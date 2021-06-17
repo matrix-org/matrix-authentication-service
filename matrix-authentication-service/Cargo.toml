@@ -1,0 +1,17 @@
+[package]
+name = "matrix-authentication-service"
+version = "0.1.0"
+authors = ["Quentin Gliech <quenting@element.io>"]
+edition = "2018"
+
+[dependencies]
+serde = { version = "1.0.126", features = ["derive"] }
+async-std = { version = "1.8.0", features = ["attributes"] }
+tide = "0.16.0"
+tracing = "0.1.26"
+tracing-subscriber = "0.2.18"
+figment = { version = "0.10.5", features = ["env"] }
+url = "2.2.2"
+oauth2 = { path = "../oauth2" }
+thiserror = "1.0.25"
+async-trait = "0.1.50"

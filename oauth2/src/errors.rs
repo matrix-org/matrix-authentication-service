@@ -2,7 +2,7 @@ use http::status::StatusCode;
 use serde::ser::{Serialize, SerializeMap};
 use url::Url;
 
-trait OAuth2Error {
+pub trait OAuth2Error: std::fmt::Debug {
     /// A single ASCII error code.
     ///
     /// Maps to the required "error" field.
@@ -38,7 +38,8 @@ trait OAuth2ErrorCode: OAuth2Error {
     fn status(&self) -> StatusCode;
 }
 
-struct ErrorResponse<T: OAuth2Error>(T);
+#[derive(Debug)]
+pub struct ErrorResponse<T: OAuth2Error>(T);
 
 impl<T: OAuth2ErrorCode> OAuth2ErrorCode for ErrorResponse<T> {
     fn status(&self) -> StatusCode {
@@ -95,6 +96,7 @@ impl<T: OAuth2Error> Serialize for ErrorResponse<T> {
 
 macro_rules! oauth2_error_def {
     ($name:ident) => {
+        #[derive(Debug)]
         pub struct $name;
     };
 }

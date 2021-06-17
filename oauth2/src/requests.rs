@@ -9,8 +9,9 @@ use crate::types::{Seconds, StringHashSet, StringVec};
 
 // ref: https://www.iana.org/assignments/oauth-parameters/oauth-parameters.xhtml
 
-#[derive(Hash, PartialEq, Eq, PartialOrd, Ord, Display, FromStr)]
+#[derive(Hash, PartialEq, Eq, PartialOrd, Ord, Display, FromStr, Serialize)]
 #[display(style = "snake_case")]
+#[serde(rename_all = "snake_case")]
 pub enum ResponseType {
     Code,
     IdToken,
@@ -18,7 +19,7 @@ pub enum ResponseType {
     None,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Hash, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ResponseMode {
     Query,
@@ -36,6 +37,7 @@ pub enum Display {
 }
 
 #[derive(Serialize, Deserialize, FromStr)]
+#[display(style = "snake_case")]
 #[serde(rename_all = "snake_case")]
 pub enum Prompt {
     None,
@@ -83,6 +85,13 @@ pub struct AuthorizationCodeGrant {
 pub struct RefreshTokenGrant {
     refresh_token: String,
     scope: Option<StringHashSet<String>>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum GrantType {
+    AuthorizationCode,
+    RefreshToken,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
