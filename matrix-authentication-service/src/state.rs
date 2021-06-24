@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use tera::Tera;
 use url::Url;
 
 use crate::{config::Config, storage::Storage};
@@ -7,19 +8,25 @@ use crate::{config::Config, storage::Storage};
 #[derive(Debug, Clone)]
 pub struct State {
     config: Arc<Config>,
+    templates: Arc<Tera>,
     storage: Storage,
 }
 
 impl State {
-    pub fn new(config: Config) -> Self {
+    pub fn new(config: Config, templates: Tera) -> Self {
         Self {
             config: Arc::new(config),
+            templates: Arc::new(templates),
             storage: Default::default(),
         }
     }
 
     pub fn storage(&self) -> &Storage {
         &self.storage
+    }
+
+    pub fn templates(&self) -> &Tera {
+        &self.templates
     }
 
     fn base(&self) -> Url {

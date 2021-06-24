@@ -1,5 +1,5 @@
 [package]
-name = "oauth2"
+name = "oauth2-types"
 version = "0.1.0"
 authors = ["Quentin Gliech <quenting@element.io>"]
 edition = "2018"

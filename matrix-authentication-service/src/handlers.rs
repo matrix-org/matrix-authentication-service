@@ -10,6 +10,7 @@ use crate::{
 };
 
 mod oauth2;
+mod views;
 
 struct BrowserErrorHandler;
 
@@ -84,8 +85,11 @@ impl Middleware<State> for BrowserErrorHandler {
 }
 
 pub fn install(app: &mut Server<State>) {
+    app.at("").get(self::views::index);
+
     app.at(".well-known/openid-configuration")
         .get(self::oauth2::discovery);
+
     app.at("oauth2/authorize")
         .with(BrowserErrorHandler)
         .get(self::oauth2::authorize);

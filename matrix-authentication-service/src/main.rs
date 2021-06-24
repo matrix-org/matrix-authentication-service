@@ -1,3 +1,5 @@
+use tera::Tera;
+use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Registry};
 
 mod config;
@@ -21,8 +23,14 @@ async fn main() -> tide::Result<()> {
     // Loading the config
     let config = Config::load()?;
     let address = config.listener.address.clone();
+
+    // Load and compile the templates
+    let path = format!("{}/templates/**/*.html", env!("CARGO_MANIFEST_DIR"));
+    info!(%path, "Loading templates");
+    let templates = Tera::new(&path)?;
+
     // Create the shared state
-    let state = State::new(config);
+    let state = State::new(config, templates);
 
     // Start the server
     let mut app = tide::with_state(state);

@@ -12,6 +12,7 @@ tracing = "0.1.26"
 tracing-subscriber = "0.2.18"
 figment = { version = "0.10.5", features = ["env"] }
 url = "2.2.2"
-oauth2 = { path = "../oauth2" }
+oauth2-types = { path = "../oauth2-types" }
 thiserror = "1.0.25"
 async-trait = "0.1.50"
+tera = "1.10.0"

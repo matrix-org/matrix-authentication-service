@@ -1,6 +1,6 @@
 use tide::{Body, Request, Response};
 
-use oauth2::{oidc::Metadata, requests::AuthorizationRequest};
+use oauth2_types::{oidc::Metadata, requests::AuthorizationRequest};
 
 use crate::state::State;
 
