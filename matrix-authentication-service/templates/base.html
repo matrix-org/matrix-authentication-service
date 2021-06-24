@@ -14,9 +14,26 @@
             matrix-authentication-service
           </a>
         </div>
+
+        <div class="navbar-end">
+          <div class="navbar-item">
+            {% if current_user %}
+              Howdy {{ current_user.name }}!
+            {% else %}
+              <a class="button is-light" href="/login">
+                Log in
+              </a>
+            {% endif %}
+          </div>
+        </div>
       </div>
     </nav>
 
     {% block content %}{% endblock content %}
+
+    <footer class="footer">
+      <div class="content has-text-centered">
+        <p>I'm checking that session works by telling you loaded things <strong>{{ visits }}</strong> time{{ visits | pluralize }}.</p>
+    </footer>
   </body>
 </html>

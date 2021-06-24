@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="section">
+    <div class="container is-max-desktop">
+      <div class="columns">
+        <div class="column is-one-third">
+          <form method="POST">
+            <div class="field">
+              <label class="label" for="login-username">Username</label>
+              <div class="control">
+                <input class="input" name="username" id="login-username" type="text">
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="label" for="login-password">Password</label>
+              <div class="control">
+                <input class="input" name="password" id="login-password" type="password">
+              </div>
+            </div>
+
+            <div class="control">
+              <button type="submit" class="button is-link">Submit</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+{% endblock content %}

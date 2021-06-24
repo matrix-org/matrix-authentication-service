@@ -9,7 +9,7 @@ use crate::{config::Config, storage::Storage};
 pub struct State {
     config: Arc<Config>,
     templates: Arc<Tera>,
-    storage: Storage,
+    storage: Arc<Storage>,
 }
 
 impl State {

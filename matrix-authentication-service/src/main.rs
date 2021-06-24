@@ -1,4 +1,5 @@
 use tera::Tera;
+use tide::sessions::{MemoryStore, SessionMiddleware};
 use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Registry};
 
@@ -6,6 +7,7 @@ mod config;
 mod handlers;
 mod state;
 mod storage;
+mod templates;
 
 use self::config::Config;
 use self::state::State;
@@ -25,15 +27,32 @@ async fn main() -> tide::Result<()> {
     let address = config.listener.address.clone();
 
     // Load and compile the templates
-    let path = format!("{}/templates/**/*.html", env!("CARGO_MANIFEST_DIR"));
-    info!(%path, "Loading templates");
-    let templates = Tera::new(&path)?;
+    let templates = self::templates::load()?;
+
+    // Setting up session store
+    // TODO: persist somewhere
+    let store = MemoryStore::new();
 
     // Create the shared state
     let state = State::new(config, templates);
 
     // Start the server
     let mut app = tide::with_state(state);
+
+    app.with(SessionMiddleware::new(
+        store,
+        b"some random value that we will figure out later",
+    ));
+
+    app.with(tide::utils::Before(
+        |mut request: tide::Request<_>| async move {
+            let session = request.session_mut();
+            let visits: usize = session.get("visits").unwrap_or_default();
+            session.insert("visits", visits + 1).unwrap();
+            request
+        },
+    ));
+
     self::handlers::install(&mut app);
     app.listen(address).await?;
     Ok(())

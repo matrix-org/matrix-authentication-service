@@ -86,6 +86,9 @@ impl Middleware<State> for BrowserErrorHandler {
 
 pub fn install(app: &mut Server<State>) {
     app.at("").get(self::views::index);
+    app.at("login")
+        .post(self::views::login_post)
+        .get(self::views::login);
 
     app.at(".well-known/openid-configuration")
         .get(self::oauth2::discovery);
