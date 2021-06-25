@@ -1,9 +1,7 @@
-use tera::Tera;
-use tide::sessions::{MemoryStore, SessionMiddleware};
-use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Registry};
 
 mod config;
+mod csrf;
 mod handlers;
 mod state;
 mod storage;
@@ -29,30 +27,12 @@ async fn main() -> tide::Result<()> {
     // Load and compile the templates
     let templates = self::templates::load()?;
 
-    // Setting up session store
-    // TODO: persist somewhere
-    let store = MemoryStore::new();
-
     // Create the shared state
     let state = State::new(config, templates);
 
     // Start the server
     let mut app = tide::with_state(state);
-
-    app.with(SessionMiddleware::new(
-        store,
-        b"some random value that we will figure out later",
-    ));
-
-    app.with(tide::utils::Before(
-        |mut request: tide::Request<_>| async move {
-            let session = request.session_mut();
-            let visits: usize = session.get("visits").unwrap_or_default();
-            session.insert("visits", visits + 1).unwrap();
-            request
-        },
-    ));
-
+    app.with(tide_tracing::TraceMiddleware::new());
     self::handlers::install(&mut app);
     app.listen(address).await?;
     Ok(())

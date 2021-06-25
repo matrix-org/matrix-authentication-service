@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use serde::Deserialize;
 use thiserror::Error;
-use tide::{Middleware, Redirect, Server};
+use tide::{sessions::SessionMiddleware, Middleware, Redirect, Server};
 use url::Url;
 
 use crate::{
@@ -85,15 +85,24 @@ impl Middleware<State> for BrowserErrorHandler {
 }
 
 pub fn install(app: &mut Server<State>) {
-    app.at("").get(self::views::index);
-    app.at("login")
-        .post(self::views::login_post)
-        .get(self::views::login);
+    let state = app.state().clone();
+
+    app.at("/").nest({
+        let mut views = tide::with_state(state.clone());
+        views.with(state.session_middleware());
+        views.with(crate::csrf::HasCsrf);
+        views.at("/").get(self::views::index);
+        views.at("/login").get(self::views::login);
+        views.at("/login").post(self::views::login_post);
+
+        views
+            .at("oauth2/authorize")
+            .with(BrowserErrorHandler)
+            .get(self::oauth2::authorize);
+
+        views
+    });
 
     app.at(".well-known/openid-configuration")
         .get(self::oauth2::discovery);
-
-    app.at("oauth2/authorize")
-        .with(BrowserErrorHandler)
-        .get(self::oauth2::authorize);
 }

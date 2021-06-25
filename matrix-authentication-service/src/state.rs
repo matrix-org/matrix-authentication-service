@@ -1,15 +1,29 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
+use csrf::{AesGcmCsrfProtection, CsrfProtection};
 use tera::Tera;
+use tide::{
+    sessions::{MemoryStore, SessionMiddleware, SessionStore},
+    Middleware,
+};
 use url::Url;
 
 use crate::{config::Config, storage::Storage};
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct State {
     config: Arc<Config>,
     templates: Arc<Tera>,
     storage: Arc<Storage>,
+    session_store: Arc<MemoryStore>,
+    csrf: Arc<AesGcmCsrfProtection>,
+}
+
+impl std::fmt::Debug for State {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "State")
+    }
 }
 
 impl State {
@@ -18,6 +32,10 @@ impl State {
             config: Arc::new(config),
             templates: Arc::new(templates),
             storage: Default::default(),
+            session_store: Arc::new(MemoryStore::new()),
+            csrf: Arc::new(AesGcmCsrfProtection::from_key(
+                *b"01234567012345670123456701234567",
+            )),
         }
     }
 
@@ -27,6 +45,14 @@ impl State {
 
     pub fn templates(&self) -> &Tera {
         &self.templates
+    }
+
+    pub fn csrf_protection(&self) -> Arc<AesGcmCsrfProtection> {
+        self.csrf.clone()
+    }
+
+    pub fn session_middleware(self) -> impl Middleware<Self> {
+        SessionMiddleware::new(self, b"some random value that we will figure out later")
     }
 
     fn base(&self) -> Url {
@@ -47,5 +73,30 @@ impl State {
 
     pub fn jwks_uri(&self) -> Option<Url> {
         self.base().join(".well-known/jwks.json").ok()
+    }
+}
+
+#[async_trait]
+impl SessionStore for State {
+    async fn load_session(
+        &self,
+        cookie_value: String,
+    ) -> anyhow::Result<Option<tide::sessions::Session>> {
+        self.session_store.load_session(cookie_value).await
+    }
+
+    async fn store_session(
+        &self,
+        session: tide::sessions::Session,
+    ) -> anyhow::Result<Option<String>> {
+        self.session_store.store_session(session).await
+    }
+
+    async fn destroy_session(&self, session: tide::sessions::Session) -> anyhow::Result<()> {
+        self.session_store.destroy_session(session).await
+    }
+
+    async fn clear_store(&self) -> anyhow::Result<()> {
+        self.session_store.clear_store().await
     }
 }
