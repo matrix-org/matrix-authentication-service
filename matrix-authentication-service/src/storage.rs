@@ -5,6 +5,8 @@ use serde::Serialize;
 use thiserror::Error;
 use url::Url;
 
+use crate::config::OAuth2ClientConfig;
+
 #[derive(Debug, Default)]
 pub struct Storage {
     clients: RwLock<HashMap<String, Client>>,
@@ -69,21 +71,32 @@ impl User {
 }
 
 impl Storage {
-    pub async fn lookup_client(&self, client_id: &str) -> Result<Client, ClientLookupError> {
-        // First lookup for an existing client
-        let clients = self.clients.upgradable_read().await;
-        if let Some(client) = clients.get(client_id) {
-            Ok(client.clone())
-        } else {
-            // If it does not exist, insert a new client
-            let mut clients = RwLockUpgradableReadGuard::upgrade(clients).await;
-            let new_client = Client {
-                client_id: client_id.to_string(),
-                redirect_uris: None,
+    pub async fn load_static_clients(&self, clients: &[OAuth2ClientConfig]) {
+        let mut storage = self.clients.write().await;
+        for config in clients {
+            let redirect_uris = config
+                .redirect_uris
+                .as_ref()
+                .map(|uris| uris.iter().cloned().collect());
+            let client_id = config.client_id.clone();
+
+            let client = Client {
+                client_id: client_id.clone(),
+                redirect_uris,
             };
-            clients.insert(client_id.to_string(), new_client.clone());
-            Ok(new_client)
+
+            // TODO: we could warn about duplicate clients here
+            storage.insert(client_id, client);
         }
+    }
+
+    pub async fn lookup_client(&self, client_id: &str) -> Result<Client, ClientLookupError> {
+        self.clients
+            .read()
+            .await
+            .get(client_id)
+            .cloned()
+            .ok_or(ClientLookupError)
     }
 
     pub async fn login(&self, name: &str, password: &str) -> Result<User, UserLoginError> {

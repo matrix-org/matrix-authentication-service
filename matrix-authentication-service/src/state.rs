@@ -9,11 +9,11 @@ use tide::{
 };
 use url::Url;
 
-use crate::{config::Config, storage::Storage};
+use crate::{config::RootConfig, storage::Storage};
 
 #[derive(Clone)]
 pub struct State {
-    config: Arc<Config>,
+    config: Arc<RootConfig>,
     templates: Arc<Tera>,
     storage: Arc<Storage>,
     session_store: Arc<MemoryStore>,
@@ -27,7 +27,7 @@ impl std::fmt::Debug for State {
 }
 
 impl State {
-    pub fn new(config: Config, templates: Tera) -> Self {
+    pub fn new(config: RootConfig, templates: Tera) -> Self {
         Self {
             config: Arc::new(config),
             templates: Arc::new(templates),
@@ -37,6 +37,10 @@ impl State {
                 *b"01234567012345670123456701234567",
             )),
         }
+    }
+
+    pub fn config(&self) -> &RootConfig {
+        &self.config
     }
 
     pub fn storage(&self) -> &Storage {

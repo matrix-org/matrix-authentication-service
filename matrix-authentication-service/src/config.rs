@@ -1,44 +1,71 @@
-use figment::{error::Error as FigmentError, providers::Env, Figment};
+use figment::{
+    error::Error as FigmentError,
+    providers::{Env, Format, Yaml},
+    Figment,
+};
 use serde::Deserialize;
 use url::Url;
 
 #[derive(Debug, Deserialize)]
-pub struct OAuth2 {
-    pub issuer: Url,
+pub struct OAuth2ClientConfig {
+    pub client_id: String,
+
+    #[serde(default)]
+    pub redirect_uris: Option<Vec<Url>>,
 }
 
-impl Default for OAuth2 {
+fn default_oauth2_issuer() -> Url {
+    "http://[::]:8080".parse().unwrap()
+}
+
+#[derive(Debug, Deserialize)]
+pub struct OAuth2Config {
+    #[serde(default = "default_oauth2_issuer")]
+    pub issuer: Url,
+
+    #[serde(default)]
+    pub clients: Vec<OAuth2ClientConfig>,
+}
+
+impl Default for OAuth2Config {
     fn default() -> Self {
         Self {
-            issuer: "http://[::]:8080".parse().unwrap(),
+            issuer: default_oauth2_issuer(),
+            clients: Default::default(),
         }
     }
 }
 
+fn default_listener_address() -> String {
+    "[::]:8080".into()
+}
+
 #[derive(Debug, Deserialize)]
-pub struct Listener {
+pub struct ListenerConfig {
+    #[serde(default = "default_listener_address")]
     pub address: String,
 }
 
-impl Default for Listener {
+impl Default for ListenerConfig {
     fn default() -> Self {
-        Listener {
-            address: "[::]:8080".into(),
+        ListenerConfig {
+            address: default_listener_address(),
         }
     }
 }
 
 #[derive(Debug, Default, Deserialize)]
 #[serde(default)]
-pub struct Config {
-    pub oauth2: OAuth2,
-    pub listener: Listener,
+pub struct RootConfig {
+    pub oauth2: OAuth2Config,
+    pub listener: ListenerConfig,
 }
 
-impl Config {
-    pub fn load() -> Result<Config, FigmentError> {
+impl RootConfig {
+    pub fn load() -> Result<RootConfig, FigmentError> {
         Figment::new()
             .merge(Env::prefixed("MAS_").split("_"))
+            .merge(Yaml::file("config.yaml"))
             .extract()
     }
 }
