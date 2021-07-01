@@ -14,8 +14,7 @@ use self::state::State;
 async fn main() -> tide::Result<()> {
     // Setup logging & tracing
     let fmt_layer = tracing_subscriber::fmt::layer();
-    let filter_layer =
-        EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("debug"))?;
+    let filter_layer = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?;
 
     let subscriber = Registry::default().with(filter_layer).with(fmt_layer);
     subscriber.try_init()?;

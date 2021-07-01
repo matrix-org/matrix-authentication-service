@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use csrf::{AesGcmCsrfProtection, CsrfProtection};
+use csrf::AesGcmCsrfProtection;
 use tera::Tera;
 use tide::{
     sessions::{MemoryStore, SessionMiddleware, SessionStore},

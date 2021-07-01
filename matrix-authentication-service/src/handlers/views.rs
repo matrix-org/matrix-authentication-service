@@ -1,12 +1,12 @@
 use serde::Deserialize;
 use tide::{Redirect, Request, Response};
 
+use crate::csrf::CsrfForm;
 use crate::state::State;
 use crate::templates::common_context;
 
 #[derive(Deserialize)]
 struct LoginForm {
-    csrf: String,
     username: String,
     password: String,
 }
@@ -36,8 +36,8 @@ pub async fn login(req: Request<State>) -> tide::Result {
 }
 
 pub async fn login_post(mut req: Request<State>) -> tide::Result {
-    let form: LoginForm = req.body_form().await?;
-    crate::csrf::verify_csrf(&req, &form.csrf)?;
+    let form: CsrfForm<LoginForm> = req.body_form().await?;
+    let form = form.verify_csrf(&req)?;
     let state = req.state();
 
     let user = state

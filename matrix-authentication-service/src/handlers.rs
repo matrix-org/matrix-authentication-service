@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use serde::Deserialize;
 use thiserror::Error;
-use tide::{sessions::SessionMiddleware, Middleware, Redirect, Server};
+use tide::{Middleware, Redirect, Server};
 use url::Url;
 
 use crate::{
