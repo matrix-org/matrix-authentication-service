@@ -11,19 +11,7 @@ struct LoginForm {
     password: String,
 }
 
-pub async fn index(req: Request<State>) -> tide::Result {
-    let state = req.state();
-    let ctx = common_context(&req).await?;
-
-    let content = state.templates().render("index.html", &ctx)?;
-    let body = Response::builder(200)
-        .body(content)
-        .content_type("text/html")
-        .into();
-    Ok(body)
-}
-
-pub async fn login(req: Request<State>) -> tide::Result {
+pub async fn get(req: Request<State>) -> tide::Result {
     let state = req.state();
     let ctx = common_context(&req).await?;
 
@@ -35,7 +23,7 @@ pub async fn login(req: Request<State>) -> tide::Result {
     Ok(body)
 }
 
-pub async fn login_post(mut req: Request<State>) -> tide::Result {
+pub async fn post(mut req: Request<State>) -> tide::Result {
     let form: CsrfForm<LoginForm> = req.body_form().await?;
     let form = form.verify_csrf(&req)?;
     let state = req.state();

@@ -90,10 +90,10 @@ pub fn install(app: &mut Server<State>) {
     app.at("/").nest({
         let mut views = tide::with_state(state.clone());
         views.with(state.session_middleware());
-        views.with(crate::csrf::HasCsrf);
-        views.at("/").get(self::views::index);
-        views.at("/login").get(self::views::login);
-        views.at("/login").post(self::views::login_post);
+        views.with(crate::middlewares::HasCsrf);
+        views.at("/").get(self::views::index::get);
+        views.at("/login").get(self::views::login::get);
+        views.at("/login").post(self::views::login::post);
 
         views
             .at("oauth2/authorize")

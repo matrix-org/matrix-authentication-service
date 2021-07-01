@@ -3,6 +3,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilte
 mod config;
 mod csrf;
 mod handlers;
+mod middlewares;
 mod state;
 mod storage;
 mod templates;
