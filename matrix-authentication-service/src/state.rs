@@ -55,8 +55,11 @@ impl State {
         self.csrf.clone()
     }
 
-    pub fn session_middleware(self) -> impl Middleware<Self> {
-        SessionMiddleware::new(self, b"some random value that we will figure out later")
+    pub fn session_middleware(&self) -> impl Middleware<Self> {
+        SessionMiddleware::new(
+            self.clone(),
+            b"some random value that we will figure out later",
+        )
     }
 
     fn base(&self) -> Url {

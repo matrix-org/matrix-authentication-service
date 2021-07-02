@@ -1,22 +1,19 @@
 use std::convert::TryInto;
+use std::future::Future;
+use std::pin::Pin;
 
-use async_trait::async_trait;
 use csrf::CsrfProtection;
 use data_encoding::BASE64;
-use tide::{http::Cookie, Middleware};
+use tide::http::Cookie;
 use time::Duration;
 
 use crate::state::State;
 
-pub struct HasCsrf;
-
-#[async_trait]
-impl Middleware<State> for HasCsrf {
-    async fn handle(
-        &self,
-        mut request: tide::Request<State>,
-        next: tide::Next<'_, State>,
-    ) -> tide::Result {
+pub fn middleware<'a>(
+    mut request: tide::Request<State>,
+    next: tide::Next<'a, State>,
+) -> Pin<Box<dyn Future<Output = tide::Result> + Send + 'a>> {
+    Box::pin(async {
         // Generate, inject and save cookie with CSRF
         let state = request.state();
         let protection = state.csrf_protection();
@@ -40,5 +37,5 @@ impl Middleware<State> for HasCsrf {
         );
 
         Ok(response)
-    }
+    })
 }

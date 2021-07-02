@@ -34,7 +34,7 @@ async fn main() -> tide::Result<()> {
         .await;
 
     // Start the server
-    let address = state.config().listener.address.clone();
+    let address = state.config().http.address.clone();
     let mut app = tide::with_state(state);
     app.with(tide_tracing::TraceMiddleware::new());
     self::handlers::install(&mut app);

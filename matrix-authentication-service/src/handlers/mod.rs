@@ -1,7 +1,13 @@
+use std::convert::TryInto;
+
 use async_trait::async_trait;
 use serde::Deserialize;
 use thiserror::Error;
-use tide::{Middleware, Redirect, Server};
+use tide::{
+    http::headers::HeaderValue,
+    security::{CorsMiddleware, Origin},
+    Middleware, Redirect, Server,
+};
 use url::Url;
 
 use crate::{
@@ -87,13 +93,20 @@ impl Middleware<State> for BrowserErrorHandler {
 pub fn install(app: &mut Server<State>) {
     let state = app.state().clone();
 
+    let cors = CorsMiddleware::new()
+        .allow_methods("GET, POST, OPTIONS".parse::<HeaderValue>().unwrap())
+        .allow_origin(Origin::from("*"))
+        .allow_credentials(false);
+
     app.at("/").nest({
         let mut views = tide::with_state(state.clone());
         views.with(state.session_middleware());
-        views.with(crate::middlewares::HasCsrf);
+        views.with(crate::middlewares::csrf);
         views.at("/").get(self::views::index::get);
-        views.at("/login").get(self::views::login::get);
-        views.at("/login").post(self::views::login::post);
+        views
+            .at("/login")
+            .get(self::views::login::get)
+            .post(self::views::login::post);
 
         views
             .at("oauth2/authorize")
@@ -103,6 +116,10 @@ pub fn install(app: &mut Server<State>) {
         views
     });
 
-    app.at(".well-known/openid-configuration")
-        .get(self::oauth2::discovery);
+    app.at("/.well-known").nest({
+        let mut wk = tide::with_state(state);
+        wk.with(cors);
+        wk.at("/openid-configuration").get(self::oauth2::discovery);
+        wk
+    });
 }
