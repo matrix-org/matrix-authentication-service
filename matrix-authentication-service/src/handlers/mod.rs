@@ -106,6 +106,7 @@ pub fn install(app: &mut Server<State>) {
             .at("/login")
             .get(self::views::login::get)
             .post(self::views::login::post);
+        views.at("/logout").post(self::views::logout::post);
 
         views
             .at("oauth2/authorize")
