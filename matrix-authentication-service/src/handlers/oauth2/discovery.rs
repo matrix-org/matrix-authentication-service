@@ -1,10 +1,10 @@
 use tide::{Body, Request, Response};
 
-use oauth2_types::{oidc::Metadata, requests::AuthorizationRequest};
+use oauth2_types::oidc::Metadata;
 
 use crate::state::State;
 
-pub async fn discovery(req: Request<State>) -> tide::Result {
+pub async fn get(req: Request<State>) -> tide::Result {
     let state = req.state();
     let m = Metadata {
         issuer: state.issuer(),
@@ -20,11 +20,5 @@ pub async fn discovery(req: Request<State>) -> tide::Result {
 
     let body = Body::from_json(&m)?;
 
-    Ok(Response::builder(200).body(body).build())
-}
-
-pub async fn authorize(req: Request<State>) -> tide::Result {
-    let params: AuthorizationRequest = req.query()?;
-    let body = Body::from_json(&params)?;
     Ok(Response::builder(200).body(body).build())
 }

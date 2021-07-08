@@ -111,7 +111,7 @@ pub fn install(app: &mut Server<State>) {
         views
             .at("oauth2/authorize")
             .with(BrowserErrorHandler)
-            .get(self::oauth2::authorize);
+            .get(self::oauth2::authorization::get);
 
         views
     });
@@ -119,7 +119,8 @@ pub fn install(app: &mut Server<State>) {
     app.at("/.well-known").nest({
         let mut wk = tide::with_state(state);
         wk.with(cors);
-        wk.at("/openid-configuration").get(self::oauth2::discovery);
+        wk.at("/openid-configuration")
+            .get(self::oauth2::discovery::get);
         wk
     });
 }

@@ -1,23 +1,19 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
-use async_std::sync::{RwLock, RwLockUpgradableReadGuard};
-use serde::Serialize;
 use thiserror::Error;
 use url::Url;
 
 use crate::config::OAuth2ClientConfig;
-
-#[derive(Debug, Default)]
-pub struct Storage {
-    clients: RwLock<HashMap<String, Client>>,
-    users: RwLock<HashMap<String, User>>,
-}
 
 #[derive(Debug, Clone)]
 pub struct Client {
     client_id: String,
     redirect_uris: Option<HashSet<Url>>,
 }
+
+#[derive(Debug, Error)]
+#[error("Could not find client")]
+pub struct ClientLookupError;
 
 #[derive(Debug, Error)]
 #[error("Invalid redirect URI")]
@@ -47,30 +43,7 @@ impl Client {
     }
 }
 
-#[derive(Debug, Error)]
-#[error("Could not find client")]
-pub struct ClientLookupError;
-
-#[derive(Debug, Error)]
-#[error("Invalid credentials")]
-pub struct UserLoginError;
-
-#[derive(Debug, Error)]
-#[error("Could not find user")]
-pub struct UserLookupError;
-
-#[derive(Serialize, Debug, Clone)]
-pub struct User {
-    name: String,
-}
-
-impl User {
-    pub fn key(&self) -> &str {
-        &self.name
-    }
-}
-
-impl Storage {
+impl super::Storage {
     pub async fn load_static_clients(&self, clients: &[OAuth2ClientConfig]) {
         let mut storage = self.clients.write().await;
         for config in clients {
@@ -98,37 +71,11 @@ impl Storage {
             .cloned()
             .ok_or(ClientLookupError)
     }
-
-    pub async fn login(&self, name: &str, password: &str) -> Result<User, UserLoginError> {
-        // Hardcoded bad password to test login failures
-        if password == "bad" {
-            Err(UserLoginError)
-        } else {
-            // First lookup for an existing user
-            let users = self.users.upgradable_read().await;
-            if let Some(user) = users.get(name) {
-                Ok(user.clone())
-            } else {
-                // If it does not exist, insert a new user
-                let mut users = RwLockUpgradableReadGuard::upgrade(users).await;
-                let new_user = User {
-                    name: name.to_string(),
-                };
-                users.insert(name.to_string(), new_user.clone());
-                Ok(new_user)
-            }
-        }
-    }
-
-    pub async fn lookup_user(&self, name: &str) -> Result<User, UserLookupError> {
-        let users = self.users.read().await;
-        users.get(name).cloned().ok_or(UserLookupError)
-    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::super::Storage;
 
     #[async_std::test]
     async fn test_login() {
