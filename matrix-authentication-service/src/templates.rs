@@ -6,7 +6,7 @@ use tracing::info;
 use crate::state::State;
 
 pub fn load() -> Result<Tera, tera::Error> {
-    let path = format!("{}/templates/**/*.html", env!("CARGO_MANIFEST_DIR"));
+    let path = format!("{}/templates/**/*.{{html,txt}}", env!("CARGO_MANIFEST_DIR"));
     info!(%path, "Loading templates");
     Tera::new(&path)
 }

@@ -1,0 +1,11 @@
+{% if code %}
+{{- code }}
+{% endif %}
+
+{%- if description %}
+{{ description }}
+{% endif %}
+
+{%- if details %}
+{{ details }}
+{% endif %}

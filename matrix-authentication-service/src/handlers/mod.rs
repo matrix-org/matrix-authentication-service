@@ -1,5 +1,3 @@
-use std::convert::TryInto;
-
 use async_trait::async_trait;
 use serde::Deserialize;
 use thiserror::Error;
@@ -102,6 +100,7 @@ pub fn install(app: &mut Server<State>) {
         let mut views = tide::with_state(state.clone());
         views.with(state.session_middleware());
         views.with(crate::middlewares::csrf);
+        views.with(crate::middlewares::errors);
         views.at("/").get(self::views::index::get);
         views
             .at("/login")
