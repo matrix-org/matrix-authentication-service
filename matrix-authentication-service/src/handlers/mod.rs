@@ -27,6 +27,7 @@ use crate::{
     storage::{ClientLookupError, InvalidRedirectUriError, Storage},
 };
 
+mod health;
 mod oauth2;
 mod views;
 
@@ -53,9 +54,9 @@ struct QueryParams {
     redirect_uri: Option<String>,
 }
 
-async fn redirect_uri_from_params(
+async fn redirect_uri_from_params<T>(
     params: QueryParams,
-    storage: &Storage,
+    storage: &Storage<T>,
 ) -> Result<Url, RedirectUriLookupError> {
     use RedirectUriLookupError::*;
     let client_id = params.client_id.ok_or(MissingClientId)?;
@@ -109,6 +110,8 @@ pub fn install(app: &mut Server<State>) {
         .allow_methods("GET, POST, OPTIONS".parse::<HeaderValue>().unwrap())
         .allow_origin(Origin::from("*"))
         .allow_credentials(false);
+
+    app.at("/health").get(self::health::get);
 
     app.at("/").nest({
         let mut views = tide::with_state(state.clone());

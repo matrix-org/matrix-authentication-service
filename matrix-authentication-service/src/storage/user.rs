@@ -35,7 +35,7 @@ pub struct UserLoginError;
 #[error("Could not find user")]
 pub struct UserLookupError;
 
-impl super::Storage {
+impl<T> super::Storage<T> {
     pub async fn login(&self, name: &str, password: &str) -> Result<User, UserLoginError> {
         // Hardcoded bad password to test login failures
         if password == "bad" {

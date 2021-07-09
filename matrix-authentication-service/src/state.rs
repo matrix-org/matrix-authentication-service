@@ -16,6 +16,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use csrf::AesGcmCsrfProtection;
+use sqlx::PgPool;
 use tera::Tera;
 use tide::{
     sessions::{MemoryStore, SessionMiddleware, SessionStore},
@@ -29,23 +30,23 @@ use crate::{config::RootConfig, storage::Storage};
 pub struct State {
     config: Arc<RootConfig>,
     templates: Arc<Tera>,
-    storage: Arc<Storage>,
+    storage: Arc<Storage<PgPool>>,
     session_store: Arc<MemoryStore>,
     csrf: Arc<AesGcmCsrfProtection>,
 }
 
 impl std::fmt::Debug for State {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "State")
+        f.debug_struct("State").finish_non_exhaustive()
     }
 }
 
 impl State {
-    pub fn new(config: RootConfig, templates: Tera) -> Self {
+    pub fn new(config: RootConfig, templates: Tera, pool: PgPool) -> Self {
         Self {
             config: Arc::new(config),
             templates: Arc::new(templates),
-            storage: Default::default(),
+            storage: Arc::new(Storage::new(pool)),
             session_store: Arc::new(MemoryStore::new()),
             csrf: Arc::new(AesGcmCsrfProtection::from_key(
                 *b"01234567012345670123456701234567",
@@ -57,7 +58,7 @@ impl State {
         &self.config
     }
 
-    pub fn storage(&self) -> &Storage {
+    pub fn storage(&self) -> &Storage<PgPool> {
         &self.storage
     }
 

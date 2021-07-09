@@ -57,7 +57,7 @@ impl Client {
     }
 }
 
-impl super::Storage {
+impl<T> super::Storage<T> {
     pub async fn load_static_clients(&self, clients: &[OAuth2ClientConfig]) {
         let mut storage = self.clients.write().await;
         for config in clients {
@@ -93,7 +93,7 @@ mod tests {
 
     #[async_std::test]
     async fn test_login() {
-        let storage = Storage::default();
+        let storage = Storage::new(());
 
         // "bad" is a bad password and should not insert
         assert_eq!(storage.users.read().await.len(), 0);

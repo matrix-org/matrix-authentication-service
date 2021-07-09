@@ -15,6 +15,7 @@
 use std::collections::HashMap;
 
 use async_std::sync::RwLock;
+use sqlx::migrate::Migrator;
 
 mod client;
 mod user;
@@ -22,8 +23,25 @@ mod user;
 pub use self::client::{Client, ClientLookupError, InvalidRedirectUriError};
 pub use self::user::User;
 
-#[derive(Debug, Default)]
-pub struct Storage {
+pub static MIGRATOR: Migrator = sqlx::migrate!();
+
+#[derive(Debug)]
+pub struct Storage<Pool> {
+    pool: Pool,
     clients: RwLock<HashMap<String, Client>>,
     users: RwLock<HashMap<String, User>>,
+}
+
+impl<Pool> Storage<Pool> {
+    pub fn new(pool: Pool) -> Self {
+        Self {
+            pool,
+            clients: Default::default(),
+            users: Default::default(),
+        }
+    }
+
+    pub fn pool(&self) -> &Pool {
+        &self.pool
+    }
 }

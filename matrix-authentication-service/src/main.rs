@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![forbid(unsafe_code)]
+
+use anyhow::Context;
+use tracing::{info_span, Instrument};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Registry};
 
 mod config;
@@ -24,6 +28,7 @@ mod templates;
 
 use self::config::RootConfig;
 use self::state::State;
+use self::storage::MIGRATOR;
 
 #[async_std::main]
 async fn main() -> tide::Result<()> {
@@ -32,26 +37,45 @@ async fn main() -> tide::Result<()> {
     let filter_layer = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?;
 
     let subscriber = Registry::default().with(filter_layer).with(fmt_layer);
-    subscriber.try_init()?;
+    subscriber
+        .try_init()
+        .context("could not initialize logging")?;
 
     // Loading the config
-    let config = RootConfig::load()?;
+    let config = RootConfig::load().context("could not load config")?;
+
+    // Connect to the database
+    let pool = config
+        .database
+        .connect()
+        .await
+        .context("could not connect to database")?;
 
     // Load and compile the templates
-    let templates = self::templates::load()?;
+    let templates = self::templates::load().context("could not load templates")?;
 
     // Create the shared state
-    let state = State::new(config, templates);
+    let state = State::new(config, templates, pool);
     state
         .storage()
         .load_static_clients(&state.config().oauth2.clients)
         .await;
+
+    // Run pending migrations
+    // TODO: make this a separate command
+    MIGRATOR
+        .run(state.storage().pool())
+        .instrument(info_span!("migrations"))
+        .await
+        .context("could not run migrations")?;
 
     // Start the server
     let address = state.config().http.address.clone();
     let mut app = tide::with_state(state);
     app.with(tide_tracing::TraceMiddleware::new());
     self::handlers::install(&mut app);
-    app.listen(address).await?;
+    app.listen(address)
+        .await
+        .context("could not start server")?;
     Ok(())
 }

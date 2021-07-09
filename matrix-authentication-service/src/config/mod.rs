@@ -19,9 +19,11 @@ use figment::{
 };
 use serde::Deserialize;
 
+mod database;
 mod http;
 mod oauth2;
 
+pub use self::database::Config as DatabaseConfig;
 pub use self::http::Config as HttpConfig;
 pub use self::oauth2::{ClientConfig as OAuth2ClientConfig, Config as OAuth2Config};
 
@@ -30,6 +32,7 @@ pub use self::oauth2::{ClientConfig as OAuth2ClientConfig, Config as OAuth2Confi
 pub struct RootConfig {
     pub oauth2: OAuth2Config,
     pub http: HttpConfig,
+    pub database: DatabaseConfig,
 }
 
 impl RootConfig {
