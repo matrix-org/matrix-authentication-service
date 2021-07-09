@@ -18,6 +18,7 @@ use async_std::sync::RwLock;
 use sqlx::migrate::Migrator;
 
 mod client;
+mod session;
 mod user;
 
 pub use self::{

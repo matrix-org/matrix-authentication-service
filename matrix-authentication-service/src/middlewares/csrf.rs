@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::convert::TryInto;
+use std::{convert::TryInto, time::Duration};
 
 use async_trait::async_trait;
 use csrf::CsrfProtection;
 use data_encoding::BASE64;
 use tide::http::Cookie;
-use time::Duration;
 
 #[derive(Debug, Clone)]
 pub struct Middleware<T> {
@@ -28,10 +27,10 @@ pub struct Middleware<T> {
 }
 
 impl<T: CsrfProtection> Middleware<T> {
-    pub fn new(protection: T, cookie_name: String, ttl: Duration) -> Self {
+    pub fn new<D: Into<Duration>>(protection: T, cookie_name: String, ttl: D) -> Self {
         Self {
             protection,
-            ttl,
+            ttl: ttl.into(),
             cookie_name,
         }
     }
@@ -53,9 +52,11 @@ where
             .and_then(|cookie| BASE64.decode(cookie.value().as_bytes()).ok())
             .and_then(|decoded| self.protection.parse_cookie(&decoded).ok())
             .and_then(|parsed| parsed.value().try_into().ok());
-        let (token, cookie) = self
-            .protection
-            .generate_token_pair(previous_token_value.as_ref(), self.ttl.whole_seconds())?;
+
+        let (token, cookie) = self.protection.generate_token_pair(
+            previous_token_value.as_ref(),
+            self.ttl.as_secs().try_into()?,
+        )?;
 
         request.set_ext(token);
 
@@ -63,7 +64,7 @@ where
         response.insert_cookie(
             Cookie::build(self.cookie_name.clone(), cookie.b64_string())
                 .http_only(true)
-                .max_age(Duration::seconds(self.ttl.whole_seconds()))
+                .max_age(self.ttl.try_into()?)
                 .same_site(tide::http::cookies::SameSite::Strict)
                 .finish(),
         );

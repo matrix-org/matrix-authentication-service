@@ -12,16 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use csrf::AesGcmCsrfProtection;
+use std::time::Duration;
+
+use csrf::{AesGcmCsrfProtection, CsrfProtection};
 use serde::Deserialize;
 use serde_with::serde_as;
 use tide::Middleware;
-use time::Duration;
 
 use crate::middlewares::CsrfMiddleware;
 
 fn default_ttl() -> Duration {
-    Duration::hour()
+    Duration::from_secs(3600)
 }
 
 fn default_cookie_name() -> String {
@@ -38,11 +39,12 @@ pub struct Config {
     cookie_name: String,
 
     #[serde(default = "default_ttl")]
+    #[serde_as(as = "serde_with::DurationSeconds<u64>")]
     ttl: Duration,
 }
 
 impl Config {
-    pub fn into_protection(self) -> AesGcmCsrfProtection {
+    pub fn into_protection(self) -> impl CsrfProtection {
         AesGcmCsrfProtection::from_key(self.key)
     }
 

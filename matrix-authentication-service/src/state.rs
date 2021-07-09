@@ -14,13 +14,9 @@
 
 use std::sync::Arc;
 
-use async_trait::async_trait;
 use sqlx::PgPool;
 use tera::Tera;
-use tide::{
-    sessions::{MemoryStore, SessionMiddleware, SessionStore},
-    Middleware,
-};
+use tide::Middleware;
 use url::Url;
 
 use crate::{config::RootConfig, storage::Storage};
@@ -30,7 +26,6 @@ pub struct State {
     config: Arc<RootConfig>,
     templates: Arc<Tera>,
     storage: Arc<Storage<PgPool>>,
-    session_store: Arc<MemoryStore>,
 }
 
 impl std::fmt::Debug for State {
@@ -45,7 +40,6 @@ impl State {
             config: Arc::new(config),
             templates: Arc::new(templates),
             storage: Arc::new(Storage::new(pool)),
-            session_store: Arc::new(MemoryStore::new()),
         }
     }
 
@@ -62,10 +56,13 @@ impl State {
     }
 
     pub fn session_middleware(&self) -> impl Middleware<Self> {
-        SessionMiddleware::new(
-            self.clone(),
-            b"some random value that we will figure out later",
-        )
+        self.config
+            .session
+            .to_middleware(self.storage.session_store())
+    }
+
+    pub fn csrf_middleware(&self) -> impl Middleware<Self> {
+        self.config.csrf.clone().into_middleware()
     }
 
     fn base(&self) -> Url {
@@ -86,30 +83,5 @@ impl State {
 
     pub fn jwks_uri(&self) -> Option<Url> {
         self.base().join(".well-known/jwks.json").ok()
-    }
-}
-
-#[async_trait]
-impl SessionStore for State {
-    async fn load_session(
-        &self,
-        cookie_value: String,
-    ) -> anyhow::Result<Option<tide::sessions::Session>> {
-        self.session_store.load_session(cookie_value).await
-    }
-
-    async fn store_session(
-        &self,
-        session: tide::sessions::Session,
-    ) -> anyhow::Result<Option<String>> {
-        self.session_store.store_session(session).await
-    }
-
-    async fn destroy_session(&self, session: tide::sessions::Session) -> anyhow::Result<()> {
-        self.session_store.destroy_session(session).await
-    }
-
-    async fn clear_store(&self) -> anyhow::Result<()> {
-        self.session_store.clear_store().await
     }
 }
