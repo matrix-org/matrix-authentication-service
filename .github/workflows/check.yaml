@@ -75,6 +75,7 @@ jobs:
 
     runs-on: ${{ matrix.os.runner }}
     strategy:
+      fail-fast: false # Continue other jobs if one fails to help filling the cache
       matrix:
         os:
           - name: "macOS"
