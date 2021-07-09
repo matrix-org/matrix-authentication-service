@@ -58,7 +58,7 @@ async fn redirect_uri_from_params<T>(
     params: QueryParams,
     storage: &Storage<T>,
 ) -> Result<Url, RedirectUriLookupError> {
-    use RedirectUriLookupError::*;
+    use RedirectUriLookupError::MissingClientId;
     let client_id = params.client_id.ok_or(MissingClientId)?;
     let client = storage.lookup_client(&client_id).await?;
     let redirect_uri: Option<Url> = if let Some(uri) = params.redirect_uri {

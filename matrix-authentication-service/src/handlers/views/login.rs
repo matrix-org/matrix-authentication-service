@@ -15,9 +15,7 @@
 use serde::Deserialize;
 use tide::{Redirect, Request, Response};
 
-use crate::csrf::CsrfForm;
-use crate::state::State;
-use crate::templates::common_context;
+use crate::{csrf::CsrfForm, state::State, templates::common_context};
 
 #[derive(Deserialize)]
 struct LoginForm {

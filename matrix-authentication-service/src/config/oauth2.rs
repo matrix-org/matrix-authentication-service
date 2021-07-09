@@ -40,7 +40,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             issuer: default_oauth2_issuer(),
-            clients: Default::default(),
+            clients: Vec::new(),
         }
     }
 }

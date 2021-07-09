@@ -12,9 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use tide::{Body, Request, Response};
-
 use oauth2_types::requests::AuthorizationRequest;
+use tide::{Body, Request, Response};
 
 use crate::state::State;
 

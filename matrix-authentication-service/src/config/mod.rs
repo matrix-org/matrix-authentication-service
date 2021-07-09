@@ -24,10 +24,12 @@ mod database;
 mod http;
 mod oauth2;
 
-pub use self::csrf::Config as CsrfConfig;
-pub use self::database::Config as DatabaseConfig;
-pub use self::http::Config as HttpConfig;
-pub use self::oauth2::{ClientConfig as OAuth2ClientConfig, Config as OAuth2Config};
+pub use self::{
+    csrf::Config as CsrfConfig,
+    database::Config as DatabaseConfig,
+    http::Config as HttpConfig,
+    oauth2::{ClientConfig as OAuth2ClientConfig, Config as OAuth2Config},
+};
 
 #[derive(Debug, Deserialize)]
 pub struct RootConfig {

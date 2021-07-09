@@ -13,6 +13,9 @@
 // limitations under the License.
 
 #![forbid(unsafe_code)]
+#![deny(clippy::all)]
+#![warn(clippy::pedantic)]
+#![allow(clippy::module_name_repetitions)]
 
 use anyhow::Context;
 use tracing::{info_span, Instrument};
@@ -26,9 +29,7 @@ mod state;
 mod storage;
 mod templates;
 
-use self::config::RootConfig;
-use self::state::State;
-use self::storage::MIGRATOR;
+use self::{config::RootConfig, state::State, storage::MIGRATOR};
 
 #[async_std::main]
 async fn main() -> tide::Result<()> {

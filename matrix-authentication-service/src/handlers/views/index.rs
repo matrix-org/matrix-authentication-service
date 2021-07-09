@@ -14,8 +14,7 @@
 
 use tide::{Request, Response};
 
-use crate::state::State;
-use crate::templates::common_context;
+use crate::{state::State, templates::common_context};
 
 pub async fn get(req: Request<State>) -> tide::Result {
     let state = req.state();

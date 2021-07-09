@@ -20,8 +20,10 @@ use sqlx::migrate::Migrator;
 mod client;
 mod user;
 
-pub use self::client::{Client, ClientLookupError, InvalidRedirectUriError};
-pub use self::user::User;
+pub use self::{
+    client::{Client, ClientLookupError, InvalidRedirectUriError},
+    user::User,
+};
 
 pub static MIGRATOR: Migrator = sqlx::migrate!();
 
@@ -36,8 +38,8 @@ impl<Pool> Storage<Pool> {
     pub fn new(pool: Pool) -> Self {
         Self {
             pool,
-            clients: Default::default(),
-            users: Default::default(),
+            clients: RwLock::default(),
+            users: RwLock::default(),
         }
     }
 

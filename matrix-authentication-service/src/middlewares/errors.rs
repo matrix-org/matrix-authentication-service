@@ -12,9 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::cmp::Reverse;
-use std::future::Future;
-use std::pin::Pin;
+use std::{cmp::Reverse, future::Future, pin::Pin};
 
 use mime::{Mime, STAR};
 use serde::Serialize;
@@ -25,19 +23,20 @@ use tide::{
 };
 use tracing::debug;
 
-use crate::state::State;
-use crate::templates::common_context;
+use crate::{state::State, templates::common_context};
 
 /// Get the weight parameter for a mime type from 0 to 1000
+#[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
 fn get_weight(mime: &Mime) -> usize {
     let q = mime
         .get_param("q")
-        .map(|q| q.as_str().parse().unwrap_or(0.0))
-        .unwrap_or(1.0_f64)
+        .map_or(1.0_f64, |q| q.as_str().parse().unwrap_or(0.0))
         .min(1.0)
         .max(0.0);
 
-    // Weight have a 3 digit precision so we can multiply by 1000 and cast to int
+    // Weight have a 3 digit precision so we can multiply by 1000 and cast to
+    // int. Sign loss should not happen here because of the min/max up there and
+    // truncation does not matter here.
     (q * 1000.0) as _
 }
 
@@ -47,12 +46,12 @@ fn preferred_mime_type<'a>(
     supported_types: &'a [Mime],
 ) -> Option<&'a Mime> {
     let accept = request.header(ACCEPT)?;
-    // Parse the Accept header as a list of mime types with their associated weight
+    // Parse the Accept header as a list of mime types with their associated
+    // weight
     let accepted_types: Vec<(Mime, usize)> = {
         let v: Option<Vec<_>> = accept
             .into_iter()
-            .map(|value| value.as_str().split(','))
-            .flatten()
+            .flat_map(|value| value.as_str().split(','))
             .map(|mime| {
                 mime.trim().parse().ok().map(|mime| {
                     let q = get_weight(&mime);
@@ -65,7 +64,8 @@ fn preferred_mime_type<'a>(
         v
     };
 
-    // For each supported content type, find out if it is accepted with what weight and specificity
+    // For each supported content type, find out if it is accepted with what
+    // weight and specificity
     let mut types: Vec<_> = supported_types
         .iter()
         .enumerate()
@@ -133,7 +133,8 @@ pub fn middleware<'a>(
 
         let mut response = next.run(request).await;
 
-        // Find out what message should be displayed from the response status code
+        // Find out what message should be displayed from the response status
+        // code
         let (code, description) = match response.status() {
             StatusCode::NotFound => (Some("Not found".to_string()), None),
             StatusCode::MethodNotAllowed => (Some("Method not allowed".to_string()), None),
@@ -148,8 +149,8 @@ pub fn middleware<'a>(
             _ => (None, None),
         };
 
-        // If there is an error associated to the response, format it in a nice way with
-        // a backtrace if we have one
+        // If there is an error associated to the response, format it in a nice
+        // way with a backtrace if we have one
         let details = response.take_error().map(|err| {
             format!(
                 "{}{}",
@@ -166,7 +167,8 @@ pub fn middleware<'a>(
             details,
         };
 
-        // This is the case if one of the code, description or details is not None
+        // This is the case if one of the code, description or details is not
+        // None
         if error_context.should_render() {
             match content_type {
                 Some(c) if c == &mime::APPLICATION_JSON => {

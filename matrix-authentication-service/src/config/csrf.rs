@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use time::Duration;
-
 use csrf::AesGcmCsrfProtection;
 use serde::Deserialize;
 use serde_with::serde_as;
 use tide::Middleware;
+use time::Duration;
 
 use crate::middlewares::CsrfMiddleware;
 

@@ -29,10 +29,12 @@ fn default_connect_timeout() -> Duration {
     Duration::from_secs(30)
 }
 
+#[allow(clippy::unnecessary_wraps)]
 fn default_idle_timeout() -> Option<Duration> {
     Some(Duration::from_secs(10 * 60))
 }
 
+#[allow(clippy::unnecessary_wraps)]
 fn default_max_lifetime() -> Option<Duration> {
     Some(Duration::from_secs(30 * 60))
 }

@@ -29,17 +29,17 @@ impl User {
 
 #[derive(Debug, Error)]
 #[error("Invalid credentials")]
-pub struct UserLoginError;
+pub struct LoginError;
 
 #[derive(Debug, Error)]
 #[error("Could not find user")]
-pub struct UserLookupError;
+pub struct LookupError;
 
 impl<T> super::Storage<T> {
-    pub async fn login(&self, name: &str, password: &str) -> Result<User, UserLoginError> {
+    pub async fn login(&self, name: &str, password: &str) -> Result<User, LoginError> {
         // Hardcoded bad password to test login failures
         if password == "bad" {
-            Err(UserLoginError)
+            Err(LoginError)
         } else {
             // First lookup for an existing user
             let users = self.users.upgradable_read().await;
@@ -57,8 +57,8 @@ impl<T> super::Storage<T> {
         }
     }
 
-    pub async fn lookup_user(&self, name: &str) -> Result<User, UserLookupError> {
+    pub async fn lookup_user(&self, name: &str) -> Result<User, LookupError> {
         let users = self.users.read().await;
-        users.get(name).cloned().ok_or(UserLookupError)
+        users.get(name).cloned().ok_or(LookupError)
     }
 }

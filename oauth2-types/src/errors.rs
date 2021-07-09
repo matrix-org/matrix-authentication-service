@@ -22,23 +22,25 @@ pub trait OAuth2Error: std::fmt::Debug {
     /// Maps to the required "error" field.
     fn error(&self) -> &'static str;
 
-    /// Human-readable ASCII text providing additional information, used to assist the client
-    /// developer in understanding the error that occurred.
+    /// Human-readable ASCII text providing additional information, used to
+    /// assist the client developer in understanding the error that
+    /// occurred.
     ///
-    /// Maps to the optional "error_description" field.
+    /// Maps to the optional `error_description` field.
     fn description(&self) -> Option<String> {
         None
     }
 
-    /// A URI identifying a human-readable web page with information about the error, used to
-    /// provide the client developer with additional information about the error.
+    /// A URI identifying a human-readable web page with information about the
+    /// error, used to provide the client developer with additional
+    /// information about the error.
     ///
-    /// Maps to the optional "error_uri" field.
+    /// Maps to the optional `error_uri` field.
     fn uri(&self) -> Option<Url> {
         None
     }
 
-    /// Wraps the error with an ErrorResponse to help serializing.
+    /// Wraps the error with an `ErrorResponse` to help serializing.
     fn into_response(self) -> ErrorResponse<Self>
     where
         Self: Sized,

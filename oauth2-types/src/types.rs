@@ -14,10 +14,16 @@
 
 //! Utilitary types for serde
 
-use serde::{Deserialize, Serialize};
-use std::{collections::HashSet, hash::Hash, time::Duration};
+use std::{
+    collections::{hash_map::RandomState, HashSet},
+    hash::Hash,
+    time::Duration,
+};
 
-/// A HashSet that serializes to a space-separated string in alphanumerical order
+use serde::{Deserialize, Serialize};
+
+/// A `HashSet` that serializes to a space-separated string in alphanumerical
+/// order
 #[derive(Debug, PartialEq)]
 pub struct StringHashSet<T: Eq + Hash>(HashSet<T>);
 
@@ -27,7 +33,7 @@ impl<T: Eq + Hash> From<HashSet<T>> for StringHashSet<T> {
     }
 }
 
-impl<T: Eq + Hash> From<StringHashSet<T>> for HashSet<T> {
+impl<T: Eq + Hash> From<StringHashSet<T>> for HashSet<T, RandomState> {
     fn from(set: StringHashSet<T>) -> Self {
         set.0
     }
