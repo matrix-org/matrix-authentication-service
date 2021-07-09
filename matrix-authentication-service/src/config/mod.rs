@@ -19,20 +19,28 @@ use figment::{
 };
 use serde::Deserialize;
 
+mod csrf;
 mod database;
 mod http;
 mod oauth2;
 
+pub use self::csrf::Config as CsrfConfig;
 pub use self::database::Config as DatabaseConfig;
 pub use self::http::Config as HttpConfig;
 pub use self::oauth2::{ClientConfig as OAuth2ClientConfig, Config as OAuth2Config};
 
-#[derive(Debug, Default, Deserialize)]
-#[serde(default)]
+#[derive(Debug, Deserialize)]
 pub struct RootConfig {
+    #[serde(default)]
     pub oauth2: OAuth2Config,
+
+    #[serde(default)]
     pub http: HttpConfig,
+
+    #[serde(default)]
     pub database: DatabaseConfig,
+
+    pub csrf: CsrfConfig,
 }
 
 impl RootConfig {

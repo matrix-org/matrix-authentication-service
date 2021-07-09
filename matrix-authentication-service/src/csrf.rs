@@ -29,13 +29,14 @@ pub struct CsrfForm<T> {
 
 impl<T> CsrfForm<T> {
     pub fn verify_csrf(self, request: &tide::Request<State>) -> tide::Result<T> {
-        // Verify CSRF from body
-        let state = request.state();
-        let protection = state.csrf_protection();
+        // Verify CSRF from request
+        let csrf_config = &request.state().config().csrf;
 
         let cookie = request
-            .cookie("csrf")
+            .cookie(csrf_config.cookie_name())
             .ok_or_else(|| anyhow::anyhow!("missing csrf cookie"))?; // TODO: proper error
+
+        let protection = csrf_config.clone().into_protection();
         let cookie = BASE64.decode(cookie.value().as_bytes())?;
         let cookie = protection.parse_cookie(&cookie)?;
 

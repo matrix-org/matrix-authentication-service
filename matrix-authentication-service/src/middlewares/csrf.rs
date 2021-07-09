@@ -13,43 +13,61 @@
 // limitations under the License.
 
 use std::convert::TryInto;
-use std::future::Future;
-use std::pin::Pin;
 
+use async_trait::async_trait;
 use csrf::CsrfProtection;
 use data_encoding::BASE64;
 use tide::http::Cookie;
 use time::Duration;
 
-use crate::state::State;
+#[derive(Debug, Clone)]
+pub struct Middleware<T> {
+    protection: T,
+    ttl: Duration,
+    cookie_name: String,
+}
 
-pub fn middleware<'a>(
-    mut request: tide::Request<State>,
-    next: tide::Next<'a, State>,
-) -> Pin<Box<dyn Future<Output = tide::Result> + Send + 'a>> {
-    Box::pin(async {
-        // Generate, inject and save cookie with CSRF
-        let state = request.state();
-        let protection = state.csrf_protection();
+impl<T: CsrfProtection> Middleware<T> {
+    pub fn new(protection: T, cookie_name: String, ttl: Duration) -> Self {
+        Self {
+            protection,
+            ttl,
+            cookie_name,
+        }
+    }
+}
+
+#[async_trait]
+impl<Protection, State> tide::Middleware<State> for Middleware<Protection>
+where
+    Protection: CsrfProtection + 'static,
+    State: Clone + Send + Sync + 'static,
+{
+    async fn handle(
+        &self,
+        mut request: tide::Request<State>,
+        next: tide::Next<'_, State>,
+    ) -> tide::Result {
         let previous_token_value = request
-            .cookie("csrf")
+            .cookie(&self.cookie_name)
             .and_then(|cookie| BASE64.decode(cookie.value().as_bytes()).ok())
-            .and_then(|decoded| protection.parse_cookie(&decoded).ok())
+            .and_then(|decoded| self.protection.parse_cookie(&decoded).ok())
             .and_then(|parsed| parsed.value().try_into().ok());
-        let (token, cookie) =
-            protection.generate_token_pair(previous_token_value.as_ref(), 3600)?;
+        let (token, cookie) = self
+            .protection
+            .generate_token_pair(previous_token_value.as_ref(), self.ttl.whole_seconds())?;
 
         request.set_ext(token);
 
         let mut response = next.run(request).await;
         response.insert_cookie(
-            Cookie::build("csrf", cookie.b64_string())
+            Cookie::build(self.cookie_name.clone(), cookie.b64_string())
                 .http_only(true)
-                .max_age(Duration::seconds(3600))
+                .max_age(Duration::seconds(self.ttl.whole_seconds()))
                 .same_site(tide::http::cookies::SameSite::Strict)
                 .finish(),
         );
 
         Ok(response)
-    })
+    }
 }

@@ -15,5 +15,5 @@
 mod csrf;
 mod errors;
 
-pub use self::csrf::middleware as csrf;
+pub use self::csrf::Middleware as CsrfMiddleware;
 pub use self::errors::middleware as errors;

@@ -111,12 +111,14 @@ pub fn install(app: &mut Server<State>) {
         .allow_origin(Origin::from("*"))
         .allow_credentials(false);
 
+    let csrf = state.config().csrf.clone().into_middleware();
+
     app.at("/health").get(self::health::get);
 
     app.at("/").nest({
         let mut views = tide::with_state(state.clone());
         views.with(state.session_middleware());
-        views.with(crate::middlewares::csrf);
+        views.with(csrf);
         views.with(crate::middlewares::errors);
         views.at("/").get(self::views::index::get);
         views

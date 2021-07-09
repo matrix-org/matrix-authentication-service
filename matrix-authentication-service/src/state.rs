@@ -15,7 +15,6 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use csrf::AesGcmCsrfProtection;
 use sqlx::PgPool;
 use tera::Tera;
 use tide::{
@@ -32,7 +31,6 @@ pub struct State {
     templates: Arc<Tera>,
     storage: Arc<Storage<PgPool>>,
     session_store: Arc<MemoryStore>,
-    csrf: Arc<AesGcmCsrfProtection>,
 }
 
 impl std::fmt::Debug for State {
@@ -48,9 +46,6 @@ impl State {
             templates: Arc::new(templates),
             storage: Arc::new(Storage::new(pool)),
             session_store: Arc::new(MemoryStore::new()),
-            csrf: Arc::new(AesGcmCsrfProtection::from_key(
-                *b"01234567012345670123456701234567",
-            )),
         }
     }
 
@@ -64,10 +59,6 @@ impl State {
 
     pub fn templates(&self) -> &Tera {
         &self.templates
-    }
-
-    pub fn csrf_protection(&self) -> Arc<AesGcmCsrfProtection> {
-        self.csrf.clone()
     }
 
     pub fn session_middleware(&self) -> impl Middleware<Self> {
