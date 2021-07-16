@@ -53,7 +53,7 @@ jobs:
         continue-on-error: true
         with:
           command: fetch
-          args: --frozen --locked
+          args: --locked
 
       - name: Fetch dependencies (retry)
         id: fetch-2
@@ -62,14 +62,14 @@ jobs:
         continue-on-error: true
         with:
           command: fetch
-          args: --frozen --locked
+          args: --locked
 
       - name: Fetch dependencies (second retry)
         uses: actions-rs/cargo@v1
         if: steps.fetch.outcome == 'failure' && steps.fetch-2.outcome == 'failure'
         with:
           command: fetch
-          args: --frozen --locked
+          args: --locked
 
 
   rustfmt:
