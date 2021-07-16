@@ -18,9 +18,10 @@
 #![allow(clippy::module_name_repetitions)]
 
 use anyhow::Context;
-use tracing::{info_span, Instrument};
+use clap::Clap;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Registry};
 
+mod cli;
 mod config;
 mod csrf;
 mod handlers;
@@ -29,10 +30,10 @@ mod state;
 mod storage;
 mod templates;
 
-use self::{config::RootConfig, state::State, storage::MIGRATOR};
+use self::cli::RootCommand;
 
 #[async_std::main]
-async fn main() -> tide::Result<()> {
+async fn main() -> anyhow::Result<()> {
     // Setup logging & tracing
     let fmt_layer = tracing_subscriber::fmt::layer();
     let filter_layer = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?;
@@ -42,41 +43,9 @@ async fn main() -> tide::Result<()> {
         .try_init()
         .context("could not initialize logging")?;
 
-    // Loading the config
-    let config = RootConfig::load().context("could not load config")?;
+    // Parse the CLI arguments
+    let opts = RootCommand::parse();
 
-    // Connect to the database
-    let pool = config
-        .database
-        .connect()
-        .await
-        .context("could not connect to database")?;
-
-    // Load and compile the templates
-    let templates = self::templates::load().context("could not load templates")?;
-
-    // Create the shared state
-    let state = State::new(config, templates, pool);
-    state
-        .storage()
-        .load_static_clients(&state.config().oauth2.clients)
-        .await;
-
-    // Run pending migrations
-    // TODO: make this a separate command
-    MIGRATOR
-        .run(state.storage().pool())
-        .instrument(info_span!("migrations"))
-        .await
-        .context("could not run migrations")?;
-
-    // Start the server
-    let address = state.config().http.address.clone();
-    let mut app = tide::with_state(state);
-    app.with(tide_tracing::TraceMiddleware::new());
-    self::handlers::install(&mut app);
-    app.listen(address)
-        .await
-        .context("could not start server")?;
-    Ok(())
+    // And run the command
+    opts.run().await
 }

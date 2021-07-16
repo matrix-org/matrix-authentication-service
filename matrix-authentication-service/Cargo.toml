@@ -6,6 +6,7 @@ edition = "2018"
 license = "Apache-2.0"
 
 [dependencies]
+clap = "3.0.0-beta.2"
 serde = { version = "1.0.126", features = ["derive"] }
 async-std = { version = "1.9.0", features = ["attributes"] }
 tide = "0.16.0"
@@ -26,3 +27,4 @@ mime = "0.3.16"
 sqlx = { version = "0.5.5", features = ["runtime-async-std-rustls", "postgres", "migrate", "chrono"] }
 serde_with = { version = "1.9.4", features = ["hex", "chrono"] }
 schemars = { version = "0.8.3", features = ["url", "chrono"] }
+serde_yaml = "0.8.17"

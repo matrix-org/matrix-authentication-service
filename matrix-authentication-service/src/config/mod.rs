@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::path::Path;
+
 use figment::{
     error::Error as FigmentError,
     providers::{Env, Format, Yaml},
@@ -51,10 +53,13 @@ pub struct RootConfig {
 }
 
 impl RootConfig {
-    pub fn load() -> Result<RootConfig, FigmentError> {
+    pub fn load<P>(path: P) -> Result<RootConfig, FigmentError>
+    where
+        P: AsRef<Path>,
+    {
         Figment::new()
             .merge(Env::prefixed("MAS_").split("_"))
-            .merge(Yaml::file("config.yaml"))
+            .merge(Yaml::file(path))
             .extract()
     }
 }

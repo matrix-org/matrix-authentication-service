@@ -14,6 +14,7 @@
 
 use std::time::Duration;
 
+use anyhow::Context;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
@@ -78,7 +79,7 @@ pub struct DatabaseConfig {
 
 impl DatabaseConfig {
     #[tracing::instrument(err)]
-    pub async fn connect(&self) -> Result<PgPool, sqlx::Error> {
+    pub async fn connect(&self) -> anyhow::Result<PgPool> {
         PgPoolOptions::new()
             .max_connections(self.max_connections)
             .min_connections(self.min_connections)
@@ -87,5 +88,6 @@ impl DatabaseConfig {
             .max_lifetime(self.max_lifetime)
             .connect(&self.uri)
             .await
+            .context("could not connect to the database")
     }
 }
