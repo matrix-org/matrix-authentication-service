@@ -6,25 +6,41 @@ edition = "2018"
 license = "Apache-2.0"
 
 [dependencies]
-clap = "3.0.0-beta.2"
-serde = { version = "1.0.126", features = ["derive"] }
+# Async runtime
 async-std = { version = "1.9.0", features = ["attributes"] }
-tide = "0.16.0"
+async-trait = "0.1.50"
+
+# Logging and tracing
 tracing = "0.1.26"
 tracing-subscriber = "0.2.19"
-figment = { version = "0.10.6", features = ["env", "yaml", "test"] }
-url = "2.2.2"
-oauth2-types = { path = "../oauth2-types" }
+
+# Error management
 thiserror = "1.0.26"
-async-trait = "0.1.50"
-tera = "1.12.0"
-anyhow = "1.0.41"
+anyhow = "1.0.42"
+
+# Web server
+tide = "0.16.0"
+tide-tracing = "0.0.11"
+tera = "1.12.1"
 csrf = "0.4.0"
+
+# Database access
+sqlx = { version = "0.5.5", features = ["runtime-async-std-rustls", "postgres", "migrate", "chrono"] }
+
+# Various structure (de)serialization
+serde = { version = "1.0.126", features = ["derive"] }
+serde_yaml = "0.8.17"
+serde_with = { version = "1.9.4", features = ["hex", "chrono"] }
+
+# Argument & config parsing
+clap = "3.0.0-beta.2"
+figment = { version = "0.10.6", features = ["env", "yaml", "test"] }
+schemars = { version = "0.8.3", features = ["url", "chrono"] }
+
+# Various data types
 data-encoding = "2.3.2"
 chrono = { version = "0.4.19", features = ["serde"] }
-tide-tracing = "0.0.11"
+url = "2.2.2"
 mime = "0.3.16"
-sqlx = { version = "0.5.5", features = ["runtime-async-std-rustls", "postgres", "migrate", "chrono"] }
-serde_with = { version = "1.9.4", features = ["hex", "chrono"] }
-schemars = { version = "0.8.3", features = ["url", "chrono"] }
-serde_yaml = "0.8.17"
+
+oauth2-types = { path = "../oauth2-types" }

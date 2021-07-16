@@ -11,5 +11,5 @@ serde = "1.0.126"
 serde_json = "1.0.64"
 language-tags = { version = "0.3.2", features = ["serde"] }
 url = { version = "2.2.2", features = ["serde"] }
-parse-display = "0.5.0"
+parse-display = "0.5.1"
 indoc = "1.0.3"
