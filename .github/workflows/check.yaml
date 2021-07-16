@@ -110,7 +110,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: fmt
-          args: --all --offline -- --check
+          args: --all -- --check
 
 
   clippy:
