@@ -31,8 +31,8 @@ pub async fn common_context(req: &Request<State>) -> Result<Context, anyhow::Err
 
     let mut ctx = Context::new();
 
-    let user: Option<String> = session.get("current_user");
-    if let Some(ref user) = user {
+    let user: Option<_> = session.get("current_user");
+    if let Some(user) = user {
         let user = state.storage().lookup_user(user).await?;
         ctx.insert("current_user", &user);
     }

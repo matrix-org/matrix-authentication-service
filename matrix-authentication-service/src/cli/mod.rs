@@ -17,11 +17,14 @@ use std::path::PathBuf;
 use anyhow::Context;
 use clap::Clap;
 
-use self::{config::ConfigCommand, database::DatabaseCommand, server::ServerCommand};
+use self::{
+    config::ConfigCommand, database::DatabaseCommand, manage::ManageCommand, server::ServerCommand,
+};
 use crate::config::ConfigurationSection;
 
 mod config;
 mod database;
+mod manage;
 mod server;
 
 #[derive(Clap, Debug)]
@@ -34,6 +37,9 @@ enum Subcommand {
 
     /// Runs the web server
     Server(ServerCommand),
+
+    /// Manage the instance
+    Manage(ManageCommand),
 }
 
 #[derive(Clap, Debug)]
@@ -53,6 +59,7 @@ impl RootCommand {
             Some(S::Config(c)) => c.run(self).await,
             Some(S::Database(c)) => c.run(self).await,
             Some(S::Server(c)) => c.run(self).await,
+            Some(S::Manage(c)) => c.run(self).await,
             None => ServerCommand::default().run(self).await,
         }
     }

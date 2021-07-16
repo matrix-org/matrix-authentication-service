@@ -12,53 +12,94 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use async_std::sync::RwLockUpgradableReadGuard;
+use anyhow::Context;
+use argon2::Argon2;
+use password_hash::{PasswordHash, SaltString};
+use rand::rngs::OsRng;
 use serde::Serialize;
-use thiserror::Error;
+use sqlx::{FromRow, PgPool};
+use tracing::{info_span, Instrument};
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone, FromRow)]
 pub struct User {
-    name: String,
+    id: i32,
+    username: String,
 }
 
 impl User {
-    pub fn key(&self) -> &str {
-        &self.name
+    pub fn key(&self) -> i32 {
+        self.id
     }
 }
 
-#[derive(Debug, Error)]
-#[error("Invalid credentials")]
-pub struct LoginError;
+impl super::Storage<PgPool> {
+    pub async fn login(&self, username: &str, password: &str) -> anyhow::Result<User> {
+        let mut conn = self.pool.acquire().await?;
 
-#[derive(Debug, Error)]
-#[error("Could not find user")]
-pub struct LookupError;
+        let (id, username, hashed_password): (i32, String, String) = sqlx::query_as(
+            r#"
+                SELECT id, username, hashed_password
+                FROM users
+                WHERE username = $1
+            "#,
+        )
+        .bind(&username)
+        .fetch_one(&mut conn)
+        .instrument(info_span!("Fetch user"))
+        .await
+        .context("could not find user")?;
 
-impl<T> super::Storage<T> {
-    pub async fn login(&self, name: &str, password: &str) -> Result<User, LoginError> {
-        // Hardcoded bad password to test login failures
-        if password == "bad" {
-            Err(LoginError)
-        } else {
-            // First lookup for an existing user
-            let users = self.users.upgradable_read().await;
-            if let Some(user) = users.get(name) {
-                Ok(user.clone())
-            } else {
-                // If it does not exist, insert a new user
-                let mut users = RwLockUpgradableReadGuard::upgrade(users).await;
-                let new_user = User {
-                    name: name.to_string(),
-                };
-                users.insert(name.to_string(), new_user.clone());
-                Ok(new_user)
-            }
-        }
+        let context = Argon2::default();
+        let hasher = PasswordHash::new(&hashed_password).map_err(anyhow::Error::msg)?;
+        hasher
+            .verify_password(&[&context], &password)
+            .map_err(anyhow::Error::msg)?;
+
+        Ok(User { id, username })
     }
 
-    pub async fn lookup_user(&self, name: &str) -> Result<User, LookupError> {
-        let users = self.users.read().await;
-        users.get(name).cloned().ok_or(LookupError)
+    pub async fn register_user(&self, username: &str, password: &str) -> anyhow::Result<User> {
+        let context = Argon2::default();
+        let salt = SaltString::generate(&mut OsRng);
+        let hashed_password =
+            PasswordHash::generate(context, password, salt.as_str()).map_err(anyhow::Error::msg)?;
+
+        let mut conn = self.pool.acquire().await?;
+
+        let result: (i32,) = sqlx::query_as(
+            r#"
+                INSERT INTO users (username, hashed_password)
+                VALUES ($1, $2)
+                RETURNING id
+            "#,
+        )
+        .bind(&username)
+        .bind(&hashed_password.to_string())
+        .fetch_one(&mut conn)
+        .instrument(info_span!("Register user"))
+        .await
+        .context("could not insert user")?;
+
+        Ok(User {
+            id: result.0,
+            username: username.to_string(),
+        })
+    }
+
+    pub async fn lookup_user(&self, id: i32) -> anyhow::Result<User> {
+        let mut conn = self.pool.acquire().await?;
+
+        sqlx::query_as(
+            r#"
+                SELECT id, username
+                FROM users
+                WHERE id = $1
+            "#,
+        )
+        .bind(&id)
+        .fetch_one(&mut conn)
+        .instrument(info_span!("Fetch user"))
+        .await
+        .context("could not fetch user")
     }
 }

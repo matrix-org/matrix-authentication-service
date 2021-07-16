@@ -86,28 +86,3 @@ impl<T> super::Storage<T> {
             .ok_or(ClientLookupError)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::super::Storage;
-
-    #[async_std::test]
-    async fn test_login() {
-        let storage = Storage::new(());
-
-        // "bad" is a bad password and should not insert
-        assert_eq!(storage.users.read().await.len(), 0);
-        assert!(storage.login("hello", "bad").await.is_err());
-        assert_eq!(storage.users.read().await.len(), 0);
-
-        // Logging in with the same user should only insert once
-        assert!(storage.login("hello", "good").await.is_ok());
-        assert_eq!(storage.users.read().await.len(), 1);
-        assert!(storage.login("hello", "good").await.is_ok());
-        assert_eq!(storage.users.read().await.len(), 1);
-
-        // Logging in with another user should also do an insert
-        assert!(storage.login("world", "good").await.is_ok());
-        assert_eq!(storage.users.read().await.len(), 2);
-    }
-}

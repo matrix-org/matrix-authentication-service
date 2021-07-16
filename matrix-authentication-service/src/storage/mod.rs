@@ -14,7 +14,6 @@
 
 use std::collections::HashMap;
 
-use async_std::sync::RwLock;
 use sqlx::migrate::Migrator;
 
 mod client;
@@ -32,7 +31,6 @@ pub static MIGRATOR: Migrator = sqlx::migrate!();
 pub struct Storage<Pool> {
     pool: Pool,
     clients: HashMap<String, Client>,
-    users: RwLock<HashMap<String, User>>,
 }
 
 impl<Pool> Storage<Pool> {
@@ -40,7 +38,6 @@ impl<Pool> Storage<Pool> {
         Self {
             pool,
             clients: HashMap::default(),
-            users: RwLock::default(),
         }
     }
 
