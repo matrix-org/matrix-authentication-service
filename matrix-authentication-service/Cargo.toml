@@ -37,10 +37,11 @@ clap = "3.0.0-beta.2"
 figment = { version = "0.10.6", features = ["env", "yaml", "test"] }
 schemars = { version = "0.8.3", features = ["url", "chrono"] }
 
-# Various data types
+# Various data types and utilities
 data-encoding = "2.3.2"
 chrono = { version = "0.4.19", features = ["serde"] }
-url = "2.2.2"
+url = { version = "2.2.2", features = ["serde"] }
 mime = "0.3.16"
+rand = "0.8.4"
 
 oauth2-types = { path = "../oauth2-types" }

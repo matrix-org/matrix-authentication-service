@@ -20,7 +20,7 @@ use tide::{
     Middleware,
 };
 
-use super::LoadableConfig;
+use super::ConfigurationSection;
 
 fn secret_schema(gen: &mut SchemaGenerator) -> Schema {
     String::json_schema(gen)
@@ -43,9 +43,17 @@ impl SessionConfig {
     }
 }
 
-impl LoadableConfig<'_> for SessionConfig {
+impl ConfigurationSection<'_> for SessionConfig {
     fn path() -> &'static str {
         "session"
+    }
+
+    fn generate() -> Self {
+        let secret: [u8; 32] = rand::random();
+
+        Self {
+            secret: secret.into(),
+        }
     }
 }
 
@@ -66,7 +74,7 @@ mod tests {
                 "#,
             )?;
 
-            let config = SessionConfig::load("config.yaml")?;
+            let config = SessionConfig::load_from_file("config.yaml")?;
 
             assert_eq!(
                 config.secret,

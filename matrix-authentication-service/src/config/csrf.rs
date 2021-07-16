@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use tide::Middleware;
 
-use super::LoadableConfig;
+use super::ConfigurationSection;
 use crate::middlewares::CsrfMiddleware;
 
 fn default_ttl() -> Duration {
@@ -72,9 +72,17 @@ impl CsrfConfig {
     }
 }
 
-impl LoadableConfig<'_> for CsrfConfig {
+impl ConfigurationSection<'_> for CsrfConfig {
     fn path() -> &'static str {
         "csrf"
+    }
+
+    fn generate() -> Self {
+        Self {
+            key: rand::random(),
+            ttl: default_ttl(),
+            cookie_name: default_cookie_name(),
+        }
     }
 }
 
@@ -96,7 +104,7 @@ mod tests {
                 "#,
             )?;
 
-            let config = CsrfConfig::load("config.yaml")?;
+            let config = CsrfConfig::load_from_file("config.yaml")?;
 
             assert_eq!(
                 config.key,

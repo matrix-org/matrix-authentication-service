@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 use url::Url;
 
-use super::LoadableConfig;
+use super::ConfigurationSection;
 
 #[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -50,9 +50,13 @@ impl Default for OAuth2Config {
     }
 }
 
-impl LoadableConfig<'_> for OAuth2Config {
+impl ConfigurationSection<'_> for OAuth2Config {
     fn path() -> &'static str {
         "oauth2"
+    }
+
+    fn generate() -> Self {
+        Self::default()
     }
 }
 
@@ -78,7 +82,7 @@ mod tests {
                 "#,
             )?;
 
-            let config = OAuth2Config::load("config.yaml")?;
+            let config = OAuth2Config::load_from_file("config.yaml")?;
 
             assert_eq!(config.issuer, "https://example.com".parse().unwrap());
             assert_eq!(config.clients.len(), 2);

@@ -17,7 +17,7 @@ use schemars::schema_for;
 use tracing::info;
 
 use super::RootCommand;
-use crate::config::RootConfig;
+use crate::config::{ConfigurationSection, RootConfig};
 
 #[derive(Clap, Debug)]
 pub(super) struct ConfigCommand {
@@ -35,6 +35,9 @@ enum ConfigSubcommand {
 
     /// Check a config file
     Check,
+
+    /// Generate a new config file
+    Generate,
 }
 
 impl ConfigCommand {
@@ -58,6 +61,13 @@ impl ConfigCommand {
             SC::Check => {
                 let _config: RootConfig = root.load_config()?;
                 info!(path = ?root.config, "Configuration file looks good");
+                Ok(())
+            }
+            SC::Generate => {
+                let config = RootConfig::load_and_generate()?;
+
+                serde_yaml::to_writer(std::io::stdout(), &config)?;
+
                 Ok(())
             }
         }

@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none};
 use sqlx::postgres::{PgPool, PgPoolOptions};
 
-use super::LoadableConfig;
+use super::ConfigurationSection;
 
 fn default_uri() -> String {
     "postgresql://".to_string()
@@ -109,9 +109,13 @@ impl DatabaseConfig {
     }
 }
 
-impl LoadableConfig<'_> for DatabaseConfig {
+impl ConfigurationSection<'_> for DatabaseConfig {
     fn path() -> &'static str {
         "database"
+    }
+
+    fn generate() -> Self {
+        Self::default()
     }
 }
 
@@ -132,7 +136,7 @@ mod tests {
                 "#,
             )?;
 
-            let config = DatabaseConfig::load("config.yaml")?;
+            let config = DatabaseConfig::load_from_file("config.yaml")?;
 
             assert_eq!(config.uri, "postgresql://user:password@host/database");
 

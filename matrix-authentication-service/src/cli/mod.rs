@@ -18,7 +18,7 @@ use anyhow::Context;
 use clap::Clap;
 
 use self::{config::ConfigCommand, database::DatabaseCommand, server::ServerCommand};
-use crate::config::LoadableConfig;
+use crate::config::ConfigurationSection;
 
 mod config;
 mod database;
@@ -57,7 +57,7 @@ impl RootCommand {
         }
     }
 
-    fn load_config<'de, T: LoadableConfig<'de>>(&self) -> anyhow::Result<T> {
-        T::load(&self.config).context("could not load configuration")
+    fn load_config<'de, T: ConfigurationSection<'de>>(&self) -> anyhow::Result<T> {
+        T::load_from_file(&self.config).context("could not load configuration")
     }
 }

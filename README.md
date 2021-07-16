@@ -7,5 +7,6 @@ Don't expect too much here for now, this is very much a work in progress.
 
 - [Install Rust and Cargo](https://www.rust-lang.org/learn/get-started)
 - Clone this repository
-- Compile and run the server via `cargo run`
+- Generate the sample config via `cargo run -- config generate > config.yaml`
+- Run the server via `cargo run -- server -c config.yaml`
 - Go to <http://localhost:8080/>

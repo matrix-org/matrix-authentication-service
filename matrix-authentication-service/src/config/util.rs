@@ -16,15 +16,42 @@ use std::path::Path;
 
 use figment::{
     error::Error as FigmentError,
-    providers::{Env, Format, Yaml},
-    Figment,
+    providers::{Env, Format, Serialized, Yaml},
+    Figment, Profile,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-pub trait LoadableConfig<'a>: Sized + Deserialize<'a> {
+/// Trait implemented by all configuration section to help loading specific part
+/// of the config and generate the sample config.
+pub trait ConfigurationSection<'a>: Sized + Deserialize<'a> + Serialize {
+    /// Specify where this section should live relative to the root.
     fn path() -> &'static str;
 
-    fn load<P>(path: P) -> Result<Self, FigmentError>
+    /// Generate a sample configuration for this section.
+    fn generate() -> Self;
+
+    /// Generate a sample configuration and override it with environment
+    /// variables.
+    ///
+    /// This is what backs the `config generate` subcommand, allowing to
+    /// programatically generate a configuration file, e.g.
+    ///
+    /// ```sh
+    /// export MAS_OAUTH2_ISSUER=https://example.com/
+    /// export MAS_HTTP_ADDRESS=127.0.0.1:1234
+    /// matrix-authentication-service config generate
+    /// ```
+    fn load_and_generate() -> Result<Self, FigmentError> {
+        let base = Self::generate();
+
+        Figment::new()
+            .merge(Serialized::from(&base, Profile::Default))
+            .merge(Env::prefixed("MAS_").split("_"))
+            .extract_inner(Self::path())
+    }
+
+    /// Load configuration from a file and environment variables.
+    fn load_from_file<P>(path: P) -> Result<Self, FigmentError>
     where
         P: AsRef<Path>,
     {

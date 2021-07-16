@@ -15,7 +15,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use super::LoadableConfig;
+use super::ConfigurationSection;
 
 fn default_http_address() -> String {
     "[::]:8080".into()
@@ -35,8 +35,12 @@ impl Default for HttpConfig {
     }
 }
 
-impl LoadableConfig<'_> for HttpConfig {
+impl ConfigurationSection<'_> for HttpConfig {
     fn path() -> &'static str {
         "http"
+    }
+
+    fn generate() -> Self {
+        Self::default()
     }
 }

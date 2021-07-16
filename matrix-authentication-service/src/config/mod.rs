@@ -28,7 +28,7 @@ pub use self::{
     http::HttpConfig,
     oauth2::{OAuth2ClientConfig, OAuth2Config},
     session::SessionConfig,
-    util::LoadableConfig,
+    util::ConfigurationSection,
 };
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -47,8 +47,18 @@ pub struct RootConfig {
     pub session: SessionConfig,
 }
 
-impl LoadableConfig<'_> for RootConfig {
+impl ConfigurationSection<'_> for RootConfig {
     fn path() -> &'static str {
         ""
+    }
+
+    fn generate() -> Self {
+        Self {
+            oauth2: OAuth2Config::generate(),
+            http: HttpConfig::generate(),
+            database: DatabaseConfig::generate(),
+            csrf: CsrfConfig::generate(),
+            session: SessionConfig::generate(),
+        }
     }
 }
