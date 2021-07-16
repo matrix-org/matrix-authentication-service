@@ -16,7 +16,7 @@ use anyhow::Context;
 use clap::Clap;
 
 use super::RootCommand;
-use crate::{config::RootConfig, state::State};
+use crate::{config::RootConfig, state::State, storage::Storage};
 
 #[derive(Clap, Debug, Default)]
 pub(super) struct ServerCommand;
@@ -28,15 +28,13 @@ impl ServerCommand {
         // Connect to the database
         let pool = config.database.connect().await?;
 
+        let storage = Storage::new(pool).with_static_clients(&config.oauth2.clients);
+
         // Load and compile the templates
         let templates = crate::templates::load().context("could not load templates")?;
 
         // Create the shared state
-        let state = State::new(config, templates, pool);
-        state
-            .storage()
-            .load_static_clients(&state.config().oauth2.clients)
-            .await;
+        let state = State::new(config, templates, storage);
 
         // Start the server
         let address = state.config().http.address.clone();

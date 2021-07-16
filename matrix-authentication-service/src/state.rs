@@ -35,11 +35,11 @@ impl std::fmt::Debug for State {
 }
 
 impl State {
-    pub fn new(config: RootConfig, templates: Tera, pool: PgPool) -> Self {
+    pub fn new(config: RootConfig, templates: Tera, storage: Storage<PgPool>) -> Self {
         Self {
             config: Arc::new(config),
             templates: Arc::new(templates),
-            storage: Arc::new(Storage::new(pool)),
+            storage: Arc::new(storage),
         }
     }
 

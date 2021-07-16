@@ -31,7 +31,7 @@ pub static MIGRATOR: Migrator = sqlx::migrate!();
 #[derive(Debug)]
 pub struct Storage<Pool> {
     pool: Pool,
-    clients: RwLock<HashMap<String, Client>>,
+    clients: HashMap<String, Client>,
     users: RwLock<HashMap<String, User>>,
 }
 
@@ -39,7 +39,7 @@ impl<Pool> Storage<Pool> {
     pub fn new(pool: Pool) -> Self {
         Self {
             pool,
-            clients: RwLock::default(),
+            clients: HashMap::default(),
             users: RwLock::default(),
         }
     }

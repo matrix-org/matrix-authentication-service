@@ -58,8 +58,8 @@ impl Client {
 }
 
 impl<T> super::Storage<T> {
-    pub async fn load_static_clients(&self, clients: &[OAuth2ClientConfig]) {
-        let mut storage = self.clients.write().await;
+    pub fn with_static_clients(mut self, clients: &[OAuth2ClientConfig]) -> Self {
+        let storage = &mut self.clients;
         for config in clients {
             let redirect_uris = config
                 .redirect_uris
@@ -75,12 +75,12 @@ impl<T> super::Storage<T> {
             // TODO: we could warn about duplicate clients here
             storage.insert(client_id, client);
         }
+
+        self
     }
 
     pub async fn lookup_client(&self, client_id: &str) -> Result<Client, ClientLookupError> {
         self.clients
-            .read()
-            .await
             .get(client_id)
             .cloned()
             .ok_or(ClientLookupError)
