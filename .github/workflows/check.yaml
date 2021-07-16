@@ -10,8 +10,21 @@ env:
 
 jobs:
   fetch:
-    name: Fetch Cargo dependencies
-    runs-on: ubuntu-latest
+    name: Fetch Cargo dependencies (${{ matrix.os.name }})
+    runs-on: ${{ matrix.os.runner }}
+
+    strategy:
+      matrix:
+        os:
+          - name: "macOS"
+            runner: "macos-latest"
+            target: "x86_64-apple-darwin"
+          - name: "Windows"
+            runner: "windows-latest"
+            target: "x86_64-pc-windows-msvc"
+          - name: "Linux"
+            runner: "ubuntu-latest"
+            target: "x86_64-unknown-linux-musl"
 
     steps:
       - name: Checkout the code
@@ -21,6 +34,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
+          target: ${{ matrix.os.target }}
           profile: minimal
           override: true
 
@@ -31,7 +45,7 @@ jobs:
             ~/.cargo/registry/index
             ~/.cargo/registry/cache
             ~/.cargo/git/db
-          key: cargo-deps-${{ hashFiles('**/Cargo.lock') }}
+          key: cargo-deps-${{ hashFiles('**/Cargo.lock') }}-${{ runner.os }}
 
       - name: Fetch dependencies
         id: fetch
@@ -39,12 +53,7 @@ jobs:
         continue-on-error: true
         with:
           command: fetch
-          args: |-
-            -Zmultitarget
-            --target x86_64-apple-darwin
-            --target x86_64-pc-windows-msvc
-            --target x86_64-unknown-linux-musl
-            --frozen --locked
+          args: --frozen --locked
 
       - name: Fetch dependencies (retry)
         id: fetch-2
@@ -53,24 +62,14 @@ jobs:
         continue-on-error: true
         with:
           command: fetch
-          args: |-
-            -Zmultitarget
-            --target x86_64-apple-darwin
-            --target x86_64-pc-windows-msvc
-            --target x86_64-unknown-linux-musl
-            --frozen --locked
+          args: --frozen --locked
 
       - name: Fetch dependencies (second retry)
         uses: actions-rs/cargo@v1
         if: steps.fetch.outcome == 'failure' && steps.fetch-2.outcome == 'failure'
         with:
           command: fetch
-          args: |-
-            -Zmultitarget
-            --target x86_64-apple-darwin
-            --target x86_64-pc-windows-msvc
-            --target x86_64-unknown-linux-musl
-            --frozen --locked
+          args: --frozen --locked
 
 
   rustfmt:
@@ -98,7 +97,7 @@ jobs:
             ~/.cargo/registry/index
             ~/.cargo/registry/cache
             ~/.cargo/git/db
-          key: cargo-deps-${{ hashFiles('**/Cargo.lock') }}
+          key: cargo-deps-${{ hashFiles('**/Cargo.lock') }}-${{ runner.os }}
 
       - name: Setup build cache
         uses: actions/cache@v2.1.6
@@ -139,7 +138,7 @@ jobs:
             ~/.cargo/registry/index
             ~/.cargo/registry/cache
             ~/.cargo/git/db
-          key: cargo-deps-${{ hashFiles('**/Cargo.lock') }}
+          key: cargo-deps-${{ hashFiles('**/Cargo.lock') }}-${{ runner.os }}
 
       - name: Setup build cache
         uses: actions/cache@v2.1.6
@@ -198,7 +197,7 @@ jobs:
             ~/.cargo/registry/index
             ~/.cargo/registry/cache
             ~/.cargo/git/db
-          key: cargo-deps-${{ hashFiles('**/Cargo.lock') }}
+          key: cargo-deps-${{ hashFiles('**/Cargo.lock') }}-${{ runner.os }}
 
       - name: Setup build cache
         uses: actions/cache@v2.1.6
