@@ -16,14 +16,14 @@ use anyhow::Context;
 use clap::Clap;
 
 use super::RootCommand;
-use crate::state::State;
+use crate::{config::RootConfig, state::State};
 
 #[derive(Clap, Debug, Default)]
 pub(super) struct ServerCommand;
 
 impl ServerCommand {
     pub async fn run(&self, root: &RootCommand) -> anyhow::Result<()> {
-        let config = root.load_config()?;
+        let config: RootConfig = root.load_config()?;
 
         // Connect to the database
         let pool = config.database.connect().await?;

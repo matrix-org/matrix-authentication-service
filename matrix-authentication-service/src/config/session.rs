@@ -20,6 +20,8 @@ use tide::{
     Middleware,
 };
 
+use super::LoadableConfig;
+
 fn secret_schema(gen: &mut SchemaGenerator) -> Schema {
     String::json_schema(gen)
 }
@@ -38,5 +40,43 @@ impl SessionConfig {
         store: impl SessionStore,
     ) -> impl Middleware<State> {
         SessionMiddleware::new(store, &self.secret)
+    }
+}
+
+impl LoadableConfig<'_> for SessionConfig {
+    fn path() -> &'static str {
+        "session"
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use figment::Jail;
+
+    use super::*;
+
+    #[test]
+    fn load_config() {
+        Jail::expect_with(|jail| {
+            jail.create_file(
+                "config.yaml",
+                r#"
+                    session:
+                      secret: 00112233445566778899AABBCCDDEEFF
+                "#,
+            )?;
+
+            let config = SessionConfig::load("config.yaml")?;
+
+            assert_eq!(
+                config.secret,
+                [
+                    0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC,
+                    0xDD, 0xEE, 0xFF,
+                ]
+            );
+
+            Ok(())
+        })
     }
 }

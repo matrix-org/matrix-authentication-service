@@ -20,6 +20,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use tide::Middleware;
 
+use super::LoadableConfig;
 use crate::middlewares::CsrfMiddleware;
 
 fn default_ttl() -> Duration {
@@ -68,5 +69,47 @@ impl CsrfConfig {
 
     pub fn cookie_name(&self) -> &str {
         &self.cookie_name
+    }
+}
+
+impl LoadableConfig<'_> for CsrfConfig {
+    fn path() -> &'static str {
+        "csrf"
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use figment::Jail;
+
+    use super::*;
+
+    #[test]
+    fn load_config() {
+        Jail::expect_with(|jail| {
+            jail.create_file(
+                "config.yaml",
+                r#"
+                    csrf:
+                      key: 0000111122223333444455556666777788889999AAAABBBBCCCCDDDDEEEEFFFF
+                      ttl: 1800
+                "#,
+            )?;
+
+            let config = CsrfConfig::load("config.yaml")?;
+
+            assert_eq!(
+                config.key,
+                [
+                    0x00, 0x00, 0x11, 0x11, 0x22, 0x22, 0x33, 0x33, 0x44, 0x44, 0x55, 0x55, 0x66,
+                    0x66, 0x77, 0x77, 0x88, 0x88, 0x99, 0x99, 0xAA, 0xAA, 0xBB, 0xBB, 0xCC, 0xCC,
+                    0xDD, 0xDD, 0xEE, 0xEE, 0xFF, 0xFF,
+                ]
+            );
+
+            assert_eq!(config.ttl, Duration::from_secs(1800));
+
+            Ok(())
+        })
     }
 }

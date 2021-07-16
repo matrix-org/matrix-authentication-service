@@ -15,10 +15,12 @@
 use std::time::Duration;
 
 use anyhow::Context;
-use schemars::JsonSchema;
+use schemars::{gen::SchemaGenerator, schema::Schema, JsonSchema};
 use serde::{Deserialize, Serialize};
-use serde_with::skip_serializing_none;
+use serde_with::{serde_as, skip_serializing_none};
 use sqlx::postgres::{PgPool, PgPoolOptions};
+
+use super::LoadableConfig;
 
 fn default_uri() -> String {
     "postgresql://".to_string()
@@ -55,6 +57,15 @@ impl Default for DatabaseConfig {
     }
 }
 
+fn duration_schema(gen: &mut SchemaGenerator) -> Schema {
+    Option::<u64>::json_schema(gen)
+}
+
+fn optional_duration_schema(gen: &mut SchemaGenerator) -> Schema {
+    u64::json_schema(gen)
+}
+
+#[serde_as]
 #[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct DatabaseConfig {
@@ -67,13 +78,19 @@ pub struct DatabaseConfig {
     #[serde(default)]
     min_connections: u32,
 
+    #[schemars(schema_with = "duration_schema")]
     #[serde(default = "default_connect_timeout")]
+    #[serde_as(as = "serde_with::DurationSeconds<u64>")]
     connect_timeout: Duration,
 
+    #[schemars(schema_with = "optional_duration_schema")]
     #[serde(default = "default_idle_timeout")]
+    #[serde_as(as = "Option<serde_with::DurationSeconds<u64>>")]
     idle_timeout: Option<Duration>,
 
+    #[schemars(schema_with = "optional_duration_schema")]
     #[serde(default = "default_max_lifetime")]
+    #[serde_as(as = "Option<serde_with::DurationSeconds<u64>>")]
     max_lifetime: Option<Duration>,
 }
 
@@ -89,5 +106,37 @@ impl DatabaseConfig {
             .connect(&self.uri)
             .await
             .context("could not connect to the database")
+    }
+}
+
+impl LoadableConfig<'_> for DatabaseConfig {
+    fn path() -> &'static str {
+        "database"
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use figment::Jail;
+
+    use super::*;
+
+    #[test]
+    fn load_config() {
+        Jail::expect_with(|jail| {
+            jail.create_file(
+                "config.yaml",
+                r#"
+                    database:
+                      uri: postgresql://user:password@host/database
+                "#,
+            )?;
+
+            let config = DatabaseConfig::load("config.yaml")?;
+
+            assert_eq!(config.uri, "postgresql://user:password@host/database");
+
+            Ok(())
+        })
     }
 }

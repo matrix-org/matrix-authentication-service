@@ -42,7 +42,7 @@ impl ConfigCommand {
         use ConfigSubcommand as SC;
         match &self.subcommand {
             SC::Dump => {
-                let config = root.load_config()?;
+                let config: RootConfig = root.load_config()?;
 
                 serde_yaml::to_writer(std::io::stdout(), &config)?;
 
@@ -56,7 +56,7 @@ impl ConfigCommand {
                 Ok(())
             }
             SC::Check => {
-                root.load_config()?;
+                let _config: RootConfig = root.load_config()?;
                 info!(path = ?root.config, "Configuration file looks good");
                 Ok(())
             }

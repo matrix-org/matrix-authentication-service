@@ -12,13 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::path::Path;
-
-use figment::{
-    error::Error as FigmentError,
-    providers::{Env, Format, Yaml},
-    Figment,
-};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -27,6 +20,7 @@ mod database;
 mod http;
 mod oauth2;
 mod session;
+mod util;
 
 pub use self::{
     csrf::CsrfConfig,
@@ -34,6 +28,7 @@ pub use self::{
     http::HttpConfig,
     oauth2::{OAuth2ClientConfig, OAuth2Config},
     session::SessionConfig,
+    util::LoadableConfig,
 };
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -52,14 +47,8 @@ pub struct RootConfig {
     pub session: SessionConfig,
 }
 
-impl RootConfig {
-    pub fn load<P>(path: P) -> Result<RootConfig, FigmentError>
-    where
-        P: AsRef<Path>,
-    {
-        Figment::new()
-            .merge(Env::prefixed("MAS_").split("_"))
-            .merge(Yaml::file(path))
-            .extract()
+impl LoadableConfig<'_> for RootConfig {
+    fn path() -> &'static str {
+        ""
     }
 }

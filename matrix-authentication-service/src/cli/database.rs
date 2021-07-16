@@ -16,7 +16,7 @@ use anyhow::Context;
 use clap::Clap;
 
 use super::RootCommand;
-use crate::storage::MIGRATOR;
+use crate::{config::DatabaseConfig, storage::MIGRATOR};
 
 #[derive(Clap, Debug)]
 pub(super) struct DatabaseCommand {
@@ -32,8 +32,8 @@ enum DatabaseSubcommand {
 
 impl DatabaseCommand {
     pub async fn run(&self, root: &RootCommand) -> anyhow::Result<()> {
-        let config = root.load_config()?;
-        let pool = config.database.connect().await?;
+        let config: DatabaseConfig = root.load_config()?;
+        let pool = config.connect().await?;
 
         // Run pending migrations
         MIGRATOR

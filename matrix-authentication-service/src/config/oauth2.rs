@@ -14,8 +14,12 @@
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 use url::Url;
 
+use super::LoadableConfig;
+
+#[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct OAuth2ClientConfig {
     pub client_id: String,
@@ -43,5 +47,52 @@ impl Default for OAuth2Config {
             issuer: default_oauth2_issuer(),
             clients: Vec::new(),
         }
+    }
+}
+
+impl LoadableConfig<'_> for OAuth2Config {
+    fn path() -> &'static str {
+        "oauth2"
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use figment::Jail;
+
+    use super::*;
+
+    #[test]
+    fn load_config() {
+        Jail::expect_with(|jail| {
+            jail.create_file(
+                "config.yaml",
+                r#"
+                    oauth2:
+                      issuer: https://example.com
+                      clients:
+                        - client_id: hello
+                          redirect_uris:
+                            - https://exemple.fr/callback
+                        - client_id: world
+                "#,
+            )?;
+
+            let config = OAuth2Config::load("config.yaml")?;
+
+            assert_eq!(config.issuer, "https://example.com".parse().unwrap());
+            assert_eq!(config.clients.len(), 2);
+
+            assert_eq!(config.clients[0].client_id, "hello");
+            assert_eq!(
+                config.clients[0].redirect_uris,
+                Some(vec!["https://exemple.fr/callback".parse().unwrap()])
+            );
+
+            assert_eq!(config.clients[1].client_id, "world");
+            assert_eq!(config.clients[1].redirect_uris, None);
+
+            Ok(())
+        })
     }
 }

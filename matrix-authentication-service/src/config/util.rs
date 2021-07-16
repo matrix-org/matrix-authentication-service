@@ -12,31 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use std::path::Path;
 
-use super::LoadableConfig;
+use figment::{
+    error::Error as FigmentError,
+    providers::{Env, Format, Yaml},
+    Figment,
+};
+use serde::Deserialize;
 
-fn default_http_address() -> String {
-    "[::]:8080".into()
-}
+pub trait LoadableConfig<'a>: Sized + Deserialize<'a> {
+    fn path() -> &'static str;
 
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
-pub struct HttpConfig {
-    #[serde(default = "default_http_address")]
-    pub address: String,
-}
-
-impl Default for HttpConfig {
-    fn default() -> Self {
-        Self {
-            address: default_http_address(),
-        }
-    }
-}
-
-impl LoadableConfig<'_> for HttpConfig {
-    fn path() -> &'static str {
-        "http"
+    fn load<P>(path: P) -> Result<Self, FigmentError>
+    where
+        P: AsRef<Path>,
+    {
+        Figment::new()
+            .merge(Env::prefixed("MAS_").split("_"))
+            .merge(Yaml::file(path))
+            .extract_inner(Self::path())
     }
 }
