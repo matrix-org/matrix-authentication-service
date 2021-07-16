@@ -12,21 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use serde::Deserialize;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
 fn default_http_address() -> String {
     "[::]:8080".into()
 }
 
-#[derive(Debug, Deserialize)]
-pub struct Config {
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct HttpConfig {
     #[serde(default = "default_http_address")]
     pub address: String,
 }
 
-impl Default for Config {
+impl Default for HttpConfig {
     fn default() -> Self {
-        Config {
+        Self {
             address: default_http_address(),
         }
     }

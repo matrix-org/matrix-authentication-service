@@ -25,3 +25,4 @@ tide-tracing = "0.0.11"
 mime = "0.3.16"
 sqlx = { version = "0.5.5", features = ["runtime-async-std-rustls", "postgres", "migrate", "chrono"] }
 serde_with = { version = "1.9.4", features = ["hex", "chrono"] }
+schemars = { version = "0.8.3", features = ["url", "chrono"] }

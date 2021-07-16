@@ -17,7 +17,8 @@ use figment::{
     providers::{Env, Format, Yaml},
     Figment,
 };
-use serde::Deserialize;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
 mod csrf;
 mod database;
@@ -26,14 +27,14 @@ mod oauth2;
 mod session;
 
 pub use self::{
-    csrf::Config as CsrfConfig,
-    database::Config as DatabaseConfig,
-    http::Config as HttpConfig,
-    oauth2::{ClientConfig as OAuth2ClientConfig, Config as OAuth2Config},
-    session::Config as SessionConfig,
+    csrf::CsrfConfig,
+    database::DatabaseConfig,
+    http::HttpConfig,
+    oauth2::{OAuth2ClientConfig, OAuth2Config},
+    session::SessionConfig,
 };
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct RootConfig {
     #[serde(default)]
     pub oauth2: OAuth2Config,

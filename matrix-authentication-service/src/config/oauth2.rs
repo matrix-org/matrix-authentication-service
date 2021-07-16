@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use serde::Deserialize;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use url::Url;
 
-#[derive(Debug, Deserialize)]
-pub struct ClientConfig {
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct OAuth2ClientConfig {
     pub client_id: String,
 
     #[serde(default)]
@@ -27,16 +28,16 @@ fn default_oauth2_issuer() -> Url {
     "http://[::]:8080".parse().unwrap()
 }
 
-#[derive(Debug, Deserialize)]
-pub struct Config {
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct OAuth2Config {
     #[serde(default = "default_oauth2_issuer")]
     pub issuer: Url,
 
     #[serde(default)]
-    pub clients: Vec<ClientConfig>,
+    pub clients: Vec<OAuth2ClientConfig>,
 }
 
-impl Default for Config {
+impl Default for OAuth2Config {
     fn default() -> Self {
         Self {
             issuer: default_oauth2_issuer(),

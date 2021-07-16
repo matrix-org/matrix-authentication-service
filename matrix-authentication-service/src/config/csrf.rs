@@ -15,7 +15,8 @@
 use std::time::Duration;
 
 use csrf::{AesGcmCsrfProtection, CsrfProtection};
-use serde::Deserialize;
+use schemars::{gen::SchemaGenerator, schema::Schema, JsonSchema};
+use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use tide::Middleware;
 
@@ -29,21 +30,31 @@ fn default_cookie_name() -> String {
     "csrf".to_string()
 }
 
+fn key_schema(gen: &mut SchemaGenerator) -> Schema {
+    String::json_schema(gen)
+}
+
+fn ttl_schema(gen: &mut SchemaGenerator) -> Schema {
+    u64::json_schema(gen)
+}
+
 #[serde_as]
-#[derive(Debug, Clone, Deserialize)]
-pub struct Config {
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct CsrfConfig {
+    #[schemars(schema_with = "key_schema")]
     #[serde_as(as = "serde_with::hex::Hex")]
     key: [u8; 32],
 
     #[serde(default = "default_cookie_name")]
     cookie_name: String,
 
+    #[schemars(schema_with = "ttl_schema")]
     #[serde(default = "default_ttl")]
     #[serde_as(as = "serde_with::DurationSeconds<u64>")]
     ttl: Duration,
 }
 
-impl Config {
+impl CsrfConfig {
     pub fn into_protection(self) -> impl CsrfProtection {
         AesGcmCsrfProtection::from_key(self.key)
     }

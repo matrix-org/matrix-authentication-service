@@ -14,7 +14,9 @@
 
 use std::time::Duration;
 
-use serde::Deserialize;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 use sqlx::postgres::{PgPool, PgPoolOptions};
 
 fn default_uri() -> String {
@@ -39,7 +41,7 @@ fn default_max_lifetime() -> Option<Duration> {
     Some(Duration::from_secs(30 * 60))
 }
 
-impl Default for Config {
+impl Default for DatabaseConfig {
     fn default() -> Self {
         Self {
             uri: default_uri(),
@@ -52,8 +54,9 @@ impl Default for Config {
     }
 }
 
-#[derive(Debug, Deserialize)]
-pub struct Config {
+#[skip_serializing_none]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct DatabaseConfig {
     #[serde(default = "default_uri")]
     uri: String,
 
@@ -73,7 +76,7 @@ pub struct Config {
     max_lifetime: Option<Duration>,
 }
 
-impl Config {
+impl DatabaseConfig {
     #[tracing::instrument(err)]
     pub async fn connect(&self) -> Result<PgPool, sqlx::Error> {
         PgPoolOptions::new()

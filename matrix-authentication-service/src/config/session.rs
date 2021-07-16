@@ -12,21 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use serde::Deserialize;
+use schemars::{gen::SchemaGenerator, schema::Schema, JsonSchema};
+use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use tide::{
     sessions::{SessionMiddleware, SessionStore},
     Middleware,
 };
 
+fn secret_schema(gen: &mut SchemaGenerator) -> Schema {
+    String::json_schema(gen)
+}
+
 #[serde_as]
-#[derive(Debug, Deserialize)]
-pub struct Config {
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct SessionConfig {
+    #[schemars(schema_with = "secret_schema")]
     #[serde_as(as = "serde_with::hex::Hex")]
     secret: Vec<u8>,
 }
 
-impl Config {
+impl SessionConfig {
     pub fn to_middleware<State: Clone + Send + Sync + 'static>(
         &self,
         store: impl SessionStore,
