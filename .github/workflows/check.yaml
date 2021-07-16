@@ -9,24 +9,65 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  rustfmt:
-    name: Check style
+  fetch:
+    name: Fetch Cargo dependencies
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout the code
         uses: actions/checkout@v2
 
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          profile: minimal
+          override: true
+
       - name: Setup Cargo cache
         uses: actions/cache@v2.1.6
         with:
           path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: cargo-${{ hashFiles('**/Cargo.lock') }}-rustfmt
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+          key: cargo-deps-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Fetch dependencies
+        id: fetch
+        uses: actions-rs/cargo@v1
+        continue-on-error: true
+        with:
+          command: fetch
+          args: |-
+            -Zmultitarget
+            --target x86_64-apple-darwin
+            --target x86_64-pc-windows-msvc
+            --target x86_64-unknown-linux-musl
+
+      - name: Fetch dependencies (retry)
+        uses: actions-rs/cargo@v1
+        if: steps.fetch.outcome == 'failure'
+        with:
+          command: fetch
+          args: |-
+            -Zmultitarget
+            --target x86_64-apple-darwin
+            --target x86_64-pc-windows-msvc
+            --target x86_64-unknown-linux-musl
+
+
+  rustfmt:
+    name: Check style
+    needs: [fetch]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v2
 
       - name: Install toolchain
+        id: toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
@@ -34,46 +75,74 @@ jobs:
           profile: minimal
           override: true
 
+      - name: Setup Cargo cache
+        uses: actions/cache@v2.1.6
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+          key: cargo-deps-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Setup build cache
+        uses: actions/cache@v2.1.6
+        with:
+          path: |
+            target
+          key: cargo-fmt-${{ hashFiles('**/Cargo.lock') }}-${{ steps.toolchain.outputs.rustc_hash }}
+
       - name: Check style
         uses: actions-rs/cargo@v1
         with:
           command: fmt
           args: --all -- --check
 
+
   clippy:
     name: Run Clippy
+    needs: [fetch]
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout the code
         uses: actions/checkout@v2
 
-      - name: Setup Cargo cache
-        uses: actions/cache@v2.1.6
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: cargo-${{ hashFiles('**/Cargo.lock') }}-clippy
-
       - name: Install toolchain
+        id: toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           components: clippy
+          profile: minimal
           override: true
+
+      - name: Setup Cargo cache
+        uses: actions/cache@v2.1.6
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+          key: cargo-deps-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Setup build cache
+        uses: actions/cache@v2.1.6
+        with:
+          path: |
+            target
+          key: cargo-clippy-${{ hashFiles('**/Cargo.lock') }}-${{ steps.toolchain.outputs.rustc_hash }}
 
       - name: Run Clippy
         uses: actions-rs/clippy-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
+
   test:
     name: Run test suite on ${{ matrix.os.name }} / ${{ matrix.toolchain }}
-    needs: [rustfmt, clippy]
-
+    needs: [rustfmt, clippy, fetch]
     runs-on: ${{ matrix.os.runner }}
+
     strategy:
       fail-fast: false # Continue other jobs if one fails to help filling the cache
       matrix:
@@ -97,21 +166,30 @@ jobs:
       - name: Checkout the code
         uses: actions/checkout@v2
 
-      - name: Setup Cargo cache
-        uses: actions/cache@v2.1.6
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: cargo-${{ hashFiles('**/Cargo.lock') }}-${{ matrix.os.target }}-${{ matrix.toolchain }}
-
       - name: Install toolchain
+        id: toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.toolchain }}
           target: ${{ matrix.os.target }}
+          profile: minimal
           override: true
+
+      - name: Setup Cargo cache
+        uses: actions/cache@v2.1.6
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+          key: cargo-deps-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Setup Cargo cache
+        uses: actions/cache@v2.1.6
+        with:
+          path: |
+            target
+          key: cargo-build-${{ hashFiles('**/Cargo.lock') }}-${{ matrix.os.target }}-${{ steps.toolchain.outputs.rustc_hash }}
 
       - name: Build
         uses: actions-rs/cargo@v1
