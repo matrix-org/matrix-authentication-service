@@ -50,10 +50,8 @@ impl super::Storage<PgPool> {
         .context("could not find user")?;
 
         let context = Argon2::default();
-        let hasher = PasswordHash::new(&hashed_password).map_err(anyhow::Error::msg)?;
-        hasher
-            .verify_password(&[&context], &password)
-            .map_err(anyhow::Error::msg)?;
+        let hasher = PasswordHash::new(&hashed_password)?;
+        hasher.verify_password(&[&context], &password)?;
 
         Ok(User { id, username })
     }
@@ -61,8 +59,7 @@ impl super::Storage<PgPool> {
     pub async fn register_user(&self, username: &str, password: &str) -> anyhow::Result<User> {
         let context = Argon2::default();
         let salt = SaltString::generate(&mut OsRng);
-        let hashed_password =
-            PasswordHash::generate(context, password, salt.as_str()).map_err(anyhow::Error::msg)?;
+        let hashed_password = PasswordHash::generate(context, password, salt.as_str())?;
 
         let mut conn = self.pool.acquire().await?;
 
