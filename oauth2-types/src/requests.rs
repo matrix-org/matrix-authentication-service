@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::hash::Hash;
+use std::{collections::HashSet, hash::Hash, time::Duration};
 
 use language_tags::LanguageTag;
 use parse_display::{Display, FromStr};
 use serde::{Deserialize, Serialize};
+use serde_with::{rust::StringWithSeparator, serde_as, DurationSeconds, SpaceSeparator};
 use url::Url;
-
-use crate::types::{Seconds, StringHashSet, StringVec};
 
 // ref: https://www.iana.org/assignments/oauth-parameters/oauth-parameters.xhtml
 
@@ -60,21 +59,39 @@ pub enum Prompt {
     SelectAccount,
 }
 
+#[serde_as]
 #[derive(Serialize, Deserialize)]
 pub struct AuthorizationRequest {
-    response_type: StringHashSet<ResponseType>,
+    #[serde_as(as = "StringWithSeparator::<SpaceSeparator, ResponseType>")]
+    response_type: HashSet<ResponseType>,
+
     client_id: String,
+
     redirect_uri: Option<Url>,
-    scope: StringHashSet<String>,
+
+    #[serde_as(as = "StringWithSeparator::<SpaceSeparator, String>")]
+    scope: HashSet<String>,
+
     state: Option<String>,
+
     response_mode: Option<ResponseMode>,
+
     nonce: Option<String>,
+
     display: Option<Display>,
-    max_age: Option<Seconds>,
-    ui_locales: Option<StringVec<LanguageTag>>,
+
+    #[serde_as(as = "Option<DurationSeconds>")]
+    max_age: Option<Duration>,
+
+    #[serde_as(as = "Option<StringWithSeparator::<SpaceSeparator, LanguageTag>>")]
+    ui_locales: Option<Vec<LanguageTag>>,
+
     id_token_hint: Option<String>,
+
     login_hint: Option<String>,
-    acr_values: Option<StringHashSet<String>>,
+
+    #[serde_as(as = "Option<StringWithSeparator::<SpaceSeparator, String>>")]
+    acr_values: Option<HashSet<String>>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -95,10 +112,13 @@ pub struct AuthorizationCodeGrant {
     redirect_uri: Option<Url>,
 }
 
+#[serde_as]
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct RefreshTokenGrant {
     refresh_token: String,
-    scope: Option<StringHashSet<String>>,
+
+    #[serde_as(as = "Option<StringWithSeparator::<SpaceSeparator, String>>")]
+    scope: Option<HashSet<String>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
@@ -117,13 +137,20 @@ pub enum AccessTokenRequest {
     Unsupported,
 }
 
+#[serde_as]
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct AccessTokenResponse {
     access_token: String,
+
     token_type: TokenType,
-    expires_in: Option<Seconds>,
+
+    #[serde_as(as = "Option<DurationSeconds>")]
+    expires_in: Option<Duration>,
+
     refresh_token: Option<String>,
-    scope: Option<StringHashSet<String>>,
+
+    #[serde_as(as = "Option<StringWithSeparator::<SpaceSeparator, String>>")]
+    scope: Option<HashSet<String>>,
 }
 
 #[cfg(test)]
@@ -140,14 +167,16 @@ mod tests {
         let expected = json!({
             "grant_type": "refresh_token",
             "refresh_token": "abcd",
-            "scope": "openid profile",
+            "scope": "openid",
         });
 
         let scope = {
             let mut s = HashSet::new();
+            // TODO: insert multiple scopes and test it. It's a bit tricky to test since
+            // HashSet have no guarantees regarding the ordering of items, so right
+            // now the output is unstable.
             s.insert("openid".to_string());
-            s.insert("profile".to_string());
-            Some(s.into())
+            Some(s)
         };
 
         let req = AccessTokenRequest::RefreshToken(RefreshTokenGrant {

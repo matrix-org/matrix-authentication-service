@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::HashSet;
-
 use oauth2_types::oidc::Metadata;
 use tide::{Body, Request, Response};
 
@@ -27,10 +25,10 @@ pub async fn get(req: Request<State>) -> tide::Result {
         token_endpoint: state.token_endpoint(),
         jwks_uri: state.jwks_uri(),
         registration_endpoint: None,
-        scopes_supported: HashSet::default(),
-        response_types_supported: HashSet::default(),
-        response_modes_supported: HashSet::default(),
-        grant_types_supported: HashSet::default(),
+        scopes_supported: None,
+        response_types_supported: None,
+        response_modes_supported: None,
+        grant_types_supported: None,
     };
 
     let body = Body::from_json(&m)?;
