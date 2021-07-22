@@ -106,12 +106,22 @@ impl Middleware<State> for BrowserErrorHandler {
 pub fn install(app: &mut Server<State>) {
     let state = app.state().clone();
 
-    let cors = CorsMiddleware::new()
-        .allow_methods("GET, POST, OPTIONS".parse::<HeaderValue>().unwrap())
-        .allow_origin(Origin::from("*"))
-        .allow_credentials(false);
-
     app.at("/health").get(self::health::get);
+
+    app.at("/.well-known").nest({
+        let cors = CorsMiddleware::new()
+            .allow_methods("GET, POST, OPTIONS".parse::<HeaderValue>().unwrap())
+            .allow_origin(Origin::from("*"))
+            .allow_credentials(false);
+
+        let metadata_endpoint =
+            self::oauth2::discovery::MetadataEndpoint::from_config(&state.config().oauth2);
+
+        let mut wk = tide::new();
+        wk.with(cors);
+        wk.at("/openid-configuration").get(metadata_endpoint);
+        wk
+    });
 
     app.at("/").nest({
         let mut views = tide::with_state(state.clone());
@@ -131,13 +141,5 @@ pub fn install(app: &mut Server<State>) {
             .get(self::oauth2::authorization::get);
 
         views
-    });
-
-    app.at("/.well-known").nest({
-        let mut wk = tide::with_state(state);
-        wk.with(cors);
-        wk.at("/openid-configuration")
-            .get(self::oauth2::discovery::get);
-        wk
     });
 }

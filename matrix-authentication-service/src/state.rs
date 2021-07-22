@@ -17,7 +17,6 @@ use std::sync::Arc;
 use sqlx::PgPool;
 use tera::Tera;
 use tide::Middleware;
-use url::Url;
 
 use crate::{config::RootConfig, storage::Storage};
 
@@ -63,25 +62,5 @@ impl State {
 
     pub fn csrf_middleware(&self) -> impl Middleware<Self> {
         self.config.csrf.clone().into_middleware()
-    }
-
-    fn base(&self) -> Url {
-        self.config.oauth2.issuer.clone()
-    }
-
-    pub fn issuer(&self) -> Url {
-        self.base()
-    }
-
-    pub fn authorization_endpoint(&self) -> Option<Url> {
-        self.base().join("oauth2/authorize").ok()
-    }
-
-    pub fn token_endpoint(&self) -> Option<Url> {
-        self.base().join("oauth2/token").ok()
-    }
-
-    pub fn jwks_uri(&self) -> Option<Url> {
-        self.base().join(".well-known/jwks.json").ok()
     }
 }
