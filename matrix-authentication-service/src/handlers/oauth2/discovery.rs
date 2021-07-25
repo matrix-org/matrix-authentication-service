@@ -33,6 +33,7 @@ impl MetadataEndpoint {
             response_types_supported: None,
             response_modes_supported: None,
             grant_types_supported: None,
+            code_challenge_methods_supported: None,
         })
     }
 }

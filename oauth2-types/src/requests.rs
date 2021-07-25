@@ -22,7 +22,20 @@ use url::Url;
 
 // ref: https://www.iana.org/assignments/oauth-parameters/oauth-parameters.xhtml
 
-#[derive(Hash, PartialEq, Eq, PartialOrd, Ord, Display, FromStr, Serialize)]
+#[derive(
+    Debug,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Clone,
+    Copy,
+    Display,
+    FromStr,
+    Serialize,
+    Deserialize,
+)]
 #[display(style = "snake_case")]
 #[serde(rename_all = "snake_case")]
 pub enum ResponseType {
@@ -32,7 +45,20 @@ pub enum ResponseType {
     None,
 }
 
-#[derive(Hash, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(
+    Debug,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Clone,
+    Copy,
+    Display,
+    FromStr,
+    Serialize,
+    Deserialize,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum ResponseMode {
     Query,
@@ -40,7 +66,20 @@ pub enum ResponseMode {
     FormPost,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(
+    Debug,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Clone,
+    Copy,
+    Display,
+    FromStr,
+    Serialize,
+    Deserialize,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum Display {
     Page,
@@ -49,7 +88,20 @@ pub enum Display {
     Wap,
 }
 
-#[derive(Serialize, Deserialize, FromStr)]
+#[derive(
+    Debug,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Clone,
+    Copy,
+    Display,
+    FromStr,
+    Serialize,
+    Deserialize,
+)]
 #[display(style = "snake_case")]
 #[serde(rename_all = "snake_case")]
 pub enum Prompt {
@@ -81,9 +133,11 @@ pub struct AuthorizationRequest {
     display: Option<Display>,
 
     #[serde_as(as = "Option<DurationSeconds>")]
+    #[serde(default)]
     max_age: Option<Duration>,
 
     #[serde_as(as = "Option<StringWithSeparator::<SpaceSeparator, LanguageTag>>")]
+    #[serde(default)]
     ui_locales: Option<Vec<LanguageTag>>,
 
     id_token_hint: Option<String>,
@@ -91,6 +145,7 @@ pub struct AuthorizationRequest {
     login_hint: Option<String>,
 
     #[serde_as(as = "Option<StringWithSeparator::<SpaceSeparator, String>>")]
+    #[serde(default)]
     acr_values: Option<HashSet<String>>,
 }
 
@@ -100,7 +155,20 @@ pub struct AuthorizationResponse {
     state: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(
+    Debug,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Clone,
+    Copy,
+    Display,
+    FromStr,
+    Serialize,
+    Deserialize,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum TokenType {
     Bearer,
@@ -121,7 +189,20 @@ pub struct RefreshTokenGrant {
     scope: Option<HashSet<String>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Hash, PartialEq, Eq)]
+#[derive(
+    Debug,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Clone,
+    Copy,
+    Display,
+    FromStr,
+    Serialize,
+    Deserialize,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum GrantType {
     AuthorizationCode,

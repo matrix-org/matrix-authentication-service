@@ -12,14 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![forbid(unsafe_code)]
-#![deny(clippy::all)]
-#![warn(clippy::pedantic)]
+use parse_display::{Display, FromStr};
+use serde::{Deserialize, Serialize};
 
-pub mod errors;
-pub mod oidc;
-pub mod pkce;
-pub mod requests;
+#[derive(
+    Debug,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Clone,
+    Copy,
+    Display,
+    FromStr,
+    Serialize,
+    Deserialize,
+)]
+pub enum CodeChallengeMethod {
+    #[serde(rename = "plain")]
+    #[display("plain")]
+    Plain,
 
-#[cfg(test)]
-mod test_utils;
+    #[serde(rename = "S256")]
+    #[display("S256")]
+    S256,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Request {
+    pub code_challenge_method: CodeChallengeMethod,
+    pub code_challenge: String,
+}
