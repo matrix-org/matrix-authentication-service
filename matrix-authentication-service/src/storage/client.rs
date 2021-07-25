@@ -14,14 +14,15 @@
 
 use std::collections::HashSet;
 
+use serde::Serialize;
 use thiserror::Error;
 use url::Url;
 
 use crate::config::OAuth2ClientConfig;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Client {
-    client_id: String,
+    pub client_id: String,
     redirect_uris: Option<HashSet<Url>>,
 }
 
@@ -34,17 +35,15 @@ pub struct ClientLookupError;
 pub struct InvalidRedirectUriError;
 
 impl Client {
-    pub fn resolve_redirect_uri(
-        &self,
-        suggested_uri: Option<Url>,
-    ) -> Result<Url, InvalidRedirectUriError> {
+    pub fn resolve_redirect_uri<'a>(
+        &'a self,
+        suggested_uri: &'a Option<Url>,
+    ) -> Result<&'a Url, InvalidRedirectUriError> {
         match (suggested_uri, &self.redirect_uris) {
             (None, None) => Err(InvalidRedirectUriError),
-            (None, Some(redirect_uris)) => redirect_uris
-                .iter()
-                .next()
-                .cloned()
-                .ok_or(InvalidRedirectUriError),
+            (None, Some(redirect_uris)) => {
+                redirect_uris.iter().next().ok_or(InvalidRedirectUriError)
+            }
             (Some(suggested_uri), None) => Ok(suggested_uri),
             (Some(suggested_uri), Some(redirect_uris)) => {
                 if redirect_uris.contains(&suggested_uri) {

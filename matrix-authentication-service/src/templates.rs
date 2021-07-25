@@ -31,10 +31,10 @@ pub async fn common_context(req: &Request<State>) -> Result<Context, anyhow::Err
 
     let mut ctx = Context::new();
 
-    let user: Option<_> = session.get("current_user");
-    if let Some(user) = user {
-        let user = state.storage().lookup_user(user).await?;
-        ctx.insert("current_user", &user);
+    let session_id: Option<_> = session.get("current_session");
+    if let Some(session_id) = session_id {
+        let user = state.storage().lookup_session(session_id).await?;
+        ctx.insert("current_session", &user);
     }
 
     let token: Option<&CsrfToken> = req.ext();

@@ -20,6 +20,7 @@ use tide::{
     security::{CorsMiddleware, Origin},
     Middleware, Redirect, Server,
 };
+use tracing::error;
 use url::Url;
 
 use crate::{
@@ -67,8 +68,8 @@ async fn redirect_uri_from_params<T>(
         None
     };
 
-    let redirect_uri = client.resolve_redirect_uri(redirect_uri)?;
-    Ok(redirect_uri)
+    let redirect_uri = client.resolve_redirect_uri(&redirect_uri)?;
+    Ok(redirect_uri.clone())
 }
 
 #[async_trait]
@@ -83,6 +84,7 @@ impl Middleware<State> for BrowserErrorHandler {
         let redirect_uri = redirect_uri_from_params(params, storage).await;
         let mut response = next.run(request).await;
         if let Some(err) = response.take_error() {
+            error!("{}", err);
             if let Ok(mut redirect_uri) = redirect_uri {
                 redirect_uri
                     .query_pairs_mut()
@@ -128,11 +130,19 @@ pub fn install(app: &mut Server<State>) {
         views.with(state.session_middleware());
         views.with(state.csrf_middleware());
         views.with(crate::middlewares::errors);
+
         views.at("/").get(self::views::index::get);
+
         views
             .at("/login")
             .get(self::views::login::get)
             .post(self::views::login::post);
+
+        views
+            .at("/reauth")
+            .get(self::views::reauth::get)
+            .post(self::views::reauth::post);
+
         views.at("/logout").post(self::views::logout::post);
 
         views

@@ -153,7 +153,7 @@ pub fn middleware<'a>(
         // way with a backtrace if we have one
         let details = response.take_error().map(|err| {
             format!(
-                "{}{}",
+                "{:?}{}",
                 err,
                 err.backtrace()
                     .map(|bt| format!("\nBacktrace:\n{}", bt.to_string()))

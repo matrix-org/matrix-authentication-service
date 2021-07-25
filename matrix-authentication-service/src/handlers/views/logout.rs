@@ -21,7 +21,7 @@ pub async fn post(mut req: Request<State>) -> tide::Result {
     form.verify_csrf(&req)?;
 
     let session = req.session_mut();
-    session.remove("current_user");
+    session.remove("current_session");
 
     Ok(Redirect::new("/").into())
 }

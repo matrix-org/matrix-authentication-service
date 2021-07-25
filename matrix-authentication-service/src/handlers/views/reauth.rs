@@ -18,8 +18,7 @@ use tide::{Redirect, Request, Response};
 use crate::{csrf::CsrfForm, state::State, templates::common_context};
 
 #[derive(Deserialize)]
-struct LoginForm {
-    username: String,
+struct ReauthForm {
     password: String,
 }
 
@@ -28,7 +27,7 @@ pub async fn get(req: Request<State>) -> tide::Result {
     let ctx = common_context(&req).await?;
 
     // TODO: check if there is an existing session
-    let content = state.templates().render("login.html", &ctx)?;
+    let content = state.templates().render("reauth.html", &ctx)?;
     let body = Response::builder(200)
         .body(content)
         .content_type("text/html")
@@ -37,17 +36,19 @@ pub async fn get(req: Request<State>) -> tide::Result {
 }
 
 pub async fn post(mut req: Request<State>) -> tide::Result {
-    let form: CsrfForm<LoginForm> = req.body_form().await?;
+    let form: CsrfForm<ReauthForm> = req.body_form().await?;
     let form = form.verify_csrf(&req)?;
     let state = req.state();
+    let session = req.session();
 
-    let session_info = state
+    let session_id = session
+        .get("current_session")
+        .ok_or_else(|| anyhow::anyhow!("could not find existing session"))?;
+
+    let _session = state
         .storage()
-        .login(&form.username, &form.password)
+        .lookup_and_reauth_session(session_id, &form.password)
         .await?;
-
-    let session = req.session_mut();
-    session.insert("current_session", session_info.key())?;
 
     Ok(Redirect::new("/").into())
 }
