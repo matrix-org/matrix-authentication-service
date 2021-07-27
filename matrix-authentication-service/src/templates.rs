@@ -12,11 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use tera::{Context, Tera};
-use tide::Request;
+use tera::Tera;
 use tracing::info;
-
-use crate::{middlewares::CsrfToken, state::State};
 
 pub fn load() -> Result<Tera, tera::Error> {
     let path = format!("{}/templates/**/*.{{html,txt}}", env!("CARGO_MANIFEST_DIR"));
@@ -24,22 +21,22 @@ pub fn load() -> Result<Tera, tera::Error> {
     Tera::new(&path)
 }
 
-pub async fn common_context(req: &Request<State>) -> Result<Context, anyhow::Error> {
-    let state = req.state();
-    let session = req.session();
-
-    let mut ctx = Context::new();
-
-    let session_id: Option<_> = session.get("current_session");
-    if let Some(session_id) = session_id {
-        let user = state.storage().lookup_session(session_id).await?;
-        ctx.insert("current_session", &user);
-    }
-
-    let token: Option<&CsrfToken> = req.ext();
-    if let Some(token) = token {
-        ctx.insert("csrf_token", &token.form_value());
-    }
-
-    Ok(ctx)
-}
+// pub async fn common_context(req: &Request<State>) -> Result<Context, anyhow::Error> {
+//     let state = req.state();
+//     let session = req.session();
+//
+//     let mut ctx = Context::new();
+//
+//     let session_id: Option<_> = session.get("current_session");
+//     if let Some(session_id) = session_id {
+//         let user = state.storage().lookup_session(session_id).await?;
+//         ctx.insert("current_session", &user);
+//     }
+//
+//     let token: Option<&CsrfToken> = req.ext();
+//     if let Some(token) = token {
+//         ctx.insert("csrf_token", &token.form_value());
+//     }
+//
+//     Ok(ctx)
+// }

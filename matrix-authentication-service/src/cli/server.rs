@@ -12,11 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::net::SocketAddr;
+
 use anyhow::Context;
 use clap::Clap;
 
 use super::RootCommand;
-use crate::{config::RootConfig, state::State, storage::Storage};
+use crate::config::RootConfig;
 
 #[derive(Clap, Debug, Default)]
 pub(super) struct ServerCommand;
@@ -28,22 +30,13 @@ impl ServerCommand {
         // Connect to the database
         let pool = config.database.connect().await?;
 
-        let storage = Storage::new(pool).with_static_clients(&config.oauth2.clients);
-
         // Load and compile the templates
         let templates = crate::templates::load().context("could not load templates")?;
 
-        // Create the shared state
-        let state = State::new(config, templates, storage);
-
         // Start the server
-        let address = state.config().http.address.clone();
-        let mut app = tide::with_state(state);
-        app.with(tide_tracing::TraceMiddleware::new());
-        crate::handlers::install(&mut app);
-        app.listen(address)
-            .await
-            .context("could not start server")?;
+        let address: SocketAddr = config.http.address.parse()?;
+        let root = crate::handlers::root(pool, templates, &config);
+        warp::serve(root).run(address).await;
 
         Ok(())
     }

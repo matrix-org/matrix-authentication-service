@@ -12,18 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use tide::{Request, Response};
+use std::sync::Arc;
 
-use crate::{state::State, templates::common_context};
+use tera::{Context, Tera};
+use warp::{reply::with_header, Rejection, Reply};
 
-pub async fn get(req: Request<State>) -> tide::Result {
-    let state = req.state();
-    let ctx = common_context(&req).await?;
+use crate::errors::WrapError;
 
-    let content = state.templates().render("index.html", &ctx)?;
-    let body = Response::builder(200)
-        .body(content)
-        .content_type("text/html")
-        .into();
-    Ok(body)
+pub async fn get(templates: Arc<Tera>) -> Result<impl Reply, Rejection> {
+    let ctx = Context::new();
+    let content = templates.render("index.html", &ctx).wrap_error()?;
+    Ok(with_header(content, "Content-Type", "text/html"))
 }

@@ -25,7 +25,7 @@ use crate::{
 
 // TODO: https://datatracker.ietf.org/doc/html/rfc8414#section-2
 #[skip_serializing_none]
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct Metadata {
     /// The authorization server's issuer identifier, which is a URL that uses
     /// the "https" scheme and has no query or fragment components.

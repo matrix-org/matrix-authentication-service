@@ -12,10 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod csrf;
-mod errors;
+#[derive(Debug)]
+pub struct WrappedError(anyhow::Error);
 
-pub use self::{
-    csrf::{Middleware as CsrfMiddleware, UnencryptedToken as CsrfToken},
-    errors::middleware as errors,
-};
+impl warp::reject::Reject for WrappedError {}
+
+pub trait WrapError<T> {
+    fn wrap_error(self) -> Result<T, WrappedError>;
+}
+
+impl<T, E> WrapError<T> for Result<T, E>
+where
+    E: Into<anyhow::Error>,
+{
+    fn wrap_error(self) -> Result<T, WrappedError> {
+        self.map_err(|e| WrappedError(e.into()))
+    }
+}

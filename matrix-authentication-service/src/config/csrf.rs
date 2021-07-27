@@ -16,10 +16,8 @@ use chrono::Duration;
 use schemars::{gen::SchemaGenerator, schema::Schema, JsonSchema};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use tide::Middleware;
 
 use super::ConfigurationSection;
-use crate::middlewares::CsrfMiddleware;
 
 fn default_ttl() -> Duration {
     Duration::hours(1)
@@ -53,14 +51,14 @@ pub struct CsrfConfig {
     ttl: Duration,
 }
 
-impl CsrfConfig {
-    pub fn into_middleware<State: Clone + Send + Sync + 'static>(self) -> impl Middleware<State> {
-        let ttl = self.ttl;
-        let cookie_name = self.cookie_name.clone();
-        let protection = self.key;
-        CsrfMiddleware::new(protection, cookie_name, ttl)
-    }
-}
+// impl CsrfConfig {
+//     pub fn into_middleware<State: Clone + Send + Sync + 'static>(self) -> impl Middleware<State> {
+//         let ttl = self.ttl;
+//         let cookie_name = self.cookie_name.clone();
+//         let protection = self.key;
+//         CsrfMiddleware::new(protection, cookie_name, ttl)
+//     }
+// }
 
 impl ConfigurationSection<'_> for CsrfConfig {
     fn path() -> &'static str {

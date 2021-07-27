@@ -17,19 +17,16 @@
 
 use std::time::SystemTime;
 
-use async_trait::async_trait;
 use chacha20poly1305::{
     aead::{generic_array::GenericArray, Aead, NewAead},
     ChaCha20Poly1305,
 };
 use chrono::{DateTime, Duration, Utc};
+use cookie::{Cookie, CookieBuilder, SameSite};
 use data_encoding::BASE64URL_NOPAD;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, TimestampSeconds};
-use tide::http::{
-    cookies::{CookieBuilder, SameSite},
-    Cookie,
-};
+use warp::filters::BoxedFilter;
 
 #[serde_as]
 #[derive(Serialize, Deserialize)]
@@ -107,7 +104,7 @@ impl UnencryptedToken {
         // Converting expiration time from `chrono` to `time` via native `SystemTime`
         let expires: SystemTime = self.expiration.into();
         Ok(Cookie::build(name, value)
-            .expires(expires.into())
+            .expires(expires)
             .http_only(true)
             .same_site(SameSite::Strict))
     }
@@ -170,6 +167,16 @@ impl Middleware {
     }
 }
 
+pub fn extract_or_generate(
+    key: [u8; 32],
+    cookie_name: String,
+    ttl: Duration,
+) -> BoxedFilter<(UnencryptedToken,)> {
+    warp::cookie::optional(cookie_name)
+}
+
+/*
+
 #[async_trait]
 impl<State> tide::Middleware<State> for Middleware
 where
@@ -211,3 +218,4 @@ where
         Ok(response)
     }
 }
+*/

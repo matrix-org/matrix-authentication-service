@@ -16,7 +16,6 @@ use std::sync::Arc;
 
 use sqlx::PgPool;
 use tera::Tera;
-use tide::Middleware;
 
 use crate::{config::RootConfig, storage::Storage};
 
@@ -29,7 +28,7 @@ pub struct State {
 
 impl std::fmt::Debug for State {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("State").finish_non_exhaustive()
+        f.debug_struct("State").finish()
     }
 }
 
@@ -52,15 +51,5 @@ impl State {
 
     pub fn templates(&self) -> &Tera {
         &self.templates
-    }
-
-    pub fn session_middleware(&self) -> impl Middleware<Self> {
-        self.config
-            .session
-            .to_middleware(self.storage.session_store())
-    }
-
-    pub fn csrf_middleware(&self) -> impl Middleware<Self> {
-        self.config.csrf.clone().into_middleware()
     }
 }

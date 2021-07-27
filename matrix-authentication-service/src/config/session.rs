@@ -15,10 +15,6 @@
 use schemars::{gen::SchemaGenerator, schema::Schema, JsonSchema};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use tide::{
-    sessions::{SessionMiddleware, SessionStore},
-    Middleware,
-};
 
 use super::ConfigurationSection;
 
@@ -34,14 +30,14 @@ pub struct SessionConfig {
     secret: Vec<u8>,
 }
 
-impl SessionConfig {
-    pub fn to_middleware<State: Clone + Send + Sync + 'static>(
-        &self,
-        store: impl SessionStore,
-    ) -> impl Middleware<State> {
-        SessionMiddleware::new(store, &self.secret)
-    }
-}
+// impl SessionConfig {
+//     pub fn to_middleware<State: Clone + Send + Sync + 'static>(
+//         &self,
+//         store: impl SessionStore,
+//     ) -> impl Middleware<State> {
+//         SessionMiddleware::new(store, &self.secret)
+//     }
+// }
 
 impl ConfigurationSection<'_> for SessionConfig {
     fn path() -> &'static str {

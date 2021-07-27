@@ -17,7 +17,7 @@ use std::collections::HashMap;
 use sqlx::migrate::Migrator;
 
 mod client;
-mod session;
+// mod session;
 mod user;
 
 pub use self::{

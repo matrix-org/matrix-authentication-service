@@ -23,16 +23,17 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilte
 
 mod cli;
 mod config;
-mod csrf;
+mod errors;
+// mod csrf;
+mod filters;
 mod handlers;
-mod middlewares;
 mod state;
 mod storage;
 mod templates;
 
 use self::cli::RootCommand;
 
-#[async_std::main]
+#[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // Setup logging & tracing
     let fmt_layer = tracing_subscriber::fmt::layer();
