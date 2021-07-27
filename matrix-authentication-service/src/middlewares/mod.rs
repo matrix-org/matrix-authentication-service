@@ -15,4 +15,7 @@
 mod csrf;
 mod errors;
 
-pub use self::{csrf::Middleware as CsrfMiddleware, errors::middleware as errors};
+pub use self::{
+    csrf::{Middleware as CsrfMiddleware, UnencryptedToken as CsrfToken},
+    errors::middleware as errors,
+};

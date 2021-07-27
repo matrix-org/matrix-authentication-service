@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use csrf::CsrfToken;
 use tera::{Context, Tera};
 use tide::Request;
 use tracing::info;
 
-use crate::state::State;
+use crate::{middlewares::CsrfToken, state::State};
 
 pub fn load() -> Result<Tera, tera::Error> {
     let path = format!("{}/templates/**/*.{{html,txt}}", env!("CARGO_MANIFEST_DIR"));
@@ -39,7 +38,7 @@ pub async fn common_context(req: &Request<State>) -> Result<Context, anyhow::Err
 
     let token: Option<&CsrfToken> = req.ext();
     if let Some(token) = token {
-        ctx.insert("csrf_token", &token.b64_string());
+        ctx.insert("csrf_token", &token.form_value());
     }
 
     Ok(ctx)

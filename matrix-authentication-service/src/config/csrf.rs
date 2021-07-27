@@ -12,9 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::time::Duration;
-
-use csrf::{AesGcmCsrfProtection, CsrfProtection};
+use chrono::Duration;
 use schemars::{gen::SchemaGenerator, schema::Schema, JsonSchema};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
@@ -24,7 +22,7 @@ use super::ConfigurationSection;
 use crate::middlewares::CsrfMiddleware;
 
 fn default_ttl() -> Duration {
-    Duration::from_secs(3600)
+    Duration::hours(1)
 }
 
 fn default_cookie_name() -> String {
@@ -51,24 +49,16 @@ pub struct CsrfConfig {
 
     #[schemars(schema_with = "ttl_schema")]
     #[serde(default = "default_ttl")]
-    #[serde_as(as = "serde_with::DurationSeconds<u64>")]
+    #[serde_as(as = "serde_with::DurationSeconds<i64>")]
     ttl: Duration,
 }
 
 impl CsrfConfig {
-    pub fn into_protection(self) -> impl CsrfProtection {
-        AesGcmCsrfProtection::from_key(self.key)
-    }
-
     pub fn into_middleware<State: Clone + Send + Sync + 'static>(self) -> impl Middleware<State> {
         let ttl = self.ttl;
         let cookie_name = self.cookie_name.clone();
-        let protection = self.into_protection();
+        let protection = self.key;
         CsrfMiddleware::new(protection, cookie_name, ttl)
-    }
-
-    pub fn cookie_name(&self) -> &str {
-        &self.cookie_name
     }
 }
 
@@ -115,7 +105,7 @@ mod tests {
                 ]
             );
 
-            assert_eq!(config.ttl, Duration::from_secs(1800));
+            assert_eq!(config.ttl, Duration::minutes(30));
 
             Ok(())
         })

@@ -12,11 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use csrf::CsrfProtection;
-use data_encoding::BASE64;
 use serde::Deserialize;
 
-use crate::state::State;
+use crate::middlewares::CsrfToken;
 
 /// A CSRF-protected form
 #[derive(Deserialize)]
@@ -28,25 +26,16 @@ pub struct CsrfForm<T> {
 }
 
 impl<T> CsrfForm<T> {
-    pub fn verify_csrf(self, request: &tide::Request<State>) -> tide::Result<T> {
+    pub fn verify_csrf<State>(self, request: &tide::Request<State>) -> tide::Result<T>
+    where
+        State: Clone + Send + Sync + 'static,
+    {
         // Verify CSRF from request
-        let csrf_config = &request.state().config().csrf;
-
-        let cookie = request
-            .cookie(csrf_config.cookie_name())
+        let csrf_token: &CsrfToken = request
+            .ext()
             .ok_or_else(|| anyhow::anyhow!("missing csrf cookie"))?; // TODO: proper error
 
-        let protection = csrf_config.clone().into_protection();
-        let cookie = BASE64.decode(cookie.value().as_bytes())?;
-        let cookie = protection.parse_cookie(&cookie)?;
-
-        let token = BASE64.decode(self.csrf.as_bytes())?;
-        let token = protection.parse_token(&token)?;
-
-        if protection.verify_token_pair(&token, &cookie) {
-            Ok(self.inner)
-        } else {
-            Err(tide::Error::from_str(400, "failed CSRF validation"))
-        }
+        csrf_token.verify_form_value(&self.csrf)?;
+        Ok(self.inner)
     }
 }
