@@ -12,22 +12,43 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::sync::Arc;
-
 use sqlx::PgPool;
-use tera::Tera;
-use warp::{reply::with_header, Rejection, Reply};
+use warp::{filters::BoxedFilter, reply::with_header, wrap_fn, Filter, Rejection, Reply};
 
-use crate::{errors::WrapError, filters::CsrfToken, templates::CommonContext};
+use crate::{
+    config::CsrfConfig,
+    errors::WrapError,
+    filters::{csrf::with_csrf, with_pool, with_templates, CsrfToken},
+    templates::{CommonContext, Templates},
+};
 
-pub async fn get(
-    templates: Arc<Tera>,
+pub(super) fn filter(
+    pool: PgPool,
+    templates: Templates,
+    csrf_config: &CsrfConfig,
+) -> BoxedFilter<(impl Reply,)> {
+    // TODO: this is ugly and leaks
+    let csrf_cookie_name = Box::leak(Box::new(csrf_config.cookie_name.clone()));
+
+    warp::get()
+        .and(warp::path::end())
+        .and(with_templates(templates))
+        .and(csrf_config.to_extract_filter())
+        .and(with_pool(pool))
+        .and_then(get)
+        .untuple_one()
+        .with(wrap_fn(with_csrf(csrf_config.key, csrf_cookie_name)))
+        .boxed()
+}
+
+async fn get(
+    templates: Templates,
     csrf_token: CsrfToken,
     db: PgPool,
 ) -> Result<(CsrfToken, impl Reply), Rejection> {
     let ctx = CommonContext::default()
         .with_csrf_token(&csrf_token)
-        .with_session(&db)
+        .load_session(&db)
         .await
         .wrap_error()?
         .finish()

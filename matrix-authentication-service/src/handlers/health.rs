@@ -14,11 +14,19 @@
 
 use sqlx::PgPool;
 use tracing::{info_span, Instrument};
-use warp::{Rejection, Reply};
+use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
-use crate::errors::WrapError;
+use crate::{errors::WrapError, filters::with_pool};
 
-pub async fn get(pool: PgPool) -> Result<impl Reply, Rejection> {
+pub fn filter(pool: PgPool) -> BoxedFilter<(impl Reply,)> {
+    warp::get()
+        .and(warp::path("health"))
+        .and(with_pool(pool))
+        .and_then(get)
+        .boxed()
+}
+
+async fn get(pool: PgPool) -> Result<impl Reply, Rejection> {
     sqlx::query("SELECT $1")
         .bind(1_i64)
         .execute(&pool)

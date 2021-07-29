@@ -12,16 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use tide::{Redirect, Request};
+use warp::{filters::BoxedFilter, hyper::Uri, wrap_fn, Filter, Rejection, Reply};
 
-use crate::{csrf::CsrfForm, state::State};
+use crate::{
+    config::CsrfConfig,
+    csrf::CsrfForm,
+    errors::WrapError,
+    filters::{csrf::with_csrf, CsrfToken},
+};
 
-pub async fn post(mut req: Request<State>) -> tide::Result {
-    let form: CsrfForm<()> = req.body_form().await?;
-    form.verify_csrf(&req)?;
+pub(super) fn filter(csrf_config: &CsrfConfig) -> BoxedFilter<(impl Reply,)> {
+    // TODO: this is ugly and leaks
+    let csrf_cookie_name = Box::leak(Box::new(csrf_config.cookie_name.clone()));
 
-    let session = req.session_mut();
-    session.remove("current_session");
-
-    Ok(Redirect::new("/").into())
+    warp::post()
+        .and(warp::path("logout"))
+        .and(csrf_config.to_extract_filter())
+        .and(warp::body::form())
+        .and_then(|token: CsrfToken, form: CsrfForm<()>| async {
+            form.verify_csrf(&token).wrap_error()?;
+            Ok::<_, Rejection>((token, warp::redirect(Uri::from_static("/login"))))
+        })
+        .untuple_one()
+        .with(wrap_fn(with_csrf(csrf_config.key, csrf_cookie_name)))
+        .boxed()
 }

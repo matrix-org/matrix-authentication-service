@@ -12,14 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::sync::Arc;
-
 use serde::Deserialize;
 use sqlx::PgPool;
-use tera::Tera;
-use warp::{reply::with_header, Rejection, Reply};
+use warp::{
+    filters::BoxedFilter, hyper::Uri, reply::with_header, wrap_fn, Filter, Rejection, Reply,
+};
 
-use crate::{errors::WrapError, filters::CsrfToken, templates::CommonContext};
+use crate::{
+    config::CsrfConfig,
+    csrf::CsrfForm,
+    errors::WrapError,
+    filters::{csrf::with_csrf, with_pool, with_templates, CsrfToken},
+    storage::login,
+    templates::{CommonContext, Templates},
+};
 
 #[derive(Deserialize)]
 struct LoginForm {
@@ -27,14 +33,41 @@ struct LoginForm {
     password: String,
 }
 
-pub async fn get(
-    templates: Arc<Tera>,
+pub(super) fn filter(
+    pool: PgPool,
+    templates: Templates,
+    csrf_config: &CsrfConfig,
+) -> BoxedFilter<(impl Reply,)> {
+    // TODO: this is ugly and leaks
+    let csrf_cookie_name = Box::leak(Box::new(csrf_config.cookie_name.clone()));
+
+    let get = warp::get()
+        .and(with_templates(templates))
+        .and(csrf_config.to_extract_filter())
+        .and(with_pool(pool.clone()))
+        .and_then(get)
+        .untuple_one()
+        .with(wrap_fn(with_csrf(csrf_config.key, csrf_cookie_name)));
+
+    let post = warp::post()
+        .and(csrf_config.to_extract_filter())
+        .and(with_pool(pool))
+        .and(warp::body::form())
+        .and_then(post)
+        .untuple_one()
+        .with(wrap_fn(with_csrf(csrf_config.key, csrf_cookie_name)));
+
+    warp::path("login").and(get.or(post)).boxed()
+}
+
+async fn get(
+    templates: Templates,
     csrf_token: CsrfToken,
     db: PgPool,
 ) -> Result<(CsrfToken, impl Reply), Rejection> {
     let ctx = CommonContext::default()
         .with_csrf_token(&csrf_token)
-        .with_session(&db)
+        .load_session(&db)
         .await
         .wrap_error()?
         .finish()
@@ -48,20 +81,16 @@ pub async fn get(
     ))
 }
 
-/*
-pub async fn post(mut req: Request<State>) -> tide::Result {
-    let form: CsrfForm<LoginForm> = req.body_form().await?;
-    let form = form.verify_csrf(&req)?;
-    let state = req.state();
+async fn post(
+    csrf_token: CsrfToken,
+    db: PgPool,
+    form: CsrfForm<LoginForm>,
+) -> Result<(CsrfToken, impl Reply), Rejection> {
+    let form = form.verify_csrf(&csrf_token).wrap_error()?;
 
-    let session_info = state
-        .storage()
-        .login(&form.username, &form.password)
-        .await?;
+    let _session_info = login(&db, &form.username, &form.password)
+        .await
+        .wrap_error()?;
 
-    let session = req.session_mut();
-    session.insert("current_session", session_info.key())?;
-
-    Ok(Redirect::new("/").into())
+    Ok((csrf_token, warp::redirect(Uri::from_static("/"))))
 }
-*/

@@ -55,10 +55,10 @@ pub struct CsrfConfig {
 }
 
 impl CsrfConfig {
-    pub fn into_extract_filter(self) -> BoxedFilter<(CsrfToken,)> {
+    pub fn to_extract_filter(&self) -> BoxedFilter<(CsrfToken,)> {
         let ttl = self.ttl;
         // TODO: we should probably not leak here
-        let cookie_name = Box::leak(Box::new(self.cookie_name));
+        let cookie_name = Box::leak(Box::new(self.cookie_name.clone()));
         extract_or_generate(self.key, cookie_name, ttl)
     }
 }

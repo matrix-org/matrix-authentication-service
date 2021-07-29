@@ -12,5 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use warp::{filters::BoxedFilter, Reply};
+
+use crate::config::OAuth2Config;
+
 // pub mod authorization;
-pub mod discovery;
+mod discovery;
+
+use self::discovery::filter as discovery;
+
+pub fn filter(config: &OAuth2Config) -> BoxedFilter<(impl Reply,)> {
+    discovery(config)
+}

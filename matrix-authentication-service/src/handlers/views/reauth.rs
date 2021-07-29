@@ -13,26 +13,91 @@
 // limitations under the License.
 
 use serde::Deserialize;
-use tide::{Redirect, Request, Response};
+use sqlx::PgPool;
+use tracing::info;
+use warp::{filters::BoxedFilter, reply::with_header, wrap_fn, Filter, Rejection, Reply};
 
-use crate::{csrf::CsrfForm, state::State, templates::common_context};
+use crate::{
+    config::CsrfConfig,
+    csrf::CsrfForm,
+    errors::WrapError,
+    filters::{csrf::with_csrf, with_pool, with_templates, CsrfToken},
+    templates::{CommonContext, Templates},
+};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct ReauthForm {
     password: String,
 }
 
-pub async fn get(req: Request<State>) -> tide::Result {
-    let state = req.state();
-    let ctx = common_context(&req).await?;
+pub(super) fn filter(
+    pool: PgPool,
+    templates: Templates,
+    csrf_config: &CsrfConfig,
+) -> BoxedFilter<(impl Reply,)> {
+    // TODO: this is ugly and leaks
+    let csrf_cookie_name = Box::leak(Box::new(csrf_config.cookie_name.clone()));
+
+    let get = warp::get()
+        .and(with_templates(templates))
+        .and(csrf_config.to_extract_filter())
+        .and(with_pool(pool.clone()))
+        .and_then(get)
+        .untuple_one()
+        .with(wrap_fn(with_csrf(csrf_config.key, csrf_cookie_name)));
+
+    let post = warp::post()
+        .and(csrf_config.to_extract_filter())
+        .and(with_pool(pool))
+        .and(warp::body::form())
+        .and_then(post)
+        .untuple_one()
+        .with(wrap_fn(with_csrf(csrf_config.key, csrf_cookie_name)));
+
+    warp::path("reauth").and(get.or(post)).boxed()
+}
+
+async fn get(
+    templates: Templates,
+    csrf_token: CsrfToken,
+    db: PgPool,
+) -> Result<(CsrfToken, impl Reply), Rejection> {
+    let ctx = CommonContext::default()
+        .with_csrf_token(&csrf_token)
+        .load_session(&db)
+        .await
+        .wrap_error()?
+        .finish()
+        .wrap_error()?;
 
     // TODO: check if there is an existing session
-    let content = state.templates().render("reauth.html", &ctx)?;
-    let body = Response::builder(200)
-        .body(content)
-        .content_type("text/html")
-        .into();
-    Ok(body)
+    let content = templates.render("reauth.html", &ctx).wrap_error()?;
+    Ok((
+        csrf_token,
+        with_header(content, "Content-Type", "text/html"),
+    ))
+}
+
+async fn post(
+    csrf_token: CsrfToken,
+    _db: PgPool,
+    form: CsrfForm<ReauthForm>,
+) -> Result<(CsrfToken, impl Reply), Rejection> {
+    let form = form.verify_csrf(&csrf_token).wrap_error()?;
+
+    info!(?form, "reauth");
+
+    Ok((csrf_token, "unimplemented"))
+}
+
+/*
+    let form = form.verify_csrf(&csrf_token).wrap_error()?;
+
+    let _session_info = login(&db, &form.username, &form.password)
+        .await
+        .wrap_error()?;
+
+    Ok((csrf_token, warp::redirect(Uri::from_static("/"))))
 }
 
 pub async fn post(mut req: Request<State>) -> tide::Result {
@@ -52,3 +117,4 @@ pub async fn post(mut req: Request<State>) -> tide::Result {
 
     Ok(Redirect::new("/").into())
 }
+*/

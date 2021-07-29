@@ -15,4 +15,17 @@
 pub mod csrf;
 // mod errors;
 
-pub use csrf::UnencryptedToken as CsrfToken;
+use sqlx::PgPool;
+use warp::{filters::BoxedFilter, Filter};
+
+use crate::templates::Templates;
+
+pub use self::csrf::UnencryptedToken as CsrfToken;
+
+pub fn with_pool(pool: PgPool) -> BoxedFilter<(PgPool,)> {
+    warp::any().map(move || pool.clone()).boxed()
+}
+
+pub fn with_templates(templates: Templates) -> BoxedFilter<(Templates,)> {
+    warp::any().map(move || templates.clone()).boxed()
+}

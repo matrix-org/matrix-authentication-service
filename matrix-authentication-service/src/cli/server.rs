@@ -19,6 +19,7 @@ use clap::Clap;
 
 use super::RootCommand;
 use crate::config::RootConfig;
+use crate::templates::Templates;
 
 #[derive(Clap, Debug, Default)]
 pub(super) struct ServerCommand;
@@ -31,7 +32,7 @@ impl ServerCommand {
         let pool = config.database.connect().await?;
 
         // Load and compile the templates
-        let templates = crate::templates::load().context("could not load templates")?;
+        let templates = Templates::load().context("could not load templates")?;
 
         // Start the server
         let address: SocketAddr = config.http.address.parse()?;

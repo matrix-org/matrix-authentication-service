@@ -12,7 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub(super) mod index;
-pub(super) mod login;
-// pub(super) mod logout;
-// pub(super) mod reauth;
+use sqlx::PgPool;
+use warp::{filters::BoxedFilter, Filter, Reply};
+
+use crate::{config::CsrfConfig, templates::Templates};
+
+mod index;
+mod login;
+mod logout;
+mod reauth;
+
+use self::index::filter as index;
+use self::login::filter as login;
+use self::logout::filter as logout;
+use self::reauth::filter as reauth;
+
+pub(super) fn filter(
+    pool: PgPool,
+    templates: Templates,
+    csrf_config: &CsrfConfig,
+) -> BoxedFilter<(impl Reply,)> {
+    index(pool.clone(), templates.clone(), csrf_config)
+        .or(login(pool.clone(), templates.clone(), csrf_config))
+        .or(logout(csrf_config))
+        .or(reauth(pool, templates, csrf_config))
+        .boxed()
+}

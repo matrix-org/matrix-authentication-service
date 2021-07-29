@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::{ops::Deref, sync::Arc};
+
 use anyhow::Context as _;
 use serde::Serialize;
 use sqlx::{Executor, Postgres};
@@ -23,10 +25,24 @@ use crate::{
     storage::{lookup_session, SessionInfo},
 };
 
-pub fn load() -> Result<Tera, tera::Error> {
-    let path = format!("{}/templates/**/*.{{html,txt}}", env!("CARGO_MANIFEST_DIR"));
-    info!(%path, "Loading templates");
-    Tera::new(&path)
+#[derive(Clone)]
+pub struct Templates(Arc<Tera>);
+
+impl Templates {
+    pub fn load() -> Result<Self, tera::Error> {
+        let path = format!("{}/templates/**/*.{{html,txt}}", env!("CARGO_MANIFEST_DIR"));
+        info!(%path, "Loading templates");
+        let tera = Tera::new(&path)?;
+        Ok(Self(Arc::new(tera)))
+    }
+}
+
+impl Deref for Templates {
+    type Target = Tera;
+
+    fn deref(&self) -> &Self::Target {
+        self.0.as_ref()
+    }
 }
 
 #[derive(Serialize, Default)]
@@ -43,7 +59,14 @@ impl CommonContext {
         }
     }
 
-    pub async fn with_session<'e>(
+    pub fn with_session(self, session: SessionInfo) -> Self {
+        Self {
+            session: Some(session),
+            ..self
+        }
+    }
+
+    pub async fn load_session<'e>(
         self,
         _executor: impl Executor<'e, Database = Postgres>,
     ) -> anyhow::Result<Self> {

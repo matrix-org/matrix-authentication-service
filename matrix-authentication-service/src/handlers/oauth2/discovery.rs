@@ -17,7 +17,7 @@ use warp::{filters::BoxedFilter, Filter, Reply};
 
 use crate::config::OAuth2Config;
 
-pub fn get(config: &OAuth2Config) -> BoxedFilter<(impl Reply,)> {
+pub(super) fn filter(config: &OAuth2Config) -> BoxedFilter<(impl Reply,)> {
     let base = config.issuer.clone();
     let metadata = Metadata {
         authorization_endpoint: base.join("oauth2/authorize").ok(),
@@ -32,7 +32,11 @@ pub fn get(config: &OAuth2Config) -> BoxedFilter<(impl Reply,)> {
         code_challenge_methods_supported: None,
     };
 
-    warp::any()
+    let cors = warp::cors().allow_any_origin();
+
+    warp::get()
+        .and(warp::path!(".well-known" / "openid-configuration"))
         .map(move || warp::reply::json(&metadata))
+        .with(cors)
         .boxed()
 }

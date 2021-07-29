@@ -47,12 +47,7 @@ impl SessionInfo {
 
 impl super::Storage<PgPool> {
     pub async fn login(&self, username: &str, password: &str) -> anyhow::Result<SessionInfo> {
-        let mut txn = self.pool.begin().await?;
-        let user = lookup_user_by_username(&mut txn, username).await?;
-        let mut session = start_session(&mut txn, user).await?;
-        session.last_authd_at = Some(authenticate_session(&mut txn, session.id, password).await?);
-        txn.commit().await?;
-        Ok(session)
+        login(&self.pool, username, password).await
     }
 
     pub async fn register_user(&self, username: &str, password: &str) -> anyhow::Result<User> {
@@ -77,6 +72,15 @@ impl super::Storage<PgPool> {
         txn.commit().await?;
         Ok(session)
     }
+}
+
+pub async fn login(pool: &PgPool, username: &str, password: &str) -> anyhow::Result<SessionInfo> {
+    let mut txn = pool.begin().await?;
+    let user = lookup_user_by_username(&mut txn, username).await?;
+    let mut session = start_session(&mut txn, user).await?;
+    session.last_authd_at = Some(authenticate_session(&mut txn, session.id, password).await?);
+    txn.commit().await?;
+    Ok(session)
 }
 
 pub async fn lookup_session(

@@ -22,7 +22,7 @@ mod user;
 
 pub use self::{
     client::{Client, ClientLookupError, InvalidRedirectUriError},
-    user::{lookup_session, SessionInfo, User},
+    user::{login, lookup_session, SessionInfo, User},
 };
 
 pub static MIGRATOR: Migrator = sqlx::migrate!();
