@@ -14,7 +14,7 @@
 
 use serde::Deserialize;
 
-use crate::middlewares::CsrfToken;
+use crate::filters::CsrfToken;
 
 /// A CSRF-protected form
 #[derive(Deserialize)]
@@ -26,16 +26,9 @@ pub struct CsrfForm<T> {
 }
 
 impl<T> CsrfForm<T> {
-    pub fn verify_csrf<State>(self, request: &tide::Request<State>) -> tide::Result<T>
-    where
-        State: Clone + Send + Sync + 'static,
-    {
+    pub fn verify_csrf(self, token: &CsrfToken) -> anyhow::Result<T> {
         // Verify CSRF from request
-        let csrf_token: &CsrfToken = request
-            .ext()
-            .ok_or_else(|| anyhow::anyhow!("missing csrf cookie"))?; // TODO: proper error
-
-        csrf_token.verify_form_value(&self.csrf)?;
+        token.verify_form_value(&self.csrf)?;
         Ok(self.inner)
     }
 }

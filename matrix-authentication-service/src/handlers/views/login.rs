@@ -12,10 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use serde::Deserialize;
-use tide::{Redirect, Request, Response};
+use std::sync::Arc;
 
-use crate::{csrf::CsrfForm, state::State, templates::common_context};
+use serde::Deserialize;
+use sqlx::PgPool;
+use tera::Tera;
+use warp::{reply::with_header, Rejection, Reply};
+
+use crate::{errors::WrapError, filters::CsrfToken, templates::CommonContext};
 
 #[derive(Deserialize)]
 struct LoginForm {
@@ -23,19 +27,28 @@ struct LoginForm {
     password: String,
 }
 
-pub async fn get(req: Request<State>) -> tide::Result {
-    let state = req.state();
-    let ctx = common_context(&req).await?;
+pub async fn get(
+    templates: Arc<Tera>,
+    csrf_token: CsrfToken,
+    db: PgPool,
+) -> Result<(CsrfToken, impl Reply), Rejection> {
+    let ctx = CommonContext::default()
+        .with_csrf_token(&csrf_token)
+        .with_session(&db)
+        .await
+        .wrap_error()?
+        .finish()
+        .wrap_error()?;
 
     // TODO: check if there is an existing session
-    let content = state.templates().render("login.html", &ctx)?;
-    let body = Response::builder(200)
-        .body(content)
-        .content_type("text/html")
-        .into();
-    Ok(body)
+    let content = templates.render("login.html", &ctx).wrap_error()?;
+    Ok((
+        csrf_token,
+        with_header(content, "Content-Type", "text/html"),
+    ))
 }
 
+/*
 pub async fn post(mut req: Request<State>) -> tide::Result {
     let form: CsrfForm<LoginForm> = req.body_form().await?;
     let form = form.verify_csrf(&req)?;
@@ -51,3 +64,4 @@ pub async fn post(mut req: Request<State>) -> tide::Result {
 
     Ok(Redirect::new("/").into())
 }
+*/

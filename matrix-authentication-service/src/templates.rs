@@ -12,13 +12,54 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use tera::Tera;
+use anyhow::Context as _;
+use serde::Serialize;
+use sqlx::{Executor, Postgres};
+use tera::{Context, Tera};
 use tracing::info;
+
+use crate::{
+    filters::CsrfToken,
+    storage::{lookup_session, SessionInfo},
+};
 
 pub fn load() -> Result<Tera, tera::Error> {
     let path = format!("{}/templates/**/*.{{html,txt}}", env!("CARGO_MANIFEST_DIR"));
     info!(%path, "Loading templates");
     Tera::new(&path)
+}
+
+#[derive(Serialize, Default)]
+pub struct CommonContext {
+    csrf_token: Option<String>,
+    session: Option<SessionInfo>,
+}
+
+impl CommonContext {
+    pub fn with_csrf_token(self, token: &CsrfToken) -> Self {
+        Self {
+            csrf_token: Some(token.form_value()),
+            ..self
+        }
+    }
+
+    pub async fn with_session<'e>(
+        self,
+        _executor: impl Executor<'e, Database = Postgres>,
+    ) -> anyhow::Result<Self> {
+        Ok(self)
+        /*
+        let session = lookup_session(executor, 1).await?;
+        Ok(Self {
+            session: Some(session),
+            ..self
+        })
+        */
+    }
+
+    pub fn finish(self) -> anyhow::Result<Context> {
+        Context::from_serialize(&self).context("could not serialize common context for templates")
+    }
 }
 
 // pub async fn common_context(req: &Request<State>) -> Result<Context, anyhow::Error> {

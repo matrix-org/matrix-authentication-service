@@ -16,6 +16,9 @@ use chrono::Duration;
 use schemars::{gen::SchemaGenerator, schema::Schema, JsonSchema};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
+use warp::filters::BoxedFilter;
+
+use crate::filters::{csrf::extract_or_generate, CsrfToken};
 
 use super::ConfigurationSection;
 
@@ -40,10 +43,10 @@ fn ttl_schema(gen: &mut SchemaGenerator) -> Schema {
 pub struct CsrfConfig {
     #[schemars(schema_with = "key_schema")]
     #[serde_as(as = "serde_with::hex::Hex")]
-    key: [u8; 32],
+    pub key: [u8; 32],
 
     #[serde(default = "default_cookie_name")]
-    cookie_name: String,
+    pub cookie_name: String,
 
     #[schemars(schema_with = "ttl_schema")]
     #[serde(default = "default_ttl")]
@@ -51,14 +54,14 @@ pub struct CsrfConfig {
     ttl: Duration,
 }
 
-// impl CsrfConfig {
-//     pub fn into_middleware<State: Clone + Send + Sync + 'static>(self) -> impl Middleware<State> {
-//         let ttl = self.ttl;
-//         let cookie_name = self.cookie_name.clone();
-//         let protection = self.key;
-//         CsrfMiddleware::new(protection, cookie_name, ttl)
-//     }
-// }
+impl CsrfConfig {
+    pub fn into_extract_filter(self) -> BoxedFilter<(CsrfToken,)> {
+        let ttl = self.ttl;
+        // TODO: we should probably not leak here
+        let cookie_name = Box::leak(Box::new(self.cookie_name));
+        extract_or_generate(self.key, cookie_name, ttl)
+    }
+}
 
 impl ConfigurationSection<'_> for CsrfConfig {
     fn path() -> &'static str {

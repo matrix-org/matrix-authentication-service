@@ -23,8 +23,8 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilte
 
 mod cli;
 mod config;
+mod csrf;
 mod errors;
-// mod csrf;
 mod filters;
 mod handlers;
 mod state;

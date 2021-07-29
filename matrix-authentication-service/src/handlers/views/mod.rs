@@ -13,6 +13,6 @@
 // limitations under the License.
 
 pub(super) mod index;
-// pub(super) mod login;
+pub(super) mod login;
 // pub(super) mod logout;
 // pub(super) mod reauth;

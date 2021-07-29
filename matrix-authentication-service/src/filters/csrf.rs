@@ -24,9 +24,12 @@ use chacha20poly1305::{
 use chrono::{DateTime, Duration, Utc};
 use cookie::{Cookie, CookieBuilder, SameSite};
 use data_encoding::BASE64URL_NOPAD;
+use headers::{Header, HeaderMapExt, HeaderValue, SetCookie};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, TimestampSeconds};
-use warp::filters::BoxedFilter;
+use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
+
+use crate::errors::WrapError;
 
 #[serde_as]
 #[derive(Serialize, Deserialize)]
@@ -100,17 +103,16 @@ impl UnencryptedToken {
         name: &'n str,
         key: &[u8; 32],
     ) -> anyhow::Result<CookieBuilder<'c>> {
-        let value = self.encrypt(key)?.to_cookie_value()?;
         // Converting expiration time from `chrono` to `time` via native `SystemTime`
         let expires: SystemTime = self.expiration.into();
-        Ok(Cookie::build(name, value)
-            .expires(expires)
-            .http_only(true)
-            .same_site(SameSite::Strict))
+        Ok(self
+            .encrypt(key)?
+            .to_cookie_builder(name)?
+            .expires(Some(expires.into())))
     }
 
-    fn from_cookie(cookie: &Cookie, key: &[u8; 32]) -> anyhow::Result<Self> {
-        let encrypted = EncryptedToken::from_cookie_value(cookie.value())?;
+    fn from_cookie_value(value: &str, key: &[u8; 32]) -> anyhow::Result<Self> {
+        let encrypted = EncryptedToken::from_cookie_value(value)?;
         let token = encrypted.decrypt(key)?;
         Ok(token)
     }
@@ -147,75 +149,82 @@ impl EncryptedToken {
         let content = bincode::deserialize(&raw)?;
         Ok(content)
     }
-}
 
-#[derive(Debug, Clone)]
-pub struct Middleware {
-    key: [u8; 32],
-    ttl: Duration,
-    cookie_name: String,
-}
-
-impl Middleware {
-    /// Create a new CSRF protection middleware from a key, cookie name and TTL
-    pub fn new(key: [u8; 32], cookie_name: String, ttl: Duration) -> Self {
-        Self {
-            key,
-            ttl,
-            cookie_name,
-        }
+    fn to_cookie_builder<'c, 'n: 'c>(&self, name: &'n str) -> anyhow::Result<CookieBuilder<'c>> {
+        let value = self.to_cookie_value()?;
+        Ok(Cookie::build(name, value)
+            .http_only(true)
+            .same_site(SameSite::Strict))
     }
 }
 
 pub fn extract_or_generate(
     key: [u8; 32],
-    cookie_name: String,
+    cookie_name: &'static str,
     ttl: Duration,
 ) -> BoxedFilter<(UnencryptedToken,)> {
-    warp::cookie::optional(cookie_name)
+    warp::any()
+        .map(move || (key, ttl))
+        .untuple_one()
+        .and(warp::cookie::optional(cookie_name))
+        .and_then(|key, ttl, maybe_cookie: Option<String>| async move {
+            // Explicitely specify the "Error" type here to have the `?` operation working
+            Ok::<_, Rejection>(
+                maybe_cookie
+                    // Try decrypting the cookie
+                    .map(|cookie| UnencryptedToken::from_cookie_value(&cookie, &key))
+                    // If there was an error decrypting it, bail out here
+                    .transpose()
+                    .wrap_error()?
+                    // Verify its TTL (but do not hard-error if it expired)
+                    .and_then(|token| token.verify_expiration().ok())
+                    .map_or_else(
+                        // Generate a new token if no valid one were found
+                        || UnencryptedToken::generate(ttl),
+                        // Else, refresh the expiration of the token
+                        |token| token.refresh(ttl),
+                    ),
+            )
+        })
+        .boxed()
 }
 
-/*
+pub struct WithTypedHeader<R, H> {
+    reply: R,
+    header: H,
+}
 
-#[async_trait]
-impl<State> tide::Middleware<State> for Middleware
+impl<R, H> Reply for WithTypedHeader<R, H>
 where
-    State: Clone + Send + Sync + 'static,
+    R: Reply,
+    H: Header + Send,
 {
-    async fn handle(
-        &self,
-        mut request: tide::Request<State>,
-        next: tide::Next<'_, State>,
-    ) -> tide::Result {
-        let csrf_token = request
-            // Get the CSRF cookie
-            .cookie(&self.cookie_name)
-            // Try decrypting it
-            .map(|cookie| UnencryptedToken::from_cookie(&cookie, &self.key))
-            // If there was an error decrypting it, bail out here
-            .transpose()?
-            // Verify it's TTL (but do not hard-error if it expired)
-            .and_then(|token| token.verify_expiration().ok())
-            .map_or_else(
-                // Generate a new token if no valid one were found
-                || UnencryptedToken::generate(self.ttl),
-                // Else, refresh the expiration of the cookie
-                |token| token.refresh(self.ttl),
-            );
-
-        // Build the cookie before calling the next stage since the owned csrf_token has
-        // to be passed as a request extension
-        let cookie = csrf_token
-            .to_cookie_builder(&self.cookie_name, &self.key)?
-            .finish()
-            .into_owned();
-
-        request.set_ext(csrf_token);
-
-        let mut response = next.run(request).await;
-        response.insert_cookie(cookie);
-
-        Ok(response)
+    fn into_response(self) -> warp::reply::Response {
+        let mut res = self.reply.into_response();
+        res.headers_mut().typed_insert(self.header);
+        res
     }
 }
-*/
+
+pub fn with_csrf<R: Reply, F>(
+    key: [u8; 32],
+    cookie_name: &'static str,
+) -> impl Fn(F) -> BoxedFilter<(WithTypedHeader<R, SetCookie>,)>
+where
+    F: Filter<Extract = (UnencryptedToken, R), Error = Rejection> + Clone + Send + Sync + 'static,
+{
+    move |f: F| {
+        f.and_then(move |token: UnencryptedToken, reply: R| async move {
+            let cookie = token
+                .to_cookie_builder(cookie_name, &key)
+                .wrap_error()?
+                .finish()
+                .to_string();
+            let header =
+                SetCookie::decode(&mut [HeaderValue::from_str(&cookie).wrap_error()?].iter())
+                    .wrap_error()?;
+            Ok::<_, Rejection>(WithTypedHeader { reply, header })
+        })
+        .boxed()
+    }
+}

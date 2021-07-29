@@ -14,13 +14,28 @@
 
 use std::sync::Arc;
 
-use tera::{Context, Tera};
+use sqlx::PgPool;
+use tera::Tera;
 use warp::{reply::with_header, Rejection, Reply};
 
-use crate::errors::WrapError;
+use crate::{errors::WrapError, filters::CsrfToken, templates::CommonContext};
 
-pub async fn get(templates: Arc<Tera>) -> Result<impl Reply, Rejection> {
-    let ctx = Context::new();
+pub async fn get(
+    templates: Arc<Tera>,
+    csrf_token: CsrfToken,
+    db: PgPool,
+) -> Result<(CsrfToken, impl Reply), Rejection> {
+    let ctx = CommonContext::default()
+        .with_csrf_token(&csrf_token)
+        .with_session(&db)
+        .await
+        .wrap_error()?
+        .finish()
+        .wrap_error()?;
+
     let content = templates.render("index.html", &ctx).wrap_error()?;
-    Ok(with_header(content, "Content-Type", "text/html"))
+    Ok((
+        csrf_token,
+        with_header(content, "Content-Type", "text/html"),
+    ))
 }

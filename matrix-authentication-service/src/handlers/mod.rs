@@ -12,17 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::sync::Arc;
+use std::{convert::Infallible, sync::Arc};
 
 use sqlx::PgPool;
 use tera::Tera;
-use warp::{filters::BoxedFilter, Filter};
+use warp::{filters::BoxedFilter, wrap_fn, Filter, Rejection, Reply};
 
-use crate::config::RootConfig;
+use crate::{config::RootConfig, filters::csrf::with_csrf};
 
 mod health;
 mod oauth2;
 mod views;
+
+async fn display_error(err: Rejection) -> Result<impl Reply, Infallible> {
+    let ret = format!("{:?}", err);
+    Ok(ret)
+}
 
 pub fn root(
     pool: PgPool,
@@ -30,14 +35,18 @@ pub fn root(
     config: &RootConfig,
 ) -> BoxedFilter<(impl warp::Reply,)> {
     let templates = Arc::new(templates);
-    let with_pool = move || pool.clone();
-    let with_templates = move || templates.clone();
+    let with_csrf_token = config.csrf.clone().into_extract_filter();
+    let with_pool = warp::any().map(move || pool.clone());
+    let with_templates = warp::any().map(move || templates.clone());
+
+    // TODO: this is ugly and leaks
+    let csrf_cookie_name = Box::leak(Box::new(config.csrf.cookie_name.clone()));
 
     let cors = warp::cors().allow_any_origin();
 
     let health = warp::path("health")
         .and(warp::get())
-        .map(with_pool)
+        .and(with_pool.clone())
         .and_then(self::health::get)
         .boxed();
 
@@ -48,10 +57,23 @@ pub fn root(
 
     let index = warp::path::end()
         .and(warp::get())
-        .map(with_templates)
-        .and_then(self::views::index::get);
+        .and(with_templates.clone())
+        .and(with_csrf_token.clone())
+        .and(with_pool.clone())
+        .and_then(self::views::index::get)
+        .untuple_one()
+        .with(wrap_fn(with_csrf(config.csrf.key, csrf_cookie_name)));
 
-    health.or(index).or(metadata).boxed()
+    let login = warp::path("login")
+        .and(warp::get())
+        .and(with_templates)
+        .and(with_csrf_token)
+        .and(with_pool)
+        .and_then(self::views::login::get)
+        .untuple_one()
+        .with(wrap_fn(with_csrf(config.csrf.key, csrf_cookie_name)));
+
+    health.or(index).or(login).or(metadata).boxed()
 
     // app.at("/").nest({
     //     let mut views = tide::with_state(state.clone());
