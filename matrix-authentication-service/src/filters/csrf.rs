@@ -104,5 +104,5 @@ pub fn save_csrf_token<R: Reply, F>(
 where
     F: Filter<Extract = (CsrfToken, R), Error = Rejection> + Clone + Send + Sync + 'static,
 {
-    save_encrypted("csrf", &cookies_config)
+    save_encrypted("csrf", cookies_config)
 }
