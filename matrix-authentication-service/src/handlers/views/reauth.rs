@@ -22,7 +22,11 @@ use crate::{
     config::{CookiesConfig, CsrfConfig},
     csrf::CsrfForm,
     errors::WrapError,
-    filters::{csrf::save_csrf_token, session::with_session, with_pool, with_templates, CsrfToken},
+    filters::{
+        csrf::{csrf_token, save_csrf_token, updated_csrf_token},
+        session::with_session,
+        with_pool, with_templates, CsrfToken,
+    },
     storage::SessionInfo,
     templates::{CommonContext, Templates},
 };
@@ -40,14 +44,14 @@ pub(super) fn filter(
 ) -> BoxedFilter<(impl Reply,)> {
     let get = warp::get()
         .and(with_templates(templates))
-        .and(csrf_config.to_extract_filter(cookies_config))
+        .and(updated_csrf_token(cookies_config, csrf_config))
         .and(with_session(pool, cookies_config))
         .and_then(get)
         .untuple_one()
         .with(wrap_fn(save_csrf_token(cookies_config)));
 
     let post = warp::post()
-        .and(csrf_config.to_extract_filter(cookies_config))
+        .and(csrf_token(cookies_config))
         .and(with_session(pool, cookies_config))
         .and(with_pool(pool))
         .and(warp::body::form())
@@ -61,15 +65,14 @@ pub(super) fn filter(
 async fn get(
     templates: Templates,
     csrf_token: CsrfToken,
-    session: Option<SessionInfo>,
+    session: SessionInfo,
 ) -> Result<(CsrfToken, impl Reply), Rejection> {
     let ctx = CommonContext::default()
         .with_csrf_token(&csrf_token)
-        .maybe_with_session(session)
+        .with_session(session)
         .finish()
         .wrap_error()?;
 
-    // TODO: check if there is an existing session
     let content = templates.render("reauth.html", &ctx).wrap_error()?;
     Ok((
         csrf_token,
@@ -79,17 +82,13 @@ async fn get(
 
 async fn post(
     csrf_token: CsrfToken,
-    session: Option<SessionInfo>,
+    session: SessionInfo,
     pool: PgPool,
     form: CsrfForm<ReauthForm>,
 ) -> Result<(CsrfToken, impl Reply), Rejection> {
     let form = form.verify_csrf(&csrf_token).wrap_error()?;
-    // TODO: filter with forced active session
-    let _session = session
-        .unwrap()
-        .reauth(&pool, &form.password)
-        .await
-        .wrap_error()?;
+
+    let _session = session.reauth(&pool, &form.password).await.wrap_error()?;
 
     Ok((csrf_token, warp::redirect(Uri::from_static("/"))))
 }

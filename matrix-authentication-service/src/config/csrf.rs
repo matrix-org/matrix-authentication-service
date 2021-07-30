@@ -16,10 +16,8 @@ use chrono::Duration;
 use schemars::{gen::SchemaGenerator, schema::Schema, JsonSchema};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use warp::filters::BoxedFilter;
 
-use super::{ConfigurationSection, CookiesConfig};
-use crate::filters::csrf::{extract_or_generate, CsrfToken};
+use super::ConfigurationSection;
 
 fn default_ttl() -> Duration {
     Duration::hours(1)
@@ -35,13 +33,7 @@ pub struct CsrfConfig {
     #[schemars(schema_with = "ttl_schema")]
     #[serde(default = "default_ttl")]
     #[serde_as(as = "serde_with::DurationSeconds<i64>")]
-    ttl: Duration,
-}
-
-impl CsrfConfig {
-    pub fn to_extract_filter(&self, cookies_config: &CookiesConfig) -> BoxedFilter<(CsrfToken,)> {
-        extract_or_generate(cookies_config, "csrf", self.ttl)
-    }
+    pub ttl: Duration,
 }
 
 impl Default for CsrfConfig {
@@ -82,6 +74,6 @@ mod tests {
             assert_eq!(config.ttl, Duration::minutes(30));
 
             Ok(())
-        })
+        });
     }
 }

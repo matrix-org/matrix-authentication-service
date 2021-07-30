@@ -18,7 +18,7 @@ use sqlx::{Executor, PgPool, Postgres};
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 use super::{
-    cookies::{encrypted, save_encrypted, WithTypedHeader},
+    cookies::{encrypted, maybe_encrypted, save_encrypted, WithTypedHeader},
     with_pool,
 };
 use crate::{
@@ -47,19 +47,29 @@ impl Session {
     }
 }
 
-pub fn with_session(
+pub fn with_optional_session(
     pool: &PgPool,
     cookies_config: &CookiesConfig,
 ) -> BoxedFilter<(Option<SessionInfo>,)> {
-    encrypted("session", cookies_config)
+    maybe_encrypted("session", cookies_config)
         .and(with_pool(pool))
         .and_then(|maybe_session: Option<Session>, pool: PgPool| async move {
             let maybe_session_info = if let Some(session) = maybe_session {
-                Some(session.load_session_info(&pool).await.wrap_error()?)
+                session.load_session_info(&pool).await.ok()
             } else {
                 None
             };
             Ok::<_, Rejection>(maybe_session_info)
+        })
+        .boxed()
+}
+
+pub fn with_session(pool: &PgPool, cookies_config: &CookiesConfig) -> BoxedFilter<(SessionInfo,)> {
+    encrypted("session", cookies_config)
+        .and(with_pool(pool))
+        .and_then(|session: Session, pool: PgPool| async move {
+            let session_info = session.load_session_info(&pool).await.wrap_error()?;
+            Ok::<_, Rejection>(session_info)
         })
         .boxed()
 }

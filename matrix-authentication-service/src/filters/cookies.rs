@@ -66,7 +66,7 @@ impl EncryptedCookie {
     }
 }
 
-pub fn encrypted<T>(name: &'static str, options: &CookiesConfig) -> BoxedFilter<(Option<T>,)>
+pub fn maybe_encrypted<T>(name: &'static str, options: &CookiesConfig) -> BoxedFilter<(Option<T>,)>
 where
     T: DeserializeOwned + Send + 'static,
 {
@@ -76,6 +76,20 @@ where
             maybe_value
                 .and_then(|value| EncryptedCookie::from_cookie_value(&value).ok())
                 .and_then(|encrypted| encrypted.decrypt(&secret).ok())
+        })
+        .boxed()
+}
+
+pub fn encrypted<T>(name: &'static str, options: &CookiesConfig) -> BoxedFilter<(T,)>
+where
+    T: DeserializeOwned + Send + 'static,
+{
+    let secret = options.secret;
+    warp::cookie::cookie(name)
+        .and_then(move |value: String| async move {
+            let encrypted = EncryptedCookie::from_cookie_value(&value).wrap_error()?;
+            let decrypted = encrypted.decrypt(&secret).wrap_error()?;
+            Ok::<_, Rejection>(decrypted)
         })
         .boxed()
 }

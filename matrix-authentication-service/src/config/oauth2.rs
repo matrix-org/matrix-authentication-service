@@ -97,6 +97,6 @@ mod tests {
             assert_eq!(config.clients[1].redirect_uris, None);
 
             Ok(())
-        })
+        });
     }
 }

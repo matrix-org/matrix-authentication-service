@@ -23,8 +23,8 @@ use crate::{
     csrf::CsrfForm,
     errors::WrapError,
     filters::{
-        csrf::save_csrf_token,
-        session::{save_session, with_session},
+        csrf::{csrf_token, save_csrf_token, updated_csrf_token},
+        session::{save_session, with_optional_session},
         with_pool, with_templates, CsrfToken,
     },
     storage::{login, SessionInfo},
@@ -45,14 +45,14 @@ pub(super) fn filter(
 ) -> BoxedFilter<(impl Reply,)> {
     let get = warp::get()
         .and(with_templates(templates))
-        .and(csrf_config.to_extract_filter(cookies_config))
-        .and(with_session(pool, cookies_config))
+        .and(updated_csrf_token(cookies_config, csrf_config))
+        .and(with_optional_session(pool, cookies_config))
         .and_then(get)
         .untuple_one()
         .with(wrap_fn(save_csrf_token(cookies_config)));
 
     let post = warp::post()
-        .and(csrf_config.to_extract_filter(cookies_config))
+        .and(csrf_token(cookies_config))
         .and(with_pool(pool))
         .and(warp::body::form())
         .and_then(post)

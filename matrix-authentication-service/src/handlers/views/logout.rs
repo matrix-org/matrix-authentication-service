@@ -16,21 +16,21 @@ use sqlx::PgPool;
 use warp::{filters::BoxedFilter, hyper::Uri, wrap_fn, Filter, Rejection, Reply};
 
 use crate::{
-    config::{CookiesConfig, CsrfConfig},
+    config::CookiesConfig,
     csrf::CsrfForm,
     errors::WrapError,
-    filters::{csrf::save_csrf_token, session::with_session, with_pool, CsrfToken},
+    filters::{
+        csrf::{csrf_token, save_csrf_token},
+        session::with_session,
+        with_pool, CsrfToken,
+    },
     storage::SessionInfo,
 };
 
-pub(super) fn filter(
-    pool: &PgPool,
-    csrf_config: &CsrfConfig,
-    cookies_config: &CookiesConfig,
-) -> BoxedFilter<(impl Reply,)> {
+pub(super) fn filter(pool: &PgPool, cookies_config: &CookiesConfig) -> BoxedFilter<(impl Reply,)> {
     warp::post()
         .and(warp::path("logout"))
-        .and(csrf_config.to_extract_filter(cookies_config))
+        .and(csrf_token(cookies_config))
         .and(with_session(pool, cookies_config))
         .and(with_pool(pool))
         .and(warp::body::form())
@@ -42,12 +42,11 @@ pub(super) fn filter(
 
 async fn post(
     token: CsrfToken,
-    session: Option<SessionInfo>,
+    session: SessionInfo,
     pool: PgPool,
     form: CsrfForm<()>,
 ) -> Result<(CsrfToken, impl Reply), Rejection> {
     form.verify_csrf(&token).wrap_error()?;
-    // TODO: filter with forced active session
-    session.unwrap().end(&pool).await.wrap_error()?;
+    session.end(&pool).await.wrap_error()?;
     Ok::<_, Rejection>((token, warp::redirect(Uri::from_static("/login"))))
 }

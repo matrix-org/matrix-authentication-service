@@ -38,7 +38,7 @@ pub(super) fn filter(
 ) -> BoxedFilter<(impl Reply,)> {
     index(pool, templates, csrf_config, cookies_config)
         .or(login(pool, templates, csrf_config, cookies_config))
-        .or(logout(pool, csrf_config, cookies_config))
+        .or(logout(pool, cookies_config))
         .or(reauth(pool, templates, csrf_config, cookies_config))
         .boxed()
 }

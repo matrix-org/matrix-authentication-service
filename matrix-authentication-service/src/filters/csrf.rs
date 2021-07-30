@@ -23,7 +23,10 @@ use serde_with::{serde_as, TimestampSeconds};
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 use super::cookies::{save_encrypted, WithTypedHeader};
-use crate::config::CookiesConfig;
+use crate::{
+    config::{CookiesConfig, CsrfConfig},
+    errors::WrapError,
+};
 
 #[serde_as]
 #[derive(Serialize, Deserialize)]
@@ -75,12 +78,21 @@ impl CsrfToken {
     }
 }
 
-pub fn extract_or_generate(
+pub fn csrf_token(cookies_config: &CookiesConfig) -> BoxedFilter<(CsrfToken,)> {
+    super::cookies::encrypted("csrf", cookies_config)
+        .and_then(move |token: CsrfToken| async move {
+            let verified = token.verify_expiration().wrap_error()?;
+            Ok::<_, Rejection>(verified)
+        })
+        .boxed()
+}
+
+pub fn updated_csrf_token(
     cookies_config: &CookiesConfig,
-    cookie_name: &'static str,
-    ttl: Duration,
+    csrf_config: &CsrfConfig,
 ) -> BoxedFilter<(CsrfToken,)> {
-    crate::filters::cookies::encrypted(cookie_name, cookies_config)
+    let ttl = csrf_config.ttl;
+    super::cookies::maybe_encrypted("csrf", cookies_config)
         .and_then(move |maybe_token: Option<CsrfToken>| async move {
             // Explicitely specify the "Error" type here to have the `?` operation working
             Ok::<_, Rejection>(

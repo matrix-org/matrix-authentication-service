@@ -141,6 +141,6 @@ mod tests {
             assert_eq!(config.uri, "postgresql://user:password@host/database");
 
             Ok(())
-        })
+        });
     }
 }
