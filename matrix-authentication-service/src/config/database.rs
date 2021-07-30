@@ -18,7 +18,11 @@ use anyhow::Context;
 use schemars::{gen::SchemaGenerator, schema::Schema, JsonSchema};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none};
-use sqlx::postgres::{PgPool, PgPoolOptions};
+use sqlx::{
+    postgres::{PgConnectOptions, PgPool, PgPoolOptions},
+    ConnectOptions,
+};
+use tracing::log::LevelFilter;
 
 use super::ConfigurationSection;
 
@@ -97,13 +101,23 @@ pub struct DatabaseConfig {
 impl DatabaseConfig {
     #[tracing::instrument(err)]
     pub async fn connect(&self) -> anyhow::Result<PgPool> {
+        let mut options = self
+            .uri
+            .parse::<PgConnectOptions>()
+            .context("invalid database URL")?
+            .application_name("matrix-authentication-service");
+
+        options
+            .log_statements(LevelFilter::Debug)
+            .log_slow_statements(LevelFilter::Warn, Duration::from_millis(100));
+
         PgPoolOptions::new()
             .max_connections(self.max_connections)
             .min_connections(self.min_connections)
             .connect_timeout(self.connect_timeout)
             .idle_timeout(self.idle_timeout)
             .max_lifetime(self.max_lifetime)
-            .connect(&self.uri)
+            .connect_with(options)
             .await
             .context("could not connect to the database")
     }

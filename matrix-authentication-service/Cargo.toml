@@ -8,7 +8,7 @@ license = "Apache-2.0"
 [dependencies]
 # Async runtime
 tokio = { version = "1.9.0", features = ["full"] }
-async-trait = "0.1.50"
+async-trait = "0.1.51"
 
 # Logging and tracing
 tracing = "0.1.26"
@@ -20,6 +20,11 @@ anyhow = "1.0.42"
 
 # Web server
 warp = "0.3.1"
+tower = { version = "0.4.8", features = ["full"] }
+tower-http = { version = "0.1.1", features = ["full"] }
+hyper = { version = "0.14.11", features = ["full"] }
+
+# Template engine
 tera = "1.12.1"
 
 # Database access

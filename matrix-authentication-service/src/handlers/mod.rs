@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use hyper::StatusCode;
 use sqlx::PgPool;
 use warp::{filters::BoxedFilter, Filter};
 
@@ -31,5 +32,7 @@ pub fn root(
     health(pool)
         .or(oauth2(&config.oauth2))
         .or(views(pool, templates, &config.csrf, &config.cookies))
+        .or(warp::get().map(|| StatusCode::NOT_FOUND))
+        .with(warp::log(module_path!()))
         .boxed()
 }
