@@ -19,7 +19,7 @@ use crate::{
     config::{CookiesConfig, CsrfConfig},
     csrf::CsrfForm,
     errors::WrapError,
-    filters::{session::with_session, with_pool, CsrfToken},
+    filters::{csrf::save_csrf_token, session::with_session, with_pool, CsrfToken},
     storage::SessionInfo,
 };
 
@@ -36,7 +36,7 @@ pub(super) fn filter(
         .and(warp::body::form())
         .and_then(post)
         .untuple_one()
-        .with(wrap_fn(csrf_config.to_save_filter(cookies_config)))
+        .with(wrap_fn(save_csrf_token(cookies_config)))
         .boxed()
 }
 

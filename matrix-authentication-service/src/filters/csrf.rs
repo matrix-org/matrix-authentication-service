@@ -17,10 +17,12 @@
 
 use chrono::{DateTime, Duration, Utc};
 use data_encoding::BASE64URL_NOPAD;
+use headers::SetCookie;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, TimestampSeconds};
-use warp::{filters::BoxedFilter, Filter, Rejection};
+use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
+use super::cookies::{save_encrypted, WithTypedHeader};
 use crate::config::CookiesConfig;
 
 #[serde_as]
@@ -94,4 +96,13 @@ pub fn extract_or_generate(
             )
         })
         .boxed()
+}
+
+pub fn save_csrf_token<R: Reply, F>(
+    cookies_config: &CookiesConfig,
+) -> impl Fn(F) -> BoxedFilter<(WithTypedHeader<R, SetCookie>,)>
+where
+    F: Filter<Extract = (CsrfToken, R), Error = Rejection> + Clone + Send + Sync + 'static,
+{
+    save_encrypted("csrf", &cookies_config)
 }

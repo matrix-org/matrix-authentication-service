@@ -13,18 +13,13 @@
 // limitations under the License.
 
 use chrono::Duration;
-use headers::SetCookie;
 use schemars::{gen::SchemaGenerator, schema::Schema, JsonSchema};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
-
-use crate::filters::{
-    cookies::WithTypedHeader,
-    csrf::{extract_or_generate, CsrfToken},
-};
+use warp::filters::BoxedFilter;
 
 use super::{ConfigurationSection, CookiesConfig};
+use crate::filters::csrf::{extract_or_generate, CsrfToken};
 
 fn default_ttl() -> Duration {
     Duration::hours(1)
@@ -46,16 +41,6 @@ pub struct CsrfConfig {
 impl CsrfConfig {
     pub fn to_extract_filter(&self, cookies_config: &CookiesConfig) -> BoxedFilter<(CsrfToken,)> {
         extract_or_generate(cookies_config, "csrf", self.ttl)
-    }
-
-    pub fn to_save_filter<R: Reply, F>(
-        &self,
-        cookies_config: &CookiesConfig,
-    ) -> impl Fn(F) -> BoxedFilter<(WithTypedHeader<R, SetCookie>,)>
-    where
-        F: Filter<Extract = (CsrfToken, R), Error = Rejection> + Clone + Send + Sync + 'static,
-    {
-        crate::filters::cookies::save_encrypted("csrf", cookies_config)
     }
 }
 

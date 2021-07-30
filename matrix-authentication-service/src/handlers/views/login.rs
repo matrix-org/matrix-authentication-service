@@ -23,6 +23,7 @@ use crate::{
     csrf::CsrfForm,
     errors::WrapError,
     filters::{
+        csrf::save_csrf_token,
         session::{save_session, with_session},
         with_pool, with_templates, CsrfToken,
     },
@@ -48,7 +49,7 @@ pub(super) fn filter(
         .and(with_session(pool, cookies_config))
         .and_then(get)
         .untuple_one()
-        .with(wrap_fn(csrf_config.to_save_filter(cookies_config)));
+        .with(wrap_fn(save_csrf_token(cookies_config)));
 
     let post = warp::post()
         .and(csrf_config.to_extract_filter(cookies_config))

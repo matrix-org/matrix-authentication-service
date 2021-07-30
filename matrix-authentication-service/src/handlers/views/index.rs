@@ -18,7 +18,7 @@ use warp::{filters::BoxedFilter, reply::with_header, wrap_fn, Filter, Rejection,
 use crate::{
     config::{CookiesConfig, CsrfConfig},
     errors::WrapError,
-    filters::{session::with_session, with_templates, CsrfToken},
+    filters::{csrf::save_csrf_token, session::with_session, with_templates, CsrfToken},
     storage::SessionInfo,
     templates::{CommonContext, Templates},
 };
@@ -36,7 +36,7 @@ pub(super) fn filter(
         .and(with_session(pool, cookies_config))
         .and_then(get)
         .untuple_one()
-        .with(wrap_fn(csrf_config.to_save_filter(cookies_config)))
+        .with(wrap_fn(save_csrf_token(cookies_config)))
         .boxed()
 }
 
