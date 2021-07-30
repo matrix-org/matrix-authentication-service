@@ -15,19 +15,19 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+mod cookies;
 mod csrf;
 mod database;
 mod http;
 mod oauth2;
-mod session;
 mod util;
 
 pub use self::{
+    cookies::CookiesConfig,
     csrf::CsrfConfig,
     database::DatabaseConfig,
     http::HttpConfig,
     oauth2::{OAuth2ClientConfig, OAuth2Config},
-    session::SessionConfig,
     util::ConfigurationSection,
 };
 
@@ -42,9 +42,10 @@ pub struct RootConfig {
     #[serde(default)]
     pub database: DatabaseConfig,
 
-    pub csrf: CsrfConfig,
+    pub cookies: CookiesConfig,
 
-    pub session: SessionConfig,
+    #[serde(default)]
+    pub csrf: CsrfConfig,
 }
 
 impl ConfigurationSection<'_> for RootConfig {
@@ -57,8 +58,8 @@ impl ConfigurationSection<'_> for RootConfig {
             oauth2: OAuth2Config::generate(),
             http: HttpConfig::generate(),
             database: DatabaseConfig::generate(),
+            cookies: CookiesConfig::generate(),
             csrf: CsrfConfig::generate(),
-            session: SessionConfig::generate(),
         }
     }
 }

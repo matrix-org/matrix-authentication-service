@@ -15,26 +15,30 @@
 use sqlx::PgPool;
 use warp::{filters::BoxedFilter, Filter, Reply};
 
-use crate::{config::CsrfConfig, templates::Templates};
+use crate::{
+    config::{CookiesConfig, CsrfConfig},
+    templates::Templates,
+};
 
 mod index;
 mod login;
 mod logout;
 mod reauth;
 
-use self::index::filter as index;
-use self::login::filter as login;
-use self::logout::filter as logout;
-use self::reauth::filter as reauth;
+use self::{
+    index::filter as index, login::filter as login, logout::filter as logout,
+    reauth::filter as reauth,
+};
 
 pub(super) fn filter(
-    pool: PgPool,
-    templates: Templates,
+    pool: &PgPool,
+    templates: &Templates,
     csrf_config: &CsrfConfig,
+    cookies_config: &CookiesConfig,
 ) -> BoxedFilter<(impl Reply,)> {
-    index(pool.clone(), templates.clone(), csrf_config)
-        .or(login(pool.clone(), templates.clone(), csrf_config))
-        .or(logout(csrf_config))
-        .or(reauth(pool, templates, csrf_config))
+    index(pool, templates, csrf_config, cookies_config)
+        .or(login(pool, templates, csrf_config, cookies_config))
+        .or(logout(pool, csrf_config, cookies_config))
+        .or(reauth(pool, templates, csrf_config, cookies_config))
         .boxed()
 }

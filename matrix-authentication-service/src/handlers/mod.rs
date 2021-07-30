@@ -24,12 +24,12 @@ mod views;
 use self::{health::filter as health, oauth2::filter as oauth2, views::filter as views};
 
 pub fn root(
-    pool: PgPool,
-    templates: Templates,
+    pool: &PgPool,
+    templates: &Templates,
     config: &RootConfig,
 ) -> BoxedFilter<(impl warp::Reply,)> {
-    health(pool.clone())
+    health(pool)
         .or(oauth2(&config.oauth2))
-        .or(views(pool, templates, &config.csrf))
+        .or(views(pool, templates, &config.csrf, &config.cookies))
         .boxed()
 }

@@ -12,36 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::HashMap;
-
 use sqlx::migrate::Migrator;
 
-mod client;
-// mod session;
 mod user;
 
-pub use self::{
-    client::{Client, ClientLookupError, InvalidRedirectUriError},
-    user::{login, lookup_session, SessionInfo, User},
-};
+pub use self::user::{login, lookup_active_session, register_user, SessionInfo, User};
 
 pub static MIGRATOR: Migrator = sqlx::migrate!();
-
-#[derive(Debug)]
-pub struct Storage<Pool> {
-    pool: Pool,
-    clients: HashMap<String, Client>,
-}
-
-impl<Pool> Storage<Pool> {
-    pub fn new(pool: Pool) -> Self {
-        Self {
-            pool,
-            clients: HashMap::default(),
-        }
-    }
-
-    pub fn pool(&self) -> &Pool {
-        &self.pool
-    }
-}

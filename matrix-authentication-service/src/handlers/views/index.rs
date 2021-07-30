@@ -16,41 +16,38 @@ use sqlx::PgPool;
 use warp::{filters::BoxedFilter, reply::with_header, wrap_fn, Filter, Rejection, Reply};
 
 use crate::{
-    config::CsrfConfig,
+    config::{CookiesConfig, CsrfConfig},
     errors::WrapError,
-    filters::{csrf::with_csrf, with_pool, with_templates, CsrfToken},
+    filters::{session::with_session, with_templates, CsrfToken},
+    storage::SessionInfo,
     templates::{CommonContext, Templates},
 };
 
 pub(super) fn filter(
-    pool: PgPool,
-    templates: Templates,
+    pool: &PgPool,
+    templates: &Templates,
     csrf_config: &CsrfConfig,
+    cookies_config: &CookiesConfig,
 ) -> BoxedFilter<(impl Reply,)> {
-    // TODO: this is ugly and leaks
-    let csrf_cookie_name = Box::leak(Box::new(csrf_config.cookie_name.clone()));
-
     warp::get()
         .and(warp::path::end())
         .and(with_templates(templates))
-        .and(csrf_config.to_extract_filter())
-        .and(with_pool(pool))
+        .and(csrf_config.to_extract_filter(cookies_config))
+        .and(with_session(pool, cookies_config))
         .and_then(get)
         .untuple_one()
-        .with(wrap_fn(with_csrf(csrf_config.key, csrf_cookie_name)))
+        .with(wrap_fn(csrf_config.to_save_filter(cookies_config)))
         .boxed()
 }
 
 async fn get(
     templates: Templates,
     csrf_token: CsrfToken,
-    db: PgPool,
+    session: Option<SessionInfo>,
 ) -> Result<(CsrfToken, impl Reply), Rejection> {
     let ctx = CommonContext::default()
         .with_csrf_token(&csrf_token)
-        .load_session(&db)
-        .await
-        .wrap_error()?
+        .maybe_with_session(session)
         .finish()
         .wrap_error()?;
 

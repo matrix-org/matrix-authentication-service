@@ -18,8 +18,7 @@ use anyhow::Context;
 use clap::Clap;
 
 use super::RootCommand;
-use crate::config::RootConfig;
-use crate::templates::Templates;
+use crate::{config::RootConfig, templates::Templates};
 
 #[derive(Clap, Debug, Default)]
 pub(super) struct ServerCommand;
@@ -36,7 +35,7 @@ impl ServerCommand {
 
         // Start the server
         let address: SocketAddr = config.http.address.parse()?;
-        let root = crate::handlers::root(pool, templates, &config);
+        let root = crate::handlers::root(&pool, &templates, &config);
         warp::serve(root).run(address).await;
 
         Ok(())

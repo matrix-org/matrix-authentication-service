@@ -43,34 +43,21 @@ impl SessionInfo {
     pub fn key(&self) -> i32 {
         self.id
     }
-}
 
-impl super::Storage<PgPool> {
-    pub async fn login(&self, username: &str, password: &str) -> anyhow::Result<SessionInfo> {
-        login(&self.pool, username, password).await
-    }
-
-    pub async fn register_user(&self, username: &str, password: &str) -> anyhow::Result<User> {
-        let mut conn = self.pool.acquire().await?;
-        let hasher = Argon2::default();
-        register_user(&mut conn, hasher, username, password).await
-    }
-
-    pub async fn lookup_session(&self, id: i32) -> anyhow::Result<SessionInfo> {
-        let mut conn = self.pool.acquire().await?;
-        lookup_session(&mut conn, id).await
-    }
-
-    pub async fn lookup_and_reauth_session(
-        &self,
-        session_id: i32,
-        password: &str,
-    ) -> anyhow::Result<SessionInfo> {
-        let mut txn = self.pool.begin().await?;
-        let mut session = lookup_session(&mut txn, session_id).await?;
-        session.last_authd_at = Some(authenticate_session(&mut txn, session.id, password).await?);
+    pub async fn reauth(mut self, pool: &PgPool, password: &str) -> anyhow::Result<Self> {
+        let mut txn = pool.begin().await?;
+        self.last_authd_at = Some(authenticate_session(&mut txn, self.id, password).await?);
         txn.commit().await?;
-        Ok(session)
+        Ok(self)
+    }
+
+    pub async fn end(
+        mut self,
+        executor: impl Executor<'_, Database = Postgres>,
+    ) -> anyhow::Result<Self> {
+        end_session(executor, self.id).await?;
+        self.active = false;
+        Ok(self)
     }
 }
 
@@ -83,7 +70,7 @@ pub async fn login(pool: &PgPool, username: &str, password: &str) -> anyhow::Res
     Ok(session)
 }
 
-pub async fn lookup_session(
+pub async fn lookup_active_session(
     executor: impl Executor<'_, Database = Postgres>,
     id: i32,
 ) -> anyhow::Result<SessionInfo> {
@@ -101,7 +88,7 @@ pub async fn lookup_session(
                 ON s.user_id = u.id
             LEFT JOIN user_session_authentications a
                 ON a.session_id = s.id
-            WHERE s.id = $1
+            WHERE s.id = $1 AND s.active
             ORDER BY a.created_at DESC
             LIMIT 1
         "#,
@@ -206,6 +193,24 @@ pub async fn register_user(
         id,
         username: username.to_string(),
     })
+}
+
+pub async fn end_session(
+    executor: impl Executor<'_, Database = Postgres>,
+    id: i32,
+) -> anyhow::Result<()> {
+    let res = sqlx::query("UPDATE user_sessions SET active = FALSE WHERE id = $1")
+        .bind(&id)
+        .execute(executor)
+        .instrument(info_span!("End session"))
+        .await
+        .context("could not end session")?;
+
+    match res.rows_affected() {
+        1 => Ok(()),
+        0 => Err(anyhow::anyhow!("no row affected")),
+        _ => Err(anyhow::anyhow!("too many row affected")),
+    }
 }
 
 #[allow(dead_code)]

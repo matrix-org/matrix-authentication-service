@@ -12,28 +12,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use sqlx::PgPool;
 use warp::{filters::BoxedFilter, hyper::Uri, wrap_fn, Filter, Rejection, Reply};
 
 use crate::{
-    config::CsrfConfig,
+    config::{CookiesConfig, CsrfConfig},
     csrf::CsrfForm,
     errors::WrapError,
-    filters::{csrf::with_csrf, CsrfToken},
+    filters::{session::with_session, with_pool, CsrfToken},
+    storage::SessionInfo,
 };
 
-pub(super) fn filter(csrf_config: &CsrfConfig) -> BoxedFilter<(impl Reply,)> {
-    // TODO: this is ugly and leaks
-    let csrf_cookie_name = Box::leak(Box::new(csrf_config.cookie_name.clone()));
-
+pub(super) fn filter(
+    pool: &PgPool,
+    csrf_config: &CsrfConfig,
+    cookies_config: &CookiesConfig,
+) -> BoxedFilter<(impl Reply,)> {
     warp::post()
         .and(warp::path("logout"))
-        .and(csrf_config.to_extract_filter())
+        .and(csrf_config.to_extract_filter(cookies_config))
+        .and(with_session(pool, cookies_config))
+        .and(with_pool(pool))
         .and(warp::body::form())
-        .and_then(|token: CsrfToken, form: CsrfForm<()>| async {
-            form.verify_csrf(&token).wrap_error()?;
-            Ok::<_, Rejection>((token, warp::redirect(Uri::from_static("/login"))))
-        })
+        .and_then(post)
         .untuple_one()
-        .with(wrap_fn(with_csrf(csrf_config.key, csrf_cookie_name)))
+        .with(wrap_fn(csrf_config.to_save_filter(cookies_config)))
         .boxed()
+}
+
+async fn post(
+    token: CsrfToken,
+    session: Option<SessionInfo>,
+    pool: PgPool,
+    form: CsrfForm<()>,
+) -> Result<(CsrfToken, impl Reply), Rejection> {
+    form.verify_csrf(&token).wrap_error()?;
+    // TODO: filter with forced active session
+    session.unwrap().end(&pool).await.wrap_error()?;
+    Ok::<_, Rejection>((token, warp::redirect(Uri::from_static("/login"))))
 }

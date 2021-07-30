@@ -27,7 +27,6 @@ mod csrf;
 mod errors;
 mod filters;
 mod handlers;
-mod state;
 mod storage;
 mod templates;
 

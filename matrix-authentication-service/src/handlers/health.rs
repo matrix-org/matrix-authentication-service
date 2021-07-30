@@ -18,7 +18,7 @@ use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 use crate::{errors::WrapError, filters::with_pool};
 
-pub fn filter(pool: PgPool) -> BoxedFilter<(impl Reply,)> {
+pub fn filter(pool: &PgPool) -> BoxedFilter<(impl Reply,)> {
     warp::get()
         .and(warp::path("health"))
         .and(with_pool(pool))

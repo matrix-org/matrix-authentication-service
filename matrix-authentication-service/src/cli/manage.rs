@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use argon2::Argon2;
 use clap::Clap;
 use tracing::info;
 
 use super::RootCommand;
-use crate::{config::DatabaseConfig, storage::Storage};
+use crate::{config::DatabaseConfig, storage::register_user};
 
 #[derive(Clap, Debug)]
 pub(super) struct ManageCommand {
@@ -37,9 +38,9 @@ impl ManageCommand {
             SC::Register { username, password } => {
                 let config: DatabaseConfig = root.load_config()?;
                 let pool = config.connect().await?;
-                let storage = Storage::new(pool);
+                let hasher = Argon2::default();
 
-                let user = storage.register_user(&username, &password).await?;
+                let user = register_user(&pool, hasher, username, password).await?;
                 info!(?user, "User registered");
 
                 Ok(())

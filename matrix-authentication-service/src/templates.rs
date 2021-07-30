@@ -16,14 +16,10 @@ use std::{ops::Deref, sync::Arc};
 
 use anyhow::Context as _;
 use serde::Serialize;
-use sqlx::{Executor, Postgres};
 use tera::{Context, Tera};
 use tracing::info;
 
-use crate::{
-    filters::CsrfToken,
-    storage::{lookup_session, SessionInfo},
-};
+use crate::{filters::CsrfToken, storage::SessionInfo};
 
 #[derive(Clone)]
 pub struct Templates(Arc<Tera>);
@@ -48,7 +44,7 @@ impl Deref for Templates {
 #[derive(Serialize, Default)]
 pub struct CommonContext {
     csrf_token: Option<String>,
-    session: Option<SessionInfo>,
+    current_session: Option<SessionInfo>,
 }
 
 impl CommonContext {
@@ -59,48 +55,19 @@ impl CommonContext {
         }
     }
 
-    pub fn with_session(self, session: SessionInfo) -> Self {
+    pub fn maybe_with_session(self, current_session: Option<SessionInfo>) -> Self {
         Self {
-            session: Some(session),
+            current_session,
             ..self
         }
     }
 
-    pub async fn load_session<'e>(
-        self,
-        _executor: impl Executor<'e, Database = Postgres>,
-    ) -> anyhow::Result<Self> {
-        Ok(self)
-        /*
-        let session = lookup_session(executor, 1).await?;
-        Ok(Self {
-            session: Some(session),
-            ..self
-        })
-        */
+    #[allow(dead_code)]
+    pub fn with_session(self, current_session: SessionInfo) -> Self {
+        self.maybe_with_session(Some(current_session))
     }
 
     pub fn finish(self) -> anyhow::Result<Context> {
         Context::from_serialize(&self).context("could not serialize common context for templates")
     }
 }
-
-// pub async fn common_context(req: &Request<State>) -> Result<Context, anyhow::Error> {
-//     let state = req.state();
-//     let session = req.session();
-//
-//     let mut ctx = Context::new();
-//
-//     let session_id: Option<_> = session.get("current_session");
-//     if let Some(session_id) = session_id {
-//         let user = state.storage().lookup_session(session_id).await?;
-//         ctx.insert("current_session", &user);
-//     }
-//
-//     let token: Option<&CsrfToken> = req.ext();
-//     if let Some(token) = token {
-//         ctx.insert("csrf_token", &token.form_value());
-//     }
-//
-//     Ok(ctx)
-// }
