@@ -14,8 +14,8 @@
 
 -- A logged in session
 CREATE TABLE user_sessions (
-  "id" SERIAL PRIMARY KEY,
-  "user_id" INT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  "id" BIGSERIAL PRIMARY KEY,
+  "user_id" BIGINT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
   "active" BOOLEAN NOT NULL DEFAULT TRUE,
 
   "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
@@ -29,7 +29,7 @@ CREATE TRIGGER set_timestamp
 
 -- An authentication within a session
 CREATE TABLE user_session_authentications (
-  "id" SERIAL PRIMARY KEY,
-  "session_id" INT NOT NULL REFERENCES user_sessions (id) ON DELETE CASCADE,
+  "id" BIGSERIAL PRIMARY KEY,
+  "session_id" BIGINT NOT NULL REFERENCES user_sessions (id) ON DELETE CASCADE,
   "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );

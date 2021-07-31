@@ -25,14 +25,14 @@ use tracing::{info_span, Instrument};
 
 #[derive(Serialize, Debug, Clone, FromRow)]
 pub struct User {
-    pub id: i32,
+    pub id: i64,
     pub username: String,
 }
 
 #[derive(Serialize, Debug, Clone, FromRow)]
 pub struct SessionInfo {
-    id: i32,
-    user_id: i32,
+    id: i64,
+    user_id: i64,
     username: String,
     active: bool,
     created_at: DateTime<Utc>,
@@ -40,7 +40,7 @@ pub struct SessionInfo {
 }
 
 impl SessionInfo {
-    pub fn key(&self) -> i32 {
+    pub fn key(&self) -> i64 {
         self.id
     }
 
@@ -72,7 +72,7 @@ pub async fn login(pool: &PgPool, username: &str, password: &str) -> anyhow::Res
 
 pub async fn lookup_active_session(
     executor: impl Executor<'_, Database = Postgres>,
-    id: i32,
+    id: i64,
 ) -> anyhow::Result<SessionInfo> {
     sqlx::query_as(
         r#"
@@ -103,7 +103,7 @@ pub async fn start_session(
     executor: impl Executor<'_, Database = Postgres>,
     user: User,
 ) -> anyhow::Result<SessionInfo> {
-    let (id, created_at): (i32, DateTime<Utc>) = sqlx::query_as(
+    let (id, created_at): (i64, DateTime<Utc>) = sqlx::query_as(
         r#"
             INSERT INTO user_sessions (user_id)
             VALUES ($1)
@@ -127,7 +127,7 @@ pub async fn start_session(
 
 pub async fn authenticate_session(
     txn: &mut Transaction<'_, Postgres>,
-    session_id: i32,
+    session_id: i64,
     password: &str,
 ) -> anyhow::Result<DateTime<Utc>> {
     // First, fetch the hashed password from the user associated with that session
@@ -175,7 +175,7 @@ pub async fn register_user(
     let salt = SaltString::generate(&mut OsRng);
     let hashed_password = PasswordHash::generate(phf, password, salt.as_str())?;
 
-    let id: i32 = sqlx::query_scalar(
+    let id: i64 = sqlx::query_scalar(
         r#"
             INSERT INTO users (username, hashed_password)
             VALUES ($1, $2)
@@ -197,7 +197,7 @@ pub async fn register_user(
 
 pub async fn end_session(
     executor: impl Executor<'_, Database = Postgres>,
-    id: i32,
+    id: i64,
 ) -> anyhow::Result<()> {
     let res = sqlx::query("UPDATE user_sessions SET active = FALSE WHERE id = $1")
         .bind(&id)
@@ -216,7 +216,7 @@ pub async fn end_session(
 #[allow(dead_code)]
 pub async fn lookup_user_by_id(
     executor: impl Executor<'_, Database = Postgres>,
-    id: i32,
+    id: i64,
 ) -> anyhow::Result<User> {
     sqlx::query_as(
         r#"

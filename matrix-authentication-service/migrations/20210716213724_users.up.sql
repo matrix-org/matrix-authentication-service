@@ -13,7 +13,7 @@
 -- limitations under the License.
 
 CREATE TABLE users (
-  "id" SERIAL PRIMARY KEY,
+  "id" BIGSERIAL PRIMARY KEY,
   "username" TEXT NOT NULL UNIQUE,
   "hashed_password" TEXT NOT NULL,
   "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),

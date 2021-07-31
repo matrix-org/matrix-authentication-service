@@ -29,7 +29,7 @@ use crate::{
 
 #[derive(Serialize, Deserialize)]
 pub struct Session {
-    current: i32,
+    current: i64,
 }
 
 impl Session {
