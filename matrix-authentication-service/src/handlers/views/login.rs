@@ -20,10 +20,9 @@ use warp::{
 
 use crate::{
     config::{CookiesConfig, CsrfConfig},
-    csrf::CsrfForm,
     errors::WrapError,
     filters::{
-        csrf::{csrf_token, save_csrf_token, updated_csrf_token},
+        csrf::{protected_form, save_csrf_token, updated_csrf_token},
         session::{save_session, with_optional_session},
         with_pool, with_templates, CsrfToken,
     },
@@ -52,9 +51,8 @@ pub(super) fn filter(
         .with(wrap_fn(save_csrf_token(cookies_config)));
 
     let post = warp::post()
-        .and(csrf_token(cookies_config))
         .and(with_pool(pool))
-        .and(warp::body::form())
+        .and(protected_form(cookies_config))
         .and_then(post)
         .untuple_one()
         .with(wrap_fn(save_session(cookies_config)));
@@ -81,13 +79,7 @@ async fn get(
     ))
 }
 
-async fn post(
-    csrf_token: CsrfToken,
-    db: PgPool,
-    form: CsrfForm<LoginForm>,
-) -> Result<(SessionInfo, impl Reply), Rejection> {
-    let form = form.verify_csrf(&csrf_token).wrap_error()?;
-
+async fn post(db: PgPool, form: LoginForm) -> Result<(SessionInfo, impl Reply), Rejection> {
     let session_info = login(&db, &form.username, &form.password)
         .await
         .wrap_error()?;

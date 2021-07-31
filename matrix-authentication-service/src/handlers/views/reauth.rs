@@ -20,10 +20,9 @@ use warp::{
 
 use crate::{
     config::{CookiesConfig, CsrfConfig},
-    csrf::CsrfForm,
     errors::WrapError,
     filters::{
-        csrf::{csrf_token, save_csrf_token, updated_csrf_token},
+        csrf::{protected_form, save_csrf_token, updated_csrf_token},
         session::with_session,
         with_pool, with_templates, CsrfToken,
     },
@@ -51,13 +50,10 @@ pub(super) fn filter(
         .with(wrap_fn(save_csrf_token(cookies_config)));
 
     let post = warp::post()
-        .and(csrf_token(cookies_config))
         .and(with_session(pool, cookies_config))
         .and(with_pool(pool))
-        .and(warp::body::form())
-        .and_then(post)
-        .untuple_one()
-        .with(wrap_fn(save_csrf_token(cookies_config)));
+        .and(protected_form(cookies_config))
+        .and_then(post);
 
     warp::path("reauth").and(get.or(post)).boxed()
 }
@@ -81,14 +77,11 @@ async fn get(
 }
 
 async fn post(
-    csrf_token: CsrfToken,
     session: SessionInfo,
     pool: PgPool,
-    form: CsrfForm<ReauthForm>,
-) -> Result<(CsrfToken, impl Reply), Rejection> {
-    let form = form.verify_csrf(&csrf_token).wrap_error()?;
-
+    form: ReauthForm,
+) -> Result<impl Reply, Rejection> {
     let _session = session.reauth(&pool, &form.password).await.wrap_error()?;
 
-    Ok((csrf_token, warp::redirect(Uri::from_static("/"))))
+    Ok(warp::redirect(Uri::from_static("/")))
 }

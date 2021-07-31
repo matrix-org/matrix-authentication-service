@@ -13,40 +13,26 @@
 // limitations under the License.
 
 use sqlx::PgPool;
-use warp::{filters::BoxedFilter, hyper::Uri, wrap_fn, Filter, Rejection, Reply};
+use warp::{filters::BoxedFilter, hyper::Uri, Filter, Rejection, Reply};
 
 use crate::{
     config::CookiesConfig,
-    csrf::CsrfForm,
     errors::WrapError,
-    filters::{
-        csrf::{csrf_token, save_csrf_token},
-        session::with_session,
-        with_pool, CsrfToken,
-    },
+    filters::{csrf::protected_form, session::with_session, with_pool},
     storage::SessionInfo,
 };
 
 pub(super) fn filter(pool: &PgPool, cookies_config: &CookiesConfig) -> BoxedFilter<(impl Reply,)> {
     warp::post()
         .and(warp::path("logout"))
-        .and(csrf_token(cookies_config))
         .and(with_session(pool, cookies_config))
         .and(with_pool(pool))
-        .and(warp::body::form())
+        .and(protected_form(cookies_config))
         .and_then(post)
-        .untuple_one()
-        .with(wrap_fn(save_csrf_token(cookies_config)))
         .boxed()
 }
 
-async fn post(
-    token: CsrfToken,
-    session: SessionInfo,
-    pool: PgPool,
-    form: CsrfForm<()>,
-) -> Result<(CsrfToken, impl Reply), Rejection> {
-    form.verify_csrf(&token).wrap_error()?;
+async fn post(session: SessionInfo, pool: PgPool, _form: ()) -> Result<impl Reply, Rejection> {
     session.end(&pool).await.wrap_error()?;
-    Ok::<_, Rejection>((token, warp::redirect(Uri::from_static("/login"))))
+    Ok::<_, Rejection>(warp::redirect(Uri::from_static("/login")))
 }

@@ -18,7 +18,7 @@
 use chrono::{DateTime, Duration, Utc};
 use data_encoding::BASE64URL_NOPAD;
 use headers::SetCookie;
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_with::{serde_as, TimestampSeconds};
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
@@ -78,6 +78,23 @@ impl CsrfToken {
     }
 }
 
+/// A CSRF-protected form
+#[derive(Deserialize)]
+struct CsrfForm<T> {
+    csrf: String,
+
+    #[serde(flatten)]
+    inner: T,
+}
+
+impl<T> CsrfForm<T> {
+    fn verify_csrf(self, token: &CsrfToken) -> anyhow::Result<T> {
+        // Verify CSRF from request
+        token.verify_form_value(&self.csrf)?;
+        Ok(self.inner)
+    }
+}
+
 pub fn csrf_token(cookies_config: &CookiesConfig) -> BoxedFilter<(CsrfToken,)> {
     super::cookies::encrypted("csrf", cookies_config)
         .and_then(move |token: CsrfToken| async move {
@@ -117,4 +134,19 @@ where
     F: Filter<Extract = (CsrfToken, R), Error = Rejection> + Clone + Send + Sync + 'static,
 {
     save_encrypted("csrf", cookies_config)
+}
+
+pub fn protected_form<T>(cookies_config: &CookiesConfig) -> BoxedFilter<(T,)>
+where
+    T: DeserializeOwned + Send + 'static,
+{
+    csrf_token(cookies_config)
+        .and(warp::body::form())
+        .and_then(
+            |csrf_token: CsrfToken, protected_form: CsrfForm<T>| async move {
+                let form = protected_form.verify_csrf(&csrf_token).wrap_error()?;
+                Ok::<_, Rejection>(form)
+            },
+        )
+        .boxed()
 }
