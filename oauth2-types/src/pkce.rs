@@ -14,6 +14,7 @@
 
 use parse_display::{Display, FromStr};
 use serde::{Deserialize, Serialize};
+use sqlx::Type;
 
 #[derive(
     Debug,
@@ -28,15 +29,17 @@ use serde::{Deserialize, Serialize};
     FromStr,
     Serialize,
     Deserialize,
+    Type,
 )]
+#[repr(i8)]
 pub enum CodeChallengeMethod {
     #[serde(rename = "plain")]
     #[display("plain")]
-    Plain,
+    Plain = 0,
 
     #[serde(rename = "S256")]
     #[display("S256")]
-    S256,
+    S256 = 1,
 }
 
 #[derive(Serialize, Deserialize)]

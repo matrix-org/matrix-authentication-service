@@ -15,12 +15,13 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
+use thiserror::Error;
 use url::Url;
 
 use super::ConfigurationSection;
 
 #[skip_serializing_none]
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct OAuth2ClientConfig {
     pub client_id: String,
 
@@ -28,11 +29,37 @@ pub struct OAuth2ClientConfig {
     pub redirect_uris: Option<Vec<Url>>,
 }
 
+#[derive(Debug, Error)]
+#[error("Invalid redirect URI")]
+pub struct InvalidRedirectUriError;
+
+impl OAuth2ClientConfig {
+    pub fn resolve_redirect_uri<'a>(
+        &'a self,
+        suggested_uri: &'a Option<Url>,
+    ) -> Result<&'a Url, InvalidRedirectUriError> {
+        match (suggested_uri, &self.redirect_uris) {
+            (None, None) => Err(InvalidRedirectUriError),
+            (None, Some(redirect_uris)) => {
+                redirect_uris.iter().next().ok_or(InvalidRedirectUriError)
+            }
+            (Some(suggested_uri), None) => Ok(suggested_uri),
+            (Some(suggested_uri), Some(redirect_uris)) => {
+                if redirect_uris.contains(suggested_uri) {
+                    Ok(suggested_uri)
+                } else {
+                    Err(InvalidRedirectUriError)
+                }
+            }
+        }
+    }
+}
+
 fn default_oauth2_issuer() -> Url {
     "http://[::]:8080".parse().unwrap()
 }
 
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct OAuth2Config {
     #[serde(default = "default_oauth2_issuer")]
     pub issuer: Url,

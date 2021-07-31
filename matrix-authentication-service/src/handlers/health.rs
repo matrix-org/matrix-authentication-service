@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use hyper::header::CONTENT_TYPE;
+use mime::TEXT_PLAIN;
 use sqlx::PgPool;
 use tracing::{info_span, Instrument};
-use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
+use warp::{filters::BoxedFilter, reply::with_header, Filter, Rejection, Reply};
 
 use crate::{errors::WrapError, filters::with_pool};
 
@@ -34,5 +36,5 @@ async fn get(pool: PgPool) -> Result<impl Reply, Rejection> {
         .await
         .wrap_error()?;
 
-    Ok(Box::new("ok"))
+    Ok(with_header("ok", CONTENT_TYPE, TEXT_PLAIN.to_string()))
 }

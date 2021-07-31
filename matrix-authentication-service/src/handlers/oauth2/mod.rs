@@ -12,15 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use warp::{filters::BoxedFilter, Reply};
+use sqlx::PgPool;
+use warp::{filters::BoxedFilter, Filter, Reply};
 
-use crate::config::OAuth2Config;
+use crate::config::{CookiesConfig, OAuth2Config};
 
-// pub mod authorization;
+mod authorization;
 mod discovery;
 
-use self::discovery::filter as discovery;
+use self::{authorization::filter as authorization, discovery::filter as discovery};
 
-pub fn filter(config: &OAuth2Config) -> BoxedFilter<(impl Reply,)> {
-    discovery(config)
+pub fn filter(
+    pool: &PgPool,
+    oauth2_config: &OAuth2Config,
+    cookies_config: &CookiesConfig,
+) -> BoxedFilter<(impl Reply,)> {
+    discovery(oauth2_config)
+        .or(authorization(pool, oauth2_config, cookies_config))
+        .boxed()
 }

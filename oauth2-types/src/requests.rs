@@ -115,20 +115,20 @@ pub enum Prompt {
 #[derive(Serialize, Deserialize)]
 pub struct AuthorizationRequest {
     #[serde_as(as = "StringWithSeparator::<SpaceSeparator, ResponseType>")]
-    response_type: HashSet<ResponseType>,
+    pub response_type: HashSet<ResponseType>,
 
-    client_id: String,
+    pub client_id: String,
 
-    redirect_uri: Option<Url>,
+    pub redirect_uri: Option<Url>,
 
     #[serde_as(as = "StringWithSeparator::<SpaceSeparator, String>")]
-    scope: HashSet<String>,
+    pub scope: HashSet<String>,
 
-    state: Option<String>,
+    pub state: Option<String>,
 
     response_mode: Option<ResponseMode>,
 
-    nonce: Option<String>,
+    pub nonce: Option<String>,
 
     display: Option<Display>,
 

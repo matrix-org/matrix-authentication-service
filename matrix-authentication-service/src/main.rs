@@ -16,7 +16,8 @@
 #![deny(clippy::all)]
 #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
-#![allow(clippy::unused_async)]
+#![allow(clippy::unused_async)] // Some warp filters need that
+#![allow(clippy::used_underscore_binding)] // This is needed by sqlx macros
 
 use anyhow::Context;
 use clap::Clap;

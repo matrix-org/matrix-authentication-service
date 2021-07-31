@@ -14,6 +14,7 @@
 
 use sqlx::migrate::Migrator;
 
+pub mod oauth2;
 mod user;
 
 pub use self::user::{login, lookup_active_session, register_user, SessionInfo, User};

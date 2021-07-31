@@ -74,7 +74,8 @@ pub async fn lookup_active_session(
     executor: impl Executor<'_, Database = Postgres>,
     id: i64,
 ) -> anyhow::Result<SessionInfo> {
-    sqlx::query_as(
+    sqlx::query_as!(
+        SessionInfo,
         r#"
             SELECT
                 s.id,
@@ -82,7 +83,7 @@ pub async fn lookup_active_session(
                 u.username,
                 s.active,
                 s.created_at,
-                a.created_at as last_authd_at
+                a.created_at as "last_authd_at?"
             FROM user_sessions s
             INNER JOIN users u 
                 ON s.user_id = u.id
@@ -92,8 +93,8 @@ pub async fn lookup_active_session(
             ORDER BY a.created_at DESC
             LIMIT 1
         "#,
+        id,
     )
-    .bind(id)
     .fetch_one(executor)
     .await
     .context("could not fetch session")
@@ -131,7 +132,7 @@ pub async fn authenticate_session(
     password: &str,
 ) -> anyhow::Result<DateTime<Utc>> {
     // First, fetch the hashed password from the user associated with that session
-    let hashed_password: String = sqlx::query_scalar(
+    let hashed_password: String = sqlx::query_scalar!(
         r#"
             SELECT u.hashed_password
             FROM user_sessions s
@@ -139,8 +140,8 @@ pub async fn authenticate_session(
                ON u.id = s.user_id 
             WHERE s.id = $1
         "#,
+        session_id,
     )
-    .bind(session_id)
     .fetch_one(txn.borrow_mut())
     .await
     .context("could not fetch user password hash")?;
@@ -151,14 +152,14 @@ pub async fn authenticate_session(
     hasher.verify_password(&[&context], &password)?;
 
     // That went well, let's insert the auth info
-    let created_at: DateTime<Utc> = sqlx::query_scalar(
+    let created_at: DateTime<Utc> = sqlx::query_scalar!(
         r#"
             INSERT INTO user_session_authentications (session_id)
             VALUES ($1)
             RETURNING created_at
         "#,
+        session_id,
     )
-    .bind(session_id)
     .fetch_one(txn.borrow_mut())
     .await
     .context("could not save session auth")?;
@@ -175,15 +176,15 @@ pub async fn register_user(
     let salt = SaltString::generate(&mut OsRng);
     let hashed_password = PasswordHash::generate(phf, password, salt.as_str())?;
 
-    let id: i64 = sqlx::query_scalar(
+    let id: i64 = sqlx::query_scalar!(
         r#"
             INSERT INTO users (username, hashed_password)
             VALUES ($1, $2)
             RETURNING id
         "#,
+        username,
+        hashed_password.to_string(),
     )
-    .bind(&username)
-    .bind(&hashed_password.to_string())
     .fetch_one(executor)
     .instrument(info_span!("Register user"))
     .await
@@ -199,8 +200,7 @@ pub async fn end_session(
     executor: impl Executor<'_, Database = Postgres>,
     id: i64,
 ) -> anyhow::Result<()> {
-    let res = sqlx::query("UPDATE user_sessions SET active = FALSE WHERE id = $1")
-        .bind(&id)
+    let res = sqlx::query!("UPDATE user_sessions SET active = FALSE WHERE id = $1", id)
         .execute(executor)
         .instrument(info_span!("End session"))
         .await
@@ -218,14 +218,15 @@ pub async fn lookup_user_by_id(
     executor: impl Executor<'_, Database = Postgres>,
     id: i64,
 ) -> anyhow::Result<User> {
-    sqlx::query_as(
+    sqlx::query_as!(
+        User,
         r#"
             SELECT id, username
             FROM users
             WHERE id = $1
         "#,
+        id
     )
-    .bind(&id)
     .fetch_one(executor)
     .instrument(info_span!("Fetch user"))
     .await
@@ -236,14 +237,15 @@ pub async fn lookup_user_by_username(
     executor: impl Executor<'_, Database = Postgres>,
     username: &str,
 ) -> anyhow::Result<User> {
-    sqlx::query_as(
+    sqlx::query_as!(
+        User,
         r#"
             SELECT id, username
             FROM users
             WHERE username = $1
         "#,
+        username,
     )
-    .bind(&username)
     .fetch_one(executor)
     .instrument(info_span!("Fetch user"))
     .await

@@ -1,0 +1,291 @@
+{
+  "db": "PostgreSQL",
+  "037ba804eabd0b4290d87d1de37054f358eb11397d3a8e4b69a81cdce0a178e0": {
+    "query": "\n            SELECT id, username\n            FROM users\n            WHERE username = $1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "username",
+          "type_info": "Text"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "138c3297a66107d8428ca10d04f9a4dd75faf9c1d3f84bcedd3b09f55dd84206": {
+    "query": "\n            INSERT INTO oauth2_codes\n                (oauth2_session_id, code, code_challenge_method, code_challenge)\n            VALUES\n                ($1, $2, $3, $4)\n            RETURNING\n                id, oauth2_session_id, code, code_challenge_method, code_challenge\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "oauth2_session_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 2,
+          "name": "code",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "code_challenge_method",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 4,
+          "name": "code_challenge",
+          "type_info": "Text"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text",
+          "Int2",
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        true
+      ]
+    }
+  },
+  "34e61467c9d30fa18f1f96990358f87aeb4ffa5fe0364fe499f6132017e0f20b": {
+    "query": "\n            INSERT INTO oauth2_sessions \n                (user_session_id, client_id, scope, state, nonce)\n            VALUES\n                ($1, $2, $3, $4, $5)\n            RETURNING\n                id, user_session_id, client_id, scope, state, nonce, created_at, updated_at\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "user_session_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 2,
+          "name": "client_id",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "scope",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 4,
+          "name": "state",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "nonce",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 6,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 7,
+          "name": "updated_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text",
+          "Text",
+          "Text",
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        true,
+        false,
+        false,
+        true,
+        true,
+        false,
+        false
+      ]
+    }
+  },
+  "35bedaa6fdf7ac91d54b458b4637f2182c2f82be3e2f80cd2db934ee279a7f2a": {
+    "query": "\n            SELECT id, username\n            FROM users\n            WHERE id = $1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "username",
+          "type_info": "Text"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "4f925a277d73df779360f81e0cf5d7983b50ebe744f461559dd561b7e36c20d4": {
+    "query": "\n            SELECT\n                s.id,\n                u.id as user_id,\n                u.username,\n                s.active,\n                s.created_at,\n                a.created_at as \"last_authd_at?\"\n            FROM user_sessions s\n            INNER JOIN users u \n                ON s.user_id = u.id\n            LEFT JOIN user_session_authentications a\n                ON a.session_id = s.id\n            WHERE s.id = $1 AND s.active\n            ORDER BY a.created_at DESC\n            LIMIT 1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "user_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 2,
+          "name": "username",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "active",
+          "type_info": "Bool"
+        },
+        {
+          "ordinal": 4,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 5,
+          "name": "last_authd_at?",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "9ba45ab114b656105cc46b0c10fb05769860fcdc05eaf54d6225640fb914dab9": {
+    "query": "\n            INSERT INTO user_session_authentications (session_id)\n            VALUES ($1)\n            RETURNING created_at\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "a09dfe1019110f2ec6eba0d35bafa467ab4b7980dd8b556826f03863f8edb0ab": {
+    "query": "UPDATE user_sessions SET active = FALSE WHERE id = $1",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "a552eee8a8e5ffdee4d4789c634851bd64780dfe730807aac20142d7cd643814": {
+    "query": "\n            SELECT u.hashed_password\n            FROM user_sessions s\n            INNER JOIN users u\n               ON u.id = s.user_id \n            WHERE s.id = $1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "hashed_password",
+          "type_info": "Text"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "f9a09ff53b6f221649f4f050e3d5ade114f852ddf50a78610a6c0ef0689af681": {
+    "query": "\n            INSERT INTO users (username, hashed_password)\n            VALUES ($1, $2)\n            RETURNING id\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Text"
+        ]
+      },
+      "nullable": [
+        false
+      ]
+    }
+  }
+}
