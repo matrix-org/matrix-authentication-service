@@ -17,14 +17,13 @@ use warp::{filters::BoxedFilter, reply::with_header, wrap_fn, Filter, Rejection,
 
 use crate::{
     config::{CookiesConfig, CsrfConfig},
-    errors::WrapError,
     filters::{
         csrf::{save_csrf_token, updated_csrf_token},
         session::with_optional_session,
         with_templates, CsrfToken,
     },
     storage::SessionInfo,
-    templates::{CommonContext, Templates},
+    templates::{TemplateContext, Templates},
 };
 
 pub(super) fn filter(
@@ -49,13 +48,9 @@ async fn get(
     csrf_token: CsrfToken,
     session: Option<SessionInfo>,
 ) -> Result<(CsrfToken, impl Reply), Rejection> {
-    let ctx = CommonContext::default()
-        .with_csrf_token(&csrf_token)
-        .maybe_with_session(session)
-        .finish()
-        .wrap_error()?;
+    let ctx = ().maybe_with_session(session).with_csrf(&csrf_token);
 
-    let content = templates.render("index.html", &ctx).wrap_error()?;
+    let content = templates.render_index(&ctx)?;
     Ok((
         csrf_token,
         with_header(content, "Content-Type", "text/html"),

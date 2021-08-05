@@ -12,62 +12,152 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{ops::Deref, sync::Arc};
+use std::{collections::HashSet, string::ToString, sync::Arc};
 
-use anyhow::Context as _;
 use serde::Serialize;
-use tera::{Context, Tera};
-use tracing::info;
+use tera::{Context, Error as TeraError, Tera};
+use thiserror::Error;
+use tracing::{debug, info};
+use warp::reject::Reject;
 
 use crate::{filters::CsrfToken, storage::SessionInfo};
 
 #[derive(Clone)]
 pub struct Templates(Arc<Tera>);
 
+#[derive(Error, Debug)]
+pub enum TemplateLoadingError {
+    #[error("could not load and compile some templates")]
+    Compile(#[from] TeraError),
+
+    #[error("missing templates {missing:?}")]
+    MissingTemplates {
+        missing: HashSet<String>,
+        loaded: HashSet<String>,
+    },
+}
+
 impl Templates {
-    pub fn load() -> Result<Self, tera::Error> {
+    pub fn load() -> Result<Self, TemplateLoadingError> {
         let path = format!("{}/templates/**/*.{{html,txt}}", env!("CARGO_MANIFEST_DIR"));
         info!(%path, "Loading templates");
         let tera = Tera::new(&path)?;
-        Ok(Self(Arc::new(tera)))
-    }
-}
 
-impl Deref for Templates {
-    type Target = Tera;
+        let loaded: HashSet<_> = tera.get_template_names().collect();
+        let needed: HashSet<_> = std::array::IntoIter::new(TEMPLATES).collect();
+        debug!(?loaded, ?needed, "Templates loaded");
+        let missing: HashSet<_> = needed.difference(&loaded).collect();
 
-    fn deref(&self) -> &Self::Target {
-        self.0.as_ref()
-    }
-}
-
-#[derive(Serialize, Default)]
-pub struct CommonContext {
-    csrf_token: Option<String>,
-    current_session: Option<SessionInfo>,
-}
-
-impl CommonContext {
-    pub fn with_csrf_token(self, token: &CsrfToken) -> Self {
-        Self {
-            csrf_token: Some(token.form_value()),
-            ..self
+        if missing.is_empty() {
+            Ok(Self(Arc::new(tera)))
+        } else {
+            let missing = missing.into_iter().map(ToString::to_string).collect();
+            let loaded = loaded.into_iter().map(ToString::to_string).collect();
+            Err(TemplateLoadingError::MissingTemplates { missing, loaded })
         }
     }
+}
 
-    pub fn maybe_with_session(self, current_session: Option<SessionInfo>) -> Self {
-        Self {
+#[derive(Error, Debug)]
+pub enum TemplateError {
+    #[error("could not prepare context for template {template:?}")]
+    Context {
+        template: &'static str,
+        #[source]
+        source: TeraError,
+    },
+
+    #[error("could not render template {template:?}")]
+    Render {
+        template: &'static str,
+        #[source]
+        source: TeraError,
+    },
+}
+
+impl Reject for TemplateError {}
+
+macro_rules! count {
+    () => (0_usize);
+    ( $x:tt $($xs:tt)* ) => (1_usize + count!($($xs)*));
+}
+
+macro_rules! register_templates {
+    ( $($(#[doc = $doc:expr])* $name:ident ($param:ty) => $template:expr),* $(,)? ) => {
+        /// List of registered templates
+        static TEMPLATES: [&'static str; count!($($template)*)] = [$($template),*];
+
+        impl Templates {
+            $(
+                $(#[doc = $doc])?
+                pub fn $name(&self, context: &$param) -> Result<String, TemplateError> {
+                    let ctx = Context::from_serialize(context)
+                        .map_err(|source| TemplateError::Context { template: $template, source })?;
+
+                    self.0.render($template, &ctx)
+                        .map_err(|source| TemplateError::Render { template: $template, source })
+                }
+            )*
+        }
+    };
+}
+
+register_templates!(
+    /// Render the login page
+    render_login(WithCsrf<()>) => "login.html",
+
+    /// Render the home page
+    render_index(WithCsrf<WithOptionalSession<()>>) => "index.html",
+
+    /// Render the re-authentication form
+    render_reauth(WithCsrf<WithSession<()>>) => "reauth.html",
+);
+
+pub trait TemplateContext: Sized {
+    fn with_session(self, current_session: SessionInfo) -> WithSession<Self> {
+        WithSession {
             current_session,
-            ..self
+            inner: self,
         }
     }
 
-    #[allow(dead_code)]
-    pub fn with_session(self, current_session: SessionInfo) -> Self {
-        self.maybe_with_session(Some(current_session))
+    fn maybe_with_session(self, current_session: Option<SessionInfo>) -> WithOptionalSession<Self> {
+        WithOptionalSession {
+            current_session,
+            inner: self,
+        }
     }
 
-    pub fn finish(self) -> anyhow::Result<Context> {
-        Context::from_serialize(&self).context("could not serialize common context for templates")
+    fn with_csrf(self, token: &CsrfToken) -> WithCsrf<Self> {
+        WithCsrf {
+            csrf_token: token.form_value(),
+            inner: self,
+        }
     }
+}
+
+impl<T: Sized> TemplateContext for T {}
+
+#[derive(Serialize)]
+pub struct WithCsrf<T> {
+    csrf_token: String,
+
+    #[serde(flatten)]
+    inner: T,
+}
+
+#[derive(Serialize)]
+pub struct WithSession<T> {
+    current_session: SessionInfo,
+
+    #[serde(flatten)]
+    inner: T,
+}
+
+#[derive(Serialize)]
+pub struct WithOptionalSession<T> {
+    current_session: Option<SessionInfo>,
+
+    #[serde(flatten)]
+    inner: T,
 }

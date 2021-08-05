@@ -23,11 +23,11 @@ use crate::{
     errors::WrapError,
     filters::{
         csrf::{protected_form, save_csrf_token, updated_csrf_token},
-        session::{save_session, with_optional_session},
+        session::save_session,
         with_pool, with_templates, CsrfToken,
     },
     storage::{login, SessionInfo},
-    templates::{CommonContext, Templates},
+    templates::{TemplateContext, Templates},
 };
 
 #[derive(Deserialize)]
@@ -45,7 +45,6 @@ pub(super) fn filter(
     let get = warp::get()
         .and(with_templates(templates))
         .and(updated_csrf_token(cookies_config, csrf_config))
-        .and(with_optional_session(pool, cookies_config))
         .and_then(get)
         .untuple_one()
         .with(wrap_fn(save_csrf_token(cookies_config)));
@@ -63,16 +62,11 @@ pub(super) fn filter(
 async fn get(
     templates: Templates,
     csrf_token: CsrfToken,
-    session: Option<crate::storage::SessionInfo>,
 ) -> Result<(CsrfToken, impl Reply), Rejection> {
-    let ctx = CommonContext::default()
-        .with_csrf_token(&csrf_token)
-        .maybe_with_session(session)
-        .finish()
-        .wrap_error()?;
+    let ctx = ().with_csrf(&csrf_token);
 
     // TODO: check if there is an existing session
-    let content = templates.render("login.html", &ctx).wrap_error()?;
+    let content = templates.render_login(&ctx)?;
     Ok((
         csrf_token,
         with_header(content, "Content-Type", "text/html"),

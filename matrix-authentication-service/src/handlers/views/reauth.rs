@@ -27,7 +27,7 @@ use crate::{
         with_pool, with_templates, CsrfToken,
     },
     storage::SessionInfo,
-    templates::{CommonContext, Templates},
+    templates::{TemplateContext, Templates},
 };
 
 #[derive(Deserialize, Debug)]
@@ -63,13 +63,9 @@ async fn get(
     csrf_token: CsrfToken,
     session: SessionInfo,
 ) -> Result<(CsrfToken, impl Reply), Rejection> {
-    let ctx = CommonContext::default()
-        .with_csrf_token(&csrf_token)
-        .with_session(session)
-        .finish()
-        .wrap_error()?;
+    let ctx = ().with_session(session).with_csrf(&csrf_token);
 
-    let content = templates.render("reauth.html", &ctx).wrap_error()?;
+    let content = templates.render_reauth(&ctx)?;
     Ok((
         csrf_token,
         with_header(content, "Content-Type", "text/html"),
