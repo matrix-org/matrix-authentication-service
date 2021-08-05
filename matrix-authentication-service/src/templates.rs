@@ -38,6 +38,7 @@ pub enum TemplateLoadingError {
 }
 
 impl Templates {
+    /// Load the templates and check all needed templates are properly loaded
     pub fn load() -> Result<Self, TemplateLoadingError> {
         let path = format!("{}/templates/**/*.{{html,txt}}", env!("CARGO_MANIFEST_DIR"));
         info!(%path, "Loading templates");
@@ -77,11 +78,16 @@ pub enum TemplateError {
 
 impl Reject for TemplateError {}
 
+/// Count the number of tokens. Used to have a fixed-sized array for the
+/// templates list.
 macro_rules! count {
     () => (0_usize);
     ( $x:tt $($xs:tt)* ) => (1_usize + count!($($xs)*));
 }
 
+/// Macro that helps generating helper function that renders a specific template
+/// with a strongly-typed context. It also register the template in a static
+/// array to help detecting missing templates at startup time.
 macro_rules! register_templates {
     ( $($(#[doc = $doc:expr])* $name:ident ($param:ty) => $template:expr),* $(,)? ) => {
         /// List of registered templates
@@ -113,6 +119,7 @@ register_templates!(
     render_reauth(WithCsrf<WithSession<()>>) => "reauth.html",
 );
 
+/// Helper trait to construct context wrappers
 pub trait TemplateContext: Sized {
     fn with_session(self, current_session: SessionInfo) -> WithSession<Self> {
         WithSession {
@@ -138,6 +145,7 @@ pub trait TemplateContext: Sized {
 
 impl<T: Sized> TemplateContext for T {}
 
+/// Context with a CSRF token in it
 #[derive(Serialize)]
 pub struct WithCsrf<T> {
     csrf_token: String,
@@ -146,6 +154,7 @@ pub struct WithCsrf<T> {
     inner: T,
 }
 
+/// Context with a user session in it
 #[derive(Serialize)]
 pub struct WithSession<T> {
     current_session: SessionInfo,
@@ -154,6 +163,7 @@ pub struct WithSession<T> {
     inner: T,
 }
 
+/// Context with an optional user session in it
 #[derive(Serialize)]
 pub struct WithOptionalSession<T> {
     current_session: Option<SessionInfo>,
