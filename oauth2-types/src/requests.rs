@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{collections::HashSet, hash::Hash, time::Duration};
+use std::{collections::HashSet, hash::Hash};
 
+use chrono::Duration;
 use language_tags::LanguageTag;
 use parse_display::{Display, FromStr};
 use serde::{Deserialize, Serialize};
@@ -126,15 +127,15 @@ pub struct AuthorizationRequest {
 
     pub state: Option<String>,
 
-    response_mode: Option<ResponseMode>,
+    pub response_mode: Option<ResponseMode>,
 
     pub nonce: Option<String>,
 
     display: Option<Display>,
 
-    #[serde_as(as = "Option<DurationSeconds>")]
+    #[serde_as(as = "Option<DurationSeconds<i64>>")]
     #[serde(default)]
-    max_age: Option<Duration>,
+    pub max_age: Option<Duration>,
 
     #[serde_as(as = "Option<StringWithSeparator::<SpaceSeparator, LanguageTag>>")]
     #[serde(default)]
@@ -149,10 +150,12 @@ pub struct AuthorizationRequest {
     acr_values: Option<HashSet<String>>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct AuthorizationResponse {
-    code: String,
-    state: Option<String>,
+    pub code: Option<String>,
+    pub state: Option<String>,
+    #[serde(flatten)]
+    pub access_token: Option<AccessTokenResponse>,
 }
 
 #[derive(
@@ -225,13 +228,35 @@ pub struct AccessTokenResponse {
 
     token_type: TokenType,
 
-    #[serde_as(as = "Option<DurationSeconds>")]
+    #[serde_as(as = "Option<DurationSeconds<i64>>")]
     expires_in: Option<Duration>,
-
-    refresh_token: Option<String>,
 
     #[serde_as(as = "Option<StringWithSeparator::<SpaceSeparator, String>>")]
     scope: Option<HashSet<String>>,
+}
+
+impl AccessTokenResponse {
+    #[must_use]
+    pub fn new(access_token: String) -> AccessTokenResponse {
+        AccessTokenResponse {
+            access_token,
+            token_type: TokenType::Bearer,
+            expires_in: None,
+            scope: None,
+        }
+    }
+
+    #[must_use]
+    pub fn with_scopes(mut self, scope: HashSet<String>) -> Self {
+        self.scope = Some(scope);
+        self
+    }
+
+    #[must_use]
+    pub fn with_expires_in(mut self, expires_in: Duration) -> Self {
+        self.expires_in = Some(expires_in);
+        self
+    }
 }
 
 #[cfg(test)]

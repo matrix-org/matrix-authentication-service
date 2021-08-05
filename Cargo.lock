@@ -1250,6 +1250,7 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
+ "serde_urlencoded",
  "serde_with",
  "serde_yaml",
  "sqlx",
@@ -1412,6 +1413,7 @@ dependencies = [
 name = "oauth2-types"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "http",
  "indoc",
  "language-tags",

@@ -73,8 +73,34 @@
       ]
     }
   },
-  "34e61467c9d30fa18f1f96990358f87aeb4ffa5fe0364fe499f6132017e0f20b": {
-    "query": "\n            INSERT INTO oauth2_sessions \n                (user_session_id, client_id, scope, state, nonce)\n            VALUES\n                ($1, $2, $3, $4, $5)\n            RETURNING\n                id, user_session_id, client_id, scope, state, nonce, created_at, updated_at\n        ",
+  "35bedaa6fdf7ac91d54b458b4637f2182c2f82be3e2f80cd2db934ee279a7f2a": {
+    "query": "\n            SELECT id, username\n            FROM users\n            WHERE id = $1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "username",
+          "type_info": "Text"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "3f8aaca9f29ded15acf4f0056a789af643ab62816a2fb598dcc9af4fff2841f0": {
+    "query": "\n            INSERT INTO oauth2_sessions \n                (user_session_id, client_id, scope, state, nonce, max_age, response_type, response_mode)\n            VALUES\n                ($1, $2, $3, $4, $5, $6, $7, $8)\n            RETURNING\n                id, user_session_id, client_id, scope, state, nonce, max_age, \n                response_type, response_mode, created_at, updated_at\n        ",
     "describe": {
       "columns": [
         {
@@ -109,11 +135,26 @@
         },
         {
           "ordinal": 6,
+          "name": "max_age",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 7,
+          "name": "response_type",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 8,
+          "name": "response_mode",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 9,
           "name": "created_at",
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 7,
+          "ordinal": 10,
           "name": "updated_at",
           "type_info": "Timestamptz"
         }
@@ -123,6 +164,9 @@
           "Int8",
           "Text",
           "Text",
+          "Text",
+          "Text",
+          "Int4",
           "Text",
           "Text"
         ]
@@ -134,13 +178,16 @@
         false,
         true,
         true,
+        true,
+        false,
+        false,
         false,
         false
       ]
     }
   },
-  "35bedaa6fdf7ac91d54b458b4637f2182c2f82be3e2f80cd2db934ee279a7f2a": {
-    "query": "\n            SELECT id, username\n            FROM users\n            WHERE id = $1\n        ",
+  "4f925a277d73df779360f81e0cf5d7983b50ebe744f461559dd561b7e36c20d4": {
+    "query": "\n            SELECT\n                s.id,\n                u.id as user_id,\n                u.username,\n                s.active,\n                s.created_at,\n                a.created_at as \"last_authd_at?\"\n            FROM user_sessions s\n            INNER JOIN users u \n                ON s.user_id = u.id\n            LEFT JOIN user_session_authentications a\n                ON a.session_id = s.id\n            WHERE s.id = $1 AND s.active\n            ORDER BY a.created_at DESC\n            LIMIT 1\n        ",
     "describe": {
       "columns": [
         {
@@ -150,8 +197,28 @@
         },
         {
           "ordinal": 1,
+          "name": "user_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 2,
           "name": "username",
           "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "active",
+          "type_info": "Bool"
+        },
+        {
+          "ordinal": 4,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 5,
+          "name": "last_authd_at?",
+          "type_info": "Timestamptz"
         }
       ],
       "parameters": {
@@ -161,12 +228,16 @@
       },
       "nullable": [
         false,
+        false,
+        false,
+        false,
+        false,
         false
       ]
     }
   },
-  "4f925a277d73df779360f81e0cf5d7983b50ebe744f461559dd561b7e36c20d4": {
-    "query": "\n            SELECT\n                s.id,\n                u.id as user_id,\n                u.username,\n                s.active,\n                s.created_at,\n                a.created_at as \"last_authd_at?\"\n            FROM user_sessions s\n            INNER JOIN users u \n                ON s.user_id = u.id\n            LEFT JOIN user_session_authentications a\n                ON a.session_id = s.id\n            WHERE s.id = $1 AND s.active\n            ORDER BY a.created_at DESC\n            LIMIT 1\n        ",
+  "62986972431bfc4649e3d8c8c7648f9049c4197773e53496422ad8b8aa15b459": {
+    "query": "\n            SELECT\n                s.id,\n                u.id as user_id,\n                u.username,\n                s.active,\n                s.created_at,\n                a.created_at as \"last_authd_at?\"\n            FROM user_sessions s\n            INNER JOIN users u \n                ON s.user_id = u.id\n            LEFT JOIN user_session_authentications a\n                ON a.session_id = s.id\n            WHERE s.id = $1\n            ORDER BY a.created_at DESC\n            LIMIT 1\n        ",
     "describe": {
       "columns": [
         {

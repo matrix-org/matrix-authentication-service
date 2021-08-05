@@ -34,9 +34,9 @@ pub struct SessionInfo {
     id: i64,
     user_id: i64,
     username: String,
-    active: bool,
+    pub active: bool,
     created_at: DateTime<Utc>,
-    last_authd_at: Option<DateTime<Utc>>,
+    pub last_authd_at: Option<DateTime<Utc>>,
 }
 
 impl SessionInfo {
@@ -90,6 +90,36 @@ pub async fn lookup_active_session(
             LEFT JOIN user_session_authentications a
                 ON a.session_id = s.id
             WHERE s.id = $1 AND s.active
+            ORDER BY a.created_at DESC
+            LIMIT 1
+        "#,
+        id,
+    )
+    .fetch_one(executor)
+    .await
+    .context("could not fetch session")
+}
+
+pub async fn lookup_session(
+    executor: impl Executor<'_, Database = Postgres>,
+    id: i64,
+) -> anyhow::Result<SessionInfo> {
+    sqlx::query_as!(
+        SessionInfo,
+        r#"
+            SELECT
+                s.id,
+                u.id as user_id,
+                u.username,
+                s.active,
+                s.created_at,
+                a.created_at as "last_authd_at?"
+            FROM user_sessions s
+            INNER JOIN users u 
+                ON s.user_id = u.id
+            LEFT JOIN user_session_authentications a
+                ON a.session_id = s.id
+            WHERE s.id = $1
             ORDER BY a.created_at DESC
             LIMIT 1
         "#,

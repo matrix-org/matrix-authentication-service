@@ -12,11 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::{collections::HashSet, convert::TryFrom};
+
 use anyhow::Context;
-use chrono::{DateTime, Utc};
-use oauth2_types::pkce;
+use chrono::{DateTime, Duration, Utc};
+use itertools::Itertools;
+use oauth2_types::{
+    pkce,
+    requests::{ResponseMode, ResponseType},
+};
 use serde::Serialize;
 use sqlx::{Executor, FromRow, Postgres};
+
+use super::{user::lookup_session, SessionInfo};
 
 #[derive(FromRow, Serialize)]
 pub struct OAuth2Session {
@@ -24,8 +32,11 @@ pub struct OAuth2Session {
     user_session_id: Option<i64>,
     client_id: String,
     scope: String,
-    state: Option<String>,
+    pub state: Option<String>,
     nonce: Option<String>,
+    max_age: Option<i32>,
+    response_type: String,
+    response_mode: String,
 
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
@@ -40,8 +51,28 @@ impl OAuth2Session {
     ) -> anyhow::Result<OAuth2Code> {
         add_code(executor, self.id, code, code_challenge).await
     }
+
+    pub async fn fetch_session<'e>(
+        &self,
+        executor: impl Executor<'e, Database = Postgres>,
+    ) -> anyhow::Result<Option<SessionInfo>> {
+        match self.user_session_id {
+            Some(id) => {
+                let info = lookup_session(executor, id).await?;
+                Ok(Some(info))
+            }
+            None => Ok(None),
+        }
+    }
+
+    pub fn max_auth_time(&self) -> Option<DateTime<Utc>> {
+        self.max_age
+            .map(|d| Duration::seconds(i64::from(d)))
+            .map(|d| self.created_at - d)
+    }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn start_session(
     executor: impl Executor<'_, Database = Postgres>,
     optional_session_id: Option<i64>,
@@ -49,22 +80,37 @@ pub async fn start_session(
     scope: &str,
     state: Option<&str>,
     nonce: Option<&str>,
+    max_age: Option<Duration>,
+    response_type: &HashSet<ResponseType>,
+    response_mode: ResponseMode,
 ) -> anyhow::Result<OAuth2Session> {
+    // Checked convertion of duration to i32, maxing at i32::MAX
+    let max_age = max_age.map(|d| i32::try_from(d.num_seconds()).unwrap_or(i32::MAX));
+    let response_mode = response_mode.to_string();
+    let response_type: String = {
+        let it = response_type.iter().map(ToString::to_string);
+        Itertools::intersperse(it, " ".to_string()).collect()
+    };
+
     sqlx::query_as!(
         OAuth2Session,
         r#"
             INSERT INTO oauth2_sessions 
-                (user_session_id, client_id, scope, state, nonce)
+                (user_session_id, client_id, scope, state, nonce, max_age, response_type, response_mode)
             VALUES
-                ($1, $2, $3, $4, $5)
+                ($1, $2, $3, $4, $5, $6, $7, $8)
             RETURNING
-                id, user_session_id, client_id, scope, state, nonce, created_at, updated_at
+                id, user_session_id, client_id, scope, state, nonce, max_age, 
+                response_type, response_mode, created_at, updated_at
         "#,
         optional_session_id,
         client_id,
         scope,
         state,
         nonce,
+        max_age,
+        response_type,
+        response_mode,
     )
     .fetch_one(executor)
     .await
@@ -75,7 +121,7 @@ pub async fn start_session(
 pub struct OAuth2Code {
     id: i64,
     oauth2_session_id: i64,
-    code: String,
+    pub code: String,
     code_challenge: Option<String>,
     code_challenge_method: Option<i16>,
 }

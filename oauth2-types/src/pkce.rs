@@ -14,7 +14,6 @@
 
 use parse_display::{Display, FromStr};
 use serde::{Deserialize, Serialize};
-use sqlx::Type;
 
 #[derive(
     Debug,
@@ -29,8 +28,8 @@ use sqlx::Type;
     FromStr,
     Serialize,
     Deserialize,
-    Type,
 )]
+#[cfg_attr(feature = "sqlx_type", derive(sqlx::Type))]
 #[repr(i8)]
 pub enum CodeChallengeMethod {
     #[serde(rename = "plain")]

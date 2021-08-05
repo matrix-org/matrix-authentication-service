@@ -19,6 +19,9 @@ CREATE TABLE oauth2_sessions (
   "scope" TEXT NOT NULL,
   "state" TEXT,
   "nonce" TEXT,
+  "max_age" INT,
+  "response_type" TEXT NOT NULL,
+  "response_mode" TEXT NOT NULL,
 
   "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()

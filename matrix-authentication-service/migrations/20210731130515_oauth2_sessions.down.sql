@@ -12,6 +12,6 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-DROP TRIGGER set_timestamp ON TABLE oauth2_sessions;
+DROP TRIGGER set_timestamp ON oauth2_sessions;
 DROP TABLE oauth2_codes;
 DROP TABLE oauth2_sessions;

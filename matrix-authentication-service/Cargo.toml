@@ -56,5 +56,6 @@ headers = "0.3.4"
 cookie = "0.15.1"
 chacha20poly1305 = { version = "0.8.1", features = ["std"] }
 
-oauth2-types = { path = "../oauth2-types" }
+oauth2-types = { path = "../oauth2-types", features = ["sqlx_type"] }
 serde_json = "1.0.66"
+serde_urlencoded = "0.7.0"

@@ -13,5 +13,9 @@ language-tags = { version = "0.3.2", features = ["serde"] }
 url = { version = "2.2.2", features = ["serde"] }
 parse-display = "0.5.1"
 indoc = "1.0.3"
-serde_with = "1.9.4"
-sqlx = "0.5.5"
+serde_with = { version = "1.9.4", features = ["chrono"] }
+sqlx = { version = "0.5.5", default-features = false, optional = true }
+chrono = "0.4.19"
+
+[features]
+sqlx_type = ["sqlx"]
