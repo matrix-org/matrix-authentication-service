@@ -20,7 +20,7 @@ use oauth2_types::{
 };
 use serde::Deserialize;
 use sqlx::PgPool;
-use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
+use warp::{Filter, Rejection, Reply};
 
 use crate::{
     config::{CookiesConfig, OAuth2ClientConfig, OAuth2Config},
@@ -42,7 +42,7 @@ pub fn filter(
     pool: &PgPool,
     oauth2_config: &OAuth2Config,
     cookies_config: &CookiesConfig,
-) -> BoxedFilter<(impl Reply,)> {
+) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
     let clients = oauth2_config.clients.clone();
     warp::get()
         .and(warp::path!("oauth2" / "authorize"))
@@ -51,7 +51,6 @@ pub fn filter(
         .and(with_optional_session(pool, cookies_config))
         .and(with_pool(pool))
         .and_then(get)
-        .boxed()
 }
 
 async fn get(

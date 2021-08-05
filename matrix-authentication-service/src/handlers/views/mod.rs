@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use sqlx::PgPool;
-use warp::{filters::BoxedFilter, Filter, Reply};
+use warp::{Filter, Rejection, Reply};
 
 use crate::{
     config::{CookiesConfig, CsrfConfig},
@@ -35,7 +35,7 @@ pub(super) fn filter(
     templates: &Templates,
     csrf_config: &CsrfConfig,
     cookies_config: &CookiesConfig,
-) -> BoxedFilter<(impl Reply,)> {
+) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
     index(pool, templates, csrf_config, cookies_config)
         .or(login(pool, templates, csrf_config, cookies_config))
         .or(logout(pool, cookies_config))

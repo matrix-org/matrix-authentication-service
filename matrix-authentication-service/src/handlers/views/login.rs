@@ -14,9 +14,7 @@
 
 use serde::Deserialize;
 use sqlx::PgPool;
-use warp::{
-    filters::BoxedFilter, hyper::Uri, reply::with_header, wrap_fn, Filter, Rejection, Reply,
-};
+use warp::{hyper::Uri, reply::with_header, wrap_fn, Filter, Rejection, Reply};
 
 use crate::{
     config::{CookiesConfig, CsrfConfig},
@@ -41,7 +39,7 @@ pub(super) fn filter(
     templates: &Templates,
     csrf_config: &CsrfConfig,
     cookies_config: &CookiesConfig,
-) -> BoxedFilter<(impl Reply,)> {
+) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
     let get = warp::get()
         .and(with_templates(templates))
         .and(updated_csrf_token(cookies_config, csrf_config))
@@ -56,7 +54,7 @@ pub(super) fn filter(
         .untuple_one()
         .with(wrap_fn(save_session(cookies_config)));
 
-    warp::path("login").and(get.or(post)).boxed()
+    warp::path("login").and(get.or(post))
 }
 
 async fn get(

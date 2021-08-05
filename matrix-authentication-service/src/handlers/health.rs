@@ -16,16 +16,17 @@ use hyper::header::CONTENT_TYPE;
 use mime::TEXT_PLAIN;
 use sqlx::PgPool;
 use tracing::{info_span, Instrument};
-use warp::{filters::BoxedFilter, reply::with_header, Filter, Rejection, Reply};
+use warp::{reply::with_header, Filter, Rejection, Reply};
 
 use crate::{errors::WrapError, filters::with_pool};
 
-pub fn filter(pool: &PgPool) -> BoxedFilter<(impl Reply,)> {
+pub fn filter(
+    pool: &PgPool,
+) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
     warp::get()
         .and(warp::path("health"))
         .and(with_pool(pool))
         .and_then(get)
-        .boxed()
 }
 
 async fn get(pool: PgPool) -> Result<impl Reply, Rejection> {

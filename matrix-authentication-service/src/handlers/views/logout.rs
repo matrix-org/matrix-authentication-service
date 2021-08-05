@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use sqlx::PgPool;
-use warp::{filters::BoxedFilter, hyper::Uri, Filter, Rejection, Reply};
+use warp::{hyper::Uri, Filter, Rejection, Reply};
 
 use crate::{
     config::CookiesConfig,
@@ -22,14 +22,16 @@ use crate::{
     storage::SessionInfo,
 };
 
-pub(super) fn filter(pool: &PgPool, cookies_config: &CookiesConfig) -> BoxedFilter<(impl Reply,)> {
+pub(super) fn filter(
+    pool: &PgPool,
+    cookies_config: &CookiesConfig,
+) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
     warp::post()
         .and(warp::path("logout"))
         .and(with_session(pool, cookies_config))
         .and(with_pool(pool))
         .and(protected_form(cookies_config))
         .and_then(post)
-        .boxed()
 }
 
 async fn post(session: SessionInfo, pool: PgPool, _form: ()) -> Result<impl Reply, Rejection> {

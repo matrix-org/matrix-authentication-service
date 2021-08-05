@@ -17,18 +17,24 @@ pub mod csrf;
 pub mod cookies;
 pub mod session;
 
+use std::convert::Infallible;
+
 use sqlx::PgPool;
-use warp::{filters::BoxedFilter, Filter};
+use warp::Filter;
 
 pub use self::csrf::CsrfToken;
 use crate::templates::Templates;
 
-pub fn with_pool(pool: &PgPool) -> BoxedFilter<(PgPool,)> {
+pub fn with_pool(
+    pool: &PgPool,
+) -> impl Filter<Extract = (PgPool,), Error = Infallible> + Clone + Send + Sync + 'static {
     let pool = pool.clone();
-    warp::any().map(move || pool.clone()).boxed()
+    warp::any().map(move || pool.clone())
 }
 
-pub fn with_templates(templates: &Templates) -> BoxedFilter<(Templates,)> {
+pub fn with_templates(
+    templates: &Templates,
+) -> impl Filter<Extract = (Templates,), Error = Infallible> + Clone + Send + Sync + 'static {
     let templates = templates.clone();
-    warp::any().map(move || templates.clone()).boxed()
+    warp::any().map(move || templates.clone())
 }

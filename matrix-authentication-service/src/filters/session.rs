@@ -50,7 +50,8 @@ impl Session {
 pub fn with_optional_session(
     pool: &PgPool,
     cookies_config: &CookiesConfig,
-) -> BoxedFilter<(Option<SessionInfo>,)> {
+) -> impl Filter<Extract = (Option<SessionInfo>,), Error = Rejection> + Clone + Send + Sync + 'static
+{
     maybe_encrypted("session", cookies_config)
         .and(with_pool(pool))
         .and_then(|maybe_session: Option<Session>, pool: PgPool| async move {
@@ -61,17 +62,18 @@ pub fn with_optional_session(
             };
             Ok::<_, Rejection>(maybe_session_info)
         })
-        .boxed()
 }
 
-pub fn with_session(pool: &PgPool, cookies_config: &CookiesConfig) -> BoxedFilter<(SessionInfo,)> {
+pub fn with_session(
+    pool: &PgPool,
+    cookies_config: &CookiesConfig,
+) -> impl Filter<Extract = (SessionInfo,), Error = Rejection> + Clone + Send + Sync + 'static {
     encrypted("session", cookies_config)
         .and(with_pool(pool))
         .and_then(|session: Session, pool: PgPool| async move {
             let session_info = session.load_session_info(&pool).await.wrap_error()?;
             Ok::<_, Rejection>(session_info)
         })
-        .boxed()
 }
 
 pub fn save_session<R: Reply, F>(

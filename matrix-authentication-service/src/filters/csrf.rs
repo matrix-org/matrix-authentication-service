@@ -95,22 +95,22 @@ impl<T> CsrfForm<T> {
     }
 }
 
-pub fn csrf_token(cookies_config: &CookiesConfig) -> BoxedFilter<(CsrfToken,)> {
-    super::cookies::encrypted("csrf", cookies_config)
-        .and_then(move |token: CsrfToken| async move {
-            let verified = token.verify_expiration().wrap_error()?;
-            Ok::<_, Rejection>(verified)
-        })
-        .boxed()
+pub fn csrf_token(
+    cookies_config: &CookiesConfig,
+) -> impl Filter<Extract = (CsrfToken,), Error = Rejection> + Clone + Send + Sync + 'static {
+    super::cookies::encrypted("csrf", cookies_config).and_then(move |token: CsrfToken| async move {
+        let verified = token.verify_expiration().wrap_error()?;
+        Ok::<_, Rejection>(verified)
+    })
 }
 
 pub fn updated_csrf_token(
     cookies_config: &CookiesConfig,
     csrf_config: &CsrfConfig,
-) -> BoxedFilter<(CsrfToken,)> {
+) -> impl Filter<Extract = (CsrfToken,), Error = Rejection> + Clone + Send + Sync + 'static {
     let ttl = csrf_config.ttl;
-    super::cookies::maybe_encrypted("csrf", cookies_config)
-        .and_then(move |maybe_token: Option<CsrfToken>| async move {
+    super::cookies::maybe_encrypted("csrf", cookies_config).and_then(
+        move |maybe_token: Option<CsrfToken>| async move {
             // Explicitely specify the "Error" type here to have the `?` operation working
             Ok::<_, Rejection>(
                 maybe_token
@@ -123,8 +123,8 @@ pub fn updated_csrf_token(
                         |token| token.refresh(ttl),
                     ),
             )
-        })
-        .boxed()
+        },
+    )
 }
 
 pub fn save_csrf_token<R: Reply, F>(
@@ -136,17 +136,16 @@ where
     save_encrypted("csrf", cookies_config)
 }
 
-pub fn protected_form<T>(cookies_config: &CookiesConfig) -> BoxedFilter<(T,)>
+pub fn protected_form<T>(
+    cookies_config: &CookiesConfig,
+) -> impl Filter<Extract = (T,), Error = Rejection> + Clone + Send + Sync + 'static
 where
     T: DeserializeOwned + Send + 'static,
 {
-    csrf_token(cookies_config)
-        .and(warp::body::form())
-        .and_then(
-            |csrf_token: CsrfToken, protected_form: CsrfForm<T>| async move {
-                let form = protected_form.verify_csrf(&csrf_token).wrap_error()?;
-                Ok::<_, Rejection>(form)
-            },
-        )
-        .boxed()
+    csrf_token(cookies_config).and(warp::body::form()).and_then(
+        |csrf_token: CsrfToken, protected_form: CsrfForm<T>| async move {
+            let form = protected_form.verify_csrf(&csrf_token).wrap_error()?;
+            Ok::<_, Rejection>(form)
+        },
+    )
 }

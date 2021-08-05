@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use sqlx::PgPool;
-use warp::{filters::BoxedFilter, Filter, Reply};
+use warp::{Filter, Rejection, Reply};
 
 use crate::config::{CookiesConfig, OAuth2Config};
 
@@ -26,8 +26,6 @@ pub fn filter(
     pool: &PgPool,
     oauth2_config: &OAuth2Config,
     cookies_config: &CookiesConfig,
-) -> BoxedFilter<(impl Reply,)> {
-    discovery(oauth2_config)
-        .or(authorization(pool, oauth2_config, cookies_config))
-        .boxed()
+) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
+    discovery(oauth2_config).or(authorization(pool, oauth2_config, cookies_config))
 }

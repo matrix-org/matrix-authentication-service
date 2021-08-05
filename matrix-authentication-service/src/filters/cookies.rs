@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::convert::Infallible;
+
 use chacha20poly1305::{
     aead::{generic_array::GenericArray, Aead, NewAead},
     ChaCha20Poly1305,
@@ -66,32 +68,34 @@ impl EncryptedCookie {
     }
 }
 
-pub fn maybe_encrypted<T>(name: &'static str, options: &CookiesConfig) -> BoxedFilter<(Option<T>,)>
+pub fn maybe_encrypted<T>(
+    name: &'static str,
+    options: &CookiesConfig,
+) -> impl Filter<Extract = (Option<T>,), Error = Infallible> + Clone + Send + Sync + 'static
 where
     T: DeserializeOwned + Send + 'static,
 {
     let secret = options.secret;
-    warp::cookie::optional(name)
-        .map(move |maybe_value: Option<String>| {
-            maybe_value
-                .and_then(|value| EncryptedCookie::from_cookie_value(&value).ok())
-                .and_then(|encrypted| encrypted.decrypt(&secret).ok())
-        })
-        .boxed()
+    warp::cookie::optional(name).map(move |maybe_value: Option<String>| {
+        maybe_value
+            .and_then(|value| EncryptedCookie::from_cookie_value(&value).ok())
+            .and_then(|encrypted| encrypted.decrypt(&secret).ok())
+    })
 }
 
-pub fn encrypted<T>(name: &'static str, options: &CookiesConfig) -> BoxedFilter<(T,)>
+pub fn encrypted<T>(
+    name: &'static str,
+    options: &CookiesConfig,
+) -> impl Filter<Extract = (T,), Error = Rejection> + Clone + Send + Sync + 'static
 where
     T: DeserializeOwned + Send + 'static,
 {
     let secret = options.secret;
-    warp::cookie::cookie(name)
-        .and_then(move |value: String| async move {
-            let encrypted = EncryptedCookie::from_cookie_value(&value).wrap_error()?;
-            let decrypted = encrypted.decrypt(&secret).wrap_error()?;
-            Ok::<_, Rejection>(decrypted)
-        })
-        .boxed()
+    warp::cookie::cookie(name).and_then(move |value: String| async move {
+        let encrypted = EncryptedCookie::from_cookie_value(&value).wrap_error()?;
+        let decrypted = encrypted.decrypt(&secret).wrap_error()?;
+        Ok::<_, Rejection>(decrypted)
+    })
 }
 
 pub struct WithTypedHeader<R, H> {

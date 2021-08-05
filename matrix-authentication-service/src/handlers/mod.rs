@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use sqlx::PgPool;
-use warp::{filters::BoxedFilter, Filter};
+use warp::{Filter, Rejection, Reply};
 
 use crate::{config::RootConfig, templates::Templates};
 
@@ -27,11 +27,10 @@ pub fn root(
     pool: &PgPool,
     templates: &Templates,
     config: &RootConfig,
-) -> BoxedFilter<(impl warp::Reply,)> {
+) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
     health(pool)
         .or(oauth2(pool, &config.oauth2, &config.cookies))
         .or(views(pool, templates, &config.csrf, &config.cookies))
         //.or(warp::get().map(|| StatusCode::NOT_FOUND)) <- This messes up the error reporting
         .with(warp::log(module_path!()))
-        .boxed()
 }
