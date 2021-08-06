@@ -16,6 +16,7 @@ CREATE TABLE oauth2_sessions (
   "id" BIGSERIAL PRIMARY KEY,
   "user_session_id" BIGINT REFERENCES user_sessions (id) ON DELETE CASCADE,
   "client_id" TEXT NOT NULL,
+  "redirect_uri" TEXT NOT NULL,
   "scope" TEXT NOT NULL,
   "state" TEXT,
   "nonce" TEXT,

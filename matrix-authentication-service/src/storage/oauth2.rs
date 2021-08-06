@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{collections::HashSet, convert::TryFrom};
+use std::{collections::HashSet, convert::TryFrom, str::FromStr};
 
 use anyhow::Context;
 use chrono::{DateTime, Duration, Utc};
@@ -23,14 +23,16 @@ use oauth2_types::{
 };
 use serde::Serialize;
 use sqlx::{Executor, FromRow, Postgres};
+use url::Url;
 
 use super::{user::lookup_session, SessionInfo};
 
 #[derive(FromRow, Serialize)]
 pub struct OAuth2Session {
-    id: i64,
+    pub id: i64,
     user_session_id: Option<i64>,
     client_id: String,
+    redirect_uri: String,
     scope: String,
     pub state: Option<String>,
     nonce: Option<String>,
@@ -52,9 +54,9 @@ impl OAuth2Session {
         add_code(executor, self.id, code, code_challenge).await
     }
 
-    pub async fn fetch_session<'e>(
+    pub async fn fetch_session(
         &self,
-        executor: impl Executor<'e, Database = Postgres>,
+        executor: impl Executor<'_, Database = Postgres>,
     ) -> anyhow::Result<Option<SessionInfo>> {
         match self.user_session_id {
             Some(id) => {
@@ -65,10 +67,60 @@ impl OAuth2Session {
         }
     }
 
+    pub async fn fetch_code(
+        &self,
+        executor: impl Executor<'_, Database = Postgres>,
+    ) -> anyhow::Result<String> {
+        get_code_for_session(executor, self.id).await
+    }
+
+    pub async fn match_or_set_session(
+        &mut self,
+        executor: impl Executor<'_, Database = Postgres>,
+        session: SessionInfo,
+    ) -> anyhow::Result<SessionInfo> {
+        match self.user_session_id {
+            Some(id) if id == session.key() => Ok(session),
+            Some(id) => Err(anyhow::anyhow!(
+                "session mismatch, expected {}, got {}",
+                id,
+                session.key()
+            )),
+            None => {
+                sqlx::query!(
+                    "UPDATE oauth2_sessions SET user_session_id = $1 WHERE id = $2",
+                    session.key(),
+                    self.id,
+                )
+                .execute(executor)
+                .await
+                .context("could not update oauth2 session")?;
+                Ok(session)
+            }
+        }
+    }
+
     pub fn max_auth_time(&self) -> Option<DateTime<Utc>> {
         self.max_age
             .map(|d| Duration::seconds(i64::from(d)))
             .map(|d| self.created_at - d)
+    }
+
+    pub fn response_type(&self) -> anyhow::Result<HashSet<ResponseType>> {
+        self.response_type
+            .split(' ')
+            .map(|s| {
+                ResponseType::from_str(s).with_context(|| format!("invalid response type {}", s))
+            })
+            .collect()
+    }
+
+    pub fn response_mode(&self) -> anyhow::Result<ResponseMode> {
+        self.response_mode.parse().context("invalid response mode")
+    }
+
+    pub fn redirect_uri(&self) -> anyhow::Result<Url> {
+        self.redirect_uri.parse().context("invalid redirect uri")
     }
 }
 
@@ -77,6 +129,7 @@ pub async fn start_session(
     executor: impl Executor<'_, Database = Postgres>,
     optional_session_id: Option<i64>,
     client_id: &str,
+    redirect_uri: &Url,
     scope: &str,
     state: Option<&str>,
     nonce: Option<&str>,
@@ -96,15 +149,17 @@ pub async fn start_session(
         OAuth2Session,
         r#"
             INSERT INTO oauth2_sessions 
-                (user_session_id, client_id, scope, state, nonce, max_age, response_type, response_mode)
+                (user_session_id, client_id, redirect_uri, scope, state, nonce, max_age,
+                 response_type, response_mode)
             VALUES
-                ($1, $2, $3, $4, $5, $6, $7, $8)
+                ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             RETURNING
-                id, user_session_id, client_id, scope, state, nonce, max_age, 
+                id, user_session_id, client_id, redirect_uri, scope, state, nonce, max_age, 
                 response_type, response_mode, created_at, updated_at
         "#,
         optional_session_id,
         client_id,
+        redirect_uri.as_str(),
         scope,
         state,
         nonce,
@@ -115,6 +170,43 @@ pub async fn start_session(
     .fetch_one(executor)
     .await
     .context("could not insert oauth2 session")
+}
+
+pub async fn get_session_by_id(
+    executor: impl Executor<'_, Database = Postgres>,
+    oauth2_session_id: i64,
+) -> anyhow::Result<OAuth2Session> {
+    sqlx::query_as!(
+        OAuth2Session,
+        r#"
+            SELECT
+                id, user_session_id, client_id, redirect_uri, scope, state, nonce,
+                max_age, response_type, response_mode, created_at, updated_at
+            FROM oauth2_sessions
+            WHERE id = $1
+        "#,
+        oauth2_session_id
+    )
+    .fetch_one(executor)
+    .await
+    .context("could not fetch oauth2 session")
+}
+
+pub async fn get_code_for_session(
+    executor: impl Executor<'_, Database = Postgres>,
+    oauth2_session_id: i64,
+) -> anyhow::Result<String> {
+    sqlx::query_scalar!(
+        r#"
+            SELECT code
+            FROM oauth2_codes
+            WHERE oauth2_session_id = $1
+        "#,
+        oauth2_session_id
+    )
+    .fetch_one(executor)
+    .await
+    .context("could not fetch oauth2 code")
 }
 
 #[derive(FromRow, Serialize)]

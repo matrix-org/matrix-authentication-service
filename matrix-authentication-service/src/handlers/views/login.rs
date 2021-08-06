@@ -12,9 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use serde::Deserialize;
+use std::convert::TryFrom;
+
+use hyper::http::uri::{Parts, PathAndQuery, Uri};
+use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
-use warp::{hyper::Uri, reply::html, wrap_fn, Filter, Rejection, Reply};
+use warp::{reply::html, wrap_fn, Filter, Rejection, Reply};
 
 use crate::{
     config::{CookiesConfig, CsrfConfig},
@@ -27,6 +30,28 @@ use crate::{
     storage::{login, SessionInfo},
     templates::{TemplateContext, Templates},
 };
+
+#[derive(Serialize, Deserialize)]
+pub struct LoginRequest {
+    next: Option<String>,
+}
+
+impl LoginRequest {
+    pub fn new(next: Option<String>) -> Self {
+        Self { next }
+    }
+
+    pub fn build_uri(&self) -> anyhow::Result<Uri> {
+        let qs = serde_urlencoded::to_string(self)?;
+        let path_and_query = PathAndQuery::try_from(format!("/login?{}", qs))?;
+        let uri = Uri::from_parts({
+            let mut parts = Parts::default();
+            parts.path_and_query = Some(path_and_query);
+            parts
+        })?;
+        Ok(uri)
+    }
+}
 
 #[derive(Deserialize)]
 struct LoginForm {
@@ -50,6 +75,7 @@ pub(super) fn filter(
     let post = warp::post()
         .and(with_pool(pool))
         .and(protected_form(cookies_config))
+        .and(warp::query())
         .and_then(post)
         .untuple_one()
         .with(wrap_fn(save_session(cookies_config)));
@@ -68,10 +94,28 @@ async fn get(
     Ok((csrf_token, html(content)))
 }
 
-async fn post(db: PgPool, form: LoginForm) -> Result<(SessionInfo, impl Reply), Rejection> {
+async fn post(
+    db: PgPool,
+    form: LoginForm,
+    query: LoginRequest,
+) -> Result<(SessionInfo, impl Reply), Rejection> {
     let session_info = login(&db, &form.username, &form.password)
         .await
         .wrap_error()?;
 
-    Ok((session_info, warp::redirect(Uri::from_static("/"))))
+    let uri: Uri = Uri::from_parts({
+        let mut parts = Parts::default();
+        parts.path_and_query = Some(
+            query
+                .next
+                .map(warp::http::uri::PathAndQuery::try_from)
+                .transpose()
+                .wrap_error()?
+                .unwrap_or_else(|| PathAndQuery::from_static("/")),
+        );
+        parts
+    })
+    .wrap_error()?;
+
+    Ok((session_info, warp::redirect(uri)))
 }

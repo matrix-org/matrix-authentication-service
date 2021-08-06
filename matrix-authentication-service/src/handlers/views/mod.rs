@@ -25,6 +25,7 @@ mod login;
 mod logout;
 mod reauth;
 
+pub use self::login::LoginRequest;
 use self::{
     index::filter as index, login::filter as login, logout::filter as logout,
     reauth::filter as reauth,

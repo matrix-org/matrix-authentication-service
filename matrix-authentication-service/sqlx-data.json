@@ -73,6 +73,26 @@
       ]
     }
   },
+  "17729fd0354a84e04bfcd525db6575ed2ba75dd730bea3f2be964f4b347dd484": {
+    "query": "\n            SELECT code\n            FROM oauth2_codes\n            WHERE oauth2_session_id = $1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "code",
+          "type_info": "Text"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
   "35bedaa6fdf7ac91d54b458b4637f2182c2f82be3e2f80cd2db934ee279a7f2a": {
     "query": "\n            SELECT id, username\n            FROM users\n            WHERE id = $1\n        ",
     "describe": {
@@ -94,93 +114,6 @@
         ]
       },
       "nullable": [
-        false,
-        false
-      ]
-    }
-  },
-  "3f8aaca9f29ded15acf4f0056a789af643ab62816a2fb598dcc9af4fff2841f0": {
-    "query": "\n            INSERT INTO oauth2_sessions \n                (user_session_id, client_id, scope, state, nonce, max_age, response_type, response_mode)\n            VALUES\n                ($1, $2, $3, $4, $5, $6, $7, $8)\n            RETURNING\n                id, user_session_id, client_id, scope, state, nonce, max_age, \n                response_type, response_mode, created_at, updated_at\n        ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
-          "name": "user_session_id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 2,
-          "name": "client_id",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 3,
-          "name": "scope",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 4,
-          "name": "state",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 5,
-          "name": "nonce",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 6,
-          "name": "max_age",
-          "type_info": "Int4"
-        },
-        {
-          "ordinal": 7,
-          "name": "response_type",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 8,
-          "name": "response_mode",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 9,
-          "name": "created_at",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 10,
-          "name": "updated_at",
-          "type_info": "Timestamptz"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Text",
-          "Text",
-          "Text",
-          "Text",
-          "Int4",
-          "Text",
-          "Text"
-        ]
-      },
-      "nullable": [
-        false,
-        true,
-        false,
-        false,
-        true,
-        true,
-        true,
-        false,
-        false,
         false,
         false
       ]
@@ -306,6 +239,100 @@
       ]
     }
   },
+  "a051f542df7d3f80f5dc6dd6f04d49a462c64e4ce9146d90069d16ec9b61084b": {
+    "query": "\n            INSERT INTO oauth2_sessions \n                (user_session_id, client_id, redirect_uri, scope, state, nonce, max_age,\n                 response_type, response_mode)\n            VALUES\n                ($1, $2, $3, $4, $5, $6, $7, $8, $9)\n            RETURNING\n                id, user_session_id, client_id, redirect_uri, scope, state, nonce, max_age, \n                response_type, response_mode, created_at, updated_at\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "user_session_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 2,
+          "name": "client_id",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "redirect_uri",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 4,
+          "name": "scope",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "state",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 6,
+          "name": "nonce",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 7,
+          "name": "max_age",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 8,
+          "name": "response_type",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 9,
+          "name": "response_mode",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 10,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 11,
+          "name": "updated_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Int4",
+          "Text",
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "a09dfe1019110f2ec6eba0d35bafa467ab4b7980dd8b556826f03863f8edb0ab": {
     "query": "UPDATE user_sessions SET active = FALSE WHERE id = $1",
     "describe": {
@@ -338,6 +365,19 @@
       ]
     }
   },
+  "a6eb935107d060dd01bf9824ceff87b9ff5492b58cefef002a49f444d3a3daa1": {
+    "query": "UPDATE oauth2_sessions SET user_session_id = $1 WHERE id = $2",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "f9a09ff53b6f221649f4f050e3d5ade114f852ddf50a78610a6c0ef0689af681": {
     "query": "\n            INSERT INTO users (username, hashed_password)\n            VALUES ($1, $2)\n            RETURNING id\n        ",
     "describe": {
@@ -355,6 +395,92 @@
         ]
       },
       "nullable": [
+        false
+      ]
+    }
+  },
+  "ff515ebb80ba4af1948472f5c7120a03e25b1ebe42151b8a2036bfbb042f17f6": {
+    "query": "\n            SELECT\n                id, user_session_id, client_id, redirect_uri, scope, state, nonce,\n                max_age, response_type, response_mode, created_at, updated_at\n            FROM oauth2_sessions\n            WHERE id = $1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "user_session_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 2,
+          "name": "client_id",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "redirect_uri",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 4,
+          "name": "scope",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "state",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 6,
+          "name": "nonce",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 7,
+          "name": "max_age",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 8,
+          "name": "response_type",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 9,
+          "name": "response_mode",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 10,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 11,
+          "name": "updated_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
         false
       ]
     }

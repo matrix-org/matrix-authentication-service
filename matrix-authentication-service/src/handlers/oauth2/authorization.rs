@@ -12,10 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    convert::TryFrom,
+};
 
 use data_encoding::BASE64URL_NOPAD;
-use hyper::{header::LOCATION, StatusCode};
+use hyper::{
+    header::LOCATION,
+    http::uri::{Parts, PathAndQuery, Uri},
+    StatusCode,
+};
 use itertools::Itertools;
 use oauth2_types::{
     pkce,
@@ -28,6 +35,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use url::Url;
 use warp::{
+    redirect::see_other,
     reply::{html, with_header},
     Filter, Rejection, Reply,
 };
@@ -35,8 +43,15 @@ use warp::{
 use crate::{
     config::{CookiesConfig, OAuth2ClientConfig, OAuth2Config},
     errors::WrapError,
-    filters::{session::with_optional_session, with_pool, with_templates},
-    storage::{oauth2::start_session, SessionInfo},
+    filters::{
+        session::{with_optional_session, with_session},
+        with_pool, with_templates,
+    },
+    handlers::views::LoginRequest,
+    storage::{
+        oauth2::{get_session_by_id, start_session},
+        SessionInfo,
+    },
     templates::{FormPostContext, Templates},
 };
 
@@ -144,14 +159,24 @@ pub fn filter(
     cookies_config: &CookiesConfig,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
     let clients = oauth2_config.clients.clone();
-    warp::get()
+    let authorize = warp::get()
         .and(warp::path!("oauth2" / "authorize"))
         .map(move || clients.clone())
         .and(warp::query())
         .and(with_optional_session(pool, cookies_config))
         .and(with_pool(pool))
         .and(with_templates(templates))
-        .and_then(get)
+        .and_then(get);
+
+    let step = warp::get()
+        .and(warp::path!("oauth2" / "authorize" / "step"))
+        .and(warp::query().map(|s: StepRequest| s.id))
+        .and(with_session(pool, cookies_config))
+        .and(with_pool(pool))
+        .and(with_templates(templates))
+        .and_then(step);
+
+    authorize.or(step)
 }
 
 async fn get(
@@ -190,6 +215,7 @@ async fn get(
         &mut txn,
         maybe_session_id,
         &client.client_id,
+        redirect_uri,
         &scope,
         params.auth.state.as_deref(),
         params.auth.nonce.as_deref(),
@@ -200,24 +226,81 @@ async fn get(
     .await
     .wrap_error()?;
 
-    let code = if response_type.contains(&ResponseType::Code) {
+    // Generate the code at this stage, since we have the PKCE params ready
+    if response_type.contains(&ResponseType::Code) {
         // 192bit random bytes encoded in base64, which gives a 32 character code
         let code: [u8; 24] = rand::random();
         let code = BASE64URL_NOPAD.encode(&code);
-        Some(
-            oauth2_session
-                .add_code(&mut txn, &code, &params.pkce)
-                .await
-                .wrap_error()?,
-        )
-    } else {
-        None
+        oauth2_session
+            .add_code(&mut txn, &code, &params.pkce)
+            .await
+            .wrap_error()?;
     };
 
     // Do we have a user in this session, with a last authentication time that
     // matches the requirement?
     let user_session = oauth2_session.fetch_session(&mut txn).await.wrap_error()?;
+    txn.commit().await.wrap_error()?;
+
     if let Some(user_session) = user_session {
+        step(oauth2_session.id, user_session, pool, templates).await
+    } else {
+        let next = StepRequest::new(oauth2_session.id)
+            .build_uri()
+            .wrap_error()?
+            .to_string();
+
+        let destination = LoginRequest::new(Some(next)).build_uri().wrap_error()?;
+        Ok(Box::new(see_other(destination)))
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+struct StepRequest {
+    id: i64,
+}
+
+impl StepRequest {
+    fn new(id: i64) -> Self {
+        Self { id }
+    }
+
+    fn build_uri(&self) -> anyhow::Result<Uri> {
+        let qs = serde_urlencoded::to_string(self)?;
+        let path_and_query = PathAndQuery::try_from(format!("/oauth2/authorize/step?{}", qs))?;
+        let uri = Uri::from_parts({
+            let mut parts = Parts::default();
+            parts.path_and_query = Some(path_and_query);
+            parts
+        })?;
+        Ok(uri)
+    }
+}
+
+async fn step(
+    oauth2_session_id: i64,
+    user_session: SessionInfo,
+    pool: PgPool,
+    templates: Templates,
+) -> Result<Box<dyn Reply>, Rejection> {
+    // Start a DB transaction
+    let mut txn = pool.begin().await.wrap_error()?;
+
+    let mut oauth2_session = get_session_by_id(&mut txn, oauth2_session_id)
+        .await
+        .wrap_error()?;
+
+    let user_session = oauth2_session
+        .match_or_set_session(&mut txn, user_session)
+        .await
+        .wrap_error()?;
+
+    let response_mode = oauth2_session.response_mode().wrap_error()?;
+    let response_type = oauth2_session.response_type().wrap_error()?;
+    let redirect_uri = oauth2_session.redirect_uri().wrap_error()?;
+
+    let reply =
+        // Check if the active session is valid
         if user_session.active && user_session.last_authd_at >= oauth2_session.max_auth_time() {
             // Yep! Let's complete the auth now
             let mut params = AuthorizationResponse {
@@ -226,8 +309,8 @@ async fn get(
             };
 
             // Did they request an auth code?
-            if let Some(ref code) = code {
-                params.code = Some(code.code.clone());
+            if response_type.contains(&ResponseType::Code) {
+                params.code = Some(oauth2_session.fetch_code(&mut txn).await.wrap_error()?);
             }
 
             // Did they request an access token?
@@ -243,20 +326,13 @@ async fn get(
                 todo!("id tokens are not implemented yet");
             }
 
-            txn.commit().await.wrap_error()?;
-            let reply = back_to_client(redirect_uri.clone(), response_mode, params, &templates)
-                .wrap_error()?;
-            return Ok(reply);
-        }
-        // TODO: show reauth form
-    }
-
-    // TODO: show login form
+            back_to_client(redirect_uri, response_mode, params, &templates).wrap_error()?
+        } else {
+            // Ask for a reauth
+            // TODO: have the OAuth2 session ID in there
+            Box::new(see_other(Uri::from_static("/reauth")))
+        };
 
     txn.commit().await.wrap_error()?;
-    Ok(Box::new(warp::reply::json(&serde_json::json!({
-        "session": oauth2_session,
-        "code": code,
-        "redirect_uri": redirect_uri,
-    }))))
+    Ok(reply)
 }
