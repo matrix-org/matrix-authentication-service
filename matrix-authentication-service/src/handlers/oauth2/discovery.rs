@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use oauth2_types::oidc::Metadata;
+use std::collections::HashSet;
+
+use oauth2_types::{oidc::Metadata, requests::ResponseMode};
 use warp::{Filter, Rejection, Reply};
 
 use crate::config::OAuth2Config;
@@ -21,6 +23,27 @@ pub(super) fn filter(
     config: &OAuth2Config,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
     let base = config.issuer.clone();
+
+    let response_modes_supported = Some({
+        let mut s = HashSet::new();
+        s.insert(ResponseMode::FormPost);
+        s.insert(ResponseMode::Query);
+        s.insert(ResponseMode::Fragment);
+        s
+    });
+
+    let response_types_supported = Some({
+        let mut s = HashSet::new();
+        s.insert("code".to_string());
+        s.insert("token".to_string());
+        s.insert("id_token".to_string());
+        s.insert("code token".to_string());
+        s.insert("code id_token".to_string());
+        s.insert("token id_token".to_string());
+        s.insert("code token id_token".to_string());
+        s
+    });
+
     let metadata = Metadata {
         authorization_endpoint: base.join("oauth2/authorize").ok(),
         token_endpoint: base.join("oauth2/token").ok(),
@@ -28,8 +51,8 @@ pub(super) fn filter(
         issuer: base,
         registration_endpoint: None,
         scopes_supported: None,
-        response_types_supported: None,
-        response_modes_supported: None,
+        response_types_supported,
+        response_modes_supported,
         grant_types_supported: None,
         code_challenge_methods_supported: None,
     };

@@ -20,7 +20,7 @@ use url::Url;
 
 use crate::{
     pkce::CodeChallengeMethod,
-    requests::{GrantType, ResponseMode, ResponseType},
+    requests::{GrantType, ResponseMode},
 };
 
 // TODO: https://datatracker.ietf.org/doc/html/rfc8414#section-2
@@ -50,7 +50,7 @@ pub struct Metadata {
 
     /// JSON array containing a list of the OAuth 2.0 "response_type" values
     /// that this authorization server supports.
-    pub response_types_supported: Option<HashSet<ResponseType>>,
+    pub response_types_supported: Option<HashSet<String>>,
 
     /// JSON array containing a list of the OAuth 2.0 "response_mode" values
     /// that this authorization server supports, as specified in "OAuth 2.0
