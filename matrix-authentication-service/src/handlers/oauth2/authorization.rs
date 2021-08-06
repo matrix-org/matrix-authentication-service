@@ -16,7 +16,10 @@ use std::collections::{HashMap, HashSet};
 
 use data_encoding::BASE64URL_NOPAD;
 use headers::HeaderValue;
-use hyper::{header::LOCATION, StatusCode};
+use hyper::{
+    header::{CONTENT_TYPE, LOCATION},
+    Body, StatusCode,
+};
 use itertools::Itertools;
 use oauth2_types::{
     pkce,
@@ -28,82 +31,74 @@ use oauth2_types::{
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use url::Url;
-use warp::{reply::Response, Filter, Rejection, Reply};
+use warp::{
+    reply::{with_header, Response},
+    Filter, Rejection, Reply,
+};
 
 use crate::{
     config::{CookiesConfig, OAuth2ClientConfig, OAuth2Config},
     errors::WrapError,
-    filters::{session::with_optional_session, with_pool},
+    filters::{session::with_optional_session, with_pool, with_templates},
     storage::{oauth2::start_session, SessionInfo},
+    templates::{FormPostContext, Templates},
 };
 
-struct BackToClient<T> {
-    redirect_uri: Url,
+fn back_to_client<T>(
+    mut redirect_uri: Url,
     response_mode: ResponseMode,
     params: T,
-}
-
-#[derive(Serialize)]
-struct AllParams<'s, T> {
-    #[serde(flatten, skip_serializing_if = "Option::is_none")]
-    existing: Option<HashMap<&'s str, &'s str>>,
-
-    #[serde(flatten)]
-    new: T,
-}
-
-impl<T> Reply for BackToClient<T>
+    templates: &Templates,
+) -> anyhow::Result<Box<dyn Reply>>
 where
-    T: Serialize + Send,
+    T: Serialize,
 {
-    fn into_response(self) -> warp::reply::Response {
-        // TODO: there are a bunch of unwrap here, it might not be the right approach
-        let url = match self.response_mode {
-            ResponseMode::Query => {
-                let mut url = self.redirect_uri;
-                let existing: Option<HashMap<&str, &str>> = url
-                    .query()
-                    .and_then(|qs| serde_urlencoded::from_str(qs).ok());
+    #[derive(Serialize)]
+    struct AllParams<'s, T> {
+        #[serde(flatten, skip_serializing_if = "Option::is_none")]
+        existing: Option<HashMap<&'s str, &'s str>>,
 
-                let merged = AllParams {
-                    existing,
-                    new: self.params,
-                };
-
-                let new_qs = serde_urlencoded::to_string(merged)
-                    .expect("invalid query string serialization");
-
-                url.set_query(Some(&new_qs));
-                url
-            }
-            ResponseMode::Fragment => {
-                let mut url = self.redirect_uri;
-                let existing: Option<HashMap<&str, &str>> = url
-                    .fragment()
-                    .and_then(|qs| serde_urlencoded::from_str(qs).ok());
-
-                let merged = AllParams {
-                    existing,
-                    new: self.params,
-                };
-
-                let new_qs = serde_urlencoded::to_string(merged)
-                    .expect("invalid query string serialization");
-
-                url.set_fragment(Some(&new_qs));
-                url
-            }
-            ResponseMode::FormPost => todo!(),
-        };
-
-        let mut resp = Response::default();
-        *resp.status_mut() = StatusCode::SEE_OTHER;
-        resp.headers_mut().insert(
-            LOCATION,
-            HeaderValue::from_str(url.as_str()).expect("could not convert url to header value"),
-        );
-        resp
+        #[serde(flatten)]
+        params: T,
     }
+
+    match response_mode {
+        ResponseMode::Query => {
+            let existing: Option<HashMap<&str, &str>> = redirect_uri
+                .query()
+                .map(|qs| serde_urlencoded::from_str(qs))
+                .transpose()?;
+
+            let merged = AllParams { existing, params };
+
+            let new_qs = serde_urlencoded::to_string(merged)?;
+
+            redirect_uri.set_query(Some(&new_qs));
+        }
+        ResponseMode::Fragment => {
+            let existing: Option<HashMap<&str, &str>> = redirect_uri
+                .fragment()
+                .map(|qs| serde_urlencoded::from_str(qs))
+                .transpose()?;
+
+            let merged = AllParams { existing, params };
+
+            let new_qs = serde_urlencoded::to_string(merged)?;
+
+            redirect_uri.set_fragment(Some(&new_qs));
+        }
+        ResponseMode::FormPost => {
+            let ctx = FormPostContext::new(redirect_uri, params);
+            let rendered = templates.render_form_post(&ctx)?;
+            return Ok(Box::new(with_header(rendered, CONTENT_TYPE, "text/html")));
+        }
+    };
+
+    Ok(Box::new(with_header(
+        StatusCode::SEE_OTHER,
+        LOCATION,
+        HeaderValue::from_str(redirect_uri.as_str())?,
+    )))
 }
 
 #[derive(Deserialize)]
@@ -115,12 +110,19 @@ struct Params {
     pkce: Option<pkce::Request>,
 }
 
+/// Given a list of response types and an optional user-defined response mode,
+/// figure out what response mode must be used, and emit an error if the
+/// suggested response mode isn't allowed for the given response types.
 fn resolve_response_mode(
     response_type: &HashSet<ResponseType>,
     suggested_response_mode: Option<ResponseMode>,
 ) -> anyhow::Result<ResponseMode> {
     use ResponseMode as M;
     use ResponseType as T;
+
+    // If the response type includes either "token" or "id_token", the default
+    // response mode is "fragment" and the response mode "query" must not be
+    // used
     if response_type.contains(&T::Token) || response_type.contains(&T::IdToken) {
         match suggested_response_mode {
             None => Ok(M::Fragment),
@@ -128,12 +130,14 @@ fn resolve_response_mode(
             Some(mode) => Ok(mode),
         }
     } else {
+        // In other cases, all response modes are allowed, defaulting to "query"
         Ok(suggested_response_mode.unwrap_or(M::Query))
     }
 }
 
 pub fn filter(
     pool: &PgPool,
+    templates: &Templates,
     oauth2_config: &OAuth2Config,
     cookies_config: &CookiesConfig,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
@@ -144,6 +148,7 @@ pub fn filter(
         .and(warp::query())
         .and(with_optional_session(pool, cookies_config))
         .and(with_pool(pool))
+        .and(with_templates(templates))
         .and_then(get)
 }
 
@@ -152,7 +157,8 @@ async fn get(
     params: Params,
     maybe_session: Option<SessionInfo>,
     pool: PgPool,
-) -> Result<impl Reply, Rejection> {
+    templates: Templates,
+) -> Result<Box<dyn Reply>, Rejection> {
     // First, find out what client it is
     let client = clients
         .into_iter()
@@ -236,12 +242,9 @@ async fn get(
             }
 
             txn.commit().await.wrap_error()?;
-            return Ok(BackToClient {
-                params,
-                response_mode,
-                redirect_uri: redirect_uri.clone(),
-            }
-            .into_response());
+            let reply = back_to_client(redirect_uri.clone(), response_mode, params, &templates)
+                .wrap_error()?;
+            return Ok(reply);
         }
         // TODO: show reauth form
     }
@@ -249,10 +252,9 @@ async fn get(
     // TODO: show login form
 
     txn.commit().await.wrap_error()?;
-    Ok(warp::reply::json(&serde_json::json!({
+    Ok(Box::new(warp::reply::json(&serde_json::json!({
         "session": oauth2_session,
         "code": code,
         "redirect_uri": redirect_uri,
-    }))
-    .into_response())
+    }))))
 }

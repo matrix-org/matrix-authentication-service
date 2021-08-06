@@ -29,7 +29,7 @@ pub fn root(
     config: &RootConfig,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
     health(pool)
-        .or(oauth2(pool, &config.oauth2, &config.cookies))
+        .or(oauth2(pool, templates, &config.oauth2, &config.cookies))
         .or(views(pool, templates, &config.csrf, &config.cookies))
         //.or(warp::get().map(|| StatusCode::NOT_FOUND)) <- This messes up the error reporting
         .with(warp::log(module_path!()))

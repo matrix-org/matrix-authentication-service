@@ -15,7 +15,10 @@
 use sqlx::PgPool;
 use warp::{Filter, Rejection, Reply};
 
-use crate::config::{CookiesConfig, OAuth2Config};
+use crate::{
+    config::{CookiesConfig, OAuth2Config},
+    templates::Templates,
+};
 
 mod authorization;
 mod discovery;
@@ -24,8 +27,14 @@ use self::{authorization::filter as authorization, discovery::filter as discover
 
 pub fn filter(
     pool: &PgPool,
+    templates: &Templates,
     oauth2_config: &OAuth2Config,
     cookies_config: &CookiesConfig,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
-    discovery(oauth2_config).or(authorization(pool, oauth2_config, cookies_config))
+    discovery(oauth2_config).or(authorization(
+        pool,
+        templates,
+        oauth2_config,
+        cookies_config,
+    ))
 }

@@ -18,6 +18,7 @@ use serde::Serialize;
 use tera::{Context, Error as TeraError, Tera};
 use thiserror::Error;
 use tracing::{debug, info};
+use url::Url;
 use warp::reject::Reject;
 
 use crate::{filters::CsrfToken, storage::SessionInfo};
@@ -88,15 +89,37 @@ macro_rules! count {
 /// Macro that helps generating helper function that renders a specific template
 /// with a strongly-typed context. It also register the template in a static
 /// array to help detecting missing templates at startup time.
+///
+/// The syntax looks almost like a function to confuse syntax highlighter as
+/// little as possible.
 macro_rules! register_templates {
-    ( $($(#[doc = $doc:expr])* $name:ident ($param:ty) => $template:expr),* $(,)? ) => {
+    {
+        $(
+            // Match any attribute on the function, such as #[doc], #[allow(dead_code)], etc.
+            $( #[ $attr:meta ] )*
+            // The function name
+            pub fn $name:ident
+                // Optional list of generics. Taken from
+                // https://newbedev.com/rust-macro-accepting-type-with-generic-parameters
+                $(< $( $lt:tt $( : $clt:tt $(+ $dlt:tt )* )? ),+ >)?
+                // Type of context taken by the template
+                ( $param:ty )
+            {
+                // The name of the template file
+                $template:expr
+            }
+        )*
+    } => {
         /// List of registered templates
-        static TEMPLATES: [&'static str; count!($($template)*)] = [$($template),*];
+        static TEMPLATES: [&'static str; count!( $( $template )* )] = [ $( $template ),* ];
 
         impl Templates {
             $(
-                $(#[doc = $doc])?
-                pub fn $name(&self, context: &$param) -> Result<String, TemplateError> {
+                $(#[$attr])?
+                pub fn $name
+                    $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
+                    (&self, context: &$param)
+                -> Result<String, TemplateError> {
                     let ctx = Context::from_serialize(context)
                         .map_err(|source| TemplateError::Context { template: $template, source })?;
 
@@ -108,16 +131,19 @@ macro_rules! register_templates {
     };
 }
 
-register_templates!(
+register_templates! {
     /// Render the login page
-    render_login(WithCsrf<()>) => "login.html",
+    pub fn render_login(WithCsrf<()>) { "login.html" }
 
     /// Render the home page
-    render_index(WithCsrf<WithOptionalSession<()>>) => "index.html",
+    pub fn render_index(WithCsrf<WithOptionalSession<()>>) { "index.html" }
 
     /// Render the re-authentication form
-    render_reauth(WithCsrf<WithSession<()>>) => "reauth.html",
-);
+    pub fn render_reauth(WithCsrf<WithSession<()>>) { "reauth.html" }
+
+    /// Render the form used by the form_post response mode
+    pub fn render_form_post<T: Serialize>(FormPostContext<T>) { "form_post.html" }
+}
 
 /// Helper trait to construct context wrappers
 pub trait TemplateContext: Sized {
@@ -170,4 +196,20 @@ pub struct WithOptionalSession<T> {
 
     #[serde(flatten)]
     inner: T,
+}
+
+/// Context used by the `form_post.html` template
+#[derive(Serialize)]
+pub struct FormPostContext<T> {
+    redirect_uri: Url,
+    params: T,
+}
+
+impl<T> FormPostContext<T> {
+    pub fn new(redirect_uri: Url, params: T) -> Self {
+        Self {
+            redirect_uri,
+            params,
+        }
+    }
 }
