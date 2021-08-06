@@ -14,7 +14,7 @@
 
 use serde::Deserialize;
 use sqlx::PgPool;
-use warp::{hyper::Uri, reply::with_header, wrap_fn, Filter, Rejection, Reply};
+use warp::{hyper::Uri, reply::html, wrap_fn, Filter, Rejection, Reply};
 
 use crate::{
     config::{CookiesConfig, CsrfConfig},
@@ -64,10 +64,7 @@ async fn get(
     let ctx = ().with_session(session).with_csrf(&csrf_token);
 
     let content = templates.render_reauth(&ctx)?;
-    Ok((
-        csrf_token,
-        with_header(content, "Content-Type", "text/html"),
-    ))
+    Ok((csrf_token, html(content)))
 }
 
 async fn post(

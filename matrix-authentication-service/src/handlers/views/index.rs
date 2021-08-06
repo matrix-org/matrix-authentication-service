@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use sqlx::PgPool;
-use warp::{reply::with_header, wrap_fn, Filter, Rejection, Reply};
+use warp::{reply::html, wrap_fn, Filter, Rejection, Reply};
 
 use crate::{
     config::{CookiesConfig, CsrfConfig},
@@ -50,8 +50,5 @@ async fn get(
     let ctx = ().maybe_with_session(session).with_csrf(&csrf_token);
 
     let content = templates.render_index(&ctx)?;
-    Ok((
-        csrf_token,
-        with_header(content, "Content-Type", "text/html"),
-    ))
+    Ok((csrf_token, html(content)))
 }

@@ -14,7 +14,7 @@
 
 use serde::Deserialize;
 use sqlx::PgPool;
-use warp::{hyper::Uri, reply::with_header, wrap_fn, Filter, Rejection, Reply};
+use warp::{hyper::Uri, reply::html, wrap_fn, Filter, Rejection, Reply};
 
 use crate::{
     config::{CookiesConfig, CsrfConfig},
@@ -65,10 +65,7 @@ async fn get(
 
     // TODO: check if there is an existing session
     let content = templates.render_login(&ctx)?;
-    Ok((
-        csrf_token,
-        with_header(content, "Content-Type", "text/html"),
-    ))
+    Ok((csrf_token, html(content)))
 }
 
 async fn post(db: PgPool, form: LoginForm) -> Result<(SessionInfo, impl Reply), Rejection> {

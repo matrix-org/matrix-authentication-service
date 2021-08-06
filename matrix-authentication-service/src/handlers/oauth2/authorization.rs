@@ -15,11 +15,7 @@
 use std::collections::{HashMap, HashSet};
 
 use data_encoding::BASE64URL_NOPAD;
-use headers::HeaderValue;
-use hyper::{
-    header::{CONTENT_TYPE, LOCATION},
-    Body, StatusCode,
-};
+use hyper::{header::LOCATION, StatusCode};
 use itertools::Itertools;
 use oauth2_types::{
     pkce,
@@ -32,7 +28,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use url::Url;
 use warp::{
-    reply::{with_header, Response},
+    reply::{html, with_header},
     Filter, Rejection, Reply,
 };
 
@@ -74,6 +70,12 @@ where
             let new_qs = serde_urlencoded::to_string(merged)?;
 
             redirect_uri.set_query(Some(&new_qs));
+
+            Ok(Box::new(with_header(
+                StatusCode::SEE_OTHER,
+                LOCATION,
+                redirect_uri.as_str(),
+            )))
         }
         ResponseMode::Fragment => {
             let existing: Option<HashMap<&str, &str>> = redirect_uri
@@ -86,19 +88,19 @@ where
             let new_qs = serde_urlencoded::to_string(merged)?;
 
             redirect_uri.set_fragment(Some(&new_qs));
+
+            Ok(Box::new(with_header(
+                StatusCode::SEE_OTHER,
+                LOCATION,
+                redirect_uri.as_str(),
+            )))
         }
         ResponseMode::FormPost => {
             let ctx = FormPostContext::new(redirect_uri, params);
             let rendered = templates.render_form_post(&ctx)?;
-            return Ok(Box::new(with_header(rendered, CONTENT_TYPE, "text/html")));
+            Ok(Box::new(html(rendered)))
         }
-    };
-
-    Ok(Box::new(with_header(
-        StatusCode::SEE_OTHER,
-        LOCATION,
-        HeaderValue::from_str(redirect_uri.as_str())?,
-    )))
+    }
 }
 
 #[derive(Deserialize)]
