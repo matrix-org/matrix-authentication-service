@@ -378,6 +378,52 @@
       "nullable": []
     }
   },
+  "b766b2b41d8770b5bef9928bb3b96abbaf8466b473e12b21f145c015b7cf2f05": {
+    "query": "\n            INSERT INTO oauth2_access_tokens\n                (oauth2_session_id, token, expires_after)\n            VALUES\n                ($1, $2, $3)\n            RETURNING\n                id, oauth2_session_id, token, expires_after, created_at\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "oauth2_session_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 2,
+          "name": "token",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "expires_after",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 4,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text",
+          "Int4"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "f9a09ff53b6f221649f4f050e3d5ade114f852ddf50a78610a6c0ef0689af681": {
     "query": "\n            INSERT INTO users (username, hashed_password)\n            VALUES ($1, $2)\n            RETURNING id\n        ",
     "describe": {

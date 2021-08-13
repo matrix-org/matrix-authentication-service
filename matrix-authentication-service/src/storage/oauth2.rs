@@ -247,3 +247,40 @@ pub async fn add_code(
     .await
     .context("could not insert oauth2 authorization code")
 }
+
+#[derive(FromRow, Serialize)]
+pub struct OAuth2AccessToken {
+    id: i64,
+    oauth2_session_id: i64,
+    token: String,
+    expires_after: i32,
+    created_at: DateTime<Utc>,
+}
+
+pub async fn add_access_token(
+    executor: impl Executor<'_, Database = Postgres>,
+    oauth2_session_id: i64,
+    token: &str,
+    expires_after: Duration,
+) -> anyhow::Result<OAuth2AccessToken> {
+    // Checked convertion of duration to i32, maxing at i32::MAX
+    let expires_after = i32::try_from(expires_after.num_seconds()).unwrap_or(i32::MAX);
+
+    sqlx::query_as!(
+        OAuth2AccessToken,
+        r#"
+            INSERT INTO oauth2_access_tokens
+                (oauth2_session_id, token, expires_after)
+            VALUES
+                ($1, $2, $3)
+            RETURNING
+                id, oauth2_session_id, token, expires_after, created_at
+        "#,
+        oauth2_session_id,
+        token,
+        expires_after,
+    )
+    .fetch_one(executor)
+    .await
+    .context("could not insert oauth2 access token")
+}

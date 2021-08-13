@@ -30,6 +30,7 @@ mod filters;
 mod handlers;
 mod storage;
 mod templates;
+mod tokens;
 
 use self::cli::RootCommand;
 

@@ -156,6 +156,7 @@ pub struct AuthorizationResponse {
     pub state: Option<String>,
     #[serde(flatten)]
     pub access_token: Option<AccessTokenResponse>,
+    pub refresh_token: Option<String>,
 }
 
 #[derive(

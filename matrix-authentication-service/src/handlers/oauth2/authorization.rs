@@ -17,6 +17,7 @@ use std::{
     convert::TryFrom,
 };
 
+use chrono::Duration;
 use data_encoding::BASE64URL_NOPAD;
 use hyper::{
     header::LOCATION,
@@ -31,6 +32,7 @@ use oauth2_types::{
         ResponseType,
     },
 };
+use rand::thread_rng;
 use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Postgres, Transaction};
 use url::Url;
@@ -50,10 +52,11 @@ use crate::{
     },
     handlers::views::LoginRequest,
     storage::{
-        oauth2::{get_session_by_id, start_session},
+        oauth2::{add_access_token, get_session_by_id, start_session},
         SessionInfo,
     },
     templates::{FormPostContext, Templates},
+    tokens,
 };
 
 fn back_to_client<T>(
@@ -312,10 +315,19 @@ async fn step(
 
             // Did they request an access token?
             if response_type.contains(&ResponseType::Token) {
-                // TODO: generate and store an access token
-                params.access_token = Some(AccessTokenResponse::new(
-                    "some_static_token_that_should_be_generated".into(),
-                ));
+                let ttl = Duration::minutes(5);
+                let (access_token, refresh_token) = {
+                    let mut rng = thread_rng();
+                    (
+                        tokens::generate(&mut rng, tokens::TokenType::AccessToken),
+                        tokens::generate(&mut rng, tokens::TokenType::RefreshToken)
+                    )
+                };
+
+                add_access_token(&mut txn, oauth2_session_id, &access_token, ttl).await.wrap_error()?;
+                params.access_token = Some(AccessTokenResponse::new(access_token).with_expires_in(ttl));
+                // TODO: save the refresh token
+                params.refresh_token = Some(refresh_token);
             }
 
             // Did they request an ID token?
