@@ -22,8 +22,12 @@ use crate::{
 
 mod authorization;
 mod discovery;
+mod introspection;
 
-use self::{authorization::filter as authorization, discovery::filter as discovery};
+use self::{
+    authorization::filter as authorization, discovery::filter as discovery,
+    introspection::filter as introspection,
+};
 
 pub fn filter(
     pool: &PgPool,
@@ -31,10 +35,12 @@ pub fn filter(
     oauth2_config: &OAuth2Config,
     cookies_config: &CookiesConfig,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
-    discovery(oauth2_config).or(authorization(
-        pool,
-        templates,
-        oauth2_config,
-        cookies_config,
-    ))
+    discovery(oauth2_config)
+        .or(authorization(
+            pool,
+            templates,
+            oauth2_config,
+            cookies_config,
+        ))
+        .or(introspection(pool, oauth2_config))
 }

@@ -63,4 +63,7 @@ pub struct Metadata {
 
     /// PKCE code challenge methods supported by this authorization server
     pub code_challenge_methods_supported: Option<HashSet<CodeChallengeMethod>>,
+
+    /// URL of the authorization server's OAuth 2.0 introspection endpoint.
+    pub introspection_endpoint: Option<Url>,
 }

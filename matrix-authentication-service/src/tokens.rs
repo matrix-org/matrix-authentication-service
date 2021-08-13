@@ -15,6 +15,7 @@
 use std::convert::TryInto;
 
 use crc::{Crc, CRC_32_ISO_HDLC};
+use oauth2_types::requests::TokenTypeHint;
 use rand::{distributions::Alphanumeric, Rng};
 use thiserror::Error;
 
@@ -38,6 +39,16 @@ impl TokenType {
             "mar" => Some(TokenType::RefreshToken),
             _ => None,
         }
+    }
+}
+
+impl PartialEq<TokenTypeHint> for TokenType {
+    fn eq(&self, other: &TokenTypeHint) -> bool {
+        matches!(
+            (self, other),
+            (TokenType::AccessToken, TokenTypeHint::AccessToken)
+                | (TokenType::RefreshToken, TokenTypeHint::RefreshToken)
+        )
     }
 }
 

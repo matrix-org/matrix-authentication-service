@@ -26,6 +26,9 @@ pub struct OAuth2ClientConfig {
     pub client_id: String,
 
     #[serde(default)]
+    pub client_secret: Option<String>,
+
+    #[serde(default)]
     pub redirect_uris: Option<Vec<Url>>,
 }
 

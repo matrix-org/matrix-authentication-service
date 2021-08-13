@@ -148,13 +148,13 @@ pub async fn start_session(
     sqlx::query_as!(
         OAuth2Session,
         r#"
-            INSERT INTO oauth2_sessions 
+            INSERT INTO oauth2_sessions
                 (user_session_id, client_id, redirect_uri, scope, state, nonce, max_age,
                  response_type, response_mode)
             VALUES
                 ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             RETURNING
-                id, user_session_id, client_id, redirect_uri, scope, state, nonce, max_age, 
+                id, user_session_id, client_id, redirect_uri, scope, state, nonce, max_age,
                 response_type, response_mode, created_at, updated_at
         "#,
         optional_session_id,
@@ -283,4 +283,49 @@ pub async fn add_access_token(
     .fetch_one(executor)
     .await
     .context("could not insert oauth2 access token")
+}
+
+pub struct OAuth2AccessTokenLookup {
+    pub active: bool,
+    pub username: String,
+    pub client_id: String,
+    pub scope: String,
+    pub created_at: DateTime<Utc>,
+    expires_after: i32,
+}
+
+impl OAuth2AccessTokenLookup {
+    pub fn exp(&self) -> DateTime<Utc> {
+        self.created_at + Duration::seconds(i64::from(self.expires_after))
+    }
+}
+
+pub async fn lookup_access_token(
+    executor: impl Executor<'_, Database = Postgres>,
+    token: &str,
+) -> anyhow::Result<OAuth2AccessTokenLookup> {
+    sqlx::query_as!(
+        OAuth2AccessTokenLookup,
+        r#"
+            SELECT
+                 u.username      AS "username!",
+                us.active        AS "active!",
+                os.client_id     AS "client_id!",
+                os.scope         AS "scope!",
+                at.created_at    AS "created_at!",
+                at.expires_after AS "expires_after!"
+            FROM oauth2_access_tokens at
+            INNER JOIN oauth2_sessions os
+              ON os.id = at.oauth2_session_id
+            INNER JOIN user_sessions us
+              ON us.id = os.user_session_id
+            INNER JOIN users u
+              ON u.id = us.user_id
+            WHERE at.token = $1
+        "#,
+        token,
+    )
+    .fetch_one(executor)
+    .await
+    .context("could not introspect oauth2 access token")
 }

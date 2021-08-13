@@ -14,11 +14,14 @@
 
 use std::{collections::HashSet, hash::Hash};
 
-use chrono::Duration;
+use chrono::{DateTime, Duration, Utc};
 use language_tags::LanguageTag;
 use parse_display::{Display, FromStr};
 use serde::{Deserialize, Serialize};
-use serde_with::{rust::StringWithSeparator, serde_as, DurationSeconds, SpaceSeparator};
+use serde_with::{
+    rust::StringWithSeparator, serde_as, skip_serializing_none, DurationSeconds, SpaceSeparator,
+    TimestampSeconds,
+};
 use url::Url;
 
 // ref: https://www.iana.org/assignments/oauth-parameters/oauth-parameters.xhtml
@@ -258,6 +261,55 @@ impl AccessTokenResponse {
         self.expires_in = Some(expires_in);
         self
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum TokenTypeHint {
+    AccessToken,
+    RefreshToken,
+}
+
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub struct IntrospectionRequest {
+    pub token: String,
+
+    #[serde(default)]
+    pub token_type_hint: Option<TokenTypeHint>,
+}
+
+#[serde_as]
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Default)]
+pub struct IntrospectionResponse {
+    pub active: bool,
+
+    #[serde_as(as = "Option<StringWithSeparator::<SpaceSeparator, String>>")]
+    pub scope: Option<HashSet<String>>,
+
+    pub client_id: Option<String>,
+
+    pub username: Option<String>,
+
+    pub token_type: Option<TokenTypeHint>,
+
+    #[serde_as(as = "Option<TimestampSeconds>")]
+    pub exp: Option<DateTime<Utc>>,
+
+    #[serde_as(as = "Option<TimestampSeconds>")]
+    pub iat: Option<DateTime<Utc>>,
+
+    #[serde_as(as = "Option<TimestampSeconds>")]
+    pub nbf: Option<DateTime<Utc>>,
+
+    pub sub: Option<String>,
+
+    pub aud: Option<String>,
+
+    pub iss: Option<String>,
+
+    pub jti: Option<String>,
 }
 
 #[cfg(test)]
