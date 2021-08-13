@@ -23,8 +23,8 @@ use crate::{errors::WrapError, filters::database::with_connection};
 pub fn filter(
     pool: &PgPool,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
-    warp::get()
-        .and(warp::path("health"))
+    warp::path!("health")
+        .and(warp::get())
         .and(with_connection(pool))
         .and_then(get)
 }

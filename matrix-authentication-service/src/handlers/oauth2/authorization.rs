@@ -163,8 +163,8 @@ pub fn filter(
     cookies_config: &CookiesConfig,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
     let clients = oauth2_config.clients.clone();
-    let authorize = warp::get()
-        .and(warp::path!("oauth2" / "authorize"))
+    let authorize = warp::path!("oauth2" / "authorize")
+        .and(warp::get())
         .map(move || clients.clone())
         .and(warp::query())
         .and(with_optional_session(pool, cookies_config))
@@ -172,8 +172,8 @@ pub fn filter(
         .and(with_templates(templates))
         .and_then(get);
 
-    let step = warp::get()
-        .and(warp::path!("oauth2" / "authorize" / "step"))
+    let step = warp::path!("oauth2" / "authorize" / "step")
+        .and(warp::get())
         .and(warp::query().map(|s: StepRequest| s.id))
         .and(with_session(pool, cookies_config))
         .and(with_transaction(pool))

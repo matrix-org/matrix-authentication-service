@@ -99,7 +99,7 @@ pub(super) fn filter(
         .untuple_one()
         .with(wrap_fn(save_session(cookies_config)));
 
-    warp::path("login").and(get.or(post))
+    warp::path!("login").and(get.or(post))
 }
 
 async fn get(

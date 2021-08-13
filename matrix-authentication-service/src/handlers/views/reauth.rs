@@ -54,7 +54,7 @@ pub(super) fn filter(
         .and(protected_form(cookies_config))
         .and_then(post);
 
-    warp::path("reauth").and(get.or(post))
+    warp::path!("reauth").and(get.or(post))
 }
 
 async fn get(

@@ -60,8 +60,8 @@ pub(super) fn filter(
 
     let cors = warp::cors().allow_any_origin();
 
-    warp::get()
-        .and(warp::path!(".well-known" / "openid-configuration"))
+    warp::path!(".well-known" / "openid-configuration")
+        .and(warp::get())
         .map(move || warp::reply::json(&metadata))
         .with(cors)
 }

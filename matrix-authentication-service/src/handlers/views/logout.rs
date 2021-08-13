@@ -26,8 +26,8 @@ pub(super) fn filter(
     pool: &PgPool,
     cookies_config: &CookiesConfig,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
-    warp::post()
-        .and(warp::path("logout"))
+    warp::path!("logout")
+        .and(warp::post())
         .and(with_session(pool, cookies_config))
         .and(with_connection(pool))
         .and(protected_form(cookies_config))

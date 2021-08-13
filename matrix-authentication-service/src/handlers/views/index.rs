@@ -32,8 +32,8 @@ pub(super) fn filter(
     csrf_config: &CsrfConfig,
     cookies_config: &CookiesConfig,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
-    warp::get()
-        .and(warp::path::end())
+    warp::path::end()
+        .and(warp::get())
         .and(with_templates(templates))
         .and(updated_csrf_token(cookies_config, csrf_config))
         .and(with_optional_session(pool, cookies_config))
