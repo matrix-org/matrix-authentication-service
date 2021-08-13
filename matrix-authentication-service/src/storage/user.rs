@@ -20,7 +20,7 @@ use chrono::{DateTime, Utc};
 use password_hash::{PasswordHash, PasswordHasher, SaltString};
 use rand::rngs::OsRng;
 use serde::Serialize;
-use sqlx::{Executor, FromRow, PgPool, Postgres, Transaction};
+use sqlx::{Acquire, Executor, FromRow, Postgres, Transaction};
 use tracing::{info_span, Instrument};
 
 #[derive(Serialize, Debug, Clone, FromRow)]
@@ -44,8 +44,12 @@ impl SessionInfo {
         self.id
     }
 
-    pub async fn reauth(mut self, pool: &PgPool, password: &str) -> anyhow::Result<Self> {
-        let mut txn = pool.begin().await?;
+    pub async fn reauth(
+        mut self,
+        conn: impl Acquire<'_, Database = Postgres>,
+        password: &str,
+    ) -> anyhow::Result<Self> {
+        let mut txn = conn.begin().await?;
         self.last_authd_at = Some(authenticate_session(&mut txn, self.id, password).await?);
         txn.commit().await?;
         Ok(self)
@@ -61,8 +65,12 @@ impl SessionInfo {
     }
 }
 
-pub async fn login(pool: &PgPool, username: &str, password: &str) -> anyhow::Result<SessionInfo> {
-    let mut txn = pool.begin().await?;
+pub async fn login(
+    conn: impl Acquire<'_, Database = Postgres>,
+    username: &str,
+    password: &str,
+) -> anyhow::Result<SessionInfo> {
+    let mut txn = conn.begin().await?;
     let user = lookup_user_by_username(&mut txn, username).await?;
     let mut session = start_session(&mut txn, user).await?;
     session.last_authd_at = Some(authenticate_session(&mut txn, session.id, password).await?);

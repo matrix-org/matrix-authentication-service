@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use serde::Deserialize;
-use sqlx::PgPool;
+use sqlx::{pool::PoolConnection, PgPool, Postgres};
 use warp::{hyper::Uri, reply::html, wrap_fn, Filter, Rejection, Reply};
 
 use crate::{
@@ -21,8 +21,9 @@ use crate::{
     errors::WrapError,
     filters::{
         csrf::{protected_form, save_csrf_token, updated_csrf_token},
+        database::with_connection,
         session::with_session,
-        with_pool, with_templates, CsrfToken,
+        with_templates, CsrfToken,
     },
     storage::SessionInfo,
     templates::{TemplateContext, Templates},
@@ -49,7 +50,7 @@ pub(super) fn filter(
 
     let post = warp::post()
         .and(with_session(pool, cookies_config))
-        .and(with_pool(pool))
+        .and(with_connection(pool))
         .and(protected_form(cookies_config))
         .and_then(post);
 
@@ -69,10 +70,13 @@ async fn get(
 
 async fn post(
     session: SessionInfo,
-    pool: PgPool,
+    mut conn: PoolConnection<Postgres>,
     form: ReauthForm,
 ) -> Result<impl Reply, Rejection> {
-    let _session = session.reauth(&pool, &form.password).await.wrap_error()?;
+    let _session = session
+        .reauth(&mut conn, &form.password)
+        .await
+        .wrap_error()?;
 
     Ok(warp::redirect(Uri::from_static("/")))
 }

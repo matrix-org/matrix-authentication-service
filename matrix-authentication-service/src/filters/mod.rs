@@ -15,22 +15,15 @@
 pub mod csrf;
 // mod errors;
 pub mod cookies;
+pub mod database;
 pub mod session;
 
 use std::convert::Infallible;
 
-use sqlx::PgPool;
 use warp::Filter;
 
 pub use self::csrf::CsrfToken;
 use crate::templates::Templates;
-
-pub fn with_pool(
-    pool: &PgPool,
-) -> impl Filter<Extract = (PgPool,), Error = Infallible> + Clone + Send + Sync + 'static {
-    let pool = pool.clone();
-    warp::any().map(move || pool.clone())
-}
 
 pub fn with_templates(
     templates: &Templates,

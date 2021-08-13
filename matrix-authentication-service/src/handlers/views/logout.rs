@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use sqlx::PgPool;
+use sqlx::{pool::PoolConnection, PgPool, Postgres};
 use warp::{hyper::Uri, Filter, Rejection, Reply};
 
 use crate::{
     config::CookiesConfig,
     errors::WrapError,
-    filters::{csrf::protected_form, session::with_session, with_pool},
+    filters::{csrf::protected_form, database::with_connection, session::with_session},
     storage::SessionInfo,
 };
 
@@ -29,12 +29,16 @@ pub(super) fn filter(
     warp::post()
         .and(warp::path("logout"))
         .and(with_session(pool, cookies_config))
-        .and(with_pool(pool))
+        .and(with_connection(pool))
         .and(protected_form(cookies_config))
         .and_then(post)
 }
 
-async fn post(session: SessionInfo, pool: PgPool, _form: ()) -> Result<impl Reply, Rejection> {
-    session.end(&pool).await.wrap_error()?;
+async fn post(
+    session: SessionInfo,
+    mut conn: PoolConnection<Postgres>,
+    _form: (),
+) -> Result<impl Reply, Rejection> {
+    session.end(&mut conn).await.wrap_error()?;
     Ok::<_, Rejection>(warp::redirect(Uri::from_static("/login")))
 }

@@ -32,7 +32,7 @@ use oauth2_types::{
     },
 };
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
+use sqlx::{PgPool, Postgres, Transaction};
 use url::Url;
 use warp::{
     redirect::see_other,
@@ -44,8 +44,9 @@ use crate::{
     config::{CookiesConfig, OAuth2ClientConfig, OAuth2Config},
     errors::WrapError,
     filters::{
+        database::with_transaction,
         session::{with_optional_session, with_session},
-        with_pool, with_templates,
+        with_templates,
     },
     handlers::views::LoginRequest,
     storage::{
@@ -164,7 +165,7 @@ pub fn filter(
         .map(move || clients.clone())
         .and(warp::query())
         .and(with_optional_session(pool, cookies_config))
-        .and(with_pool(pool))
+        .and(with_transaction(pool))
         .and(with_templates(templates))
         .and_then(get);
 
@@ -172,7 +173,7 @@ pub fn filter(
         .and(warp::path!("oauth2" / "authorize" / "step"))
         .and(warp::query().map(|s: StepRequest| s.id))
         .and(with_session(pool, cookies_config))
-        .and(with_pool(pool))
+        .and(with_transaction(pool))
         .and(with_templates(templates))
         .and_then(step);
 
@@ -183,7 +184,7 @@ async fn get(
     clients: Vec<OAuth2ClientConfig>,
     params: Params,
     maybe_session: Option<SessionInfo>,
-    pool: PgPool,
+    mut txn: Transaction<'_, Postgres>,
     templates: Templates,
 ) -> Result<Box<dyn Reply>, Rejection> {
     // First, find out what client it is
@@ -198,8 +199,6 @@ async fn get(
         .resolve_redirect_uri(&params.auth.redirect_uri)
         .wrap_error()?;
 
-    // Start a DB transaction
-    let mut txn = pool.begin().await.wrap_error()?;
     let maybe_session_id = maybe_session.as_ref().map(SessionInfo::key);
 
     let scope: String = {
@@ -237,14 +236,15 @@ async fn get(
             .wrap_error()?;
     };
 
-    // Do we have a user in this session, with a last authentication time that
-    // matches the requirement?
+    // Do we already have a user session for this oauth2 session?
     let user_session = oauth2_session.fetch_session(&mut txn).await.wrap_error()?;
-    txn.commit().await.wrap_error()?;
 
     if let Some(user_session) = user_session {
-        step(oauth2_session.id, user_session, pool, templates).await
+        step(oauth2_session.id, user_session, txn, templates).await
     } else {
+        // If not, redirect the user to the login page
+        txn.commit().await.wrap_error()?;
+
         let next = StepRequest::new(oauth2_session.id)
             .build_uri()
             .wrap_error()?
@@ -280,12 +280,9 @@ impl StepRequest {
 async fn step(
     oauth2_session_id: i64,
     user_session: SessionInfo,
-    pool: PgPool,
+    mut txn: Transaction<'_, Postgres>,
     templates: Templates,
 ) -> Result<Box<dyn Reply>, Rejection> {
-    // Start a DB transaction
-    let mut txn = pool.begin().await.wrap_error()?;
-
     let mut oauth2_session = get_session_by_id(&mut txn, oauth2_session_id)
         .await
         .wrap_error()?;

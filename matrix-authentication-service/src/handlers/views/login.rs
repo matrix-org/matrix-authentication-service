@@ -16,7 +16,7 @@ use std::convert::TryFrom;
 
 use hyper::http::uri::{Parts, PathAndQuery, Uri};
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
+use sqlx::{pool::PoolConnection, PgPool, Postgres};
 use warp::{reply::html, wrap_fn, Filter, Rejection, Reply};
 
 use crate::{
@@ -24,8 +24,9 @@ use crate::{
     errors::WrapError,
     filters::{
         csrf::{protected_form, save_csrf_token, updated_csrf_token},
-        session::save_session,
-        with_pool, with_templates, CsrfToken,
+        database::with_connection,
+        session::{save_session, with_optional_session},
+        with_templates, CsrfToken,
     },
     storage::{login, SessionInfo},
     templates::{TemplateContext, Templates},
@@ -51,6 +52,22 @@ impl LoginRequest {
         })?;
         Ok(uri)
     }
+
+    fn redirect(self) -> Result<impl Reply, Rejection> {
+        let uri: Uri = Uri::from_parts({
+            let mut parts = Parts::default();
+            parts.path_and_query = Some(
+                self.next
+                    .map(warp::http::uri::PathAndQuery::try_from)
+                    .transpose()
+                    .wrap_error()?
+                    .unwrap_or_else(|| PathAndQuery::from_static("/")),
+            );
+            parts
+        })
+        .wrap_error()?;
+        Ok(warp::redirect::see_other(uri))
+    }
 }
 
 #[derive(Deserialize)]
@@ -68,12 +85,14 @@ pub(super) fn filter(
     let get = warp::get()
         .and(with_templates(templates))
         .and(updated_csrf_token(cookies_config, csrf_config))
+        .and(warp::query())
+        .and(with_optional_session(pool, cookies_config))
         .and_then(get)
         .untuple_one()
         .with(wrap_fn(save_csrf_token(cookies_config)));
 
     let post = warp::post()
-        .and(with_pool(pool))
+        .and(with_connection(pool))
         .and(protected_form(cookies_config))
         .and(warp::query())
         .and_then(post)
@@ -86,36 +105,26 @@ pub(super) fn filter(
 async fn get(
     templates: Templates,
     csrf_token: CsrfToken,
-) -> Result<(CsrfToken, impl Reply), Rejection> {
-    let ctx = ().with_csrf(&csrf_token);
-
-    // TODO: check if there is an existing session
-    let content = templates.render_login(&ctx)?;
-    Ok((csrf_token, html(content)))
+    query: LoginRequest,
+    maybe_session: Option<SessionInfo>,
+) -> Result<(CsrfToken, Box<dyn Reply>), Rejection> {
+    if maybe_session.is_some() {
+        Ok((csrf_token, Box::new(query.redirect()?)))
+    } else {
+        let ctx = ().with_csrf(&csrf_token);
+        let content = templates.render_login(&ctx)?;
+        Ok((csrf_token, Box::new(html(content))))
+    }
 }
 
 async fn post(
-    db: PgPool,
+    mut conn: PoolConnection<Postgres>,
     form: LoginForm,
     query: LoginRequest,
 ) -> Result<(SessionInfo, impl Reply), Rejection> {
-    let session_info = login(&db, &form.username, &form.password)
+    let session_info = login(&mut conn, &form.username, &form.password)
         .await
         .wrap_error()?;
 
-    let uri: Uri = Uri::from_parts({
-        let mut parts = Parts::default();
-        parts.path_and_query = Some(
-            query
-                .next
-                .map(warp::http::uri::PathAndQuery::try_from)
-                .transpose()
-                .wrap_error()?
-                .unwrap_or_else(|| PathAndQuery::from_static("/")),
-        );
-        parts
-    })
-    .wrap_error()?;
-
-    Ok((session_info, warp::redirect(uri)))
+    Ok((session_info, query.redirect()?))
 }

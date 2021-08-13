@@ -14,12 +14,12 @@
 
 use headers::SetCookie;
 use serde::{Deserialize, Serialize};
-use sqlx::{Executor, PgPool, Postgres};
+use sqlx::{pool::PoolConnection, Executor, PgPool, Postgres};
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 use super::{
     cookies::{encrypted, maybe_encrypted, save_encrypted, WithTypedHeader},
-    with_pool,
+    database::with_connection,
 };
 use crate::{
     config::CookiesConfig,
@@ -53,15 +53,17 @@ pub fn with_optional_session(
 ) -> impl Filter<Extract = (Option<SessionInfo>,), Error = Rejection> + Clone + Send + Sync + 'static
 {
     maybe_encrypted("session", cookies_config)
-        .and(with_pool(pool))
-        .and_then(|maybe_session: Option<Session>, pool: PgPool| async move {
-            let maybe_session_info = if let Some(session) = maybe_session {
-                session.load_session_info(&pool).await.ok()
-            } else {
-                None
-            };
-            Ok::<_, Rejection>(maybe_session_info)
-        })
+        .and(with_connection(pool))
+        .and_then(
+            |maybe_session: Option<Session>, mut conn: PoolConnection<Postgres>| async move {
+                let maybe_session_info = if let Some(session) = maybe_session {
+                    session.load_session_info(&mut conn).await.ok()
+                } else {
+                    None
+                };
+                Ok::<_, Rejection>(maybe_session_info)
+            },
+        )
 }
 
 pub fn with_session(
@@ -69,11 +71,13 @@ pub fn with_session(
     cookies_config: &CookiesConfig,
 ) -> impl Filter<Extract = (SessionInfo,), Error = Rejection> + Clone + Send + Sync + 'static {
     encrypted("session", cookies_config)
-        .and(with_pool(pool))
-        .and_then(|session: Session, pool: PgPool| async move {
-            let session_info = session.load_session_info(&pool).await.wrap_error()?;
-            Ok::<_, Rejection>(session_info)
-        })
+        .and(with_connection(pool))
+        .and_then(
+            |session: Session, mut conn: PoolConnection<Postgres>| async move {
+                let session_info = session.load_session_info(&mut conn).await.wrap_error()?;
+                Ok::<_, Rejection>(session_info)
+            },
+        )
 }
 
 pub fn save_session<R: Reply, F>(

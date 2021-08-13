@@ -14,25 +14,25 @@
 
 use hyper::header::CONTENT_TYPE;
 use mime::TEXT_PLAIN;
-use sqlx::PgPool;
+use sqlx::{pool::PoolConnection, PgPool, Postgres};
 use tracing::{info_span, Instrument};
 use warp::{reply::with_header, Filter, Rejection, Reply};
 
-use crate::{errors::WrapError, filters::with_pool};
+use crate::{errors::WrapError, filters::database::with_connection};
 
 pub fn filter(
     pool: &PgPool,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
     warp::get()
         .and(warp::path("health"))
-        .and(with_pool(pool))
+        .and(with_connection(pool))
         .and_then(get)
 }
 
-async fn get(pool: PgPool) -> Result<impl Reply, Rejection> {
+async fn get(mut conn: PoolConnection<Postgres>) -> Result<impl Reply, Rejection> {
     sqlx::query("SELECT $1")
         .bind(1_i64)
-        .execute(&pool)
+        .execute(&mut conn)
         .instrument(info_span!("DB health"))
         .await
         .wrap_error()?;
