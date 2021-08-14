@@ -158,6 +158,8 @@ jobs:
     needs: [rustfmt, clippy, fetch]
     runs-on: ${{ matrix.os.runner }}
 
+    continue-on-error: "${{ matrix.toolchain == 'beta' || matrix.toolchain == 'nightly' }}"
+
     strategy:
       fail-fast: false # Continue other jobs if one fails to help filling the cache
       matrix:
@@ -173,6 +175,7 @@ jobs:
             target: "x86_64-unknown-linux-musl"
 
         toolchain:
+          - "1.51.0" # MSRV
           - stable
           - beta
           - nightly
