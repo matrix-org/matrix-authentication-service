@@ -33,7 +33,7 @@ jobs:
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
+          toolchain: "1.51.0" # MSRV
           target: ${{ matrix.os.target }}
           profile: minimal
           override: true
@@ -45,7 +45,7 @@ jobs:
             ~/.cargo/registry/index
             ~/.cargo/registry/cache
             ~/.cargo/git/db
-          key: cargo-deps-${{ hashFiles('**/Cargo.lock') }}-${{ runner.os }}
+          key: cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}-${{ runner.os }}
 
       - name: Fetch dependencies
         id: fetch
@@ -97,7 +97,7 @@ jobs:
             ~/.cargo/registry/index
             ~/.cargo/registry/cache
             ~/.cargo/git/db
-          key: cargo-deps-${{ hashFiles('**/Cargo.lock') }}-${{ runner.os }}
+          key: cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}-${{ runner.os }}
 
       - name: Setup build cache
         uses: actions/cache@v2.1.6
@@ -138,7 +138,7 @@ jobs:
             ~/.cargo/registry/index
             ~/.cargo/registry/cache
             ~/.cargo/git/db
-          key: cargo-deps-${{ hashFiles('**/Cargo.lock') }}-${{ runner.os }}
+          key: cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}-${{ runner.os }}
 
       - name: Setup build cache
         uses: actions/cache@v2.1.6
@@ -200,7 +200,7 @@ jobs:
             ~/.cargo/registry/index
             ~/.cargo/registry/cache
             ~/.cargo/git/db
-          key: cargo-deps-${{ hashFiles('**/Cargo.lock') }}-${{ runner.os }}
+          key: cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}-${{ runner.os }}
 
       - name: Setup build cache
         uses: actions/cache@v2.1.6
