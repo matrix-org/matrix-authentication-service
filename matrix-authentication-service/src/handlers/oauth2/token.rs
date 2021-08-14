@@ -104,6 +104,8 @@ async fn authorization_code_grant(
         .with_expires_in(ttl)
         .with_refresh_token(refresh_token);
 
+    txn.commit().await.wrap_error()?;
+
     Ok(params)
 }
 
