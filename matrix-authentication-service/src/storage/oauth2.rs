@@ -329,3 +329,36 @@ pub async fn lookup_access_token(
     .await
     .context("could not introspect oauth2 access token")
 }
+
+pub struct OAuth2CodeLookup {
+    pub id: i64,
+    pub oauth2_session_id: i64,
+    pub client_id: String,
+    pub redirect_uri: String,
+    pub scope: String,
+}
+
+pub async fn lookup_code(
+    executor: impl Executor<'_, Database = Postgres>,
+    code: &str,
+) -> anyhow::Result<OAuth2CodeLookup> {
+    sqlx::query_as!(
+        OAuth2CodeLookup,
+        r#"
+            SELECT
+                oc.id,
+                os.id        AS "oauth2_session_id!",
+                os.client_id AS "client_id!",
+                os.redirect_uri,
+                os.scope     AS "scope!"
+            FROM oauth2_codes oc
+            INNER JOIN oauth2_sessions os
+              ON os.id = oc.oauth2_session_id
+            WHERE oc.code = $1
+        "#,
+        code,
+    )
+    .fetch_one(executor)
+    .await
+    .context("could not lookup oauth2 code")
+}

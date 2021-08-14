@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![allow(clippy::unused_async)] // Some warp filters need that
+
 use sqlx::PgPool;
 use warp::{Filter, Rejection, Reply};
 
@@ -31,6 +33,5 @@ pub fn root(
     health(pool)
         .or(oauth2(pool, templates, &config.oauth2, &config.cookies))
         .or(views(pool, templates, &config.csrf, &config.cookies))
-        //.or(warp::get().map(|| StatusCode::NOT_FOUND)) <- This messes up the error reporting
         .with(warp::log(module_path!()))
 }

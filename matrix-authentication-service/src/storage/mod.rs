@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![allow(clippy::used_underscore_binding)] // This is needed by sqlx macros
+
 use sqlx::migrate::Migrator;
 
 pub mod oauth2;

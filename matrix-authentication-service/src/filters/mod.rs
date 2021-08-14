@@ -12,8 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![allow(clippy::unused_async)] // Some warp filters need that
+
 pub mod csrf;
 // mod errors;
+pub mod client;
 pub mod cookies;
 pub mod database;
 pub mod session;

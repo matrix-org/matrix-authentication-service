@@ -154,12 +154,11 @@ pub struct AuthorizationRequest {
 }
 
 #[derive(Serialize, Deserialize, Default)]
-pub struct AuthorizationResponse {
+pub struct AuthorizationResponse<R> {
     pub code: Option<String>,
     pub state: Option<String>,
     #[serde(flatten)]
-    pub access_token: Option<AccessTokenResponse>,
-    pub refresh_token: Option<String>,
+    pub response: R,
 }
 
 #[derive(
@@ -183,8 +182,8 @@ pub enum TokenType {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct AuthorizationCodeGrant {
-    code: String,
-    redirect_uri: Option<Url>,
+    pub code: String,
+    pub redirect_uri: Option<Url>,
 }
 
 #[serde_as]
@@ -192,6 +191,13 @@ pub struct AuthorizationCodeGrant {
 pub struct RefreshTokenGrant {
     refresh_token: String,
 
+    #[serde_as(as = "Option<StringWithSeparator::<SpaceSeparator, String>>")]
+    scope: Option<HashSet<String>>,
+}
+
+#[serde_as]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub struct ClientCredentialsGrant {
     #[serde_as(as = "Option<StringWithSeparator::<SpaceSeparator, String>>")]
     scope: Option<HashSet<String>>,
 }
@@ -214,6 +220,7 @@ pub struct RefreshTokenGrant {
 pub enum GrantType {
     AuthorizationCode,
     RefreshToken,
+    ClientCredentials,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -221,6 +228,7 @@ pub enum GrantType {
 pub enum AccessTokenRequest {
     AuthorizationCode(AuthorizationCodeGrant),
     RefreshToken(RefreshTokenGrant),
+    ClientCredentials(ClientCredentialsGrant),
     #[serde(skip_deserializing, other)]
     Unsupported,
 }
@@ -229,6 +237,7 @@ pub enum AccessTokenRequest {
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct AccessTokenResponse {
     access_token: String,
+    refresh_token: Option<String>,
 
     token_type: TokenType,
 
@@ -244,10 +253,17 @@ impl AccessTokenResponse {
     pub fn new(access_token: String) -> AccessTokenResponse {
         AccessTokenResponse {
             access_token,
+            refresh_token: None,
             token_type: TokenType::Bearer,
             expires_in: None,
             scope: None,
         }
+    }
+
+    #[must_use]
+    pub fn with_refresh_token(mut self, refresh_token: String) -> Self {
+        self.refresh_token = Some(refresh_token);
+        self
     }
 
     #[must_use]

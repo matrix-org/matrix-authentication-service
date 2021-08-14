@@ -23,10 +23,11 @@ use crate::{
 mod authorization;
 mod discovery;
 mod introspection;
+mod token;
 
 use self::{
     authorization::filter as authorization, discovery::filter as discovery,
-    introspection::filter as introspection,
+    introspection::filter as introspection, token::filter as token,
 };
 
 pub fn filter(
@@ -43,4 +44,5 @@ pub fn filter(
             cookies_config,
         ))
         .or(introspection(pool, oauth2_config))
+        .or(token(pool, oauth2_config))
 }

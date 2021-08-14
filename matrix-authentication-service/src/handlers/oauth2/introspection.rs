@@ -18,19 +18,24 @@ use sqlx::{pool::PoolConnection, PgPool, Postgres};
 use warp::{Filter, Rejection, Reply};
 
 use crate::{
-    config::OAuth2Config, errors::WrapError, filters::database::with_connection,
-    storage::oauth2::lookup_access_token, tokens,
+    config::{OAuth2ClientConfig, OAuth2Config},
+    errors::WrapError,
+    filters::{
+        client::{with_client_auth, ClientAuthentication},
+        database::with_connection,
+    },
+    storage::oauth2::lookup_access_token,
+    tokens,
 };
 
 pub fn filter(
     pool: &PgPool,
-    _oauth2_config: &OAuth2Config,
+    oauth2_config: &OAuth2Config,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
     warp::path!("oauth2" / "introspect")
-        .and(warp::get())
-        // TODO: authenticate client
+        .and(warp::post())
         .and(with_connection(pool))
-        .and(warp::query())
+        .and(with_client_auth(oauth2_config))
         .and_then(introspect)
         .recover(recover)
 }
@@ -52,8 +57,16 @@ const INACTIVE: IntrospectionResponse = IntrospectionResponse {
 
 async fn introspect(
     mut conn: PoolConnection<Postgres>,
+    auth: ClientAuthentication,
+    _client: OAuth2ClientConfig,
     params: IntrospectionRequest,
 ) -> Result<impl Reply, Rejection> {
+    // Token introspection is only allowed by confidential clients
+    if auth.public() {
+        // TODO: have a nice error here
+        return Ok(warp::reply::json(&INACTIVE));
+    }
+
     let token = &params.token;
     let token_type = tokens::check(token).wrap_error()?;
     if let Some(hint) = params.token_type_hint {

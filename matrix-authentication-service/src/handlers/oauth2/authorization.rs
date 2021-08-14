@@ -299,8 +299,8 @@ async fn step(
     let response_type = oauth2_session.response_type().wrap_error()?;
     let redirect_uri = oauth2_session.redirect_uri().wrap_error()?;
 
+    // Check if the active session is valid
     let reply =
-        // Check if the active session is valid
         if user_session.active && user_session.last_authd_at >= oauth2_session.max_auth_time() {
             // Yep! Let's complete the auth now
             let mut params = AuthorizationResponse {
@@ -320,14 +320,18 @@ async fn step(
                     let mut rng = thread_rng();
                     (
                         tokens::generate(&mut rng, tokens::TokenType::AccessToken),
-                        tokens::generate(&mut rng, tokens::TokenType::RefreshToken)
+                        tokens::generate(&mut rng, tokens::TokenType::RefreshToken),
                     )
                 };
 
-                add_access_token(&mut txn, oauth2_session_id, &access_token, ttl).await.wrap_error()?;
-                params.access_token = Some(AccessTokenResponse::new(access_token).with_expires_in(ttl));
-                // TODO: save the refresh token
-                params.refresh_token = Some(refresh_token);
+                add_access_token(&mut txn, oauth2_session_id, &access_token, ttl)
+                    .await
+                    .wrap_error()?;
+                params.response = Some(
+                    AccessTokenResponse::new(access_token)
+                        .with_expires_in(ttl)
+                        .with_refresh_token(refresh_token),
+                );
             }
 
             // Did they request an ID token?
