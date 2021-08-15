@@ -1255,6 +1255,7 @@ dependencies = [
  "cookie",
  "crc 2.0.0",
  "data-encoding",
+ "dotenv",
  "figment",
  "headers",
  "hyper",

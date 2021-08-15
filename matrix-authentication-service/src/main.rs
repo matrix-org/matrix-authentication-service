@@ -34,6 +34,9 @@ use self::cli::RootCommand;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // Load environment variables from .env files
+    dotenv::dotenv()?;
+
     // Setup logging & tracing
     let fmt_layer = tracing_subscriber::fmt::layer();
     let filter_layer = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?;

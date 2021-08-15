@@ -39,6 +39,7 @@ serde_with = { version = "1.9.4", features = ["hex", "chrono"] }
 clap = "3.0.0-beta.2"
 figment = { version = "0.10.6", features = ["env", "yaml", "test"] }
 schemars = { version = "0.8.3", features = ["url", "chrono"] }
+dotenv = "0.15.0"
 
 # Password hashing
 argon2 = { version = "0.2.2", features = ["password-hash"] }
