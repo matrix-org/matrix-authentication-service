@@ -24,11 +24,12 @@ mod index;
 mod login;
 mod logout;
 mod reauth;
+mod register;
 
 pub use self::login::LoginRequest;
 use self::{
     index::filter as index, login::filter as login, logout::filter as logout,
-    reauth::filter as reauth,
+    reauth::filter as reauth, register::filter as register,
 };
 
 pub(super) fn filter(
@@ -39,6 +40,7 @@ pub(super) fn filter(
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
     index(pool, templates, csrf_config, cookies_config)
         .or(login(pool, templates, csrf_config, cookies_config))
+        .or(register(pool, templates, csrf_config, cookies_config))
         .or(logout(pool, cookies_config))
         .or(reauth(pool, templates, csrf_config, cookies_config))
         .boxed()

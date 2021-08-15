@@ -135,6 +135,9 @@ register_templates! {
     /// Render the login page
     pub fn render_login(WithCsrf<()>) { "login.html" }
 
+    /// Render the registration page
+    pub fn render_register(WithCsrf<()>) { "register.html" }
+
     /// Render the home page
     pub fn render_index(WithCsrf<WithOptionalSession<()>>) { "index.html" }
 
