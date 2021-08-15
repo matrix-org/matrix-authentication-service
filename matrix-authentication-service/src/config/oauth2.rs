@@ -80,6 +80,14 @@ impl Default for OAuth2Config {
     }
 }
 
+impl OAuth2Config {
+    pub fn discovery_url(&self) -> Url {
+        self.issuer
+            .join(".well-known/openid-configuration")
+            .expect("could not build discovery url")
+    }
+}
+
 impl ConfigurationSection<'_> for OAuth2Config {
     fn path() -> &'static str {
         "oauth2"

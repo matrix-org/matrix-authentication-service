@@ -139,7 +139,7 @@ register_templates! {
     pub fn render_register(WithCsrf<()>) { "register.html" }
 
     /// Render the home page
-    pub fn render_index(WithCsrf<WithOptionalSession<()>>) { "index.html" }
+    pub fn render_index(WithCsrf<WithOptionalSession<IndexContext>>) { "index.html" }
 
     /// Render the re-authentication form
     pub fn render_reauth(WithCsrf<WithSession<()>>) { "reauth.html" }
@@ -199,6 +199,18 @@ pub struct WithOptionalSession<T> {
 
     #[serde(flatten)]
     inner: T,
+}
+
+// Context used by the `index.html` template
+#[derive(Serialize)]
+pub struct IndexContext {
+    discovery_url: Url,
+}
+
+impl IndexContext {
+    pub fn new(discovery_url: Url) -> Self {
+        Self { discovery_url }
+    }
 }
 
 /// Context used by the `form_post.html` template

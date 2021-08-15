@@ -13,27 +13,31 @@
 // limitations under the License.
 
 use sqlx::PgPool;
+use url::Url;
 use warp::{reply::html, wrap_fn, Filter, Rejection, Reply};
 
 use crate::{
-    config::{CookiesConfig, CsrfConfig},
+    config::{CookiesConfig, CsrfConfig, OAuth2Config},
     filters::{
         csrf::{save_csrf_token, updated_csrf_token},
         session::with_optional_session,
         with_templates, CsrfToken,
     },
     storage::SessionInfo,
-    templates::{TemplateContext, Templates},
+    templates::{IndexContext, TemplateContext, Templates},
 };
 
 pub(super) fn filter(
     pool: &PgPool,
     templates: &Templates,
+    oauth2_config: &OAuth2Config,
     csrf_config: &CsrfConfig,
     cookies_config: &CookiesConfig,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
+    let discovery_url = oauth2_config.discovery_url();
     warp::path::end()
         .and(warp::get())
+        .map(move || discovery_url.clone())
         .and(with_templates(templates))
         .and(updated_csrf_token(cookies_config, csrf_config))
         .and(with_optional_session(pool, cookies_config))
@@ -43,11 +47,14 @@ pub(super) fn filter(
 }
 
 async fn get(
+    discovery_url: Url,
     templates: Templates,
     csrf_token: CsrfToken,
     session: Option<SessionInfo>,
 ) -> Result<(CsrfToken, impl Reply), Rejection> {
-    let ctx = ().maybe_with_session(session).with_csrf(&csrf_token);
+    let ctx = IndexContext::new(discovery_url)
+        .maybe_with_session(session)
+        .with_csrf(&csrf_token);
 
     let content = templates.render_index(&ctx)?;
     Ok((csrf_token, html(content)))

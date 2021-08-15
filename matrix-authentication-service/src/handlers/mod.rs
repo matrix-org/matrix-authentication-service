@@ -32,6 +32,12 @@ pub fn root(
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
     health(pool)
         .or(oauth2(pool, templates, &config.oauth2, &config.cookies))
-        .or(views(pool, templates, &config.csrf, &config.cookies))
+        .or(views(
+            pool,
+            templates,
+            &config.oauth2,
+            &config.csrf,
+            &config.cookies,
+        ))
         .with(warp::log(module_path!()))
 }

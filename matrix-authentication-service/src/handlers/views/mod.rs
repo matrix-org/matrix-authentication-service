@@ -16,7 +16,7 @@ use sqlx::PgPool;
 use warp::{Filter, Rejection, Reply};
 
 use crate::{
-    config::{CookiesConfig, CsrfConfig},
+    config::{CookiesConfig, CsrfConfig, OAuth2Config},
     templates::Templates,
 };
 
@@ -35,10 +35,11 @@ use self::{
 pub(super) fn filter(
     pool: &PgPool,
     templates: &Templates,
+    oauth2_config: &OAuth2Config,
     csrf_config: &CsrfConfig,
     cookies_config: &CookiesConfig,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
-    index(pool, templates, csrf_config, cookies_config)
+    index(pool, templates, oauth2_config, csrf_config, cookies_config)
         .or(login(pool, templates, csrf_config, cookies_config))
         .or(register(pool, templates, csrf_config, cookies_config))
         .or(logout(pool, cookies_config))
