@@ -21,6 +21,7 @@ use password_hash::{PasswordHash, PasswordHasher, SaltString};
 use rand::rngs::OsRng;
 use serde::Serialize;
 use sqlx::{Acquire, Executor, FromRow, Postgres, Transaction};
+use thiserror::Error;
 use tracing::{info_span, Instrument};
 
 #[derive(Serialize, Debug, Clone, FromRow)]
@@ -65,15 +66,60 @@ impl SessionInfo {
     }
 }
 
+#[derive(Debug, Error)]
+enum LoginError {
+    #[error("could not find user {username:?}")]
+    NotFound {
+        username: String,
+        #[source]
+        source: sqlx::Error,
+    },
+
+    #[error("authentication failed for {username:?}")]
+    Authentication {
+        username: String,
+        #[source]
+        source: AuthenticationError,
+    },
+
+    #[error("failed to login")]
+    Other(#[from] anyhow::Error),
+}
+
 pub async fn login(
     conn: impl Acquire<'_, Database = Postgres>,
     username: &str,
     password: &str,
 ) -> anyhow::Result<SessionInfo> {
     let mut txn = conn.begin().await?;
-    let user = lookup_user_by_username(&mut txn, username).await?;
+    let user = lookup_user_by_username(&mut txn, username)
+        .await
+        .map_err(|source| {
+            if matches!(source, sqlx::Error::RowNotFound) {
+                LoginError::NotFound {
+                    username: username.to_string(),
+                    source,
+                }
+            } else {
+                LoginError::Other(source.into())
+            }
+        })?;
+
     let mut session = start_session(&mut txn, user).await?;
-    session.last_authd_at = Some(authenticate_session(&mut txn, session.id, password).await?);
+    session.last_authd_at = Some(
+        authenticate_session(&mut txn, session.id, password)
+            .await
+            .map_err(|source| {
+                if matches!(source, AuthenticationError::Password { .. }) {
+                    LoginError::Authentication {
+                        username: username.to_string(),
+                        source,
+                    }
+                } else {
+                    LoginError::Other(source.into())
+                }
+            })?,
+    );
     txn.commit().await?;
     Ok(session)
 }
@@ -164,11 +210,23 @@ pub async fn start_session(
     })
 }
 
+#[derive(Debug, Error)]
+pub enum AuthenticationError {
+    #[error("could not verify password")]
+    Password(#[from] password_hash::Error),
+
+    #[error("could not fetch user password hash")]
+    Fetch(sqlx::Error),
+
+    #[error("could not save session auth")]
+    Save(sqlx::Error),
+}
+
 pub async fn authenticate_session(
     txn: &mut Transaction<'_, Postgres>,
     session_id: i64,
     password: &str,
-) -> anyhow::Result<DateTime<Utc>> {
+) -> Result<DateTime<Utc>, AuthenticationError> {
     // First, fetch the hashed password from the user associated with that session
     let hashed_password: String = sqlx::query_scalar!(
         r#"
@@ -182,7 +240,7 @@ pub async fn authenticate_session(
     )
     .fetch_one(txn.borrow_mut())
     .await
-    .context("could not fetch user password hash")?;
+    .map_err(AuthenticationError::Fetch)?;
 
     // TODO: pass verifiers list as parameter
     let context = Argon2::default();
@@ -200,7 +258,7 @@ pub async fn authenticate_session(
     )
     .fetch_one(txn.borrow_mut())
     .await
-    .context("could not save session auth")?;
+    .map_err(AuthenticationError::Save)?;
 
     Ok(created_at)
 }
@@ -274,7 +332,7 @@ pub async fn lookup_user_by_id(
 pub async fn lookup_user_by_username(
     executor: impl Executor<'_, Database = Postgres>,
     username: &str,
-) -> anyhow::Result<User> {
+) -> Result<User, sqlx::Error> {
     sqlx::query_as!(
         User,
         r#"
@@ -287,5 +345,4 @@ pub async fn lookup_user_by_username(
     .fetch_one(executor)
     .instrument(info_span!("Fetch user"))
     .await
-    .context("could not fetch user")
 }

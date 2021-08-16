@@ -16,17 +16,29 @@
 //! and signed token
 
 use chrono::{DateTime, Duration, Utc};
-use data_encoding::BASE64URL_NOPAD;
+use data_encoding::{DecodeError, BASE64URL_NOPAD};
 use headers::SetCookie;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_with::{serde_as, TimestampSeconds};
-use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
+use thiserror::Error;
+use warp::{filters::BoxedFilter, reject::Reject, Filter, Rejection, Reply};
 
 use super::cookies::{save_encrypted, WithTypedHeader};
-use crate::{
-    config::{CookiesConfig, CsrfConfig},
-    errors::WrapError,
-};
+use crate::config::{CookiesConfig, CsrfConfig};
+
+#[derive(Debug, Error)]
+pub enum CsrfError {
+    #[error("CSRF token mismatch")]
+    Mismatch,
+
+    #[error("CSRF token expired")]
+    Expired,
+
+    #[error("could not decode CSRF token")]
+    Decode(#[from] DecodeError),
+}
+
+impl Reject for CsrfError {}
 
 #[serde_as]
 #[derive(Serialize, Deserialize)]
@@ -60,20 +72,20 @@ impl CsrfToken {
     }
 
     /// Verifies that the value got from an HTML form matches this token
-    pub fn verify_form_value(&self, form_value: &str) -> anyhow::Result<()> {
+    pub fn verify_form_value(&self, form_value: &str) -> Result<(), CsrfError> {
         let form_value = BASE64URL_NOPAD.decode(form_value.as_bytes())?;
         if self.token[..] == form_value {
             Ok(())
         } else {
-            Err(anyhow::anyhow!("CSRF token mismatch"))
+            Err(CsrfError::Mismatch)
         }
     }
 
-    fn verify_expiration(self) -> anyhow::Result<Self> {
+    fn verify_expiration(self) -> Result<Self, CsrfError> {
         if Utc::now() < self.expiration {
             Ok(self)
         } else {
-            Err(anyhow::anyhow!("CSRF token expired"))
+            Err(CsrfError::Expired)
         }
     }
 }
@@ -88,7 +100,7 @@ struct CsrfForm<T> {
 }
 
 impl<T> CsrfForm<T> {
-    fn verify_csrf(self, token: &CsrfToken) -> anyhow::Result<T> {
+    fn verify_csrf(self, token: &CsrfToken) -> Result<T, CsrfError> {
         // Verify CSRF from request
         token.verify_form_value(&self.csrf)?;
         Ok(self.inner)
@@ -99,7 +111,7 @@ pub fn csrf_token(
     cookies_config: &CookiesConfig,
 ) -> impl Filter<Extract = (CsrfToken,), Error = Rejection> + Clone + Send + Sync + 'static {
     super::cookies::encrypted("csrf", cookies_config).and_then(move |token: CsrfToken| async move {
-        let verified = token.verify_expiration().wrap_error()?;
+        let verified = token.verify_expiration()?;
         Ok::<_, Rejection>(verified)
     })
 }
@@ -144,7 +156,7 @@ where
 {
     csrf_token(cookies_config).and(warp::body::form()).and_then(
         |csrf_token: CsrfToken, protected_form: CsrfForm<T>| async move {
-            let form = protected_form.verify_csrf(&csrf_token).wrap_error()?;
+            let form = protected_form.verify_csrf(&csrf_token)?;
             Ok::<_, Rejection>(form)
         },
     )
