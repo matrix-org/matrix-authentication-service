@@ -24,6 +24,8 @@ use sqlx::{Acquire, Executor, FromRow, Postgres, Transaction};
 use thiserror::Error;
 use tracing::{info_span, Instrument};
 
+use crate::errors::HtmlError;
+
 #[derive(Serialize, Debug, Clone, FromRow)]
 pub struct User {
     pub id: i64,
@@ -67,7 +69,7 @@ impl SessionInfo {
 }
 
 #[derive(Debug, Error)]
-enum LoginError {
+pub enum LoginError {
     #[error("could not find user {username:?}")]
     NotFound {
         username: String,
@@ -86,12 +88,24 @@ enum LoginError {
     Other(#[from] anyhow::Error),
 }
 
+impl HtmlError for LoginError {
+    fn html_display(&self) -> String {
+        match self {
+            LoginError::NotFound { .. } => format!("Could not find user"),
+            LoginError::Authentication { .. } => {
+                format!("Failed to authenticate user")
+            }
+            LoginError::Other(e) => format!("Internal error: <pre>{}</pre>", e),
+        }
+    }
+}
+
 pub async fn login(
     conn: impl Acquire<'_, Database = Postgres>,
     username: &str,
     password: &str,
-) -> anyhow::Result<SessionInfo> {
-    let mut txn = conn.begin().await?;
+) -> Result<SessionInfo, LoginError> {
+    let mut txn = conn.begin().await.context("could not start transaction")?;
     let user = lookup_user_by_username(&mut txn, username)
         .await
         .map_err(|source| {
@@ -120,7 +134,7 @@ pub async fn login(
                 }
             })?,
     );
-    txn.commit().await?;
+    txn.commit().await.context("could not commit transaction")?;
     Ok(session)
 }
 

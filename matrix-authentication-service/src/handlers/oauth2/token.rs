@@ -77,9 +77,7 @@ async fn authorization_code_grant(
     let mut txn = conn.begin().await.wrap_error()?;
     let code = lookup_code(&mut txn, &grant.code).await.wrap_error()?;
     if client.client_id != code.client_id {
-        return Err(anyhow::anyhow!("invalid client"))
-            .wrap_error()
-            .map_err(warp::reject::custom);
+        return Err(anyhow::anyhow!("invalid client")).wrap_error();
     }
 
     // TODO: verify PKCE

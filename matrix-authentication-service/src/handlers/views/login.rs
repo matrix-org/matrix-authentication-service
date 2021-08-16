@@ -21,7 +21,7 @@ use warp::{reply::html, wrap_fn, Filter, Rejection, Reply};
 
 use crate::{
     config::{CookiesConfig, CsrfConfig},
-    errors::WrapError,
+    errors::{WrapError, WrapFormError},
     filters::{
         csrf::{protected_form, save_csrf_token, updated_csrf_token},
         database::with_connection,
@@ -29,7 +29,7 @@ use crate::{
         with_templates, CsrfToken,
     },
     storage::{login, SessionInfo},
-    templates::{TemplateContext, Templates},
+    templates::{LoginFormField, TemplateContext, Templates},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -122,9 +122,18 @@ async fn post(
     form: LoginForm,
     query: LoginRequest,
 ) -> Result<(SessionInfo, impl Reply), Rejection> {
+    // TODO: recover
     let session_info = login(&mut conn, &form.username, &form.password)
         .await
-        .wrap_error()?;
+        .map_err(|e| match e {
+            crate::storage::user::LoginError::NotFound { .. } => {
+                e.on_field(LoginFormField::Username)
+            }
+            crate::storage::user::LoginError::Authentication { .. } => {
+                e.on_field(LoginFormField::Password)
+            }
+            crate::storage::user::LoginError::Other(_) => e.on_form(),
+        })?;
 
     Ok((session_info, query.redirect()?))
 }

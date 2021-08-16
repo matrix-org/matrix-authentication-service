@@ -21,7 +21,7 @@ use tracing::{debug, info};
 use url::Url;
 use warp::reject::Reject;
 
-use crate::{filters::CsrfToken, storage::SessionInfo};
+use crate::{errors::ErroredForm, filters::CsrfToken, storage::SessionInfo};
 
 #[derive(Clone)]
 pub struct Templates(Arc<Tera>);
@@ -211,6 +211,18 @@ impl IndexContext {
     pub fn new(discovery_url: Url) -> Self {
         Self { discovery_url }
     }
+}
+
+#[derive(Serialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum LoginFormField {
+    Username,
+    Password,
+}
+
+#[derive(Serialize)]
+pub struct LoginContext {
+    form: ErroredForm<LoginFormField>,
 }
 
 /// Context used by the `form_post.html` template

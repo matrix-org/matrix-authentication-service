@@ -127,9 +127,7 @@ async fn post(
     query: RegisterRequest,
 ) -> Result<(SessionInfo, impl Reply), Rejection> {
     if form.password != form.password_confirm {
-        return Err(anyhow::anyhow!("password mismatch"))
-            .wrap_error()
-            .map_err(warp::reject::custom);
+        return Err(anyhow::anyhow!("password mismatch")).wrap_error();
     }
 
     let pfh = Argon2::default();
