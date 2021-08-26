@@ -35,7 +35,12 @@ use self::cli::RootCommand;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // Load environment variables from .env files
-    dotenv::dotenv()?;
+    if let Err(e) = dotenv::dotenv() {
+        // Display the error if it is something other than the .env file not existing
+        if !e.not_found() {
+            return Err(e).context("could not load .env file");
+        }
+    }
 
     // Setup logging & tracing
     let fmt_layer = tracing_subscriber::fmt::layer();
