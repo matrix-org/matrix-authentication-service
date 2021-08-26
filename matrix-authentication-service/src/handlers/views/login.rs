@@ -92,8 +92,10 @@ pub(super) fn filter(
         .and_then(get);
 
     let post = warp::post()
+        .and(with_templates(templates))
         .and(with_connection(pool))
         .and(with_cookie_saver(cookies_config))
+        .and(updated_csrf_token(cookies_config, csrf_config))
         .and(protected_form(cookies_config))
         .and(warp::query())
         .and_then(post);
@@ -120,26 +122,33 @@ async fn get(
 }
 
 async fn post(
+    templates: Templates,
     mut conn: PoolConnection<Postgres>,
     cookie_saver: EncryptedCookieSaver,
+    csrf_token: CsrfToken,
     form: LoginForm,
     query: LoginRequest,
-) -> Result<impl Reply, Rejection> {
+) -> Result<Box<dyn Reply>, Rejection> {
+    use crate::storage::user::LoginError;
     // TODO: recover
-    let session_info = login(&mut conn, &form.username, &form.password)
-        .await
-        .map_err(|e| match e {
-            crate::storage::user::LoginError::NotFound { .. } => {
-                e.on_field(LoginFormField::Username)
-            }
-            crate::storage::user::LoginError::Authentication { .. } => {
-                e.on_field(LoginFormField::Password)
-            }
-            crate::storage::user::LoginError::Other(_) => e.on_form(),
-        })?;
-
-    let session_cookie = SessionCookie::from_session_info(&session_info);
-    let reply = query.redirect()?;
-    let reply = cookie_saver.save_encrypted(&session_cookie, reply)?;
-    Ok(reply)
+    match login(&mut conn, &form.username, &form.password).await {
+        Ok(session_info) => {
+            let session_cookie = SessionCookie::from_session_info(&session_info);
+            let reply = query.redirect()?;
+            let reply = cookie_saver.save_encrypted(&session_cookie, reply)?;
+            Ok(Box::new(reply))
+        }
+        Err(e) => {
+            let errored_form = match e {
+                LoginError::NotFound { .. } => e.on_field(LoginFormField::Username),
+                LoginError::Authentication { .. } => e.on_field(LoginFormField::Password),
+                LoginError::Other(_) => e.on_form(),
+            };
+            let ctx = LoginContext::with_form_error(errored_form).with_csrf(&csrf_token);
+            let content = templates.render_login(&ctx)?;
+            let reply = html(content);
+            let reply = cookie_saver.save_encrypted(&csrf_token, reply)?;
+            Ok(Box::new(reply))
+        }
+    }
 }

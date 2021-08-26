@@ -20,21 +20,43 @@ limitations under the License.
   <section class="section">
     <div class="container is-max-desktop">
       <div class="columns">
-        <div class="column is-one-third">
+        <div class="column is-half is-offset-one-quarter">
+          {% if form.has_errors %}
+            <article class="message is-danger">
+              <div class="message-body">
+                {% for message in form.form_errors %}
+                  <p>{{ message | safe }}</p>
+                {% else %}
+                  <p>Login failed, check the fields below for more details.</p>
+                {% endfor %}
+              </div>
+            </article>
+          {% endif %}
+
           <form method="POST">
             <input type="hidden" name="csrf" value="{{ csrf_token }}" />
             <div class="field">
               <label class="label" for="login-username">Username</label>
               <div class="control">
-                <input class="input" name="username" id="login-username" type="text">
+                <input class="input{% if 'username' in form.fields_errors %} is-danger{% endif %}" name="username" id="login-username" type="text">
               </div>
+              {% if 'username' in form.fields_errors %}
+                {% for message in form.fields_errors.username %}
+                  <p class="help is-danger">{{ message | safe }}</p>
+                {% endfor %}
+              {% endif %}
             </div>
 
             <div class="field">
               <label class="label" for="login-password">Password</label>
               <div class="control">
-                <input class="input" name="password" id="login-password" type="password">
+                <input class="input{% if 'password' in form.fields_errors %} is-danger{% endif %}" name="password" id="login-password" type="password">
               </div>
+              {% if 'password' in form.fields_errors %}
+                {% for message in form.fields_errors.password %}
+                  <p class="help is-danger">{{ message | safe }}</p>
+                {% endfor %}
+              {% endif %}
             </div>
 
             <div class="control">

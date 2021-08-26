@@ -225,6 +225,12 @@ pub struct LoginContext {
     form: ErroredForm<LoginFormField>,
 }
 
+impl LoginContext {
+    pub fn with_form_error(form: ErroredForm<LoginFormField>) -> Self {
+        Self { form }
+    }
+}
+
 impl Default for LoginContext {
     fn default() -> Self {
         Self {
