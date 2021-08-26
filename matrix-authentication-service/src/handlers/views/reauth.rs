@@ -14,13 +14,14 @@
 
 use serde::Deserialize;
 use sqlx::{pool::PoolConnection, PgPool, Postgres};
-use warp::{hyper::Uri, reply::html, wrap_fn, Filter, Rejection, Reply};
+use warp::{hyper::Uri, reply::html, Filter, Rejection, Reply};
 
 use crate::{
     config::{CookiesConfig, CsrfConfig},
     errors::WrapError,
     filters::{
-        csrf::{protected_form, save_csrf_token, updated_csrf_token},
+        cookies::{with_cookie_saver, EncryptedCookieSaver},
+        csrf::{protected_form, updated_csrf_token},
         database::with_connection,
         session::with_session,
         with_templates, CsrfToken,
@@ -42,11 +43,10 @@ pub(super) fn filter(
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
     let get = warp::get()
         .and(with_templates(templates))
+        .and(with_cookie_saver(cookies_config))
         .and(updated_csrf_token(cookies_config, csrf_config))
         .and(with_session(pool, cookies_config))
-        .and_then(get)
-        .untuple_one()
-        .with(wrap_fn(save_csrf_token(cookies_config)));
+        .and_then(get);
 
     let post = warp::post()
         .and(with_session(pool, cookies_config))
@@ -59,13 +59,16 @@ pub(super) fn filter(
 
 async fn get(
     templates: Templates,
+    cookie_saver: EncryptedCookieSaver,
     csrf_token: CsrfToken,
     session: SessionInfo,
-) -> Result<(CsrfToken, impl Reply), Rejection> {
+) -> Result<impl Reply, Rejection> {
     let ctx = ().with_session(session).with_csrf(&csrf_token);
 
     let content = templates.render_reauth(&ctx)?;
-    Ok((csrf_token, html(content)))
+    let reply = html(content);
+    let reply = cookie_saver.save_encrypted(&csrf_token, reply)?;
+    Ok(reply)
 }
 
 async fn post(

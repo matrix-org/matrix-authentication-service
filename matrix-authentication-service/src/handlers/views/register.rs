@@ -18,15 +18,16 @@ use argon2::Argon2;
 use hyper::http::uri::{Parts, PathAndQuery, Uri};
 use serde::{Deserialize, Serialize};
 use sqlx::{pool::PoolConnection, PgPool, Postgres};
-use warp::{reply::html, wrap_fn, Filter, Rejection, Reply};
+use warp::{reply::html, Filter, Rejection, Reply};
 
 use crate::{
     config::{CookiesConfig, CsrfConfig},
     errors::WrapError,
     filters::{
-        csrf::{protected_form, save_csrf_token, updated_csrf_token},
+        cookies::{with_cookie_saver, EncryptedCookieSaver},
+        csrf::{protected_form, updated_csrf_token},
         database::with_connection,
-        session::{save_session, with_optional_session},
+        session::{with_optional_session, SessionCookie},
         with_templates, CsrfToken,
     },
     storage::{register_user, user::start_session, SessionInfo},
@@ -88,44 +89,46 @@ pub(super) fn filter(
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
     let get = warp::get()
         .and(with_templates(templates))
+        .and(with_cookie_saver(cookies_config))
         .and(updated_csrf_token(cookies_config, csrf_config))
         .and(warp::query())
         .and(with_optional_session(pool, cookies_config))
-        .and_then(get)
-        .untuple_one()
-        .with(wrap_fn(save_csrf_token(cookies_config)));
+        .and_then(get);
 
     let post = warp::post()
         .and(with_connection(pool))
+        .and(with_cookie_saver(cookies_config))
         .and(protected_form(cookies_config))
         .and(warp::query())
-        .and_then(post)
-        .untuple_one()
-        .with(wrap_fn(save_session(cookies_config)));
+        .and_then(post);
 
     warp::path!("register").and(get.or(post))
 }
 
 async fn get(
     templates: Templates,
+    cookie_saver: EncryptedCookieSaver,
     csrf_token: CsrfToken,
     query: RegisterRequest,
     maybe_session: Option<SessionInfo>,
-) -> Result<(CsrfToken, Box<dyn Reply>), Rejection> {
+) -> Result<Box<dyn Reply>, Rejection> {
     if maybe_session.is_some() {
-        Ok((csrf_token, Box::new(query.redirect()?)))
+        Ok(Box::new(query.redirect()?))
     } else {
         let ctx = ().with_csrf(&csrf_token);
         let content = templates.render_register(&ctx)?;
-        Ok((csrf_token, Box::new(html(content))))
+        let reply = html(content);
+        let reply = cookie_saver.save_encrypted(&csrf_token, reply)?;
+        Ok(Box::new(reply))
     }
 }
 
 async fn post(
     mut conn: PoolConnection<Postgres>,
+    cookie_saver: EncryptedCookieSaver,
     form: RegisterForm,
     query: RegisterRequest,
-) -> Result<(SessionInfo, impl Reply), Rejection> {
+) -> Result<impl Reply, Rejection> {
     if form.password != form.password_confirm {
         return Err(anyhow::anyhow!("password mismatch")).wrap_error();
     }
@@ -137,5 +140,8 @@ async fn post(
 
     let session_info = start_session(&mut conn, user).await.wrap_error()?;
 
-    Ok((session_info, query.redirect()?))
+    let session_cookie = SessionCookie::from_session_info(&session_info);
+    let reply = query.redirect()?;
+    let reply = cookie_saver.save_encrypted(&session_cookie, reply)?;
+    Ok(reply)
 }

@@ -133,7 +133,7 @@ macro_rules! register_templates {
 
 register_templates! {
     /// Render the login page
-    pub fn render_login(WithCsrf<()>) { "login.html" }
+    pub fn render_login(WithCsrf<LoginContext>) { "login.html" }
 
     /// Render the registration page
     pub fn render_register(WithCsrf<()>) { "register.html" }
@@ -223,6 +223,14 @@ pub enum LoginFormField {
 #[derive(Serialize)]
 pub struct LoginContext {
     form: ErroredForm<LoginFormField>,
+}
+
+impl Default for LoginContext {
+    fn default() -> Self {
+        Self {
+            form: ErroredForm::new(),
+        }
+    }
 }
 
 /// Context used by the `form_post.html` template

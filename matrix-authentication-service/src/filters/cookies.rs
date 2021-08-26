@@ -22,7 +22,7 @@ use cookie::Cookie;
 use data_encoding::BASE64URL_NOPAD;
 use headers::{Header, HeaderMapExt, HeaderValue, SetCookie};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
+use warp::{Filter, Rejection, Reply};
 
 use crate::{config::CookiesConfig, errors::WrapError};
 
@@ -69,14 +69,13 @@ impl EncryptedCookie {
 }
 
 pub fn maybe_encrypted<T>(
-    name: &'static str,
     options: &CookiesConfig,
 ) -> impl Filter<Extract = (Option<T>,), Error = Infallible> + Clone + Send + Sync + 'static
 where
-    T: DeserializeOwned + Send + 'static,
+    T: DeserializeOwned + EncryptableCookieValue + Send + 'static,
 {
     let secret = options.secret;
-    warp::cookie::optional(name).map(move |maybe_value: Option<String>| {
+    warp::cookie::optional(T::cookie_key()).map(move |maybe_value: Option<String>| {
         maybe_value
             .and_then(|value| EncryptedCookie::from_cookie_value(&value).ok())
             .and_then(|encrypted| encrypted.decrypt(&secret).ok())
@@ -84,18 +83,30 @@ where
 }
 
 pub fn encrypted<T>(
-    name: &'static str,
     options: &CookiesConfig,
 ) -> impl Filter<Extract = (T,), Error = Rejection> + Clone + Send + Sync + 'static
 where
-    T: DeserializeOwned + Send + 'static,
+    T: DeserializeOwned + EncryptableCookieValue + Send + 'static,
 {
     let secret = options.secret;
-    warp::cookie::cookie(name).and_then(move |value: String| async move {
+    warp::cookie::cookie(T::cookie_key()).and_then(move |value: String| async move {
         let encrypted = EncryptedCookie::from_cookie_value(&value).wrap_error()?;
         let decrypted = encrypted.decrypt(&secret).wrap_error()?;
         Ok::<_, Rejection>(decrypted)
     })
+}
+
+pub fn with_cookie_saver(
+    options: &CookiesConfig,
+) -> impl Filter<Extract = (EncryptedCookieSaver,), Error = Infallible> + Clone + Send + Sync + 'static
+{
+    let secret = options.secret;
+    warp::any().map(move || EncryptedCookieSaver { secret })
+}
+
+/// A cookie that can be encrypted with a well-known cookie key
+pub trait EncryptableCookieValue {
+    fn cookie_key() -> &'static str;
 }
 
 pub struct WithTypedHeader<R, H> {
@@ -115,27 +126,25 @@ where
     }
 }
 
-pub fn save_encrypted<T, R: Reply, F>(
-    name: &'static str,
-    options: &CookiesConfig,
-) -> impl Fn(F) -> BoxedFilter<(WithTypedHeader<R, SetCookie>,)>
-where
-    T: Serialize + Send,
-    F: Filter<Extract = (T, R), Error = Rejection> + Clone + Send + Sync + 'static,
-{
-    let secret = options.secret;
-    move |f: F| {
-        f.and_then(move |unencrypted: T, reply: R| async move {
-            let encrypted = EncryptedCookie::encrypt(unencrypted, &secret)
-                .wrap_error()?
-                .to_cookie_value()
-                .wrap_error()?;
-            let value = Cookie::build(name, encrypted).finish().to_string();
-            let header =
-                SetCookie::decode(&mut [HeaderValue::from_str(&value).wrap_error()?].iter())
-                    .wrap_error()?;
-            Ok::<_, Rejection>(WithTypedHeader { reply, header })
-        })
-        .boxed()
+pub struct EncryptedCookieSaver {
+    secret: [u8; 32],
+}
+
+impl EncryptedCookieSaver {
+    pub fn save_encrypted<T: Serialize + EncryptableCookieValue, R: Reply>(
+        &self,
+        cookie: &T,
+        reply: R,
+    ) -> Result<WithTypedHeader<R, SetCookie>, Rejection> {
+        let encrypted = EncryptedCookie::encrypt(cookie, &self.secret)
+            .wrap_error()?
+            .to_cookie_value()
+            .wrap_error()?;
+        let value = Cookie::build(T::cookie_key(), encrypted)
+            .finish()
+            .to_string();
+        let header = SetCookie::decode(&mut [HeaderValue::from_str(&value).wrap_error()?].iter())
+            .wrap_error()?;
+        Ok(WithTypedHeader { reply, header })
     }
 }

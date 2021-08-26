@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use headers::SetCookie;
 use serde::{Deserialize, Serialize};
 use sqlx::{pool::PoolConnection, Executor, PgPool, Postgres};
-use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
+use warp::{Filter, Rejection};
 
 use super::{
-    cookies::{encrypted, maybe_encrypted, save_encrypted, WithTypedHeader},
+    cookies::{encrypted, maybe_encrypted, EncryptableCookieValue},
     database::with_connection,
 };
 use crate::{
@@ -28,11 +27,11 @@ use crate::{
 };
 
 #[derive(Serialize, Deserialize)]
-pub struct Session {
+pub struct SessionCookie {
     current: i64,
 }
 
-impl Session {
+impl SessionCookie {
     pub fn from_session_info(info: &SessionInfo) -> Self {
         Self {
             current: info.key(),
@@ -47,15 +46,21 @@ impl Session {
     }
 }
 
+impl EncryptableCookieValue for SessionCookie {
+    fn cookie_key() -> &'static str {
+        "session"
+    }
+}
+
 pub fn with_optional_session(
     pool: &PgPool,
     cookies_config: &CookiesConfig,
 ) -> impl Filter<Extract = (Option<SessionInfo>,), Error = Rejection> + Clone + Send + Sync + 'static
 {
-    maybe_encrypted("session", cookies_config)
+    maybe_encrypted(cookies_config)
         .and(with_connection(pool))
         .and_then(
-            |maybe_session: Option<Session>, mut conn: PoolConnection<Postgres>| async move {
+            |maybe_session: Option<SessionCookie>, mut conn: PoolConnection<Postgres>| async move {
                 let maybe_session_info = if let Some(session) = maybe_session {
                     session.load_session_info(&mut conn).await.ok()
                 } else {
@@ -70,28 +75,12 @@ pub fn with_session(
     pool: &PgPool,
     cookies_config: &CookiesConfig,
 ) -> impl Filter<Extract = (SessionInfo,), Error = Rejection> + Clone + Send + Sync + 'static {
-    encrypted("session", cookies_config)
+    encrypted(cookies_config)
         .and(with_connection(pool))
         .and_then(
-            |session: Session, mut conn: PoolConnection<Postgres>| async move {
+            |session: SessionCookie, mut conn: PoolConnection<Postgres>| async move {
                 let session_info = session.load_session_info(&mut conn).await.wrap_error()?;
                 Ok::<_, Rejection>(session_info)
             },
         )
-}
-
-pub fn save_session<R: Reply, F>(
-    cookies_config: &CookiesConfig,
-) -> impl Fn(F) -> BoxedFilter<(WithTypedHeader<R, SetCookie>,)>
-where
-    F: Filter<Extract = (SessionInfo, R), Error = Rejection> + Clone + Send + Sync + 'static,
-{
-    // This clone might be avoidable
-    let cookies_config = cookies_config.clone();
-    move |f: F| {
-        let f = f
-            .map(|session_info, reply| (Session::from_session_info(&session_info), reply))
-            .untuple_one();
-        save_encrypted("session", &cookies_config)(f)
-    }
 }

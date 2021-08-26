@@ -91,10 +91,8 @@ pub enum LoginError {
 impl HtmlError for LoginError {
     fn html_display(&self) -> String {
         match self {
-            LoginError::NotFound { .. } => format!("Could not find user"),
-            LoginError::Authentication { .. } => {
-                format!("Failed to authenticate user")
-            }
+            LoginError::NotFound { .. } => "Could not find user".to_string(),
+            LoginError::Authentication { .. } => "Failed to authenticate user".to_string(),
             LoginError::Other(e) => format!("Internal error: <pre>{}</pre>", e),
         }
     }

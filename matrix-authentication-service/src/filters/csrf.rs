@@ -17,13 +17,12 @@
 
 use chrono::{DateTime, Duration, Utc};
 use data_encoding::{DecodeError, BASE64URL_NOPAD};
-use headers::SetCookie;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_with::{serde_as, TimestampSeconds};
 use thiserror::Error;
-use warp::{filters::BoxedFilter, reject::Reject, Filter, Rejection, Reply};
+use warp::{reject::Reject, Filter, Rejection};
 
-use super::cookies::{save_encrypted, WithTypedHeader};
+use super::cookies::EncryptableCookieValue;
 use crate::config::{CookiesConfig, CsrfConfig};
 
 #[derive(Debug, Error)]
@@ -90,6 +89,12 @@ impl CsrfToken {
     }
 }
 
+impl EncryptableCookieValue for CsrfToken {
+    fn cookie_key() -> &'static str {
+        "csrf"
+    }
+}
+
 /// A CSRF-protected form
 #[derive(Deserialize)]
 struct CsrfForm<T> {
@@ -110,7 +115,7 @@ impl<T> CsrfForm<T> {
 pub fn csrf_token(
     cookies_config: &CookiesConfig,
 ) -> impl Filter<Extract = (CsrfToken,), Error = Rejection> + Clone + Send + Sync + 'static {
-    super::cookies::encrypted("csrf", cookies_config).and_then(move |token: CsrfToken| async move {
+    super::cookies::encrypted(cookies_config).and_then(move |token: CsrfToken| async move {
         let verified = token.verify_expiration()?;
         Ok::<_, Rejection>(verified)
     })
@@ -121,7 +126,7 @@ pub fn updated_csrf_token(
     csrf_config: &CsrfConfig,
 ) -> impl Filter<Extract = (CsrfToken,), Error = Rejection> + Clone + Send + Sync + 'static {
     let ttl = csrf_config.ttl;
-    super::cookies::maybe_encrypted("csrf", cookies_config).and_then(
+    super::cookies::maybe_encrypted(cookies_config).and_then(
         move |maybe_token: Option<CsrfToken>| async move {
             // Explicitely specify the "Error" type here to have the `?` operation working
             Ok::<_, Rejection>(
@@ -137,15 +142,6 @@ pub fn updated_csrf_token(
             )
         },
     )
-}
-
-pub fn save_csrf_token<R: Reply, F>(
-    cookies_config: &CookiesConfig,
-) -> impl Fn(F) -> BoxedFilter<(WithTypedHeader<R, SetCookie>,)>
-where
-    F: Filter<Extract = (CsrfToken, R), Error = Rejection> + Clone + Send + Sync + 'static,
-{
-    save_encrypted("csrf", cookies_config)
 }
 
 pub fn protected_form<T>(

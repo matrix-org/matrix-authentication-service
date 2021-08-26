@@ -40,5 +40,5 @@ async fn post(
     _form: (),
 ) -> Result<impl Reply, Rejection> {
     session.end(&mut conn).await.wrap_error()?;
-    Ok::<_, Rejection>(warp::redirect(Uri::from_static("/login")))
+    Ok(warp::redirect(Uri::from_static("/login")))
 }
