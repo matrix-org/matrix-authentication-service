@@ -54,23 +54,43 @@ pub fn with_client_auth<T: DeserializeOwned + Send + 'static>(
        + Send
        + Sync
        + 'static {
-    // TODO: figure out the credentials *and then* authenticate the client
-    let clients = oauth2_config.clients.clone();
-    let client_secret_basic_filter = warp::any()
-        .map(move || clients.clone())
-        .and(with_typed_header())
+    // First, extract the client credentials
+    let credentials = with_typed_header()
         .and(warp::body::form())
-        .and_then(client_secret_basic_auth)
+        // Either from the "Authorization" header
+        .map(|auth: Authorization<Basic>, body: T| {
+            let client_id = auth.0.username().to_string();
+            let client_secret = Some(auth.0.password().to_string());
+            (
+                ClientAuthentication::ClientSecretBasic,
+                client_id,
+                client_secret,
+                body,
+            )
+        })
+        // Or from the form body
+        .or(warp::body::form().map(|form: ClientAuthForm<T>| {
+            let ClientAuthForm {
+                client_id,
+                client_secret,
+                body,
+            } = form;
+            let auth_type = if client_secret.is_some() {
+                ClientAuthentication::ClientSecretPost
+            } else {
+                ClientAuthentication::None
+            };
+            (auth_type, client_id, client_secret, body)
+        }))
+        .unify()
         .untuple_one();
 
     let clients = oauth2_config.clients.clone();
-    let client_post_filter = warp::any()
+    warp::any()
         .map(move || clients.clone())
-        .and(warp::body::form())
-        .and_then(client_post_auth)
-        .untuple_one();
-
-    client_secret_basic_filter.or(client_post_filter).unify()
+        .and(credentials)
+        .and_then(authenticate_client)
+        .untuple_one()
 }
 
 #[derive(Error, Debug)]
@@ -90,41 +110,29 @@ enum ClientAuthenticationError {
 
 impl Reject for ClientAuthenticationError {}
 
-fn authenticate_client(
+async fn authenticate_client<T>(
+    clients: Vec<OAuth2ClientConfig>,
+    auth_type: ClientAuthentication,
     client_id: String,
     client_secret: Option<String>,
-    clients: &[OAuth2ClientConfig],
-) -> Result<&OAuth2ClientConfig, ClientAuthenticationError> {
+    body: T,
+) -> Result<(ClientAuthentication, OAuth2ClientConfig, T), Rejection> {
     let client = clients
         .iter()
         .find(|client| client.client_id == client_id)
         .ok_or_else(|| ClientAuthenticationError::ClientNotFound {
-            client_id: client_id.clone(),
+            client_id: client_id.to_string(),
         })?;
 
-    match (client_secret, client.client_secret.as_ref()) {
+    let client = match (client_secret, client.client_secret.as_ref()) {
         (None, None) => Ok(client),
         (Some(ref given), Some(expected)) if given == expected => Ok(client),
         (Some(_), Some(_)) => Err(ClientAuthenticationError::ClientSecretMismatch { client_id }),
         (Some(_), None) => Err(ClientAuthenticationError::NoClientSecret { client_id }),
         (None, Some(_)) => Err(ClientAuthenticationError::ClientSecretRequired { client_id }),
-    }
-}
+    }?;
 
-async fn client_secret_basic_auth<T>(
-    clients: Vec<OAuth2ClientConfig>,
-    auth: Authorization<Basic>,
-    body: T,
-) -> Result<(ClientAuthentication, OAuth2ClientConfig, T), Rejection> {
-    let client_id = auth.0.username().to_string();
-    let client_secret = auth.0.password().to_string();
-
-    let client = authenticate_client(client_id, Some(client_secret), &clients)?;
-    Ok((
-        ClientAuthentication::ClientSecretBasic,
-        client.clone(),
-        body,
-    ))
+    Ok((auth_type, client.clone(), body))
 }
 
 #[derive(Deserialize)]
@@ -134,20 +142,6 @@ struct ClientAuthForm<T> {
 
     #[serde(flatten)]
     body: T,
-}
-
-async fn client_post_auth<T>(
-    clients: Vec<OAuth2ClientConfig>,
-    form: ClientAuthForm<T>,
-) -> Result<(ClientAuthentication, OAuth2ClientConfig, T), Rejection> {
-    let auth = if form.client_secret.is_some() {
-        ClientAuthentication::ClientSecretPost
-    } else {
-        ClientAuthentication::None
-    };
-
-    let client = authenticate_client(form.client_id, form.client_secret, &clients)?;
-    Ok((auth, client.clone(), form.body))
 }
 
 #[cfg(test)]
