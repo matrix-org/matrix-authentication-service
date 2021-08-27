@@ -30,7 +30,11 @@ use crate::{
         client::{with_client_auth, ClientAuthentication},
         database::with_connection,
     },
-    storage::oauth2::{add_access_token, lookup_code},
+    storage::oauth2::{
+        access_token::{add_access_token, revoke_access_token},
+        authorization_code::lookup_code,
+        refresh_token::{add_refresh_token, lookup_refresh_token, replace_refresh_token},
+    },
     tokens,
 };
 
@@ -91,16 +95,24 @@ async fn authorization_code_grant(
         )
     };
 
-    add_access_token(&mut txn, code.oauth2_session_id, &access_token, ttl)
+    let access_token = add_access_token(&mut txn, code.oauth2_session_id, &access_token, ttl)
         .await
         .wrap_error()?;
-    // TODO: save the refresh token
+
+    let refresh_token = add_refresh_token(
+        &mut txn,
+        code.oauth2_session_id,
+        access_token.id,
+        &refresh_token,
+    )
+    .await
+    .wrap_error()?;
 
     // TODO: generate id_token if the "openid" scope was asked
     // TODO: have the scopes back here
-    let params = AccessTokenResponse::new(access_token)
+    let params = AccessTokenResponse::new(access_token.token)
         .with_expires_in(ttl)
-        .with_refresh_token(refresh_token);
+        .with_refresh_token(refresh_token.token);
 
     txn.commit().await.wrap_error()?;
 
@@ -108,9 +120,62 @@ async fn authorization_code_grant(
 }
 
 async fn refresh_token_grant(
-    _grant: &RefreshTokenGrant,
-    _client: &OAuth2ClientConfig,
-    _conn: &mut PoolConnection<Postgres>,
+    grant: &RefreshTokenGrant,
+    client: &OAuth2ClientConfig,
+    conn: &mut PoolConnection<Postgres>,
 ) -> Result<AccessTokenResponse, Rejection> {
-    todo!()
+    let mut txn = conn.begin().await.wrap_error()?;
+    // TODO: scope handling
+    let refresh_token_lookup = lookup_refresh_token(&mut txn, &grant.refresh_token)
+        .await
+        .wrap_error()?;
+
+    if client.client_id != refresh_token_lookup.client_id {
+        return Err(anyhow::anyhow!("invalid client")).wrap_error();
+    }
+
+    let ttl = Duration::minutes(5);
+    let (access_token, refresh_token) = {
+        let mut rng = thread_rng();
+        (
+            tokens::generate(&mut rng, tokens::TokenType::AccessToken),
+            tokens::generate(&mut rng, tokens::TokenType::RefreshToken),
+        )
+    };
+
+    let access_token = add_access_token(
+        &mut txn,
+        refresh_token_lookup.oauth2_session_id,
+        &access_token,
+        ttl,
+    )
+    .await
+    .wrap_error()?;
+
+    let refresh_token = add_refresh_token(
+        &mut txn,
+        refresh_token_lookup.oauth2_session_id,
+        access_token.id,
+        &refresh_token,
+    )
+    .await
+    .wrap_error()?;
+
+    replace_refresh_token(&mut txn, refresh_token_lookup.id, refresh_token.id)
+        .await
+        .wrap_error()?;
+
+    if let Some(access_token_id) = refresh_token_lookup.oauth2_access_token_id {
+        revoke_access_token(&mut txn, access_token_id)
+            .await
+            .wrap_error()?;
+    }
+
+    let params = AccessTokenResponse::new(access_token.token)
+        .with_expires_in(ttl)
+        .with_refresh_token(refresh_token.token);
+
+    txn.commit().await.wrap_error()?;
+
+    Ok(params)
 }

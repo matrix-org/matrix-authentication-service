@@ -23,7 +23,7 @@ struct CleanupExpired(Pool<Postgres>);
 #[async_trait::async_trait]
 impl Task for CleanupExpired {
     async fn run(&self) {
-        let res = crate::storage::oauth2::cleanup_expired(&self.0).await;
+        let res = crate::storage::oauth2::access_token::cleanup_expired(&self.0).await;
         match res {
             Ok(0) => {
                 debug!("no token to clean up");

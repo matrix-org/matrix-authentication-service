@@ -183,14 +183,16 @@ pub enum TokenType {
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct AuthorizationCodeGrant {
     pub code: String,
+    #[serde(default)]
     pub redirect_uri: Option<Url>,
 }
 
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct RefreshTokenGrant {
-    refresh_token: String,
+    pub refresh_token: String,
 
+    #[serde(default)]
     #[serde_as(as = "Option<StringWithSeparator::<SpaceSeparator, String>>")]
     scope: Option<HashSet<String>>,
 }
@@ -198,6 +200,7 @@ pub struct RefreshTokenGrant {
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct ClientCredentialsGrant {
+    #[serde(default)]
     #[serde_as(as = "Option<StringWithSeparator::<SpaceSeparator, String>>")]
     scope: Option<HashSet<String>>,
 }

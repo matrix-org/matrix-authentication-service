@@ -15,6 +15,7 @@
 use chrono::Utc;
 use oauth2_types::requests::{IntrospectionRequest, IntrospectionResponse, TokenTypeHint};
 use sqlx::{pool::PoolConnection, PgPool, Postgres};
+use tracing::{info, warn};
 use warp::{Filter, Rejection, Reply};
 
 use crate::{
@@ -24,7 +25,7 @@ use crate::{
         client::{with_client_auth, ClientAuthentication},
         database::with_connection,
     },
-    storage::oauth2::lookup_access_token,
+    storage::oauth2::{access_token::lookup_access_token, refresh_token::lookup_refresh_token},
     tokens,
 };
 
@@ -58,11 +59,12 @@ const INACTIVE: IntrospectionResponse = IntrospectionResponse {
 async fn introspect(
     mut conn: PoolConnection<Postgres>,
     auth: ClientAuthentication,
-    _client: OAuth2ClientConfig,
+    client: OAuth2ClientConfig,
     params: IntrospectionRequest,
 ) -> Result<impl Reply, Rejection> {
     // Token introspection is only allowed by confidential clients
     if auth.public() {
+        warn!(?client, "Client tried to introspect");
         // TODO: have a nice error here
         return Ok(warp::reply::json(&INACTIVE));
     }
@@ -71,6 +73,7 @@ async fn introspect(
     let token_type = tokens::check(token).wrap_error()?;
     if let Some(hint) = params.token_type_hint {
         if token_type != hint {
+            info!("Token type hint did not match");
             return Ok(warp::reply::json(&INACTIVE));
         }
     }
@@ -82,6 +85,7 @@ async fn introspect(
 
             // Check it is active and did not expire
             if !token.active || exp < Utc::now() {
+                info!(?token, "Access token expired");
                 return Ok(warp::reply::json(&INACTIVE));
             }
 
@@ -100,7 +104,24 @@ async fn introspect(
                 jti: None,
             }
         }
-        tokens::TokenType::RefreshToken => INACTIVE,
+        tokens::TokenType::RefreshToken => {
+            let token = lookup_refresh_token(&mut conn, token).await.wrap_error()?;
+
+            IntrospectionResponse {
+                active: true,
+                scope: None, // TODO: parse back scopes
+                client_id: Some(token.client_id),
+                username: None,
+                token_type: Some(TokenTypeHint::RefreshToken),
+                exp: None,
+                iat: None,
+                nbf: None,
+                sub: None,
+                aud: None,
+                iss: None,
+                jti: None,
+            }
+        }
     };
 
     Ok(warp::reply::json(&reply))

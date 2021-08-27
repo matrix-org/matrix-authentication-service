@@ -52,7 +52,11 @@ use crate::{
     },
     handlers::views::LoginRequest,
     storage::{
-        oauth2::{add_access_token, get_session_by_id, start_session},
+        oauth2::{
+            access_token::add_access_token,
+            refresh_token::add_refresh_token,
+            session::{get_session_by_id, start_session},
+        },
         SessionInfo,
     },
     templates::{FormPostContext, Templates},
@@ -300,51 +304,58 @@ async fn step(
     let redirect_uri = oauth2_session.redirect_uri().wrap_error()?;
 
     // Check if the active session is valid
-    let reply =
-        if user_session.active && user_session.last_authd_at >= oauth2_session.max_auth_time() {
-            // Yep! Let's complete the auth now
-            let mut params = AuthorizationResponse {
-                state: oauth2_session.state.clone(),
-                ..AuthorizationResponse::default()
+    let reply = if user_session.active
+        && user_session.last_authd_at >= oauth2_session.max_auth_time()
+    {
+        // Yep! Let's complete the auth now
+        let mut params = AuthorizationResponse {
+            state: oauth2_session.state.clone(),
+            ..AuthorizationResponse::default()
+        };
+
+        // Did they request an auth code?
+        if response_type.contains(&ResponseType::Code) {
+            params.code = Some(oauth2_session.fetch_code(&mut txn).await.wrap_error()?);
+        }
+
+        // Did they request an access token?
+        if response_type.contains(&ResponseType::Token) {
+            let ttl = Duration::minutes(5);
+            let (access_token, refresh_token) = {
+                let mut rng = thread_rng();
+                (
+                    tokens::generate(&mut rng, tokens::TokenType::AccessToken),
+                    tokens::generate(&mut rng, tokens::TokenType::RefreshToken),
+                )
             };
 
-            // Did they request an auth code?
-            if response_type.contains(&ResponseType::Code) {
-                params.code = Some(oauth2_session.fetch_code(&mut txn).await.wrap_error()?);
-            }
+            let access_token = add_access_token(&mut txn, oauth2_session_id, &access_token, ttl)
+                .await
+                .wrap_error()?;
 
-            // Did they request an access token?
-            if response_type.contains(&ResponseType::Token) {
-                let ttl = Duration::minutes(5);
-                let (access_token, refresh_token) = {
-                    let mut rng = thread_rng();
-                    (
-                        tokens::generate(&mut rng, tokens::TokenType::AccessToken),
-                        tokens::generate(&mut rng, tokens::TokenType::RefreshToken),
-                    )
-                };
-
-                add_access_token(&mut txn, oauth2_session_id, &access_token, ttl)
+            let refresh_token =
+                add_refresh_token(&mut txn, oauth2_session_id, access_token.id, &refresh_token)
                     .await
                     .wrap_error()?;
-                params.response = Some(
-                    AccessTokenResponse::new(access_token)
-                        .with_expires_in(ttl)
-                        .with_refresh_token(refresh_token),
-                );
-            }
 
-            // Did they request an ID token?
-            if response_type.contains(&ResponseType::IdToken) {
-                todo!("id tokens are not implemented yet");
-            }
+            params.response = Some(
+                AccessTokenResponse::new(access_token.token)
+                    .with_expires_in(ttl)
+                    .with_refresh_token(refresh_token.token),
+            );
+        }
 
-            back_to_client(redirect_uri, response_mode, params, &templates).wrap_error()?
-        } else {
-            // Ask for a reauth
-            // TODO: have the OAuth2 session ID in there
-            Box::new(see_other(Uri::from_static("/reauth")))
-        };
+        // Did they request an ID token?
+        if response_type.contains(&ResponseType::IdToken) {
+            todo!("id tokens are not implemented yet");
+        }
+
+        back_to_client(redirect_uri, response_mode, params, &templates).wrap_error()?
+    } else {
+        // Ask for a reauth
+        // TODO: have the OAuth2 session ID in there
+        Box::new(see_other(Uri::from_static("/reauth")))
+    };
 
     txn.commit().await.wrap_error()?;
     Ok(reply)
