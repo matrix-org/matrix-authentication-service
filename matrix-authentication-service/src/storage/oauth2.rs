@@ -362,3 +362,19 @@ pub async fn lookup_code(
     .await
     .context("could not lookup oauth2 code")
 }
+
+pub async fn cleanup_expired(
+    executor: impl Executor<'_, Database = Postgres>,
+) -> anyhow::Result<u64> {
+    let res = sqlx::query!(
+        r#"
+            DELETE FROM oauth2_access_tokens
+            WHERE created_at + (expires_after * INTERVAL '1 second') + INTERVAL '15 minutes' < now()
+        "#,
+    )
+    .execute(executor)
+    .await
+    .context("could not cleanup expired access tokens")?;
+
+    Ok(res.rows_affected())
+}

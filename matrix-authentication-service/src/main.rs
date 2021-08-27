@@ -27,6 +27,7 @@ mod errors;
 mod filters;
 mod handlers;
 mod storage;
+mod tasks;
 mod templates;
 mod tokens;
 

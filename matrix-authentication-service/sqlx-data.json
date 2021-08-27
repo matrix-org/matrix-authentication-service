@@ -219,6 +219,16 @@
       ]
     }
   },
+  "5d1a17b2ad6153217551ae31549ad9d62cc39d2f9a4e62a7ccb60fd91e0ac685": {
+    "query": "\n            DELETE FROM oauth2_access_tokens\n            WHERE created_at + (expires_after * INTERVAL '1 second') + INTERVAL '15 minutes' < now()\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": []
+    }
+  },
   "62986972431bfc4649e3d8c8c7648f9049c4197773e53496422ad8b8aa15b459": {
     "query": "\n            SELECT\n                s.id,\n                u.id as user_id,\n                u.username,\n                s.active,\n                s.created_at,\n                a.created_at as \"last_authd_at?\"\n            FROM user_sessions s\n            INNER JOIN users u \n                ON s.user_id = u.id\n            LEFT JOIN user_session_authentications a\n                ON a.session_id = s.id\n            WHERE s.id = $1\n            ORDER BY a.created_at DESC\n            LIMIT 1\n        ",
     "describe": {

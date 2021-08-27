@@ -9,6 +9,8 @@ license = "Apache-2.0"
 # Async runtime
 tokio = { version = "1.10.0", features = ["full"] }
 async-trait = "0.1.51"
+tokio-stream = "0.1.7"
+futures-util = "0.3.16"
 
 # Logging and tracing
 tracing = "0.1.26"

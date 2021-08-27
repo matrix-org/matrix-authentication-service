@@ -29,7 +29,11 @@ use tower_http::{
 };
 
 use super::RootCommand;
-use crate::{config::RootConfig, templates::Templates};
+use crate::{
+    config::RootConfig,
+    tasks::{self, TaskQueue},
+    templates::Templates,
+};
 
 #[derive(Clap, Debug, Default)]
 pub(super) struct ServerCommand;
@@ -49,6 +53,10 @@ impl ServerCommand {
 
         // Start the server
         let root = crate::handlers::root(&pool, &templates, &config);
+
+        let queue = TaskQueue::default();
+        queue.recuring(Duration::from_secs(15), tasks::cleanup_expired(&pool));
+        queue.start();
 
         let warp_service = warp::service(root);
 
