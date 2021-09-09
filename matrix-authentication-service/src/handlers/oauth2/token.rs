@@ -43,7 +43,7 @@ use crate::{
     tokens,
 };
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 struct CustomClaims {
     #[serde(rename = "iss")]
     issuer: Url,
@@ -141,7 +141,8 @@ async fn authorization_code_grant(
     })
     .set_duration_and_issuance(&options, Duration::minutes(30));
     let id_token = keys
-        .token(crate::config::Algorithm::Rs256, header, &claims)
+        .token(crate::config::Algorithm::Rs256, header, claims)
+        .await
         .context("could not sign ID token")
         .wrap_error()?;
 

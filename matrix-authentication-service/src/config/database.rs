@@ -15,6 +15,7 @@
 use std::time::Duration;
 
 use anyhow::Context;
+use async_trait::async_trait;
 use schemars::{gen::SchemaGenerator, schema::Schema, JsonSchema};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none};
@@ -123,13 +124,14 @@ impl DatabaseConfig {
     }
 }
 
+#[async_trait]
 impl ConfigurationSection<'_> for DatabaseConfig {
     fn path() -> &'static str {
         "database"
     }
 
-    fn generate() -> Self {
-        Self::default()
+    async fn generate() -> anyhow::Result<Self> {
+        Ok(Self::default())
     }
 }
 

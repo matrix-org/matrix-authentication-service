@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use async_trait::async_trait;
 use chrono::Duration;
 use schemars::{gen::SchemaGenerator, schema::Schema, JsonSchema};
 use serde::{Deserialize, Serialize};
@@ -42,13 +43,14 @@ impl Default for CsrfConfig {
     }
 }
 
+#[async_trait]
 impl ConfigurationSection<'_> for CsrfConfig {
     fn path() -> &'static str {
         "csrf"
     }
 
-    fn generate() -> Self {
-        Self::default()
+    async fn generate() -> anyhow::Result<Self> {
+        Ok(Self::default())
     }
 }
 

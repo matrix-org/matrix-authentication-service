@@ -22,6 +22,7 @@ use rand::rngs::OsRng;
 use serde::Serialize;
 use sqlx::{Acquire, Executor, FromRow, Postgres, Transaction};
 use thiserror::Error;
+use tokio::task;
 use tracing::{info_span, Instrument};
 
 use crate::errors::HtmlError;
@@ -50,7 +51,7 @@ impl SessionInfo {
     pub async fn reauth(
         mut self,
         conn: impl Acquire<'_, Database = Postgres>,
-        password: &str,
+        password: String,
     ) -> anyhow::Result<Self> {
         let mut txn = conn.begin().await?;
         self.last_authd_at = Some(authenticate_session(&mut txn, self.id, password).await?);
@@ -101,7 +102,7 @@ impl HtmlError for LoginError {
 pub async fn login(
     conn: impl Acquire<'_, Database = Postgres>,
     username: &str,
-    password: &str,
+    password: String,
 ) -> Result<SessionInfo, LoginError> {
     let mut txn = conn.begin().await.context("could not start transaction")?;
     let user = lookup_user_by_username(&mut txn, username)
@@ -232,12 +233,15 @@ pub enum AuthenticationError {
 
     #[error("could not save session auth")]
     Save(sqlx::Error),
+
+    #[error("runtime error")]
+    Internal(#[from] tokio::task::JoinError),
 }
 
 pub async fn authenticate_session(
     txn: &mut Transaction<'_, Postgres>,
     session_id: i64,
-    password: &str,
+    password: String,
 ) -> Result<DateTime<Utc>, AuthenticationError> {
     // First, fetch the hashed password from the user associated with that session
     let hashed_password: String = sqlx::query_scalar!(
@@ -255,9 +259,15 @@ pub async fn authenticate_session(
     .map_err(AuthenticationError::Fetch)?;
 
     // TODO: pass verifiers list as parameter
-    let context = Argon2::default();
-    let hasher = PasswordHash::new(&hashed_password)?;
-    hasher.verify_password(&[&context], &password)?;
+    // Verify the password in a blocking thread to avoid blocking the async executor
+    task::spawn_blocking(move || {
+        let context = Argon2::default();
+        let hasher = PasswordHash::new(&hashed_password).map_err(AuthenticationError::Password)?;
+        hasher
+            .verify_password(&[&context], &password)
+            .map_err(AuthenticationError::Password)
+    })
+    .await??;
 
     // That went well, let's insert the auth info
     let created_at: DateTime<Utc> = sqlx::query_scalar!(

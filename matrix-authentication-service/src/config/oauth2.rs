@@ -15,6 +15,7 @@
 use std::convert::TryFrom;
 
 use anyhow::Context;
+use async_trait::async_trait;
 use jwt_compact::{
     alg::{self, StrongAlg, StrongKey},
     jwk::JsonWebKey,
@@ -30,6 +31,8 @@ use serde::{
 };
 use serde_with::skip_serializing_none;
 use thiserror::Error;
+use tokio::task;
+use tracing::info;
 use url::Url;
 
 use super::ConfigurationSection;
@@ -38,7 +41,7 @@ use super::ConfigurationSection;
 
 const RS256: StrongAlg<alg::Rsa> = StrongAlg(alg::Rsa::rs256());
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum Algorithm {
     Rs256,
@@ -69,15 +72,15 @@ impl KeySet {
         Jwks { keys }
     }
 
-    #[allow(dead_code)]
-    pub fn token<T>(
+    #[tracing::instrument(err)]
+    pub async fn token<T>(
         &self,
         alg: Algorithm,
         header: Header,
-        claims: &Claims<T>,
+        claims: Claims<T>,
     ) -> anyhow::Result<String>
     where
-        T: Serialize,
+        T: std::fmt::Debug + Serialize + Send + Sync + 'static,
     {
         match alg {
             Algorithm::Rs256 => {
@@ -87,10 +90,15 @@ impl KeySet {
                     .find_map(Key::rsa)
                     .context("could not find RSA key")?;
                 let header = header.with_key_id(kid);
+
                 // TODO: store them as strong keys
-                RS256
-                    .token(header, claims, &StrongKey::try_from(key.clone())?)
-                    .context("failed to sign token")
+                let key = StrongKey::try_from(key.clone())?;
+                task::spawn_blocking(move || {
+                    RS256
+                        .token(header, &claims, &key)
+                        .context("failed to sign token")
+                })
+                .await?
             }
             Algorithm::Es256k => {
                 // TODO: make this const with lazy_static?
@@ -103,9 +111,13 @@ impl KeySet {
                 let key = k256::ecdsa::SigningKey::from(key);
                 let header = header.with_key_id(kid);
                 // TODO: use StrongAlg
-                es256k
-                    .token(header, claims, &key)
-                    .context("failed to sign token")
+
+                task::spawn_blocking(move || {
+                    es256k
+                        .token(header, &claims, &key)
+                        .context("failed to sign token")
+                })
+                .await?
             }
         }
     }
@@ -318,7 +330,7 @@ pub struct OAuth2Config {
     #[serde(default)]
     pub clients: Vec<OAuth2ClientConfig>,
 
-    #[schemars(with = "Vec<String>")]
+    #[schemars(with = "Vec<String>")] // TODO: this is a lie
     pub keys: KeySet,
 }
 
@@ -361,20 +373,44 @@ impl OAuth2Config {
     }
 }
 
+#[async_trait]
 impl ConfigurationSection<'_> for OAuth2Config {
     fn path() -> &'static str {
         "oauth2"
     }
 
-    fn generate() -> Self {
-        let mut rng = rand::thread_rng();
-        let rsa_key = RsaPrivateKey::new(&mut rng, 2048).unwrap();
-        let ecdsa_key = k256::SecretKey::random(rng);
-        Self {
+    #[tracing::instrument]
+    async fn generate() -> anyhow::Result<Self> {
+        info!("Generating keys...");
+
+        let span = tracing::info_span!("rsa");
+        let rsa_key = task::spawn_blocking(move || {
+            let _entered = span.enter();
+            let mut rng = rand::thread_rng();
+            let ret =
+                RsaPrivateKey::new(&mut rng, 2048).context("could not generate RSA private key");
+            info!("Done generating RSA key");
+            ret
+        });
+
+        let span = tracing::info_span!("ecdsa");
+        let ecdsa_key = task::spawn_blocking(move || {
+            let _entered = span.enter();
+            let rng = rand::thread_rng();
+            let ret = k256::SecretKey::random(rng);
+            info!("Done generating ECDSA key");
+            ret
+        });
+
+        let (ecdsa_key, rsa_key) = tokio::join!(ecdsa_key, rsa_key);
+        let rsa_key = rsa_key.context("could not join blocking task")??;
+        let ecdsa_key = ecdsa_key.context("could not join blocking task")?;
+
+        Ok(Self {
             issuer: default_oauth2_issuer(),
             clients: Vec::new(),
             keys: KeySet(vec![Key::from_rsa(rsa_key), Key::from_ecdsa(ecdsa_key)]),
-        }
+        })
     }
 }
 

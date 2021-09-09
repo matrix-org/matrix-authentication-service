@@ -64,7 +64,7 @@ impl ConfigCommand {
                 Ok(())
             }
             SC::Generate => {
-                let config = RootConfig::load_and_generate()?;
+                let config = RootConfig::load_and_generate().await?;
 
                 serde_yaml::to_writer(std::io::stdout(), &config)?;
 

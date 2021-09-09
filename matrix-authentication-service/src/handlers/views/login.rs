@@ -131,7 +131,7 @@ async fn post(
 ) -> Result<Box<dyn Reply>, Rejection> {
     use crate::storage::user::LoginError;
     // TODO: recover
-    match login(&mut conn, &form.username, &form.password).await {
+    match login(&mut conn, &form.username, form.password).await {
         Ok(session_info) => {
             let session_cookie = SessionCookie::from_session_info(&session_info);
             let reply = query.redirect()?;

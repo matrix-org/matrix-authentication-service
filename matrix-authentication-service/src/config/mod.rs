@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use async_trait::async_trait;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -47,18 +48,19 @@ pub struct RootConfig {
     pub csrf: CsrfConfig,
 }
 
+#[async_trait]
 impl ConfigurationSection<'_> for RootConfig {
     fn path() -> &'static str {
         ""
     }
 
-    fn generate() -> Self {
-        Self {
-            oauth2: OAuth2Config::generate(),
-            http: HttpConfig::generate(),
-            database: DatabaseConfig::generate(),
-            cookies: CookiesConfig::generate(),
-            csrf: CsrfConfig::generate(),
-        }
+    async fn generate() -> anyhow::Result<Self> {
+        Ok(Self {
+            oauth2: OAuth2Config::generate().await?,
+            http: HttpConfig::generate().await?,
+            database: DatabaseConfig::generate().await?,
+            cookies: CookiesConfig::generate().await?,
+            csrf: CsrfConfig::generate().await?,
+        })
     }
 }

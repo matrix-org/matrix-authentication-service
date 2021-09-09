@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use async_trait::async_trait;
 use schemars::{gen::SchemaGenerator, schema::Schema, JsonSchema};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
@@ -30,14 +31,15 @@ pub struct CookiesConfig {
     pub secret: [u8; 32],
 }
 
+#[async_trait]
 impl ConfigurationSection<'_> for CookiesConfig {
     fn path() -> &'static str {
         "cookies"
     }
 
-    fn generate() -> Self {
-        Self {
+    async fn generate() -> anyhow::Result<Self> {
+        Ok(Self {
             secret: rand::random(),
-        }
+        })
     }
 }

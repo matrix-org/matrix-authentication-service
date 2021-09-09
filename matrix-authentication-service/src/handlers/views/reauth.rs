@@ -77,7 +77,7 @@ async fn post(
     form: ReauthForm,
 ) -> Result<impl Reply, Rejection> {
     let _session = session
-        .reauth(&mut conn, &form.password)
+        .reauth(&mut conn, form.password)
         .await
         .wrap_error()?;
 

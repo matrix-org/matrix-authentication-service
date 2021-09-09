@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use async_trait::async_trait;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -35,12 +36,13 @@ impl Default for HttpConfig {
     }
 }
 
+#[async_trait]
 impl ConfigurationSection<'_> for HttpConfig {
     fn path() -> &'static str {
         "http"
     }
 
-    fn generate() -> Self {
-        Self::default()
+    async fn generate() -> anyhow::Result<Self> {
+        Ok(Self::default())
     }
 }

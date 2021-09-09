@@ -44,7 +44,7 @@ async fn main() -> anyhow::Result<()> {
     }
 
     // Setup logging & tracing
-    let fmt_layer = tracing_subscriber::fmt::layer();
+    let fmt_layer = tracing_subscriber::fmt::layer().with_writer(std::io::stderr);
     let filter_layer = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?;
 
     let subscriber = Registry::default().with(filter_layer).with(fmt_layer);
