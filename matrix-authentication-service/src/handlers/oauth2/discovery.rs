@@ -47,7 +47,7 @@ pub(super) fn filter(
     let metadata = Metadata {
         authorization_endpoint: base.join("oauth2/authorize").ok(),
         token_endpoint: base.join("oauth2/token").ok(),
-        jwks_uri: base.join(".well-known/jwks.json").ok(),
+        jwks_uri: base.join("oauth2/keys.json").ok(),
         introspection_endpoint: base.join("oauth2/introspect").ok(),
         issuer: base,
         registration_endpoint: None,

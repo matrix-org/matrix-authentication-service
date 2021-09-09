@@ -26,11 +26,21 @@ use std::convert::Infallible;
 use warp::Filter;
 
 pub use self::csrf::CsrfToken;
-use crate::templates::Templates;
+use crate::{
+    config::{KeySet, OAuth2Config},
+    templates::Templates,
+};
 
 pub fn with_templates(
     templates: &Templates,
 ) -> impl Filter<Extract = (Templates,), Error = Infallible> + Clone + Send + Sync + 'static {
     let templates = templates.clone();
     warp::any().map(move || templates.clone())
+}
+
+pub fn with_keys(
+    oauth2_config: &OAuth2Config,
+) -> impl Filter<Extract = (KeySet,), Error = Infallible> + Clone + Send + Sync + 'static {
+    let keyset = oauth2_config.keys.clone();
+    warp::any().map(move || keyset.clone())
 }

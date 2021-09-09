@@ -27,13 +27,12 @@ pub use self::{
     csrf::CsrfConfig,
     database::DatabaseConfig,
     http::HttpConfig,
-    oauth2::{OAuth2ClientConfig, OAuth2Config},
+    oauth2::{Algorithm, KeySet, OAuth2ClientConfig, OAuth2Config},
     util::ConfigurationSection,
 };
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct RootConfig {
-    #[serde(default)]
     pub oauth2: OAuth2Config,
 
     #[serde(default)]

@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use anyhow::Context;
 use chrono::Duration;
+use jwt_compact::{Claims, Header, TimeOptions};
 use oauth2_types::{
     errors::{InvalidGrant, OAuth2Error},
     requests::{
@@ -20,15 +22,18 @@ use oauth2_types::{
     },
 };
 use rand::thread_rng;
+use serde::Serialize;
 use sqlx::{pool::PoolConnection, Acquire, PgPool, Postgres};
+use url::Url;
 use warp::{Filter, Rejection, Reply};
 
 use crate::{
-    config::{OAuth2ClientConfig, OAuth2Config},
+    config::{KeySet, OAuth2ClientConfig, OAuth2Config},
     errors::WrapError,
     filters::{
         client::{with_client_auth, ClientAuthentication},
         database::with_connection,
+        with_keys,
     },
     storage::oauth2::{
         access_token::{add_access_token, revoke_access_token},
@@ -38,13 +43,26 @@ use crate::{
     tokens,
 };
 
+#[derive(Serialize)]
+struct CustomClaims {
+    #[serde(rename = "iss")]
+    issuer: Url,
+    #[serde(rename = "sub")]
+    subject: String,
+    #[serde(rename = "aud")]
+    audiences: Vec<String>,
+}
+
 pub fn filter(
     pool: &PgPool,
     oauth2_config: &OAuth2Config,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
+    let issuer = oauth2_config.issuer.clone();
     warp::path!("oauth2" / "token")
         .and(warp::post())
         .and(with_client_auth(oauth2_config))
+        .and(with_keys(oauth2_config))
+        .and(warp::any().map(move || issuer.clone()))
         .and(with_connection(pool))
         .and_then(token)
 }
@@ -53,11 +71,13 @@ async fn token(
     _auth: ClientAuthentication,
     client: OAuth2ClientConfig,
     req: AccessTokenRequest,
+    keys: KeySet,
+    issuer: Url,
     mut conn: PoolConnection<Postgres>,
 ) -> Result<impl Reply, Rejection> {
     let reply = match req {
         AccessTokenRequest::AuthorizationCode(grant) => {
-            let reply = authorization_code_grant(&grant, &client, &mut conn).await?;
+            let reply = authorization_code_grant(&grant, &client, &keys, issuer, &mut conn).await?;
             warp::reply::json(&reply)
         }
         AccessTokenRequest::RefreshToken(grant) => {
@@ -76,6 +96,8 @@ async fn token(
 async fn authorization_code_grant(
     grant: &AuthorizationCodeGrant,
     client: &OAuth2ClientConfig,
+    keys: &KeySet,
+    issuer: Url,
     conn: &mut PoolConnection<Postgres>,
 ) -> Result<AccessTokenResponse, Rejection> {
     let mut txn = conn.begin().await.wrap_error()?;
@@ -108,11 +130,26 @@ async fn authorization_code_grant(
     .await
     .wrap_error()?;
 
-    // TODO: generate id_token if the "openid" scope was asked
+    // TODO: generate id_token only if the "openid" scope was asked
+    let header = Header::default();
+    let options = TimeOptions::default();
+    let claims = Claims::new(CustomClaims {
+        issuer,
+        // TODO: get that from the session
+        subject: "random-subject".to_string(),
+        audiences: vec![client.client_id.clone()],
+    })
+    .set_duration_and_issuance(&options, Duration::minutes(30));
+    let id_token = keys
+        .token(crate::config::Algorithm::Rs256, header, &claims)
+        .context("could not sign ID token")
+        .wrap_error()?;
+
     // TODO: have the scopes back here
     let params = AccessTokenResponse::new(access_token.token)
         .with_expires_in(ttl)
-        .with_refresh_token(refresh_token.token);
+        .with_refresh_token(refresh_token.token)
+        .with_id_token(id_token);
 
     txn.commit().await.wrap_error()?;
 

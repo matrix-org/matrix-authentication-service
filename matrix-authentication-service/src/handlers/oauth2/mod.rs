@@ -23,11 +23,12 @@ use crate::{
 mod authorization;
 mod discovery;
 mod introspection;
+mod keys;
 mod token;
 
 use self::{
     authorization::filter as authorization, discovery::filter as discovery,
-    introspection::filter as introspection, token::filter as token,
+    introspection::filter as introspection, keys::filter as keys, token::filter as token,
 };
 
 pub fn filter(
@@ -37,6 +38,7 @@ pub fn filter(
     cookies_config: &CookiesConfig,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
     discovery(oauth2_config)
+        .or(keys(oauth2_config))
         .or(authorization(
             pool,
             templates,

@@ -149,7 +149,7 @@ mod tests {
     use super::*;
 
     fn oauth2_config() -> OAuth2Config {
-        let mut config = OAuth2Config::default();
+        let mut config = OAuth2Config::test();
         config.clients.push(OAuth2ClientConfig {
             client_id: "public".to_string(),
             client_secret: None,

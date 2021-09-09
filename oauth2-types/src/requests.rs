@@ -237,10 +237,13 @@ pub enum AccessTokenRequest {
 }
 
 #[serde_as]
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct AccessTokenResponse {
     access_token: String,
     refresh_token: Option<String>,
+    // TODO: this should be somewhere else
+    id_token: Option<String>,
 
     token_type: TokenType,
 
@@ -257,6 +260,7 @@ impl AccessTokenResponse {
         AccessTokenResponse {
             access_token,
             refresh_token: None,
+            id_token: None,
             token_type: TokenType::Bearer,
             expires_in: None,
             scope: None,
@@ -266,6 +270,12 @@ impl AccessTokenResponse {
     #[must_use]
     pub fn with_refresh_token(mut self, refresh_token: String) -> Self {
         self.refresh_token = Some(refresh_token);
+        self
+    }
+
+    #[must_use]
+    pub fn with_id_token(mut self, id_token: String) -> Self {
+        self.id_token = Some(id_token);
         self
     }
 
