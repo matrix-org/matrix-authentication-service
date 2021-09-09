@@ -381,20 +381,8 @@
       ]
     }
   },
-  "88ac8783bd5881c42eafd9cf87a16fe6031f3153fd6a8618e689694584aeb2de": {
-    "query": "\n            DELETE FROM oauth2_access_tokens\n            WHERE id = $1\n        ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      },
-      "nullable": []
-    }
-  },
-  "8c21b0b46e74ae5667b82bfe57706a64396683ac4dc29311424008c3f3e94136": {
-    "query": "\n            SELECT\n                oc.id,\n                os.id        AS \"oauth2_session_id!\",\n                os.client_id AS \"client_id!\",\n                os.redirect_uri,\n                os.scope     AS \"scope!\"\n            FROM oauth2_codes oc\n            INNER JOIN oauth2_sessions os\n              ON os.id = oc.oauth2_session_id\n            WHERE oc.code = $1\n        ",
+  "886dee6a6f1f426f0e891790bbeffbc222fd75d8da0a107e7de673f1cc445f30": {
+    "query": "\n            SELECT\n                oc.id,\n                os.id        AS \"oauth2_session_id!\",\n                os.client_id AS \"client_id!\",\n                os.redirect_uri,\n                os.scope     AS \"scope!\",\n                os.nonce\n            FROM oauth2_codes oc\n            INNER JOIN oauth2_sessions os\n              ON os.id = oc.oauth2_session_id\n            WHERE oc.code = $1\n        ",
     "describe": {
       "columns": [
         {
@@ -421,6 +409,11 @@
           "ordinal": 4,
           "name": "scope!",
           "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "nonce",
+          "type_info": "Text"
         }
       ],
       "parameters": {
@@ -433,8 +426,21 @@
         false,
         false,
         false,
-        false
+        false,
+        true
       ]
+    }
+  },
+  "88ac8783bd5881c42eafd9cf87a16fe6031f3153fd6a8618e689694584aeb2de": {
+    "query": "\n            DELETE FROM oauth2_access_tokens\n            WHERE id = $1\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": []
     }
   },
   "9ba45ab114b656105cc46b0c10fb05769860fcdc05eaf54d6225640fb914dab9": {

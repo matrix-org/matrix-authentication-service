@@ -14,6 +14,7 @@
 
 use anyhow::Context;
 use chrono::Duration;
+use data_encoding::BASE64URL_NOPAD;
 use jwt_compact::{Claims, Header, TimeOptions};
 use oauth2_types::{
     errors::{InvalidGrant, OAuth2Error},
@@ -23,6 +24,8 @@ use oauth2_types::{
 };
 use rand::thread_rng;
 use serde::Serialize;
+use serde_with::skip_serializing_none;
+use sha2::{Digest, Sha256};
 use sqlx::{pool::PoolConnection, Acquire, PgPool, Postgres};
 use url::Url;
 use warp::{Filter, Rejection, Reply};
@@ -43,6 +46,7 @@ use crate::{
     tokens,
 };
 
+#[skip_serializing_none]
 #[derive(Serialize, Debug)]
 struct CustomClaims {
     #[serde(rename = "iss")]
@@ -51,6 +55,9 @@ struct CustomClaims {
     subject: String,
     #[serde(rename = "aud")]
     audiences: Vec<String>,
+    nonce: Option<String>,
+    at_hash: String,
+    c_hash: String,
 }
 
 pub fn filter(
@@ -91,6 +98,16 @@ async fn token(
     };
 
     Ok(reply)
+}
+
+fn hash<H: Digest>(mut hasher: H, token: &str) -> anyhow::Result<String> {
+    hasher.update(token);
+    let hash = hasher.finalize();
+    // Left-most 128bit
+    let bits = hash
+        .get(..16)
+        .context("failed to get first 128 bits of hash")?;
+    Ok(BASE64URL_NOPAD.encode(bits))
 }
 
 async fn authorization_code_grant(
@@ -138,6 +155,9 @@ async fn authorization_code_grant(
         // TODO: get that from the session
         subject: "random-subject".to_string(),
         audiences: vec![client.client_id.clone()],
+        nonce: code.nonce,
+        at_hash: hash(Sha256::new(), &access_token.token).wrap_error()?,
+        c_hash: hash(Sha256::new(), &grant.code).wrap_error()?,
     })
     .set_duration_and_issuance(&options, Duration::minutes(30));
     let id_token = keys

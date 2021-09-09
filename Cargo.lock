@@ -1405,6 +1405,7 @@ dependencies = [
  "serde_urlencoded",
  "serde_with",
  "serde_yaml",
+ "sha2",
  "sqlx",
  "tera",
  "thiserror",

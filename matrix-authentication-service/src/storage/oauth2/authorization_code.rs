@@ -62,6 +62,7 @@ pub struct OAuth2CodeLookup {
     pub client_id: String,
     pub redirect_uri: String,
     pub scope: String,
+    pub nonce: Option<String>,
 }
 
 pub async fn lookup_code(
@@ -76,7 +77,8 @@ pub async fn lookup_code(
                 os.id        AS "oauth2_session_id!",
                 os.client_id AS "client_id!",
                 os.redirect_uri,
-                os.scope     AS "scope!"
+                os.scope     AS "scope!",
+                os.nonce
             FROM oauth2_codes oc
             INNER JOIN oauth2_sessions os
               ON os.id = oc.oauth2_session_id

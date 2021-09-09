@@ -49,12 +49,14 @@ dotenv = "0.15.0"
 argon2 = { version = "0.3.0", features = ["password-hash"] }
 password-hash = { version = "0.3.0", features = ["std"] }
 
-# Crypto and signing stuff
+# Crypto, hashing and signing stuff
 rsa = "0.5.0"
 k256 = "0.9.6"
 pkcs8 = { version = "0.7.5", features = ["pem"] }
 elliptic-curve = { version = "0.10.6", features = ["pem"] }
 chacha20poly1305 = { version = "0.9.0", features = ["std"] }
+sha2 = "0.9.8"
+crc = "2.0.0"
 
 # Various data types and utilities
 data-encoding = "2.3.2"
@@ -66,7 +68,6 @@ rand = "0.8.4"
 bincode = "1.3.3"
 headers = "0.3.4"
 cookie = "0.15.1"
-crc = "2.0.0"
 
 oauth2-types = { path = "../oauth2-types", features = ["sqlx_type"] }
 
