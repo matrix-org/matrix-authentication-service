@@ -20,10 +20,11 @@ use chacha20poly1305::{
 };
 use cookie::Cookie;
 use data_encoding::BASE64URL_NOPAD;
-use headers::{Header, HeaderMapExt, HeaderValue, SetCookie};
+use headers::{Header, HeaderValue, SetCookie};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use warp::{Filter, Rejection, Reply};
 
+use super::headers::{typed_header, WithTypedHeader};
 use crate::{config::CookiesConfig, errors::WrapError};
 
 #[derive(Serialize, Deserialize)]
@@ -109,23 +110,6 @@ pub trait EncryptableCookieValue {
     fn cookie_key() -> &'static str;
 }
 
-pub struct WithTypedHeader<R, H> {
-    reply: R,
-    header: H,
-}
-
-impl<R, H> Reply for WithTypedHeader<R, H>
-where
-    R: Reply,
-    H: Header + Send,
-{
-    fn into_response(self) -> warp::reply::Response {
-        let mut res = self.reply.into_response();
-        res.headers_mut().typed_insert(self.header);
-        res
-    }
-}
-
 pub struct EncryptedCookieSaver {
     secret: [u8; 32],
 }
@@ -145,6 +129,6 @@ impl EncryptedCookieSaver {
             .to_string();
         let header = SetCookie::decode(&mut [HeaderValue::from_str(&value).wrap_error()?].iter())
             .wrap_error()?;
-        Ok(WithTypedHeader { reply, header })
+        Ok(typed_header(header, reply))
     }
 }

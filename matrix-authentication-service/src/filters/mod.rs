@@ -16,9 +16,11 @@
 
 pub mod csrf;
 // mod errors;
+pub mod authenticate;
 pub mod client;
 pub mod cookies;
 pub mod database;
+pub mod headers;
 pub mod session;
 
 use std::convert::Infallible;

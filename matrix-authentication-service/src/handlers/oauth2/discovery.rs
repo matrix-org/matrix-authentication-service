@@ -49,6 +49,7 @@ pub(super) fn filter(
         token_endpoint: base.join("oauth2/token").ok(),
         jwks_uri: base.join("oauth2/keys.json").ok(),
         introspection_endpoint: base.join("oauth2/introspect").ok(),
+        userinfo_endpoint: base.join("oauth2/userinfo").ok(),
         issuer: base,
         registration_endpoint: None,
         scopes_supported: None,

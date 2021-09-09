@@ -25,10 +25,12 @@ mod discovery;
 mod introspection;
 mod keys;
 mod token;
+mod userinfo;
 
 use self::{
     authorization::filter as authorization, discovery::filter as discovery,
     introspection::filter as introspection, keys::filter as keys, token::filter as token,
+    userinfo::filter as userinfo,
 };
 
 pub fn filter(
@@ -45,6 +47,7 @@ pub fn filter(
             oauth2_config,
             cookies_config,
         ))
+        .or(userinfo(pool, oauth2_config))
         .or(introspection(pool, oauth2_config))
         .or(token(pool, oauth2_config))
 }

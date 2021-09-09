@@ -15,6 +15,7 @@
 use anyhow::Context;
 use chrono::Duration;
 use data_encoding::BASE64URL_NOPAD;
+use headers::{CacheControl, Pragma};
 use jwt_compact::{Claims, Header, TimeOptions};
 use oauth2_types::{
     errors::{InvalidGrant, OAuth2Error},
@@ -36,6 +37,7 @@ use crate::{
     filters::{
         client::{with_client_auth, ClientAuthentication},
         database::with_connection,
+        headers::typed_header,
         with_keys,
     },
     storage::oauth2::{
@@ -97,7 +99,10 @@ async fn token(
         }
     };
 
-    Ok(reply)
+    Ok(typed_header(
+        Pragma::no_cache(),
+        typed_header(CacheControl::new().with_no_store(), reply),
+    ))
 }
 
 fn hash<H: Digest>(mut hasher: H, token: &str) -> anyhow::Result<String> {

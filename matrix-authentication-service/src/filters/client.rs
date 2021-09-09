@@ -12,15 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use headers::{authorization::Basic, Authorization, Header, HeaderValue};
+use headers::{authorization::Basic, Authorization};
 use serde::{de::DeserializeOwned, Deserialize};
 use thiserror::Error;
 use warp::{reject::Reject, Filter, Rejection};
 
-use crate::{
-    config::{OAuth2ClientConfig, OAuth2Config},
-    errors::WrapError,
-};
+use super::headers::with_typed_header;
+use crate::config::{OAuth2ClientConfig, OAuth2Config};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ClientAuthentication {
@@ -33,18 +31,6 @@ impl ClientAuthentication {
     pub fn public(&self) -> bool {
         matches!(self, &Self::None)
     }
-}
-
-// TODO: move that somewhere else
-pub fn with_typed_header<T: Header + Send + 'static>(
-) -> impl Filter<Extract = (T,), Error = Rejection> + Clone + Send + Sync + 'static {
-    warp::header::value(T::name().as_str()).and_then(decode_typed_header)
-}
-
-async fn decode_typed_header<T: Header>(header: HeaderValue) -> Result<T, Rejection> {
-    let mut it = std::iter::once(&header);
-    let decoded = T::decode(&mut it).wrap_error()?;
-    Ok(decoded)
 }
 
 pub fn with_client_auth<T: DeserializeOwned + Send + 'static>(

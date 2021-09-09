@@ -66,4 +66,6 @@ pub struct Metadata {
 
     /// URL of the authorization server's OAuth 2.0 introspection endpoint.
     pub introspection_endpoint: Option<Url>,
+
+    pub userinfo_endpoint: Option<Url>,
 }

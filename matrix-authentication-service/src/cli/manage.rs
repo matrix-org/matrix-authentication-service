@@ -14,7 +14,7 @@
 
 use argon2::Argon2;
 use clap::Clap;
-use tracing::info;
+use tracing::{info, warn};
 
 use super::RootCommand;
 use crate::{config::DatabaseConfig, storage::register_user};
@@ -29,6 +29,9 @@ pub(super) struct ManageCommand {
 enum ManageSubcommand {
     /// Register a new user
     Register { username: String, password: String },
+
+    /// List active users
+    Users,
 }
 
 impl ManageCommand {
@@ -42,6 +45,11 @@ impl ManageCommand {
 
                 let user = register_user(&pool, hasher, username, password).await?;
                 info!(?user, "User registered");
+
+                Ok(())
+            }
+            SC::Users => {
+                warn!("Not implemented yet");
 
                 Ok(())
             }
