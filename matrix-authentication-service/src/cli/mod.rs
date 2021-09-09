@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Clippy seems confused by clap.rs derive macros
+#![allow(clippy::suspicious_else_formatting)]
+
 use std::path::PathBuf;
 
 use anyhow::Context;
