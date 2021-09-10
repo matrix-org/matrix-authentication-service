@@ -18,7 +18,6 @@ use std::{
 };
 
 use chrono::Duration;
-use data_encoding::BASE64URL_NOPAD;
 use hyper::{
     header::LOCATION,
     http::uri::{Parts, PathAndQuery, Uri},
@@ -26,18 +25,21 @@ use hyper::{
 };
 use itertools::Itertools;
 use oauth2_types::{
+    errors::{ErrorResponse, InvalidRequest, OAuth2Error},
     pkce,
     requests::{
         AccessTokenResponse, AuthorizationRequest, AuthorizationResponse, ResponseMode,
         ResponseType,
     },
 };
-use rand::thread_rng;
+use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use sqlx::{PgPool, Postgres, Transaction};
 use url::Url;
 use warp::{
     redirect::see_other,
+    reject::InvalidQuery,
     reply::{html, with_header},
     Filter, Rejection, Reply,
 };
@@ -62,6 +64,26 @@ use crate::{
     templates::{FormPostContext, Templates},
     tokens,
 };
+
+#[derive(Deserialize)]
+struct PartialParams {
+    client_id: Option<String>,
+    redirect_uri: Option<String>,
+    /*
+    response_type: Option<String>,
+    response_mode: Option<String>,
+    */
+}
+
+enum ReplyOrBackToClient {
+    Reply(Box<dyn Reply>),
+    BackToClient {
+        params: Value,
+        redirect_uri: Url,
+        response_mode: ResponseMode,
+    },
+    Error(Box<dyn OAuth2Error>),
+}
 
 fn back_to_client<T>(
     mut redirect_uri: Url,
@@ -173,7 +195,6 @@ pub fn filter(
         .and(warp::query())
         .and(with_optional_session(pool, cookies_config))
         .and(with_transaction(pool))
-        .and(with_templates(templates))
         .and_then(get);
 
     let step = warp::path!("oauth2" / "authorize" / "step")
@@ -181,10 +202,81 @@ pub fn filter(
         .and(warp::query().map(|s: StepRequest| s.id))
         .and(with_session(pool, cookies_config))
         .and(with_transaction(pool))
-        .and(with_templates(templates))
         .and_then(step);
 
-    authorize.or(step)
+    let clients = oauth2_config.clients.clone();
+    authorize
+        .or(step)
+        .unify()
+        .recover(recover)
+        .unify()
+        .and(warp::query())
+        .and(warp::any().map(move || clients.clone()))
+        .and(with_templates(templates))
+        .and_then(actually_reply)
+}
+
+async fn recover(rejection: Rejection) -> Result<ReplyOrBackToClient, Rejection> {
+    if rejection.find::<InvalidQuery>().is_some() {
+        Ok(ReplyOrBackToClient::Error(Box::new(InvalidRequest)))
+    } else {
+        Err(rejection)
+    }
+}
+
+async fn actually_reply(
+    rep: ReplyOrBackToClient,
+    q: PartialParams,
+    clients: Vec<OAuth2ClientConfig>,
+    templates: Templates,
+) -> Result<impl Reply, Rejection> {
+    let (redirect_uri, response_mode, params) = match rep {
+        ReplyOrBackToClient::Reply(r) => return Ok(r),
+        ReplyOrBackToClient::BackToClient {
+            redirect_uri,
+            response_mode,
+            params,
+        } => (redirect_uri, response_mode, params),
+        ReplyOrBackToClient::Error(error) => {
+            let PartialParams {
+                client_id,
+                redirect_uri,
+                ..
+            } = q;
+
+            // First, disover the client
+            let client = client_id.and_then(|client_id| {
+                clients
+                    .into_iter()
+                    .find(|client| client.client_id == client_id)
+            });
+
+            let client = match client {
+                Some(client) => client,
+                None => return Ok(Box::new(html(templates.render_error(&error.into())?))),
+            };
+
+            let redirect_uri: Result<Option<Url>, _> = redirect_uri.map(|r| r.parse()).transpose();
+            let redirect_uri = match redirect_uri {
+                Ok(r) => r,
+                Err(_) => return Ok(Box::new(html(templates.render_error(&error.into())?))),
+            };
+
+            let redirect_uri = client.resolve_redirect_uri(&redirect_uri);
+            let redirect_uri = match redirect_uri {
+                Ok(r) => r,
+                Err(_) => return Ok(Box::new(html(templates.render_error(&error.into())?))),
+            };
+
+            let reply: ErrorResponse = error.into();
+            let reply = serde_json::to_value(&reply).wrap_error()?;
+            // TODO: resolve response mode
+            (redirect_uri.clone(), ResponseMode::Query, reply)
+        }
+    };
+
+    // TODO: we should include the state param in errors
+    back_to_client(redirect_uri, response_mode, params, &templates).wrap_error()
 }
 
 async fn get(
@@ -192,18 +284,12 @@ async fn get(
     params: Params,
     maybe_session: Option<SessionInfo>,
     mut txn: Transaction<'_, Postgres>,
-    templates: Templates,
-) -> Result<Box<dyn Reply>, Rejection> {
+) -> Result<ReplyOrBackToClient, Rejection> {
     // First, find out what client it is
     let client = clients
         .into_iter()
         .find(|client| client.client_id == params.auth.client_id)
         .ok_or_else(|| anyhow::anyhow!("could not find client"))
-        .wrap_error()?;
-
-    // Then, figure out the redirect URI
-    let redirect_uri = client
-        .resolve_redirect_uri(&params.auth.redirect_uri)
         .wrap_error()?;
 
     let maybe_session_id = maybe_session.as_ref().map(SessionInfo::key);
@@ -213,6 +299,9 @@ async fn get(
         Itertools::intersperse(it, " ".to_string()).collect()
     };
 
+    let redirect_uri = client
+        .resolve_redirect_uri(&params.auth.redirect_uri)
+        .wrap_error()?;
     let response_type = &params.auth.response_type;
     let response_mode =
         resolve_response_mode(response_type, params.auth.response_mode).wrap_error()?;
@@ -234,9 +323,13 @@ async fn get(
 
     // Generate the code at this stage, since we have the PKCE params ready
     if response_type.contains(&ResponseType::Code) {
-        // 192bit random bytes encoded in base64, which gives a 32 character code
-        let code: [u8; 24] = rand::random();
-        let code = BASE64URL_NOPAD.encode(&code);
+        // 32 random alphanumeric characters, about 190bit of entropy
+        let code: String = thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(32)
+            .map(char::from)
+            .collect();
+
         oauth2_session
             .add_code(&mut txn, &code, &params.pkce)
             .await
@@ -247,7 +340,7 @@ async fn get(
     let user_session = oauth2_session.fetch_session(&mut txn).await.wrap_error()?;
 
     if let Some(user_session) = user_session {
-        step(oauth2_session.id, user_session, txn, templates).await
+        step(oauth2_session.id, user_session, txn).await
     } else {
         // If not, redirect the user to the login page
         txn.commit().await.wrap_error()?;
@@ -258,7 +351,7 @@ async fn get(
             .to_string();
 
         let destination = LoginRequest::new(Some(next)).build_uri().wrap_error()?;
-        Ok(Box::new(see_other(destination)))
+        Ok(ReplyOrBackToClient::Reply(Box::new(see_other(destination))))
     }
 }
 
@@ -288,8 +381,7 @@ async fn step(
     oauth2_session_id: i64,
     user_session: SessionInfo,
     mut txn: Transaction<'_, Postgres>,
-    templates: Templates,
-) -> Result<Box<dyn Reply>, Rejection> {
+) -> Result<ReplyOrBackToClient, Rejection> {
     let mut oauth2_session = get_session_by_id(&mut txn, oauth2_session_id)
         .await
         .wrap_error()?;
@@ -350,11 +442,16 @@ async fn step(
             todo!("id tokens are not implemented yet");
         }
 
-        back_to_client(redirect_uri, response_mode, params, &templates).wrap_error()?
+        let params = serde_json::to_value(&params).unwrap();
+        ReplyOrBackToClient::BackToClient {
+            redirect_uri,
+            response_mode,
+            params,
+        }
     } else {
         // Ask for a reauth
         // TODO: have the OAuth2 session ID in there
-        Box::new(see_other(Uri::from_static("/reauth")))
+        ReplyOrBackToClient::Reply(Box::new(see_other(Uri::from_static("/reauth"))))
     };
 
     txn.commit().await.wrap_error()?;

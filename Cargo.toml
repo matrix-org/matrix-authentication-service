@@ -4,3 +4,5 @@ members = [
   "oauth2-types",
   "matrix-authentication-service",
 ]
+
+resolver = "2"

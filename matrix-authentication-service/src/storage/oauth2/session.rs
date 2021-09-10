@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{collections::HashSet, convert::TryFrom, str::FromStr};
+use std::{collections::HashSet, convert::TryFrom, str::FromStr, string::ToString};
 
 use anyhow::Context;
 use chrono::{DateTime, Duration, Utc};
@@ -34,7 +34,7 @@ use super::{
 pub struct OAuth2Session {
     pub id: i64,
     user_session_id: Option<i64>,
-    client_id: String,
+    pub client_id: String,
     redirect_uri: String,
     scope: String,
     pub state: Option<String>,
@@ -143,6 +143,7 @@ pub async fn start_session(
     // Checked convertion of duration to i32, maxing at i32::MAX
     let max_age = max_age.map(|d| i32::try_from(d.num_seconds()).unwrap_or(i32::MAX));
     let response_mode = response_mode.to_string();
+    let redirect_uri = redirect_uri.to_string();
     let response_type: String = {
         let it = response_type.iter().map(ToString::to_string);
         Itertools::intersperse(it, " ".to_string()).collect()
@@ -162,7 +163,7 @@ pub async fn start_session(
         "#,
         optional_session_id,
         client_id,
-        redirect_uri.as_str(),
+        redirect_uri,
         scope,
         state,
         nonce,

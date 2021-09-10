@@ -14,6 +14,7 @@
 
 use std::{collections::HashSet, string::ToString, sync::Arc};
 
+use oauth2_types::errors::OAuth2Error;
 use serde::Serialize;
 use tera::{Context, Error as TeraError, Tera};
 use thiserror::Error;
@@ -146,6 +147,9 @@ register_templates! {
 
     /// Render the form used by the form_post response mode
     pub fn render_form_post<T: Serialize>(FormPostContext<T>) { "form_post.html" }
+
+    /// Render the HTML error page
+    pub fn render_error(ErrorContext) { "error.html" }
 }
 
 /// Helper trait to construct context wrappers
@@ -252,5 +256,44 @@ impl<T> FormPostContext<T> {
             redirect_uri,
             params,
         }
+    }
+}
+
+#[derive(Default, Serialize)]
+pub struct ErrorContext {
+    code: Option<&'static str>,
+    description: Option<String>,
+    details: Option<String>,
+}
+
+impl ErrorContext {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn with_code(mut self, code: &'static str) -> Self {
+        self.code = Some(code);
+        self
+    }
+
+    pub fn with_description(mut self, description: String) -> Self {
+        self.description = Some(description);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_details(mut self, details: String) -> Self {
+        self.details = Some(details);
+        self
+    }
+}
+
+impl From<Box<dyn OAuth2Error>> for ErrorContext {
+    fn from(err: Box<dyn OAuth2Error>) -> Self {
+        let mut ctx = ErrorContext::new().with_code(err.error());
+        if let Some(desc) = err.description() {
+            ctx = ctx.with_description(desc);
+        }
+        ctx
     }
 }

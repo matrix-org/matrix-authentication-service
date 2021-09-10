@@ -16,7 +16,7 @@ use http::status::StatusCode;
 use serde::ser::{Serialize, SerializeMap};
 use url::Url;
 
-pub trait OAuth2Error: std::fmt::Debug {
+pub trait OAuth2Error: std::fmt::Debug + Send + Sync {
     /// A single ASCII error code.
     ///
     /// Maps to the required "error" field.
@@ -41,11 +41,11 @@ pub trait OAuth2Error: std::fmt::Debug {
     }
 
     /// Wraps the error with an `ErrorResponse` to help serializing.
-    fn into_response(self) -> ErrorResponse<Self>
+    fn into_response(self) -> ErrorResponse
     where
-        Self: Sized,
+        Self: Sized + 'static,
     {
-        ErrorResponse(self)
+        ErrorResponse(Box::new(self))
     }
 }
 
@@ -55,15 +55,15 @@ trait OAuth2ErrorCode: OAuth2Error {
 }
 
 #[derive(Debug)]
-pub struct ErrorResponse<T: OAuth2Error>(T);
+pub struct ErrorResponse(Box<dyn OAuth2Error>);
 
-impl<T: OAuth2ErrorCode> OAuth2ErrorCode for ErrorResponse<T> {
-    fn status(&self) -> StatusCode {
-        self.0.status()
+impl From<Box<dyn OAuth2Error>> for ErrorResponse {
+    fn from(b: Box<dyn OAuth2Error>) -> Self {
+        Self(b)
     }
 }
 
-impl<T: OAuth2Error> OAuth2Error for ErrorResponse<T> {
+impl OAuth2Error for ErrorResponse {
     fn error(&self) -> &'static str {
         self.0.error()
     }
@@ -77,7 +77,7 @@ impl<T: OAuth2Error> OAuth2Error for ErrorResponse<T> {
     }
 }
 
-impl<T: OAuth2Error> Serialize for ErrorResponse<T> {
+impl Serialize for ErrorResponse {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,

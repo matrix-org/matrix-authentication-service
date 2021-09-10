@@ -289,7 +289,7 @@ pub struct OAuth2ClientConfig {
     pub client_secret: Option<String>,
 
     #[serde(default)]
-    pub redirect_uris: Option<Vec<Url>>,
+    pub redirect_uris: Vec<Url>,
 }
 
 #[derive(Debug, Error)]
@@ -301,19 +301,20 @@ impl OAuth2ClientConfig {
         &'a self,
         suggested_uri: &'a Option<Url>,
     ) -> Result<&'a Url, InvalidRedirectUriError> {
-        match (suggested_uri, &self.redirect_uris) {
-            (None, None) => Err(InvalidRedirectUriError),
-            (None, Some(redirect_uris)) => {
-                redirect_uris.iter().next().ok_or(InvalidRedirectUriError)
-            }
-            (Some(suggested_uri), None) => Ok(suggested_uri),
-            (Some(suggested_uri), Some(redirect_uris)) => {
-                if redirect_uris.contains(suggested_uri) {
-                    Ok(suggested_uri)
-                } else {
-                    Err(InvalidRedirectUriError)
-                }
-            }
+        suggested_uri.as_ref().map_or_else(
+            || self.redirect_uris.get(0).ok_or(InvalidRedirectUriError),
+            |suggested_uri| self.check_redirect_uri(suggested_uri),
+        )
+    }
+
+    pub fn check_redirect_uri<'a>(
+        &self,
+        redirect_uri: &'a Url,
+    ) -> Result<&'a Url, InvalidRedirectUriError> {
+        if self.redirect_uris.contains(redirect_uri) {
+            Ok(redirect_uri)
+        } else {
+            Err(InvalidRedirectUriError)
         }
     }
 }
@@ -464,11 +465,11 @@ mod tests {
             assert_eq!(config.clients[0].client_id, "hello");
             assert_eq!(
                 config.clients[0].redirect_uris,
-                Some(vec!["https://exemple.fr/callback".parse().unwrap()])
+                vec!["https://exemple.fr/callback".parse().unwrap()]
             );
 
             assert_eq!(config.clients[1].client_id, "world");
-            assert_eq!(config.clients[1].redirect_uris, None);
+            assert_eq!(config.clients[1].redirect_uris, Vec::new());
 
             Ok(())
         });

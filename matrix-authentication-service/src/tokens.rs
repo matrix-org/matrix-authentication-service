@@ -91,7 +91,6 @@ pub enum TokenFormatError {
     InvalidCrc { expected: String, got: String },
 }
 
-#[allow(dead_code)]
 pub fn check(token: &str) -> Result<TokenType, TokenFormatError> {
     let split: Vec<&str> = token.split('_').collect();
     let [prefix, random_part, crc]: [&str; 3] = split
