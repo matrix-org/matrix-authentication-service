@@ -16,9 +16,10 @@ use anyhow::Context;
 use chrono::Duration;
 use data_encoding::BASE64URL_NOPAD;
 use headers::{CacheControl, Pragma};
+use hyper::StatusCode;
 use jwt_compact::{Claims, Header, TimeOptions};
 use oauth2_types::{
-    errors::{InvalidGrant, OAuth2Error},
+    errors::{InvalidGrant, OAuth2Error, OAuth2ErrorCode, UnauthorizedClient},
     requests::{
         AccessTokenRequest, AccessTokenResponse, AuthorizationCodeGrant, RefreshTokenGrant,
     },
@@ -29,7 +30,11 @@ use serde_with::skip_serializing_none;
 use sha2::{Digest, Sha256};
 use sqlx::{pool::PoolConnection, Acquire, PgPool, Postgres};
 use url::Url;
-use warp::{Filter, Rejection, Reply};
+use warp::{
+    reject::Reject,
+    reply::{json, with_status},
+    Filter, Rejection, Reply,
+};
 
 use crate::{
     config::{KeySet, OAuth2ClientConfig, OAuth2Config},
@@ -62,6 +67,23 @@ struct CustomClaims {
     c_hash: String,
 }
 
+#[derive(Debug)]
+struct Error {
+    json: serde_json::Value,
+    status: StatusCode,
+}
+
+impl Reject for Error {}
+
+fn error<T, E>(e: E) -> Result<T, Rejection>
+where
+    E: OAuth2ErrorCode + 'static,
+{
+    let status = e.status();
+    let json = serde_json::to_value(e.into_response()).wrap_error()?;
+    Err(Error { json, status }.into())
+}
+
 pub fn filter(
     pool: &PgPool,
     oauth2_config: &OAuth2Config,
@@ -74,6 +96,15 @@ pub fn filter(
         .and(warp::any().map(move || issuer.clone()))
         .and(with_connection(pool))
         .and_then(token)
+        .recover(recover)
+}
+
+async fn recover(rejection: Rejection) -> Result<impl Reply, Rejection> {
+    if let Some(Error { json, status }) = rejection.find::<Error>() {
+        Ok(with_status(warp::reply::json(json), *status))
+    } else {
+        Err(rejection)
+    }
 }
 
 async fn token(
@@ -87,15 +118,15 @@ async fn token(
     let reply = match req {
         AccessTokenRequest::AuthorizationCode(grant) => {
             let reply = authorization_code_grant(&grant, &client, &keys, issuer, &mut conn).await?;
-            warp::reply::json(&reply)
+            json(&reply)
         }
         AccessTokenRequest::RefreshToken(grant) => {
             let reply = refresh_token_grant(&grant, &client, &mut conn).await?;
-            warp::reply::json(&reply)
+            json(&reply)
         }
         _ => {
             let reply = InvalidGrant.into_response();
-            warp::reply::json(&reply)
+            json(&reply)
         }
     };
 
@@ -125,7 +156,7 @@ async fn authorization_code_grant(
     let mut txn = conn.begin().await.wrap_error()?;
     let code = lookup_code(&mut txn, &grant.code).await.wrap_error()?;
     if client.client_id != code.client_id {
-        return Err(anyhow::anyhow!("invalid client")).wrap_error();
+        return error(UnauthorizedClient);
     }
 
     // TODO: verify PKCE
@@ -194,7 +225,8 @@ async fn refresh_token_grant(
         .wrap_error()?;
 
     if client.client_id != refresh_token_lookup.client_id {
-        return Err(anyhow::anyhow!("invalid client")).wrap_error();
+        // As per https://datatracker.ietf.org/doc/html/rfc6749#section-5.2
+        return error(InvalidGrant);
     }
 
     let ttl = Duration::minutes(5);

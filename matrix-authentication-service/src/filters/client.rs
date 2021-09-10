@@ -139,12 +139,12 @@ mod tests {
         config.clients.push(OAuth2ClientConfig {
             client_id: "public".to_string(),
             client_secret: None,
-            redirect_uris: None,
+            redirect_uris: Vec::new(),
         });
         config.clients.push(OAuth2ClientConfig {
             client_id: "confidential".to_string(),
             client_secret: Some("secret".to_string()),
-            redirect_uris: None,
+            redirect_uris: Vec::new(),
         });
         config
     }

@@ -20,7 +20,7 @@ use url::Url;
 
 use crate::{
     pkce::CodeChallengeMethod,
-    requests::{GrantType, ResponseMode},
+    requests::{ClientAuthenticationMethod, GrantType, ResponseMode},
 };
 
 // TODO: https://datatracker.ietf.org/doc/html/rfc8414#section-2
@@ -60,6 +60,10 @@ pub struct Metadata {
     /// JSON array containing a list of the OAuth 2.0 grant type values that
     /// this authorization server supports.
     pub grant_types_supported: Option<HashSet<GrantType>>,
+
+    /// JSON array containing a list of client authentication methods supported
+    /// by this token endpoint.
+    pub token_endpoint_auth_methods_supported: Option<HashSet<ClientAuthenticationMethod>>,
 
     /// PKCE code challenge methods supported by this authorization server
     pub code_challenge_methods_supported: Option<HashSet<CodeChallengeMethod>>,

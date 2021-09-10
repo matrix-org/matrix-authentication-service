@@ -14,7 +14,10 @@
 
 use std::collections::HashSet;
 
-use oauth2_types::{oidc::Metadata, requests::ResponseMode};
+use oauth2_types::{
+    oidc::Metadata,
+    requests::{ClientAuthenticationMethod, GrantType, ResponseMode},
+};
 use warp::{Filter, Rejection, Reply};
 
 use crate::config::OAuth2Config;
@@ -44,6 +47,21 @@ pub(super) fn filter(
         s
     });
 
+    let grant_types_supported = Some({
+        let mut s = HashSet::new();
+        s.insert(GrantType::AuthorizationCode);
+        s.insert(GrantType::RefreshToken);
+        s
+    });
+
+    let token_endpoint_auth_methods_supported = Some({
+        let mut s = HashSet::new();
+        s.insert(ClientAuthenticationMethod::ClientSecretBasic);
+        s.insert(ClientAuthenticationMethod::ClientSecretPost);
+        s.insert(ClientAuthenticationMethod::None);
+        s
+    });
+
     let metadata = Metadata {
         authorization_endpoint: base.join("oauth2/authorize").ok(),
         token_endpoint: base.join("oauth2/token").ok(),
@@ -55,7 +73,8 @@ pub(super) fn filter(
         scopes_supported: None,
         response_types_supported,
         response_modes_supported,
-        grant_types_supported: None,
+        grant_types_supported,
+        token_endpoint_auth_methods_supported,
         code_challenge_methods_supported: None,
     };
 

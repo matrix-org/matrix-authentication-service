@@ -85,6 +85,27 @@ pub enum ResponseMode {
     Deserialize,
 )]
 #[serde(rename_all = "snake_case")]
+pub enum ClientAuthenticationMethod {
+    None,
+    ClientSecretPost,
+    ClientSecretBasic,
+}
+
+#[derive(
+    Debug,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Clone,
+    Copy,
+    Display,
+    FromStr,
+    Serialize,
+    Deserialize,
+)]
+#[serde(rename_all = "snake_case")]
 pub enum Display {
     Page,
     Popup,

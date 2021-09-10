@@ -49,9 +49,22 @@ pub trait OAuth2Error: std::fmt::Debug + Send + Sync {
     }
 }
 
-trait OAuth2ErrorCode: OAuth2Error {
+pub trait OAuth2ErrorCode: OAuth2Error + 'static {
     /// The HTTP status code that must be returned by this error
     fn status(&self) -> StatusCode;
+}
+
+impl OAuth2Error for &Box<dyn OAuth2ErrorCode> {
+    fn error(&self) -> &'static str {
+        self.as_ref().error()
+    }
+    fn description(&self) -> Option<String> {
+        self.as_ref().description()
+    }
+
+    fn uri(&self) -> Option<Url> {
+        self.as_ref().uri()
+    }
 }
 
 #[derive(Debug)]
@@ -112,7 +125,7 @@ impl Serialize for ErrorResponse {
 
 macro_rules! oauth2_error_def {
     ($name:ident) => {
-        #[derive(Debug)]
+        #[derive(Debug, Clone)]
         pub struct $name;
     };
 }
