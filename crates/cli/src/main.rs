@@ -27,12 +27,14 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilte
 
 use self::{
     config::ConfigCommand, database::DatabaseCommand, manage::ManageCommand, server::ServerCommand,
+    templates::TemplatesCommand,
 };
 
 mod config;
 mod database;
 mod manage;
 mod server;
+mod templates;
 
 #[derive(Clap, Debug)]
 enum Subcommand {
@@ -47,6 +49,9 @@ enum Subcommand {
 
     /// Manage the instance
     Manage(ManageCommand),
+
+    /// Templates-related commands
+    Templates(TemplatesCommand),
 }
 
 #[derive(Clap, Debug)]
@@ -67,6 +72,7 @@ impl RootCommand {
             Some(S::Database(c)) => c.run(self).await,
             Some(S::Server(c)) => c.run(self).await,
             Some(S::Manage(c)) => c.run(self).await,
+            Some(S::Templates(c)) => c.run(self).await,
             None => ServerCommand::default().run(self).await,
         }
     }

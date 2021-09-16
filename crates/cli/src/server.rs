@@ -49,7 +49,8 @@ impl ServerCommand {
         let pool = config.database.connect().await?;
 
         // Load and compile the templates
-        let templates = Templates::load().context("could not load templates")?;
+        // TODO: custom template path from the config
+        let templates = Templates::load(None, true).context("could not load templates")?;
 
         // Start the server
         let root = mas_core::handlers::root(&pool, &templates, &config);
