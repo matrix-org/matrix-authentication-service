@@ -1,8 +1,5 @@
 [workspace]
 
-members = [
-  "oauth2-types",
-  "matrix-authentication-service",
-]
+members = ["crates/*"]
 
 resolver = "2"

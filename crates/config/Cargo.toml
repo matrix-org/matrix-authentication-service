@@ -1,0 +1,38 @@
+[package]
+name = "mas-config"
+version = "0.1.0"
+authors = ["Quentin Gliech <quenting@element.io>"]
+edition = "2018"
+license = "Apache-2.0"
+
+[dependencies]
+tokio = { version = "1.11.0", features = [] }
+tracing = "0.1.27"
+async-trait = "0.1.51"
+
+thiserror = "1.0.29"
+anyhow = "1.0.44"
+
+schemars = { version = "0.8.3", features = ["url", "chrono"] }
+figment = { version = "0.10.6", features = ["env", "yaml", "test"] }
+chrono = { version = "0.4.19", features = ["serde"] }
+url = { version = "2.2.2", features = ["serde"] }
+
+serde = { version = "1.0.130", features = ["derive"] }
+serde_with = { version = "1.10.0", features = ["hex", "chrono"] }
+serde_json = "1.0.68"
+sqlx = { version = "0.5.7", features = ["runtime-tokio-rustls", "postgres"] }
+
+rand = "0.8.4"
+rsa = "0.5.0"
+k256 = "0.9.6"
+pkcs8 = { version = "0.7.6", features = ["pem"] }
+elliptic-curve = { version = "0.10.6", features = ["pem"] }
+
+indoc = "1.0.3"
+
+[dependencies.jwt-compact]
+# Waiting on the next release because of the bump of the `rsa` dependency
+git = "https://github.com/slowli/jwt-compact.git"
+rev = "7a6dee6824c1d4e7c7f81019c9a968e5c9e44923"
+features = ["rsa", "k256"]

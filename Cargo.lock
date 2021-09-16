@@ -1355,22 +1355,55 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3e2e65a1a2e43cfcb47a895c4c8b10d1f4a61097f9f254f183aee60cad9c651d"
 
 [[package]]
-name = "matchers"
-version = "0.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f099785f7595cc4b4553a174ce30dd7589ef93391ff414dbb67f62392b9e0ce1"
+name = "mas-cli"
+version = "0.1.0"
 dependencies = [
- "regex-automata",
+ "anyhow",
+ "argon2",
+ "clap",
+ "dotenv",
+ "hyper",
+ "indoc",
+ "mas-config",
+ "mas-core",
+ "schemars",
+ "serde_yaml",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+ "warp",
 ]
 
 [[package]]
-name = "matches"
-version = "0.1.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3e378b66a060d48947b590737b30a1be76706c8dd7b8ba0f2fe3989c68a853f"
+name = "mas-config"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "elliptic-curve",
+ "figment",
+ "indoc",
+ "jwt-compact",
+ "k256",
+ "pkcs8",
+ "rand 0.8.4",
+ "rsa",
+ "schemars",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "sqlx",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "url",
+]
 
 [[package]]
-name = "matrix-authentication-service"
+name = "mas-core"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -1379,11 +1412,9 @@ dependencies = [
  "bincode",
  "chacha20poly1305",
  "chrono",
- "clap",
  "cookie",
  "crc",
  "data-encoding",
- "dotenv",
  "elliptic-curve",
  "figment",
  "futures-util",
@@ -1393,6 +1424,7 @@ dependencies = [
  "itertools",
  "jwt-compact",
  "k256",
+ "mas-config",
  "mime",
  "oauth2-types",
  "password-hash",
@@ -1411,13 +1443,25 @@ dependencies = [
  "thiserror",
  "tokio",
  "tokio-stream",
- "tower",
- "tower-http",
  "tracing",
- "tracing-subscriber",
  "url",
  "warp",
 ]
+
+[[package]]
+name = "matchers"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f099785f7595cc4b4553a174ce30dd7589ef93391ff414dbb67f62392b9e0ce1"
+dependencies = [
+ "regex-automata",
+]
+
+[[package]]
+name = "matches"
+version = "0.1.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a3e378b66a060d48947b590737b30a1be76706c8dd7b8ba0f2fe3989c68a853f"
 
 [[package]]
 name = "md-5"
