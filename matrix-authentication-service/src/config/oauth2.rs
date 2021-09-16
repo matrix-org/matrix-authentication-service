@@ -357,7 +357,7 @@ impl OAuth2Config {
           -----END PRIVATE KEY-----
         "#})
         .unwrap();
-        let ecdsa_key = Key::from_rsa_pem(indoc::indoc! {r#"
+        let ecdsa_key = Key::from_ecdsa_pem(indoc::indoc! {r#"
           -----BEGIN PRIVATE KEY-----
           MIGEAgEAMBAGByqGSM49AgEGBSuBBAAKBG0wawIBAQQgqfn5mYO/5Qq/wOOiWgHA
           NaiDiepgUJ2GI5eq2V8D8nahRANCAARMK9aKUd/H28qaU+0qvS6bSJItzAge1VHn
