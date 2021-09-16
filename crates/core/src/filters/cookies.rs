@@ -69,7 +69,8 @@ impl EncryptedCookie {
     }
 }
 
-#[must_use] pub fn maybe_encrypted<T>(
+#[must_use]
+pub fn maybe_encrypted<T>(
     options: &CookiesConfig,
 ) -> impl Filter<Extract = (Option<T>,), Error = Infallible> + Clone + Send + Sync + 'static
 where
@@ -83,7 +84,8 @@ where
     })
 }
 
-#[must_use] pub fn encrypted<T>(
+#[must_use]
+pub fn encrypted<T>(
     options: &CookiesConfig,
 ) -> impl Filter<Extract = (T,), Error = Rejection> + Clone + Send + Sync + 'static
 where
@@ -97,7 +99,8 @@ where
     })
 }
 
-#[must_use] pub fn with_cookie_saver(
+#[must_use]
+pub fn with_cookie_saver(
     options: &CookiesConfig,
 ) -> impl Filter<Extract = (EncryptedCookieSaver,), Error = Infallible> + Clone + Send + Sync + 'static
 {

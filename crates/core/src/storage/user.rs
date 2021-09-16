@@ -44,7 +44,8 @@ pub struct SessionInfo {
 }
 
 impl SessionInfo {
-    #[must_use] pub fn key(&self) -> i64 {
+    #[must_use]
+    pub fn key(&self) -> i64 {
         self.id
     }
 

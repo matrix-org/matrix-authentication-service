@@ -33,14 +33,16 @@ use crate::{
     templates::Templates,
 };
 
-#[must_use] pub fn with_templates(
+#[must_use]
+pub fn with_templates(
     templates: &Templates,
 ) -> impl Filter<Extract = (Templates,), Error = Infallible> + Clone + Send + Sync + 'static {
     let templates = templates.clone();
     warp::any().map(move || templates.clone())
 }
 
-#[must_use] pub fn with_keys(
+#[must_use]
+pub fn with_keys(
     oauth2_config: &OAuth2Config,
 ) -> impl Filter<Extract = (KeySet,), Error = Infallible> + Clone + Send + Sync + 'static {
     let keyset = oauth2_config.keys.clone();

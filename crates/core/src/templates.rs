@@ -212,7 +212,8 @@ pub struct IndexContext {
 }
 
 impl IndexContext {
-    #[must_use] pub fn new(discovery_url: Url) -> Self {
+    #[must_use]
+    pub fn new(discovery_url: Url) -> Self {
         Self { discovery_url }
     }
 }
@@ -230,7 +231,8 @@ pub struct LoginContext {
 }
 
 impl LoginContext {
-    #[must_use] pub fn with_form_error(form: ErroredForm<LoginFormField>) -> Self {
+    #[must_use]
+    pub fn with_form_error(form: ErroredForm<LoginFormField>) -> Self {
         Self { form }
     }
 }
@@ -267,22 +269,26 @@ pub struct ErrorContext {
 }
 
 impl ErrorContext {
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self::default()
     }
 
-    #[must_use] pub fn with_code(mut self, code: &'static str) -> Self {
+    #[must_use]
+    pub fn with_code(mut self, code: &'static str) -> Self {
         self.code = Some(code);
         self
     }
 
-    #[must_use] pub fn with_description(mut self, description: String) -> Self {
+    #[must_use]
+    pub fn with_description(mut self, description: String) -> Self {
         self.description = Some(description);
         self
     }
 
     #[allow(dead_code)]
-    #[must_use] pub fn with_details(mut self, details: String) -> Self {
+    #[must_use]
+    pub fn with_details(mut self, details: String) -> Self {
         self.details = Some(details);
         self
     }

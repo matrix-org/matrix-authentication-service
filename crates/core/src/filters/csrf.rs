@@ -66,7 +66,8 @@ impl CsrfToken {
     }
 
     /// Get the value to include in HTML forms
-    #[must_use] pub fn form_value(&self) -> String {
+    #[must_use]
+    pub fn form_value(&self) -> String {
         BASE64URL_NOPAD.encode(&self.token[..])
     }
 
@@ -112,7 +113,8 @@ impl<T> CsrfForm<T> {
     }
 }
 
-#[must_use] pub fn csrf_token(
+#[must_use]
+pub fn csrf_token(
     cookies_config: &CookiesConfig,
 ) -> impl Filter<Extract = (CsrfToken,), Error = Rejection> + Clone + Send + Sync + 'static {
     super::cookies::encrypted(cookies_config).and_then(move |token: CsrfToken| async move {
@@ -121,7 +123,8 @@ impl<T> CsrfForm<T> {
     })
 }
 
-#[must_use] pub fn updated_csrf_token(
+#[must_use]
+pub fn updated_csrf_token(
     cookies_config: &CookiesConfig,
     csrf_config: &CsrfConfig,
 ) -> impl Filter<Extract = (CsrfToken,), Error = Rejection> + Clone + Send + Sync + 'static {
@@ -144,7 +147,8 @@ impl<T> CsrfForm<T> {
     )
 }
 
-#[must_use] pub fn protected_form<T>(
+#[must_use]
+pub fn protected_form<T>(
     cookies_config: &CookiesConfig,
 ) -> impl Filter<Extract = (T,), Error = Rejection> + Clone + Send + Sync + 'static
 where

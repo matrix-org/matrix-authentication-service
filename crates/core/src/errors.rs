@@ -93,7 +93,8 @@ pub struct ErroredForm<FieldType> {
 }
 
 impl<T> ErroredForm<T> {
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             form: Vec::new(),
             fields: Vec::new(),

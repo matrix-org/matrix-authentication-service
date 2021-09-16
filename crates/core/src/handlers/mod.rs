@@ -25,7 +25,8 @@ mod views;
 
 use self::{health::filter as health, oauth2::filter as oauth2, views::filter as views};
 
-#[must_use] pub fn root(
+#[must_use]
+pub fn root(
     pool: &PgPool,
     templates: &Templates,
     config: &RootConfig,

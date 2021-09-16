@@ -103,7 +103,8 @@ impl OAuth2Session {
         }
     }
 
-    #[must_use] pub fn max_auth_time(&self) -> Option<DateTime<Utc>> {
+    #[must_use]
+    pub fn max_auth_time(&self) -> Option<DateTime<Utc>> {
         self.max_age
             .map(|d| Duration::seconds(i64::from(d)))
             .map(|d| self.created_at - d)

@@ -32,7 +32,8 @@ pub struct SessionCookie {
 }
 
 impl SessionCookie {
-    #[must_use] pub fn from_session_info(info: &SessionInfo) -> Self {
+    #[must_use]
+    pub fn from_session_info(info: &SessionInfo) -> Self {
         Self {
             current: info.key(),
         }
@@ -52,7 +53,8 @@ impl EncryptableCookieValue for SessionCookie {
     }
 }
 
-#[must_use] pub fn with_optional_session(
+#[must_use]
+pub fn with_optional_session(
     pool: &PgPool,
     cookies_config: &CookiesConfig,
 ) -> impl Filter<Extract = (Option<SessionInfo>,), Error = Rejection> + Clone + Send + Sync + 'static
@@ -71,7 +73,8 @@ impl EncryptableCookieValue for SessionCookie {
         )
 }
 
-#[must_use] pub fn with_session(
+#[must_use]
+pub fn with_session(
     pool: &PgPool,
     cookies_config: &CookiesConfig,
 ) -> impl Filter<Extract = (SessionInfo,), Error = Rejection> + Clone + Send + Sync + 'static {

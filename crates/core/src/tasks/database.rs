@@ -38,6 +38,7 @@ impl Task for CleanupExpired {
     }
 }
 
-#[must_use] pub fn cleanup_expired(pool: &Pool<Postgres>) -> impl Task + Clone {
+#[must_use]
+pub fn cleanup_expired(pool: &Pool<Postgres>) -> impl Task + Clone {
     CleanupExpired(pool.clone())
 }

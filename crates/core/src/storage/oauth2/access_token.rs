@@ -67,7 +67,8 @@ pub struct OAuth2AccessTokenLookup {
 }
 
 impl OAuth2AccessTokenLookup {
-    #[must_use] pub fn exp(&self) -> DateTime<Utc> {
+    #[must_use]
+    pub fn exp(&self) -> DateTime<Utc> {
         self.created_at + Duration::seconds(i64::from(self.expires_after))
     }
 }
