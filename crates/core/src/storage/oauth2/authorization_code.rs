@@ -90,3 +90,29 @@ pub async fn lookup_code(
     .await
     .context("could not lookup oauth2 code")
 }
+
+pub async fn consume_code(
+    executor: impl Executor<'_, Database = Postgres>,
+    code_id: i64,
+) -> anyhow::Result<()> {
+    // TODO: mark the code as invalid instead to allow invalidating the whole
+    // session on code reuse
+    let res = sqlx::query!(
+        r#"
+            DELETE FROM oauth2_codes
+            WHERE id = $1
+        "#,
+        code_id,
+    )
+    .execute(executor)
+    .await
+    .context("could not consume authorization code")?;
+
+    if res.rows_affected() == 1 {
+        Ok(())
+    } else {
+        Err(anyhow::anyhow!(
+            "no row were affected when consuming authorization code"
+        ))
+    }
+}

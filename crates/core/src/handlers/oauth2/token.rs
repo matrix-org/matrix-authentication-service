@@ -47,7 +47,7 @@ use crate::{
     },
     storage::oauth2::{
         access_token::{add_access_token, revoke_access_token},
-        authorization_code::lookup_code,
+        authorization_code::{consume_code, lookup_code},
         refresh_token::{add_refresh_token, lookup_refresh_token, replace_refresh_token},
     },
     tokens,
@@ -154,13 +154,13 @@ async fn authorization_code_grant(
     conn: &mut PoolConnection<Postgres>,
 ) -> Result<AccessTokenResponse, Rejection> {
     let mut txn = conn.begin().await.wrap_error()?;
+    // TODO: recover from failed code lookup with invalid_grant instead
     let code = lookup_code(&mut txn, &grant.code).await.wrap_error()?;
     if client.client_id != code.client_id {
         return error(UnauthorizedClient);
     }
 
     // TODO: verify PKCE
-    // TODO: make the code invalid
     let ttl = Duration::minutes(5);
     let (access_token, refresh_token) = {
         let mut rng = thread_rng();
@@ -207,6 +207,8 @@ async fn authorization_code_grant(
         .with_expires_in(ttl)
         .with_refresh_token(refresh_token.token)
         .with_id_token(id_token);
+
+    consume_code(&mut txn, code.id).await.wrap_error()?;
 
     txn.commit().await.wrap_error()?;
 

@@ -661,6 +661,18 @@
       ]
     }
   },
+  "eaddc1e33715ad31b4195fda72dbe870f179dd8da53a88d0543b72a278ed1d3d": {
+    "query": "\n            DELETE FROM oauth2_codes\n            WHERE id = $1\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "f9a09ff53b6f221649f4f050e3d5ade114f852ddf50a78610a6c0ef0689af681": {
     "query": "\n            INSERT INTO users (username, hashed_password)\n            VALUES ($1, $2)\n            RETURNING id\n        ",
     "describe": {
