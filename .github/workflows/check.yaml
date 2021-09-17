@@ -9,22 +9,9 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  fetch:
-    name: Fetch Cargo dependencies (${{ matrix.os.name }})
-    runs-on: ${{ matrix.os.runner }}
-
-    strategy:
-      matrix:
-        os:
-          - name: "macOS"
-            runner: "macos-latest"
-            target: "x86_64-apple-darwin"
-          - name: "Windows"
-            runner: "windows-latest"
-            target: "x86_64-pc-windows-msvc"
-          - name: "Linux"
-            runner: "ubuntu-latest"
-            target: "x86_64-unknown-linux-musl"
+  fetch-linux:
+    name: Fetch Cargo dependencies (Linux)
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout the code
@@ -34,7 +21,105 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: "1.54.0" # MSRV
-          target: ${{ matrix.os.target }}
+          target: x86_64-unknown-linux-musl
+          profile: minimal
+          override: true
+
+      - name: Setup Cargo cache
+        uses: actions/cache@v2.1.6
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+          key: cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}-${{ runner.os }}
+
+      - name: Fetch dependencies
+        id: fetch
+        uses: actions-rs/cargo@v1
+        continue-on-error: true
+        with:
+          command: fetch
+          args: --locked
+
+      - name: Fetch dependencies (retry)
+        id: fetch-2
+        uses: actions-rs/cargo@v1
+        if: steps.fetch.outcome == 'failure'
+        continue-on-error: true
+        with:
+          command: fetch
+          args: --locked
+
+      - name: Fetch dependencies (second retry)
+        uses: actions-rs/cargo@v1
+        if: steps.fetch.outcome == 'failure' && steps.fetch-2.outcome == 'failure'
+        with:
+          command: fetch
+          args: --locked
+
+  fetch-macos:
+    name: Fetch Cargo dependencies (macOS)
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v2
+
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: "1.54.0" # MSRV
+          target: x86_64-apple-darwin
+          profile: minimal
+          override: true
+
+      - name: Setup Cargo cache
+        uses: actions/cache@v2.1.6
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+          key: cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}-${{ runner.os }}
+
+      - name: Fetch dependencies
+        id: fetch
+        uses: actions-rs/cargo@v1
+        continue-on-error: true
+        with:
+          command: fetch
+          args: --locked
+
+      - name: Fetch dependencies (retry)
+        id: fetch-2
+        uses: actions-rs/cargo@v1
+        if: steps.fetch.outcome == 'failure'
+        continue-on-error: true
+        with:
+          command: fetch
+          args: --locked
+
+      - name: Fetch dependencies (second retry)
+        uses: actions-rs/cargo@v1
+        if: steps.fetch.outcome == 'failure' && steps.fetch-2.outcome == 'failure'
+        with:
+          command: fetch
+          args: --locked
+
+  fetch-windows:
+    name: Fetch Cargo dependencies (Windows)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v2
+
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: "1.54.0" # MSRV
+          target: x86_64-pc-windows-msvc
           profile: minimal
           override: true
 
@@ -74,7 +159,7 @@ jobs:
 
   rustfmt:
     name: Check style
-    needs: [fetch]
+    needs: [fetch-linux]
     runs-on: ubuntu-latest
 
     steps:
@@ -115,7 +200,7 @@ jobs:
 
   clippy:
     name: Run Clippy
-    needs: [fetch]
+    needs: [fetch-linux]
     runs-on: ubuntu-latest
 
     steps:
@@ -155,7 +240,7 @@ jobs:
 
   test:
     name: Run test suite on ${{ matrix.os.name }} / ${{ matrix.toolchain }}
-    needs: [rustfmt, clippy, fetch]
+    needs: [rustfmt, clippy, fetch-linux, fetch-macos, fetch-windows]
     runs-on: ${{ matrix.os.runner }}
 
     continue-on-error: "${{ matrix.toolchain == 'beta' || matrix.toolchain == 'nightly' }}"
