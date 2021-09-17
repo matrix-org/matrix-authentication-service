@@ -27,8 +27,8 @@ mod context;
 mod macros;
 
 pub use self::context::{
-    ErrorContext, FormPostContext, IndexContext, LoginContext, LoginFormField, TemplateContext,
-    WithCsrf, WithOptionalSession, WithSession,
+    EmptyContext, ErrorContext, FormPostContext, IndexContext, LoginContext, LoginFormField,
+    TemplateContext, WithCsrf, WithOptionalSession, WithSession,
 };
 
 #[derive(Clone)]
@@ -163,13 +163,13 @@ register_templates! {
     pub fn render_login(WithCsrf<LoginContext>) { "login.html" }
 
     /// Render the registration page
-    pub fn render_register(WithCsrf<()>) { "register.html" }
+    pub fn render_register(WithCsrf<EmptyContext>) { "register.html" }
 
     /// Render the home page
     pub fn render_index(WithCsrf<WithOptionalSession<IndexContext>>) { "index.html" }
 
     /// Render the re-authentication form
-    pub fn render_reauth(WithCsrf<WithSession<()>>) { "reauth.html" }
+    pub fn render_reauth(WithCsrf<WithSession<EmptyContext>>) { "reauth.html" }
 
     /// Render the form used by the form_post response mode
     pub fn render_form_post<T: Serialize>(FormPostContext<T>) { "form_post.html" }

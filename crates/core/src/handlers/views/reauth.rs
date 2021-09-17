@@ -27,7 +27,7 @@ use crate::{
         with_templates, CsrfToken,
     },
     storage::SessionInfo,
-    templates::{TemplateContext, Templates},
+    templates::{EmptyContext, TemplateContext, Templates},
 };
 
 #[derive(Deserialize, Debug)]
@@ -63,7 +63,7 @@ async fn get(
     csrf_token: CsrfToken,
     session: SessionInfo,
 ) -> Result<impl Reply, Rejection> {
-    let ctx = ().with_session(session).with_csrf(&csrf_token);
+    let ctx = EmptyContext.with_session(session).with_csrf(&csrf_token);
 
     let content = templates.render_reauth(&ctx)?;
     let reply = html(content);

@@ -19,22 +19,31 @@ use url::Url;
 use crate::{errors::ErroredForm, filters::CsrfToken, storage::SessionInfo};
 
 /// Helper trait to construct context wrappers
-pub trait TemplateContext: Sized {
-    fn with_session(self, current_session: SessionInfo) -> WithSession<Self> {
+pub trait TemplateContext {
+    fn with_session(self, current_session: SessionInfo) -> WithSession<Self>
+    where
+        Self: Sized,
+    {
         WithSession {
             current_session,
             inner: self,
         }
     }
 
-    fn maybe_with_session(self, current_session: Option<SessionInfo>) -> WithOptionalSession<Self> {
+    fn maybe_with_session(self, current_session: Option<SessionInfo>) -> WithOptionalSession<Self>
+    where
+        Self: Sized,
+    {
         WithOptionalSession {
             current_session,
             inner: self,
         }
     }
 
-    fn with_csrf(self, token: &CsrfToken) -> WithCsrf<Self> {
+    fn with_csrf(self, token: &CsrfToken) -> WithCsrf<Self>
+    where
+        Self: Sized,
+    {
         WithCsrf {
             csrf_token: token.form_value(),
             inner: self,
@@ -42,13 +51,13 @@ pub trait TemplateContext: Sized {
     }
 }
 
-impl TemplateContext for () {}
+impl TemplateContext for EmptyContext {}
 impl TemplateContext for IndexContext {}
 impl TemplateContext for LoginContext {}
-impl<T: Sized> TemplateContext for FormPostContext<T> {}
-impl<T: Sized> TemplateContext for WithSession<T> {}
-impl<T: Sized> TemplateContext for WithOptionalSession<T> {}
-impl<T: Sized> TemplateContext for WithCsrf<T> {}
+impl<T> TemplateContext for FormPostContext<T> {}
+impl<T> TemplateContext for WithSession<T> {}
+impl<T> TemplateContext for WithOptionalSession<T> {}
+impl<T> TemplateContext for WithCsrf<T> {}
 
 /// Context with a CSRF token in it
 #[derive(Serialize)]
@@ -76,6 +85,10 @@ pub struct WithOptionalSession<T> {
     #[serde(flatten)]
     inner: T,
 }
+
+/// An empty context used for composition
+#[derive(Serialize)]
+pub struct EmptyContext;
 
 // Context used by the `index.html` template
 #[derive(Serialize)]

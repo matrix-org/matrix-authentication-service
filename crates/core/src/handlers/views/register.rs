@@ -31,7 +31,7 @@ use crate::{
         with_templates, CsrfToken,
     },
     storage::{register_user, user::start_session, SessionInfo},
-    templates::{TemplateContext, Templates},
+    templates::{EmptyContext, TemplateContext, Templates},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -115,7 +115,7 @@ async fn get(
     if maybe_session.is_some() {
         Ok(Box::new(query.redirect()?))
     } else {
-        let ctx = ().with_csrf(&csrf_token);
+        let ctx = EmptyContext.with_csrf(&csrf_token);
         let content = templates.render_register(&ctx)?;
         let reply = html(content);
         let reply = cookie_saver.save_encrypted(&csrf_token, reply)?;
