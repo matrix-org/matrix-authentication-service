@@ -56,15 +56,25 @@ pub trait ConfigurationSection<'a>: Sized + Deserialize<'a> + Serialize {
             .context("could not load configuration")
     }
 
+    /// Load configuration from a list of files and environment variables.
+    fn load_from_files<P>(paths: &[P]) -> Result<Self, FigmentError>
+    where
+        P: AsRef<Path>,
+    {
+        let base = Figment::new().merge(Env::prefixed("MAS_").split("_"));
+
+        paths
+            .iter()
+            .fold(base, |f, path| f.merge(Yaml::file(path)))
+            .extract_inner(Self::path())
+    }
+
     /// Load configuration from a file and environment variables.
     fn load_from_file<P>(path: P) -> Result<Self, FigmentError>
     where
         P: AsRef<Path>,
     {
-        Figment::new()
-            .merge(Env::prefixed("MAS_").split("_"))
-            .merge(Yaml::file(path))
-            .extract_inner(Self::path())
+        Self::load_from_files(&[path])
     }
 
     /// Generate config used in unit tests

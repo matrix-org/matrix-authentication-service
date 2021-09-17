@@ -23,6 +23,7 @@ use std::path::PathBuf;
 use anyhow::Context;
 use clap::Clap;
 use mas_config::ConfigurationSection;
+use tracing::trace;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Registry};
 
 use self::{
@@ -57,8 +58,14 @@ enum Subcommand {
 #[derive(Clap, Debug)]
 struct RootCommand {
     /// Path to the configuration file
-    #[clap(short, long, global = true, default_value = "config.yaml")]
-    config: PathBuf,
+    #[clap(
+        short,
+        long,
+        global = true,
+        default_value = "config.yaml",
+        multiple_occurrences(true)
+    )]
+    config: Vec<PathBuf>,
 
     #[clap(subcommand)]
     subcommand: Option<Subcommand>,
@@ -78,7 +85,7 @@ impl RootCommand {
     }
 
     fn load_config<'de, T: ConfigurationSection<'de>>(&self) -> anyhow::Result<T> {
-        T::load_from_file(&self.config).context("could not load configuration")
+        T::load_from_files(&self.config).context("could not load configuration")
     }
 }
 
@@ -105,5 +112,6 @@ async fn main() -> anyhow::Result<()> {
     let opts = RootCommand::parse();
 
     // And run the command
+    trace!(?opts, "Running command");
     opts.run().await
 }
