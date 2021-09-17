@@ -69,6 +69,7 @@ use crate::{
 struct PartialParams {
     client_id: Option<String>,
     redirect_uri: Option<String>,
+    state: Option<String>,
     /*
     response_type: Option<String>,
     response_mode: Option<String>,
@@ -81,6 +82,7 @@ enum ReplyOrBackToClient {
         params: Value,
         redirect_uri: Url,
         response_mode: ResponseMode,
+        state: Option<String>,
     },
     Error(Box<dyn OAuth2Error>),
 }
@@ -88,6 +90,7 @@ enum ReplyOrBackToClient {
 fn back_to_client<T>(
     mut redirect_uri: Url,
     response_mode: ResponseMode,
+    state: Option<String>,
     params: T,
     templates: &Templates,
 ) -> anyhow::Result<Box<dyn Reply>>
@@ -98,6 +101,9 @@ where
     struct AllParams<'s, T> {
         #[serde(flatten, skip_serializing_if = "Option::is_none")]
         existing: Option<HashMap<&'s str, &'s str>>,
+
+        #[serde(skip_serializing_if = "Option::is_none")]
+        state: Option<String>,
 
         #[serde(flatten)]
         params: T,
@@ -110,7 +116,11 @@ where
                 .map(|qs| serde_urlencoded::from_str(qs))
                 .transpose()?;
 
-            let merged = AllParams { existing, params };
+            let merged = AllParams {
+                existing,
+                state,
+                params,
+            };
 
             let new_qs = serde_urlencoded::to_string(merged)?;
 
@@ -128,7 +138,11 @@ where
                 .map(|qs| serde_urlencoded::from_str(qs))
                 .transpose()?;
 
-            let merged = AllParams { existing, params };
+            let merged = AllParams {
+                existing,
+                state,
+                params,
+            };
 
             let new_qs = serde_urlencoded::to_string(merged)?;
 
@@ -230,17 +244,19 @@ async fn actually_reply(
     clients: Vec<OAuth2ClientConfig>,
     templates: Templates,
 ) -> Result<impl Reply, Rejection> {
-    let (redirect_uri, response_mode, params) = match rep {
+    let (redirect_uri, response_mode, state, params) = match rep {
         ReplyOrBackToClient::Reply(r) => return Ok(r),
         ReplyOrBackToClient::BackToClient {
             redirect_uri,
             response_mode,
             params,
-        } => (redirect_uri, response_mode, params),
+            state,
+        } => (redirect_uri, response_mode, state, params),
         ReplyOrBackToClient::Error(error) => {
             let PartialParams {
                 client_id,
                 redirect_uri,
+                state,
                 ..
             } = q;
 
@@ -271,12 +287,11 @@ async fn actually_reply(
             let reply: ErrorResponse = error.into();
             let reply = serde_json::to_value(&reply).wrap_error()?;
             // TODO: resolve response mode
-            (redirect_uri.clone(), ResponseMode::Query, reply)
+            (redirect_uri.clone(), ResponseMode::Query, state, reply)
         }
     };
 
-    // TODO: we should include the state param in errors
-    back_to_client(redirect_uri, response_mode, params, &templates).wrap_error()
+    back_to_client(redirect_uri, response_mode, state, params, &templates).wrap_error()
 }
 
 async fn get(
@@ -400,10 +415,7 @@ async fn step(
         && user_session.last_authd_at >= oauth2_session.max_auth_time()
     {
         // Yep! Let's complete the auth now
-        let mut params = AuthorizationResponse {
-            state: oauth2_session.state.clone(),
-            ..AuthorizationResponse::default()
-        };
+        let mut params = AuthorizationResponse::default();
 
         // Did they request an auth code?
         if response_type.contains(&ResponseType::Code) {
@@ -446,6 +458,7 @@ async fn step(
         ReplyOrBackToClient::BackToClient {
             redirect_uri,
             response_mode,
+            state: oauth2_session.state.clone(),
             params,
         }
     } else {

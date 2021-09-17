@@ -177,7 +177,6 @@ pub struct AuthorizationRequest {
 #[derive(Serialize, Deserialize, Default)]
 pub struct AuthorizationResponse<R> {
     pub code: Option<String>,
-    pub state: Option<String>,
     #[serde(flatten)]
     pub response: R,
 }
