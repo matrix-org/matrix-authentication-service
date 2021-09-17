@@ -14,16 +14,60 @@
 
 use chrono::Utc;
 use headers::{authorization::Bearer, Authorization};
+use hyper::StatusCode;
 use sqlx::{pool::PoolConnection, PgPool, Postgres};
-use warp::{Filter, Rejection};
-
-use super::{database::with_connection, headers::with_typed_header};
-use crate::{
-    errors::WrapError,
-    storage::oauth2::access_token::{lookup_access_token, OAuth2AccessTokenLookup},
-    tokens,
+use thiserror::Error;
+use warp::{
+    reject::{MissingHeader, Reject},
+    reply::{with_header, with_status},
+    Filter, Rejection, Reply,
 };
 
+use super::{
+    database::with_connection,
+    headers::{with_typed_header, InvalidTypedHeader},
+};
+use crate::{
+    errors::wrapped_error,
+    storage::oauth2::access_token::{
+        lookup_access_token, AccessTokenLookupError, OAuth2AccessTokenLookup,
+    },
+    tokens::{self, TokenFormatError, TokenType},
+};
+
+#[derive(Debug, Error)]
+enum AuthenticationError {
+    #[error("invalid token format")]
+    TokenFormat(#[from] TokenFormatError),
+
+    #[error("invalid token type {0:?}, expected an access token")]
+    WrongTokenType(TokenType),
+
+    #[error("unknown token")]
+    TokenNotFound(#[source] AccessTokenLookupError),
+
+    #[error("token is not active")]
+    TokenInactive,
+
+    #[error("token expired")]
+    TokenExpired,
+
+    #[error("missing authorization header")]
+    MissingAuthorizationHeader,
+
+    #[error("invalid authorization header")]
+    InvalidAuthorizationHeader,
+}
+
+impl Reject for AuthenticationError {}
+
+/// Authenticate a request using an access token as a bearer authorization
+///
+/// # Rejections
+///
+/// This can reject with either a [`AuthenticationError`] or with a generic
+/// wrapped sqlx error.
+#[must_use]
 pub fn with_authentication(
     pool: &PgPool,
 ) -> impl Filter<Extract = (OAuth2AccessTokenLookup,), Error = Rejection> + Clone + Send + Sync + 'static
@@ -31,6 +75,8 @@ pub fn with_authentication(
     with_connection(pool)
         .and(with_typed_header())
         .and_then(authenticate)
+        .recover(recover)
+        .unify()
 }
 
 async fn authenticate(
@@ -38,18 +84,58 @@ async fn authenticate(
     auth: Authorization<Bearer>,
 ) -> Result<OAuth2AccessTokenLookup, Rejection> {
     let token = auth.0.token();
-    let token_type = tokens::check(token).wrap_error()?;
+    let token_type = tokens::check(token).map_err(AuthenticationError::TokenFormat)?;
+
     if token_type != tokens::TokenType::AccessToken {
-        return Err(anyhow::anyhow!("wrong token type")).wrap_error();
+        return Err(AuthenticationError::WrongTokenType(token_type).into());
     }
 
-    let token = lookup_access_token(&mut conn, token).await.wrap_error()?;
-    let exp = token.exp();
+    let token = lookup_access_token(&mut conn, token).await.map_err(|e| {
+        if e.not_found() {
+            // This error happens if the token was not found and should be recovered
+            warp::reject::custom(AuthenticationError::TokenNotFound(e))
+        } else {
+            // This is a generic database error that we want to propagate
+            warp::reject::custom(wrapped_error(e))
+        }
+    })?;
 
-    // Check it is active and did not expire
-    if !token.active || exp < Utc::now() {
-        return Err(anyhow::anyhow!("token expired")).wrap_error();
+    if !token.active {
+        return Err(AuthenticationError::TokenInactive.into());
+    }
+
+    if token.exp() < Utc::now() {
+        return Err(AuthenticationError::TokenExpired.into());
     }
 
     Ok(token)
+}
+
+/// Transform the rejections from the [`with_typed_header`] filter
+async fn recover(rejection: Rejection) -> Result<OAuth2AccessTokenLookup, Rejection> {
+    if rejection.find::<MissingHeader>().is_some() {
+        return Err(warp::reject::custom(
+            AuthenticationError::MissingAuthorizationHeader,
+        ));
+    }
+
+    if rejection.find::<InvalidTypedHeader>().is_some() {
+        return Err(warp::reject::custom(
+            AuthenticationError::InvalidAuthorizationHeader,
+        ));
+    }
+
+    Err(rejection)
+}
+
+pub async fn recover_unauthorized(rejection: Rejection) -> Result<impl Reply, Rejection> {
+    if rejection.find::<AuthenticationError>().is_some() {
+        // TODO: have the issuer/realm here
+        let reply = "invalid token";
+        let reply = with_status(reply, StatusCode::UNAUTHORIZED);
+        let reply = with_header(reply, "WWW-Authenticate", r#"Bearer error="invalid_token""#);
+        return Ok(reply);
+    }
+
+    Err(rejection)
 }

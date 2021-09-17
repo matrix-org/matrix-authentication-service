@@ -17,7 +17,8 @@ use sqlx::PgPool;
 use warp::{Filter, Rejection, Reply};
 
 use crate::{
-    config::OAuth2Config, filters::authenticate::with_authentication,
+    config::OAuth2Config,
+    filters::authenticate::{recover_unauthorized, with_authentication},
     storage::oauth2::access_token::OAuth2AccessTokenLookup,
 };
 
@@ -34,6 +35,7 @@ pub(super) fn filter(
         .and(warp::get().or(warp::post()).unify())
         .and(with_authentication(pool))
         .and_then(userinfo)
+        .recover(recover_unauthorized)
 }
 
 async fn userinfo(token: OAuth2AccessTokenLookup) -> Result<impl Reply, Rejection> {

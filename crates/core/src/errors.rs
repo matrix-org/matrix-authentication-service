@@ -22,6 +22,10 @@ pub struct WrappedError(anyhow::Error);
 
 impl warp::reject::Reject for WrappedError {}
 
+pub fn wrapped_error<T: Into<anyhow::Error>>(e: T) -> impl Reject {
+    WrappedError(e.into())
+}
+
 pub trait WrapError<T> {
     fn wrap_error(self) -> Result<T, Rejection>;
 }

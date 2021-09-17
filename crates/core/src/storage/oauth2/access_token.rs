@@ -18,6 +18,7 @@ use anyhow::Context;
 use chrono::{DateTime, Duration, Utc};
 use serde::Serialize;
 use sqlx::{Executor, FromRow, Postgres};
+use thiserror::Error;
 
 #[derive(FromRow, Serialize)]
 pub struct OAuth2AccessToken {
@@ -73,11 +74,22 @@ impl OAuth2AccessTokenLookup {
     }
 }
 
+#[derive(Debug, Error)]
+#[error("failed to lookup access token")]
+pub struct AccessTokenLookupError(#[from] sqlx::Error);
+
+impl AccessTokenLookupError {
+    #[must_use]
+    pub fn not_found(&self) -> bool {
+        matches!(self.0, sqlx::Error::RowNotFound)
+    }
+}
+
 pub async fn lookup_access_token(
     executor: impl Executor<'_, Database = Postgres>,
     token: &str,
-) -> anyhow::Result<OAuth2AccessTokenLookup> {
-    sqlx::query_as!(
+) -> Result<OAuth2AccessTokenLookup, AccessTokenLookupError> {
+    let res = sqlx::query_as!(
         OAuth2AccessTokenLookup,
         r#"
             SELECT
@@ -99,8 +111,9 @@ pub async fn lookup_access_token(
         token,
     )
     .fetch_one(executor)
-    .await
-    .context("could not introspect oauth2 access token")
+    .await?;
+
+    Ok(res)
 }
 
 pub async fn revoke_access_token(

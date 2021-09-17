@@ -13,10 +13,10 @@
 // limitations under the License.
 //
 use headers::{Header, HeaderMapExt, HeaderValue};
-use warp::{Filter, Rejection, Reply};
+use thiserror::Error;
+use warp::{reject::Reject, Filter, Rejection, Reply};
 
-use crate::errors::WrapError;
-
+/// Add a typed header to a reply
 pub fn typed_header<R, H>(header: H, reply: R) -> WithTypedHeader<R, H> {
     WithTypedHeader { reply, header }
 }
@@ -38,6 +38,18 @@ where
     }
 }
 
+#[derive(Debug, Error)]
+#[error("could not decode header {1}")]
+pub struct InvalidTypedHeader(#[source] headers::Error, &'static str);
+
+impl Reject for InvalidTypedHeader {}
+
+/// Extract a typed header from the request
+///
+/// # Rejections
+///
+/// This can reject with either a [`warp::reject::MissingHeader`] or a
+/// [`InvalidTypedHeader`].
 pub fn with_typed_header<T: Header + Send + 'static>(
 ) -> impl Filter<Extract = (T,), Error = Rejection> + Clone + Send + Sync + 'static {
     warp::header::value(T::name().as_str()).and_then(decode_typed_header)
@@ -45,6 +57,6 @@ pub fn with_typed_header<T: Header + Send + 'static>(
 
 async fn decode_typed_header<T: Header>(header: HeaderValue) -> Result<T, Rejection> {
     let mut it = std::iter::once(&header);
-    let decoded = T::decode(&mut it).wrap_error()?;
+    let decoded = T::decode(&mut it).map_err(|e| InvalidTypedHeader(e, T::name().as_str()))?;
     Ok(decoded)
 }
