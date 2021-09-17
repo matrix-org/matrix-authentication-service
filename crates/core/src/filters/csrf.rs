@@ -40,7 +40,7 @@ pub enum CsrfError {
 impl Reject for CsrfError {}
 
 #[serde_as]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct CsrfToken {
     #[serde_as(as = "TimestampSeconds<i64>")]
     expiration: DateTime<Utc>,
@@ -113,8 +113,7 @@ impl<T> CsrfForm<T> {
     }
 }
 
-#[must_use]
-pub fn csrf_token(
+fn csrf_token(
     cookies_config: &CookiesConfig,
 ) -> impl Filter<Extract = (CsrfToken,), Error = Rejection> + Clone + Send + Sync + 'static {
     super::cookies::encrypted(cookies_config).and_then(move |token: CsrfToken| async move {
@@ -123,6 +122,11 @@ pub fn csrf_token(
     })
 }
 
+/// Extract an up-to-date CSRF token to include in forms
+///
+/// Routes using this should not forget to reply the updated CSRF cookie using
+/// an [`super::cookies::EncryptedCookieSaver`] obtained with
+/// [`super::cookies::with_cookie_saver`]
 #[must_use]
 pub fn updated_csrf_token(
     cookies_config: &CookiesConfig,
@@ -147,6 +151,19 @@ pub fn updated_csrf_token(
     )
 }
 
+/// Extract values from a CSRF-protected form
+///
+/// # Rejections
+///
+/// This can reject with:
+///
+///  - [`warp::filters::body::BodyDeserializeError`] if the overall form failed
+///    to decode
+///  - [`CsrfError`] if the CSRF token was invalid or expired
+///  - [`warp::reject::MissingCookie`] if the CSRF cookie was missing
+///  - [`super::cookies::CookieDecryptionError`] if the cookie failed to decrypt
+///
+///  TODO: we might want to unify the last three rejections in one
 #[must_use]
 pub fn protected_form<T>(
     cookies_config: &CookiesConfig,

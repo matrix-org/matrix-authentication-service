@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::convert::Infallible;
+use std::{convert::Infallible, marker::PhantomData};
 
 use chacha20poly1305::{
     aead::{generic_array::GenericArray, Aead, NewAead},
@@ -22,10 +22,39 @@ use cookie::Cookie;
 use data_encoding::BASE64URL_NOPAD;
 use headers::{Header, HeaderValue, SetCookie};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use warp::{Filter, Rejection, Reply};
+use thiserror::Error;
+use warp::{reject::Reject, Filter, Rejection, Reply};
 
 use super::headers::{typed_header, WithTypedHeader};
 use crate::{config::CookiesConfig, errors::WrapError};
+
+#[derive(Debug, Error)]
+struct CookieDecryptionError<T: EncryptableCookieValue>(#[source] anyhow::Error, PhantomData<T>);
+
+impl<T> Reject for CookieDecryptionError<T> where
+    T: EncryptableCookieValue + Send + Sync + std::fmt::Debug + 'static
+{
+}
+
+impl<T: EncryptableCookieValue> From<anyhow::Error> for CookieDecryptionError<T> {
+    fn from(e: anyhow::Error) -> Self {
+        Self(e, PhantomData)
+    }
+}
+
+impl<T: EncryptableCookieValue> std::fmt::Display for CookieDecryptionError<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "failed to decrypt cookie {}", T::cookie_key())
+    }
+}
+
+fn decryption_error<T>(e: anyhow::Error) -> Rejection
+where
+    T: EncryptableCookieValue + Send + Sync + std::fmt::Debug + 'static,
+{
+    let e: CookieDecryptionError<T> = e.into();
+    warp::reject::custom(e)
+}
 
 #[derive(Serialize, Deserialize)]
 struct EncryptedCookie {
@@ -69,6 +98,7 @@ impl EncryptedCookie {
     }
 }
 
+/// Extract an optional encrypted cookie
 #[must_use]
 pub fn maybe_encrypted<T>(
     options: &CookiesConfig,
@@ -76,14 +106,21 @@ pub fn maybe_encrypted<T>(
 where
     T: DeserializeOwned + EncryptableCookieValue + Send + 'static,
 {
-    let secret = options.secret;
-    warp::cookie::optional(T::cookie_key()).map(move |maybe_value: Option<String>| {
-        maybe_value
-            .and_then(|value| EncryptedCookie::from_cookie_value(&value).ok())
-            .and_then(|encrypted| encrypted.decrypt(&secret).ok())
-    })
+    encrypted(options).map(Some).recover(recover::<T>).unify()
 }
 
+async fn recover<T>(_rejection: Rejection) -> Result<Option<T>, Infallible> {
+    // We could actually look for MissingCookie and CookieDecryptionError
+    // rejections, but nothing else should happen here anyway
+    Ok(None)
+}
+
+/// Extract an encrypted cookie
+///
+/// # Rejections
+///
+/// This can reject with either a [`warp::reject::MissingCookie`] or a
+/// [`CookieDecryptionError`]
 #[must_use]
 pub fn encrypted<T>(
     options: &CookiesConfig,
@@ -93,8 +130,9 @@ where
 {
     let secret = options.secret;
     warp::cookie::cookie(T::cookie_key()).and_then(move |value: String| async move {
-        let encrypted = EncryptedCookie::from_cookie_value(&value).wrap_error()?;
-        let decrypted = encrypted.decrypt(&secret).wrap_error()?;
+        let encrypted =
+            EncryptedCookie::from_cookie_value(&value).map_err(decryption_error::<T>)?;
+        let decrypted = encrypted.decrypt(&secret).map_err(decryption_error::<T>)?;
         Ok::<_, Rejection>(decrypted)
     })
 }
@@ -109,7 +147,7 @@ pub fn with_cookie_saver(
 }
 
 /// A cookie that can be encrypted with a well-known cookie key
-pub trait EncryptableCookieValue {
+pub trait EncryptableCookieValue: Send + Sync + std::fmt::Debug {
     fn cookie_key() -> &'static str;
 }
 

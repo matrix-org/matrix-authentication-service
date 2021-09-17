@@ -26,7 +26,7 @@ use crate::{
     storage::{lookup_active_session, SessionInfo},
 };
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct SessionCookie {
     current: i64,
 }
@@ -43,7 +43,8 @@ impl SessionCookie {
         &self,
         executor: impl Executor<'_, Database = Postgres>,
     ) -> anyhow::Result<SessionInfo> {
-        lookup_active_session(executor, self.current).await
+        let res = lookup_active_session(executor, self.current).await?;
+        Ok(res)
     }
 }
 

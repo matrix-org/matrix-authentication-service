@@ -138,11 +138,24 @@ pub async fn login(
     Ok(session)
 }
 
+#[derive(Debug, Error)]
+#[error("could not fetch session")]
+pub struct ActiveSessionLookupError(#[from] sqlx::Error);
+
+/*
+impl ActiveSessionLookupError {
+    #[must_use]
+    pub fn not_found(&self) -> bool {
+        matches!(self.0, sqlx::Error::RowNotFound)
+    }
+}
+*/
+
 pub async fn lookup_active_session(
     executor: impl Executor<'_, Database = Postgres>,
     id: i64,
-) -> anyhow::Result<SessionInfo> {
-    sqlx::query_as!(
+) -> Result<SessionInfo, ActiveSessionLookupError> {
+    let res = sqlx::query_as!(
         SessionInfo,
         r#"
             SELECT
@@ -164,8 +177,9 @@ pub async fn lookup_active_session(
         id,
     )
     .fetch_one(executor)
-    .await
-    .context("could not fetch session")
+    .await?;
+
+    Ok(res)
 }
 
 pub async fn lookup_session(
