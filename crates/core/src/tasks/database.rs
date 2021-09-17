@@ -20,6 +20,12 @@ use super::Task;
 #[derive(Clone)]
 struct CleanupExpired(Pool<Postgres>);
 
+impl std::fmt::Debug for CleanupExpired {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CleanupExpired").finish_non_exhaustive()
+    }
+}
+
 #[async_trait::async_trait]
 impl Task for CleanupExpired {
     async fn run(&self) {

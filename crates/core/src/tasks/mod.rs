@@ -20,13 +20,14 @@ use tokio::{
     time::Interval,
 };
 use tokio_stream::wrappers::IntervalStream;
+use tracing::debug;
 
 mod database;
 
 pub use self::database::cleanup_expired;
 
 #[async_trait::async_trait]
-pub trait Task: Send + Sync + 'static {
+pub trait Task: std::fmt::Debug + Send + Sync + 'static {
     async fn run(&self);
 }
 
@@ -93,7 +94,8 @@ impl TaskQueue {
         queue.schedule(task).await;
     }
 
-    pub fn recuring(&self, every: Duration, task: impl Task + Clone) {
+    pub fn recuring(&self, every: Duration, task: impl Task + Clone + std::fmt::Debug) {
+        debug!(?task, period = every.as_secs(), "Scheduling recuring task");
         let queue = self.inner.clone();
         tokio::task::spawn(async move {
             queue.recuring(tokio::time::interval(every), task).await;

@@ -22,6 +22,7 @@ use clap::Clap;
 use hyper::{header, Server};
 use mas_config::RootConfig;
 use mas_core::{
+    storage::MIGRATOR,
     tasks::{self, TaskQueue},
     templates::Templates,
 };
@@ -32,11 +33,16 @@ use tower_http::{
     trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer},
     LatencyUnit,
 };
+use tracing::info;
 
 use super::RootCommand;
 
 #[derive(Clap, Debug, Default)]
-pub(super) struct ServerCommand;
+pub(super) struct ServerCommand {
+    /// Automatically apply pending migrations
+    #[clap(long)]
+    migrate: bool,
+}
 
 impl ServerCommand {
     pub async fn run(&self, root: &RootCommand) -> anyhow::Result<()> {
@@ -48,16 +54,25 @@ impl ServerCommand {
         // Connect to the database
         let pool = config.database.connect().await?;
 
+        if self.migrate {
+            info!("Running pending migrations");
+            MIGRATOR
+                .run(&pool)
+                .await
+                .context("could not run migrations")?;
+        }
+
+        info!("Starting task scheduler");
+        let queue = TaskQueue::default();
+        queue.recuring(Duration::from_secs(15), tasks::cleanup_expired(&pool));
+        queue.start();
+
         // Load and compile the templates
         // TODO: custom template path from the config
         let templates = Templates::load(None, true).context("could not load templates")?;
 
         // Start the server
         let root = mas_core::handlers::root(&pool, &templates, &config);
-
-        let queue = TaskQueue::default();
-        queue.recuring(Duration::from_secs(15), tasks::cleanup_expired(&pool));
-        queue.start();
 
         let warp_service = warp::service(root);
 
@@ -83,7 +98,7 @@ impl ServerCommand {
             ]))
             .service(warp_service);
 
-        tracing::info!("Listening on http://{}", listener.local_addr().unwrap());
+        info!("Listening on http://{}", listener.local_addr().unwrap());
 
         Server::from_tcp(listener)?
             .serve(Shared::new(service))
