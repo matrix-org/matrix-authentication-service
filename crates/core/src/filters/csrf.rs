@@ -25,20 +25,25 @@ use warp::{reject::Reject, Filter, Rejection};
 use super::cookies::EncryptableCookieValue;
 use crate::config::{CookiesConfig, CsrfConfig};
 
+/// Failed to validate CSRF token
 #[derive(Debug, Error)]
 pub enum CsrfError {
+    /// The token in the form did not match the token in the cookie
     #[error("CSRF token mismatch")]
     Mismatch,
 
+    /// The token expired
     #[error("CSRF token expired")]
     Expired,
 
+    /// Failed to decode the token
     #[error("could not decode CSRF token")]
     Decode(#[from] DecodeError),
 }
 
 impl Reject for CsrfError {}
 
+/// A CSRF token
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CsrfToken {
@@ -125,8 +130,8 @@ fn csrf_token(
 /// Extract an up-to-date CSRF token to include in forms
 ///
 /// Routes using this should not forget to reply the updated CSRF cookie using
-/// an [`super::cookies::EncryptedCookieSaver`] obtained with
-/// [`super::cookies::encrypted_cookie_saver`]
+/// an [`EncryptedCookieSaver`][`super::cookies::EncryptedCookieSaver`] obtained
+/// with [`encrypted_cookie_saver`][`super::cookies::encrypted_cookie_saver`]
 #[must_use]
 pub fn updated_csrf_token(
     cookies_config: &CookiesConfig,

@@ -15,6 +15,7 @@
 //! Set of [`warp`] filters
 
 #![allow(clippy::unused_async)] // Some warp filters need that
+#![deny(missing_docs)]
 
 pub mod csrf;
 // mod errors;
@@ -35,6 +36,7 @@ use crate::{
     templates::Templates,
 };
 
+/// Get the [`Templates`]
 #[must_use]
 pub fn with_templates(
     templates: &Templates,
@@ -43,6 +45,7 @@ pub fn with_templates(
     warp::any().map(move || templates.clone())
 }
 
+/// Extract the [`KeySet`] from the [`OAuth2Config`]
 #[must_use]
 pub fn with_keys(
     oauth2_config: &OAuth2Config,

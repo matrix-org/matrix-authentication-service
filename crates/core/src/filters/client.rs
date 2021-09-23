@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Handle client authentication
+
 use headers::{authorization::Basic, Authorization};
 use serde::{de::DeserializeOwned, Deserialize};
 use thiserror::Error;
@@ -20,22 +22,34 @@ use warp::{reject::Reject, Filter, Rejection};
 use super::headers::typed_header;
 use crate::config::{OAuth2ClientConfig, OAuth2Config};
 
+/// Type of client authentication that succeeded
 #[derive(Debug, PartialEq, Eq)]
 pub enum ClientAuthentication {
+    /// `client_secret_basic` authentication, where the `client_id` and
+    /// `client_secret` are sent through the `Authorization` header with
+    /// `Basic` authentication
     ClientSecretBasic,
+
+    /// `client_secret_post` authentication, where the `client_id` and
+    /// `client_secret` are sent in the request body
     ClientSecretPost,
+
+    /// `none` authentication for public clients, where only the `client_id` is
+    /// sent in the request body
     None,
 }
 
 impl ClientAuthentication {
     #[must_use]
+    /// Check if the authenticated client is public or not
     pub fn public(&self) -> bool {
         matches!(self, &Self::None)
     }
 }
 
+/// Protect an enpoint with client authentication
 #[must_use]
-pub fn with_client_auth<T: DeserializeOwned + Send + 'static>(
+pub fn client_authentication<T: DeserializeOwned + Send + 'static>(
     oauth2_config: &OAuth2Config,
 ) -> impl Filter<Extract = (ClientAuthentication, OAuth2ClientConfig, T), Error = Rejection>
        + Clone
@@ -161,7 +175,7 @@ mod tests {
 
     #[tokio::test]
     async fn client_secret_post() {
-        let filter = with_client_auth::<Form>(&oauth2_config());
+        let filter = client_authentication::<Form>(&oauth2_config());
 
         let (auth, client, body) = warp::test::request()
             .method("POST")
@@ -178,7 +192,7 @@ mod tests {
 
     #[tokio::test]
     async fn client_secret_basic() {
-        let filter = with_client_auth::<Form>(&oauth2_config());
+        let filter = client_authentication::<Form>(&oauth2_config());
 
         let (auth, client, body) = warp::test::request()
             .method("POST")
@@ -196,7 +210,7 @@ mod tests {
 
     #[tokio::test]
     async fn none() {
-        let filter = with_client_auth::<Form>(&oauth2_config());
+        let filter = client_authentication::<Form>(&oauth2_config());
 
         let (auth, client, body) = warp::test::request()
             .method("POST")

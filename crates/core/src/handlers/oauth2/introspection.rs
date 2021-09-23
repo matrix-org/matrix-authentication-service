@@ -22,7 +22,7 @@ use crate::{
     config::{OAuth2ClientConfig, OAuth2Config},
     errors::WrapError,
     filters::{
-        client::{with_client_auth, ClientAuthentication},
+        client::{client_authentication, ClientAuthentication},
         database::connection,
     },
     storage::oauth2::{access_token::lookup_access_token, refresh_token::lookup_refresh_token},
@@ -36,7 +36,7 @@ pub fn filter(
     warp::path!("oauth2" / "introspect")
         .and(warp::post())
         .and(connection(pool))
-        .and(with_client_auth(oauth2_config))
+        .and(client_authentication(oauth2_config))
         .and_then(introspect)
         .recover(recover)
 }

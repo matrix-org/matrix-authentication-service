@@ -12,13 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Deal with encrypted cookies
+
 use std::{convert::Infallible, marker::PhantomData};
 
 use chacha20poly1305::{
     aead::{generic_array::GenericArray, Aead, NewAead},
     ChaCha20Poly1305,
 };
-use cookie::Cookie;
+use cookie::{Cookie, SameSite};
 use data_encoding::BASE64URL_NOPAD;
 use headers::{Header, HeaderValue, SetCookie};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -158,6 +160,7 @@ pub fn encrypted_cookie_saver(
 
 /// A cookie that can be encrypted with a well-known cookie key
 pub trait EncryptableCookieValue: Serialize + Send + Sync + std::fmt::Debug {
+    /// What key should be used for this cookie
     fn cookie_key() -> &'static str;
 }
 
@@ -167,6 +170,7 @@ pub struct EncryptedCookieSaver {
 }
 
 impl EncryptedCookieSaver {
+    /// Save an [`EncryptableCookieValue`]
     pub fn save_encrypted<T: EncryptableCookieValue, R: Reply>(
         &self,
         cookie: &T,
@@ -176,9 +180,14 @@ impl EncryptedCookieSaver {
             .wrap_error()?
             .to_cookie_value()
             .wrap_error()?;
+
+        // TODO: make those options customizable
         let value = Cookie::build(T::cookie_key(), encrypted)
+            .http_only(true)
+            .same_site(SameSite::Strict)
             .finish()
             .to_string();
+
         let header = SetCookie::decode(&mut [HeaderValue::from_str(&value).wrap_error()?].iter())
             .wrap_error()?;
         Ok(with_typed_header(header, reply))

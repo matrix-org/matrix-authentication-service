@@ -42,24 +42,31 @@ use crate::{
 /// This is recoverable with [`recover_unauthorized`]
 #[derive(Debug, Error)]
 pub enum AuthenticationError {
+    /// The bearer token has an invalid format
     #[error("invalid token format")]
     TokenFormat(#[from] TokenFormatError),
 
+    /// The bearer token is not an access token
     #[error("invalid token type {0:?}, expected an access token")]
     WrongTokenType(TokenType),
 
+    /// The access token was not found in the database
     #[error("unknown token")]
     TokenNotFound(#[source] AccessTokenLookupError),
 
+    /// The access token is no longer active
     #[error("token is not active")]
     TokenInactive,
 
+    /// The access token expired
     #[error("token expired")]
     TokenExpired,
 
+    /// The `Authorization` header is missing
     #[error("missing authorization header")]
     MissingAuthorizationHeader,
 
+    /// The `Authorization` header is invalid
     #[error("invalid authorization header")]
     InvalidAuthorizationHeader,
 }

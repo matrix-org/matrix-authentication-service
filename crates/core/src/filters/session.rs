@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Load user sessions from the database
+
 use serde::{Deserialize, Serialize};
 use sqlx::{pool::PoolConnection, Executor, PgPool, Postgres};
 use thiserror::Error;
@@ -31,26 +33,32 @@ use crate::{
     storage::{lookup_active_session, user::ActiveSessionLookupError, SessionInfo},
 };
 
+/// The session is missing or failed to load
 #[derive(Error, Debug)]
 pub enum SessionLoadError {
+    /// No session cookie was found
     #[error("missing session cookie")]
     MissingCookie,
 
+    /// The session cookie is invalid
     #[error("unable to parse or decrypt session cookie")]
     InvalidCookie,
 
+    /// The session is unknown or inactive
     #[error("unknown or inactive session")]
     UnknownSession,
 }
 
 impl Reject for SessionLoadError {}
 
+/// An encrypted cookie to save the session ID
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SessionCookie {
     current: i64,
 }
 
 impl SessionCookie {
+    /// Forge the cookie from a [`SessionInfo`]
     #[must_use]
     pub fn from_session_info(info: &SessionInfo) -> Self {
         Self {
@@ -58,6 +66,7 @@ impl SessionCookie {
         }
     }
 
+    /// Load the [`SessionInfo`] from database
     pub async fn load_session_info(
         &self,
         executor: impl Executor<'_, Database = Postgres>,

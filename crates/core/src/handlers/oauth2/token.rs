@@ -40,7 +40,7 @@ use crate::{
     config::{KeySet, OAuth2ClientConfig, OAuth2Config},
     errors::WrapError,
     filters::{
-        client::{with_client_auth, ClientAuthentication},
+        client::{client_authentication, ClientAuthentication},
         database::connection,
         with_keys,
     },
@@ -91,7 +91,7 @@ pub fn filter(
     let issuer = oauth2_config.issuer.clone();
     warp::path!("oauth2" / "token")
         .and(warp::post())
-        .and(with_client_auth(oauth2_config))
+        .and(client_authentication(oauth2_config))
         .and(with_keys(oauth2_config))
         .and(warp::any().map(move || issuer.clone()))
         .and(connection(pool))
