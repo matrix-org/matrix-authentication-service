@@ -69,6 +69,17 @@ impl SessionInfo {
         self.active = false;
         Ok(self)
     }
+
+    pub(crate) fn samples() -> Vec<Self> {
+        vec![SessionInfo {
+            id: 1,
+            user_id: 2,
+            username: "john".to_string(),
+            active: true,
+            created_at: Utc::now(),
+            last_authd_at: Some(Utc::now()),
+        }]
+    }
 }
 
 #[derive(Debug, Error)]

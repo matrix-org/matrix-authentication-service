@@ -167,6 +167,7 @@ impl Reject for TemplateError {}
 
 register_templates! {
     extra = { "base.html" };
+    generics = { T = EmptyContext };
 
     /// Render the login page
     pub fn render_login(WithCsrf<LoginContext>) { "login.html" }
@@ -185,4 +186,15 @@ register_templates! {
 
     /// Render the HTML error page
     pub fn render_error(ErrorContext) { "error.html" }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn check_all_templates() {
+        let templates = Templates::load(None, true).unwrap();
+        templates.check_render().unwrap();
+    }
 }

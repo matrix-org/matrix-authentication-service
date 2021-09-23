@@ -15,7 +15,7 @@
 //! Contexts used in templates
 
 use oauth2_types::errors::OAuth2Error;
-use serde::Serialize;
+use serde::{ser::SerializeStruct, Serialize};
 use url::Url;
 
 use crate::{errors::ErroredForm, filters::CsrfToken, storage::SessionInfo};
@@ -51,15 +51,11 @@ pub trait TemplateContext {
             inner: self,
         }
     }
-}
 
-impl TemplateContext for EmptyContext {}
-impl TemplateContext for IndexContext {}
-impl TemplateContext for LoginContext {}
-impl<T> TemplateContext for FormPostContext<T> {}
-impl<T> TemplateContext for WithSession<T> {}
-impl<T> TemplateContext for WithOptionalSession<T> {}
-impl<T> TemplateContext for WithCsrf<T> {}
+    fn sample() -> Vec<Self>
+    where
+        Self: Sized;
+}
 
 /// Context with a CSRF token in it
 #[derive(Serialize)]
@@ -68,6 +64,21 @@ pub struct WithCsrf<T> {
 
     #[serde(flatten)]
     inner: T,
+}
+
+impl<T: TemplateContext> TemplateContext for WithCsrf<T> {
+    fn sample() -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        T::sample()
+            .into_iter()
+            .map(|inner| WithCsrf {
+                csrf_token: "fake_csrf_token".into(),
+                inner,
+            })
+            .collect()
+    }
 }
 
 /// Context with a user session in it
@@ -79,6 +90,23 @@ pub struct WithSession<T> {
     inner: T,
 }
 
+impl<T: TemplateContext> TemplateContext for WithSession<T> {
+    fn sample() -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        SessionInfo::samples()
+            .into_iter()
+            .flat_map(|session| {
+                T::sample().into_iter().map(move |inner| WithSession {
+                    current_session: session.clone(),
+                    inner,
+                })
+            })
+            .collect()
+    }
+}
+
 /// Context with an optional user session in it
 #[derive(Serialize)]
 pub struct WithOptionalSession<T> {
@@ -88,9 +116,51 @@ pub struct WithOptionalSession<T> {
     inner: T,
 }
 
+impl<T: TemplateContext> TemplateContext for WithOptionalSession<T> {
+    fn sample() -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        SessionInfo::samples()
+            .into_iter()
+            .map(Some) // Wrap all samples in an Option
+            .chain(std::iter::once(None)) // Add the "None" option
+            .flat_map(|session| {
+                T::sample()
+                    .into_iter()
+                    .map(move |inner| WithOptionalSession {
+                        current_session: session.clone(),
+                        inner,
+                    })
+            })
+            .collect()
+    }
+}
+
 /// An empty context used for composition
-#[derive(Serialize)]
 pub struct EmptyContext;
+
+impl Serialize for EmptyContext {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut s = serializer.serialize_struct("EmptyContext", 0)?;
+        // FIXME: for some reason, serde seems to not like struct flattening with empty
+        // stuff
+        s.serialize_field("__UNUSED", &())?;
+        s.end()
+    }
+}
+
+impl TemplateContext for EmptyContext {
+    fn sample() -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        vec![EmptyContext]
+    }
+}
 
 /// Context used by the `index.html` template
 #[derive(Serialize)]
@@ -105,6 +175,19 @@ impl IndexContext {
     }
 }
 
+impl TemplateContext for IndexContext {
+    fn sample() -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        vec![Self {
+            discovery_url: "https://example.com/.well-known/openid-configuration"
+                .parse()
+                .unwrap(),
+        }]
+    }
+}
+
 #[derive(Serialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum LoginFormField {
@@ -116,6 +199,18 @@ pub enum LoginFormField {
 #[derive(Serialize)]
 pub struct LoginContext {
     form: ErroredForm<LoginFormField>,
+}
+
+impl TemplateContext for LoginContext {
+    fn sample() -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        // TODO: samples with errors
+        vec![LoginContext {
+            form: ErroredForm::default(),
+        }]
+    }
 }
 
 impl LoginContext {
@@ -140,6 +235,22 @@ pub struct FormPostContext<T> {
     params: T,
 }
 
+impl<T: TemplateContext> TemplateContext for FormPostContext<T> {
+    fn sample() -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        let sample_params = T::sample();
+        sample_params
+            .into_iter()
+            .map(|params| FormPostContext {
+                redirect_uri: "https://example.com/callback".parse().unwrap(),
+                params,
+            })
+            .collect()
+    }
+}
+
 impl<T> FormPostContext<T> {
     pub fn new(redirect_uri: Url, params: T) -> Self {
         Self {
@@ -155,6 +266,22 @@ pub struct ErrorContext {
     code: Option<&'static str>,
     description: Option<String>,
     details: Option<String>,
+}
+
+impl TemplateContext for ErrorContext {
+    fn sample() -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        vec![
+            Self::new()
+                .with_code("sample_error")
+                .with_description("A fancy description".into())
+                .with_details("Something happened".into()),
+            Self::new().with_code("another_error"),
+            Self::new(),
+        ]
+    }
 }
 
 impl ErrorContext {

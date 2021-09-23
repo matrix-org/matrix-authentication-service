@@ -33,6 +33,10 @@ macro_rules! register_templates {
         )?
 
         $(
+            generics = { $( $generic:ident = $sample:ty ),* };
+        )?
+
+        $(
             // Match any attribute on the function, such as #[doc], #[allow(dead_code)], etc.
             $( #[ $attr:meta ] )*
             // The function name
@@ -72,6 +76,34 @@ macro_rules! register_templates {
                         .map_err(|source| TemplateError::Render { template: $template, source })
                 }
             )*
+
+            pub fn check_render(&self) -> Result<(), TemplateError> {
+                self.check_render_inner $( ::< $( $sample ),+ > )? ()
+            }
+
+            fn check_render_inner
+            $( < $( $generic ),+ > )?
+            (&self) -> Result<(), TemplateError>
+            $( where
+                $( $generic : TemplateContext + Serialize, )+
+            )?
+
+            {
+                $(
+                    {
+                        let samples: Vec< $param > = TemplateContext::sample();
+
+                        let name = $template;
+                        for sample in samples {
+                            ::tracing::info!(name, "Rendering template");
+                            self. $name (&sample)?;
+                        }
+                    }
+                )*
+
+
+                Ok(())
+            }
         }
     };
 }
