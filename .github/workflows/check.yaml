@@ -146,7 +146,7 @@ jobs:
   test:
     name: Run test suite with Rust ${{ matrix.toolchain }}
     needs: [rustfmt, clippy, fetch]
-    runs-on: ${{ matrix.os.runner }}
+    runs-on: ubuntu-latest
 
     continue-on-error: "${{ matrix.toolchain == 'beta' || matrix.toolchain == 'nightly' }}"
 
