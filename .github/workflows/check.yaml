@@ -9,8 +9,8 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  fetch-linux:
-    name: Fetch Cargo dependencies (Linux)
+  fetch:
+    name: Fetch Cargo dependencies
     runs-on: ubuntu-latest
 
     steps:
@@ -32,7 +32,9 @@ jobs:
             ~/.cargo/registry/index
             ~/.cargo/registry/cache
             ~/.cargo/git/db
-          key: cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}-${{ runner.os }}
+          key: ${{ runner.os }}-cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-deps-msrv-
 
       - name: Fetch dependencies
         id: fetch
@@ -57,109 +59,10 @@ jobs:
         with:
           command: fetch
           args: --locked
-
-  fetch-macos:
-    name: Fetch Cargo dependencies (macOS)
-    runs-on: macos-latest
-
-    steps:
-      - name: Checkout the code
-        uses: actions/checkout@v2
-
-      - name: Install toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: "1.54.0" # MSRV
-          target: x86_64-apple-darwin
-          profile: minimal
-          override: true
-
-      - name: Setup Cargo cache
-        uses: actions/cache@v2.1.6
-        with:
-          path: |
-            ~/.cargo/registry/index
-            ~/.cargo/registry/cache
-            ~/.cargo/git/db
-          key: cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}-${{ runner.os }}
-
-      - name: Fetch dependencies
-        id: fetch
-        uses: actions-rs/cargo@v1
-        continue-on-error: true
-        with:
-          command: fetch
-          args: --locked
-
-      - name: Fetch dependencies (retry)
-        id: fetch-2
-        uses: actions-rs/cargo@v1
-        if: steps.fetch.outcome == 'failure'
-        continue-on-error: true
-        with:
-          command: fetch
-          args: --locked
-
-      - name: Fetch dependencies (second retry)
-        uses: actions-rs/cargo@v1
-        if: steps.fetch.outcome == 'failure' && steps.fetch-2.outcome == 'failure'
-        with:
-          command: fetch
-          args: --locked
-
-  fetch-windows:
-    name: Fetch Cargo dependencies (Windows)
-    runs-on: windows-latest
-
-    steps:
-      - name: Checkout the code
-        uses: actions/checkout@v2
-
-      - name: Install toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: "1.54.0" # MSRV
-          target: x86_64-pc-windows-msvc
-          profile: minimal
-          override: true
-
-      - name: Setup Cargo cache
-        uses: actions/cache@v2.1.6
-        with:
-          path: |
-            ~/.cargo/registry/index
-            ~/.cargo/registry/cache
-            ~/.cargo/git/db
-          key: cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}-${{ runner.os }}
-
-      - name: Fetch dependencies
-        id: fetch
-        uses: actions-rs/cargo@v1
-        continue-on-error: true
-        with:
-          command: fetch
-          args: --locked
-
-      - name: Fetch dependencies (retry)
-        id: fetch-2
-        uses: actions-rs/cargo@v1
-        if: steps.fetch.outcome == 'failure'
-        continue-on-error: true
-        with:
-          command: fetch
-          args: --locked
-
-      - name: Fetch dependencies (second retry)
-        uses: actions-rs/cargo@v1
-        if: steps.fetch.outcome == 'failure' && steps.fetch-2.outcome == 'failure'
-        with:
-          command: fetch
-          args: --locked
-
 
   rustfmt:
     name: Check style
-    needs: [fetch-linux]
+    needs: [fetch]
     runs-on: ubuntu-latest
 
     steps:
@@ -171,6 +74,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
+          target: x86_64-unknown-linux-musl
           components: rustfmt
           profile: minimal
           override: true
@@ -182,7 +86,7 @@ jobs:
             ~/.cargo/registry/index
             ~/.cargo/registry/cache
             ~/.cargo/git/db
-          key: cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}-${{ runner.os }}
+          key: ${{ runner.os }}-cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Setup build cache
         uses: actions/cache@v2.1.6
@@ -200,7 +104,7 @@ jobs:
 
   clippy:
     name: Run Clippy
-    needs: [fetch-linux]
+    needs: [fetch]
     runs-on: ubuntu-latest
 
     steps:
@@ -212,6 +116,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+          target: x86_64-unknown-linux-musl
           components: clippy
           profile: minimal
           override: true
@@ -223,7 +128,7 @@ jobs:
             ~/.cargo/registry/index
             ~/.cargo/registry/cache
             ~/.cargo/git/db
-          key: cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}-${{ runner.os }}
+          key: ${{ runner.os }}-cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Setup build cache
         uses: actions/cache@v2.1.6
@@ -239,8 +144,8 @@ jobs:
 
 
   test:
-    name: Run test suite on ${{ matrix.os.name }} / ${{ matrix.toolchain }}
-    needs: [rustfmt, clippy, fetch-linux, fetch-macos, fetch-windows]
+    name: Run test suite with Rust ${{ matrix.toolchain }}
+    needs: [rustfmt, clippy, fetch]
     runs-on: ${{ matrix.os.runner }}
 
     continue-on-error: "${{ matrix.toolchain == 'beta' || matrix.toolchain == 'nightly' }}"
@@ -248,17 +153,6 @@ jobs:
     strategy:
       fail-fast: false # Continue other jobs if one fails to help filling the cache
       matrix:
-        os:
-          - name: "macOS"
-            runner: "macos-latest"
-            target: "x86_64-apple-darwin"
-          - name: "Windows"
-            runner: "windows-latest"
-            target: "x86_64-pc-windows-msvc"
-          - name: "Linux"
-            runner: "ubuntu-latest"
-            target: "x86_64-unknown-linux-musl"
-
         toolchain:
           - "1.54.0" # MSRV
           - stable
@@ -274,7 +168,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.toolchain }}
-          target: ${{ matrix.os.target }}
+          target: x86_64-unknown-linux-musl
           profile: minimal
           override: true
 
@@ -285,20 +179,17 @@ jobs:
             ~/.cargo/registry/index
             ~/.cargo/registry/cache
             ~/.cargo/git/db
-          key: cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}-${{ runner.os }}
+          key: ${{ runner.os }}-cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Setup build cache
         uses: actions/cache@v2.1.6
         with:
           path: |
             target
-          key: cargo-build-${{ hashFiles('**/Cargo.lock') }}-${{ matrix.os.target }}-${{ steps.toolchain.outputs.rustc_hash }}
-
-      - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --offline
+          key: ${{ runner.os }}-cargo-build-${{ steps.toolchain.outputs.rustc_hash }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-${{ steps.toolchain.outputs.rustc_hash }}-
+            ${{ runner.os }}-cargo-build-
 
       - name: Test
         uses: actions-rs/cargo@v1
