@@ -7,13 +7,13 @@ license = "Apache-2.0"
 
 [dependencies]
 # Async runtime
-tokio = { version = "1.11.0", features = ["full"] }
+tokio = { version = "1.12.0", features = ["full"] }
 async-trait = "0.1.51"
 tokio-stream = "0.1.7"
 futures-util = "0.3.17"
 
 # Logging and tracing
-tracing = "0.1.27"
+tracing = "0.1.28"
 
 # Error management
 thiserror = "1.0.29"
@@ -21,7 +21,7 @@ anyhow = "1.0.44"
 
 # Web server
 warp = "0.3.1"
-hyper = { version = "0.14.12", features = ["full"] }
+hyper = { version = "0.14.13", features = ["full"] }
 
 # Template engine
 tera = "1.12.1"
@@ -38,7 +38,7 @@ serde_urlencoded = "0.7.0"
 
 # Argument & config parsing
 figment = { version = "0.10.6", features = ["env", "yaml", "test"] }
-schemars = { version = "0.8.3", features = ["url", "chrono"] }
+schemars = { version = "0.8.5", features = ["url", "chrono"] }
 
 # Password hashing
 argon2 = { version = "0.3.1", features = ["password-hash"] }
