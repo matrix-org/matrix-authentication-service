@@ -12,45 +12,50 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Database-related filters to grab connections and start transactions from the
+//! connection pool
+
 use std::convert::Infallible;
 
-use sqlx::{pool::PoolConnection, PgPool, Postgres, Transaction};
+use sqlx::{
+    pool::{Pool, PoolConnection},
+    Database, Transaction,
+};
 use warp::{Filter, Rejection};
 
 use crate::errors::WrapError;
 
-fn with_pool(
-    pool: &PgPool,
-) -> impl Filter<Extract = (PgPool,), Error = Infallible> + Clone + Send + Sync + 'static {
+fn with_pool<T: Database>(
+    pool: &Pool<T>,
+) -> impl Filter<Extract = (Pool<T>,), Error = Infallible> + Clone + Send + Sync + 'static {
     let pool = pool.clone();
     warp::any().map(move || pool.clone())
 }
 
 /// Acquire a connection to the database
-pub fn connection(
-    pool: &PgPool,
-) -> impl Filter<Extract = (PoolConnection<Postgres>,), Error = Rejection> + Clone + Send + Sync + 'static
+pub fn connection<T: Database>(
+    pool: &Pool<T>,
+) -> impl Filter<Extract = (PoolConnection<T>,), Error = Rejection> + Clone + Send + Sync + 'static
 {
     with_pool(pool).and_then(acquire_connection)
 }
 
-async fn acquire_connection(pool: PgPool) -> Result<PoolConnection<Postgres>, Rejection> {
+async fn acquire_connection<T: Database>(pool: Pool<T>) -> Result<PoolConnection<T>, Rejection> {
     let conn = pool.acquire().await.wrap_error()?;
     Ok(conn)
 }
 
 /// Start a database transaction
-pub fn transaction(
-    pool: &PgPool,
-) -> impl Filter<Extract = (Transaction<'static, Postgres>,), Error = Rejection>
-       + Clone
-       + Send
-       + Sync
-       + 'static {
+pub fn transaction<T: Database>(
+    pool: &Pool<T>,
+) -> impl Filter<Extract = (Transaction<'static, T>,), Error = Rejection> + Clone + Send + Sync + 'static
+{
     with_pool(pool).and_then(acquire_transaction)
 }
 
-async fn acquire_transaction(pool: PgPool) -> Result<Transaction<'static, Postgres>, Rejection> {
+async fn acquire_transaction<T: Database>(
+    pool: Pool<T>,
+) -> Result<Transaction<'static, T>, Rejection> {
     let txn = pool.begin().await.wrap_error()?;
     Ok(txn)
 }
