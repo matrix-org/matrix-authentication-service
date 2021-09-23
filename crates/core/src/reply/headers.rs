@@ -35,6 +35,7 @@ pub fn with_typed_header<R, H>(header: H, reply: R) -> WithTypedHeader<R, H> {
     WithTypedHeader { reply, header }
 }
 
+/// A reply with a typed header set
 pub struct WithTypedHeader<R, H> {
     reply: R,
     header: H,

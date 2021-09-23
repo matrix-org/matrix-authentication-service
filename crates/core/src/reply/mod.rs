@@ -14,6 +14,8 @@
 
 //! Set of wrappers for [`warp::Reply`]
 
+#![deny(missing_docs)]
+
 pub mod headers;
 
 pub use self::headers::{with_typed_header, WithTypedHeader};

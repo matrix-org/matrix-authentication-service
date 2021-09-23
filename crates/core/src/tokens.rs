@@ -13,6 +13,29 @@
 // limitations under the License.
 
 //! Access token and refresh token generation and validation
+//!
+//! # Example
+//!
+//! ```rust
+//! extern crate rand;
+//!
+//! use rand::thread_rng;
+//! use mas_core::tokens::{TokenType, AccessToken, RefreshToken};
+//!
+//! let mut rng = thread_rng();
+//!
+//! // Generate an access token
+//! let token = AccessToken.generate(&mut rng);
+//!
+//! // Check it and verify its type is right
+//! assert_eq!(TokenType::check(&token).unwrap(), AccessToken);
+//!
+//! // Same, but with a refresh token
+//! let token = RefreshToken.generate(&mut rng);
+//! assert_eq!(TokenType::check(&token).unwrap(), RefreshToken);
+//! ```
+
+#![deny(missing_docs)]
 
 use std::convert::TryInto;
 
@@ -21,13 +44,16 @@ use oauth2_types::requests::TokenTypeHint;
 use rand::{distributions::Alphanumeric, Rng};
 use thiserror::Error;
 
+/// Type of token to generate or validate
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TokenType {
+    /// An access token, used by Relying Parties to authenticate requests
     AccessToken,
+    /// A refresh token, used by the refresh token grant
     RefreshToken,
 }
 
-pub use TokenType::*;
+pub use TokenType::{AccessToken, RefreshToken};
 
 impl TokenType {
     fn prefix(self) -> &'static str {
@@ -45,6 +71,17 @@ impl TokenType {
         }
     }
 
+    /// Generate a token for the given type
+    ///
+    /// ```rust
+    /// extern crate rand;
+    ///
+    /// use rand::thread_rng;
+    /// use mas_core::tokens::{AccessToken, RefreshToken};
+    ///
+    /// AccessToken.generate(thread_rng());
+    /// RefreshToken.generate(thread_rng());
+    /// ```
     pub fn generate(self, rng: impl Rng) -> String {
         let random_part: String = rng
             .sample_iter(&Alphanumeric)
@@ -58,6 +95,21 @@ impl TokenType {
         format!("{}_{}", base, crc)
     }
 
+    /// Check the format of a token and determine its type
+    ///
+    /// ```rust
+    /// use mas_core::tokens::TokenType;
+    ///
+    /// assert_eq!(
+    ///     TokenType::check("mat_kkLSacJDpek22jKWw4AcXG68b7U3W6_0Lg9yb"),
+    ///     Ok(TokenType::AccessToken)
+    /// );
+    ///
+    /// assert_eq!(
+    ///     TokenType::check("mar_PkpplxPkfjsqvtdfUlYR1Afg2TpaHF_GaTQd2"),
+    ///     Ok(TokenType::RefreshToken)
+    /// );
+    /// ```
     pub fn check(token: &str) -> Result<TokenType, TokenFormatError> {
         let split: Vec<&str> = token.split('_').collect();
         let [prefix, random_part, crc]: [&str; 3] = split
@@ -111,16 +163,28 @@ fn base62_encode(mut num: u32) -> String {
 
 const CRC: Crc<u32> = Crc::<u32>::new(&CRC_32_ISO_HDLC);
 
-#[derive(Debug, Error)]
+/// Invalid token
+#[derive(Debug, Error, PartialEq)]
 pub enum TokenFormatError {
+    /// Overall token format is invalid
     #[error("invalid token format")]
     InvalidFormat,
 
+    /// Token used an unknown prefix
     #[error("unknown token prefix {prefix:?}")]
-    UnknownPrefix { prefix: String },
+    UnknownPrefix {
+        /// The prefix found in the token
+        prefix: String,
+    },
 
+    /// The CRC checksum in the token is invalid
     #[error("invalid crc {got:?}, expected {expected:?}")]
-    InvalidCrc { expected: String, got: String },
+    InvalidCrc {
+        /// The CRC hash expected to be found in the token
+        expected: String,
+        /// The CRC found in the token
+        got: String,
+    },
 }
 
 #[cfg(test)]
