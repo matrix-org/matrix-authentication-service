@@ -34,7 +34,7 @@ use crate::{
     storage::oauth2::access_token::{
         lookup_access_token, AccessTokenLookupError, OAuth2AccessTokenLookup,
     },
-    tokens::{self, TokenFormatError, TokenType},
+    tokens::{TokenFormatError, TokenType},
 };
 
 /// Bearer token authentication failed
@@ -89,9 +89,9 @@ async fn authenticate(
     auth: Authorization<Bearer>,
 ) -> Result<OAuth2AccessTokenLookup, Rejection> {
     let token = auth.0.token();
-    let token_type = tokens::check(token).map_err(AuthenticationError::TokenFormat)?;
+    let token_type = TokenType::check(token).map_err(AuthenticationError::TokenFormat)?;
 
-    if token_type != tokens::TokenType::AccessToken {
+    if token_type != TokenType::AccessToken {
         return Err(AuthenticationError::WrongTokenType(token_type).into());
     }
 

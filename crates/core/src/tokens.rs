@@ -27,6 +27,8 @@ pub enum TokenType {
     RefreshToken,
 }
 
+pub use TokenType::*;
+
 impl TokenType {
     fn prefix(self) -> &'static str {
         match self {
@@ -41,6 +43,47 @@ impl TokenType {
             "mar" => Some(TokenType::RefreshToken),
             _ => None,
         }
+    }
+
+    pub fn generate(self, rng: impl Rng) -> String {
+        let random_part: String = rng
+            .sample_iter(&Alphanumeric)
+            .take(30)
+            .map(char::from)
+            .collect();
+
+        let base = format!("{}_{}", self.prefix(), random_part);
+        let crc = CRC.checksum(base.as_bytes());
+        let crc = base62_encode(crc);
+        format!("{}_{}", base, crc)
+    }
+
+    pub fn check(token: &str) -> Result<TokenType, TokenFormatError> {
+        let split: Vec<&str> = token.split('_').collect();
+        let [prefix, random_part, crc]: [&str; 3] = split
+            .try_into()
+            .map_err(|_| TokenFormatError::InvalidFormat)?;
+
+        if prefix.len() != 3 || random_part.len() != 30 || crc.len() != 6 {
+            return Err(TokenFormatError::InvalidFormat);
+        }
+
+        let token_type =
+            TokenType::match_prefix(prefix).ok_or_else(|| TokenFormatError::UnknownPrefix {
+                prefix: prefix.to_string(),
+            })?;
+
+        let base = format!("{}_{}", token_type.prefix(), random_part);
+        let expected_crc = CRC.checksum(base.as_bytes());
+        let expected_crc = base62_encode(expected_crc);
+        if crc != expected_crc {
+            return Err(TokenFormatError::InvalidCrc {
+                expected: expected_crc,
+                got: crc.to_string(),
+            });
+        }
+
+        Ok(token_type)
     }
 }
 
@@ -68,19 +111,6 @@ fn base62_encode(mut num: u32) -> String {
 
 const CRC: Crc<u32> = Crc::<u32>::new(&CRC_32_ISO_HDLC);
 
-pub fn generate(rng: impl Rng, token_type: TokenType) -> String {
-    let random_part: String = rng
-        .sample_iter(&Alphanumeric)
-        .take(30)
-        .map(char::from)
-        .collect();
-
-    let base = format!("{}_{}", token_type.prefix(), random_part);
-    let crc = CRC.checksum(base.as_bytes());
-    let crc = base62_encode(crc);
-    format!("{}_{}", base, crc)
-}
-
 #[derive(Debug, Error)]
 pub enum TokenFormatError {
     #[error("invalid token format")]
@@ -91,34 +121,6 @@ pub enum TokenFormatError {
 
     #[error("invalid crc {got:?}, expected {expected:?}")]
     InvalidCrc { expected: String, got: String },
-}
-
-pub fn check(token: &str) -> Result<TokenType, TokenFormatError> {
-    let split: Vec<&str> = token.split('_').collect();
-    let [prefix, random_part, crc]: [&str; 3] = split
-        .try_into()
-        .map_err(|_| TokenFormatError::InvalidFormat)?;
-
-    if prefix.len() != 3 || random_part.len() != 30 || crc.len() != 6 {
-        return Err(TokenFormatError::InvalidFormat);
-    }
-
-    let token_type =
-        TokenType::match_prefix(prefix).ok_or_else(|| TokenFormatError::UnknownPrefix {
-            prefix: prefix.to_string(),
-        })?;
-
-    let base = format!("{}_{}", token_type.prefix(), random_part);
-    let expected_crc = CRC.checksum(base.as_bytes());
-    let expected_crc = base62_encode(expected_crc);
-    if crc != expected_crc {
-        return Err(TokenFormatError::InvalidCrc {
-            expected: expected_crc,
-            got: crc.to_string(),
-        });
-    }
-
-    Ok(token_type)
 }
 
 #[cfg(test)]
@@ -153,7 +155,7 @@ mod tests {
         let mut rng = thread_rng();
         // Generate many access tokens
         let tokens: HashSet<String> = (0..COUNT)
-            .map(|_| generate(&mut rng, TokenType::AccessToken))
+            .map(|_| TokenType::AccessToken.generate(&mut rng))
             .collect();
 
         // Check that they are all different
@@ -161,18 +163,18 @@ mod tests {
 
         // Check that they are all valid and detected as access tokens
         for token in tokens {
-            assert_eq!(check(&token).unwrap(), TokenType::AccessToken);
+            assert_eq!(TokenType::check(&token).unwrap(), TokenType::AccessToken);
         }
 
         // Same, but for refresh tokens
         let tokens: HashSet<String> = (0..COUNT)
-            .map(|_| generate(&mut rng, TokenType::RefreshToken))
+            .map(|_| TokenType::RefreshToken.generate(&mut rng))
             .collect();
 
         assert_eq!(tokens.len(), COUNT, "All tokens are unique");
 
         for token in tokens {
-            assert_eq!(check(&token).unwrap(), TokenType::RefreshToken);
+            assert_eq!(TokenType::check(&token).unwrap(), TokenType::RefreshToken);
         }
     }
 }

@@ -18,7 +18,7 @@ use warp::{Filter, Rejection, Reply};
 
 use crate::{
     config::OAuth2Config,
-    filters::authenticate::{recover_unauthorized, authentication},
+    filters::authenticate::{authentication, recover_unauthorized},
     storage::oauth2::access_token::OAuth2AccessTokenLookup,
 };
 

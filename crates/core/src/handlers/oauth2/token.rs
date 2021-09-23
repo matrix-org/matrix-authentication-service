@@ -50,7 +50,7 @@ use crate::{
         authorization_code::{consume_code, lookup_code},
         refresh_token::{add_refresh_token, lookup_refresh_token, replace_refresh_token},
     },
-    tokens,
+    tokens::{AccessToken, RefreshToken},
 };
 
 #[skip_serializing_none]
@@ -164,8 +164,8 @@ async fn authorization_code_grant(
     let (access_token, refresh_token) = {
         let mut rng = thread_rng();
         (
-            tokens::generate(&mut rng, tokens::TokenType::AccessToken),
-            tokens::generate(&mut rng, tokens::TokenType::RefreshToken),
+            AccessToken.generate(&mut rng),
+            RefreshToken.generate(&mut rng),
         )
     };
 
@@ -234,8 +234,8 @@ async fn refresh_token_grant(
     let (access_token, refresh_token) = {
         let mut rng = thread_rng();
         (
-            tokens::generate(&mut rng, tokens::TokenType::AccessToken),
-            tokens::generate(&mut rng, tokens::TokenType::RefreshToken),
+            AccessToken.generate(&mut rng),
+            RefreshToken.generate(&mut rng),
         )
     };
 

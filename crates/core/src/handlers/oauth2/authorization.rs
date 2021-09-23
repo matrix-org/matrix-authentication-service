@@ -62,7 +62,7 @@ use crate::{
         SessionInfo,
     },
     templates::{FormPostContext, Templates},
-    tokens,
+    tokens::{AccessToken, RefreshToken},
 };
 
 #[derive(Deserialize)]
@@ -428,8 +428,8 @@ async fn step(
             let (access_token, refresh_token) = {
                 let mut rng = thread_rng();
                 (
-                    tokens::generate(&mut rng, tokens::TokenType::AccessToken),
-                    tokens::generate(&mut rng, tokens::TokenType::RefreshToken),
+                    AccessToken.generate(&mut rng),
+                    RefreshToken.generate(&mut rng),
                 )
             };
 

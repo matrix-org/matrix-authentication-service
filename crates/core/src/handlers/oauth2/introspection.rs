@@ -26,7 +26,7 @@ use crate::{
         database::connection,
     },
     storage::oauth2::{access_token::lookup_access_token, refresh_token::lookup_refresh_token},
-    tokens,
+    tokens::{self, TokenType},
 };
 
 pub fn filter(
@@ -70,7 +70,7 @@ async fn introspect(
     }
 
     let token = &params.token;
-    let token_type = tokens::check(token).wrap_error()?;
+    let token_type = TokenType::check(token).wrap_error()?;
     if let Some(hint) = params.token_type_hint {
         if token_type != hint {
             info!("Token type hint did not match");
