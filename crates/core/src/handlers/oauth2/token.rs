@@ -41,10 +41,10 @@ use crate::{
     errors::WrapError,
     filters::{
         client::{with_client_auth, ClientAuthentication},
-        database::with_connection,
-        headers::typed_header,
+        database::connection,
         with_keys,
     },
+    reply::with_typed_header,
     storage::oauth2::{
         access_token::{add_access_token, revoke_access_token},
         authorization_code::{consume_code, lookup_code},
@@ -94,7 +94,7 @@ pub fn filter(
         .and(with_client_auth(oauth2_config))
         .and(with_keys(oauth2_config))
         .and(warp::any().map(move || issuer.clone()))
-        .and(with_connection(pool))
+        .and(connection(pool))
         .and_then(token)
         .recover(recover)
 }
@@ -130,10 +130,9 @@ async fn token(
         }
     };
 
-    Ok(typed_header(
-        Pragma::no_cache(),
-        typed_header(CacheControl::new().with_no_store(), reply),
-    ))
+    let reply = with_typed_header(CacheControl::new().with_no_store(), reply);
+    let reply = with_typed_header(Pragma::no_cache(), reply);
+    Ok(reply)
 }
 
 fn hash<H: Digest>(mut hasher: H, token: &str) -> anyhow::Result<String> {

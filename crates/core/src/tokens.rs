@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Access token and refresh token generation and validation
+
 use std::convert::TryInto;
 
 use crc::{Crc, CRC_32_ISO_HDLC};

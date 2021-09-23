@@ -17,7 +17,7 @@ use serde::{de::DeserializeOwned, Deserialize};
 use thiserror::Error;
 use warp::{reject::Reject, Filter, Rejection};
 
-use super::headers::with_typed_header;
+use super::headers::typed_header;
 use crate::config::{OAuth2ClientConfig, OAuth2Config};
 
 #[derive(Debug, PartialEq, Eq)]
@@ -43,7 +43,7 @@ pub fn with_client_auth<T: DeserializeOwned + Send + 'static>(
        + Sync
        + 'static {
     // First, extract the client credentials
-    let credentials = with_typed_header()
+    let credentials = typed_header()
         .and(warp::body::form())
         // Either from the "Authorization" header
         .map(|auth: Authorization<Basic>, body: T| {

@@ -26,7 +26,8 @@ fn with_pool(
     warp::any().map(move || pool.clone())
 }
 
-pub fn with_connection(
+/// Acquire a connection to the database
+pub fn connection(
     pool: &PgPool,
 ) -> impl Filter<Extract = (PoolConnection<Postgres>,), Error = Rejection> + Clone + Send + Sync + 'static
 {
@@ -38,7 +39,8 @@ async fn acquire_connection(pool: PgPool) -> Result<PoolConnection<Postgres>, Re
     Ok(conn)
 }
 
-pub fn with_transaction(
+/// Start a database transaction
+pub fn transaction(
     pool: &PgPool,
 ) -> impl Filter<Extract = (Transaction<'static, Postgres>,), Error = Rejection>
        + Clone

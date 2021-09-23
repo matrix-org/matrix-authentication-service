@@ -48,8 +48,8 @@ use crate::{
     config::{CookiesConfig, OAuth2ClientConfig, OAuth2Config},
     errors::WrapError,
     filters::{
-        database::with_transaction,
-        session::{with_optional_session, with_session},
+        database::transaction,
+        session::{optional_session, session},
         with_templates,
     },
     handlers::views::LoginRequest,
@@ -207,15 +207,15 @@ pub fn filter(
         .and(warp::get())
         .map(move || clients.clone())
         .and(warp::query())
-        .and(with_optional_session(pool, cookies_config))
-        .and(with_transaction(pool))
+        .and(optional_session(pool, cookies_config))
+        .and(transaction(pool))
         .and_then(get);
 
     let step = warp::path!("oauth2" / "authorize" / "step")
         .and(warp::get())
         .and(warp::query().map(|s: StepRequest| s.id))
-        .and(with_session(pool, cookies_config))
-        .and(with_transaction(pool))
+        .and(session(pool, cookies_config))
+        .and(transaction(pool))
         .and_then(step);
 
     let clients = oauth2_config.clients.clone();

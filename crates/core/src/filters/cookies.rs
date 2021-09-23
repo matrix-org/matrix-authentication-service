@@ -25,16 +25,22 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use thiserror::Error;
 use warp::{reject::Reject, Filter, Rejection, Reply};
 
-use super::headers::{typed_header, WithTypedHeader};
-use crate::{config::CookiesConfig, errors::WrapError};
+use crate::{
+    config::CookiesConfig,
+    errors::WrapError,
+    reply::{with_typed_header, WithTypedHeader},
+};
 
+/// Unable to decrypt the cookie
 #[derive(Debug, Error)]
-struct CookieDecryptionError<T: EncryptableCookieValue>(#[source] anyhow::Error, PhantomData<T>);
+pub struct CookieDecryptionError<T: EncryptableCookieValue>(
+    #[source] anyhow::Error,
+    // This [`std::marker::PhantomData`] records what kind of cookie it was trying to save.
+    // This then use when displaying the error.
+    PhantomData<T>,
+);
 
-impl<T> Reject for CookieDecryptionError<T> where
-    T: EncryptableCookieValue + Send + Sync + std::fmt::Debug + 'static
-{
-}
+impl<T> Reject for CookieDecryptionError<T> where T: EncryptableCookieValue + 'static {}
 
 impl<T: EncryptableCookieValue> From<anyhow::Error> for CookieDecryptionError<T> {
     fn from(e: anyhow::Error) -> Self {
@@ -50,7 +56,7 @@ impl<T: EncryptableCookieValue> std::fmt::Display for CookieDecryptionError<T> {
 
 fn decryption_error<T>(e: anyhow::Error) -> Rejection
 where
-    T: EncryptableCookieValue + Send + Sync + std::fmt::Debug + 'static,
+    T: EncryptableCookieValue + 'static,
 {
     let e: CookieDecryptionError<T> = e.into();
     warp::reject::custom(e)
@@ -104,7 +110,7 @@ pub fn maybe_encrypted<T>(
     options: &CookiesConfig,
 ) -> impl Filter<Extract = (Option<T>,), Error = Infallible> + Clone + Send + Sync + 'static
 where
-    T: DeserializeOwned + EncryptableCookieValue + Send + 'static,
+    T: DeserializeOwned + EncryptableCookieValue + 'static,
 {
     encrypted(options).map(Some).recover(recover::<T>).unify()
 }
@@ -126,7 +132,7 @@ pub fn encrypted<T>(
     options: &CookiesConfig,
 ) -> impl Filter<Extract = (T,), Error = Rejection> + Clone + Send + Sync + 'static
 where
-    T: DeserializeOwned + EncryptableCookieValue + Send + 'static,
+    T: DeserializeOwned + EncryptableCookieValue + 'static,
 {
     let secret = options.secret;
     warp::cookie::cookie(T::cookie_key()).and_then(move |value: String| async move {
@@ -138,7 +144,7 @@ where
 }
 
 #[must_use]
-pub fn with_cookie_saver(
+pub fn encrypted_cookie_saver(
     options: &CookiesConfig,
 ) -> impl Filter<Extract = (EncryptedCookieSaver,), Error = Infallible> + Clone + Send + Sync + 'static
 {
@@ -151,6 +157,7 @@ pub trait EncryptableCookieValue: Send + Sync + std::fmt::Debug {
     fn cookie_key() -> &'static str;
 }
 
+/// An opaque structure which helps encrypting a cookie and attach it to a reply
 pub struct EncryptedCookieSaver {
     secret: [u8; 32],
 }
@@ -170,6 +177,6 @@ impl EncryptedCookieSaver {
             .to_string();
         let header = SetCookie::decode(&mut [HeaderValue::from_str(&value).wrap_error()?].iter())
             .wrap_error()?;
-        Ok(typed_header(header, reply))
+        Ok(with_typed_header(header, reply))
     }
 }

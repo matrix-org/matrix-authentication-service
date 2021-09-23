@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Authenticate an endpoint with an access token as bearer authorization token
+
 use chrono::Utc;
 use headers::{authorization::Bearer, Authorization};
 use hyper::StatusCode;
@@ -24,8 +26,8 @@ use warp::{
 };
 
 use super::{
-    database::with_connection,
-    headers::{with_typed_header, InvalidTypedHeader},
+    database::connection,
+    headers::{typed_header, InvalidTypedHeader},
 };
 use crate::{
     errors::wrapped_error,
@@ -35,8 +37,11 @@ use crate::{
     tokens::{self, TokenFormatError, TokenType},
 };
 
+/// Bearer token authentication failed
+///
+/// This is recoverable with [`recover_unauthorized`]
 #[derive(Debug, Error)]
-enum AuthenticationError {
+pub enum AuthenticationError {
     #[error("invalid token format")]
     TokenFormat(#[from] TokenFormatError),
 
@@ -68,12 +73,12 @@ impl Reject for AuthenticationError {}
 /// This can reject with either a [`AuthenticationError`] or with a generic
 /// wrapped sqlx error.
 #[must_use]
-pub fn with_authentication(
+pub fn authentication(
     pool: &PgPool,
 ) -> impl Filter<Extract = (OAuth2AccessTokenLookup,), Error = Rejection> + Clone + Send + Sync + 'static
 {
-    with_connection(pool)
-        .and(with_typed_header())
+    connection(pool)
+        .and(typed_header())
         .and_then(authenticate)
         .recover(recover)
         .unify()
@@ -128,6 +133,10 @@ async fn recover(rejection: Rejection) -> Result<OAuth2AccessTokenLookup, Reject
     Err(rejection)
 }
 
+/// Recover from an [`AuthenticationError`] with a `WWW-Authenticate` header, as
+/// per [RFC6750]. This is not intended for user-facing endpoints.
+///
+/// [RFC6750]: https://www.rfc-editor.org/rfc/rfc6750.html
 pub async fn recover_unauthorized(rejection: Rejection) -> Result<impl Reply, Rejection> {
     if rejection.find::<AuthenticationError>().is_some() {
         // TODO: have the issuer/realm here

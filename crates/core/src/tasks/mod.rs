@@ -12,6 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Generic, sequential task scheduler
+//!
+//! Tasks here are ran one after another to avoid having to unnecesarily lock
+//! resources and avoid database conflicts. Tasks are not persisted, which is
+//! considered "good enough" for now.
+
 use std::{collections::VecDeque, sync::Arc, time::Duration};
 
 use futures_util::StreamExt;

@@ -12,16 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Interactions with the database
+//! Set of wrappers for [`warp::Reply`]
 
-#![allow(clippy::used_underscore_binding)] // This is needed by sqlx macros
+pub mod headers;
 
-use sqlx::migrate::Migrator;
-
-pub mod oauth2;
-pub mod user;
-
-pub use self::user::{login, lookup_active_session, register_user, SessionInfo, User};
-
-/// Embedded migrations, allowing them to run on startup
-pub static MIGRATOR: Migrator = sqlx::migrate!();
+pub use self::headers::{with_typed_header, WithTypedHeader};

@@ -18,7 +18,7 @@ use warp::{hyper::Uri, Filter, Rejection, Reply};
 use crate::{
     config::CookiesConfig,
     errors::WrapError,
-    filters::{csrf::protected_form, database::with_connection, session::with_session},
+    filters::{csrf::protected_form, database::connection, session::session},
     storage::SessionInfo,
 };
 
@@ -28,8 +28,8 @@ pub(super) fn filter(
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
     warp::path!("logout")
         .and(warp::post())
-        .and(with_session(pool, cookies_config))
-        .and(with_connection(pool))
+        .and(session(pool, cookies_config))
+        .and(connection(pool))
         .and(protected_form(cookies_config))
         .and_then(post)
 }

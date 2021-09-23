@@ -12,31 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-use headers::{Header, HeaderMapExt, HeaderValue};
+use headers::{Header, HeaderValue};
 use thiserror::Error;
-use warp::{reject::Reject, Filter, Rejection, Reply};
-
-/// Add a typed header to a reply
-pub fn typed_header<R, H>(header: H, reply: R) -> WithTypedHeader<R, H> {
-    WithTypedHeader { reply, header }
-}
-
-pub struct WithTypedHeader<R, H> {
-    reply: R,
-    header: H,
-}
-
-impl<R, H> Reply for WithTypedHeader<R, H>
-where
-    R: Reply,
-    H: Header + Send,
-{
-    fn into_response(self) -> warp::reply::Response {
-        let mut res = self.reply.into_response();
-        res.headers_mut().typed_insert(self.header);
-        res
-    }
-}
+use warp::{reject::Reject, Filter, Rejection};
 
 #[derive(Debug, Error)]
 #[error("could not decode header {1}")]
@@ -50,7 +28,7 @@ impl Reject for InvalidTypedHeader {}
 ///
 /// This can reject with either a [`warp::reject::MissingHeader`] or a
 /// [`InvalidTypedHeader`].
-pub fn with_typed_header<T: Header + Send + 'static>(
+pub fn typed_header<T: Header + Send + 'static>(
 ) -> impl Filter<Extract = (T,), Error = Rejection> + Clone + Send + Sync + 'static {
     warp::header::value(T::name().as_str()).and_then(decode_typed_header)
 }

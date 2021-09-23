@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Contexts used in templates
+
 use oauth2_types::errors::OAuth2Error;
 use serde::Serialize;
 use url::Url;
@@ -90,7 +92,7 @@ pub struct WithOptionalSession<T> {
 #[derive(Serialize)]
 pub struct EmptyContext;
 
-// Context used by the `index.html` template
+/// Context used by the `index.html` template
 #[derive(Serialize)]
 pub struct IndexContext {
     discovery_url: Url,
@@ -110,6 +112,7 @@ pub enum LoginFormField {
     Password,
 }
 
+/// Context used by the `login.html` template
 #[derive(Serialize)]
 pub struct LoginContext {
     form: ErroredForm<LoginFormField>,
@@ -146,6 +149,7 @@ impl<T> FormPostContext<T> {
     }
 }
 
+/// Context used by the `error.html` template
 #[derive(Default, Serialize)]
 pub struct ErrorContext {
     code: Option<&'static str>,

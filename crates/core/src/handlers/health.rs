@@ -18,14 +18,14 @@ use sqlx::{pool::PoolConnection, PgPool, Postgres};
 use tracing::{info_span, Instrument};
 use warp::{reply::with_header, Filter, Rejection, Reply};
 
-use crate::{errors::WrapError, filters::database::with_connection};
+use crate::{errors::WrapError, filters::database::connection};
 
 pub fn filter(
     pool: &PgPool,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
     warp::path!("health")
         .and(warp::get())
-        .and(with_connection(pool))
+        .and(connection(pool))
         .and_then(get)
 }
 

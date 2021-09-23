@@ -20,10 +20,10 @@ use crate::{
     config::{CookiesConfig, CsrfConfig},
     errors::WrapError,
     filters::{
-        cookies::{with_cookie_saver, EncryptedCookieSaver},
+        cookies::{encrypted_cookie_saver, EncryptedCookieSaver},
         csrf::{protected_form, updated_csrf_token},
-        database::with_connection,
-        session::with_session,
+        database::connection,
+        session::session,
         with_templates, CsrfToken,
     },
     storage::SessionInfo,
@@ -43,14 +43,14 @@ pub(super) fn filter(
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
     let get = warp::get()
         .and(with_templates(templates))
-        .and(with_cookie_saver(cookies_config))
+        .and(encrypted_cookie_saver(cookies_config))
         .and(updated_csrf_token(cookies_config, csrf_config))
-        .and(with_session(pool, cookies_config))
+        .and(session(pool, cookies_config))
         .and_then(get);
 
     let post = warp::post()
-        .and(with_session(pool, cookies_config))
-        .and(with_connection(pool))
+        .and(session(pool, cookies_config))
+        .and(connection(pool))
         .and(protected_form(cookies_config))
         .and_then(post);
 

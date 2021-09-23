@@ -23,7 +23,7 @@ use crate::{
     errors::WrapError,
     filters::{
         client::{with_client_auth, ClientAuthentication},
-        database::with_connection,
+        database::connection,
     },
     storage::oauth2::{access_token::lookup_access_token, refresh_token::lookup_refresh_token},
     tokens,
@@ -35,7 +35,7 @@ pub fn filter(
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
     warp::path!("oauth2" / "introspect")
         .and(warp::post())
-        .and(with_connection(pool))
+        .and(connection(pool))
         .and(with_client_auth(oauth2_config))
         .and_then(introspect)
         .recover(recover)

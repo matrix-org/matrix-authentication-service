@@ -18,7 +18,7 @@ use warp::{Filter, Rejection, Reply};
 
 use crate::{
     config::OAuth2Config,
-    filters::authenticate::{recover_unauthorized, with_authentication},
+    filters::authenticate::{recover_unauthorized, authentication},
     storage::oauth2::access_token::OAuth2AccessTokenLookup,
 };
 
@@ -33,7 +33,7 @@ pub(super) fn filter(
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
     warp::path!("oauth2" / "userinfo")
         .and(warp::get().or(warp::post()).unify())
-        .and(with_authentication(pool))
+        .and(authentication(pool))
         .and_then(userinfo)
         .recover(recover_unauthorized)
 }

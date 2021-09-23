@@ -18,7 +18,7 @@ use warp::{Filter, Rejection};
 
 use super::{
     cookies::{encrypted, maybe_encrypted, EncryptableCookieValue},
-    database::with_connection,
+    database::connection,
 };
 use crate::{
     config::CookiesConfig,
@@ -54,14 +54,15 @@ impl EncryptableCookieValue for SessionCookie {
     }
 }
 
+/// Extract a user session information if logged in
 #[must_use]
-pub fn with_optional_session(
+pub fn optional_session(
     pool: &PgPool,
     cookies_config: &CookiesConfig,
 ) -> impl Filter<Extract = (Option<SessionInfo>,), Error = Rejection> + Clone + Send + Sync + 'static
 {
     maybe_encrypted(cookies_config)
-        .and(with_connection(pool))
+        .and(connection(pool))
         .and_then(
             |maybe_session: Option<SessionCookie>, mut conn: PoolConnection<Postgres>| async move {
                 let maybe_session_info = if let Some(session) = maybe_session {
@@ -74,17 +75,17 @@ pub fn with_optional_session(
         )
 }
 
+/// Extract a user session information, rejecting if not logged in
 #[must_use]
-pub fn with_session(
+pub fn session(
     pool: &PgPool,
     cookies_config: &CookiesConfig,
 ) -> impl Filter<Extract = (SessionInfo,), Error = Rejection> + Clone + Send + Sync + 'static {
-    encrypted(cookies_config)
-        .and(with_connection(pool))
-        .and_then(
-            |session: SessionCookie, mut conn: PoolConnection<Postgres>| async move {
-                let session_info = session.load_session_info(&mut conn).await.wrap_error()?;
-                Ok::<_, Rejection>(session_info)
-            },
-        )
+    // TODO: this should be wrapped up in a recoverable error
+    encrypted(cookies_config).and(connection(pool)).and_then(
+        |session: SessionCookie, mut conn: PoolConnection<Postgres>| async move {
+            let session_info = session.load_session_info(&mut conn).await.wrap_error()?;
+            Ok::<_, Rejection>(session_info)
+        },
+    )
 }

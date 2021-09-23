@@ -19,9 +19,9 @@ use warp::{reply::html, Filter, Rejection, Reply};
 use crate::{
     config::{CookiesConfig, CsrfConfig, OAuth2Config},
     filters::{
-        cookies::{with_cookie_saver, EncryptedCookieSaver},
+        cookies::{encrypted_cookie_saver, EncryptedCookieSaver},
         csrf::updated_csrf_token,
-        session::with_optional_session,
+        session::optional_session,
         with_templates, CsrfToken,
     },
     storage::SessionInfo,
@@ -40,9 +40,9 @@ pub(super) fn filter(
         .and(warp::get())
         .map(move || discovery_url.clone())
         .and(with_templates(templates))
-        .and(with_cookie_saver(cookies_config))
+        .and(encrypted_cookie_saver(cookies_config))
         .and(updated_csrf_token(cookies_config, csrf_config))
-        .and(with_optional_session(pool, cookies_config))
+        .and(optional_session(pool, cookies_config))
         .and_then(get)
 }
 

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Templates rendering
+
 use std::{collections::HashSet, io::Cursor, path::Path, string::ToString, sync::Arc};
 
 use anyhow::Context as _;
@@ -31,7 +33,8 @@ pub use self::context::{
     TemplateContext, WithCsrf, WithOptionalSession, WithSession,
 };
 
-#[derive(Clone)]
+/// Wrapper around [`tera::Tera`] helping rendering the various templates
+#[derive(Debug, Clone)]
 pub struct Templates(Arc<Tera>);
 
 #[derive(Error, Debug)]

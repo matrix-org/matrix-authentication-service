@@ -126,7 +126,7 @@ fn csrf_token(
 ///
 /// Routes using this should not forget to reply the updated CSRF cookie using
 /// an [`super::cookies::EncryptedCookieSaver`] obtained with
-/// [`super::cookies::with_cookie_saver`]
+/// [`super::cookies::encrypted_cookie_saver`]
 #[must_use]
 pub fn updated_csrf_token(
     cookies_config: &CookiesConfig,
