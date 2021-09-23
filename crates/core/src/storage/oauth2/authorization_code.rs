@@ -16,6 +16,8 @@ use anyhow::Context;
 use oauth2_types::pkce;
 use serde::Serialize;
 use sqlx::{Executor, FromRow, Postgres};
+use thiserror::Error;
+use warp::reject::Reject;
 
 #[derive(FromRow, Serialize)]
 pub struct OAuth2Code {
@@ -65,11 +67,24 @@ pub struct OAuth2CodeLookup {
     pub nonce: Option<String>,
 }
 
+#[derive(Debug, Error)]
+#[error("failed to lookup oauth2 code")]
+pub struct CodeLookupError(#[from] sqlx::Error);
+
+impl Reject for CodeLookupError {}
+
+impl CodeLookupError {
+    #[must_use]
+    pub fn not_found(&self) -> bool {
+        matches!(self.0, sqlx::Error::RowNotFound)
+    }
+}
+
 pub async fn lookup_code(
     executor: impl Executor<'_, Database = Postgres>,
     code: &str,
-) -> anyhow::Result<OAuth2CodeLookup> {
-    sqlx::query_as!(
+) -> Result<OAuth2CodeLookup, CodeLookupError> {
+    let res = sqlx::query_as!(
         OAuth2CodeLookup,
         r#"
             SELECT
@@ -87,8 +102,9 @@ pub async fn lookup_code(
         code,
     )
     .fetch_one(executor)
-    .await
-    .context("could not lookup oauth2 code")
+    .await?;
+
+    Ok(res)
 }
 
 pub async fn consume_code(

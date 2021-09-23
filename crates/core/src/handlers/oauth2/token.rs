@@ -153,8 +153,15 @@ async fn authorization_code_grant(
     conn: &mut PoolConnection<Postgres>,
 ) -> Result<AccessTokenResponse, Rejection> {
     let mut txn = conn.begin().await.wrap_error()?;
-    // TODO: recover from failed code lookup with invalid_grant instead
-    let code = lookup_code(&mut txn, &grant.code).await.wrap_error()?;
+
+    // TODO: we should invalidate the existing session if a code is used twice after
+    // some period of time. See the `oidcc-codereuse-30seconds` test from the
+    // conformance suite
+    let code = match lookup_code(&mut txn, &grant.code).await {
+        Err(e) if e.not_found() => return error(InvalidGrant),
+        x => x,
+    }?;
+
     if client.client_id != code.client_id {
         return error(UnauthorizedClient);
     }
