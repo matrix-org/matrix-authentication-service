@@ -41,6 +41,10 @@ enum TemplatesSubcommand {
     Check {
         /// Path where the templates are
         path: String,
+
+        /// Skip loading builtin templates
+        #[clap(long)]
+        skip_builtin: bool,
     },
 }
 
@@ -54,8 +58,8 @@ impl TemplatesCommand {
                 Ok(())
             }
 
-            SC::Check { path } => {
-                Templates::load(Some(path.clone()), false)?;
+            SC::Check { path, skip_builtin } => {
+                Templates::load(Some(path), !skip_builtin)?;
 
                 Ok(())
             }

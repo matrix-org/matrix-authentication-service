@@ -21,6 +21,7 @@ mod csrf;
 mod database;
 mod http;
 mod oauth2;
+mod templates;
 mod util;
 
 pub use self::{
@@ -29,6 +30,7 @@ pub use self::{
     database::DatabaseConfig,
     http::HttpConfig,
     oauth2::{Algorithm, KeySet, OAuth2ClientConfig, OAuth2Config},
+    templates::TemplatesConfig,
     util::ConfigurationSection,
 };
 
@@ -43,6 +45,9 @@ pub struct RootConfig {
     pub database: DatabaseConfig,
 
     pub cookies: CookiesConfig,
+
+    #[serde(default)]
+    pub templates: TemplatesConfig,
 
     #[serde(default)]
     pub csrf: CsrfConfig,
@@ -60,6 +65,7 @@ impl ConfigurationSection<'_> for RootConfig {
             http: HttpConfig::generate().await?,
             database: DatabaseConfig::generate().await?,
             cookies: CookiesConfig::generate().await?,
+            templates: TemplatesConfig::generate().await?,
             csrf: CsrfConfig::generate().await?,
         })
     }
@@ -70,6 +76,7 @@ impl ConfigurationSection<'_> for RootConfig {
             http: HttpConfig::test(),
             database: DatabaseConfig::test(),
             cookies: CookiesConfig::test(),
+            templates: TemplatesConfig::test(),
             csrf: CsrfConfig::test(),
         }
     }

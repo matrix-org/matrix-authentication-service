@@ -17,6 +17,7 @@
 use std::{collections::HashSet, io::Cursor, path::Path, string::ToString, sync::Arc};
 
 use anyhow::Context as _;
+use mas_config::TemplatesConfig;
 use serde::Serialize;
 use tera::{Context, Error as TeraError, Tera};
 use thiserror::Error;
@@ -50,13 +51,18 @@ pub enum TemplateLoadingError {
 }
 
 impl Templates {
+    /// Load the templates from [the config][`TemplatesConfig`]
+    pub fn load_from_config(config: &TemplatesConfig) -> Result<Self, TemplateLoadingError> {
+        Self::load(config.path.as_deref(), config.builtin)
+    }
+
     /// Load the templates and check all needed templates are properly loaded
     ///
     /// # Arguments
     ///
     /// * `path` - An optional path to where templates should be loaded
     /// * `builtin` - Set to `true` to load the builtin templates as well
-    pub fn load(path: Option<String>, builtin: bool) -> Result<Self, TemplateLoadingError> {
+    pub fn load(path: Option<&str>, builtin: bool) -> Result<Self, TemplateLoadingError> {
         let tera = {
             let mut tera = Tera::default();
 

@@ -68,8 +68,8 @@ impl ServerCommand {
         queue.start();
 
         // Load and compile the templates
-        // TODO: custom template path from the config
-        let templates = Templates::load(None, true).context("could not load templates")?;
+        let templates =
+            Templates::load_from_config(&config.templates).context("could not load templates")?;
 
         // Start the server
         let root = mas_core::handlers::root(&pool, &templates, &config);

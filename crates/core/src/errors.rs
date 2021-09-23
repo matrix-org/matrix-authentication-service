@@ -90,10 +90,19 @@ struct FieldError<FieldType> {
     error: Box<dyn HtmlError>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct ErroredForm<FieldType> {
     form: Vec<FormError>,
     fields: Vec<FieldError<FieldType>>,
+}
+
+impl<T> Default for ErroredForm<T> {
+    fn default() -> Self {
+        Self {
+            form: Vec::new(),
+            fields: Vec::new(),
+        }
+    }
 }
 
 impl<T> ErroredForm<T> {
