@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Set of [`warp`] filters
+
 #![allow(clippy::unused_async)] // Some warp filters need that
 
 pub mod csrf;
@@ -25,7 +27,7 @@ pub mod session;
 
 use std::convert::Infallible;
 
-use warp::Filter;
+use warp::{Filter, Rejection};
 
 pub use self::csrf::CsrfToken;
 use crate::{
@@ -47,4 +49,31 @@ pub fn with_keys(
 ) -> impl Filter<Extract = (KeySet,), Error = Infallible> + Clone + Send + Sync + 'static {
     let keyset = oauth2_config.keys.clone();
     warp::any().map(move || keyset.clone())
+}
+
+/// Recover a particular rejection type with a `None` option variant
+///
+/// # Example
+///
+/// ```rust
+/// extern crate warp;
+///
+/// use warp::{filters::header::header, reject::MissingHeader, Filter};
+///
+/// use mas_core::filters::none_on_error;
+///
+/// header("Content-Length")
+///     .map(Some)
+///     .recover(none_on_error::<_, MissingHeader>)
+///     .unify()
+///     .map(|length: Option<u64>| {
+///       format!("header: {:?}", length)
+///     });
+/// ```
+pub async fn none_on_error<T, E: 'static>(rejection: Rejection) -> Result<Option<T>, Rejection> {
+    if rejection.find::<E>().is_some() {
+        Ok(None)
+    } else {
+        Err(rejection)
+    }
 }

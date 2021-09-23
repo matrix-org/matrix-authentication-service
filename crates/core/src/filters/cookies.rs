@@ -23,8 +23,12 @@ use data_encoding::BASE64URL_NOPAD;
 use headers::{Header, HeaderValue, SetCookie};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use thiserror::Error;
-use warp::{reject::Reject, Filter, Rejection, Reply};
+use warp::{
+    reject::{MissingCookie, Reject},
+    Filter, Rejection, Reply,
+};
 
+use super::none_on_error;
 use crate::{
     config::CookiesConfig,
     errors::WrapError,
@@ -108,17 +112,16 @@ impl EncryptedCookie {
 #[must_use]
 pub fn maybe_encrypted<T>(
     options: &CookiesConfig,
-) -> impl Filter<Extract = (Option<T>,), Error = Infallible> + Clone + Send + Sync + 'static
+) -> impl Filter<Extract = (Option<T>,), Error = Rejection> + Clone + Send + Sync + 'static
 where
     T: DeserializeOwned + EncryptableCookieValue + 'static,
 {
-    encrypted(options).map(Some).recover(recover::<T>).unify()
-}
-
-async fn recover<T>(_rejection: Rejection) -> Result<Option<T>, Infallible> {
-    // We could actually look for MissingCookie and CookieDecryptionError
-    // rejections, but nothing else should happen here anyway
-    Ok(None)
+    encrypted(options)
+        .map(Some)
+        .recover(none_on_error::<T, MissingCookie>)
+        .unify()
+        .recover(none_on_error::<T, CookieDecryptionError<T>>)
+        .unify()
 }
 
 /// Extract an encrypted cookie
@@ -143,6 +146,7 @@ where
     })
 }
 
+/// Get an [`EncryptedCookieSaver`] to help saving an [`EncryptableCookieValue`]
 #[must_use]
 pub fn encrypted_cookie_saver(
     options: &CookiesConfig,
@@ -153,7 +157,7 @@ pub fn encrypted_cookie_saver(
 }
 
 /// A cookie that can be encrypted with a well-known cookie key
-pub trait EncryptableCookieValue: Send + Sync + std::fmt::Debug {
+pub trait EncryptableCookieValue: Serialize + Send + Sync + std::fmt::Debug {
     fn cookie_key() -> &'static str;
 }
 
@@ -163,7 +167,7 @@ pub struct EncryptedCookieSaver {
 }
 
 impl EncryptedCookieSaver {
-    pub fn save_encrypted<T: Serialize + EncryptableCookieValue, R: Reply>(
+    pub fn save_encrypted<T: EncryptableCookieValue, R: Reply>(
         &self,
         cookie: &T,
         reply: R,

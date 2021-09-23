@@ -16,6 +16,7 @@ use headers::{Header, HeaderValue};
 use thiserror::Error;
 use warp::{reject::Reject, Filter, Rejection};
 
+/// Failed to decode typed header
 #[derive(Debug, Error)]
 #[error("could not decode header {1}")]
 pub struct InvalidTypedHeader(#[source] headers::Error, &'static str);

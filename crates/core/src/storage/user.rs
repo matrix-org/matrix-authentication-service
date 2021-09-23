@@ -24,6 +24,7 @@ use sqlx::{Acquire, Executor, FromRow, Postgres, Transaction};
 use thiserror::Error;
 use tokio::task;
 use tracing::{info_span, Instrument};
+use warp::reject::Reject;
 
 use crate::errors::HtmlError;
 
@@ -142,14 +143,14 @@ pub async fn login(
 #[error("could not fetch session")]
 pub struct ActiveSessionLookupError(#[from] sqlx::Error);
 
-/*
+impl Reject for ActiveSessionLookupError {}
+
 impl ActiveSessionLookupError {
     #[must_use]
     pub fn not_found(&self) -> bool {
         matches!(self.0, sqlx::Error::RowNotFound)
     }
 }
-*/
 
 pub async fn lookup_active_session(
     executor: impl Executor<'_, Database = Postgres>,

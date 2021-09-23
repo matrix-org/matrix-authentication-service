@@ -14,17 +14,36 @@
 
 use serde::{Deserialize, Serialize};
 use sqlx::{pool::PoolConnection, Executor, PgPool, Postgres};
-use warp::{Filter, Rejection};
+use thiserror::Error;
+use tracing::warn;
+use warp::{
+    reject::{MissingCookie, Reject},
+    Filter, Rejection,
+};
 
 use super::{
-    cookies::{encrypted, maybe_encrypted, EncryptableCookieValue},
+    cookies::{encrypted, CookieDecryptionError, EncryptableCookieValue},
     database::connection,
+    none_on_error,
 };
 use crate::{
     config::CookiesConfig,
-    errors::WrapError,
-    storage::{lookup_active_session, SessionInfo},
+    storage::{lookup_active_session, user::ActiveSessionLookupError, SessionInfo},
 };
+
+#[derive(Error, Debug)]
+pub enum SessionLoadError {
+    #[error("missing session cookie")]
+    MissingCookie,
+
+    #[error("unable to parse or decrypt session cookie")]
+    InvalidCookie,
+
+    #[error("unknown or inactive session")]
+    UnknownSession,
+}
+
+impl Reject for SessionLoadError {}
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SessionCookie {
@@ -42,7 +61,7 @@ impl SessionCookie {
     pub async fn load_session_info(
         &self,
         executor: impl Executor<'_, Database = Postgres>,
-    ) -> anyhow::Result<SessionInfo> {
+    ) -> Result<SessionInfo, ActiveSessionLookupError> {
         let res = lookup_active_session(executor, self.current).await?;
         Ok(res)
     }
@@ -61,31 +80,59 @@ pub fn optional_session(
     cookies_config: &CookiesConfig,
 ) -> impl Filter<Extract = (Option<SessionInfo>,), Error = Rejection> + Clone + Send + Sync + 'static
 {
-    maybe_encrypted(cookies_config)
-        .and(connection(pool))
-        .and_then(
-            |maybe_session: Option<SessionCookie>, mut conn: PoolConnection<Postgres>| async move {
-                let maybe_session_info = if let Some(session) = maybe_session {
-                    session.load_session_info(&mut conn).await.ok()
-                } else {
-                    None
-                };
-                Ok::<_, Rejection>(maybe_session_info)
-            },
-        )
+    session(pool, cookies_config)
+        .map(Some)
+        .recover(none_on_error::<_, SessionLoadError>)
+        .unify()
 }
 
 /// Extract a user session information, rejecting if not logged in
+///
+/// # Rejections
+///
+/// This filter will reject with a [`SessionLoadError`] when the session is
+/// inactive or missing. It will reject with a wrapped error on other database
+/// failures.
 #[must_use]
 pub fn session(
     pool: &PgPool,
     cookies_config: &CookiesConfig,
 ) -> impl Filter<Extract = (SessionInfo,), Error = Rejection> + Clone + Send + Sync + 'static {
-    // TODO: this should be wrapped up in a recoverable error
-    encrypted(cookies_config).and(connection(pool)).and_then(
-        |session: SessionCookie, mut conn: PoolConnection<Postgres>| async move {
-            let session_info = session.load_session_info(&mut conn).await.wrap_error()?;
-            Ok::<_, Rejection>(session_info)
-        },
-    )
+    encrypted(cookies_config)
+        .and(connection(pool))
+        .and_then(load_session)
+        .recover(recover)
+        .unify()
+}
+
+async fn load_session(
+    session: SessionCookie,
+    mut conn: PoolConnection<Postgres>,
+) -> Result<SessionInfo, Rejection> {
+    let session_info = session.load_session_info(&mut conn).await?;
+    Ok(session_info)
+}
+
+/// Recover from expected rejections, to transform them into a
+/// [`SessionLoadError`]
+async fn recover<T>(rejection: Rejection) -> Result<T, Rejection> {
+    if let Some(e) = rejection.find::<ActiveSessionLookupError>() {
+        if e.not_found() {
+            return Err(warp::reject::custom(SessionLoadError::UnknownSession));
+        }
+
+        // If we're here, there is a real database error that should be
+        // propagated
+    }
+
+    if let Some(_e) = rejection.find::<MissingCookie>() {
+        return Err(warp::reject::custom(SessionLoadError::MissingCookie));
+    }
+
+    if let Some(error) = rejection.find::<CookieDecryptionError<SessionCookie>>() {
+        warn!(?error, "could not decrypt session cookie");
+        return Err(warp::reject::custom(SessionLoadError::InvalidCookie));
+    }
+
+    Err(rejection)
 }
