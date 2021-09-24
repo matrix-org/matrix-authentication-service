@@ -1,0 +1,30 @@
+name: Deploy the documentation
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  pages:
+    name: GitHub Pages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v2
+
+      - name: Setup mdBook
+        uses: peaceiris/actions-mdbook@4b5ef36b314c2599664ca107bb8c02412548d79d # v1.1.14
+        with:
+          mdbook-version: '0.4.12'
+
+      - name: Build the documentation
+        run: mdbook build
+          
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@068dc23d9710f1ba62e86896f84735d869951305 # v3.8.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./target/book
+
+
