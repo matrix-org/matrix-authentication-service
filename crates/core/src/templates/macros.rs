@@ -33,10 +33,6 @@ macro_rules! register_templates {
         )?
 
         $(
-            generics = { $( $generic:ident = $sample:ty ),* };
-        )?
-
-        $(
             // Match any attribute on the function, such as #[doc], #[allow(dead_code)], etc.
             $( #[ $attr:meta ] )*
             // The function name
@@ -76,34 +72,31 @@ macro_rules! register_templates {
                         .map_err(|source| TemplateError::Render { template: $template, source })
                 }
             )*
+        }
 
-            pub fn check_render(&self) -> Result<(), TemplateError> {
-                self.check_render_inner $( ::< $( $sample ),+ > )? ()
-            }
+        /// Helps rendering each template with sample data
+        pub mod check {
+            use super::*;
 
-            fn check_render_inner
-            $( < $( $generic ),+ > )?
-            (&self) -> Result<(), TemplateError>
-            $( where
-                $( $generic : TemplateContext + Serialize, )+
-            )?
+            $(
+                #[doc = concat!("Render the `", $template, "` template with sample contexts")]
+                pub fn $name
+                    $(< $( $lt $( : $clt $(+ $dlt )* + TemplateContext )? ),+ >)?
+                    (templates: &Templates)
+                -> anyhow::Result<()> {
+                    let samples: Vec< $param > = TemplateContext::sample();
 
-            {
-                $(
-                    {
-                        let samples: Vec< $param > = TemplateContext::sample();
-
-                        let name = $template;
-                        for sample in samples {
-                            ::tracing::info!(name, "Rendering template");
-                            self. $name (&sample)?;
-                        }
+                    let name = $template;
+                    for sample in samples {
+                        let context = serde_json::to_value(&sample)?;
+                        ::tracing::info!(name, %context, "Rendering template");
+                        templates. $name (&sample)
+                            .with_context(|| format!("Failed to render template {:?} with context {}", name, context))?;
                     }
-                )*
 
-
-                Ok(())
-            }
+                    Ok(())
+                }
+            )*
         }
     };
 }

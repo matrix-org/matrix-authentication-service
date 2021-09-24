@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![deny(missing_docs)]
+
 //! Templates rendering
 
 use std::{collections::HashSet, io::Cursor, path::Path, string::ToString, sync::Arc};
@@ -25,7 +27,9 @@ use tokio::{fs::OpenOptions, io::AsyncWriteExt};
 use tracing::{debug, info, warn};
 use warp::reject::Reject;
 
+#[allow(missing_docs)] // TODO
 mod context;
+
 #[macro_use]
 mod macros;
 
@@ -38,14 +42,19 @@ pub use self::context::{
 #[derive(Debug, Clone)]
 pub struct Templates(Arc<Tera>);
 
+/// There was an issue while loading the templates
 #[derive(Error, Debug)]
 pub enum TemplateLoadingError {
+    /// Some templates failed to compile
     #[error("could not load and compile some templates")]
     Compile(#[from] TeraError),
 
+    /// There are essential templates missing
     #[error("missing templates {missing:?}")]
     MissingTemplates {
+        /// List of missing templates
         missing: HashSet<String>,
+        /// List of templates that were loaded
         loaded: HashSet<String>,
     },
 }
@@ -146,18 +155,27 @@ impl Templates {
     }
 }
 
+/// Failed to render a template
 #[derive(Error, Debug)]
 pub enum TemplateError {
+    /// Failed to prepare the context used by this template
     #[error("could not prepare context for template {template:?}")]
     Context {
+        /// The name of the template being rendered
         template: &'static str,
+
+        /// The underlying error
         #[source]
         source: TeraError,
     },
 
+    /// Failed to render the template
     #[error("could not render template {template:?}")]
     Render {
+        /// The name of the template being rendered
         template: &'static str,
+
+        /// The underlying error
         #[source]
         source: TeraError,
     },
@@ -167,7 +185,6 @@ impl Reject for TemplateError {}
 
 register_templates! {
     extra = { "base.html" };
-    generics = { T = EmptyContext };
 
     /// Render the login page
     pub fn render_login(WithCsrf<LoginContext>) { "login.html" }
@@ -188,12 +205,26 @@ register_templates! {
     pub fn render_error(ErrorContext) { "error.html" }
 }
 
+impl Templates {
+    /// Render all templates with the generated samples to check if they render
+    /// properly
+    pub fn check_render(&self) -> anyhow::Result<()> {
+        check::render_login(self)?;
+        check::render_register(self)?;
+        check::render_index(self)?;
+        check::render_reauth(self)?;
+        check::render_form_post::<EmptyContext>(self)?;
+        check::render_error(self)?;
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn check_all_templates() {
+    fn check_builtin_templates() {
         let templates = Templates::load(None, true).unwrap();
         templates.check_render().unwrap();
     }

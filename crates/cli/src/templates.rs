@@ -59,7 +59,8 @@ impl TemplatesCommand {
             }
 
             SC::Check { path, skip_builtin } => {
-                Templates::load(Some(path), !skip_builtin)?;
+                let templates = Templates::load(Some(path), !skip_builtin)?;
+                templates.check_render()?;
 
                 Ok(())
             }

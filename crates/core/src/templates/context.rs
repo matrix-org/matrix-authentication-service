@@ -22,6 +22,7 @@ use crate::{errors::ErroredForm, filters::CsrfToken, storage::SessionInfo};
 
 /// Helper trait to construct context wrappers
 pub trait TemplateContext {
+    /// Attach a user session to the template context
     fn with_session(self, current_session: SessionInfo) -> WithSession<Self>
     where
         Self: Sized,
@@ -32,6 +33,7 @@ pub trait TemplateContext {
         }
     }
 
+    /// Attach an optional user session to the template context
     fn maybe_with_session(self, current_session: Option<SessionInfo>) -> WithOptionalSession<Self>
     where
         Self: Sized,
@@ -42,6 +44,7 @@ pub trait TemplateContext {
         }
     }
 
+    /// Attach a CSRF token to the template context
     fn with_csrf(self, token: &CsrfToken) -> WithCsrf<Self>
     where
         Self: Sized,
@@ -52,6 +55,10 @@ pub trait TemplateContext {
         }
     }
 
+    /// Generate sample values for this context type
+    ///
+    /// This is then used to check for template validity in unit tests and in
+    /// the CLI (`cargo run -- templates check`)
     fn sample() -> Vec<Self>
     where
         Self: Sized;
