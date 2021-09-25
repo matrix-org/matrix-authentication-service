@@ -26,7 +26,7 @@ use headers::{Header, HeaderValue, SetCookie};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use thiserror::Error;
 use warp::{
-    reject::{MissingCookie, Reject},
+    reject::{InvalidHeader, MissingCookie, Reject},
     Filter, Rejection, Reply,
 };
 
@@ -120,6 +120,8 @@ where
 {
     encrypted(options)
         .map(Some)
+        .recover(none_on_error::<T, InvalidHeader>)
+        .unify()
         .recover(none_on_error::<T, MissingCookie>)
         .unify()
         .recover(none_on_error::<T, CookieDecryptionError<T>>)

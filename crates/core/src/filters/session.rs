@@ -19,7 +19,7 @@ use sqlx::{pool::PoolConnection, Executor, PgPool, Postgres};
 use thiserror::Error;
 use tracing::warn;
 use warp::{
-    reject::{MissingCookie, Reject},
+    reject::{InvalidHeader, MissingCookie, Reject},
     Filter, Rejection,
 };
 
@@ -132,6 +132,12 @@ async fn recover<T>(rejection: Rejection) -> Result<T, Rejection> {
 
         // If we're here, there is a real database error that should be
         // propagated
+    }
+
+    if let Some(e) = rejection.find::<InvalidHeader>() {
+        if e.name() == "cookie" {
+            return Err(warp::reject::custom(SessionLoadError::MissingCookie));
+        }
     }
 
     if let Some(_e) = rejection.find::<MissingCookie>() {
