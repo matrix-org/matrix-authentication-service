@@ -27,7 +27,7 @@ hyper = { version = "0.14.13", features = ["full"] }
 tera = "1.12.1"
 
 # Database access
-sqlx = { version = "0.5.7", features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "offline"] }
+sqlx = { version = "0.5.9", features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "offline"] }
 
 # Various structure (de)serialization
 serde = { version = "1.0.130", features = ["derive"] }
@@ -38,7 +38,7 @@ serde_urlencoded = "0.7.0"
 
 # Argument & config parsing
 figment = { version = "0.10.6", features = ["env", "yaml", "test"] }
-schemars = { version = "0.8.5", features = ["url", "chrono"] }
+schemars = { version = "0.8.6", features = ["url", "chrono"] }
 
 # Password hashing
 argon2 = { version = "0.3.1", features = ["password-hash"] }
