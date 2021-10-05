@@ -20,6 +20,7 @@ pub mod errors;
 pub mod oidc;
 pub mod pkce;
 pub mod requests;
+pub mod scope;
 
 #[cfg(test)]
 mod test_utils;

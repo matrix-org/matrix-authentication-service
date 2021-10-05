@@ -24,6 +24,8 @@ use serde_with::{
 };
 use url::Url;
 
+use crate::scope::Scope;
+
 // ref: https://www.iana.org/assignments/oauth-parameters/oauth-parameters.xhtml
 
 #[derive(
@@ -212,22 +214,18 @@ pub struct AuthorizationCodeGrant {
     pub code_verifier: Option<String>,
 }
 
-#[serde_as]
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct RefreshTokenGrant {
     pub refresh_token: String,
 
     #[serde(default)]
-    #[serde_as(as = "Option<StringWithSeparator::<SpaceSeparator, String>>")]
-    scope: Option<HashSet<String>>,
+    scope: Option<Scope>,
 }
 
-#[serde_as]
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct ClientCredentialsGrant {
     #[serde(default)]
-    #[serde_as(as = "Option<StringWithSeparator::<SpaceSeparator, String>>")]
-    scope: Option<HashSet<String>>,
+    scope: Option<Scope>,
 }
 
 #[derive(
@@ -275,8 +273,7 @@ pub struct AccessTokenResponse {
     #[serde_as(as = "Option<DurationSeconds<i64>>")]
     expires_in: Option<Duration>,
 
-    #[serde_as(as = "Option<StringWithSeparator::<SpaceSeparator, String>>")]
-    scope: Option<HashSet<String>>,
+    scope: Option<Scope>,
 }
 
 impl AccessTokenResponse {
@@ -305,7 +302,7 @@ impl AccessTokenResponse {
     }
 
     #[must_use]
-    pub fn with_scopes(mut self, scope: HashSet<String>) -> Self {
+    pub fn with_scope(mut self, scope: Scope) -> Self {
         self.scope = Some(scope);
         self
     }
@@ -339,8 +336,7 @@ pub struct IntrospectionRequest {
 pub struct IntrospectionResponse {
     pub active: bool,
 
-    #[serde_as(as = "Option<StringWithSeparator::<SpaceSeparator, String>>")]
-    pub scope: Option<HashSet<String>>,
+    pub scope: Option<Scope>,
 
     pub client_id: Option<String>,
 
@@ -368,12 +364,10 @@ pub struct IntrospectionResponse {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
-
     use serde_json::json;
 
     use super::*;
-    use crate::test_utils::assert_serde_json;
+    use crate::{scope::OPENID, test_utils::assert_serde_json};
 
     #[test]
     fn serde_refresh_token_grant() {
@@ -383,14 +377,10 @@ mod tests {
             "scope": "openid",
         });
 
-        let scope = {
-            let mut s = HashSet::new();
-            // TODO: insert multiple scopes and test it. It's a bit tricky to test since
-            // HashSet have no guarantees regarding the ordering of items, so right
-            // now the output is unstable.
-            s.insert("openid".to_string());
-            Some(s)
-        };
+        // TODO: insert multiple scopes and test it. It's a bit tricky to test since
+        // HashSet have no guarantees regarding the ordering of items, so right
+        // now the output is unstable.
+        let scope: Option<Scope> = Some(vec![OPENID].into_iter().collect());
 
         let req = AccessTokenRequest::RefreshToken(RefreshTokenGrant {
             refresh_token: "abcd".into(),
