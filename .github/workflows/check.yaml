@@ -60,6 +60,50 @@ jobs:
           command: fetch
           args: --locked
 
+  lsif:
+    name: Generate LSIF index and upload it to Sourcegraph
+    needs: [fetch]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v2
+
+      - name: Install toolchain
+        id: toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          target: x86_64-unknown-linux-musl
+          components: rustfmt
+          profile: minimal
+          override: true
+
+      - name: Setup Cargo cache
+        uses: actions/cache@v2.1.6
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+          key: ${{ runner.os }}-cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Download rust-analyzer and Sourcegraph CLI
+        run: |
+          mkdir -p "${HOME}/.local/bin"
+          curl -sL https://github.com/rust-analyzer/rust-analyzer/releases/download/2021-10-04/rust-analyzer-x86_64-unknown-linux-gnu.gz | gunzip > "${HOME}/.local/bin/rust-analyzer"
+          curl -sL https://github.com/sourcegraph/src-cli/releases/download/3.32.0/src_linux_amd64 > "${HOME}/.local/bin/src"
+          chmod +x "${HOME}/.local/bin/rust-analyzer" "${HOME}/.local/bin/src"
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Generate LSIF data
+        run: rust-analyzer lsif . > ./dump.lsif
+
+      - name: Upload LSIF data
+        run: |
+          src lsif upload -file=./dump.lsif -indexer=rust-analyzer -repo="github.com/${GITHUB_REPOSITORY}" -commit="${GITHUB_SHA}" -github-token="${{ secrets.GITHUB_TOKEN }}"
+
   rustfmt:
     name: Check style
     needs: [fetch]
