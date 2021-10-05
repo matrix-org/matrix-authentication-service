@@ -12,8 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::borrow::Cow;
+
+use data_encoding::BASE64URL_NOPAD;
 use parse_display::{Display, FromStr};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 #[derive(
     Debug,
@@ -41,8 +45,34 @@ pub enum CodeChallengeMethod {
     S256 = 1,
 }
 
+impl CodeChallengeMethod {
+    #[must_use]
+    pub fn compute_challenge(self, verifier: &str) -> Cow<'_, str> {
+        match self {
+            CodeChallengeMethod::Plain => verifier.into(),
+            CodeChallengeMethod::S256 => {
+                let mut hasher = Sha256::new();
+                hasher.update(verifier.as_bytes());
+                let hash = hasher.finalize();
+                let verifier = BASE64URL_NOPAD.encode(&hash);
+                verifier.into()
+            }
+        }
+    }
+
+    #[must_use]
+    pub fn verify(self, challenge: &str, verifier: &str) -> bool {
+        self.compute_challenge(verifier) == challenge
+    }
+}
+
 #[derive(Serialize, Deserialize)]
-pub struct Request {
+pub struct AuthorizationRequest {
     pub code_challenge_method: CodeChallengeMethod,
     pub code_challenge: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct TokenRequest {
+    pub code_challenge_verifier: String,
 }

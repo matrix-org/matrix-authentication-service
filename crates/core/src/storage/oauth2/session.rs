@@ -52,7 +52,7 @@ impl OAuth2Session {
         &self,
         executor: impl Executor<'e, Database = Postgres>,
         code: &str,
-        code_challenge: &Option<pkce::Request>,
+        code_challenge: &Option<pkce::AuthorizationRequest>,
     ) -> anyhow::Result<OAuth2Code> {
         add_code(executor, self.id, code, code_challenge).await
     }

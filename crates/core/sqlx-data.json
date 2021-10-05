@@ -381,56 +381,6 @@
       ]
     }
   },
-  "886dee6a6f1f426f0e891790bbeffbc222fd75d8da0a107e7de673f1cc445f30": {
-    "query": "\n            SELECT\n                oc.id,\n                os.id        AS \"oauth2_session_id!\",\n                os.client_id AS \"client_id!\",\n                os.redirect_uri,\n                os.scope     AS \"scope!\",\n                os.nonce\n            FROM oauth2_codes oc\n            INNER JOIN oauth2_sessions os\n              ON os.id = oc.oauth2_session_id\n            WHERE oc.code = $1\n        ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
-          "name": "oauth2_session_id!",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 2,
-          "name": "client_id!",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 3,
-          "name": "redirect_uri",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 4,
-          "name": "scope!",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 5,
-          "name": "nonce",
-          "type_info": "Text"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Text"
-        ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        true
-      ]
-    }
-  },
   "88ac8783bd5881c42eafd9cf87a16fe6031f3153fd6a8618e689694584aeb2de": {
     "query": "\n            DELETE FROM oauth2_access_tokens\n            WHERE id = $1\n        ",
     "describe": {
@@ -671,6 +621,68 @@
         ]
       },
       "nullable": []
+    }
+  },
+  "eb5f772a7387de0dc2f9f660f470476c075da097134a8ded226eb630545c16eb": {
+    "query": "\n            SELECT\n                oc.id,\n                oc.code_challenge,\n                oc.code_challenge_method,\n                os.id        AS \"oauth2_session_id!\",\n                os.client_id AS \"client_id!\",\n                os.redirect_uri,\n                os.scope     AS \"scope!\",\n                os.nonce\n            FROM oauth2_codes oc\n            INNER JOIN oauth2_sessions os\n              ON os.id = oc.oauth2_session_id\n            WHERE oc.code = $1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "code_challenge",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "code_challenge_method",
+          "type_info": "Int2"
+        },
+        {
+          "ordinal": 3,
+          "name": "oauth2_session_id!",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 4,
+          "name": "client_id!",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 5,
+          "name": "redirect_uri",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 6,
+          "name": "scope!",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 7,
+          "name": "nonce",
+          "type_info": "Text"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        true
+      ]
     }
   },
   "f9a09ff53b6f221649f4f050e3d5ade114f852ddf50a78610a6c0ef0689af681": {

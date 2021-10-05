@@ -16,6 +16,8 @@ indoc = "1.0.3"
 serde_with = { version = "1.10.0", features = ["chrono"] }
 sqlx = { version = "0.5.9", default-features = false, optional = true }
 chrono = "0.4.19"
+sha2 = "0.9.8"
+data-encoding = "2.3.2"
 
 [features]
 sqlx_type = ["sqlx"]

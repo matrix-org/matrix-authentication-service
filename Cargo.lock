@@ -1623,6 +1623,7 @@ name = "oauth2-types"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "data-encoding",
  "http",
  "indoc",
  "language-tags",
@@ -1630,6 +1631,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
+ "sha2",
  "sqlx",
  "url",
 ]

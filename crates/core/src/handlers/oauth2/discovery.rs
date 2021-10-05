@@ -16,6 +16,7 @@ use std::collections::HashSet;
 
 use oauth2_types::{
     oidc::Metadata,
+    pkce::CodeChallengeMethod,
     requests::{ClientAuthenticationMethod, GrantType, ResponseMode},
 };
 use warp::{Filter, Rejection, Reply};
@@ -62,6 +63,13 @@ pub(super) fn filter(
         s
     });
 
+    let code_challenge_methods_supported = Some({
+        let mut s = HashSet::new();
+        s.insert(CodeChallengeMethod::Plain);
+        s.insert(CodeChallengeMethod::S256);
+        s
+    });
+
     let metadata = Metadata {
         authorization_endpoint: base.join("oauth2/authorize").ok(),
         token_endpoint: base.join("oauth2/token").ok(),
@@ -75,7 +83,7 @@ pub(super) fn filter(
         response_modes_supported,
         grant_types_supported,
         token_endpoint_auth_methods_supported,
-        code_challenge_methods_supported: None,
+        code_challenge_methods_supported,
     };
 
     let cors = warp::cors().allow_any_origin();

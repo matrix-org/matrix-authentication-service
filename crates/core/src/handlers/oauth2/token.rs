@@ -19,7 +19,10 @@ use headers::{CacheControl, Pragma};
 use hyper::StatusCode;
 use jwt_compact::{Claims, Header, TimeOptions};
 use oauth2_types::{
-    errors::{InvalidGrant, OAuth2Error, OAuth2ErrorCode, UnauthorizedClient},
+    errors::{
+        InvalidGrant, InvalidRequest, OAuth2Error, OAuth2ErrorCode, ServerError, UnauthorizedClient,
+    },
+    pkce::CodeChallengeMethod,
     requests::{
         AccessTokenRequest, AccessTokenResponse, AuthorizationCodeGrant, RefreshTokenGrant,
     },
@@ -165,6 +168,34 @@ async fn authorization_code_grant(
     if client.client_id != code.client_id {
         return error(UnauthorizedClient);
     }
+
+    match (
+        code.code_challenge_method.as_ref(),
+        code.code_challenge.as_ref(),
+        grant.code_verifier.as_ref(),
+    ) {
+        (None, None, None) => {}
+        // We have a challenge but no verifier (or vice-versa)? Bad request.
+        (Some(_), Some(_), None) | (None, None, Some(_)) => return error(InvalidRequest),
+        (Some(0 /* Plain */), Some(code_challenge), Some(code_verifier)) => {
+            if !CodeChallengeMethod::Plain.verify(code_challenge, code_verifier) {
+                return error(InvalidRequest);
+            }
+        }
+        (Some(1 /* S256 */), Some(code_challenge), Some(code_verifier)) => {
+            if !CodeChallengeMethod::S256.verify(code_challenge, code_verifier) {
+                return error(InvalidRequest);
+            }
+        }
+
+        // We have something else?
+        // That's a DB inconcistancy, we should bail out
+        _ => {
+            // TODO: are we sure we want to handle errors like that?
+            tracing::error!("Invalid state from the database");
+            return error(ServerError); // Somthing bad happened in the database
+        }
+    };
 
     // TODO: verify PKCE
     let ttl = Duration::minutes(5);

@@ -32,7 +32,7 @@ pub async fn add_code(
     executor: impl Executor<'_, Database = Postgres>,
     oauth2_session_id: i64,
     code: &str,
-    code_challenge: &Option<pkce::Request>,
+    code_challenge: &Option<pkce::AuthorizationRequest>,
 ) -> anyhow::Result<OAuth2Code> {
     let code_challenge_method = code_challenge
         .as_ref()
@@ -65,6 +65,8 @@ pub struct OAuth2CodeLookup {
     pub redirect_uri: String,
     pub scope: String,
     pub nonce: Option<String>,
+    pub code_challenge: Option<String>,
+    pub code_challenge_method: Option<i16>,
 }
 
 #[derive(Debug, Error)]
@@ -84,11 +86,14 @@ pub async fn lookup_code(
     executor: impl Executor<'_, Database = Postgres>,
     code: &str,
 ) -> Result<OAuth2CodeLookup, CodeLookupError> {
+    // TODO: this should return a better type
     let res = sqlx::query_as!(
         OAuth2CodeLookup,
         r#"
             SELECT
                 oc.id,
+                oc.code_challenge,
+                oc.code_challenge_method,
                 os.id        AS "oauth2_session_id!",
                 os.client_id AS "client_id!",
                 os.redirect_uri,

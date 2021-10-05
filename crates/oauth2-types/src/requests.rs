@@ -200,11 +200,16 @@ pub enum TokenType {
     Bearer,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct AuthorizationCodeGrant {
     pub code: String,
     #[serde(default)]
     pub redirect_uri: Option<Url>,
+
+    // TODO: move this somehow in the pkce module
+    #[serde(default)]
+    pub code_verifier: Option<String>,
 }
 
 #[serde_as]
@@ -406,6 +411,7 @@ mod tests {
         let req = AccessTokenRequest::AuthorizationCode(AuthorizationCodeGrant {
             code: "abcd".into(),
             redirect_uri: Some("https://example.com/redirect".parse().unwrap()),
+            code_verifier: None,
         });
 
         assert_serde_json(&req, expected);

@@ -237,6 +237,7 @@ pub mod rfc6749 {
 
     oauth2_error! {
         ServerError,
+        code: INTERNAL_SERVER_ERROR,
         "server_error" =>
         "The authorization server encountered an unexpected \
          condition that prevented it from fulfilling the request."

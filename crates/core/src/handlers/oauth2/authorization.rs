@@ -168,7 +168,7 @@ struct Params {
     auth: AuthorizationRequest,
 
     #[serde(flatten)]
-    pkce: Option<pkce::Request>,
+    pkce: Option<pkce::AuthorizationRequest>,
 }
 
 /// Given a list of response types and an optional user-defined response mode,
@@ -349,7 +349,7 @@ async fn get(
             .add_code(&mut txn, &code, &params.pkce)
             .await
             .wrap_error()?;
-    };
+    }
 
     // Do we already have a user session for this oauth2 session?
     let user_session = oauth2_session.fetch_session(&mut txn).await.wrap_error()?;
