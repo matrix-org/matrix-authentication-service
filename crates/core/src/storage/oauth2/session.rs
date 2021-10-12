@@ -17,6 +17,7 @@ use std::{collections::HashSet, convert::TryFrom, str::FromStr, string::ToString
 use anyhow::Context;
 use chrono::{DateTime, Duration, Utc};
 use itertools::Itertools;
+use mas_data_model::BrowserSession;
 use oauth2_types::{
     pkce,
     requests::{ResponseMode, ResponseType},
@@ -25,10 +26,8 @@ use serde::Serialize;
 use sqlx::{Executor, FromRow, Postgres};
 use url::Url;
 
-use super::{
-    super::{user::lookup_session, SessionInfo},
-    authorization_code::{add_code, OAuth2Code},
-};
+use super::authorization_code::{add_code, OAuth2Code};
+use crate::storage::{lookup_active_session, PostgresqlBackend};
 
 #[derive(FromRow, Serialize)]
 pub struct OAuth2Session {
@@ -60,10 +59,11 @@ impl OAuth2Session {
     pub async fn fetch_session(
         &self,
         executor: impl Executor<'_, Database = Postgres>,
-    ) -> anyhow::Result<Option<SessionInfo>> {
+    ) -> anyhow::Result<Option<BrowserSession<PostgresqlBackend>>> {
         match self.user_session_id {
             Some(id) => {
-                let info = lookup_session(executor, id).await?;
+                // TODO: and if the session is inactive?
+                let info = lookup_active_session(executor, id).await?;
                 Ok(Some(info))
             }
             None => Ok(None),
@@ -80,19 +80,19 @@ impl OAuth2Session {
     pub async fn match_or_set_session(
         &mut self,
         executor: impl Executor<'_, Database = Postgres>,
-        session: SessionInfo,
-    ) -> anyhow::Result<SessionInfo> {
+        session: BrowserSession<PostgresqlBackend>,
+    ) -> anyhow::Result<BrowserSession<PostgresqlBackend>> {
         match self.user_session_id {
-            Some(id) if id == session.key() => Ok(session),
+            Some(id) if id == session.data => Ok(session),
             Some(id) => Err(anyhow::anyhow!(
                 "session mismatch, expected {}, got {}",
                 id,
-                session.key()
+                session.data
             )),
             None => {
                 sqlx::query!(
                     "UPDATE oauth2_sessions SET user_session_id = $1 WHERE id = $2",
-                    session.key(),
+                    session.data,
                     self.id,
                 )
                 .execute(executor)

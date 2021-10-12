@@ -34,7 +34,7 @@ limitations under the License.
         <div class="navbar-end">
           {% if current_session %}
             <div class="navbar-item">
-              Howdy {{ current_session.username }}!
+              Howdy {{ current_session.user.username }}!
             </div>
             <div class="navbar-item">
               <form method="POST" action="/logout">

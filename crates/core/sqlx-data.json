@@ -93,8 +93,8 @@
       ]
     }
   },
-  "35bedaa6fdf7ac91d54b458b4637f2182c2f82be3e2f80cd2db934ee279a7f2a": {
-    "query": "\n            SELECT id, username\n            FROM users\n            WHERE id = $1\n        ",
+  "307fd9f71e7a94a0a0d9ce523ee9792e127485d0d12480c43f179dd9b75afbab": {
+    "query": "\n            INSERT INTO user_sessions (user_id)\n            VALUES ($1)\n            RETURNING id, created_at\n        ",
     "describe": {
       "columns": [
         {
@@ -104,8 +104,8 @@
         },
         {
           "ordinal": 1,
-          "name": "username",
-          "type_info": "Text"
+          "name": "created_at",
+          "type_info": "Timestamptz"
         }
       ],
       "parameters": {
@@ -157,56 +157,6 @@
       "parameters": {
         "Left": [
           "Text"
-        ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ]
-    }
-  },
-  "4f925a277d73df779360f81e0cf5d7983b50ebe744f461559dd561b7e36c20d4": {
-    "query": "\n            SELECT\n                s.id,\n                u.id as user_id,\n                u.username,\n                s.active,\n                s.created_at,\n                a.created_at as \"last_authd_at?\"\n            FROM user_sessions s\n            INNER JOIN users u \n                ON s.user_id = u.id\n            LEFT JOIN user_session_authentications a\n                ON a.session_id = s.id\n            WHERE s.id = $1 AND s.active\n            ORDER BY a.created_at DESC\n            LIMIT 1\n        ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
-          "name": "user_id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 2,
-          "name": "username",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 3,
-          "name": "active",
-          "type_info": "Bool"
-        },
-        {
-          "ordinal": 4,
-          "name": "created_at",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 5,
-          "name": "last_authd_at?",
-          "type_info": "Timestamptz"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8"
         ]
       },
       "nullable": [
@@ -273,56 +223,6 @@
       "nullable": []
     }
   },
-  "62986972431bfc4649e3d8c8c7648f9049c4197773e53496422ad8b8aa15b459": {
-    "query": "\n            SELECT\n                s.id,\n                u.id as user_id,\n                u.username,\n                s.active,\n                s.created_at,\n                a.created_at as \"last_authd_at?\"\n            FROM user_sessions s\n            INNER JOIN users u \n                ON s.user_id = u.id\n            LEFT JOIN user_session_authentications a\n                ON a.session_id = s.id\n            WHERE s.id = $1\n            ORDER BY a.created_at DESC\n            LIMIT 1\n        ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
-          "name": "user_id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 2,
-          "name": "username",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 3,
-          "name": "active",
-          "type_info": "Bool"
-        },
-        {
-          "ordinal": 4,
-          "name": "created_at",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 5,
-          "name": "last_authd_at?",
-          "type_info": "Timestamptz"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ]
-    }
-  },
   "73f2d928f7bf88af79a3685bd6346652b4e4454b0ce75e38343840c9765e3f27": {
     "query": "\n            INSERT INTO oauth2_refresh_tokens\n                (oauth2_session_id, oauth2_access_token_id, token)\n            VALUES\n                ($1, $2, $3)\n            RETURNING\n                id, oauth2_session_id, oauth2_access_token_id, token, next_token_id, \n                created_at, updated_at\n        ",
     "describe": {
@@ -381,6 +281,56 @@
       ]
     }
   },
+  "7fa7d001583e98f5e4626751fa2c8743e7b83a240d1a51de50a7dba95c4e8a6b": {
+    "query": "\n            SELECT\n                s.id,\n                u.id as user_id,\n                u.username,\n                s.created_at,\n                a.id as \"last_authentication_id?\",\n                a.created_at as \"last_authd_at?\"\n            FROM user_sessions s\n            INNER JOIN users u \n                ON s.user_id = u.id\n            LEFT JOIN user_session_authentications a\n                ON a.session_id = s.id\n            WHERE s.id = $1 AND s.active\n            ORDER BY a.created_at DESC\n            LIMIT 1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "user_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 2,
+          "name": "username",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 4,
+          "name": "last_authentication_id?",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 5,
+          "name": "last_authd_at?",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "88ac8783bd5881c42eafd9cf87a16fe6031f3153fd6a8618e689694584aeb2de": {
     "query": "\n            DELETE FROM oauth2_access_tokens\n            WHERE id = $1\n        ",
     "describe": {
@@ -391,26 +341,6 @@
         ]
       },
       "nullable": []
-    }
-  },
-  "9ba45ab114b656105cc46b0c10fb05769860fcdc05eaf54d6225640fb914dab9": {
-    "query": "\n            INSERT INTO user_session_authentications (session_id)\n            VALUES ($1)\n            RETURNING created_at\n        ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "created_at",
-          "type_info": "Timestamptz"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      },
-      "nullable": [
-        false
-      ]
     }
   },
   "a09dfe1019110f2ec6eba0d35bafa467ab4b7980dd8b556826f03863f8edb0ab": {
@@ -606,6 +536,32 @@
         true,
         false,
         false,
+        false,
+        false
+      ]
+    }
+  },
+  "d9d27eb4a0c11818a636d407438c4bc567a39396e7e236b3e776504417988eab": {
+    "query": "\n            INSERT INTO user_session_authentications (session_id)\n            VALUES ($1)\n            RETURNING id, created_at\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
         false,
         false
       ]

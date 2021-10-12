@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use mas_data_model::BrowserSession;
 use sqlx::PgPool;
 use url::Url;
 use warp::{reply::html, Filter, Rejection, Reply};
@@ -24,7 +25,7 @@ use crate::{
         session::optional_session,
         with_templates, CsrfToken,
     },
-    storage::SessionInfo,
+    storage::PostgresqlBackend,
     templates::{IndexContext, TemplateContext, Templates},
 };
 
@@ -51,10 +52,10 @@ async fn get(
     templates: Templates,
     cookie_saver: EncryptedCookieSaver,
     csrf_token: CsrfToken,
-    session: Option<SessionInfo>,
+    maybe_session: Option<BrowserSession<PostgresqlBackend>>,
 ) -> Result<impl Reply, Rejection> {
     let ctx = IndexContext::new(discovery_url)
-        .maybe_with_session(session)
+        .maybe_with_session(maybe_session)
         .with_csrf(&csrf_token);
 
     let content = templates.render_index(&ctx)?;

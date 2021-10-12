@@ -14,16 +14,17 @@
 
 //! Contexts used in templates
 
+use mas_data_model::BrowserSession;
 use oauth2_types::errors::OAuth2Error;
 use serde::{ser::SerializeStruct, Serialize};
 use url::Url;
 
-use crate::{errors::ErroredForm, filters::CsrfToken, storage::SessionInfo};
+use crate::{errors::ErroredForm, filters::CsrfToken, storage::PostgresqlBackend};
 
 /// Helper trait to construct context wrappers
 pub trait TemplateContext {
     /// Attach a user session to the template context
-    fn with_session(self, current_session: SessionInfo) -> WithSession<Self>
+    fn with_session(self, current_session: BrowserSession<PostgresqlBackend>) -> WithSession<Self>
     where
         Self: Sized,
     {
@@ -34,7 +35,10 @@ pub trait TemplateContext {
     }
 
     /// Attach an optional user session to the template context
-    fn maybe_with_session(self, current_session: Option<SessionInfo>) -> WithOptionalSession<Self>
+    fn maybe_with_session(
+        self,
+        current_session: Option<BrowserSession<PostgresqlBackend>>,
+    ) -> WithOptionalSession<Self>
     where
         Self: Sized,
     {
@@ -91,7 +95,7 @@ impl<T: TemplateContext> TemplateContext for WithCsrf<T> {
 /// Context with a user session in it
 #[derive(Serialize)]
 pub struct WithSession<T> {
-    current_session: SessionInfo,
+    current_session: BrowserSession<PostgresqlBackend>,
 
     #[serde(flatten)]
     inner: T,
@@ -102,7 +106,7 @@ impl<T: TemplateContext> TemplateContext for WithSession<T> {
     where
         Self: Sized,
     {
-        SessionInfo::samples()
+        BrowserSession::<PostgresqlBackend>::samples()
             .into_iter()
             .flat_map(|session| {
                 T::sample().into_iter().map(move |inner| WithSession {
@@ -117,7 +121,7 @@ impl<T: TemplateContext> TemplateContext for WithSession<T> {
 /// Context with an optional user session in it
 #[derive(Serialize)]
 pub struct WithOptionalSession<T> {
-    current_session: Option<SessionInfo>,
+    current_session: Option<BrowserSession<PostgresqlBackend>>,
 
     #[serde(flatten)]
     inner: T,
@@ -128,7 +132,7 @@ impl<T: TemplateContext> TemplateContext for WithOptionalSession<T> {
     where
         Self: Sized,
     {
-        SessionInfo::samples()
+        BrowserSession::<PostgresqlBackend>::samples()
             .into_iter()
             .map(Some) // Wrap all samples in an Option
             .chain(std::iter::once(None)) // Add the "None" option

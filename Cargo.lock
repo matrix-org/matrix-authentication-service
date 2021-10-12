@@ -1390,6 +1390,7 @@ dependencies = [
  "jwt-compact",
  "k256",
  "mas-config",
+ "mas-data-model",
  "mime",
  "oauth2-types",
  "password-hash",
@@ -1411,6 +1412,16 @@ dependencies = [
  "tracing",
  "url",
  "warp",
+]
+
+[[package]]
+name = "mas-data-model"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "oauth2-types",
+ "serde",
+ "thiserror",
 ]
 
 [[package]]

@@ -14,6 +14,7 @@
 
 //! Load user sessions from the database
 
+use mas_data_model::BrowserSession;
 use serde::{Deserialize, Serialize};
 use sqlx::{pool::PoolConnection, Executor, PgPool, Postgres};
 use thiserror::Error;
@@ -30,7 +31,7 @@ use super::{
 };
 use crate::{
     config::CookiesConfig,
-    storage::{lookup_active_session, user::ActiveSessionLookupError, SessionInfo},
+    storage::{lookup_active_session, user::ActiveSessionLookupError, PostgresqlBackend},
 };
 
 /// The session is missing or failed to load
@@ -58,19 +59,19 @@ pub struct SessionCookie {
 }
 
 impl SessionCookie {
-    /// Forge the cookie from a [`SessionInfo`]
+    /// Forge the cookie from a [`BrowserSession`]
     #[must_use]
-    pub fn from_session_info(info: &SessionInfo) -> Self {
+    pub fn from_session(session: &BrowserSession<PostgresqlBackend>) -> Self {
         Self {
-            current: info.key(),
+            current: session.data,
         }
     }
 
-    /// Load the [`SessionInfo`] from database
-    pub async fn load_session_info(
+    /// Load the [`BrowserSession`] from database
+    pub async fn load_session(
         &self,
         executor: impl Executor<'_, Database = Postgres>,
-    ) -> Result<SessionInfo, ActiveSessionLookupError> {
+    ) -> Result<BrowserSession<PostgresqlBackend>, ActiveSessionLookupError> {
         let res = lookup_active_session(executor, self.current).await?;
         Ok(res)
     }
@@ -87,8 +88,11 @@ impl EncryptableCookieValue for SessionCookie {
 pub fn optional_session(
     pool: &PgPool,
     cookies_config: &CookiesConfig,
-) -> impl Filter<Extract = (Option<SessionInfo>,), Error = Rejection> + Clone + Send + Sync + 'static
-{
+) -> impl Filter<Extract = (Option<BrowserSession<PostgresqlBackend>>,), Error = Rejection>
+       + Clone
+       + Send
+       + Sync
+       + 'static {
     session(pool, cookies_config)
         .map(Some)
         .recover(none_on_error::<_, SessionLoadError>)
@@ -106,7 +110,11 @@ pub fn optional_session(
 pub fn session(
     pool: &PgPool,
     cookies_config: &CookiesConfig,
-) -> impl Filter<Extract = (SessionInfo,), Error = Rejection> + Clone + Send + Sync + 'static {
+) -> impl Filter<Extract = (BrowserSession<PostgresqlBackend>,), Error = Rejection>
+       + Clone
+       + Send
+       + Sync
+       + 'static {
     encrypted(cookies_config)
         .and(connection(pool))
         .and_then(load_session)
@@ -117,8 +125,8 @@ pub fn session(
 async fn load_session(
     session: SessionCookie,
     mut conn: PoolConnection<Postgres>,
-) -> Result<SessionInfo, Rejection> {
-    let session_info = session.load_session_info(&mut conn).await?;
+) -> Result<BrowserSession<PostgresqlBackend>, Rejection> {
+    let session_info = session.load_session(&mut conn).await?;
     Ok(session_info)
 }
 

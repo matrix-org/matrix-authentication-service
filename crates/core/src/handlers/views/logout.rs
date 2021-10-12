@@ -12,14 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use sqlx::{pool::PoolConnection, PgPool, Postgres};
+use mas_data_model::BrowserSession;
+use sqlx::{PgPool, Postgres, Transaction};
 use warp::{hyper::Uri, Filter, Rejection, Reply};
 
 use crate::{
     config::CookiesConfig,
     errors::WrapError,
-    filters::{csrf::protected_form, database::connection, session::session},
-    storage::SessionInfo,
+    filters::{csrf::protected_form, database::transaction, session::session},
+    storage::{user::end_session, PostgresqlBackend},
 };
 
 pub(super) fn filter(
@@ -29,16 +30,18 @@ pub(super) fn filter(
     warp::path!("logout")
         .and(warp::post())
         .and(session(pool, cookies_config))
-        .and(connection(pool))
+        .and(transaction(pool))
         .and(protected_form(cookies_config))
         .and_then(post)
 }
 
 async fn post(
-    session: SessionInfo,
-    mut conn: PoolConnection<Postgres>,
+    session: BrowserSession<PostgresqlBackend>,
+    mut txn: Transaction<'_, Postgres>,
     _form: (),
 ) -> Result<impl Reply, Rejection> {
-    session.end(&mut conn).await.wrap_error()?;
+    end_session(&mut txn, &session).await.wrap_error()?;
+    txn.commit().await.wrap_error()?;
+
     Ok(warp::redirect(Uri::from_static("/login")))
 }

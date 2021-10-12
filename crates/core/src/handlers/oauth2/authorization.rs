@@ -24,6 +24,7 @@ use hyper::{
     StatusCode,
 };
 use itertools::Itertools;
+use mas_data_model::BrowserSession;
 use oauth2_types::{
     errors::{ErrorResponse, InvalidRequest, OAuth2Error},
     pkce,
@@ -59,7 +60,7 @@ use crate::{
             refresh_token::add_refresh_token,
             session::{get_session_by_id, start_session},
         },
-        SessionInfo,
+        PostgresqlBackend,
     },
     templates::{FormPostContext, Templates},
     tokens::{AccessToken, RefreshToken},
@@ -297,7 +298,7 @@ async fn actually_reply(
 async fn get(
     clients: Vec<OAuth2ClientConfig>,
     params: Params,
-    maybe_session: Option<SessionInfo>,
+    maybe_session: Option<BrowserSession<PostgresqlBackend>>,
     mut txn: Transaction<'_, Postgres>,
 ) -> Result<ReplyOrBackToClient, Rejection> {
     // First, find out what client it is
@@ -307,7 +308,7 @@ async fn get(
         .ok_or_else(|| anyhow::anyhow!("could not find client"))
         .wrap_error()?;
 
-    let maybe_session_id = maybe_session.as_ref().map(SessionInfo::key);
+    let maybe_session_id = maybe_session.as_ref().map(|s| s.data);
 
     let scope: String = {
         let it = params.auth.scope.iter().map(ToString::to_string);
@@ -394,7 +395,7 @@ impl StepRequest {
 
 async fn step(
     oauth2_session_id: i64,
-    user_session: SessionInfo,
+    user_session: BrowserSession<PostgresqlBackend>,
     mut txn: Transaction<'_, Postgres>,
 ) -> Result<ReplyOrBackToClient, Rejection> {
     let mut oauth2_session = get_session_by_id(&mut txn, oauth2_session_id)
@@ -411,8 +412,9 @@ async fn step(
     let redirect_uri = oauth2_session.redirect_uri().wrap_error()?;
 
     // Check if the active session is valid
-    let reply = if user_session.active
-        && user_session.last_authd_at >= oauth2_session.max_auth_time()
+    // TODO: this is ugly & should check if the session is active
+    let reply = if user_session.last_authentication.map(|x| x.created_at)
+        >= oauth2_session.max_auth_time()
     {
         // Yep! Let's complete the auth now
         let mut params = AuthorizationResponse::default();

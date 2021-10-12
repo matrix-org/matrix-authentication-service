@@ -66,6 +66,7 @@ cookie = "0.15.1"
 
 oauth2-types = { path = "../oauth2-types", features = ["sqlx_type"] }
 mas-config = { path = "../config" }
+mas-data-model = { path = "../data-model" }
 
 [dependencies.jwt-compact]
 # Waiting on the next release because of the bump of the `rsa` dependency

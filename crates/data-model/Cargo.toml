@@ -1,0 +1,13 @@
+[package]
+name = "mas-data-model"
+version = "0.1.0"
+authors = ["Quentin Gliech <quenting@element.io>"]
+edition = "2018"
+license = "Apache-2.0"
+
+[dependencies]
+chrono = "0.4.19"
+thiserror = "1.0.29"
+serde = "1.0.130"
+
+oauth2-types = { path = "../oauth2-types" }

@@ -15,6 +15,7 @@
 use std::convert::TryFrom;
 
 use hyper::http::uri::{Parts, PathAndQuery, Uri};
+use mas_data_model::BrowserSession;
 use serde::{Deserialize, Serialize};
 use sqlx::{pool::PoolConnection, PgPool, Postgres};
 use warp::{reply::html, Filter, Rejection, Reply};
@@ -29,7 +30,7 @@ use crate::{
         session::{optional_session, SessionCookie},
         with_templates, CsrfToken,
     },
-    storage::{login, SessionInfo},
+    storage::{login, PostgresqlBackend},
     templates::{LoginContext, LoginFormField, TemplateContext, Templates},
 };
 
@@ -108,7 +109,7 @@ async fn get(
     cookie_saver: EncryptedCookieSaver,
     csrf_token: CsrfToken,
     query: LoginRequest,
-    maybe_session: Option<SessionInfo>,
+    maybe_session: Option<BrowserSession<PostgresqlBackend>>,
 ) -> Result<Box<dyn Reply>, Rejection> {
     if maybe_session.is_some() {
         Ok(Box::new(query.redirect()?))
@@ -133,7 +134,7 @@ async fn post(
     // TODO: recover
     match login(&mut conn, &form.username, form.password).await {
         Ok(session_info) => {
-            let session_cookie = SessionCookie::from_session_info(&session_info);
+            let session_cookie = SessionCookie::from_session(&session_info);
             let reply = query.redirect()?;
             let reply = cookie_saver.save_encrypted(&session_cookie, reply)?;
             Ok(Box::new(reply))
