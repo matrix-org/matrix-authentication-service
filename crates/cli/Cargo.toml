@@ -7,10 +7,11 @@ license = "Apache-2.0"
 
 [dependencies]
 tokio = { version = "1.12.0", features = ["full"] }
+futures = "0.3.17"
 anyhow = "1.0.44"
 clap = "3.0.0-beta.4"
-tracing = "0.1.28"
-tracing-subscriber = "0.2.24"
+tracing = "0.1.29"
+tracing-subscriber = "0.2.25"
 dotenv = "0.15.0"
 schemars = { version = "0.8.6", features = ["url", "chrono"] }
 tower = { version = "0.4.8", features = ["full"] }
@@ -19,6 +20,10 @@ hyper = { version = "0.14.13", features = ["full"] }
 serde_yaml = "0.8.21"
 warp = "0.3.1"
 argon2 = { version = "0.3.1", features = ["password-hash"] }
+opentelemetry = { version = "0.16.0", features = ["trace", "metrics", "rt-tokio"] }
+opentelemetry-otlp = { version = "0.9.0", features = ["trace", "metrics"] }
+opentelemetry-semantic-conventions = "0.8.0"
+tracing-opentelemetry = "0.15.0"
 
 mas-config = { path = "../config" }
 mas-core = { path = "../core" }

@@ -176,7 +176,7 @@ pub struct DatabaseConfig {
 }
 
 impl DatabaseConfig {
-    #[tracing::instrument(err)]
+    #[tracing::instrument(err, skip_all)]
     pub async fn connect(&self) -> anyhow::Result<PgPool> {
         let mut options: PgConnectOptions = (&self.options)
             .try_into()

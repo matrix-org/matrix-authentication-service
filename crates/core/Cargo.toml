@@ -13,10 +13,10 @@ tokio-stream = "0.1.7"
 futures-util = "0.3.17"
 
 # Logging and tracing
-tracing = "0.1.28"
+tracing = "0.1.29"
 
 # Error management
-thiserror = "1.0.29"
+thiserror = "1.0.30"
 anyhow = "1.0.44"
 
 # Web server

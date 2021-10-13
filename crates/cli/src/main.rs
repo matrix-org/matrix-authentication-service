@@ -23,7 +23,6 @@ use std::path::PathBuf;
 use anyhow::Context;
 use clap::Clap;
 use mas_config::ConfigurationSection;
-use tracing::trace;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Registry};
 
 use self::{
@@ -35,6 +34,7 @@ mod config;
 mod database;
 mod manage;
 mod server;
+mod telemetry;
 mod templates;
 
 #[derive(Clap, Debug)]
@@ -91,27 +91,50 @@ impl RootCommand {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // We're splitting the "fallible" part of main in another function to have a
+    // chance to shutdown the telemetry exporters regardless of if there was an
+    // error or not
+    let res = try_main().await;
+    telemetry::shutdown();
+    res
+}
+
+async fn try_main() -> anyhow::Result<()> {
     // Load environment variables from .env files
-    if let Err(e) = dotenv::dotenv() {
+    // We keep the path to log it afterwards
+    let dotenv_path: Option<PathBuf> = dotenv::dotenv()
+        .map(Some)
         // Display the error if it is something other than the .env file not existing
-        if !e.not_found() {
-            return Err(e).context("could not load .env file");
-        }
-    }
+        .or_else(|e| if e.not_found() { Ok(None) } else { Err(e) })?;
 
     // Setup logging & tracing
+    let (tracer, _meter) = telemetry::setup()?;
+    let telemetry_layer = tracing_opentelemetry::layer().with_tracer(tracer);
+
+    // This writes logs to stderr
     let fmt_layer = tracing_subscriber::fmt::layer().with_writer(std::io::stderr);
     let filter_layer = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?;
 
-    let subscriber = Registry::default().with(filter_layer).with(fmt_layer);
+    let subscriber = Registry::default()
+        .with(telemetry_layer)
+        .with(filter_layer)
+        .with(fmt_layer);
     subscriber
         .try_init()
         .context("could not initialize logging")?;
+
+    // Now that logging is set up, we can log stuff, like if the .env file was
+    // loaded or not
+    if let Some(path) = dotenv_path {
+        tracing::info!(?path, "Loaded environment variables from file");
+    }
 
     // Parse the CLI arguments
     let opts = RootCommand::parse();
 
     // And run the command
-    trace!(?opts, "Running command");
-    opts.run().await
+    tracing::trace!(?opts, "Running command");
+    opts.run().await?;
+
+    Ok(())
 }

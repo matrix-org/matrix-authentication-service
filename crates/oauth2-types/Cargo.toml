@@ -18,7 +18,7 @@ sqlx = { version = "0.5.9", default-features = false, optional = true }
 chrono = "0.4.19"
 sha2 = "0.9.8"
 data-encoding = "2.3.2"
-thiserror = "1.0.29"
+thiserror = "1.0.30"
 itertools = "0.10.1"
 
 [features]
