@@ -15,29 +15,33 @@
 use std::time::Duration;
 
 use futures::stream::{Stream, StreamExt};
+use mas_config::{MetricsConfig, TelemetryConfig, TracingConfig};
 use opentelemetry::{
     global,
-    sdk::{
-        self,
-        metrics::{self, PushController},
-        trace::{self, Tracer},
-        Resource,
-    },
+    sdk::{self, trace::Tracer, Resource},
 };
 use opentelemetry_semantic_conventions as semcov;
 
-pub fn setup() -> anyhow::Result<(Tracer, PushController)> {
+pub fn setup(config: &TelemetryConfig) -> anyhow::Result<Option<Tracer>> {
     global::set_error_handler(|e| tracing::error!("{}", e))?;
 
-    Ok((tracer()?, meter()?))
+    let tracer = tracer(&config.tracing)?;
+    meter(&config.metrics)?;
+    Ok(tracer)
 }
 
 pub fn shutdown() {
     global::shutdown_tracer_provider();
 }
 
-fn tracer() -> anyhow::Result<Tracer> {
-    let exporter = opentelemetry_otlp::new_exporter().tonic();
+#[cfg(feature = "otlp")]
+fn otlp_tracer(endpoint: &Option<url::Url>) -> anyhow::Result<Tracer> {
+    use opentelemetry_otlp::WithExportConfig;
+
+    let mut exporter = opentelemetry_otlp::new_exporter().tonic();
+    if let Some(endpoint) = endpoint {
+        exporter = exporter.with_endpoint(endpoint.to_string());
+    }
 
     let tracer = opentelemetry_otlp::new_pipeline()
         .tracing()
@@ -48,25 +52,74 @@ fn tracer() -> anyhow::Result<Tracer> {
     Ok(tracer)
 }
 
+#[cfg(not(feature = "otlp"))]
+fn otlp_tracer(_endpoint: &Option<url::Url>) -> anyhow::Result<Tracer> {
+    anyhow::bail!("The service was compiled without OTLP exporter support, but config exports traces via OTLP.")
+}
+
+fn stdout_tracer() -> Tracer {
+    sdk::export::trace::stdout::new_pipeline()
+        .with_pretty_print(true)
+        .with_trace_config(trace_config())
+        .install_simple()
+}
+
+fn tracer(config: &TracingConfig) -> anyhow::Result<Option<Tracer>> {
+    let tracer = match config {
+        TracingConfig::None => return Ok(None),
+        TracingConfig::Stdout => stdout_tracer(),
+        TracingConfig::Otlp { endpoint } => otlp_tracer(endpoint)?,
+    };
+
+    Ok(Some(tracer))
+}
+
 fn interval(duration: Duration) -> impl Stream<Item = tokio::time::Instant> {
     // Skip first immediate tick from tokio
     opentelemetry::util::tokio_interval_stream(duration).skip(1)
 }
 
-fn meter() -> anyhow::Result<PushController> {
-    let exporter = opentelemetry_otlp::new_exporter().tonic();
+#[cfg(feature = "otlp")]
+fn otlp_meter(endpoint: &Option<url::Url>) -> anyhow::Result<()> {
+    use opentelemetry_otlp::WithExportConfig;
 
-    let meter = opentelemetry_otlp::new_pipeline()
+    let mut exporter = opentelemetry_otlp::new_exporter().tonic();
+    if let Some(endpoint) = endpoint {
+        exporter = exporter.with_endpoint(endpoint.to_string());
+    }
+
+    opentelemetry_otlp::new_pipeline()
         .metrics(tokio::spawn, interval)
         .with_exporter(exporter)
-        .with_aggregator_selector(metrics::selectors::simple::Selector::Exact)
+        .with_aggregator_selector(sdk::metrics::selectors::simple::Selector::Exact)
         .build()?;
 
-    Ok(meter)
+    Ok(())
 }
 
-fn trace_config() -> trace::Config {
-    trace::config().with_resource(resource())
+#[cfg(not(feature = "otlp"))]
+fn otlp_meter(_endpoint: &Option<url::Url>) -> anyhow::Result<()> {
+    anyhow::bail!("The service was compiled without OTLP exporter support, but config exports metrics via OTLP.")
+}
+
+fn stdout_meter() {
+    sdk::export::metrics::stdout(tokio::spawn, interval)
+        .with_pretty_print(true)
+        .init();
+}
+
+fn meter(config: &MetricsConfig) -> anyhow::Result<()> {
+    match config {
+        MetricsConfig::None => {}
+        MetricsConfig::Stdout => stdout_meter(),
+        MetricsConfig::Otlp { endpoint } => otlp_meter(endpoint)?,
+    };
+
+    Ok(())
+}
+
+fn trace_config() -> sdk::trace::Config {
+    sdk::trace::config().with_resource(resource())
 }
 
 fn resource() -> Resource {

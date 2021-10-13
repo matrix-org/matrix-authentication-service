@@ -22,8 +22,11 @@ use std::path::PathBuf;
 
 use anyhow::Context;
 use clap::Clap;
-use mas_config::ConfigurationSection;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Registry};
+use mas_config::{ConfigurationSection, TelemetryConfig};
+use tracing_subscriber::{
+    filter::LevelFilter, layer::SubscriberExt, reload, util::SubscriberInitExt, EnvFilter, Layer,
+    Registry,
+};
 
 use self::{
     config::ConfigCommand, database::DatabaseCommand, manage::ManageCommand, server::ServerCommand,
@@ -107,13 +110,16 @@ async fn try_main() -> anyhow::Result<()> {
         // Display the error if it is something other than the .env file not existing
         .or_else(|e| if e.not_found() { Ok(None) } else { Err(e) })?;
 
-    // Setup logging & tracing
-    let (tracer, _meter) = telemetry::setup()?;
-    let telemetry_layer = tracing_opentelemetry::layer().with_tracer(tracer);
-
+    // Setup logging
     // This writes logs to stderr
     let fmt_layer = tracing_subscriber::fmt::layer().with_writer(std::io::stderr);
     let filter_layer = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?;
+
+    // Don't fill the telemetry layer for now, we want to configure it based on the
+    // app config, so we need to delay that a bit
+    let (telemetry_layer, handle) = reload::Layer::new(None);
+    // We only want "INFO" level spans to go through OpenTelemetry
+    let telemetry_layer = telemetry_layer.with_filter(LevelFilter::INFO);
 
     let subscriber = Registry::default()
         .with(telemetry_layer)
@@ -131,6 +137,22 @@ async fn try_main() -> anyhow::Result<()> {
 
     // Parse the CLI arguments
     let opts = RootCommand::parse();
+
+    // Telemetry config could fail to load, but that's probably OK, since the whole
+    // config will be loaded afterwards, and crash if there is a problem.
+    // Falling back to default.
+    let telemetry_config: TelemetryConfig = opts.load_config().unwrap_or_default();
+
+    // Setup OpenTelemtry tracing and metrics
+    let tracer = telemetry::setup(&telemetry_config)?;
+    if let Some(tracer) = tracer {
+        // Now we can swap out the actual opentelemetry tracing layer
+        handle.reload(
+            tracing_opentelemetry::layer()
+                .with_tracer(tracer)
+                .with_tracked_inactivity(false),
+        )?;
+    }
 
     // And run the command
     tracing::trace!(?opts, "Running command");

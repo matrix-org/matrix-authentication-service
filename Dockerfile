@@ -1,8 +1,8 @@
 ARG RUSTC_VERSION=1.55.0
 
 # cargo-chef helps with caching dependencies between builds
-FROM lukemathwalker/cargo-chef:latest-rust-${RUSTC_VERSION}-alpine AS chef
-WORKDIR app
+FROM lukemathwalker/cargo-chef:latest-rust-${RUSTC_VERSION} AS chef
+WORKDIR /app
 
 FROM chef AS planner
 COPY . .
