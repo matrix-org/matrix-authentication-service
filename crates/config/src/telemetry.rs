@@ -19,10 +19,21 @@ use serde_with::skip_serializing_none;
 
 use super::ConfigurationSection;
 
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+#[non_exhaustive]
+pub enum Propagator {
+    TraceContext,
+    Baggage,
+    Jaeger,
+    B3,
+    B3Multi,
+}
+
 #[skip_serializing_none]
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "exporter", rename_all = "lowercase")]
-pub enum TracingConfig {
+pub enum TracingExporterConfig {
     None,
     Stdout,
     Otlp {
@@ -31,34 +42,49 @@ pub enum TracingConfig {
     },
 }
 
-impl Default for TracingConfig {
-    fn default() -> Self {
-        Self::None
-    }
-}
-
-#[skip_serializing_none]
-#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(tag = "exporter", rename_all = "lowercase")]
-pub enum MetricsConfig {
-    None,
-    Stdout,
-    Otlp {
-        #[serde(default)]
-        endpoint: Option<url::Url>,
-    },
-}
-
-impl Default for MetricsConfig {
+impl Default for TracingExporterConfig {
     fn default() -> Self {
         Self::None
     }
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, JsonSchema)]
+pub struct TracingConfig {
+    #[serde(default, flatten)]
+    pub exporter: TracingExporterConfig,
+
+    pub propagators: Vec<Propagator>,
+}
+
+#[skip_serializing_none]
+#[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
+#[serde(tag = "exporter", rename_all = "lowercase")]
+pub enum MetricsExporterConfig {
+    None,
+    Stdout,
+    Otlp {
+        #[serde(default)]
+        endpoint: Option<url::Url>,
+    },
+}
+
+impl Default for MetricsExporterConfig {
+    fn default() -> Self {
+        Self::None
+    }
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize, JsonSchema)]
+pub struct MetricsConfig {
+    #[serde(default, flatten)]
+    pub exporter: MetricsExporterConfig,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize, JsonSchema)]
 pub struct TelemetryConfig {
     #[serde(default)]
     pub tracing: TracingConfig,
+
     #[serde(default)]
     pub metrics: MetricsConfig,
 }

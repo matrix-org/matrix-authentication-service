@@ -14,8 +14,9 @@
 
 use std::time::Duration;
 
+use anyhow::bail;
 use futures::stream::{Stream, StreamExt};
-use mas_config::{MetricsConfig, TelemetryConfig, TracingConfig};
+use mas_config::{MetricsExporterConfig, Propagator, TelemetryConfig, TracingExporterConfig};
 use opentelemetry::{
     global,
     propagation::TextMapPropagator,
@@ -30,15 +31,15 @@ use opentelemetry_semantic_conventions as semcov;
 
 pub fn setup(config: &TelemetryConfig) -> anyhow::Result<Option<Tracer>> {
     global::set_error_handler(|e| tracing::error!("{}", e))?;
-    let propagator = propagator();
+    let propagator = propagator(&config.tracing.propagators)?;
 
     // The CORS filter needs to know what headers it should whitelist for
     // CORS-protected requests.
     mas_core::filters::cors::set_propagator(&propagator);
     global::set_text_map_propagator(propagator);
 
-    let tracer = tracer(&config.tracing)?;
-    meter(&config.metrics)?;
+    let tracer = tracer(&config.tracing.exporter)?;
+    meter(&config.metrics.exporter)?;
     Ok(tracer)
 }
 
@@ -46,15 +47,24 @@ pub fn shutdown() {
     global::shutdown_tracer_provider();
 }
 
-fn propagator() -> impl TextMapPropagator {
-    // TODO: make this configurable
-    let baggage_propagator = BaggagePropagator::new();
-    let trace_context_propagator = TraceContextPropagator::new();
+fn match_propagator(
+    propagator: Propagator,
+) -> anyhow::Result<Box<dyn TextMapPropagator + Send + Sync>> {
+    match propagator {
+        Propagator::TraceContext => Ok(Box::new(TraceContextPropagator::new())),
+        Propagator::Baggage => Ok(Box::new(BaggagePropagator::new())),
+        p => bail!(
+            "The service was compiled without support for the {:?} propagator, but config uses it.",
+            p
+        ),
+    }
+}
 
-    TextMapCompositePropagator::new(vec![
-        Box::new(baggage_propagator),
-        Box::new(trace_context_propagator),
-    ])
+fn propagator(propagators: &[Propagator]) -> anyhow::Result<impl TextMapPropagator> {
+    let propagators: Result<Vec<_>, _> =
+        propagators.iter().cloned().map(match_propagator).collect();
+
+    Ok(TextMapCompositePropagator::new(propagators?))
 }
 
 #[cfg(feature = "otlp")]
@@ -87,11 +97,11 @@ fn stdout_tracer() -> Tracer {
         .install_simple()
 }
 
-fn tracer(config: &TracingConfig) -> anyhow::Result<Option<Tracer>> {
+fn tracer(config: &TracingExporterConfig) -> anyhow::Result<Option<Tracer>> {
     let tracer = match config {
-        TracingConfig::None => return Ok(None),
-        TracingConfig::Stdout => stdout_tracer(),
-        TracingConfig::Otlp { endpoint } => otlp_tracer(endpoint)?,
+        TracingExporterConfig::None => return Ok(None),
+        TracingExporterConfig::Stdout => stdout_tracer(),
+        TracingExporterConfig::Otlp { endpoint } => otlp_tracer(endpoint)?,
     };
 
     Ok(Some(tracer))
@@ -131,11 +141,11 @@ fn stdout_meter() {
         .init();
 }
 
-fn meter(config: &MetricsConfig) -> anyhow::Result<()> {
+fn meter(config: &MetricsExporterConfig) -> anyhow::Result<()> {
     match config {
-        MetricsConfig::None => {}
-        MetricsConfig::Stdout => stdout_meter(),
-        MetricsConfig::Otlp { endpoint } => otlp_meter(endpoint)?,
+        MetricsExporterConfig::None => {}
+        MetricsExporterConfig::Stdout => stdout_meter(),
+        MetricsExporterConfig::Otlp { endpoint } => otlp_meter(endpoint)?,
     };
 
     Ok(())

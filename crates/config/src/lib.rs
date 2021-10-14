@@ -31,7 +31,10 @@ pub use self::{
     database::DatabaseConfig,
     http::HttpConfig,
     oauth2::{Algorithm, KeySet, OAuth2ClientConfig, OAuth2Config},
-    telemetry::{MetricsConfig, TelemetryConfig, TracingConfig},
+    telemetry::{
+        MetricsConfig, MetricsExporterConfig, Propagator, TelemetryConfig, TracingConfig,
+        TracingExporterConfig,
+    },
     templates::TemplatesConfig,
     util::ConfigurationSection,
 };
