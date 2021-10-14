@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::time::Duration;
+use std::{net::SocketAddr, time::Duration};
 
 use anyhow::bail;
 use futures::stream::{Stream, StreamExt};
@@ -27,7 +27,12 @@ use opentelemetry::{
         Resource,
     },
 };
+#[cfg(feature = "jaeger")]
+use opentelemetry_jaeger::Propagator as JaegerPropagator;
 use opentelemetry_semantic_conventions as semcov;
+#[cfg(feature = "zipkin")]
+use opentelemetry_zipkin::{B3Encoding, Propagator as ZipkinPropagator};
+use url::Url;
 
 pub fn setup(config: &TelemetryConfig) -> anyhow::Result<Option<Tracer>> {
     global::set_error_handler(|e| tracing::error!("{}", e))?;
@@ -53,6 +58,20 @@ fn match_propagator(
     match propagator {
         Propagator::TraceContext => Ok(Box::new(TraceContextPropagator::new())),
         Propagator::Baggage => Ok(Box::new(BaggagePropagator::new())),
+
+        #[cfg(feature = "jaeger")]
+        Propagator::Jaeger => Ok(Box::new(JaegerPropagator::new())),
+
+        #[cfg(feature = "zipkin")]
+        Propagator::B3 => Ok(Box::new(ZipkinPropagator::with_encoding(
+            B3Encoding::SingleHeader,
+        ))),
+
+        #[cfg(feature = "zipkin")]
+        Propagator::B3Multi => Ok(Box::new(ZipkinPropagator::with_encoding(
+            B3Encoding::MultipleHeader,
+        ))),
+
         p => bail!(
             "The service was compiled without support for the {:?} propagator, but config uses it.",
             p
@@ -67,8 +86,15 @@ fn propagator(propagators: &[Propagator]) -> anyhow::Result<impl TextMapPropagat
     Ok(TextMapCompositePropagator::new(propagators?))
 }
 
+fn stdout_tracer() -> Tracer {
+    sdk::export::trace::stdout::new_pipeline()
+        .with_pretty_print(true)
+        .with_trace_config(trace_config())
+        .install_simple()
+}
+
 #[cfg(feature = "otlp")]
-fn otlp_tracer(endpoint: &Option<url::Url>) -> anyhow::Result<Tracer> {
+fn otlp_tracer(endpoint: &Option<Url>) -> anyhow::Result<Tracer> {
     use opentelemetry_otlp::WithExportConfig;
 
     let mut exporter = opentelemetry_otlp::new_exporter().tonic();
@@ -86,15 +112,52 @@ fn otlp_tracer(endpoint: &Option<url::Url>) -> anyhow::Result<Tracer> {
 }
 
 #[cfg(not(feature = "otlp"))]
-fn otlp_tracer(_endpoint: &Option<url::Url>) -> anyhow::Result<Tracer> {
+fn otlp_tracer(_endpoint: &Option<Url>) -> anyhow::Result<Tracer> {
     anyhow::bail!("The service was compiled without OTLP exporter support, but config exports traces via OTLP.")
 }
 
-fn stdout_tracer() -> Tracer {
-    sdk::export::trace::stdout::new_pipeline()
-        .with_pretty_print(true)
-        .with_trace_config(trace_config())
-        .install_simple()
+#[cfg(not(feature = "jaeger"))]
+fn jaeger_tracer(_agent_endpoint: &Option<SocketAddr>) -> anyhow::Result<Tracer> {
+    anyhow::bail!("The service was compiled without Jaeger exporter support, but config exports traces via Jaeger.")
+}
+
+#[cfg(feature = "jaeger")]
+fn jaeger_tracer(agent_endpoint: &Option<SocketAddr>) -> anyhow::Result<Tracer> {
+    // TODO: also support exporting to a Jaeger collector & skip the agent
+    let mut pipeline = opentelemetry_jaeger::new_pipeline()
+        .with_service_name(env!("CARGO_PKG_NAME"))
+        .with_trace_config(trace_config());
+
+    if let Some(agent_endpoint) = agent_endpoint {
+        pipeline = pipeline.with_agent_endpoint(agent_endpoint);
+    }
+
+    let tracer = pipeline.install_batch(opentelemetry::runtime::Tokio)?;
+
+    Ok(tracer)
+}
+
+#[cfg(not(feature = "zipkin"))]
+fn zipkin_tracer(_collector_endpoint: &Option<Url>) -> anyhow::Result<Tracer> {
+    anyhow::bail!("The service was compiled without Jaeger exporter support, but config exports traces via Jaeger.")
+}
+
+#[cfg(feature = "zipkin")]
+fn zipkin_tracer(collector_endpoint: &Option<Url>) -> anyhow::Result<Tracer> {
+    let http_client = reqwest::Client::new();
+
+    let mut pipeline = opentelemetry_zipkin::new_pipeline()
+        .with_http_client(http_client)
+        .with_service_name(env!("CARGO_PKG_NAME"))
+        .with_trace_config(trace_config());
+
+    if let Some(collector_endpoint) = collector_endpoint {
+        pipeline = pipeline.with_collector_endpoint(collector_endpoint.to_string());
+    }
+
+    let tracer = pipeline.install_batch(opentelemetry::runtime::Tokio)?;
+
+    Ok(tracer)
 }
 
 fn tracer(config: &TracingExporterConfig) -> anyhow::Result<Option<Tracer>> {
@@ -102,6 +165,8 @@ fn tracer(config: &TracingExporterConfig) -> anyhow::Result<Option<Tracer>> {
         TracingExporterConfig::None => return Ok(None),
         TracingExporterConfig::Stdout => stdout_tracer(),
         TracingExporterConfig::Otlp { endpoint } => otlp_tracer(endpoint)?,
+        TracingExporterConfig::Jaeger { agent_endpoint } => jaeger_tracer(agent_endpoint)?,
+        TracingExporterConfig::Zipkin { collector_endpoint } => zipkin_tracer(collector_endpoint)?,
     };
 
     Ok(Some(tracer))

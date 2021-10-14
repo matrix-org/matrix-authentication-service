@@ -12,10 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::net::SocketAddr;
+
 use async_trait::async_trait;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
+use url::Url;
 
 use super::ConfigurationSection;
 
@@ -38,7 +41,15 @@ pub enum TracingExporterConfig {
     Stdout,
     Otlp {
         #[serde(default)]
-        endpoint: Option<url::Url>,
+        endpoint: Option<Url>,
+    },
+    Jaeger {
+        #[serde(default)]
+        agent_endpoint: Option<SocketAddr>,
+    },
+    Zipkin {
+        #[serde(default)]
+        collector_endpoint: Option<Url>,
     },
 }
 
