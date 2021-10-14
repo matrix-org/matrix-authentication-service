@@ -18,12 +18,19 @@ use futures::stream::{Stream, StreamExt};
 use mas_config::{MetricsConfig, TelemetryConfig, TracingConfig};
 use opentelemetry::{
     global,
-    sdk::{self, trace::Tracer, Resource},
+    propagation::TextMapPropagator,
+    sdk::{
+        self,
+        propagation::{BaggagePropagator, TextMapCompositePropagator, TraceContextPropagator},
+        trace::Tracer,
+        Resource,
+    },
 };
 use opentelemetry_semantic_conventions as semcov;
 
 pub fn setup(config: &TelemetryConfig) -> anyhow::Result<Option<Tracer>> {
     global::set_error_handler(|e| tracing::error!("{}", e))?;
+    global::set_text_map_propagator(propagator());
 
     let tracer = tracer(&config.tracing)?;
     meter(&config.metrics)?;
@@ -32,6 +39,17 @@ pub fn setup(config: &TelemetryConfig) -> anyhow::Result<Option<Tracer>> {
 
 pub fn shutdown() {
     global::shutdown_tracer_provider();
+}
+
+fn propagator() -> impl TextMapPropagator {
+    // TODO: make this configurable
+    let baggage_propagator = BaggagePropagator::new();
+    let trace_context_propagator = TraceContextPropagator::new();
+
+    TextMapCompositePropagator::new(vec![
+        Box::new(baggage_propagator),
+        Box::new(trace_context_propagator),
+    ])
 }
 
 #[cfg(feature = "otlp")]
