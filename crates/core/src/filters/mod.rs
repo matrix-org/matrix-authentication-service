@@ -17,11 +17,11 @@
 #![allow(clippy::unused_async)] // Some warp filters need that
 #![deny(missing_docs)]
 
-pub mod csrf;
-// mod errors;
 pub mod authenticate;
 pub mod client;
 pub mod cookies;
+pub mod cors;
+pub mod csrf;
 pub mod database;
 pub mod headers;
 pub mod session;

@@ -30,7 +30,12 @@ use opentelemetry_semantic_conventions as semcov;
 
 pub fn setup(config: &TelemetryConfig) -> anyhow::Result<Option<Tracer>> {
     global::set_error_handler(|e| tracing::error!("{}", e))?;
-    global::set_text_map_propagator(propagator());
+    let propagator = propagator();
+
+    // The CORS filter needs to know what headers it should whitelist for
+    // CORS-protected requests.
+    mas_core::filters::cors::set_propagator(&propagator);
+    global::set_text_map_propagator(propagator);
 
     let tracer = tracer(&config.tracing)?;
     meter(&config.metrics)?;

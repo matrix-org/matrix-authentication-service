@@ -12,13 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use hyper::Method;
 use serde::Serialize;
 use sqlx::PgPool;
 use warp::{Filter, Rejection, Reply};
 
 use crate::{
     config::OAuth2Config,
-    filters::authenticate::{authentication, recover_unauthorized},
+    filters::{
+        authenticate::{authentication, recover_unauthorized},
+        cors::cors,
+    },
     storage::oauth2::access_token::OAuth2AccessTokenLookup,
 };
 
@@ -31,11 +35,15 @@ pub(super) fn filter(
     pool: &PgPool,
     _config: &OAuth2Config,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
-    warp::path!("oauth2" / "userinfo")
-        .and(warp::get().or(warp::post()).unify())
-        .and(authentication(pool))
-        .and_then(userinfo)
-        .recover(recover_unauthorized)
+    warp::path!("oauth2" / "userinfo").and(
+        warp::get()
+            .or(warp::post())
+            .unify()
+            .and(authentication(pool))
+            .and_then(userinfo)
+            .recover(recover_unauthorized)
+            .with(cors().allow_methods([Method::GET, Method::POST])),
+    )
 }
 
 async fn userinfo(token: OAuth2AccessTokenLookup) -> Result<impl Reply, Rejection> {

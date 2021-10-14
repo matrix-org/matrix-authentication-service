@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use chrono::Utc;
+use hyper::Method;
 use oauth2_types::requests::{IntrospectionRequest, IntrospectionResponse, TokenTypeHint};
 use sqlx::{pool::PoolConnection, PgPool, Postgres};
 use tracing::{info, warn};
@@ -23,6 +24,7 @@ use crate::{
     errors::WrapError,
     filters::{
         client::{client_authentication, ClientAuthentication},
+        cors::cors,
         database::connection,
     },
     storage::oauth2::{access_token::lookup_access_token, refresh_token::lookup_refresh_token},
@@ -33,12 +35,14 @@ pub fn filter(
     pool: &PgPool,
     oauth2_config: &OAuth2Config,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
-    warp::path!("oauth2" / "introspect")
-        .and(warp::post())
-        .and(connection(pool))
-        .and(client_authentication(oauth2_config))
-        .and_then(introspect)
-        .recover(recover)
+    warp::path!("oauth2" / "introspect").and(
+        warp::post()
+            .and(connection(pool))
+            .and(client_authentication(oauth2_config))
+            .and_then(introspect)
+            .recover(recover)
+            .with(cors().allow_method(Method::POST)),
+    )
 }
 
 const INACTIVE: IntrospectionResponse = IntrospectionResponse {

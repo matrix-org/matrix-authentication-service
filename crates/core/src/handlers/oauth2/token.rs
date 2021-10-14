@@ -16,7 +16,7 @@ use anyhow::Context;
 use chrono::Duration;
 use data_encoding::BASE64URL_NOPAD;
 use headers::{CacheControl, Pragma};
-use hyper::StatusCode;
+use hyper::{Method, StatusCode};
 use jwt_compact::{Claims, Header, TimeOptions};
 use oauth2_types::{
     errors::{
@@ -44,6 +44,7 @@ use crate::{
     errors::WrapError,
     filters::{
         client::{client_authentication, ClientAuthentication},
+        cors::cors,
         database::connection,
         with_keys,
     },
@@ -92,14 +93,16 @@ pub fn filter(
     oauth2_config: &OAuth2Config,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
     let issuer = oauth2_config.issuer.clone();
-    warp::path!("oauth2" / "token")
-        .and(warp::post())
-        .and(client_authentication(oauth2_config))
-        .and(with_keys(oauth2_config))
-        .and(warp::any().map(move || issuer.clone()))
-        .and(connection(pool))
-        .and_then(token)
-        .recover(recover)
+    warp::path!("oauth2" / "token").and(
+        warp::post()
+            .and(client_authentication(oauth2_config))
+            .and(with_keys(oauth2_config))
+            .and(warp::any().map(move || issuer.clone()))
+            .and(connection(pool))
+            .and_then(token)
+            .recover(recover)
+            .with(cors().allow_method(Method::POST)),
+    )
 }
 
 async fn recover(rejection: Rejection) -> Result<impl Reply, Rejection> {

@@ -15,6 +15,7 @@
 use std::collections::HashSet;
 
 use hyper::Method;
+use mas_config::OAuth2Config;
 use oauth2_types::{
     oidc::Metadata,
     pkce::CodeChallengeMethod,
@@ -22,7 +23,7 @@ use oauth2_types::{
 };
 use warp::{Filter, Rejection, Reply};
 
-use crate::config::OAuth2Config;
+use crate::filters::cors::cors;
 
 pub(super) fn filter(
     config: &OAuth2Config,
@@ -87,15 +88,9 @@ pub(super) fn filter(
         code_challenge_methods_supported,
     };
 
-    // TODO: get the headers list from the global opentelemetry propagators
-    let cors = warp::cors()
-        .allow_method(Method::GET)
-        .allow_any_origin()
-        .allow_headers(["traceparent"]);
-
     warp::path!(".well-known" / "openid-configuration").and(
         warp::get()
             .map(move || warp::reply::json(&metadata))
-            .with(cors),
+            .with(cors().allow_method(Method::GET)),
     )
 }
