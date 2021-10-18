@@ -24,8 +24,8 @@ use mas_config::RootConfig;
 use mas_core::{
     storage::MIGRATOR,
     tasks::{self, TaskQueue},
-    templates::Templates,
 };
+use mas_templates::Templates;
 use opentelemetry_http::HeaderExtractor;
 use tower::{make::Shared, ServiceBuilder};
 use tower_http::{

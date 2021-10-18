@@ -29,5 +29,4 @@ pub mod handlers;
 pub mod reply;
 pub mod storage;
 pub mod tasks;
-pub mod templates;
 pub mod tokens;

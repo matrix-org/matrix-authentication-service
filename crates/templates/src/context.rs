@@ -14,47 +14,51 @@
 
 //! Contexts used in templates
 
-use mas_data_model::BrowserSession;
+use mas_data_model::{errors::ErroredForm, BrowserSession, StorageBackend};
 use oauth2_types::errors::OAuth2Error;
 use serde::{ser::SerializeStruct, Serialize};
 use url::Url;
 
-use crate::{errors::ErroredForm, filters::CsrfToken, storage::PostgresqlBackend};
-
 /// Helper trait to construct context wrappers
-pub trait TemplateContext {
+pub trait TemplateContext: Serialize {
     /// Attach a user session to the template context
-    fn with_session(self, current_session: BrowserSession<PostgresqlBackend>) -> WithSession<Self>
+    fn with_session<S: StorageBackend>(
+        self,
+        current_session: BrowserSession<S>,
+    ) -> WithSession<Self>
     where
         Self: Sized,
+        BrowserSession<S>: Into<BrowserSession<()>>,
     {
         WithSession {
-            current_session,
+            current_session: current_session.into(),
             inner: self,
         }
     }
 
     /// Attach an optional user session to the template context
-    fn maybe_with_session(
+    fn maybe_with_session<S: StorageBackend>(
         self,
-        current_session: Option<BrowserSession<PostgresqlBackend>>,
+        current_session: Option<BrowserSession<S>>,
     ) -> WithOptionalSession<Self>
     where
         Self: Sized,
+        BrowserSession<S>: Into<BrowserSession<()>>,
     {
         WithOptionalSession {
-            current_session,
+            current_session: current_session.map(Into::into),
             inner: self,
         }
     }
 
     /// Attach a CSRF token to the template context
-    fn with_csrf(self, token: &CsrfToken) -> WithCsrf<Self>
+    fn with_csrf(self, csrf_token: String) -> WithCsrf<Self>
     where
         Self: Sized,
     {
+        // TODO: make this method use a CsrfToken again
         WithCsrf {
-            csrf_token: token.form_value(),
+            csrf_token,
             inner: self,
         }
     }
@@ -95,7 +99,7 @@ impl<T: TemplateContext> TemplateContext for WithCsrf<T> {
 /// Context with a user session in it
 #[derive(Serialize)]
 pub struct WithSession<T> {
-    current_session: BrowserSession<PostgresqlBackend>,
+    current_session: BrowserSession<()>,
 
     #[serde(flatten)]
     inner: T,
@@ -106,7 +110,7 @@ impl<T: TemplateContext> TemplateContext for WithSession<T> {
     where
         Self: Sized,
     {
-        BrowserSession::<PostgresqlBackend>::samples()
+        BrowserSession::samples()
             .into_iter()
             .flat_map(|session| {
                 T::sample().into_iter().map(move |inner| WithSession {
@@ -121,7 +125,7 @@ impl<T: TemplateContext> TemplateContext for WithSession<T> {
 /// Context with an optional user session in it
 #[derive(Serialize)]
 pub struct WithOptionalSession<T> {
-    current_session: Option<BrowserSession<PostgresqlBackend>>,
+    current_session: Option<BrowserSession<()>>,
 
     #[serde(flatten)]
     inner: T,
@@ -132,7 +136,7 @@ impl<T: TemplateContext> TemplateContext for WithOptionalSession<T> {
     where
         Self: Sized,
     {
-        BrowserSession::<PostgresqlBackend>::samples()
+        BrowserSession::samples()
             .into_iter()
             .map(Some) // Wrap all samples in an Option
             .chain(std::iter::once(None)) // Add the "None" option

@@ -17,7 +17,7 @@ use std::{borrow::BorrowMut, convert::TryInto};
 use anyhow::Context;
 use argon2::Argon2;
 use chrono::{DateTime, Utc};
-use mas_data_model::{Authentication, BrowserSession, User};
+use mas_data_model::{errors::HtmlError, Authentication, BrowserSession, User};
 use password_hash::{PasswordHash, PasswordHasher, SaltString};
 use rand::rngs::OsRng;
 use sqlx::{Acquire, Executor, FromRow, Postgres, Transaction};
@@ -27,7 +27,6 @@ use tracing::{info_span, Instrument};
 use warp::reject::Reject;
 
 use super::{DatabaseInconsistencyError, PostgresqlBackend};
-use crate::errors::HtmlError;
 
 #[derive(Debug, Clone, FromRow)]
 struct UserLookup {

@@ -16,7 +16,7 @@
 
 #![allow(clippy::used_underscore_binding)] // This is needed by sqlx macros
 
-use mas_data_model::StorageBackend;
+use mas_data_model::{StorageBackend, StorageBackendMarker};
 use serde::Serialize;
 use sqlx::migrate::Migrator;
 use thiserror::Error;
@@ -37,6 +37,8 @@ impl StorageBackend for PostgresqlBackend {
     type SessionData = i64;
     type UserData = i64;
 }
+
+impl StorageBackendMarker for PostgresqlBackend {}
 
 pub mod oauth2;
 pub mod user;

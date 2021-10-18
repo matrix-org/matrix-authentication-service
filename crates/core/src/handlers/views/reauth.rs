@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use mas_data_model::BrowserSession;
+use mas_templates::{EmptyContext, TemplateContext, Templates};
 use serde::Deserialize;
 use sqlx::{PgPool, Postgres, Transaction};
 use warp::{hyper::Uri, reply::html, Filter, Rejection, Reply};
@@ -28,7 +29,6 @@ use crate::{
         with_templates, CsrfToken,
     },
     storage::{user::authenticate_session, PostgresqlBackend},
-    templates::{EmptyContext, TemplateContext, Templates},
 };
 
 #[derive(Deserialize, Debug)]
@@ -64,7 +64,9 @@ async fn get(
     csrf_token: CsrfToken,
     session: BrowserSession<PostgresqlBackend>,
 ) -> Result<impl Reply, Rejection> {
-    let ctx = EmptyContext.with_session(session).with_csrf(&csrf_token);
+    let ctx = EmptyContext
+        .with_session(session)
+        .with_csrf(csrf_token.form_value());
 
     let content = templates.render_reauth(&ctx)?;
     let reply = html(content);

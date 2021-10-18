@@ -17,6 +17,7 @@ use std::convert::TryFrom;
 use argon2::Argon2;
 use hyper::http::uri::{Parts, PathAndQuery, Uri};
 use mas_data_model::BrowserSession;
+use mas_templates::{EmptyContext, TemplateContext, Templates};
 use serde::{Deserialize, Serialize};
 use sqlx::{pool::PoolConnection, PgPool, Postgres};
 use warp::{reply::html, Filter, Rejection, Reply};
@@ -32,7 +33,6 @@ use crate::{
         with_templates, CsrfToken,
     },
     storage::{register_user, user::start_session, PostgresqlBackend},
-    templates::{EmptyContext, TemplateContext, Templates},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -116,7 +116,7 @@ async fn get(
     if maybe_session.is_some() {
         Ok(Box::new(query.redirect()?))
     } else {
-        let ctx = EmptyContext.with_csrf(&csrf_token);
+        let ctx = EmptyContext.with_csrf(csrf_token.form_value());
         let content = templates.render_register(&ctx)?;
         let reply = html(content);
         let reply = cookie_saver.save_encrypted(&csrf_token, reply)?;

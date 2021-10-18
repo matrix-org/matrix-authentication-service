@@ -23,8 +23,13 @@ static PROPAGATOR_HEADERS: OnceCell<Vec<String>> = OnceCell::new();
 /// Notify the CORS filter what opentelemetry propagators are being used. This
 /// helps whitelisting headers in CORS requests.
 pub fn set_propagator(propagator: &dyn opentelemetry::propagation::TextMapPropagator) {
+    let headers = propagator.fields().map(ToString::to_string).collect();
+    tracing::debug!(
+        ?headers,
+        "Headers allowed in CORS requests for trace propagators set"
+    );
     PROPAGATOR_HEADERS
-        .set(propagator.fields().map(ToString::to_string).collect())
+        .set(headers)
         .expect(concat!(module_path!(), "::set_propagator was called twice"));
 }
 

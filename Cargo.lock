@@ -1448,6 +1448,7 @@ dependencies = [
  "indoc",
  "mas-config",
  "mas-core",
+ "mas-templates",
  "opentelemetry",
  "opentelemetry-http",
  "opentelemetry-jaeger",
@@ -1517,6 +1518,7 @@ dependencies = [
  "k256",
  "mas-config",
  "mas-data-model",
+ "mas-templates",
  "mime",
  "oauth2-types",
  "once_cell",
@@ -1550,6 +1552,24 @@ dependencies = [
  "oauth2-types",
  "serde",
  "thiserror",
+]
+
+[[package]]
+name = "mas-templates"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "mas-config",
+ "mas-data-model",
+ "oauth2-types",
+ "serde",
+ "serde_json",
+ "tera",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "url",
+ "warp",
 ]
 
 [[package]]

@@ -16,6 +16,10 @@ use chrono::{DateTime, Duration, Utc};
 use oauth2_types::{pkce::CodeChallengeMethod, scope::Scope};
 use serde::Serialize;
 
+pub mod errors;
+
+pub trait StorageBackendMarker: StorageBackend {}
+
 pub trait StorageBackend {
     type UserData: Clone + std::fmt::Debug + PartialEq;
     type AuthenticationData: Clone + std::fmt::Debug + PartialEq;
@@ -26,7 +30,18 @@ pub trait StorageBackend {
     type AccessTokenData: Clone + std::fmt::Debug + PartialEq;
 }
 
+impl StorageBackend for () {
+    type AccessTokenData = ();
+    type AuthenticationData = ();
+    type AuthorizationCodeData = ();
+    type BrowserSessionData = ();
+    type ClientData = ();
+    type SessionData = ();
+    type UserData = ();
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(bound = "T: StorageBackend")]
 pub struct User<T: StorageBackend> {
     #[serde(skip_serializing)]
     pub data: T::UserData,
@@ -47,20 +62,52 @@ where
     }
 }
 
+impl<S: StorageBackendMarker> From<User<S>> for User<()> {
+    fn from(u: User<S>) -> Self {
+        User {
+            data: (),
+            username: u.username,
+            sub: u.sub,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(bound = "T: StorageBackend")]
 pub struct Authentication<T: StorageBackend> {
     #[serde(skip_serializing)]
     pub data: T::AuthenticationData,
     pub created_at: DateTime<Utc>,
 }
 
+impl<S: StorageBackendMarker> From<Authentication<S>> for Authentication<()> {
+    fn from(a: Authentication<S>) -> Self {
+        Authentication {
+            data: (),
+            created_at: a.created_at,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(bound = "T: StorageBackend")]
 pub struct BrowserSession<T: StorageBackend> {
     #[serde(skip_serializing)]
     pub data: T::BrowserSessionData,
     pub user: User<T>,
     pub created_at: DateTime<Utc>,
     pub last_authentication: Option<Authentication<T>>,
+}
+
+impl<S: StorageBackendMarker> From<BrowserSession<S>> for BrowserSession<()> {
+    fn from(s: BrowserSession<S>) -> Self {
+        BrowserSession {
+            data: (),
+            user: s.user.into(),
+            created_at: s.created_at,
+            last_authentication: s.last_authentication.map(Into::into),
+        }
+    }
 }
 
 impl<T: StorageBackend> BrowserSession<T>
@@ -82,19 +129,41 @@ where
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(bound = "T: StorageBackend")]
 pub struct Client<T: StorageBackend> {
     #[serde(skip_serializing)]
     pub data: T::ClientData,
     pub client_id: String,
 }
 
+impl<S: StorageBackendMarker> From<Client<S>> for Client<()> {
+    fn from(c: Client<S>) -> Self {
+        Client {
+            data: (),
+            client_id: c.client_id,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(bound = "T: StorageBackend")]
 pub struct Session<T: StorageBackend> {
     #[serde(skip_serializing)]
     pub data: T::SessionData,
     pub browser_session: Option<BrowserSession<T>>,
     pub client: Client<T>,
     pub scope: Scope,
+}
+
+impl<S: StorageBackendMarker> From<Session<S>> for Session<()> {
+    fn from(s: Session<S>) -> Self {
+        Session {
+            data: (),
+            browser_session: s.browser_session.map(Into::into),
+            client: s.client.into(),
+            scope: s.scope,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -117,11 +186,22 @@ impl Pkce {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(bound = "T: StorageBackend")]
 pub struct AuthorizationCode<T: StorageBackend> {
     #[serde(skip_serializing)]
     pub data: T::AuthorizationCodeData,
     pub code: String,
     pub pkce: Pkce,
+}
+
+impl<S: StorageBackendMarker> From<AuthorizationCode<S>> for AuthorizationCode<()> {
+    fn from(c: AuthorizationCode<S>) -> Self {
+        AuthorizationCode {
+            data: (),
+            code: c.code,
+            pkce: c.pkce,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -131,4 +211,16 @@ pub struct AccessToken<T: StorageBackend> {
     pub token: String,
     pub expires_after: Duration,
     pub created_at: DateTime<Utc>,
+}
+
+impl<S: StorageBackendMarker> From<AccessToken<S>> for AccessToken<()> {
+    fn from(t: AccessToken<S>) -> Self {
+        AccessToken {
+            data: (),
+            jti: t.jti,
+            token: t.token,
+            expires_after: t.expires_after,
+            created_at: t.created_at,
+        }
+    }
 }

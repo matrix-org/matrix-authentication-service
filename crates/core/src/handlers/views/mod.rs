@@ -12,13 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use mas_templates::Templates;
 use sqlx::PgPool;
 use warp::{Filter, Rejection, Reply};
 
-use crate::{
-    config::{CookiesConfig, CsrfConfig, OAuth2Config},
-    templates::Templates,
-};
+use crate::config::{CookiesConfig, CsrfConfig, OAuth2Config};
 
 mod index;
 mod login;

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use mas_data_model::BrowserSession;
+use mas_templates::{IndexContext, TemplateContext, Templates};
 use sqlx::PgPool;
 use url::Url;
 use warp::{reply::html, Filter, Rejection, Reply};
@@ -26,7 +27,6 @@ use crate::{
         with_templates, CsrfToken,
     },
     storage::PostgresqlBackend,
-    templates::{IndexContext, TemplateContext, Templates},
 };
 
 pub(super) fn filter(
@@ -56,7 +56,7 @@ async fn get(
 ) -> Result<impl Reply, Rejection> {
     let ctx = IndexContext::new(discovery_url)
         .maybe_with_session(maybe_session)
-        .with_csrf(&csrf_token);
+        .with_csrf(csrf_token.form_value());
 
     let content = templates.render_index(&ctx)?;
     let reply = html(content);

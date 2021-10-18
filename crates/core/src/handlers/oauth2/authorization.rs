@@ -25,6 +25,7 @@ use hyper::{
 };
 use itertools::Itertools;
 use mas_data_model::BrowserSession;
+use mas_templates::{FormPostContext, Templates};
 use oauth2_types::{
     errors::{ErrorResponse, InvalidRequest, OAuth2Error},
     pkce,
@@ -62,7 +63,6 @@ use crate::{
         },
         PostgresqlBackend,
     },
-    templates::{FormPostContext, Templates},
     tokens::{AccessToken, RefreshToken},
 };
 

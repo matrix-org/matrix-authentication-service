@@ -15,14 +15,15 @@
 use std::convert::TryFrom;
 
 use hyper::http::uri::{Parts, PathAndQuery, Uri};
-use mas_data_model::BrowserSession;
+use mas_data_model::{errors::WrapFormError, BrowserSession};
+use mas_templates::{LoginContext, LoginFormField, TemplateContext, Templates};
 use serde::{Deserialize, Serialize};
 use sqlx::{pool::PoolConnection, PgPool, Postgres};
 use warp::{reply::html, Filter, Rejection, Reply};
 
 use crate::{
     config::{CookiesConfig, CsrfConfig},
-    errors::{WrapError, WrapFormError},
+    errors::WrapError,
     filters::{
         cookies::{encrypted_cookie_saver, EncryptedCookieSaver},
         csrf::{protected_form, updated_csrf_token},
@@ -31,7 +32,6 @@ use crate::{
         with_templates, CsrfToken,
     },
     storage::{login, PostgresqlBackend},
-    templates::{LoginContext, LoginFormField, TemplateContext, Templates},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -114,7 +114,7 @@ async fn get(
     if maybe_session.is_some() {
         Ok(Box::new(query.redirect()?))
     } else {
-        let ctx = LoginContext::default().with_csrf(&csrf_token);
+        let ctx = LoginContext::default().with_csrf(csrf_token.form_value());
         let content = templates.render_login(&ctx)?;
         let reply = html(content);
         let reply = cookie_saver.save_encrypted(&csrf_token, reply)?;
@@ -145,7 +145,8 @@ async fn post(
                 LoginError::Authentication { .. } => e.on_field(LoginFormField::Password),
                 LoginError::Other(_) => e.on_form(),
             };
-            let ctx = LoginContext::with_form_error(errored_form).with_csrf(&csrf_token);
+            let ctx =
+                LoginContext::with_form_error(errored_form).with_csrf(csrf_token.form_value());
             let content = templates.render_login(&ctx)?;
             let reply = html(content);
             let reply = cookie_saver.save_encrypted(&csrf_token, reply)?;

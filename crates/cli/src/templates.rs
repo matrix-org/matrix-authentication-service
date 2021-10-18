@@ -15,7 +15,7 @@
 use std::path::PathBuf;
 
 use clap::Clap;
-use mas_core::templates::Templates;
+use mas_templates::Templates;
 
 use super::RootCommand;
 
