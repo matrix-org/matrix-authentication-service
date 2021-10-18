@@ -13,19 +13,19 @@
 // limitations under the License.
 
 use anyhow::Context;
-use clap::Clap;
+use clap::Parser;
 use mas_config::DatabaseConfig;
 use mas_core::storage::MIGRATOR;
 
 use super::RootCommand;
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub(super) struct DatabaseCommand {
     #[clap(subcommand)]
     subcommand: DatabaseSubcommand,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 enum DatabaseSubcommand {
     /// Run database migrations
     Migrate,

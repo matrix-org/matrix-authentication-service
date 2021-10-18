@@ -12,20 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use clap::Clap;
+use clap::Parser;
 use mas_config::{ConfigurationSection, RootConfig};
 use schemars::schema_for;
 use tracing::info;
 
 use super::RootCommand;
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub(super) struct ConfigCommand {
     #[clap(subcommand)]
     subcommand: ConfigSubcommand,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 enum ConfigSubcommand {
     /// Dump the current config as YAML
     Dump,

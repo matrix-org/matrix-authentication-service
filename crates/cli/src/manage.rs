@@ -13,20 +13,20 @@
 // limitations under the License.
 
 use argon2::Argon2;
-use clap::Clap;
+use clap::Parser;
 use mas_config::DatabaseConfig;
 use mas_core::storage::register_user;
 use tracing::{info, warn};
 
 use super::RootCommand;
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub(super) struct ManageCommand {
     #[clap(subcommand)]
     subcommand: ManageSubcommand,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 enum ManageSubcommand {
     /// Register a new user
     Register { username: String, password: String },

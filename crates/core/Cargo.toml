@@ -25,7 +25,7 @@ warp = "0.3.1"
 hyper = { version = "0.14.13", features = ["full"] }
 
 # Template engine
-tera = "1.12.1"
+tera = "1.13.0"
 
 # Database access
 sqlx = { version = "0.5.9", features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "offline"] }

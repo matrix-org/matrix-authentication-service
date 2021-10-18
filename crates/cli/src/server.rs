@@ -18,7 +18,7 @@ use std::{
 };
 
 use anyhow::Context;
-use clap::Clap;
+use clap::Parser;
 use hyper::{header, Server, Version};
 use mas_config::RootConfig;
 use mas_core::{
@@ -37,7 +37,7 @@ use tracing::{field, info};
 
 use super::RootCommand;
 
-#[derive(Clap, Debug, Default)]
+#[derive(Parser, Debug, Default)]
 pub(super) struct ServerCommand {
     /// Automatically apply pending migrations
     #[clap(long)]

@@ -14,18 +14,18 @@
 
 use std::path::PathBuf;
 
-use clap::Clap;
+use clap::Parser;
 use mas_templates::Templates;
 
 use super::RootCommand;
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub(super) struct TemplatesCommand {
     #[clap(subcommand)]
     subcommand: TemplatesSubcommand,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 enum TemplatesSubcommand {
     /// Save the builtin templates to a folder
     Save {
