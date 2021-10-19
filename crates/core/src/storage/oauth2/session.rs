@@ -17,19 +17,19 @@ use std::{collections::HashSet, convert::TryFrom, str::FromStr, string::ToString
 use anyhow::Context;
 use chrono::{DateTime, Duration, Utc};
 use itertools::Itertools;
-use mas_data_model::BrowserSession;
+use mas_data_model::{AuthorizationCode, BrowserSession};
 use oauth2_types::{
     pkce,
     requests::{ResponseMode, ResponseType},
 };
 use serde::Serialize;
-use sqlx::{Executor, FromRow, Postgres};
+use sqlx::PgExecutor;
 use url::Url;
 
-use super::authorization_code::{add_code, OAuth2Code};
+use super::authorization_code::add_code;
 use crate::storage::{lookup_active_session, PostgresqlBackend};
 
-#[derive(FromRow, Serialize)]
+#[derive(Serialize)]
 pub struct OAuth2Session {
     pub id: i64,
     user_session_id: Option<i64>,
@@ -49,16 +49,16 @@ pub struct OAuth2Session {
 impl OAuth2Session {
     pub async fn add_code<'e>(
         &self,
-        executor: impl Executor<'e, Database = Postgres>,
+        executor: impl PgExecutor<'e>,
         code: &str,
         code_challenge: &Option<pkce::AuthorizationRequest>,
-    ) -> anyhow::Result<OAuth2Code> {
+    ) -> anyhow::Result<AuthorizationCode<PostgresqlBackend>> {
         add_code(executor, self.id, code, code_challenge).await
     }
 
     pub async fn fetch_session(
         &self,
-        executor: impl Executor<'_, Database = Postgres>,
+        executor: impl PgExecutor<'_>,
     ) -> anyhow::Result<Option<BrowserSession<PostgresqlBackend>>> {
         match self.user_session_id {
             Some(id) => {
@@ -70,16 +70,13 @@ impl OAuth2Session {
         }
     }
 
-    pub async fn fetch_code(
-        &self,
-        executor: impl Executor<'_, Database = Postgres>,
-    ) -> anyhow::Result<String> {
+    pub async fn fetch_code(&self, executor: impl PgExecutor<'_>) -> anyhow::Result<String> {
         get_code_for_session(executor, self.id).await
     }
 
     pub async fn match_or_set_session(
         &mut self,
-        executor: impl Executor<'_, Database = Postgres>,
+        executor: impl PgExecutor<'_>,
         session: BrowserSession<PostgresqlBackend>,
     ) -> anyhow::Result<BrowserSession<PostgresqlBackend>> {
         match self.user_session_id {
@@ -130,7 +127,7 @@ impl OAuth2Session {
 
 #[allow(clippy::too_many_arguments)]
 pub async fn start_session(
-    executor: impl Executor<'_, Database = Postgres>,
+    executor: impl PgExecutor<'_>,
     optional_session_id: Option<i64>,
     client_id: &str,
     redirect_uri: &Url,
@@ -178,7 +175,7 @@ pub async fn start_session(
 }
 
 pub async fn get_session_by_id(
-    executor: impl Executor<'_, Database = Postgres>,
+    executor: impl PgExecutor<'_>,
     oauth2_session_id: i64,
 ) -> anyhow::Result<OAuth2Session> {
     sqlx::query_as!(
@@ -198,7 +195,7 @@ pub async fn get_session_by_id(
 }
 
 pub async fn get_code_for_session(
-    executor: impl Executor<'_, Database = Postgres>,
+    executor: impl PgExecutor<'_>,
     oauth2_session_id: i64,
 ) -> anyhow::Result<String> {
     sqlx::query_scalar!(

@@ -14,9 +14,9 @@
 
 //! Authenticate an endpoint with an access token as bearer authorization token
 
-use chrono::Utc;
 use headers::{authorization::Bearer, Authorization};
 use hyper::StatusCode;
+use mas_data_model::{AccessToken, Session};
 use sqlx::{pool::PoolConnection, PgPool, Postgres};
 use thiserror::Error;
 use warp::{
@@ -31,8 +31,9 @@ use super::{
 };
 use crate::{
     errors::wrapped_error,
-    storage::oauth2::access_token::{
-        lookup_access_token, AccessTokenLookupError, OAuth2AccessTokenLookup,
+    storage::{
+        oauth2::access_token::{lookup_active_access_token, AccessTokenLookupError},
+        PostgresqlBackend,
     },
     tokens::{TokenFormatError, TokenType},
 };
@@ -82,19 +83,25 @@ impl Reject for AuthenticationError {}
 #[must_use]
 pub fn authentication(
     pool: &PgPool,
-) -> impl Filter<Extract = (OAuth2AccessTokenLookup,), Error = Rejection> + Clone + Send + Sync + 'static
-{
+) -> impl Filter<
+    Extract = (AccessToken<PostgresqlBackend>, Session<PostgresqlBackend>),
+    Error = Rejection,
+> + Clone
+       + Send
+       + Sync
+       + 'static {
     connection(pool)
         .and(typed_header())
         .and_then(authenticate)
         .recover(recover)
         .unify()
+        .untuple_one()
 }
 
 async fn authenticate(
     mut conn: PoolConnection<Postgres>,
     auth: Authorization<Bearer>,
-) -> Result<OAuth2AccessTokenLookup, Rejection> {
+) -> Result<(AccessToken<PostgresqlBackend>, Session<PostgresqlBackend>), Rejection> {
     let token = auth.0.token();
     let token_type = TokenType::check(token).map_err(AuthenticationError::TokenFormat)?;
 
@@ -102,29 +109,25 @@ async fn authenticate(
         return Err(AuthenticationError::WrongTokenType(token_type).into());
     }
 
-    let token = lookup_access_token(&mut conn, token).await.map_err(|e| {
-        if e.not_found() {
-            // This error happens if the token was not found and should be recovered
-            warp::reject::custom(AuthenticationError::TokenNotFound(e))
-        } else {
-            // This is a generic database error that we want to propagate
-            warp::reject::custom(wrapped_error(e))
-        }
-    })?;
+    let (token, session) = lookup_active_access_token(&mut conn, token)
+        .await
+        .map_err(|e| {
+            if e.not_found() {
+                // This error happens if the token was not found and should be recovered
+                warp::reject::custom(AuthenticationError::TokenNotFound(e))
+            } else {
+                // This is a generic database error that we want to propagate
+                warp::reject::custom(wrapped_error(e))
+            }
+        })?;
 
-    if !token.active {
-        return Err(AuthenticationError::TokenInactive.into());
-    }
-
-    if token.exp() < Utc::now() {
-        return Err(AuthenticationError::TokenExpired.into());
-    }
-
-    Ok(token)
+    Ok((token, session))
 }
 
 /// Transform the rejections from the [`with_typed_header`] filter
-async fn recover(rejection: Rejection) -> Result<OAuth2AccessTokenLookup, Rejection> {
+async fn recover(
+    rejection: Rejection,
+) -> Result<(AccessToken<PostgresqlBackend>, Session<PostgresqlBackend>), Rejection> {
     if rejection.find::<MissingHeader>().is_some() {
         return Err(warp::reject::custom(
             AuthenticationError::MissingAuthorizationHeader,

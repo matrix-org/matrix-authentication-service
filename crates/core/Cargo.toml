@@ -24,22 +24,14 @@ anyhow = "1.0.44"
 warp = "0.3.1"
 hyper = { version = "0.14.13", features = ["full"] }
 
-# Template engine
-tera = "1.13.0"
-
 # Database access
 sqlx = { version = "0.5.9", features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "offline"] }
 
 # Various structure (de)serialization
 serde = { version = "1.0.130", features = ["derive"] }
-serde_yaml = "0.8.21"
 serde_with = { version = "1.10.0", features = ["hex", "chrono"] }
 serde_json = "1.0.68"
 serde_urlencoded = "0.7.0"
-
-# Argument & config parsing
-figment = { version = "0.10.6", features = ["env", "yaml", "test"] }
-schemars = { version = "0.8.6", features = ["url", "chrono"] }
 
 # Password hashing
 argon2 = { version = "0.3.1", features = ["password-hash"] }

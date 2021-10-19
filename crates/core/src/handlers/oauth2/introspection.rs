@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use chrono::Utc;
 use hyper::Method;
 use oauth2_types::requests::{IntrospectionRequest, IntrospectionResponse, TokenTypeHint};
 use sqlx::{pool::PoolConnection, PgPool, Postgres};
@@ -27,7 +26,9 @@ use crate::{
         cors::cors,
         database::connection,
     },
-    storage::oauth2::{access_token::lookup_access_token, refresh_token::lookup_refresh_token},
+    storage::oauth2::{
+        access_token::lookup_active_access_token, refresh_token::lookup_active_refresh_token,
+    },
     tokens::{self, TokenType},
 };
 
@@ -84,43 +85,41 @@ async fn introspect(
 
     let reply = match token_type {
         tokens::TokenType::AccessToken => {
-            let token = lookup_access_token(&mut conn, token).await.wrap_error()?;
+            let (token, session) = lookup_active_access_token(&mut conn, token)
+                .await
+                .wrap_error()?;
             let exp = token.exp();
-
-            // Check it is active and did not expire
-            if !token.active || exp < Utc::now() {
-                info!(?token, "Access token expired");
-                return Ok(warp::reply::json(&INACTIVE));
-            }
 
             IntrospectionResponse {
                 active: true,
-                scope: None, // TODO: parse back scopes
-                client_id: Some(token.client_id.clone()),
-                username: Some(token.username.clone()),
+                scope: Some(session.scope),
+                client_id: Some(session.client.client_id),
+                username: session.browser_session.clone().map(|s| s.user.username),
                 token_type: Some(TokenTypeHint::AccessToken),
                 exp: Some(exp),
                 iat: Some(token.created_at),
                 nbf: Some(token.created_at),
-                sub: None,
+                sub: session.browser_session.map(|s| s.user.sub),
                 aud: None,
                 iss: None,
                 jti: None,
             }
         }
         tokens::TokenType::RefreshToken => {
-            let token = lookup_refresh_token(&mut conn, token).await.wrap_error()?;
+            let (token, session) = lookup_active_refresh_token(&mut conn, token)
+                .await
+                .wrap_error()?;
 
             IntrospectionResponse {
                 active: true,
-                scope: None, // TODO: parse back scopes
-                client_id: Some(token.client_id),
-                username: None,
+                scope: Some(session.scope),
+                client_id: Some(session.client.client_id),
+                username: session.browser_session.clone().map(|s| s.user.username),
                 token_type: Some(TokenTypeHint::RefreshToken),
                 exp: None,
-                iat: None,
-                nbf: None,
-                sub: None,
+                iat: Some(token.created_at),
+                nbf: Some(token.created_at),
+                sub: session.browser_session.map(|s| s.user.sub),
                 aud: None,
                 iss: None,
                 jti: None,

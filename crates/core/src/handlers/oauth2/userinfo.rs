@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use hyper::Method;
+use mas_data_model::{AccessToken, Session};
 use serde::Serialize;
 use sqlx::PgPool;
 use warp::{Filter, Rejection, Reply};
@@ -23,12 +24,13 @@ use crate::{
         authenticate::{authentication, recover_unauthorized},
         cors::cors,
     },
-    storage::oauth2::access_token::OAuth2AccessTokenLookup,
+    storage::PostgresqlBackend,
 };
 
 #[derive(Serialize)]
 struct UserInfo {
     sub: String,
+    username: String,
 }
 
 pub(super) fn filter(
@@ -46,8 +48,14 @@ pub(super) fn filter(
     )
 }
 
-async fn userinfo(token: OAuth2AccessTokenLookup) -> Result<impl Reply, Rejection> {
+async fn userinfo(
+    _token: AccessToken<PostgresqlBackend>,
+    session: Session<PostgresqlBackend>,
+) -> Result<impl Reply, Rejection> {
+    // TODO: we really should not have an Option here
+    let user = session.browser_session.unwrap().user;
     Ok(warp::reply::json(&UserInfo {
-        sub: token.username,
+        sub: user.sub,
+        username: user.username,
     }))
 }

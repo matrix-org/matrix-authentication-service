@@ -19,13 +19,11 @@ use headers::{CacheControl, Pragma};
 use hyper::{Method, StatusCode};
 use jwt_compact::{Claims, Header, TimeOptions};
 use oauth2_types::{
-    errors::{
-        InvalidGrant, InvalidRequest, OAuth2Error, OAuth2ErrorCode, ServerError, UnauthorizedClient,
-    },
-    pkce::CodeChallengeMethod,
+    errors::{InvalidGrant, InvalidRequest, OAuth2Error, OAuth2ErrorCode, UnauthorizedClient},
     requests::{
         AccessTokenRequest, AccessTokenResponse, AuthorizationCodeGrant, RefreshTokenGrant,
     },
+    scope::OPENID,
 };
 use rand::thread_rng;
 use serde::Serialize;
@@ -52,7 +50,7 @@ use crate::{
     storage::oauth2::{
         access_token::{add_access_token, revoke_access_token},
         authorization_code::{consume_code, lookup_code},
-        refresh_token::{add_refresh_token, lookup_refresh_token, replace_refresh_token},
+        refresh_token::{add_refresh_token, lookup_active_refresh_token, replace_refresh_token},
     },
     tokens::{AccessToken, RefreshToken},
 };
@@ -163,46 +161,37 @@ async fn authorization_code_grant(
     // TODO: we should invalidate the existing session if a code is used twice after
     // some period of time. See the `oidcc-codereuse-30seconds` test from the
     // conformance suite
-    let code = match lookup_code(&mut txn, &grant.code).await {
+    let (code, session) = match lookup_code(&mut txn, &grant.code).await {
         Err(e) if e.not_found() => return error(InvalidGrant),
         x => x,
     }?;
 
-    if client.client_id != code.client_id {
+    if client.client_id != session.client.client_id {
         return error(UnauthorizedClient);
     }
 
-    match (
-        code.code_challenge_method.as_ref(),
-        code.code_challenge.as_ref(),
-        grant.code_verifier.as_ref(),
-    ) {
-        (None, None, None) => {}
+    match (code.pkce.as_ref(), grant.code_verifier.as_ref()) {
+        (None, None) => {}
         // We have a challenge but no verifier (or vice-versa)? Bad request.
-        (Some(_), Some(_), None) | (None, None, Some(_)) => return error(InvalidRequest),
-        (Some(0 /* Plain */), Some(code_challenge), Some(code_verifier)) => {
-            if !CodeChallengeMethod::Plain.verify(code_challenge, code_verifier) {
+        (Some(_), None) | (None, Some(_)) => return error(InvalidRequest),
+        // If we have both, we need to check the code validity
+        (Some(pkce), Some(verifier)) => {
+            if !pkce.verify(verifier) {
                 return error(InvalidRequest);
             }
-        }
-        (Some(1 /* S256 */), Some(code_challenge), Some(code_verifier)) => {
-            if !CodeChallengeMethod::S256.verify(code_challenge, code_verifier) {
-                return error(InvalidRequest);
-            }
-        }
-
-        // We have something else?
-        // That's a DB inconcistancy, we should bail out
-        _ => {
-            // TODO: are we sure we want to handle errors like that?
-            tracing::error!("Invalid state from the database");
-            return error(ServerError); // Somthing bad happened in the database
         }
     };
 
-    // TODO: verify PKCE
+    // TODO: this should probably not happen?
+    let browser_session = session
+        .browser_session
+        .ok_or_else(|| {
+            anyhow::anyhow!("this oauth2 session has no database session attached to it")
+        })
+        .wrap_error()?;
+
     let ttl = Duration::minutes(5);
-    let (access_token, refresh_token) = {
+    let (access_token_str, refresh_token_str) = {
         let mut rng = thread_rng();
         (
             AccessToken.generate(&mut rng),
@@ -210,45 +199,48 @@ async fn authorization_code_grant(
         )
     };
 
-    let access_token = add_access_token(&mut txn, code.oauth2_session_id, &access_token, ttl)
+    let access_token = add_access_token(&mut txn, session.data, &access_token_str, ttl)
         .await
         .wrap_error()?;
 
-    let refresh_token = add_refresh_token(
-        &mut txn,
-        code.oauth2_session_id,
-        access_token.id,
-        &refresh_token,
-    )
-    .await
-    .wrap_error()?;
+    let _refresh_token =
+        add_refresh_token(&mut txn, session.data, access_token, &refresh_token_str)
+            .await
+            .wrap_error()?;
 
-    // TODO: generate id_token only if the "openid" scope was asked
-    let header = Header::default();
-    let options = TimeOptions::default();
-    let claims = Claims::new(CustomClaims {
-        issuer,
-        // TODO: get that from the session
-        subject: "random-subject".to_string(),
-        audiences: vec![client.client_id.clone()],
-        nonce: code.nonce,
-        at_hash: hash(Sha256::new(), &access_token.token).wrap_error()?,
-        c_hash: hash(Sha256::new(), &grant.code).wrap_error()?,
-    })
-    .set_duration_and_issuance(&options, Duration::minutes(30));
-    let id_token = keys
-        .token(crate::config::Algorithm::Rs256, header, claims)
-        .await
-        .context("could not sign ID token")
-        .wrap_error()?;
+    let id_token = if session.scope.contains(&OPENID) {
+        let header = Header::default();
+        let options = TimeOptions::default();
+        let claims = Claims::new(CustomClaims {
+            issuer,
+            subject: browser_session.user.sub,
+            audiences: vec![client.client_id.clone()],
+            nonce: session.nonce,
+            at_hash: hash(Sha256::new(), &access_token_str).wrap_error()?,
+            c_hash: hash(Sha256::new(), &grant.code).wrap_error()?,
+        })
+        .set_duration_and_issuance(&options, Duration::minutes(30));
+        let id_token = keys
+            .token(crate::config::Algorithm::Rs256, header, claims)
+            .await
+            .context("could not sign ID token")
+            .wrap_error()?;
 
-    // TODO: have the scopes back here
-    let params = AccessTokenResponse::new(access_token.token)
+        Some(id_token)
+    } else {
+        None
+    };
+
+    let mut params = AccessTokenResponse::new(access_token_str)
         .with_expires_in(ttl)
-        .with_refresh_token(refresh_token.token)
-        .with_id_token(id_token);
+        .with_refresh_token(refresh_token_str)
+        .with_scope(session.scope);
 
-    consume_code(&mut txn, code.id).await.wrap_error()?;
+    if let Some(id_token) = id_token {
+        params = params.with_id_token(id_token);
+    }
+
+    consume_code(&mut txn, code).await.wrap_error()?;
 
     txn.commit().await.wrap_error()?;
 
@@ -261,18 +253,17 @@ async fn refresh_token_grant(
     conn: &mut PoolConnection<Postgres>,
 ) -> Result<AccessTokenResponse, Rejection> {
     let mut txn = conn.begin().await.wrap_error()?;
-    // TODO: scope handling
-    let refresh_token_lookup = lookup_refresh_token(&mut txn, &grant.refresh_token)
+    let (refresh_token, session) = lookup_active_refresh_token(&mut txn, &grant.refresh_token)
         .await
         .wrap_error()?;
 
-    if client.client_id != refresh_token_lookup.client_id {
+    if client.client_id != session.client.client_id {
         // As per https://datatracker.ietf.org/doc/html/rfc6749#section-5.2
         return error(InvalidGrant);
     }
 
     let ttl = Duration::minutes(5);
-    let (access_token, refresh_token) = {
+    let (access_token_str, refresh_token_str) = {
         let mut rng = thread_rng();
         (
             AccessToken.generate(&mut rng),
@@ -280,37 +271,29 @@ async fn refresh_token_grant(
         )
     };
 
-    let access_token = add_access_token(
-        &mut txn,
-        refresh_token_lookup.oauth2_session_id,
-        &access_token,
-        ttl,
-    )
-    .await
-    .wrap_error()?;
-
-    let refresh_token = add_refresh_token(
-        &mut txn,
-        refresh_token_lookup.oauth2_session_id,
-        access_token.id,
-        &refresh_token,
-    )
-    .await
-    .wrap_error()?;
-
-    replace_refresh_token(&mut txn, refresh_token_lookup.id, refresh_token.id)
+    let new_access_token = add_access_token(&mut txn, session.data, &access_token_str, ttl)
         .await
         .wrap_error()?;
 
-    if let Some(access_token_id) = refresh_token_lookup.oauth2_access_token_id {
-        revoke_access_token(&mut txn, access_token_id)
+    let new_refresh_token =
+        add_refresh_token(&mut txn, session.data, new_access_token, &refresh_token_str)
+            .await
+            .wrap_error()?;
+
+    replace_refresh_token(&mut txn, &refresh_token, &new_refresh_token)
+        .await
+        .wrap_error()?;
+
+    if let Some(access_token) = refresh_token.access_token {
+        revoke_access_token(&mut txn, access_token.data)
             .await
             .wrap_error()?;
     }
 
-    let params = AccessTokenResponse::new(access_token.token)
+    let params = AccessTokenResponse::new(access_token_str)
         .with_expires_in(ttl)
-        .with_refresh_token(refresh_token.token);
+        .with_refresh_token(refresh_token_str)
+        .with_scope(session.scope);
 
     txn.commit().await.wrap_error()?;
 

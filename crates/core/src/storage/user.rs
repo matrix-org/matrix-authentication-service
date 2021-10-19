@@ -20,15 +20,16 @@ use chrono::{DateTime, Utc};
 use mas_data_model::{errors::HtmlError, Authentication, BrowserSession, User};
 use password_hash::{PasswordHash, PasswordHasher, SaltString};
 use rand::rngs::OsRng;
-use sqlx::{Acquire, Executor, FromRow, Postgres, Transaction};
+use sqlx::{Acquire, PgExecutor, Postgres, Transaction};
 use thiserror::Error;
 use tokio::task;
 use tracing::{info_span, Instrument};
 use warp::reject::Reject;
 
 use super::{DatabaseInconsistencyError, PostgresqlBackend};
+use crate::storage::IdAndCreationTime;
 
-#[derive(Debug, Clone, FromRow)]
+#[derive(Debug, Clone)]
 struct UserLookup {
     pub id: i64,
     pub username: String,
@@ -159,7 +160,7 @@ impl TryInto<BrowserSession<PostgresqlBackend>> for SessionLookup {
 }
 
 pub async fn lookup_active_session(
-    executor: impl Executor<'_, Database = Postgres>,
+    executor: impl PgExecutor<'_>,
     id: i64,
 ) -> Result<BrowserSession<PostgresqlBackend>, ActiveSessionLookupError> {
     let res = sqlx::query_as!(
@@ -190,18 +191,12 @@ pub async fn lookup_active_session(
     Ok(res)
 }
 
-#[derive(FromRow)]
-struct SessionStartResult {
-    id: i64,
-    created_at: DateTime<Utc>,
-}
-
 pub async fn start_session(
-    executor: impl Executor<'_, Database = Postgres>,
+    executor: impl PgExecutor<'_>,
     user: User<PostgresqlBackend>,
 ) -> anyhow::Result<BrowserSession<PostgresqlBackend>> {
     let res = sqlx::query_as!(
-        SessionStartResult,
+        IdAndCreationTime,
         r#"
             INSERT INTO user_sessions (user_id)
             VALUES ($1)
@@ -238,12 +233,6 @@ pub enum AuthenticationError {
     Internal(#[from] tokio::task::JoinError),
 }
 
-#[derive(FromRow)]
-struct AuthenticationInsertionResult {
-    id: i64,
-    created_at: DateTime<Utc>,
-}
-
 pub async fn authenticate_session(
     txn: &mut Transaction<'_, Postgres>,
     session: &BrowserSession<PostgresqlBackend>,
@@ -277,7 +266,7 @@ pub async fn authenticate_session(
 
     // That went well, let's insert the auth info
     let res = sqlx::query_as!(
-        AuthenticationInsertionResult,
+        IdAndCreationTime,
         r#"
             INSERT INTO user_session_authentications (session_id)
             VALUES ($1)
@@ -296,7 +285,7 @@ pub async fn authenticate_session(
 }
 
 pub async fn register_user(
-    executor: impl Executor<'_, Database = Postgres>,
+    executor: impl PgExecutor<'_>,
     phf: impl PasswordHasher,
     username: &str,
     password: &str,
@@ -326,7 +315,7 @@ pub async fn register_user(
 }
 
 pub async fn end_session(
-    executor: impl Executor<'_, Database = Postgres>,
+    executor: impl PgExecutor<'_>,
     session: &BrowserSession<PostgresqlBackend>,
 ) -> anyhow::Result<()> {
     let res = sqlx::query!(
@@ -346,7 +335,7 @@ pub async fn end_session(
 }
 
 pub async fn lookup_user_by_username(
-    executor: impl Executor<'_, Database = Postgres>,
+    executor: impl PgExecutor<'_>,
     username: &str,
 ) -> Result<User<PostgresqlBackend>, sqlx::Error> {
     let res = sqlx::query_as!(

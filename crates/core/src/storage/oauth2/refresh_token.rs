@@ -13,83 +13,192 @@
 // limitations under the License.
 
 use anyhow::Context;
-use chrono::{DateTime, Utc};
-use sqlx::{Executor, Postgres};
+use chrono::{DateTime, Duration, Utc};
+use mas_data_model::{
+    AccessToken, Authentication, BrowserSession, Client, RefreshToken, Session, User,
+};
+use sqlx::PgExecutor;
 
-#[derive(Debug)]
-pub struct OAuth2RefreshToken {
-    pub id: i64,
-    oauth2_session_id: i64,
-    oauth2_access_token_id: Option<i64>,
-    pub token: String,
-    next_token_id: Option<i64>,
-    created_at: DateTime<Utc>,
-    updated_at: DateTime<Utc>,
-}
+use crate::storage::{DatabaseInconsistencyError, IdAndCreationTime, PostgresqlBackend};
 
 pub async fn add_refresh_token(
-    executor: impl Executor<'_, Database = Postgres>,
+    executor: impl PgExecutor<'_>,
     oauth2_session_id: i64,
-    oauth2_access_token_id: i64,
+    access_token: AccessToken<PostgresqlBackend>,
     token: &str,
-) -> anyhow::Result<OAuth2RefreshToken> {
-    sqlx::query_as!(
-        OAuth2RefreshToken,
+) -> anyhow::Result<RefreshToken<PostgresqlBackend>> {
+    let res = sqlx::query_as!(
+        IdAndCreationTime,
         r#"
             INSERT INTO oauth2_refresh_tokens
                 (oauth2_session_id, oauth2_access_token_id, token)
             VALUES
                 ($1, $2, $3)
             RETURNING
-                id, oauth2_session_id, oauth2_access_token_id, token, next_token_id, 
-                created_at, updated_at
+                id, created_at
         "#,
         oauth2_session_id,
-        oauth2_access_token_id,
+        access_token.data,
         token,
     )
     .fetch_one(executor)
     .await
-    .context("could not insert oauth2 refresh token")
+    .context("could not insert oauth2 refresh token")?;
+
+    Ok(RefreshToken {
+        data: res.id,
+        token: token.to_string(),
+        access_token: Some(access_token),
+        created_at: res.created_at,
+    })
 }
 
-pub struct OAuth2RefreshTokenLookup {
-    pub id: i64,
-    pub oauth2_session_id: i64,
-    pub oauth2_access_token_id: Option<i64>,
-    pub client_id: String,
-    pub scope: String,
+struct OAuth2RefreshTokenLookup {
+    refresh_token_id: i64,
+    refresh_token: String,
+    refresh_token_created_at: DateTime<Utc>,
+    access_token_id: Option<i64>,
+    access_token: Option<String>,
+    access_token_expires_after: Option<i32>,
+    access_token_created_at: Option<DateTime<Utc>>,
+    session_id: i64,
+    client_id: String,
+    scope: String,
+    redirect_uri: String,
+    nonce: Option<String>,
+    user_session_id: i64,
+    user_session_created_at: DateTime<Utc>,
+    user_id: i64,
+    user_username: String,
+    user_session_last_authentication_id: Option<i64>,
+    user_session_last_authentication_created_at: Option<DateTime<Utc>>,
 }
 
-pub async fn lookup_refresh_token(
-    executor: impl Executor<'_, Database = Postgres>,
+#[allow(clippy::too_many_lines)]
+pub async fn lookup_active_refresh_token(
+    executor: impl PgExecutor<'_>,
     token: &str,
-) -> anyhow::Result<OAuth2RefreshTokenLookup> {
-    sqlx::query_as!(
+) -> anyhow::Result<(RefreshToken<PostgresqlBackend>, Session<PostgresqlBackend>)> {
+    let res = sqlx::query_as!(
         OAuth2RefreshTokenLookup,
         r#"
             SELECT
-                rt.id,
-                rt.oauth2_session_id,
-                rt.oauth2_access_token_id,
-                os.client_id AS "client_id!",
-                os.scope     AS "scope!"
+                rt.id              AS refresh_token_id,
+                rt.token           AS refresh_token,
+                rt.created_at      AS refresh_token_created_at,
+                at.id              AS "access_token_id?",
+                at.token           AS "access_token?",
+                at.expires_after   AS "access_token_expires_after?",
+                at.created_at      AS "access_token_created_at?",
+                os.id              AS "session_id!",
+                os.client_id       AS "client_id!",
+                os.scope           AS "scope!",
+                os.redirect_uri    AS "redirect_uri!",
+                os.nonce           AS "nonce",
+                us.id              AS "user_session_id!",
+                us.created_at      AS "user_session_created_at!",
+                 u.id              AS "user_id!",
+                 u.username        AS "user_username!",
+                usa.id             AS "user_session_last_authentication_id?",
+                usa.created_at     AS "user_session_last_authentication_created_at?"
             FROM oauth2_refresh_tokens rt
+            LEFT JOIN oauth2_access_tokens at
+              ON at.id = rt.oauth2_access_token_id
             INNER JOIN oauth2_sessions os
               ON os.id = rt.oauth2_session_id
-            WHERE rt.token = $1 AND rt.next_token_id IS NULL
+            INNER JOIN user_sessions us
+              ON us.id = os.user_session_id
+            INNER JOIN users u
+              ON u.id = us.user_id
+            LEFT JOIN user_session_authentications usa
+              ON usa.session_id = us.id
+
+            WHERE rt.token = $1
+              AND rt.next_token_id IS NULL
+              AND us.active
+
+            ORDER BY usa.created_at DESC
+            LIMIT 1
         "#,
         token,
     )
     .fetch_one(executor)
     .await
-    .context("failed to fetch oauth2 refresh token")
+    .context("failed to fetch oauth2 refresh token")?;
+
+    let access_token = match (
+        res.access_token_id,
+        res.access_token,
+        res.access_token_created_at,
+        res.access_token_expires_after,
+    ) {
+        (None, None, None, None) => None,
+        (Some(id), Some(token), Some(created_at), Some(expires_after)) => Some(AccessToken {
+            data: id,
+            jti: format!("{}", id),
+            token,
+            created_at,
+            expires_after: Duration::seconds(expires_after.into()),
+        }),
+        _ => return Err(DatabaseInconsistencyError.into()),
+    };
+
+    let refresh_token = RefreshToken {
+        data: res.refresh_token_id,
+        token: res.refresh_token,
+        created_at: res.refresh_token_created_at,
+        access_token,
+    };
+
+    let client = Client {
+        data: (),
+        client_id: res.client_id,
+    };
+
+    let user = User {
+        data: res.user_id,
+        username: res.user_username,
+        sub: format!("fake-sub-{}", res.user_id),
+    };
+
+    let last_authentication = match (
+        res.user_session_last_authentication_id,
+        res.user_session_last_authentication_created_at,
+    ) {
+        (None, None) => None,
+        (Some(id), Some(created_at)) => Some(Authentication {
+            data: id,
+            created_at,
+        }),
+        _ => return Err(DatabaseInconsistencyError.into()),
+    };
+
+    let browser_session = Some(BrowserSession {
+        data: res.user_session_id,
+        created_at: res.user_session_created_at,
+        user,
+        last_authentication,
+    });
+
+    let session = Session {
+        data: res.session_id,
+        client,
+        browser_session,
+        scope: res.scope.parse().context("invalid scope in database")?,
+        redirect_uri: res
+            .redirect_uri
+            .parse()
+            .context("invalid redirect_uri in database")?,
+        nonce: res.nonce,
+    };
+
+    Ok((refresh_token, session))
 }
 
 pub async fn replace_refresh_token(
-    executor: impl Executor<'_, Database = Postgres>,
-    refresh_token_id: i64,
-    next_refresh_token_id: i64,
+    executor: impl PgExecutor<'_>,
+    refresh_token: &RefreshToken<PostgresqlBackend>,
+    next_refresh_token: &RefreshToken<PostgresqlBackend>,
 ) -> anyhow::Result<()> {
     let res = sqlx::query!(
         r#"
@@ -97,8 +206,8 @@ pub async fn replace_refresh_token(
             SET next_token_id = $2
             WHERE id = $1
         "#,
-        refresh_token_id,
-        next_refresh_token_id
+        refresh_token.data,
+        next_refresh_token.data
     )
     .execute(executor)
     .await

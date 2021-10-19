@@ -16,13 +16,14 @@
 
 #![allow(clippy::used_underscore_binding)] // This is needed by sqlx macros
 
+use chrono::{DateTime, Utc};
 use mas_data_model::{StorageBackend, StorageBackendMarker};
 use serde::Serialize;
 use sqlx::migrate::Migrator;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-#[error("databse query returned an inconsistent state")]
+#[error("database query returned an inconsistent state")]
 pub struct DatabaseInconsistencyError;
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
@@ -34,11 +35,17 @@ impl StorageBackend for PostgresqlBackend {
     type AuthorizationCodeData = i64;
     type BrowserSessionData = i64;
     type ClientData = ();
+    type RefreshTokenData = i64;
     type SessionData = i64;
     type UserData = i64;
 }
 
 impl StorageBackendMarker for PostgresqlBackend {}
+
+struct IdAndCreationTime {
+    id: i64,
+    created_at: DateTime<Utc>,
+}
 
 pub mod oauth2;
 pub mod user;

@@ -1520,7 +1520,6 @@ dependencies = [
  "crc",
  "data-encoding",
  "elliptic-curve",
- "figment",
  "futures-util",
  "headers",
  "hyper",
@@ -1539,15 +1538,12 @@ dependencies = [
  "pkcs8",
  "rand 0.8.4",
  "rsa",
- "schemars",
  "serde",
  "serde_json",
  "serde_urlencoded",
  "serde_with",
- "serde_yaml",
  "sha2",
  "sqlx",
- "tera",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -1564,6 +1560,7 @@ dependencies = [
  "oauth2-types",
  "serde",
  "thiserror",
+ "url",
 ]
 
 [[package]]

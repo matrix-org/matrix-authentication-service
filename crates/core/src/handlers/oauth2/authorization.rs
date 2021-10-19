@@ -395,7 +395,7 @@ impl StepRequest {
 
 async fn step(
     oauth2_session_id: i64,
-    user_session: BrowserSession<PostgresqlBackend>,
+    browser_session: BrowserSession<PostgresqlBackend>,
     mut txn: Transaction<'_, Postgres>,
 ) -> Result<ReplyOrBackToClient, Rejection> {
     let mut oauth2_session = get_session_by_id(&mut txn, oauth2_session_id)
@@ -403,7 +403,7 @@ async fn step(
         .wrap_error()?;
 
     let user_session = oauth2_session
-        .match_or_set_session(&mut txn, user_session)
+        .match_or_set_session(&mut txn, browser_session)
         .await
         .wrap_error()?;
 
@@ -427,7 +427,7 @@ async fn step(
         // Did they request an access token?
         if response_type.contains(&ResponseType::Token) {
             let ttl = Duration::minutes(5);
-            let (access_token, refresh_token) = {
+            let (access_token_str, refresh_token_str) = {
                 let mut rng = thread_rng();
                 (
                     AccessToken.generate(&mut rng),
@@ -435,19 +435,24 @@ async fn step(
                 )
             };
 
-            let access_token = add_access_token(&mut txn, oauth2_session_id, &access_token, ttl)
-                .await
-                .wrap_error()?;
-
-            let refresh_token =
-                add_refresh_token(&mut txn, oauth2_session_id, access_token.id, &refresh_token)
+            let access_token =
+                add_access_token(&mut txn, oauth2_session_id, &access_token_str, ttl)
                     .await
                     .wrap_error()?;
 
+            let _refresh_token = add_refresh_token(
+                &mut txn,
+                oauth2_session_id,
+                access_token,
+                &refresh_token_str,
+            )
+            .await
+            .wrap_error()?;
+
             params.response = Some(
-                AccessTokenResponse::new(access_token.token)
+                AccessTokenResponse::new(access_token_str)
                     .with_expires_in(ttl)
-                    .with_refresh_token(refresh_token.token),
+                    .with_refresh_token(refresh_token_str),
             );
         }
 

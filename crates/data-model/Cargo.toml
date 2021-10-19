@@ -9,5 +9,6 @@ license = "Apache-2.0"
 chrono = "0.4.19"
 thiserror = "1.0.30"
 serde = "1.0.130"
+url = { version = "2.2.2", features = ["serde"] }
 
 oauth2-types = { path = "../oauth2-types" }
