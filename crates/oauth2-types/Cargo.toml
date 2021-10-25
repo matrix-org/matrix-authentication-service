@@ -13,7 +13,7 @@ language-tags = { version = "0.3.2", features = ["serde"] }
 url = { version = "2.2.2", features = ["serde"] }
 parse-display = "0.5.3"
 indoc = "1.0.3"
-serde_with = { version = "1.10.0", features = ["chrono"] }
+serde_with = { version = "1.11.0", features = ["chrono"] }
 sqlx = { version = "0.5.9", default-features = false, optional = true }
 chrono = "0.4.19"
 sha2 = "0.9.8"
