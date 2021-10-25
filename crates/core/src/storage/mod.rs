@@ -32,7 +32,7 @@ pub struct PostgresqlBackend;
 impl StorageBackend for PostgresqlBackend {
     type AccessTokenData = i64;
     type AuthenticationData = i64;
-    type AuthorizationCodeData = i64;
+    type AuthorizationGrantData = i64;
     type BrowserSessionData = i64;
     type ClientData = ();
     type RefreshTokenData = i64;

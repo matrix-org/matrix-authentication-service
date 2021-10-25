@@ -12,9 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::num::NonZeroU32;
+
 use chrono::{DateTime, Duration, Utc};
-use oauth2_types::{pkce::CodeChallengeMethod, scope::Scope};
+use oauth2_types::{pkce::CodeChallengeMethod, requests::ResponseMode, scope::Scope};
 use serde::Serialize;
+use thiserror::Error;
 use url::Url;
 
 pub mod errors;
@@ -27,7 +30,7 @@ pub trait StorageBackend {
     type BrowserSessionData: Clone + std::fmt::Debug + PartialEq;
     type ClientData: Clone + std::fmt::Debug + PartialEq;
     type SessionData: Clone + std::fmt::Debug + PartialEq;
-    type AuthorizationCodeData: Clone + std::fmt::Debug + PartialEq;
+    type AuthorizationGrantData: Clone + std::fmt::Debug + PartialEq;
     type AccessTokenData: Clone + std::fmt::Debug + PartialEq;
     type RefreshTokenData: Clone + std::fmt::Debug + PartialEq;
 }
@@ -35,7 +38,7 @@ pub trait StorageBackend {
 impl StorageBackend for () {
     type AccessTokenData = ();
     type AuthenticationData = ();
-    type AuthorizationCodeData = ();
+    type AuthorizationGrantData = ();
     type BrowserSessionData = ();
     type ClientData = ();
     type RefreshTokenData = ();
@@ -153,60 +156,18 @@ impl<S: StorageBackendMarker> From<Client<S>> for Client<()> {
 pub struct Session<T: StorageBackend> {
     #[serde(skip_serializing)]
     pub data: T::SessionData,
-    pub browser_session: Option<BrowserSession<T>>,
+    pub browser_session: BrowserSession<T>,
     pub client: Client<T>,
     pub scope: Scope,
-    pub redirect_uri: Url,
-    pub nonce: Option<String>,
 }
 
 impl<S: StorageBackendMarker> From<Session<S>> for Session<()> {
     fn from(s: Session<S>) -> Self {
         Session {
             data: (),
-            browser_session: s.browser_session.map(Into::into),
+            browser_session: s.browser_session.into(),
             client: s.client.into(),
             scope: s.scope,
-            redirect_uri: s.redirect_uri,
-            nonce: s.nonce,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct Pkce {
-    challenge_method: CodeChallengeMethod,
-    challenge: String,
-}
-
-impl Pkce {
-    pub fn new(challenge_method: CodeChallengeMethod, challenge: String) -> Self {
-        Pkce {
-            challenge_method,
-            challenge,
-        }
-    }
-
-    pub fn verify(&self, verifier: &str) -> bool {
-        self.challenge_method.verify(&self.challenge, verifier)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(bound = "T: StorageBackend")]
-pub struct AuthorizationCode<T: StorageBackend> {
-    #[serde(skip_serializing)]
-    pub data: T::AuthorizationCodeData,
-    pub code: String,
-    pub pkce: Option<Pkce>,
-}
-
-impl<S: StorageBackendMarker> From<AuthorizationCode<S>> for AuthorizationCode<()> {
-    fn from(c: AuthorizationCode<S>) -> Self {
-        AuthorizationCode {
-            data: (),
-            code: c.code,
-            pkce: c.pkce,
         }
     }
 }
@@ -254,5 +215,127 @@ impl<S: StorageBackendMarker> From<RefreshToken<S>> for RefreshToken<()> {
             created_at: t.created_at,
             access_token: t.access_token.map(Into::into),
         }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct Pkce {
+    pub challenge_method: CodeChallengeMethod,
+    pub challenge: String,
+}
+
+impl Pkce {
+    pub fn new(challenge_method: CodeChallengeMethod, challenge: String) -> Self {
+        Pkce {
+            challenge_method,
+            challenge,
+        }
+    }
+
+    pub fn verify(&self, verifier: &str) -> bool {
+        self.challenge_method.verify(&self.challenge, verifier)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct AuthorizationCode {
+    pub code: String,
+    pub pkce: Option<Pkce>,
+}
+
+#[derive(Debug, Error)]
+#[error("invalid state transition")]
+pub struct InvalidTransitionError;
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(bound = "T: StorageBackend")]
+pub enum AuthorizationGrantStage<T: StorageBackend> {
+    Pending,
+    Fulfilled {
+        session: Session<T>,
+        fulfilled_at: DateTime<Utc>,
+    },
+    Exchanged {
+        session: Session<T>,
+        fulfilled_at: DateTime<Utc>,
+        exchanged_at: DateTime<Utc>,
+    },
+    Cancelled {
+        cancelled_at: DateTime<Utc>,
+    },
+}
+
+impl<T: StorageBackend> Default for AuthorizationGrantStage<T> {
+    fn default() -> Self {
+        Self::Pending
+    }
+}
+
+impl<T: StorageBackend> AuthorizationGrantStage<T> {
+    pub fn new() -> Self {
+        Self::Pending
+    }
+
+    pub fn fulfill(
+        self,
+        fulfilled_at: DateTime<Utc>,
+        session: Session<T>,
+    ) -> Result<Self, InvalidTransitionError> {
+        match self {
+            Self::Pending => Ok(Self::Fulfilled {
+                fulfilled_at,
+                session,
+            }),
+            _ => Err(InvalidTransitionError),
+        }
+    }
+
+    pub fn exchange(self, exchanged_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
+        match self {
+            Self::Fulfilled {
+                fulfilled_at,
+                session,
+            } => Ok(Self::Exchanged {
+                fulfilled_at,
+                exchanged_at,
+                session,
+            }),
+            _ => Err(InvalidTransitionError),
+        }
+    }
+
+    pub fn cancel(self, cancelled_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
+        match self {
+            Self::Pending => Ok(Self::Cancelled { cancelled_at }),
+            _ => Err(InvalidTransitionError),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(bound = "T: StorageBackend")]
+pub struct AuthorizationGrant<T: StorageBackend> {
+    #[serde(skip_serializing)]
+    pub data: T::AuthorizationGrantData,
+    #[serde(flatten)]
+    pub stage: AuthorizationGrantStage<T>,
+    pub code: Option<AuthorizationCode>,
+    pub client: Client<T>,
+    pub redirect_uri: Url,
+    pub scope: Scope,
+    pub state: Option<String>,
+    pub nonce: Option<String>,
+    pub max_age: Option<NonZeroU32>,
+    pub acr_values: Option<String>,
+    pub response_mode: ResponseMode,
+    pub response_type_token: bool,
+    pub response_type_id_token: bool,
+    pub created_at: DateTime<Utc>,
+}
+
+impl<T: StorageBackend> AuthorizationGrant<T> {
+    pub fn max_auth_time(&self) -> DateTime<Utc> {
+        let max_age: Option<i64> = self.max_age.map(|x| x.get().into());
+        self.created_at + Duration::seconds(max_age.unwrap_or(3600 * 24 * 365))
     }
 }

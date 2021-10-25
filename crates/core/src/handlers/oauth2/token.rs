@@ -18,6 +18,7 @@ use data_encoding::BASE64URL_NOPAD;
 use headers::{CacheControl, Pragma};
 use hyper::{Method, StatusCode};
 use jwt_compact::{Claims, Header, TimeOptions};
+use mas_data_model::AuthorizationGrantStage;
 use oauth2_types::{
     errors::{InvalidGrant, InvalidRequest, OAuth2Error, OAuth2ErrorCode, UnauthorizedClient},
     requests::{
@@ -30,6 +31,7 @@ use serde::Serialize;
 use serde_with::skip_serializing_none;
 use sha2::{Digest, Sha256};
 use sqlx::{pool::PoolConnection, Acquire, PgPool, Postgres};
+use tracing::debug;
 use url::Url;
 use warp::{
     reject::Reject,
@@ -47,10 +49,15 @@ use crate::{
         with_keys,
     },
     reply::with_typed_header,
-    storage::oauth2::{
-        access_token::{add_access_token, revoke_access_token},
-        authorization_code::{consume_code, lookup_code},
-        refresh_token::{add_refresh_token, lookup_active_refresh_token, replace_refresh_token},
+    storage::{
+        oauth2::{
+            access_token::{add_access_token, revoke_access_token},
+            authorization_grant::{exchange_grant, lookup_grant_by_code},
+            refresh_token::{
+                add_refresh_token, lookup_active_refresh_token, replace_refresh_token,
+            },
+        },
+        DatabaseInconsistencyError,
     },
     tokens::{AccessToken, RefreshToken},
 };
@@ -156,15 +163,50 @@ async fn authorization_code_grant(
     issuer: Url,
     conn: &mut PoolConnection<Postgres>,
 ) -> Result<AccessTokenResponse, Rejection> {
+    // TODO: there is a bunch of unnecessary cloning here
     let mut txn = conn.begin().await.wrap_error()?;
 
-    // TODO: we should invalidate the existing session if a code is used twice after
-    // some period of time. See the `oidcc-codereuse-30seconds` test from the
-    // conformance suite
-    let (code, session) = match lookup_code(&mut txn, &grant.code).await {
-        Err(e) if e.not_found() => return error(InvalidGrant),
-        x => x,
-    }?;
+    // TODO: handle "not found" cases
+    let authz_grant = lookup_grant_by_code(&mut txn, &grant.code)
+        .await
+        .wrap_error()?;
+
+    let session = match authz_grant.stage {
+        AuthorizationGrantStage::Cancelled { cancelled_at } => {
+            debug!(%cancelled_at, "Authorization grant was cancelled");
+            return error(InvalidGrant);
+        }
+        AuthorizationGrantStage::Exchanged {
+            exchanged_at,
+            fulfilled_at,
+            session: _,
+        } => {
+            // TODO: we should invalidate the existing session if a code is used twice after
+            // some period of time. See the `oidcc-codereuse-30seconds` test from the
+            // conformance suite
+            debug!(%exchanged_at, %fulfilled_at, "Authorization code was already exchanged");
+            return error(InvalidGrant);
+        }
+        AuthorizationGrantStage::Pending => {
+            debug!("Authorization grant has not been fulfilled yet");
+            return error(InvalidGrant);
+        }
+        AuthorizationGrantStage::Fulfilled {
+            ref session,
+            fulfilled_at: _,
+        } => {
+            // TODO: we should check that the session was not fullfilled too long ago
+            // (30s to 1min?). The main problem is getting a timestamp from the database
+            session
+        }
+    };
+
+    // This should never happen, since we looked up in the database using the code
+    let code = authz_grant
+        .code
+        .as_ref()
+        .ok_or(DatabaseInconsistencyError)
+        .wrap_error()?;
 
     if client.client_id != session.client.client_id {
         return error(UnauthorizedClient);
@@ -182,13 +224,7 @@ async fn authorization_code_grant(
         }
     };
 
-    // TODO: this should probably not happen?
-    let browser_session = session
-        .browser_session
-        .ok_or_else(|| {
-            anyhow::anyhow!("this oauth2 session has no database session attached to it")
-        })
-        .wrap_error()?;
+    let browser_session = &session.browser_session;
 
     let ttl = Duration::minutes(5);
     let (access_token_str, refresh_token_str) = {
@@ -199,23 +235,22 @@ async fn authorization_code_grant(
         )
     };
 
-    let access_token = add_access_token(&mut txn, session.data, &access_token_str, ttl)
+    let access_token = add_access_token(&mut txn, session, &access_token_str, ttl)
         .await
         .wrap_error()?;
 
-    let _refresh_token =
-        add_refresh_token(&mut txn, session.data, access_token, &refresh_token_str)
-            .await
-            .wrap_error()?;
+    let _refresh_token = add_refresh_token(&mut txn, session, access_token, &refresh_token_str)
+        .await
+        .wrap_error()?;
 
     let id_token = if session.scope.contains(&OPENID) {
         let header = Header::default();
         let options = TimeOptions::default();
         let claims = Claims::new(CustomClaims {
             issuer,
-            subject: browser_session.user.sub,
+            subject: browser_session.user.sub.clone(),
             audiences: vec![client.client_id.clone()],
-            nonce: session.nonce,
+            nonce: authz_grant.nonce.clone(),
             at_hash: hash(Sha256::new(), &access_token_str).wrap_error()?,
             c_hash: hash(Sha256::new(), &grant.code).wrap_error()?,
         })
@@ -234,13 +269,13 @@ async fn authorization_code_grant(
     let mut params = AccessTokenResponse::new(access_token_str)
         .with_expires_in(ttl)
         .with_refresh_token(refresh_token_str)
-        .with_scope(session.scope);
+        .with_scope(session.scope.clone());
 
     if let Some(id_token) = id_token {
         params = params.with_id_token(id_token);
     }
 
-    consume_code(&mut txn, code).await.wrap_error()?;
+    exchange_grant(&mut txn, authz_grant).await.wrap_error()?;
 
     txn.commit().await.wrap_error()?;
 
@@ -271,12 +306,12 @@ async fn refresh_token_grant(
         )
     };
 
-    let new_access_token = add_access_token(&mut txn, session.data, &access_token_str, ttl)
+    let new_access_token = add_access_token(&mut txn, &session, &access_token_str, ttl)
         .await
         .wrap_error()?;
 
     let new_refresh_token =
-        add_refresh_token(&mut txn, session.data, new_access_token, &refresh_token_str)
+        add_refresh_token(&mut txn, &session, new_access_token, &refresh_token_str)
             .await
             .wrap_error()?;
 
@@ -285,7 +320,7 @@ async fn refresh_token_grant(
         .wrap_error()?;
 
     if let Some(access_token) = refresh_token.access_token {
-        revoke_access_token(&mut txn, access_token.data)
+        revoke_access_token(&mut txn, &access_token)
             .await
             .wrap_error()?;
     }

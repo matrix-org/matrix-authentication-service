@@ -148,8 +148,7 @@ pub struct AuthorizationRequest {
 
     pub redirect_uri: Option<Url>,
 
-    #[serde_as(as = "StringWithSeparator::<SpaceSeparator, String>")]
-    pub scope: HashSet<String>,
+    pub scope: Scope,
 
     pub state: Option<String>,
 

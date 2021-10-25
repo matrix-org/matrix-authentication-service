@@ -52,8 +52,7 @@ async fn userinfo(
     _token: AccessToken<PostgresqlBackend>,
     session: Session<PostgresqlBackend>,
 ) -> Result<impl Reply, Rejection> {
-    // TODO: we really should not have an Option here
-    let user = session.browser_session.unwrap().user;
+    let user = session.browser_session.user;
     Ok(warp::reply::json(&UserInfo {
         sub: user.sub,
         username: user.username,

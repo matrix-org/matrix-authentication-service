@@ -24,7 +24,7 @@ use crate::storage::{DatabaseInconsistencyError, IdAndCreationTime, PostgresqlBa
 
 pub async fn add_access_token(
     executor: impl PgExecutor<'_>,
-    oauth2_session_id: i64,
+    session: &Session<PostgresqlBackend>,
     token: &str,
     expires_after: Duration,
 ) -> anyhow::Result<AccessToken<PostgresqlBackend>> {
@@ -41,7 +41,7 @@ pub async fn add_access_token(
             RETURNING
                 id, created_at
         "#,
-        oauth2_session_id,
+        session.data,
         token,
         expires_after_seconds,
     )
@@ -67,8 +67,6 @@ pub struct OAuth2AccessTokenLookup {
     session_id: i64,
     client_id: String,
     scope: String,
-    redirect_uri: String,
-    nonce: Option<String>,
     user_session_id: i64,
     user_session_created_at: DateTime<Utc>,
     user_id: i64,
@@ -109,8 +107,6 @@ pub async fn lookup_active_access_token(
                 os.id              AS "session_id!",
                 os.client_id       AS "client_id!",
                 os.scope           AS "scope!",
-                os.redirect_uri    AS "redirect_uri!",
-                os.nonce           AS "nonce",
                 us.id              AS "user_session_id!",
                 us.created_at      AS "user_session_created_at!",
                  u.id              AS "user_id!",
@@ -171,39 +167,35 @@ pub async fn lookup_active_access_token(
         _ => return Err(DatabaseInconsistencyError.into()),
     };
 
-    let browser_session = Some(BrowserSession {
+    let browser_session = BrowserSession {
         data: res.user_session_id,
         created_at: res.user_session_created_at,
         user,
         last_authentication,
-    });
+    };
 
     let scope = res.scope.parse().map_err(|_e| DatabaseInconsistencyError)?;
-
-    let redirect_uri = res
-        .redirect_uri
-        .parse()
-        .map_err(|_e| DatabaseInconsistencyError)?;
 
     let session = Session {
         data: res.session_id,
         client,
         browser_session,
         scope,
-        redirect_uri,
-        nonce: res.nonce,
     };
 
     Ok((access_token, session))
 }
 
-pub async fn revoke_access_token(executor: impl PgExecutor<'_>, id: i64) -> anyhow::Result<()> {
+pub async fn revoke_access_token(
+    executor: impl PgExecutor<'_>,
+    access_token: &AccessToken<PostgresqlBackend>,
+) -> anyhow::Result<()> {
     let res = sqlx::query!(
         r#"
             DELETE FROM oauth2_access_tokens
             WHERE id = $1
         "#,
-        id,
+        access_token.data,
     )
     .execute(executor)
     .await

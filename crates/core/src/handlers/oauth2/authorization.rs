@@ -23,11 +23,12 @@ use hyper::{
     http::uri::{Parts, PathAndQuery, Uri},
     StatusCode,
 };
-use itertools::Itertools;
-use mas_data_model::BrowserSession;
+use mas_data_model::{
+    Authentication, AuthorizationCode, AuthorizationGrantStage, BrowserSession, Pkce,
+};
 use mas_templates::{FormPostContext, Templates};
 use oauth2_types::{
-    errors::{ErrorResponse, InvalidRequest, OAuth2Error},
+    errors::{ErrorResponse, InvalidGrant, InvalidRequest, OAuth2Error},
     pkce,
     requests::{
         AccessTokenResponse, AuthorizationRequest, AuthorizationResponse, ResponseMode,
@@ -58,8 +59,10 @@ use crate::{
     storage::{
         oauth2::{
             access_token::add_access_token,
+            authorization_grant::{
+                derive_session, fulfill_grant, get_grant_by_id, new_authorization_grant,
+            },
             refresh_token::add_refresh_token,
-            session::{get_session_by_id, start_session},
         },
         PostgresqlBackend,
     },
@@ -308,13 +311,6 @@ async fn get(
         .ok_or_else(|| anyhow::anyhow!("could not find client"))
         .wrap_error()?;
 
-    let maybe_session_id = maybe_session.as_ref().map(|s| s.data);
-
-    let scope: String = {
-        let it = params.auth.scope.iter().map(ToString::to_string);
-        Itertools::intersperse(it, " ".to_string()).collect()
-    };
-
     let redirect_uri = client
         .resolve_redirect_uri(&params.auth.redirect_uri)
         .wrap_error()?;
@@ -322,23 +318,7 @@ async fn get(
     let response_mode =
         resolve_response_mode(response_type, params.auth.response_mode).wrap_error()?;
 
-    let oauth2_session = start_session(
-        &mut txn,
-        maybe_session_id,
-        &client.client_id,
-        redirect_uri,
-        &scope,
-        params.auth.state.as_deref(),
-        params.auth.nonce.as_deref(),
-        params.auth.max_age,
-        response_type,
-        response_mode,
-    )
-    .await
-    .wrap_error()?;
-
-    // Generate the code at this stage, since we have the PKCE params ready
-    if response_type.contains(&ResponseType::Code) {
+    let code: Option<AuthorizationCode> = if response_type.contains(&ResponseType::Code) {
         // 32 random alphanumeric characters, about 190bit of entropy
         let code: String = thread_rng()
             .sample_iter(&Alphanumeric)
@@ -346,22 +326,47 @@ async fn get(
             .map(char::from)
             .collect();
 
-        oauth2_session
-            .add_code(&mut txn, &code, &params.pkce)
-            .await
-            .wrap_error()?;
-    }
+        let pkce = params.pkce.map(|p| Pkce {
+            challenge: p.code_challenge,
+            challenge_method: p.code_challenge_method,
+        });
 
-    // Do we already have a user session for this oauth2 session?
-    let user_session = oauth2_session.fetch_session(&mut txn).await.wrap_error()?;
+        Some(AuthorizationCode { code, pkce })
+    } else {
+        // If the request had PKCE params but no code asked, it should get back with an
+        // error
+        if params.pkce.is_some() {
+            return Ok(ReplyOrBackToClient::Error(Box::new(InvalidGrant)));
+        }
 
-    if let Some(user_session) = user_session {
-        step(oauth2_session.id, user_session, txn).await
+        None
+    };
+
+    let grant = new_authorization_grant(
+        &mut txn,
+        client.client_id.clone(),
+        redirect_uri.clone(),
+        params.auth.scope,
+        code,
+        params.auth.state,
+        params.auth.nonce,
+        // TODO: support max_age and acr_values
+        None,
+        None,
+        response_mode,
+        response_type.contains(&ResponseType::Token),
+        response_type.contains(&ResponseType::IdToken),
+    )
+    .await
+    .wrap_error()?;
+
+    if let Some(user_session) = maybe_session {
+        step(grant.data, user_session, txn).await
     } else {
         // If not, redirect the user to the login page
         txn.commit().await.wrap_error()?;
 
-        let next = StepRequest::new(oauth2_session.id)
+        let next = StepRequest::new(grant.data)
             .build_uri()
             .wrap_error()?
             .to_string();
@@ -393,85 +398,84 @@ impl StepRequest {
     }
 }
 
+fn reauth() -> ReplyOrBackToClient {
+    // Ask for a reauth
+    // TODO: have the OAuth2 session ID in there
+    ReplyOrBackToClient::Reply(Box::new(see_other(Uri::from_static("/reauth"))))
+}
+
 async fn step(
-    oauth2_session_id: i64,
+    grant_id: i64,
     browser_session: BrowserSession<PostgresqlBackend>,
     mut txn: Transaction<'_, Postgres>,
 ) -> Result<ReplyOrBackToClient, Rejection> {
-    let mut oauth2_session = get_session_by_id(&mut txn, oauth2_session_id)
-        .await
-        .wrap_error()?;
+    // TODO: we should check if the grant here was started by the browser doing that
+    // request using a signed cookie
+    let grant = get_grant_by_id(&mut txn, grant_id).await.wrap_error()?;
 
-    let user_session = oauth2_session
-        .match_or_set_session(&mut txn, browser_session)
-        .await
-        .wrap_error()?;
+    if !matches!(grant.stage, AuthorizationGrantStage::Pending) {
+        return Err(anyhow::anyhow!("authorization grant not pending")).wrap_error();
+    }
 
-    let response_mode = oauth2_session.response_mode().wrap_error()?;
-    let response_type = oauth2_session.response_type().wrap_error()?;
-    let redirect_uri = oauth2_session.redirect_uri().wrap_error()?;
+    let reply = match browser_session.last_authentication {
+        Some(Authentication { created_at, .. }) if created_at < grant.max_auth_time() => {
+            let session = derive_session(&mut txn, &grant, browser_session)
+                .await
+                .wrap_error()?;
 
-    // Check if the active session is valid
-    // TODO: this is ugly & should check if the session is active
-    let reply = if user_session.last_authentication.map(|x| x.created_at)
-        >= oauth2_session.max_auth_time()
-    {
-        // Yep! Let's complete the auth now
-        let mut params = AuthorizationResponse::default();
+            let grant = fulfill_grant(&mut txn, grant, session.clone())
+                .await
+                .wrap_error()?;
 
-        // Did they request an auth code?
-        if response_type.contains(&ResponseType::Code) {
-            params.code = Some(oauth2_session.fetch_code(&mut txn).await.wrap_error()?);
-        }
+            // Yep! Let's complete the auth now
+            let mut params = AuthorizationResponse::default();
 
-        // Did they request an access token?
-        if response_type.contains(&ResponseType::Token) {
-            let ttl = Duration::minutes(5);
-            let (access_token_str, refresh_token_str) = {
-                let mut rng = thread_rng();
-                (
-                    AccessToken.generate(&mut rng),
-                    RefreshToken.generate(&mut rng),
-                )
-            };
+            // Did they request an auth code?
+            if let Some(code) = grant.code {
+                params.code = Some(code.code);
+            }
 
-            let access_token =
-                add_access_token(&mut txn, oauth2_session_id, &access_token_str, ttl)
+            // Did they request an access token?
+            if grant.response_type_token {
+                let ttl = Duration::minutes(5);
+                let (access_token_str, refresh_token_str) = {
+                    let mut rng = thread_rng();
+                    (
+                        AccessToken.generate(&mut rng),
+                        RefreshToken.generate(&mut rng),
+                    )
+                };
+
+                let access_token = add_access_token(&mut txn, &session, &access_token_str, ttl)
                     .await
                     .wrap_error()?;
 
-            let _refresh_token = add_refresh_token(
-                &mut txn,
-                oauth2_session_id,
-                access_token,
-                &refresh_token_str,
-            )
-            .await
-            .wrap_error()?;
+                let _refresh_token =
+                    add_refresh_token(&mut txn, &session, access_token, &refresh_token_str)
+                        .await
+                        .wrap_error()?;
 
-            params.response = Some(
-                AccessTokenResponse::new(access_token_str)
-                    .with_expires_in(ttl)
-                    .with_refresh_token(refresh_token_str),
-            );
-        }
+                params.response = Some(
+                    AccessTokenResponse::new(access_token_str)
+                        .with_expires_in(ttl)
+                        .with_refresh_token(refresh_token_str),
+                );
+            }
 
-        // Did they request an ID token?
-        if response_type.contains(&ResponseType::IdToken) {
-            todo!("id tokens are not implemented yet");
-        }
+            // Did they request an ID token?
+            if grant.response_type_id_token {
+                todo!("id tokens are not implemented yet");
+            }
 
-        let params = serde_json::to_value(&params).unwrap();
-        ReplyOrBackToClient::BackToClient {
-            redirect_uri,
-            response_mode,
-            state: oauth2_session.state.clone(),
-            params,
+            let params = serde_json::to_value(&params).unwrap();
+            ReplyOrBackToClient::BackToClient {
+                redirect_uri: grant.redirect_uri,
+                response_mode: grant.response_mode,
+                state: grant.state,
+                params,
+            }
         }
-    } else {
-        // Ask for a reauth
-        // TODO: have the OAuth2 session ID in there
-        ReplyOrBackToClient::Reply(Box::new(see_other(Uri::from_static("/reauth"))))
+        _ => reauth(),
     };
 
     txn.commit().await.wrap_error()?;

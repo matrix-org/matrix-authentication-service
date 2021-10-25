@@ -23,7 +23,7 @@ use crate::storage::{DatabaseInconsistencyError, IdAndCreationTime, PostgresqlBa
 
 pub async fn add_refresh_token(
     executor: impl PgExecutor<'_>,
-    oauth2_session_id: i64,
+    session: &Session<PostgresqlBackend>,
     access_token: AccessToken<PostgresqlBackend>,
     token: &str,
 ) -> anyhow::Result<RefreshToken<PostgresqlBackend>> {
@@ -37,7 +37,7 @@ pub async fn add_refresh_token(
             RETURNING
                 id, created_at
         "#,
-        oauth2_session_id,
+        session.data,
         access_token.data,
         token,
     )
@@ -64,8 +64,6 @@ struct OAuth2RefreshTokenLookup {
     session_id: i64,
     client_id: String,
     scope: String,
-    redirect_uri: String,
-    nonce: Option<String>,
     user_session_id: i64,
     user_session_created_at: DateTime<Utc>,
     user_id: i64,
@@ -93,8 +91,6 @@ pub async fn lookup_active_refresh_token(
                 os.id              AS "session_id!",
                 os.client_id       AS "client_id!",
                 os.scope           AS "scope!",
-                os.redirect_uri    AS "redirect_uri!",
-                os.nonce           AS "nonce",
                 us.id              AS "user_session_id!",
                 us.created_at      AS "user_session_created_at!",
                  u.id              AS "user_id!",
@@ -173,23 +169,18 @@ pub async fn lookup_active_refresh_token(
         _ => return Err(DatabaseInconsistencyError.into()),
     };
 
-    let browser_session = Some(BrowserSession {
+    let browser_session = BrowserSession {
         data: res.user_session_id,
         created_at: res.user_session_created_at,
         user,
         last_authentication,
-    });
+    };
 
     let session = Session {
         data: res.session_id,
         client,
         browser_session,
         scope: res.scope.parse().context("invalid scope in database")?,
-        redirect_uri: res
-            .redirect_uri
-            .parse()
-            .context("invalid redirect_uri in database")?,
-        nonce: res.nonce,
     };
 
     Ok((refresh_token, session))
