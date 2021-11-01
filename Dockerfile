@@ -1,8 +1,9 @@
-ARG RUSTC_VERSION=1.55.0
+ARG RUSTC_VERSION=1.56.0
 
 # cargo-chef helps with caching dependencies between builds
-FROM lukemathwalker/cargo-chef:latest-rust-${RUSTC_VERSION} AS chef
+FROM docker.io/library/rust:${RUSTC_VERSION}-slim AS chef
 WORKDIR /app
+RUN cargo install --locked cargo-chef
 
 FROM chef AS planner
 COPY . .
