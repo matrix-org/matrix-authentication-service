@@ -12,17 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub mod errors;
-pub(crate) mod oauth2;
-pub(crate) mod tokens;
-pub(crate) mod traits;
-pub(crate) mod users;
+pub(self) mod authorization_grant;
+pub(self) mod client;
+pub(self) mod session;
 
 pub use self::{
-    oauth2::{
-        AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, Client, Pkce, Session,
-    },
-    tokens::{AccessToken, RefreshToken},
-    traits::{StorageBackend, StorageBackendMarker},
-    users::{Authentication, BrowserSession, User},
+    authorization_grant::{AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, Pkce},
+    client::Client,
+    session::Session,
 };

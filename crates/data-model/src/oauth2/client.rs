@@ -12,17 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub mod errors;
-pub(crate) mod oauth2;
-pub(crate) mod tokens;
-pub(crate) mod traits;
-pub(crate) mod users;
+use serde::Serialize;
 
-pub use self::{
-    oauth2::{
-        AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, Client, Pkce, Session,
-    },
-    tokens::{AccessToken, RefreshToken},
-    traits::{StorageBackend, StorageBackendMarker},
-    users::{Authentication, BrowserSession, User},
-};
+use crate::traits::{StorageBackend, StorageBackendMarker};
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(bound = "T: StorageBackend")]
+pub struct Client<T: StorageBackend> {
+    #[serde(skip_serializing)]
+    pub data: T::ClientData,
+    pub client_id: String,
+}
+
+impl<S: StorageBackendMarker> From<Client<S>> for Client<()> {
+    fn from(c: Client<S>) -> Self {
+        Client {
+            data: (),
+            client_id: c.client_id,
+        }
+    }
+}
