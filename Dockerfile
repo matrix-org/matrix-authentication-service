@@ -11,7 +11,8 @@ ARG RUSTC_VERSION=1.56.1
 
 ## Base image with cargo-chef and the right cross-compilation toolchain ##
 # cargo-chef helps with caching dependencies between builds
-FROM --platform=${BUILDPLATFORM} docker.io/library/rust:${RUSTC_VERSION}-slim AS chef
+# The image Debian base name (bullseye) must be in sync with the runtime variant (debian11)
+FROM --platform=${BUILDPLATFORM} docker.io/library/rust:${RUSTC_VERSION}-slim-bullseye AS chef
 
 # Install x86_64 and aarch64 cross-compiling stack
 RUN apt update && apt install -y --no-install-recommends \
@@ -63,11 +64,12 @@ RUN cargo build \
   --release \
   --bin mas-cli \
   --target $(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")
+
 # Move the binary to avoid having to guess its name in the next stage
-#
 RUN mv target/$(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")/release/mas-cli /mas-cli
 
 ## Runtime stage ##
-FROM --platform=${TARGETPLATFORM} gcr.io/distroless/cc
+# The image Debian base name (bullseye) must be in sync with the runtime variant (debian11)
+FROM --platform=${TARGETPLATFORM} gcr.io/distroless/cc-debian11:nonroot
 COPY --from=builder /mas-cli /mas-cli
 ENTRYPOINT ["/mas-cli"]
