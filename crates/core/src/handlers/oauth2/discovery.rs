@@ -17,7 +17,7 @@ use std::collections::HashSet;
 use hyper::Method;
 use mas_config::OAuth2Config;
 use oauth2_types::{
-    oidc::Metadata,
+    oidc::{Metadata, SigningAlgorithm},
     pkce::CodeChallengeMethod,
     requests::{ClientAuthenticationMethod, GrantType, ResponseMode},
 };
@@ -61,7 +61,16 @@ pub(super) fn filter(
         let mut s = HashSet::new();
         s.insert(ClientAuthenticationMethod::ClientSecretBasic);
         s.insert(ClientAuthenticationMethod::ClientSecretPost);
+        s.insert(ClientAuthenticationMethod::ClientSecretJwt);
         s.insert(ClientAuthenticationMethod::None);
+        s
+    });
+
+    let token_endpoint_auth_signing_alg_values_supported = Some({
+        let mut s = HashSet::new();
+        s.insert(SigningAlgorithm::Hs256);
+        s.insert(SigningAlgorithm::Hs384);
+        s.insert(SigningAlgorithm::Hs512);
         s
     });
 
@@ -85,6 +94,7 @@ pub(super) fn filter(
         response_modes_supported,
         grant_types_supported,
         token_endpoint_auth_methods_supported,
+        token_endpoint_auth_signing_alg_values_supported,
         code_challenge_methods_supported,
     };
 

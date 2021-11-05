@@ -91,6 +91,16 @@ pub enum ClientAuthenticationMethod {
     None,
     ClientSecretPost,
     ClientSecretBasic,
+    ClientSecretJwt,
+    PrivateKeyJwt,
+}
+
+impl ClientAuthenticationMethod {
+    #[must_use]
+    /// Check if the authentication method is for public client or not
+    pub fn public(&self) -> bool {
+        matches!(self, &Self::None)
+    }
 }
 
 #[derive(

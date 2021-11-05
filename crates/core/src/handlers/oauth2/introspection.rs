@@ -13,7 +13,9 @@
 // limitations under the License.
 
 use hyper::Method;
-use oauth2_types::requests::{IntrospectionRequest, IntrospectionResponse, TokenTypeHint};
+use oauth2_types::requests::{
+    ClientAuthenticationMethod, IntrospectionRequest, IntrospectionResponse, TokenTypeHint,
+};
 use sqlx::{pool::PoolConnection, PgPool, Postgres};
 use tracing::{info, warn};
 use warp::{Filter, Rejection, Reply};
@@ -21,11 +23,7 @@ use warp::{Filter, Rejection, Reply};
 use crate::{
     config::{OAuth2ClientConfig, OAuth2Config},
     errors::WrapError,
-    filters::{
-        client::{client_authentication, ClientAuthentication},
-        cors::cors,
-        database::connection,
-    },
+    filters::{client::client_authentication, cors::cors, database::connection},
     storage::oauth2::{
         access_token::lookup_active_access_token, refresh_token::lookup_active_refresh_token,
     },
@@ -36,10 +34,16 @@ pub fn filter(
     pool: &PgPool,
     oauth2_config: &OAuth2Config,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
+    let audience = oauth2_config
+        .issuer
+        .join("/oauth2/introspect")
+        .unwrap()
+        .to_string();
+
     warp::path!("oauth2" / "introspect").and(
         warp::post()
             .and(connection(pool))
-            .and(client_authentication(oauth2_config))
+            .and(client_authentication(oauth2_config, audience))
             .and_then(introspect)
             .recover(recover)
             .with(cors().allow_method(Method::POST)),
@@ -63,7 +67,7 @@ const INACTIVE: IntrospectionResponse = IntrospectionResponse {
 
 async fn introspect(
     mut conn: PoolConnection<Postgres>,
-    auth: ClientAuthentication,
+    auth: ClientAuthenticationMethod,
     client: OAuth2ClientConfig,
     params: IntrospectionRequest,
 ) -> Result<impl Reply, Rejection> {

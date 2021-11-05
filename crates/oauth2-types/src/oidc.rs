@@ -23,6 +23,28 @@ use crate::{
     requests::{ClientAuthenticationMethod, GrantType, ResponseMode},
 };
 
+#[derive(Serialize, Clone, Copy, PartialEq, Eq, Hash)]
+#[serde(rename_all = "UPPERCASE")]
+pub enum SigningAlgorithm {
+    #[serde(rename = "none")]
+    None,
+    Hs256,
+    Hs384,
+    Hs512,
+    Ps256,
+    Ps384,
+    Ps512,
+    Rs256,
+    Rs384,
+    Rs512,
+    Es256,
+    Es256K,
+    Es384,
+    Es512,
+    #[serde(rename = "EcDSA")]
+    EcDsa,
+}
+
 // TODO: https://datatracker.ietf.org/doc/html/rfc8414#section-2
 #[skip_serializing_none]
 #[derive(Serialize, Clone)]
@@ -64,6 +86,13 @@ pub struct Metadata {
     /// JSON array containing a list of client authentication methods supported
     /// by this token endpoint.
     pub token_endpoint_auth_methods_supported: Option<HashSet<ClientAuthenticationMethod>>,
+
+    /// JSON array containing a list of the JWS signing algorithms supported by
+    /// the Token Endpoint for the signature on the JWT used to authenticate
+    /// the Client at the Token Endpoint for the private_key_jwt and
+    /// client_secret_jwt authentication methods. Servers SHOULD support
+    /// RS256. The value none MUST NOT be used.
+    pub token_endpoint_auth_signing_alg_values_supported: Option<HashSet<SigningAlgorithm>>,
 
     /// PKCE code challenge methods supported by this authorization server
     pub code_challenge_methods_supported: Option<HashSet<CodeChallengeMethod>>,

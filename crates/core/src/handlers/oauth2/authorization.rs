@@ -113,6 +113,15 @@ where
         params: T,
     }
 
+    #[derive(Serialize)]
+    struct ParamsWithState<T> {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        state: Option<String>,
+
+        #[serde(flatten)]
+        params: T,
+    }
+
     match response_mode {
         ResponseMode::Query => {
             let existing: Option<HashMap<&str, &str>> = redirect_uri
@@ -159,7 +168,8 @@ where
             )))
         }
         ResponseMode::FormPost => {
-            let ctx = FormPostContext::new(redirect_uri, params);
+            let merged = ParamsWithState { state, params };
+            let ctx = FormPostContext::new(redirect_uri, merged);
             let rendered = templates.render_form_post(&ctx)?;
             Ok(Box::new(html(rendered)))
         }

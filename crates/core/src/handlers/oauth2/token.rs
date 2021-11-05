@@ -22,7 +22,8 @@ use mas_data_model::AuthorizationGrantStage;
 use oauth2_types::{
     errors::{InvalidGrant, InvalidRequest, OAuth2Error, OAuth2ErrorCode, UnauthorizedClient},
     requests::{
-        AccessTokenRequest, AccessTokenResponse, AuthorizationCodeGrant, RefreshTokenGrant,
+        AccessTokenRequest, AccessTokenResponse, AuthorizationCodeGrant,
+        ClientAuthenticationMethod, RefreshTokenGrant,
     },
     scope::OPENID,
 };
@@ -42,12 +43,7 @@ use warp::{
 use crate::{
     config::{KeySet, OAuth2ClientConfig, OAuth2Config},
     errors::WrapError,
-    filters::{
-        client::{client_authentication, ClientAuthentication},
-        cors::cors,
-        database::connection,
-        with_keys,
-    },
+    filters::{client::client_authentication, cors::cors, database::connection, with_keys},
     reply::with_typed_header,
     storage::{
         oauth2::{
@@ -97,10 +93,16 @@ pub fn filter(
     pool: &PgPool,
     oauth2_config: &OAuth2Config,
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
+    let audience = oauth2_config
+        .issuer
+        .join("/oauth2/token")
+        .unwrap()
+        .to_string();
     let issuer = oauth2_config.issuer.clone();
+
     warp::path!("oauth2" / "token").and(
         warp::post()
-            .and(client_authentication(oauth2_config))
+            .and(client_authentication(oauth2_config, audience))
             .and(with_keys(oauth2_config))
             .and(warp::any().map(move || issuer.clone()))
             .and(connection(pool))
@@ -119,7 +121,7 @@ async fn recover(rejection: Rejection) -> Result<impl Reply, Rejection> {
 }
 
 async fn token(
-    _auth: ClientAuthentication,
+    _auth: ClientAuthenticationMethod,
     client: OAuth2ClientConfig,
     req: AccessTokenRequest,
     keys: KeySet,
