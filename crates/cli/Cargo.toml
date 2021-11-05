@@ -6,9 +6,9 @@ edition = "2018"
 license = "Apache-2.0"
 
 [dependencies]
-tokio = { version = "1.12.0", features = ["full"] }
+tokio = { version = "1.13.0", features = ["full"] }
 futures = "0.3.17"
-anyhow = "1.0.44"
+anyhow = "1.0.45"
 clap = "3.0.0-beta.5"
 dotenv = "0.15.0"
 schemars = { version = "0.8.6", features = ["url", "chrono"] }
