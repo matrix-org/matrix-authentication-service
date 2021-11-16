@@ -14,7 +14,8 @@
 
 use std::{
     collections::{HashMap, HashSet},
-    convert::TryFrom,
+    convert::{TryFrom, TryInto},
+    num::NonZeroU32,
 };
 
 use chrono::Duration;
@@ -24,7 +25,8 @@ use hyper::{
     StatusCode,
 };
 use mas_data_model::{
-    Authentication, AuthorizationCode, AuthorizationGrantStage, BrowserSession, Pkce,
+    Authentication, AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, BrowserSession,
+    Pkce, StorageBackend,
 };
 use mas_templates::{FormPostContext, Templates};
 use oauth2_types::{
@@ -55,7 +57,7 @@ use crate::{
         session::{optional_session, session},
         with_templates,
     },
-    handlers::views::LoginRequest,
+    handlers::views::{LoginRequest, PostAuthAction, ReauthRequest},
     storage::{
         oauth2::{
             access_token::add_access_token,
@@ -227,7 +229,7 @@ pub fn filter(
 
     let step = warp::path!("oauth2" / "authorize" / "step")
         .and(warp::get())
-        .and(warp::query().map(|s: StepRequest| s.id))
+        .and(warp::query())
         .and(session(pool, cookies_config))
         .and(transaction(pool))
         .and_then(step);
@@ -352,6 +354,14 @@ async fn get(
         None
     };
 
+    let max_age: Option<NonZeroU32> = params
+        .auth
+        .max_age
+        .as_ref()
+        .map(|d| d.num_seconds().try_into().and_then(|d: u32| d.try_into()))
+        .transpose()
+        .wrap_error()?;
+
     let grant = new_authorization_grant(
         &mut txn,
         client.client_id.clone(),
@@ -360,8 +370,7 @@ async fn get(
         code,
         params.auth.state,
         params.auth.nonce,
-        // TODO: support max_age and acr_values
-        None,
+        max_age,
         None,
         response_mode,
         response_type.contains(&ResponseType::Token),
@@ -370,33 +379,36 @@ async fn get(
     .await
     .wrap_error()?;
 
+    let next = ContinueAuthorizationGrant::from_authorization_grant(grant);
+
     if let Some(user_session) = maybe_session {
-        step(grant.data, user_session, txn).await
+        step(next, user_session, txn).await
     } else {
         // If not, redirect the user to the login page
         txn.commit().await.wrap_error()?;
 
-        let next = StepRequest::new(grant.data)
-            .build_uri()
-            .wrap_error()?
-            .to_string();
+        let next: PostAuthAction<_> = next.into();
+        let next: LoginRequest<_> = next.into();
+        let next = next.build_uri().wrap_error()?;
 
-        let destination = LoginRequest::new(Some(next)).build_uri().wrap_error()?;
-        Ok(ReplyOrBackToClient::Reply(Box::new(see_other(destination))))
+        Ok(ReplyOrBackToClient::Reply(Box::new(see_other(next))))
     }
 }
 
-#[derive(Deserialize, Serialize)]
-struct StepRequest {
-    id: i64,
+#[derive(Serialize, Deserialize)]
+pub(crate) struct ContinueAuthorizationGrant<S: StorageBackend> {
+    data: S::AuthorizationGrantData,
 }
 
-impl StepRequest {
-    fn new(id: i64) -> Self {
-        Self { id }
+impl<S: StorageBackend> ContinueAuthorizationGrant<S> {
+    pub fn from_authorization_grant(grant: AuthorizationGrant<S>) -> Self {
+        Self { data: grant.data }
     }
 
-    fn build_uri(&self) -> anyhow::Result<Uri> {
+    pub fn build_uri(&self) -> anyhow::Result<Uri>
+    where
+        S::AuthorizationGrantData: Serialize,
+    {
         let qs = serde_urlencoded::to_string(self)?;
         let path_and_query = PathAndQuery::try_from(format!("/oauth2/authorize/step?{}", qs))?;
         let uri = Uri::from_parts({
@@ -408,20 +420,14 @@ impl StepRequest {
     }
 }
 
-fn reauth() -> ReplyOrBackToClient {
-    // Ask for a reauth
-    // TODO: have the OAuth2 session ID in there
-    ReplyOrBackToClient::Reply(Box::new(see_other(Uri::from_static("/reauth"))))
-}
-
 async fn step(
-    grant_id: i64,
+    next: ContinueAuthorizationGrant<PostgresqlBackend>,
     browser_session: BrowserSession<PostgresqlBackend>,
     mut txn: Transaction<'_, Postgres>,
 ) -> Result<ReplyOrBackToClient, Rejection> {
     // TODO: we should check if the grant here was started by the browser doing that
     // request using a signed cookie
-    let grant = get_grant_by_id(&mut txn, grant_id).await.wrap_error()?;
+    let grant = get_grant_by_id(&mut txn, next.data).await.wrap_error()?;
 
     if !matches!(grant.stage, AuthorizationGrantStage::Pending) {
         return Err(anyhow::anyhow!("authorization grant not pending")).wrap_error();
@@ -485,7 +491,13 @@ async fn step(
                 params,
             }
         }
-        _ => reauth(),
+        _ => {
+            let next: PostAuthAction<_> = next.into();
+            let next: ReauthRequest<_> = next.into();
+            let next = next.build_uri().wrap_error()?;
+
+            ReplyOrBackToClient::Reply(Box::new(see_other(next)))
+        }
     };
 
     txn.commit().await.wrap_error()?;

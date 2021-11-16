@@ -25,6 +25,7 @@ mod keys;
 mod token;
 mod userinfo;
 
+pub(crate) use self::authorization::ContinueAuthorizationGrant;
 use self::{
     authorization::filter as authorization, discovery::filter as discovery,
     introspection::filter as introspection, keys::filter as keys, token::filter as token,

@@ -15,12 +15,13 @@
 use std::convert::TryFrom;
 
 use hyper::http::uri::{Parts, PathAndQuery, Uri};
-use mas_data_model::{errors::WrapFormError, BrowserSession};
+use mas_data_model::{errors::WrapFormError, BrowserSession, StorageBackend};
 use mas_templates::{LoginContext, LoginFormField, TemplateContext, Templates};
 use serde::{Deserialize, Serialize};
 use sqlx::{pool::PoolConnection, PgPool, Postgres};
 use warp::{reply::html, Filter, Rejection, Reply};
 
+use super::shared::PostAuthAction;
 use crate::{
     config::{CookiesConfig, CsrfConfig},
     errors::WrapError,
@@ -34,19 +35,33 @@ use crate::{
     storage::{login, PostgresqlBackend},
 };
 
-#[derive(Serialize, Deserialize)]
-pub struct LoginRequest {
-    next: Option<String>,
+#[derive(Deserialize)]
+#[serde(
+    rename_all = "snake_case",
+    bound = "<S as StorageBackend>::AuthorizationGrantData: Deserialize<'de>"
+)]
+pub(crate) struct LoginRequest<S: StorageBackend> {
+    #[serde(flatten, skip_serializing_if = "Option::is_none")]
+    next: Option<PostAuthAction<S>>,
 }
 
-impl LoginRequest {
-    pub fn new(next: Option<String>) -> Self {
-        Self { next }
+impl<S: StorageBackend> From<PostAuthAction<S>> for LoginRequest<S> {
+    fn from(next: PostAuthAction<S>) -> Self {
+        Self { next: Some(next) }
     }
+}
 
-    pub fn build_uri(&self) -> anyhow::Result<Uri> {
-        let qs = serde_urlencoded::to_string(self)?;
-        let path_and_query = PathAndQuery::try_from(format!("/login?{}", qs))?;
+impl<S: StorageBackend> LoginRequest<S> {
+    pub fn build_uri(&self) -> anyhow::Result<Uri>
+    where
+        S::AuthorizationGrantData: Serialize,
+    {
+        let path_and_query = if let Some(next) = &self.next {
+            let qs = serde_urlencoded::to_string(next)?;
+            PathAndQuery::try_from(format!("/login?{}", qs))?
+        } else {
+            PathAndQuery::from_static("/login")
+        };
         let uri = Uri::from_parts({
             let mut parts = Parts::default();
             parts.path_and_query = Some(path_and_query);
@@ -55,19 +70,17 @@ impl LoginRequest {
         Ok(uri)
     }
 
-    fn redirect(self) -> Result<impl Reply, Rejection> {
-        let uri: Uri = Uri::from_parts({
-            let mut parts = Parts::default();
-            parts.path_and_query = Some(
-                self.next
-                    .map(warp::http::uri::PathAndQuery::try_from)
-                    .transpose()
-                    .wrap_error()?
-                    .unwrap_or_else(|| PathAndQuery::from_static("/")),
-            );
-            parts
-        })
-        .wrap_error()?;
+    fn redirect(self) -> Result<impl Reply, Rejection>
+    where
+        S::AuthorizationGrantData: Serialize,
+    {
+        let uri = self
+            .next
+            .as_ref()
+            .map(PostAuthAction::build_uri)
+            .transpose()
+            .wrap_error()?
+            .unwrap_or_else(|| Uri::from_static("/"));
         Ok(warp::redirect::see_other(uri))
     }
 }
@@ -108,7 +121,7 @@ async fn get(
     templates: Templates,
     cookie_saver: EncryptedCookieSaver,
     csrf_token: CsrfToken,
-    query: LoginRequest,
+    query: LoginRequest<PostgresqlBackend>,
     maybe_session: Option<BrowserSession<PostgresqlBackend>>,
 ) -> Result<Box<dyn Reply>, Rejection> {
     if maybe_session.is_some() {
@@ -128,7 +141,7 @@ async fn post(
     cookie_saver: EncryptedCookieSaver,
     csrf_token: CsrfToken,
     form: LoginForm,
-    query: LoginRequest,
+    query: LoginRequest<PostgresqlBackend>,
 ) -> Result<Box<dyn Reply>, Rejection> {
     use crate::storage::user::LoginError;
     // TODO: recover

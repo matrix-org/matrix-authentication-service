@@ -12,12 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use mas_data_model::BrowserSession;
+use std::convert::TryFrom;
+
+use hyper::http::uri::{Parts, PathAndQuery};
+use mas_data_model::{BrowserSession, StorageBackend};
 use mas_templates::{EmptyContext, TemplateContext, Templates};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use sqlx::{PgPool, Postgres, Transaction};
 use warp::{hyper::Uri, reply::html, Filter, Rejection, Reply};
 
+use super::PostAuthAction;
 use crate::{
     config::{CookiesConfig, CsrfConfig},
     errors::WrapError,
@@ -30,6 +34,55 @@ use crate::{
     },
     storage::{user::authenticate_session, PostgresqlBackend},
 };
+#[derive(Deserialize)]
+#[serde(
+    rename_all = "snake_case",
+    bound = "<S as StorageBackend>::AuthorizationGrantData: Deserialize<'de>"
+)]
+pub(crate) struct ReauthRequest<S: StorageBackend> {
+    #[serde(flatten, skip_serializing_if = "Option::is_none")]
+    next: Option<PostAuthAction<S>>,
+}
+
+impl<S: StorageBackend> From<PostAuthAction<S>> for ReauthRequest<S> {
+    fn from(next: PostAuthAction<S>) -> Self {
+        Self { next: Some(next) }
+    }
+}
+
+impl<S: StorageBackend> ReauthRequest<S> {
+    pub fn build_uri(&self) -> anyhow::Result<Uri>
+    where
+        S::AuthorizationGrantData: Serialize,
+    {
+        let path_and_query = if let Some(next) = &self.next {
+            let qs = serde_urlencoded::to_string(next)?;
+            PathAndQuery::try_from(format!("/reauth?{}", qs))?
+        } else {
+            PathAndQuery::from_static("/reauth")
+        };
+        let uri = Uri::from_parts({
+            let mut parts = Parts::default();
+            parts.path_and_query = Some(path_and_query);
+            parts
+        })?;
+        Ok(uri)
+    }
+
+    fn redirect(self) -> Result<impl Reply, Rejection>
+    where
+        S::AuthorizationGrantData: Serialize,
+    {
+        let uri = self
+            .next
+            .as_ref()
+            .map(PostAuthAction::build_uri)
+            .transpose()
+            .wrap_error()?
+            .unwrap_or_else(|| Uri::from_static("/"));
+        Ok(warp::redirect::see_other(uri))
+    }
+}
 
 #[derive(Deserialize, Debug)]
 struct ReauthForm {
@@ -47,12 +100,14 @@ pub(super) fn filter(
         .and(encrypted_cookie_saver(cookies_config))
         .and(updated_csrf_token(cookies_config, csrf_config))
         .and(session(pool, cookies_config))
+        .and(warp::query())
         .and_then(get);
 
     let post = warp::post()
         .and(session(pool, cookies_config))
         .and(transaction(pool))
         .and(protected_form(cookies_config))
+        .and(warp::query())
         .and_then(post);
 
     warp::path!("reauth").and(get.or(post))
@@ -63,6 +118,7 @@ async fn get(
     cookie_saver: EncryptedCookieSaver,
     csrf_token: CsrfToken,
     session: BrowserSession<PostgresqlBackend>,
+    _query: ReauthRequest<PostgresqlBackend>,
 ) -> Result<impl Reply, Rejection> {
     let ctx = EmptyContext
         .with_session(session)
@@ -78,11 +134,12 @@ async fn post(
     session: BrowserSession<PostgresqlBackend>,
     mut txn: Transaction<'_, Postgres>,
     form: ReauthForm,
+    query: ReauthRequest<PostgresqlBackend>,
 ) -> Result<impl Reply, Rejection> {
     authenticate_session(&mut txn, &session, form.password)
         .await
         .wrap_error()?;
     txn.commit().await.wrap_error()?;
 
-    Ok(warp::redirect(Uri::from_static("/")))
+    Ok(query.redirect()?)
 }
