@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{collections::HashSet, hash::Hash};
+use std::{collections::HashSet, hash::Hash, num::NonZeroU32};
 
 use chrono::{DateTime, Duration, Utc};
 use language_tags::LanguageTag;
 use parse_display::{Display, FromStr};
 use serde::{Deserialize, Serialize};
 use serde_with::{
-    rust::StringWithSeparator, serde_as, skip_serializing_none, DurationSeconds, SpaceSeparator,
-    TimestampSeconds,
+    rust::StringWithSeparator, serde_as, skip_serializing_none, DisplayFromStr, DurationSeconds,
+    SpaceSeparator, TimestampSeconds,
 };
 use url::Url;
 
@@ -168,9 +168,9 @@ pub struct AuthorizationRequest {
 
     display: Option<Display>,
 
-    #[serde_as(as = "Option<DurationSeconds<i64>>")]
     #[serde(default)]
-    pub max_age: Option<Duration>,
+    #[serde_as(as = "Option<DisplayFromStr>")]
+    pub max_age: Option<NonZeroU32>,
 
     #[serde_as(as = "Option<StringWithSeparator::<SpaceSeparator, LanguageTag>>")]
     #[serde(default)]

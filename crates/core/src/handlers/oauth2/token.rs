@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use anyhow::Context;
-use chrono::Duration;
+use chrono::{DateTime, Duration, Utc};
 use data_encoding::BASE64URL_NOPAD;
 use headers::{CacheControl, Pragma};
 use hyper::{Method, StatusCode};
@@ -29,7 +29,7 @@ use oauth2_types::{
 };
 use rand::thread_rng;
 use serde::Serialize;
-use serde_with::skip_serializing_none;
+use serde_with::{serde_as, skip_serializing_none};
 use sha2::{Digest, Sha256};
 use sqlx::{pool::PoolConnection, Acquire, PgPool, Postgres};
 use tracing::debug;
@@ -58,6 +58,7 @@ use crate::{
     tokens::{AccessToken, RefreshToken},
 };
 
+#[serde_as]
 #[skip_serializing_none]
 #[derive(Serialize, Debug)]
 struct CustomClaims {
@@ -68,6 +69,8 @@ struct CustomClaims {
     #[serde(rename = "aud")]
     audiences: Vec<String>,
     nonce: Option<String>,
+    #[serde_as(as = "Option<serde_with::TimestampSeconds>")]
+    auth_time: Option<DateTime<Utc>>,
     at_hash: String,
     c_hash: String,
 }
@@ -253,6 +256,10 @@ async fn authorization_code_grant(
             subject: browser_session.user.sub.clone(),
             audiences: vec![client.client_id.clone()],
             nonce: authz_grant.nonce.clone(),
+            auth_time: browser_session
+                .last_authentication
+                .as_ref()
+                .map(|a| a.created_at),
             at_hash: hash(Sha256::new(), &access_token_str).wrap_error()?,
             c_hash: hash(Sha256::new(), &grant.code).wrap_error()?,
         })

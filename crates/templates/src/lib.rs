@@ -41,7 +41,8 @@ mod macros;
 
 pub use self::context::{
     EmptyContext, ErrorContext, FormPostContext, IndexContext, LoginContext, LoginFormField,
-    TemplateContext, WithCsrf, WithOptionalSession, WithSession,
+    PostAuthContext, ReauthContext, ReauthFormField, TemplateContext, WithCsrf,
+    WithOptionalSession, WithSession,
 };
 
 /// Wrapper around [`tera::Tera`] helping rendering the various templates
@@ -202,7 +203,7 @@ register_templates! {
     pub fn render_index(WithCsrf<WithOptionalSession<IndexContext>>) { "index.html" }
 
     /// Render the re-authentication form
-    pub fn render_reauth(WithCsrf<WithSession<EmptyContext>>) { "reauth.html" }
+    pub fn render_reauth(WithCsrf<WithSession<ReauthContext>>) { "reauth.html" }
 
     /// Render the form used by the form_post response mode
     pub fn render_form_post<T: Serialize>(FormPostContext<T>) { "form_post.html" }

@@ -14,7 +14,7 @@
 
 //! Contexts used in templates
 
-use mas_data_model::{errors::ErroredForm, BrowserSession, StorageBackend};
+use mas_data_model::{errors::ErroredForm, AuthorizationGrant, BrowserSession, StorageBackend};
 use oauth2_types::errors::OAuth2Error;
 use serde::{ser::SerializeStruct, Serialize};
 use url::Url;
@@ -210,10 +210,18 @@ pub enum LoginFormField {
     Password,
 }
 
+/// Context used in login and reauth screens, for the post-auth action to do
+#[derive(Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum PostAuthContext {
+    ContinueAuthorizationGrant { grant: AuthorizationGrant<()> },
+}
+
 /// Context used by the `login.html` template
 #[derive(Serialize)]
 pub struct LoginContext {
     form: ErroredForm<LoginFormField>,
+    next: Option<PostAuthContext>,
 }
 
 impl TemplateContext for LoginContext {
@@ -224,14 +232,23 @@ impl TemplateContext for LoginContext {
         // TODO: samples with errors
         vec![LoginContext {
             form: ErroredForm::default(),
+            next: None,
         }]
     }
 }
 
 impl LoginContext {
     #[must_use]
-    pub fn with_form_error(form: ErroredForm<LoginFormField>) -> Self {
-        Self { form }
+    pub fn with_form_error(self, form: ErroredForm<LoginFormField>) -> Self {
+        Self { form, ..self }
+    }
+
+    #[must_use]
+    pub fn with_post_action(self, next: PostAuthContext) -> Self {
+        Self {
+            next: Some(next),
+            ..self
+        }
     }
 }
 
@@ -239,8 +256,59 @@ impl Default for LoginContext {
     fn default() -> Self {
         Self {
             form: ErroredForm::new(),
+            next: None,
         }
     }
+}
+
+#[derive(Serialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum ReauthFormField {
+    Password,
+}
+
+impl TemplateContext for ReauthContext {
+    fn sample() -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        // TODO: samples with errors
+        vec![ReauthContext {
+            form: ErroredForm::default(),
+            next: None,
+        }]
+    }
+}
+
+impl ReauthContext {
+    #[must_use]
+    pub fn with_form_error(self, form: ErroredForm<ReauthFormField>) -> Self {
+        Self { form, ..self }
+    }
+
+    #[must_use]
+    pub fn with_post_action(self, next: PostAuthContext) -> Self {
+        Self {
+            next: Some(next),
+            ..self
+        }
+    }
+}
+
+impl Default for ReauthContext {
+    fn default() -> Self {
+        Self {
+            form: ErroredForm::new(),
+            next: None,
+        }
+    }
+}
+
+/// Context used by the `reauth.html` template
+#[derive(Serialize)]
+pub struct ReauthContext {
+    form: ErroredForm<ReauthFormField>,
+    next: Option<PostAuthContext>,
 }
 
 /// Context used by the `form_post.html` template

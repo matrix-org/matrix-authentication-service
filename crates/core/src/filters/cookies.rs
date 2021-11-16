@@ -186,7 +186,7 @@ impl EncryptedCookieSaver {
         // TODO: make those options customizable
         let value = Cookie::build(T::cookie_key(), encrypted)
             .http_only(true)
-            .same_site(SameSite::Strict)
+            .same_site(SameSite::Lax)
             .finish()
             .to_string();
 

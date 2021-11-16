@@ -36,7 +36,16 @@ limitations under the License.
           </form>
         </div>
         <div class="column is-two-third">
-          <pre><code>{{ current_session | json_encode(pretty=True) | safe }}</code></pre>
+          <div class="block">
+            <h3 class="title is-3">Current session data:</h3>
+            <pre><code>{{ current_session | json_encode(pretty=True) | safe }}</code></pre>
+          </div>
+          {% if next %}
+            <div class="block">
+              <h3 class="title is-3">Next action:</h3>
+              <pre><code>{{ next | json_encode(pretty=True) | safe }}</code></pre>
+            </div>
+          {% endif %}
         </div>
       </div>
     </div>

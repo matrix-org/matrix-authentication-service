@@ -16,9 +16,9 @@ use std::convert::TryFrom;
 
 use hyper::http::uri::{Parts, PathAndQuery};
 use mas_data_model::{BrowserSession, StorageBackend};
-use mas_templates::{EmptyContext, TemplateContext, Templates};
-use serde::{Deserialize, Serialize};
-use sqlx::{PgPool, Postgres, Transaction};
+use mas_templates::{ReauthContext, TemplateContext, Templates};
+use serde::Deserialize;
+use sqlx::{pool::PoolConnection, PgPool, Postgres, Transaction};
 use warp::{hyper::Uri, reply::html, Filter, Rejection, Reply};
 
 use super::PostAuthAction;
@@ -28,34 +28,34 @@ use crate::{
     filters::{
         cookies::{encrypted_cookie_saver, EncryptedCookieSaver},
         csrf::{protected_form, updated_csrf_token},
-        database::transaction,
+        database::{connection, transaction},
         session::session,
         with_templates, CsrfToken,
     },
     storage::{user::authenticate_session, PostgresqlBackend},
 };
 #[derive(Deserialize)]
-#[serde(
-    rename_all = "snake_case",
-    bound = "<S as StorageBackend>::AuthorizationGrantData: Deserialize<'de>"
-)]
+#[serde(bound(deserialize = "S::AuthorizationGrantData: std::str::FromStr,
+                             <S::AuthorizationGrantData as std::str::FromStr>::Err: std::fmt::Display"))]
 pub(crate) struct ReauthRequest<S: StorageBackend> {
-    #[serde(flatten, skip_serializing_if = "Option::is_none")]
-    next: Option<PostAuthAction<S>>,
+    #[serde(flatten)]
+    post_auth_action: Option<PostAuthAction<S>>,
 }
 
 impl<S: StorageBackend> From<PostAuthAction<S>> for ReauthRequest<S> {
-    fn from(next: PostAuthAction<S>) -> Self {
-        Self { next: Some(next) }
+    fn from(post_auth_action: PostAuthAction<S>) -> Self {
+        Self {
+            post_auth_action: Some(post_auth_action),
+        }
     }
 }
 
 impl<S: StorageBackend> ReauthRequest<S> {
     pub fn build_uri(&self) -> anyhow::Result<Uri>
     where
-        S::AuthorizationGrantData: Serialize,
+        S::AuthorizationGrantData: std::fmt::Display,
     {
-        let path_and_query = if let Some(next) = &self.next {
+        let path_and_query = if let Some(next) = &self.post_auth_action {
             let qs = serde_urlencoded::to_string(next)?;
             PathAndQuery::try_from(format!("/reauth?{}", qs))?
         } else {
@@ -71,10 +71,10 @@ impl<S: StorageBackend> ReauthRequest<S> {
 
     fn redirect(self) -> Result<impl Reply, Rejection>
     where
-        S::AuthorizationGrantData: Serialize,
+        S::AuthorizationGrantData: std::fmt::Display,
     {
         let uri = self
-            .next
+            .post_auth_action
             .as_ref()
             .map(PostAuthAction::build_uri)
             .transpose()
@@ -97,6 +97,7 @@ pub(super) fn filter(
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
     let get = warp::get()
         .and(with_templates(templates))
+        .and(connection(pool))
         .and(encrypted_cookie_saver(cookies_config))
         .and(updated_csrf_token(cookies_config, csrf_config))
         .and(session(pool, cookies_config))
@@ -115,14 +116,21 @@ pub(super) fn filter(
 
 async fn get(
     templates: Templates,
+    mut conn: PoolConnection<Postgres>,
     cookie_saver: EncryptedCookieSaver,
     csrf_token: CsrfToken,
     session: BrowserSession<PostgresqlBackend>,
-    _query: ReauthRequest<PostgresqlBackend>,
+    query: ReauthRequest<PostgresqlBackend>,
 ) -> Result<impl Reply, Rejection> {
-    let ctx = EmptyContext
-        .with_session(session)
-        .with_csrf(csrf_token.form_value());
+    let ctx = ReauthContext::default();
+    let ctx = match query.post_auth_action {
+        Some(next) => {
+            let next = next.load_context(&mut conn).await.wrap_error()?;
+            ctx.with_post_action(next)
+        }
+        None => ctx,
+    };
+    let ctx = ctx.with_session(session).with_csrf(csrf_token.form_value());
 
     let content = templates.render_reauth(&ctx)?;
     let reply = html(content);
@@ -136,6 +144,7 @@ async fn post(
     form: ReauthForm,
     query: ReauthRequest<PostgresqlBackend>,
 ) -> Result<impl Reply, Rejection> {
+    // TODO: recover from errors here
     authenticate_session(&mut txn, &session, form.password)
         .await
         .wrap_error()?;

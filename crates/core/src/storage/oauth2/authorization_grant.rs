@@ -121,7 +121,6 @@ struct GrantLookup {
     grant_redirect_uri: String,
     grant_response_mode: String,
     grant_nonce: Option<String>,
-    #[allow(dead_code)]
     grant_max_age: Option<i32>,
     grant_acr_values: Option<String>,
     grant_response_type_code: bool,
@@ -274,6 +273,15 @@ impl TryInto<AuthorizationGrant<PostgresqlBackend>> for GrantLookup {
             .parse()
             .map_err(|_e| DatabaseInconsistencyError)?;
 
+        let max_age = self
+            .grant_max_age
+            .map(|m: i32| m.try_into())
+            .transpose()
+            .map_err(|_e| DatabaseInconsistencyError)?
+            .map(|m: u32| m.try_into())
+            .transpose()
+            .map_err(|_e| DatabaseInconsistencyError)?;
+
         Ok(AuthorizationGrant {
             data: self.grant_id,
             stage,
@@ -283,7 +291,7 @@ impl TryInto<AuthorizationGrant<PostgresqlBackend>> for GrantLookup {
             scope,
             state: self.grant_state,
             nonce: self.grant_nonce,
-            max_age: None, // TODO
+            max_age, // TODO
             response_mode,
             redirect_uri,
             created_at: self.grant_created_at,
@@ -340,6 +348,9 @@ pub async fn get_grant_by_id(
               ON usa.session_id = us.id
             WHERE
                 og.id = $1
+
+            ORDER BY usa.created_at DESC
+            LIMIT 1
         "#,
         id,
     )
@@ -399,6 +410,9 @@ pub async fn lookup_grant_by_code(
               ON usa.session_id = us.id
             WHERE
                 og.code = $1
+
+            ORDER BY usa.created_at DESC
+            LIMIT 1
         "#,
         code,
     )

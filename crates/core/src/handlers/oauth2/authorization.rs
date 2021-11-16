@@ -14,8 +14,7 @@
 
 use std::{
     collections::{HashMap, HashSet},
-    convert::{TryFrom, TryInto},
-    num::NonZeroU32,
+    convert::TryFrom,
 };
 
 use chrono::Duration;
@@ -40,7 +39,7 @@ use oauth2_types::{
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use sqlx::{PgPool, Postgres, Transaction};
+use sqlx::{PgExecutor, PgPool, Postgres, Transaction};
 use url::Url;
 use warp::{
     redirect::see_other,
@@ -354,14 +353,6 @@ async fn get(
         None
     };
 
-    let max_age: Option<NonZeroU32> = params
-        .auth
-        .max_age
-        .as_ref()
-        .map(|d| d.num_seconds().try_into().and_then(|d: u32| d.try_into()))
-        .transpose()
-        .wrap_error()?;
-
     let grant = new_authorization_grant(
         &mut txn,
         client.client_id.clone(),
@@ -370,7 +361,7 @@ async fn get(
         code,
         params.auth.state,
         params.auth.nonce,
-        max_age,
+        params.auth.max_age,
         None,
         response_mode,
         response_type.contains(&ResponseType::Token),
@@ -397,6 +388,14 @@ async fn get(
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ContinueAuthorizationGrant<S: StorageBackend> {
+    #[serde(
+        with = "serde_with::rust::display_fromstr",
+        bound(
+            deserialize = "S::AuthorizationGrantData: std::str::FromStr, 
+                           <S::AuthorizationGrantData as std::str::FromStr>::Err: std::fmt::Display",
+            serialize = "S::AuthorizationGrantData: std::fmt::Display"
+        )
+    )]
     data: S::AuthorizationGrantData,
 }
 
@@ -407,7 +406,7 @@ impl<S: StorageBackend> ContinueAuthorizationGrant<S> {
 
     pub fn build_uri(&self) -> anyhow::Result<Uri>
     where
-        S::AuthorizationGrantData: Serialize,
+        S::AuthorizationGrantData: std::fmt::Display,
     {
         let qs = serde_urlencoded::to_string(self)?;
         let path_and_query = PathAndQuery::try_from(format!("/oauth2/authorize/step?{}", qs))?;
@@ -420,6 +419,15 @@ impl<S: StorageBackend> ContinueAuthorizationGrant<S> {
     }
 }
 
+impl ContinueAuthorizationGrant<PostgresqlBackend> {
+    pub async fn fetch_authorization_grant(
+        &self,
+        executor: impl PgExecutor<'_>,
+    ) -> anyhow::Result<AuthorizationGrant<PostgresqlBackend>> {
+        get_grant_by_id(executor, self.data).await
+    }
+}
+
 async fn step(
     next: ContinueAuthorizationGrant<PostgresqlBackend>,
     browser_session: BrowserSession<PostgresqlBackend>,
@@ -427,14 +435,17 @@ async fn step(
 ) -> Result<ReplyOrBackToClient, Rejection> {
     // TODO: we should check if the grant here was started by the browser doing that
     // request using a signed cookie
-    let grant = get_grant_by_id(&mut txn, next.data).await.wrap_error()?;
+    let grant = next
+        .fetch_authorization_grant(&mut txn)
+        .await
+        .wrap_error()?;
 
     if !matches!(grant.stage, AuthorizationGrantStage::Pending) {
         return Err(anyhow::anyhow!("authorization grant not pending")).wrap_error();
     }
 
     let reply = match browser_session.last_authentication {
-        Some(Authentication { created_at, .. }) if created_at < grant.max_auth_time() => {
+        Some(Authentication { created_at, .. }) if created_at > grant.max_auth_time() => {
             let session = derive_session(&mut txn, &grant, browser_session)
                 .await
                 .wrap_error()?;

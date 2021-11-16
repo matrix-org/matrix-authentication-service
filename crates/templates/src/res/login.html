@@ -20,7 +20,7 @@ limitations under the License.
   <section class="section">
     <div class="container is-max-desktop">
       <div class="columns">
-        <div class="column is-half is-offset-one-quarter">
+        <div class="column is-one-third">
           {% if form.has_errors %}
             <article class="message is-danger">
               <div class="message-body">
@@ -64,6 +64,15 @@ limitations under the License.
             </div>
           </form>
         </div>
+
+        {% if next %}
+          <div class="column is-two-third">
+            <div class="block">
+              <h3 class="title is-3">Next action:</h3>
+              <pre><code>{{ next | json_encode(pretty=True) | safe }}</code></pre>
+            </div>
+          </div>
+        {% endif %}
       </div>
     </div>
   </section>

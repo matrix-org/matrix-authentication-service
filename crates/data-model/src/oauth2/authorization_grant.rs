@@ -21,7 +21,7 @@ use thiserror::Error;
 use url::Url;
 
 use super::{client::Client, session::Session};
-use crate::traits::StorageBackend;
+use crate::{traits::StorageBackend, StorageBackendMarker};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Pkce {
@@ -53,7 +53,7 @@ pub struct AuthorizationCode {
 pub struct InvalidTransitionError;
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
-#[serde(bound = "T: StorageBackend")]
+#[serde(bound = "T: StorageBackend", tag = "stage", rename_all = "lowercase")]
 pub enum AuthorizationGrantStage<T: StorageBackend> {
     Pending,
     Fulfilled {
@@ -117,6 +117,32 @@ impl<T: StorageBackend> AuthorizationGrantStage<T> {
     }
 }
 
+impl<S: StorageBackendMarker> From<AuthorizationGrantStage<S>> for AuthorizationGrantStage<()> {
+    fn from(s: AuthorizationGrantStage<S>) -> Self {
+        use AuthorizationGrantStage::*;
+        match s {
+            Pending => Pending,
+            Fulfilled {
+                session,
+                fulfilled_at,
+            } => Fulfilled {
+                session: session.into(),
+                fulfilled_at,
+            },
+            Exchanged {
+                session,
+                fulfilled_at,
+                exchanged_at,
+            } => Exchanged {
+                session: session.into(),
+                fulfilled_at,
+                exchanged_at,
+            },
+            Cancelled { cancelled_at } => Cancelled { cancelled_at },
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(bound = "T: StorageBackend")]
 pub struct AuthorizationGrant<T: StorageBackend> {
@@ -138,9 +164,30 @@ pub struct AuthorizationGrant<T: StorageBackend> {
     pub created_at: DateTime<Utc>,
 }
 
+impl<S: StorageBackendMarker> From<AuthorizationGrant<S>> for AuthorizationGrant<()> {
+    fn from(g: AuthorizationGrant<S>) -> Self {
+        AuthorizationGrant {
+            data: (),
+            stage: g.stage.into(),
+            code: g.code,
+            client: g.client.into(),
+            redirect_uri: g.redirect_uri,
+            scope: g.scope,
+            state: g.state,
+            nonce: g.nonce,
+            max_age: g.max_age,
+            acr_values: g.acr_values,
+            response_mode: g.response_mode,
+            response_type_token: g.response_type_token,
+            response_type_id_token: g.response_type_id_token,
+            created_at: g.created_at,
+        }
+    }
+}
+
 impl<T: StorageBackend> AuthorizationGrant<T> {
     pub fn max_auth_time(&self) -> DateTime<Utc> {
         let max_age: Option<i64> = self.max_age.map(|x| x.get().into());
-        self.created_at + Duration::seconds(max_age.unwrap_or(3600 * 24 * 365))
+        self.created_at - Duration::seconds(max_age.unwrap_or(3600 * 24 * 365))
     }
 }
