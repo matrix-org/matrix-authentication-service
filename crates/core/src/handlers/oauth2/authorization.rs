@@ -29,7 +29,10 @@ use mas_data_model::{
 };
 use mas_templates::{FormPostContext, Templates};
 use oauth2_types::{
-    errors::{ErrorResponse, InvalidGrant, InvalidRequest, LoginRequired, OAuth2Error},
+    errors::{
+        ErrorResponse, InvalidGrant, InvalidRequest, LoginRequired, OAuth2Error,
+        RegistrationNotSupported, RequestNotSupported, RequestUriNotSupported,
+    },
     pkce,
     requests::{
         AccessTokenResponse, AuthorizationRequest, AuthorizationResponse, Prompt, ResponseMode,
@@ -316,6 +319,22 @@ async fn get(
     maybe_session: Option<BrowserSession<PostgresqlBackend>>,
     mut txn: Transaction<'_, Postgres>,
 ) -> Result<ReplyOrBackToClient, Rejection> {
+    // Check if the request/request_uri/registration params are used. If so, reply
+    // with the right error since we don't support them.
+    if params.auth.request.is_some() {
+        return Ok(ReplyOrBackToClient::Error(Box::new(RequestNotSupported)));
+    }
+
+    if params.auth.request_uri.is_some() {
+        return Ok(ReplyOrBackToClient::Error(Box::new(RequestUriNotSupported)));
+    }
+
+    if params.auth.registration.is_some() {
+        return Ok(ReplyOrBackToClient::Error(Box::new(
+            RegistrationNotSupported,
+        )));
+    }
+
     // First, find out what client it is
     let client = clients
         .into_iter()

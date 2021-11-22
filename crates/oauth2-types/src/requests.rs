@@ -185,6 +185,12 @@ pub struct AuthorizationRequest {
     #[serde_as(as = "Option<StringWithSeparator::<SpaceSeparator, String>>")]
     #[serde(default)]
     acr_values: Option<HashSet<String>>,
+
+    pub request: Option<String>,
+
+    pub request_uri: Option<Url>,
+
+    pub registration: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Default)]
