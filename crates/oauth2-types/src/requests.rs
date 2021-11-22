@@ -168,6 +168,8 @@ pub struct AuthorizationRequest {
 
     display: Option<Display>,
 
+    pub prompt: Option<Prompt>,
+
     #[serde(default)]
     #[serde_as(as = "Option<DisplayFromStr>")]
     pub max_age: Option<NonZeroU32>,

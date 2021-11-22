@@ -29,10 +29,10 @@ use mas_data_model::{
 };
 use mas_templates::{FormPostContext, Templates};
 use oauth2_types::{
-    errors::{ErrorResponse, InvalidGrant, InvalidRequest, OAuth2Error},
+    errors::{ErrorResponse, InvalidGrant, InvalidRequest, LoginRequired, OAuth2Error},
     pkce,
     requests::{
-        AccessTokenResponse, AuthorizationRequest, AuthorizationResponse, ResponseMode,
+        AccessTokenResponse, AuthorizationRequest, AuthorizationResponse, Prompt, ResponseMode,
         ResponseType,
     },
     scope::ScopeToken,
@@ -389,17 +389,37 @@ async fn get(
 
     let next = ContinueAuthorizationGrant::from_authorization_grant(grant);
 
-    if let Some(user_session) = maybe_session {
-        step(next, user_session, txn).await
-    } else {
-        // If not, redirect the user to the login page
-        txn.commit().await.wrap_error()?;
+    match (maybe_session, params.auth.prompt) {
+        (None, Some(Prompt::None)) => {
+            // If there is no session and prompt=none was asked, go back to the client
+            txn.commit().await.wrap_error()?;
+            Ok(ReplyOrBackToClient::Error(Box::new(LoginRequired)))
+        }
+        (Some(_), Some(Prompt::Login | Prompt::Consent | Prompt::SelectAccount)) => {
+            // We're already logged in but login|consent|select_account was asked, reauth
+            // TODO: better pages here
+            txn.commit().await.wrap_error()?;
 
-        let next: PostAuthAction<_> = next.into();
-        let next: LoginRequest<_> = next.into();
-        let next = next.build_uri().wrap_error()?;
+            let next: PostAuthAction<_> = next.into();
+            let next: ReauthRequest<_> = next.into();
+            let next = next.build_uri().wrap_error()?;
 
-        Ok(ReplyOrBackToClient::Reply(Box::new(see_other(next))))
+            Ok(ReplyOrBackToClient::Reply(Box::new(see_other(next))))
+        }
+        (Some(user_session), _) => {
+            // Other cases where we already have a session
+            step(next, user_session, txn).await
+        }
+        (None, _) => {
+            // Other cases where we don't have a session, ask for a login
+            txn.commit().await.wrap_error()?;
+
+            let next: PostAuthAction<_> = next.into();
+            let next: LoginRequest<_> = next.into();
+            let next = next.build_uri().wrap_error()?;
+
+            Ok(ReplyOrBackToClient::Reply(Box::new(see_other(next))))
+        }
     }
 }
 

@@ -252,6 +252,62 @@ pub mod rfc6749 {
     }
 }
 
+pub mod oidc_core {
+
+    oauth2_error! {
+        InteractionRequired,
+        "interaction_required" =>
+        "The Authorization Server requires End-User interaction of some form to proceed."
+    }
+
+    oauth2_error! {
+        LoginRequired,
+        "login_required" =>
+        "The Authorization Server requires End-User authentication."
+    }
+
+    oauth2_error! {
+        AccountSelectionRequired,
+        "account_selection_required"
+    }
+
+    oauth2_error! {
+        ConsentRequired,
+        "consent_required"
+    }
+
+    oauth2_error! {
+        InvalidRequestUri,
+        "invalid_request_uri" =>
+        "The request_uri in the Authorization Request returns an error or contains invalid data. "
+    }
+
+    oauth2_error! {
+        InvalidRequestObject,
+        "invalid_request_object" =>
+        "The request parameter contains an invalid Request Object."
+    }
+
+    oauth2_error! {
+        RequestNotSupported,
+        "request_not_supported" =>
+        "The provider does not support use of the request parameter."
+    }
+
+    oauth2_error! {
+        RequestUriNotSupported,
+        "request_uri_not_supported" =>
+        "The provider does not support use of the request_uri parameter."
+    }
+
+    oauth2_error! {
+        RegistrationNotSupported,
+        "registration_not_supported" =>
+        "The provider does not support use of the registration parameter."
+    }
+}
+
+pub use oidc_core::*;
 pub use rfc6749::*;
 
 #[cfg(test)]
