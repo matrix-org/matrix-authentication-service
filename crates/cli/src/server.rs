@@ -110,6 +110,32 @@ impl<B> OnResponse<B> for OtelOnResponse {
     }
 }
 
+#[cfg(not(unix))]
+async fn shutdown_signal() {
+    // Wait for the CTRL+C signal
+    tokio::signal::ctrl_c()
+        .await
+        .expect("failed to install Ctrl+C signal handler");
+
+    tracing::info!("Got Ctrl+C, shutting down");
+}
+
+#[cfg(unix)]
+async fn shutdown_signal() {
+    use tokio::signal::unix::{signal, SignalKind};
+
+    // Wait for SIGTERM and SIGINT signals
+    // This might panic but should be fine
+    let mut term =
+        signal(SignalKind::terminate()).expect("failed to install SIGTERM signal handler");
+    let mut int = signal(SignalKind::interrupt()).expect("failed to install SIGINT signal handler");
+
+    tokio::select! {
+        _ = term.recv() => tracing::info!("Got SIGTERM, shutting down"),
+        _ = int.recv() => tracing::info!("Got SIGINT, shutting down"),
+    };
+}
+
 impl ServerCommand {
     pub async fn run(&self, root: &RootCommand) -> anyhow::Result<()> {
         let config: RootConfig = root.load_config()?;
@@ -164,6 +190,7 @@ impl ServerCommand {
 
         Server::from_tcp(listener)?
             .serve(Shared::new(service))
+            .with_graceful_shutdown(shutdown_signal())
             .await?;
 
         Ok(())
