@@ -89,20 +89,13 @@ jobs:
             ~/.cargo/git/db
           key: ${{ runner.os }}-cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Download rust-analyzer and Sourcegraph CLI
-        run: |
-          mkdir -p "${HOME}/.local/bin"
-          curl -sL https://github.com/rust-analyzer/rust-analyzer/releases/download/2021-10-04/rust-analyzer-x86_64-unknown-linux-gnu.gz | gunzip > "${HOME}/.local/bin/rust-analyzer"
-          curl -sL https://github.com/sourcegraph/src-cli/releases/download/3.32.0/src_linux_amd64 > "${HOME}/.local/bin/src"
-          chmod +x "${HOME}/.local/bin/rust-analyzer" "${HOME}/.local/bin/src"
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-
       - name: Generate LSIF data
-        run: rust-analyzer lsif . > ./dump.lsif
+        uses: sourcegraph/lsif-rust-action@v0.1.0
 
       - name: Upload LSIF data
-        run: |
-          src lsif upload -file=./dump.lsif -indexer=rust-analyzer -repo="github.com/${GITHUB_REPOSITORY}" -commit="${GITHUB_SHA}" -github-token="${{ secrets.GITHUB_TOKEN }}"
+        uses: sourcegraph/lsif-upload-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
 
   rustfmt:
