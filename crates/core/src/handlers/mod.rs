@@ -16,7 +16,7 @@
 
 use mas_templates::Templates;
 use sqlx::PgPool;
-use warp::{Filter, Rejection, Reply};
+use warp::{filters::BoxedFilter, Filter, Reply};
 
 use crate::config::RootConfig;
 
@@ -31,7 +31,7 @@ pub fn root(
     pool: &PgPool,
     templates: &Templates,
     config: &RootConfig,
-) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
+) -> BoxedFilter<(impl Reply,)> {
     health(pool)
         .or(oauth2(pool, templates, &config.oauth2, &config.cookies))
         .or(views(
@@ -42,4 +42,5 @@ pub fn root(
             &config.cookies,
         ))
         .with(warp::log(module_path!()))
+        .boxed()
 }

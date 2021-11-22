@@ -14,7 +14,7 @@
 
 use mas_templates::Templates;
 use sqlx::PgPool;
-use warp::{Filter, Rejection, Reply};
+use warp::{filters::BoxedFilter, Filter, Reply};
 
 use crate::config::{CookiesConfig, OAuth2Config};
 
@@ -37,7 +37,7 @@ pub fn filter(
     templates: &Templates,
     oauth2_config: &OAuth2Config,
     cookies_config: &CookiesConfig,
-) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
+) -> BoxedFilter<(impl Reply,)> {
     discovery(oauth2_config)
         .or(keys(oauth2_config))
         .or(authorization(
@@ -49,4 +49,5 @@ pub fn filter(
         .or(userinfo(pool, oauth2_config))
         .or(introspection(pool, oauth2_config))
         .or(token(pool, oauth2_config))
+        .boxed()
 }
