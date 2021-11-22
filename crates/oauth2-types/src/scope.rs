@@ -28,17 +28,20 @@ pub struct InvalidScope;
 pub struct ScopeToken(Cow<'static, str>);
 
 impl ScopeToken {
-    const fn well_known(token: &'static str) -> Self {
+    /// Create a `ScopeToken` from a static string. The validity of it is not
+    /// checked since it has to be valid in const contexts
+    #[must_use]
+    pub const fn from_static(token: &'static str) -> Self {
         Self(Cow::Borrowed(token))
     }
 }
 
-pub const OPENID: ScopeToken = ScopeToken::well_known("openid");
-pub const PROFILE: ScopeToken = ScopeToken::well_known("profile");
-pub const EMAIL: ScopeToken = ScopeToken::well_known("email");
-pub const ADDRESS: ScopeToken = ScopeToken::well_known("address");
-pub const PHONE: ScopeToken = ScopeToken::well_known("phone");
-pub const OFFLINE_ACCESS: ScopeToken = ScopeToken::well_known("offline_access");
+pub const OPENID: ScopeToken = ScopeToken::from_static("openid");
+pub const PROFILE: ScopeToken = ScopeToken::from_static("profile");
+pub const EMAIL: ScopeToken = ScopeToken::from_static("email");
+pub const ADDRESS: ScopeToken = ScopeToken::from_static("address");
+pub const PHONE: ScopeToken = ScopeToken::from_static("phone");
+pub const OFFLINE_ACCESS: ScopeToken = ScopeToken::from_static("offline_access");
 
 // As per RFC6749 appendix A:
 // https://datatracker.ietf.org/doc/html/rfc6749#appendix-A
@@ -113,6 +116,10 @@ impl Scope {
         ScopeToken::from_str(token)
             .map(|token| self.0.contains(&token))
             .unwrap_or(false)
+    }
+
+    pub fn insert(&mut self, value: ScopeToken) -> bool {
+        self.0.insert(value)
     }
 }
 

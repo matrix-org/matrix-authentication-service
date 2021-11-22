@@ -35,6 +35,7 @@ use oauth2_types::{
         AccessTokenResponse, AuthorizationRequest, AuthorizationResponse, ResponseMode,
         ResponseType,
     },
+    scope::ScopeToken,
 };
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use serde::{Deserialize, Serialize};
@@ -353,11 +354,27 @@ async fn get(
         None
     };
 
+    // Generate the device ID
+    // TODO: this should probably be done somewhere else?
+    let device_id: String = thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(10)
+        .map(char::from)
+        .collect();
+    let device_scope: ScopeToken = format!("urn:matrix:device:{}", device_id)
+        .parse()
+        .wrap_error()?;
+    let scope = {
+        let mut s = params.auth.scope.clone();
+        s.insert(device_scope);
+        s
+    };
+
     let grant = new_authorization_grant(
         &mut txn,
         client.client_id.clone(),
         redirect_uri.clone(),
-        params.auth.scope,
+        scope,
         code,
         params.auth.state,
         params.auth.nonce,
