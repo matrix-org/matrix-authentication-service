@@ -21,8 +21,6 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::implicit_hasher)]
 
-pub(crate) use mas_config as config;
-
 pub mod errors;
 pub mod filters;
 pub mod handlers;
@@ -30,3 +28,5 @@ pub mod reply;
 pub mod storage;
 pub mod tasks;
 pub mod tokens;
+
+pub use self::filters::cors::set_propagator;

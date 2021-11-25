@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use mas_config::{CookiesConfig, OAuth2Config};
 use mas_templates::Templates;
 use sqlx::PgPool;
 use warp::{filters::BoxedFilter, Filter, Reply};
-
-use crate::config::{CookiesConfig, OAuth2Config};
 
 mod authorization;
 mod discovery;

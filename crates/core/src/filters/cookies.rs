@@ -23,6 +23,7 @@ use chacha20poly1305::{
 use cookie::{Cookie, SameSite};
 use data_encoding::BASE64URL_NOPAD;
 use headers::{Header, HeaderValue, SetCookie};
+use mas_config::CookiesConfig;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use thiserror::Error;
 use warp::{
@@ -32,7 +33,6 @@ use warp::{
 
 use super::none_on_error;
 use crate::{
-    config::CookiesConfig,
     errors::WrapError,
     reply::{with_typed_header, WithTypedHeader},
 };

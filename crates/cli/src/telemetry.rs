@@ -40,7 +40,7 @@ pub fn setup(config: &TelemetryConfig) -> anyhow::Result<Option<Tracer>> {
 
     // The CORS filter needs to know what headers it should whitelist for
     // CORS-protected requests.
-    mas_core::filters::cors::set_propagator(&propagator);
+    mas_core::set_propagator(&propagator);
     global::set_text_map_propagator(propagator);
 
     let tracer = tracer(&config.tracing.exporter)?;

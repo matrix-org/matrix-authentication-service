@@ -12,6 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub mod access_token;
-pub mod authorization_grant;
-pub mod refresh_token;
+pub(crate) mod access_token;
+pub(crate) mod authorization_grant;
+pub(crate) mod refresh_token;

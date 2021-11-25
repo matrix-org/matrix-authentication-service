@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use hyper::Method;
+use mas_config::{OAuth2ClientConfig, OAuth2Config};
 use oauth2_types::requests::{
     ClientAuthenticationMethod, IntrospectionRequest, IntrospectionResponse, TokenTypeHint,
 };
@@ -21,7 +22,6 @@ use tracing::{info, warn};
 use warp::{Filter, Rejection, Reply};
 
 use crate::{
-    config::{OAuth2ClientConfig, OAuth2Config},
     errors::WrapError,
     filters::{client::client_authentication, cors::cors, database::connection},
     storage::oauth2::{

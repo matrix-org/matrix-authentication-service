@@ -15,15 +15,15 @@
 use warp::{reject::Reject, Rejection};
 
 #[derive(Debug)]
-pub struct WrappedError(anyhow::Error);
+pub(crate) struct WrappedError(anyhow::Error);
 
 impl warp::reject::Reject for WrappedError {}
 
-pub fn wrapped_error<T: Into<anyhow::Error>>(e: T) -> impl Reject {
+pub(crate) fn wrapped_error<T: Into<anyhow::Error>>(e: T) -> impl Reject {
     WrappedError(e.into())
 }
 
-pub trait WrapError<T> {
+pub(crate) trait WrapError<T> {
     fn wrap_error(self) -> Result<T, Rejection>;
 }
 

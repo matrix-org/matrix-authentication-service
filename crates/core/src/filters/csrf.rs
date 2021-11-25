@@ -17,13 +17,13 @@
 
 use chrono::{DateTime, Duration, Utc};
 use data_encoding::{DecodeError, BASE64URL_NOPAD};
+use mas_config::{CookiesConfig, CsrfConfig};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_with::{serde_as, TimestampSeconds};
 use thiserror::Error;
 use warp::{reject::Reject, Filter, Rejection};
 
 use super::cookies::EncryptableCookieValue;
-use crate::config::{CookiesConfig, CsrfConfig};
 
 /// Failed to validate CSRF token
 #[derive(Debug, Error)]

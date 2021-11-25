@@ -47,8 +47,8 @@ struct IdAndCreationTime {
     created_at: DateTime<Utc>,
 }
 
-pub mod oauth2;
-pub mod user;
+pub(crate) mod oauth2;
+pub(crate) mod user;
 
 pub use self::user::{login, lookup_active_session, register_user};
 

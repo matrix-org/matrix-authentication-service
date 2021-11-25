@@ -23,6 +23,7 @@ use hyper::{
     http::uri::{Parts, PathAndQuery, Uri},
     StatusCode,
 };
+use mas_config::{CookiesConfig, OAuth2ClientConfig, OAuth2Config};
 use mas_data_model::{
     Authentication, AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, BrowserSession,
     Pkce, StorageBackend,
@@ -53,7 +54,6 @@ use warp::{
 };
 
 use crate::{
-    config::{CookiesConfig, OAuth2ClientConfig, OAuth2Config},
     errors::WrapError,
     filters::{
         database::transaction,

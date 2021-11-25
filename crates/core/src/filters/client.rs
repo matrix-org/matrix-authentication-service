@@ -22,6 +22,7 @@ use jwt_compact::{
     alg::{Hs256, Hs256Key, Hs384, Hs384Key, Hs512, Hs512Key},
     Algorithm, AlgorithmExt, AlgorithmSignature, TimeOptions, Token, UntrustedToken,
 };
+use mas_config::{OAuth2ClientConfig, OAuth2Config};
 use oauth2_types::requests::ClientAuthenticationMethod;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_with::skip_serializing_none;
@@ -29,10 +30,7 @@ use thiserror::Error;
 use warp::{reject::Reject, Filter, Rejection};
 
 use super::headers::typed_header;
-use crate::{
-    config::{OAuth2ClientConfig, OAuth2Config},
-    errors::WrapError,
-};
+use crate::errors::WrapError;
 
 /// Protect an enpoint with client authentication
 #[must_use]

@@ -15,6 +15,7 @@
 use std::convert::TryFrom;
 
 use hyper::http::uri::{Parts, PathAndQuery, Uri};
+use mas_config::{CookiesConfig, CsrfConfig};
 use mas_data_model::{errors::WrapFormError, BrowserSession, StorageBackend};
 use mas_templates::{LoginContext, LoginFormField, TemplateContext, Templates};
 use serde::Deserialize;
@@ -23,7 +24,6 @@ use warp::{reply::html, Filter, Rejection, Reply};
 
 use super::shared::PostAuthAction;
 use crate::{
-    config::{CookiesConfig, CsrfConfig},
     errors::WrapError,
     filters::{
         cookies::{encrypted_cookie_saver, EncryptedCookieSaver},

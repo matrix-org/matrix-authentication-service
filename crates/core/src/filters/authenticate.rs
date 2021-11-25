@@ -55,14 +55,6 @@ pub enum AuthenticationError {
     #[error("unknown token")]
     TokenNotFound(#[source] AccessTokenLookupError),
 
-    /// The access token is no longer active
-    #[error("token is not active")]
-    TokenInactive,
-
-    /// The access token expired
-    #[error("token expired")]
-    TokenExpired,
-
     /// The `Authorization` header is missing
     #[error("missing authorization header")]
     MissingAuthorizationHeader,

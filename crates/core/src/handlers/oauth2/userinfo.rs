@@ -13,13 +13,13 @@
 // limitations under the License.
 
 use hyper::Method;
+use mas_config::OAuth2Config;
 use mas_data_model::{AccessToken, Session};
 use serde::Serialize;
 use sqlx::PgPool;
 use warp::{Filter, Rejection, Reply};
 
 use crate::{
-    config::OAuth2Config,
     filters::{
         authenticate::{authentication, recover_unauthorized},
         cors::cors,

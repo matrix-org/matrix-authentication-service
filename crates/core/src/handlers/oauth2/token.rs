@@ -18,6 +18,7 @@ use data_encoding::BASE64URL_NOPAD;
 use headers::{CacheControl, Pragma};
 use hyper::{Method, StatusCode};
 use jwt_compact::{Claims, Header, TimeOptions};
+use mas_config::{KeySet, OAuth2ClientConfig, OAuth2Config};
 use mas_data_model::AuthorizationGrantStage;
 use oauth2_types::{
     errors::{InvalidGrant, InvalidRequest, OAuth2Error, OAuth2ErrorCode, UnauthorizedClient},
@@ -41,7 +42,6 @@ use warp::{
 };
 
 use crate::{
-    config::{KeySet, OAuth2ClientConfig, OAuth2Config},
     errors::WrapError,
     filters::{client::client_authentication, cors::cors, database::connection, with_keys},
     reply::with_typed_header,
@@ -265,7 +265,7 @@ async fn authorization_code_grant(
         })
         .set_duration_and_issuance(&options, Duration::minutes(30));
         let id_token = keys
-            .token(crate::config::Algorithm::Rs256, header, claims)
+            .token(mas_config::Algorithm::Rs256, header, claims)
             .await
             .context("could not sign ID token")
             .wrap_error()?;

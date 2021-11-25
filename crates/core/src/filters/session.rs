@@ -14,6 +14,7 @@
 
 //! Load user sessions from the database
 
+use mas_config::CookiesConfig;
 use mas_data_model::BrowserSession;
 use serde::{Deserialize, Serialize};
 use sqlx::{pool::PoolConnection, Executor, PgPool, Postgres};
@@ -29,10 +30,7 @@ use super::{
     database::connection,
     none_on_error,
 };
-use crate::{
-    config::CookiesConfig,
-    storage::{lookup_active_session, user::ActiveSessionLookupError, PostgresqlBackend},
-};
+use crate::storage::{lookup_active_session, user::ActiveSessionLookupError, PostgresqlBackend};
 
 /// The session is missing or failed to load
 #[derive(Error, Debug)]

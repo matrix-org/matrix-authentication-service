@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use mas_config::{CookiesConfig, CsrfConfig, OAuth2Config};
 use mas_data_model::BrowserSession;
 use mas_templates::{IndexContext, TemplateContext, Templates};
 use sqlx::PgPool;
@@ -19,7 +20,6 @@ use url::Url;
 use warp::{reply::html, Filter, Rejection, Reply};
 
 use crate::{
-    config::{CookiesConfig, CsrfConfig, OAuth2Config},
     filters::{
         cookies::{encrypted_cookie_saver, EncryptedCookieSaver},
         csrf::updated_csrf_token,

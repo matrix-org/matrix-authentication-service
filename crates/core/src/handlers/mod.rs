@@ -14,11 +14,10 @@
 
 #![allow(clippy::unused_async)] // Some warp filters need that
 
+use mas_config::RootConfig;
 use mas_templates::Templates;
 use sqlx::PgPool;
 use warp::{filters::BoxedFilter, Filter, Reply};
-
-use crate::config::RootConfig;
 
 mod health;
 mod oauth2;

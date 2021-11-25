@@ -28,11 +28,11 @@ pub mod session;
 
 use std::convert::Infallible;
 
+use mas_config::{KeySet, OAuth2Config};
 use mas_templates::Templates;
 use warp::{Filter, Rejection};
 
 pub use self::csrf::CsrfToken;
-use crate::config::{KeySet, OAuth2Config};
 
 /// Get the [`Templates`]
 #[must_use]
