@@ -131,7 +131,7 @@ where
         ResponseMode::Query => {
             let existing: Option<HashMap<&str, &str>> = redirect_uri
                 .query()
-                .map(|qs| serde_urlencoded::from_str(qs))
+                .map(serde_urlencoded::from_str)
                 .transpose()?;
 
             let merged = AllParams {
@@ -153,7 +153,7 @@ where
         ResponseMode::Fragment => {
             let existing: Option<HashMap<&str, &str>> = redirect_uri
                 .fragment()
-                .map(|qs| serde_urlencoded::from_str(qs))
+                .map(serde_urlencoded::from_str)
                 .transpose()?;
 
             let merged = AllParams {

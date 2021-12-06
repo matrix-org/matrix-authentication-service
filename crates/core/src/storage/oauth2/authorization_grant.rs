@@ -275,10 +275,10 @@ impl TryInto<AuthorizationGrant<PostgresqlBackend>> for GrantLookup {
 
         let max_age = self
             .grant_max_age
-            .map(|m: i32| m.try_into())
+            .map(u32::try_from)
             .transpose()
             .map_err(|_e| DatabaseInconsistencyError)?
-            .map(|m: u32| m.try_into())
+            .map(NonZeroU32::try_from)
             .transpose()
             .map_err(|_e| DatabaseInconsistencyError)?;
 

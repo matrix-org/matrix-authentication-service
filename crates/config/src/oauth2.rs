@@ -126,8 +126,14 @@ impl KeySet {
 #[derive(Debug, Clone)]
 #[non_exhaustive]
 pub enum Key {
-    Rsa { key: RsaPrivateKey, kid: String },
-    Ecdsa { key: k256::SecretKey, kid: String },
+    Rsa {
+        key: Box<RsaPrivateKey>,
+        kid: String,
+    },
+    Ecdsa {
+        key: k256::SecretKey,
+        kid: String,
+    },
 }
 
 impl Key {
@@ -145,7 +151,10 @@ impl Key {
     fn from_rsa(key: RsaPrivateKey) -> Self {
         // TODO: hash the key and use as KID
         let kid = String::from("rsa-kid");
-        Self::Rsa { kid, key }
+        Self::Rsa {
+            kid,
+            key: Box::new(key),
+        }
     }
 
     fn from_rsa_pem(key: &str) -> anyhow::Result<Self> {
