@@ -6,21 +6,21 @@ edition = "2018"
 license = "Apache-2.0"
 
 [dependencies]
-tokio = { version = "1.13.0", features = [] }
+tokio = { version = "1.14.0", features = [] }
 tracing = { version = "0.1.29", features = ["log"] }
 async-trait = "0.1.51"
 
 thiserror = "1.0.30"
-anyhow = "1.0.45"
+anyhow = "1.0.51"
 
-schemars = { version = "0.8.6", features = ["url", "chrono"] }
+schemars = { version = "0.8.8", features = ["url", "chrono"] }
 figment = { version = "0.10.6", features = ["env", "yaml", "test"] }
 chrono = { version = "0.4.19", features = ["serde"] }
 url = { version = "2.2.2", features = ["serde"] }
 
 serde = { version = "1.0.130", features = ["derive"] }
 serde_with = { version = "1.11.0", features = ["hex", "chrono"] }
-serde_json = "1.0.68"
+serde_json = "1.0.72"
 sqlx = { version = "0.5.9", features = ["runtime-tokio-rustls", "postgres"] }
 
 rand = "0.8.4"

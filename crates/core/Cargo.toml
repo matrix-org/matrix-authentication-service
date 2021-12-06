@@ -7,10 +7,10 @@ license = "Apache-2.0"
 
 [dependencies]
 # Async runtime
-tokio = { version = "1.13.0", features = ["full"] }
+tokio = { version = "1.14.0", features = ["full"] }
 async-trait = "0.1.51"
 tokio-stream = "0.1.8"
-futures-util = "0.3.17"
+futures-util = "0.3.18"
 
 # Logging and tracing
 tracing = "0.1.29"
@@ -18,11 +18,11 @@ opentelemetry = "0.16.0"
 
 # Error management
 thiserror = "1.0.30"
-anyhow = "1.0.45"
+anyhow = "1.0.51"
 
 # Web server
-warp = "0.3.1"
-hyper = { version = "0.14.14", features = ["full"] }
+warp = "0.3.2"
+hyper = { version = "0.14.15", features = ["full"] }
 
 # Database access
 sqlx = { version = "0.5.9", features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "offline"] }
@@ -30,7 +30,7 @@ sqlx = { version = "0.5.9", features = ["runtime-tokio-rustls", "postgres", "mig
 # Various structure (de)serialization
 serde = { version = "1.0.130", features = ["derive"] }
 serde_with = { version = "1.11.0", features = ["hex", "chrono"] }
-serde_json = "1.0.68"
+serde_json = "1.0.72"
 serde_urlencoded = "0.7.0"
 
 # Password hashing
