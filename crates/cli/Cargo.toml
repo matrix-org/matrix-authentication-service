@@ -9,16 +9,16 @@ license = "Apache-2.0"
 tokio = { version = "1.14.0", features = ["full"] }
 futures = "0.3.18"
 anyhow = "1.0.51"
-clap = "3.0.0-beta.5"
+clap = { version = "3.0.0-rc.1", features = ["derive"] }
 dotenv = "0.15.0"
 schemars = { version = "0.8.8", features = ["url", "chrono"] }
 tower = { version = "0.4.11", features = ["full"] }
 tower-http = { version = "0.2.0", features = ["full"] }
-hyper = { version = "0.14.15", features = ["full"] }
+hyper = { version = "0.14.16", features = ["full"] }
 serde_yaml = "0.8.21"
 warp = "0.3.2"
 url = "2.2.2"
-argon2 = { version = "0.3.1", features = ["password-hash"] }
+argon2 = { version = "0.3.2", features = ["password-hash"] }
 reqwest = { version = "0.11.7", features = ["rustls-tls"], default-features = false, optional = true }
 
 tracing = "0.1.29"

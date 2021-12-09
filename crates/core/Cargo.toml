@@ -11,7 +11,7 @@ dev = ["mas-static-files/dev", "mas-templates/dev"]
 [dependencies]
 # Async runtime
 tokio = { version = "1.14.0", features = ["full"] }
-async-trait = "0.1.51"
+async-trait = "0.1.52"
 tokio-stream = "0.1.8"
 futures-util = "0.3.18"
 
@@ -25,19 +25,19 @@ anyhow = "1.0.51"
 
 # Web server
 warp = "0.3.2"
-hyper = { version = "0.14.15", features = ["full"] }
+hyper = { version = "0.14.16", features = ["full"] }
 
 # Database access
 sqlx = { version = "0.5.9", features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "offline"] }
 
 # Various structure (de)serialization
-serde = { version = "1.0.130", features = ["derive"] }
+serde = { version = "1.0.131", features = ["derive"] }
 serde_with = { version = "1.11.0", features = ["hex", "chrono"] }
 serde_json = "1.0.72"
 serde_urlencoded = "0.7.0"
 
 # Password hashing
-argon2 = { version = "0.3.1", features = ["password-hash"] }
+argon2 = { version = "0.3.2", features = ["password-hash"] }
 password-hash = { version = "0.3.2", features = ["std"] }
 
 # Crypto, hashing and signing stuff
@@ -46,7 +46,7 @@ k256 = "0.9.6"
 pkcs8 = { version = "0.7.6", features = ["pem"] }
 elliptic-curve = { version = "0.10.6", features = ["pem"] }
 chacha20poly1305 = { version = "0.9.0", features = ["std"] }
-sha2 = "0.9.8"
+sha2 = "0.10.0"
 crc = "2.1.0"
 jwt-compact = { version = "0.5.0-beta.1", features = ["with_rsa", "k256"] }
 
@@ -54,7 +54,7 @@ jwt-compact = { version = "0.5.0-beta.1", features = ["with_rsa", "k256"] }
 data-encoding = "2.3.2"
 chrono = { version = "0.4.19", features = ["serde"] }
 url = { version = "2.2.2", features = ["serde"] }
-itertools = "0.10.1"
+itertools = "0.10.3"
 mime = "0.3.16"
 rand = "0.8.4"
 bincode = "1.3.3"
