@@ -34,12 +34,14 @@ opentelemetry-zipkin = { version = "0.14.0", features = ["reqwest-client", "reqw
 mas-config = { path = "../config" }
 mas-core = { path = "../core" }
 mas-templates = { path = "../templates" }
+watchman_client = "0.7.1"
 
 [dev-dependencies]
 indoc = "1.0.3"
 
 [features]
 default = ["otlp", "jaeger", "zipkin"]
+dev = ["mas-templates/dev"]
 # Enable OpenTelemetry OTLP exporter. Requires "protoc"
 otlp = ["opentelemetry-otlp"]
 # Enable OpenTelemetry Jaeger exporter and propagator.

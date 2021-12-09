@@ -15,6 +15,7 @@
 use std::path::PathBuf;
 
 use clap::Parser;
+use mas_config::TemplatesConfig;
 use mas_templates::Templates;
 
 use super::RootCommand;
@@ -59,8 +60,12 @@ impl TemplatesCommand {
             }
 
             SC::Check { path, skip_builtin } => {
-                let templates = Templates::load(Some(path), !skip_builtin)?;
-                templates.check_render()?;
+                let config = TemplatesConfig {
+                    path: Some(path.to_string()),
+                    builtin: !skip_builtin,
+                };
+                let templates = Templates::load_from_config(&config).await?;
+                templates.check_render().await?;
 
                 Ok(())
             }

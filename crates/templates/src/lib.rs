@@ -23,14 +23,20 @@
 
 //! Templates rendering
 
-use std::{collections::HashSet, io::Cursor, path::Path, string::ToString, sync::Arc};
+use std::{
+    collections::HashSet,
+    io::Cursor,
+    path::{Path, PathBuf},
+    string::ToString,
+    sync::Arc,
+};
 
-use anyhow::Context as _;
+use anyhow::{bail, Context as _};
 use mas_config::TemplatesConfig;
 use serde::Serialize;
 use tera::{Context, Error as TeraError, Tera};
 use thiserror::Error;
-use tokio::{fs::OpenOptions, io::AsyncWriteExt};
+use tokio::{fs::OpenOptions, io::AsyncWriteExt, sync::RwLock, task::JoinError};
 use tracing::{debug, info, warn};
 
 #[allow(missing_docs)] // TODO
@@ -47,7 +53,10 @@ pub use self::context::{
 
 /// Wrapper around [`tera::Tera`] helping rendering the various templates
 #[derive(Debug, Clone)]
-pub struct Templates(Arc<Tera>);
+pub struct Templates {
+    tera: Arc<RwLock<Tera>>,
+    config: TemplatesConfig,
+}
 
 /// There was an issue while loading the templates
 #[derive(Error, Debug)]
@@ -55,6 +64,10 @@ pub enum TemplateLoadingError {
     /// Some templates failed to compile
     #[error("could not load and compile some templates")]
     Compile(#[from] TeraError),
+
+    /// Could not join blocking task
+    #[error("error from async runtime")]
+    Runtime(#[from] JoinError),
 
     /// There are essential templates missing
     #[error("missing templates {missing:?}")]
@@ -67,44 +80,104 @@ pub enum TemplateLoadingError {
 }
 
 impl Templates {
-    /// Load the templates from [the config][`TemplatesConfig`]
-    pub fn load_from_config(config: &TemplatesConfig) -> Result<Self, TemplateLoadingError> {
-        Self::load(config.path.as_deref(), config.builtin)
+    /// List directories to watch
+    pub async fn watch_roots(&self) -> Vec<PathBuf> {
+        Self::roots(self.config.path.as_deref(), self.config.builtin)
+            .await
+            .into_iter()
+            .filter_map(Result::ok)
+            .collect()
     }
 
-    /// Load the templates and check all needed templates are properly loaded
-    ///
-    /// # Arguments
-    ///
-    /// * `path` - An optional path to where templates should be loaded
-    /// * `builtin` - Set to `true` to load the builtin templates as well
-    pub fn load(path: Option<&str>, builtin: bool) -> Result<Self, TemplateLoadingError> {
-        let tera = {
-            let mut tera = Tera::default();
+    async fn roots(path: Option<&str>, builtin: bool) -> Vec<Result<PathBuf, std::io::Error>> {
+        let mut paths = Vec::new();
+        if builtin && cfg!(feature = "dev") {
+            paths.push(PathBuf::from(format!(
+                "{}/src/res",
+                env!("CARGO_MANIFEST_DIR")
+            )));
+        }
 
-            if builtin {
-                info!("Loading builtin templates");
+        if let Some(path) = path {
+            paths.push(PathBuf::from(path));
+        }
 
-                for (name, source) in EXTRA_TEMPLATES {
-                    tera.add_raw_template(name, source)?;
-                }
+        let mut ret = Vec::new();
+        for path in paths {
+            ret.push(tokio::fs::read_dir(&path).await.map(|_| path));
+        }
 
-                for (name, source) in TEMPLATES {
-                    tera.add_raw_template(name, source)?;
-                }
+        ret
+    }
+
+    fn load_builtin() -> Result<Tera, TemplateLoadingError> {
+        let mut tera = Tera::default();
+        info!("Loading builtin templates");
+
+        for (name, source) in EXTRA_TEMPLATES {
+            if let Some(source) = source {
+                tera.add_raw_template(name, source)?;
             }
+        }
 
-            if let Some(path) = path {
-                let path = format!("{}/**/*.{{html,txt}}", path);
+        for (name, source) in TEMPLATES {
+            if let Some(source) = source {
+                tera.add_raw_template(name, source)?;
+            }
+        }
+
+        Ok(tera)
+    }
+
+    /// Load the templates from [the config][`TemplatesConfig`]
+    pub async fn load_from_config(config: &TemplatesConfig) -> Result<Self, TemplateLoadingError> {
+        let tera = Self::load(config.path.as_deref(), config.builtin).await?;
+
+        Ok(Self {
+            tera: Arc::new(RwLock::new(tera)),
+            config: config.clone(),
+        })
+    }
+
+    async fn load(path: Option<&str>, builtin: bool) -> Result<Tera, TemplateLoadingError> {
+        let mut teras = Vec::new();
+
+        let roots = Self::roots(path, builtin).await;
+        for maybe_root in roots {
+            let root = match maybe_root {
+                Ok(root) => root,
+                Err(err) => {
+                    warn!(%err, "Could not open a template folder, skipping it");
+                    continue;
+                }
+            };
+
+            // This uses blocking I/Os, do that in a blocking task
+            let tera = tokio::task::spawn_blocking(move || {
+                // Using `to_string_lossy` here is probably fine
+                let path = format!("{}/**/*.{{html,txt}}", root.to_string_lossy());
                 info!(%path, "Loading templates from filesystem");
-                tera.extend(&Tera::parse(&path)?)?;
-            }
+                Tera::parse(&path)
+            })
+            .await??;
 
-            tera.build_inheritance_chains()?;
-            tera.check_macro_files()?;
+            teras.push(tera);
+        }
 
-            tera
-        };
+        if builtin {
+            teras.push(Self::load_builtin()?);
+        }
+
+        // Merging all Tera instances into a single one
+        let mut tera = teras
+            .into_iter()
+            .try_fold(Tera::default(), |mut acc, tera| {
+                acc.extend(&tera)?;
+                Ok::<_, TemplateLoadingError>(acc)
+            })?;
+
+        tera.build_inheritance_chains()?;
+        tera.check_macro_files()?;
 
         let loaded: HashSet<_> = tera.get_template_names().collect();
         let needed: HashSet<_> = std::array::IntoIter::new(TEMPLATES)
@@ -114,7 +187,7 @@ impl Templates {
         let missing: HashSet<_> = needed.difference(&loaded).collect();
 
         if missing.is_empty() {
-            Ok(Self(Arc::new(tera)))
+            Ok(tera)
         } else {
             let missing = missing.into_iter().map(ToString::to_string).collect();
             let loaded = loaded.into_iter().map(ToString::to_string).collect();
@@ -122,8 +195,23 @@ impl Templates {
         }
     }
 
+    /// Reload the templates on disk
+    pub async fn reload(&self) -> anyhow::Result<()> {
+        // Prepare the new Tera instance
+        let new_tera = Self::load(self.config.path.as_deref(), self.config.builtin).await?;
+
+        // Swap it
+        *self.tera.write().await = new_tera;
+
+        Ok(())
+    }
+
     /// Save the builtin templates to a folder
     pub async fn save(path: &Path, overwrite: bool) -> anyhow::Result<()> {
+        if cfg!(feature = "dev") {
+            bail!("Builtin templates are not included in dev binaries")
+        }
+
         tokio::fs::create_dir_all(&path)
             .await
             .context("could not create destination folder")?;
@@ -140,22 +228,24 @@ impl Templates {
         };
 
         for (name, source) in templates {
-            let path = path.join(name);
+            if let Some(source) = source {
+                let path = path.join(name);
 
-            let mut file = match options.open(&path).await {
-                Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
-                    // Not overwriting a template is a soft error
-                    warn!(?path, "Not overwriting template");
-                    continue;
-                }
-                x => x.context(format!("could not open file {:?}", path))?,
-            };
+                let mut file = match options.open(&path).await {
+                    Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+                        // Not overwriting a template is a soft error
+                        warn!(?path, "Not overwriting template");
+                        continue;
+                    }
+                    x => x.context(format!("could not open file {:?}", path))?,
+                };
 
-            let mut buffer = Cursor::new(source);
-            file.write_all_buf(&mut buffer)
-                .await
-                .context(format!("could not write file {:?}", path))?;
-            info!(?path, "Wrote template");
+                let mut buffer = Cursor::new(source);
+                file.write_all_buf(&mut buffer)
+                    .await
+                    .context(format!("could not write file {:?}", path))?;
+                info!(?path, "Wrote template");
+            }
         }
 
         Ok(())
@@ -215,13 +305,13 @@ register_templates! {
 impl Templates {
     /// Render all templates with the generated samples to check if they render
     /// properly
-    pub fn check_render(&self) -> anyhow::Result<()> {
-        check::render_login(self)?;
-        check::render_register(self)?;
-        check::render_index(self)?;
-        check::render_reauth(self)?;
-        check::render_form_post::<EmptyContext>(self)?;
-        check::render_error(self)?;
+    pub async fn check_render(&self) -> anyhow::Result<()> {
+        check::render_login(self).await?;
+        check::render_register(self).await?;
+        check::render_index(self).await?;
+        check::render_reauth(self).await?;
+        check::render_form_post::<EmptyContext>(self).await?;
+        check::render_error(self).await?;
         Ok(())
     }
 }
@@ -230,9 +320,14 @@ impl Templates {
 mod tests {
     use super::*;
 
-    #[test]
-    fn check_builtin_templates() {
-        let templates = Templates::load(None, true).unwrap();
-        templates.check_render().unwrap();
+    #[tokio::test]
+    async fn check_builtin_templates() {
+        let config = TemplatesConfig {
+            path: None,
+            builtin: true,
+        };
+
+        let templates = Templates::load_from_config(&config).await.unwrap();
+        templates.check_render().await.unwrap();
     }
 }

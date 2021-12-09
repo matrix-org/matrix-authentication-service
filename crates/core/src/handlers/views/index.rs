@@ -58,7 +58,7 @@ async fn get(
         .maybe_with_session(maybe_session)
         .with_csrf(csrf_token.form_value());
 
-    let content = templates.render_index(&ctx)?;
+    let content = templates.render_index(&ctx).await?;
     let reply = html(content);
     let reply = cookie_saver.save_encrypted(&csrf_token, reply)?;
     Ok(Box::new(reply))

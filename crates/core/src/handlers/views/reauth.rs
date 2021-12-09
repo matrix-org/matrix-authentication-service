@@ -132,7 +132,7 @@ async fn get(
     };
     let ctx = ctx.with_session(session).with_csrf(csrf_token.form_value());
 
-    let content = templates.render_reauth(&ctx)?;
+    let content = templates.render_reauth(&ctx).await?;
     let reply = html(content);
     let reply = cookie_saver.save_encrypted(&csrf_token, reply)?;
     Ok(reply)

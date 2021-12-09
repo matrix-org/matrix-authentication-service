@@ -117,7 +117,7 @@ async fn get(
         Ok(Box::new(query.redirect()?))
     } else {
         let ctx = EmptyContext.with_csrf(csrf_token.form_value());
-        let content = templates.render_register(&ctx)?;
+        let content = templates.render_register(&ctx).await?;
         let reply = html(content);
         let reply = cookie_saver.save_encrypted(&csrf_token, reply)?;
         Ok(Box::new(reply))

@@ -138,7 +138,7 @@ async fn get(
             None => ctx,
         };
         let ctx = ctx.with_csrf(csrf_token.form_value());
-        let content = templates.render_login(&ctx)?;
+        let content = templates.render_login(&ctx).await?;
         let reply = html(content);
         let reply = cookie_saver.save_encrypted(&csrf_token, reply)?;
         Ok(Box::new(reply))
@@ -171,7 +171,7 @@ async fn post(
             let ctx = LoginContext::default()
                 .with_form_error(errored_form)
                 .with_csrf(csrf_token.form_value());
-            let content = templates.render_login(&ctx)?;
+            let content = templates.render_login(&ctx).await?;
             let reply = html(content);
             let reply = cookie_saver.save_encrypted(&csrf_token, reply)?;
             Ok(Box::new(reply))

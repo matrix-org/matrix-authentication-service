@@ -96,7 +96,7 @@ enum ReplyOrBackToClient {
     Error(Box<dyn OAuth2Error>),
 }
 
-fn back_to_client<T>(
+async fn back_to_client<T>(
     mut redirect_uri: Url,
     response_mode: ResponseMode,
     state: Option<String>,
@@ -175,7 +175,7 @@ where
         ResponseMode::FormPost => {
             let merged = ParamsWithState { state, params };
             let ctx = FormPostContext::new(redirect_uri, merged);
-            let rendered = templates.render_form_post(&ctx)?;
+            let rendered = templates.render_form_post(&ctx).await?;
             Ok(Box::new(html(rendered)))
         }
     }
@@ -288,19 +288,19 @@ async fn actually_reply(
 
             let client = match client {
                 Some(client) => client,
-                None => return Ok(Box::new(html(templates.render_error(&error.into())?))),
+                None => return Ok(Box::new(html(templates.render_error(&error.into()).await?))),
             };
 
             let redirect_uri: Result<Option<Url>, _> = redirect_uri.map(|r| r.parse()).transpose();
             let redirect_uri = match redirect_uri {
                 Ok(r) => r,
-                Err(_) => return Ok(Box::new(html(templates.render_error(&error.into())?))),
+                Err(_) => return Ok(Box::new(html(templates.render_error(&error.into()).await?))),
             };
 
             let redirect_uri = client.resolve_redirect_uri(&redirect_uri);
             let redirect_uri = match redirect_uri {
                 Ok(r) => r,
-                Err(_) => return Ok(Box::new(html(templates.render_error(&error.into())?))),
+                Err(_) => return Ok(Box::new(html(templates.render_error(&error.into()).await?))),
             };
 
             let reply: ErrorResponse = error.into();
@@ -310,7 +310,9 @@ async fn actually_reply(
         }
     };
 
-    back_to_client(redirect_uri, response_mode, state, params, &templates).wrap_error()
+    back_to_client(redirect_uri, response_mode, state, params, &templates)
+        .await
+        .wrap_error()
 }
 
 async fn get(

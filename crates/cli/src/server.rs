@@ -19,6 +19,7 @@ use std::{
 
 use anyhow::Context;
 use clap::Parser;
+use futures::{future::TryFutureExt, stream::TryStreamExt};
 use hyper::{header, Server, Version};
 use mas_config::RootConfig;
 use mas_core::{
@@ -33,7 +34,7 @@ use tower_http::{
     sensitive_headers::SetSensitiveHeadersLayer,
     trace::{MakeSpan, OnResponse, TraceLayer},
 };
-use tracing::{field, info};
+use tracing::{error, field, info};
 
 use super::RootCommand;
 
@@ -42,6 +43,10 @@ pub(super) struct ServerCommand {
     /// Automatically apply pending migrations
     #[clap(long)]
     migrate: bool,
+
+    /// Watch for changes for templates on the filesystem
+    #[clap(short, long)]
+    watch: bool,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -136,6 +141,76 @@ async fn shutdown_signal() {
     };
 }
 
+/// Watch for changes in the templates folders
+async fn watch_templates(
+    client: &watchman_client::Client,
+    templates: &Templates,
+) -> anyhow::Result<()> {
+    use watchman_client::{
+        fields::NameOnly,
+        pdu::{QueryResult, SubscribeRequest},
+        CanonicalPath, SubscriptionData,
+    };
+
+    let templates = templates.clone();
+
+    // Find which roots we're supposed to watch
+    let roots = templates.watch_roots().await;
+    let mut streams = Vec::new();
+
+    for root in roots {
+        // For each root, create a subscription
+        let resolved = client
+            .resolve_root(CanonicalPath::canonicalize(root)?)
+            .await?;
+
+        // TODO: we could subscribe to less, properly filter here
+        let (subscription, _) = client
+            .subscribe::<NameOnly>(&resolved, SubscribeRequest::default())
+            .await?;
+
+        // Create a stream out of that subscription
+        let stream = futures::stream::try_unfold(subscription, |mut sub| async move {
+            let next = sub.next().await?;
+            anyhow::Ok(Some((next, sub)))
+        });
+
+        streams.push(Box::pin(stream));
+    }
+
+    let files_changed_stream =
+        futures::stream::select_all(streams).try_filter_map(|event| async move {
+            match event {
+                SubscriptionData::FilesChanged(QueryResult {
+                    files: Some(files), ..
+                }) => {
+                    let files: Vec<_> = files.into_iter().map(|f| f.name.into_inner()).collect();
+                    Ok(Some(files))
+                }
+                _ => Ok(None),
+            }
+        });
+
+    let fut = files_changed_stream
+        .try_for_each(move |files| {
+            let templates = templates.clone();
+            async move {
+                info!(?files, "Files changed, reloading templates");
+
+                templates
+                    .clone()
+                    .reload()
+                    .await
+                    .context("Could not reload templates")
+            }
+        })
+        .inspect_err(|err| error!(%err, "Error while watching templates, stop watching"));
+
+    tokio::spawn(fut);
+
+    Ok(())
+}
+
 impl ServerCommand {
     pub async fn run(&self, root: &RootCommand) -> anyhow::Result<()> {
         let config: RootConfig = root.load_config()?;
@@ -160,8 +235,21 @@ impl ServerCommand {
         queue.start();
 
         // Load and compile the templates
-        let templates =
-            Templates::load_from_config(&config.templates).context("could not load templates")?;
+        let templates = Templates::load_from_config(&config.templates)
+            .await
+            .context("could not load templates")?;
+
+        // Watch for changes in templates if the --watch flag is present
+        if self.watch {
+            let client = watchman_client::Connector::new()
+                .connect()
+                .await
+                .context("could not connect to watchman")?;
+
+            watch_templates(&client, &templates)
+                .await
+                .context("could not watch for templates changes")?;
+        }
 
         // Start the server
         let root = mas_core::handlers::root(&pool, &templates, &config);

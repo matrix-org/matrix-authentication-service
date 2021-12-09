@@ -5,6 +5,9 @@ authors = ["Quentin Gliech <quenting@element.io>"]
 edition = "2018"
 license = "Apache-2.0"
 
+[features]
+dev = []
+
 [dependencies]
 tracing = "0.1.29"
 tokio = "1.14.0"

@@ -49,26 +49,40 @@ macro_rules! register_templates {
         )*
     } => {
         /// List of registered templates
-        static TEMPLATES: [(&'static str, &'static str); count!( $( $template )* )] = [
-            $( ($template, include_str!(concat!("res/", $template))) ),*
+        static TEMPLATES: [(&'static str, Option<&'static str>); count!( $( $template )* )] = [
+            $( (
+                $template,
+                if cfg!(feature = "dev") {
+                    None
+                } else {
+                    Some(include_str!(concat!("res/", $template)))
+                }
+            ) ),*
         ];
 
         /// List of extra templates used by other templates
-        static EXTRA_TEMPLATES: [(&'static str, &'static str); count!( $( $( $extra_template )* )? )] = [
-            $( $( ($extra_template, include_str!(concat!("res/", $extra_template))) ),* )?
+        static EXTRA_TEMPLATES: [(&'static str, Option<&'static str>); count!( $( $( $extra_template )* )? )] = [
+            $( $( (
+                $extra_template,
+                if cfg!(feature = "dev") {
+                    None
+                } else {
+                    Some(include_str!(concat!("res/", $extra_template)))
+                }
+            ) ),* )?
         ];
 
         impl Templates {
             $(
                 $(#[$attr])?
-                pub fn $name
+                pub async fn $name
                     $(< $( $lt $( : $clt $(+ $dlt )* )? ),+ >)?
                     (&self, context: &$param)
                 -> Result<String, TemplateError> {
                     let ctx = Context::from_serialize(context)
                         .map_err(|source| TemplateError::Context { template: $template, source })?;
 
-                    self.0.render($template, &ctx)
+                    self.tera.read().await.render($template, &ctx)
                         .map_err(|source| TemplateError::Render { template: $template, source })
                 }
             )*
@@ -80,7 +94,7 @@ macro_rules! register_templates {
 
             $(
                 #[doc = concat!("Render the `", $template, "` template with sample contexts")]
-                pub fn $name
+                pub async fn $name
                     $(< $( $lt $( : $clt $(+ $dlt )* + TemplateContext )? ),+ >)?
                     (templates: &Templates)
                 -> anyhow::Result<()> {
@@ -91,6 +105,7 @@ macro_rules! register_templates {
                         let context = serde_json::to_value(&sample)?;
                         ::tracing::info!(name, %context, "Rendering template");
                         templates. $name (&sample)
+                            .await
                             .with_context(|| format!("Failed to render template {:?} with context {}", name, context))?;
                     }
 
