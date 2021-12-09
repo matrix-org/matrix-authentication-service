@@ -1,0 +1,15 @@
+[package]
+name = "mas-static-files"
+version = "0.1.0"
+authors = ["Quentin Gliech <quenting@element.io>"]
+edition = "2018"
+license = "Apache-2.0"
+
+[features]
+dev = []
+
+[dependencies]
+headers = "0.3.5"
+mime_guess = "2.0.3"
+rust-embed = "6.3.0"
+warp = "0.3.2"

@@ -8,7 +8,15 @@ See the [Documentation](https://matrix-org.github.io/matrix-authentication-servi
 ## Running
 
 - [Install Rust and Cargo](https://www.rust-lang.org/learn/get-started)
+- [Install Node.js and npm](https://nodejs.org/)
 - Clone this repository
+- Generate the frontend:
+  ```sh
+  cd crates/static-files
+  npm ci
+  npm run build
+  cd ../..
+  ```
 - Generate the sample config via `cargo run -- config generate > config.yaml`
 - Run the database migrations via `cargo run -- database migrate`
 - Run the server via `cargo run -- server -c config.yaml`

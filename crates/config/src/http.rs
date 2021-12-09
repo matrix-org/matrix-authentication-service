@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::path::PathBuf;
+
 use async_trait::async_trait;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -26,12 +28,16 @@ fn default_http_address() -> String {
 pub struct HttpConfig {
     #[serde(default = "default_http_address")]
     pub address: String,
+
+    #[serde(default)]
+    pub web_root: Option<PathBuf>,
 }
 
 impl Default for HttpConfig {
     fn default() -> Self {
         Self {
             address: default_http_address(),
+            web_root: None,
         }
     }
 }

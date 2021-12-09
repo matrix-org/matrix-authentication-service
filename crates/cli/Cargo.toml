@@ -41,7 +41,7 @@ indoc = "1.0.3"
 
 [features]
 default = ["otlp", "jaeger", "zipkin"]
-dev = ["mas-templates/dev"]
+dev = ["mas-templates/dev", "mas-core/dev"]
 # Enable OpenTelemetry OTLP exporter. Requires "protoc"
 otlp = ["opentelemetry-otlp"]
 # Enable OpenTelemetry Jaeger exporter and propagator.

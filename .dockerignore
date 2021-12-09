@@ -1,3 +1,6 @@
 target/
 crates/*/target
+crates/*/node_modules
 .git/
+Dockerfile
+.dockerignore

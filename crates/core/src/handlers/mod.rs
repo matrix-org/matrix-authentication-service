@@ -15,6 +15,7 @@
 #![allow(clippy::unused_async)] // Some warp filters need that
 
 use mas_config::RootConfig;
+use mas_static_files::filter as static_files;
 use mas_templates::Templates;
 use sqlx::PgPool;
 use warp::{filters::BoxedFilter, Filter, Reply};
@@ -31,7 +32,8 @@ pub fn root(
     templates: &Templates,
     config: &RootConfig,
 ) -> BoxedFilter<(impl Reply,)> {
-    health(pool)
+    static_files(config.http.web_root.clone())
+        .or(health(pool))
         .or(oauth2(pool, templates, &config.oauth2, &config.cookies))
         .or(views(
             pool,

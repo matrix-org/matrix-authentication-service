@@ -1,0 +1,15 @@
+{
+  "name": "static-files",
+  "private": true,
+  "scripts": {
+    "build": "tailwindcss --postcss -o public/tailwind.css",
+    "start": "tailwindcss --postcss -o public/tailwind.css --watch"
+  },
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "autoprefixer": "^10.4.0",
+    "cssnano": "^5.0.12",
+    "postcss": "^8.4.4",
+    "tailwindcss": "^2.2.19"
+  }
+}

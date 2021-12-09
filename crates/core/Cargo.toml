@@ -5,6 +5,9 @@ authors = ["Quentin Gliech <quenting@element.io>"]
 edition = "2018"
 license = "Apache-2.0"
 
+[features]
+dev = ["mas-static-files/dev", "mas-templates/dev"]
+
 [dependencies]
 # Async runtime
 tokio = { version = "1.14.0", features = ["full"] }
@@ -63,6 +66,7 @@ oauth2-types = { path = "../oauth2-types", features = ["sqlx_type"] }
 mas-config = { path = "../config" }
 mas-data-model = { path = "../data-model" }
 mas-templates = { path = "../templates" }
+mas-static-files = { path = "../static-files" }
 
 [dev-dependencies]
 indoc = "1.0.3"
