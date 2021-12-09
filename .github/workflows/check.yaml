@@ -317,6 +317,7 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: ghcr.io/matrix-org/matrix-authentication-service
+          bake-target: docker-metadata-action
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -324,6 +325,24 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=sha
+
+      - name: Docker meta (debug variant)
+        id: meta-debug
+        uses: docker/metadata-action@v3
+        with:
+          images: ghcr.io/matrix-org/matrix-authentication-service
+          bake-target: docker-metadata-action-debug
+          tags: |
+            type=ref,event=branch,suffix=-debug
+            type=ref,event=pr,suffix=-debug
+            type=semver,pattern={{version}},suffix=-debug
+            type=semver,pattern={{major}}.{{minor}},suffix=-debug
+            type=semver,pattern={{major}},suffix=-debug
+            type=sha,suffix=-debug
+
+      - name: Merge buildx bake files
+        run: |
+            jq -s '.[0] * .[1]' ${{ steps.meta.outputs.bake-file }} ${{ steps.meta-debug.outputs.bake-file }} > docker-bake.override.json
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
@@ -337,12 +356,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
-        uses: docker/build-push-action@v2
+        uses: docker/bake-action@v1
         with:
-          context: .
-          platforms: linux/amd64,linux/arm64
+          targets: gha
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max

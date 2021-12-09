@@ -4,3 +4,4 @@ crates/*/node_modules
 .git/
 Dockerfile
 .dockerignore
+docker-bake.hcl
