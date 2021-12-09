@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::convert::TryFrom;
-
 use argon2::Argon2;
 use hyper::http::uri::{Parts, PathAndQuery, Uri};
 use mas_config::{CookiesConfig, CsrfConfig};

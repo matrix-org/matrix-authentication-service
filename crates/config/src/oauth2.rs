@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::convert::TryFrom;
-
 use anyhow::Context;
 use async_trait::async_trait;
 use jwt_compact::{
@@ -67,6 +65,7 @@ pub struct Jwks {
 pub struct KeySet(Vec<Key>);
 
 impl KeySet {
+    #[must_use]
     pub fn to_public_jwks(&self) -> Jwks {
         let keys = self.0.iter().map(Key::to_public_jwk).collect();
         Jwks { keys }
@@ -345,6 +344,7 @@ pub struct OAuth2Config {
 }
 
 impl OAuth2Config {
+    #[must_use]
     pub fn discovery_url(&self) -> Url {
         self.issuer
             .join(".well-known/openid-configuration")

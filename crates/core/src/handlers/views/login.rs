@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::convert::TryFrom;
-
 use hyper::http::uri::{Parts, PathAndQuery, Uri};
 use mas_config::{CookiesConfig, CsrfConfig};
 use mas_data_model::{errors::WrapFormError, BrowserSession, StorageBackend};

@@ -27,7 +27,7 @@ use warp::{filters::BoxedFilter, Filter, Reply};
 
 #[cfg(not(feature = "dev"))]
 mod builtin {
-    use std::{convert::TryInto, fmt::Write, str::FromStr};
+    use std::{fmt::Write, str::FromStr};
 
     use headers::{ContentLength, ContentType, ETag, HeaderMapExt};
     use rust_embed::RustEmbed;

@@ -12,6 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![forbid(unsafe_code)]
+#![deny(clippy::all)]
+#![deny(rustdoc::broken_intra_doc_links)]
+#![warn(clippy::pedantic)]
+#![allow(clippy::module_name_repetitions)]
+#![allow(clippy::missing_panics_doc)]
+#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::trait_duplication_in_bounds)]
+
 pub mod errors;
 pub(crate) mod oauth2;
 pub(crate) mod tokens;

@@ -30,6 +30,7 @@ impl<T: StorageBackend> User<T>
 where
     T::UserData: Default,
 {
+    #[must_use]
     pub fn samples() -> Vec<Self> {
         vec![User {
             data: Default::default(),
@@ -92,6 +93,7 @@ where
     T::BrowserSessionData: Default,
     T::UserData: Default,
 {
+    #[must_use]
     pub fn samples() -> Vec<Self> {
         User::<T>::samples()
             .into_iter()

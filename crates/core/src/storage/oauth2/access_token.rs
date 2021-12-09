@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::convert::TryFrom;
-
 use anyhow::Context;
 use chrono::{DateTime, Duration, Utc};
 use mas_data_model::{AccessToken, Authentication, BrowserSession, Client, Session, User};

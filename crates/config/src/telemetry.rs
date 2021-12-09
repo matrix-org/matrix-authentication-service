@@ -107,10 +107,10 @@ impl ConfigurationSection<'_> for TelemetryConfig {
     }
 
     async fn generate() -> anyhow::Result<Self> {
-        Ok(Default::default())
+        Ok(Self::default())
     }
 
     fn test() -> Self {
-        Default::default()
+        Self::default()
     }
 }

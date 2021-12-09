@@ -30,6 +30,7 @@ pub struct Pkce {
 }
 
 impl Pkce {
+    #[must_use]
     pub fn new(challenge_method: CodeChallengeMethod, challenge: String) -> Self {
         Pkce {
             challenge_method,
@@ -37,6 +38,7 @@ impl Pkce {
         }
     }
 
+    #[must_use]
     pub fn verify(&self, verifier: &str) -> bool {
         self.challenge_method.verify(&self.challenge, verifier)
     }
@@ -77,6 +79,7 @@ impl<T: StorageBackend> Default for AuthorizationGrantStage<T> {
 }
 
 impl<T: StorageBackend> AuthorizationGrantStage<T> {
+    #[must_use]
     pub fn new() -> Self {
         Self::Pending
     }
@@ -119,7 +122,7 @@ impl<T: StorageBackend> AuthorizationGrantStage<T> {
 
 impl<S: StorageBackendMarker> From<AuthorizationGrantStage<S>> for AuthorizationGrantStage<()> {
     fn from(s: AuthorizationGrantStage<S>) -> Self {
-        use AuthorizationGrantStage::*;
+        use AuthorizationGrantStage::{Cancelled, Exchanged, Fulfilled, Pending};
         match s {
             Pending => Pending,
             Fulfilled {

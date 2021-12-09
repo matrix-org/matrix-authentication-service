@@ -37,8 +37,6 @@
 
 #![deny(missing_docs)]
 
-use std::convert::TryInto;
-
 use crc::{Crc, CRC_32_ISO_HDLC};
 use oauth2_types::requests::TokenTypeHint;
 use rand::{distributions::Alphanumeric, Rng};
