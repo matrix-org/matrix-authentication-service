@@ -359,4 +359,4 @@ jobs:
         uses: docker/bake-action@v1
         with:
           targets: gha
-          push: ${{ github.event_name != 'pull_request' }}
+          set: gha-push.output=type=image,push=${{ github.event_name != 'pull_request' }}

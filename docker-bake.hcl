@@ -35,12 +35,15 @@ target "gha-base" {
   cache-to = ["type=gha,mode=max"]
 }
 
+// This is filled by GitHub Actions
+target "gha-push" {}
+
 target "gha-regular" {
-  inherits = ["gha-base", "docker-metadata-action"]
+  inherits = ["gha-base", "gha-push", "docker-metadata-action"]
 }
 
 target "gha-debug" {
-  inherits = ["gha-base", "debug", "docker-metadata-action-debug"]
+  inherits = ["gha-base", "gha-push", "debug", "docker-metadata-action-debug"]
 }
 
 target "gha-test" {
