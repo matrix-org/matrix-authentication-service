@@ -14,7 +14,12 @@ target "debug" {
 
 target "release" {
   inherits = ["default"]
-  platforms = ["linux/amd64", "linux/arm64"]
+  platforms = [
+    "linux/amd64",
+    "linux/arm64",
+    "linux/arm/v6",
+    "linux/arm/v7",
+  ]
 }
 
 // This is what is baked by GitHub Actions

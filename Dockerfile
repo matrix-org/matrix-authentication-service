@@ -29,32 +29,45 @@ RUN find public -type f -exec touch -t 197001010000.00 {} +
 # The image Debian base name (bullseye) must be in sync with the runtime variant (debian11)
 FROM --platform=${BUILDPLATFORM} docker.io/library/rust:${RUSTC_VERSION}-slim-${DEBIAN_VERSION_NAME} AS chef
 
-# Install x86_64 and aarch64 cross-compiling stack
+# Install x86_64, aarch64 and arm (v6 and v7) cross-compiling stack
 RUN apt update && apt install -y --no-install-recommends \
   g++-x86-64-linux-gnu \
   g++-aarch64-linux-gnu \
+  g++-arm-linux-gnueabihf \
   libc6-dev-arm64-cross \
   libc6-dev-amd64-cross \
+  libc6-dev-armhf-cross \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 RUN cargo install --locked cargo-chef
 
 ENV \
+  CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc \
+  CC_x86_64_unknown_linux_gnu=x86_64-linux-gnu-gcc \
+  CXX_x86_64_unknown_linux_gnu=x86_64-linux-gnu-g++ \
   CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc \
   CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc \
   CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++ \
-  CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc \
-  CC_x86_64_unknown_linux_gnu=x86_64-linux-gnu-gcc \
-  CXX_x86_64_unknown_linux_gnu=x86_64-linux-gnu-g++
+  CARGO_TARGET_ARM_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc \
+  CC_arm_unknown_linux_gnueabihf=arm-linux-gnueabihf-gcc \
+  CXX_arm_unknown_linux_gnueabihf=arm-linux-gnueabihf-g++ \
+  CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc \
+  CC_armv7_unknown_linux_gnueabihf=arm-linux-gnueabihf-gcc \
+  CXX_armv7_unknown_linux_gnueabihf=arm-linux-gnueabihf-g++
 
 ARG RUSTC_VERSION
 ARG TARGETPLATFORM
 
+# Install all cross-compilation targets
+RUN rustup target add --toolchain "${RUSTC_VERSION}" \
+  x86_64-unknown-linux-gnu \
+  aarch64-unknown-linux-gnu \
+  arm-unknown-linux-gnueabihf \
+  armv7-unknown-linux-gnueabihf
+
 # Helper script that transforms docker platforms to LLVM triples
 COPY ./misc/docker-arch-to-rust-target.sh /
-# Install the right toolchain for cross-compilation
-RUN rustup target add `/docker-arch-to-rust-target.sh "${TARGETPLATFORM}"` --toolchain "${RUSTC_VERSION}"
 
 ## Run the planner from cargo-chef ##
 FROM --platform=${BUILDPLATFORM} chef AS planner
