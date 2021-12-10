@@ -37,6 +37,7 @@ RUN apt update && apt install -y --no-install-recommends \
   libc6-dev-arm64-cross \
   libc6-dev-amd64-cross \
   libc6-dev-armhf-cross \
+  qemu-user \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -44,15 +45,19 @@ RUN cargo install --locked cargo-chef
 
 ENV \
   CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc \
+  CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUNNER="qemu-x86_64 -L /usr/x86_64-linux-gnu" \
   CC_x86_64_unknown_linux_gnu=x86_64-linux-gnu-gcc \
   CXX_x86_64_unknown_linux_gnu=x86_64-linux-gnu-g++ \
   CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc \
+  CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUNNER="qemu-aarch64 -L /usr/aarch64-linux-gnu" \
   CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc \
   CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++ \
   CARGO_TARGET_ARM_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc \
+  CARGO_TARGET_ARM_UNKNOWN_LINUX_GNUEABIHF_RUNNER="qemu-arm -L /usr/arm-linux-gnueabihf" \
   CC_arm_unknown_linux_gnueabihf=arm-linux-gnueabihf-gcc \
   CXX_arm_unknown_linux_gnueabihf=arm-linux-gnueabihf-g++ \
   CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc \
+  CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_RUNNER="qemu-arm -L /usr/arm-linux-gnueabihf" \
   CC_armv7_unknown_linux_gnueabihf=arm-linux-gnueabihf-gcc \
   CXX_armv7_unknown_linux_gnueabihf=arm-linux-gnueabihf-g++
 
@@ -75,7 +80,7 @@ COPY . .
 RUN cargo chef prepare --recipe-path recipe.json
 
 ## Actual build stage ##
-FROM --platform=${BUILDPLATFORM} chef AS builder 
+FROM --platform=${BUILDPLATFORM} chef AS builder
 
 ARG TARGETPLATFORM
 
@@ -96,6 +101,23 @@ RUN cargo build \
 
 # Move the binary to avoid having to guess its name in the next stage
 RUN mv target/$(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")/release/mas-cli /mas-cli
+
+## Stage to run unit tests ##
+FROM --platform=${BUILDPLATFORM} chef AS test 
+
+ARG TARGETPLATFORM
+
+# Build dependencies
+COPY --from=planner /app/recipe.json recipe.json
+RUN cargo chef cook \
+  --recipe-path recipe.json \
+  --target $(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")
+
+# Run the tests
+COPY . .
+COPY --from=static-files /app/crates/static-files/public /app/crates/static-files/public
+RUN cargo test \
+  --target $(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")
 
 ## Runtime stage, debug variant ##
 FROM --platform=${TARGETPLATFORM} gcr.io/distroless/cc-debian${DEBIAN_VERSION}:debug-nonroot AS debug

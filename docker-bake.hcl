@@ -12,6 +12,11 @@ target "debug" {
   target = "debug"
 }
 
+target "test" {
+  inherits = ["default"]
+  target = "test"
+}
+
 target "release" {
   inherits = ["default"]
   platforms = [
@@ -22,7 +27,7 @@ target "release" {
 }
 
 // This is what is baked by GitHub Actions
-group "gha" { targets = ["gha-regular", "gha-debug"] }
+group "gha" { targets = ["gha-regular", "gha-debug", "gha-test"] }
 
 target "gha-base" {
   inherits = ["release"]
@@ -36,4 +41,8 @@ target "gha-regular" {
 
 target "gha-debug" {
   inherits = ["gha-base", "debug", "docker-metadata-action-debug"]
+}
+
+target "gha-test" {
+  inherits = ["gha-base", "test"]
 }
