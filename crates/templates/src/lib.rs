@@ -284,7 +284,11 @@ pub enum TemplateError {
 impl warp::reject::Reject for TemplateError {}
 
 register_templates! {
-    extra = { "base.html" };
+    extra = {
+        "base.html",
+        "components/button.html",
+        "components/field.html"
+    };
 
     /// Render the login page
     pub fn render_login(WithCsrf<LoginContext>) { "login.html" }
