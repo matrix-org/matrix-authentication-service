@@ -115,17 +115,12 @@ impl Templates {
         let mut tera = Tera::default();
         info!("Loading builtin templates");
 
-        for (name, source) in EXTRA_TEMPLATES {
-            if let Some(source) = source {
-                tera.add_raw_template(name, source)?;
-            }
-        }
-
-        for (name, source) in TEMPLATES {
-            if let Some(source) = source {
-                tera.add_raw_template(name, source)?;
-            }
-        }
+        tera.add_raw_templates(
+            EXTRA_TEMPLATES
+                .into_iter()
+                .chain(TEMPLATES)
+                .filter_map(|(name, content)| content.map(|c| (name, c))),
+        )?;
 
         Ok(tera)
     }
@@ -183,9 +178,7 @@ impl Templates {
         self::functions::register(&mut tera);
 
         let loaded: HashSet<_> = tera.get_template_names().collect();
-        let needed: HashSet<_> = std::array::IntoIter::new(TEMPLATES)
-            .map(|(name, _)| name)
-            .collect();
+        let needed: HashSet<_> = TEMPLATES.into_iter().map(|(name, _)| name).collect();
         debug!(?loaded, ?needed, "Templates loaded");
         let missing: HashSet<_> = needed.difference(&loaded).collect();
 
@@ -219,7 +212,7 @@ impl Templates {
             .await
             .context("could not create destination folder")?;
 
-        let templates = std::array::IntoIter::new(TEMPLATES).chain(EXTRA_TEMPLATES);
+        let templates = TEMPLATES.into_iter().chain(EXTRA_TEMPLATES);
 
         let mut options = OpenOptions::new();
         if overwrite {
@@ -285,9 +278,9 @@ impl warp::reject::Reject for TemplateError {}
 
 register_templates! {
     extra = {
-        "base.html",
         "components/button.html",
-        "components/field.html"
+        "components/field.html",
+        "base.html",
     };
 
     /// Render the login page

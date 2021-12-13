@@ -29,7 +29,7 @@ macro_rules! count {
 macro_rules! register_templates {
     {
         $(
-            extra = { $( $extra_template:expr ),* };
+            extra = { $( $extra_template:expr ),* $(,)? };
         )?
 
         $(
