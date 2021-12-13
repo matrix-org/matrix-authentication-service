@@ -16,40 +16,38 @@ limitations under the License.
 
 {% extends "base.html" %}
 
+{% block navbar_start %}
+  {% if next and next.kind == "continue_authorization_grant" %}
+    <a href="#">← Back</a>
+  {% endif %}
+{% endblock %}
+
+{% block navbar_end %}{% endblock %}
+
 {% block content %}
-  <section class="section">
-    <div class="container is-max-desktop">
-      <div class="columns">
-        <div class="column is-one-third">
-          <form method="POST">
-            <input type="hidden" name="csrf" value="{{ csrf_token }}" />
-            <div class="field">
-              <label class="label" for="register-username">Username</label>
-              <div class="control">
-                <input class="input" name="username" id="register-username" type="text">
-              </div>
-            </div>
-
-            <div class="field">
-              <label class="label" for="register-password">Password</label>
-              <div class="control">
-                <input class="input" name="password" id="register-password" type="password">
-              </div>
-            </div>
-
-            <div class="field">
-              <label class="label" for="register-password">Confirm password</label>
-              <div class="control">
-                <input class="input" name="password_confirm" id="register-password-confirm" type="password">
-              </div>
-            </div>
-
-            <div class="control">
-              <button type="submit" class="button is-link">Register</button>
-            </div>
-          </form>
-        </div>
+  <section class="flex items-center justify-center flex-1">
+    <form method="POST" class="grid grid-cols-1 gap-6 w-96">
+      <div class="text-center">
+        <h1 class="text-lg text-center font-medium">Create your account</h1>
+        {% if next and next.kind == "continue_authorization_grant" %}
+          <p>to continue to <em>{{ next.grant.client.client_id }}</em></p>
+        {% endif %}
       </div>
-    </div>
+      <input type="hidden" name="csrf" value="{{ csrf_token }}" />
+      {# TODO: errors #}
+      {{ field::input(label="Username", name="username") }}
+      {{ field::input(label="Password", name="password", type="password") }}
+      {{ field::input(label="Confirm Password", name="password_confirm", type="password") }}
+      {{ button::button(text="Next") }}
+      {# TODO: proper link #}
+      {{ button::link_text(text="Login instead", href="/login") }}
+    </form>
   </section>
+
+  {% if next %}
+    <section class="self-center my-6">
+      {# TODO: proper back link #}
+      {{ button::link_text(text="Return to application", href="/") }}
+    </section>
+  {% endif %}
 {% endblock content %}

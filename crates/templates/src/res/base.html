@@ -14,52 +14,40 @@ See the License for the specific language governing permissions and
 limitations under the License.
 #}
 
+{% import "components/button.html" as button %}
+{% import "components/field.html" as field %}
+
 <!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8">
     <title>{% block title %}matrix-authentication-service{% endblock title %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css">
     <link rel="stylesheet" href="/tailwind.css">
   </head>
-  <body>
-    <nav class="navbar is-dark" role="navigation" aria-label="main navigation">
-      <div class="container">
-        <div class="navbar-brand">
-          <a class="navbar-item" href="/">
-            matrix-authentication-service
-          </a>
-        </div>
+  <body class="bg-white text-black-900 dark:bg-black-800 dark:text-white flex flex-col min-h-screen">
+    <nav class="container mx-auto py-2 flex-initial flex items-center px-2" role="navigation" aria-label="main navigation">
+      {% block navbar_start %}{% endblock navbar_start %}
 
-        <div class="navbar-end">
+      <div class="flex-1"></div>
+
+      {% block navbar_end %}
+        <div class="grid grid-flow-col auto-cols-max gap-4 place-items-center">
           {% if current_session %}
-            <div class="navbar-item">
-              Howdy {{ current_session.user.username }}!
-            </div>
-            <div class="navbar-item">
-              <form method="POST" action="/logout">
-                <input type="hidden" name="csrf" value="{{ csrf_token }}" />
-                <button class="button is-light" action="submit">
-                  Log out
-                </button>
-              </form>
-            </div>
-          {% else %}
-            <div class="navbar-item">
-              <a class="button is-light" href="/login">
-                Log in
-              </a>
+            <div class="text-grey-200 dark:text-grey-250 mx-2">
+              Logged in as <span class="font-bold">{{ current_session.user.username }}</span>.
             </div>
 
-            <div class="navbar-item">
-              <a class="button is-light" href="/register">
-                Register
-              </a>
-            </div>
+            <form method="POST" action="/logout">
+              <input type="hidden" name="csrf" value="{{ csrf_token }}" />
+              {{ button::button_ghost(text="Log out", name="logout", type="submit") }}
+            </form>
+          {% else %}
+            {{ button::link(text="Log in", href="/login") }}
+            {{ button::link_ghost(text="Register", href="/register") }}
           {% endif %}
         </div>
-      </div>
+      {% endblock navbar_end %}
     </nav>
 
     {% block content %}{% endblock content %}

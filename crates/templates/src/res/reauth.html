@@ -17,38 +17,32 @@ limitations under the License.
 {% extends "base.html" %}
 
 {% block content %}
-  <section class="section">
-    <div class="container is-max-desktop">
-      <div class="columns">
-        <div class="column is-one-third">
-          <form method="POST">
-            <input type="hidden" name="csrf" value="{{ csrf_token }}" />
-            <div class="field">
-              <label class="label" for="login-password">Password</label>
-              <div class="control">
-                <input class="input" name="password" id="login-password" type="password">
-              </div>
-            </div>
-
-            <div class="control">
-              <button type="submit" class="button is-link">Submit</button>
-            </div>
-          </form>
-        </div>
-        <div class="column is-two-third">
-          <div class="block">
-            <h3 class="title is-3">Current session data:</h3>
-            <pre><code>{{ current_session | json_encode(pretty=True) | safe }}</code></pre>
-          </div>
-          {% if next %}
-            <div class="block">
-              <h3 class="title is-3">Next action:</h3>
-              <pre><code>{{ next | json_encode(pretty=True) | safe }}</code></pre>
-            </div>
-          {% endif %}
-        </div>
+  <section class="flex items-center justify-center flex-1">
+    <form method="POST" class="grid grid-cols-1 gap-6 w-96 m-4">
+      <div class="text-center">
+        <h1 class="text-lg text-center font-medium">Confim access</h1>
+        {% if next and next.kind == "continue_authorization_grant" %}
+          <p>to continue to <em>{{ next.grant.client.client_id }}</em></p>
+        {% endif %}
       </div>
-    </div>
+      <input type="hidden" name="csrf" value="{{ csrf_token }}" />
+      {# TODO: errors #}
+      {{ field::input(label="Password", name="password", type="password") }}
+      {{ button::button(text="Confirm password") }}
+    </form>
   </section>
+
+  <div class="flex justify-center">
+    <div class="w-96 m-2">
+      <h3 class="title is-3">Current session data:</h3>
+      <pre class="text-sm whitespace-pre-wrap"><code>{{ current_session | json_encode(pretty=True) | safe }}</code></pre>
+    </div>
+    {% if next %}
+      <div class="w-96 m-2">
+        <h3 class="title is-3">Next action:</h3>
+        <pre class="text-sm whitespace-pre-wrap"><code>{{ next | json_encode(pretty=True) | safe }}</code></pre>
+      </div>
+    {% endif %}
+  </div>
 {% endblock content %}
 

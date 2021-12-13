@@ -41,6 +41,7 @@ use tracing::{debug, info, warn};
 
 #[allow(missing_docs)] // TODO
 mod context;
+mod functions;
 
 #[macro_use]
 mod macros;
@@ -178,6 +179,8 @@ impl Templates {
 
         tera.build_inheritance_chains()?;
         tera.check_macro_files()?;
+
+        self::functions::register(&mut tera);
 
         let loaded: HashSet<_> = tera.get_template_names().collect();
         let needed: HashSet<_> = std::array::IntoIter::new(TEMPLATES)

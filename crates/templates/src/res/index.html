@@ -17,11 +17,12 @@ limitations under the License.
 {% extends "base.html" %}
 
 {% block content %}
-  <section class="section">
-    <div class="container content">
-      <h1>Matrix Authentication Service</h1>
-      <p>
-        OpenID Connect discovery document: <a href="{{ discovery_url }}">{{ discovery_url }}</a>
+  <section class="flex-1 flex flex-col items-center justify-center">
+    <div>
+      <h1 class="my-2 text-5xl font-extrabold leading-tight">Matrix Authentication Service</h1>
+      <p class="text-lg">
+        OpenID Connect discovery document:
+        <a class="text-links hover:text-links/70" href="{{ discovery_url }}">{{ discovery_url }}</a>
       </p>
     </div>
   </section>
