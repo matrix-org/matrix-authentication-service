@@ -8,7 +8,7 @@ license = "Apache-2.0"
 [dependencies]
 tokio = { version = "1.14.0", features = ["full"] }
 futures = "0.3.18"
-anyhow = "1.0.51"
+anyhow = { version = "1.0.51", features = ["backtrace"] }
 clap = { version = "3.0.0-rc.4", features = ["derive"] }
 dotenv = "0.15.0"
 schemars = { version = "0.8.8", features = ["url", "chrono"] }
