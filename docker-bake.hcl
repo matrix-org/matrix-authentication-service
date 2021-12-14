@@ -31,8 +31,6 @@ group "gha" { targets = ["gha-regular", "gha-debug", "gha-test"] }
 
 target "gha-base" {
   inherits = ["release"]
-  cache-from = ["type=gha"]
-  cache-to = ["type=gha,mode=max"]
 }
 
 // This is filled by GitHub Actions

@@ -307,6 +307,8 @@ jobs:
     name: Build and push Docker image
     needs: [rustfmt, clippy]
     runs-on: ubuntu-latest
+    env:
+      IMAGE: ghcr.io/matrix-org/matrix-authentication-service
 
     steps:
       - name: Checkout the code
@@ -316,7 +318,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v3
         with:
-          images: ghcr.io/matrix-org/matrix-authentication-service
+          images: "${{ env.IMAGE }}"
           bake-target: docker-metadata-action
           tags: |
             type=ref,event=branch
@@ -330,7 +332,7 @@ jobs:
         id: meta-debug
         uses: docker/metadata-action@v3
         with:
-          images: ghcr.io/matrix-org/matrix-authentication-service
+          images: "${{ env.IMAGE }}"
           bake-target: docker-metadata-action-debug
           tags: |
             type=ref,event=branch,suffix=-debug
@@ -362,8 +364,20 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push
+      - name: Build
         uses: docker/bake-action@v1
+        if: github.event_name == 'pull_request'
         with:
           targets: gha
-          set: gha-push.output=type=image,push=${{ github.event_name != 'pull_request' }}
+          set: |
+            gha-push.cache-from=type=registry,ref=${{ env.IMAGE }}:buildcache
+
+      - name: Build and push
+        uses: docker/bake-action@v1
+        if: github.event_name != 'pull_request'
+        with:
+          targets: gha
+          set: |
+            gha-push.output=type=image,push=true
+            gha-push.cache-from=type=registry,ref=${{ env.IMAGE }}:buildcache
+            gha-push.cache-to=type=registry,ref=${{ env.IMAGE }}:buildcache,mode=max
