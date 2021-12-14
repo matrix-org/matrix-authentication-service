@@ -105,11 +105,10 @@ async fn main() -> anyhow::Result<()> {
 async fn try_main() -> anyhow::Result<()> {
     // Load environment variables from .env files
     // We keep the path to log it afterwards
-    let dotenv_path: Option<PathBuf> = dotenv::dotenv()
+    let dotenv_path: Result<Option<PathBuf>, _> = dotenv::dotenv()
         .map(Some)
         // Display the error if it is something other than the .env file not existing
-        .or_else(|e| if e.not_found() { Ok(None) } else { Err(e) })
-        .context("failed to load .env file")?;
+        .or_else(|e| if e.not_found() { Ok(None) } else { Err(e) });
 
     // Setup logging
     // This writes logs to stderr
@@ -134,8 +133,10 @@ async fn try_main() -> anyhow::Result<()> {
 
     // Now that logging is set up, we can log stuff, like if the .env file was
     // loaded or not
-    if let Some(path) = dotenv_path {
-        tracing::info!(?path, "Loaded environment variables from file");
+    match dotenv_path {
+        Ok(Some(path)) => tracing::info!(?path, "Loaded environment variables from file"),
+        Ok(None) => {}
+        Err(err) => tracing::warn!(%err, "failed to load .env file"),
     }
 
     // Parse the CLI arguments
