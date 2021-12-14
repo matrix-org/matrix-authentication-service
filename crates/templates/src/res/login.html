@@ -18,7 +18,12 @@ limitations under the License.
 
 {% block navbar_start %}
   {% if next and next.kind == "continue_authorization_grant" %}
-    <a href="#">← Back</a>
+    {{ back_to_client::link(
+      text="← Back",
+      uri=next.grant.redirect_uri,
+      mode=next.grant.response_mode,
+      params=dict(error="access_denied", state=next.grant.state)
+    ) }}
   {% endif %}
 {% endblock %}
 
@@ -40,14 +45,19 @@ limitations under the License.
       {{ field::input(label="Username", name="username") }}
       {{ field::input(label="Password", name="password", type="password") }}
       {{ button::button(text="Next") }}
-      {{ button::link_text(text="Create account", href="/register") }}
+      {{ button::link_text(text="Create account", href=register_link) }}
     </form>
   </section>
 
   {% if next and next.kind == "continue_authorization_grant" %}
     <section class="self-center my-6">
-      {# TODO: proper back link #}
-      {{ button::link_text(text="Return to application", href="/") }}
+      {{ back_to_client::link(
+        text="Return to application",
+        class=button::text_class(),
+        uri=next.grant.redirect_uri,
+        mode=next.grant.response_mode,
+        params=dict(error="access_denied", state=next.grant.state)
+      ) }}
     </section>
   {% endif %}
 {% endblock content %}

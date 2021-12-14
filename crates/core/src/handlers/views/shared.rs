@@ -21,7 +21,7 @@ use sqlx::PgExecutor;
 use super::super::oauth2::ContinueAuthorizationGrant;
 use crate::storage::PostgresqlBackend;
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone)]
 #[serde(rename_all = "snake_case", tag = "next")]
 pub(crate) enum PostAuthAction<S: StorageBackend> {
     #[serde(bound(

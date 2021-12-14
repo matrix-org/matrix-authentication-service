@@ -204,7 +204,7 @@ impl TemplateContext for IndexContext {
 }
 
 #[derive(Serialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case")]
 pub enum LoginFormField {
     Username,
     Password,
@@ -222,6 +222,7 @@ pub enum PostAuthContext {
 pub struct LoginContext {
     form: ErroredForm<LoginFormField>,
     next: Option<PostAuthContext>,
+    register_link: String,
 }
 
 impl TemplateContext for LoginContext {
@@ -233,6 +234,7 @@ impl TemplateContext for LoginContext {
         vec![LoginContext {
             form: ErroredForm::default(),
             next: None,
+            register_link: "/register".to_string(),
         }]
     }
 }
@@ -250,6 +252,14 @@ impl LoginContext {
             ..self
         }
     }
+
+    #[must_use]
+    pub fn with_register_link(self, register_link: String) -> Self {
+        Self {
+            register_link,
+            ..self
+        }
+    }
 }
 
 impl Default for LoginContext {
@@ -257,6 +267,67 @@ impl Default for LoginContext {
         Self {
             form: ErroredForm::new(),
             next: None,
+            register_link: "/register".to_string(),
+        }
+    }
+}
+
+#[derive(Serialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum RegisterFormField {
+    Username,
+    Password,
+    PasswordConfirm,
+}
+
+/// Context used by the `register.html` template
+#[derive(Serialize)]
+pub struct RegisterContext {
+    form: ErroredForm<LoginFormField>,
+    next: Option<PostAuthContext>,
+    login_link: String,
+}
+
+impl TemplateContext for RegisterContext {
+    fn sample() -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        // TODO: samples with errors
+        vec![RegisterContext {
+            form: ErroredForm::default(),
+            next: None,
+            login_link: "/login".to_string(),
+        }]
+    }
+}
+
+impl RegisterContext {
+    #[must_use]
+    pub fn with_form_error(self, form: ErroredForm<LoginFormField>) -> Self {
+        Self { form, ..self }
+    }
+
+    #[must_use]
+    pub fn with_post_action(self, next: PostAuthContext) -> Self {
+        Self {
+            next: Some(next),
+            ..self
+        }
+    }
+
+    #[must_use]
+    pub fn with_login_link(self, login_link: String) -> Self {
+        Self { login_link, ..self }
+    }
+}
+
+impl Default for RegisterContext {
+    fn default() -> Self {
+        Self {
+            form: ErroredForm::new(),
+            next: None,
+            login_link: "/login".to_string(),
         }
     }
 }

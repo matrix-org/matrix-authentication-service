@@ -48,8 +48,8 @@ mod macros;
 
 pub use self::context::{
     EmptyContext, ErrorContext, FormPostContext, IndexContext, LoginContext, LoginFormField,
-    PostAuthContext, ReauthContext, ReauthFormField, TemplateContext, WithCsrf,
-    WithOptionalSession, WithSession,
+    PostAuthContext, ReauthContext, ReauthFormField, RegisterContext, RegisterFormField,
+    TemplateContext, WithCsrf, WithOptionalSession, WithSession,
 };
 
 /// Wrapper around [`tera::Tera`] helping rendering the various templates
@@ -280,6 +280,7 @@ register_templates! {
     extra = {
         "components/button.html",
         "components/field.html",
+        "components/back_to_client.html",
         "base.html",
     };
 
@@ -287,7 +288,7 @@ register_templates! {
     pub fn render_login(WithCsrf<LoginContext>) { "login.html" }
 
     /// Render the registration page
-    pub fn render_register(WithCsrf<EmptyContext>) { "register.html" }
+    pub fn render_register(WithCsrf<RegisterContext>) { "register.html" }
 
     /// Render the home page
     pub fn render_index(WithCsrf<WithOptionalSession<IndexContext>>) { "index.html" }

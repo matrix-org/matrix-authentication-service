@@ -16,6 +16,17 @@ limitations under the License.
 
 {% extends "base.html" %}
 
+{% block navbar_start %}
+  {% if next and next.kind == "continue_authorization_grant" %}
+    {{ back_to_client::link(
+      text="← Back",
+      uri=next.grant.redirect_uri,
+      mode=next.grant.response_mode,
+      params=dict(error="access_denied", state=next.grant.state)
+    ) }}
+  {% endif %}
+{% endblock %}
+
 {% block content %}
   <section class="flex items-center justify-center flex-1">
     <form method="POST" class="grid grid-cols-1 gap-6 w-96 m-4">
@@ -44,5 +55,17 @@ limitations under the License.
       </div>
     {% endif %}
   </div>
+
+  {% if next and next.kind == "continue_authorization_grant" %}
+    <section class="self-center my-6">
+      {{ back_to_client::link(
+        text="Return to application",
+        class=button::text_class(),
+        uri=next.grant.redirect_uri,
+        mode=next.grant.response_mode,
+        params=dict(error="access_denied", state=next.grant.state)
+      ) }}
+    </section>
+  {% endif %}
 {% endblock content %}
 

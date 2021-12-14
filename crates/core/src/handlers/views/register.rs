@@ -15,12 +15,13 @@
 use argon2::Argon2;
 use hyper::http::uri::{Parts, PathAndQuery, Uri};
 use mas_config::{CookiesConfig, CsrfConfig};
-use mas_data_model::BrowserSession;
-use mas_templates::{EmptyContext, TemplateContext, Templates};
-use serde::{Deserialize, Serialize};
+use mas_data_model::{BrowserSession, StorageBackend};
+use mas_templates::{RegisterContext, TemplateContext, Templates};
+use serde::Deserialize;
 use sqlx::{pool::PoolConnection, PgPool, Postgres};
 use warp::{reply::html, Filter, Rejection, Reply};
 
+use super::{LoginRequest, PostAuthAction};
 use crate::{
     errors::WrapError,
     filters::{
@@ -33,21 +34,34 @@ use crate::{
     storage::{register_user, user::start_session, PostgresqlBackend},
 };
 
-#[derive(Serialize, Deserialize)]
-pub struct RegisterRequest {
-    next: Option<String>,
+#[derive(Deserialize)]
+#[serde(bound(deserialize = "S::AuthorizationGrantData: std::str::FromStr,
+                             <S::AuthorizationGrantData as std::str::FromStr>::Err: std::fmt::Display"))]
+pub struct RegisterRequest<S: StorageBackend> {
+    #[serde(flatten)]
+    post_auth_action: Option<PostAuthAction<S>>,
 }
 
-impl RegisterRequest {
-    #[allow(dead_code)]
-    pub fn new(next: Option<String>) -> Self {
-        Self { next }
+impl<S: StorageBackend> From<PostAuthAction<S>> for RegisterRequest<S> {
+    fn from(post_auth_action: PostAuthAction<S>) -> Self {
+        Self {
+            post_auth_action: Some(post_auth_action),
+        }
     }
+}
 
+impl<S: StorageBackend> RegisterRequest<S> {
     #[allow(dead_code)]
-    pub fn build_uri(&self) -> anyhow::Result<Uri> {
-        let qs = serde_urlencoded::to_string(self)?;
-        let path_and_query = PathAndQuery::try_from(format!("/register?{}", qs))?;
+    pub fn build_uri(&self) -> anyhow::Result<Uri>
+    where
+        S::AuthorizationGrantData: std::fmt::Display,
+    {
+        let path_and_query = if let Some(next) = &self.post_auth_action {
+            let qs = serde_urlencoded::to_string(next)?;
+            PathAndQuery::try_from(format!("/register?{}", qs))?
+        } else {
+            PathAndQuery::from_static("/register")
+        };
         let uri = Uri::from_parts({
             let mut parts = Parts::default();
             parts.path_and_query = Some(path_and_query);
@@ -56,19 +70,17 @@ impl RegisterRequest {
         Ok(uri)
     }
 
-    fn redirect(self) -> Result<impl Reply, Rejection> {
-        let uri: Uri = Uri::from_parts({
-            let mut parts = Parts::default();
-            parts.path_and_query = Some(
-                self.next
-                    .map(warp::http::uri::PathAndQuery::try_from)
-                    .transpose()
-                    .wrap_error()?
-                    .unwrap_or_else(|| PathAndQuery::from_static("/")),
-            );
-            parts
-        })
-        .wrap_error()?;
+    fn redirect(self) -> Result<impl Reply, Rejection>
+    where
+        S::AuthorizationGrantData: std::fmt::Display,
+    {
+        let uri = self
+            .post_auth_action
+            .as_ref()
+            .map(PostAuthAction::build_uri)
+            .transpose()
+            .wrap_error()?
+            .unwrap_or_else(|| Uri::from_static("/"));
         Ok(warp::redirect::see_other(uri))
     }
 }
@@ -88,6 +100,7 @@ pub(super) fn filter(
 ) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
     let get = warp::get()
         .and(with_templates(templates))
+        .and(connection(pool))
         .and(encrypted_cookie_saver(cookies_config))
         .and(updated_csrf_token(cookies_config, csrf_config))
         .and(warp::query())
@@ -106,15 +119,26 @@ pub(super) fn filter(
 
 async fn get(
     templates: Templates,
+    mut conn: PoolConnection<Postgres>,
     cookie_saver: EncryptedCookieSaver,
     csrf_token: CsrfToken,
-    query: RegisterRequest,
+    query: RegisterRequest<PostgresqlBackend>,
     maybe_session: Option<BrowserSession<PostgresqlBackend>>,
 ) -> Result<Box<dyn Reply>, Rejection> {
     if maybe_session.is_some() {
         Ok(Box::new(query.redirect()?))
     } else {
-        let ctx = EmptyContext.with_csrf(csrf_token.form_value());
+        let ctx = RegisterContext::default();
+        let ctx = match query.post_auth_action {
+            Some(next) => {
+                let login_link = LoginRequest::from(next.clone()).build_uri().wrap_error()?;
+                let next = next.load_context(&mut conn).await.wrap_error()?;
+                ctx.with_post_action(next)
+                    .with_login_link(login_link.to_string())
+            }
+            None => ctx,
+        };
+        let ctx = ctx.with_csrf(csrf_token.form_value());
         let content = templates.render_register(&ctx).await?;
         let reply = html(content);
         let reply = cookie_saver.save_encrypted(&csrf_token, reply)?;
@@ -126,8 +150,9 @@ async fn post(
     mut conn: PoolConnection<Postgres>,
     cookie_saver: EncryptedCookieSaver,
     form: RegisterForm,
-    query: RegisterRequest,
+    query: RegisterRequest<PostgresqlBackend>,
 ) -> Result<impl Reply, Rejection> {
+    // TODO: display nice form errors
     if form.password != form.password_confirm {
         return Err(anyhow::anyhow!("password mismatch")).wrap_error();
     }

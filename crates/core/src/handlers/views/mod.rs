@@ -28,7 +28,9 @@ use self::{
     index::filter as index, login::filter as login, logout::filter as logout,
     reauth::filter as reauth, register::filter as register,
 };
-pub(crate) use self::{login::LoginRequest, reauth::ReauthRequest, shared::PostAuthAction};
+pub(crate) use self::{
+    login::LoginRequest, reauth::ReauthRequest, register::RegisterRequest, shared::PostAuthAction,
+};
 
 pub(super) fn filter(
     pool: &PgPool,

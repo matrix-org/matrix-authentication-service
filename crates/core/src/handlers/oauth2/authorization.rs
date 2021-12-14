@@ -441,7 +441,7 @@ async fn get(
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub(crate) struct ContinueAuthorizationGrant<S: StorageBackend> {
     #[serde(
         with = "serde_with::rust::display_fromstr",

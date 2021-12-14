@@ -35,7 +35,7 @@ limitations under the License.
 {% endmacro %}
 
 {% macro link_text(text, href="#", class="") %}
-<a class="{{ self::text_class() }} {{ class }}" href="{{ href }}">{{ text }}</a>
+  <a class="{{ self::text_class() }} {{ class }}" href="{{ href }}">{{ text }}</a>
 {% endmacro %}
 
 {% macro link_ghost(text, href="#", class="") %}

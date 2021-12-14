@@ -20,7 +20,7 @@ use serde::Deserialize;
 use sqlx::{pool::PoolConnection, PgPool, Postgres};
 use warp::{reply::html, Filter, Rejection, Reply};
 
-use super::shared::PostAuthAction;
+use super::{shared::PostAuthAction, RegisterRequest};
 use crate::{
     errors::WrapError,
     filters::{
@@ -130,8 +130,12 @@ async fn get(
         let ctx = LoginContext::default();
         let ctx = match query.post_auth_action {
             Some(next) => {
+                let register_link = RegisterRequest::from(next.clone())
+                    .build_uri()
+                    .wrap_error()?;
                 let next = next.load_context(&mut conn).await.wrap_error()?;
                 ctx.with_post_action(next)
+                    .with_register_link(register_link.to_string())
             }
             None => ctx,
         };
