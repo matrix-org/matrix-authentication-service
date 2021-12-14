@@ -215,8 +215,12 @@ impl ServerCommand {
     pub async fn run(&self, root: &RootCommand) -> anyhow::Result<()> {
         let config: RootConfig = root.load_config()?;
 
-        let addr: SocketAddr = config.http.address.parse()?;
-        let listener = TcpListener::bind(addr)?;
+        let addr: SocketAddr = config
+            .http
+            .address
+            .parse()
+            .context("could not parse listener address")?;
+        let listener = TcpListener::bind(addr).context("could not bind address")?;
 
         // Connect to the database
         let pool = config.database.connect().await?;

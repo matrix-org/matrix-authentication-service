@@ -108,12 +108,15 @@ async fn try_main() -> anyhow::Result<()> {
     let dotenv_path: Option<PathBuf> = dotenv::dotenv()
         .map(Some)
         // Display the error if it is something other than the .env file not existing
-        .or_else(|e| if e.not_found() { Ok(None) } else { Err(e) })?;
+        .or_else(|e| if e.not_found() { Ok(None) } else { Err(e) })
+        .context("failed to load .env file")?;
 
     // Setup logging
     // This writes logs to stderr
     let fmt_layer = tracing_subscriber::fmt::layer().with_writer(std::io::stderr);
-    let filter_layer = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?;
+    let filter_layer = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("info"))
+        .context("could not setup logging filter")?;
 
     // Don't fill the telemetry layer for now, we want to configure it based on the
     // app config, so we need to delay that a bit
@@ -144,7 +147,7 @@ async fn try_main() -> anyhow::Result<()> {
     let telemetry_config: TelemetryConfig = opts.load_config().unwrap_or_default();
 
     // Setup OpenTelemtry tracing and metrics
-    let tracer = telemetry::setup(&telemetry_config)?;
+    let tracer = telemetry::setup(&telemetry_config).context("failed to setup opentelemetry")?;
     if let Some(tracer) = tracer {
         // Now we can swap out the actual opentelemetry tracing layer
         handle.reload(
