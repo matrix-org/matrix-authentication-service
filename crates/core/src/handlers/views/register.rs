@@ -18,7 +18,7 @@ use mas_config::{CookiesConfig, CsrfConfig};
 use mas_data_model::{BrowserSession, StorageBackend};
 use mas_templates::{RegisterContext, TemplateContext, Templates};
 use serde::Deserialize;
-use sqlx::{pool::PoolConnection, PgPool, Postgres};
+use sqlx::{pool::PoolConnection, PgPool, Postgres, Transaction};
 use warp::{reply::html, Filter, Rejection, Reply};
 
 use super::{LoginRequest, PostAuthAction};
@@ -27,7 +27,7 @@ use crate::{
     filters::{
         cookies::{encrypted_cookie_saver, EncryptedCookieSaver},
         csrf::{protected_form, updated_csrf_token},
-        database::connection,
+        database::{connection, transaction},
         session::{optional_session, SessionCookie},
         with_templates, CsrfToken,
     },
@@ -108,7 +108,7 @@ pub(super) fn filter(
         .and_then(get);
 
     let post = warp::post()
-        .and(connection(pool))
+        .and(transaction(pool))
         .and(encrypted_cookie_saver(cookies_config))
         .and(protected_form(cookies_config))
         .and(warp::query())
@@ -147,7 +147,7 @@ async fn get(
 }
 
 async fn post(
-    mut conn: PoolConnection<Postgres>,
+    mut txn: Transaction<'_, Postgres>,
     cookie_saver: EncryptedCookieSaver,
     form: RegisterForm,
     query: RegisterRequest<PostgresqlBackend>,
@@ -158,11 +158,11 @@ async fn post(
     }
 
     let pfh = Argon2::default();
-    let user = register_user(&mut conn, pfh, &form.username, &form.password)
+    let user = register_user(&mut txn, pfh, &form.username, &form.password)
         .await
         .wrap_error()?;
 
-    let session_info = start_session(&mut conn, user).await.wrap_error()?;
+    let session_info = start_session(&mut txn, user).await.wrap_error()?;
 
     let session_cookie = SessionCookie::from_session(&session_info);
     let reply = query.redirect()?;

@@ -241,11 +241,13 @@ pub async fn authenticate_session(
     // First, fetch the hashed password from the user associated with that session
     let hashed_password: String = sqlx::query_scalar!(
         r#"
-            SELECT u.hashed_password
+            SELECT up.hashed_password
             FROM user_sessions s
-            INNER JOIN users u
-               ON u.id = s.user_id 
+            INNER JOIN user_passwords up
+               ON up.id = s.user_id 
             WHERE s.id = $1
+            ORDER BY up.created_at DESC
+            LIMIT 1
         "#,
         session.data,
     )
@@ -285,27 +287,39 @@ pub async fn authenticate_session(
 }
 
 pub async fn register_user(
-    executor: impl PgExecutor<'_>,
+    txn: &mut Transaction<'_, Postgres>,
     phf: impl PasswordHasher,
     username: &str,
     password: &str,
 ) -> anyhow::Result<User<PostgresqlBackend>> {
-    let salt = SaltString::generate(&mut OsRng);
-    let hashed_password = PasswordHash::generate(phf, password, salt.as_str())?;
-
     let id: i64 = sqlx::query_scalar!(
         r#"
-            INSERT INTO users (username, hashed_password)
-            VALUES ($1, $2)
+            INSERT INTO users (username)
+            VALUES ($1)
             RETURNING id
         "#,
         username,
-        hashed_password.to_string(),
     )
-    .fetch_one(executor)
+    .fetch_one(txn.borrow_mut())
     .instrument(info_span!("Register user"))
     .await
     .context("could not insert user")?;
+
+    let salt = SaltString::generate(&mut OsRng);
+    let hashed_password = PasswordHash::generate(phf, password, salt.as_str())?;
+
+    sqlx::query_scalar!(
+        r#"
+            INSERT INTO user_passwords (user_id, hashed_password)
+            VALUES ($1, $2)
+        "#,
+        id,
+        hashed_password.to_string(),
+    )
+    .execute(txn.borrow_mut())
+    .instrument(info_span!("Save user credentials"))
+    .await
+    .context("could not insert user password")?;
 
     Ok(User {
         data: id,

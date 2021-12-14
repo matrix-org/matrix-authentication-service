@@ -794,26 +794,6 @@
       "nullable": []
     }
   },
-  "a552eee8a8e5ffdee4d4789c634851bd64780dfe730807aac20142d7cd643814": {
-    "query": "\n            SELECT u.hashed_password\n            FROM user_sessions s\n            INNER JOIN users u\n               ON u.id = s.user_id \n            WHERE s.id = $1\n        ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "hashed_password",
-          "type_info": "Text"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      },
-      "nullable": [
-        false
-      ]
-    }
-  },
   "c29e741474aacc91c0aacc028a9e7452a5327d5ce6d4b791bf20a2636069087e": {
     "query": "\n            INSERT INTO oauth2_sessions\n                (user_session_id, client_id, scope)\n            SELECT\n                $1,\n                og.client_id,\n                og.scope\n            FROM\n                oauth2_authorization_grants og\n            WHERE\n                og.id = $2\n            RETURNING id, created_at\n        ",
     "describe": {
@@ -874,6 +854,19 @@
       ]
     }
   },
+  "d7200c0def0662fda4af259c7872e06b8208e36f320ca90ea781c13d2bf85a9f": {
+    "query": "\n            INSERT INTO user_passwords (user_id, hashed_password)\n            VALUES ($1, $2)\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "d9d27eb4a0c11818a636d407438c4bc567a39396e7e236b3e776504417988eab": {
     "query": "\n            INSERT INTO user_session_authentications (session_id)\n            VALUES ($1)\n            RETURNING id, created_at\n        ",
     "describe": {
@@ -900,8 +893,8 @@
       ]
     }
   },
-  "f9a09ff53b6f221649f4f050e3d5ade114f852ddf50a78610a6c0ef0689af681": {
-    "query": "\n            INSERT INTO users (username, hashed_password)\n            VALUES ($1, $2)\n            RETURNING id\n        ",
+  "dda03ba41249bff965cb8f129acc15f4e40807adb9b75dee0ac43edd7809de84": {
+    "query": "\n            INSERT INTO users (username)\n            VALUES ($1)\n            RETURNING id\n        ",
     "describe": {
       "columns": [
         {
@@ -912,8 +905,27 @@
       ],
       "parameters": {
         "Left": [
-          "Text",
           "Text"
+        ]
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "fe1fcf14de164f06a8fa1a0512ff955beaf83df0eebc4d63ea28d837613f8fed": {
+    "query": "\n            SELECT up.hashed_password\n            FROM user_sessions s\n            INNER JOIN user_passwords up\n               ON up.id = s.user_id \n            WHERE s.id = $1\n            ORDER BY up.created_at DESC\n            LIMIT 1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "hashed_password",
+          "type_info": "Text"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
         ]
       },
       "nullable": [
