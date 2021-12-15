@@ -164,6 +164,8 @@ async fn post(
 
     let session_info = start_session(&mut txn, user).await.wrap_error()?;
 
+    txn.commit().await.wrap_error()?;
+
     let session_cookie = SessionCookie::from_session(&session_info);
     let reply = query.redirect()?;
     let reply = cookie_saver.save_encrypted(&session_cookie, reply)?;
