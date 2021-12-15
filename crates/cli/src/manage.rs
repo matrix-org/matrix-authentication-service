@@ -42,9 +42,11 @@ impl ManageCommand {
             SC::Register { username, password } => {
                 let config: DatabaseConfig = root.load_config()?;
                 let pool = config.connect().await?;
+                let mut txn = pool.begin().await?;
                 let hasher = Argon2::default();
 
-                let user = register_user(&pool, hasher, username, password).await?;
+                let user = register_user(&mut txn, hasher, username, password).await?;
+                txn.commit().await?;
                 info!(?user, "User registered");
 
                 Ok(())
