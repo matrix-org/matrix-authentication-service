@@ -17,6 +17,7 @@ use mas_templates::Templates;
 use sqlx::PgPool;
 use warp::{filters::BoxedFilter, Filter, Reply};
 
+mod account;
 mod index;
 mod login;
 mod logout;
@@ -25,8 +26,8 @@ mod register;
 mod shared;
 
 use self::{
-    index::filter as index, login::filter as login, logout::filter as logout,
-    reauth::filter as reauth, register::filter as register,
+    account::filter as account, index::filter as index, login::filter as login,
+    logout::filter as logout, reauth::filter as reauth, register::filter as register,
 };
 pub(crate) use self::{
     login::LoginRequest, reauth::ReauthRequest, register::RegisterRequest, shared::PostAuthAction,
@@ -40,6 +41,7 @@ pub(super) fn filter(
     cookies_config: &CookiesConfig,
 ) -> BoxedFilter<(impl Reply,)> {
     index(pool, templates, oauth2_config, csrf_config, cookies_config)
+        .or(account(pool, templates, csrf_config, cookies_config))
         .or(login(pool, templates, csrf_config, cookies_config))
         .or(register(pool, templates, csrf_config, cookies_config))
         .or(logout(pool, cookies_config))

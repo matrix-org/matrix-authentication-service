@@ -47,9 +47,9 @@ mod functions;
 mod macros;
 
 pub use self::context::{
-    EmptyContext, ErrorContext, FormPostContext, IndexContext, LoginContext, LoginFormField,
-    PostAuthContext, ReauthContext, ReauthFormField, RegisterContext, RegisterFormField,
-    TemplateContext, WithCsrf, WithOptionalSession, WithSession,
+    AccountContext, EmptyContext, ErrorContext, FormPostContext, IndexContext, LoginContext,
+    LoginFormField, PostAuthContext, ReauthContext, ReauthFormField, RegisterContext,
+    RegisterFormField, TemplateContext, WithCsrf, WithOptionalSession, WithSession,
 };
 
 /// Wrapper around [`tera::Tera`] helping rendering the various templates
@@ -293,6 +293,9 @@ register_templates! {
     /// Render the home page
     pub fn render_index(WithCsrf<WithOptionalSession<IndexContext>>) { "index.html" }
 
+    /// Render the account management page
+    pub fn render_account(WithCsrf<WithSession<AccountContext>>) { "account.html" }
+
     /// Render the re-authentication form
     pub fn render_reauth(WithCsrf<WithSession<ReauthContext>>) { "reauth.html" }
 
@@ -310,6 +313,7 @@ impl Templates {
         check::render_login(self).await?;
         check::render_register(self).await?;
         check::render_index(self).await?;
+        check::render_account(self).await?;
         check::render_reauth(self).await?;
         check::render_form_post::<EmptyContext>(self).await?;
         check::render_error(self).await?;

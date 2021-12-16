@@ -382,6 +382,28 @@ pub struct ReauthContext {
     next: Option<PostAuthContext>,
 }
 
+/// Context used by the `account.html` template
+#[derive(Serialize)]
+pub struct AccountContext {
+    active_sessions: usize,
+}
+
+impl AccountContext {
+    #[must_use]
+    pub fn new(active_sessions: usize) -> Self {
+        Self { active_sessions }
+    }
+}
+
+impl TemplateContext for AccountContext {
+    fn sample() -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        vec![Self::new(5)]
+    }
+}
+
 /// Context used by the `form_post.html` template
 #[derive(Serialize)]
 pub struct FormPostContext<T> {

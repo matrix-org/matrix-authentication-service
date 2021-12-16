@@ -65,6 +65,7 @@ impl HtmlError for LoginError {
     }
 }
 
+#[tracing::instrument(skip(conn, password))]
 pub async fn login(
     conn: impl Acquire<'_, Database = Postgres>,
     username: &str,
@@ -85,20 +86,19 @@ pub async fn login(
         })?;
 
     let mut session = start_session(&mut txn, user).await?;
-    session.last_authentication = Some(
-        authenticate_session(&mut txn, &session, password)
-            .await
-            .map_err(|source| {
-                if matches!(source, AuthenticationError::Password { .. }) {
-                    LoginError::Authentication {
-                        username: username.to_string(),
-                        source,
-                    }
-                } else {
-                    LoginError::Other(source.into())
+    authenticate_session(&mut txn, &mut session, password)
+        .await
+        .map_err(|source| {
+            if matches!(source, AuthenticationError::Password { .. }) {
+                LoginError::Authentication {
+                    username: username.to_string(),
+                    source,
                 }
-            })?,
-    );
+            } else {
+                LoginError::Other(source.into())
+            }
+        })?;
+
     txn.commit().await.context("could not commit transaction")?;
     Ok(session)
 }
@@ -218,6 +218,26 @@ pub async fn start_session(
     Ok(session)
 }
 
+#[tracing::instrument(skip_all, fields(user.id = user.data))]
+pub async fn count_active_sessions(
+    executor: impl PgExecutor<'_>,
+    user: &User<PostgresqlBackend>,
+) -> Result<usize, anyhow::Error> {
+    let res = sqlx::query_scalar!(
+        r#"
+            SELECT COUNT(*) as "count!"
+            FROM user_sessions s
+            WHERE s.user_id = $1 AND s.active
+        "#,
+        user.data,
+    )
+    .fetch_one(executor)
+    .await?
+    .try_into()?;
+
+    Ok(res)
+}
+
 #[derive(Debug, Error)]
 pub enum AuthenticationError {
     #[error("could not verify password")]
@@ -233,25 +253,25 @@ pub enum AuthenticationError {
     Internal(#[from] tokio::task::JoinError),
 }
 
+#[tracing::instrument(skip_all, fields(session.id = session.data, user.id = session.user.data))]
 pub async fn authenticate_session(
     txn: &mut Transaction<'_, Postgres>,
-    session: &BrowserSession<PostgresqlBackend>,
+    session: &mut BrowserSession<PostgresqlBackend>,
     password: String,
-) -> Result<Authentication<PostgresqlBackend>, AuthenticationError> {
+) -> Result<(), AuthenticationError> {
     // First, fetch the hashed password from the user associated with that session
     let hashed_password: String = sqlx::query_scalar!(
         r#"
             SELECT up.hashed_password
-            FROM user_sessions s
-            INNER JOIN user_passwords up
-               ON up.id = s.user_id 
-            WHERE s.id = $1
+            FROM user_passwords up
+            WHERE up.user_id = $1
             ORDER BY up.created_at DESC
             LIMIT 1
         "#,
-        session.data,
+        session.user.data,
     )
     .fetch_one(txn.borrow_mut())
+    .instrument(tracing::info_span!("Lookup hashed password"))
     .await
     .map_err(AuthenticationError::Fetch)?;
 
@@ -264,6 +284,7 @@ pub async fn authenticate_session(
             .verify_password(&[&context], &password)
             .map_err(AuthenticationError::Password)
     })
+    .instrument(tracing::info_span!("Verify hashed password"))
     .await??;
 
     // That went well, let's insert the auth info
@@ -277,15 +298,19 @@ pub async fn authenticate_session(
         session.data,
     )
     .fetch_one(txn.borrow_mut())
+    .instrument(tracing::info_span!("Save authentication"))
     .await
     .map_err(AuthenticationError::Save)?;
 
-    Ok(Authentication {
+    session.last_authentication = Some(Authentication {
         data: res.id,
         created_at: res.created_at,
-    })
+    });
+
+    Ok(())
 }
 
+#[tracing::instrument(skip(txn, phf, password))]
 pub async fn register_user(
     txn: &mut Transaction<'_, Postgres>,
     phf: impl PasswordHasher,
@@ -305,6 +330,24 @@ pub async fn register_user(
     .await
     .context("could not insert user")?;
 
+    let user = User {
+        data: id,
+        username: username.to_string(),
+        sub: format!("fake-sub-{}", id),
+    };
+
+    set_password(txn.borrow_mut(), phf, &user, password).await?;
+
+    Ok(user)
+}
+
+#[tracing::instrument(skip_all, fields(user.id = user.data))]
+pub async fn set_password(
+    executor: impl PgExecutor<'_>,
+    phf: impl PasswordHasher,
+    user: &User<PostgresqlBackend>,
+    password: &str,
+) -> anyhow::Result<()> {
     let salt = SaltString::generate(&mut OsRng);
     let hashed_password = PasswordHash::generate(phf, password, salt.as_str())?;
 
@@ -313,21 +356,18 @@ pub async fn register_user(
             INSERT INTO user_passwords (user_id, hashed_password)
             VALUES ($1, $2)
         "#,
-        id,
+        user.data,
         hashed_password.to_string(),
     )
-    .execute(txn.borrow_mut())
+    .execute(executor)
     .instrument(info_span!("Save user credentials"))
     .await
     .context("could not insert user password")?;
 
-    Ok(User {
-        data: id,
-        username: username.to_string(),
-        sub: format!("fake-sub-{}", id),
-    })
+    Ok(())
 }
 
+#[tracing::instrument(skip_all, fields(session.id = session.data))]
 pub async fn end_session(
     executor: impl PgExecutor<'_>,
     session: &BrowserSession<PostgresqlBackend>,
@@ -348,6 +388,7 @@ pub async fn end_session(
     }
 }
 
+#[tracing::instrument(skip(executor))]
 pub async fn lookup_user_by_username(
     executor: impl PgExecutor<'_>,
     username: &str,

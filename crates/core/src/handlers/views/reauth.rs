@@ -137,13 +137,13 @@ async fn get(
 }
 
 async fn post(
-    session: BrowserSession<PostgresqlBackend>,
+    mut session: BrowserSession<PostgresqlBackend>,
     mut txn: Transaction<'_, Postgres>,
     form: ReauthForm,
     query: ReauthRequest<PostgresqlBackend>,
 ) -> Result<impl Reply, Rejection> {
     // TODO: recover from errors here
-    authenticate_session(&mut txn, &session, form.password)
+    authenticate_session(&mut txn, &mut session, form.password)
         .await
         .wrap_error()?;
     txn.commit().await.wrap_error()?;

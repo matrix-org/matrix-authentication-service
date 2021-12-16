@@ -589,6 +589,26 @@
       "nullable": []
     }
   },
+  "647a2a5bbde39d0ed3931d0287b468bc7dedf6171e1dc6171a5d9f079b9ed0fa": {
+    "query": "\n            SELECT up.hashed_password\n            FROM user_passwords up\n            WHERE up.user_id = $1\n            ORDER BY up.created_at DESC\n            LIMIT 1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "hashed_password",
+          "type_info": "Text"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
   "6765e725d31a1490ddee3f28e32dea41abdd9acefb1edd9a7b4e6790ec131173": {
     "query": "\n            SELECT\n                rt.id              AS refresh_token_id,\n                rt.token           AS refresh_token,\n                rt.created_at      AS refresh_token_created_at,\n                at.id              AS \"access_token_id?\",\n                at.token           AS \"access_token?\",\n                at.expires_after   AS \"access_token_expires_after?\",\n                at.created_at      AS \"access_token_created_at?\",\n                os.id              AS \"session_id!\",\n                os.client_id       AS \"client_id!\",\n                os.scope           AS \"scope!\",\n                us.id              AS \"user_session_id!\",\n                us.created_at      AS \"user_session_created_at!\",\n                 u.id              AS \"user_id!\",\n                 u.username        AS \"user_username!\",\n                usa.id             AS \"user_session_last_authentication_id?\",\n                usa.created_at     AS \"user_session_last_authentication_created_at?\"\n            FROM oauth2_refresh_tokens rt\n            LEFT JOIN oauth2_access_tokens at\n              ON at.id = rt.oauth2_access_token_id\n            INNER JOIN oauth2_sessions os\n              ON os.id = rt.oauth2_session_id\n            INNER JOIN user_sessions us\n              ON us.id = os.user_session_id\n            INNER JOIN users u\n              ON u.id = us.user_id\n            LEFT JOIN user_session_authentications usa\n              ON usa.session_id = us.id\n\n            WHERE rt.token = $1\n              AND rt.next_token_id IS NULL\n              AND us.active\n\n            ORDER BY usa.created_at DESC\n            LIMIT 1\n        ",
     "describe": {
@@ -913,14 +933,14 @@
       ]
     }
   },
-  "fe1fcf14de164f06a8fa1a0512ff955beaf83df0eebc4d63ea28d837613f8fed": {
-    "query": "\n            SELECT up.hashed_password\n            FROM user_sessions s\n            INNER JOIN user_passwords up\n               ON up.id = s.user_id \n            WHERE s.id = $1\n            ORDER BY up.created_at DESC\n            LIMIT 1\n        ",
+  "e5cd99bdaf9c678fc659431fecc5d76b25bb08b781fd17e50eda82ea3aa8cea8": {
+    "query": "\n            SELECT COUNT(*) as \"count!\"\n            FROM user_sessions s\n            WHERE s.user_id = $1 AND s.active\n        ",
     "describe": {
       "columns": [
         {
           "ordinal": 0,
-          "name": "hashed_password",
-          "type_info": "Text"
+          "name": "count!",
+          "type_info": "Int8"
         }
       ],
       "parameters": {
@@ -929,7 +949,7 @@
         ]
       },
       "nullable": [
-        false
+        null
       ]
     }
   }
