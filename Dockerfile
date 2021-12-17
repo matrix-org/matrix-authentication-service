@@ -10,7 +10,7 @@
 # The Debian version and version name must be in sync
 ARG DEBIAN_VERSION=11
 ARG DEBIAN_VERSION_NAME=bullseye
-ARG RUSTC_VERSION=1.56.1
+ARG RUSTC_VERSION=1.57.0
 ARG NODEJS_VERSION=16
 
 ## Build stage that builds the static files/frontend ##
@@ -89,11 +89,13 @@ COPY --from=planner /app/recipe.json recipe.json
 RUN cargo chef cook \
   --release \
   --recipe-path recipe.json \
-  --target $(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")
+  --target $(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}") \
+  --package mas-cli
 
 # Build the rest
 COPY . .
 COPY --from=static-files /app/crates/static-files/public /app/crates/static-files/public
+ENV SQLX_OFFLINE=true
 RUN cargo build \
   --release \
   --bin mas-cli \
@@ -116,6 +118,7 @@ RUN cargo chef cook \
 # Run the tests
 COPY . .
 COPY --from=static-files /app/crates/static-files/public /app/crates/static-files/public
+ENV SQLX_OFFLINE=true
 RUN cargo test \
   --target $(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")
 
