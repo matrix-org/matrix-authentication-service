@@ -15,7 +15,7 @@
 use anyhow::Context;
 use clap::Parser;
 use mas_config::DatabaseConfig;
-use mas_core::storage::MIGRATOR;
+use mas_storage::MIGRATOR;
 
 use super::RootCommand;
 

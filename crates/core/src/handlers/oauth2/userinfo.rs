@@ -15,16 +15,14 @@
 use hyper::Method;
 use mas_config::OAuth2Config;
 use mas_data_model::{AccessToken, Session};
+use mas_storage::PostgresqlBackend;
 use serde::Serialize;
 use sqlx::PgPool;
 use warp::{Filter, Rejection, Reply};
 
-use crate::{
-    filters::{
-        authenticate::{authentication, recover_unauthorized},
-        cors::cors,
-    },
-    storage::PostgresqlBackend,
+use crate::filters::{
+    authenticate::{authentication, recover_unauthorized},
+    cors::cors,
 };
 
 #[derive(Serialize)]

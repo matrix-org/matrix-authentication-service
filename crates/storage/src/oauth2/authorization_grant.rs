@@ -26,7 +26,7 @@ use oauth2_types::{pkce::CodeChallengeMethod, requests::ResponseMode, scope::Sco
 use sqlx::PgExecutor;
 use url::Url;
 
-use crate::storage::{DatabaseInconsistencyError, IdAndCreationTime, PostgresqlBackend};
+use crate::{DatabaseInconsistencyError, IdAndCreationTime, PostgresqlBackend};
 
 #[allow(clippy::too_many_arguments)]
 pub async fn new_authorization_grant(

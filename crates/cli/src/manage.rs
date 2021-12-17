@@ -15,7 +15,7 @@
 use argon2::Argon2;
 use clap::Parser;
 use mas_config::DatabaseConfig;
-use mas_core::storage::register_user;
+use mas_storage::user::register_user;
 use tracing::{info, warn};
 
 use super::RootCommand;

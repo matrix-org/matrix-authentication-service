@@ -47,10 +47,8 @@ struct IdAndCreationTime {
     created_at: DateTime<Utc>,
 }
 
-pub(crate) mod oauth2;
-pub(crate) mod user;
-
-pub use self::user::{login, lookup_active_session, register_user};
+pub mod oauth2;
+pub mod user;
 
 /// Embedded migrations, allowing them to run on startup
 pub static MIGRATOR: Migrator = sqlx::migrate!();

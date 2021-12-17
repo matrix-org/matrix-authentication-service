@@ -14,53 +14,54 @@
 
 use anyhow::Context;
 use chrono::{DateTime, Duration, Utc};
-use mas_data_model::{
-    AccessToken, Authentication, BrowserSession, Client, RefreshToken, Session, User,
-};
+use mas_data_model::{AccessToken, Authentication, BrowserSession, Client, Session, User};
 use sqlx::PgExecutor;
+use thiserror::Error;
 
-use crate::storage::{DatabaseInconsistencyError, IdAndCreationTime, PostgresqlBackend};
+use crate::{DatabaseInconsistencyError, IdAndCreationTime, PostgresqlBackend};
 
-pub async fn add_refresh_token(
+pub async fn add_access_token(
     executor: impl PgExecutor<'_>,
     session: &Session<PostgresqlBackend>,
-    access_token: AccessToken<PostgresqlBackend>,
     token: &str,
-) -> anyhow::Result<RefreshToken<PostgresqlBackend>> {
+    expires_after: Duration,
+) -> anyhow::Result<AccessToken<PostgresqlBackend>> {
+    // Checked convertion of duration to i32, maxing at i32::MAX
+    let expires_after_seconds = i32::try_from(expires_after.num_seconds()).unwrap_or(i32::MAX);
+
     let res = sqlx::query_as!(
         IdAndCreationTime,
         r#"
-            INSERT INTO oauth2_refresh_tokens
-                (oauth2_session_id, oauth2_access_token_id, token)
+            INSERT INTO oauth2_access_tokens
+                (oauth2_session_id, token, expires_after)
             VALUES
                 ($1, $2, $3)
             RETURNING
                 id, created_at
         "#,
         session.data,
-        access_token.data,
         token,
+        expires_after_seconds,
     )
     .fetch_one(executor)
     .await
-    .context("could not insert oauth2 refresh token")?;
+    .context("could not insert oauth2 access token")?;
 
-    Ok(RefreshToken {
+    Ok(AccessToken {
         data: res.id,
+        expires_after,
         token: token.to_string(),
-        access_token: Some(access_token),
+        jti: format!("{}", res.id),
         created_at: res.created_at,
     })
 }
 
-struct OAuth2RefreshTokenLookup {
-    refresh_token_id: i64,
-    refresh_token: String,
-    refresh_token_created_at: DateTime<Utc>,
-    access_token_id: Option<i64>,
-    access_token: Option<String>,
-    access_token_expires_after: Option<i32>,
-    access_token_created_at: Option<DateTime<Utc>>,
+#[derive(Debug)]
+pub struct OAuth2AccessTokenLookup {
+    access_token_id: i64,
+    access_token: String,
+    access_token_expires_after: i32,
+    access_token_created_at: DateTime<Utc>,
     session_id: i64,
     client_id: String,
     scope: String,
@@ -72,22 +73,35 @@ struct OAuth2RefreshTokenLookup {
     user_session_last_authentication_created_at: Option<DateTime<Utc>>,
 }
 
-#[allow(clippy::too_many_lines)]
-pub async fn lookup_active_refresh_token(
+#[derive(Debug, Error)]
+#[error("failed to lookup access token")]
+pub enum AccessTokenLookupError {
+    Database(#[from] sqlx::Error),
+    Inconsistency(#[from] DatabaseInconsistencyError),
+}
+
+impl AccessTokenLookupError {
+    #[must_use]
+    pub fn not_found(&self) -> bool {
+        matches!(
+            self,
+            &AccessTokenLookupError::Database(sqlx::Error::RowNotFound)
+        )
+    }
+}
+
+pub async fn lookup_active_access_token(
     executor: impl PgExecutor<'_>,
     token: &str,
-) -> anyhow::Result<(RefreshToken<PostgresqlBackend>, Session<PostgresqlBackend>)> {
+) -> Result<(AccessToken<PostgresqlBackend>, Session<PostgresqlBackend>), AccessTokenLookupError> {
     let res = sqlx::query_as!(
-        OAuth2RefreshTokenLookup,
+        OAuth2AccessTokenLookup,
         r#"
             SELECT
-                rt.id              AS refresh_token_id,
-                rt.token           AS refresh_token,
-                rt.created_at      AS refresh_token_created_at,
-                at.id              AS "access_token_id?",
-                at.token           AS "access_token?",
-                at.expires_after   AS "access_token_expires_after?",
-                at.created_at      AS "access_token_created_at?",
+                at.id              AS "access_token_id",
+                at.token           AS "access_token",
+                at.expires_after   AS "access_token_expires_after",
+                at.created_at      AS "access_token_created_at",
                 os.id              AS "session_id!",
                 os.client_id       AS "client_id!",
                 os.scope           AS "scope!",
@@ -97,11 +111,10 @@ pub async fn lookup_active_refresh_token(
                  u.username        AS "user_username!",
                 usa.id             AS "user_session_last_authentication_id?",
                 usa.created_at     AS "user_session_last_authentication_created_at?"
-            FROM oauth2_refresh_tokens rt
-            LEFT JOIN oauth2_access_tokens at
-              ON at.id = rt.oauth2_access_token_id
+
+            FROM oauth2_access_tokens at
             INNER JOIN oauth2_sessions os
-              ON os.id = rt.oauth2_session_id
+              ON os.id = at.oauth2_session_id
             INNER JOIN user_sessions us
               ON us.id = os.user_session_id
             INNER JOIN users u
@@ -109,8 +122,8 @@ pub async fn lookup_active_refresh_token(
             LEFT JOIN user_session_authentications usa
               ON usa.session_id = us.id
 
-            WHERE rt.token = $1
-              AND rt.next_token_id IS NULL
+            WHERE at.token = $1
+              AND at.created_at + (at.expires_after * INTERVAL '1 second') >= now()
               AND us.active
 
             ORDER BY usa.created_at DESC
@@ -119,31 +132,14 @@ pub async fn lookup_active_refresh_token(
         token,
     )
     .fetch_one(executor)
-    .await
-    .context("failed to fetch oauth2 refresh token")?;
+    .await?;
 
-    let access_token = match (
-        res.access_token_id,
-        res.access_token,
-        res.access_token_created_at,
-        res.access_token_expires_after,
-    ) {
-        (None, None, None, None) => None,
-        (Some(id), Some(token), Some(created_at), Some(expires_after)) => Some(AccessToken {
-            data: id,
-            jti: format!("{}", id),
-            token,
-            created_at,
-            expires_after: Duration::seconds(expires_after.into()),
-        }),
-        _ => return Err(DatabaseInconsistencyError.into()),
-    };
-
-    let refresh_token = RefreshToken {
-        data: res.refresh_token_id,
-        token: res.refresh_token,
-        created_at: res.refresh_token_created_at,
-        access_token,
+    let access_token = AccessToken {
+        data: res.access_token_id,
+        jti: format!("{}", res.access_token_id),
+        token: res.access_token,
+        created_at: res.access_token_created_at,
+        expires_after: Duration::seconds(res.access_token_expires_after.into()),
     };
 
     let client = Client {
@@ -176,39 +172,50 @@ pub async fn lookup_active_refresh_token(
         last_authentication,
     };
 
+    let scope = res.scope.parse().map_err(|_e| DatabaseInconsistencyError)?;
+
     let session = Session {
         data: res.session_id,
         client,
         browser_session,
-        scope: res.scope.parse().context("invalid scope in database")?,
+        scope,
     };
 
-    Ok((refresh_token, session))
+    Ok((access_token, session))
 }
 
-pub async fn replace_refresh_token(
+pub async fn revoke_access_token(
     executor: impl PgExecutor<'_>,
-    refresh_token: &RefreshToken<PostgresqlBackend>,
-    next_refresh_token: &RefreshToken<PostgresqlBackend>,
+    access_token: &AccessToken<PostgresqlBackend>,
 ) -> anyhow::Result<()> {
     let res = sqlx::query!(
         r#"
-            UPDATE oauth2_refresh_tokens
-            SET next_token_id = $2
+            DELETE FROM oauth2_access_tokens
             WHERE id = $1
         "#,
-        refresh_token.data,
-        next_refresh_token.data
+        access_token.data,
     )
     .execute(executor)
     .await
-    .context("failed to update oauth2 refresh token")?;
+    .context("could not revoke access tokens")?;
 
     if res.rows_affected() == 1 {
         Ok(())
     } else {
-        Err(anyhow::anyhow!(
-            "no row were affected when updating refresh token"
-        ))
+        Err(anyhow::anyhow!("no row were affected when revoking token"))
     }
+}
+
+pub async fn cleanup_expired(executor: impl PgExecutor<'_>) -> anyhow::Result<u64> {
+    let res = sqlx::query!(
+        r#"
+            DELETE FROM oauth2_access_tokens
+            WHERE created_at + (expires_after * INTERVAL '1 second') + INTERVAL '15 minutes' < now()
+        "#,
+    )
+    .execute(executor)
+    .await
+    .context("could not cleanup expired access tokens")?;
+
+    Ok(res.rows_affected())
 }

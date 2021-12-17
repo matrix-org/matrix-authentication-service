@@ -1513,6 +1513,7 @@ dependencies = [
  "indoc",
  "mas-config",
  "mas-core",
+ "mas-storage",
  "mas-templates",
  "opentelemetry",
  "opentelemetry-http",
@@ -1584,6 +1585,7 @@ dependencies = [
  "mas-config",
  "mas-data-model",
  "mas-static-files",
+ "mas-storage",
  "mas-templates",
  "mime",
  "oauth2-types",
@@ -1625,6 +1627,26 @@ dependencies = [
  "headers",
  "mime_guess",
  "rust-embed",
+ "warp",
+]
+
+[[package]]
+name = "mas-storage"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "argon2",
+ "chrono",
+ "mas-data-model",
+ "oauth2-types",
+ "password-hash",
+ "rand",
+ "serde",
+ "sqlx",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "url",
  "warp",
 ]
 

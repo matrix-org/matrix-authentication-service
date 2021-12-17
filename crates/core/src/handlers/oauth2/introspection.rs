@@ -14,6 +14,9 @@
 
 use hyper::Method;
 use mas_config::{OAuth2ClientConfig, OAuth2Config};
+use mas_storage::oauth2::{
+    access_token::lookup_active_access_token, refresh_token::lookup_active_refresh_token,
+};
 use oauth2_types::requests::{
     ClientAuthenticationMethod, IntrospectionRequest, IntrospectionResponse, TokenTypeHint,
 };
@@ -24,9 +27,6 @@ use warp::{Filter, Rejection, Reply};
 use crate::{
     errors::WrapError,
     filters::{client::client_authentication, cors::cors, database::connection},
-    storage::oauth2::{
-        access_token::lookup_active_access_token, refresh_token::lookup_active_refresh_token,
-    },
     tokens::{self, TokenType},
 };
 

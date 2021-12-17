@@ -20,6 +20,14 @@ use hyper::{Method, StatusCode};
 use jwt_compact::{Claims, Header, TimeOptions};
 use mas_config::{KeySet, OAuth2ClientConfig, OAuth2Config};
 use mas_data_model::AuthorizationGrantStage;
+use mas_storage::{
+    oauth2::{
+        access_token::{add_access_token, revoke_access_token},
+        authorization_grant::{exchange_grant, lookup_grant_by_code},
+        refresh_token::{add_refresh_token, lookup_active_refresh_token, replace_refresh_token},
+    },
+    DatabaseInconsistencyError,
+};
 use oauth2_types::{
     errors::{InvalidGrant, InvalidRequest, OAuth2Error, OAuth2ErrorCode, UnauthorizedClient},
     requests::{
@@ -45,16 +53,6 @@ use crate::{
     errors::WrapError,
     filters::{client::client_authentication, cors::cors, database::connection, with_keys},
     reply::with_typed_header,
-    storage::{
-        oauth2::{
-            access_token::{add_access_token, revoke_access_token},
-            authorization_grant::{exchange_grant, lookup_grant_by_code},
-            refresh_token::{
-                add_refresh_token, lookup_active_refresh_token, replace_refresh_token,
-            },
-        },
-        DatabaseInconsistencyError,
-    },
     tokens::{AccessToken, RefreshToken},
 };
 

@@ -1,0 +1,25 @@
+[package]
+name = "mas-storage"
+version = "0.1.0"
+authors = ["Quentin Gliech <quenting@element.io>"]
+edition = "2021"
+license = "Apache-2.0"
+
+[dependencies]
+tokio = "1.14.0"
+sqlx = { version = "0.5.9", features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "offline"] }
+chrono = { version = "0.4.19", features = ["serde"] }
+serde = { version = "1.0.131", features = ["derive"] }
+thiserror = "1.0.30"
+anyhow = "1.0.51"
+tracing = "0.1.29"
+warp = "0.3.2"
+
+# Password hashing
+argon2 = { version = "0.3.2", features = ["password-hash"] }
+password-hash = { version = "0.3.2", features = ["std"] }
+rand = "0.8.4"
+url = { version = "2.2.2", features = ["serde"] }
+
+oauth2-types = { path = "../oauth2-types", features = ["sqlx_type"] }
+mas-data-model = { path = "../data-model" }

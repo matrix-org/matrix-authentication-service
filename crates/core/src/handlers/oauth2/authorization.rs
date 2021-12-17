@@ -25,6 +25,16 @@ use mas_data_model::{
     Authentication, AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, BrowserSession,
     Pkce, StorageBackend,
 };
+use mas_storage::{
+    oauth2::{
+        access_token::add_access_token,
+        authorization_grant::{
+            derive_session, fulfill_grant, get_grant_by_id, new_authorization_grant,
+        },
+        refresh_token::add_refresh_token,
+    },
+    PostgresqlBackend,
+};
 use mas_templates::{FormPostContext, Templates};
 use oauth2_types::{
     errors::{
@@ -58,16 +68,6 @@ use crate::{
         with_templates,
     },
     handlers::views::{LoginRequest, PostAuthAction, ReauthRequest},
-    storage::{
-        oauth2::{
-            access_token::add_access_token,
-            authorization_grant::{
-                derive_session, fulfill_grant, get_grant_by_id, new_authorization_grant,
-            },
-            refresh_token::add_refresh_token,
-        },
-        PostgresqlBackend,
-    },
     tokens::{AccessToken, RefreshToken},
 };
 

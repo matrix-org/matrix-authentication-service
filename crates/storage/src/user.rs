@@ -27,7 +27,7 @@ use tracing::{info_span, Instrument};
 use warp::reject::Reject;
 
 use super::{DatabaseInconsistencyError, PostgresqlBackend};
-use crate::storage::IdAndCreationTime;
+use crate::IdAndCreationTime;
 
 #[derive(Debug, Clone)]
 struct UserLookup {

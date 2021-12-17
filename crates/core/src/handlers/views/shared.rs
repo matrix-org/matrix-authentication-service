@@ -14,12 +14,12 @@
 
 use hyper::Uri;
 use mas_data_model::StorageBackend;
+use mas_storage::PostgresqlBackend;
 use mas_templates::PostAuthContext;
 use serde::{Deserialize, Serialize};
 use sqlx::PgExecutor;
 
 use super::super::oauth2::ContinueAuthorizationGrant;
-use crate::storage::PostgresqlBackend;
 
 #[derive(Deserialize, Serialize, Clone)]
 #[serde(rename_all = "snake_case", tag = "next")]

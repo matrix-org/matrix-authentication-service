@@ -16,6 +16,10 @@
 
 use mas_config::CookiesConfig;
 use mas_data_model::BrowserSession;
+use mas_storage::{
+    user::{lookup_active_session, ActiveSessionLookupError},
+    PostgresqlBackend,
+};
 use serde::{Deserialize, Serialize};
 use sqlx::{pool::PoolConnection, Executor, PgPool, Postgres};
 use thiserror::Error;
@@ -30,7 +34,6 @@ use super::{
     database::connection,
     none_on_error,
 };
-use crate::storage::{lookup_active_session, user::ActiveSessionLookupError, PostgresqlBackend};
 
 /// The session is missing or failed to load
 #[derive(Error, Debug)]

@@ -15,6 +15,10 @@
 use argon2::Argon2;
 use mas_config::{CookiesConfig, CsrfConfig};
 use mas_data_model::BrowserSession;
+use mas_storage::{
+    user::{authenticate_session, count_active_sessions, set_password},
+    PostgresqlBackend,
+};
 use mas_templates::{AccountContext, TemplateContext, Templates};
 use serde::Deserialize;
 use sqlx::{pool::PoolConnection, PgExecutor, PgPool, Postgres, Transaction};
@@ -28,10 +32,6 @@ use crate::{
         database::{connection, transaction},
         session::session,
         with_templates, CsrfToken,
-    },
-    storage::{
-        user::{authenticate_session, count_active_sessions, set_password},
-        PostgresqlBackend,
     },
 };
 

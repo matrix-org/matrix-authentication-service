@@ -17,6 +17,10 @@
 use headers::{authorization::Bearer, Authorization};
 use hyper::StatusCode;
 use mas_data_model::{AccessToken, Session};
+use mas_storage::{
+    oauth2::access_token::{lookup_active_access_token, AccessTokenLookupError},
+    PostgresqlBackend,
+};
 use sqlx::{pool::PoolConnection, PgPool, Postgres};
 use thiserror::Error;
 use warp::{
@@ -31,10 +35,6 @@ use super::{
 };
 use crate::{
     errors::wrapped_error,
-    storage::{
-        oauth2::access_token::{lookup_active_access_token, AccessTokenLookupError},
-        PostgresqlBackend,
-    },
     tokens::{TokenFormatError, TokenType},
 };
 

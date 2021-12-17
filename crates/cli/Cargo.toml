@@ -34,6 +34,7 @@ opentelemetry-zipkin = { version = "0.14.0", features = ["reqwest-client", "reqw
 mas-config = { path = "../config" }
 mas-core = { path = "../core" }
 mas-templates = { path = "../templates" }
+mas-storage = { path = "../storage" }
 watchman_client = "0.7.1"
 
 [dev-dependencies]

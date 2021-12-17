@@ -15,6 +15,7 @@
 use hyper::http::uri::{Parts, PathAndQuery, Uri};
 use mas_config::{CookiesConfig, CsrfConfig};
 use mas_data_model::{errors::WrapFormError, BrowserSession, StorageBackend};
+use mas_storage::{user::login, PostgresqlBackend};
 use mas_templates::{LoginContext, LoginFormField, TemplateContext, Templates};
 use serde::Deserialize;
 use sqlx::{pool::PoolConnection, PgPool, Postgres};
@@ -30,7 +31,6 @@ use crate::{
         session::{optional_session, SessionCookie},
         with_templates, CsrfToken,
     },
-    storage::{login, PostgresqlBackend},
 };
 
 #[derive(Deserialize)]
@@ -155,7 +155,7 @@ async fn post(
     form: LoginForm,
     query: LoginRequest<PostgresqlBackend>,
 ) -> Result<Box<dyn Reply>, Rejection> {
-    use crate::storage::user::LoginError;
+    use mas_storage::user::LoginError;
     // TODO: recover
     match login(&mut conn, &form.username, form.password).await {
         Ok(session_info) => {

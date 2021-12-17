@@ -14,13 +14,13 @@
 
 use mas_config::CookiesConfig;
 use mas_data_model::BrowserSession;
+use mas_storage::{user::end_session, PostgresqlBackend};
 use sqlx::{PgPool, Postgres, Transaction};
 use warp::{hyper::Uri, Filter, Rejection, Reply};
 
 use crate::{
     errors::WrapError,
     filters::{csrf::protected_form, database::transaction, session::session},
-    storage::{user::end_session, PostgresqlBackend},
 };
 
 pub(super) fn filter(

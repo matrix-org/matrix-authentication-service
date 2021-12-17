@@ -67,6 +67,7 @@ mas-config = { path = "../config" }
 mas-data-model = { path = "../data-model" }
 mas-templates = { path = "../templates" }
 mas-static-files = { path = "../static-files" }
+mas-storage = { path = "../storage" }
 
 [dev-dependencies]
 indoc = "1.0.3"

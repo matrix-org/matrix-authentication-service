@@ -15,6 +15,7 @@
 use hyper::http::uri::{Parts, PathAndQuery};
 use mas_config::{CookiesConfig, CsrfConfig};
 use mas_data_model::{BrowserSession, StorageBackend};
+use mas_storage::{user::authenticate_session, PostgresqlBackend};
 use mas_templates::{ReauthContext, TemplateContext, Templates};
 use serde::Deserialize;
 use sqlx::{pool::PoolConnection, PgPool, Postgres, Transaction};
@@ -30,8 +31,8 @@ use crate::{
         session::session,
         with_templates, CsrfToken,
     },
-    storage::{user::authenticate_session, PostgresqlBackend},
 };
+
 #[derive(Deserialize)]
 #[serde(bound(deserialize = "S::AuthorizationGrantData: std::str::FromStr,
                              <S::AuthorizationGrantData as std::str::FromStr>::Err: std::fmt::Display"))]

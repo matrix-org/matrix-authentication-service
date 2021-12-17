@@ -16,6 +16,10 @@ use argon2::Argon2;
 use hyper::http::uri::{Parts, PathAndQuery, Uri};
 use mas_config::{CookiesConfig, CsrfConfig};
 use mas_data_model::{BrowserSession, StorageBackend};
+use mas_storage::{
+    user::{register_user, start_session},
+    PostgresqlBackend,
+};
 use mas_templates::{RegisterContext, TemplateContext, Templates};
 use serde::Deserialize;
 use sqlx::{pool::PoolConnection, PgPool, Postgres, Transaction};
@@ -31,7 +35,6 @@ use crate::{
         session::{optional_session, SessionCookie},
         with_templates, CsrfToken,
     },
-    storage::{register_user, user::start_session, PostgresqlBackend},
 };
 
 #[derive(Deserialize)]

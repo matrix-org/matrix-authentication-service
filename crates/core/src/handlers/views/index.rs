@@ -14,19 +14,17 @@
 
 use mas_config::{CookiesConfig, CsrfConfig, OAuth2Config};
 use mas_data_model::BrowserSession;
+use mas_storage::PostgresqlBackend;
 use mas_templates::{IndexContext, TemplateContext, Templates};
 use sqlx::PgPool;
 use url::Url;
 use warp::{reply::html, Filter, Rejection, Reply};
 
-use crate::{
-    filters::{
-        cookies::{encrypted_cookie_saver, EncryptedCookieSaver},
-        csrf::updated_csrf_token,
-        session::optional_session,
-        with_templates, CsrfToken,
-    },
-    storage::PostgresqlBackend,
+use crate::filters::{
+    cookies::{encrypted_cookie_saver, EncryptedCookieSaver},
+    csrf::updated_csrf_token,
+    session::optional_session,
+    with_templates, CsrfToken,
 };
 
 pub(super) fn filter(
