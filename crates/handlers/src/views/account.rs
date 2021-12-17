@@ -32,23 +32,20 @@ use mas_warp_utils::{
 };
 use serde::Deserialize;
 use sqlx::{pool::PoolConnection, PgExecutor, PgPool, Postgres, Transaction};
-use warp::{reply::html, Filter, Rejection, Reply};
+use warp::{filters::BoxedFilter, reply::html, Filter, Rejection, Reply};
 
 pub(super) fn filter(
     pool: &PgPool,
     templates: &Templates,
     csrf_config: &CsrfConfig,
     cookies_config: &CookiesConfig,
-) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
+) -> BoxedFilter<(Box<dyn Reply>,)> {
     let get = with_templates(templates)
         .and(encrypted_cookie_saver(cookies_config))
         .and(updated_csrf_token(cookies_config, csrf_config))
         .and(session(pool, cookies_config))
         .and(connection(pool))
-        .and_then(get)
-        .with(warp::filters::trace::trace(|_info| {
-            tracing::info_span!("GET /account")
-        }));
+        .and_then(get);
 
     let post = with_templates(templates)
         .and(encrypted_cookie_saver(cookies_config))
@@ -56,14 +53,11 @@ pub(super) fn filter(
         .and(session(pool, cookies_config))
         .and(transaction(pool))
         .and(protected_form(cookies_config))
-        .and_then(post)
-        .with(warp::filters::trace::trace(|_info| {
-            tracing::info_span!("POST /account")
-        }));
+        .and_then(post);
 
-    let filter = warp::get().and(get).or(warp::post().and(post));
+    let filter = warp::get().and(get).or(warp::post().and(post)).unify();
 
-    warp::path!("account").and(filter)
+    warp::path!("account").and(filter).boxed()
 }
 
 #[derive(Deserialize)]

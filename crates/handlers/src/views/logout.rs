@@ -20,27 +20,28 @@ use mas_warp_utils::{
     filters::{csrf::protected_form, database::transaction, session::session},
 };
 use sqlx::{PgPool, Postgres, Transaction};
-use warp::{hyper::Uri, Filter, Rejection, Reply};
+use warp::{filters::BoxedFilter, hyper::Uri, Filter, Rejection, Reply};
 
 pub(super) fn filter(
     pool: &PgPool,
     cookies_config: &CookiesConfig,
-) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
+) -> BoxedFilter<(Box<dyn Reply>,)> {
     warp::path!("logout")
         .and(warp::post())
         .and(session(pool, cookies_config))
         .and(transaction(pool))
         .and(protected_form(cookies_config))
         .and_then(post)
+        .boxed()
 }
 
 async fn post(
     session: BrowserSession<PostgresqlBackend>,
     mut txn: Transaction<'_, Postgres>,
     _form: (),
-) -> Result<impl Reply, Rejection> {
+) -> Result<Box<dyn Reply>, Rejection> {
     end_session(&mut txn, &session).await.wrap_error()?;
     txn.commit().await.wrap_error()?;
 
-    Ok(warp::redirect(Uri::from_static("/login")))
+    Ok(Box::new(warp::redirect(Uri::from_static("/login"))))
 }

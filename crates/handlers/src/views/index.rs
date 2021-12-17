@@ -24,7 +24,7 @@ use mas_warp_utils::filters::{
 };
 use sqlx::PgPool;
 use url::Url;
-use warp::{reply::html, Filter, Rejection, Reply};
+use warp::{filters::BoxedFilter, reply::html, Filter, Rejection, Reply};
 
 pub(super) fn filter(
     pool: &PgPool,
@@ -32,7 +32,7 @@ pub(super) fn filter(
     oauth2_config: &OAuth2Config,
     csrf_config: &CsrfConfig,
     cookies_config: &CookiesConfig,
-) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
+) -> BoxedFilter<(Box<dyn Reply>,)> {
     let discovery_url = oauth2_config.discovery_url();
     warp::path::end()
         .and(warp::get())
@@ -42,6 +42,7 @@ pub(super) fn filter(
         .and(updated_csrf_token(cookies_config, csrf_config))
         .and(optional_session(pool, cookies_config))
         .and_then(get)
+        .boxed()
 }
 
 async fn get(
@@ -50,7 +51,7 @@ async fn get(
     cookie_saver: EncryptedCookieSaver,
     csrf_token: CsrfToken,
     maybe_session: Option<BrowserSession<PostgresqlBackend>>,
-) -> Result<impl Reply, Rejection> {
+) -> Result<Box<dyn Reply>, Rejection> {
     let ctx = IndexContext::new(discovery_url)
         .maybe_with_session(maybe_session)
         .with_csrf(csrf_token.form_value());

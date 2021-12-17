@@ -29,7 +29,7 @@ use mas_warp_utils::{
 };
 use serde::Deserialize;
 use sqlx::{pool::PoolConnection, PgPool, Postgres, Transaction};
-use warp::{hyper::Uri, reply::html, Filter, Rejection, Reply};
+use warp::{filters::BoxedFilter, hyper::Uri, reply::html, Filter, Rejection, Reply};
 
 use super::PostAuthAction;
 
@@ -93,7 +93,7 @@ pub(super) fn filter(
     templates: &Templates,
     csrf_config: &CsrfConfig,
     cookies_config: &CookiesConfig,
-) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
+) -> BoxedFilter<(Box<dyn Reply>,)> {
     let get = warp::get()
         .and(with_templates(templates))
         .and(connection(pool))
@@ -110,7 +110,7 @@ pub(super) fn filter(
         .and(warp::query())
         .and_then(post);
 
-    warp::path!("reauth").and(get.or(post))
+    warp::path!("reauth").and(get.or(post).unify()).boxed()
 }
 
 async fn get(
@@ -120,7 +120,7 @@ async fn get(
     csrf_token: CsrfToken,
     session: BrowserSession<PostgresqlBackend>,
     query: ReauthRequest<PostgresqlBackend>,
-) -> Result<impl Reply, Rejection> {
+) -> Result<Box<dyn Reply>, Rejection> {
     let ctx = ReauthContext::default();
     let ctx = match query.post_auth_action {
         Some(next) => {
@@ -134,7 +134,7 @@ async fn get(
     let content = templates.render_reauth(&ctx).await?;
     let reply = html(content);
     let reply = cookie_saver.save_encrypted(&csrf_token, reply)?;
-    Ok(reply)
+    Ok(Box::new(reply))
 }
 
 async fn post(
@@ -142,12 +142,12 @@ async fn post(
     mut txn: Transaction<'_, Postgres>,
     form: ReauthForm,
     query: ReauthRequest<PostgresqlBackend>,
-) -> Result<impl Reply, Rejection> {
+) -> Result<Box<dyn Reply>, Rejection> {
     // TODO: recover from errors here
     authenticate_session(&mut txn, &mut session, form.password)
         .await
         .wrap_error()?;
     txn.commit().await.wrap_error()?;
 
-    Ok(query.redirect()?)
+    Ok(Box::new(query.redirect()?))
 }

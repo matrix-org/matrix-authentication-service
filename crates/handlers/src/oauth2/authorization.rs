@@ -62,6 +62,7 @@ use serde_json::Value;
 use sqlx::{PgExecutor, PgPool, Postgres, Transaction};
 use url::Url;
 use warp::{
+    filters::BoxedFilter,
     redirect::see_other,
     reject::InvalidQuery,
     reply::{html, with_header},
@@ -216,7 +217,7 @@ pub fn filter(
     templates: &Templates,
     oauth2_config: &OAuth2Config,
     cookies_config: &CookiesConfig,
-) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
+) -> BoxedFilter<(Box<dyn Reply>,)> {
     let clients = oauth2_config.clients.clone();
     let authorize = warp::path!("oauth2" / "authorize")
         .and(warp::get())
@@ -243,6 +244,7 @@ pub fn filter(
         .and(warp::any().map(move || clients.clone()))
         .and(with_templates(templates))
         .and_then(actually_reply)
+        .boxed()
 }
 
 async fn recover(rejection: Rejection) -> Result<ReplyOrBackToClient, Rejection> {
@@ -258,7 +260,7 @@ async fn actually_reply(
     q: PartialParams,
     clients: Vec<OAuth2ClientConfig>,
     templates: Templates,
-) -> Result<impl Reply, Rejection> {
+) -> Result<Box<dyn Reply>, Rejection> {
     let (redirect_uri, response_mode, state, params) = match rep {
         ReplyOrBackToClient::Reply(r) => return Ok(r),
         ReplyOrBackToClient::BackToClient {

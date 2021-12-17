@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use hyper::Method;
 use mas_config::{OAuth2ClientConfig, OAuth2Config};
 use mas_data_model::TokenType;
 use mas_storage::oauth2::{
@@ -20,33 +19,32 @@ use mas_storage::oauth2::{
 };
 use mas_warp_utils::{
     errors::WrapError,
-    filters::{client::client_authentication, cors::cors, database::connection},
+    filters::{client::client_authentication, database::connection},
 };
 use oauth2_types::requests::{
     ClientAuthenticationMethod, IntrospectionRequest, IntrospectionResponse, TokenTypeHint,
 };
 use sqlx::{pool::PoolConnection, PgPool, Postgres};
 use tracing::{info, warn};
-use warp::{Filter, Rejection, Reply};
+use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
-pub fn filter(
-    pool: &PgPool,
-    oauth2_config: &OAuth2Config,
-) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
+pub fn filter(pool: &PgPool, oauth2_config: &OAuth2Config) -> BoxedFilter<(Box<dyn Reply>,)> {
     let audience = oauth2_config
         .issuer
         .join("/oauth2/introspect")
         .unwrap()
         .to_string();
 
-    warp::path!("oauth2" / "introspect").and(
-        warp::post()
-            .and(connection(pool))
-            .and(client_authentication(oauth2_config, audience))
-            .and_then(introspect)
-            .recover(recover)
-            .with(cors().allow_method(Method::POST)),
-    )
+    warp::path!("oauth2" / "introspect")
+        .and(
+            warp::post()
+                .and(connection(pool))
+                .and(client_authentication(oauth2_config, audience))
+                .and_then(introspect)
+                .recover(recover)
+                .unify(),
+        )
+        .boxed()
 }
 
 const INACTIVE: IntrospectionResponse = IntrospectionResponse {
@@ -69,12 +67,12 @@ async fn introspect(
     auth: ClientAuthenticationMethod,
     client: OAuth2ClientConfig,
     params: IntrospectionRequest,
-) -> Result<impl Reply, Rejection> {
+) -> Result<Box<dyn Reply>, Rejection> {
     // Token introspection is only allowed by confidential clients
     if auth.public() {
         warn!(?client, "Client tried to introspect");
         // TODO: have a nice error here
-        return Ok(warp::reply::json(&INACTIVE));
+        return Ok(Box::new(warp::reply::json(&INACTIVE)));
     }
 
     let token = &params.token;
@@ -82,7 +80,7 @@ async fn introspect(
     if let Some(hint) = params.token_type_hint {
         if token_type != hint {
             info!("Token type hint did not match");
-            return Ok(warp::reply::json(&INACTIVE));
+            return Ok(Box::new(warp::reply::json(&INACTIVE)));
         }
     }
 
@@ -130,13 +128,13 @@ async fn introspect(
         }
     };
 
-    Ok(warp::reply::json(&reply))
+    Ok(Box::new(warp::reply::json(&reply)))
 }
 
-async fn recover(rejection: Rejection) -> Result<impl Reply, Rejection> {
+async fn recover(rejection: Rejection) -> Result<Box<dyn Reply>, Rejection> {
     if rejection.is_not_found() {
         Err(rejection)
     } else {
-        Ok(warp::reply::json(&INACTIVE))
+        Ok(Box::new(warp::reply::json(&INACTIVE)))
     }
 }

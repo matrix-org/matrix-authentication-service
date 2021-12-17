@@ -29,7 +29,7 @@ use mas_warp_utils::{
 };
 use serde::Deserialize;
 use sqlx::{pool::PoolConnection, PgPool, Postgres};
-use warp::{reply::html, Filter, Rejection, Reply};
+use warp::{filters::BoxedFilter, reply::html, Filter, Rejection, Reply};
 
 use super::{shared::PostAuthAction, RegisterRequest};
 
@@ -94,7 +94,7 @@ pub(super) fn filter(
     templates: &Templates,
     csrf_config: &CsrfConfig,
     cookies_config: &CookiesConfig,
-) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
+) -> BoxedFilter<(Box<dyn Reply>,)> {
     let get = warp::get()
         .and(with_templates(templates))
         .and(connection(pool))
@@ -113,7 +113,7 @@ pub(super) fn filter(
         .and(warp::query())
         .and_then(post);
 
-    warp::path!("login").and(get.or(post))
+    warp::path!("login").and(get.or(post).unify()).boxed()
 }
 
 async fn get(

@@ -12,17 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use hyper::Method;
 use mas_config::OAuth2Config;
 use mas_data_model::{AccessToken, Session};
 use mas_storage::PostgresqlBackend;
-use mas_warp_utils::filters::{
-    authenticate::{authentication, recover_unauthorized},
-    cors::cors,
-};
+use mas_warp_utils::filters::authenticate::{authentication, recover_unauthorized};
 use serde::Serialize;
 use sqlx::PgPool;
-use warp::{Filter, Rejection, Reply};
+use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 #[derive(Serialize)]
 struct UserInfo {
@@ -30,28 +26,27 @@ struct UserInfo {
     username: String,
 }
 
-pub(super) fn filter(
-    pool: &PgPool,
-    _config: &OAuth2Config,
-) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
-    warp::path!("oauth2" / "userinfo").and(
-        warp::get()
-            .or(warp::post())
-            .unify()
-            .and(authentication(pool))
-            .and_then(userinfo)
-            .recover(recover_unauthorized)
-            .with(cors().allow_methods([Method::GET, Method::POST])),
-    )
+pub(super) fn filter(pool: &PgPool, _config: &OAuth2Config) -> BoxedFilter<(Box<dyn Reply>,)> {
+    warp::path!("oauth2" / "userinfo")
+        .and(
+            warp::get()
+                .or(warp::post())
+                .unify()
+                .and(authentication(pool))
+                .and_then(userinfo)
+                .recover(recover_unauthorized)
+                .unify(),
+        )
+        .boxed()
 }
 
 async fn userinfo(
     _token: AccessToken<PostgresqlBackend>,
     session: Session<PostgresqlBackend>,
-) -> Result<impl Reply, Rejection> {
+) -> Result<Box<dyn Reply>, Rejection> {
     let user = session.browser_session.user;
-    Ok(warp::reply::json(&UserInfo {
+    Ok(Box::new(warp::reply::json(&UserInfo {
         sub: user.sub,
         username: user.username,
-    }))
+    })))
 }

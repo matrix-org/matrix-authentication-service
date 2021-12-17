@@ -12,8 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use hyper::Method;
 use mas_config::{CookiesConfig, OAuth2Config};
 use mas_templates::Templates;
+use mas_warp_utils::filters::cors::cors;
 use sqlx::PgPool;
 use warp::{filters::BoxedFilter, Filter, Reply};
 
@@ -37,16 +39,28 @@ pub fn filter(
     oauth2_config: &OAuth2Config,
     cookies_config: &CookiesConfig,
 ) -> BoxedFilter<(impl Reply,)> {
-    discovery(oauth2_config)
-        .or(keys(oauth2_config))
-        .or(authorization(
-            pool,
-            templates,
-            oauth2_config,
-            cookies_config,
-        ))
-        .or(userinfo(pool, oauth2_config))
-        .or(introspection(pool, oauth2_config))
-        .or(token(pool, oauth2_config))
+    let discovery = discovery(oauth2_config);
+    let keys = keys(oauth2_config);
+    let authorization = authorization(pool, templates, oauth2_config, cookies_config);
+    let userinfo = userinfo(pool, oauth2_config);
+    let introspection = introspection(pool, oauth2_config);
+    let token = token(pool, oauth2_config);
+
+    let filter = discovery
+        .or(keys)
+        .unify()
         .boxed()
+        .or(userinfo)
+        .unify()
+        .boxed()
+        .or(token)
+        .unify()
+        .boxed()
+        .or(introspection)
+        .unify()
+        .boxed()
+        .with(cors().allow_methods([Method::POST, Method::GET]))
+        .boxed();
+
+    filter.or(authorization).boxed()
 }

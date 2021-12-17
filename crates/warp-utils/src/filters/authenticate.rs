@@ -136,13 +136,13 @@ async fn recover(
 /// per [RFC6750]. This is not intended for user-facing endpoints.
 ///
 /// [RFC6750]: https://www.rfc-editor.org/rfc/rfc6750.html
-pub async fn recover_unauthorized(rejection: Rejection) -> Result<impl Reply, Rejection> {
+pub async fn recover_unauthorized(rejection: Rejection) -> Result<Box<dyn Reply>, Rejection> {
     if rejection.find::<AuthenticationError>().is_some() {
         // TODO: have the issuer/realm here
         let reply = "invalid token";
         let reply = with_status(reply, StatusCode::UNAUTHORIZED);
         let reply = with_header(reply, "WWW-Authenticate", r#"Bearer error="invalid_token""#);
-        return Ok(reply);
+        return Ok(Box::new(reply));
     }
 
     Err(rejection)

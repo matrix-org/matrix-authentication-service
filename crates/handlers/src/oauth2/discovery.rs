@@ -14,19 +14,15 @@
 
 use std::collections::HashSet;
 
-use hyper::Method;
 use mas_config::OAuth2Config;
-use mas_warp_utils::filters::cors::cors;
 use oauth2_types::{
     oidc::{Metadata, SigningAlgorithm},
     pkce::CodeChallengeMethod,
     requests::{ClientAuthenticationMethod, GrantType, ResponseMode},
 };
-use warp::{Filter, Rejection, Reply};
+use warp::{filters::BoxedFilter, Filter, Reply};
 
-pub(super) fn filter(
-    config: &OAuth2Config,
-) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
+pub(super) fn filter(config: &OAuth2Config) -> BoxedFilter<(Box<dyn Reply>,)> {
     let base = config.issuer.clone();
 
     let response_modes_supported = Some({
@@ -97,9 +93,11 @@ pub(super) fn filter(
         code_challenge_methods_supported,
     };
 
-    warp::path!(".well-known" / "openid-configuration").and(
-        warp::get()
-            .map(move || warp::reply::json(&metadata))
-            .with(cors().allow_method(Method::GET)),
-    )
+    warp::path!(".well-known" / "openid-configuration")
+        .and(warp::get())
+        .map(move || {
+            let ret: Box<dyn Reply> = Box::new(warp::reply::json(&metadata));
+            ret
+        })
+        .boxed()
 }

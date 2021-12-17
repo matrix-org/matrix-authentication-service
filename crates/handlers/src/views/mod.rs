@@ -39,12 +39,16 @@ pub(super) fn filter(
     oauth2_config: &OAuth2Config,
     csrf_config: &CsrfConfig,
     cookies_config: &CookiesConfig,
-) -> BoxedFilter<(impl Reply,)> {
-    index(pool, templates, oauth2_config, csrf_config, cookies_config)
-        .or(account(pool, templates, csrf_config, cookies_config))
-        .or(login(pool, templates, csrf_config, cookies_config))
-        .or(register(pool, templates, csrf_config, cookies_config))
-        .or(logout(pool, cookies_config))
-        .or(reauth(pool, templates, csrf_config, cookies_config))
-        .boxed()
+) -> BoxedFilter<(Box<dyn Reply>,)> {
+    let index = index(pool, templates, oauth2_config, csrf_config, cookies_config);
+    let account = account(pool, templates, csrf_config, cookies_config);
+    let login = login(pool, templates, csrf_config, cookies_config);
+    let register = register(pool, templates, csrf_config, cookies_config);
+    let logout = logout(pool, cookies_config);
+    let reauth = reauth(pool, templates, csrf_config, cookies_config);
+
+    let f1 = index.or(account).unify().boxed();
+    let f2 = login.or(register).unify().boxed();
+    let f3 = logout.or(reauth).unify().boxed();
+    f1.or(f2).unify().or(f3).unify().boxed()
 }

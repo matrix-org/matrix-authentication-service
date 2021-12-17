@@ -33,7 +33,7 @@ use mas_warp_utils::{
 };
 use serde::Deserialize;
 use sqlx::{pool::PoolConnection, PgPool, Postgres, Transaction};
-use warp::{reply::html, Filter, Rejection, Reply};
+use warp::{filters::BoxedFilter, reply::html, Filter, Rejection, Reply};
 
 use super::{LoginRequest, PostAuthAction};
 
@@ -100,7 +100,7 @@ pub(super) fn filter(
     templates: &Templates,
     csrf_config: &CsrfConfig,
     cookies_config: &CookiesConfig,
-) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
+) -> BoxedFilter<(Box<dyn Reply>,)> {
     let get = warp::get()
         .and(with_templates(templates))
         .and(connection(pool))
@@ -117,7 +117,7 @@ pub(super) fn filter(
         .and(warp::query())
         .and_then(post);
 
-    warp::path!("register").and(get.or(post))
+    warp::path!("register").and(get.or(post).unify()).boxed()
 }
 
 async fn get(
@@ -154,7 +154,7 @@ async fn post(
     cookie_saver: EncryptedCookieSaver,
     form: RegisterForm,
     query: RegisterRequest<PostgresqlBackend>,
-) -> Result<impl Reply, Rejection> {
+) -> Result<Box<dyn Reply>, Rejection> {
     // TODO: display nice form errors
     if form.password != form.password_confirm {
         return Err(anyhow::anyhow!("password mismatch")).wrap_error();
@@ -172,5 +172,5 @@ async fn post(
     let session_cookie = SessionCookie::from_session(&session_info);
     let reply = query.redirect()?;
     let reply = cookie_saver.save_encrypted(&session_cookie, reply)?;
-    Ok(reply)
+    Ok(Box::new(reply))
 }

@@ -12,19 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use hyper::Method;
 use mas_config::OAuth2Config;
-use mas_warp_utils::filters::cors::cors;
-use warp::{Filter, Rejection, Reply};
+use warp::{filters::BoxedFilter, Filter, Reply};
 
-pub(super) fn filter(
-    config: &OAuth2Config,
-) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
+pub(super) fn filter(config: &OAuth2Config) -> BoxedFilter<(Box<dyn Reply>,)> {
     let jwks = config.keys.to_public_jwks();
 
-    warp::path!("oauth2" / "keys.json").and(
-        warp::get()
-            .map(move || warp::reply::json(&jwks))
-            .with(cors().allow_method(Method::GET)),
-    )
+    warp::path!("oauth2" / "keys.json")
+        .and(warp::get().map(move || {
+            let ret: Box<dyn Reply> = Box::new(warp::reply::json(&jwks));
+            ret
+        }))
+        .boxed()
 }

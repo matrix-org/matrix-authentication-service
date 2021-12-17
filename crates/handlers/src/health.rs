@@ -19,7 +19,7 @@ use sqlx::{pool::PoolConnection, PgPool, Postgres};
 use tracing::{info_span, Instrument};
 use warp::{filters::BoxedFilter, reply::with_header, Filter, Rejection, Reply};
 
-pub fn filter(pool: &PgPool) -> BoxedFilter<(impl Reply,)> {
+pub fn filter(pool: &PgPool) -> BoxedFilter<(Box<dyn Reply>,)> {
     warp::path!("health")
         .and(warp::get())
         .and(connection(pool))
@@ -27,7 +27,7 @@ pub fn filter(pool: &PgPool) -> BoxedFilter<(impl Reply,)> {
         .boxed()
 }
 
-async fn get(mut conn: PoolConnection<Postgres>) -> Result<impl Reply, Rejection> {
+async fn get(mut conn: PoolConnection<Postgres>) -> Result<Box<dyn Reply>, Rejection> {
     sqlx::query("SELECT $1")
         .bind(1_i64)
         .execute(&mut conn)
@@ -35,5 +35,9 @@ async fn get(mut conn: PoolConnection<Postgres>) -> Result<impl Reply, Rejection
         .await
         .wrap_error()?;
 
-    Ok(with_header("ok", CONTENT_TYPE, TEXT_PLAIN.to_string()))
+    Ok(Box::new(with_header(
+        "ok",
+        CONTENT_TYPE,
+        TEXT_PLAIN.to_string(),
+    )))
 }

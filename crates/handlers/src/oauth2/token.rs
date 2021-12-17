@@ -16,7 +16,7 @@ use anyhow::Context;
 use chrono::{DateTime, Duration, Utc};
 use data_encoding::BASE64URL_NOPAD;
 use headers::{CacheControl, Pragma};
-use hyper::{Method, StatusCode};
+use hyper::StatusCode;
 use jwt_compact::{Claims, Header, TimeOptions};
 use mas_config::{KeySet, OAuth2ClientConfig, OAuth2Config};
 use mas_data_model::{AuthorizationGrantStage, TokenType};
@@ -30,7 +30,7 @@ use mas_storage::{
 };
 use mas_warp_utils::{
     errors::WrapError,
-    filters::{client::client_authentication, cors::cors, database::connection, with_keys},
+    filters::{client::client_authentication, database::connection, with_keys},
     reply::with_typed_header,
 };
 use oauth2_types::{
@@ -49,6 +49,7 @@ use sqlx::{pool::PoolConnection, Acquire, PgPool, Postgres};
 use tracing::debug;
 use url::Url;
 use warp::{
+    filters::BoxedFilter,
     reject::Reject,
     reply::{json, with_status},
     Filter, Rejection, Reply,
@@ -88,10 +89,7 @@ where
     Err(Error { json, status }.into())
 }
 
-pub fn filter(
-    pool: &PgPool,
-    oauth2_config: &OAuth2Config,
-) -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Clone + Send + Sync + 'static {
+pub fn filter(pool: &PgPool, oauth2_config: &OAuth2Config) -> BoxedFilter<(Box<dyn Reply>,)> {
     let audience = oauth2_config
         .issuer
         .join("/oauth2/token")
@@ -99,21 +97,23 @@ pub fn filter(
         .to_string();
     let issuer = oauth2_config.issuer.clone();
 
-    warp::path!("oauth2" / "token").and(
-        warp::post()
-            .and(client_authentication(oauth2_config, audience))
-            .and(with_keys(oauth2_config))
-            .and(warp::any().map(move || issuer.clone()))
-            .and(connection(pool))
-            .and_then(token)
-            .recover(recover)
-            .with(cors().allow_method(Method::POST)),
-    )
+    warp::path!("oauth2" / "token")
+        .and(
+            warp::post()
+                .and(client_authentication(oauth2_config, audience))
+                .and(with_keys(oauth2_config))
+                .and(warp::any().map(move || issuer.clone()))
+                .and(connection(pool))
+                .and_then(token)
+                .recover(recover)
+                .unify(),
+        )
+        .boxed()
 }
 
-async fn recover(rejection: Rejection) -> Result<impl Reply, Rejection> {
+async fn recover(rejection: Rejection) -> Result<Box<dyn Reply>, Rejection> {
     if let Some(Error { json, status }) = rejection.find::<Error>() {
-        Ok(with_status(warp::reply::json(json), *status))
+        Ok(Box::new(with_status(warp::reply::json(json), *status)))
     } else {
         Err(rejection)
     }
@@ -126,7 +126,7 @@ async fn token(
     keys: KeySet,
     issuer: Url,
     mut conn: PoolConnection<Postgres>,
-) -> Result<impl Reply, Rejection> {
+) -> Result<Box<dyn Reply>, Rejection> {
     let reply = match req {
         AccessTokenRequest::AuthorizationCode(grant) => {
             let reply = authorization_code_grant(&grant, &client, &keys, issuer, &mut conn).await?;
@@ -144,7 +144,7 @@ async fn token(
 
     let reply = with_typed_header(CacheControl::new().with_no_store(), reply);
     let reply = with_typed_header(Pragma::no_cache(), reply);
-    Ok(reply)
+    Ok(Box::new(reply))
 }
 
 fn hash<H: Digest>(mut hasher: H, token: &str) -> anyhow::Result<String> {

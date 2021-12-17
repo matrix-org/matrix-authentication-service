@@ -40,16 +40,25 @@ pub fn root(
     templates: &Templates,
     config: &RootConfig,
 ) -> BoxedFilter<(impl Reply,)> {
-    health(pool)
-        .or(oauth2(pool, templates, &config.oauth2, &config.cookies))
-        .or(views(
-            pool,
-            templates,
-            &config.oauth2,
-            &config.csrf,
-            &config.cookies,
-        ))
-        .or(static_files(config.http.web_root.clone()))
-        .with(warp::log(module_path!()))
+    let health = health(pool);
+    let oauth2 = oauth2(pool, templates, &config.oauth2, &config.cookies);
+    let views = views(
+        pool,
+        templates,
+        &config.oauth2,
+        &config.csrf,
+        &config.cookies,
+    );
+    let static_files = static_files(config.http.web_root.clone());
+
+    let filter = health
+        .or(views)
+        .unify()
+        .or(static_files)
+        .unify()
         .boxed()
+        .or(oauth2)
+        .boxed();
+
+    filter.with(warp::log(module_path!())).boxed()
 }
