@@ -23,7 +23,7 @@ use hyper::{
 use mas_config::{CookiesConfig, OAuth2ClientConfig, OAuth2Config};
 use mas_data_model::{
     Authentication, AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, BrowserSession,
-    Pkce, StorageBackend,
+    Pkce, StorageBackend, TokenType,
 };
 use mas_storage::{
     oauth2::{
@@ -36,6 +36,14 @@ use mas_storage::{
     PostgresqlBackend,
 };
 use mas_templates::{FormPostContext, Templates};
+use mas_warp_utils::{
+    errors::WrapError,
+    filters::{
+        database::transaction,
+        session::{optional_session, session},
+        with_templates,
+    },
+};
 use oauth2_types::{
     errors::{
         ErrorResponse, InvalidGrant, InvalidRequest, LoginRequired, OAuth2Error,
@@ -60,16 +68,7 @@ use warp::{
     Filter, Rejection, Reply,
 };
 
-use crate::{
-    errors::WrapError,
-    filters::{
-        database::transaction,
-        session::{optional_session, session},
-        with_templates,
-    },
-    handlers::views::{LoginRequest, PostAuthAction, ReauthRequest},
-    tokens::{AccessToken, RefreshToken},
-};
+use crate::views::{LoginRequest, PostAuthAction, ReauthRequest};
 
 #[derive(Deserialize)]
 struct PartialParams {
@@ -523,8 +522,8 @@ async fn step(
                 let (access_token_str, refresh_token_str) = {
                     let mut rng = thread_rng();
                     (
-                        AccessToken.generate(&mut rng),
-                        RefreshToken.generate(&mut rng),
+                        TokenType::AccessToken.generate(&mut rng),
+                        TokenType::RefreshToken.generate(&mut rng),
                     )
                 };
 

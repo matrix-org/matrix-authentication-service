@@ -13,12 +13,11 @@
 // limitations under the License.
 
 use hyper::header::CONTENT_TYPE;
+use mas_warp_utils::{errors::WrapError, filters::database::connection};
 use mime::TEXT_PLAIN;
 use sqlx::{pool::PoolConnection, PgPool, Postgres};
 use tracing::{info_span, Instrument};
 use warp::{filters::BoxedFilter, reply::with_header, Filter, Rejection, Reply};
-
-use crate::{errors::WrapError, filters::database::connection};
 
 pub fn filter(pool: &PgPool) -> BoxedFilter<(impl Reply,)> {
     warp::path!("health")

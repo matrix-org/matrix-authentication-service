@@ -16,16 +16,15 @@ use mas_config::{CookiesConfig, CsrfConfig, OAuth2Config};
 use mas_data_model::BrowserSession;
 use mas_storage::PostgresqlBackend;
 use mas_templates::{IndexContext, TemplateContext, Templates};
-use sqlx::PgPool;
-use url::Url;
-use warp::{reply::html, Filter, Rejection, Reply};
-
-use crate::filters::{
+use mas_warp_utils::filters::{
     cookies::{encrypted_cookie_saver, EncryptedCookieSaver},
     csrf::updated_csrf_token,
     session::optional_session,
     with_templates, CsrfToken,
 };
+use sqlx::PgPool;
+use url::Url;
+use warp::{reply::html, Filter, Rejection, Reply};
 
 pub(super) fn filter(
     pool: &PgPool,

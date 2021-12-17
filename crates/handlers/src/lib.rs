@@ -20,12 +20,36 @@
 #![allow(clippy::missing_panics_doc)]
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::implicit_hasher)]
+#![allow(clippy::unused_async)] // Some warp filters need that
 
-pub mod errors;
-pub mod filters;
-pub mod handlers;
-pub mod reply;
-pub mod tasks;
-pub mod tokens;
+use mas_config::RootConfig;
+use mas_static_files::filter as static_files;
+use mas_templates::Templates;
+use sqlx::PgPool;
+use warp::{filters::BoxedFilter, Filter, Reply};
 
-pub use self::filters::cors::set_propagator;
+mod health;
+mod oauth2;
+mod views;
+
+use self::{health::filter as health, oauth2::filter as oauth2, views::filter as views};
+
+#[must_use]
+pub fn root(
+    pool: &PgPool,
+    templates: &Templates,
+    config: &RootConfig,
+) -> BoxedFilter<(impl Reply,)> {
+    health(pool)
+        .or(oauth2(pool, templates, &config.oauth2, &config.cookies))
+        .or(views(
+            pool,
+            templates,
+            &config.oauth2,
+            &config.csrf,
+            &config.cookies,
+        ))
+        .or(static_files(config.http.web_root.clone()))
+        .with(warp::log(module_path!()))
+        .boxed()
+}

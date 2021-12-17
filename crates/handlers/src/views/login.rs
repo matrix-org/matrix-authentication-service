@@ -17,12 +17,7 @@ use mas_config::{CookiesConfig, CsrfConfig};
 use mas_data_model::{errors::WrapFormError, BrowserSession, StorageBackend};
 use mas_storage::{user::login, PostgresqlBackend};
 use mas_templates::{LoginContext, LoginFormField, TemplateContext, Templates};
-use serde::Deserialize;
-use sqlx::{pool::PoolConnection, PgPool, Postgres};
-use warp::{reply::html, Filter, Rejection, Reply};
-
-use super::{shared::PostAuthAction, RegisterRequest};
-use crate::{
+use mas_warp_utils::{
     errors::WrapError,
     filters::{
         cookies::{encrypted_cookie_saver, EncryptedCookieSaver},
@@ -32,6 +27,11 @@ use crate::{
         with_templates, CsrfToken,
     },
 };
+use serde::Deserialize;
+use sqlx::{pool::PoolConnection, PgPool, Postgres};
+use warp::{reply::html, Filter, Rejection, Reply};
+
+use super::{shared::PostAuthAction, RegisterRequest};
 
 #[derive(Deserialize)]
 #[serde(bound(deserialize = "S::AuthorizationGrantData: std::str::FromStr,

@@ -20,11 +20,7 @@ use mas_storage::{
     PostgresqlBackend,
 };
 use mas_templates::{AccountContext, TemplateContext, Templates};
-use serde::Deserialize;
-use sqlx::{pool::PoolConnection, PgExecutor, PgPool, Postgres, Transaction};
-use warp::{reply::html, Filter, Rejection, Reply};
-
-use crate::{
+use mas_warp_utils::{
     errors::WrapError,
     filters::{
         cookies::{encrypted_cookie_saver, EncryptedCookieSaver},
@@ -34,6 +30,9 @@ use crate::{
         with_templates, CsrfToken,
     },
 };
+use serde::Deserialize;
+use sqlx::{pool::PoolConnection, PgExecutor, PgPool, Postgres, Transaction};
+use warp::{reply::html, Filter, Rejection, Reply};
 
 pub(super) fn filter(
     pool: &PgPool,

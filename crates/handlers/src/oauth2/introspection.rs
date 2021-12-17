@@ -14,8 +14,13 @@
 
 use hyper::Method;
 use mas_config::{OAuth2ClientConfig, OAuth2Config};
+use mas_data_model::TokenType;
 use mas_storage::oauth2::{
     access_token::lookup_active_access_token, refresh_token::lookup_active_refresh_token,
+};
+use mas_warp_utils::{
+    errors::WrapError,
+    filters::{client::client_authentication, cors::cors, database::connection},
 };
 use oauth2_types::requests::{
     ClientAuthenticationMethod, IntrospectionRequest, IntrospectionResponse, TokenTypeHint,
@@ -23,12 +28,6 @@ use oauth2_types::requests::{
 use sqlx::{pool::PoolConnection, PgPool, Postgres};
 use tracing::{info, warn};
 use warp::{Filter, Rejection, Reply};
-
-use crate::{
-    errors::WrapError,
-    filters::{client::client_authentication, cors::cors, database::connection},
-    tokens::{self, TokenType},
-};
 
 pub fn filter(
     pool: &PgPool,
@@ -88,7 +87,7 @@ async fn introspect(
     }
 
     let reply = match token_type {
-        tokens::TokenType::AccessToken => {
+        TokenType::AccessToken => {
             let (token, session) = lookup_active_access_token(&mut conn, token)
                 .await
                 .wrap_error()?;
@@ -109,7 +108,7 @@ async fn introspect(
                 jti: None,
             }
         }
-        tokens::TokenType::RefreshToken => {
+        TokenType::RefreshToken => {
             let (token, session) = lookup_active_refresh_token(&mut conn, token)
                 .await
                 .wrap_error()?;

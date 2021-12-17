@@ -61,7 +61,7 @@ pub fn with_keys(
 ///
 /// use warp::{filters::header::header, reject::MissingHeader, Filter};
 ///
-/// use mas_core::filters::none_on_error;
+/// use mas_warp_utils::filters::none_on_error;
 ///
 /// header("Content-Length")
 ///     .map(Some)

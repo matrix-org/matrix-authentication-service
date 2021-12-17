@@ -19,7 +19,7 @@ use headers::{CacheControl, Pragma};
 use hyper::{Method, StatusCode};
 use jwt_compact::{Claims, Header, TimeOptions};
 use mas_config::{KeySet, OAuth2ClientConfig, OAuth2Config};
-use mas_data_model::AuthorizationGrantStage;
+use mas_data_model::{AuthorizationGrantStage, TokenType};
 use mas_storage::{
     oauth2::{
         access_token::{add_access_token, revoke_access_token},
@@ -27,6 +27,11 @@ use mas_storage::{
         refresh_token::{add_refresh_token, lookup_active_refresh_token, replace_refresh_token},
     },
     DatabaseInconsistencyError,
+};
+use mas_warp_utils::{
+    errors::WrapError,
+    filters::{client::client_authentication, cors::cors, database::connection, with_keys},
+    reply::with_typed_header,
 };
 use oauth2_types::{
     errors::{InvalidGrant, InvalidRequest, OAuth2Error, OAuth2ErrorCode, UnauthorizedClient},
@@ -47,13 +52,6 @@ use warp::{
     reject::Reject,
     reply::{json, with_status},
     Filter, Rejection, Reply,
-};
-
-use crate::{
-    errors::WrapError,
-    filters::{client::client_authentication, cors::cors, database::connection, with_keys},
-    reply::with_typed_header,
-    tokens::{AccessToken, RefreshToken},
 };
 
 #[serde_as]
@@ -233,8 +231,8 @@ async fn authorization_code_grant(
     let (access_token_str, refresh_token_str) = {
         let mut rng = thread_rng();
         (
-            AccessToken.generate(&mut rng),
-            RefreshToken.generate(&mut rng),
+            TokenType::AccessToken.generate(&mut rng),
+            TokenType::RefreshToken.generate(&mut rng),
         )
     };
 
@@ -308,8 +306,8 @@ async fn refresh_token_grant(
     let (access_token_str, refresh_token_str) = {
         let mut rng = thread_rng();
         (
-            AccessToken.generate(&mut rng),
-            RefreshToken.generate(&mut rng),
+            TokenType::AccessToken.generate(&mut rng),
+            TokenType::RefreshToken.generate(&mut rng),
         )
     };
 

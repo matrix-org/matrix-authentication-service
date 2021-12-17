@@ -22,8 +22,8 @@ use clap::Parser;
 use futures::{future::TryFutureExt, stream::TryStreamExt};
 use hyper::{header, Server, Version};
 use mas_config::RootConfig;
-use mas_core::tasks::{self, TaskQueue};
 use mas_storage::MIGRATOR;
+use mas_tasks::TaskQueue;
 use mas_templates::Templates;
 use opentelemetry_http::HeaderExtractor;
 use tower::{make::Shared, ServiceBuilder};
@@ -233,7 +233,7 @@ impl ServerCommand {
 
         info!("Starting task scheduler");
         let queue = TaskQueue::default();
-        queue.recuring(Duration::from_secs(15), tasks::cleanup_expired(&pool));
+        queue.recuring(Duration::from_secs(15), mas_tasks::cleanup_expired(&pool));
         queue.start();
 
         // Load and compile the templates
@@ -254,7 +254,7 @@ impl ServerCommand {
         }
 
         // Start the server
-        let root = mas_core::handlers::root(&pool, &templates, &config);
+        let root = mas_handlers::root(&pool, &templates, &config);
 
         let warp_service = warp::service(root);
 

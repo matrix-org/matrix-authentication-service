@@ -16,7 +16,7 @@
 
 use headers::{authorization::Bearer, Authorization};
 use hyper::StatusCode;
-use mas_data_model::{AccessToken, Session};
+use mas_data_model::{AccessToken, Session, TokenFormatError, TokenType};
 use mas_storage::{
     oauth2::access_token::{lookup_active_access_token, AccessTokenLookupError},
     PostgresqlBackend,
@@ -33,10 +33,7 @@ use super::{
     database::connection,
     headers::{typed_header, InvalidTypedHeader},
 };
-use crate::{
-    errors::wrapped_error,
-    tokens::{TokenFormatError, TokenType},
-};
+use crate::errors::wrapped_error;
 
 /// Bearer token authentication failed
 ///

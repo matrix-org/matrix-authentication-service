@@ -14,12 +14,8 @@ url = { version = "2.2.2", features = ["serde"] }
 parse-display = "0.5.3"
 indoc = "1.0.3"
 serde_with = { version = "1.11.0", features = ["chrono"] }
-sqlx = { version = "0.5.9", default-features = false, optional = true }
 chrono = "0.4.19"
 sha2 = "0.10.0"
 data-encoding = "2.3.2"
 thiserror = "1.0.30"
 itertools = "0.10.3"
-
-[features]
-sqlx_type = ["sqlx"]

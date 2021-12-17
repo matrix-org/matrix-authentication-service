@@ -19,7 +19,7 @@
 //! extern crate warp;
 //!
 //! use warp::Reply;
-//! use mas_core::reply::with_typed_header;
+//! use mas_warp_utils::reply::with_typed_header;
 //!
 //! let reply = r#"{"hello": "world"}"#;
 //! let reply = with_typed_header(headers::ContentType::json(), reply);;

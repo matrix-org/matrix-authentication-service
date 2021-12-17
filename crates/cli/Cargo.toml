@@ -20,6 +20,7 @@ warp = "0.3.2"
 url = "2.2.2"
 argon2 = { version = "0.3.2", features = ["password-hash"] }
 reqwest = { version = "0.11.7", features = ["rustls-tls"], default-features = false, optional = true }
+watchman_client = "0.7.1"
 
 tracing = "0.1.29"
 tracing-subscriber = { version = "0.3.3", features = ["env-filter"] }
@@ -32,17 +33,18 @@ opentelemetry-otlp = { version = "0.9.0", features = ["trace", "metrics"], optio
 opentelemetry-zipkin = { version = "0.14.0", features = ["reqwest-client", "reqwest-rustls"], default-features = false, optional = true }
 
 mas-config = { path = "../config" }
-mas-core = { path = "../core" }
+mas-handlers = { path = "../handlers" }
 mas-templates = { path = "../templates" }
 mas-storage = { path = "../storage" }
-watchman_client = "0.7.1"
+mas-tasks = { path = "../tasks" }
+mas-warp-utils = { path = "../warp-utils" }
 
 [dev-dependencies]
 indoc = "1.0.3"
 
 [features]
 default = ["otlp", "jaeger", "zipkin"]
-dev = ["mas-templates/dev", "mas-core/dev"]
+dev = ["mas-templates/dev", "mas-handlers/dev"]
 # Enable OpenTelemetry OTLP exporter. Requires "protoc"
 otlp = ["opentelemetry-otlp"]
 # Enable OpenTelemetry Jaeger exporter and propagator.

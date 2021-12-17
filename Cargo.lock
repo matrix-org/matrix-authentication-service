@@ -1512,9 +1512,11 @@ dependencies = [
  "hyper",
  "indoc",
  "mas-config",
- "mas-core",
+ "mas-handlers",
  "mas-storage",
+ "mas-tasks",
  "mas-templates",
+ "mas-warp-utils",
  "opentelemetry",
  "opentelemetry-http",
  "opentelemetry-jaeger",
@@ -1562,39 +1564,38 @@ dependencies = [
 ]
 
 [[package]]
-name = "mas-core"
+name = "mas-data-model"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "crc",
+ "oauth2-types",
+ "rand",
+ "serde",
+ "thiserror",
+ "url",
+]
+
+[[package]]
+name = "mas-handlers"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "argon2",
- "async-trait",
- "bincode",
- "chacha20poly1305",
  "chrono",
- "cookie",
- "crc",
  "data-encoding",
- "elliptic-curve",
- "futures-util",
  "headers",
  "hyper",
- "indoc",
- "itertools",
  "jwt-compact",
- "k256",
  "mas-config",
  "mas-data-model",
  "mas-static-files",
  "mas-storage",
  "mas-templates",
+ "mas-warp-utils",
  "mime",
  "oauth2-types",
- "once_cell",
- "opentelemetry",
- "password-hash",
- "pkcs8",
  "rand",
- "rsa",
  "serde",
  "serde_json",
  "serde_urlencoded",
@@ -1603,21 +1604,9 @@ dependencies = [
  "sqlx",
  "thiserror",
  "tokio",
- "tokio-stream",
  "tracing",
  "url",
  "warp",
-]
-
-[[package]]
-name = "mas-data-model"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "oauth2-types",
- "serde",
- "thiserror",
- "url",
 ]
 
 [[package]]
@@ -1651,6 +1640,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "mas-tasks"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "futures-util",
+ "mas-storage",
+ "sqlx",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+]
+
+[[package]]
 name = "mas-templates"
 version = "0.1.0"
 dependencies = [
@@ -1666,6 +1668,40 @@ dependencies = [
  "tokio",
  "tracing",
  "url",
+ "warp",
+]
+
+[[package]]
+name = "mas-warp-utils"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "chacha20poly1305",
+ "chrono",
+ "cookie",
+ "crc",
+ "data-encoding",
+ "headers",
+ "hyper",
+ "jwt-compact",
+ "mas-config",
+ "mas-data-model",
+ "mas-storage",
+ "mas-templates",
+ "mime",
+ "oauth2-types",
+ "once_cell",
+ "opentelemetry",
+ "rand",
+ "serde",
+ "serde_json",
+ "serde_urlencoded",
+ "serde_with",
+ "sqlx",
+ "thiserror",
+ "tokio",
+ "tracing",
  "warp",
 ]
 
@@ -1895,7 +1931,6 @@ dependencies = [
  "serde_json",
  "serde_with",
  "sha2 0.10.0",
- "sqlx",
  "thiserror",
  "url",
 ]

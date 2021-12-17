@@ -12,26 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use warp::{reject::Reject, Rejection};
-
-#[derive(Debug)]
-pub(crate) struct WrappedError(anyhow::Error);
-
-impl warp::reject::Reject for WrappedError {}
-
-pub(crate) fn wrapped_error<T: Into<anyhow::Error>>(e: T) -> impl Reject {
-    WrappedError(e.into())
-}
-
-pub(crate) trait WrapError<T> {
-    fn wrap_error(self) -> Result<T, Rejection>;
-}
-
-impl<T, E> WrapError<T> for Result<T, E>
-where
-    E: Into<anyhow::Error>,
-{
-    fn wrap_error(self) -> Result<T, Rejection> {
-        self.map_err(|e| warp::reject::custom(WrappedError(e.into())))
-    }
-}
+pub mod errors;
+pub mod filters;
+pub mod reply;

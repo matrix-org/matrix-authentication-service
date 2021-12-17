@@ -31,7 +31,7 @@ pub use self::{
     oauth2::{
         AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, Client, Pkce, Session,
     },
-    tokens::{AccessToken, RefreshToken},
+    tokens::{AccessToken, RefreshToken, TokenFormatError, TokenType},
     traits::{StorageBackend, StorageBackendMarker},
     users::{Authentication, BrowserSession, User},
 };

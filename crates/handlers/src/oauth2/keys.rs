@@ -14,9 +14,8 @@
 
 use hyper::Method;
 use mas_config::OAuth2Config;
+use mas_warp_utils::filters::cors::cors;
 use warp::{Filter, Rejection, Reply};
-
-use crate::filters::cors::cors;
 
 pub(super) fn filter(
     config: &OAuth2Config,
