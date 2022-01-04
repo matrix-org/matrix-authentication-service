@@ -36,8 +36,12 @@ serde_urlencoded = "0.7.0"
 argon2 = { version = "0.3.2", features = ["password-hash"] }
 
 # Crypto, hashing and signing stuff
-sha2 = "0.10.0"
-jwt-compact = { version = "0.5.0-beta.1", features = ["with_rsa", "k256"] }
+rsa = { git = "https://github.com/sandhose/rsa.git", branch = "bump-pkcs" }
+pkcs8 = { version = "0.8.0", features = ["pem"] }
+elliptic-curve = { version = "0.11.6", features = ["pem"] }
+chacha20poly1305 = { version = "0.9.0", features = ["std"] }
+sha2 = "0.9.8"
+crc = "2.1.0"
 
 # Various data types and utilities
 data-encoding = "2.3.2"
@@ -54,3 +58,7 @@ mas-templates = { path = "../templates" }
 mas-static-files = { path = "../static-files" }
 mas-storage = { path = "../storage" }
 mas-warp-utils = { path = "../warp-utils" }
+mas-jose = { path = "../jose" }
+
+[dev-dependencies]
+indoc = "1.0.3"

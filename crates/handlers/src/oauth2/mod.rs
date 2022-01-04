@@ -12,8 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::sync::Arc;
+
 use hyper::Method;
 use mas_config::{CookiesConfig, OAuth2Config};
+use mas_jose::StaticKeystore;
 use mas_templates::Templates;
 use mas_warp_utils::filters::cors::cors;
 use sqlx::PgPool;
@@ -36,15 +39,16 @@ use self::{
 pub fn filter(
     pool: &PgPool,
     templates: &Templates,
+    key_store: &Arc<StaticKeystore>,
     oauth2_config: &OAuth2Config,
     cookies_config: &CookiesConfig,
 ) -> BoxedFilter<(impl Reply,)> {
     let discovery = discovery(oauth2_config);
-    let keys = keys(oauth2_config);
+    let keys = keys(key_store);
     let authorization = authorization(pool, templates, oauth2_config, cookies_config);
     let userinfo = userinfo(pool, oauth2_config);
     let introspection = introspection(pool, oauth2_config);
-    let token = token(pool, oauth2_config);
+    let token = token(pool, key_store, oauth2_config);
 
     let filter = discovery
         .or(keys)

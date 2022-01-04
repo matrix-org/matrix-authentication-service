@@ -22,7 +22,10 @@
 #![allow(clippy::implicit_hasher)]
 #![allow(clippy::unused_async)] // Some warp filters need that
 
+use std::sync::Arc;
+
 use mas_config::RootConfig;
+use mas_jose::StaticKeystore;
 use mas_static_files::filter as static_files;
 use mas_templates::Templates;
 use sqlx::PgPool;
@@ -38,10 +41,11 @@ use self::{health::filter as health, oauth2::filter as oauth2, views::filter as 
 pub fn root(
     pool: &PgPool,
     templates: &Templates,
+    key_store: &Arc<StaticKeystore>,
     config: &RootConfig,
 ) -> BoxedFilter<(impl Reply,)> {
     let health = health(pool);
-    let oauth2 = oauth2(pool, templates, &config.oauth2, &config.cookies);
+    let oauth2 = oauth2(pool, templates, key_store, &config.oauth2, &config.cookies);
     let views = views(
         pool,
         templates,

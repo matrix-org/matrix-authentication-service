@@ -38,7 +38,7 @@ pub use self::{
     csrf::CsrfConfig,
     database::DatabaseConfig,
     http::HttpConfig,
-    oauth2::{Algorithm, KeySet, OAuth2ClientConfig, OAuth2Config},
+    oauth2::{OAuth2ClientConfig, OAuth2Config},
     telemetry::{
         MetricsConfig, MetricsExporterConfig, Propagator, TelemetryConfig, TracingConfig,
         TracingExporterConfig,

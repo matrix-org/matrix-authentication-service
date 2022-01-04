@@ -12,14 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::sync::Arc;
+
 use anyhow::Context;
 use chrono::{DateTime, Duration, Utc};
 use data_encoding::BASE64URL_NOPAD;
 use headers::{CacheControl, Pragma};
 use hyper::StatusCode;
-use jwt_compact::{Claims, Header, TimeOptions};
-use mas_config::{KeySet, OAuth2ClientConfig, OAuth2Config};
+use mas_config::{OAuth2ClientConfig, OAuth2Config};
 use mas_data_model::{AuthorizationGrantStage, TokenType};
+use mas_jose::{DecodedJsonWebToken, JsonWebSignatureAlgorithm, SigningKeystore, StaticKeystore};
 use mas_storage::{
     oauth2::{
         access_token::{add_access_token, revoke_access_token},
@@ -30,7 +32,7 @@ use mas_storage::{
 };
 use mas_warp_utils::{
     errors::WrapError,
-    filters::{client::client_authentication, database::connection, with_keys},
+    filters::{client::client_authentication, database::connection},
     reply::with_typed_header,
 };
 use oauth2_types::{
@@ -89,7 +91,12 @@ where
     Err(Error { json, status }.into())
 }
 
-pub fn filter(pool: &PgPool, oauth2_config: &OAuth2Config) -> BoxedFilter<(Box<dyn Reply>,)> {
+pub fn filter(
+    pool: &PgPool,
+    key_store: &Arc<StaticKeystore>,
+    oauth2_config: &OAuth2Config,
+) -> BoxedFilter<(Box<dyn Reply>,)> {
+    let key_store = key_store.clone();
     let audience = oauth2_config
         .issuer
         .join("/oauth2/token")
@@ -101,7 +108,7 @@ pub fn filter(pool: &PgPool, oauth2_config: &OAuth2Config) -> BoxedFilter<(Box<d
         .and(
             warp::post()
                 .and(client_authentication(oauth2_config, audience))
-                .and(with_keys(oauth2_config))
+                .and(warp::any().map(move || key_store.clone()))
                 .and(warp::any().map(move || issuer.clone()))
                 .and(connection(pool))
                 .and_then(token)
@@ -123,13 +130,14 @@ async fn token(
     _auth: ClientAuthenticationMethod,
     client: OAuth2ClientConfig,
     req: AccessTokenRequest,
-    keys: KeySet,
+    key_store: Arc<StaticKeystore>,
     issuer: Url,
     mut conn: PoolConnection<Postgres>,
 ) -> Result<Box<dyn Reply>, Rejection> {
     let reply = match req {
         AccessTokenRequest::AuthorizationCode(grant) => {
-            let reply = authorization_code_grant(&grant, &client, &keys, issuer, &mut conn).await?;
+            let reply =
+                authorization_code_grant(&grant, &client, &key_store, issuer, &mut conn).await?;
             json(&reply)
         }
         AccessTokenRequest::RefreshToken(grant) => {
@@ -160,7 +168,7 @@ fn hash<H: Digest>(mut hasher: H, token: &str) -> anyhow::Result<String> {
 async fn authorization_code_grant(
     grant: &AuthorizationCodeGrant,
     client: &OAuth2ClientConfig,
-    keys: &KeySet,
+    key_store: &StaticKeystore,
     issuer: Url,
     conn: &mut PoolConnection<Postgres>,
 ) -> Result<AccessTokenResponse, Rejection> {
@@ -245,9 +253,8 @@ async fn authorization_code_grant(
         .wrap_error()?;
 
     let id_token = if session.scope.contains(&OPENID) {
-        let header = Header::default();
-        let options = TimeOptions::default();
-        let claims = Claims::new(CustomClaims {
+        // TODO: time-related claims
+        let claims = CustomClaims {
             issuer,
             subject: browser_session.user.sub.clone(),
             audiences: vec![client.client_id.clone()],
@@ -258,15 +265,15 @@ async fn authorization_code_grant(
                 .map(|a| a.created_at),
             at_hash: hash(Sha256::new(), &access_token_str).wrap_error()?,
             c_hash: hash(Sha256::new(), &grant.code).wrap_error()?,
-        })
-        .set_duration_and_issuance(&options, Duration::minutes(30));
-        let id_token = keys
-            .token(mas_config::Algorithm::Rs256, header, claims)
+        };
+        let header = key_store
+            .prepare_header(JsonWebSignatureAlgorithm::Rs256)
             .await
-            .context("could not sign ID token")
             .wrap_error()?;
+        let id_token = DecodedJsonWebToken::new(header, claims);
+        let id_token = id_token.sign(key_store).await.wrap_error()?;
 
-        Some(id_token)
+        Some(id_token.serialize())
     } else {
         None
     };

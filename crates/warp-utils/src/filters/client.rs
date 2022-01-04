@@ -14,15 +14,9 @@
 
 //! Handle client authentication
 
-use std::borrow::Cow;
-
-use chrono::{Duration, Utc};
 use headers::{authorization::Basic, Authorization};
-use jwt_compact::{
-    alg::{Hs256, Hs256Key, Hs384, Hs384Key, Hs512, Hs512Key},
-    Algorithm, AlgorithmExt, AlgorithmSignature, TimeOptions, Token, UntrustedToken,
-};
 use mas_config::{OAuth2ClientConfig, OAuth2Config};
+use mas_jose::{DecodedJsonWebToken, JsonWebTokenParts, SharedSecret};
 use oauth2_types::requests::ClientAuthenticationMethod;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_with::skip_serializing_none;
@@ -113,67 +107,6 @@ struct ClientAssertionClaims {
     jwt_id: Option<String>,
 }
 
-struct UnsignedSignature(Vec<u8>);
-impl AlgorithmSignature for UnsignedSignature {
-    fn try_from_slice(slice: &[u8]) -> anyhow::Result<Self> {
-        Ok(Self(slice.to_vec()))
-    }
-
-    fn as_bytes(&self) -> std::borrow::Cow<'_, [u8]> {
-        Cow::Borrowed(&self.0)
-    }
-}
-
-struct Unsigned<'a>(&'a str);
-impl<'a> Algorithm for Unsigned<'a> {
-    type SigningKey = ();
-
-    type VerifyingKey = ();
-
-    type Signature = UnsignedSignature;
-
-    fn name(&self) -> std::borrow::Cow<'static, str> {
-        Cow::Owned(self.0.to_string())
-    }
-
-    fn sign(&self, _signing_key: &Self::SigningKey, _message: &[u8]) -> Self::Signature {
-        UnsignedSignature(Vec::new())
-    }
-
-    fn verify_signature(
-        &self,
-        _signature: &Self::Signature,
-        _verifying_key: &Self::VerifyingKey,
-        _message: &[u8],
-    ) -> bool {
-        true
-    }
-}
-
-fn verify_token(
-    untrusted_token: &UntrustedToken,
-    key: &str,
-) -> anyhow::Result<Token<ClientAssertionClaims>> {
-    match untrusted_token.algorithm() {
-        "HS256" => {
-            let key = Hs256Key::new(key);
-            let token = Hs256.validate_integrity(untrusted_token, &key)?;
-            Ok(token)
-        }
-        "HS384" => {
-            let key = Hs384Key::new(key);
-            let token = Hs384.validate_integrity(untrusted_token, &key)?;
-            Ok(token)
-        }
-        "HS512" => {
-            let key = Hs512Key::new(key);
-            let token = Hs512.validate_integrity(untrusted_token, &key)?;
-            Ok(token)
-        }
-        alg => anyhow::bail!("unsupported signing algorithm {}", alg),
-    }
-}
-
 async fn authenticate_client<T>(
     clients: Vec<OAuth2ClientConfig>,
     audience: String,
@@ -211,23 +144,13 @@ async fn authenticate_client<T>(
             client_assertion_type: ClientAssertionType::JwtBearer,
             client_assertion,
         } => {
-            let untrusted_token = UntrustedToken::new(&client_assertion).wrap_error()?;
+            let token: JsonWebTokenParts = client_assertion.parse().wrap_error()?;
+            let decoded: DecodedJsonWebToken<ClientAssertionClaims> =
+                token.decode().wrap_error()?;
 
             // client_id might have been passed as parameter. If not, it should be inferred
             // from the token, as per rfc7521 sec. 4.2
-            // TODO: this is not a pretty way to do it
-            let client_id = client_id
-                .ok_or(()) // Dumb error type
-                .or_else(|()| {
-                    let alg = Unsigned(untrusted_token.algorithm());
-                    // We need to deserialize the token once without verifying the signature to get
-                    // the client_id
-                    let token: Token<ClientAssertionClaims> =
-                        alg.validate_integrity(&untrusted_token, &())?;
-
-                    Ok::<_, anyhow::Error>(token.claims().custom.subject.clone())
-                })
-                .wrap_error()?;
+            let client_id = client_id.unwrap_or_else(|| decoded.claims().subject.clone());
 
             let client = clients
                 .iter()
@@ -237,32 +160,20 @@ async fn authenticate_client<T>(
                 })?;
 
             if let Some(client_secret) = &client.client_secret {
-                let token = verify_token(&untrusted_token, client_secret).wrap_error()?;
-
-                let time_options = TimeOptions::new(Duration::minutes(1), Utc::now);
-
-                // rfc7523 sec. 3.4: expiration must be set and validated
-                let claims = token
-                    .claims()
-                    .validate_expiration(&time_options)
-                    .wrap_error()?;
-
-                // rfc7523 sec. 3.5: "not before" can be set and must be validated if present
-                if claims.not_before.is_some() {
-                    claims.validate_maturity(&time_options).wrap_error()?;
-                }
+                let store = SharedSecret::new(client_secret);
+                token.verify(&decoded, &store).await.wrap_error()?;
+                let claims = decoded.claims();
+                // TODO: validate the times again
 
                 // rfc7523 sec. 3.3: the audience is the URL being called
-                if claims.custom.audience != audience {
+                if claims.audience != audience {
                     Err(ClientAuthenticationError::AudienceMismatch {
                         expected: audience,
-                        got: claims.custom.audience.clone(),
+                        got: claims.audience.clone(),
                     })
                 // rfc7523 sec. 3.1 & 3.2: both the issuer and the subject must
                 // match the client_id
-                } else if claims.custom.issuer != claims.custom.subject
-                    || claims.custom.issuer != client_id
-                {
+                } else if claims.issuer != claims.subject || claims.issuer != client_id {
                     Err(ClientAuthenticationError::InvalidAssertion)
                 } else {
                     Ok(client)
@@ -348,8 +259,8 @@ struct ClientAuthForm<T> {
 #[cfg(test)]
 mod tests {
     use headers::authorization::Credentials;
-    use jwt_compact::{Claims, Header};
     use mas_config::ConfigurationSection;
+    use mas_jose::{JsonWebSignatureAlgorithm, SigningKeystore};
     use serde_json::json;
 
     use super::*;
@@ -385,38 +296,34 @@ mod tests {
 
     #[tokio::test]
     async fn client_secret_jwt_hs256() {
-        client_secret_jwt::<'_, Hs256>().await;
+        client_secret_jwt(JsonWebSignatureAlgorithm::Hs256).await;
     }
 
     #[tokio::test]
     async fn client_secret_jwt_hs384() {
-        client_secret_jwt::<'_, Hs384>().await;
+        client_secret_jwt(JsonWebSignatureAlgorithm::Hs384).await;
     }
 
     #[tokio::test]
     async fn client_secret_jwt_hs512() {
-        client_secret_jwt::<'_, Hs512>().await;
+        client_secret_jwt(JsonWebSignatureAlgorithm::Hs512).await;
     }
 
-    async fn client_secret_jwt<'k, A>()
-    where
-        A: Algorithm + Default,
-        A::SigningKey: From<&'k [u8]>,
-    {
+    async fn client_secret_jwt(alg: JsonWebSignatureAlgorithm) {
         let audience = "https://example.com/token".to_string();
         let filter = client_authentication::<Form>(&oauth2_config(), audience.clone());
-        let time_options = TimeOptions::default();
 
-        let key = A::SigningKey::from(CLIENT_SECRET.as_bytes());
-        let alg = A::default();
-        let header = Header::default();
-        let claims = Claims::new(ClientAssertionClaims {
+        let store = SharedSecret::new(&CLIENT_SECRET);
+        let claims = ClientAssertionClaims {
             issuer: "confidential".to_string(),
             subject: "confidential".to_string(),
             audience,
             jwt_id: None,
-        })
-        .set_duration_and_issuance(&time_options, Duration::seconds(15));
+        };
+        let header = store.prepare_header(alg).await.expect("JWT header");
+        let jwt = DecodedJsonWebToken::new(header, claims);
+        let jwt = jwt.sign(&store).await.expect("signed token");
+        let jwt = jwt.serialize();
 
         // TODO: test failing cases
         //  - expired token
@@ -425,16 +332,12 @@ mod tests {
         //  - audience mismatch
         //  - wrong secret/signature
 
-        let token = alg
-            .token(header, &claims, &key)
-            .expect("could not sign token");
-
         let (auth, client, body) = warp::test::request()
             .method("POST")
             .header("Content-Type", mime::APPLICATION_WWW_FORM_URLENCODED.to_string())
             .body(serde_urlencoded::to_string(json!({
                 "client_id": "confidential",
-                "client_assertion": token,
+                "client_assertion": jwt,
                 "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
                 "foo": "baz",
                 "bar": "foobar",
@@ -453,7 +356,7 @@ mod tests {
             .method("POST")
             .header("Content-Type", mime::APPLICATION_WWW_FORM_URLENCODED.to_string())
             .body(serde_urlencoded::to_string(json!({
-                "client_assertion": token,
+                "client_assertion": jwt,
                 "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
                 "foo": "baz",
                 "bar": "foobar",
@@ -467,7 +370,7 @@ mod tests {
             .method("POST")
             .body(serde_urlencoded::to_string(json!({
                 "client_id": "confidential-2",
-                "client_assertion": token,
+                "client_assertion": jwt,
                 "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
                 "foo": "baz",
                 "bar": "foobar",

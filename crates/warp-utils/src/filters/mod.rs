@@ -28,7 +28,6 @@ pub mod session;
 
 use std::convert::Infallible;
 
-use mas_config::{KeySet, OAuth2Config};
 use mas_templates::Templates;
 use warp::{Filter, Rejection};
 
@@ -41,15 +40,6 @@ pub fn with_templates(
 ) -> impl Filter<Extract = (Templates,), Error = Infallible> + Clone + Send + Sync + 'static {
     let templates = templates.clone();
     warp::any().map(move || templates.clone())
-}
-
-/// Extract the [`KeySet`] from the [`OAuth2Config`]
-#[must_use]
-pub fn with_keys(
-    oauth2_config: &OAuth2Config,
-) -> impl Filter<Extract = (KeySet,), Error = Infallible> + Clone + Send + Sync + 'static {
-    let keyset = oauth2_config.keys.clone();
-    warp::any().map(move || keyset.clone())
 }
 
 /// Recover a particular rejection type with a `None` option variant

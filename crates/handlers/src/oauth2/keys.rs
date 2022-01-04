@@ -12,16 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use mas_config::OAuth2Config;
-use warp::{filters::BoxedFilter, Filter, Reply};
+use std::sync::Arc;
 
-pub(super) fn filter(config: &OAuth2Config) -> BoxedFilter<(Box<dyn Reply>,)> {
-    let jwks = config.keys.to_public_jwks();
+use mas_jose::{ExportJwks, StaticKeystore};
+use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
+pub(super) fn filter(key_store: &Arc<StaticKeystore>) -> BoxedFilter<(Box<dyn Reply>,)> {
+    let key_store = key_store.clone();
     warp::path!("oauth2" / "keys.json")
-        .and(warp::get().map(move || {
-            let ret: Box<dyn Reply> = Box::new(warp::reply::json(&jwks));
-            ret
-        }))
+        .and(warp::get().map(move || key_store.clone()).and_then(get))
         .boxed()
+}
+
+async fn get(key_store: Arc<StaticKeystore>) -> Result<Box<dyn Reply>, Rejection> {
+    let jwks = key_store.export_jwks().await;
+
+    Ok(Box::new(warp::reply::json(&jwks)))
 }

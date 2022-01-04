@@ -159,6 +159,7 @@ impl TryInto<BrowserSession<PostgresqlBackend>> for SessionLookup {
     }
 }
 
+#[tracing::instrument(skip_all, fields(session.id = id))]
 pub async fn lookup_active_session(
     executor: impl PgExecutor<'_>,
     id: i64,
@@ -191,6 +192,7 @@ pub async fn lookup_active_session(
     Ok(res)
 }
 
+#[tracing::instrument(skip_all, fields(user.id = user.data))]
 pub async fn start_session(
     executor: impl PgExecutor<'_>,
     user: User<PostgresqlBackend>,

@@ -14,6 +14,7 @@
 
 use std::{
     net::{SocketAddr, TcpListener},
+    sync::Arc,
     time::Duration,
 };
 
@@ -236,6 +237,14 @@ impl ServerCommand {
         queue.recuring(Duration::from_secs(15), mas_tasks::cleanup_expired(&pool));
         queue.start();
 
+        // Initialize the key store
+        let key_store = config
+            .oauth2
+            .key_store()
+            .context("could not import keys from config")?;
+        // Wrap the key store in an Arc
+        let key_store = Arc::new(key_store);
+
         // Load and compile the templates
         let templates = Templates::load_from_config(&config.templates)
             .await
@@ -254,7 +263,7 @@ impl ServerCommand {
         }
 
         // Start the server
-        let root = mas_handlers::root(&pool, &templates, &config);
+        let root = mas_handlers::root(&pool, &templates, &key_store, &config);
 
         let warp_service = warp::service(root);
 
