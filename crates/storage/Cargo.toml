@@ -6,12 +6,12 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-tokio = "1.14.0"
-sqlx = { version = "0.5.9", features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "offline"] }
+tokio = "1.15.0"
+sqlx = { version = "0.5.10", features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "offline"] }
 chrono = { version = "0.4.19", features = ["serde"] }
-serde = { version = "1.0.131", features = ["derive"] }
+serde = { version = "1.0.133", features = ["derive"] }
 thiserror = "1.0.30"
-anyhow = "1.0.51"
+anyhow = "1.0.52"
 tracing = "0.1.29"
 warp = "0.3.2"
 

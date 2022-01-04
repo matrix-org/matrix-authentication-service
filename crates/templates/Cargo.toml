@@ -10,14 +10,14 @@ dev = []
 
 [dependencies]
 tracing = "0.1.29"
-tokio = { version = "1.14.0", features = ["macros"] }
+tokio = { version = "1.15.0", features = ["macros"] }
 
-anyhow = "1.0.51"
+anyhow = "1.0.52"
 thiserror = "1.0.30"
 
 tera = "1.15.0"
-serde = { version = "1.0.131", features = ["derive"] }
-serde_json = "1.0.72"
+serde = { version = "1.0.133", features = ["derive"] }
+serde_json = "1.0.74"
 serde_urlencoded = "0.7.0"
 
 url = "2.2.2"

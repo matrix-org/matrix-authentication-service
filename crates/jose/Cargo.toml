@@ -6,7 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-anyhow = "1.0.51"
+anyhow = "1.0.52"
 async-trait = "0.1.52"
 base64ct = { version = "1.0.1", features = ["std"] }
 crypto-mac = { version = "0.11.1", features = ["std"] }
@@ -20,11 +20,11 @@ pkcs8 = { version = "0.8.0", features = ["pem"] }
 rand = "0.8.4"
 rsa = { git = "https://github.com/sandhose/RSA.git", branch = "bump-pkcs" }
 sec1 = "0.2.1"
-serde = { version = "1.0.132", features = ["derive"] }
-serde_json = "1.0.73"
+serde = { version = "1.0.133", features = ["derive"] }
+serde_json = "1.0.74"
 serde_with = { version = "1.11.0", features = ["base64"] }
 sha2 = "0.9.8"
-signature = { version = "1.4.0" }
+signature = "1.4.0"
 thiserror = "1.0.30"
 tokio = { version = "1.15.0", features = ["macros", "rt"] }
 url = { version = "2.2.2", features = ["serde"] }
