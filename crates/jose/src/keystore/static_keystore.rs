@@ -19,7 +19,6 @@ use async_trait::async_trait;
 use base64ct::{Base64UrlUnpadded, Encoding};
 use digest::Digest;
 use ecdsa::VerifyingKey;
-use hmac::{Hmac, Mac};
 use p256::{NistP256, PublicKey};
 use pkcs1::EncodeRsaPublicKey;
 use pkcs8::EncodePublicKey;
@@ -27,117 +26,11 @@ use rsa::{PublicKey as _, RsaPublicKey};
 use sha2::{Sha256, Sha384, Sha512};
 use signature::{Signature, Signer, Verifier};
 
+use super::{ExportJwks, SigningKeystore, VerifyingKeystore};
 use crate::{
-    iana::JsonWebSignatureAlgorithm, JsonWebKey, JsonWebKeyOperation, JsonWebKeySet, JwtHeader,
+    iana::{JsonWebKeyOperation, JsonWebSignatureAlgorithm},
+    JsonWebKey, JsonWebKeySet, JwtHeader,
 };
-
-#[async_trait]
-pub trait SigningKeystore {
-    async fn prepare_header(self, alg: JsonWebSignatureAlgorithm) -> anyhow::Result<JwtHeader>;
-
-    async fn sign(self, header: &JwtHeader, msg: &[u8]) -> anyhow::Result<Vec<u8>>;
-}
-
-#[async_trait]
-pub trait VerifyingKeystore {
-    async fn verify(self, header: &JwtHeader, msg: &[u8], signature: &[u8]) -> anyhow::Result<()>;
-}
-
-#[async_trait]
-pub trait ExportJwks {
-    async fn export_jwks(self) -> JsonWebKeySet;
-}
-
-pub struct SharedSecret<'a> {
-    inner: &'a [u8],
-}
-
-impl<'a> SharedSecret<'a> {
-    pub fn new(source: &'a impl AsRef<[u8]>) -> Self {
-        Self {
-            inner: source.as_ref(),
-        }
-    }
-}
-
-#[async_trait]
-impl<'a> SigningKeystore for &SharedSecret<'a> {
-    async fn prepare_header(self, alg: JsonWebSignatureAlgorithm) -> anyhow::Result<JwtHeader> {
-        if !matches!(
-            alg,
-            JsonWebSignatureAlgorithm::Hs256
-                | JsonWebSignatureAlgorithm::Hs384
-                | JsonWebSignatureAlgorithm::Hs512,
-        ) {
-            bail!("unsupported algorithm")
-        }
-
-        Ok(JwtHeader::new(alg))
-    }
-
-    async fn sign(self, header: &JwtHeader, msg: &[u8]) -> anyhow::Result<Vec<u8>> {
-        // TODO: do the signing in a blocking task
-        // TODO: should we bail out if the key is too small?
-        let signature = match header.alg() {
-            JsonWebSignatureAlgorithm::Hs256 => {
-                let mut mac = Hmac::<Sha256>::new_from_slice(self.inner)?;
-                mac.update(msg);
-                mac.finalize().into_bytes().to_vec()
-            }
-
-            JsonWebSignatureAlgorithm::Hs384 => {
-                let mut mac = Hmac::<Sha384>::new_from_slice(self.inner)?;
-                mac.update(msg);
-                mac.finalize().into_bytes().to_vec()
-            }
-
-            JsonWebSignatureAlgorithm::Hs512 => {
-                let mut mac = Hmac::<Sha512>::new_from_slice(self.inner)?;
-                mac.update(msg);
-                mac.finalize().into_bytes().to_vec()
-            }
-
-            _ => bail!("unsupported algorithm"),
-        };
-
-        Ok(signature)
-    }
-}
-
-#[async_trait]
-impl<'a> VerifyingKeystore for &SharedSecret<'a> {
-    async fn verify(
-        self,
-        header: &JwtHeader,
-        payload: &[u8],
-        signature: &[u8],
-    ) -> anyhow::Result<()> {
-        // TODO: do the verification in a blocking task
-        match header.alg() {
-            JsonWebSignatureAlgorithm::Hs256 => {
-                let mut mac = Hmac::<Sha256>::new_from_slice(self.inner)?;
-                mac.update(payload);
-                mac.verify(signature.try_into()?)?;
-            }
-
-            JsonWebSignatureAlgorithm::Hs384 => {
-                let mut mac = Hmac::<Sha384>::new_from_slice(self.inner)?;
-                mac.update(payload);
-                mac.verify(signature.try_into()?)?;
-            }
-
-            JsonWebSignatureAlgorithm::Hs512 => {
-                let mut mac = Hmac::<Sha512>::new_from_slice(self.inner)?;
-                mac.update(payload);
-                mac.verify(signature.try_into()?)?;
-            }
-
-            _ => bail!("unsupported algorithm"),
-        };
-
-        Ok(())
-    }
-}
 
 #[derive(Default)]
 pub struct StaticKeystore {
@@ -462,23 +355,6 @@ MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg+tHxet7G+uar2Cef
 iYPb7jv3uzncFtwJ7RhDOvEA0fChRANCAATCKn2AEqa9785k+TmwkeCvLub8XGrF
 ezE6bA/blaPVE3nu4SUVYKULRJQxNjeOSra8TQrlIS8e5ItbMn8Tv9KV
 -----END PRIVATE KEY-----";
-
-    #[tokio::test]
-    async fn test_shared_secret() {
-        let secret = "super-complicated-secret-that-should-be-big-enough-for-sha512";
-        let message = "this is the message to sign".as_bytes();
-        let store = SharedSecret::new(&secret);
-        for alg in [
-            JsonWebSignatureAlgorithm::Hs256,
-            JsonWebSignatureAlgorithm::Hs384,
-            JsonWebSignatureAlgorithm::Hs512,
-        ] {
-            let header = store.prepare_header(alg).await.unwrap();
-            assert_eq!(header.alg(), alg);
-            let signature = store.sign(&header, message).await.unwrap();
-            store.verify(&header, message, &signature).await.unwrap();
-        }
-    }
 
     #[tokio::test]
     async fn test_static_store() {

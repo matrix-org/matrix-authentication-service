@@ -1,0 +1,134 @@
+// Copyright 2022 The Matrix.org Foundation C.I.C.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+use anyhow::bail;
+use async_trait::async_trait;
+use hmac::{Hmac, Mac};
+use sha2::{Sha256, Sha384, Sha512};
+
+use super::{SigningKeystore, VerifyingKeystore};
+use crate::{JsonWebSignatureAlgorithm, JwtHeader};
+
+pub struct SharedSecret<'a> {
+    inner: &'a [u8],
+}
+
+impl<'a> SharedSecret<'a> {
+    pub fn new(source: &'a impl AsRef<[u8]>) -> Self {
+        Self {
+            inner: source.as_ref(),
+        }
+    }
+}
+
+#[async_trait]
+impl<'a> SigningKeystore for &SharedSecret<'a> {
+    async fn prepare_header(self, alg: JsonWebSignatureAlgorithm) -> anyhow::Result<JwtHeader> {
+        if !matches!(
+            alg,
+            JsonWebSignatureAlgorithm::Hs256
+                | JsonWebSignatureAlgorithm::Hs384
+                | JsonWebSignatureAlgorithm::Hs512,
+        ) {
+            bail!("unsupported algorithm")
+        }
+
+        Ok(JwtHeader::new(alg))
+    }
+
+    async fn sign(self, header: &JwtHeader, msg: &[u8]) -> anyhow::Result<Vec<u8>> {
+        // TODO: do the signing in a blocking task
+        // TODO: should we bail out if the key is too small?
+        let signature = match header.alg() {
+            JsonWebSignatureAlgorithm::Hs256 => {
+                let mut mac = Hmac::<Sha256>::new_from_slice(self.inner)?;
+                mac.update(msg);
+                mac.finalize().into_bytes().to_vec()
+            }
+
+            JsonWebSignatureAlgorithm::Hs384 => {
+                let mut mac = Hmac::<Sha384>::new_from_slice(self.inner)?;
+                mac.update(msg);
+                mac.finalize().into_bytes().to_vec()
+            }
+
+            JsonWebSignatureAlgorithm::Hs512 => {
+                let mut mac = Hmac::<Sha512>::new_from_slice(self.inner)?;
+                mac.update(msg);
+                mac.finalize().into_bytes().to_vec()
+            }
+
+            _ => bail!("unsupported algorithm"),
+        };
+
+        Ok(signature)
+    }
+}
+
+#[async_trait]
+impl<'a> VerifyingKeystore for &SharedSecret<'a> {
+    async fn verify(
+        self,
+        header: &JwtHeader,
+        payload: &[u8],
+        signature: &[u8],
+    ) -> anyhow::Result<()> {
+        // TODO: do the verification in a blocking task
+        match header.alg() {
+            JsonWebSignatureAlgorithm::Hs256 => {
+                let mut mac = Hmac::<Sha256>::new_from_slice(self.inner)?;
+                mac.update(payload);
+                mac.verify(signature.try_into()?)?;
+            }
+
+            JsonWebSignatureAlgorithm::Hs384 => {
+                let mut mac = Hmac::<Sha384>::new_from_slice(self.inner)?;
+                mac.update(payload);
+                mac.verify(signature.try_into()?)?;
+            }
+
+            JsonWebSignatureAlgorithm::Hs512 => {
+                let mut mac = Hmac::<Sha512>::new_from_slice(self.inner)?;
+                mac.update(payload);
+                mac.verify(signature.try_into()?)?;
+            }
+
+            _ => bail!("unsupported algorithm"),
+        };
+
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_shared_secret() {
+        let secret = "super-complicated-secret-that-should-be-big-enough-for-sha512";
+        let message = "this is the message to sign".as_bytes();
+        let store = SharedSecret::new(&secret);
+        for alg in [
+            JsonWebSignatureAlgorithm::Hs256,
+            JsonWebSignatureAlgorithm::Hs384,
+            JsonWebSignatureAlgorithm::Hs512,
+        ] {
+            let header = store.prepare_header(alg).await.unwrap();
+            assert_eq!(header.alg(), alg);
+            let signature = store.sign(&header, message).await.unwrap();
+            store.verify(&header, message, &signature).await.unwrap();
+        }
+    }
+}
