@@ -14,9 +14,7 @@
 
 use async_trait::async_trait;
 
-use crate::{
-    iana::JsonWebSignatureAlgorithm, JsonWebKeySet, JwtHeader,
-};
+use crate::{iana::JsonWebSignatureAlgorithm, JsonWebKeySet, JwtHeader};
 
 #[async_trait]
 pub trait SigningKeystore {
@@ -32,6 +30,5 @@ pub trait VerifyingKeystore {
 
 #[async_trait]
 pub trait ExportJwks {
-    async fn export_jwks(self) -> JsonWebKeySet;
+    async fn export_jwks(&self) -> anyhow::Result<JsonWebKeySet>;
 }
-

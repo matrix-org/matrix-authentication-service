@@ -17,6 +17,7 @@
 use anyhow::bail;
 use p256::NistP256;
 use rsa::{BigUint, PublicKeyParts};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::{
     base64::{Base64, Standard, UrlSafe},
@@ -25,14 +26,17 @@ use serde_with::{
 };
 use url::Url;
 
-use crate::iana::{
-    JsonWebKeyEcEllipticCurve, JsonWebKeyOkpEllipticCurve, JsonWebKeyOperation, JsonWebKeyUse,
-    JsonWebSignatureAlgorithm,
+use crate::{
+    iana::{
+        JsonWebKeyEcEllipticCurve, JsonWebKeyOkpEllipticCurve, JsonWebKeyOperation, JsonWebKeyUse,
+        JsonWebSignatureAlgorithm,
+    },
+    JsonWebKeyType,
 };
 
 #[serde_as]
 #[skip_serializing_none]
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct JsonWebKey {
     #[serde(flatten)]
     parameters: JsonWebKeyParameters,
@@ -49,17 +53,21 @@ pub struct JsonWebKey {
     #[serde(default)]
     kid: Option<String>,
 
+    #[schemars(with = "Option<String>")]
     #[serde(default)]
     x5u: Option<Url>,
 
+    #[schemars(with = "Vec<String>")]
     #[serde(default)]
     #[serde_as(as = "Option<Vec<Base64<Standard, Padded>>>")]
     x5c: Option<Vec<Vec<u8>>>,
 
+    #[schemars(with = "Option<String>")]
     #[serde(default)]
     #[serde_as(as = "Option<Base64<UrlSafe, Unpadded>>")]
     x5t: Option<Vec<u8>>,
 
+    #[schemars(with = "Option<String>")]
     #[serde(default, rename = "x5t#S256")]
     #[serde_as(as = "Option<Base64<UrlSafe, Unpadded>>")]
     x5t_s256: Option<Vec<u8>>,
@@ -104,11 +112,38 @@ impl JsonWebKey {
         self.kid = Some(kid.into());
         self
     }
+
+    #[must_use]
+    pub fn kty(&self) -> JsonWebKeyType {
+        match self.parameters {
+            JsonWebKeyParameters::Ec { .. } => JsonWebKeyType::Ec,
+            JsonWebKeyParameters::Rsa { .. } => JsonWebKeyType::Rsa,
+            JsonWebKeyParameters::Okp { .. } => JsonWebKeyType::Okp,
+        }
+    }
+
+    #[must_use]
+    pub fn kid(&self) -> Option<&str> {
+        self.kid.as_deref()
+    }
+
+    #[must_use]
+    pub fn params(&self) -> &JsonWebKeyParameters {
+        &self.parameters
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct JsonWebKeySet {
     keys: Vec<JsonWebKey>,
+}
+
+impl std::ops::Deref for JsonWebKeySet {
+    type Target = Vec<JsonWebKey>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.keys
+    }
 }
 
 impl JsonWebKeySet {
@@ -119,27 +154,36 @@ impl JsonWebKeySet {
 }
 
 #[serde_as]
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kty")]
 pub enum JsonWebKeyParameters {
     #[serde(rename = "RSA")]
     Rsa {
+        #[schemars(with = "String")]
         #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
         n: Vec<u8>,
+
+        #[schemars(with = "String")]
         #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
         e: Vec<u8>,
     },
     #[serde(rename = "EC")]
     Ec {
         crv: JsonWebKeyEcEllipticCurve,
+
+        #[schemars(with = "String")]
         #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
         x: Vec<u8>,
+
+        #[schemars(with = "String")]
         #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
         y: Vec<u8>,
     },
     #[serde(rename = "OKP")]
     Okp {
         crv: JsonWebKeyOkpEllipticCurve,
+
+        #[schemars(with = "String")]
         #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
         x: Vec<u8>,
     },

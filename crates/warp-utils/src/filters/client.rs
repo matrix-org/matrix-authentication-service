@@ -15,7 +15,7 @@
 //! Handle client authentication
 
 use headers::{authorization::Basic, Authorization};
-use mas_config::{OAuth2ClientConfig, OAuth2Config};
+use mas_config::{OAuth2ClientAuthMethodConfig, OAuth2ClientConfig, OAuth2Config};
 use mas_jose::{DecodedJsonWebToken, JsonWebTokenParts, SharedSecret};
 use oauth2_types::requests::ClientAuthenticationMethod;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -72,17 +72,14 @@ pub fn client_authentication<T: DeserializeOwned + Send + 'static>(
 
 #[derive(Error, Debug)]
 enum ClientAuthenticationError {
-    #[error("no client secret found for client {client_id:?}")]
-    NoClientSecret { client_id: String },
-
     #[error("wrong client secret for client {client_id:?}")]
     ClientSecretMismatch { client_id: String },
 
     #[error("could not find client {client_id:?}")]
     ClientNotFound { client_id: String },
 
-    #[error("client secret required for client {client_id:?}")]
-    ClientSecretRequired { client_id: String },
+    #[error("wrong client authentication method for client {client_id:?}")]
+    WrongAuthenticationMethod { client_id: String },
 
     #[error("wrong audience in client assertion: expected {expected:?}, got {got:?}")]
     AudienceMismatch { expected: String, got: String },
@@ -113,12 +110,11 @@ async fn authenticate_client<T>(
     credentials: ClientCredentials,
     body: T,
 ) -> Result<(ClientAuthenticationMethod, OAuth2ClientConfig, T), Rejection> {
-    let auth_type = credentials.authentication_type();
-    let client = match credentials {
+    let (auth_method, client) = match credentials {
         ClientCredentials::Pair {
             client_id,
             client_secret,
-            ..
+            via,
         } => {
             let client = clients
                 .iter()
@@ -127,17 +123,49 @@ async fn authenticate_client<T>(
                     client_id: client_id.to_string(),
                 })?;
 
-            match (client_secret, client.client_secret.as_ref()) {
-                (None, None) => Ok(client),
-                (Some(ref given), Some(expected)) if given == expected => Ok(client),
-                (Some(_), Some(_)) => {
-                    Err(ClientAuthenticationError::ClientSecretMismatch { client_id })
+            let auth_method = match (&client.client_auth_method, client_secret, via) {
+                (OAuth2ClientAuthMethodConfig::None, None, _) => ClientAuthenticationMethod::None,
+
+                (
+                    OAuth2ClientAuthMethodConfig::ClientSecretBasic {
+                        client_secret: ref expected_client_secret,
+                    },
+                    Some(ref given_client_secret),
+                    CredentialsVia::AuthorizationHeader,
+                ) => {
+                    if expected_client_secret != given_client_secret {
+                        return Err(
+                            ClientAuthenticationError::ClientSecretMismatch { client_id }.into(),
+                        );
+                    }
+
+                    ClientAuthenticationMethod::ClientSecretBasic
                 }
-                (Some(_), None) => Err(ClientAuthenticationError::NoClientSecret { client_id }),
-                (None, Some(_)) => {
-                    Err(ClientAuthenticationError::ClientSecretRequired { client_id })
+
+                (
+                    OAuth2ClientAuthMethodConfig::ClientSecretPost {
+                        client_secret: ref expected_client_secret,
+                    },
+                    Some(ref given_client_secret),
+                    CredentialsVia::FormBody,
+                ) => {
+                    if expected_client_secret != given_client_secret {
+                        return Err(
+                            ClientAuthenticationError::ClientSecretMismatch { client_id }.into(),
+                        );
+                    }
+
+                    ClientAuthenticationMethod::ClientSecretPost
                 }
-            }
+
+                _ => {
+                    return Err(
+                        ClientAuthenticationError::WrongAuthenticationMethod { client_id }.into(),
+                    )
+                }
+            };
+
+            (auth_method, client)
         }
         ClientCredentials::Assertion {
             client_id,
@@ -150,43 +178,61 @@ async fn authenticate_client<T>(
 
             // client_id might have been passed as parameter. If not, it should be inferred
             // from the token, as per rfc7521 sec. 4.2
-            let client_id = client_id.unwrap_or_else(|| decoded.claims().subject.clone());
+            let client_id = client_id
+                .as_ref()
+                .unwrap_or_else(|| &decoded.claims().subject);
 
             let client = clients
                 .iter()
-                .find(|client| client.client_id == client_id)
+                .find(|client| &client.client_id == client_id)
                 .ok_or_else(|| ClientAuthenticationError::ClientNotFound {
                     client_id: client_id.to_string(),
                 })?;
 
-            if let Some(client_secret) = &client.client_secret {
-                let store = SharedSecret::new(client_secret);
-                token.verify(&decoded, &store).await.wrap_error()?;
-                let claims = decoded.claims();
-                // TODO: validate the times again
-
-                // rfc7523 sec. 3.3: the audience is the URL being called
-                if claims.audience != audience {
-                    Err(ClientAuthenticationError::AudienceMismatch {
-                        expected: audience,
-                        got: claims.audience.clone(),
-                    })
-                // rfc7523 sec. 3.1 & 3.2: both the issuer and the subject must
-                // match the client_id
-                } else if claims.issuer != claims.subject || claims.issuer != client_id {
-                    Err(ClientAuthenticationError::InvalidAssertion)
-                } else {
-                    Ok(client)
+            let auth_method = match &client.client_auth_method {
+                OAuth2ClientAuthMethodConfig::PrivateKeyJwt(jwks) => {
+                    let store = jwks.key_store();
+                    token.verify(&decoded, &store).await.wrap_error()?;
+                    ClientAuthenticationMethod::PrivateKeyJwt
                 }
-            } else {
-                Err(ClientAuthenticationError::ClientSecretRequired {
-                    client_id: client_id.to_string(),
-                })
-            }
-        }
-    }?;
 
-    Ok((auth_type, client.clone(), body))
+                OAuth2ClientAuthMethodConfig::ClientSecretJwt { client_secret } => {
+                    let store = SharedSecret::new(client_secret);
+                    token.verify(&decoded, &store).await.wrap_error()?;
+                    ClientAuthenticationMethod::ClientSecretJwt
+                }
+
+                _ => {
+                    return Err(ClientAuthenticationError::WrongAuthenticationMethod {
+                        client_id: client_id.clone(),
+                    }
+                    .into())
+                }
+            };
+
+            let claims = decoded.claims();
+            // TODO: validate the times again
+
+            // rfc7523 sec. 3.3: the audience is the URL being called
+            if claims.audience != audience {
+                return Err(ClientAuthenticationError::AudienceMismatch {
+                    expected: audience,
+                    got: claims.audience.clone(),
+                }
+                .into());
+            }
+
+            // rfc7523 sec. 3.1 & 3.2: both the issuer and the subject must
+            // match the client_id
+            if claims.issuer != claims.subject || &claims.issuer != client_id {
+                return Err(ClientAuthenticationError::InvalidAssertion.into());
+            }
+
+            (auth_method, client)
+        }
+    };
+
+    Ok((auth_method, client.clone(), body))
 }
 
 #[derive(Deserialize)]
@@ -225,28 +271,6 @@ enum ClientCredentials {
     },
 }
 
-impl ClientCredentials {
-    fn authentication_type(&self) -> ClientAuthenticationMethod {
-        match self {
-            ClientCredentials::Pair {
-                via: CredentialsVia::FormBody,
-                client_secret: None,
-                ..
-            } => ClientAuthenticationMethod::None,
-            ClientCredentials::Pair {
-                via: CredentialsVia::FormBody,
-                client_secret: Some(_),
-                ..
-            } => ClientAuthenticationMethod::ClientSecretPost,
-            ClientCredentials::Pair {
-                via: CredentialsVia::AuthorizationHeader,
-                ..
-            } => ClientAuthenticationMethod::ClientSecretBasic,
-            ClientCredentials::Assertion { .. } => ClientAuthenticationMethod::ClientSecretJwt,
-        }
-    }
-}
-
 #[derive(Deserialize)]
 struct ClientAuthForm<T> {
     #[serde(flatten)]
@@ -259,7 +283,7 @@ struct ClientAuthForm<T> {
 #[cfg(test)]
 mod tests {
     use headers::authorization::Credentials;
-    use mas_config::ConfigurationSection;
+    use mas_config::{ConfigurationSection, OAuth2ClientAuthMethodConfig};
     use mas_jose::{JsonWebSignatureAlgorithm, SigningKeystore};
     use serde_json::json;
 
@@ -272,17 +296,21 @@ mod tests {
         let mut config = OAuth2Config::test();
         config.clients.push(OAuth2ClientConfig {
             client_id: "public".to_string(),
-            client_secret: None,
+            client_auth_method: OAuth2ClientAuthMethodConfig::None,
             redirect_uris: Vec::new(),
         });
         config.clients.push(OAuth2ClientConfig {
-            client_id: "confidential".to_string(),
-            client_secret: Some(CLIENT_SECRET.to_string()),
+            client_id: "secret-basic".to_string(),
+            client_auth_method: OAuth2ClientAuthMethodConfig::ClientSecretBasic {
+                client_secret: CLIENT_SECRET.to_string(),
+            },
             redirect_uris: Vec::new(),
         });
         config.clients.push(OAuth2ClientConfig {
-            client_id: "confidential-2".to_string(),
-            client_secret: Some(CLIENT_SECRET.to_string()),
+            client_id: "secret-post".to_string(),
+            client_auth_method: OAuth2ClientAuthMethodConfig::ClientSecretPost {
+                client_secret: CLIENT_SECRET.to_string(),
+            },
             redirect_uris: Vec::new(),
         });
         config
@@ -395,7 +423,7 @@ mod tests {
             )
             .body(
                 serde_urlencoded::to_string(json!({
-                    "client_id": "confidential",
+                    "client_id": "secret-post",
                     "client_secret": CLIENT_SECRET,
                     "foo": "baz",
                     "bar": "foobar",
@@ -407,7 +435,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(auth, ClientAuthenticationMethod::ClientSecretPost);
-        assert_eq!(client.client_id, "confidential");
+        assert_eq!(client.client_id, "secret-post");
         assert_eq!(body.foo, "baz");
         assert_eq!(body.bar, "foobar");
     }
@@ -419,7 +447,7 @@ mod tests {
             "https://example.com/token".to_string(),
         );
 
-        let auth = Authorization::basic("confidential", CLIENT_SECRET);
+        let auth = Authorization::basic("secret-basic", CLIENT_SECRET);
         let (auth, client, body) = warp::test::request()
             .method("POST")
             .header(
@@ -439,7 +467,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(auth, ClientAuthenticationMethod::ClientSecretBasic);
-        assert_eq!(client.client_id, "confidential");
+        assert_eq!(client.client_id, "secret-basic");
         assert_eq!(body.foo, "baz");
         assert_eq!(body.bar, "foobar");
     }

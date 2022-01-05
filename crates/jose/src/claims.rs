@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod jwks;
-mod shared_secret;
-mod static_keystore;
-mod traits;
+trait ClaimSet {
+    fn validate(&self) -> anyhow::Result<()>;
+}
 
-pub use self::{
-    jwks::{JwksStore, StaticJwksStore},
-    shared_secret::SharedSecret,
-    static_keystore::StaticKeystore,
-    traits::{ExportJwks, SigningKeystore, VerifyingKeystore},
-};
+struct UnvalidatedClaim<T>(T);
+
+impl<T> ClaimSet for UnvalidatedClaim<T> {
+    fn validate(&self) -> anyhow::Result<()> {
+        Ok(())
+    }
+}

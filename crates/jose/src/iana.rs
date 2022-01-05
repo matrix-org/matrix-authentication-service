@@ -16,9 +16,10 @@
 //!
 //! <https://www.iana.org/assignments/jose/jose.xhtml>
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 pub enum JsonWebSignatureAlgorithm {
     /// HMAC using SHA-256
     #[serde(rename = "HS256")]
@@ -157,7 +158,7 @@ pub enum JsonWebSignatureAlgorithm {
     Es256K,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum JsonWebEncryptionAlgorithm {
     /// AES_128_CBC_HMAC_SHA_256 authenticated encryption algorithm
     #[serde(rename = "A128CBC-HS256")]
@@ -184,14 +185,14 @@ pub enum JsonWebEncryptionAlgorithm {
     A256Gcm,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum JsonWebEncryptionCompressionAlgorithm {
     /// DEFLATE
     #[serde(rename = "DEF")]
     Def,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum JsonWebKeyType {
     /// Elliptic Curve
     #[serde(rename = "EC")]
@@ -210,7 +211,7 @@ pub enum JsonWebKeyType {
     Okp,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 pub enum JsonWebKeyEcEllipticCurve {
     /// P-256 Curve
     #[serde(rename = "P-256")]
@@ -229,7 +230,7 @@ pub enum JsonWebKeyEcEllipticCurve {
     Secp256K1,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 pub enum JsonWebKeyOkpEllipticCurve {
     /// Ed25519 signature algorithm key pairs
     #[serde(rename = "Ed25519")]
@@ -248,7 +249,7 @@ pub enum JsonWebKeyOkpEllipticCurve {
     X448,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 pub enum JsonWebKeyUse {
     /// Digital Signature or MAC
     #[serde(rename = "sig")]
@@ -259,7 +260,7 @@ pub enum JsonWebKeyUse {
     Enc,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 pub enum JsonWebKeyOperation {
     /// Compute digital signature or MAC
     #[serde(rename = "sign")]

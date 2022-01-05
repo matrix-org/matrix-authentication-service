@@ -19,6 +19,7 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::module_name_repetitions)]
 
+mod claims;
 pub(crate) mod iana;
 pub(crate) mod jwk;
 pub(crate) mod jwt;
@@ -31,5 +32,8 @@ pub use self::{
     },
     jwk::{JsonWebKey, JsonWebKeySet},
     jwt::{DecodedJsonWebToken, JsonWebTokenParts, JwtHeader},
-    keystore::{ExportJwks, SharedSecret, SigningKeystore, StaticKeystore, VerifyingKeystore},
+    keystore::{
+        ExportJwks, JwksStore, SharedSecret, SigningKeystore, StaticJwksStore, StaticKeystore,
+        VerifyingKeystore,
+    },
 };

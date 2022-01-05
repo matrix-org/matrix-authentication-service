@@ -27,10 +27,7 @@ use sha2::{Sha256, Sha384, Sha512};
 use signature::{Signature, Signer, Verifier};
 
 use super::{ExportJwks, SigningKeystore, VerifyingKeystore};
-use crate::{
-    iana::{JsonWebKeyOperation, JsonWebSignatureAlgorithm},
-    JsonWebKey, JsonWebKeySet, JwtHeader,
-};
+use crate::{iana::JsonWebSignatureAlgorithm, JsonWebKey, JsonWebKeySet, JwtHeader};
 
 #[derive(Default)]
 pub struct StaticKeystore {
@@ -276,23 +273,13 @@ impl VerifyingKeystore for &StaticKeystore {
 }
 
 #[async_trait]
-impl ExportJwks for &StaticKeystore {
-    async fn export_jwks(self) -> JsonWebKeySet {
-        let rsa = self.rsa_keys.iter().flat_map(|(kid, key)| {
+impl ExportJwks for StaticKeystore {
+    async fn export_jwks(&self) -> anyhow::Result<JsonWebKeySet> {
+        let rsa = self.rsa_keys.iter().map(|(kid, key)| {
             let pubkey = RsaPublicKey::from(key);
-            let basekey = JsonWebKey::new(pubkey.into())
+            JsonWebKey::new(pubkey.into())
                 .with_kid(kid)
                 .with_use(crate::JsonWebKeyUse::Sig)
-                .with_key_ops(vec![JsonWebKeyOperation::Sign]);
-
-            let algs = [
-                JsonWebSignatureAlgorithm::Rs256,
-                JsonWebSignatureAlgorithm::Rs384,
-                JsonWebSignatureAlgorithm::Rs512,
-            ];
-
-            algs.into_iter()
-                .map(move |alg| basekey.clone().with_alg(alg))
         });
 
         let es256 = self.es256_keys.iter().map(|(kid, key)| {
@@ -300,12 +287,11 @@ impl ExportJwks for &StaticKeystore {
             JsonWebKey::new(pubkey.into())
                 .with_kid(kid)
                 .with_use(crate::JsonWebKeyUse::Sig)
-                .with_key_ops(vec![JsonWebKeyOperation::Sign])
                 .with_alg(JsonWebSignatureAlgorithm::Es256)
         });
 
         let keys = rsa.chain(es256).collect();
-        JsonWebKeySet::new(keys)
+        Ok(JsonWebKeySet::new(keys))
     }
 }
 

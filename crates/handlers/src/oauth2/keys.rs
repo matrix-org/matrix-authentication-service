@@ -15,6 +15,7 @@
 use std::sync::Arc;
 
 use mas_jose::{ExportJwks, StaticKeystore};
+use mas_warp_utils::errors::WrapError;
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 pub(super) fn filter(key_store: &Arc<StaticKeystore>) -> BoxedFilter<(Box<dyn Reply>,)> {
@@ -25,7 +26,7 @@ pub(super) fn filter(key_store: &Arc<StaticKeystore>) -> BoxedFilter<(Box<dyn Re
 }
 
 async fn get(key_store: Arc<StaticKeystore>) -> Result<Box<dyn Reply>, Rejection> {
-    let jwks = key_store.export_jwks().await;
+    let jwks = key_store.export_jwks().await.wrap_error()?;
 
     Ok(Box::new(warp::reply::json(&jwks)))
 }
