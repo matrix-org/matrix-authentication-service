@@ -19,7 +19,7 @@ use async_trait::async_trait;
 use base64ct::{Base64UrlUnpadded, Encoding};
 use digest::Digest;
 use ecdsa::VerifyingKey;
-use hmac::{Hmac, Mac, NewMac};
+use hmac::{Hmac, Mac};
 use p256::{NistP256, PublicKey};
 use pkcs1::EncodeRsaPublicKey;
 use pkcs8::EncodePublicKey;
@@ -117,19 +117,19 @@ impl<'a> VerifyingKeystore for &SharedSecret<'a> {
             JsonWebSignatureAlgorithm::Hs256 => {
                 let mut mac = Hmac::<Sha256>::new_from_slice(self.inner)?;
                 mac.update(payload);
-                mac.verify(signature)?;
+                mac.verify(signature.try_into()?)?;
             }
 
             JsonWebSignatureAlgorithm::Hs384 => {
                 let mut mac = Hmac::<Sha384>::new_from_slice(self.inner)?;
                 mac.update(payload);
-                mac.verify(signature)?;
+                mac.verify(signature.try_into()?)?;
             }
 
             JsonWebSignatureAlgorithm::Hs512 => {
                 let mut mac = Hmac::<Sha512>::new_from_slice(self.inner)?;
                 mac.update(payload);
-                mac.verify(signature)?;
+                mac.verify(signature.try_into()?)?;
             }
 
             _ => bail!("unsupported algorithm"),

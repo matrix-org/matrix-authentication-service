@@ -10,10 +10,10 @@ anyhow = "1.0.52"
 async-trait = "0.1.52"
 base64ct = { version = "1.0.1", features = ["std"] }
 crypto-mac = { version = "0.11.1", features = ["std"] }
-digest = "0.9.0"
+digest = "0.10.1"
 ecdsa = { version = "0.13.3", features = ["sign", "verify", "pem", "pkcs8"] }
 elliptic-curve = { version = "0.11.6", features = ["ecdh", "pem"] }
-hmac = "0.11.0"
+hmac = "0.12.0"
 p256 = { version = "0.10.0", features = ["ecdsa", "pem", "pkcs8"] }
 pkcs1 = { version = "0.3.1", features = ["pem", "pkcs8"] }
 pkcs8 = { version = "0.8.0", features = ["pem"] }
@@ -23,7 +23,7 @@ sec1 = "0.2.1"
 serde = { version = "1.0.133", features = ["derive"] }
 serde_json = "1.0.74"
 serde_with = { version = "1.11.0", features = ["base64"] }
-sha2 = "0.9.8"
+sha2 = "0.10.0"
 signature = "1.4.0"
 thiserror = "1.0.30"
 tokio = { version = "1.15.0", features = ["macros", "rt"] }
