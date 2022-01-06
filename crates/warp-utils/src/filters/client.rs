@@ -313,6 +313,20 @@ mod tests {
             },
             redirect_uris: Vec::new(),
         });
+        config.clients.push(OAuth2ClientConfig {
+            client_id: "secret-jwt".to_string(),
+            client_auth_method: OAuth2ClientAuthMethodConfig::ClientSecretJwt {
+                client_secret: CLIENT_SECRET.to_string(),
+            },
+            redirect_uris: Vec::new(),
+        });
+        config.clients.push(OAuth2ClientConfig {
+            client_id: "secret-jwt-2".to_string(),
+            client_auth_method: OAuth2ClientAuthMethodConfig::ClientSecretJwt {
+                client_secret: CLIENT_SECRET.to_string(),
+            },
+            redirect_uris: Vec::new(),
+        });
         config
     }
 
@@ -343,8 +357,8 @@ mod tests {
 
         let store = SharedSecret::new(&CLIENT_SECRET);
         let claims = ClientAssertionClaims {
-            issuer: "confidential".to_string(),
-            subject: "confidential".to_string(),
+            issuer: "secret-jwt".to_string(),
+            subject: "secret-jwt".to_string(),
             audience,
             jwt_id: None,
         };
@@ -364,7 +378,7 @@ mod tests {
             .method("POST")
             .header("Content-Type", mime::APPLICATION_WWW_FORM_URLENCODED.to_string())
             .body(serde_urlencoded::to_string(json!({
-                "client_id": "confidential",
+                "client_id": "secret-jwt",
                 "client_assertion": jwt,
                 "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
                 "foo": "baz",
@@ -375,7 +389,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(auth, ClientAuthenticationMethod::ClientSecretJwt);
-        assert_eq!(client.client_id, "confidential");
+        assert_eq!(client.client_id, "secret-jwt");
         assert_eq!(body.foo, "baz");
         assert_eq!(body.bar, "foobar");
 
@@ -397,7 +411,7 @@ mod tests {
         let res = warp::test::request()
             .method("POST")
             .body(serde_urlencoded::to_string(json!({
-                "client_id": "confidential-2",
+                "client_id": "secret-jwt-2",
                 "client_assertion": jwt,
                 "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
                 "foo": "baz",
