@@ -61,6 +61,12 @@ impl JwksOrJwksUri {
     }
 }
 
+impl From<JsonWebKeySet> for JwksOrJwksUri {
+    fn from(jwks: JsonWebKeySet) -> Self {
+        Self::Jwks(jwks)
+    }
+}
+
 #[derive(JsonSchema, Serialize, Deserialize, Clone, Debug)]
 #[serde(tag = "client_auth_method", rename_all = "snake_case")]
 pub enum OAuth2ClientAuthMethodConfig {

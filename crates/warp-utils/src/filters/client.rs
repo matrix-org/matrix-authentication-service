@@ -284,7 +284,7 @@ struct ClientAuthForm<T> {
 mod tests {
     use headers::authorization::Credentials;
     use mas_config::{ConfigurationSection, OAuth2ClientAuthMethodConfig};
-    use mas_jose::{JsonWebSignatureAlgorithm, SigningKeystore};
+    use mas_jose::{ExportJwks, JsonWebSignatureAlgorithm, SigningKeystore, StaticKeystore};
     use serde_json::json;
 
     use super::*;
@@ -292,7 +292,14 @@ mod tests {
     // Long client_secret to support it as a HS512 key
     const CLIENT_SECRET: &str = "leek2zaeyeb8thai7piehea3vah6ool9oanin9aeraThuci9EeghaekaiD1upe4Quoh7xeMae2meitohj0Waaveiwaorah1yazohr6Vae7iebeiRaWene5IeWeeciezu";
 
-    fn oauth2_config() -> OAuth2Config {
+    fn client_private_keystore() -> StaticKeystore {
+        let mut store = StaticKeystore::new();
+        store.add_test_rsa_key().unwrap();
+        store.add_test_ecdsa_key().unwrap();
+        store
+    }
+
+    async fn oauth2_config() -> OAuth2Config {
         let mut config = OAuth2Config::test();
         config.clients.push(OAuth2ClientConfig {
             client_id: "public".to_string(),
@@ -327,6 +334,19 @@ mod tests {
             },
             redirect_uris: Vec::new(),
         });
+
+        let store = client_private_keystore();
+        let jwks = store.export_jwks().await.unwrap();
+        config.clients.push(OAuth2ClientConfig {
+            client_id: "private-key-jwt".to_string(),
+            client_auth_method: OAuth2ClientAuthMethodConfig::PrivateKeyJwt(jwks.clone().into()),
+            redirect_uris: Vec::new(),
+        });
+        config.clients.push(OAuth2ClientConfig {
+            client_id: "private-key-jwt-2".to_string(),
+            client_auth_method: OAuth2ClientAuthMethodConfig::PrivateKeyJwt(jwks.into()),
+            redirect_uris: Vec::new(),
+        });
         config
     }
 
@@ -353,7 +373,7 @@ mod tests {
 
     async fn client_secret_jwt(alg: JsonWebSignatureAlgorithm) {
         let audience = "https://example.com/token".to_string();
-        let filter = client_authentication::<Form>(&oauth2_config(), audience.clone());
+        let filter = client_authentication::<Form>(&oauth2_config().await, audience.clone());
 
         let store = SharedSecret::new(&CLIENT_SECRET);
         let claims = ClientAssertionClaims {
@@ -423,9 +443,100 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn client_secret_jwt_rs256() {
+        private_key_jwt(JsonWebSignatureAlgorithm::Rs256).await;
+    }
+
+    #[tokio::test]
+    async fn client_secret_jwt_rs384() {
+        private_key_jwt(JsonWebSignatureAlgorithm::Rs384).await;
+    }
+
+    #[tokio::test]
+    async fn client_secret_jwt_rs512() {
+        private_key_jwt(JsonWebSignatureAlgorithm::Rs512).await;
+    }
+
+    #[tokio::test]
+    async fn client_secret_jwt_es256() {
+        private_key_jwt(JsonWebSignatureAlgorithm::Es256).await;
+    }
+
+    async fn private_key_jwt(alg: JsonWebSignatureAlgorithm) {
+        let audience = "https://example.com/token".to_string();
+        let filter = client_authentication::<Form>(&oauth2_config().await, audience.clone());
+
+        let store = client_private_keystore();
+        let claims = ClientAssertionClaims {
+            issuer: "private-key-jwt".to_string(),
+            subject: "private-key-jwt".to_string(),
+            audience,
+            jwt_id: None,
+        };
+        let header = store.prepare_header(alg).await.expect("JWT header");
+        let jwt = DecodedJsonWebToken::new(header, claims);
+        let jwt = jwt.sign(&store).await.expect("signed token");
+        let jwt = jwt.serialize();
+
+        // TODO: test failing cases
+        //  - expired token
+        //  - "not before" in the future
+        //  - subject/issuer mismatch
+        //  - audience mismatch
+        //  - wrong secret/signature
+
+        let (auth, client, body) = warp::test::request()
+            .method("POST")
+            .header("Content-Type", mime::APPLICATION_WWW_FORM_URLENCODED.to_string())
+            .body(serde_urlencoded::to_string(json!({
+                "client_id": "private-key-jwt",
+                "client_assertion": jwt,
+                "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                "foo": "baz",
+                "bar": "foobar",
+            })).unwrap())
+            .filter(&filter)
+            .await
+            .unwrap();
+
+        assert_eq!(auth, ClientAuthenticationMethod::PrivateKeyJwt);
+        assert_eq!(client.client_id, "private-key-jwt");
+        assert_eq!(body.foo, "baz");
+        assert_eq!(body.bar, "foobar");
+
+        // Without client_id
+        let res = warp::test::request()
+            .method("POST")
+            .header("Content-Type", mime::APPLICATION_WWW_FORM_URLENCODED.to_string())
+            .body(serde_urlencoded::to_string(json!({
+                "client_assertion": jwt,
+                "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                "foo": "baz",
+                "bar": "foobar",
+            })).unwrap())
+            .filter(&filter)
+            .await;
+        assert!(res.is_ok());
+
+        // client_id mismatch
+        let res = warp::test::request()
+            .method("POST")
+            .body(serde_urlencoded::to_string(json!({
+                "client_id": "private-key-jwt-2",
+                "client_assertion": jwt,
+                "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                "foo": "baz",
+                "bar": "foobar",
+            })).unwrap())
+            .filter(&filter)
+            .await;
+        assert!(res.is_err());
+    }
+
+    #[tokio::test]
     async fn client_secret_post() {
         let filter = client_authentication::<Form>(
-            &oauth2_config(),
+            &oauth2_config().await,
             "https://example.com/token".to_string(),
         );
 
@@ -457,7 +568,7 @@ mod tests {
     #[tokio::test]
     async fn client_secret_basic() {
         let filter = client_authentication::<Form>(
-            &oauth2_config(),
+            &oauth2_config().await,
             "https://example.com/token".to_string(),
         );
 
@@ -489,7 +600,7 @@ mod tests {
     #[tokio::test]
     async fn none() {
         let filter = client_authentication::<Form>(
-            &oauth2_config(),
+            &oauth2_config().await,
             "https://example.com/token".to_string(),
         );
 

@@ -18,27 +18,77 @@ use anyhow::bail;
 use async_trait::async_trait;
 use base64ct::{Base64UrlUnpadded, Encoding};
 use digest::Digest;
-use ecdsa::VerifyingKey;
+use ecdsa::{SigningKey, VerifyingKey};
 use p256::{NistP256, PublicKey};
-use pkcs1::EncodeRsaPublicKey;
-use pkcs8::EncodePublicKey;
-use rsa::{PublicKey as _, RsaPublicKey};
+use pkcs1::{DecodeRsaPrivateKey, EncodeRsaPublicKey};
+use pkcs8::{DecodePrivateKey, EncodePublicKey};
+use rsa::{PublicKey as _, RsaPrivateKey, RsaPublicKey};
 use sha2::{Sha256, Sha384, Sha512};
 use signature::{Signature, Signer, Verifier};
 
 use super::{ExportJwks, SigningKeystore, VerifyingKeystore};
 use crate::{iana::JsonWebSignatureAlgorithm, JsonWebKey, JsonWebKeySet, JwtHeader};
 
+// Generate with
+//  openssl genrsa 2048
+const TEST_RSA_PKCS1_PEM: &str = "-----BEGIN RSA PRIVATE KEY-----
+MIIEpAIBAAKCAQEA1j7Y2CH6Ss8tgaNvcQPaRJKnCZD8ABqNPyKDWLQLph6Zi7gZ
+GqmRtTzMuevo2ezpkbCiQAPEp1ms022P92bB+uqG7xmzHTzbwLtnq3OAdjmrnaFV
+I4v89WHUsTXX9hiYOK5dOM81bNZ6muxWZ0L/xw4jVWe7xkqnp2Lluq0HknlzP5yJ
+UEikf5BkpX0iyIu2/X4r8YVp8uzG34l/8qBx6k3rO2VkOQOSybZj1oij5KZCusnu
+QjJLKWXCqJToWE6iVn+Q0N6ySDLgmJ7Zq0Sou/9N/oWKn94FOsouQgET5NuzoIFR
+qTb321fQ8gbqt/OupBbBKEo1qUU+cS77TD/AuQIDAQABAoIBAQDLSZzmD+93lnf+
+f36ZxOcRk/nNGPYUfx0xH+VzgHthJ73YFlozs1xflQ5JB/DM/4BsziZWCX1KsctM
+XrRxMt6y4GAidcc/4eQ+T1RCGfl1tKkDi/bGIOloSGjRsV5208V0WvZ3lh2CZUy2
+vbQKjUc3sFGUkzZYI7RLHosPA2mg78IVuSnqvNaU0TgA2KkaxWs6Ecr/ys80cUvj
+KKj04DmX5xaXwUKmz353i5gIt3aY3G5CAw5fU/ocDKR8nzVCpBAGbRRiUaVKIT06
+APSkLDTUnxSYtHtDJGHjgU/TsvAwTA92J3ue5Ysu9xTE+WyHA6Rgux7RQSD/wWHr
+LdRPwxPFAoGBAOytMPh/f2zKmotanjho0QNfhAUHoQUfPudYT0nnDceOsi1jYWbQ
+c/wPeQQC4Hp/pTUrkSIQPEz/hSxzZ6RPxxuGB8O94I0uLwQK4V1UwbgfsRa9zQzW
+n0kgKZ8w8h8B7qyiKyIAnZzvKtNEnKrzrct4HsN3OEoXTwuAUYlvWtQTAoGBAOe8
+0liNaH9V6ecZiojkRR1tiQkr/dCV+a13eXXaRA/8y/3wKCQ4idYncclQJTLKsAwW
+hHuDd4uLgtifREVIBD2jGdlznNr9HQNuZgwjuUoH+r1YLGgiMWeVYSr0m8lyDlQl
+BJKTAphrqo6VJWDAnM18v+by//yRleSjVMqZ3zmDAoGBAMpA0rl5EyagGON/g/hG
+sl8Ej+hQdazP38yJbfCEsATaD6+z3rei6Yr8mfjwkG5+iGrgmT0XzMAsF909ndMP
+jeIabqY6rBtZ3TnCJobAeG9lPctmVUVkX2h5QLhWdoJC/3iteNis2AQVam5yksOQ
+S/O16ew2BHdkZds5Q/SDoYXbAoGAK9tVZ8LjWu30hXMU/9FLr0USoTS9JWOszAKH
+byFuriPmq1lvD2PP2kK+yx2q3JD1fmQokIOR9Uvi6IJD1mTJwKyEcN3reppailKz
+Z2q/X15hOsJcLR0DgpoHuKxwa1B1m8Ehu2etHxGJRtC9MTFiu5T3cIrenXskBhBP
+NMSoNWcCgYAD3u3zdeVo3gVoxneS7GNVI2WBhjtqgNIbINuxGZvfztm7+vNPE6sQ
+VL8i+09uoM1H6sXbe2XXORmtW0j/6MmYhSoBXNdqWTNAiyNRhwEQtowqgl5R7PBu
+//QZTF1z62R9IKDMRG3f5Wn8e1Dys6tXBuG603g+Dkkc/km476mrgw==
+-----END RSA PRIVATE KEY-----";
+
+// Generate with
+//  openssl ecparam -genkey -name prime256v1 | openssl pkcs8 -topk8 -nocrypt
+const TEST_ECDSA_PKCS8_PEM: &str = "-----BEGIN PRIVATE KEY-----
+MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg+tHxet7G+uar2Cef
+iYPb7jv3uzncFtwJ7RhDOvEA0fChRANCAATCKn2AEqa9785k+TmwkeCvLub8XGrF
+ezE6bA/blaPVE3nu4SUVYKULRJQxNjeOSra8TQrlIS8e5ItbMn8Tv9KV
+-----END PRIVATE KEY-----";
+
 #[derive(Default)]
 pub struct StaticKeystore {
     rsa_keys: HashMap<String, rsa::RsaPrivateKey>,
-    es256_keys: HashMap<String, ecdsa::SigningKey<NistP256>>,
+    es256_keys: HashMap<String, SigningKey<NistP256>>,
 }
 
 impl StaticKeystore {
     #[must_use]
     pub fn new() -> Self {
         StaticKeystore::default()
+    }
+
+    pub fn add_test_rsa_key(&mut self) -> anyhow::Result<()> {
+        let rsa = RsaPrivateKey::from_pkcs1_pem(TEST_RSA_PKCS1_PEM)?;
+        self.add_rsa_key(rsa)?;
+        Ok(())
+    }
+
+    pub fn add_test_ecdsa_key(&mut self) -> anyhow::Result<()> {
+        let ecdsa = SigningKey::from_pkcs8_pem(TEST_ECDSA_PKCS8_PEM)?;
+        self.add_ecdsa_key(ecdsa)?;
+        Ok(())
     }
 
     pub fn add_rsa_key(&mut self, key: rsa::RsaPrivateKey) -> anyhow::Result<()> {
@@ -57,7 +107,7 @@ impl StaticKeystore {
         Ok(())
     }
 
-    pub fn add_ecdsa_key(&mut self, key: ecdsa::SigningKey<NistP256>) -> anyhow::Result<()> {
+    pub fn add_ecdsa_key(&mut self, key: SigningKey<NistP256>) -> anyhow::Result<()> {
         let pubkey: PublicKey = key.verifying_key().into();
         let der = EncodePublicKey::to_public_key_der(&pubkey)?;
         let digest = {
@@ -297,63 +347,15 @@ impl ExportJwks for StaticKeystore {
 
 #[cfg(test)]
 mod tests {
-    use ecdsa::SigningKey;
-    use pkcs1::DecodeRsaPrivateKey;
-    use pkcs8::DecodePrivateKey;
-    use rsa::RsaPrivateKey;
-
     use super::*;
-
-    // Generate with
-    //  openssl genrsa 2048
-    const RSA_PKCS1_PEM: &str = "-----BEGIN RSA PRIVATE KEY-----
-MIIEpAIBAAKCAQEA1j7Y2CH6Ss8tgaNvcQPaRJKnCZD8ABqNPyKDWLQLph6Zi7gZ
-GqmRtTzMuevo2ezpkbCiQAPEp1ms022P92bB+uqG7xmzHTzbwLtnq3OAdjmrnaFV
-I4v89WHUsTXX9hiYOK5dOM81bNZ6muxWZ0L/xw4jVWe7xkqnp2Lluq0HknlzP5yJ
-UEikf5BkpX0iyIu2/X4r8YVp8uzG34l/8qBx6k3rO2VkOQOSybZj1oij5KZCusnu
-QjJLKWXCqJToWE6iVn+Q0N6ySDLgmJ7Zq0Sou/9N/oWKn94FOsouQgET5NuzoIFR
-qTb321fQ8gbqt/OupBbBKEo1qUU+cS77TD/AuQIDAQABAoIBAQDLSZzmD+93lnf+
-f36ZxOcRk/nNGPYUfx0xH+VzgHthJ73YFlozs1xflQ5JB/DM/4BsziZWCX1KsctM
-XrRxMt6y4GAidcc/4eQ+T1RCGfl1tKkDi/bGIOloSGjRsV5208V0WvZ3lh2CZUy2
-vbQKjUc3sFGUkzZYI7RLHosPA2mg78IVuSnqvNaU0TgA2KkaxWs6Ecr/ys80cUvj
-KKj04DmX5xaXwUKmz353i5gIt3aY3G5CAw5fU/ocDKR8nzVCpBAGbRRiUaVKIT06
-APSkLDTUnxSYtHtDJGHjgU/TsvAwTA92J3ue5Ysu9xTE+WyHA6Rgux7RQSD/wWHr
-LdRPwxPFAoGBAOytMPh/f2zKmotanjho0QNfhAUHoQUfPudYT0nnDceOsi1jYWbQ
-c/wPeQQC4Hp/pTUrkSIQPEz/hSxzZ6RPxxuGB8O94I0uLwQK4V1UwbgfsRa9zQzW
-n0kgKZ8w8h8B7qyiKyIAnZzvKtNEnKrzrct4HsN3OEoXTwuAUYlvWtQTAoGBAOe8
-0liNaH9V6ecZiojkRR1tiQkr/dCV+a13eXXaRA/8y/3wKCQ4idYncclQJTLKsAwW
-hHuDd4uLgtifREVIBD2jGdlznNr9HQNuZgwjuUoH+r1YLGgiMWeVYSr0m8lyDlQl
-BJKTAphrqo6VJWDAnM18v+by//yRleSjVMqZ3zmDAoGBAMpA0rl5EyagGON/g/hG
-sl8Ej+hQdazP38yJbfCEsATaD6+z3rei6Yr8mfjwkG5+iGrgmT0XzMAsF909ndMP
-jeIabqY6rBtZ3TnCJobAeG9lPctmVUVkX2h5QLhWdoJC/3iteNis2AQVam5yksOQ
-S/O16ew2BHdkZds5Q/SDoYXbAoGAK9tVZ8LjWu30hXMU/9FLr0USoTS9JWOszAKH
-byFuriPmq1lvD2PP2kK+yx2q3JD1fmQokIOR9Uvi6IJD1mTJwKyEcN3reppailKz
-Z2q/X15hOsJcLR0DgpoHuKxwa1B1m8Ehu2etHxGJRtC9MTFiu5T3cIrenXskBhBP
-NMSoNWcCgYAD3u3zdeVo3gVoxneS7GNVI2WBhjtqgNIbINuxGZvfztm7+vNPE6sQ
-VL8i+09uoM1H6sXbe2XXORmtW0j/6MmYhSoBXNdqWTNAiyNRhwEQtowqgl5R7PBu
-//QZTF1z62R9IKDMRG3f5Wn8e1Dys6tXBuG603g+Dkkc/km476mrgw==
------END RSA PRIVATE KEY-----";
-
-    // Generate with
-    //  openssl ecparam -genkey -name prime256v1 | openssl pkcs8 -topk8 -nocrypt
-    const EC_PKCS8_PEM: &str = "-----BEGIN PRIVATE KEY-----
-MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg+tHxet7G+uar2Cef
-iYPb7jv3uzncFtwJ7RhDOvEA0fChRANCAATCKn2AEqa9785k+TmwkeCvLub8XGrF
-ezE6bA/blaPVE3nu4SUVYKULRJQxNjeOSra8TQrlIS8e5ItbMn8Tv9KV
------END PRIVATE KEY-----";
 
     #[tokio::test]
     async fn test_static_store() {
         let message = "this is the message to sign".as_bytes();
         let store = {
             let mut s = StaticKeystore::new();
-
-            let rsa = RsaPrivateKey::from_pkcs1_pem(RSA_PKCS1_PEM).unwrap();
-            s.add_rsa_key(rsa).unwrap();
-
-            let ecdsa = SigningKey::from_pkcs8_pem(EC_PKCS8_PEM).unwrap();
-            s.add_ecdsa_key(ecdsa).unwrap();
-
+            s.add_test_rsa_key().unwrap();
+            s.add_test_ecdsa_key().unwrap();
             s
         };
 
