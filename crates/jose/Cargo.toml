@@ -9,7 +9,7 @@ license = "Apache-2.0"
 anyhow = "1.0.52"
 async-trait = "0.1.52"
 base64ct = { version = "1.0.1", features = ["std"] }
-chrono = "0.4.19"
+chrono = { version = "0.4.19", features = ["serde"] }
 crypto-mac = { version = "0.11.1", features = ["std"] }
 digest = "0.10.1"
 ecdsa = { version = "0.13.3", features = ["sign", "verify", "pem", "pkcs8"] }

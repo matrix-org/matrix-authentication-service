@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use anyhow::Context;
 use chrono::{DateTime, Duration, Utc};
@@ -21,7 +21,10 @@ use headers::{CacheControl, Pragma};
 use hyper::StatusCode;
 use mas_config::{OAuth2ClientConfig, OAuth2Config};
 use mas_data_model::{AuthorizationGrantStage, TokenType};
-use mas_jose::{DecodedJsonWebToken, JsonWebSignatureAlgorithm, SigningKeystore, StaticKeystore};
+use mas_jose::{
+    claims::{AT_HASH, AUD, AUTH_TIME, C_HASH, IAT, ISS, NONCE, SUB},
+    DecodedJsonWebToken, JsonWebSignatureAlgorithm, SigningKeystore, StaticKeystore,
+};
 use mas_storage::{
     oauth2::{
         access_token::{add_access_token, revoke_access_token},
@@ -165,6 +168,7 @@ fn hash<H: Digest>(mut hasher: H, token: &str) -> anyhow::Result<String> {
     Ok(BASE64URL_NOPAD.encode(bits))
 }
 
+#[allow(clippy::too_many_lines)]
 async fn authorization_code_grant(
     grant: &AuthorizationCodeGrant,
     client: &OAuth2ClientConfig,
@@ -253,19 +257,33 @@ async fn authorization_code_grant(
         .wrap_error()?;
 
     let id_token = if session.scope.contains(&OPENID) {
-        // TODO: time-related claims
-        let claims = CustomClaims {
-            issuer,
-            subject: browser_session.user.sub.clone(),
-            audiences: vec![client.client_id.clone()],
-            nonce: authz_grant.nonce.clone(),
-            auth_time: browser_session
-                .last_authentication
-                .as_ref()
-                .map(|a| a.created_at),
-            at_hash: hash(Sha256::new(), &access_token_str).wrap_error()?,
-            c_hash: hash(Sha256::new(), &grant.code).wrap_error()?,
-        };
+        let mut claims = HashMap::new();
+        ISS.insert(&mut claims, issuer.to_string()).wrap_error()?;
+        SUB.insert(&mut claims, &browser_session.user.sub)
+            .wrap_error()?;
+        AUD.insert(&mut claims, client.client_id.clone())
+            .wrap_error()?;
+        IAT.insert(&mut claims, Utc::now()).wrap_error()?;
+
+        if let Some(ref nonce) = authz_grant.nonce {
+            NONCE.insert(&mut claims, nonce.clone()).wrap_error()?;
+        }
+        if let Some(ref last_authentication) = browser_session.last_authentication {
+            AUTH_TIME
+                .insert(&mut claims, last_authentication.created_at)
+                .wrap_error()?;
+        }
+
+        AT_HASH
+            .insert(
+                &mut claims,
+                hash(Sha256::new(), &access_token_str).wrap_error()?,
+            )
+            .wrap_error()?;
+        C_HASH
+            .insert(&mut claims, hash(Sha256::new(), &grant.code).wrap_error()?)
+            .wrap_error()?;
+
         let header = key_store
             .prepare_header(JsonWebSignatureAlgorithm::Rs256)
             .await

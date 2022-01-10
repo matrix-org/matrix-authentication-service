@@ -19,7 +19,7 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::module_name_repetitions)]
 
-mod claims;
+pub mod claims;
 pub(crate) mod iana;
 pub(crate) mod jwk;
 pub(crate) mod jwt;

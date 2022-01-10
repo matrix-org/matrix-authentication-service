@@ -14,12 +14,16 @@
 
 //! Handle client authentication
 
+use std::collections::HashMap;
+
 use headers::{authorization::Basic, Authorization};
 use mas_config::{OAuth2ClientAuthMethodConfig, OAuth2ClientConfig, OAuth2Config};
-use mas_jose::{DecodedJsonWebToken, JsonWebTokenParts, SharedSecret};
+use mas_jose::{
+    claims::{TimeOptions, AUD, EXP, IAT, ISS, JTI, NBF, SUB},
+    DecodedJsonWebToken, JsonWebTokenParts, SharedSecret,
+};
 use oauth2_types::requests::ClientAuthenticationMethod;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use serde_with::skip_serializing_none;
+use serde::{de::DeserializeOwned, Deserialize};
 use thiserror::Error;
 use warp::{reject::Reject, Filter, Rejection};
 
@@ -81,28 +85,14 @@ enum ClientAuthenticationError {
     #[error("wrong client authentication method for client {client_id:?}")]
     WrongAuthenticationMethod { client_id: String },
 
-    #[error("wrong audience in client assertion: expected {expected:?}, got {got:?}")]
-    AudienceMismatch { expected: String, got: String },
+    #[error("wrong audience in client assertion: expected {expected:?}")]
+    MissingAudience { expected: String },
 
     #[error("invalid client assertion")]
     InvalidAssertion,
 }
 
 impl Reject for ClientAuthenticationError {}
-
-#[skip_serializing_none]
-#[derive(Serialize, Deserialize)]
-struct ClientAssertionClaims {
-    #[serde(rename = "iss")]
-    issuer: String,
-    #[serde(rename = "sub")]
-    subject: String,
-    #[serde(rename = "aud")]
-    audience: String,
-    // TODO: use the JTI and ensure it is only used once
-    #[serde(default, rename = "jti")]
-    jwt_id: Option<String>,
-}
 
 async fn authenticate_client<T>(
     clients: Vec<OAuth2ClientConfig>,
@@ -173,14 +163,35 @@ async fn authenticate_client<T>(
             client_assertion,
         } => {
             let token: JsonWebTokenParts = client_assertion.parse().wrap_error()?;
-            let decoded: DecodedJsonWebToken<ClientAssertionClaims> =
+            let decoded: DecodedJsonWebToken<HashMap<String, serde_json::Value>> =
                 token.decode().wrap_error()?;
+
+            let time_options = TimeOptions::default()
+                .freeze()
+                .leeway(chrono::Duration::minutes(1));
+
+            let mut claims = decoded.claims().clone();
+            let iss = ISS.extract_required(&mut claims).wrap_error()?;
+            let sub = SUB.extract_required(&mut claims).wrap_error()?;
+            let aud = AUD.extract_required(&mut claims).wrap_error()?;
+
+            // Validate the times
+            let _exp = EXP
+                .extract_required_with_options(&mut claims, &time_options)
+                .wrap_error()?;
+            let _nbf = NBF
+                .extract_optional_with_options(&mut claims, &time_options)
+                .wrap_error()?;
+            let _iat = IAT
+                .extract_optional_with_options(&mut claims, &time_options)
+                .wrap_error()?;
+
+            // TODO: validate the JTI
+            let _jti = JTI.extract_optional(&mut claims).wrap_error()?;
 
             // client_id might have been passed as parameter. If not, it should be inferred
             // from the token, as per rfc7521 sec. 4.2
-            let client_id = client_id
-                .as_ref()
-                .unwrap_or_else(|| &decoded.claims().subject);
+            let client_id = client_id.as_ref().unwrap_or(&sub);
 
             let client = clients
                 .iter()
@@ -210,21 +221,16 @@ async fn authenticate_client<T>(
                 }
             };
 
-            let claims = decoded.claims();
-            // TODO: validate the times again
-
             // rfc7523 sec. 3.3: the audience is the URL being called
-            if claims.audience != audience {
-                return Err(ClientAuthenticationError::AudienceMismatch {
-                    expected: audience,
-                    got: claims.audience.clone(),
-                }
-                .into());
+            if !aud.contains(&audience) {
+                return Err(
+                    ClientAuthenticationError::MissingAudience { expected: audience }.into(),
+                );
             }
 
             // rfc7523 sec. 3.1 & 3.2: both the issuer and the subject must
             // match the client_id
-            if claims.issuer != claims.subject || &claims.issuer != client_id {
+            if iss != sub || &iss != client_id {
                 return Err(ClientAuthenticationError::InvalidAssertion.into());
             }
 
@@ -371,17 +377,30 @@ mod tests {
         client_secret_jwt(JsonWebSignatureAlgorithm::Hs512).await;
     }
 
+    fn client_claims(
+        client_id: &str,
+        audience: &str,
+        iat: chrono::DateTime<chrono::Utc>,
+    ) -> HashMap<String, serde_json::Value> {
+        let mut claims = HashMap::new();
+        let exp = iat + chrono::Duration::minutes(1);
+
+        ISS.insert(&mut claims, client_id).unwrap();
+        SUB.insert(&mut claims, client_id).unwrap();
+        AUD.insert(&mut claims, vec![audience.to_string()]).unwrap();
+        IAT.insert(&mut claims, iat).unwrap();
+        NBF.insert(&mut claims, iat).unwrap();
+        EXP.insert(&mut claims, exp).unwrap();
+
+        claims
+    }
+
     async fn client_secret_jwt(alg: JsonWebSignatureAlgorithm) {
-        let audience = "https://example.com/token".to_string();
-        let filter = client_authentication::<Form>(&oauth2_config().await, audience.clone());
+        let audience = "https://example.com/token";
+        let filter = client_authentication::<Form>(&oauth2_config().await, audience.to_string());
 
         let store = SharedSecret::new(&CLIENT_SECRET);
-        let claims = ClientAssertionClaims {
-            issuer: "secret-jwt".to_string(),
-            subject: "secret-jwt".to_string(),
-            audience,
-            jwt_id: None,
-        };
+        let claims = client_claims("secret-jwt", audience, chrono::Utc::now());
         let header = store.prepare_header(alg).await.expect("JWT header");
         let jwt = DecodedJsonWebToken::new(header, claims);
         let jwt = jwt.sign(&store).await.expect("signed token");
@@ -463,16 +482,11 @@ mod tests {
     }
 
     async fn private_key_jwt(alg: JsonWebSignatureAlgorithm) {
-        let audience = "https://example.com/token".to_string();
-        let filter = client_authentication::<Form>(&oauth2_config().await, audience.clone());
+        let audience = "https://example.com/token";
+        let filter = client_authentication::<Form>(&oauth2_config().await, audience.to_string());
 
         let store = client_private_keystore();
-        let claims = ClientAssertionClaims {
-            issuer: "private-key-jwt".to_string(),
-            subject: "private-key-jwt".to_string(),
-            audience,
-            jwt_id: None,
-        };
+        let claims = client_claims("private-key-jwt", audience, chrono::Utc::now());
         let header = store.prepare_header(alg).await.expect("JWT header");
         let jwt = DecodedJsonWebToken::new(header, claims);
         let jwt = jwt.sign(&store).await.expect("signed token");
