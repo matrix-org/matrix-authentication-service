@@ -22,7 +22,7 @@ use hyper::StatusCode;
 use mas_config::{OAuth2ClientConfig, OAuth2Config};
 use mas_data_model::{AuthorizationGrantStage, TokenType};
 use mas_jose::{
-    claims::{AT_HASH, AUD, AUTH_TIME, C_HASH, IAT, ISS, NONCE, SUB},
+    claims::{AT_HASH, AUD, AUTH_TIME, C_HASH, EXP, IAT, ISS, NONCE, SUB},
     DecodedJsonWebToken, JsonWebSignatureAlgorithm, SigningKeystore, StaticKeystore,
 };
 use mas_storage::{
@@ -258,12 +258,15 @@ async fn authorization_code_grant(
 
     let id_token = if session.scope.contains(&OPENID) {
         let mut claims = HashMap::new();
+        let now = Utc::now();
         ISS.insert(&mut claims, issuer.to_string()).wrap_error()?;
         SUB.insert(&mut claims, &browser_session.user.sub)
             .wrap_error()?;
         AUD.insert(&mut claims, client.client_id.clone())
             .wrap_error()?;
-        IAT.insert(&mut claims, Utc::now()).wrap_error()?;
+        IAT.insert(&mut claims, now).wrap_error()?;
+        EXP.insert(&mut claims, now + Duration::hours(1))
+            .wrap_error()?;
 
         if let Some(ref nonce) = authz_grant.nonce {
             NONCE.insert(&mut claims, nonce.clone()).wrap_error()?;
