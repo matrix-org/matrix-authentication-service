@@ -24,6 +24,21 @@ use crate::{
 };
 
 #[derive(Serialize, Clone, Copy, PartialEq, Eq, Hash)]
+#[serde(rename_all = "lowercase")]
+pub enum SubjectType {
+    Public,
+    Pairwise,
+}
+
+#[derive(Serialize, Clone, Copy, PartialEq, Eq, Hash)]
+#[serde(rename_all = "lowercase")]
+pub enum ClaimType {
+    Normal,
+    Aggregated,
+    Distributed,
+}
+
+#[derive(Serialize, Clone, Copy, PartialEq, Eq, Hash)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum SigningAlgorithm {
     #[serde(rename = "none")]
@@ -146,7 +161,7 @@ pub struct Metadata {
 
     /// JSON array containing a list of the Subject Identifier types that this
     /// OP supports.
-    pub subject_types_supported: Option<HashSet<String>>,
+    pub subject_types_supported: Option<HashSet<SubjectType>>,
 
     /// JSON array containing a list of the JWS "alg" values supported by the OP
     /// for the ID Token.
@@ -194,10 +209,9 @@ pub struct Metadata {
     /// OpenID Provider supports.
     pub display_values_supported: Option<HashSet<Display>>,
 
-    // TODO: type
     /// JSON array containing a list of the Claim Types that the OpenID Provider
     /// supports.
-    pub claim_types_supported: Option<HashSet<String>>,
+    pub claim_types_supported: Option<HashSet<ClaimType>>,
 
     /// JSON array containing a list of the Claim Names of the Claims that the
     /// OpenID Provider MAY be able to supply values for.
