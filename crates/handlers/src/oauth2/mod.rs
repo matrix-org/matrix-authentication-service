@@ -43,7 +43,7 @@ pub fn filter(
     oauth2_config: &OAuth2Config,
     cookies_config: &CookiesConfig,
 ) -> BoxedFilter<(impl Reply,)> {
-    let discovery = discovery(oauth2_config);
+    let discovery = discovery(key_store.as_ref(), oauth2_config);
     let keys = keys(key_store);
     let authorization = authorization(pool, templates, oauth2_config, cookies_config);
     let userinfo = userinfo(pool, oauth2_config);

@@ -31,3 +31,5 @@ thiserror = "1.0.30"
 tokio = { version = "1.15.0", features = ["macros", "rt", "sync"] }
 url = { version = "2.2.2", features = ["serde"] }
 zeroize = "1.4.3"
+
+mas-iana = { path = "../iana" }

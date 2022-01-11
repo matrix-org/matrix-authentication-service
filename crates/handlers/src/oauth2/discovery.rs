@@ -15,15 +15,19 @@
 use std::collections::HashSet;
 
 use mas_config::OAuth2Config;
+use mas_jose::{JsonWebSignatureAlgorithm, SigningKeystore};
 use oauth2_types::{
-    oidc::{ClaimType, Metadata, SigningAlgorithm, SubjectType},
+    oidc::{ClaimType, Metadata, SubjectType},
     pkce::CodeChallengeMethod,
     requests::{ClientAuthenticationMethod, Display, GrantType, ResponseMode},
 };
 use warp::{filters::BoxedFilter, Filter, Reply};
 
 #[allow(clippy::too_many_lines)]
-pub(super) fn filter(config: &OAuth2Config) -> BoxedFilter<(Box<dyn Reply>,)> {
+pub(super) fn filter(
+    key_store: impl SigningKeystore,
+    config: &OAuth2Config,
+) -> BoxedFilter<(Box<dyn Reply>,)> {
     let base = config.issuer.clone();
 
     // This is how clients can authenticate
@@ -39,25 +43,17 @@ pub(super) fn filter(config: &OAuth2Config) -> BoxedFilter<(Box<dyn Reply>,)> {
 
     let client_auth_signing_alg_values_supported = Some({
         let mut s = HashSet::new();
-        s.insert(SigningAlgorithm::Hs256);
-        s.insert(SigningAlgorithm::Hs384);
-        s.insert(SigningAlgorithm::Hs512);
-        s.insert(SigningAlgorithm::Rs256);
-        s.insert(SigningAlgorithm::Rs384);
-        s.insert(SigningAlgorithm::Rs512);
+        s.insert(JsonWebSignatureAlgorithm::Hs256);
+        s.insert(JsonWebSignatureAlgorithm::Hs384);
+        s.insert(JsonWebSignatureAlgorithm::Hs512);
+        s.insert(JsonWebSignatureAlgorithm::Rs256);
+        s.insert(JsonWebSignatureAlgorithm::Rs384);
+        s.insert(JsonWebSignatureAlgorithm::Rs512);
         s
     });
 
     // This is how we can sign stuff
-    // TODO: query the signing store
-    let jwt_signing_alg_values_supported = Some({
-        let mut s = HashSet::new();
-        s.insert(SigningAlgorithm::Rs256);
-        s.insert(SigningAlgorithm::Rs384);
-        s.insert(SigningAlgorithm::Rs512);
-        s.insert(SigningAlgorithm::Es256);
-        s
-    });
+    let jwt_signing_alg_values_supported = Some(key_store.supported_algorithms());
 
     // Prepare all the endpoints
     let issuer = Some(base.clone());

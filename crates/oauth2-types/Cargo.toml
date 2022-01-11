@@ -19,3 +19,5 @@ sha2 = "0.10.0"
 data-encoding = "2.3.2"
 thiserror = "1.0.30"
 itertools = "0.10.3"
+
+mas-iana = { path = "../iana" }

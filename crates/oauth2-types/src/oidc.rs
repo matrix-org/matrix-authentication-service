@@ -14,6 +14,7 @@
 
 use std::collections::HashSet;
 
+use mas_iana::jose::{JsonWebEncryptionAlgorithm, JsonWebSignatureAlgorithm};
 use serde::Serialize;
 use serde_with::skip_serializing_none;
 use url::Url;
@@ -36,28 +37,6 @@ pub enum ClaimType {
     Normal,
     Aggregated,
     Distributed,
-}
-
-#[derive(Serialize, Clone, Copy, PartialEq, Eq, Hash)]
-#[serde(rename_all = "UPPERCASE")]
-pub enum SigningAlgorithm {
-    #[serde(rename = "none")]
-    None,
-    Hs256,
-    Hs384,
-    Hs512,
-    Ps256,
-    Ps384,
-    Ps512,
-    Rs256,
-    Rs384,
-    Rs512,
-    Es256,
-    Es256K,
-    Es384,
-    Es512,
-    #[serde(rename = "EcDSA")]
-    EcDsa,
 }
 
 /// Authorization server metadata, as described by the
@@ -104,7 +83,8 @@ pub struct Metadata {
     /// JSON array containing a list of the JWS signing algorithms supported by
     /// the token endpoint for the signature on the JWT used to authenticate the
     /// client at the token endpoint.
-    pub token_endpoint_auth_signing_alg_values_supported: Option<HashSet<SigningAlgorithm>>,
+    pub token_endpoint_auth_signing_alg_values_supported:
+        Option<HashSet<JsonWebSignatureAlgorithm>>,
 
     /// URL of a page containing human-readable information that developers
     /// might want or need to know when using the authorization server.
@@ -135,7 +115,8 @@ pub struct Metadata {
     /// JSON array containing a list of the JWS signing algorithms supported by
     /// the revocation endpoint for the signature on the JWT used to
     /// authenticate the client at the revocation endpoint.
-    pub revocation_endpoint_auth_signing_alg_values_supported: Option<HashSet<SigningAlgorithm>>,
+    pub revocation_endpoint_auth_signing_alg_values_supported:
+        Option<HashSet<JsonWebSignatureAlgorithm>>,
 
     /// URL of the authorization server's OAuth 2.0 introspection endpoint.
     pub introspection_endpoint: Option<Url>,
@@ -147,7 +128,8 @@ pub struct Metadata {
     /// JSON array containing a list of the JWS signing algorithms supported by
     /// the introspection endpoint for the signature on the JWT used to
     /// authenticate the client at the introspection endpoint.
-    pub introspection_endpoint_auth_signing_alg_values_supported: Option<HashSet<SigningAlgorithm>>,
+    pub introspection_endpoint_auth_signing_alg_values_supported:
+        Option<HashSet<JsonWebSignatureAlgorithm>>,
 
     /// PKCE code challenge methods supported by this authorization server.
     pub code_challenge_methods_supported: Option<HashSet<CodeChallengeMethod>>,
@@ -165,45 +147,39 @@ pub struct Metadata {
 
     /// JSON array containing a list of the JWS "alg" values supported by the OP
     /// for the ID Token.
-    pub id_token_signing_alg_values_supported: Option<HashSet<SigningAlgorithm>>,
+    pub id_token_signing_alg_values_supported: Option<HashSet<JsonWebSignatureAlgorithm>>,
 
-    // TODO: type
     /// JSON array containing a list of the JWE "alg" values supported by the OP
     /// for the ID Token.
-    pub id_token_encryption_alg_values_supported: Option<HashSet<SigningAlgorithm>>,
+    pub id_token_encryption_alg_values_supported: Option<HashSet<JsonWebSignatureAlgorithm>>,
 
-    // TODO: type
     /// JSON array containing a list of the JWE "enc" values supported by the OP
     /// for the ID Token.
-    pub id_token_encryption_enc_values_supported: Option<HashSet<SigningAlgorithm>>,
+    pub id_token_encryption_enc_values_supported: Option<HashSet<JsonWebEncryptionAlgorithm>>,
 
     /// JSON array containing a list of the JWS "alg" values supported by the
     /// UserInfo Endpoint.
-    pub userinfo_signing_alg_values_supported: Option<HashSet<SigningAlgorithm>>,
+    pub userinfo_signing_alg_values_supported: Option<HashSet<JsonWebSignatureAlgorithm>>,
 
-    // TODO: type
     /// JSON array containing a list of the JWE "alg" values supported by the
     /// UserInfo Endpoint.
-    pub userinfo_encryption_alg_values_supported: Option<HashSet<SigningAlgorithm>>,
+    pub userinfo_encryption_alg_values_supported: Option<HashSet<JsonWebSignatureAlgorithm>>,
 
-    // TODO: type
     /// JSON array containing a list of the JWE "enc" values supported by the
     /// UserInfo Endpoint.
-    pub userinfo_encryption_enc_values_supported: Option<HashSet<SigningAlgorithm>>,
+    pub userinfo_encryption_enc_values_supported: Option<HashSet<JsonWebEncryptionAlgorithm>>,
 
     /// JSON array containing a list of the JWS "alg" values supported by the OP
     /// for Request Objects.
-    pub request_object_signing_alg_values_supported: Option<HashSet<SigningAlgorithm>>,
+    pub request_object_signing_alg_values_supported: Option<HashSet<JsonWebSignatureAlgorithm>>,
 
-    // TODO: type
     /// JSON array containing a list of the JWE "alg" values supported by the OP
     /// for Request Objects.
-    pub request_object_encryption_alg_values_supported: Option<HashSet<SigningAlgorithm>>,
+    pub request_object_encryption_alg_values_supported: Option<HashSet<JsonWebSignatureAlgorithm>>,
 
-    // TODO: type
     /// JSON array containing a list of the JWE "enc" values supported by the OP
     /// for Request Objects.
-    pub request_object_encryption_enc_values_supported: Option<HashSet<SigningAlgorithm>>,
+    pub request_object_encryption_enc_values_supported: Option<HashSet<JsonWebEncryptionAlgorithm>>,
 
     /// JSON array containing a list of the "display" parameter values that the
     /// OpenID Provider supports.

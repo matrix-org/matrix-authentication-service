@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use anyhow::bail;
 use async_trait::async_trait;
@@ -126,6 +126,26 @@ impl StaticKeystore {
 
 #[async_trait]
 impl SigningKeystore for &StaticKeystore {
+    fn supported_algorithms(self) -> HashSet<JsonWebSignatureAlgorithm> {
+        let has_rsa = !self.rsa_keys.is_empty();
+        let has_es256 = !self.es256_keys.is_empty();
+
+        let capacity = (if has_rsa { 3 } else { 0 }) + (if has_es256 { 1 } else { 0 });
+        let mut algorithms = HashSet::with_capacity(capacity);
+
+        if has_rsa {
+            algorithms.insert(JsonWebSignatureAlgorithm::Rs256);
+            algorithms.insert(JsonWebSignatureAlgorithm::Rs384);
+            algorithms.insert(JsonWebSignatureAlgorithm::Rs512);
+        }
+
+        if has_es256 {
+            algorithms.insert(JsonWebSignatureAlgorithm::Es256);
+        }
+
+        algorithms
+    }
+
     async fn prepare_header(self, alg: JsonWebSignatureAlgorithm) -> anyhow::Result<JwtHeader> {
         let header = JwtHeader::new(alg);
 

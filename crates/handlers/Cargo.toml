@@ -59,6 +59,7 @@ mas-static-files = { path = "../static-files" }
 mas-storage = { path = "../storage" }
 mas-warp-utils = { path = "../warp-utils" }
 mas-jose = { path = "../jose" }
+mas-iana = { path = "../iana" }
 
 [dev-dependencies]
 indoc = "1.0.3"

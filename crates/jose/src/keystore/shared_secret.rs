@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::collections::HashSet;
+
 use anyhow::bail;
 use async_trait::async_trait;
 use hmac::{Hmac, Mac};
@@ -34,6 +36,16 @@ impl<'a> SharedSecret<'a> {
 
 #[async_trait]
 impl<'a> SigningKeystore for &SharedSecret<'a> {
+    fn supported_algorithms(self) -> HashSet<JsonWebSignatureAlgorithm> {
+        let mut algorithms = HashSet::with_capacity(3);
+
+        algorithms.insert(JsonWebSignatureAlgorithm::Hs256);
+        algorithms.insert(JsonWebSignatureAlgorithm::Hs384);
+        algorithms.insert(JsonWebSignatureAlgorithm::Hs512);
+
+        algorithms
+    }
+
     async fn prepare_header(self, alg: JsonWebSignatureAlgorithm) -> anyhow::Result<JwtHeader> {
         if !matches!(
             alg,
