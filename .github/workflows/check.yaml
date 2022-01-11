@@ -233,7 +233,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --offline
+          args: --offline --workspace
 
 
   coverage:
@@ -284,7 +284,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --all-features --no-fail-fast
+          args: --all-features --no-fail-fast --workspace
         env:
            CARGO_INCREMENTAL: '0'
            RUSTFLAGS: '-Zinstrument-coverage'

@@ -1,3 +1,4 @@
 [workspace]
 
+default-members = ["crates/cli"]
 members = ["crates/*"]

@@ -120,6 +120,7 @@ COPY . .
 COPY --from=static-files /app/crates/static-files/public /app/crates/static-files/public
 ENV SQLX_OFFLINE=true
 RUN cargo test \
+  --workspace \
   --target $(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")
 
 ## Runtime stage, debug variant ##
