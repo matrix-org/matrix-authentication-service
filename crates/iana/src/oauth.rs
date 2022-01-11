@@ -97,4 +97,3 @@ pub enum PkceCodeChallengeMethod {
     #[serde(rename = "S256")]
     S256,
 }
-
