@@ -20,7 +20,7 @@ use url::Url;
 
 use crate::{
     pkce::CodeChallengeMethod,
-    requests::{ClientAuthenticationMethod, GrantType, ResponseMode},
+    requests::{ClientAuthenticationMethod, Display, GrantType, ResponseMode},
 };
 
 #[derive(Serialize, Clone, Copy, PartialEq, Eq, Hash)]
@@ -45,13 +45,13 @@ pub enum SigningAlgorithm {
     EcDsa,
 }
 
-// TODO: https://datatracker.ietf.org/doc/html/rfc8414#section-2
+/// Authorization server metadata, as described by the
+/// [IANA registry](https://www.iana.org/assignments/oauth-parameters/oauth-parameters.xhtml#authorization-server-metadata)
 #[skip_serializing_none]
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Default)]
 pub struct Metadata {
-    /// The authorization server's issuer identifier, which is a URL that uses
-    /// the "https" scheme and has no query or fragment components.
-    pub issuer: Url,
+    /// Authorization server's issuer identifier URL.
+    pub issuer: Option<Url>,
 
     /// URL of the authorization server's authorization endpoint.
     pub authorization_endpoint: Option<Url>,
@@ -75,8 +75,7 @@ pub struct Metadata {
     pub response_types_supported: Option<HashSet<String>>,
 
     /// JSON array containing a list of the OAuth 2.0 "response_mode" values
-    /// that this authorization server supports, as specified in "OAuth 2.0
-    /// Multiple Response Type Encoding Practices".
+    /// that this authorization server supports.
     pub response_modes_supported: Option<HashSet<ResponseMode>>,
 
     /// JSON array containing a list of the OAuth 2.0 grant type values that
@@ -88,17 +87,151 @@ pub struct Metadata {
     pub token_endpoint_auth_methods_supported: Option<HashSet<ClientAuthenticationMethod>>,
 
     /// JSON array containing a list of the JWS signing algorithms supported by
-    /// the Token Endpoint for the signature on the JWT used to authenticate
-    /// the Client at the Token Endpoint for the private_key_jwt and
-    /// client_secret_jwt authentication methods. Servers SHOULD support
-    /// RS256. The value none MUST NOT be used.
+    /// the token endpoint for the signature on the JWT used to authenticate the
+    /// client at the token endpoint.
     pub token_endpoint_auth_signing_alg_values_supported: Option<HashSet<SigningAlgorithm>>,
 
-    /// PKCE code challenge methods supported by this authorization server
-    pub code_challenge_methods_supported: Option<HashSet<CodeChallengeMethod>>,
+    /// URL of a page containing human-readable information that developers
+    /// might want or need to know when using the authorization server.
+    pub service_documentation: Option<Url>,
+
+    // TODO: type
+    /// Languages and scripts supported for the user interface, represented as a
+    /// JSON array of language tag values from BCP 47. If omitted, the set of
+    /// supported languages and scripts is unspecified.
+    pub ui_locales_supported: Option<HashSet<String>>,
+
+    /// URL that the authorization server provides to the person registering the
+    /// client to read about the authorization server's requirements on how the
+    /// client can use the data provided by the authorization server.
+    pub op_policy_uri: Option<Url>,
+
+    /// URL that the authorization server provides to the person registering the
+    /// client to read about the authorization server's terms of service.
+    pub op_tos_uri: Option<Url>,
+
+    /// URL of the authorization server's OAuth 2.0 revocation endpoint.
+    pub revocation_endpoint: Option<Url>,
+
+    /// JSON array containing a list of client authentication methods supported
+    /// by this revocation endpoint.
+    pub revocation_endpoint_auth_methods_supported: Option<HashSet<ClientAuthenticationMethod>>,
+
+    /// JSON array containing a list of the JWS signing algorithms supported by
+    /// the revocation endpoint for the signature on the JWT used to
+    /// authenticate the client at the revocation endpoint.
+    pub revocation_endpoint_auth_signing_alg_values_supported: Option<HashSet<SigningAlgorithm>>,
 
     /// URL of the authorization server's OAuth 2.0 introspection endpoint.
     pub introspection_endpoint: Option<Url>,
 
+    /// JSON array containing a list of client authentication methods supported
+    /// by this introspection endpoint.
+    pub introspection_endpoint_auth_methods_supported: Option<HashSet<ClientAuthenticationMethod>>,
+
+    /// JSON array containing a list of the JWS signing algorithms supported by
+    /// the introspection endpoint for the signature on the JWT used to
+    /// authenticate the client at the introspection endpoint.
+    pub introspection_endpoint_auth_signing_alg_values_supported: Option<HashSet<SigningAlgorithm>>,
+
+    /// PKCE code challenge methods supported by this authorization server.
+    pub code_challenge_methods_supported: Option<HashSet<CodeChallengeMethod>>,
+
+    /// URL of the OP's UserInfo Endpoint.
     pub userinfo_endpoint: Option<Url>,
+
+    /// JSON array containing a list of the Authentication Context Class
+    /// References that this OP supports.
+    pub acr_values_supported: Option<HashSet<String>>,
+
+    /// JSON array containing a list of the Subject Identifier types that this
+    /// OP supports.
+    pub subject_types_supported: Option<HashSet<String>>,
+
+    /// JSON array containing a list of the JWS "alg" values supported by the OP
+    /// for the ID Token.
+    pub id_token_signing_alg_values_supported: Option<HashSet<SigningAlgorithm>>,
+
+    // TODO: type
+    /// JSON array containing a list of the JWE "alg" values supported by the OP
+    /// for the ID Token.
+    pub id_token_encryption_alg_values_supported: Option<HashSet<SigningAlgorithm>>,
+
+    // TODO: type
+    /// JSON array containing a list of the JWE "enc" values supported by the OP
+    /// for the ID Token.
+    pub id_token_encryption_enc_values_supported: Option<HashSet<SigningAlgorithm>>,
+
+    /// JSON array containing a list of the JWS "alg" values supported by the
+    /// UserInfo Endpoint.
+    pub userinfo_signing_alg_values_supported: Option<HashSet<SigningAlgorithm>>,
+
+    // TODO: type
+    /// JSON array containing a list of the JWE "alg" values supported by the
+    /// UserInfo Endpoint.
+    pub userinfo_encryption_alg_values_supported: Option<HashSet<SigningAlgorithm>>,
+
+    // TODO: type
+    /// JSON array containing a list of the JWE "enc" values supported by the
+    /// UserInfo Endpoint.
+    pub userinfo_encryption_enc_values_supported: Option<HashSet<SigningAlgorithm>>,
+
+    /// JSON array containing a list of the JWS "alg" values supported by the OP
+    /// for Request Objects.
+    pub request_object_signing_alg_values_supported: Option<HashSet<SigningAlgorithm>>,
+
+    // TODO: type
+    /// JSON array containing a list of the JWE "alg" values supported by the OP
+    /// for Request Objects.
+    pub request_object_encryption_alg_values_supported: Option<HashSet<SigningAlgorithm>>,
+
+    // TODO: type
+    /// JSON array containing a list of the JWE "enc" values supported by the OP
+    /// for Request Objects.
+    pub request_object_encryption_enc_values_supported: Option<HashSet<SigningAlgorithm>>,
+
+    /// JSON array containing a list of the "display" parameter values that the
+    /// OpenID Provider supports.
+    pub display_values_supported: Option<HashSet<Display>>,
+
+    // TODO: type
+    /// JSON array containing a list of the Claim Types that the OpenID Provider
+    /// supports.
+    pub claim_types_supported: Option<HashSet<String>>,
+
+    /// JSON array containing a list of the Claim Names of the Claims that the
+    /// OpenID Provider MAY be able to supply values for.
+    pub claims_supported: Option<HashSet<String>>,
+
+    // TODO: type
+    /// Languages and scripts supported for values in Claims being returned,
+    /// represented as a JSON array of BCP 47 [RFC5646] language tag values.
+    pub claims_locales_supported: Option<HashSet<String>>,
+
+    /// Boolean value specifying whether the OP supports use of the "claims"
+    /// parameter.
+    pub claims_parameter_supported: Option<bool>,
+
+    /// Boolean value specifying whether the OP supports use of the "request"
+    /// parameter.
+    pub request_parameter_supported: Option<bool>,
+
+    /// Boolean value specifying whether the OP supports use of the
+    /// "request_uri" parameter.
+    pub request_uri_parameter_supported: Option<bool>,
+
+    /// Boolean value specifying whether the OP requires any "request_uri"
+    /// values used to be pre-registered.
+    pub require_request_uri_registration: Option<bool>,
+
+    /// Indicates where authorization request needs to be protected as Request
+    /// Object and provided through either request or request_uri parameter.
+    pub require_signed_request_object: Option<bool>,
+
+    /// URL of the authorization server's pushed authorization request endpoint.
+    pub pushed_authorization_request_endpoint: Option<bool>,
+
+    /// Indicates whether the authorization server accepts authorization
+    /// requests only via PAR.
+    pub require_pushed_authorization_requests: Option<bool>,
 }

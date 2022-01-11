@@ -253,7 +253,6 @@ pub mod rfc6749 {
 }
 
 pub mod oidc_core {
-
     oauth2_error! {
         InteractionRequired,
         "interaction_required" =>

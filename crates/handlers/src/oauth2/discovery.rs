@@ -82,15 +82,14 @@ pub(super) fn filter(config: &OAuth2Config) -> BoxedFilter<(Box<dyn Reply>,)> {
         jwks_uri: base.join("oauth2/keys.json").ok(),
         introspection_endpoint: base.join("oauth2/introspect").ok(),
         userinfo_endpoint: base.join("oauth2/userinfo").ok(),
-        issuer: base,
-        registration_endpoint: None,
-        scopes_supported: None,
+        issuer: Some(base),
         response_types_supported,
         response_modes_supported,
         grant_types_supported,
         token_endpoint_auth_methods_supported,
         token_endpoint_auth_signing_alg_values_supported,
         code_challenge_methods_supported,
+        ..Metadata::default()
     };
 
     warp::path!(".well-known" / "openid-configuration")
