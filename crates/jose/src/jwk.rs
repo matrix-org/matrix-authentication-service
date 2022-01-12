@@ -15,6 +15,10 @@
 //! Ref: <https://www.rfc-editor.org/rfc/rfc7517.html>
 
 use anyhow::bail;
+use mas_iana::jose::{
+    JsonWebKeyEcEllipticCurve, JsonWebKeyOkpEllipticCurve, JsonWebKeyOperation, JsonWebKeyType,
+    JsonWebKeyUse, JsonWebSignatureAlg,
+};
 use p256::NistP256;
 use rsa::{BigUint, PublicKeyParts};
 use schemars::JsonSchema;
@@ -25,14 +29,6 @@ use serde_with::{
     serde_as, skip_serializing_none,
 };
 use url::Url;
-
-use crate::{
-    iana::{
-        JsonWebKeyEcEllipticCurve, JsonWebKeyOkpEllipticCurve, JsonWebKeyOperation, JsonWebKeyUse,
-        JsonWebSignatureAlgorithm,
-    },
-    JsonWebKeyType,
-};
 
 #[serde_as]
 #[skip_serializing_none]
@@ -48,7 +44,7 @@ pub struct JsonWebKey {
     key_ops: Option<Vec<JsonWebKeyOperation>>,
 
     #[serde(default)]
-    alg: Option<JsonWebSignatureAlgorithm>,
+    alg: Option<JsonWebSignatureAlg>,
 
     #[serde(default)]
     kid: Option<String>,
@@ -102,7 +98,7 @@ impl JsonWebKey {
     }
 
     #[must_use]
-    pub fn with_alg(mut self, alg: JsonWebSignatureAlgorithm) -> Self {
+    pub fn with_alg(mut self, alg: JsonWebSignatureAlg) -> Self {
         self.alg = Some(alg);
         self
     }

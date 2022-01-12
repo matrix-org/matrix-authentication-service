@@ -17,10 +17,11 @@ use std::collections::HashSet;
 use anyhow::bail;
 use async_trait::async_trait;
 use hmac::{Hmac, Mac};
+use mas_iana::jose::JsonWebSignatureAlg;
 use sha2::{Sha256, Sha384, Sha512};
 
 use super::{SigningKeystore, VerifyingKeystore};
-use crate::{JsonWebSignatureAlgorithm, JwtHeader};
+use crate::JwtHeader;
 
 pub struct SharedSecret<'a> {
     inner: &'a [u8],
@@ -36,22 +37,20 @@ impl<'a> SharedSecret<'a> {
 
 #[async_trait]
 impl<'a> SigningKeystore for &SharedSecret<'a> {
-    fn supported_algorithms(self) -> HashSet<JsonWebSignatureAlgorithm> {
+    fn supported_algorithms(self) -> HashSet<JsonWebSignatureAlg> {
         let mut algorithms = HashSet::with_capacity(3);
 
-        algorithms.insert(JsonWebSignatureAlgorithm::Hs256);
-        algorithms.insert(JsonWebSignatureAlgorithm::Hs384);
-        algorithms.insert(JsonWebSignatureAlgorithm::Hs512);
+        algorithms.insert(JsonWebSignatureAlg::Hs256);
+        algorithms.insert(JsonWebSignatureAlg::Hs384);
+        algorithms.insert(JsonWebSignatureAlg::Hs512);
 
         algorithms
     }
 
-    async fn prepare_header(self, alg: JsonWebSignatureAlgorithm) -> anyhow::Result<JwtHeader> {
+    async fn prepare_header(self, alg: JsonWebSignatureAlg) -> anyhow::Result<JwtHeader> {
         if !matches!(
             alg,
-            JsonWebSignatureAlgorithm::Hs256
-                | JsonWebSignatureAlgorithm::Hs384
-                | JsonWebSignatureAlgorithm::Hs512,
+            JsonWebSignatureAlg::Hs256 | JsonWebSignatureAlg::Hs384 | JsonWebSignatureAlg::Hs512,
         ) {
             bail!("unsupported algorithm")
         }
@@ -63,19 +62,19 @@ impl<'a> SigningKeystore for &SharedSecret<'a> {
         // TODO: do the signing in a blocking task
         // TODO: should we bail out if the key is too small?
         let signature = match header.alg() {
-            JsonWebSignatureAlgorithm::Hs256 => {
+            JsonWebSignatureAlg::Hs256 => {
                 let mut mac = Hmac::<Sha256>::new_from_slice(self.inner)?;
                 mac.update(msg);
                 mac.finalize().into_bytes().to_vec()
             }
 
-            JsonWebSignatureAlgorithm::Hs384 => {
+            JsonWebSignatureAlg::Hs384 => {
                 let mut mac = Hmac::<Sha384>::new_from_slice(self.inner)?;
                 mac.update(msg);
                 mac.finalize().into_bytes().to_vec()
             }
 
-            JsonWebSignatureAlgorithm::Hs512 => {
+            JsonWebSignatureAlg::Hs512 => {
                 let mut mac = Hmac::<Sha512>::new_from_slice(self.inner)?;
                 mac.update(msg);
                 mac.finalize().into_bytes().to_vec()
@@ -98,19 +97,19 @@ impl<'a> VerifyingKeystore for &SharedSecret<'a> {
     ) -> anyhow::Result<()> {
         // TODO: do the verification in a blocking task
         match header.alg() {
-            JsonWebSignatureAlgorithm::Hs256 => {
+            JsonWebSignatureAlg::Hs256 => {
                 let mut mac = Hmac::<Sha256>::new_from_slice(self.inner)?;
                 mac.update(payload);
                 mac.verify(signature.try_into()?)?;
             }
 
-            JsonWebSignatureAlgorithm::Hs384 => {
+            JsonWebSignatureAlg::Hs384 => {
                 let mut mac = Hmac::<Sha384>::new_from_slice(self.inner)?;
                 mac.update(payload);
                 mac.verify(signature.try_into()?)?;
             }
 
-            JsonWebSignatureAlgorithm::Hs512 => {
+            JsonWebSignatureAlg::Hs512 => {
                 let mut mac = Hmac::<Sha512>::new_from_slice(self.inner)?;
                 mac.update(payload);
                 mac.verify(signature.try_into()?)?;
@@ -133,9 +132,9 @@ mod tests {
         let message = "this is the message to sign".as_bytes();
         let store = SharedSecret::new(&secret);
         for alg in [
-            JsonWebSignatureAlgorithm::Hs256,
-            JsonWebSignatureAlgorithm::Hs384,
-            JsonWebSignatureAlgorithm::Hs512,
+            JsonWebSignatureAlg::Hs256,
+            JsonWebSignatureAlg::Hs384,
+            JsonWebSignatureAlg::Hs512,
         ] {
             let header = store.prepare_header(alg).await.unwrap();
             assert_eq!(header.alg(), alg);

@@ -14,7 +14,10 @@
 
 use serde::Deserialize;
 
-use crate::EnumEntry;
+use crate::{
+    traits::{s, Section},
+    EnumEntry,
+};
 
 #[derive(Debug, Deserialize, PartialEq, Eq)]
 enum Usage {
@@ -60,13 +63,41 @@ pub struct WebEncryptionSignatureAlgorithm {
 impl EnumEntry for WebEncryptionSignatureAlgorithm {
     const URL: &'static str =
         "https://www.iana.org/assignments/jose/web-signature-encryption-algorithms.csv";
-    const SECTIONS: &'static [&'static str] =
-        &["JsonWebSignatureAlgorithm", "JsonWebEncryptionAlgorithm"];
+    const SECTIONS: &'static [Section] = &[
+        s(
+            "JsonWebSignatureAlg",
+            r#"JSON Web Signature "alg" parameter"#,
+        ),
+        s(
+            "JsonWebEncryptionAlg",
+            r#"JSON Web Encryption "alg" parameter"#,
+        ),
+        s(
+            "JsonWebEncryptionEnc",
+            r#"JSON Web Encryption "enc" parameter"#,
+        ),
+    ];
 
     fn key(&self) -> Option<&'static str> {
         match self.usage {
-            Usage::Alg => Some("JsonWebSignatureAlgorithm"),
-            Usage::Enc => Some("JsonWebEncryptionAlgorithm"),
+            Usage::Alg => {
+                // RFC7518 has one for signature algs and one for encryption algs. The other two
+                // RFCs are additional Elliptic curve signature algs
+                if self.reference.contains("RFC7518, Section 3")
+                    || self.reference.contains("RFC8037")
+                    || self.reference.contains("RFC8812")
+                {
+                    Some("JsonWebSignatureAlg")
+                } else if self.reference.contains("RFC7518, Section 4")
+                    || self.reference.contains("WebCryptoAPI")
+                {
+                    Some("JsonWebEncryptionAlg")
+                } else {
+                    tracing::warn!("Unknown reference {} for JWA", self.reference);
+                    None
+                }
+            }
+            Usage::Enc => Some("JsonWebEncryptionEnc"),
             _ => None,
         }
     }
@@ -96,7 +127,10 @@ pub struct WebEncryptionCompressionAlgorithm {
 impl EnumEntry for WebEncryptionCompressionAlgorithm {
     const URL: &'static str =
         "https://www.iana.org/assignments/jose/web-encryption-compression-algorithms.csv";
-    const SECTIONS: &'static [&'static str] = &["JsonWebEncryptionCompressionAlgorithm"];
+    const SECTIONS: &'static [Section] = &[s(
+        "JsonWebEncryptionCompressionAlgorithm",
+        "JSON Web Encryption Compression Algorithm",
+    )];
 
     fn key(&self) -> Option<&'static str> {
         Some("JsonWebEncryptionCompressionAlgorithm")
@@ -128,7 +162,7 @@ pub struct WebKeyType {
 
 impl EnumEntry for WebKeyType {
     const URL: &'static str = "https://www.iana.org/assignments/jose/web-key-types.csv";
-    const SECTIONS: &'static [&'static str] = &["JsonWebKeyType"];
+    const SECTIONS: &'static [Section] = &[s("JsonWebKeyType", "JSON Web Key Type")];
 
     fn key(&self) -> Option<&'static str> {
         Some("JsonWebKeyType")
@@ -160,8 +194,16 @@ pub struct WebKeyEllipticCurve {
 
 impl EnumEntry for WebKeyEllipticCurve {
     const URL: &'static str = "https://www.iana.org/assignments/jose/web-key-elliptic-curve.csv";
-    const SECTIONS: &'static [&'static str] =
-        &["JsonWebKeyEcEllipticCurve", "JsonWebKeyOkpEllipticCurve"];
+    const SECTIONS: &'static [Section] = &[
+        s(
+            "JsonWebKeyEcEllipticCurve",
+            "JSON Web Key EC Elliptic Curve",
+        ),
+        s(
+            "JsonWebKeyOkpEllipticCurve",
+            "JSON Web Key OKP Elliptic Curve",
+        ),
+    ];
 
     fn key(&self) -> Option<&'static str> {
         if self.name.starts_with("P-") || self.name == "secp256k1" {
@@ -195,7 +237,7 @@ pub struct WebKeyUse {
 
 impl EnumEntry for WebKeyUse {
     const URL: &'static str = "https://www.iana.org/assignments/jose/web-key-use.csv";
-    const SECTIONS: &'static [&'static str] = &["JsonWebKeyUse"];
+    const SECTIONS: &'static [Section] = &[s("JsonWebKeyUse", "JSON Web Key Use")];
 
     fn key(&self) -> Option<&'static str> {
         Some("JsonWebKeyUse")
@@ -225,7 +267,7 @@ pub struct WebKeyOperation {
 
 impl EnumEntry for WebKeyOperation {
     const URL: &'static str = "https://www.iana.org/assignments/jose/web-key-operations.csv";
-    const SECTIONS: &'static [&'static str] = &["JsonWebKeyOperation"];
+    const SECTIONS: &'static [Section] = &[s("JsonWebKeyOperation", "JSON Web Key Operation")];
 
     fn key(&self) -> Option<&'static str> {
         Some("JsonWebKeyOperation")

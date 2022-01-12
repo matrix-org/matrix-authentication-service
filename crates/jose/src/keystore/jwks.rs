@@ -18,15 +18,13 @@ use anyhow::bail;
 use async_trait::async_trait;
 use chrono::{DateTime, Duration, Utc};
 use digest::Digest;
+use mas_iana::jose::{JsonWebKeyType, JsonWebSignatureAlg};
 use rsa::{PublicKey, RsaPublicKey};
 use sha2::{Sha256, Sha384, Sha512};
 use signature::{Signature, Verifier};
 use tokio::sync::RwLock;
 
-use crate::{
-    ExportJwks, JsonWebKeySet, JsonWebKeyType, JsonWebSignatureAlgorithm, JwtHeader,
-    VerifyingKeystore,
-};
+use crate::{ExportJwks, JsonWebKeySet, JwtHeader, VerifyingKeystore};
 
 pub struct StaticJwksStore {
     key_set: JsonWebKeySet,
@@ -96,7 +94,7 @@ impl VerifyingKeystore for &StaticJwksStore {
             .ok_or_else(|| anyhow::anyhow!("missing kid"))?
             .to_string();
         match header.alg() {
-            JsonWebSignatureAlgorithm::Rs256 => {
+            JsonWebSignatureAlg::Rs256 => {
                 let key = self.find_rsa_key(kid)?;
 
                 let digest = {
@@ -112,7 +110,7 @@ impl VerifyingKeystore for &StaticJwksStore {
                 )?;
             }
 
-            JsonWebSignatureAlgorithm::Rs384 => {
+            JsonWebSignatureAlg::Rs384 => {
                 let key = self.find_rsa_key(kid)?;
 
                 let digest = {
@@ -128,7 +126,7 @@ impl VerifyingKeystore for &StaticJwksStore {
                 )?;
             }
 
-            JsonWebSignatureAlgorithm::Rs512 => {
+            JsonWebSignatureAlg::Rs512 => {
                 let key = self.find_rsa_key(kid)?;
 
                 let digest = {
@@ -144,7 +142,7 @@ impl VerifyingKeystore for &StaticJwksStore {
                 )?;
             }
 
-            JsonWebSignatureAlgorithm::Es256 => {
+            JsonWebSignatureAlg::Es256 => {
                 let key = self.find_ecdsa_key(kid)?;
 
                 let signature = ecdsa::Signature::from_bytes(signature)?;

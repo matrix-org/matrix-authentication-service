@@ -19,6 +19,7 @@ use async_trait::async_trait;
 use base64ct::{Base64UrlUnpadded, Encoding};
 use digest::Digest;
 use ecdsa::{SigningKey, VerifyingKey};
+use mas_iana::jose::{JsonWebKeyUse, JsonWebSignatureAlg};
 use p256::{NistP256, PublicKey};
 use pkcs1::{DecodeRsaPrivateKey, EncodeRsaPublicKey};
 use pkcs8::{DecodePrivateKey, EncodePublicKey};
@@ -27,7 +28,7 @@ use sha2::{Sha256, Sha384, Sha512};
 use signature::{Signature, Signer, Verifier};
 
 use super::{ExportJwks, SigningKeystore, VerifyingKeystore};
-use crate::{iana::JsonWebSignatureAlgorithm, JsonWebKey, JsonWebKeySet, JwtHeader};
+use crate::{JsonWebKey, JsonWebKeySet, JwtHeader};
 
 // Generate with
 //  openssl genrsa 2048
@@ -126,7 +127,7 @@ impl StaticKeystore {
 
 #[async_trait]
 impl SigningKeystore for &StaticKeystore {
-    fn supported_algorithms(self) -> HashSet<JsonWebSignatureAlgorithm> {
+    fn supported_algorithms(self) -> HashSet<JsonWebSignatureAlg> {
         let has_rsa = !self.rsa_keys.is_empty();
         let has_es256 = !self.es256_keys.is_empty();
 
@@ -134,30 +135,30 @@ impl SigningKeystore for &StaticKeystore {
         let mut algorithms = HashSet::with_capacity(capacity);
 
         if has_rsa {
-            algorithms.insert(JsonWebSignatureAlgorithm::Rs256);
-            algorithms.insert(JsonWebSignatureAlgorithm::Rs384);
-            algorithms.insert(JsonWebSignatureAlgorithm::Rs512);
+            algorithms.insert(JsonWebSignatureAlg::Rs256);
+            algorithms.insert(JsonWebSignatureAlg::Rs384);
+            algorithms.insert(JsonWebSignatureAlg::Rs512);
         }
 
         if has_es256 {
-            algorithms.insert(JsonWebSignatureAlgorithm::Es256);
+            algorithms.insert(JsonWebSignatureAlg::Es256);
         }
 
         algorithms
     }
 
-    async fn prepare_header(self, alg: JsonWebSignatureAlgorithm) -> anyhow::Result<JwtHeader> {
+    async fn prepare_header(self, alg: JsonWebSignatureAlg) -> anyhow::Result<JwtHeader> {
         let header = JwtHeader::new(alg);
 
         let kid = match alg {
-            JsonWebSignatureAlgorithm::Rs256
-            | JsonWebSignatureAlgorithm::Rs384
-            | JsonWebSignatureAlgorithm::Rs512 => self
+            JsonWebSignatureAlg::Rs256
+            | JsonWebSignatureAlg::Rs384
+            | JsonWebSignatureAlg::Rs512 => self
                 .rsa_keys
                 .keys()
                 .next()
                 .ok_or_else(|| anyhow::anyhow!("no RSA keys in keystore"))?,
-            JsonWebSignatureAlgorithm::Es256 => self
+            JsonWebSignatureAlg::Es256 => self
                 .es256_keys
                 .keys()
                 .next()
@@ -175,7 +176,7 @@ impl SigningKeystore for &StaticKeystore {
 
         // TODO: do the signing in a blocking task
         let signature = match header.alg() {
-            JsonWebSignatureAlgorithm::Rs256 => {
+            JsonWebSignatureAlg::Rs256 => {
                 let key = self
                     .rsa_keys
                     .get(kid)
@@ -193,7 +194,7 @@ impl SigningKeystore for &StaticKeystore {
                 )?
             }
 
-            JsonWebSignatureAlgorithm::Rs384 => {
+            JsonWebSignatureAlg::Rs384 => {
                 let key = self
                     .rsa_keys
                     .get(kid)
@@ -211,7 +212,7 @@ impl SigningKeystore for &StaticKeystore {
                 )?
             }
 
-            JsonWebSignatureAlgorithm::Rs512 => {
+            JsonWebSignatureAlg::Rs512 => {
                 let key = self
                     .rsa_keys
                     .get(kid)
@@ -229,7 +230,7 @@ impl SigningKeystore for &StaticKeystore {
                 )?
             }
 
-            JsonWebSignatureAlgorithm::Es256 => {
+            JsonWebSignatureAlg::Es256 => {
                 let key = self
                     .es256_keys
                     .get(kid)
@@ -261,7 +262,7 @@ impl VerifyingKeystore for &StaticKeystore {
 
         // TODO: do the verification in a blocking task
         match header.alg() {
-            JsonWebSignatureAlgorithm::Rs256 => {
+            JsonWebSignatureAlg::Rs256 => {
                 let key = self
                     .rsa_keys
                     .get(kid)
@@ -282,7 +283,7 @@ impl VerifyingKeystore for &StaticKeystore {
                 )?;
             }
 
-            JsonWebSignatureAlgorithm::Rs384 => {
+            JsonWebSignatureAlg::Rs384 => {
                 let key = self
                     .rsa_keys
                     .get(kid)
@@ -303,7 +304,7 @@ impl VerifyingKeystore for &StaticKeystore {
                 )?;
             }
 
-            JsonWebSignatureAlgorithm::Rs512 => {
+            JsonWebSignatureAlg::Rs512 => {
                 let key = self
                     .rsa_keys
                     .get(kid)
@@ -324,7 +325,7 @@ impl VerifyingKeystore for &StaticKeystore {
                 )?;
             }
 
-            JsonWebSignatureAlgorithm::Es256 => {
+            JsonWebSignatureAlg::Es256 => {
                 let key = self
                     .es256_keys
                     .get(kid)
@@ -349,15 +350,15 @@ impl ExportJwks for StaticKeystore {
             let pubkey = RsaPublicKey::from(key);
             JsonWebKey::new(pubkey.into())
                 .with_kid(kid)
-                .with_use(crate::JsonWebKeyUse::Sig)
+                .with_use(JsonWebKeyUse::Sig)
         });
 
         let es256 = self.es256_keys.iter().map(|(kid, key)| {
             let pubkey = ecdsa::VerifyingKey::from(key);
             JsonWebKey::new(pubkey.into())
                 .with_kid(kid)
-                .with_use(crate::JsonWebKeyUse::Sig)
-                .with_alg(JsonWebSignatureAlgorithm::Es256)
+                .with_use(JsonWebKeyUse::Sig)
+                .with_alg(JsonWebSignatureAlg::Es256)
         });
 
         let keys = rsa.chain(es256).collect();
@@ -380,10 +381,10 @@ mod tests {
         };
 
         for alg in [
-            JsonWebSignatureAlgorithm::Rs256,
-            JsonWebSignatureAlgorithm::Rs384,
-            JsonWebSignatureAlgorithm::Rs512,
-            JsonWebSignatureAlgorithm::Es256,
+            JsonWebSignatureAlg::Rs256,
+            JsonWebSignatureAlg::Rs384,
+            JsonWebSignatureAlg::Rs512,
+            JsonWebSignatureAlg::Es256,
         ] {
             let header = store.prepare_header(alg).await.unwrap();
             assert_eq!(header.alg(), alg);

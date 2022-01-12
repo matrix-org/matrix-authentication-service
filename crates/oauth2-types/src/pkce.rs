@@ -33,16 +33,14 @@ use sha2::{Digest, Sha256};
     Serialize,
     Deserialize,
 )]
-#[cfg_attr(feature = "sqlx_type", derive(sqlx::Type))]
-#[repr(i8)]
 pub enum CodeChallengeMethod {
     #[serde(rename = "plain")]
     #[display("plain")]
-    Plain = 0,
+    Plain,
 
     #[serde(rename = "S256")]
     #[display("S256")]
-    S256 = 1,
+    S256,
 }
 
 impl CodeChallengeMethod {

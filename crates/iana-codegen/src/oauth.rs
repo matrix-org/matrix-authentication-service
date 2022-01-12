@@ -14,7 +14,10 @@
 
 use serde::Deserialize;
 
-use crate::EnumEntry;
+use crate::{
+    traits::{s, Section},
+    EnumEntry,
+};
 
 #[allow(dead_code)]
 #[derive(Debug, Deserialize)]
@@ -30,7 +33,7 @@ pub struct TokenTypeHint {
 impl EnumEntry for TokenTypeHint {
     const URL: &'static str =
         "https://www.iana.org/assignments/oauth-parameters/token-type-hint.csv";
-    const SECTIONS: &'static [&'static str] = &["OAuthTokenTypeHint"];
+    const SECTIONS: &'static [Section] = &[s("OAuthTokenTypeHint", "OAuth Token Type Hint")];
 
     fn key(&self) -> Option<&'static str> {
         Some("OAuthTokenTypeHint")
@@ -54,7 +57,10 @@ pub struct AuthorizationEndpointResponseType {
 
 impl EnumEntry for AuthorizationEndpointResponseType {
     const URL: &'static str = "https://www.iana.org/assignments/oauth-parameters/endpoint.csv";
-    const SECTIONS: &'static [&'static str] = &["OAuthAuthorizationEndpointResponseType"];
+    const SECTIONS: &'static [Section] = &[s(
+        "OAuthAuthorizationEndpointResponseType",
+        "OAuth Authorization Endpoint Response Type",
+    )];
 
     fn key(&self) -> Option<&'static str> {
         Some("OAuthAuthorizationEndpointResponseType")
@@ -79,7 +85,10 @@ pub struct TokenEndpointAuthenticationMethod {
 impl EnumEntry for TokenEndpointAuthenticationMethod {
     const URL: &'static str =
         "https://www.iana.org/assignments/oauth-parameters/token-endpoint-auth-method.csv";
-    const SECTIONS: &'static [&'static str] = &["OAuthTokenEndpointAuthenticationMethod"];
+    const SECTIONS: &'static [Section] = &[s(
+        "OAuthTokenEndpointAuthenticationMethod",
+        "OAuth Token Endpoint Authentication Method",
+    )];
 
     fn key(&self) -> Option<&'static str> {
         Some("OAuthTokenEndpointAuthenticationMethod")
@@ -104,7 +113,8 @@ pub struct PkceCodeChallengeMethod {
 impl EnumEntry for PkceCodeChallengeMethod {
     const URL: &'static str =
         "https://www.iana.org/assignments/oauth-parameters/pkce-code-challenge-method.csv";
-    const SECTIONS: &'static [&'static str] = &["PkceCodeChallengeMethod"];
+    const SECTIONS: &'static [Section] =
+        &[s("PkceCodeChallengeMethod", "PKCE Code Challenge Method")];
 
     fn key(&self) -> Option<&'static str> {
         Some("PkceCodeChallengeMethod")

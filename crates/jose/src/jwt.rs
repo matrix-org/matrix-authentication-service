@@ -15,6 +15,9 @@
 use std::str::FromStr;
 
 use base64ct::{Base64UrlUnpadded, Encoding};
+use mas_iana::jose::{
+    JsonWebEncryptionCompressionAlgorithm, JsonWebEncryptionEnc, JsonWebSignatureAlg,
+};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_with::{
     base64::{Base64, Standard, UrlSafe},
@@ -23,23 +26,16 @@ use serde_with::{
 };
 use url::Url;
 
-use crate::{
-    iana::{
-        JsonWebEncryptionAlgorithm, JsonWebEncryptionCompressionAlgorithm,
-        JsonWebSignatureAlgorithm,
-    },
-    jwk::JsonWebKey,
-    SigningKeystore, VerifyingKeystore,
-};
+use crate::{jwk::JsonWebKey, SigningKeystore, VerifyingKeystore};
 
 #[serde_as]
 #[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JwtHeader {
-    alg: JsonWebSignatureAlgorithm,
+    alg: JsonWebSignatureAlg,
 
     #[serde(default)]
-    enc: Option<JsonWebEncryptionAlgorithm>,
+    enc: Option<JsonWebEncryptionEnc>,
 
     #[serde(default)]
     jku: Option<Url>,
@@ -85,7 +81,7 @@ impl JwtHeader {
     }
 
     #[must_use]
-    pub fn new(alg: JsonWebSignatureAlgorithm) -> Self {
+    pub fn new(alg: JsonWebSignatureAlg) -> Self {
         Self {
             alg,
             enc: None,
@@ -104,7 +100,7 @@ impl JwtHeader {
     }
 
     #[must_use]
-    pub fn alg(&self) -> JsonWebSignatureAlgorithm {
+    pub fn alg(&self) -> JsonWebSignatureAlg {
         self.alg
     }
 
@@ -254,7 +250,7 @@ mod tests {
             jwt.decode_and_verify(&store).await.unwrap();
 
         assert_eq!(jwt.header.typ, Some("JWT".to_string()));
-        assert_eq!(jwt.header.alg, JsonWebSignatureAlgorithm::Hs256);
+        assert_eq!(jwt.header.alg, JsonWebSignatureAlg::Hs256);
         assert_eq!(
             jwt.payload,
             serde_json::json!({

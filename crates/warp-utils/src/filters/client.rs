@@ -290,7 +290,7 @@ struct ClientAuthForm<T> {
 mod tests {
     use headers::authorization::Credentials;
     use mas_config::{ConfigurationSection, OAuth2ClientAuthMethodConfig};
-    use mas_jose::{ExportJwks, JsonWebSignatureAlgorithm, SigningKeystore, StaticKeystore};
+    use mas_jose::{ExportJwks, SigningKeystore, StaticKeystore};
     use serde_json::json;
 
     use super::*;
@@ -364,17 +364,17 @@ mod tests {
 
     #[tokio::test]
     async fn client_secret_jwt_hs256() {
-        client_secret_jwt(JsonWebSignatureAlgorithm::Hs256).await;
+        client_secret_jwt("HS256").await;
     }
 
     #[tokio::test]
     async fn client_secret_jwt_hs384() {
-        client_secret_jwt(JsonWebSignatureAlgorithm::Hs384).await;
+        client_secret_jwt("HS384").await;
     }
 
     #[tokio::test]
     async fn client_secret_jwt_hs512() {
-        client_secret_jwt(JsonWebSignatureAlgorithm::Hs512).await;
+        client_secret_jwt("HS512").await;
     }
 
     fn client_claims(
@@ -395,7 +395,8 @@ mod tests {
         claims
     }
 
-    async fn client_secret_jwt(alg: JsonWebSignatureAlgorithm) {
+    async fn client_secret_jwt(alg: &str) {
+        let alg = alg.parse().unwrap();
         let audience = "https://example.com/token";
         let filter = client_authentication::<Form>(&oauth2_config().await, audience.to_string());
 
@@ -463,25 +464,26 @@ mod tests {
 
     #[tokio::test]
     async fn client_secret_jwt_rs256() {
-        private_key_jwt(JsonWebSignatureAlgorithm::Rs256).await;
+        private_key_jwt("RS256").await;
     }
 
     #[tokio::test]
     async fn client_secret_jwt_rs384() {
-        private_key_jwt(JsonWebSignatureAlgorithm::Rs384).await;
+        private_key_jwt("RS384").await;
     }
 
     #[tokio::test]
     async fn client_secret_jwt_rs512() {
-        private_key_jwt(JsonWebSignatureAlgorithm::Rs512).await;
+        private_key_jwt("RS512").await;
     }
 
     #[tokio::test]
     async fn client_secret_jwt_es256() {
-        private_key_jwt(JsonWebSignatureAlgorithm::Es256).await;
+        private_key_jwt("ES256").await;
     }
 
-    async fn private_key_jwt(alg: JsonWebSignatureAlgorithm) {
+    async fn private_key_jwt(alg: &str) {
+        let alg = alg.parse().unwrap();
         let audience = "https://example.com/token";
         let filter = client_authentication::<Form>(&oauth2_config().await, audience.to_string());
 

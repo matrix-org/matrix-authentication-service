@@ -15,7 +15,8 @@
 use std::collections::HashSet;
 
 use mas_config::OAuth2Config;
-use mas_jose::{JsonWebSignatureAlgorithm, SigningKeystore};
+use mas_iana::jose::JsonWebSignatureAlg;
+use mas_jose::SigningKeystore;
 use oauth2_types::{
     oidc::{ClaimType, Metadata, SubjectType},
     pkce::CodeChallengeMethod,
@@ -43,12 +44,12 @@ pub(super) fn filter(
 
     let client_auth_signing_alg_values_supported = Some({
         let mut s = HashSet::new();
-        s.insert(JsonWebSignatureAlgorithm::Hs256);
-        s.insert(JsonWebSignatureAlgorithm::Hs384);
-        s.insert(JsonWebSignatureAlgorithm::Hs512);
-        s.insert(JsonWebSignatureAlgorithm::Rs256);
-        s.insert(JsonWebSignatureAlgorithm::Rs384);
-        s.insert(JsonWebSignatureAlgorithm::Rs512);
+        s.insert(JsonWebSignatureAlg::Hs256);
+        s.insert(JsonWebSignatureAlg::Hs384);
+        s.insert(JsonWebSignatureAlg::Hs512);
+        s.insert(JsonWebSignatureAlg::Rs256);
+        s.insert(JsonWebSignatureAlg::Rs384);
+        s.insert(JsonWebSignatureAlg::Rs512);
         s
     });
 

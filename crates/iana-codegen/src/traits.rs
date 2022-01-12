@@ -18,6 +18,21 @@ use convert_case::{Case, Casing};
 use reqwest::Client;
 use serde::de::DeserializeOwned;
 
+#[derive(Debug, Clone)]
+pub struct Section {
+    pub key: &'static str,
+    pub doc: &'static str,
+    pub url: Option<&'static str>,
+}
+
+pub const fn s(key: &'static str, doc: &'static str) -> Section {
+    Section {
+        key,
+        doc,
+        url: None,
+    }
+}
+
 #[derive(Debug)]
 pub struct EnumMember {
     pub value: String,
@@ -28,7 +43,17 @@ pub struct EnumMember {
 #[async_trait]
 pub trait EnumEntry: DeserializeOwned + Send + Sync {
     const URL: &'static str;
-    const SECTIONS: &'static [&'static str];
+    const SECTIONS: &'static [Section];
+
+    fn sections() -> Vec<Section> {
+        Self::SECTIONS
+            .iter()
+            .map(|s| Section {
+                url: Some(Self::URL),
+                ..*s
+            })
+            .collect()
+    }
 
     fn key(&self) -> Option<&'static str>;
     fn name(&self) -> &str;

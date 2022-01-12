@@ -21,9 +21,10 @@ use headers::{CacheControl, Pragma};
 use hyper::StatusCode;
 use mas_config::{OAuth2ClientConfig, OAuth2Config};
 use mas_data_model::{AuthorizationGrantStage, TokenType};
+use mas_iana::jose::JsonWebSignatureAlg;
 use mas_jose::{
     claims::{AT_HASH, AUD, AUTH_TIME, C_HASH, EXP, IAT, ISS, NONCE, SUB},
-    DecodedJsonWebToken, JsonWebSignatureAlgorithm, SigningKeystore, StaticKeystore,
+    DecodedJsonWebToken, SigningKeystore, StaticKeystore,
 };
 use mas_storage::{
     oauth2::{
@@ -288,7 +289,7 @@ async fn authorization_code_grant(
             .wrap_error()?;
 
         let header = key_store
-            .prepare_header(JsonWebSignatureAlgorithm::Rs256)
+            .prepare_header(JsonWebSignatureAlg::Rs256)
             .await
             .wrap_error()?;
         let id_token = DecodedJsonWebToken::new(header, claims);

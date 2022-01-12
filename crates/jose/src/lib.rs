@@ -19,18 +19,12 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::module_name_repetitions)]
 
-pub(crate) use mas_iana::jose as iana;
-
 pub mod claims;
 pub(crate) mod jwk;
 pub(crate) mod jwt;
 mod keystore;
 
 pub use self::{
-    iana::{
-        JsonWebEncryptionAlgorithm, JsonWebEncryptionCompressionAlgorithm, JsonWebKeyOperation,
-        JsonWebKeyType, JsonWebKeyUse, JsonWebSignatureAlgorithm,
-    },
     jwk::{JsonWebKey, JsonWebKeySet},
     jwt::{DecodedJsonWebToken, JsonWebTokenParts, JwtHeader},
     keystore::{

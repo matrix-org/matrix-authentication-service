@@ -15,14 +15,15 @@
 use std::collections::HashSet;
 
 use async_trait::async_trait;
+use mas_iana::jose::JsonWebSignatureAlg;
 
-use crate::{iana::JsonWebSignatureAlgorithm, JsonWebKeySet, JwtHeader};
+use crate::{JsonWebKeySet, JwtHeader};
 
 #[async_trait]
 pub trait SigningKeystore {
-    fn supported_algorithms(self) -> HashSet<JsonWebSignatureAlgorithm>;
+    fn supported_algorithms(self) -> HashSet<JsonWebSignatureAlg>;
 
-    async fn prepare_header(self, alg: JsonWebSignatureAlgorithm) -> anyhow::Result<JwtHeader>;
+    async fn prepare_header(self, alg: JsonWebSignatureAlg) -> anyhow::Result<JwtHeader>;
 
     async fn sign(self, header: &JwtHeader, msg: &[u8]) -> anyhow::Result<Vec<u8>>;
 }
