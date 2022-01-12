@@ -25,6 +25,7 @@ pub struct Section {
     pub url: Option<&'static str>,
 }
 
+#[must_use]
 pub const fn s(key: &'static str, doc: &'static str) -> Section {
     Section {
         key,
@@ -45,6 +46,7 @@ pub trait EnumEntry: DeserializeOwned + Send + Sync {
     const URL: &'static str;
     const SECTIONS: &'static [Section];
 
+    #[must_use]
     fn sections() -> Vec<Section> {
         Self::SECTIONS
             .iter()

@@ -12,6 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![forbid(unsafe_code)]
+#![deny(clippy::all)]
+#![deny(rustdoc::broken_intra_doc_links)]
+#![warn(clippy::pedantic)]
+
 use std::{collections::HashMap, fmt::Display, path::PathBuf, sync::Arc};
 
 use reqwest::Client;
@@ -142,7 +147,7 @@ pub enum {} {{"#,
     }
 }
 
-use self::{jose::*, oauth::*, traits::*};
+use self::traits::{EnumEntry, EnumMember, Section};
 
 #[tracing::instrument(skip(client))]
 async fn generate_jose(client: &Arc<Client>, path: PathBuf) -> anyhow::Result<()> {
@@ -154,17 +159,17 @@ async fn generate_jose(client: &Arc<Client>, path: PathBuf) -> anyhow::Result<()
         "https://www.iana.org/assignments/jose/jose.xhtml",
         client.clone(),
     )
-    .load::<WebEncryptionSignatureAlgorithm>()
+    .load::<jose::WebEncryptionSignatureAlgorithm>()
     .await?
-    .load::<WebEncryptionCompressionAlgorithm>()
+    .load::<jose::WebEncryptionCompressionAlgorithm>()
     .await?
-    .load::<WebKeyType>()
+    .load::<jose::WebKeyType>()
     .await?
-    .load::<WebKeyEllipticCurve>()
+    .load::<jose::WebKeyEllipticCurve>()
     .await?
-    .load::<WebKeyUse>()
+    .load::<jose::WebKeyUse>()
     .await?
-    .load::<WebKeyOperation>()
+    .load::<jose::WebKeyOperation>()
     .await?;
 
     file.write(path).await?;
@@ -182,15 +187,15 @@ async fn generate_oauth(client: &Arc<Client>, path: PathBuf) -> anyhow::Result<(
         "https://www.iana.org/assignments/jose/jose.xhtml",
         client.clone(),
     )
-    .load::<AccessTokenType>()
+    .load::<oauth::AccessTokenType>()
     .await?
-    .load::<AuthorizationEndpointResponseType>()
+    .load::<oauth::AuthorizationEndpointResponseType>()
     .await?
-    .load::<TokenTypeHint>()
+    .load::<oauth::TokenTypeHint>()
     .await?
-    .load::<TokenEndpointAuthenticationMethod>()
+    .load::<oauth::TokenEndpointAuthenticationMethod>()
     .await?
-    .load::<PkceCodeChallengeMethod>()
+    .load::<oauth::PkceCodeChallengeMethod>()
     .await?;
 
     file.write(path).await?;

@@ -98,7 +98,7 @@ impl EnumEntry for WebEncryptionSignatureAlgorithm {
                 }
             }
             Usage::Enc => Some("JsonWebEncryptionEnc"),
-            _ => None,
+            Usage::Jwk => None,
         }
     }
 
