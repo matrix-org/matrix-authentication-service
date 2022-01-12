@@ -22,7 +22,8 @@ use mas_data_model::{
     Authentication, AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, BrowserSession,
     Client, Pkce, Session, User,
 };
-use oauth2_types::{pkce::CodeChallengeMethod, requests::ResponseMode, scope::Scope};
+use mas_iana::oauth::PkceCodeChallengeMethod;
+use oauth2_types::{requests::ResponseMode, scope::Scope};
 use sqlx::PgExecutor;
 use url::Url;
 
@@ -237,12 +238,12 @@ impl TryInto<AuthorizationGrant<PostgresqlBackend>> for GrantLookup {
         let pkce = match (self.grant_code_challenge, self.grant_code_challenge_method) {
             (Some(challenge), Some(challenge_method)) if challenge_method == "plain" => {
                 Some(Pkce {
-                    challenge_method: CodeChallengeMethod::Plain,
+                    challenge_method: PkceCodeChallengeMethod::Plain,
                     challenge,
                 })
             }
             (Some(challenge), Some(challenge_method)) if challenge_method == "S256" => Some(Pkce {
-                challenge_method: CodeChallengeMethod::S256,
+                challenge_method: PkceCodeChallengeMethod::S256,
                 challenge,
             }),
             (None, None) => None,

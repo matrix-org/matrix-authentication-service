@@ -23,3 +23,4 @@ url = { version = "2.2.2", features = ["serde"] }
 
 oauth2-types = { path = "../oauth2-types" }
 mas-data-model = { path = "../data-model" }
+mas-iana = { path = "../iana" }

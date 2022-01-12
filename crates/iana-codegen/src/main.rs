@@ -182,9 +182,11 @@ async fn generate_oauth(client: &Arc<Client>, path: PathBuf) -> anyhow::Result<(
         "https://www.iana.org/assignments/jose/jose.xhtml",
         client.clone(),
     )
-    .load::<TokenTypeHint>()
+    .load::<AccessTokenType>()
     .await?
     .load::<AuthorizationEndpointResponseType>()
+    .await?
+    .load::<TokenTypeHint>()
     .await?
     .load::<TokenEndpointAuthenticationMethod>()
     .await?

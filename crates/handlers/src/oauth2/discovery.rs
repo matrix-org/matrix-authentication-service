@@ -15,12 +15,17 @@
 use std::collections::HashSet;
 
 use mas_config::OAuth2Config;
-use mas_iana::jose::JsonWebSignatureAlg;
+use mas_iana::{
+    jose::JsonWebSignatureAlg,
+    oauth::{
+        OAuthAuthorizationEndpointResponseType, OAuthClientAuthenticationMethod,
+        PkceCodeChallengeMethod,
+    },
+};
 use mas_jose::SigningKeystore;
 use oauth2_types::{
     oidc::{ClaimType, Metadata, SubjectType},
-    pkce::CodeChallengeMethod,
-    requests::{ClientAuthenticationMethod, Display, GrantType, ResponseMode},
+    requests::{Display, GrantType, ResponseMode},
 };
 use warp::{filters::BoxedFilter, Filter, Reply};
 
@@ -34,11 +39,11 @@ pub(super) fn filter(
     // This is how clients can authenticate
     let client_auth_methods_supported = Some({
         let mut s = HashSet::new();
-        s.insert(ClientAuthenticationMethod::ClientSecretBasic);
-        s.insert(ClientAuthenticationMethod::ClientSecretPost);
-        s.insert(ClientAuthenticationMethod::ClientSecretJwt);
-        s.insert(ClientAuthenticationMethod::PrivateKeyJwt);
-        s.insert(ClientAuthenticationMethod::None);
+        s.insert(OAuthClientAuthenticationMethod::ClientSecretBasic);
+        s.insert(OAuthClientAuthenticationMethod::ClientSecretPost);
+        s.insert(OAuthClientAuthenticationMethod::ClientSecretJwt);
+        s.insert(OAuthClientAuthenticationMethod::PrivateKeyJwt);
+        s.insert(OAuthClientAuthenticationMethod::None);
         s
     });
 
@@ -72,13 +77,13 @@ pub(super) fn filter(
 
     let response_types_supported = Some({
         let mut s = HashSet::new();
-        s.insert("code".to_string());
-        s.insert("token".to_string());
-        s.insert("id_token".to_string());
-        s.insert("code token".to_string());
-        s.insert("code id_token".to_string());
-        s.insert("token id_token".to_string());
-        s.insert("code token id_token".to_string());
+        s.insert(OAuthAuthorizationEndpointResponseType::Code);
+        s.insert(OAuthAuthorizationEndpointResponseType::Token);
+        s.insert(OAuthAuthorizationEndpointResponseType::IdToken);
+        s.insert(OAuthAuthorizationEndpointResponseType::CodeToken);
+        s.insert(OAuthAuthorizationEndpointResponseType::CodeIdToken);
+        s.insert(OAuthAuthorizationEndpointResponseType::IdTokenToken);
+        s.insert(OAuthAuthorizationEndpointResponseType::CodeIdToken);
         s
     });
 
@@ -107,8 +112,8 @@ pub(super) fn filter(
 
     let code_challenge_methods_supported = Some({
         let mut s = HashSet::new();
-        s.insert(CodeChallengeMethod::Plain);
-        s.insert(CodeChallengeMethod::S256);
+        s.insert(PkceCodeChallengeMethod::Plain);
+        s.insert(PkceCodeChallengeMethod::S256);
         s
     });
 

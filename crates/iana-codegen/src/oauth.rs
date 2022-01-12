@@ -21,22 +21,25 @@ use crate::{
 
 #[allow(dead_code)]
 #[derive(Debug, Deserialize)]
-pub struct TokenTypeHint {
-    #[serde(rename = "Hint Value")]
+pub struct AccessTokenType {
+    #[serde(rename = "Name")]
     name: String,
+    #[serde(rename = "Additional Token Endpoint Response Parameters")]
+    additional_parameters: String,
+    #[serde(rename = "HTTP Authentication Scheme(s)")]
+    http_schemes: String,
     #[serde(rename = "Change Controller")]
     change_controller: String,
     #[serde(rename = "Reference")]
     reference: String,
 }
 
-impl EnumEntry for TokenTypeHint {
-    const URL: &'static str =
-        "https://www.iana.org/assignments/oauth-parameters/token-type-hint.csv";
-    const SECTIONS: &'static [Section] = &[s("OAuthTokenTypeHint", "OAuth Token Type Hint")];
+impl EnumEntry for AccessTokenType {
+    const URL: &'static str = "https://www.iana.org/assignments/oauth-parameters/token-types.csv";
+    const SECTIONS: &'static [Section] = &[s("OAuthAccessTokenType", "OAuth Access Token Type")];
 
     fn key(&self) -> Option<&'static str> {
-        Some("OAuthTokenTypeHint")
+        Some("OAuthAccessTokenType")
     }
 
     fn name(&self) -> &str {
@@ -82,16 +85,41 @@ pub struct TokenEndpointAuthenticationMethod {
     reference: String,
 }
 
+#[allow(dead_code)]
+#[derive(Debug, Deserialize)]
+pub struct TokenTypeHint {
+    #[serde(rename = "Hint Value")]
+    name: String,
+    #[serde(rename = "Change Controller")]
+    change_controller: String,
+    #[serde(rename = "Reference")]
+    reference: String,
+}
+
+impl EnumEntry for TokenTypeHint {
+    const URL: &'static str =
+        "https://www.iana.org/assignments/oauth-parameters/token-type-hint.csv";
+    const SECTIONS: &'static [Section] = &[s("OAuthTokenTypeHint", "OAuth Token Type Hint")];
+
+    fn key(&self) -> Option<&'static str> {
+        Some("OAuthTokenTypeHint")
+    }
+
+    fn name(&self) -> &str {
+        &self.name
+    }
+}
+
 impl EnumEntry for TokenEndpointAuthenticationMethod {
     const URL: &'static str =
         "https://www.iana.org/assignments/oauth-parameters/token-endpoint-auth-method.csv";
     const SECTIONS: &'static [Section] = &[s(
-        "OAuthTokenEndpointAuthenticationMethod",
+        "OAuthClientAuthenticationMethod",
         "OAuth Token Endpoint Authentication Method",
     )];
 
     fn key(&self) -> Option<&'static str> {
-        Some("OAuthTokenEndpointAuthenticationMethod")
+        Some("OAuthClientAuthenticationMethod")
     }
 
     fn name(&self) -> &str {

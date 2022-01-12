@@ -14,15 +14,18 @@
 
 use std::collections::HashSet;
 
-use mas_iana::jose::{JsonWebEncryptionAlg, JsonWebEncryptionEnc, JsonWebSignatureAlg};
+use mas_iana::{
+    jose::{JsonWebEncryptionAlg, JsonWebEncryptionEnc, JsonWebSignatureAlg},
+    oauth::{
+        OAuthAuthorizationEndpointResponseType, OAuthClientAuthenticationMethod,
+        PkceCodeChallengeMethod,
+    },
+};
 use serde::Serialize;
 use serde_with::skip_serializing_none;
 use url::Url;
 
-use crate::{
-    pkce::CodeChallengeMethod,
-    requests::{ClientAuthenticationMethod, Display, GrantType, ResponseMode},
-};
+use crate::requests::{Display, GrantType, ResponseMode};
 
 #[derive(Serialize, Clone, Copy, PartialEq, Eq, Hash)]
 #[serde(rename_all = "lowercase")]
@@ -66,7 +69,7 @@ pub struct Metadata {
 
     /// JSON array containing a list of the OAuth 2.0 "response_type" values
     /// that this authorization server supports.
-    pub response_types_supported: Option<HashSet<String>>,
+    pub response_types_supported: Option<HashSet<OAuthAuthorizationEndpointResponseType>>,
 
     /// JSON array containing a list of the OAuth 2.0 "response_mode" values
     /// that this authorization server supports.
@@ -78,7 +81,7 @@ pub struct Metadata {
 
     /// JSON array containing a list of client authentication methods supported
     /// by this token endpoint.
-    pub token_endpoint_auth_methods_supported: Option<HashSet<ClientAuthenticationMethod>>,
+    pub token_endpoint_auth_methods_supported: Option<HashSet<OAuthClientAuthenticationMethod>>,
 
     /// JSON array containing a list of the JWS signing algorithms supported by
     /// the token endpoint for the signature on the JWT used to authenticate the
@@ -109,7 +112,8 @@ pub struct Metadata {
 
     /// JSON array containing a list of client authentication methods supported
     /// by this revocation endpoint.
-    pub revocation_endpoint_auth_methods_supported: Option<HashSet<ClientAuthenticationMethod>>,
+    pub revocation_endpoint_auth_methods_supported:
+        Option<HashSet<OAuthClientAuthenticationMethod>>,
 
     /// JSON array containing a list of the JWS signing algorithms supported by
     /// the revocation endpoint for the signature on the JWT used to
@@ -121,7 +125,8 @@ pub struct Metadata {
 
     /// JSON array containing a list of client authentication methods supported
     /// by this introspection endpoint.
-    pub introspection_endpoint_auth_methods_supported: Option<HashSet<ClientAuthenticationMethod>>,
+    pub introspection_endpoint_auth_methods_supported:
+        Option<HashSet<OAuthClientAuthenticationMethod>>,
 
     /// JSON array containing a list of the JWS signing algorithms supported by
     /// the introspection endpoint for the signature on the JWT used to
@@ -130,7 +135,7 @@ pub struct Metadata {
         Option<HashSet<JsonWebSignatureAlg>>,
 
     /// PKCE code challenge methods supported by this authorization server.
-    pub code_challenge_methods_supported: Option<HashSet<CodeChallengeMethod>>,
+    pub code_challenge_methods_supported: Option<HashSet<PkceCodeChallengeMethod>>,
 
     /// URL of the OP's UserInfo Endpoint.
     pub userinfo_endpoint: Option<Url>,

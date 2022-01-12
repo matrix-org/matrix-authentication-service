@@ -18,11 +18,11 @@ use std::collections::HashMap;
 
 use headers::{authorization::Basic, Authorization};
 use mas_config::{OAuth2ClientAuthMethodConfig, OAuth2ClientConfig, OAuth2Config};
+use mas_iana::oauth::OAuthClientAuthenticationMethod;
 use mas_jose::{
     claims::{TimeOptions, AUD, EXP, IAT, ISS, JTI, NBF, SUB},
     DecodedJsonWebToken, JsonWebTokenParts, SharedSecret,
 };
-use oauth2_types::requests::ClientAuthenticationMethod;
 use serde::{de::DeserializeOwned, Deserialize};
 use thiserror::Error;
 use warp::{reject::Reject, Filter, Rejection};
@@ -35,7 +35,7 @@ use crate::errors::WrapError;
 pub fn client_authentication<T: DeserializeOwned + Send + 'static>(
     oauth2_config: &OAuth2Config,
     audience: String,
-) -> impl Filter<Extract = (ClientAuthenticationMethod, OAuth2ClientConfig, T), Error = Rejection>
+) -> impl Filter<Extract = (OAuthClientAuthenticationMethod, OAuth2ClientConfig, T), Error = Rejection>
        + Clone
        + Send
        + Sync
@@ -99,7 +99,7 @@ async fn authenticate_client<T>(
     audience: String,
     credentials: ClientCredentials,
     body: T,
-) -> Result<(ClientAuthenticationMethod, OAuth2ClientConfig, T), Rejection> {
+) -> Result<(OAuthClientAuthenticationMethod, OAuth2ClientConfig, T), Rejection> {
     let (auth_method, client) = match credentials {
         ClientCredentials::Pair {
             client_id,
@@ -114,7 +114,9 @@ async fn authenticate_client<T>(
                 })?;
 
             let auth_method = match (&client.client_auth_method, client_secret, via) {
-                (OAuth2ClientAuthMethodConfig::None, None, _) => ClientAuthenticationMethod::None,
+                (OAuth2ClientAuthMethodConfig::None, None, _) => {
+                    OAuthClientAuthenticationMethod::None
+                }
 
                 (
                     OAuth2ClientAuthMethodConfig::ClientSecretBasic {
@@ -129,7 +131,7 @@ async fn authenticate_client<T>(
                         );
                     }
 
-                    ClientAuthenticationMethod::ClientSecretBasic
+                    OAuthClientAuthenticationMethod::ClientSecretBasic
                 }
 
                 (
@@ -145,7 +147,7 @@ async fn authenticate_client<T>(
                         );
                     }
 
-                    ClientAuthenticationMethod::ClientSecretPost
+                    OAuthClientAuthenticationMethod::ClientSecretPost
                 }
 
                 _ => {
@@ -204,13 +206,13 @@ async fn authenticate_client<T>(
                 OAuth2ClientAuthMethodConfig::PrivateKeyJwt(jwks) => {
                     let store = jwks.key_store();
                     token.verify(&decoded, &store).await.wrap_error()?;
-                    ClientAuthenticationMethod::PrivateKeyJwt
+                    OAuthClientAuthenticationMethod::PrivateKeyJwt
                 }
 
                 OAuth2ClientAuthMethodConfig::ClientSecretJwt { client_secret } => {
                     let store = SharedSecret::new(client_secret);
                     token.verify(&decoded, &store).await.wrap_error()?;
-                    ClientAuthenticationMethod::ClientSecretJwt
+                    OAuthClientAuthenticationMethod::ClientSecretJwt
                 }
 
                 _ => {
@@ -428,7 +430,7 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(auth, ClientAuthenticationMethod::ClientSecretJwt);
+        assert_eq!(auth, OAuthClientAuthenticationMethod::ClientSecretJwt);
         assert_eq!(client.client_id, "secret-jwt");
         assert_eq!(body.foo, "baz");
         assert_eq!(body.bar, "foobar");
@@ -515,7 +517,7 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(auth, ClientAuthenticationMethod::PrivateKeyJwt);
+        assert_eq!(auth, OAuthClientAuthenticationMethod::PrivateKeyJwt);
         assert_eq!(client.client_id, "private-key-jwt");
         assert_eq!(body.foo, "baz");
         assert_eq!(body.bar, "foobar");
@@ -575,7 +577,7 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(auth, ClientAuthenticationMethod::ClientSecretPost);
+        assert_eq!(auth, OAuthClientAuthenticationMethod::ClientSecretPost);
         assert_eq!(client.client_id, "secret-post");
         assert_eq!(body.foo, "baz");
         assert_eq!(body.bar, "foobar");
@@ -607,7 +609,7 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(auth, ClientAuthenticationMethod::ClientSecretBasic);
+        assert_eq!(auth, OAuthClientAuthenticationMethod::ClientSecretBasic);
         assert_eq!(client.client_id, "secret-basic");
         assert_eq!(body.foo, "baz");
         assert_eq!(body.bar, "foobar");
@@ -638,7 +640,7 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(auth, ClientAuthenticationMethod::None);
+        assert_eq!(auth, OAuthClientAuthenticationMethod::None);
         assert_eq!(client.client_id, "public");
         assert_eq!(body.foo, "baz");
         assert_eq!(body.bar, "foobar");

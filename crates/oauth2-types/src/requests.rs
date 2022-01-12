@@ -16,6 +16,9 @@ use std::{collections::HashSet, hash::Hash, num::NonZeroU32};
 
 use chrono::{DateTime, Duration, Utc};
 use language_tags::LanguageTag;
+use mas_iana::oauth::{
+    OAuthAccessTokenType, OAuthAuthorizationEndpointResponseType, OAuthTokenTypeHint,
+};
 use parse_display::{Display, FromStr};
 use serde::{Deserialize, Serialize};
 use serde_with::{
@@ -42,65 +45,11 @@ use crate::scope::Scope;
     Serialize,
     Deserialize,
 )]
-#[display(style = "snake_case")]
-#[serde(rename_all = "snake_case")]
-pub enum ResponseType {
-    Code,
-    IdToken,
-    Token,
-    None,
-}
-
-#[derive(
-    Debug,
-    Hash,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Clone,
-    Copy,
-    Display,
-    FromStr,
-    Serialize,
-    Deserialize,
-)]
 #[serde(rename_all = "snake_case")]
 pub enum ResponseMode {
     Query,
     Fragment,
     FormPost,
-}
-
-#[derive(
-    Debug,
-    Hash,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Clone,
-    Copy,
-    Display,
-    FromStr,
-    Serialize,
-    Deserialize,
-)]
-#[serde(rename_all = "snake_case")]
-pub enum ClientAuthenticationMethod {
-    None,
-    ClientSecretPost,
-    ClientSecretBasic,
-    ClientSecretJwt,
-    PrivateKeyJwt,
-}
-
-impl ClientAuthenticationMethod {
-    #[must_use]
-    /// Check if the authentication method is for public client or not
-    pub fn public(&self) -> bool {
-        matches!(self, &Self::None)
-    }
 }
 
 #[derive(
@@ -151,8 +100,7 @@ pub enum Prompt {
 #[serde_as]
 #[derive(Serialize, Deserialize)]
 pub struct AuthorizationRequest {
-    #[serde_as(as = "StringWithSeparator::<SpaceSeparator, ResponseType>")]
-    pub response_type: HashSet<ResponseType>,
+    pub response_type: OAuthAuthorizationEndpointResponseType,
 
     pub client_id: String,
 
@@ -198,25 +146,6 @@ pub struct AuthorizationResponse<R> {
     pub code: Option<String>,
     #[serde(flatten)]
     pub response: R,
-}
-
-#[derive(
-    Debug,
-    Hash,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Clone,
-    Copy,
-    Display,
-    FromStr,
-    Serialize,
-    Deserialize,
-)]
-#[serde(rename_all = "snake_case")]
-pub enum TokenType {
-    Bearer,
 }
 
 #[skip_serializing_none]
@@ -285,7 +214,7 @@ pub struct AccessTokenResponse {
     // TODO: this should be somewhere else
     id_token: Option<String>,
 
-    token_type: TokenType,
+    token_type: OAuthAccessTokenType,
 
     #[serde_as(as = "Option<DurationSeconds<i64>>")]
     expires_in: Option<Duration>,
@@ -300,7 +229,7 @@ impl AccessTokenResponse {
             access_token,
             refresh_token: None,
             id_token: None,
-            token_type: TokenType::Bearer,
+            token_type: OAuthAccessTokenType::Bearer,
             expires_in: None,
             scope: None,
         }
@@ -331,20 +260,13 @@ impl AccessTokenResponse {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
-#[serde(rename_all = "snake_case")]
-pub enum TokenTypeHint {
-    AccessToken,
-    RefreshToken,
-}
-
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct IntrospectionRequest {
     pub token: String,
 
     #[serde(default)]
-    pub token_type_hint: Option<TokenTypeHint>,
+    pub token_type_hint: Option<OAuthTokenTypeHint>,
 }
 
 #[serde_as]
@@ -359,7 +281,7 @@ pub struct IntrospectionResponse {
 
     pub username: Option<String>,
 
-    pub token_type: Option<TokenTypeHint>,
+    pub token_type: Option<OAuthTokenTypeHint>,
 
     #[serde_as(as = "Option<TimestampSeconds>")]
     pub exp: Option<DateTime<Utc>>,

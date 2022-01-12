@@ -15,7 +15,8 @@
 use std::num::NonZeroU32;
 
 use chrono::{DateTime, Duration, Utc};
-use oauth2_types::{pkce::CodeChallengeMethod, requests::ResponseMode};
+use mas_iana::oauth::PkceCodeChallengeMethod;
+use oauth2_types::{pkce::CodeChallengeMethodExt, requests::ResponseMode};
 use serde::Serialize;
 use thiserror::Error;
 use url::Url;
@@ -25,13 +26,13 @@ use crate::{traits::StorageBackend, StorageBackendMarker};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Pkce {
-    pub challenge_method: CodeChallengeMethod,
+    pub challenge_method: PkceCodeChallengeMethod,
     pub challenge: String,
 }
 
 impl Pkce {
     #[must_use]
-    pub fn new(challenge_method: CodeChallengeMethod, challenge: String) -> Self {
+    pub fn new(challenge_method: PkceCodeChallengeMethod, challenge: String) -> Self {
         Pkce {
             challenge_method,
             challenge,

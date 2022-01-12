@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use chrono::Duration;
 use hyper::{
@@ -25,6 +25,7 @@ use mas_data_model::{
     Authentication, AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, BrowserSession,
     Pkce, StorageBackend, TokenType,
 };
+use mas_iana::oauth::OAuthAuthorizationEndpointResponseType;
 use mas_storage::{
     oauth2::{
         access_token::add_access_token,
@@ -50,9 +51,9 @@ use oauth2_types::{
         RegistrationNotSupported, RequestNotSupported, RequestUriNotSupported,
     },
     pkce,
+    prelude::*,
     requests::{
         AccessTokenResponse, AuthorizationRequest, AuthorizationResponse, Prompt, ResponseMode,
-        ResponseType,
     },
     scope::ScopeToken,
 };
@@ -191,16 +192,15 @@ struct Params {
 /// figure out what response mode must be used, and emit an error if the
 /// suggested response mode isn't allowed for the given response types.
 fn resolve_response_mode(
-    response_type: &HashSet<ResponseType>,
+    response_type: OAuthAuthorizationEndpointResponseType,
     suggested_response_mode: Option<ResponseMode>,
 ) -> anyhow::Result<ResponseMode> {
     use ResponseMode as M;
-    use ResponseType as T;
 
     // If the response type includes either "token" or "id_token", the default
     // response mode is "fragment" and the response mode "query" must not be
     // used
-    if response_type.contains(&T::Token) || response_type.contains(&T::IdToken) {
+    if response_type.has_token() || response_type.has_id_token() {
         match suggested_response_mode {
             None => Ok(M::Fragment),
             Some(M::Query) => Err(anyhow::anyhow!("invalid response mode")),
@@ -345,11 +345,11 @@ async fn get(
     let redirect_uri = client
         .resolve_redirect_uri(&params.auth.redirect_uri)
         .wrap_error()?;
-    let response_type = &params.auth.response_type;
+    let response_type = params.auth.response_type;
     let response_mode =
         resolve_response_mode(response_type, params.auth.response_mode).wrap_error()?;
 
-    let code: Option<AuthorizationCode> = if response_type.contains(&ResponseType::Code) {
+    let code: Option<AuthorizationCode> = if response_type.has_code() {
         // 32 random alphanumeric characters, about 190bit of entropy
         let code: String = thread_rng()
             .sample_iter(&Alphanumeric)
@@ -400,8 +400,8 @@ async fn get(
         params.auth.max_age,
         None,
         response_mode,
-        response_type.contains(&ResponseType::Token),
-        response_type.contains(&ResponseType::IdToken),
+        response_type.has_token(),
+        response_type.has_id_token(),
     )
     .await
     .wrap_error()?;

@@ -14,6 +14,7 @@
 
 use mas_config::{OAuth2ClientConfig, OAuth2Config};
 use mas_data_model::TokenType;
+use mas_iana::oauth::{OAuthClientAuthenticationMethod, OAuthTokenTypeHint};
 use mas_storage::oauth2::{
     access_token::lookup_active_access_token, refresh_token::lookup_active_refresh_token,
 };
@@ -21,9 +22,7 @@ use mas_warp_utils::{
     errors::WrapError,
     filters::{client::client_authentication, database::connection},
 };
-use oauth2_types::requests::{
-    ClientAuthenticationMethod, IntrospectionRequest, IntrospectionResponse, TokenTypeHint,
-};
+use oauth2_types::requests::{IntrospectionRequest, IntrospectionResponse};
 use sqlx::{pool::PoolConnection, PgPool, Postgres};
 use tracing::{info, warn};
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
@@ -64,12 +63,12 @@ const INACTIVE: IntrospectionResponse = IntrospectionResponse {
 
 async fn introspect(
     mut conn: PoolConnection<Postgres>,
-    auth: ClientAuthenticationMethod,
+    auth: OAuthClientAuthenticationMethod,
     client: OAuth2ClientConfig,
     params: IntrospectionRequest,
 ) -> Result<Box<dyn Reply>, Rejection> {
     // Token introspection is only allowed by confidential clients
-    if auth.public() {
+    if auth == OAuthClientAuthenticationMethod::None {
         warn!(?client, "Client tried to introspect");
         // TODO: have a nice error here
         return Ok(Box::new(warp::reply::json(&INACTIVE)));
@@ -96,7 +95,7 @@ async fn introspect(
                 scope: Some(session.scope),
                 client_id: Some(session.client.client_id),
                 username: Some(session.browser_session.user.username),
-                token_type: Some(TokenTypeHint::AccessToken),
+                token_type: Some(OAuthTokenTypeHint::AccessToken),
                 exp: Some(exp),
                 iat: Some(token.created_at),
                 nbf: Some(token.created_at),
@@ -116,7 +115,7 @@ async fn introspect(
                 scope: Some(session.scope),
                 client_id: Some(session.client.client_id),
                 username: Some(session.browser_session.user.username),
-                token_type: Some(TokenTypeHint::RefreshToken),
+                token_type: Some(OAuthTokenTypeHint::RefreshToken),
                 exp: None,
                 iat: Some(token.created_at),
                 nbf: Some(token.created_at),

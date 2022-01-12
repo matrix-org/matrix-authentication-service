@@ -21,24 +21,24 @@ use parse_display::{Display, FromStr};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-/// OAuth Token Type Hint
+/// OAuth Access Token Type
 ///
-/// Source: <https://www.iana.org/assignments/oauth-parameters/token-type-hint.csv>
+/// Source: <https://www.iana.org/assignments/oauth-parameters/token-types.csv>
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Hash, Display, FromStr, Serialize, Deserialize, JsonSchema,
 )]
-pub enum OAuthTokenTypeHint {
-    #[serde(rename = "access_token")]
-    #[display("access_token")]
-    AccessToken,
+pub enum OAuthAccessTokenType {
+    #[serde(rename = "Bearer")]
+    #[display("Bearer")]
+    Bearer,
 
-    #[serde(rename = "refresh_token")]
-    #[display("refresh_token")]
-    RefreshToken,
+    #[serde(rename = "N_A")]
+    #[display("N_A")]
+    Na,
 
-    #[serde(rename = "pct")]
-    #[display("pct")]
-    Pct,
+    #[serde(rename = "PoP")]
+    #[display("PoP")]
+    PoP,
 }
 
 /// OAuth Authorization Endpoint Response Type
@@ -81,13 +81,33 @@ pub enum OAuthAuthorizationEndpointResponseType {
     Token,
 }
 
+/// OAuth Token Type Hint
+///
+/// Source: <https://www.iana.org/assignments/oauth-parameters/token-type-hint.csv>
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, Display, FromStr, Serialize, Deserialize, JsonSchema,
+)]
+pub enum OAuthTokenTypeHint {
+    #[serde(rename = "access_token")]
+    #[display("access_token")]
+    AccessToken,
+
+    #[serde(rename = "refresh_token")]
+    #[display("refresh_token")]
+    RefreshToken,
+
+    #[serde(rename = "pct")]
+    #[display("pct")]
+    Pct,
+}
+
 /// OAuth Token Endpoint Authentication Method
 ///
 /// Source: <https://www.iana.org/assignments/oauth-parameters/token-endpoint-auth-method.csv>
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, Hash, Display, FromStr, Serialize, Deserialize, JsonSchema,
 )]
-pub enum OAuthTokenEndpointAuthenticationMethod {
+pub enum OAuthClientAuthenticationMethod {
     #[serde(rename = "none")]
     #[display("none")]
     None,

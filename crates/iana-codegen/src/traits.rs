@@ -61,7 +61,11 @@ pub trait EnumEntry: DeserializeOwned + Send + Sync {
         None
     }
     fn enum_name(&self) -> String {
-        self.name().replace('+', "_").to_case(Case::Pascal)
+        // Do the case transformation twice to have "N_A" turned to "Na" instead of "NA"
+        self.name()
+            .replace('+', "_")
+            .to_case(Case::Pascal)
+            .to_case(Case::Pascal)
     }
 
     async fn fetch(client: &Client) -> anyhow::Result<Vec<(&'static str, EnumMember)>> {

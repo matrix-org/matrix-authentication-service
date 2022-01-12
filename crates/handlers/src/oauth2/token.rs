@@ -21,7 +21,7 @@ use headers::{CacheControl, Pragma};
 use hyper::StatusCode;
 use mas_config::{OAuth2ClientConfig, OAuth2Config};
 use mas_data_model::{AuthorizationGrantStage, TokenType};
-use mas_iana::jose::JsonWebSignatureAlg;
+use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
 use mas_jose::{
     claims::{AT_HASH, AUD, AUTH_TIME, C_HASH, EXP, IAT, ISS, NONCE, SUB},
     DecodedJsonWebToken, SigningKeystore, StaticKeystore,
@@ -42,8 +42,7 @@ use mas_warp_utils::{
 use oauth2_types::{
     errors::{InvalidGrant, InvalidRequest, OAuth2Error, OAuth2ErrorCode, UnauthorizedClient},
     requests::{
-        AccessTokenRequest, AccessTokenResponse, AuthorizationCodeGrant,
-        ClientAuthenticationMethod, RefreshTokenGrant,
+        AccessTokenRequest, AccessTokenResponse, AuthorizationCodeGrant, RefreshTokenGrant,
     },
     scope::OPENID,
 };
@@ -131,7 +130,7 @@ async fn recover(rejection: Rejection) -> Result<Box<dyn Reply>, Rejection> {
 }
 
 async fn token(
-    _auth: ClientAuthenticationMethod,
+    _auth: OAuthClientAuthenticationMethod,
     client: OAuth2ClientConfig,
     req: AccessTokenRequest,
     key_store: Arc<StaticKeystore>,

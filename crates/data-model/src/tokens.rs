@@ -14,7 +14,7 @@
 
 use chrono::{DateTime, Duration, Utc};
 use crc::{Crc, CRC_32_ISO_HDLC};
-use oauth2_types::requests::TokenTypeHint;
+use mas_iana::oauth::OAuthTokenTypeHint;
 use rand::{distributions::Alphanumeric, Rng};
 use thiserror::Error;
 
@@ -159,12 +159,12 @@ impl TokenType {
     }
 }
 
-impl PartialEq<TokenTypeHint> for TokenType {
-    fn eq(&self, other: &TokenTypeHint) -> bool {
+impl PartialEq<OAuthTokenTypeHint> for TokenType {
+    fn eq(&self, other: &OAuthTokenTypeHint) -> bool {
         matches!(
             (self, other),
-            (TokenType::AccessToken, TokenTypeHint::AccessToken)
-                | (TokenType::RefreshToken, TokenTypeHint::RefreshToken)
+            (TokenType::AccessToken, OAuthTokenTypeHint::AccessToken)
+                | (TokenType::RefreshToken, OAuthTokenTypeHint::RefreshToken)
         )
     }
 }

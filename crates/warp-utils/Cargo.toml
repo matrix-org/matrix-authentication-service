@@ -35,3 +35,4 @@ mas-templates = { path = "../templates" }
 mas-data-model = { path = "../data-model" }
 mas-storage = { path = "../storage" }
 mas-jose = { path = "../jose" }
+mas-iana = { path = "../iana" }

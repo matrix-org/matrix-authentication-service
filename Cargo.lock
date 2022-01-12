@@ -1548,6 +1548,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "crc",
+ "mas-iana",
  "oauth2-types",
  "rand",
  "serde",
@@ -1670,6 +1671,7 @@ dependencies = [
  "argon2",
  "chrono",
  "mas-data-model",
+ "mas-iana",
  "oauth2-types",
  "password-hash",
  "rand",
@@ -1729,6 +1731,7 @@ dependencies = [
  "hyper",
  "mas-config",
  "mas-data-model",
+ "mas-iana",
  "mas-jose",
  "mas-storage",
  "mas-templates",

@@ -15,40 +15,23 @@
 use std::borrow::Cow;
 
 use data_encoding::BASE64URL_NOPAD;
-use parse_display::{Display, FromStr};
+use mas_iana::oauth::PkceCodeChallengeMethod;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-#[derive(
-    Debug,
-    Hash,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Clone,
-    Copy,
-    Display,
-    FromStr,
-    Serialize,
-    Deserialize,
-)]
-pub enum CodeChallengeMethod {
-    #[serde(rename = "plain")]
-    #[display("plain")]
-    Plain,
+pub trait CodeChallengeMethodExt {
+    #[must_use]
+    fn compute_challenge(self, verifier: &str) -> Cow<'_, str>;
 
-    #[serde(rename = "S256")]
-    #[display("S256")]
-    S256,
+    #[must_use]
+    fn verify(self, challenge: &str, verifier: &str) -> bool;
 }
 
-impl CodeChallengeMethod {
-    #[must_use]
-    pub fn compute_challenge(self, verifier: &str) -> Cow<'_, str> {
+impl CodeChallengeMethodExt for PkceCodeChallengeMethod {
+    fn compute_challenge(self, verifier: &str) -> Cow<'_, str> {
         match self {
-            CodeChallengeMethod::Plain => verifier.into(),
-            CodeChallengeMethod::S256 => {
+            Self::Plain => verifier.into(),
+            Self::S256 => {
                 let mut hasher = Sha256::new();
                 hasher.update(verifier.as_bytes());
                 let hash = hasher.finalize();
@@ -58,15 +41,14 @@ impl CodeChallengeMethod {
         }
     }
 
-    #[must_use]
-    pub fn verify(self, challenge: &str, verifier: &str) -> bool {
+    fn verify(self, challenge: &str, verifier: &str) -> bool {
         self.compute_challenge(verifier) == challenge
     }
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct AuthorizationRequest {
-    pub code_challenge_method: CodeChallengeMethod,
+    pub code_challenge_method: PkceCodeChallengeMethod,
     pub code_challenge: String,
 }
 
