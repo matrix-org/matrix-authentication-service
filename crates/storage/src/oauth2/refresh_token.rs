@@ -112,6 +112,7 @@ pub async fn lookup_active_refresh_token(
             WHERE rt.token = $1
               AND rt.next_token_id IS NULL
               AND us.active
+              AND os.ended_at IS NULL
 
             ORDER BY usa.created_at DESC
             LIMIT 1

@@ -30,6 +30,7 @@ use mas_storage::{
     oauth2::{
         access_token::{add_access_token, revoke_access_token},
         authorization_grant::{exchange_grant, lookup_grant_by_code},
+        end_oauth_session,
         refresh_token::{add_refresh_token, lookup_active_refresh_token, replace_refresh_token},
     },
     DatabaseInconsistencyError,
@@ -184,6 +185,9 @@ async fn authorization_code_grant(
         .await
         .wrap_error()?;
 
+    // TODO: that's not a timestamp from the DB. Let's assume they are in sync
+    let now = Utc::now();
+
     let session = match authz_grant.stage {
         AuthorizationGrantStage::Cancelled { cancelled_at } => {
             debug!(%cancelled_at, "Authorization grant was cancelled");
@@ -192,12 +196,17 @@ async fn authorization_code_grant(
         AuthorizationGrantStage::Exchanged {
             exchanged_at,
             fulfilled_at,
-            session: _,
+            session,
         } => {
-            // TODO: we should invalidate the existing session if a code is used twice after
-            // some period of time. See the `oidcc-codereuse-30seconds` test from the
-            // conformance suite
             debug!(%exchanged_at, %fulfilled_at, "Authorization code was already exchanged");
+
+            // Ending the session if the token was already exchanged more than 20s ago
+            if now - exchanged_at > Duration::seconds(20) {
+                debug!("Ending potentially compromised session");
+                end_oauth_session(&mut txn, session).await.wrap_error()?;
+                txn.commit().await.wrap_error()?;
+            }
+
             return error(InvalidGrant);
         }
         AuthorizationGrantStage::Pending => {
@@ -206,10 +215,13 @@ async fn authorization_code_grant(
         }
         AuthorizationGrantStage::Fulfilled {
             ref session,
-            fulfilled_at: _,
+            fulfilled_at,
         } => {
-            // TODO: we should check that the session was not fullfilled too long ago
-            // (30s to 1min?). The main problem is getting a timestamp from the database
+            if now - fulfilled_at > Duration::minutes(10) {
+                debug!("Code exchange took more than 10 minutes");
+                return error(InvalidGrant);
+            }
+
             session
         }
     };

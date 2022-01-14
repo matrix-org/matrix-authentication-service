@@ -125,6 +125,7 @@ pub async fn lookup_active_access_token(
             WHERE at.token = $1
               AND at.created_at + (at.expires_after * INTERVAL '1 second') >= now()
               AND us.active
+              AND os.ended_at IS NULL
 
             ORDER BY usa.created_at DESC
             LIMIT 1
