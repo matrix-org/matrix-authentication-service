@@ -224,98 +224,6 @@
       ]
     }
   },
-  "2dbccaf2fb557dd36598bf4d00941280535cc523ac3a481903ed825088901bce": {
-    "query": "\n            SELECT\n                at.id              AS \"access_token_id\",\n                at.token           AS \"access_token\",\n                at.expires_after   AS \"access_token_expires_after\",\n                at.created_at      AS \"access_token_created_at\",\n                os.id              AS \"session_id!\",\n                os.client_id       AS \"client_id!\",\n                os.scope           AS \"scope!\",\n                us.id              AS \"user_session_id!\",\n                us.created_at      AS \"user_session_created_at!\",\n                 u.id              AS \"user_id!\",\n                 u.username        AS \"user_username!\",\n                usa.id             AS \"user_session_last_authentication_id?\",\n                usa.created_at     AS \"user_session_last_authentication_created_at?\"\n\n            FROM oauth2_access_tokens at\n            INNER JOIN oauth2_sessions os\n              ON os.id = at.oauth2_session_id\n            INNER JOIN user_sessions us\n              ON us.id = os.user_session_id\n            INNER JOIN users u\n              ON u.id = us.user_id\n            LEFT JOIN user_session_authentications usa\n              ON usa.session_id = us.id\n\n            WHERE at.token = $1\n              AND at.created_at + (at.expires_after * INTERVAL '1 second') >= now()\n              AND us.active\n\n            ORDER BY usa.created_at DESC\n            LIMIT 1\n        ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "access_token_id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
-          "name": "access_token",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 2,
-          "name": "access_token_expires_after",
-          "type_info": "Int4"
-        },
-        {
-          "ordinal": 3,
-          "name": "access_token_created_at",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 4,
-          "name": "session_id!",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 5,
-          "name": "client_id!",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 6,
-          "name": "scope!",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 7,
-          "name": "user_session_id!",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 8,
-          "name": "user_session_created_at!",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 9,
-          "name": "user_id!",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 10,
-          "name": "user_username!",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 11,
-          "name": "user_session_last_authentication_id?",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 12,
-          "name": "user_session_last_authentication_created_at?",
-          "type_info": "Timestamptz"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Text"
-        ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ]
-    }
-  },
   "307fd9f71e7a94a0a0d9ce523ee9792e127485d0d12480c43f179dd9b75afbab": {
     "query": "\n            INSERT INTO user_sessions (user_id)\n            VALUES ($1)\n            RETURNING id, created_at\n        ",
     "describe": {
@@ -551,6 +459,18 @@
       ]
     }
   },
+  "581243a7f0c033548cc9644e0c60855ecb8bfefe51779eb135dd7547b886de79": {
+    "query": "\n            UPDATE oauth2_sessions\n            SET ended_at = NOW()\n            WHERE id = $1\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "59e8a5de682642883a9b9fc1b522736fa4397f0a0c97074f2c8908e5956c0166": {
     "query": "\n            INSERT INTO oauth2_access_tokens\n                (oauth2_session_id, token, expires_after)\n            VALUES\n                ($1, $2, $3)\n            RETURNING\n                id, created_at\n        ",
     "describe": {
@@ -609,8 +529,8 @@
       ]
     }
   },
-  "6765e725d31a1490ddee3f28e32dea41abdd9acefb1edd9a7b4e6790ec131173": {
-    "query": "\n            SELECT\n                rt.id              AS refresh_token_id,\n                rt.token           AS refresh_token,\n                rt.created_at      AS refresh_token_created_at,\n                at.id              AS \"access_token_id?\",\n                at.token           AS \"access_token?\",\n                at.expires_after   AS \"access_token_expires_after?\",\n                at.created_at      AS \"access_token_created_at?\",\n                os.id              AS \"session_id!\",\n                os.client_id       AS \"client_id!\",\n                os.scope           AS \"scope!\",\n                us.id              AS \"user_session_id!\",\n                us.created_at      AS \"user_session_created_at!\",\n                 u.id              AS \"user_id!\",\n                 u.username        AS \"user_username!\",\n                usa.id             AS \"user_session_last_authentication_id?\",\n                usa.created_at     AS \"user_session_last_authentication_created_at?\"\n            FROM oauth2_refresh_tokens rt\n            LEFT JOIN oauth2_access_tokens at\n              ON at.id = rt.oauth2_access_token_id\n            INNER JOIN oauth2_sessions os\n              ON os.id = rt.oauth2_session_id\n            INNER JOIN user_sessions us\n              ON us.id = os.user_session_id\n            INNER JOIN users u\n              ON u.id = us.user_id\n            LEFT JOIN user_session_authentications usa\n              ON usa.session_id = us.id\n\n            WHERE rt.token = $1\n              AND rt.next_token_id IS NULL\n              AND us.active\n\n            ORDER BY usa.created_at DESC\n            LIMIT 1\n        ",
+  "6e3a2f75d1277dc8773f5a4274d0c265abc95e886512da877ecb78666eb82c7f": {
+    "query": "\n            SELECT\n                rt.id              AS refresh_token_id,\n                rt.token           AS refresh_token,\n                rt.created_at      AS refresh_token_created_at,\n                at.id              AS \"access_token_id?\",\n                at.token           AS \"access_token?\",\n                at.expires_after   AS \"access_token_expires_after?\",\n                at.created_at      AS \"access_token_created_at?\",\n                os.id              AS \"session_id!\",\n                os.client_id       AS \"client_id!\",\n                os.scope           AS \"scope!\",\n                us.id              AS \"user_session_id!\",\n                us.created_at      AS \"user_session_created_at!\",\n                 u.id              AS \"user_id!\",\n                 u.username        AS \"user_username!\",\n                usa.id             AS \"user_session_last_authentication_id?\",\n                usa.created_at     AS \"user_session_last_authentication_created_at?\"\n            FROM oauth2_refresh_tokens rt\n            LEFT JOIN oauth2_access_tokens at\n              ON at.id = rt.oauth2_access_token_id\n            INNER JOIN oauth2_sessions os\n              ON os.id = rt.oauth2_session_id\n            INNER JOIN user_sessions us\n              ON us.id = os.user_session_id\n            INNER JOIN users u\n              ON u.id = us.user_id\n            LEFT JOIN user_session_authentications usa\n              ON usa.session_id = us.id\n\n            WHERE rt.token = $1\n              AND rt.next_token_id IS NULL\n              AND us.active\n              AND os.ended_at IS NULL\n\n            ORDER BY usa.created_at DESC\n            LIMIT 1\n        ",
     "describe": {
       "columns": [
         {
@@ -950,6 +870,98 @@
       },
       "nullable": [
         null
+      ]
+    }
+  },
+  "e5ea498197276d0948deda4d0d24ed0bb36bfbba362cd01fc9506afa68e6f183": {
+    "query": "\n            SELECT\n                at.id              AS \"access_token_id\",\n                at.token           AS \"access_token\",\n                at.expires_after   AS \"access_token_expires_after\",\n                at.created_at      AS \"access_token_created_at\",\n                os.id              AS \"session_id!\",\n                os.client_id       AS \"client_id!\",\n                os.scope           AS \"scope!\",\n                us.id              AS \"user_session_id!\",\n                us.created_at      AS \"user_session_created_at!\",\n                 u.id              AS \"user_id!\",\n                 u.username        AS \"user_username!\",\n                usa.id             AS \"user_session_last_authentication_id?\",\n                usa.created_at     AS \"user_session_last_authentication_created_at?\"\n\n            FROM oauth2_access_tokens at\n            INNER JOIN oauth2_sessions os\n              ON os.id = at.oauth2_session_id\n            INNER JOIN user_sessions us\n              ON us.id = os.user_session_id\n            INNER JOIN users u\n              ON u.id = us.user_id\n            LEFT JOIN user_session_authentications usa\n              ON usa.session_id = us.id\n\n            WHERE at.token = $1\n              AND at.created_at + (at.expires_after * INTERVAL '1 second') >= now()\n              AND us.active\n              AND os.ended_at IS NULL\n\n            ORDER BY usa.created_at DESC\n            LIMIT 1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "access_token_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "access_token",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "access_token_expires_after",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 3,
+          "name": "access_token_created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 4,
+          "name": "session_id!",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 5,
+          "name": "client_id!",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 6,
+          "name": "scope!",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 7,
+          "name": "user_session_id!",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 8,
+          "name": "user_session_created_at!",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 9,
+          "name": "user_id!",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 10,
+          "name": "user_username!",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 11,
+          "name": "user_session_last_authentication_id?",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 12,
+          "name": "user_session_last_authentication_created_at?",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
       ]
     }
   }
