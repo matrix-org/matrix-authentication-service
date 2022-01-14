@@ -16,6 +16,7 @@ pub trait StorageBackendMarker: StorageBackend {}
 
 pub trait StorageBackend {
     type UserData: Clone + std::fmt::Debug + PartialEq;
+    type UserEmailData: Clone + std::fmt::Debug + PartialEq;
     type AuthenticationData: Clone + std::fmt::Debug + PartialEq;
     type BrowserSessionData: Clone + std::fmt::Debug + PartialEq;
     type ClientData: Clone + std::fmt::Debug + PartialEq;
@@ -34,4 +35,5 @@ impl StorageBackend for () {
     type RefreshTokenData = ();
     type SessionData = ();
     type UserData = ();
+    type UserEmailData = ();
 }

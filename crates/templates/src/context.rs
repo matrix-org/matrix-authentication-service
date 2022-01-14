@@ -14,7 +14,9 @@
 
 //! Contexts used in templates
 
-use mas_data_model::{errors::ErroredForm, AuthorizationGrant, BrowserSession, StorageBackend};
+use mas_data_model::{
+    errors::ErroredForm, AuthorizationGrant, BrowserSession, StorageBackend, UserEmail,
+};
 use oauth2_types::errors::OAuth2Error;
 use serde::{ser::SerializeStruct, Serialize};
 use url::Url;
@@ -386,12 +388,19 @@ pub struct ReauthContext {
 #[derive(Serialize)]
 pub struct AccountContext {
     active_sessions: usize,
+    emails: Vec<UserEmail<()>>,
 }
 
 impl AccountContext {
     #[must_use]
-    pub fn new(active_sessions: usize) -> Self {
-        Self { active_sessions }
+    pub fn new<T>(active_sessions: usize, emails: Vec<T>) -> Self
+    where
+        T: Into<UserEmail<()>>,
+    {
+        Self {
+            active_sessions,
+            emails: emails.into_iter().map(Into::into).collect(),
+        }
     }
 }
 
@@ -400,7 +409,8 @@ impl TemplateContext for AccountContext {
     where
         Self: Sized,
     {
-        vec![Self::new(5)]
+        let emails: Vec<UserEmail<()>> = UserEmail::samples();
+        vec![Self::new(5, emails)]
     }
 }
 

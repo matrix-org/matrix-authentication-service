@@ -24,6 +24,7 @@ pub struct User<T: StorageBackend> {
     pub data: T::UserData,
     pub username: String,
     pub sub: String,
+    pub primary_email: Option<UserEmail<T>>,
 }
 
 impl<T: StorageBackend> User<T>
@@ -36,6 +37,7 @@ where
             data: Default::default(),
             username: "john".to_string(),
             sub: "123-456".to_string(),
+            primary_email: None,
         }]
     }
 }
@@ -46,6 +48,7 @@ impl<S: StorageBackendMarker> From<User<S>> for User<()> {
             data: (),
             username: u.username,
             sub: u.sub,
+            primary_email: u.primary_email.map(Into::into),
         }
     }
 }
@@ -104,5 +107,49 @@ where
                 last_authentication: None,
             })
             .collect()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(bound = "T: StorageBackend")]
+pub struct UserEmail<T: StorageBackend> {
+    #[serde(skip_serializing)]
+    pub data: T::UserEmailData,
+    pub email: String,
+    pub created_at: DateTime<Utc>,
+    pub confirmed_at: Option<DateTime<Utc>>,
+}
+
+impl<S: StorageBackendMarker> From<UserEmail<S>> for UserEmail<()> {
+    fn from(e: UserEmail<S>) -> Self {
+        UserEmail {
+            data: (),
+            email: e.email,
+            created_at: e.created_at,
+            confirmed_at: e.confirmed_at,
+        }
+    }
+}
+
+impl<T: StorageBackend> UserEmail<T>
+where
+    T::UserEmailData: Default,
+{
+    #[must_use]
+    pub fn samples() -> Vec<Self> {
+        vec![
+            UserEmail {
+                data: T::UserEmailData::default(),
+                email: "alice@example.com".to_string(),
+                created_at: Utc::now(),
+                confirmed_at: Some(Utc::now()),
+            },
+            UserEmail {
+                data: T::UserEmailData::default(),
+                email: "bob@example.com".to_string(),
+                created_at: Utc::now(),
+                confirmed_at: None,
+            },
+        ]
     }
 }

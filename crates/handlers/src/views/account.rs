@@ -16,7 +16,7 @@ use argon2::Argon2;
 use mas_config::{CookiesConfig, CsrfConfig};
 use mas_data_model::BrowserSession;
 use mas_storage::{
-    user::{authenticate_session, count_active_sessions, set_password},
+    user::{authenticate_session, count_active_sessions, get_user_emails, set_password},
     PostgresqlBackend,
 };
 use mas_templates::{AccountContext, TemplateContext, Templates};
@@ -25,13 +25,13 @@ use mas_warp_utils::{
     filters::{
         cookies::{encrypted_cookie_saver, EncryptedCookieSaver},
         csrf::{protected_form, updated_csrf_token},
-        database::{connection, transaction},
+        database::transaction,
         session::session,
         with_templates, CsrfToken,
     },
 };
 use serde::Deserialize;
-use sqlx::{pool::PoolConnection, PgExecutor, PgPool, Postgres, Transaction};
+use sqlx::{PgPool, Postgres, Transaction};
 use warp::{filters::BoxedFilter, reply::html, Filter, Rejection, Reply};
 
 pub(super) fn filter(
@@ -44,7 +44,7 @@ pub(super) fn filter(
         .and(encrypted_cookie_saver(cookies_config))
         .and(updated_csrf_token(cookies_config, csrf_config))
         .and(session(pool, cookies_config))
-        .and(connection(pool))
+        .and(transaction(pool))
         .and_then(get);
 
     let post = with_templates(templates)
@@ -71,9 +71,9 @@ async fn get(
     cookie_saver: EncryptedCookieSaver,
     csrf_token: CsrfToken,
     session: BrowserSession<PostgresqlBackend>,
-    mut conn: PoolConnection<Postgres>,
+    txn: Transaction<'_, Postgres>,
 ) -> Result<Box<dyn Reply>, Rejection> {
-    render(templates, cookie_saver, csrf_token, session, &mut conn).await
+    render(templates, cookie_saver, csrf_token, session, txn).await
 }
 
 async fn render(
@@ -81,18 +81,26 @@ async fn render(
     cookie_saver: EncryptedCookieSaver,
     csrf_token: CsrfToken,
     session: BrowserSession<PostgresqlBackend>,
-    executor: impl PgExecutor<'_>,
+    mut txn: Transaction<'_, Postgres>,
 ) -> Result<Box<dyn Reply>, Rejection> {
-    let active_sessions = count_active_sessions(executor, &session.user)
+    let active_sessions = count_active_sessions(&mut txn, &session.user)
         .await
         .wrap_error()?;
-    let ctx = AccountContext::new(active_sessions)
+
+    let emails = get_user_emails(&mut txn, &session.user)
+        .await
+        .wrap_error()?;
+
+    txn.commit().await.wrap_error()?;
+
+    let ctx = AccountContext::new(active_sessions, emails)
         .with_session(session)
         .with_csrf(csrf_token.form_value());
 
     let content = templates.render_account(&ctx).await?;
     let reply = html(content);
     let reply = cookie_saver.save_encrypted(&csrf_token, reply)?;
+
     Ok(Box::new(reply))
 }
 
@@ -118,9 +126,7 @@ async fn post(
         .await
         .wrap_error()?;
 
-    let reply = render(templates, cookie_saver, csrf_token, session, &mut txn).await?;
-
-    txn.commit().await.wrap_error()?;
+    let reply = render(templates, cookie_saver, csrf_token, session, txn).await?;
 
     Ok(reply)
 }

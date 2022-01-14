@@ -17,7 +17,7 @@ use std::borrow::BorrowMut;
 use anyhow::Context;
 use argon2::Argon2;
 use chrono::{DateTime, Utc};
-use mas_data_model::{errors::HtmlError, Authentication, BrowserSession, User};
+use mas_data_model::{errors::HtmlError, Authentication, BrowserSession, User, UserEmail};
 use password_hash::{PasswordHash, PasswordHasher, SaltString};
 use rand::rngs::OsRng;
 use sqlx::{Acquire, PgExecutor, Postgres, Transaction};
@@ -31,8 +31,12 @@ use crate::IdAndCreationTime;
 
 #[derive(Debug, Clone)]
 struct UserLookup {
-    pub id: i64,
-    pub username: String,
+    user_id: i64,
+    user_username: String,
+    user_email_id: Option<i64>,
+    user_email: Option<String>,
+    user_email_created_at: Option<DateTime<Utc>>,
+    user_email_confirmed_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Error)]
@@ -41,7 +45,7 @@ pub enum LoginError {
     NotFound {
         username: String,
         #[source]
-        source: sqlx::Error,
+        source: UserLookupError,
     },
 
     #[error("authentication failed for {username:?}")]
@@ -75,7 +79,7 @@ pub async fn login(
     let user = lookup_user_by_username(&mut txn, username)
         .await
         .map_err(|source| {
-            if matches!(source, sqlx::Error::RowNotFound) {
+            if source.not_found() {
                 LoginError::NotFound {
                     username: username.to_string(),
                     source,
@@ -115,10 +119,7 @@ impl Reject for ActiveSessionLookupError {}
 impl ActiveSessionLookupError {
     #[must_use]
     pub fn not_found(&self) -> bool {
-        matches!(
-            self,
-            ActiveSessionLookupError::Fetch(sqlx::Error::RowNotFound)
-        )
+        matches!(self, Self::Fetch(sqlx::Error::RowNotFound))
     }
 }
 
@@ -129,16 +130,37 @@ struct SessionLookup {
     created_at: DateTime<Utc>,
     last_authentication_id: Option<i64>,
     last_authd_at: Option<DateTime<Utc>>,
+    user_email_id: Option<i64>,
+    user_email: Option<String>,
+    user_email_created_at: Option<DateTime<Utc>>,
+    user_email_confirmed_at: Option<DateTime<Utc>>,
 }
 
 impl TryInto<BrowserSession<PostgresqlBackend>> for SessionLookup {
     type Error = DatabaseInconsistencyError;
 
     fn try_into(self) -> Result<BrowserSession<PostgresqlBackend>, Self::Error> {
+        let primary_email = match (
+            self.user_email_id,
+            self.user_email,
+            self.user_email_created_at,
+            self.user_email_confirmed_at,
+        ) {
+            (Some(id), Some(email), Some(created_at), confirmed_at) => Some(UserEmail {
+                data: id,
+                email,
+                created_at,
+                confirmed_at,
+            }),
+            (None, None, None, None) => None,
+            _ => return Err(DatabaseInconsistencyError),
+        };
+
         let user = User {
             data: self.user_id,
             username: self.username,
             sub: format!("fake-sub-{}", self.user_id),
+            primary_email,
         };
 
         let last_authentication = match (self.last_authentication_id, self.last_authd_at) {
@@ -169,16 +191,22 @@ pub async fn lookup_active_session(
         r#"
             SELECT
                 s.id,
-                u.id as user_id,
+                u.id AS user_id,
                 u.username,
                 s.created_at,
-                a.id as "last_authentication_id?",
-                a.created_at as "last_authd_at?"
+                a.id               AS "last_authentication_id?",
+                a.created_at       AS "last_authd_at?",
+                ue.id              AS "user_email_id?",
+                ue.email           AS "user_email?",
+                ue.created_at      AS "user_email_created_at?",
+                ue.confirmed_at    AS "user_email_confirmed_at?"
             FROM user_sessions s
             INNER JOIN users u 
                 ON s.user_id = u.id
             LEFT JOIN user_session_authentications a
                 ON a.session_id = s.id
+            LEFT JOIN user_emails ue
+              ON ue.id = u.primary_email_id
             WHERE s.id = $1 AND s.active
             ORDER BY a.created_at DESC
             LIMIT 1
@@ -336,6 +364,7 @@ pub async fn register_user(
         data: id,
         username: username.to_string(),
         sub: format!("fake-sub-{}", id),
+        primary_email: None,
     };
 
     set_password(txn.borrow_mut(), phf, &user, password).await?;
@@ -390,17 +419,41 @@ pub async fn end_session(
     }
 }
 
+#[derive(Debug, Error)]
+#[error("failed to lookup user")]
+pub enum UserLookupError {
+    Database(#[from] sqlx::Error),
+    Inconsistency(#[from] DatabaseInconsistencyError),
+}
+
+impl UserLookupError {
+    #[must_use]
+    pub fn not_found(&self) -> bool {
+        matches!(self, Self::Database(sqlx::Error::RowNotFound))
+    }
+}
+
 #[tracing::instrument(skip(executor))]
 pub async fn lookup_user_by_username(
     executor: impl PgExecutor<'_>,
     username: &str,
-) -> Result<User<PostgresqlBackend>, sqlx::Error> {
+) -> Result<User<PostgresqlBackend>, UserLookupError> {
     let res = sqlx::query_as!(
         UserLookup,
         r#"
-            SELECT id, username
-            FROM users
-            WHERE username = $1
+            SELECT 
+                u.id            AS user_id, 
+                u.username      AS user_username,
+                ue.id           AS "user_email_id?",
+                ue.email        AS "user_email?",
+                ue.created_at   AS "user_email_created_at?",
+                ue.confirmed_at AS "user_email_confirmed_at?"
+            FROM users u
+
+            LEFT JOIN user_emails ue
+              ON ue.id = u.primary_email_id
+
+            WHERE u.username = $1
         "#,
         username,
     )
@@ -408,9 +461,73 @@ pub async fn lookup_user_by_username(
     .instrument(info_span!("Fetch user"))
     .await?;
 
+    let primary_email = match (
+        res.user_email_id,
+        res.user_email,
+        res.user_email_created_at,
+        res.user_email_confirmed_at,
+    ) {
+        (Some(id), Some(email), Some(created_at), confirmed_at) => Some(UserEmail {
+            data: id,
+            email,
+            created_at,
+            confirmed_at,
+        }),
+        (None, None, None, None) => None,
+        _ => return Err(DatabaseInconsistencyError.into()),
+    };
+
     Ok(User {
-        data: res.id,
-        username: res.username,
-        sub: format!("fake-sub-{}", res.id),
+        data: res.user_id,
+        username: res.user_username,
+        sub: format!("fake-sub-{}", res.user_id),
+        primary_email,
     })
+}
+
+#[derive(Debug, Clone)]
+struct UserEmailLookup {
+    user_email_id: i64,
+    user_email: String,
+    user_email_created_at: DateTime<Utc>,
+    user_email_confirmed_at: Option<DateTime<Utc>>,
+}
+
+impl From<UserEmailLookup> for UserEmail<PostgresqlBackend> {
+    fn from(e: UserEmailLookup) -> UserEmail<PostgresqlBackend> {
+        UserEmail {
+            data: e.user_email_id,
+            email: e.user_email,
+            created_at: e.user_email_created_at,
+            confirmed_at: e.user_email_confirmed_at,
+        }
+    }
+}
+
+#[tracing::instrument(skip_all, fields(user.id = user.data, %user.username))]
+pub async fn get_user_emails(
+    executor: impl PgExecutor<'_>,
+    user: &User<PostgresqlBackend>,
+) -> Result<Vec<UserEmail<PostgresqlBackend>>, anyhow::Error> {
+    let res = sqlx::query_as!(
+        UserEmailLookup,
+        r#"
+            SELECT 
+                ue.id           AS "user_email_id",
+                ue.email        AS "user_email",
+                ue.created_at   AS "user_email_created_at",
+                ue.confirmed_at AS "user_email_confirmed_at"
+            FROM user_emails ue
+
+            WHERE ue.user_id = $1
+
+            ORDER BY ue.email ASC
+        "#,
+        user.data,
+    )
+    .fetch_all(executor)
+    .instrument(info_span!("Fetch user emails"))
+    .await?;
+
+    Ok(res.into_iter().map(Into::into).collect())
 }

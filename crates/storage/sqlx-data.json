@@ -1,31 +1,5 @@
 {
   "db": "PostgreSQL",
-  "037ba804eabd0b4290d87d1de37054f358eb11397d3a8e4b69a81cdce0a178e0": {
-    "query": "\n            SELECT id, username\n            FROM users\n            WHERE username = $1\n        ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
-          "name": "username",
-          "type_info": "Text"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Text"
-        ]
-      },
-      "nullable": [
-        false,
-        false
-      ]
-    }
-  },
   "0c056fcc1a85d00db88034bcc582376cf220e1933d2932e520c44ed9931f5c9d": {
     "query": "\n            INSERT INTO oauth2_refresh_tokens\n                (oauth2_session_id, oauth2_access_token_id, token)\n            VALUES\n                ($1, $2, $3)\n            RETURNING\n                id, created_at\n        ",
     "describe": {
@@ -54,483 +28,8 @@
       ]
     }
   },
-  "18d98b65c82142c28fb350f596c4439dbb04a55ff5b84586c1cb54601000d00d": {
-    "query": "\n            SELECT\n                og.id            AS grant_id,\n                og.created_at    AS grant_created_at,\n                og.cancelled_at  AS grant_cancelled_at,\n                og.fulfilled_at  AS grant_fulfilled_at,\n                og.exchanged_at  AS grant_exchanged_at,\n                og.scope         AS grant_scope,\n                og.state         AS grant_state,\n                og.redirect_uri  AS grant_redirect_uri,\n                og.response_mode AS grant_response_mode,\n                og.nonce         AS grant_nonce,\n                og.max_age       AS grant_max_age,\n                og.acr_values    AS grant_acr_values,\n                og.client_id     AS client_id,\n                og.code          AS grant_code,\n                og.response_type_code     AS grant_response_type_code,\n                og.response_type_token    AS grant_response_type_token,\n                og.response_type_id_token AS grant_response_type_id_token,\n                og.code_challenge         AS grant_code_challenge,\n                og.code_challenge_method  AS grant_code_challenge_method,\n                os.id              AS \"session_id?\",\n                us.id              AS \"user_session_id?\",\n                us.created_at      AS \"user_session_created_at?\",\n                 u.id              AS \"user_id?\",\n                 u.username        AS \"user_username?\",\n                usa.id             AS \"user_session_last_authentication_id?\",\n                usa.created_at     AS \"user_session_last_authentication_created_at?\"\n            FROM\n                oauth2_authorization_grants og\n            LEFT JOIN oauth2_sessions os\n                ON os.id = og.oauth2_session_id\n            LEFT JOIN user_sessions us\n              ON us.id = os.user_session_id\n            LEFT JOIN users u\n              ON u.id = us.user_id\n            LEFT JOIN user_session_authentications usa\n              ON usa.session_id = us.id\n            WHERE\n                og.code = $1\n\n            ORDER BY usa.created_at DESC\n            LIMIT 1\n        ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "grant_id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
-          "name": "grant_created_at",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 2,
-          "name": "grant_cancelled_at",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 3,
-          "name": "grant_fulfilled_at",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 4,
-          "name": "grant_exchanged_at",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 5,
-          "name": "grant_scope",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 6,
-          "name": "grant_state",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 7,
-          "name": "grant_redirect_uri",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 8,
-          "name": "grant_response_mode",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 9,
-          "name": "grant_nonce",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 10,
-          "name": "grant_max_age",
-          "type_info": "Int4"
-        },
-        {
-          "ordinal": 11,
-          "name": "grant_acr_values",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 12,
-          "name": "client_id",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 13,
-          "name": "grant_code",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 14,
-          "name": "grant_response_type_code",
-          "type_info": "Bool"
-        },
-        {
-          "ordinal": 15,
-          "name": "grant_response_type_token",
-          "type_info": "Bool"
-        },
-        {
-          "ordinal": 16,
-          "name": "grant_response_type_id_token",
-          "type_info": "Bool"
-        },
-        {
-          "ordinal": 17,
-          "name": "grant_code_challenge",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 18,
-          "name": "grant_code_challenge_method",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 19,
-          "name": "session_id?",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 20,
-          "name": "user_session_id?",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 21,
-          "name": "user_session_created_at?",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 22,
-          "name": "user_id?",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 23,
-          "name": "user_username?",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 24,
-          "name": "user_session_last_authentication_id?",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 25,
-          "name": "user_session_last_authentication_created_at?",
-          "type_info": "Timestamptz"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Text"
-        ]
-      },
-      "nullable": [
-        false,
-        false,
-        true,
-        true,
-        true,
-        false,
-        true,
-        false,
-        false,
-        true,
-        true,
-        true,
-        false,
-        true,
-        false,
-        false,
-        false,
-        true,
-        true,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ]
-    }
-  },
-  "307fd9f71e7a94a0a0d9ce523ee9792e127485d0d12480c43f179dd9b75afbab": {
-    "query": "\n            INSERT INTO user_sessions (user_id)\n            VALUES ($1)\n            RETURNING id, created_at\n        ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
-          "name": "created_at",
-          "type_info": "Timestamptz"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      },
-      "nullable": [
-        false,
-        false
-      ]
-    }
-  },
-  "3205a180aaa4661a016dada3a015ffd7a1019cd121e284f11e8120a6664e6288": {
-    "query": "\n            SELECT\n                og.id            AS grant_id,\n                og.created_at    AS grant_created_at,\n                og.cancelled_at  AS grant_cancelled_at,\n                og.fulfilled_at  AS grant_fulfilled_at,\n                og.exchanged_at  AS grant_exchanged_at,\n                og.scope         AS grant_scope,\n                og.state         AS grant_state,\n                og.redirect_uri  AS grant_redirect_uri,\n                og.response_mode AS grant_response_mode,\n                og.nonce         AS grant_nonce,\n                og.max_age       AS grant_max_age,\n                og.acr_values    AS grant_acr_values,\n                og.client_id     AS client_id,\n                og.code          AS grant_code,\n                og.response_type_code     AS grant_response_type_code,\n                og.response_type_token    AS grant_response_type_token,\n                og.response_type_id_token AS grant_response_type_id_token,\n                og.code_challenge         AS grant_code_challenge,\n                og.code_challenge_method  AS grant_code_challenge_method,\n                os.id              AS \"session_id?\",\n                us.id              AS \"user_session_id?\",\n                us.created_at      AS \"user_session_created_at?\",\n                 u.id              AS \"user_id?\",\n                 u.username        AS \"user_username?\",\n                usa.id             AS \"user_session_last_authentication_id?\",\n                usa.created_at     AS \"user_session_last_authentication_created_at?\"\n            FROM\n                oauth2_authorization_grants og\n            LEFT JOIN oauth2_sessions os\n                ON os.id = og.oauth2_session_id\n            LEFT JOIN user_sessions us\n              ON us.id = os.user_session_id\n            LEFT JOIN users u\n              ON u.id = us.user_id\n            LEFT JOIN user_session_authentications usa\n              ON usa.session_id = us.id\n            WHERE\n                og.id = $1\n\n            ORDER BY usa.created_at DESC\n            LIMIT 1\n        ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "grant_id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
-          "name": "grant_created_at",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 2,
-          "name": "grant_cancelled_at",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 3,
-          "name": "grant_fulfilled_at",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 4,
-          "name": "grant_exchanged_at",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 5,
-          "name": "grant_scope",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 6,
-          "name": "grant_state",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 7,
-          "name": "grant_redirect_uri",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 8,
-          "name": "grant_response_mode",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 9,
-          "name": "grant_nonce",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 10,
-          "name": "grant_max_age",
-          "type_info": "Int4"
-        },
-        {
-          "ordinal": 11,
-          "name": "grant_acr_values",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 12,
-          "name": "client_id",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 13,
-          "name": "grant_code",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 14,
-          "name": "grant_response_type_code",
-          "type_info": "Bool"
-        },
-        {
-          "ordinal": 15,
-          "name": "grant_response_type_token",
-          "type_info": "Bool"
-        },
-        {
-          "ordinal": 16,
-          "name": "grant_response_type_id_token",
-          "type_info": "Bool"
-        },
-        {
-          "ordinal": 17,
-          "name": "grant_code_challenge",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 18,
-          "name": "grant_code_challenge_method",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 19,
-          "name": "session_id?",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 20,
-          "name": "user_session_id?",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 21,
-          "name": "user_session_created_at?",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 22,
-          "name": "user_id?",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 23,
-          "name": "user_username?",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 24,
-          "name": "user_session_last_authentication_id?",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 25,
-          "name": "user_session_last_authentication_created_at?",
-          "type_info": "Timestamptz"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      },
-      "nullable": [
-        false,
-        false,
-        true,
-        true,
-        true,
-        false,
-        true,
-        false,
-        false,
-        true,
-        true,
-        true,
-        false,
-        true,
-        false,
-        false,
-        false,
-        true,
-        true,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ]
-    }
-  },
-  "38641231a3bff71252e8bc0ead3a033c9148762ea64d707642551c01a4c89b84": {
-    "query": "\n            INSERT INTO oauth2_authorization_grants\n                (client_id, redirect_uri, scope, state, nonce, max_age,\n                 acr_values, response_mode, code_challenge, code_challenge_method,\n                 response_type_code, response_type_token, response_type_id_token,\n                 code)\n            VALUES\n                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)\n            RETURNING id, created_at\n        ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
-          "name": "created_at",
-          "type_info": "Timestamptz"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Text",
-          "Text",
-          "Text",
-          "Text",
-          "Text",
-          "Int4",
-          "Text",
-          "Text",
-          "Text",
-          "Text",
-          "Bool",
-          "Bool",
-          "Bool",
-          "Text"
-        ]
-      },
-      "nullable": [
-        false,
-        false
-      ]
-    }
-  },
-  "581243a7f0c033548cc9644e0c60855ecb8bfefe51779eb135dd7547b886de79": {
-    "query": "\n            UPDATE oauth2_sessions\n            SET ended_at = NOW()\n            WHERE id = $1\n        ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      },
-      "nullable": []
-    }
-  },
-  "59e8a5de682642883a9b9fc1b522736fa4397f0a0c97074f2c8908e5956c0166": {
-    "query": "\n            INSERT INTO oauth2_access_tokens\n                (oauth2_session_id, token, expires_after)\n            VALUES\n                ($1, $2, $3)\n            RETURNING\n                id, created_at\n        ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
-          "name": "created_at",
-          "type_info": "Timestamptz"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Text",
-          "Int4"
-        ]
-      },
-      "nullable": [
-        false,
-        false
-      ]
-    }
-  },
-  "5d1a17b2ad6153217551ae31549ad9d62cc39d2f9a4e62a7ccb60fd91e0ac685": {
-    "query": "\n            DELETE FROM oauth2_access_tokens\n            WHERE created_at + (expires_after * INTERVAL '1 second') + INTERVAL '15 minutes' < now()\n        ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": []
-      },
-      "nullable": []
-    }
-  },
-  "647a2a5bbde39d0ed3931d0287b468bc7dedf6171e1dc6171a5d9f079b9ed0fa": {
-    "query": "\n            SELECT up.hashed_password\n            FROM user_passwords up\n            WHERE up.user_id = $1\n            ORDER BY up.created_at DESC\n            LIMIT 1\n        ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "hashed_password",
-          "type_info": "Text"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Int8"
-        ]
-      },
-      "nullable": [
-        false
-      ]
-    }
-  },
-  "6e3a2f75d1277dc8773f5a4274d0c265abc95e886512da877ecb78666eb82c7f": {
-    "query": "\n            SELECT\n                rt.id              AS refresh_token_id,\n                rt.token           AS refresh_token,\n                rt.created_at      AS refresh_token_created_at,\n                at.id              AS \"access_token_id?\",\n                at.token           AS \"access_token?\",\n                at.expires_after   AS \"access_token_expires_after?\",\n                at.created_at      AS \"access_token_created_at?\",\n                os.id              AS \"session_id!\",\n                os.client_id       AS \"client_id!\",\n                os.scope           AS \"scope!\",\n                us.id              AS \"user_session_id!\",\n                us.created_at      AS \"user_session_created_at!\",\n                 u.id              AS \"user_id!\",\n                 u.username        AS \"user_username!\",\n                usa.id             AS \"user_session_last_authentication_id?\",\n                usa.created_at     AS \"user_session_last_authentication_created_at?\"\n            FROM oauth2_refresh_tokens rt\n            LEFT JOIN oauth2_access_tokens at\n              ON at.id = rt.oauth2_access_token_id\n            INNER JOIN oauth2_sessions os\n              ON os.id = rt.oauth2_session_id\n            INNER JOIN user_sessions us\n              ON us.id = os.user_session_id\n            INNER JOIN users u\n              ON u.id = us.user_id\n            LEFT JOIN user_session_authentications usa\n              ON usa.session_id = us.id\n\n            WHERE rt.token = $1\n              AND rt.next_token_id IS NULL\n              AND us.active\n              AND os.ended_at IS NULL\n\n            ORDER BY usa.created_at DESC\n            LIMIT 1\n        ",
+  "16df03346a3186c289bd64d1a3869103064ddb8f8827af8f19fc9ab93910ede5": {
+    "query": "\n            SELECT\n                rt.id              AS refresh_token_id,\n                rt.token           AS refresh_token,\n                rt.created_at      AS refresh_token_created_at,\n                at.id              AS \"access_token_id?\",\n                at.token           AS \"access_token?\",\n                at.expires_after   AS \"access_token_expires_after?\",\n                at.created_at      AS \"access_token_created_at?\",\n                os.id              AS \"session_id!\",\n                os.client_id       AS \"client_id!\",\n                os.scope           AS \"scope!\",\n                us.id              AS \"user_session_id!\",\n                us.created_at      AS \"user_session_created_at!\",\n                 u.id              AS \"user_id!\",\n                 u.username        AS \"user_username!\",\n                usa.id             AS \"user_session_last_authentication_id?\",\n                usa.created_at     AS \"user_session_last_authentication_created_at?\",\n                ue.id              AS \"user_email_id?\",\n                ue.email           AS \"user_email?\",\n                ue.created_at      AS \"user_email_created_at?\",\n                ue.confirmed_at    AS \"user_email_confirmed_at?\"\n            FROM oauth2_refresh_tokens rt\n            LEFT JOIN oauth2_access_tokens at\n              ON at.id = rt.oauth2_access_token_id\n            INNER JOIN oauth2_sessions os\n              ON os.id = rt.oauth2_session_id\n            INNER JOIN user_sessions us\n              ON us.id = os.user_session_id\n            INNER JOIN users u\n              ON u.id = us.user_id\n            LEFT JOIN user_session_authentications usa\n              ON usa.session_id = us.id\n            LEFT JOIN user_emails ue\n              ON ue.id = u.primary_email_id\n\n            WHERE rt.token = $1\n              AND rt.next_token_id IS NULL\n              AND us.active\n              AND os.ended_at IS NULL\n\n            ORDER BY usa.created_at DESC\n            LIMIT 1\n        ",
     "describe": {
       "columns": [
         {
@@ -612,6 +111,26 @@
           "ordinal": 15,
           "name": "user_session_last_authentication_created_at?",
           "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 16,
+          "name": "user_email_id?",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 17,
+          "name": "user_email?",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 18,
+          "name": "user_email_created_at?",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 19,
+          "name": "user_email_confirmed_at?",
+          "type_info": "Timestamptz"
         }
       ],
       "parameters": {
@@ -635,33 +154,313 @@
         false,
         false,
         false,
-        false
+        false,
+        false,
+        false,
+        false,
+        true
       ]
     }
   },
-  "703850ba4e001d53776d77a64cbc1ee6feb61485ce41aff1103251f9b3778128": {
-    "query": "\n            UPDATE oauth2_authorization_grants AS og\n            SET\n                oauth2_session_id = os.id,\n                fulfilled_at = os.created_at\n            FROM oauth2_sessions os\n            WHERE\n                og.id = $1 AND os.id = $2\n            RETURNING fulfilled_at AS \"fulfilled_at!: DateTime<Utc>\"\n        ",
+  "2e8c6507df6c0af78deca3550157b9cc0286f204b15a646c2e7e24c51100e040": {
+    "query": "\n            SELECT\n                og.id            AS grant_id,\n                og.created_at    AS grant_created_at,\n                og.cancelled_at  AS grant_cancelled_at,\n                og.fulfilled_at  AS grant_fulfilled_at,\n                og.exchanged_at  AS grant_exchanged_at,\n                og.scope         AS grant_scope,\n                og.state         AS grant_state,\n                og.redirect_uri  AS grant_redirect_uri,\n                og.response_mode AS grant_response_mode,\n                og.nonce         AS grant_nonce,\n                og.max_age       AS grant_max_age,\n                og.acr_values    AS grant_acr_values,\n                og.client_id     AS client_id,\n                og.code          AS grant_code,\n                og.response_type_code     AS grant_response_type_code,\n                og.response_type_token    AS grant_response_type_token,\n                og.response_type_id_token AS grant_response_type_id_token,\n                og.code_challenge         AS grant_code_challenge,\n                og.code_challenge_method  AS grant_code_challenge_method,\n                os.id              AS \"session_id?\",\n                us.id              AS \"user_session_id?\",\n                us.created_at      AS \"user_session_created_at?\",\n                 u.id              AS \"user_id?\",\n                 u.username        AS \"user_username?\",\n                usa.id             AS \"user_session_last_authentication_id?\",\n                usa.created_at     AS \"user_session_last_authentication_created_at?\",\n                ue.id              AS \"user_email_id?\",\n                ue.email           AS \"user_email?\",\n                ue.created_at      AS \"user_email_created_at?\",\n                ue.confirmed_at    AS \"user_email_confirmed_at?\"\n            FROM\n                oauth2_authorization_grants og\n            LEFT JOIN oauth2_sessions os\n                ON os.id = og.oauth2_session_id\n            LEFT JOIN user_sessions us\n              ON us.id = os.user_session_id\n            LEFT JOIN users u\n              ON u.id = us.user_id\n            LEFT JOIN user_session_authentications usa\n              ON usa.session_id = us.id\n            LEFT JOIN user_emails ue\n              ON ue.id = u.primary_email_id\n\n            WHERE og.id = $1\n\n            ORDER BY usa.created_at DESC\n            LIMIT 1\n        ",
     "describe": {
       "columns": [
         {
           "ordinal": 0,
-          "name": "fulfilled_at!: DateTime<Utc>",
+          "name": "grant_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "grant_created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 2,
+          "name": "grant_cancelled_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 3,
+          "name": "grant_fulfilled_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 4,
+          "name": "grant_exchanged_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 5,
+          "name": "grant_scope",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 6,
+          "name": "grant_state",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 7,
+          "name": "grant_redirect_uri",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 8,
+          "name": "grant_response_mode",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 9,
+          "name": "grant_nonce",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 10,
+          "name": "grant_max_age",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 11,
+          "name": "grant_acr_values",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 12,
+          "name": "client_id",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 13,
+          "name": "grant_code",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 14,
+          "name": "grant_response_type_code",
+          "type_info": "Bool"
+        },
+        {
+          "ordinal": 15,
+          "name": "grant_response_type_token",
+          "type_info": "Bool"
+        },
+        {
+          "ordinal": 16,
+          "name": "grant_response_type_id_token",
+          "type_info": "Bool"
+        },
+        {
+          "ordinal": 17,
+          "name": "grant_code_challenge",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 18,
+          "name": "grant_code_challenge_method",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 19,
+          "name": "session_id?",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 20,
+          "name": "user_session_id?",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 21,
+          "name": "user_session_created_at?",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 22,
+          "name": "user_id?",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 23,
+          "name": "user_username?",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 24,
+          "name": "user_session_last_authentication_id?",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 25,
+          "name": "user_session_last_authentication_created_at?",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 26,
+          "name": "user_email_id?",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 27,
+          "name": "user_email?",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 28,
+          "name": "user_email_created_at?",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 29,
+          "name": "user_email_confirmed_at?",
           "type_info": "Timestamptz"
         }
       ],
       "parameters": {
         "Left": [
-          "Int8",
           "Int8"
         ]
       },
       "nullable": [
+        false,
+        false,
+        true,
+        true,
+        true,
+        false,
+        true,
+        false,
+        false,
+        true,
+        true,
+        true,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
         true
       ]
     }
   },
-  "7fa7d001583e98f5e4626751fa2c8743e7b83a240d1a51de50a7dba95c4e8a6b": {
-    "query": "\n            SELECT\n                s.id,\n                u.id as user_id,\n                u.username,\n                s.created_at,\n                a.id as \"last_authentication_id?\",\n                a.created_at as \"last_authd_at?\"\n            FROM user_sessions s\n            INNER JOIN users u \n                ON s.user_id = u.id\n            LEFT JOIN user_session_authentications a\n                ON a.session_id = s.id\n            WHERE s.id = $1 AND s.active\n            ORDER BY a.created_at DESC\n            LIMIT 1\n        ",
+  "307fd9f71e7a94a0a0d9ce523ee9792e127485d0d12480c43f179dd9b75afbab": {
+    "query": "\n            INSERT INTO user_sessions (user_id)\n            VALUES ($1)\n            RETURNING id, created_at\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "38641231a3bff71252e8bc0ead3a033c9148762ea64d707642551c01a4c89b84": {
+    "query": "\n            INSERT INTO oauth2_authorization_grants\n                (client_id, redirect_uri, scope, state, nonce, max_age,\n                 acr_values, response_mode, code_challenge, code_challenge_method,\n                 response_type_code, response_type_token, response_type_id_token,\n                 code)\n            VALUES\n                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)\n            RETURNING id, created_at\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Int4",
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Bool",
+          "Bool",
+          "Bool",
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "41b5ecd6860791ac6f90417ac51eb977b8c69a3dd81af4672b2592efb65963eb": {
+    "query": "\n            SELECT \n                ue.id           AS \"user_email_id\",\n                ue.email        AS \"user_email\",\n                ue.created_at   AS \"user_email_created_at\",\n                ue.confirmed_at AS \"user_email_confirmed_at\"\n            FROM user_emails ue\n\n            WHERE ue.user_id = $1\n\n            ORDER BY ue.email ASC\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "user_email_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "user_email",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "user_email_created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 3,
+          "name": "user_email_confirmed_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        true
+      ]
+    }
+  },
+  "494c17c20047e761b0dbdac0e13854af7955743afd970bbcae83ba944838c58e": {
+    "query": "\n            SELECT\n                s.id,\n                u.id AS user_id,\n                u.username,\n                s.created_at,\n                a.id               AS \"last_authentication_id?\",\n                a.created_at       AS \"last_authd_at?\",\n                ue.id              AS \"user_email_id?\",\n                ue.email           AS \"user_email?\",\n                ue.created_at      AS \"user_email_created_at?\",\n                ue.confirmed_at    AS \"user_email_confirmed_at?\"\n            FROM user_sessions s\n            INNER JOIN users u \n                ON s.user_id = u.id\n            LEFT JOIN user_session_authentications a\n                ON a.session_id = s.id\n            LEFT JOIN user_emails ue\n              ON ue.id = u.primary_email_id\n            WHERE s.id = $1 AND s.active\n            ORDER BY a.created_at DESC\n            LIMIT 1\n        ",
     "describe": {
       "columns": [
         {
@@ -693,6 +492,26 @@
           "ordinal": 5,
           "name": "last_authd_at?",
           "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 6,
+          "name": "user_email_id?",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 7,
+          "name": "user_email?",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 8,
+          "name": "user_email_created_at?",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 9,
+          "name": "user_email_confirmed_at?",
+          "type_info": "Timestamptz"
         }
       ],
       "parameters": {
@@ -706,7 +525,102 @@
         false,
         false,
         false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ]
+    }
+  },
+  "581243a7f0c033548cc9644e0c60855ecb8bfefe51779eb135dd7547b886de79": {
+    "query": "\n            UPDATE oauth2_sessions\n            SET ended_at = NOW()\n            WHERE id = $1\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "59e8a5de682642883a9b9fc1b522736fa4397f0a0c97074f2c8908e5956c0166": {
+    "query": "\n            INSERT INTO oauth2_access_tokens\n                (oauth2_session_id, token, expires_after)\n            VALUES\n                ($1, $2, $3)\n            RETURNING\n                id, created_at\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text",
+          "Int4"
+        ]
+      },
+      "nullable": [
+        false,
         false
+      ]
+    }
+  },
+  "5d1a17b2ad6153217551ae31549ad9d62cc39d2f9a4e62a7ccb60fd91e0ac685": {
+    "query": "\n            DELETE FROM oauth2_access_tokens\n            WHERE created_at + (expires_after * INTERVAL '1 second') + INTERVAL '15 minutes' < now()\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": []
+    }
+  },
+  "647a2a5bbde39d0ed3931d0287b468bc7dedf6171e1dc6171a5d9f079b9ed0fa": {
+    "query": "\n            SELECT up.hashed_password\n            FROM user_passwords up\n            WHERE up.user_id = $1\n            ORDER BY up.created_at DESC\n            LIMIT 1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "hashed_password",
+          "type_info": "Text"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "703850ba4e001d53776d77a64cbc1ee6feb61485ce41aff1103251f9b3778128": {
+    "query": "\n            UPDATE oauth2_authorization_grants AS og\n            SET\n                oauth2_session_id = os.id,\n                fulfilled_at = os.created_at\n            FROM oauth2_sessions os\n            WHERE\n                og.id = $1 AND os.id = $2\n            RETURNING fulfilled_at AS \"fulfilled_at!: DateTime<Utc>\"\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "fulfilled_at!: DateTime<Utc>",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": [
+        true
       ]
     }
   },
@@ -732,6 +646,56 @@
         ]
       },
       "nullable": []
+    }
+  },
+  "aea289a04e151da235825305a5085bc6aa100fce139dbf10a2c1bed4867fc52a": {
+    "query": "\n            SELECT \n                u.id            AS user_id, \n                u.username      AS user_username,\n                ue.id           AS \"user_email_id?\",\n                ue.email        AS \"user_email?\",\n                ue.created_at   AS \"user_email_created_at?\",\n                ue.confirmed_at AS \"user_email_confirmed_at?\"\n            FROM users u\n\n            LEFT JOIN user_emails ue\n              ON ue.id = u.primary_email_id\n\n            WHERE u.username = $1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "user_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "user_username",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "user_email_id?",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 3,
+          "name": "user_email?",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 4,
+          "name": "user_email_created_at?",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 5,
+          "name": "user_email_confirmed_at?",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ]
     }
   },
   "c29e741474aacc91c0aacc028a9e7452a5327d5ce6d4b791bf20a2636069087e": {
@@ -772,6 +736,316 @@
         ]
       },
       "nullable": []
+    }
+  },
+  "cf1b7513a56d20e405bf11f806adea2853a08ee05497c952bb3ee1dadc866d4b": {
+    "query": "\n            SELECT\n                at.id              AS \"access_token_id\",\n                at.token           AS \"access_token\",\n                at.expires_after   AS \"access_token_expires_after\",\n                at.created_at      AS \"access_token_created_at\",\n                os.id              AS \"session_id!\",\n                os.client_id       AS \"client_id!\",\n                os.scope           AS \"scope!\",\n                us.id              AS \"user_session_id!\",\n                us.created_at      AS \"user_session_created_at!\",\n                 u.id              AS \"user_id!\",\n                 u.username        AS \"user_username!\",\n                usa.id             AS \"user_session_last_authentication_id?\",\n                usa.created_at     AS \"user_session_last_authentication_created_at?\",\n                ue.id              AS \"user_email_id?\",\n                ue.email           AS \"user_email?\",\n                ue.created_at      AS \"user_email_created_at?\",\n                ue.confirmed_at    AS \"user_email_confirmed_at?\"\n\n            FROM oauth2_access_tokens at\n            INNER JOIN oauth2_sessions os\n              ON os.id = at.oauth2_session_id\n            INNER JOIN user_sessions us\n              ON us.id = os.user_session_id\n            INNER JOIN users u\n              ON u.id = us.user_id\n            LEFT JOIN user_session_authentications usa\n              ON usa.session_id = us.id\n            LEFT JOIN user_emails ue\n              ON ue.id = u.primary_email_id\n\n            WHERE at.token = $1\n              AND at.created_at + (at.expires_after * INTERVAL '1 second') >= now()\n              AND us.active\n              AND os.ended_at IS NULL\n\n            ORDER BY usa.created_at DESC\n            LIMIT 1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "access_token_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "access_token",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "access_token_expires_after",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 3,
+          "name": "access_token_created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 4,
+          "name": "session_id!",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 5,
+          "name": "client_id!",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 6,
+          "name": "scope!",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 7,
+          "name": "user_session_id!",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 8,
+          "name": "user_session_created_at!",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 9,
+          "name": "user_id!",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 10,
+          "name": "user_username!",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 11,
+          "name": "user_session_last_authentication_id?",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 12,
+          "name": "user_session_last_authentication_created_at?",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 13,
+          "name": "user_email_id?",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 14,
+          "name": "user_email?",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 15,
+          "name": "user_email_created_at?",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 16,
+          "name": "user_email_confirmed_at?",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ]
+    }
+  },
+  "d3883020ad9a0e5ea72fb9ddd2801a067209488a6ef3179afbc8173e4cc729de": {
+    "query": "\n            SELECT\n                og.id            AS grant_id,\n                og.created_at    AS grant_created_at,\n                og.cancelled_at  AS grant_cancelled_at,\n                og.fulfilled_at  AS grant_fulfilled_at,\n                og.exchanged_at  AS grant_exchanged_at,\n                og.scope         AS grant_scope,\n                og.state         AS grant_state,\n                og.redirect_uri  AS grant_redirect_uri,\n                og.response_mode AS grant_response_mode,\n                og.nonce         AS grant_nonce,\n                og.max_age       AS grant_max_age,\n                og.acr_values    AS grant_acr_values,\n                og.client_id     AS client_id,\n                og.code          AS grant_code,\n                og.response_type_code     AS grant_response_type_code,\n                og.response_type_token    AS grant_response_type_token,\n                og.response_type_id_token AS grant_response_type_id_token,\n                og.code_challenge         AS grant_code_challenge,\n                og.code_challenge_method  AS grant_code_challenge_method,\n                os.id              AS \"session_id?\",\n                us.id              AS \"user_session_id?\",\n                us.created_at      AS \"user_session_created_at?\",\n                 u.id              AS \"user_id?\",\n                 u.username        AS \"user_username?\",\n                usa.id             AS \"user_session_last_authentication_id?\",\n                usa.created_at     AS \"user_session_last_authentication_created_at?\",\n                ue.id              AS \"user_email_id?\",\n                ue.email           AS \"user_email?\",\n                ue.created_at      AS \"user_email_created_at?\",\n                ue.confirmed_at    AS \"user_email_confirmed_at?\"\n            FROM\n                oauth2_authorization_grants og\n            LEFT JOIN oauth2_sessions os\n                ON os.id = og.oauth2_session_id\n            LEFT JOIN user_sessions us\n              ON us.id = os.user_session_id\n            LEFT JOIN users u\n              ON u.id = us.user_id\n            LEFT JOIN user_session_authentications usa\n              ON usa.session_id = us.id\n            LEFT JOIN user_emails ue\n              ON ue.id = u.primary_email_id\n\n            WHERE og.code = $1\n\n            ORDER BY usa.created_at DESC\n            LIMIT 1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "grant_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "grant_created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 2,
+          "name": "grant_cancelled_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 3,
+          "name": "grant_fulfilled_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 4,
+          "name": "grant_exchanged_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 5,
+          "name": "grant_scope",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 6,
+          "name": "grant_state",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 7,
+          "name": "grant_redirect_uri",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 8,
+          "name": "grant_response_mode",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 9,
+          "name": "grant_nonce",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 10,
+          "name": "grant_max_age",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 11,
+          "name": "grant_acr_values",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 12,
+          "name": "client_id",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 13,
+          "name": "grant_code",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 14,
+          "name": "grant_response_type_code",
+          "type_info": "Bool"
+        },
+        {
+          "ordinal": 15,
+          "name": "grant_response_type_token",
+          "type_info": "Bool"
+        },
+        {
+          "ordinal": 16,
+          "name": "grant_response_type_id_token",
+          "type_info": "Bool"
+        },
+        {
+          "ordinal": 17,
+          "name": "grant_code_challenge",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 18,
+          "name": "grant_code_challenge_method",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 19,
+          "name": "session_id?",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 20,
+          "name": "user_session_id?",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 21,
+          "name": "user_session_created_at?",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 22,
+          "name": "user_id?",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 23,
+          "name": "user_username?",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 24,
+          "name": "user_session_last_authentication_id?",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 25,
+          "name": "user_session_last_authentication_created_at?",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 26,
+          "name": "user_email_id?",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 27,
+          "name": "user_email?",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 28,
+          "name": "user_email_created_at?",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 29,
+          "name": "user_email_confirmed_at?",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        true,
+        true,
+        true,
+        false,
+        true,
+        false,
+        false,
+        true,
+        true,
+        true,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ]
     }
   },
   "d604e13bdfb2ff3d354d995f0b68f04091847755db98bafea7c45bd7b5c4ab68": {
@@ -870,98 +1144,6 @@
       },
       "nullable": [
         null
-      ]
-    }
-  },
-  "e5ea498197276d0948deda4d0d24ed0bb36bfbba362cd01fc9506afa68e6f183": {
-    "query": "\n            SELECT\n                at.id              AS \"access_token_id\",\n                at.token           AS \"access_token\",\n                at.expires_after   AS \"access_token_expires_after\",\n                at.created_at      AS \"access_token_created_at\",\n                os.id              AS \"session_id!\",\n                os.client_id       AS \"client_id!\",\n                os.scope           AS \"scope!\",\n                us.id              AS \"user_session_id!\",\n                us.created_at      AS \"user_session_created_at!\",\n                 u.id              AS \"user_id!\",\n                 u.username        AS \"user_username!\",\n                usa.id             AS \"user_session_last_authentication_id?\",\n                usa.created_at     AS \"user_session_last_authentication_created_at?\"\n\n            FROM oauth2_access_tokens at\n            INNER JOIN oauth2_sessions os\n              ON os.id = at.oauth2_session_id\n            INNER JOIN user_sessions us\n              ON us.id = os.user_session_id\n            INNER JOIN users u\n              ON u.id = us.user_id\n            LEFT JOIN user_session_authentications usa\n              ON usa.session_id = us.id\n\n            WHERE at.token = $1\n              AND at.created_at + (at.expires_after * INTERVAL '1 second') >= now()\n              AND us.active\n              AND os.ended_at IS NULL\n\n            ORDER BY usa.created_at DESC\n            LIMIT 1\n        ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "access_token_id",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 1,
-          "name": "access_token",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 2,
-          "name": "access_token_expires_after",
-          "type_info": "Int4"
-        },
-        {
-          "ordinal": 3,
-          "name": "access_token_created_at",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 4,
-          "name": "session_id!",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 5,
-          "name": "client_id!",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 6,
-          "name": "scope!",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 7,
-          "name": "user_session_id!",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 8,
-          "name": "user_session_created_at!",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 9,
-          "name": "user_id!",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 10,
-          "name": "user_username!",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 11,
-          "name": "user_session_last_authentication_id?",
-          "type_info": "Int8"
-        },
-        {
-          "ordinal": 12,
-          "name": "user_session_last_authentication_created_at?",
-          "type_info": "Timestamptz"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Text"
-        ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
       ]
     }
   }

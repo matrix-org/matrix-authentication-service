@@ -20,7 +20,7 @@ use anyhow::Context;
 use chrono::{DateTime, Utc};
 use mas_data_model::{
     Authentication, AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, BrowserSession,
-    Client, Pkce, Session, User,
+    Client, Pkce, Session, User, UserEmail,
 };
 use mas_iana::oauth::PkceCodeChallengeMethod;
 use oauth2_types::{requests::ResponseMode, scope::Scope};
@@ -135,6 +135,10 @@ struct GrantLookup {
     user_username: Option<String>,
     user_session_last_authentication_id: Option<i64>,
     user_session_last_authentication_created_at: Option<DateTime<Utc>>,
+    user_email_id: Option<i64>,
+    user_email: Option<String>,
+    user_email_created_at: Option<DateTime<Utc>>,
+    user_email_confirmed_at: Option<DateTime<Utc>>,
 }
 
 impl TryInto<AuthorizationGrant<PostgresqlBackend>> for GrantLookup {
@@ -164,6 +168,22 @@ impl TryInto<AuthorizationGrant<PostgresqlBackend>> for GrantLookup {
             _ => return Err(DatabaseInconsistencyError),
         };
 
+        let primary_email = match (
+            self.user_email_id,
+            self.user_email,
+            self.user_email_created_at,
+            self.user_email_confirmed_at,
+        ) {
+            (Some(id), Some(email), Some(created_at), confirmed_at) => Some(UserEmail {
+                data: id,
+                email,
+                created_at,
+                confirmed_at,
+            }),
+            (None, None, None, None) => None,
+            _ => return Err(DatabaseInconsistencyError),
+        };
+
         let session = match (
             self.session_id,
             self.user_session_id,
@@ -171,6 +191,7 @@ impl TryInto<AuthorizationGrant<PostgresqlBackend>> for GrantLookup {
             self.user_id,
             self.user_username,
             last_authentication,
+            primary_email,
         ) {
             (
                 Some(session_id),
@@ -179,11 +200,13 @@ impl TryInto<AuthorizationGrant<PostgresqlBackend>> for GrantLookup {
                 Some(user_id),
                 Some(user_username),
                 last_authentication,
+                primary_email,
             ) => {
                 let user = User {
                     data: user_id,
                     username: user_username,
                     sub: format!("fake-sub-{}", user_id),
+                    primary_email,
                 };
 
                 let browser_session = BrowserSession {
@@ -205,7 +228,7 @@ impl TryInto<AuthorizationGrant<PostgresqlBackend>> for GrantLookup {
 
                 Some(session)
             }
-            (None, None, None, None, None, None) => None,
+            (None, None, None, None, None, None, None) => None,
             _ => return Err(DatabaseInconsistencyError),
         };
 
@@ -333,7 +356,11 @@ pub async fn get_grant_by_id(
                  u.id              AS "user_id?",
                  u.username        AS "user_username?",
                 usa.id             AS "user_session_last_authentication_id?",
-                usa.created_at     AS "user_session_last_authentication_created_at?"
+                usa.created_at     AS "user_session_last_authentication_created_at?",
+                ue.id              AS "user_email_id?",
+                ue.email           AS "user_email?",
+                ue.created_at      AS "user_email_created_at?",
+                ue.confirmed_at    AS "user_email_confirmed_at?"
             FROM
                 oauth2_authorization_grants og
             LEFT JOIN oauth2_sessions os
@@ -344,8 +371,10 @@ pub async fn get_grant_by_id(
               ON u.id = us.user_id
             LEFT JOIN user_session_authentications usa
               ON usa.session_id = us.id
-            WHERE
-                og.id = $1
+            LEFT JOIN user_emails ue
+              ON ue.id = u.primary_email_id
+
+            WHERE og.id = $1
 
             ORDER BY usa.created_at DESC
             LIMIT 1
@@ -395,7 +424,11 @@ pub async fn lookup_grant_by_code(
                  u.id              AS "user_id?",
                  u.username        AS "user_username?",
                 usa.id             AS "user_session_last_authentication_id?",
-                usa.created_at     AS "user_session_last_authentication_created_at?"
+                usa.created_at     AS "user_session_last_authentication_created_at?",
+                ue.id              AS "user_email_id?",
+                ue.email           AS "user_email?",
+                ue.created_at      AS "user_email_created_at?",
+                ue.confirmed_at    AS "user_email_confirmed_at?"
             FROM
                 oauth2_authorization_grants og
             LEFT JOIN oauth2_sessions os
@@ -406,8 +439,10 @@ pub async fn lookup_grant_by_code(
               ON u.id = us.user_id
             LEFT JOIN user_session_authentications usa
               ON usa.session_id = us.id
-            WHERE
-                og.code = $1
+            LEFT JOIN user_emails ue
+              ON ue.id = u.primary_email_id
+
+            WHERE og.code = $1
 
             ORDER BY usa.created_at DESC
             LIMIT 1

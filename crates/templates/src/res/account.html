@@ -26,6 +26,10 @@ limitations under the License.
       <div>{{ current_session.user.sub }}</div>
       <div class="font-bold">Active sessions</div>
       <div>{{ active_sessions }}</div>
+      {% if current_session.user.primary_email %}
+        <div class="font-bold">Primary email</div>
+        <div>{{ current_session.user.primary_email.email }}</div>
+      {% endif %}
     </div>
     <form class="rounded border-2 border-grey-50 dark:border-grey-450 p-4 grid gap-4 xl:grid-cols-2 grid-cols-1 place-content-start" method="POST">
       <h2 class="text-xl font-bold xl:col-span-2">Change my password</h2>
@@ -48,6 +52,13 @@ limitations under the License.
         {% endif %}
       </div>
       {{ button::link_ghost(text="Revalidate", href="/reauth", class="col-span-2 place-self-end") }}
+    </div>
+    <div class="rounded border-2 border-grey-50 dark:border-grey-450 p-4 grid gap-4 xl:grid-cols-2 grid-cols-1 place-content-start">
+      <h2 class="text-xl font-bold xl:col-span-2">Emails</h2>
+      {% for email in emails %}
+        <div class="font-bold">{{ email.email }}</div>
+        <div>{% if email.confirmed_at %}Confirmed{% else %}Unconfirmed{% endif %}</div>
+      {% endfor %}
     </div>
   </section>
 {% endblock content %}

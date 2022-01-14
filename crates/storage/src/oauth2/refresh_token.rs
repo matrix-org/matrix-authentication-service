@@ -15,7 +15,7 @@
 use anyhow::Context;
 use chrono::{DateTime, Duration, Utc};
 use mas_data_model::{
-    AccessToken, Authentication, BrowserSession, Client, RefreshToken, Session, User,
+    AccessToken, Authentication, BrowserSession, Client, RefreshToken, Session, User, UserEmail,
 };
 use sqlx::PgExecutor;
 
@@ -70,6 +70,10 @@ struct OAuth2RefreshTokenLookup {
     user_username: String,
     user_session_last_authentication_id: Option<i64>,
     user_session_last_authentication_created_at: Option<DateTime<Utc>>,
+    user_email_id: Option<i64>,
+    user_email: Option<String>,
+    user_email_created_at: Option<DateTime<Utc>>,
+    user_email_confirmed_at: Option<DateTime<Utc>>,
 }
 
 #[allow(clippy::too_many_lines)]
@@ -96,7 +100,11 @@ pub async fn lookup_active_refresh_token(
                  u.id              AS "user_id!",
                  u.username        AS "user_username!",
                 usa.id             AS "user_session_last_authentication_id?",
-                usa.created_at     AS "user_session_last_authentication_created_at?"
+                usa.created_at     AS "user_session_last_authentication_created_at?",
+                ue.id              AS "user_email_id?",
+                ue.email           AS "user_email?",
+                ue.created_at      AS "user_email_created_at?",
+                ue.confirmed_at    AS "user_email_confirmed_at?"
             FROM oauth2_refresh_tokens rt
             LEFT JOIN oauth2_access_tokens at
               ON at.id = rt.oauth2_access_token_id
@@ -108,6 +116,8 @@ pub async fn lookup_active_refresh_token(
               ON u.id = us.user_id
             LEFT JOIN user_session_authentications usa
               ON usa.session_id = us.id
+            LEFT JOIN user_emails ue
+              ON ue.id = u.primary_email_id
 
             WHERE rt.token = $1
               AND rt.next_token_id IS NULL
@@ -152,10 +162,27 @@ pub async fn lookup_active_refresh_token(
         client_id: res.client_id,
     };
 
+    let primary_email = match (
+        res.user_email_id,
+        res.user_email,
+        res.user_email_created_at,
+        res.user_email_confirmed_at,
+    ) {
+        (Some(id), Some(email), Some(created_at), confirmed_at) => Some(UserEmail {
+            data: id,
+            email,
+            created_at,
+            confirmed_at,
+        }),
+        (None, None, None, None) => None,
+        _ => return Err(DatabaseInconsistencyError.into()),
+    };
+
     let user = User {
         data: res.user_id,
         username: res.user_username,
         sub: format!("fake-sub-{}", res.user_id),
+        primary_email,
     };
 
     let last_authentication = match (
