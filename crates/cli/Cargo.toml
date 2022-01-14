@@ -9,7 +9,7 @@ license = "Apache-2.0"
 tokio = { version = "1.15.0", features = ["full"] }
 futures = "0.3.19"
 anyhow = { version = "1.0.52", features = ["backtrace"] }
-clap = { version = "3.0.4", features = ["derive"] }
+clap = { version = "3.0.7", features = ["derive"] }
 dotenv = "0.15.0"
 schemars = { version = "0.8.8", features = ["url", "chrono"] }
 tower = { version = "0.4.11", features = ["full"] }
@@ -19,7 +19,7 @@ serde_yaml = "0.8.23"
 warp = "0.3.2"
 url = "2.2.2"
 argon2 = { version = "0.3.2", features = ["password-hash"] }
-reqwest = { version = "0.11.8", features = ["rustls-tls"], default-features = false, optional = true }
+reqwest = { version = "0.11.9", features = ["rustls-tls"], default-features = false, optional = true }
 watchman_client = "0.7.1"
 
 tracing = "0.1.29"
