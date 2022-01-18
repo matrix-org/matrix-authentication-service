@@ -53,18 +53,13 @@ pub fn filter(
     let filter = discovery
         .or(keys)
         .unify()
-        .boxed()
         .or(userinfo)
         .unify()
-        .boxed()
         .or(token)
         .unify()
-        .boxed()
         .or(introspection)
         .unify()
-        .boxed()
-        .with(cors().allow_methods([Method::POST, Method::GET]))
-        .boxed();
+        .with(cors().allow_methods([Method::POST, Method::GET]));
 
     filter.or(authorization).boxed()
 }

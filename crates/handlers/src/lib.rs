@@ -55,14 +55,7 @@ pub fn root(
     );
     let static_files = static_files(config.http.web_root.clone());
 
-    let filter = health
-        .or(views)
-        .unify()
-        .or(static_files)
-        .unify()
-        .boxed()
-        .or(oauth2)
-        .boxed();
+    let filter = health.or(views).unify().or(static_files).unify().or(oauth2);
 
     filter.with(warp::log(module_path!())).boxed()
 }

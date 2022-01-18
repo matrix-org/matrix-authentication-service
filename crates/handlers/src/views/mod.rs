@@ -47,8 +47,16 @@ pub(super) fn filter(
     let logout = logout(pool, cookies_config);
     let reauth = reauth(pool, templates, csrf_config, cookies_config);
 
-    let f1 = index.or(account).unify().boxed();
-    let f2 = login.or(register).unify().boxed();
-    let f3 = logout.or(reauth).unify().boxed();
-    f1.or(f2).unify().or(f3).unify().boxed()
+    index
+        .or(account)
+        .unify()
+        .or(login)
+        .unify()
+        .or(register)
+        .unify()
+        .or(logout)
+        .unify()
+        .or(reauth)
+        .unify()
+        .boxed()
 }
