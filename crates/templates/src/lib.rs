@@ -33,6 +33,7 @@ use std::{
 
 use anyhow::{bail, Context as _};
 use mas_config::TemplatesConfig;
+use mas_data_model::StorageBackend;
 use serde::Serialize;
 use tera::{Context, Error as TeraError, Tera};
 use thiserror::Error;
@@ -47,9 +48,10 @@ mod functions;
 mod macros;
 
 pub use self::context::{
-    AccountContext, EmptyContext, ErrorContext, FormPostContext, IndexContext, LoginContext,
-    LoginFormField, PostAuthContext, ReauthContext, ReauthFormField, RegisterContext,
-    RegisterFormField, TemplateContext, WithCsrf, WithOptionalSession, WithSession,
+    AccountContext, AccountEmailsContext, EmptyContext, ErrorContext, FormPostContext,
+    IndexContext, LoginContext, LoginFormField, PostAuthContext, ReauthContext, ReauthFormField,
+    RegisterContext, RegisterFormField, TemplateContext, WithCsrf, WithOptionalSession,
+    WithSession,
 };
 
 /// Wrapper around [`tera::Tera`] helping rendering the various templates
@@ -298,6 +300,9 @@ register_templates! {
 
     /// Render the password change page
     pub fn render_account_password(WithCsrf<WithSession<EmptyContext>>) { "pages/account/password.html" }
+
+    /// Render the emails management
+    pub fn render_account_emails<T: StorageBackend>(WithCsrf<WithSession<AccountEmailsContext<T>>>) { "pages/account/emails.html" }
 
     /// Render the re-authentication form
     pub fn render_reauth(WithCsrf<WithSession<ReauthContext>>) { "pages/reauth.html" }

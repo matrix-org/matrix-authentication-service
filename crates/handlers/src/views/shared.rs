@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![allow(clippy::trait_duplication_in_bounds)]
+
 use hyper::Uri;
-use mas_data_model::StorageBackend;
-use mas_storage::PostgresqlBackend;
 use mas_templates::PostAuthContext;
 use serde::{Deserialize, Serialize};
 use sqlx::PgExecutor;
@@ -23,33 +23,17 @@ use super::super::oauth2::ContinueAuthorizationGrant;
 
 #[derive(Deserialize, Serialize, Clone)]
 #[serde(rename_all = "snake_case", tag = "next")]
-pub(crate) enum PostAuthAction<S: StorageBackend> {
-    #[serde(bound(
-        deserialize = "S::AuthorizationGrantData: std::str::FromStr, 
-                       <S::AuthorizationGrantData as std::str::FromStr>::Err: std::fmt::Display",
-        serialize = "S::AuthorizationGrantData: std::fmt::Display"
-    ))]
-    ContinueAuthorizationGrant(ContinueAuthorizationGrant<S>),
+pub(crate) enum PostAuthAction {
+    ContinueAuthorizationGrant(ContinueAuthorizationGrant),
 }
 
-impl<S: StorageBackend> PostAuthAction<S> {
-    pub fn build_uri(&self) -> anyhow::Result<Uri>
-    where
-        S::AuthorizationGrantData: std::fmt::Display,
-    {
+impl PostAuthAction {
+    pub fn build_uri(&self) -> anyhow::Result<Uri> {
         match self {
             PostAuthAction::ContinueAuthorizationGrant(c) => c.build_uri(),
         }
     }
-}
 
-impl<S: StorageBackend> From<ContinueAuthorizationGrant<S>> for PostAuthAction<S> {
-    fn from(g: ContinueAuthorizationGrant<S>) -> Self {
-        Self::ContinueAuthorizationGrant(g)
-    }
-}
-
-impl PostAuthAction<PostgresqlBackend> {
     pub async fn load_context<'e>(
         &self,
         executor: impl PgExecutor<'e>,
@@ -61,5 +45,11 @@ impl PostAuthAction<PostgresqlBackend> {
                 Ok(PostAuthContext::ContinueAuthorizationGrant { grant })
             }
         }
+    }
+}
+
+impl From<ContinueAuthorizationGrant> for PostAuthAction {
+    fn from(g: ContinueAuthorizationGrant) -> Self {
+        Self::ContinueAuthorizationGrant(g)
     }
 }

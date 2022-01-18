@@ -14,7 +14,7 @@
 
 use hyper::http::uri::{Parts, PathAndQuery};
 use mas_config::{CookiesConfig, CsrfConfig};
-use mas_data_model::{BrowserSession, StorageBackend};
+use mas_data_model::BrowserSession;
 use mas_storage::{user::authenticate_session, PostgresqlBackend};
 use mas_templates::{ReauthContext, TemplateContext, Templates};
 use mas_warp_utils::{
@@ -34,26 +34,21 @@ use warp::{filters::BoxedFilter, hyper::Uri, reply::html, Filter, Rejection, Rep
 use super::PostAuthAction;
 
 #[derive(Deserialize)]
-#[serde(bound(deserialize = "S::AuthorizationGrantData: std::str::FromStr,
-                             <S::AuthorizationGrantData as std::str::FromStr>::Err: std::fmt::Display"))]
-pub(crate) struct ReauthRequest<S: StorageBackend> {
+pub(crate) struct ReauthRequest {
     #[serde(flatten)]
-    post_auth_action: Option<PostAuthAction<S>>,
+    post_auth_action: Option<PostAuthAction>,
 }
 
-impl<S: StorageBackend> From<PostAuthAction<S>> for ReauthRequest<S> {
-    fn from(post_auth_action: PostAuthAction<S>) -> Self {
+impl From<PostAuthAction> for ReauthRequest {
+    fn from(post_auth_action: PostAuthAction) -> Self {
         Self {
             post_auth_action: Some(post_auth_action),
         }
     }
 }
 
-impl<S: StorageBackend> ReauthRequest<S> {
-    pub fn build_uri(&self) -> anyhow::Result<Uri>
-    where
-        S::AuthorizationGrantData: std::fmt::Display,
-    {
+impl ReauthRequest {
+    pub fn build_uri(&self) -> anyhow::Result<Uri> {
         let path_and_query = if let Some(next) = &self.post_auth_action {
             let qs = serde_urlencoded::to_string(next)?;
             PathAndQuery::try_from(format!("/reauth?{}", qs))?
@@ -68,10 +63,7 @@ impl<S: StorageBackend> ReauthRequest<S> {
         Ok(uri)
     }
 
-    fn redirect(self) -> Result<impl Reply, Rejection>
-    where
-        S::AuthorizationGrantData: std::fmt::Display,
-    {
+    fn redirect(self) -> Result<impl Reply, Rejection> {
         let uri = self
             .post_auth_action
             .as_ref()
@@ -119,7 +111,7 @@ async fn get(
     cookie_saver: EncryptedCookieSaver,
     csrf_token: CsrfToken,
     session: BrowserSession<PostgresqlBackend>,
-    query: ReauthRequest<PostgresqlBackend>,
+    query: ReauthRequest,
 ) -> Result<Box<dyn Reply>, Rejection> {
     let ctx = ReauthContext::default();
     let ctx = match query.post_auth_action {
@@ -141,7 +133,7 @@ async fn post(
     mut session: BrowserSession<PostgresqlBackend>,
     mut txn: Transaction<'_, Postgres>,
     form: ReauthForm,
-    query: ReauthRequest<PostgresqlBackend>,
+    query: ReauthRequest,
 ) -> Result<Box<dyn Reply>, Rejection> {
     // TODO: recover from errors here
     authenticate_session(&mut txn, &mut session, form.password)

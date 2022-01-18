@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+mod emails;
 mod password;
 
 use mas_config::{CookiesConfig, CsrfConfig};
@@ -34,7 +35,7 @@ use mas_warp_utils::{
 use sqlx::{pool::PoolConnection, PgPool, Postgres};
 use warp::{filters::BoxedFilter, reply::html, Filter, Rejection, Reply};
 
-use self::password::filter as password;
+use self::{emails::filter as emails, password::filter as password};
 
 pub(super) fn filter(
     pool: &PgPool,
@@ -52,8 +53,9 @@ pub(super) fn filter(
 
     let index = warp::path::end().and(get);
     let password = password(pool, templates, csrf_config, cookies_config);
+    let emails = emails(pool, templates, csrf_config, cookies_config);
 
-    let filter = index.or(password).unify();
+    let filter = index.or(password).unify().or(emails).unify();
 
     warp::path::path("account").and(filter).boxed()
 }

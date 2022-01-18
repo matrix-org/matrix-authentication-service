@@ -14,6 +14,8 @@
 
 //! Contexts used in templates
 
+#![allow(clippy::trait_duplication_in_bounds)]
+
 use mas_data_model::{
     errors::ErroredForm, AuthorizationGrant, BrowserSession, StorageBackend, UserEmail,
 };
@@ -384,7 +386,7 @@ pub struct ReauthContext {
     next: Option<PostAuthContext>,
 }
 
-/// Context used by the `account.html` template
+/// Context used by the `account/index.html` template
 #[derive(Serialize)]
 pub struct AccountContext {
     active_sessions: usize,
@@ -411,6 +413,30 @@ impl TemplateContext for AccountContext {
     {
         let emails: Vec<UserEmail<()>> = UserEmail::samples();
         vec![Self::new(5, emails)]
+    }
+}
+
+/// Context used by the `account/emails.html` template
+#[derive(Serialize)]
+#[serde(bound(serialize = "T: StorageBackend"))]
+pub struct AccountEmailsContext<T: StorageBackend> {
+    emails: Vec<UserEmail<T>>,
+}
+
+impl<T: StorageBackend> AccountEmailsContext<T> {
+    #[must_use]
+    pub fn new(emails: Vec<UserEmail<T>>) -> Self {
+        Self { emails }
+    }
+}
+
+impl<T: StorageBackend> TemplateContext for AccountEmailsContext<T> {
+    fn sample() -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        let emails: Vec<UserEmail<T>> = UserEmail::samples();
+        vec![Self::new(emails)]
     }
 }
 

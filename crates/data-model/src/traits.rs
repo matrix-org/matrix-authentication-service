@@ -12,18 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::fmt::Debug;
+
+use serde::{de::DeserializeOwned, Serialize};
+
 pub trait StorageBackendMarker: StorageBackend {}
 
 pub trait StorageBackend {
-    type UserData: Clone + std::fmt::Debug + PartialEq;
-    type UserEmailData: Clone + std::fmt::Debug + PartialEq;
-    type AuthenticationData: Clone + std::fmt::Debug + PartialEq;
-    type BrowserSessionData: Clone + std::fmt::Debug + PartialEq;
-    type ClientData: Clone + std::fmt::Debug + PartialEq;
-    type SessionData: Clone + std::fmt::Debug + PartialEq;
-    type AuthorizationGrantData: Clone + std::fmt::Debug + PartialEq;
-    type AccessTokenData: Clone + std::fmt::Debug + PartialEq;
-    type RefreshTokenData: Clone + std::fmt::Debug + PartialEq;
+    type UserData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
+    type UserEmailData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
+    type AuthenticationData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
+    type BrowserSessionData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
+    type ClientData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
+    type SessionData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
+    type AuthorizationGrantData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
+    type AccessTokenData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
+    type RefreshTokenData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
 }
 
 impl StorageBackend for () {

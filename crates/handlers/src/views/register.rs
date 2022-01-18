@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![allow(clippy::trait_duplication_in_bounds)]
+
 use argon2::Argon2;
 use hyper::http::uri::{Parts, PathAndQuery, Uri};
 use mas_config::{CookiesConfig, CsrfConfig};
-use mas_data_model::{BrowserSession, StorageBackend};
+use mas_data_model::BrowserSession;
 use mas_storage::{
     user::{register_user, start_session},
     PostgresqlBackend,
@@ -38,27 +40,22 @@ use warp::{filters::BoxedFilter, reply::html, Filter, Rejection, Reply};
 use super::{LoginRequest, PostAuthAction};
 
 #[derive(Deserialize)]
-#[serde(bound(deserialize = "S::AuthorizationGrantData: std::str::FromStr,
-                             <S::AuthorizationGrantData as std::str::FromStr>::Err: std::fmt::Display"))]
-pub struct RegisterRequest<S: StorageBackend> {
+pub struct RegisterRequest {
     #[serde(flatten)]
-    post_auth_action: Option<PostAuthAction<S>>,
+    post_auth_action: Option<PostAuthAction>,
 }
 
-impl<S: StorageBackend> From<PostAuthAction<S>> for RegisterRequest<S> {
-    fn from(post_auth_action: PostAuthAction<S>) -> Self {
+impl From<PostAuthAction> for RegisterRequest {
+    fn from(post_auth_action: PostAuthAction) -> Self {
         Self {
             post_auth_action: Some(post_auth_action),
         }
     }
 }
 
-impl<S: StorageBackend> RegisterRequest<S> {
+impl RegisterRequest {
     #[allow(dead_code)]
-    pub fn build_uri(&self) -> anyhow::Result<Uri>
-    where
-        S::AuthorizationGrantData: std::fmt::Display,
-    {
+    pub fn build_uri(&self) -> anyhow::Result<Uri> {
         let path_and_query = if let Some(next) = &self.post_auth_action {
             let qs = serde_urlencoded::to_string(next)?;
             PathAndQuery::try_from(format!("/register?{}", qs))?
@@ -73,10 +70,7 @@ impl<S: StorageBackend> RegisterRequest<S> {
         Ok(uri)
     }
 
-    fn redirect(self) -> Result<impl Reply, Rejection>
-    where
-        S::AuthorizationGrantData: std::fmt::Display,
-    {
+    fn redirect(self) -> Result<impl Reply, Rejection> {
         let uri = self
             .post_auth_action
             .as_ref()
@@ -125,7 +119,7 @@ async fn get(
     mut conn: PoolConnection<Postgres>,
     cookie_saver: EncryptedCookieSaver,
     csrf_token: CsrfToken,
-    query: RegisterRequest<PostgresqlBackend>,
+    query: RegisterRequest,
     maybe_session: Option<BrowserSession<PostgresqlBackend>>,
 ) -> Result<Box<dyn Reply>, Rejection> {
     if maybe_session.is_some() {
@@ -153,7 +147,7 @@ async fn post(
     mut txn: Transaction<'_, Postgres>,
     cookie_saver: EncryptedCookieSaver,
     form: RegisterForm,
-    query: RegisterRequest<PostgresqlBackend>,
+    query: RegisterRequest,
 ) -> Result<Box<dyn Reply>, Rejection> {
     // TODO: display nice form errors
     if form.password != form.password_confirm {

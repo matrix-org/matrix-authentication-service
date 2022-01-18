@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![allow(clippy::trait_duplication_in_bounds)]
+
 use hyper::http::uri::{Parts, PathAndQuery, Uri};
 use mas_config::{CookiesConfig, CsrfConfig};
-use mas_data_model::{errors::WrapFormError, BrowserSession, StorageBackend};
+use mas_data_model::{errors::WrapFormError, BrowserSession};
 use mas_storage::{user::login, PostgresqlBackend};
 use mas_templates::{LoginContext, LoginFormField, TemplateContext, Templates};
 use mas_warp_utils::{
@@ -34,26 +36,21 @@ use warp::{filters::BoxedFilter, reply::html, Filter, Rejection, Reply};
 use super::{shared::PostAuthAction, RegisterRequest};
 
 #[derive(Deserialize)]
-#[serde(bound(deserialize = "S::AuthorizationGrantData: std::str::FromStr,
-                             <S::AuthorizationGrantData as std::str::FromStr>::Err: std::fmt::Display"))]
-pub(crate) struct LoginRequest<S: StorageBackend> {
+pub(crate) struct LoginRequest {
     #[serde(flatten)]
-    post_auth_action: Option<PostAuthAction<S>>,
+    post_auth_action: Option<PostAuthAction>,
 }
 
-impl<S: StorageBackend> From<PostAuthAction<S>> for LoginRequest<S> {
-    fn from(post_auth_action: PostAuthAction<S>) -> Self {
+impl From<PostAuthAction> for LoginRequest {
+    fn from(post_auth_action: PostAuthAction) -> Self {
         Self {
             post_auth_action: Some(post_auth_action),
         }
     }
 }
 
-impl<S: StorageBackend> LoginRequest<S> {
-    pub fn build_uri(&self) -> anyhow::Result<Uri>
-    where
-        S::AuthorizationGrantData: std::fmt::Display,
-    {
+impl LoginRequest {
+    pub fn build_uri(&self) -> anyhow::Result<Uri> {
         let path_and_query = if let Some(next) = &self.post_auth_action {
             let qs = serde_urlencoded::to_string(next)?;
             PathAndQuery::try_from(format!("/login?{}", qs))?
@@ -68,10 +65,7 @@ impl<S: StorageBackend> LoginRequest<S> {
         Ok(uri)
     }
 
-    fn redirect(self) -> Result<impl Reply, Rejection>
-    where
-        S::AuthorizationGrantData: std::fmt::Display,
-    {
+    fn redirect(self) -> Result<impl Reply, Rejection> {
         let uri = self
             .post_auth_action
             .as_ref()
@@ -121,7 +115,7 @@ async fn get(
     mut conn: PoolConnection<Postgres>,
     cookie_saver: EncryptedCookieSaver,
     csrf_token: CsrfToken,
-    query: LoginRequest<PostgresqlBackend>,
+    query: LoginRequest,
     maybe_session: Option<BrowserSession<PostgresqlBackend>>,
 ) -> Result<Box<dyn Reply>, Rejection> {
     if maybe_session.is_some() {
@@ -153,7 +147,7 @@ async fn post(
     cookie_saver: EncryptedCookieSaver,
     csrf_token: CsrfToken,
     form: LoginForm,
-    query: LoginRequest<PostgresqlBackend>,
+    query: LoginRequest,
 ) -> Result<Box<dyn Reply>, Rejection> {
     use mas_storage::user::LoginError;
     // TODO: recover
@@ -187,7 +181,7 @@ mod tests {
 
     #[test]
     fn deserialize_login_request() {
-        let res: Result<LoginRequest<PostgresqlBackend>, _> =
+        let res: Result<LoginRequest, _> =
             serde_urlencoded::from_str("next=continue_authorization_grant&data=13");
         res.unwrap().post_auth_action.unwrap();
     }

@@ -533,6 +533,18 @@
       ]
     }
   },
+  "4b9de6face2e21117c947b4f550cc747ad8397b6dfadb6bc6a84124763dc66e8": {
+    "query": "\n            UPDATE users\n            SET primary_email_id = user_emails.id \n            FROM user_emails\n            WHERE user_emails.id = $1\n              AND users.id       = user_emails.user_id\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "581243a7f0c033548cc9644e0c60855ecb8bfefe51779eb135dd7547b886de79": {
     "query": "\n            UPDATE oauth2_sessions\n            SET ended_at = NOW()\n            WHERE id = $1\n        ",
     "describe": {
@@ -600,6 +612,45 @@
       },
       "nullable": [
         false
+      ]
+    }
+  },
+  "6da88febe6d8e45787cdd609dcea5f51dc601f4dffb07dd4c5d699c7d4c5b2d1": {
+    "query": "\n            INSERT INTO user_emails (user_id, email)\n            VALUES ($1, $2)\n            RETURNING \n                id           AS user_email_id,\n                email        AS user_email,\n                created_at   AS user_email_created_at,\n                confirmed_at AS user_email_confirmed_at\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "user_email_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "user_email",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "user_email_created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 3,
+          "name": "user_email_confirmed_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        true
       ]
     }
   },
@@ -691,6 +742,45 @@
       "nullable": [
         false,
         false,
+        false,
+        false,
+        false,
+        true
+      ]
+    }
+  },
+  "b0fec01072df856ba9cd8be0ecf7a58dd4709a0efca4035a2c6f99c43d5a12be": {
+    "query": "\n            SELECT \n                ue.id           AS \"user_email_id\",\n                ue.email        AS \"user_email\",\n                ue.created_at   AS \"user_email_created_at\",\n                ue.confirmed_at AS \"user_email_confirmed_at\"\n            FROM user_emails ue\n\n            WHERE ue.user_id = $1\n              AND ue.id = $2\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "user_email_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "user_email",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "user_email_created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 3,
+          "name": "user_email_confirmed_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8"
+        ]
+      },
+      "nullable": [
         false,
         false,
         false,
@@ -852,6 +942,18 @@
         false,
         true
       ]
+    }
+  },
+  "d2f767218ec2489058db9a0382ca0eea20379c30aeae9f492da4ba35b66f4dc7": {
+    "query": "\n            DELETE FROM user_emails\n            WHERE user_emails.id = $1\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": []
     }
   },
   "d3883020ad9a0e5ea72fb9ddd2801a067209488a6ef3179afbc8173e4cc729de": {

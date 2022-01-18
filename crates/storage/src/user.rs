@@ -531,3 +531,103 @@ pub async fn get_user_emails(
 
     Ok(res.into_iter().map(Into::into).collect())
 }
+
+#[tracing::instrument(skip_all, fields(user.id = user.data, %user.username, email.id = id))]
+pub async fn get_user_email(
+    executor: impl PgExecutor<'_>,
+    user: &User<PostgresqlBackend>,
+    id: i64,
+) -> Result<UserEmail<PostgresqlBackend>, anyhow::Error> {
+    let res = sqlx::query_as!(
+        UserEmailLookup,
+        r#"
+            SELECT 
+                ue.id           AS "user_email_id",
+                ue.email        AS "user_email",
+                ue.created_at   AS "user_email_created_at",
+                ue.confirmed_at AS "user_email_confirmed_at"
+            FROM user_emails ue
+
+            WHERE ue.user_id = $1
+              AND ue.id = $2
+        "#,
+        user.data,
+        id,
+    )
+    .fetch_one(executor)
+    .instrument(info_span!("Fetch user emails"))
+    .await?;
+
+    Ok(res.into())
+}
+
+#[tracing::instrument(skip(executor, user), fields(user.id = user.data, %user.username))]
+pub async fn add_user_email(
+    executor: impl PgExecutor<'_>,
+    user: &User<PostgresqlBackend>,
+    email: String,
+) -> anyhow::Result<UserEmail<PostgresqlBackend>> {
+    let res = sqlx::query_as!(
+        UserEmailLookup,
+        r#"
+            INSERT INTO user_emails (user_id, email)
+            VALUES ($1, $2)
+            RETURNING 
+                id           AS user_email_id,
+                email        AS user_email,
+                created_at   AS user_email_created_at,
+                confirmed_at AS user_email_confirmed_at
+        "#,
+        user.data,
+        email,
+    )
+    .fetch_one(executor)
+    .instrument(info_span!("Add user email"))
+    .await
+    .context("could not insert user email")?;
+
+    Ok(res.into())
+}
+
+#[tracing::instrument(skip(executor))]
+pub async fn set_user_email_as_primary(
+    executor: impl PgExecutor<'_>,
+    email: &UserEmail<PostgresqlBackend>,
+) -> anyhow::Result<()> {
+    sqlx::query!(
+        r#"
+            UPDATE users
+            SET primary_email_id = user_emails.id 
+            FROM user_emails
+            WHERE user_emails.id = $1
+              AND users.id       = user_emails.user_id
+        "#,
+        email.data,
+    )
+    .execute(executor)
+    .instrument(info_span!("Add user email"))
+    .await
+    .context("could not set user email as primary")?;
+
+    Ok(())
+}
+
+#[tracing::instrument(skip(executor))]
+pub async fn remove_user_email(
+    executor: impl PgExecutor<'_>,
+    email: UserEmail<PostgresqlBackend>,
+) -> anyhow::Result<()> {
+    sqlx::query!(
+        r#"
+            DELETE FROM user_emails
+            WHERE user_emails.id = $1
+        "#,
+        email.data,
+    )
+    .execute(executor)
+    .instrument(info_span!("Remove user email"))
+    .await
+    .context("could not remove user email")?;
+
+    Ok(())
+}

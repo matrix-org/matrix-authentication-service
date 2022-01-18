@@ -406,7 +406,7 @@ async fn get(
     .await
     .wrap_error()?;
 
-    let next = ContinueAuthorizationGrant::from_authorization_grant(grant);
+    let next = ContinueAuthorizationGrant::from_authorization_grant(&grant);
 
     match (maybe_session, params.auth.prompt) {
         (None, Some(Prompt::None)) => {
@@ -419,8 +419,8 @@ async fn get(
             // TODO: better pages here
             txn.commit().await.wrap_error()?;
 
-            let next: PostAuthAction<_> = next.into();
-            let next: ReauthRequest<_> = next.into();
+            let next: PostAuthAction = next.into();
+            let next: ReauthRequest = next.into();
             let next = next.build_uri().wrap_error()?;
 
             Ok(ReplyOrBackToClient::Reply(Box::new(see_other(next))))
@@ -433,8 +433,8 @@ async fn get(
             // Other cases where we don't have a session, ask for a login
             txn.commit().await.wrap_error()?;
 
-            let next: PostAuthAction<_> = next.into();
-            let next: LoginRequest<_> = next.into();
+            let next: PostAuthAction = next.into();
+            let next: LoginRequest = next.into();
             let next = next.build_uri().wrap_error()?;
 
             Ok(ReplyOrBackToClient::Reply(Box::new(see_other(next))))
@@ -443,27 +443,21 @@ async fn get(
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub(crate) struct ContinueAuthorizationGrant<S: StorageBackend> {
-    #[serde(
-        with = "serde_with::rust::display_fromstr",
-        bound(
-            deserialize = "S::AuthorizationGrantData: std::str::FromStr, 
-                           <S::AuthorizationGrantData as std::str::FromStr>::Err: std::fmt::Display",
-            serialize = "S::AuthorizationGrantData: std::fmt::Display"
-        )
-    )]
-    data: S::AuthorizationGrantData,
+pub(crate) struct ContinueAuthorizationGrant {
+    data: String,
 }
 
-impl<S: StorageBackend> ContinueAuthorizationGrant<S> {
-    pub fn from_authorization_grant(grant: AuthorizationGrant<S>) -> Self {
-        Self { data: grant.data }
-    }
-
-    pub fn build_uri(&self) -> anyhow::Result<Uri>
+impl ContinueAuthorizationGrant {
+    pub fn from_authorization_grant<S: StorageBackend>(grant: &AuthorizationGrant<S>) -> Self
     where
         S::AuthorizationGrantData: std::fmt::Display,
     {
+        Self {
+            data: grant.data.to_string(),
+        }
+    }
+
+    pub fn build_uri(&self) -> anyhow::Result<Uri> {
         let qs = serde_urlencoded::to_string(self)?;
         let path_and_query = PathAndQuery::try_from(format!("/oauth2/authorize/step?{}", qs))?;
         let uri = Uri::from_parts({
@@ -473,19 +467,18 @@ impl<S: StorageBackend> ContinueAuthorizationGrant<S> {
         })?;
         Ok(uri)
     }
-}
 
-impl ContinueAuthorizationGrant<PostgresqlBackend> {
     pub async fn fetch_authorization_grant(
         &self,
         executor: impl PgExecutor<'_>,
     ) -> anyhow::Result<AuthorizationGrant<PostgresqlBackend>> {
-        get_grant_by_id(executor, self.data).await
+        let data = self.data.parse()?;
+        get_grant_by_id(executor, data).await
     }
 }
 
 async fn step(
-    next: ContinueAuthorizationGrant<PostgresqlBackend>,
+    next: ContinueAuthorizationGrant,
     browser_session: BrowserSession<PostgresqlBackend>,
     mut txn: Transaction<'_, Postgres>,
 ) -> Result<ReplyOrBackToClient, Rejection> {
@@ -559,8 +552,8 @@ async fn step(
             }
         }
         _ => {
-            let next: PostAuthAction<_> = next.into();
-            let next: ReauthRequest<_> = next.into();
+            let next: PostAuthAction = next.into();
+            let next: ReauthRequest = next.into();
             let next = next.build_uri().wrap_error()?;
 
             ReplyOrBackToClient::Reply(Box::new(see_other(next)))

@@ -1,0 +1,59 @@
+{#
+Copyright 2022 The Matrix.org Foundation C.I.C.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+#}
+
+{% extends "base.html" %}
+
+{% block content %}
+  {% if current_session.user.primary_email %}
+    {% set primary_email = current_session.user.primary_email.email %}
+  {% else %}
+    {% set primary_email = "" %}
+  {% endif %}
+
+  <section class="container mx-auto grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 p-2">
+    <form class="rounded border-2 border-grey-50 dark:border-grey-450 p-4 grid gap-4 xl:grid-cols-2 grid-cols-1 place-content-start" method="POST">
+      <h2 class="text-xl font-bold xl:col-span-2">Add email</h2>
+      <input type="hidden" name="csrf" value="{{ csrf_token }}" />
+      {{ field::input(label="New email", name="email", type="email", class="xl:col-span-2") }}
+      {{ button::button(text="Add email", type="submit", class="xl:col-span-2 place-self-end", name="action", value="add") }}
+    </form>
+
+    <div class="rounded border-2 border-grey-50 dark:border-grey-450 xl:col-span-2 p-4">
+      <h2 class="text-xl font-bold xl:col-span-3">Emails</h2>
+      {% for item in emails %}
+        <form class="flex my-2 items-center justify-items-center" method="POST">
+          <input type="hidden" name="csrf" value="{{ csrf_token }}" />
+          <input type="hidden" name="data" value="{{ item.data }}" />
+          <div class="font-bold flex-1">{{ item.email }}</div>
+          {% if item.confirmed_at %}
+            <div class="mr-4">Verified</div>
+          {% else %}
+            {{ button::button(text="Resend verification", type="submit", name="action", value="resend_confirmation", class="mr-4") }}
+          {% endif %}
+
+          {% if item.email == primary_email %}
+            <div class="mr-4">Primary</div>
+          {% else %}
+            {{ button::button(text="Set as primary", type="submit", name="action", value="set_primary", class="mr-4") }}
+          {% endif %}
+          {{ button::button(text="Delete", type="submit", name="action", value="remove") }}
+        </form>
+      {% endfor %}
+    </div>
+  </section>
+{% endblock content %}
+
+

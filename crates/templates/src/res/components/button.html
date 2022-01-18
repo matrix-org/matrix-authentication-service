@@ -42,14 +42,14 @@ limitations under the License.
   <a class="{{ self::ghost_class() }} {{ class }}" href="{{ href }}">{{ text }}</a>
 {% endmacro %}
 
-{% macro button(text, name="", type="submit", class="") %}
-  <button name="{{ name }}" type="{{ type }}" class="{{ self::plain_class() }} {{ class }}">{{ text }}</button>
+{% macro button(text, name="", type="submit", class="", value="") %}
+  <button name="{{ name }}" value="{{ value }}" type="{{ type }}" class="{{ self::plain_class() }} {{ class }}">{{ text }}</button>
 {% endmacro %}
 
-{% macro button_text(text, name="", type="submit", class="") %}
-  <button name="{{ name }}" type="{{ type }}" class="{{ self::text_class() }} {{ class }}">{{ text }}</button>
+{% macro button_text(text, name="", type="submit", class="", value="") %}
+  <button name="{{ name }}" value="{{ value }}" type="{{ type }}" class="{{ self::text_class() }} {{ class }}">{{ text }}</button>
 {% endmacro %}
 
-{% macro button_ghost(text, name="", type="submit", class="") %}
-  <button name="{{ name }}" type="{{ type }}" class="{{ self::ghost_class() }} {{ class }}">{{ text }}</button>
+{% macro button_ghost(text, name="", type="submit", class="", value="") %}
+  <button name="{{ name }}" value="{{ value }}" type="{{ type }}" class="{{ self::ghost_class() }} {{ class }}">{{ text }}</button>
 {% endmacro %}

@@ -20,7 +20,6 @@ use crate::traits::{StorageBackend, StorageBackendMarker};
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(bound = "T: StorageBackend")]
 pub struct User<T: StorageBackend> {
-    #[serde(skip_serializing)]
     pub data: T::UserData,
     pub username: String,
     pub sub: String,
@@ -73,7 +72,6 @@ impl<S: StorageBackendMarker> From<Authentication<S>> for Authentication<()> {
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(bound = "T: StorageBackend")]
 pub struct BrowserSession<T: StorageBackend> {
-    #[serde(skip_serializing)]
     pub data: T::BrowserSessionData,
     pub user: User<T>,
     pub created_at: DateTime<Utc>,
@@ -113,7 +111,6 @@ where
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(bound = "T: StorageBackend")]
 pub struct UserEmail<T: StorageBackend> {
-    #[serde(skip_serializing)]
     pub data: T::UserEmailData,
     pub email: String,
     pub created_at: DateTime<Utc>,

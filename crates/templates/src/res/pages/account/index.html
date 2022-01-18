@@ -52,6 +52,7 @@ limitations under the License.
         <div class="font-bold">{{ email.email }}</div>
         <div>{% if email.confirmed_at %}Confirmed{% else %}Unconfirmed{% endif %}</div>
       {% endfor %}
+      {{ button::link_ghost(text="Manage", href="/account/emails", class="col-span-2 place-self-end") }}
     </div>
   </section>
 {% endblock content %}
