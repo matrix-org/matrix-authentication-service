@@ -1,5 +1,5 @@
 {#
-Copyright 2021 The Matrix.org Foundation C.I.C.
+Copyright 2021-2022 The Matrix.org Foundation C.I.C.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -30,15 +30,8 @@ limitations under the License.
         <div class="font-bold">Primary email</div>
         <div>{{ current_session.user.primary_email.email }}</div>
       {% endif %}
+      {{ button::link_ghost(text="Change password", href="/account/password", class="col-span-2 place-self-end") }}
     </div>
-    <form class="rounded border-2 border-grey-50 dark:border-grey-450 p-4 grid gap-4 xl:grid-cols-2 grid-cols-1 place-content-start" method="POST">
-      <h2 class="text-xl font-bold xl:col-span-2">Change my password</h2>
-      <input type="hidden" name="csrf" value="{{ csrf_token }}" />
-      {{ field::input(label="Current password", name="current_password", type="password", class="xl:col-span-2") }}
-      {{ field::input(label="New password", name="new_password", type="password") }}
-      {{ field::input(label="Confirm password", name="new_password_confirm", type="password") }}
-      {{ button::button(text="Change password", type="password", class="xl:col-span-2 place-self-end") }}
-    </form>
     <div class="rounded border-2 border-grey-50 dark:border-grey-450 p-4 grid gap-4 xl:grid-cols-2 grid-cols-1 place-content-start">
       <h2 class="text-xl font-bold xl:col-span-2">Current session</h2>
       <div class="font-bold">Started at</div>

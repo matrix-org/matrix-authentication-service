@@ -285,25 +285,28 @@ register_templates! {
     };
 
     /// Render the login page
-    pub fn render_login(WithCsrf<LoginContext>) { "login.html" }
+    pub fn render_login(WithCsrf<LoginContext>) { "pages/login.html" }
 
     /// Render the registration page
-    pub fn render_register(WithCsrf<RegisterContext>) { "register.html" }
+    pub fn render_register(WithCsrf<RegisterContext>) { "pages/register.html" }
 
     /// Render the home page
-    pub fn render_index(WithCsrf<WithOptionalSession<IndexContext>>) { "index.html" }
+    pub fn render_index(WithCsrf<WithOptionalSession<IndexContext>>) { "pages/index.html" }
 
     /// Render the account management page
-    pub fn render_account(WithCsrf<WithSession<AccountContext>>) { "account.html" }
+    pub fn render_account_index(WithCsrf<WithSession<AccountContext>>) { "pages/account/index.html" }
+
+    /// Render the password change page
+    pub fn render_account_password(WithCsrf<WithSession<EmptyContext>>) { "pages/account/password.html" }
 
     /// Render the re-authentication form
-    pub fn render_reauth(WithCsrf<WithSession<ReauthContext>>) { "reauth.html" }
+    pub fn render_reauth(WithCsrf<WithSession<ReauthContext>>) { "pages/reauth.html" }
 
     /// Render the form used by the form_post response mode
     pub fn render_form_post<T: Serialize>(FormPostContext<T>) { "form_post.html" }
 
     /// Render the HTML error page
-    pub fn render_error(ErrorContext) { "error.html" }
+    pub fn render_error(ErrorContext) { "pages/error.html" }
 }
 
 impl Templates {
@@ -313,7 +316,8 @@ impl Templates {
         check::render_login(self).await?;
         check::render_register(self).await?;
         check::render_index(self).await?;
-        check::render_account(self).await?;
+        check::render_account_index(self).await?;
+        check::render_account_password(self).await?;
         check::render_reauth(self).await?;
         check::render_form_post::<EmptyContext>(self).await?;
         check::render_error(self).await?;

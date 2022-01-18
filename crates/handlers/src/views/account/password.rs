@@ -1,4 +1,4 @@
-// Copyright 2021 The Matrix.org Foundation C.I.C.
+// Copyright 2022 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,10 +16,10 @@ use argon2::Argon2;
 use mas_config::{CookiesConfig, CsrfConfig};
 use mas_data_model::BrowserSession;
 use mas_storage::{
-    user::{authenticate_session, count_active_sessions, get_user_emails, set_password},
+    user::{authenticate_session, set_password},
     PostgresqlBackend,
 };
-use mas_templates::{AccountContext, TemplateContext, Templates};
+use mas_templates::{EmptyContext, TemplateContext, Templates};
 use mas_warp_utils::{
     errors::WrapError,
     filters::{
@@ -44,7 +44,6 @@ pub(super) fn filter(
         .and(encrypted_cookie_saver(cookies_config))
         .and(updated_csrf_token(cookies_config, csrf_config))
         .and(session(pool, cookies_config))
-        .and(transaction(pool))
         .and_then(get);
 
     let post = with_templates(templates)
@@ -55,9 +54,11 @@ pub(super) fn filter(
         .and(protected_form(cookies_config))
         .and_then(post);
 
-    let filter = warp::get().and(get).or(warp::post().and(post)).unify();
+    let get = warp::get().and(get);
+    let post = warp::post().and(post);
+    let filter = get.or(post).unify();
 
-    warp::path!("account").and(filter).boxed()
+    warp::path!("password").and(filter).boxed()
 }
 
 #[derive(Deserialize)]
@@ -66,14 +67,14 @@ struct Form {
     new_password: String,
     new_password_confirm: String,
 }
+
 async fn get(
     templates: Templates,
     cookie_saver: EncryptedCookieSaver,
     csrf_token: CsrfToken,
     session: BrowserSession<PostgresqlBackend>,
-    txn: Transaction<'_, Postgres>,
 ) -> Result<Box<dyn Reply>, Rejection> {
-    render(templates, cookie_saver, csrf_token, session, txn).await
+    render(templates, cookie_saver, csrf_token, session).await
 }
 
 async fn render(
@@ -81,23 +82,12 @@ async fn render(
     cookie_saver: EncryptedCookieSaver,
     csrf_token: CsrfToken,
     session: BrowserSession<PostgresqlBackend>,
-    mut txn: Transaction<'_, Postgres>,
 ) -> Result<Box<dyn Reply>, Rejection> {
-    let active_sessions = count_active_sessions(&mut txn, &session.user)
-        .await
-        .wrap_error()?;
-
-    let emails = get_user_emails(&mut txn, &session.user)
-        .await
-        .wrap_error()?;
-
-    txn.commit().await.wrap_error()?;
-
-    let ctx = AccountContext::new(active_sessions, emails)
+    let ctx = EmptyContext
         .with_session(session)
         .with_csrf(csrf_token.form_value());
 
-    let content = templates.render_account(&ctx).await?;
+    let content = templates.render_account_password(&ctx).await?;
     let reply = html(content);
     let reply = cookie_saver.save_encrypted(&csrf_token, reply)?;
 
@@ -126,7 +116,9 @@ async fn post(
         .await
         .wrap_error()?;
 
-    let reply = render(templates, cookie_saver, csrf_token, session, txn).await?;
+    let reply = render(templates, cookie_saver, csrf_token, session).await?;
+
+    txn.commit().await.wrap_error()?;
 
     Ok(reply)
 }
