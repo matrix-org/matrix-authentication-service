@@ -15,7 +15,9 @@
 use argon2::Argon2;
 use clap::Parser;
 use mas_config::DatabaseConfig;
-use mas_storage::user::register_user;
+use mas_storage::user::{
+    lookup_user_by_username, lookup_user_email, mark_user_email_as_verified, register_user,
+};
 use tracing::{info, warn};
 
 use super::RootCommand;
@@ -33,6 +35,9 @@ enum ManageSubcommand {
 
     /// List active users
     Users,
+
+    /// Mark email address as verified
+    VerifyEmail { username: String, email: String },
 }
 
 impl ManageCommand {
@@ -53,6 +58,20 @@ impl ManageCommand {
             }
             SC::Users => {
                 warn!("Not implemented yet");
+
+                Ok(())
+            }
+            SC::VerifyEmail { username, email } => {
+                let config: DatabaseConfig = root.load_config()?;
+                let pool = config.connect().await?;
+                let mut txn = pool.begin().await?;
+
+                let user = lookup_user_by_username(&mut txn, username).await?;
+                let email = lookup_user_email(&mut txn, &user, email).await?;
+                let email = mark_user_email_as_verified(&mut txn, email).await?;
+
+                txn.commit().await?;
+                info!(?email, "Email marked as verified");
 
                 Ok(())
             }

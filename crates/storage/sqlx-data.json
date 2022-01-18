@@ -675,6 +675,26 @@
       ]
     }
   },
+  "7de9cfa6e90ba20f5b298ea387cf13a7e40d0f5b3eb903a80d06fbe33074d596": {
+    "query": "\n            UPDATE user_emails\n            SET confirmed_at = NOW()\n            WHERE id = $1\n            RETURNING confirmed_at\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "confirmed_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      },
+      "nullable": [
+        true
+      ]
+    }
+  },
   "88ac8783bd5881c42eafd9cf87a16fe6031f3153fd6a8618e689694584aeb2de": {
     "query": "\n            DELETE FROM oauth2_access_tokens\n            WHERE id = $1\n        ",
     "describe": {
@@ -1206,6 +1226,45 @@
       "nullable": [
         false,
         false
+      ]
+    }
+  },
+  "db34b3d7fa5d824e63f388d660615d748e11c1406e8166da907e0a54a665e37a": {
+    "query": "\n            SELECT \n                ue.id           AS \"user_email_id\",\n                ue.email        AS \"user_email\",\n                ue.created_at   AS \"user_email_created_at\",\n                ue.confirmed_at AS \"user_email_confirmed_at\"\n            FROM user_emails ue\n\n            WHERE ue.user_id = $1\n              AND ue.email = $2\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "user_email_id",
+          "type_info": "Int8"
+        },
+        {
+          "ordinal": 1,
+          "name": "user_email",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "user_email_created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 3,
+          "name": "user_email_confirmed_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        true
       ]
     }
   },

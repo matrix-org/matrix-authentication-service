@@ -631,3 +631,57 @@ pub async fn remove_user_email(
 
     Ok(())
 }
+
+#[tracing::instrument(skip(executor))]
+pub async fn lookup_user_email(
+    executor: impl PgExecutor<'_>,
+    user: &User<PostgresqlBackend>,
+    email: &str,
+) -> anyhow::Result<UserEmail<PostgresqlBackend>> {
+    let res = sqlx::query_as!(
+        UserEmailLookup,
+        r#"
+            SELECT 
+                ue.id           AS "user_email_id",
+                ue.email        AS "user_email",
+                ue.created_at   AS "user_email_created_at",
+                ue.confirmed_at AS "user_email_confirmed_at"
+            FROM user_emails ue
+
+            WHERE ue.user_id = $1
+              AND ue.email = $2
+        "#,
+        user.data,
+        email,
+    )
+    .fetch_one(executor)
+    .instrument(info_span!("Lookup user email"))
+    .await
+    .context("could not lookup user email")?;
+
+    Ok(res.into())
+}
+
+#[tracing::instrument(skip(executor))]
+pub async fn mark_user_email_as_verified(
+    executor: impl PgExecutor<'_>,
+    mut email: UserEmail<PostgresqlBackend>,
+) -> anyhow::Result<UserEmail<PostgresqlBackend>> {
+    let confirmed_at = sqlx::query_scalar!(
+        r#"
+            UPDATE user_emails
+            SET confirmed_at = NOW()
+            WHERE id = $1
+            RETURNING confirmed_at
+        "#,
+        email.data,
+    )
+    .fetch_one(executor)
+    .instrument(info_span!("Confirm user email"))
+    .await
+    .context("could not update user email")?;
+
+    email.confirmed_at = confirmed_at;
+
+    Ok(email)
+}
