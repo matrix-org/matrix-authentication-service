@@ -22,6 +22,7 @@ serde = { version = "1.0.133", features = ["derive"] }
 serde_with = { version = "1.11.0", features = ["hex", "chrono"] }
 serde_json = "1.0.74"
 sqlx = { version = "0.5.10", features = ["runtime-tokio-rustls", "postgres"] }
+lettre = { version = "0.10.0-rc.4", default-features = false, features = ["serde", "builder"] }
 
 rand = "0.8.4"
 rsa = { git = "https://github.com/sandhose/rsa.git", branch = "bump-pkcs" }

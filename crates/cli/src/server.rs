@@ -23,6 +23,7 @@ use clap::Parser;
 use futures::{future::TryFutureExt, stream::TryStreamExt};
 use hyper::{header, Server, Version};
 use mas_config::RootConfig;
+use mas_email::{MailTransport, Mailer};
 use mas_storage::MIGRATOR;
 use mas_tasks::TaskQueue;
 use mas_templates::Templates;
@@ -221,6 +222,10 @@ impl ServerCommand {
             .context("could not parse listener address")?;
         let listener = TcpListener::bind(addr).context("could not bind address")?;
 
+        // Connect to the mail server
+        let mail_transport = MailTransport::try_from(&config.email.transport)?;
+        mail_transport.test_connection().await?;
+
         // Connect to the database
         let pool = config.database.connect().await?;
 
@@ -250,6 +255,13 @@ impl ServerCommand {
             .await
             .context("could not load templates")?;
 
+        let mailer = Mailer::new(
+            &templates,
+            &mail_transport,
+            &config.email.from,
+            &config.email.reply_to,
+        );
+
         // Watch for changes in templates if the --watch flag is present
         if self.watch {
             let client = watchman_client::Connector::new()
@@ -263,7 +275,7 @@ impl ServerCommand {
         }
 
         // Start the server
-        let root = mas_handlers::root(&pool, &templates, &key_store, &config);
+        let root = mas_handlers::root(&pool, &templates, &key_store, &mailer, &config);
 
         let warp_service = warp::service(root);
 

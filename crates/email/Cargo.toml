@@ -6,13 +6,15 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
+anyhow = "1.0.52"
+async-trait = "0.1.52"
 tokio = { version = "1.15.0", features = ["macros"] }
 
 mas-templates = { path = "../templates" }
-anyhow = "1.0.52"
-async-trait = "0.1.52"
+mas-config = { path = "../config" }
+tracing = "0.1.29"
 
 [dependencies.lettre]
 version = "0.10.0-rc.4"
 default-features = false
-features = ["tokio1-rustls-tls", "hostname", "builder", "tracing", "pool"]
+features = ["tokio1-rustls-tls", "hostname", "builder", "tracing", "pool", "smtp-transport"]

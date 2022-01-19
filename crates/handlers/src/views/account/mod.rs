@@ -17,6 +17,7 @@ mod password;
 
 use mas_config::{CookiesConfig, CsrfConfig};
 use mas_data_model::BrowserSession;
+use mas_email::Mailer;
 use mas_storage::{
     user::{count_active_sessions, get_user_emails},
     PostgresqlBackend,
@@ -40,6 +41,7 @@ use self::{emails::filter as emails, password::filter as password};
 pub(super) fn filter(
     pool: &PgPool,
     templates: &Templates,
+    mailer: &Mailer,
     csrf_config: &CsrfConfig,
     cookies_config: &CookiesConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
@@ -53,7 +55,7 @@ pub(super) fn filter(
 
     let index = warp::path::end().and(get);
     let password = password(pool, templates, csrf_config, cookies_config);
-    let emails = emails(pool, templates, csrf_config, cookies_config);
+    let emails = emails(pool, templates, mailer, csrf_config, cookies_config);
 
     let filter = index.or(password).unify().or(emails).unify();
 

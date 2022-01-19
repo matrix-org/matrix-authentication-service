@@ -25,6 +25,7 @@
 use std::sync::Arc;
 
 use mas_config::RootConfig;
+use mas_email::Mailer;
 use mas_jose::StaticKeystore;
 use mas_static_files::filter as static_files;
 use mas_templates::Templates;
@@ -42,6 +43,7 @@ pub fn root(
     pool: &PgPool,
     templates: &Templates,
     key_store: &Arc<StaticKeystore>,
+    mailer: &Mailer,
     config: &RootConfig,
 ) -> BoxedFilter<(impl Reply,)> {
     let health = health(pool);
@@ -49,6 +51,7 @@ pub fn root(
     let views = views(
         pool,
         templates,
+        mailer,
         &config.oauth2,
         &config.csrf,
         &config.cookies,

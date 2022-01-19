@@ -23,6 +23,9 @@ anyhow = "1.0.52"
 warp = "0.3.2"
 hyper = { version = "0.14.16", features = ["full"] }
 
+# Emails
+lettre = { version = "0.10.0-rc.4", default-features = false, features = ["builder"] }
+
 # Database access
 sqlx = { version = "0.5.10", features = ["runtime-tokio-rustls", "postgres"] }
 
@@ -54,12 +57,13 @@ headers = "0.3.5"
 oauth2-types = { path = "../oauth2-types" }
 mas-config = { path = "../config" }
 mas-data-model = { path = "../data-model" }
-mas-templates = { path = "../templates" }
+mas-email = { path = "../email" }
+mas-iana = { path = "../iana" }
+mas-jose = { path = "../jose" }
 mas-static-files = { path = "../static-files" }
 mas-storage = { path = "../storage" }
+mas-templates = { path = "../templates" }
 mas-warp-utils = { path = "../warp-utils" }
-mas-jose = { path = "../jose" }
-mas-iana = { path = "../iana" }
 
 [dev-dependencies]
 indoc = "1.0.3"

@@ -27,6 +27,7 @@ use serde::{Deserialize, Serialize};
 mod cookies;
 mod csrf;
 mod database;
+mod email;
 mod http;
 mod oauth2;
 mod telemetry;
@@ -37,6 +38,7 @@ pub use self::{
     cookies::CookiesConfig,
     csrf::CsrfConfig,
     database::DatabaseConfig,
+    email::{EmailConfig, EmailSmtpMode, EmailTransportConfig},
     http::HttpConfig,
     oauth2::{OAuth2ClientAuthMethodConfig, OAuth2ClientConfig, OAuth2Config},
     telemetry::{
@@ -67,6 +69,9 @@ pub struct RootConfig {
 
     #[serde(default)]
     pub csrf: CsrfConfig,
+
+    #[serde(default)]
+    pub email: EmailConfig,
 }
 
 #[async_trait]
@@ -84,6 +89,7 @@ impl ConfigurationSection<'_> for RootConfig {
             telemetry: TelemetryConfig::generate().await?,
             templates: TemplatesConfig::generate().await?,
             csrf: CsrfConfig::generate().await?,
+            email: EmailConfig::generate().await?,
         })
     }
 
@@ -96,6 +102,7 @@ impl ConfigurationSection<'_> for RootConfig {
             telemetry: TelemetryConfig::test(),
             templates: TemplatesConfig::test(),
             csrf: CsrfConfig::test(),
+            email: EmailConfig::test(),
         }
     }
 }

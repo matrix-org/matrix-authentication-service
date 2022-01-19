@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use mas_config::{CookiesConfig, CsrfConfig, OAuth2Config};
+use mas_email::Mailer;
 use mas_templates::Templates;
 use sqlx::PgPool;
 use warp::{filters::BoxedFilter, Filter, Reply};
@@ -36,12 +37,13 @@ pub(crate) use self::{
 pub(super) fn filter(
     pool: &PgPool,
     templates: &Templates,
+    mailer: &Mailer,
     oauth2_config: &OAuth2Config,
     csrf_config: &CsrfConfig,
     cookies_config: &CookiesConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
     let index = index(pool, templates, oauth2_config, csrf_config, cookies_config);
-    let account = account(pool, templates, csrf_config, cookies_config);
+    let account = account(pool, templates, mailer, csrf_config, cookies_config);
     let login = login(pool, templates, csrf_config, cookies_config);
     let register = register(pool, templates, csrf_config, cookies_config);
     let logout = logout(pool, cookies_config);
