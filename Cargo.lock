@@ -1205,6 +1205,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "hostname"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3c731c3e10504cc8ed35cfe2f1db4c9274c3d35fa486e3b31df46f068ef3e867"
+dependencies = [
+ "libc",
+ "match_cfg",
+ "winapi",
+]
+
+[[package]]
 name = "http"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1447,6 +1458,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "lettre"
+version = "0.10.0-rc.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "71d8da8f34d086b081c9cc3b57d3bb3b51d16fc06b5c848a188e2f14d58ac2a5"
+dependencies = [
+ "async-trait",
+ "base64 0.13.0",
+ "fastrand",
+ "futures-io",
+ "futures-util",
+ "hostname",
+ "httpdate",
+ "idna",
+ "mime",
+ "once_cell",
+ "quoted_printable",
+ "regex",
+ "rustls 0.20.2",
+ "rustls-pemfile",
+ "tokio",
+ "tokio-rustls 0.23.2",
+ "tracing",
+ "webpki-roots 0.22.2",
+]
+
+[[package]]
 name = "libc"
 version = "0.2.112"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1563,6 +1600,17 @@ dependencies = [
  "serde",
  "thiserror",
  "url",
+]
+
+[[package]]
+name = "mas-email"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "lettre",
+ "mas-templates",
+ "tokio",
 ]
 
 [[package]]
@@ -1759,6 +1807,12 @@ dependencies = [
  "tracing",
  "warp",
 ]
+
+[[package]]
+name = "match_cfg"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ffbee8634e0d45d258acb448e7eaab3fce7a0a467395d4d9f228e3c1f01fb2e4"
 
 [[package]]
 name = "matchers"
@@ -2524,6 +2578,12 @@ checksum = "47aa80447ce4daf1717500037052af176af5d38cc3e571d9ec1c7353fc10c87d"
 dependencies = [
  "proc-macro2",
 ]
+
+[[package]]
+name = "quoted_printable"
+version = "0.4.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3fee2dce59f7a43418e3382c766554c614e06a552d53a8f07ef499ea4b332c0f"
 
 [[package]]
 name = "rand"

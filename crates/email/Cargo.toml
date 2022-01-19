@@ -1,0 +1,18 @@
+[package]
+name = "mas-email"
+version = "0.1.0"
+authors = ["Quentin Gliech <quenting@element.io>"]
+edition = "2021"
+license = "Apache-2.0"
+
+[dependencies]
+tokio = { version = "1.15.0", features = ["macros"] }
+
+mas-templates = { path = "../templates" }
+anyhow = "1.0.52"
+async-trait = "0.1.52"
+
+[dependencies.lettre]
+version = "0.10.0-rc.4"
+default-features = false
+features = ["tokio1-rustls-tls", "hostname", "builder", "tracing", "pool"]

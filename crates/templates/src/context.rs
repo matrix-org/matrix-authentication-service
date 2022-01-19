@@ -17,7 +17,7 @@
 #![allow(clippy::trait_duplication_in_bounds)]
 
 use mas_data_model::{
-    errors::ErroredForm, AuthorizationGrant, BrowserSession, StorageBackend, UserEmail,
+    errors::ErroredForm, AuthorizationGrant, BrowserSession, StorageBackend, User, UserEmail,
 };
 use oauth2_types::errors::OAuth2Error;
 use serde::{ser::SerializeStruct, Serialize};
@@ -74,6 +74,15 @@ pub trait TemplateContext: Serialize {
     fn sample() -> Vec<Self>
     where
         Self: Sized;
+}
+
+impl TemplateContext for () {
+    fn sample() -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        Vec::new()
+    }
 }
 
 /// Context with a CSRF token in it
@@ -437,6 +446,40 @@ impl<T: StorageBackend> TemplateContext for AccountEmailsContext<T> {
     {
         let emails: Vec<UserEmail<T>> = UserEmail::samples();
         vec![Self::new(emails)]
+    }
+}
+
+/// Context used by the `emails/verification.{txt,html}` templates
+#[derive(Serialize)]
+pub struct EmailVerificationContext {
+    user: User<()>,
+    verification_link: Url,
+}
+
+impl EmailVerificationContext {
+    #[must_use]
+    pub fn new(user: User<()>, verification_link: Url) -> Self {
+        Self {
+            user,
+            verification_link,
+        }
+    }
+}
+
+impl TemplateContext for EmailVerificationContext {
+    fn sample() -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        User::samples()
+            .into_iter()
+            .map(|u| {
+                Self::new(
+                    u,
+                    Url::parse("https://example.com/emails/verify?code=2134").unwrap(),
+                )
+            })
+            .collect()
     }
 }
 

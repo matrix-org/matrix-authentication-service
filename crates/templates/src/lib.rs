@@ -48,10 +48,10 @@ mod functions;
 mod macros;
 
 pub use self::context::{
-    AccountContext, AccountEmailsContext, EmptyContext, ErrorContext, FormPostContext,
-    IndexContext, LoginContext, LoginFormField, PostAuthContext, ReauthContext, ReauthFormField,
-    RegisterContext, RegisterFormField, TemplateContext, WithCsrf, WithOptionalSession,
-    WithSession,
+    AccountContext, AccountEmailsContext, EmailVerificationContext, EmptyContext, ErrorContext,
+    FormPostContext, IndexContext, LoginContext, LoginFormField, PostAuthContext, ReauthContext,
+    ReauthFormField, RegisterContext, RegisterFormField, TemplateContext, WithCsrf,
+    WithOptionalSession, WithSession,
 };
 
 /// Wrapper around [`tera::Tera`] helping rendering the various templates
@@ -312,6 +312,12 @@ register_templates! {
 
     /// Render the HTML error page
     pub fn render_error(ErrorContext) { "pages/error.html" }
+
+    /// Render the email verification email (plain text variant)
+    pub fn render_email_verification_txt(EmailVerificationContext) { "emails/verification.txt" }
+
+    /// Render the email verification email (plain text variant)
+    pub fn render_email_verification_html(EmailVerificationContext) { "emails/verification.html" }
 }
 
 impl Templates {
@@ -323,9 +329,12 @@ impl Templates {
         check::render_index(self).await?;
         check::render_account_index(self).await?;
         check::render_account_password(self).await?;
+        check::render_account_emails::<()>(self).await?;
         check::render_reauth(self).await?;
         check::render_form_post::<EmptyContext>(self).await?;
         check::render_error(self).await?;
+        check::render_email_verification_txt(self).await?;
+        check::render_email_verification_html(self).await?;
         Ok(())
     }
 }
