@@ -31,6 +31,12 @@ group "gha" { targets = ["gha-regular", "gha-debug", "gha-test"] }
 
 target "gha-base" {
   inherits = ["release"]
+  // TODO: there seems to be a bug with inheriting twice the platforms, here is a workaround
+  platforms = [
+    "linux/amd64",
+    "linux/arm64",
+    "linux/arm",
+  ]
 }
 
 // This is filled by GitHub Actions
