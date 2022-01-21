@@ -1,4 +1,4 @@
-// Copyright 2021 The Matrix.org Foundation C.I.C.
+// Copyright 2021-2022 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -318,6 +318,9 @@ register_templates! {
 
     /// Render the email verification email (plain text variant)
     pub fn render_email_verification_html(EmailVerificationContext) { "emails/verification.html" }
+
+    /// Render the email post-email verification page
+    pub fn render_email_verification_done(WithCsrf<WithOptionalSession<EmptyContext>>) { "pages/verify.html" }
 }
 
 impl Templates {
@@ -335,6 +338,7 @@ impl Templates {
         check::render_error(self).await?;
         check::render_email_verification_txt(self).await?;
         check::render_email_verification_html(self).await?;
+        check::render_email_verification_done(self).await?;
         Ok(())
     }
 }

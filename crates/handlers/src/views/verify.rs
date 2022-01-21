@@ -1,4 +1,4 @@
-// Copyright 2021-2022 The Matrix.org Foundation C.I.C.
+// Copyright 2022 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,86 +12,79 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod emails;
-mod password;
-
-use mas_config::{CookiesConfig, CsrfConfig, OAuth2Config};
+use chrono::Duration;
+use mas_config::{CookiesConfig, CsrfConfig};
 use mas_data_model::BrowserSession;
-use mas_email::Mailer;
 use mas_storage::{
-    user::{count_active_sessions, get_user_emails},
+    user::{
+        consume_email_verification, lookup_user_email_verification_code,
+        mark_user_email_as_verified,
+    },
     PostgresqlBackend,
 };
-use mas_templates::{AccountContext, TemplateContext, Templates};
+use mas_templates::{EmptyContext, TemplateContext, Templates};
 use mas_warp_utils::{
     errors::WrapError,
     filters::{
         cookies::{encrypted_cookie_saver, EncryptedCookieSaver},
         csrf::updated_csrf_token,
-        database::connection,
-        session::session,
+        database::transaction,
+        session::optional_session,
         with_templates, CsrfToken,
     },
 };
-use sqlx::{pool::PoolConnection, PgPool, Postgres};
+use sqlx::{PgPool, Postgres, Transaction};
 use warp::{filters::BoxedFilter, reply::html, Filter, Rejection, Reply};
-
-use self::{emails::filter as emails, password::filter as password};
 
 pub(super) fn filter(
     pool: &PgPool,
     templates: &Templates,
-    mailer: &Mailer,
-    oauth2_config: &OAuth2Config,
     csrf_config: &CsrfConfig,
     cookies_config: &CookiesConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
-    let get = warp::get()
+    warp::path!("verify" / String)
+        .and(warp::get())
         .and(with_templates(templates))
         .and(encrypted_cookie_saver(cookies_config))
         .and(updated_csrf_token(cookies_config, csrf_config))
-        .and(session(pool, cookies_config))
-        .and(connection(pool))
-        .and_then(get);
-
-    let index = warp::path::end().and(get);
-    let password = password(pool, templates, csrf_config, cookies_config);
-    let emails = emails(
-        pool,
-        templates,
-        mailer,
-        oauth2_config,
-        csrf_config,
-        cookies_config,
-    );
-
-    let filter = index.or(password).unify().or(emails).unify();
-
-    warp::path::path("account").and(filter).boxed()
+        .and(optional_session(pool, cookies_config))
+        .and(transaction(pool))
+        .and_then(get)
+        .boxed()
 }
 
 async fn get(
+    code: String,
     templates: Templates,
     cookie_saver: EncryptedCookieSaver,
     csrf_token: CsrfToken,
-    session: BrowserSession<PostgresqlBackend>,
-    mut conn: PoolConnection<Postgres>,
+    maybe_session: Option<BrowserSession<PostgresqlBackend>>,
+    mut txn: Transaction<'_, Postgres>,
 ) -> Result<Box<dyn Reply>, Rejection> {
-    let active_sessions = count_active_sessions(&mut conn, &session.user)
+    // TODO: make those 8 hours configurable
+    let verification = lookup_user_email_verification_code(&mut txn, &code, Duration::hours(8))
         .await
         .wrap_error()?;
 
-    let emails = get_user_emails(&mut conn, &session.user)
+    // TODO: display nice errors if the code was already consumed or expired
+
+    let verification = consume_email_verification(&mut txn, verification)
         .await
         .wrap_error()?;
 
-    let ctx = AccountContext::new(active_sessions, emails)
-        .with_session(session)
+    let _email = mark_user_email_as_verified(&mut txn, verification.email)
+        .await
+        .wrap_error()?;
+
+    let ctx = EmptyContext
+        .maybe_with_session(maybe_session)
         .with_csrf(csrf_token.form_value());
 
-    let content = templates.render_account_index(&ctx).await?;
+    let content = templates.render_email_verification_done(&ctx).await?;
     let reply = html(content);
     let reply = cookie_saver.save_encrypted(&csrf_token, reply)?;
+
+    txn.commit().await.wrap_error()?;
 
     Ok(Box::new(reply))
 }

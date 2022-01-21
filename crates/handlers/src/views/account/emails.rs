@@ -13,13 +13,13 @@
 // limitations under the License.
 
 use lettre::{message::Mailbox, Address};
-use mas_config::{CookiesConfig, CsrfConfig};
-use mas_data_model::BrowserSession;
+use mas_config::{CookiesConfig, CsrfConfig, OAuth2Config};
+use mas_data_model::{BrowserSession, User, UserEmail};
 use mas_email::Mailer;
 use mas_storage::{
     user::{
-        add_user_email, get_user_email, get_user_emails, remove_user_email,
-        set_user_email_as_primary,
+        add_user_email, add_user_email_verification_code, get_user_email, get_user_emails,
+        remove_user_email, set_user_email_as_primary,
     },
     PostgresqlBackend,
 };
@@ -34,6 +34,7 @@ use mas_warp_utils::{
         with_templates, CsrfToken,
     },
 };
+use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use serde::Deserialize;
 use sqlx::{pool::PoolConnection, PgExecutor, PgPool, Postgres, Transaction};
 use tracing::info;
@@ -44,10 +45,13 @@ pub(super) fn filter(
     pool: &PgPool,
     templates: &Templates,
     mailer: &Mailer,
+    oauth2_config: &OAuth2Config,
     csrf_config: &CsrfConfig,
     cookies_config: &CookiesConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
     let mailer = mailer.clone();
+
+    let base = oauth2_config.issuer.clone();
 
     let get = with_templates(templates)
         .and(encrypted_cookie_saver(cookies_config))
@@ -58,6 +62,7 @@ pub(super) fn filter(
 
     let post = with_templates(templates)
         .and(warp::any().map(move || mailer.clone()))
+        .and(warp::any().map(move || base.clone()))
         .and(encrypted_cookie_saver(cookies_config))
         .and(updated_csrf_token(cookies_config, csrf_config))
         .and(session(pool, cookies_config))
@@ -113,9 +118,43 @@ async fn render(
     Ok(Box::new(reply))
 }
 
+async fn start_email_verification(
+    mailer: &Mailer,
+    base: &Url,
+    executor: impl PgExecutor<'_>,
+    user: &User<PostgresqlBackend>,
+    user_email: &UserEmail<PostgresqlBackend>,
+) -> anyhow::Result<()> {
+    // First, generate a code
+    let code: String = thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(32)
+        .map(char::from)
+        .collect();
+
+    add_user_email_verification_code(executor, user_email, &code).await?;
+
+    // And send the verification email
+    let address: Address = user_email.email.parse()?;
+
+    let mailbox = Mailbox::new(Some(user.username.clone()), address);
+
+    let link = base.join("./verify/")?;
+    let link = link.join(&code)?;
+
+    let context = EmailVerificationContext::new(user.clone().into(), link);
+
+    mailer.send_verification_email(mailbox, &context).await?;
+
+    info!(email.id = user_email.data, "Verification email sent");
+    Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
 async fn post(
     templates: Templates,
     mailer: Mailer,
+    base: Url,
     cookie_saver: EncryptedCookieSaver,
     csrf_token: CsrfToken,
     mut session: BrowserSession<PostgresqlBackend>,
@@ -124,9 +163,10 @@ async fn post(
 ) -> Result<Box<dyn Reply>, Rejection> {
     match form {
         Form::Add { email } => {
-            // TODO: verify email format
-            // TODO: send verification email
-            add_user_email(&mut txn, &session.user, email)
+            let user_email = add_user_email(&mut txn, &session.user, email)
+                .await
+                .wrap_error()?;
+            start_email_verification(&mailer, &base, &mut txn, &session.user, &user_email)
                 .await
                 .wrap_error()?;
         }
@@ -140,27 +180,13 @@ async fn post(
         Form::ResendConfirmation { data } => {
             let id: i64 = data.parse().wrap_error()?;
 
-            let email: Address = get_user_email(&mut txn, &session.user, id)
-                .await
-                .wrap_error()?
-                .email
-                .parse()
-                .wrap_error()?;
-
-            let mailbox = Mailbox::new(Some(session.user.username.clone()), email);
-
-            // TODO: actually generate a verification link
-            let context = EmailVerificationContext::new(
-                session.user.clone().into(),
-                Url::parse("https://example.com/verify").unwrap(),
-            );
-
-            mailer
-                .send_verification_email(mailbox, &context)
+            let user_email = get_user_email(&mut txn, &session.user, id)
                 .await
                 .wrap_error()?;
 
-            info!(email.id = id, "Verification email sent");
+            start_email_verification(&mailer, &base, &mut txn, &session.user, &user_email)
+                .await
+                .wrap_error()?;
         }
         Form::SetPrimary { data } => {
             let id = data.parse().wrap_error()?;

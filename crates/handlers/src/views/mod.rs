@@ -1,4 +1,4 @@
-// Copyright 2021 The Matrix.org Foundation C.I.C.
+// Copyright 2021-2022 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,10 +25,12 @@ mod logout;
 mod reauth;
 mod register;
 mod shared;
+mod verify;
 
 use self::{
     account::filter as account, index::filter as index, login::filter as login,
     logout::filter as logout, reauth::filter as reauth, register::filter as register,
+    verify::filter as verify,
 };
 pub(crate) use self::{
     login::LoginRequest, reauth::ReauthRequest, register::RegisterRequest, shared::PostAuthAction,
@@ -43,11 +45,19 @@ pub(super) fn filter(
     cookies_config: &CookiesConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
     let index = index(pool, templates, oauth2_config, csrf_config, cookies_config);
-    let account = account(pool, templates, mailer, csrf_config, cookies_config);
+    let account = account(
+        pool,
+        templates,
+        mailer,
+        oauth2_config,
+        csrf_config,
+        cookies_config,
+    );
     let login = login(pool, templates, csrf_config, cookies_config);
     let register = register(pool, templates, csrf_config, cookies_config);
     let logout = logout(pool, cookies_config);
     let reauth = reauth(pool, templates, csrf_config, cookies_config);
+    let verify = verify(pool, templates, csrf_config, cookies_config);
 
     index
         .or(account)
@@ -59,6 +69,8 @@ pub(super) fn filter(
         .or(logout)
         .unify()
         .or(reauth)
+        .unify()
+        .or(verify)
         .unify()
         .boxed()
 }
