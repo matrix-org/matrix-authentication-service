@@ -21,6 +21,12 @@ pub trait StorageBackendMarker: StorageBackend {}
 pub trait StorageBackend {
     type UserData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
     type UserEmailData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
+    type UserEmailVerificationData: Clone
+        + Debug
+        + PartialEq
+        + Serialize
+        + DeserializeOwned
+        + Default;
     type AuthenticationData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
     type BrowserSessionData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
     type ClientData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
@@ -40,4 +46,5 @@ impl StorageBackend for () {
     type SessionData = ();
     type UserData = ();
     type UserEmailData = ();
+    type UserEmailVerificationData = ();
 }

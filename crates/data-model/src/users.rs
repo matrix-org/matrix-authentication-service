@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use serde::Serialize;
 
 use crate::traits::{StorageBackend, StorageBackendMarker};
@@ -119,7 +119,7 @@ pub struct UserEmail<T: StorageBackend> {
 
 impl<S: StorageBackendMarker> From<UserEmail<S>> for UserEmail<()> {
     fn from(e: UserEmail<S>) -> Self {
-        UserEmail {
+        Self {
             data: (),
             email: e.email,
             created_at: e.created_at,
@@ -135,18 +135,73 @@ where
     #[must_use]
     pub fn samples() -> Vec<Self> {
         vec![
-            UserEmail {
+            Self {
                 data: T::UserEmailData::default(),
                 email: "alice@example.com".to_string(),
                 created_at: Utc::now(),
                 confirmed_at: Some(Utc::now()),
             },
-            UserEmail {
+            Self {
                 data: T::UserEmailData::default(),
                 email: "bob@example.com".to_string(),
                 created_at: Utc::now(),
                 confirmed_at: None,
             },
         ]
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub enum UserEmailVerificationState {
+    AlreadyUsed { when: DateTime<Utc> },
+    Expired,
+    Valid,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(bound = "T: StorageBackend")]
+pub struct UserEmailVerification<T: StorageBackend> {
+    pub data: T::UserEmailVerificationData,
+    pub email: UserEmail<T>,
+    pub created_at: DateTime<Utc>,
+    pub state: UserEmailVerificationState,
+}
+
+impl<S: StorageBackendMarker> From<UserEmailVerification<S>> for UserEmailVerification<()> {
+    fn from(v: UserEmailVerification<S>) -> Self {
+        Self {
+            data: (),
+            email: v.email.into(),
+            created_at: v.created_at,
+            state: v.state,
+        }
+    }
+}
+
+impl<T: StorageBackend> UserEmailVerification<T>
+where
+    T::UserEmailData: Default + Clone,
+{
+    #[must_use]
+    pub fn samples() -> Vec<Self> {
+        let states = [
+            UserEmailVerificationState::AlreadyUsed {
+                when: Utc::now() - Duration::minutes(5),
+            },
+            UserEmailVerificationState::Expired,
+            UserEmailVerificationState::Valid,
+        ];
+
+        states
+            .into_iter()
+            .flat_map(|state| {
+                UserEmail::samples().into_iter().map(move |email| Self {
+                    data: Default::default(),
+                    email,
+                    created_at: Utc::now() - Duration::minutes(10),
+                    state: state.clone(),
+                })
+            })
+            .collect()
     }
 }

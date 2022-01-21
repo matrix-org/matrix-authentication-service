@@ -33,5 +33,8 @@ pub use self::{
     },
     tokens::{AccessToken, RefreshToken, TokenFormatError, TokenType},
     traits::{StorageBackend, StorageBackendMarker},
-    users::{Authentication, BrowserSession, User, UserEmail},
+    users::{
+        Authentication, BrowserSession, User, UserEmail, UserEmailVerification,
+        UserEmailVerificationState,
+    },
 };

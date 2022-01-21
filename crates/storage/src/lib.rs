@@ -39,6 +39,7 @@ impl StorageBackend for PostgresqlBackend {
     type SessionData = i64;
     type UserData = i64;
     type UserEmailData = i64;
+    type UserEmailVerificationData = i64;
 }
 
 impl StorageBackendMarker for PostgresqlBackend {}

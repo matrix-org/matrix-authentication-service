@@ -14,13 +14,16 @@
 
 use std::borrow::BorrowMut;
 
-use anyhow::Context;
+use anyhow::{bail, Context};
 use argon2::Argon2;
 use chrono::{DateTime, Utc};
-use mas_data_model::{errors::HtmlError, Authentication, BrowserSession, User, UserEmail};
+use mas_data_model::{
+    errors::HtmlError, Authentication, BrowserSession, User, UserEmail, UserEmailVerification,
+    UserEmailVerificationState,
+};
 use password_hash::{PasswordHash, PasswordHasher, SaltString};
 use rand::rngs::OsRng;
-use sqlx::{Acquire, PgExecutor, Postgres, Transaction};
+use sqlx::{postgres::types::PgInterval, Acquire, PgExecutor, Postgres, Transaction};
 use thiserror::Error;
 use tokio::task;
 use tracing::{info_span, Instrument};
@@ -684,4 +687,124 @@ pub async fn mark_user_email_as_verified(
     email.confirmed_at = confirmed_at;
 
     Ok(email)
+}
+
+struct UserEmailVerificationLookup {
+    verification_id: i64,
+    verification_expired: bool,
+    verification_created_at: DateTime<Utc>,
+    verification_consumed_at: Option<DateTime<Utc>>,
+    user_email_id: i64,
+    user_email: String,
+    user_email_created_at: DateTime<Utc>,
+    user_email_confirmed_at: Option<DateTime<Utc>>,
+}
+
+#[tracing::instrument(skip(executor))]
+pub async fn lookup_user_email_verification_code(
+    executor: impl PgExecutor<'_>,
+    code: &str,
+    max_age: chrono::Duration,
+) -> anyhow::Result<UserEmailVerification<PostgresqlBackend>> {
+    // For some reason, we need to convert the type first
+    let max_age = PgInterval::try_from(max_age)
+        // For some reason, this error type does not let me to just bubble up the error here
+        .map_err(|e| anyhow::anyhow!("failed to encode duration: {}", e))?;
+
+    let res = sqlx::query_as!(
+        UserEmailVerificationLookup,
+        r#"
+            SELECT
+                ev.id              AS "verification_id",
+                (ev.created_at + $2 < NOW()) AS "verification_expired!",
+                ev.created_at      AS "verification_created_at",
+                ev.consumed_at     AS "verification_consumed_at",
+                ue.id              AS "user_email_id",
+                ue.email           AS "user_email",
+                ue.created_at      AS "user_email_created_at",
+                ue.confirmed_at    AS "user_email_confirmed_at"
+            FROM user_email_verifications ev
+            INNER JOIN user_emails ue
+               ON ue.id = ev.user_email_id
+            WHERE ev.code = $1
+        "#,
+        code,
+        max_age,
+    )
+    .fetch_one(executor)
+    .instrument(info_span!("Lookup user email verification"))
+    .await
+    .context("could not lookup user email verification")?;
+
+    let email = UserEmail {
+        data: res.user_email_id,
+        email: res.user_email,
+        created_at: res.user_email_created_at,
+        confirmed_at: res.user_email_confirmed_at,
+    };
+
+    let state = if res.verification_expired {
+        UserEmailVerificationState::Expired
+    } else if let Some(when) = res.verification_consumed_at {
+        UserEmailVerificationState::AlreadyUsed { when }
+    } else {
+        UserEmailVerificationState::Valid
+    };
+
+    Ok(UserEmailVerification {
+        data: res.verification_id,
+        email,
+        state,
+        created_at: res.verification_created_at,
+    })
+}
+
+#[tracing::instrument(skip(executor))]
+pub async fn consume_email_verification(
+    executor: impl PgExecutor<'_>,
+    mut verification: UserEmailVerification<PostgresqlBackend>,
+) -> anyhow::Result<UserEmailVerification<PostgresqlBackend>> {
+    if !matches!(verification.state, UserEmailVerificationState::Valid) {
+        bail!("user email verification in wrong state");
+    }
+
+    let consumed_at = sqlx::query_scalar!(
+        r#"
+            UPDATE user_email_verifications
+            SET consumed_at = NOW()
+            WHERE id = $1
+            RETURNING consumed_at AS "consumed_at!"
+        "#,
+        verification.data,
+    )
+    .fetch_one(executor)
+    .instrument(info_span!("Consume user email verification"))
+    .await
+    .context("could not update user email verification")?;
+
+    verification.state = UserEmailVerificationState::AlreadyUsed { when: consumed_at };
+
+    Ok(verification)
+}
+
+#[tracing::instrument(skip(executor, email), fields(email.id = email.data, %email.email))]
+pub async fn add_user_email_verification_code(
+    executor: impl PgExecutor<'_>,
+    email: &UserEmail<PostgresqlBackend>,
+    code: &str,
+) -> anyhow::Result<()> {
+    sqlx::query!(
+        r#"
+            INSERT INTO user_email_verifications (user_email_id, code)
+            VALUES ($1, $2)
+        "#,
+        email.data,
+        code,
+    )
+    .execute(executor)
+    .instrument(info_span!("Add user email verification code"))
+    .await
+    .context("could not insert user email verification code")?;
+
+    Ok(())
 }
