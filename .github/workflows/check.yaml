@@ -322,7 +322,6 @@ jobs:
           bake-target: docker-metadata-action
           tags: |
             type=ref,event=branch
-            type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
@@ -336,7 +335,6 @@ jobs:
           bake-target: docker-metadata-action-debug
           tags: |
             type=ref,event=branch,suffix=-debug
-            type=ref,event=pr,suffix=-debug
             type=semver,pattern={{version}},suffix=-debug
             type=semver,pattern={{major}}.{{minor}},suffix=-debug
             type=semver,pattern={{major}},suffix=-debug
@@ -353,9 +351,6 @@ jobs:
             [registry."docker.io"]
               mirrors = ["mirror.gcr.io"]
 
-            [worker.oci]
-              max-parallelism = 2
-
       - name: Login to GitHub Container Registry
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v1
@@ -364,20 +359,20 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # For pull-requests, only read from the cache, do not try to push to the
+      # cache or the image itself
       - name: Build
         uses: docker/bake-action@v1
         if: github.event_name == 'pull_request'
         with:
-          targets: gha
           set: |
-            gha-push.cache-from=type=registry,ref=${{ env.IMAGE }}:buildcache
+            base.cache-from=type=registry,ref=${{ env.IMAGE }}:buildcache
 
       - name: Build and push
         uses: docker/bake-action@v1
         if: github.event_name != 'pull_request'
         with:
-          targets: gha
           set: |
-            gha-push.output=type=image,push=true
-            gha-push.cache-from=type=registry,ref=${{ env.IMAGE }}:buildcache
-            gha-push.cache-to=type=registry,ref=${{ env.IMAGE }}:buildcache,mode=max
+            base.output=type=image,push=true
+            base.cache-from=type=registry,ref=${{ env.IMAGE }}:buildcache
+            base.cache-to=type=registry,ref=${{ env.IMAGE }}:buildcache,mode=max

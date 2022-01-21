@@ -1,7 +1,11 @@
 target/
 crates/*/target
 crates/*/node_modules
+docs/
+.devcontainer/
 .git/
+.github/
+.gitignore
 Dockerfile
 .dockerignore
 docker-bake.hcl

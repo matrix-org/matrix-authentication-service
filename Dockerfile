@@ -104,25 +104,6 @@ RUN cargo build \
 # Move the binary to avoid having to guess its name in the next stage
 RUN mv target/$(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")/release/mas-cli /mas-cli
 
-## Stage to run unit tests ##
-FROM --platform=${BUILDPLATFORM} chef AS test 
-
-ARG TARGETPLATFORM
-
-# Build dependencies
-COPY --from=planner /app/recipe.json recipe.json
-RUN cargo chef cook \
-  --recipe-path recipe.json \
-  --target $(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")
-
-# Run the tests
-COPY . .
-COPY --from=static-files /app/crates/static-files/public /app/crates/static-files/public
-ENV SQLX_OFFLINE=true
-RUN cargo test \
-  --workspace \
-  --target $(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")
-
 ## Runtime stage, debug variant ##
 FROM --platform=${TARGETPLATFORM} gcr.io/distroless/cc-debian${DEBIAN_VERSION}:debug-nonroot AS debug
 COPY --from=builder /mas-cli /mas-cli
