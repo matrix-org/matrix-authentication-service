@@ -223,7 +223,7 @@ impl ServerCommand {
         let listener = TcpListener::bind(addr).context("could not bind address")?;
 
         // Connect to the mail server
-        let mail_transport = MailTransport::try_from(&config.email.transport)?;
+        let mail_transport = MailTransport::from_config(&config.email.transport).await?;
         mail_transport.test_connection().await?;
 
         // Connect to the database

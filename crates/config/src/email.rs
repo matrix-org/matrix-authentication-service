@@ -39,7 +39,7 @@ pub enum EmailSmtpMode {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
-#[serde(tag = "transport", rename_all = "lowercase")]
+#[serde(tag = "transport", rename_all = "snake_case")]
 pub enum EmailTransportConfig {
     Blackhole,
     Smtp {
@@ -52,6 +52,7 @@ pub enum EmailTransportConfig {
         #[serde(flatten, default)]
         credentials: Option<Credentials>,
     },
+    AwsSes,
 }
 
 impl Default for EmailTransportConfig {
