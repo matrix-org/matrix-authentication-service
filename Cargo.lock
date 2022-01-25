@@ -3080,10 +3080,10 @@ dependencies = [
 [[package]]
 name = "rsa"
 version = "0.5.0"
-source = "git+https://github.com/sandhose/rsa.git?branch=bump-pkcs#44f4b93bebef6258c3f1590172d4d507bb92808b"
+source = "git+https://github.com/RustCrypto/RSA.git#6717592cc857a81c8c6f7d78c3e40ef36bd5cd67"
 dependencies = [
  "byteorder",
- "digest 0.9.0",
+ "digest 0.10.1",
  "num-bigint-dig",
  "num-integer",
  "num-iter",

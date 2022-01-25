@@ -19,7 +19,7 @@ p256 = { version = "0.10.0", features = ["ecdsa", "pem", "pkcs8"] }
 pkcs1 = { version = "0.3.1", features = ["pem", "pkcs8"] }
 pkcs8 = { version = "0.8.0", features = ["pem"] }
 rand = "0.8.4"
-rsa = { git = "https://github.com/sandhose/RSA.git", branch = "bump-pkcs" }
+rsa = { git = "https://github.com/RustCrypto/RSA.git" }
 schemars = "0.8.8"
 sec1 = "0.2.1"
 serde = { version = "1.0.135", features = ["derive"] }
