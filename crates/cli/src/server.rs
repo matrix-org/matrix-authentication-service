@@ -27,6 +27,7 @@ use mas_email::{MailTransport, Mailer};
 use mas_storage::MIGRATOR;
 use mas_tasks::TaskQueue;
 use mas_templates::Templates;
+use opentelemetry::trace::TraceContextExt;
 use opentelemetry_http::HeaderExtractor;
 use tower::{make::Shared, ServiceBuilder};
 use tower_http::{
@@ -61,6 +62,12 @@ impl<B> MakeSpan<B> for OtelMakeSpan {
         let cx = opentelemetry::global::get_text_map_propagator(|propagator| {
             propagator.extract(&extractor)
         });
+
+        let cx = if cx.span().span_context().is_remote() {
+            cx
+        } else {
+            opentelemetry::Context::new()
+        };
 
         // Attach the context so when the request span is created it gets properly
         // parented
