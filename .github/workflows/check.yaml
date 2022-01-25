@@ -13,6 +13,9 @@ jobs:
     name: Fetch Cargo dependencies
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+
     steps:
       - name: Checkout the code
         uses: actions/checkout@v2
@@ -64,6 +67,9 @@ jobs:
     needs: [fetch]
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+
     steps:
       - name: Checkout the code
         uses: actions/checkout@v2
@@ -106,6 +112,9 @@ jobs:
     needs: [fetch]
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+
     steps:
       - name: Checkout the code
         uses: actions/checkout@v2
@@ -147,6 +156,9 @@ jobs:
     name: Run test suite with Rust ${{ matrix.toolchain }}
     needs: [rustfmt, clippy, fetch]
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
 
     continue-on-error: "${{ matrix.toolchain == 'beta' || matrix.toolchain == 'nightly' }}"
 
@@ -199,6 +211,9 @@ jobs:
     name: Code coverage
     needs: [rustfmt, clippy, fetch]
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout the code
@@ -265,6 +280,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       IMAGE: ghcr.io/matrix-org/matrix-authentication-service
+
+    permissions:
+      packages: write
+      contents: read
 
     steps:
       - name: Checkout the code
