@@ -33,8 +33,6 @@ jobs:
             ~/.cargo/registry/cache
             ~/.cargo/git/db
           key: ${{ runner.os }}-cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-deps-msrv-
 
       - name: Fetch dependencies
         id: fetch
@@ -226,9 +224,6 @@ jobs:
           path: |
             target
           key: ${{ runner.os }}-cargo-build-${{ steps.toolchain.outputs.rustc_hash }}-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-build-${{ steps.toolchain.outputs.rustc_hash }}-
-            ${{ runner.os }}-cargo-build-
 
       - name: Test
         uses: actions-rs/cargo@v1
@@ -270,9 +265,6 @@ jobs:
           path: |
             target
           key: ${{ runner.os }}-cargo-coverage-${{ steps.toolchain.outputs.rustc_hash }}-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-coverage-${{ steps.toolchain.outputs.rustc_hash }}-
-            ${{ runner.os }}-cargo-coverage-
 
       - name: Download grcov
         run: |
