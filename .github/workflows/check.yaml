@@ -176,9 +176,10 @@ jobs:
           key: cargo-clippy-${{ hashFiles('**/Cargo.lock') }}-${{ steps.toolchain.outputs.rustc_hash }}
 
       - name: Run Clippy
-        uses: actions-rs/clippy-check@v1
+        uses: actions-rs/cargo@v1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          command: clippy
+          args: --workspace -- -D warnings
 
 
   test:
