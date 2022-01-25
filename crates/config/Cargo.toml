@@ -26,9 +26,9 @@ lettre = { version = "0.10.0-rc.4", default-features = false, features = ["serde
 
 rand = "0.8.4"
 rsa = { git = "https://github.com/RustCrypto/RSA.git" }
-p256 = { version = "0.10.0", features = ["ecdsa", "pem", "pkcs8"] }
+p256 = { version = "0.10.1", features = ["ecdsa", "pem", "pkcs8"] }
 pkcs8 = { version = "0.8.0", features = ["pem"] }
-elliptic-curve = { version = "0.11.6", features = ["pem", "pkcs8"] }
+elliptic-curve = { version = "0.11.7", features = ["pem", "pkcs8"] }
 
 indoc = "1.0.3"
 
