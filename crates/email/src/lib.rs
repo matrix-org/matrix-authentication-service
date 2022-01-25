@@ -15,4 +15,7 @@
 mod mailer;
 mod transport;
 
-pub use self::{mailer::Mailer, transport::Transport as MailTransport, transport::aws_ses::Transport as AwsSesTransport};
+pub use self::{
+    mailer::Mailer,
+    transport::{aws_ses::Transport as AwsSesTransport, Transport as MailTransport},
+};

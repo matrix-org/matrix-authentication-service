@@ -68,7 +68,9 @@ impl Transport {
 
                 TransportInner::Smtp(t.build())
             }
-            EmailTransportConfig::AwsSes => TransportInner::AwsSes(aws_ses::Transport::from_env().await),
+            EmailTransportConfig::AwsSes => {
+                TransportInner::AwsSes(aws_ses::Transport::from_env().await)
+            }
         };
         let inner = Arc::new(inner);
         Ok(Self { inner })
