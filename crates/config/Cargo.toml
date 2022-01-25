@@ -11,16 +11,16 @@ tracing = { version = "0.1.29", features = ["log"] }
 async-trait = "0.1.52"
 
 thiserror = "1.0.30"
-anyhow = "1.0.52"
+anyhow = "1.0.53"
 
 schemars = { version = "0.8.8", features = ["url", "chrono"] }
 figment = { version = "0.10.6", features = ["env", "yaml", "test"] }
 chrono = { version = "0.4.19", features = ["serde"] }
 url = { version = "2.2.2", features = ["serde"] }
 
-serde = { version = "1.0.133", features = ["derive"] }
+serde = { version = "1.0.135", features = ["derive"] }
 serde_with = { version = "1.11.0", features = ["hex", "chrono"] }
-serde_json = "1.0.74"
+serde_json = "1.0.78"
 sqlx = { version = "0.5.10", features = ["runtime-tokio-rustls", "postgres"] }
 lettre = { version = "0.10.0-rc.4", default-features = false, features = ["serde", "builder"] }
 

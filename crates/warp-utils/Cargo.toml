@@ -12,13 +12,13 @@ cookie = "0.16.0"
 warp = "0.3.2"
 hyper = { version = "0.14.16", features = ["full"] }
 thiserror = "1.0.30"
-anyhow = "1.0.52"
+anyhow = "1.0.53"
 sqlx = { version = "0.5.10", features = ["runtime-tokio-rustls", "postgres"] }
 chrono = { version = "0.4.19", features = ["serde"] }
-serde = { version = "1.0.133", features = ["derive"] }
+serde = { version = "1.0.135", features = ["derive"] }
 serde_with = { version = "1.11.0", features = ["hex", "chrono"] }
-serde_json = "1.0.74"
-serde_urlencoded = "0.7.0"
+serde_json = "1.0.78"
+serde_urlencoded = "0.7.1"
 data-encoding = "2.3.2"
 chacha20poly1305 = { version = "0.9.0", features = ["std"] }
 once_cell = "1.9.0"

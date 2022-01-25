@@ -17,7 +17,7 @@ tracing = "0.1.29"
 
 # Error management
 thiserror = "1.0.30"
-anyhow = "1.0.52"
+anyhow = "1.0.53"
 
 # Web server
 warp = "0.3.2"
@@ -30,10 +30,10 @@ lettre = { version = "0.10.0-rc.4", default-features = false, features = ["build
 sqlx = { version = "0.5.10", features = ["runtime-tokio-rustls", "postgres"] }
 
 # Various structure (de)serialization
-serde = { version = "1.0.133", features = ["derive"] }
+serde = { version = "1.0.135", features = ["derive"] }
 serde_with = { version = "1.11.0", features = ["hex", "chrono"] }
-serde_json = "1.0.74"
-serde_urlencoded = "0.7.0"
+serde_json = "1.0.78"
+serde_urlencoded = "0.7.1"
 
 # Password hashing
 argon2 = { version = "0.3.2", features = ["password-hash"] }
