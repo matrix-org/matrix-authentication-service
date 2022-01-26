@@ -253,6 +253,7 @@ impl ServerCommand {
         let key_store = config
             .oauth2
             .key_store()
+            .await
             .context("could not import keys from config")?;
         // Wrap the key store in an Arc
         let key_store = Arc::new(key_store);

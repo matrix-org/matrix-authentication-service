@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::path::PathBuf;
+
 use anyhow::Context;
 use async_trait::async_trait;
 use mas_jose::{JsonWebKeySet, StaticJwksStore, StaticKeystore};
@@ -24,7 +26,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 use thiserror::Error;
-use tokio::task;
+use tokio::{fs::File, io::AsyncReadExt, task};
 use tracing::info;
 use url::Url;
 
@@ -38,9 +40,17 @@ pub enum KeyType {
 }
 
 #[derive(JsonSchema, Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum KeyOrPath {
+    Key(String),
+    Path(PathBuf),
+}
+
+#[derive(JsonSchema, Serialize, Deserialize, Clone, Debug)]
 pub struct KeyConfig {
     r#type: KeyType,
-    key: String,
+    #[serde(flatten)]
+    key: KeyOrPath,
 }
 
 #[derive(JsonSchema, Serialize, Deserialize, Clone, Debug)]
@@ -140,20 +150,52 @@ impl OAuth2Config {
             .expect("could not build discovery url")
     }
 
-    pub fn key_store(&self) -> anyhow::Result<StaticKeystore> {
+    pub async fn key_store(&self) -> anyhow::Result<StaticKeystore> {
         let mut store = StaticKeystore::new();
 
-        for key in &self.keys {
-            match key.r#type {
+        for item in &self.keys {
+            // Read the key either embedded in the config file or on disk
+            let mut buf = Vec::new();
+            let (key_as_bytes, key_as_str) = match &item.key {
+                KeyOrPath::Key(key) => (key.as_bytes(), Some(key.as_str())),
+                KeyOrPath::Path(path) => {
+                    let mut file = File::open(path).await?;
+                    file.read_to_end(&mut buf).await?;
+
+                    (&buf[..], std::str::from_utf8(&buf).ok())
+                }
+            };
+
+            match item.r#type {
+                // TODO: errors are not well carried here
                 KeyType::Ecdsa => {
-                    let key = p256::SecretKey::from_pkcs1_pem(&key.key)
-                        .or_else(|_| p256::SecretKey::from_pkcs8_pem(&key.key))
-                        .or_else(|_| p256::SecretKey::from_sec1_pem(&key.key))?;
+                    // First try to read it as DER from the bytes
+                    let mut key = p256::SecretKey::from_pkcs1_der(key_as_bytes)
+                        .or_else(|_| p256::SecretKey::from_pkcs8_der(key_as_bytes))
+                        .or_else(|_| p256::SecretKey::from_sec1_der(key_as_bytes));
+
+                    // If the file was a valid string, try reading it as PEM
+                    if let Some(key_as_str) = key_as_str {
+                        key = key
+                            .or_else(|_| p256::SecretKey::from_pkcs1_pem(key_as_str))
+                            .or_else(|_| p256::SecretKey::from_pkcs8_pem(key_as_str))
+                            .or_else(|_| p256::SecretKey::from_sec1_pem(key_as_str));
+                    }
+
+                    let key = key?;
                     store.add_ecdsa_key(key.into())?;
                 }
                 KeyType::Rsa => {
-                    let key = rsa::RsaPrivateKey::from_pkcs1_pem(&key.key)
-                        .or_else(|_| rsa::RsaPrivateKey::from_pkcs8_pem(&key.key))?;
+                    let mut key = rsa::RsaPrivateKey::from_pkcs1_der(key_as_bytes)
+                        .or_else(|_| rsa::RsaPrivateKey::from_pkcs8_der(key_as_bytes));
+
+                    if let Some(key_as_str) = key_as_str {
+                        key = key
+                            .or_else(|_| rsa::RsaPrivateKey::from_pkcs1_pem(key_as_str))
+                            .or_else(|_| rsa::RsaPrivateKey::from_pkcs8_pem(key_as_str));
+                    }
+
+                    let key = key?;
                     store.add_rsa_key(key)?;
                 }
             }
@@ -186,9 +228,11 @@ impl ConfigurationSection<'_> for OAuth2Config {
         .context("could not join blocking task")??;
         let rsa_key = KeyConfig {
             r#type: KeyType::Rsa,
-            key: rsa_key
-                .to_pkcs1_pem(pem_rfc7468::LineEnding::LF)?
-                .to_string(),
+            key: KeyOrPath::Key(
+                rsa_key
+                    .to_pkcs1_pem(pem_rfc7468::LineEnding::LF)?
+                    .to_string(),
+            ),
         };
 
         let span = tracing::info_span!("ecdsa");
@@ -203,7 +247,7 @@ impl ConfigurationSection<'_> for OAuth2Config {
         .context("could not join blocking task")?;
         let ecdsa_key = KeyConfig {
             r#type: KeyType::Ecdsa,
-            key: ecdsa_key.to_pem(pem_rfc7468::LineEnding::LF)?.to_string(),
+            key: KeyOrPath::Key(ecdsa_key.to_pem(pem_rfc7468::LineEnding::LF)?.to_string()),
         };
 
         Ok(Self {
@@ -216,30 +260,34 @@ impl ConfigurationSection<'_> for OAuth2Config {
     fn test() -> Self {
         let rsa_key = KeyConfig {
             r#type: KeyType::Rsa,
-            key: indoc::indoc! {r#"
-              -----BEGIN PRIVATE KEY-----
-              MIIBVQIBADANBgkqhkiG9w0BAQEFAASCAT8wggE7AgEAAkEAymS2RkeIZo7pUeEN
-              QUGCG4GLJru5jzxomO9jiNr5D/oRcerhpQVc9aCpBfAAg4l4a1SmYdBzWqX0X5pU
-              scgTtQIDAQABAkEArNIMlrxUK4bSklkCcXtXdtdKE9vuWfGyOw0GyAB69fkEUBxh
-              3j65u+u3ZmW+bpMWHgp1FtdobE9nGwb2VBTWAQIhAOyU1jiUEkrwKK004+6b5QRE
-              vC9UI2vDWy5vioMNx5Y1AiEA2wGAJ6ETF8FF2Vd+kZlkKK7J0em9cl0gbJDsWIEw
-              N4ECIEyWYkMurD1WQdTQqnk0Po+DMOihdFYOiBYgRdbnPxWBAiEAmtd0xJAd7622
-              tPQniMnrBtiN2NxqFXHCev/8Gpc8gAECIBcaPcF59qVeRmYrfqzKBxFm7LmTwlAl
-              Gh7BNzCeN+D6
-              -----END PRIVATE KEY-----
-            "#}
-            .to_string(),
+            key: KeyOrPath::Key(
+                indoc::indoc! {r#"
+                  -----BEGIN PRIVATE KEY-----
+                  MIIBVQIBADANBgkqhkiG9w0BAQEFAASCAT8wggE7AgEAAkEAymS2RkeIZo7pUeEN
+                  QUGCG4GLJru5jzxomO9jiNr5D/oRcerhpQVc9aCpBfAAg4l4a1SmYdBzWqX0X5pU
+                  scgTtQIDAQABAkEArNIMlrxUK4bSklkCcXtXdtdKE9vuWfGyOw0GyAB69fkEUBxh
+                  3j65u+u3ZmW+bpMWHgp1FtdobE9nGwb2VBTWAQIhAOyU1jiUEkrwKK004+6b5QRE
+                  vC9UI2vDWy5vioMNx5Y1AiEA2wGAJ6ETF8FF2Vd+kZlkKK7J0em9cl0gbJDsWIEw
+                  N4ECIEyWYkMurD1WQdTQqnk0Po+DMOihdFYOiBYgRdbnPxWBAiEAmtd0xJAd7622
+                  tPQniMnrBtiN2NxqFXHCev/8Gpc8gAECIBcaPcF59qVeRmYrfqzKBxFm7LmTwlAl
+                  Gh7BNzCeN+D6
+                  -----END PRIVATE KEY-----
+                "#}
+                .to_string(),
+            ),
         };
         let ecdsa_key = KeyConfig {
             r#type: KeyType::Ecdsa,
-            key: indoc::indoc! {r#"
-              -----BEGIN PRIVATE KEY-----
-              MIGEAgEAMBAGByqGSM49AgEGBSuBBAAKBG0wawIBAQQgqfn5mYO/5Qq/wOOiWgHA
-              NaiDiepgUJ2GI5eq2V8D8nahRANCAARMK9aKUd/H28qaU+0qvS6bSJItzAge1VHn
-              OhBAAUVci1RpmUA+KdCL5sw9nadAEiONeiGr+28RYHZmlB9qXnjC
-              -----END PRIVATE KEY-----
-            "#}
-            .to_string(),
+            key: KeyOrPath::Key(
+                indoc::indoc! {r#"
+                  -----BEGIN PRIVATE KEY-----
+                  MIGEAgEAMBAGByqGSM49AgEGBSuBBAAKBG0wawIBAQQgqfn5mYO/5Qq/wOOiWgHA
+                  NaiDiepgUJ2GI5eq2V8D8nahRANCAARMK9aKUd/H28qaU+0qvS6bSJItzAge1VHn
+                  OhBAAUVci1RpmUA+KdCL5sw9nadAEiONeiGr+28RYHZmlB9qXnjC
+                  -----END PRIVATE KEY-----
+                "#}
+                .to_string(),
+            ),
         };
 
         Self {
