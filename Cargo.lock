@@ -1847,6 +1847,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "argon2",
+ "atty",
  "clap",
  "dotenv",
  "futures 0.3.19",
@@ -1872,6 +1873,7 @@ dependencies = [
  "tower",
  "tower-http",
  "tracing",
+ "tracing-appender",
  "tracing-opentelemetry",
  "tracing-subscriber",
  "url",
@@ -4116,6 +4118,17 @@ dependencies = [
  "pin-project-lite",
  "tracing-attributes",
  "tracing-core",
+]
+
+[[package]]
+name = "tracing-appender"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "94571df2eae3ed4353815ea5a90974a594a1792d8782ff2cbcc9392d1101f366"
+dependencies = [
+ "crossbeam-channel 0.5.2",
+ "time 0.3.6",
+ "tracing-subscriber",
 ]
 
 [[package]]

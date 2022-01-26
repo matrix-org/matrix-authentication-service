@@ -21,8 +21,10 @@ url = "2.2.2"
 argon2 = { version = "0.3.2", features = ["password-hash"] }
 reqwest = { version = "0.11.9", features = ["rustls-tls"], default-features = false, optional = true }
 watchman_client = "0.7.1"
+atty = "0.2.14"
 
 tracing = "0.1.29"
+tracing-appender = "0.2.0"
 tracing-subscriber = { version = "0.3.6", features = ["env-filter"] }
 tracing-opentelemetry = "0.16.0"
 opentelemetry = { version = "0.16.0", features = ["trace", "metrics", "rt-tokio"] }
