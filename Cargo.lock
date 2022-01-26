@@ -1892,6 +1892,7 @@ dependencies = [
  "lettre",
  "mas-jose",
  "p256",
+ "pem-rfc7468",
  "pkcs8",
  "rand",
  "rsa",

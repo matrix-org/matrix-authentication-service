@@ -29,6 +29,7 @@ rsa = { git = "https://github.com/RustCrypto/RSA.git" }
 p256 = { version = "0.10.1", features = ["ecdsa", "pem", "pkcs8"] }
 pkcs8 = { version = "0.8.0", features = ["pem"] }
 elliptic-curve = { version = "0.11.7", features = ["pem", "pkcs8"] }
+pem-rfc7468 = "0.3.1"
 
 indoc = "1.0.3"
 

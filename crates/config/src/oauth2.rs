@@ -15,7 +15,7 @@
 use anyhow::Context;
 use async_trait::async_trait;
 use mas_jose::{JsonWebKeySet, StaticJwksStore, StaticKeystore};
-use pkcs8::{DecodePrivateKey, EncodePrivateKey};
+use pkcs8::DecodePrivateKey;
 use rsa::{
     pkcs1::{DecodeRsaPrivateKey, EncodeRsaPrivateKey},
     RsaPrivateKey,
@@ -146,11 +146,14 @@ impl OAuth2Config {
         for key in &self.keys {
             match key.r#type {
                 KeyType::Ecdsa => {
-                    let key = p256::SecretKey::from_pkcs8_pem(&key.key)?;
+                    let key = p256::SecretKey::from_pkcs1_pem(&key.key)
+                        .or_else(|_| p256::SecretKey::from_pkcs8_pem(&key.key))
+                        .or_else(|_| p256::SecretKey::from_sec1_pem(&key.key))?;
                     store.add_ecdsa_key(key.into())?;
                 }
                 KeyType::Rsa => {
-                    let key = rsa::RsaPrivateKey::from_pkcs1_pem(&key.key)?;
+                    let key = rsa::RsaPrivateKey::from_pkcs1_pem(&key.key)
+                        .or_else(|_| rsa::RsaPrivateKey::from_pkcs8_pem(&key.key))?;
                     store.add_rsa_key(key)?;
                 }
             }
@@ -183,7 +186,9 @@ impl ConfigurationSection<'_> for OAuth2Config {
         .context("could not join blocking task")??;
         let rsa_key = KeyConfig {
             r#type: KeyType::Rsa,
-            key: rsa_key.to_pkcs1_pem(pkcs8::LineEnding::LF)?.to_string(),
+            key: rsa_key
+                .to_pkcs1_pem(pem_rfc7468::LineEnding::LF)?
+                .to_string(),
         };
 
         let span = tracing::info_span!("ecdsa");
@@ -198,7 +203,7 @@ impl ConfigurationSection<'_> for OAuth2Config {
         .context("could not join blocking task")?;
         let ecdsa_key = KeyConfig {
             r#type: KeyType::Ecdsa,
-            key: ecdsa_key.to_pkcs8_pem(pkcs8::LineEnding::LF)?.to_string(),
+            key: ecdsa_key.to_pem(pem_rfc7468::LineEnding::LF)?.to_string(),
         };
 
         Ok(Self {
