@@ -22,32 +22,72 @@ use url::Url;
 
 use super::ConfigurationSection;
 
+/// Propagation format for incoming and outgoing requests
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 #[non_exhaustive]
 pub enum Propagator {
+    /// Propagate according to the W3C Trace Context specification
     TraceContext,
+
+    /// Propagate according to the W3C Baggage specification
     Baggage,
+
+    /// Propagate trace context with Jaeger compatible headers
     Jaeger,
+
+    /// Propagate trace context with Zipkin compatible headers (single `b3`
+    /// header variant)
     B3,
+
+    /// Propagate trace context with Zipkin compatible headers (multiple
+    /// `x-b3-*` headers variant)
     B3Multi,
 }
 
+fn otlp_endpoint_example() -> &'static str {
+    "https://localhost:4317"
+}
+
+fn jaeger_agent_endpoint_example() -> &'static str {
+    "127.0.0.1:6831"
+}
+
+fn zipkin_collector_endpoint_example() -> &'static str {
+    "http://127.0.0.1:9411/api/v2/spans"
+}
+
+/// Exporter to use when exporting traces
 #[skip_serializing_none]
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "exporter", rename_all = "lowercase")]
 pub enum TracingExporterConfig {
+    /// Don't export traces
     None,
+
+    /// Export traces to the standard output. Only useful for debugging
     Stdout,
+
+    /// Export traces to an OpenTelemetry protocol compatible endpoint
     Otlp {
+        /// OTLP compatible endpoint
+        #[schemars(url, example = "otlp_endpoint_example")]
         #[serde(default)]
         endpoint: Option<Url>,
     },
+
+    /// Export traces to a Jaeger agent
     Jaeger {
+        /// Jaeger agent endpoint
+        #[schemars(example = "jaeger_agent_endpoint_example")]
         #[serde(default)]
         agent_endpoint: Option<SocketAddr>,
     },
+
+    /// Export traces to a Zipkin collector
     Zipkin {
+        /// Zipkin collector endpoint
+        #[schemars(url, example = "zipkin_collector_endpoint_example")]
         #[serde(default)]
         collector_endpoint: Option<Url>,
     },
@@ -59,23 +99,34 @@ impl Default for TracingExporterConfig {
     }
 }
 
+/// Configuration related to exporting traces
 #[derive(Clone, Debug, Default, Serialize, Deserialize, JsonSchema)]
 pub struct TracingConfig {
+    /// Exporter to use when exporting traces
     #[serde(default, flatten)]
     pub exporter: TracingExporterConfig,
 
+    /// List of propagation formats to use for incoming and outgoing requests
     pub propagators: Vec<Propagator>,
 }
 
+/// Exporter to use when exporting metrics
 #[skip_serializing_none]
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "exporter", rename_all = "lowercase")]
 pub enum MetricsExporterConfig {
+    /// Don't export metrics
     None,
+
+    /// Export metrics to stdout. Only useful for debugging
     Stdout,
+
+    /// Export metrics to an OpenTelemetry protocol compatible endpoint
     Otlp {
+        /// OTLP compatible endpoint
+        #[schemars(url, example = "otlp_endpoint_example")]
         #[serde(default)]
-        endpoint: Option<url::Url>,
+        endpoint: Option<Url>,
     },
 }
 
@@ -85,17 +136,22 @@ impl Default for MetricsExporterConfig {
     }
 }
 
+/// Configuration related to exporting metrics
 #[derive(Clone, Debug, Default, Serialize, Deserialize, JsonSchema)]
 pub struct MetricsConfig {
+    /// Exporter to use when exporting metrics
     #[serde(default, flatten)]
     pub exporter: MetricsExporterConfig,
 }
 
+/// Configuration related to sending monitoring data
 #[derive(Clone, Debug, Default, Serialize, Deserialize, JsonSchema)]
 pub struct TelemetryConfig {
+    /// Configuration related to exporting traces
     #[serde(default)]
     pub tracing: TracingConfig,
 
+    /// Configuration related to exporting metrics
     #[serde(default)]
     pub metrics: MetricsConfig,
 }

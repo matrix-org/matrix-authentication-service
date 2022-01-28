@@ -22,6 +22,7 @@ fn default_builtin() -> bool {
     true
 }
 
+/// Configuration related to templates
 #[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
 pub struct TemplatesConfig {
     /// Path to the folder that holds the custom templates

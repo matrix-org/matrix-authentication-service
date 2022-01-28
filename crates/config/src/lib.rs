@@ -20,6 +20,8 @@
 #![allow(clippy::missing_panics_doc)]
 #![allow(clippy::missing_errors_doc)]
 
+//! Application configuration logic
+
 use async_trait::async_trait;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -30,6 +32,7 @@ mod database;
 mod email;
 mod http;
 mod oauth2;
+pub(crate) mod schema;
 mod telemetry;
 mod templates;
 mod util;
@@ -49,27 +52,36 @@ pub use self::{
     util::ConfigurationSection,
 };
 
+/// Application configuration root
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct RootConfig {
+    /// Configuration related to OAuth 2.0/OIDC operations
     pub oauth2: OAuth2Config,
 
+    /// Configuration of the HTTP server
     #[serde(default)]
     pub http: HttpConfig,
 
+    /// Database connection configuration
     #[serde(default)]
     pub database: DatabaseConfig,
 
+    /// Configuration related to cookies
     pub cookies: CookiesConfig,
 
+    /// Configuration related to sending monitoring data
     #[serde(default)]
     pub telemetry: TelemetryConfig,
 
+    /// Configuration related to templates
     #[serde(default)]
     pub templates: TemplatesConfig,
 
+    /// Configuration related to Cross-Site Request Forgery protections
     #[serde(default)]
     pub csrf: CsrfConfig,
 
+    /// Configuration related to sending emails
     #[serde(default)]
     pub email: EmailConfig,
 }

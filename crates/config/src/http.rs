@@ -24,11 +24,34 @@ fn default_http_address() -> String {
     "[::]:8080".into()
 }
 
+fn http_address_example_1() -> &'static str {
+    "[::1]:8080"
+}
+fn http_address_example_2() -> &'static str {
+    "[::]:8080"
+}
+fn http_address_example_3() -> &'static str {
+    "127.0.0.1:8080"
+}
+fn http_address_example_4() -> &'static str {
+    "0.0.0.0:8080"
+}
+
+/// Configuration related to the web server
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct HttpConfig {
+    /// IP and port the server should listen to
+    #[schemars(
+        example = "http_address_example_1",
+        example = "http_address_example_2",
+        example = "http_address_example_3",
+        example = "http_address_example_4"
+    )]
     #[serde(default = "default_http_address")]
     pub address: String,
 
+    /// Path from which to serve static files. If not specified, it will serve
+    /// the static files embedded in the server binary
     #[serde(default)]
     pub web_root: Option<PathBuf>,
 }

@@ -13,20 +13,26 @@
 // limitations under the License.
 
 use async_trait::async_trait;
-use schemars::{gen::SchemaGenerator, schema::Schema, JsonSchema};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
 use super::ConfigurationSection;
 
-fn secret_schema(gen: &mut SchemaGenerator) -> Schema {
-    String::json_schema(gen)
+fn example_secret() -> &'static str {
+    "0000111122223333444455556666777788889999aaaabbbbccccddddeeeeffff"
 }
 
+/// Cookies-related configuration
 #[serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct CookiesConfig {
-    #[schemars(schema_with = "secret_schema")]
+    /// Encryption key for secure cookies
+    #[schemars(
+        with = "String",
+        regex(pattern = r"[0-9a-fA-F]{64}"),
+        example = "example_secret"
+    )]
     #[serde_as(as = "serde_with::hex::Hex")]
     pub secret: [u8; 32],
 }

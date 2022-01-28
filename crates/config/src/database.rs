@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{path::PathBuf, time::Duration};
+use std::{num::NonZeroU32, path::PathBuf, time::Duration};
 
 use anyhow::Context;
 use async_trait::async_trait;
-use schemars::{gen::SchemaGenerator, schema::Schema, JsonSchema};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none};
 use sqlx::{
@@ -26,9 +26,14 @@ use sqlx::{
 use tracing::log::LevelFilter;
 
 use super::ConfigurationSection;
+use crate::schema;
 
-fn default_max_connections() -> u32 {
-    10
+fn default_connection_string() -> String {
+    "postgresql://".to_string()
+}
+
+fn default_max_connections() -> NonZeroU32 {
+    NonZeroU32::new(10).unwrap()
 }
 
 fn default_connect_timeout() -> Duration {
@@ -58,31 +63,38 @@ impl Default for DatabaseConfig {
     }
 }
 
-fn duration_schema(gen: &mut SchemaGenerator) -> Schema {
-    Option::<u64>::json_schema(gen)
-}
-
-fn optional_duration_schema(gen: &mut SchemaGenerator) -> Schema {
-    u64::json_schema(gen)
-}
-
 #[derive(Debug, Serialize, Deserialize, JsonSchema, PartialEq)]
 #[serde(untagged)]
 enum ConnectConfig {
     Uri {
+        /// Connection URI
+        #[schemars(url, default = "default_connection_string")]
         uri: String,
     },
     Options {
+        /// Name of host to connect to
+        #[schemars(schema_with = "schema::hostname")]
         #[serde(default)]
         host: Option<String>,
+
+        /// Port number to connect at the server host
+        #[schemars(schema_with = "schema::port")]
         #[serde(default)]
         port: Option<u16>,
+
+        /// Directory containing the UNIX socket to connect to
         #[serde(default)]
         socket: Option<PathBuf>,
+
+        /// PostgreSQL user name to connect as
         #[serde(default)]
         username: Option<String>,
+
+        /// Password to be used if the server demands password authentication
         #[serde(default)]
         password: Option<String>,
+
+        /// The database name
         #[serde(default)]
         database: Option<String>,
         /* TODO
@@ -141,41 +153,49 @@ impl TryInto<PgConnectOptions> for &ConnectConfig {
 impl Default for ConnectConfig {
     fn default() -> Self {
         Self::Uri {
-            uri: "postgresql://".to_string(),
+            uri: default_connection_string(),
         }
     }
 }
 
+/// Database connection configuration
 #[serde_as]
 #[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct DatabaseConfig {
+    /// Options related to how to connect to the database
     #[serde(default, flatten)]
     options: ConnectConfig,
 
+    /// Set the maximum number of connections the pool should maintain
     #[serde(default = "default_max_connections")]
-    max_connections: u32,
+    max_connections: NonZeroU32,
 
+    /// Set the minimum number of connections the pool should maintain
     #[serde(default)]
     min_connections: u32,
 
-    #[schemars(schema_with = "duration_schema")]
+    /// Set the amount of time to attempt connecting to the database
+    #[schemars(with = "u64")]
     #[serde(default = "default_connect_timeout")]
     #[serde_as(as = "serde_with::DurationSeconds<u64>")]
     connect_timeout: Duration,
 
-    #[schemars(schema_with = "optional_duration_schema")]
+    /// Set a maximum idle duration for individual connections
+    #[schemars(with = "Option<u64>")]
     #[serde(default = "default_idle_timeout")]
     #[serde_as(as = "Option<serde_with::DurationSeconds<u64>>")]
     idle_timeout: Option<Duration>,
 
-    #[schemars(schema_with = "optional_duration_schema")]
+    /// Set the maximum lifetime of individual connections
+    #[schemars(with = "u64")]
     #[serde(default = "default_max_lifetime")]
     #[serde_as(as = "Option<serde_with::DurationSeconds<u64>>")]
     max_lifetime: Option<Duration>,
 }
 
 impl DatabaseConfig {
+    /// Connect to the database
     #[tracing::instrument(err, skip_all)]
     pub async fn connect(&self) -> anyhow::Result<PgPool> {
         let mut options: PgConnectOptions = (&self.options)
@@ -187,7 +207,7 @@ impl DatabaseConfig {
             .log_slow_statements(LevelFilter::Warn, Duration::from_millis(100));
 
         PgPoolOptions::new()
-            .max_connections(self.max_connections)
+            .max_connections(self.max_connections.into())
             .min_connections(self.min_connections)
             .connect_timeout(self.connect_timeout)
             .idle_timeout(self.idle_timeout)

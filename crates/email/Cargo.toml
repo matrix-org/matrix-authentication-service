@@ -19,4 +19,4 @@ aws-config = "0.5.2"
 [dependencies.lettre]
 version = "0.10.0-rc.4"
 default-features = false
-features = ["tokio1-rustls-tls", "hostname", "builder", "tracing", "pool", "smtp-transport"]
+features = ["tokio1-rustls-tls", "hostname", "builder", "tracing", "pool", "smtp-transport", "sendmail-transport"]

@@ -14,7 +14,7 @@
 
 use async_trait::async_trait;
 use chrono::Duration;
-use schemars::{gen::SchemaGenerator, schema::Schema, JsonSchema};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
@@ -24,14 +24,12 @@ fn default_ttl() -> Duration {
     Duration::hours(1)
 }
 
-fn ttl_schema(gen: &mut SchemaGenerator) -> Schema {
-    u64::json_schema(gen)
-}
-
+/// Configuration related to Cross-Site Request Forgery protections
 #[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct CsrfConfig {
-    #[schemars(schema_with = "ttl_schema")]
+    /// Time-to-live of a CSRF token in seconds
+    #[schemars(with = "u64", range(min = 60, max = 86400))]
     #[serde(default = "default_ttl")]
     #[serde_as(as = "serde_with::DurationSeconds<i64>")]
     pub ttl: Duration,

@@ -14,7 +14,7 @@
 
 use clap::Parser;
 use mas_config::{ConfigurationSection, RootConfig};
-use schemars::schema_for;
+use schemars::gen::SchemaSettings;
 use tracing::info;
 
 use super::RootCommand;
@@ -52,7 +52,12 @@ impl ConfigCommand {
                 Ok(())
             }
             SC::Schema => {
-                let schema = schema_for!(RootConfig);
+                let settings = SchemaSettings::draft07().with(|s| {
+                    s.option_nullable = false;
+                    s.option_add_null_type = false;
+                });
+                let gen = settings.into_generator();
+                let schema = gen.into_root_schema_for::<RootConfig>();
 
                 serde_yaml::to_writer(std::io::stdout(), &schema)?;
 

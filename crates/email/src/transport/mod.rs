@@ -17,7 +17,10 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use lettre::{
     address::Envelope,
-    transport::smtp::{authentication::Credentials, AsyncSmtpTransport},
+    transport::{
+        sendmail::AsyncSendmailTransport,
+        smtp::{authentication::Credentials, AsyncSmtpTransport},
+    },
     AsyncTransport, Tokio1Executor,
 };
 use mas_config::{EmailSmtpMode, EmailTransportConfig};
@@ -32,6 +35,7 @@ pub struct Transport {
 enum TransportInner {
     Blackhole,
     Smtp(AsyncSmtpTransport<Tokio1Executor>),
+    Sendmail(AsyncSendmailTransport<Tokio1Executor>),
     AwsSes(aws_ses::Transport),
 }
 
@@ -63,10 +67,13 @@ impl Transport {
                 }
 
                 if let Some(port) = port {
-                    t = t.port(*port);
+                    t = t.port((*port).into());
                 }
 
                 TransportInner::Smtp(t.build())
+            }
+            EmailTransportConfig::Sendmail { command } => {
+                TransportInner::Sendmail(AsyncSendmailTransport::new_with_command(command))
             }
             EmailTransportConfig::AwsSes => {
                 TransportInner::AwsSes(aws_ses::Transport::from_env().await)
@@ -84,6 +91,7 @@ impl Transport {
             TransportInner::Smtp(t) => {
                 t.test_connection().await?;
             }
+            &TransportInner::Sendmail(_) => {}
             TransportInner::AwsSes(_) => {}
         }
 
@@ -111,6 +119,9 @@ impl AsyncTransport for Transport {
                 );
             }
             TransportInner::Smtp(t) => {
+                t.send_raw(envelope, email).await?;
+            }
+            TransportInner::Sendmail(t) => {
                 t.send_raw(envelope, email).await?;
             }
             TransportInner::AwsSes(t) => {
