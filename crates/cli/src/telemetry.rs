@@ -1,4 +1,4 @@
-// Copyright 2021 The Matrix.org Foundation C.I.C.
+// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@ use std::{net::SocketAddr, time::Duration};
 
 use anyhow::bail;
 use futures::stream::{Stream, StreamExt};
+use hyper::{header, Version};
 use mas_config::{MetricsExporterConfig, Propagator, TelemetryConfig, TracingExporterConfig};
 use opentelemetry::{
     global,
@@ -26,12 +27,16 @@ use opentelemetry::{
         trace::Tracer,
         Resource,
     },
+    trace::TraceContextExt,
 };
+use opentelemetry_http::HeaderExtractor;
 #[cfg(feature = "jaeger")]
 use opentelemetry_jaeger::Propagator as JaegerPropagator;
 use opentelemetry_semantic_conventions as semcov;
 #[cfg(feature = "zipkin")]
 use opentelemetry_zipkin::{B3Encoding, Propagator as ZipkinPropagator};
+use tower_http::trace::{MakeSpan, OnResponse};
+use tracing::field;
 use url::Url;
 
 pub fn setup(config: &TelemetryConfig) -> anyhow::Result<Option<Tracer>> {
@@ -236,4 +241,76 @@ fn resource() -> Resource {
     );
 
     resource.merge(&detected)
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct OtelMakeSpan;
+
+impl<B> MakeSpan<B> for OtelMakeSpan {
+    fn make_span(&mut self, request: &hyper::Request<B>) -> tracing::Span {
+        // Extract the context from the headers
+        let headers = request.headers();
+        let extractor = HeaderExtractor(headers);
+
+        let cx = opentelemetry::global::get_text_map_propagator(|propagator| {
+            propagator.extract(&extractor)
+        });
+
+        let cx = if cx.span().span_context().is_remote() {
+            cx
+        } else {
+            opentelemetry::Context::new()
+        };
+
+        // Attach the context so when the request span is created it gets properly
+        // parented
+        let _guard = cx.attach();
+
+        let version = match request.version() {
+            Version::HTTP_09 => "0.9",
+            Version::HTTP_10 => "1.0",
+            Version::HTTP_11 => "1.1",
+            Version::HTTP_2 => "2.0",
+            Version::HTTP_3 => "3.0",
+            _ => "",
+        };
+
+        let span = tracing::info_span!(
+            "request",
+            http.method = %request.method(),
+            http.target = %request.uri(),
+            http.flavor = version,
+            http.status_code = field::Empty,
+            http.user_agent = field::Empty,
+            otel.kind = "server",
+            otel.status_code = field::Empty,
+        );
+
+        if let Some(user_agent) = headers
+            .get(header::USER_AGENT)
+            .and_then(|s| s.to_str().ok())
+        {
+            span.record("http.user_agent", &user_agent);
+        }
+
+        span
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct OtelOnResponse;
+
+impl<B> OnResponse<B> for OtelOnResponse {
+    fn on_response(self, response: &hyper::Response<B>, _latency: Duration, span: &tracing::Span) {
+        let s = response.status();
+        let status = if s.is_success() {
+            "ok"
+        } else if s.is_client_error() || s.is_server_error() {
+            "error"
+        } else {
+            "unset"
+        };
+        span.record("otel.status_code", &status);
+        span.record("http.status_code", &s.as_u16());
+    }
 }

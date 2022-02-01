@@ -1,4 +1,4 @@
-// Copyright 2021 The Matrix.org Foundation C.I.C.
+// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,76 +20,15 @@
 use std::path::PathBuf;
 
 use anyhow::Context;
-use clap::Parser;
-use mas_config::{ConfigurationSection, TelemetryConfig};
+use clap::StructOpt;
+use mas_config::TelemetryConfig;
 use tracing_subscriber::{
     filter::LevelFilter, layer::SubscriberExt, reload, util::SubscriberInitExt, EnvFilter, Layer,
     Registry,
 };
 
-use self::{
-    config::ConfigCommand, database::DatabaseCommand, manage::ManageCommand, server::ServerCommand,
-    templates::TemplatesCommand,
-};
-
-mod config;
-mod database;
-mod manage;
-mod server;
+mod commands;
 mod telemetry;
-mod templates;
-
-#[derive(Parser, Debug)]
-enum Subcommand {
-    /// Configuration-related commands
-    Config(ConfigCommand),
-
-    /// Manage the database
-    Database(DatabaseCommand),
-
-    /// Runs the web server
-    Server(ServerCommand),
-
-    /// Manage the instance
-    Manage(ManageCommand),
-
-    /// Templates-related commands
-    Templates(TemplatesCommand),
-}
-
-#[derive(Parser, Debug)]
-struct RootCommand {
-    /// Path to the configuration file
-    #[clap(
-        short,
-        long,
-        global = true,
-        default_value = "config.yaml",
-        multiple_occurrences(true)
-    )]
-    config: Vec<PathBuf>,
-
-    #[clap(subcommand)]
-    subcommand: Option<Subcommand>,
-}
-
-impl RootCommand {
-    async fn run(&self) -> anyhow::Result<()> {
-        use Subcommand as S;
-        match &self.subcommand {
-            Some(S::Config(c)) => c.run(self).await,
-            Some(S::Database(c)) => c.run(self).await,
-            Some(S::Server(c)) => c.run(self).await,
-            Some(S::Manage(c)) => c.run(self).await,
-            Some(S::Templates(c)) => c.run(self).await,
-            None => ServerCommand::default().run(self).await,
-        }
-    }
-
-    fn load_config<'de, T: ConfigurationSection<'de>>(&self) -> anyhow::Result<T> {
-        T::load_from_files(&self.config).context("could not load configuration")
-    }
-}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -97,7 +36,7 @@ async fn main() -> anyhow::Result<()> {
     // chance to shutdown the telemetry exporters regardless of if there was an
     // error or not
     let res = try_main().await;
-    telemetry::shutdown();
+    self::telemetry::shutdown();
     res
 }
 
@@ -142,7 +81,7 @@ async fn try_main() -> anyhow::Result<()> {
     }
 
     // Parse the CLI arguments
-    let opts = RootCommand::parse();
+    let opts = self::commands::Options::parse();
 
     // Telemetry config could fail to load, but that's probably OK, since the whole
     // config will be loaded afterwards, and crash if there is a problem.

@@ -1,4 +1,4 @@
-// Copyright 2021 The Matrix.org Foundation C.I.C.
+// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,16 +17,14 @@ use mas_config::{ConfigurationSection, RootConfig};
 use schemars::gen::SchemaSettings;
 use tracing::info;
 
-use super::RootCommand;
-
 #[derive(Parser, Debug)]
-pub(super) struct ConfigCommand {
+pub(super) struct Options {
     #[clap(subcommand)]
-    subcommand: ConfigSubcommand,
+    subcommand: Subcommand,
 }
 
 #[derive(Parser, Debug)]
-enum ConfigSubcommand {
+enum Subcommand {
     /// Dump the current config as YAML
     Dump,
 
@@ -40,9 +38,9 @@ enum ConfigSubcommand {
     Generate,
 }
 
-impl ConfigCommand {
-    pub async fn run(&self, root: &RootCommand) -> anyhow::Result<()> {
-        use ConfigSubcommand as SC;
+impl Options {
+    pub async fn run(&self, root: &super::Options) -> anyhow::Result<()> {
+        use Subcommand as SC;
         match &self.subcommand {
             SC::Dump => {
                 let config: RootConfig = root.load_config()?;

@@ -1,4 +1,4 @@
-// Copyright 2021 The Matrix.org Foundation C.I.C.
+// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,16 +18,14 @@ use clap::Parser;
 use mas_config::TemplatesConfig;
 use mas_templates::Templates;
 
-use super::RootCommand;
-
 #[derive(Parser, Debug)]
-pub(super) struct TemplatesCommand {
+pub(super) struct Options {
     #[clap(subcommand)]
-    subcommand: TemplatesSubcommand,
+    subcommand: Subcommand,
 }
 
 #[derive(Parser, Debug)]
-enum TemplatesSubcommand {
+enum Subcommand {
     /// Save the builtin templates to a folder
     Save {
         /// Where the templates should be saved
@@ -49,9 +47,9 @@ enum TemplatesSubcommand {
     },
 }
 
-impl TemplatesCommand {
-    pub async fn run(&self, _root: &RootCommand) -> anyhow::Result<()> {
-        use TemplatesSubcommand as SC;
+impl Options {
+    pub async fn run(&self, _root: &super::Options) -> anyhow::Result<()> {
+        use Subcommand as SC;
         match &self.subcommand {
             SC::Save { path, overwrite } => {
                 Templates::save(path, *overwrite).await?;

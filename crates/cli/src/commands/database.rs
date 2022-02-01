@@ -1,4 +1,4 @@
-// Copyright 2021 The Matrix.org Foundation C.I.C.
+// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,22 +17,20 @@ use clap::Parser;
 use mas_config::DatabaseConfig;
 use mas_storage::MIGRATOR;
 
-use super::RootCommand;
-
 #[derive(Parser, Debug)]
-pub(super) struct DatabaseCommand {
+pub(super) struct Options {
     #[clap(subcommand)]
-    subcommand: DatabaseSubcommand,
+    subcommand: Subcommand,
 }
 
 #[derive(Parser, Debug)]
-enum DatabaseSubcommand {
+enum Subcommand {
     /// Run database migrations
     Migrate,
 }
 
-impl DatabaseCommand {
-    pub async fn run(&self, root: &RootCommand) -> anyhow::Result<()> {
+impl Options {
+    pub async fn run(&self, root: &super::Options) -> anyhow::Result<()> {
         let config: DatabaseConfig = root.load_config()?;
         let pool = config.connect().await?;
 
