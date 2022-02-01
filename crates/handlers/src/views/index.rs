@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use mas_config::{CookiesConfig, CsrfConfig, OAuth2Config};
+use mas_config::{CookiesConfig, CsrfConfig, HttpConfig};
 use mas_data_model::BrowserSession;
 use mas_storage::PostgresqlBackend;
 use mas_templates::{IndexContext, TemplateContext, Templates};
@@ -20,23 +20,22 @@ use mas_warp_utils::filters::{
     cookies::{encrypted_cookie_saver, EncryptedCookieSaver},
     csrf::updated_csrf_token,
     session::optional_session,
+    url_builder::{url_builder, UrlBuilder},
     with_templates, CsrfToken,
 };
 use sqlx::PgPool;
-use url::Url;
 use warp::{filters::BoxedFilter, reply::html, Filter, Rejection, Reply};
 
 pub(super) fn filter(
     pool: &PgPool,
     templates: &Templates,
-    oauth2_config: &OAuth2Config,
+    http_config: &HttpConfig,
     csrf_config: &CsrfConfig,
     cookies_config: &CookiesConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
-    let discovery_url = oauth2_config.discovery_url();
     warp::path::end()
         .and(warp::get())
-        .map(move || discovery_url.clone())
+        .and(url_builder(http_config))
         .and(with_templates(templates))
         .and(encrypted_cookie_saver(cookies_config))
         .and(updated_csrf_token(cookies_config, csrf_config))
@@ -46,13 +45,13 @@ pub(super) fn filter(
 }
 
 async fn get(
-    discovery_url: Url,
+    url_builder: UrlBuilder,
     templates: Templates,
     cookie_saver: EncryptedCookieSaver,
     csrf_token: CsrfToken,
     maybe_session: Option<BrowserSession<PostgresqlBackend>>,
 ) -> Result<Box<dyn Reply>, Rejection> {
-    let ctx = IndexContext::new(discovery_url)
+    let ctx = IndexContext::new(url_builder.oidc_discovery())
         .maybe_with_session(maybe_session)
         .with_csrf(csrf_token.form_value());
 

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use lettre::{message::Mailbox, Address};
-use mas_config::{CookiesConfig, CsrfConfig, OAuth2Config};
+use mas_config::{CookiesConfig, CsrfConfig, HttpConfig};
 use mas_data_model::{BrowserSession, User, UserEmail};
 use mas_email::Mailer;
 use mas_storage::{
@@ -31,6 +31,7 @@ use mas_warp_utils::{
         csrf::{protected_form, updated_csrf_token},
         database::{connection, transaction},
         session::session,
+        url_builder::{url_builder, UrlBuilder},
         with_templates, CsrfToken,
     },
 };
@@ -38,20 +39,17 @@ use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use serde::Deserialize;
 use sqlx::{pool::PoolConnection, PgExecutor, PgPool, Postgres, Transaction};
 use tracing::info;
-use url::Url;
 use warp::{filters::BoxedFilter, reply::html, Filter, Rejection, Reply};
 
 pub(super) fn filter(
     pool: &PgPool,
     templates: &Templates,
     mailer: &Mailer,
-    oauth2_config: &OAuth2Config,
+    http_config: &HttpConfig,
     csrf_config: &CsrfConfig,
     cookies_config: &CookiesConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
     let mailer = mailer.clone();
-
-    let base = oauth2_config.issuer.clone();
 
     let get = with_templates(templates)
         .and(encrypted_cookie_saver(cookies_config))
@@ -62,7 +60,7 @@ pub(super) fn filter(
 
     let post = with_templates(templates)
         .and(warp::any().map(move || mailer.clone()))
-        .and(warp::any().map(move || base.clone()))
+        .and(url_builder(http_config))
         .and(encrypted_cookie_saver(cookies_config))
         .and(updated_csrf_token(cookies_config, csrf_config))
         .and(session(pool, cookies_config))
@@ -120,7 +118,7 @@ async fn render(
 
 async fn start_email_verification(
     mailer: &Mailer,
-    base: &Url,
+    url_builder: &UrlBuilder,
     executor: impl PgExecutor<'_>,
     user: &User<PostgresqlBackend>,
     user_email: &UserEmail<PostgresqlBackend>,
@@ -139,8 +137,7 @@ async fn start_email_verification(
 
     let mailbox = Mailbox::new(Some(user.username.clone()), address);
 
-    let link = base.join("./verify/")?;
-    let link = link.join(&code)?;
+    let link = url_builder.email_verification(&code);
 
     let context = EmailVerificationContext::new(user.clone().into(), link);
 
@@ -154,7 +151,7 @@ async fn start_email_verification(
 async fn post(
     templates: Templates,
     mailer: Mailer,
-    base: Url,
+    url_builder: UrlBuilder,
     cookie_saver: EncryptedCookieSaver,
     csrf_token: CsrfToken,
     mut session: BrowserSession<PostgresqlBackend>,
@@ -166,7 +163,7 @@ async fn post(
             let user_email = add_user_email(&mut txn, &session.user, email)
                 .await
                 .wrap_error()?;
-            start_email_verification(&mailer, &base, &mut txn, &session.user, &user_email)
+            start_email_verification(&mailer, &url_builder, &mut txn, &session.user, &user_email)
                 .await
                 .wrap_error()?;
         }
@@ -184,7 +181,7 @@ async fn post(
                 .await
                 .wrap_error()?;
 
-            start_email_verification(&mailer, &base, &mut txn, &session.user, &user_email)
+            start_email_verification(&mailer, &url_builder, &mut txn, &session.user, &user_email)
                 .await
                 .wrap_error()?;
         }

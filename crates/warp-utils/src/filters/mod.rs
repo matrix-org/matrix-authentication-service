@@ -25,6 +25,7 @@ pub mod csrf;
 pub mod database;
 pub mod headers;
 pub mod session;
+pub mod url_builder;
 
 use std::convert::Infallible;
 

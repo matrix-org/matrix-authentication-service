@@ -15,7 +15,7 @@
 use std::sync::Arc;
 
 use hyper::Method;
-use mas_config::{CookiesConfig, OAuth2Config};
+use mas_config::{CookiesConfig, HttpConfig, OAuth2Config};
 use mas_jose::StaticKeystore;
 use mas_templates::Templates;
 use mas_warp_utils::filters::cors::cors;
@@ -41,14 +41,15 @@ pub fn filter(
     templates: &Templates,
     key_store: &Arc<StaticKeystore>,
     oauth2_config: &OAuth2Config,
+    http_config: &HttpConfig,
     cookies_config: &CookiesConfig,
 ) -> BoxedFilter<(impl Reply,)> {
-    let discovery = discovery(key_store.as_ref(), oauth2_config);
+    let discovery = discovery(key_store.as_ref(), http_config);
     let keys = keys(key_store);
     let authorization = authorization(pool, templates, oauth2_config, cookies_config);
     let userinfo = userinfo(pool, oauth2_config);
-    let introspection = introspection(pool, oauth2_config);
-    let token = token(pool, key_store, oauth2_config);
+    let introspection = introspection(pool, oauth2_config, http_config);
+    let token = token(pool, key_store, oauth2_config, http_config);
 
     let filter = discovery
         .or(keys)

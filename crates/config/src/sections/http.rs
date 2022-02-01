@@ -17,11 +17,16 @@ use std::path::PathBuf;
 use async_trait::async_trait;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use url::Url;
 
 use super::ConfigurationSection;
 
 fn default_http_address() -> String {
     "[::]:8080".into()
+}
+
+fn default_public_base() -> Url {
+    "http://[::]:8080".parse().unwrap()
 }
 
 fn http_address_example_1() -> &'static str {
@@ -54,6 +59,9 @@ pub struct HttpConfig {
     /// the static files embedded in the server binary
     #[serde(default)]
     pub web_root: Option<PathBuf>,
+
+    /// Public URL base from where the authentication service is reachable
+    pub public_base: Url,
 }
 
 impl Default for HttpConfig {
@@ -61,6 +69,7 @@ impl Default for HttpConfig {
         Self {
             address: default_http_address(),
             web_root: None,
+            public_base: default_public_base(),
         }
     }
 }

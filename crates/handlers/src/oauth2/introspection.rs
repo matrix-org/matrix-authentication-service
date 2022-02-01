@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use mas_config::{OAuth2ClientConfig, OAuth2Config};
+use mas_config::{HttpConfig, OAuth2ClientConfig, OAuth2Config};
 use mas_data_model::TokenType;
 use mas_iana::oauth::{OAuthClientAuthenticationMethod, OAuthTokenTypeHint};
 use mas_storage::oauth2::{
@@ -20,18 +20,20 @@ use mas_storage::oauth2::{
 };
 use mas_warp_utils::{
     errors::WrapError,
-    filters::{client::client_authentication, database::connection},
+    filters::{client::client_authentication, database::connection, url_builder::UrlBuilder},
 };
 use oauth2_types::requests::{IntrospectionRequest, IntrospectionResponse};
 use sqlx::{pool::PoolConnection, PgPool, Postgres};
 use tracing::{info, warn};
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
-pub fn filter(pool: &PgPool, oauth2_config: &OAuth2Config) -> BoxedFilter<(Box<dyn Reply>,)> {
-    let audience = oauth2_config
-        .issuer
-        .join("/oauth2/introspect")
-        .unwrap()
+pub fn filter(
+    pool: &PgPool,
+    oauth2_config: &OAuth2Config,
+    http_config: &HttpConfig,
+) -> BoxedFilter<(Box<dyn Reply>,)> {
+    let audience = UrlBuilder::from(http_config)
+        .oauth_introspection_endpoint()
         .to_string();
 
     warp::path!("oauth2" / "introspect")

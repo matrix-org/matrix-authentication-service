@@ -126,15 +126,8 @@ impl OAuth2ClientConfig {
     }
 }
 
-fn default_oauth2_issuer() -> Url {
-    "http://[::]:8080".parse().unwrap()
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct OAuth2Config {
-    #[serde(default = "default_oauth2_issuer")]
-    pub issuer: Url,
-
     #[serde(default)]
     pub clients: Vec<OAuth2ClientConfig>,
 
@@ -143,13 +136,6 @@ pub struct OAuth2Config {
 }
 
 impl OAuth2Config {
-    #[must_use]
-    pub fn discovery_url(&self) -> Url {
-        self.issuer
-            .join(".well-known/openid-configuration")
-            .expect("could not build discovery url")
-    }
-
     pub async fn key_store(&self) -> anyhow::Result<StaticKeystore> {
         let mut store = StaticKeystore::new();
 
@@ -251,7 +237,6 @@ impl ConfigurationSection<'_> for OAuth2Config {
         };
 
         Ok(Self {
-            issuer: default_oauth2_issuer(),
             clients: Vec::new(),
             keys: vec![rsa_key, ecdsa_key],
         })
@@ -291,7 +276,6 @@ impl ConfigurationSection<'_> for OAuth2Config {
         };
 
         Self {
-            issuer: default_oauth2_issuer(),
             clients: Vec::new(),
             keys: vec![rsa_key, ecdsa_key],
         }
@@ -331,7 +315,6 @@ mod tests {
                             NaiDiepgUJ2GI5eq2V8D8nahRANCAARMK9aKUd/H28qaU+0qvS6bSJItzAge1VHn
                             OhBAAUVci1RpmUA+KdCL5sw9nadAEiONeiGr+28RYHZmlB9qXnjC
                             -----END PRIVATE KEY-----
-                      issuer: https://example.com
                       clients:
                         - client_id: public
                           client_auth_method: none
@@ -372,7 +355,6 @@ mod tests {
 
             let config = OAuth2Config::load_from_file("config.yaml")?;
 
-            assert_eq!(config.issuer, "https://example.com".parse().unwrap());
             assert_eq!(config.clients.len(), 5);
 
             assert_eq!(config.clients[0].client_id, "public");

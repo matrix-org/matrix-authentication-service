@@ -14,7 +14,7 @@
 
 use std::collections::HashSet;
 
-use mas_config::OAuth2Config;
+use mas_config::HttpConfig;
 use mas_iana::{
     jose::JsonWebSignatureAlg,
     oauth::{
@@ -23,6 +23,7 @@ use mas_iana::{
     },
 };
 use mas_jose::SigningKeystore;
+use mas_warp_utils::filters::url_builder::UrlBuilder;
 use oauth2_types::{
     oidc::{ClaimType, Metadata, SubjectType},
     requests::{Display, GrantType, ResponseMode},
@@ -32,9 +33,9 @@ use warp::{filters::BoxedFilter, Filter, Reply};
 #[allow(clippy::too_many_lines)]
 pub(super) fn filter(
     key_store: impl SigningKeystore,
-    config: &OAuth2Config,
+    http_config: &HttpConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
-    let base = config.issuer.clone();
+    let builder = UrlBuilder::from(http_config);
 
     // This is how clients can authenticate
     let client_auth_methods_supported = Some({
@@ -62,12 +63,12 @@ pub(super) fn filter(
     let jwt_signing_alg_values_supported = Some(key_store.supported_algorithms());
 
     // Prepare all the endpoints
-    let issuer = Some(base.clone());
-    let authorization_endpoint = base.join("oauth2/authorize").ok();
-    let token_endpoint = base.join("oauth2/token").ok();
-    let jwks_uri = base.join("oauth2/keys.json").ok();
-    let introspection_endpoint = base.join("oauth2/introspect").ok();
-    let userinfo_endpoint = base.join("oauth2/userinfo").ok();
+    let issuer = Some(builder.oidc_issuer());
+    let authorization_endpoint = Some(builder.oauth_authorization_endpoint());
+    let token_endpoint = Some(builder.oauth_token_endpoint());
+    let jwks_uri = Some(builder.jwks_uri());
+    let introspection_endpoint = Some(builder.oauth_introspection_endpoint());
+    let userinfo_endpoint = Some(builder.oidc_userinfo_endpoint());
 
     let scopes_supported = Some({
         let mut s = HashSet::new();

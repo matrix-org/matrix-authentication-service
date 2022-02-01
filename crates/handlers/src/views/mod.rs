@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use mas_config::{CookiesConfig, CsrfConfig, OAuth2Config};
+use mas_config::{CookiesConfig, CsrfConfig, HttpConfig};
 use mas_email::Mailer;
 use mas_templates::Templates;
 use sqlx::PgPool;
@@ -40,16 +40,16 @@ pub(super) fn filter(
     pool: &PgPool,
     templates: &Templates,
     mailer: &Mailer,
-    oauth2_config: &OAuth2Config,
+    http_config: &HttpConfig,
     csrf_config: &CsrfConfig,
     cookies_config: &CookiesConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
-    let index = index(pool, templates, oauth2_config, csrf_config, cookies_config);
+    let index = index(pool, templates, http_config, csrf_config, cookies_config);
     let account = account(
         pool,
         templates,
         mailer,
-        oauth2_config,
+        http_config,
         csrf_config,
         cookies_config,
     );

@@ -19,7 +19,7 @@ use chrono::{DateTime, Duration, Utc};
 use data_encoding::BASE64URL_NOPAD;
 use headers::{CacheControl, Pragma};
 use hyper::StatusCode;
-use mas_config::{OAuth2ClientConfig, OAuth2Config};
+use mas_config::{HttpConfig, OAuth2ClientConfig, OAuth2Config};
 use mas_data_model::{AuthorizationGrantStage, TokenType};
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
 use mas_jose::{
@@ -37,7 +37,7 @@ use mas_storage::{
 };
 use mas_warp_utils::{
     errors::WrapError,
-    filters::{client::client_authentication, database::connection},
+    filters::{client::client_authentication, database::connection, url_builder::UrlBuilder},
     reply::with_typed_header,
 };
 use oauth2_types::{
@@ -99,14 +99,13 @@ pub fn filter(
     pool: &PgPool,
     key_store: &Arc<StaticKeystore>,
     oauth2_config: &OAuth2Config,
+    http_config: &HttpConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
     let key_store = key_store.clone();
-    let audience = oauth2_config
-        .issuer
-        .join("/oauth2/token")
-        .unwrap()
-        .to_string();
-    let issuer = oauth2_config.issuer.clone();
+    let builder = UrlBuilder::from(http_config);
+    let audience = builder.oauth_token_endpoint().to_string();
+
+    let issuer = builder.oidc_issuer();
 
     warp::path!("oauth2" / "token")
         .and(

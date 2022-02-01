@@ -47,12 +47,19 @@ pub fn root(
     config: &RootConfig,
 ) -> BoxedFilter<(impl Reply,)> {
     let health = health(pool);
-    let oauth2 = oauth2(pool, templates, key_store, &config.oauth2, &config.cookies);
+    let oauth2 = oauth2(
+        pool,
+        templates,
+        key_store,
+        &config.oauth2,
+        &config.http,
+        &config.cookies,
+    );
     let views = views(
         pool,
         templates,
         mailer,
-        &config.oauth2,
+        &config.http,
         &config.csrf,
         &config.cookies,
     );

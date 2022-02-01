@@ -15,7 +15,7 @@
 mod emails;
 mod password;
 
-use mas_config::{CookiesConfig, CsrfConfig, OAuth2Config};
+use mas_config::{CookiesConfig, CsrfConfig, HttpConfig};
 use mas_data_model::BrowserSession;
 use mas_email::Mailer;
 use mas_storage::{
@@ -42,7 +42,7 @@ pub(super) fn filter(
     pool: &PgPool,
     templates: &Templates,
     mailer: &Mailer,
-    oauth2_config: &OAuth2Config,
+    http_config: &HttpConfig,
     csrf_config: &CsrfConfig,
     cookies_config: &CookiesConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
@@ -60,7 +60,7 @@ pub(super) fn filter(
         pool,
         templates,
         mailer,
-        oauth2_config,
+        http_config,
         csrf_config,
         cookies_config,
     );
