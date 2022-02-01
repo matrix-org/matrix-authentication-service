@@ -282,8 +282,9 @@ jobs:
       IMAGE: ghcr.io/matrix-org/matrix-authentication-service
 
     permissions:
-      packages: write
       contents: read
+      packages: write
+      id-token: write
 
     steps:
       - name: Checkout the code
