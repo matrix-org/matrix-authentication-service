@@ -14,6 +14,7 @@
 
 #![forbid(unsafe_code)]
 #![deny(clippy::all)]
+#![deny(missing_docs)]
 #![deny(rustdoc::broken_intra_doc_links)]
 #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]

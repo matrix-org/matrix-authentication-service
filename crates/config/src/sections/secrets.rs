@@ -34,12 +34,14 @@ use tracing::info;
 
 use super::ConfigurationSection;
 
+/// Helps encrypting and decrypting data
 #[derive(Clone)]
 pub struct Encrypter {
     aead: Arc<ChaCha20Poly1305>,
 }
 
 impl Encrypter {
+    /// Creates an [`Encrypter`] out of an encryption key
     #[must_use]
     pub fn new(key: &[u8; 32]) -> Self {
         let key = GenericArray::from_slice(key);
@@ -48,12 +50,14 @@ impl Encrypter {
         Self { aead }
     }
 
+    /// Encrypt a payload
     pub fn encrypt(&self, nonce: &[u8; 12], decrypted: &[u8]) -> anyhow::Result<Vec<u8>> {
         let nonce = GenericArray::from_slice(&nonce[..]);
         let encrypted = self.aead.encrypt(nonce, decrypted)?;
         Ok(encrypted)
     }
 
+    /// Decrypts a payload
     pub fn decrypt(&self, nonce: &[u8; 12], encrypted: &[u8]) -> anyhow::Result<Vec<u8>> {
         let nonce = GenericArray::from_slice(&nonce[..]);
         let encrypted = self.aead.decrypt(nonce, encrypted)?;
@@ -86,6 +90,7 @@ pub struct KeyConfig {
     key: KeyOrPath,
 }
 
+/// Application secrets
 #[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct SecretsConfig {
@@ -104,6 +109,7 @@ pub struct SecretsConfig {
 }
 
 impl SecretsConfig {
+    /// Derive a signing and verifying keystore out of the config
     pub async fn key_store(&self) -> anyhow::Result<StaticKeystore> {
         let mut store = StaticKeystore::new();
 
@@ -158,6 +164,7 @@ impl SecretsConfig {
         Ok(store)
     }
 
+    /// Derive an [`Encrypter`] out of the config
     #[must_use]
     pub fn encrypter(&self) -> Encrypter {
         Encrypter::new(&self.encryption)

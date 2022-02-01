@@ -48,24 +48,51 @@ impl From<JsonWebKeySet> for JwksOrJwksUri {
     }
 }
 
+/// Authentication method used by clients
 #[derive(JsonSchema, Serialize, Deserialize, Clone, Debug)]
 #[serde(tag = "client_auth_method", rename_all = "snake_case")]
 pub enum ClientAuthMethodConfig {
+    /// `none`: No authentication
     None,
-    ClientSecretBasic { client_secret: String },
-    ClientSecretPost { client_secret: String },
-    ClientSecretJwt { client_secret: String },
+
+    /// `client_secret_basic`: `client_id` and `client_secret` used as basic
+    /// authorization credentials
+    ClientSecretBasic {
+        /// The client secret
+        client_secret: String,
+    },
+
+    /// `client_secret_post`: `client_id` and `client_secret` sent in the
+    /// request body
+    ClientSecretPost {
+        /// The client secret
+        client_secret: String,
+    },
+
+    /// `client_secret_basic`: a `client_assertion` sent in the request body and
+    /// signed using the `client_secret`
+    ClientSecretJwt {
+        /// The client secret
+        client_secret: String,
+    },
+
+    /// `client_secret_basic`: a `client_assertion` sent in the request body and
+    /// signed by an asymetric key
     PrivateKeyJwt(JwksOrJwksUri),
 }
 
+/// An OAuth 2.0 client configuration
 #[skip_serializing_none]
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct ClientConfig {
+    /// The client ID
     pub client_id: String,
 
+    /// Authentication method used for this client
     #[serde(flatten)]
     pub client_auth_method: ClientAuthMethodConfig,
 
+    /// List of allowed redirect URIs
     #[serde(default)]
     pub redirect_uris: Vec<Url>,
 }
@@ -75,6 +102,7 @@ pub struct ClientConfig {
 pub struct InvalidRedirectUriError;
 
 impl ClientConfig {
+    #[doc(hidden)]
     pub fn resolve_redirect_uri<'a>(
         &'a self,
         suggested_uri: &'a Option<Url>,
@@ -85,7 +113,7 @@ impl ClientConfig {
         )
     }
 
-    pub fn check_redirect_uri<'a>(
+    fn check_redirect_uri<'a>(
         &self,
         redirect_uri: &'a Url,
     ) -> Result<&'a Url, InvalidRedirectUriError> {
@@ -97,6 +125,7 @@ impl ClientConfig {
     }
 }
 
+/// List of OAuth 2.0/OIDC clients config
 #[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
 #[serde(transparent)]
 pub struct ClientsConfig(Vec<ClientConfig>);

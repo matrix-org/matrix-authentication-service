@@ -12,11 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Useful JSON Schema definitions
+
 use schemars::{
     gen::SchemaGenerator,
     schema::{InstanceType, NumberValidation, Schema, SchemaObject},
 };
 
+/// A network port
 pub fn port(_gen: &mut SchemaGenerator) -> Schema {
     Schema::Object(SchemaObject {
         instance_type: Some(InstanceType::Integer.into()),
@@ -29,6 +32,7 @@ pub fn port(_gen: &mut SchemaGenerator) -> Schema {
     })
 }
 
+/// A network hostname
 pub fn hostname(_gen: &mut SchemaGenerator) -> Schema {
     Schema::Object(SchemaObject {
         instance_type: Some(InstanceType::String.into()),
