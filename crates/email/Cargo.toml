@@ -8,13 +8,13 @@ license = "Apache-2.0"
 [dependencies]
 anyhow = "1.0.53"
 async-trait = "0.1.52"
-tokio = { version = "1.15.0", features = ["macros"] }
+tokio = { version = "1.16.1", features = ["macros"] }
 
 mas-templates = { path = "../templates" }
 mas-config = { path = "../config" }
 tracing = "0.1.29"
-aws-sdk-sesv2 = "0.5.2"
-aws-config = "0.5.2"
+aws-sdk-sesv2 = "0.6.0"
+aws-config = "0.6.0"
 
 [dependencies.lettre]
 version = "0.10.0-rc.4"

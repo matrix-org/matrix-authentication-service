@@ -10,7 +10,7 @@ dev = ["mas-static-files/dev", "mas-templates/dev"]
 
 [dependencies]
 # Async runtime
-tokio = { version = "1.15.0", features = ["macros"] }
+tokio = { version = "1.16.1", features = ["macros"] }
 
 # Logging and tracing
 tracing = "0.1.29"
@@ -30,18 +30,18 @@ lettre = { version = "0.10.0-rc.4", default-features = false, features = ["build
 sqlx = { version = "0.5.10", features = ["runtime-tokio-rustls", "postgres"] }
 
 # Various structure (de)serialization
-serde = { version = "1.0.135", features = ["derive"] }
+serde = { version = "1.0.136", features = ["derive"] }
 serde_with = { version = "1.11.0", features = ["hex", "chrono"] }
 serde_json = "1.0.78"
 serde_urlencoded = "0.7.1"
 
 # Password hashing
-argon2 = { version = "0.3.2", features = ["password-hash"] }
+argon2 = { version = "0.3.3", features = ["password-hash"] }
 
 # Crypto, hashing and signing stuff
 rsa = { git = "https://github.com/RustCrypto/RSA.git" }
 pkcs8 = { version = "0.8.0", features = ["pem"] }
-elliptic-curve = { version = "0.11.7", features = ["pem"] }
+elliptic-curve = { version = "0.11.12", features = ["pem"] }
 sha2 = "0.10.1"
 crc = "2.1.0"
 
@@ -51,7 +51,7 @@ chrono = { version = "0.4.19", features = ["serde"] }
 url = { version = "2.2.2", features = ["serde"] }
 mime = "0.3.16"
 rand = "0.8.4"
-headers = "0.3.5"
+headers = "0.3.6"
 
 oauth2-types = { path = "../oauth2-types" }
 mas-config = { path = "../config" }

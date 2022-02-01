@@ -6,10 +6,10 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-tokio = { version = "1.15.0", features = ["full"] }
+tokio = { version = "1.16.1", features = ["full"] }
 futures = "0.3.19"
 anyhow = { version = "1.0.53", features = ["backtrace"] }
-clap = { version = "3.0.12", features = ["derive"] }
+clap = { version = "3.0.13", features = ["derive"] }
 dotenv = "0.15.0"
 schemars = { version = "0.8.8", features = ["url", "chrono"] }
 tower = { version = "0.4.11", features = ["full"] }
@@ -18,14 +18,14 @@ hyper = { version = "0.14.16", features = ["full"] }
 serde_yaml = "0.8.23"
 warp = "0.3.2"
 url = "2.2.2"
-argon2 = { version = "0.3.2", features = ["password-hash"] }
+argon2 = { version = "0.3.3", features = ["password-hash"] }
 reqwest = { version = "0.11.9", features = ["rustls-tls"], default-features = false, optional = true }
 watchman_client = "0.7.1"
 atty = "0.2.14"
 
 tracing = "0.1.29"
 tracing-appender = "0.2.0"
-tracing-subscriber = { version = "0.3.6", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.7", features = ["env-filter"] }
 tracing-opentelemetry = "0.16.0"
 opentelemetry = { version = "0.16.0", features = ["trace", "metrics", "rt-tokio"] }
 opentelemetry-http = "0.5.0"
