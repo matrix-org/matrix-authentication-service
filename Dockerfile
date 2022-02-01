@@ -1,3 +1,5 @@
+# syntax = docker/dockerfile:1.3
+
 # Builds a minimal image with the binary only. It is multi-arch capable,
 # cross-building to aarch64 and x86_64. When cross-compiling, Docker sets two
 # implicit BUILDARG: BUILDPLATFORM being the host platform and TARGETPLATFORM
@@ -29,55 +31,47 @@ RUN find public -type f -exec touch -t 197001010000.00 {} +
 # The image Debian base name (bullseye) must be in sync with the runtime variant (debian11)
 FROM --platform=${BUILDPLATFORM} docker.io/library/rust:${RUSTC_VERSION}-slim-${DEBIAN_VERSION_NAME} AS chef
 
-# Install x86_64, aarch64 and arm (v6 and v7) cross-compiling stack
-RUN apt update && apt install -y --no-install-recommends \
-  g++-x86-64-linux-gnu \
+# Install x86_64 and aarch64 cross-compiling stack
+RUN rm -f /etc/apt/apt.conf.d/docker-clean; echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
+RUN \
+  --mount=type=cache,target=/var/cache/apt \
+  --mount=type=cache,target=/var/lib/apt \
+  apt update && apt install -y --no-install-recommends \
   g++-aarch64-linux-gnu \
-  g++-arm-linux-gnueabihf \
+  g++-x86-64-linux-gnu \
   libc6-dev-arm64-cross \
-  libc6-dev-amd64-cross \
-  libc6-dev-armhf-cross \
-  qemu-user \
-  && rm -rf /var/lib/apt/lists/*
+  libc6-dev-amd64-cross
 
 WORKDIR /app
-RUN cargo install --locked cargo-chef
+RUN \
+  --mount=type=cache,target=/usr/local/cargo/registry \
+  cargo install --locked cargo-chef
 
 ENV \
   CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc \
-  CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUNNER="qemu-x86_64 -L /usr/x86_64-linux-gnu" \
   CC_x86_64_unknown_linux_gnu=x86_64-linux-gnu-gcc \
   CXX_x86_64_unknown_linux_gnu=x86_64-linux-gnu-g++ \
   CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc \
-  CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUNNER="qemu-aarch64 -L /usr/aarch64-linux-gnu" \
   CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc \
-  CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++ \
-  CARGO_TARGET_ARM_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc \
-  CARGO_TARGET_ARM_UNKNOWN_LINUX_GNUEABIHF_RUNNER="qemu-arm -L /usr/arm-linux-gnueabihf" \
-  CC_arm_unknown_linux_gnueabihf=arm-linux-gnueabihf-gcc \
-  CXX_arm_unknown_linux_gnueabihf=arm-linux-gnueabihf-g++ \
-  CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc \
-  CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_RUNNER="qemu-arm -L /usr/arm-linux-gnueabihf" \
-  CC_armv7_unknown_linux_gnueabihf=arm-linux-gnueabihf-gcc \
-  CXX_armv7_unknown_linux_gnueabihf=arm-linux-gnueabihf-g++
+  CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++
 
 ARG RUSTC_VERSION
-ARG TARGETPLATFORM
 
 # Install all cross-compilation targets
 RUN rustup target add --toolchain "${RUSTC_VERSION}" \
   x86_64-unknown-linux-gnu \
-  aarch64-unknown-linux-gnu \
-  arm-unknown-linux-gnueabihf \
-  armv7-unknown-linux-gnueabihf
+  aarch64-unknown-linux-gnu
 
 # Helper script that transforms docker platforms to LLVM triples
 COPY ./misc/docker-arch-to-rust-target.sh /
 
 ## Run the planner from cargo-chef ##
 FROM --platform=${BUILDPLATFORM} chef AS planner
-COPY . .
-RUN cargo chef prepare --recipe-path recipe.json
+COPY ./Cargo.toml ./Cargo.lock /app/
+COPY ./crates /app/crates
+RUN \
+  --mount=type=cache,target=/usr/local/cargo/registry \
+  cargo chef prepare --recipe-path recipe.json
 
 ## Actual build stage ##
 FROM --platform=${BUILDPLATFORM} chef AS builder
@@ -86,17 +80,22 @@ ARG TARGETPLATFORM
 
 # Build dependencies
 COPY --from=planner /app/recipe.json recipe.json
-RUN cargo chef cook \
+RUN \
+  --mount=type=cache,target=/usr/local/cargo/registry \
+  cargo chef cook \
   --release \
   --recipe-path recipe.json \
   --target $(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}") \
   --package mas-cli
 
 # Build the rest
-COPY . .
+COPY ./Cargo.toml ./Cargo.lock /app/
+COPY ./crates /app/crates
 COPY --from=static-files /app/crates/static-files/public /app/crates/static-files/public
 ENV SQLX_OFFLINE=true
-RUN cargo build \
+RUN \
+  --mount=type=cache,target=/usr/local/cargo/registry \
+  cargo build \
   --release \
   --bin mas-cli \
   --target $(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")
