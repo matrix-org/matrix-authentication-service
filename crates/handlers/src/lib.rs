@@ -24,7 +24,7 @@
 
 use std::sync::Arc;
 
-use mas_config::RootConfig;
+use mas_config::{Encrypter, RootConfig};
 use mas_email::Mailer;
 use mas_jose::StaticKeystore;
 use mas_static_files::filter as static_files;
@@ -43,6 +43,7 @@ pub fn root(
     pool: &PgPool,
     templates: &Templates,
     key_store: &Arc<StaticKeystore>,
+    encrypter: &Encrypter,
     mailer: &Mailer,
     config: &RootConfig,
 ) -> BoxedFilter<(impl Reply,)> {
@@ -51,17 +52,17 @@ pub fn root(
         pool,
         templates,
         key_store,
-        &config.oauth2,
+        encrypter,
+        &config.clients,
         &config.http,
-        &config.cookies,
     );
     let views = views(
         pool,
         templates,
         mailer,
+        encrypter,
         &config.http,
         &config.csrf,
-        &config.cookies,
     );
     let static_files = static_files(config.http.web_root.clone());
 

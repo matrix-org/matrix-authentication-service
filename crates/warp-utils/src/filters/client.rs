@@ -17,7 +17,7 @@
 use std::collections::HashMap;
 
 use headers::{authorization::Basic, Authorization};
-use mas_config::{OAuth2ClientAuthMethodConfig, OAuth2ClientConfig, OAuth2Config};
+use mas_config::{ClientAuthMethodConfig, ClientConfig, ClientsConfig};
 use mas_iana::oauth::OAuthClientAuthenticationMethod;
 use mas_jose::{
     claims::{TimeOptions, AUD, EXP, IAT, ISS, JTI, NBF, SUB},
@@ -33,9 +33,9 @@ use crate::errors::WrapError;
 /// Protect an enpoint with client authentication
 #[must_use]
 pub fn client_authentication<T: DeserializeOwned + Send + 'static>(
-    oauth2_config: &OAuth2Config,
+    clients_config: &ClientsConfig,
     audience: String,
-) -> impl Filter<Extract = (OAuthClientAuthenticationMethod, OAuth2ClientConfig, T), Error = Rejection>
+) -> impl Filter<Extract = (OAuthClientAuthenticationMethod, ClientConfig, T), Error = Rejection>
        + Clone
        + Send
        + Sync
@@ -65,9 +65,9 @@ pub fn client_authentication<T: DeserializeOwned + Send + 'static>(
         .unify()
         .untuple_one();
 
-    let clients = oauth2_config.clients.clone();
+    let clients_config = clients_config.clone();
     warp::any()
-        .map(move || clients.clone())
+        .map(move || clients_config.clone())
         .and(warp::any().map(move || audience.clone()))
         .and(credentials)
         .and_then(authenticate_client)
@@ -95,18 +95,18 @@ enum ClientAuthenticationError {
 impl Reject for ClientAuthenticationError {}
 
 async fn authenticate_client<T>(
-    clients: Vec<OAuth2ClientConfig>,
+    clients_config: ClientsConfig,
     audience: String,
     credentials: ClientCredentials,
     body: T,
-) -> Result<(OAuthClientAuthenticationMethod, OAuth2ClientConfig, T), Rejection> {
+) -> Result<(OAuthClientAuthenticationMethod, ClientConfig, T), Rejection> {
     let (auth_method, client) = match credentials {
         ClientCredentials::Pair {
             client_id,
             client_secret,
             via,
         } => {
-            let client = clients
+            let client = clients_config
                 .iter()
                 .find(|client| client.client_id == client_id)
                 .ok_or_else(|| ClientAuthenticationError::ClientNotFound {
@@ -114,12 +114,10 @@ async fn authenticate_client<T>(
                 })?;
 
             let auth_method = match (&client.client_auth_method, client_secret, via) {
-                (OAuth2ClientAuthMethodConfig::None, None, _) => {
-                    OAuthClientAuthenticationMethod::None
-                }
+                (ClientAuthMethodConfig::None, None, _) => OAuthClientAuthenticationMethod::None,
 
                 (
-                    OAuth2ClientAuthMethodConfig::ClientSecretBasic {
+                    ClientAuthMethodConfig::ClientSecretBasic {
                         client_secret: ref expected_client_secret,
                     },
                     Some(ref given_client_secret),
@@ -135,7 +133,7 @@ async fn authenticate_client<T>(
                 }
 
                 (
-                    OAuth2ClientAuthMethodConfig::ClientSecretPost {
+                    ClientAuthMethodConfig::ClientSecretPost {
                         client_secret: ref expected_client_secret,
                     },
                     Some(ref given_client_secret),
@@ -195,7 +193,7 @@ async fn authenticate_client<T>(
             // from the token, as per rfc7521 sec. 4.2
             let client_id = client_id.as_ref().unwrap_or(&sub);
 
-            let client = clients
+            let client = clients_config
                 .iter()
                 .find(|client| &client.client_id == client_id)
                 .ok_or_else(|| ClientAuthenticationError::ClientNotFound {
@@ -203,13 +201,13 @@ async fn authenticate_client<T>(
                 })?;
 
             let auth_method = match &client.client_auth_method {
-                OAuth2ClientAuthMethodConfig::PrivateKeyJwt(jwks) => {
+                ClientAuthMethodConfig::PrivateKeyJwt(jwks) => {
                     let store = jwks.key_store();
                     token.verify(&decoded, &store).await.wrap_error()?;
                     OAuthClientAuthenticationMethod::PrivateKeyJwt
                 }
 
-                OAuth2ClientAuthMethodConfig::ClientSecretJwt { client_secret } => {
+                ClientAuthMethodConfig::ClientSecretJwt { client_secret } => {
                     let store = SharedSecret::new(client_secret);
                     token.verify(&decoded, &store).await.wrap_error()?;
                     OAuthClientAuthenticationMethod::ClientSecretJwt
@@ -291,7 +289,7 @@ struct ClientAuthForm<T> {
 #[cfg(test)]
 mod tests {
     use headers::authorization::Credentials;
-    use mas_config::{ConfigurationSection, OAuth2ClientAuthMethodConfig};
+    use mas_config::{ClientAuthMethodConfig, ConfigurationSection};
     use mas_jose::{ExportJwks, SigningKeystore, StaticKeystore};
     use serde_json::json;
 
@@ -307,37 +305,37 @@ mod tests {
         store
     }
 
-    async fn oauth2_config() -> OAuth2Config {
-        let mut config = OAuth2Config::test();
-        config.clients.push(OAuth2ClientConfig {
+    async fn oauth2_config() -> ClientsConfig {
+        let mut config = ClientsConfig::test();
+        config.push(ClientConfig {
             client_id: "public".to_string(),
-            client_auth_method: OAuth2ClientAuthMethodConfig::None,
+            client_auth_method: ClientAuthMethodConfig::None,
             redirect_uris: Vec::new(),
         });
-        config.clients.push(OAuth2ClientConfig {
+        config.push(ClientConfig {
             client_id: "secret-basic".to_string(),
-            client_auth_method: OAuth2ClientAuthMethodConfig::ClientSecretBasic {
+            client_auth_method: ClientAuthMethodConfig::ClientSecretBasic {
                 client_secret: CLIENT_SECRET.to_string(),
             },
             redirect_uris: Vec::new(),
         });
-        config.clients.push(OAuth2ClientConfig {
+        config.push(ClientConfig {
             client_id: "secret-post".to_string(),
-            client_auth_method: OAuth2ClientAuthMethodConfig::ClientSecretPost {
+            client_auth_method: ClientAuthMethodConfig::ClientSecretPost {
                 client_secret: CLIENT_SECRET.to_string(),
             },
             redirect_uris: Vec::new(),
         });
-        config.clients.push(OAuth2ClientConfig {
+        config.push(ClientConfig {
             client_id: "secret-jwt".to_string(),
-            client_auth_method: OAuth2ClientAuthMethodConfig::ClientSecretJwt {
+            client_auth_method: ClientAuthMethodConfig::ClientSecretJwt {
                 client_secret: CLIENT_SECRET.to_string(),
             },
             redirect_uris: Vec::new(),
         });
-        config.clients.push(OAuth2ClientConfig {
+        config.push(ClientConfig {
             client_id: "secret-jwt-2".to_string(),
-            client_auth_method: OAuth2ClientAuthMethodConfig::ClientSecretJwt {
+            client_auth_method: ClientAuthMethodConfig::ClientSecretJwt {
                 client_secret: CLIENT_SECRET.to_string(),
             },
             redirect_uris: Vec::new(),
@@ -345,14 +343,14 @@ mod tests {
 
         let store = client_private_keystore();
         let jwks = store.export_jwks().await.unwrap();
-        config.clients.push(OAuth2ClientConfig {
+        config.push(ClientConfig {
             client_id: "private-key-jwt".to_string(),
-            client_auth_method: OAuth2ClientAuthMethodConfig::PrivateKeyJwt(jwks.clone().into()),
+            client_auth_method: ClientAuthMethodConfig::PrivateKeyJwt(jwks.clone().into()),
             redirect_uris: Vec::new(),
         });
-        config.clients.push(OAuth2ClientConfig {
+        config.push(ClientConfig {
             client_id: "private-key-jwt-2".to_string(),
-            client_auth_method: OAuth2ClientAuthMethodConfig::PrivateKeyJwt(jwks.into()),
+            client_auth_method: ClientAuthMethodConfig::PrivateKeyJwt(jwks.into()),
             redirect_uris: Vec::new(),
         });
         config

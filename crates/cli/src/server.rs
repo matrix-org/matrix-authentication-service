@@ -251,12 +251,14 @@ impl ServerCommand {
 
         // Initialize the key store
         let key_store = config
-            .oauth2
+            .secrets
             .key_store()
             .await
             .context("could not import keys from config")?;
         // Wrap the key store in an Arc
         let key_store = Arc::new(key_store);
+
+        let encrypter = config.secrets.encrypter();
 
         // Load and compile the templates
         let templates = Templates::load_from_config(&config.templates)
@@ -283,7 +285,10 @@ impl ServerCommand {
         }
 
         // Start the server
-        let root = mas_handlers::root(&pool, &templates, &key_store, &mailer, &config);
+        let root = mas_handlers::root(&pool, &templates, &key_store, &encrypter, &mailer, &config);
+
+        // Explicitely the config to properly zeroize secret keys
+        drop(config);
 
         let warp_service = warp::service(root);
 

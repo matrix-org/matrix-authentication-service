@@ -1,4 +1,4 @@
-// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2022 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,11 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 use anyhow::Context;
 use async_trait::async_trait;
-use mas_jose::{JsonWebKeySet, StaticJwksStore, StaticKeystore};
+use chacha20poly1305::{
+    aead::{generic_array::GenericArray, Aead, NewAead},
+    ChaCha20Poly1305,
+};
+use mas_jose::StaticKeystore;
 use pkcs8::DecodePrivateKey;
 use rsa::{
     pkcs1::{DecodeRsaPrivateKey, EncodeRsaPrivateKey},
@@ -24,13 +28,42 @@ use rsa::{
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use serde_with::skip_serializing_none;
-use thiserror::Error;
+use serde_with::serde_as;
 use tokio::{fs::File, io::AsyncReadExt, task};
 use tracing::info;
-use url::Url;
 
 use super::ConfigurationSection;
+
+#[derive(Clone)]
+pub struct Encrypter {
+    aead: Arc<ChaCha20Poly1305>,
+}
+
+impl Encrypter {
+    #[must_use]
+    pub fn new(key: &[u8; 32]) -> Self {
+        let key = GenericArray::from_slice(key);
+        let aead = ChaCha20Poly1305::new(key);
+        let aead = Arc::new(aead);
+        Self { aead }
+    }
+
+    pub fn encrypt(&self, nonce: &[u8; 12], decrypted: &[u8]) -> anyhow::Result<Vec<u8>> {
+        let nonce = GenericArray::from_slice(&nonce[..]);
+        let encrypted = self.aead.encrypt(nonce, decrypted)?;
+        Ok(encrypted)
+    }
+
+    pub fn decrypt(&self, nonce: &[u8; 12], encrypted: &[u8]) -> anyhow::Result<Vec<u8>> {
+        let nonce = GenericArray::from_slice(&nonce[..]);
+        let encrypted = self.aead.decrypt(nonce, encrypted)?;
+        Ok(encrypted)
+    }
+}
+
+fn example_secret() -> &'static str {
+    "0000111122223333444455556666777788889999aaaabbbbccccddddeeeeffff"
+}
 
 #[derive(JsonSchema, Serialize, Deserialize, Clone, Copy, Debug)]
 #[serde(rename_all = "lowercase")]
@@ -53,89 +86,24 @@ pub struct KeyConfig {
     key: KeyOrPath,
 }
 
-#[derive(JsonSchema, Serialize, Deserialize, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
-pub enum JwksOrJwksUri {
-    Jwks(JsonWebKeySet),
-    JwksUri(Url),
-}
-
-impl JwksOrJwksUri {
-    pub fn key_store(&self) -> StaticJwksStore {
-        let jwks = match self {
-            Self::Jwks(jwks) => jwks.clone(),
-            Self::JwksUri(_) => unimplemented!("jwks_uri are not implemented yet"),
-        };
-
-        StaticJwksStore::new(jwks)
-    }
-}
-
-impl From<JsonWebKeySet> for JwksOrJwksUri {
-    fn from(jwks: JsonWebKeySet) -> Self {
-        Self::Jwks(jwks)
-    }
-}
-
-#[derive(JsonSchema, Serialize, Deserialize, Clone, Debug)]
-#[serde(tag = "client_auth_method", rename_all = "snake_case")]
-pub enum OAuth2ClientAuthMethodConfig {
-    None,
-    ClientSecretBasic { client_secret: String },
-    ClientSecretPost { client_secret: String },
-    ClientSecretJwt { client_secret: String },
-    PrivateKeyJwt(JwksOrJwksUri),
-}
-
-#[skip_serializing_none]
+#[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct OAuth2ClientConfig {
-    pub client_id: String,
+pub struct SecretsConfig {
+    /// Encryption key for secure cookies
+    #[schemars(
+        with = "String",
+        regex(pattern = r"[0-9a-fA-F]{64}"),
+        example = "example_secret"
+    )]
+    #[serde_as(as = "serde_with::hex::Hex")]
+    encryption: [u8; 32],
 
-    #[serde(flatten)]
-    pub client_auth_method: OAuth2ClientAuthMethodConfig,
-
+    /// List of private keys to use for signing and encrypting payloads
     #[serde(default)]
-    pub redirect_uris: Vec<Url>,
+    keys: Vec<KeyConfig>,
 }
 
-#[derive(Debug, Error)]
-#[error("Invalid redirect URI")]
-pub struct InvalidRedirectUriError;
-
-impl OAuth2ClientConfig {
-    pub fn resolve_redirect_uri<'a>(
-        &'a self,
-        suggested_uri: &'a Option<Url>,
-    ) -> Result<&'a Url, InvalidRedirectUriError> {
-        suggested_uri.as_ref().map_or_else(
-            || self.redirect_uris.get(0).ok_or(InvalidRedirectUriError),
-            |suggested_uri| self.check_redirect_uri(suggested_uri),
-        )
-    }
-
-    pub fn check_redirect_uri<'a>(
-        &self,
-        redirect_uri: &'a Url,
-    ) -> Result<&'a Url, InvalidRedirectUriError> {
-        if self.redirect_uris.contains(redirect_uri) {
-            Ok(redirect_uri)
-        } else {
-            Err(InvalidRedirectUriError)
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct OAuth2Config {
-    #[serde(default)]
-    pub clients: Vec<OAuth2ClientConfig>,
-
-    #[serde(default)]
-    pub keys: Vec<KeyConfig>,
-}
-
-impl OAuth2Config {
+impl SecretsConfig {
     pub async fn key_store(&self) -> anyhow::Result<StaticKeystore> {
         let mut store = StaticKeystore::new();
 
@@ -189,12 +157,17 @@ impl OAuth2Config {
 
         Ok(store)
     }
+
+    #[must_use]
+    pub fn encrypter(&self) -> Encrypter {
+        Encrypter::new(&self.encryption)
+    }
 }
 
 #[async_trait]
-impl ConfigurationSection<'_> for OAuth2Config {
+impl ConfigurationSection<'_> for SecretsConfig {
     fn path() -> &'static str {
-        "oauth2"
+        "secrets"
     }
 
     #[tracing::instrument]
@@ -237,7 +210,7 @@ impl ConfigurationSection<'_> for OAuth2Config {
         };
 
         Ok(Self {
-            clients: Vec::new(),
+            encryption: rand::random(),
             keys: vec![rsa_key, ecdsa_key],
         })
     }
@@ -276,97 +249,8 @@ impl ConfigurationSection<'_> for OAuth2Config {
         };
 
         Self {
-            clients: Vec::new(),
+            encryption: [0xEA; 32],
             keys: vec![rsa_key, ecdsa_key],
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use figment::Jail;
-
-    use super::*;
-
-    #[test]
-    fn load_config() {
-        Jail::expect_with(|jail| {
-            jail.create_file(
-                "config.yaml",
-                r#"
-                    oauth2:
-                      keys: 
-                        - type: rsa
-                          key: |
-                            -----BEGIN PRIVATE KEY-----
-                            MIIBVQIBADANBgkqhkiG9w0BAQEFAASCAT8wggE7AgEAAkEAymS2RkeIZo7pUeEN
-                            QUGCG4GLJru5jzxomO9jiNr5D/oRcerhpQVc9aCpBfAAg4l4a1SmYdBzWqX0X5pU
-                            scgTtQIDAQABAkEArNIMlrxUK4bSklkCcXtXdtdKE9vuWfGyOw0GyAB69fkEUBxh
-                            3j65u+u3ZmW+bpMWHgp1FtdobE9nGwb2VBTWAQIhAOyU1jiUEkrwKK004+6b5QRE
-                            vC9UI2vDWy5vioMNx5Y1AiEA2wGAJ6ETF8FF2Vd+kZlkKK7J0em9cl0gbJDsWIEw
-                            N4ECIEyWYkMurD1WQdTQqnk0Po+DMOihdFYOiBYgRdbnPxWBAiEAmtd0xJAd7622
-                            tPQniMnrBtiN2NxqFXHCev/8Gpc8gAECIBcaPcF59qVeRmYrfqzKBxFm7LmTwlAl
-                            Gh7BNzCeN+D6
-                            -----END PRIVATE KEY-----
-                        - type: ecdsa
-                          key: |
-                            -----BEGIN PRIVATE KEY-----
-                            MIGEAgEAMBAGByqGSM49AgEGBSuBBAAKBG0wawIBAQQgqfn5mYO/5Qq/wOOiWgHA
-                            NaiDiepgUJ2GI5eq2V8D8nahRANCAARMK9aKUd/H28qaU+0qvS6bSJItzAge1VHn
-                            OhBAAUVci1RpmUA+KdCL5sw9nadAEiONeiGr+28RYHZmlB9qXnjC
-                            -----END PRIVATE KEY-----
-                      clients:
-                        - client_id: public
-                          client_auth_method: none
-                          redirect_uris:
-                            - https://exemple.fr/callback
-
-                        - client_id: secret-basic
-                          client_auth_method: client_secret_basic
-                          client_secret: hello
-
-                        - client_id: secret-post
-                          client_auth_method: client_secret_post
-                          client_secret: hello
-
-                        - client_id: secret-jwk
-                          client_auth_method: client_secret_jwt
-                          client_secret: hello
-
-                        - client_id: jwks
-                          client_auth_method: private_key_jwt
-                          jwks:
-                            keys:
-                            - kid: "03e84aed4ef4431014e8617567864c4efaaaede9"
-                              kty: "RSA"
-                              alg: "RS256"
-                              use: "sig"
-                              e: "AQAB"
-                              n: "ma2uRyBeSEOatGuDpCiV9oIxlDWix_KypDYuhQfEzqi_BiF4fV266OWfyjcABbam59aJMNvOnKW3u_eZM-PhMCBij5MZ-vcBJ4GfxDJeKSn-GP_dJ09rpDcILh8HaWAnPmMoi4DC0nrfE241wPISvZaaZnGHkOrfN_EnA5DligLgVUbrA5rJhQ1aSEQO_gf1raEOW3DZ_ACU3qhtgO0ZBG3a5h7BPiRs2sXqb2UCmBBgwyvYLDebnpE7AotF6_xBIlR-Cykdap3GHVMXhrIpvU195HF30ZoBU4dMd-AeG6HgRt4Cqy1moGoDgMQfbmQ48Hlunv9_Vi2e2CLvYECcBw"
-
-                            - kid: "d01c1abe249269f72ef7ca2613a86c9f05e59567"
-                              kty: "RSA"
-                              alg: "RS256"
-                              use: "sig"
-                              e: "AQAB"
-                              n: "0hukqytPwrj1RbMYhYoepCi3CN5k7DwYkTe_Cmb7cP9_qv4ok78KdvFXt5AnQxCRwBD7-qTNkkfMWO2RxUMBdQD0ED6tsSb1n5dp0XY8dSWiBDCX8f6Hr-KolOpvMLZKRy01HdAWcM6RoL9ikbjYHUEW1C8IJnw3MzVHkpKFDL354aptdNLaAdTCBvKzU9WpXo10g-5ctzSlWWjQuecLMQ4G1mNdsR1LHhUENEnOvgT8cDkX0fJzLbEbyBYkdMgKggyVPEB1bg6evG4fTKawgnf0IDSPxIU-wdS9wdSP9ZCJJPLi5CEp-6t6rE_sb2dGcnzjCGlembC57VwpkUvyMw"
-                "#,
-            )?;
-
-            let config = OAuth2Config::load_from_file("config.yaml")?;
-
-            assert_eq!(config.clients.len(), 5);
-
-            assert_eq!(config.clients[0].client_id, "public");
-            assert_eq!(
-                config.clients[0].redirect_uris,
-                vec!["https://exemple.fr/callback".parse().unwrap()]
-            );
-
-            assert_eq!(config.clients[1].client_id, "secret-basic");
-            assert_eq!(config.clients[1].redirect_uris, Vec::new());
-
-            Ok(())
-        });
     }
 }

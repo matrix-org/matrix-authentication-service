@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use mas_config::CookiesConfig;
+use mas_config::Encrypter;
 use mas_data_model::BrowserSession;
 use mas_storage::{user::end_session, PostgresqlBackend};
 use mas_warp_utils::{
@@ -22,15 +22,12 @@ use mas_warp_utils::{
 use sqlx::{PgPool, Postgres, Transaction};
 use warp::{filters::BoxedFilter, hyper::Uri, Filter, Rejection, Reply};
 
-pub(super) fn filter(
-    pool: &PgPool,
-    cookies_config: &CookiesConfig,
-) -> BoxedFilter<(Box<dyn Reply>,)> {
+pub(super) fn filter(pool: &PgPool, encrypter: &Encrypter) -> BoxedFilter<(Box<dyn Reply>,)> {
     warp::path!("logout")
         .and(warp::post())
-        .and(session(pool, cookies_config))
+        .and(session(pool, encrypter))
         .and(transaction(pool))
-        .and(protected_form(cookies_config))
+        .and(protected_form(encrypter))
         .and_then(post)
         .boxed()
 }

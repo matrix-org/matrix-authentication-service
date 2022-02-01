@@ -14,7 +14,7 @@
 
 //! Load user sessions from the database
 
-use mas_config::CookiesConfig;
+use mas_config::Encrypter;
 use mas_data_model::BrowserSession;
 use mas_storage::{
     user::{lookup_active_session, ActiveSessionLookupError},
@@ -88,13 +88,13 @@ impl EncryptableCookieValue for SessionCookie {
 #[must_use]
 pub fn optional_session(
     pool: &PgPool,
-    cookies_config: &CookiesConfig,
+    encrypter: &Encrypter,
 ) -> impl Filter<Extract = (Option<BrowserSession<PostgresqlBackend>>,), Error = Rejection>
        + Clone
        + Send
        + Sync
        + 'static {
-    session(pool, cookies_config)
+    session(pool, encrypter)
         .map(Some)
         .recover(none_on_error::<_, SessionLoadError>)
         .unify()
@@ -110,13 +110,13 @@ pub fn optional_session(
 #[must_use]
 pub fn session(
     pool: &PgPool,
-    cookies_config: &CookiesConfig,
+    encrypter: &Encrypter,
 ) -> impl Filter<Extract = (BrowserSession<PostgresqlBackend>,), Error = Rejection>
        + Clone
        + Send
        + Sync
        + 'static {
-    encrypted(cookies_config)
+    encrypted(encrypter)
         .and(connection(pool))
         .and_then(load_session)
         .recover(recover)

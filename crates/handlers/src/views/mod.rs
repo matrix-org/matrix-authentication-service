@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use mas_config::{CookiesConfig, CsrfConfig, HttpConfig};
+use mas_config::{CsrfConfig, Encrypter, HttpConfig};
 use mas_email::Mailer;
 use mas_templates::Templates;
 use sqlx::PgPool;
@@ -40,24 +40,17 @@ pub(super) fn filter(
     pool: &PgPool,
     templates: &Templates,
     mailer: &Mailer,
+    encrypter: &Encrypter,
     http_config: &HttpConfig,
     csrf_config: &CsrfConfig,
-    cookies_config: &CookiesConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
-    let index = index(pool, templates, http_config, csrf_config, cookies_config);
-    let account = account(
-        pool,
-        templates,
-        mailer,
-        http_config,
-        csrf_config,
-        cookies_config,
-    );
-    let login = login(pool, templates, csrf_config, cookies_config);
-    let register = register(pool, templates, csrf_config, cookies_config);
-    let logout = logout(pool, cookies_config);
-    let reauth = reauth(pool, templates, csrf_config, cookies_config);
-    let verify = verify(pool, templates, csrf_config, cookies_config);
+    let index = index(pool, templates, encrypter, http_config, csrf_config);
+    let account = account(pool, templates, mailer, encrypter, http_config, csrf_config);
+    let login = login(pool, templates, encrypter, csrf_config);
+    let register = register(pool, templates, encrypter, csrf_config);
+    let logout = logout(pool, encrypter);
+    let reauth = reauth(pool, templates, encrypter, csrf_config);
+    let verify = verify(pool, templates, encrypter, csrf_config);
 
     index
         .or(account)

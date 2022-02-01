@@ -16,14 +16,10 @@
 
 use std::{convert::Infallible, marker::PhantomData};
 
-use chacha20poly1305::{
-    aead::{generic_array::GenericArray, Aead, NewAead},
-    ChaCha20Poly1305,
-};
 use cookie::{Cookie, SameSite};
 use data_encoding::BASE64URL_NOPAD;
 use headers::{Header, HeaderValue, SetCookie};
-use mas_config::CookiesConfig;
+use mas_config::Encrypter;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use thiserror::Error;
 use warp::{
@@ -76,23 +72,16 @@ struct EncryptedCookie {
 
 impl EncryptedCookie {
     /// Encrypt from a given key
-    fn encrypt<T: Serialize>(payload: T, key: &[u8; 32]) -> anyhow::Result<Self> {
-        let key = GenericArray::from_slice(key);
-        let aead = ChaCha20Poly1305::new(key);
+    fn encrypt<T: Serialize>(payload: T, encrypter: &Encrypter) -> anyhow::Result<Self> {
         let message = bincode::serialize(&payload)?;
         let nonce: [u8; 12] = rand::random();
-        let ciphertext = aead.encrypt(GenericArray::from_slice(&nonce[..]), &message[..])?;
+        let ciphertext = encrypter.encrypt(&nonce, &message)?;
         Ok(Self { nonce, ciphertext })
     }
 
     /// Decrypt the content of the cookie from a given key
-    fn decrypt<T: DeserializeOwned>(&self, key: &[u8; 32]) -> anyhow::Result<T> {
-        let key = GenericArray::from_slice(key);
-        let aead = ChaCha20Poly1305::new(key);
-        let message = aead.decrypt(
-            GenericArray::from_slice(&self.nonce[..]),
-            &self.ciphertext[..],
-        )?;
+    fn decrypt<T: DeserializeOwned>(&self, encrypter: &Encrypter) -> anyhow::Result<T> {
+        let message = encrypter.decrypt(&self.nonce, &self.ciphertext)?;
         let token = bincode::deserialize(&message)?;
         Ok(token)
     }
@@ -113,12 +102,12 @@ impl EncryptedCookie {
 /// Extract an optional encrypted cookie
 #[must_use]
 pub fn maybe_encrypted<T>(
-    options: &CookiesConfig,
+    encrypter: &Encrypter,
 ) -> impl Filter<Extract = (Option<T>,), Error = Rejection> + Clone + Send + Sync + 'static
 where
     T: DeserializeOwned + EncryptableCookieValue + 'static,
 {
-    encrypted(options)
+    encrypted(encrypter)
         .map(Some)
         .recover(none_on_error::<T, InvalidHeader>)
         .unify()
@@ -136,28 +125,35 @@ where
 /// [`CookieDecryptionError`]
 #[must_use]
 pub fn encrypted<T>(
-    options: &CookiesConfig,
+    encrypter: &Encrypter,
 ) -> impl Filter<Extract = (T,), Error = Rejection> + Clone + Send + Sync + 'static
 where
     T: DeserializeOwned + EncryptableCookieValue + 'static,
 {
-    let secret = options.secret;
-    warp::cookie::cookie(T::cookie_key()).and_then(move |value: String| async move {
-        let encrypted =
-            EncryptedCookie::from_cookie_value(&value).map_err(decryption_error::<T>)?;
-        let decrypted = encrypted.decrypt(&secret).map_err(decryption_error::<T>)?;
-        Ok::<_, Rejection>(decrypted)
+    let encrypter = encrypter.clone();
+    warp::cookie::cookie(T::cookie_key()).and_then(move |value: String| {
+        let encrypter = encrypter.clone();
+        async move {
+            let encrypted =
+                EncryptedCookie::from_cookie_value(&value).map_err(decryption_error::<T>)?;
+            let decrypted = encrypted
+                .decrypt(&encrypter)
+                .map_err(decryption_error::<T>)?;
+            Ok::<_, Rejection>(decrypted)
+        }
     })
 }
 
 /// Get an [`EncryptedCookieSaver`] to help saving an [`EncryptableCookieValue`]
 #[must_use]
 pub fn encrypted_cookie_saver(
-    options: &CookiesConfig,
+    encrypter: &Encrypter,
 ) -> impl Filter<Extract = (EncryptedCookieSaver,), Error = Infallible> + Clone + Send + Sync + 'static
 {
-    let secret = options.secret;
-    warp::any().map(move || EncryptedCookieSaver { secret })
+    let encrypter = encrypter.clone();
+    warp::any().map(move || EncryptedCookieSaver {
+        encrypter: encrypter.clone(),
+    })
 }
 
 /// A cookie that can be encrypted with a well-known cookie key
@@ -168,7 +164,7 @@ pub trait EncryptableCookieValue: Serialize + Send + Sync + std::fmt::Debug {
 
 /// An opaque structure which helps encrypting a cookie and attach it to a reply
 pub struct EncryptedCookieSaver {
-    secret: [u8; 32],
+    encrypter: Encrypter,
 }
 
 impl EncryptedCookieSaver {
@@ -178,7 +174,7 @@ impl EncryptedCookieSaver {
         cookie: &T,
         reply: R,
     ) -> Result<WithTypedHeader<R, SetCookie>, Rejection> {
-        let encrypted = EncryptedCookie::encrypt(cookie, &self.secret)
+        let encrypted = EncryptedCookie::encrypt(cookie, &self.encrypter)
             .wrap_error()?
             .to_cookie_value()
             .wrap_error()?;

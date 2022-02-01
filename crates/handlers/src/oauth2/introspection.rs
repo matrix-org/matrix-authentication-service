@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use mas_config::{HttpConfig, OAuth2ClientConfig, OAuth2Config};
+use mas_config::{ClientConfig, ClientsConfig, HttpConfig};
 use mas_data_model::TokenType;
 use mas_iana::oauth::{OAuthClientAuthenticationMethod, OAuthTokenTypeHint};
 use mas_storage::oauth2::{
@@ -29,7 +29,7 @@ use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 pub fn filter(
     pool: &PgPool,
-    oauth2_config: &OAuth2Config,
+    clients_config: &ClientsConfig,
     http_config: &HttpConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
     let audience = UrlBuilder::from(http_config)
@@ -40,7 +40,7 @@ pub fn filter(
         .and(
             warp::post()
                 .and(connection(pool))
-                .and(client_authentication(oauth2_config, audience))
+                .and(client_authentication(clients_config, audience))
                 .and_then(introspect)
                 .recover(recover)
                 .unify(),
@@ -66,7 +66,7 @@ const INACTIVE: IntrospectionResponse = IntrospectionResponse {
 async fn introspect(
     mut conn: PoolConnection<Postgres>,
     auth: OAuthClientAuthenticationMethod,
-    client: OAuth2ClientConfig,
+    client: ClientConfig,
     params: IntrospectionRequest,
 ) -> Result<Box<dyn Reply>, Rejection> {
     // Token introspection is only allowed by confidential clients

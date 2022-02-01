@@ -17,7 +17,7 @@
 
 use chrono::{DateTime, Duration, Utc};
 use data_encoding::{DecodeError, BASE64URL_NOPAD};
-use mas_config::{CookiesConfig, CsrfConfig};
+use mas_config::{CsrfConfig, Encrypter};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_with::{serde_as, TimestampSeconds};
 use thiserror::Error;
@@ -119,9 +119,9 @@ impl<T> CsrfForm<T> {
 }
 
 fn csrf_token(
-    cookies_config: &CookiesConfig,
+    encrypter: &Encrypter,
 ) -> impl Filter<Extract = (CsrfToken,), Error = Rejection> + Clone + Send + Sync + 'static {
-    super::cookies::encrypted(cookies_config).and_then(move |token: CsrfToken| async move {
+    super::cookies::encrypted(encrypter).and_then(move |token: CsrfToken| async move {
         let verified = token.verify_expiration()?;
         Ok::<_, Rejection>(verified)
     })
@@ -134,11 +134,11 @@ fn csrf_token(
 /// with [`encrypted_cookie_saver`][`super::cookies::encrypted_cookie_saver`]
 #[must_use]
 pub fn updated_csrf_token(
-    cookies_config: &CookiesConfig,
+    encrypter: &Encrypter,
     csrf_config: &CsrfConfig,
 ) -> impl Filter<Extract = (CsrfToken,), Error = Rejection> + Clone + Send + Sync + 'static {
     let ttl = csrf_config.ttl;
-    super::cookies::maybe_encrypted(cookies_config).and_then(
+    super::cookies::maybe_encrypted(encrypter).and_then(
         move |maybe_token: Option<CsrfToken>| async move {
             // Explicitely specify the "Error" type here to have the `?` operation working
             Ok::<_, Rejection>(
@@ -171,12 +171,12 @@ pub fn updated_csrf_token(
 ///  TODO: we might want to unify the last three rejections in one
 #[must_use]
 pub fn protected_form<T>(
-    cookies_config: &CookiesConfig,
+    encrypter: &Encrypter,
 ) -> impl Filter<Extract = (T,), Error = Rejection> + Clone + Send + Sync + 'static
 where
     T: DeserializeOwned + Send + 'static,
 {
-    csrf_token(cookies_config).and(warp::body::form()).and_then(
+    csrf_token(encrypter).and(warp::body::form()).and_then(
         |csrf_token: CsrfToken, protected_form: CsrfForm<T>| async move {
             let form = protected_form.verify_csrf(&csrf_token)?;
             Ok::<_, Rejection>(form)

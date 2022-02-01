@@ -15,7 +15,7 @@
 #![allow(clippy::trait_duplication_in_bounds)]
 
 use hyper::http::uri::{Parts, PathAndQuery, Uri};
-use mas_config::{CookiesConfig, CsrfConfig};
+use mas_config::{CsrfConfig, Encrypter};
 use mas_data_model::{errors::WrapFormError, BrowserSession};
 use mas_storage::{user::login, PostgresqlBackend};
 use mas_templates::{LoginContext, LoginFormField, TemplateContext, Templates};
@@ -86,24 +86,24 @@ struct LoginForm {
 pub(super) fn filter(
     pool: &PgPool,
     templates: &Templates,
+    encrypter: &Encrypter,
     csrf_config: &CsrfConfig,
-    cookies_config: &CookiesConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
     let get = warp::get()
         .and(with_templates(templates))
         .and(connection(pool))
-        .and(encrypted_cookie_saver(cookies_config))
-        .and(updated_csrf_token(cookies_config, csrf_config))
+        .and(encrypted_cookie_saver(encrypter))
+        .and(updated_csrf_token(encrypter, csrf_config))
         .and(warp::query())
-        .and(optional_session(pool, cookies_config))
+        .and(optional_session(pool, encrypter))
         .and_then(get);
 
     let post = warp::post()
         .and(with_templates(templates))
         .and(connection(pool))
-        .and(encrypted_cookie_saver(cookies_config))
-        .and(updated_csrf_token(cookies_config, csrf_config))
-        .and(protected_form(cookies_config))
+        .and(encrypted_cookie_saver(encrypter))
+        .and(updated_csrf_token(encrypter, csrf_config))
+        .and(protected_form(encrypter))
         .and(warp::query())
         .and_then(post);
 

@@ -70,7 +70,7 @@ impl UrlBuilder {
 
     /// JWKS URI
     pub fn jwks_uri(&self) -> Url {
-        self.base.join("oauth2/jwks.json").expect("build URL")
+        self.base.join("oauth2/keys.json").expect("build URL")
     }
 
     /// Email verification URL

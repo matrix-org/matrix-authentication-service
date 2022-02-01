@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use lettre::{message::Mailbox, Address};
-use mas_config::{CookiesConfig, CsrfConfig, HttpConfig};
+use mas_config::{CsrfConfig, Encrypter, HttpConfig};
 use mas_data_model::{BrowserSession, User, UserEmail};
 use mas_email::Mailer;
 use mas_storage::{
@@ -45,27 +45,27 @@ pub(super) fn filter(
     pool: &PgPool,
     templates: &Templates,
     mailer: &Mailer,
+    encrypter: &Encrypter,
     http_config: &HttpConfig,
     csrf_config: &CsrfConfig,
-    cookies_config: &CookiesConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
     let mailer = mailer.clone();
 
     let get = with_templates(templates)
-        .and(encrypted_cookie_saver(cookies_config))
-        .and(updated_csrf_token(cookies_config, csrf_config))
-        .and(session(pool, cookies_config))
+        .and(encrypted_cookie_saver(encrypter))
+        .and(updated_csrf_token(encrypter, csrf_config))
+        .and(session(pool, encrypter))
         .and(connection(pool))
         .and_then(get);
 
     let post = with_templates(templates)
         .and(warp::any().map(move || mailer.clone()))
         .and(url_builder(http_config))
-        .and(encrypted_cookie_saver(cookies_config))
-        .and(updated_csrf_token(cookies_config, csrf_config))
-        .and(session(pool, cookies_config))
+        .and(encrypted_cookie_saver(encrypter))
+        .and(updated_csrf_token(encrypter, csrf_config))
+        .and(session(pool, encrypter))
         .and(transaction(pool))
-        .and(protected_form(cookies_config))
+        .and(protected_form(encrypter))
         .and_then(post);
 
     let get = warp::get().and(get);

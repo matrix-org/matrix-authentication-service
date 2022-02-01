@@ -19,7 +19,7 @@ use chrono::{DateTime, Duration, Utc};
 use data_encoding::BASE64URL_NOPAD;
 use headers::{CacheControl, Pragma};
 use hyper::StatusCode;
-use mas_config::{HttpConfig, OAuth2ClientConfig, OAuth2Config};
+use mas_config::{ClientConfig, ClientsConfig, HttpConfig};
 use mas_data_model::{AuthorizationGrantStage, TokenType};
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
 use mas_jose::{
@@ -98,7 +98,7 @@ where
 pub fn filter(
     pool: &PgPool,
     key_store: &Arc<StaticKeystore>,
-    oauth2_config: &OAuth2Config,
+    clients_config: &ClientsConfig,
     http_config: &HttpConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
     let key_store = key_store.clone();
@@ -110,7 +110,7 @@ pub fn filter(
     warp::path!("oauth2" / "token")
         .and(
             warp::post()
-                .and(client_authentication(oauth2_config, audience))
+                .and(client_authentication(clients_config, audience))
                 .and(warp::any().map(move || key_store.clone()))
                 .and(warp::any().map(move || issuer.clone()))
                 .and(connection(pool))
@@ -131,7 +131,7 @@ async fn recover(rejection: Rejection) -> Result<Box<dyn Reply>, Rejection> {
 
 async fn token(
     _auth: OAuthClientAuthenticationMethod,
-    client: OAuth2ClientConfig,
+    client: ClientConfig,
     req: AccessTokenRequest,
     key_store: Arc<StaticKeystore>,
     issuer: Url,
@@ -171,7 +171,7 @@ fn hash<H: Digest>(mut hasher: H, token: &str) -> anyhow::Result<String> {
 #[allow(clippy::too_many_lines)]
 async fn authorization_code_grant(
     grant: &AuthorizationCodeGrant,
-    client: &OAuth2ClientConfig,
+    client: &ClientConfig,
     key_store: &StaticKeystore,
     issuer: Url,
     conn: &mut PoolConnection<Postgres>,
@@ -328,7 +328,7 @@ async fn authorization_code_grant(
 
 async fn refresh_token_grant(
     grant: &RefreshTokenGrant,
-    client: &OAuth2ClientConfig,
+    client: &ClientConfig,
     conn: &mut PoolConnection<Postgres>,
 ) -> Result<AccessTokenResponse, Rejection> {
     let mut txn = conn.begin().await.wrap_error()?;

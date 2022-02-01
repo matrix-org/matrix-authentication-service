@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use argon2::Argon2;
-use mas_config::{CookiesConfig, CsrfConfig};
+use mas_config::{CsrfConfig, Encrypter};
 use mas_data_model::BrowserSession;
 use mas_storage::{
     user::{authenticate_session, set_password},
@@ -37,21 +37,21 @@ use warp::{filters::BoxedFilter, reply::html, Filter, Rejection, Reply};
 pub(super) fn filter(
     pool: &PgPool,
     templates: &Templates,
+    encrypter: &Encrypter,
     csrf_config: &CsrfConfig,
-    cookies_config: &CookiesConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
     let get = with_templates(templates)
-        .and(encrypted_cookie_saver(cookies_config))
-        .and(updated_csrf_token(cookies_config, csrf_config))
-        .and(session(pool, cookies_config))
+        .and(encrypted_cookie_saver(encrypter))
+        .and(updated_csrf_token(encrypter, csrf_config))
+        .and(session(pool, encrypter))
         .and_then(get);
 
     let post = with_templates(templates)
-        .and(encrypted_cookie_saver(cookies_config))
-        .and(updated_csrf_token(cookies_config, csrf_config))
-        .and(session(pool, cookies_config))
+        .and(encrypted_cookie_saver(encrypter))
+        .and(updated_csrf_token(encrypter, csrf_config))
+        .and(session(pool, encrypter))
         .and(transaction(pool))
-        .and(protected_form(cookies_config))
+        .and(protected_form(encrypter))
         .and_then(post);
 
     let get = warp::get().and(get);

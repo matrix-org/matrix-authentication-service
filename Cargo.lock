@@ -1887,6 +1887,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "chacha20poly1305",
  "chrono",
  "elliptic-curve",
  "figment",
@@ -1944,7 +1945,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "argon2",
- "chacha20poly1305",
  "chrono",
  "crc",
  "data-encoding",
@@ -2106,7 +2106,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bincode",
- "chacha20poly1305",
  "chrono",
  "cookie",
  "crc",

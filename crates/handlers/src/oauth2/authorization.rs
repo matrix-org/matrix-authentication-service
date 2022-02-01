@@ -20,7 +20,7 @@ use hyper::{
     http::uri::{Parts, PathAndQuery, Uri},
     StatusCode,
 };
-use mas_config::{CookiesConfig, OAuth2ClientConfig, OAuth2Config};
+use mas_config::{ClientsConfig, Encrypter};
 use mas_data_model::{
     Authentication, AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, BrowserSession,
     Pkce, StorageBackend, TokenType,
@@ -215,33 +215,34 @@ fn resolve_response_mode(
 pub fn filter(
     pool: &PgPool,
     templates: &Templates,
-    oauth2_config: &OAuth2Config,
-    cookies_config: &CookiesConfig,
+    encrypter: &Encrypter,
+    clients_config: &ClientsConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
-    let clients = oauth2_config.clients.clone();
+    let clients_config = clients_config.clone();
+    let clients_config_2 = clients_config.clone();
+
     let authorize = warp::path!("oauth2" / "authorize")
         .and(warp::get())
-        .map(move || clients.clone())
+        .map(move || clients_config.clone())
         .and(warp::query())
-        .and(optional_session(pool, cookies_config))
+        .and(optional_session(pool, encrypter))
         .and(transaction(pool))
         .and_then(get);
 
     let step = warp::path!("oauth2" / "authorize" / "step")
         .and(warp::get())
         .and(warp::query())
-        .and(session(pool, cookies_config))
+        .and(session(pool, encrypter))
         .and(transaction(pool))
         .and_then(step);
 
-    let clients = oauth2_config.clients.clone();
     authorize
         .or(step)
         .unify()
         .recover(recover)
         .unify()
         .and(warp::query())
-        .and(warp::any().map(move || clients.clone()))
+        .and(warp::any().map(move || clients_config_2.clone()))
         .and(with_templates(templates))
         .and_then(actually_reply)
         .boxed()
@@ -258,7 +259,7 @@ async fn recover(rejection: Rejection) -> Result<ReplyOrBackToClient, Rejection>
 async fn actually_reply(
     rep: ReplyOrBackToClient,
     q: PartialParams,
-    clients: Vec<OAuth2ClientConfig>,
+    clients: ClientsConfig,
     templates: Templates,
 ) -> Result<Box<dyn Reply>, Rejection> {
     let (redirect_uri, response_mode, state, params) = match rep {
@@ -278,11 +279,8 @@ async fn actually_reply(
             } = q;
 
             // First, disover the client
-            let client = client_id.and_then(|client_id| {
-                clients
-                    .into_iter()
-                    .find(|client| client.client_id == client_id)
-            });
+            let client = client_id
+                .and_then(|client_id| clients.iter().find(|client| client.client_id == client_id));
 
             let client = match client {
                 Some(client) => client,
@@ -314,7 +312,7 @@ async fn actually_reply(
 }
 
 async fn get(
-    clients: Vec<OAuth2ClientConfig>,
+    clients: ClientsConfig,
     params: Params,
     maybe_session: Option<BrowserSession<PostgresqlBackend>>,
     mut txn: Transaction<'_, Postgres>,
@@ -337,7 +335,7 @@ async fn get(
 
     // First, find out what client it is
     let client = clients
-        .into_iter()
+        .iter()
         .find(|client| client.client_id == params.auth.client_id)
         .ok_or_else(|| anyhow::anyhow!("could not find client"))
         .wrap_error()?;

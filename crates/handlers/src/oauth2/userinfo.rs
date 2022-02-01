@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use mas_config::OAuth2Config;
 use mas_data_model::{AccessToken, Session};
 use mas_storage::PostgresqlBackend;
 use mas_warp_utils::filters::authenticate::{authentication, recover_unauthorized};
@@ -26,7 +25,7 @@ struct UserInfo {
     username: String,
 }
 
-pub(super) fn filter(pool: &PgPool, _config: &OAuth2Config) -> BoxedFilter<(Box<dyn Reply>,)> {
+pub(super) fn filter(pool: &PgPool) -> BoxedFilter<(Box<dyn Reply>,)> {
     warp::path!("oauth2" / "userinfo")
         .and(
             warp::get()

@@ -16,22 +16,22 @@ use async_trait::async_trait;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-mod cookies;
+mod clients;
 mod csrf;
 mod database;
 mod email;
 mod http;
-mod oauth2;
+mod secrets;
 mod telemetry;
 mod templates;
 
 pub use self::{
-    cookies::CookiesConfig,
+    clients::{ClientAuthMethodConfig, ClientConfig, ClientsConfig},
     csrf::CsrfConfig,
     database::DatabaseConfig,
     email::{EmailConfig, EmailSmtpMode, EmailTransportConfig},
     http::HttpConfig,
-    oauth2::{OAuth2ClientAuthMethodConfig, OAuth2ClientConfig, OAuth2Config},
+    secrets::{Encrypter, SecretsConfig},
     telemetry::{
         MetricsConfig, MetricsExporterConfig, Propagator, TelemetryConfig, TracingConfig,
         TracingExporterConfig,
@@ -43,8 +43,9 @@ use crate::util::ConfigurationSection;
 /// Application configuration root
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct RootConfig {
-    /// Configuration related to OAuth 2.0/OIDC operations
-    pub oauth2: OAuth2Config,
+    /// List of OAuth 2.0/OIDC clients config
+    #[serde(default)]
+    pub clients: ClientsConfig,
 
     /// Configuration of the HTTP server
     #[serde(default)]
@@ -53,9 +54,6 @@ pub struct RootConfig {
     /// Database connection configuration
     #[serde(default)]
     pub database: DatabaseConfig,
-
-    /// Configuration related to cookies
-    pub cookies: CookiesConfig,
 
     /// Configuration related to sending monitoring data
     #[serde(default)]
@@ -72,6 +70,9 @@ pub struct RootConfig {
     /// Configuration related to sending emails
     #[serde(default)]
     pub email: EmailConfig,
+
+    /// Application secrets
+    pub secrets: SecretsConfig,
 }
 
 #[async_trait]
@@ -82,27 +83,27 @@ impl ConfigurationSection<'_> for RootConfig {
 
     async fn generate() -> anyhow::Result<Self> {
         Ok(Self {
-            oauth2: OAuth2Config::generate().await?,
+            clients: ClientsConfig::generate().await?,
             http: HttpConfig::generate().await?,
             database: DatabaseConfig::generate().await?,
-            cookies: CookiesConfig::generate().await?,
             telemetry: TelemetryConfig::generate().await?,
             templates: TemplatesConfig::generate().await?,
             csrf: CsrfConfig::generate().await?,
             email: EmailConfig::generate().await?,
+            secrets: SecretsConfig::generate().await?,
         })
     }
 
     fn test() -> Self {
         Self {
-            oauth2: OAuth2Config::test(),
+            clients: ClientsConfig::test(),
             http: HttpConfig::test(),
             database: DatabaseConfig::test(),
-            cookies: CookiesConfig::test(),
             telemetry: TelemetryConfig::test(),
             templates: TemplatesConfig::test(),
             csrf: CsrfConfig::test(),
             email: EmailConfig::test(),
+            secrets: SecretsConfig::test(),
         }
     }
 }
