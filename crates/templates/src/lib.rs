@@ -13,13 +13,9 @@
 // limitations under the License.
 
 #![forbid(unsafe_code)]
-#![deny(missing_docs)]
-#![deny(clippy::all)]
-#![deny(rustdoc::broken_intra_doc_links)]
+#![deny(clippy::all, missing_docs, rustdoc::broken_intra_doc_links)]
 #![warn(clippy::pedantic)]
-#![allow(clippy::module_name_repetitions)]
-#![allow(clippy::missing_panics_doc)]
-#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::module_name_repetitions, clippy::missing_errors_doc)]
 
 //! Templates rendering
 
@@ -40,7 +36,6 @@ use thiserror::Error;
 use tokio::{fs::OpenOptions, io::AsyncWriteExt, sync::RwLock, task::JoinError};
 use tracing::{debug, info, warn};
 
-#[allow(missing_docs)] // TODO
 mod context;
 mod functions;
 

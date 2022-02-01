@@ -198,7 +198,7 @@ pub struct Metadata {
 
     // TODO: type
     /// Languages and scripts supported for values in Claims being returned,
-    /// represented as a JSON array of BCP 47 [RFC5646] language tag values.
+    /// represented as a JSON array of BCP 47 language tag values.
     pub claims_locales_supported: Option<HashSet<String>>,
 
     /// Boolean value specifying whether the OP supports use of the "claims"

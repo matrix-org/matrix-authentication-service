@@ -18,6 +18,10 @@
 //! resources and avoid database conflicts. Tasks are not persisted, which is
 //! considered "good enough" for now.
 
+#![forbid(unsafe_code)]
+#![deny(clippy::all, missing_docs, rustdoc::broken_intra_doc_links)]
+#![warn(clippy::pedantic)]
+
 use std::{collections::VecDeque, sync::Arc, time::Duration};
 
 use futures_util::StreamExt;
@@ -32,8 +36,10 @@ mod database;
 
 pub use self::database::cleanup_expired;
 
+/// A [`Task`] can be executed by a [`TaskQueue`]
 #[async_trait::async_trait]
 pub trait Task: std::fmt::Debug + Send + Sync + 'static {
+    /// Execute the [`Task`]
     async fn run(&self);
 }
 
@@ -81,12 +87,14 @@ impl TaskQueueInner {
     }
 }
 
+/// A [`TaskQueue`] executes tasks inserted in it in order
 #[derive(Default)]
 pub struct TaskQueue {
     inner: Arc<TaskQueueInner>,
 }
 
 impl TaskQueue {
+    /// Start the task queue to run forever
     pub fn start(&self) {
         let queue = self.inner.clone();
         tokio::task::spawn(async move {
@@ -100,6 +108,7 @@ impl TaskQueue {
         queue.schedule(task).await;
     }
 
+    /// Schedule a task in the queue at regular intervals
     pub fn recuring(&self, every: Duration, task: impl Task + Clone + std::fmt::Debug) {
         debug!(?task, period = every.as_secs(), "Scheduling recuring task");
         let queue = self.inner.clone();

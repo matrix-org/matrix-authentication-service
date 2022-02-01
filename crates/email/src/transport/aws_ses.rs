@@ -19,16 +19,21 @@ use aws_sdk_sesv2::{
 };
 use lettre::{address::Envelope, AsyncTransport};
 
+/// An asynchronous email transport that sends email via the AWS Simple Email
+/// Service v2 API
 pub struct Transport {
     client: Client,
 }
 
 impl Transport {
+    /// Construct a [`Transport`] from the environment
     pub async fn from_env() -> Self {
         let config = aws_config::from_env().load().await;
         Self::new(&config)
     }
 
+    /// Constructs a [`Transport`] from a given AWS shared config
+    #[must_use]
     pub fn new(config: &aws_config::Config) -> Self {
         let client = Client::new(config);
         Self { client }

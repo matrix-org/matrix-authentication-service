@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Database-related tasks
+
 use sqlx::{Pool, Postgres};
 use tracing::{debug, error, info};
 
@@ -44,6 +46,7 @@ impl Task for CleanupExpired {
     }
 }
 
+/// Cleanup expired tokens
 #[must_use]
 pub fn cleanup_expired(pool: &Pool<Postgres>) -> impl Task + Clone {
     CleanupExpired(pool.clone())

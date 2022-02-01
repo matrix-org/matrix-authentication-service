@@ -197,6 +197,8 @@ pub struct IndexContext {
 }
 
 impl IndexContext {
+    /// Constructs the context for the index page from the OIDC discovery
+    /// document URL
     #[must_use]
     pub fn new(discovery_url: Url) -> Self {
         Self { discovery_url }
@@ -216,10 +218,14 @@ impl TemplateContext for IndexContext {
     }
 }
 
+/// Fields of the login form
 #[derive(Serialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum LoginFormField {
+    /// The username field
     Username,
+
+    /// The password field
     Password,
 }
 
@@ -227,7 +233,11 @@ pub enum LoginFormField {
 #[derive(Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum PostAuthContext {
-    ContinueAuthorizationGrant { grant: AuthorizationGrant<()> },
+    /// Continue an authorization grant
+    ContinueAuthorizationGrant {
+        /// The authorization grant that will be continued after authentication
+        grant: AuthorizationGrant<()>,
+    },
 }
 
 /// Context used by the `login.html` template
@@ -253,11 +263,13 @@ impl TemplateContext for LoginContext {
 }
 
 impl LoginContext {
+    /// Add an error on the login form
     #[must_use]
     pub fn with_form_error(self, form: ErroredForm<LoginFormField>) -> Self {
         Self { form, ..self }
     }
 
+    /// Add a post authentication action to the context
     #[must_use]
     pub fn with_post_action(self, next: PostAuthContext) -> Self {
         Self {
@@ -266,6 +278,7 @@ impl LoginContext {
         }
     }
 
+    /// Add a registration link to the context
     #[must_use]
     pub fn with_register_link(self, register_link: String) -> Self {
         Self {
@@ -285,11 +298,17 @@ impl Default for LoginContext {
     }
 }
 
+/// Fields of the registration form
 #[derive(Serialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum RegisterFormField {
+    /// The username field
     Username,
+
+    /// The password field
     Password,
+
+    /// The password confirmation field
     PasswordConfirm,
 }
 
@@ -316,11 +335,13 @@ impl TemplateContext for RegisterContext {
 }
 
 impl RegisterContext {
+    /// Add an error on the registration form
     #[must_use]
     pub fn with_form_error(self, form: ErroredForm<LoginFormField>) -> Self {
         Self { form, ..self }
     }
 
+    /// Add a post authentication action to the context
     #[must_use]
     pub fn with_post_action(self, next: PostAuthContext) -> Self {
         Self {
@@ -329,6 +350,7 @@ impl RegisterContext {
         }
     }
 
+    /// Add a login link to the context
     #[must_use]
     pub fn with_login_link(self, login_link: String) -> Self {
         Self { login_link, ..self }
@@ -345,9 +367,11 @@ impl Default for RegisterContext {
     }
 }
 
+/// Fields of the reauthentication form
 #[derive(Serialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum ReauthFormField {
+    /// The password field
     Password,
 }
 
@@ -365,11 +389,13 @@ impl TemplateContext for ReauthContext {
 }
 
 impl ReauthContext {
+    /// Add an error on the reauthentication form
     #[must_use]
     pub fn with_form_error(self, form: ErroredForm<ReauthFormField>) -> Self {
         Self { form, ..self }
     }
 
+    /// Add a post authentication action to the context
     #[must_use]
     pub fn with_post_action(self, next: PostAuthContext) -> Self {
         Self {
@@ -403,6 +429,7 @@ pub struct AccountContext {
 }
 
 impl AccountContext {
+    /// Constructs a context for the "my account" page
     #[must_use]
     pub fn new<T>(active_sessions: usize, emails: Vec<T>) -> Self
     where
@@ -433,6 +460,7 @@ pub struct AccountEmailsContext<T: StorageBackend> {
 }
 
 impl<T: StorageBackend> AccountEmailsContext<T> {
+    /// Constructs a context for the email management page
     #[must_use]
     pub fn new(emails: Vec<UserEmail<T>>) -> Self {
         Self { emails }
@@ -457,6 +485,7 @@ pub struct EmailVerificationContext {
 }
 
 impl EmailVerificationContext {
+    /// Constructs a context for the verification email
     #[must_use]
     pub fn new(user: User<()>, verification_link: Url) -> Self {
         Self {
@@ -507,6 +536,7 @@ impl<T: TemplateContext> TemplateContext for FormPostContext<T> {
 }
 
 impl<T> FormPostContext<T> {
+    /// Constructs a context for the `form_post` response mode form
     pub fn new(redirect_uri: Url, params: T) -> Self {
         Self {
             redirect_uri,
@@ -540,23 +570,27 @@ impl TemplateContext for ErrorContext {
 }
 
 impl ErrorContext {
+    /// Constructs a context for the error page
     #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Add the error code to the context
     #[must_use]
     pub fn with_code(mut self, code: &'static str) -> Self {
         self.code = Some(code);
         self
     }
 
+    /// Add the error description to the context
     #[must_use]
     pub fn with_description(mut self, description: String) -> Self {
         self.description = Some(description);
         self
     }
 
+    /// Add the error details to the context
     #[allow(dead_code)]
     #[must_use]
     pub fn with_details(mut self, details: String) -> Self {

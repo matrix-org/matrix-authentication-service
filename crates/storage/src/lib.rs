@@ -14,7 +14,14 @@
 
 //! Interactions with the database
 
-#![allow(clippy::used_underscore_binding)] // This is needed by sqlx macros
+#![forbid(unsafe_code)]
+#![deny(clippy::all, rustdoc::broken_intra_doc_links)]
+#![warn(clippy::pedantic)]
+#![allow(
+    clippy::missing_errors_doc,
+    clippy::missing_panics_doc,
+    clippy::module_name_repetitions
+)]
 
 use chrono::{DateTime, Utc};
 use mas_data_model::{StorageBackend, StorageBackendMarker};

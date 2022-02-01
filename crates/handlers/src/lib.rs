@@ -13,14 +13,11 @@
 // limitations under the License.
 
 #![forbid(unsafe_code)]
-#![deny(clippy::all)]
-#![deny(rustdoc::broken_intra_doc_links)]
+#![deny(clippy::all, rustdoc::broken_intra_doc_links)]
 #![warn(clippy::pedantic)]
-#![allow(clippy::module_name_repetitions)]
-#![allow(clippy::missing_panics_doc)]
-#![allow(clippy::missing_errors_doc)]
-#![allow(clippy::implicit_hasher)]
-#![allow(clippy::unused_async)] // Some warp filters need that
+#![allow(
+    clippy::unused_async // Some warp filters need that
+)]
 
 use std::sync::Arc;
 

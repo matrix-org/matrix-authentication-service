@@ -37,11 +37,13 @@ pub struct UrlBuilder {
 
 impl UrlBuilder {
     /// OIDC issuer
+    #[must_use]
     pub fn oidc_issuer(&self) -> Url {
         self.base.clone()
     }
 
     /// OIDC dicovery document URL
+    #[must_use]
     pub fn oidc_discovery(&self) -> Url {
         self.base
             .join(".well-known/openid-configuration")
@@ -49,31 +51,37 @@ impl UrlBuilder {
     }
 
     /// OAuth 2.0 authorization endpoint
+    #[must_use]
     pub fn oauth_authorization_endpoint(&self) -> Url {
         self.base.join("oauth2/authorize").expect("build URL")
     }
 
     /// OAuth 2.0 token endpoint
+    #[must_use]
     pub fn oauth_token_endpoint(&self) -> Url {
         self.base.join("oauth2/token").expect("build URL")
     }
 
     /// OAuth 2.0 introspection endpoint
+    #[must_use]
     pub fn oauth_introspection_endpoint(&self) -> Url {
         self.base.join("oauth2/introspect").expect("build URL")
     }
 
     /// OAuth 2.0 introspection endpoint
+    #[must_use]
     pub fn oidc_userinfo_endpoint(&self) -> Url {
         self.base.join("oauth2/userinfo").expect("build URL")
     }
 
     /// JWKS URI
+    #[must_use]
     pub fn jwks_uri(&self) -> Url {
         self.base.join("oauth2/keys.json").expect("build URL")
     }
 
     /// Email verification URL
+    #[must_use]
     pub fn email_verification(&self, code: &str) -> Url {
         self.base
             .join("verify")
@@ -84,6 +92,7 @@ impl UrlBuilder {
 }
 
 /// Injects an [`UrlBuilder`] to help building absolute URLs
+#[must_use]
 pub fn url_builder(
     config: &HttpConfig,
 ) -> impl Filter<Extract = (UrlBuilder,), Error = Infallible> + Clone + Send + Sync + 'static {

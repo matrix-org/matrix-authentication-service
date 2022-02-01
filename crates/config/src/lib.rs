@@ -13,13 +13,14 @@
 // limitations under the License.
 
 #![forbid(unsafe_code)]
-#![deny(clippy::all)]
-#![deny(missing_docs)]
-#![deny(rustdoc::broken_intra_doc_links)]
+#![deny(
+    clippy::all,
+    missing_docs,
+    rustdoc::missing_crate_level_docs,
+    rustdoc::broken_intra_doc_links
+)]
 #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
-#![allow(clippy::missing_panics_doc)]
-#![allow(clippy::missing_errors_doc)]
 
 //! Application configuration logic
 

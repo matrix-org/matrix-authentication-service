@@ -28,14 +28,17 @@ use serde::{Deserialize, Serialize};
     Debug, Clone, Copy, PartialEq, Eq, Hash, Display, FromStr, Serialize, Deserialize, JsonSchema,
 )]
 pub enum OAuthAccessTokenType {
+    /// `Bearer`
     #[serde(rename = "Bearer")]
     #[display("Bearer")]
     Bearer,
 
+    /// `N_A`
     #[serde(rename = "N_A")]
     #[display("N_A")]
     Na,
 
+    /// `PoP`
     #[serde(rename = "PoP")]
     #[display("PoP")]
     PoP,
@@ -48,34 +51,42 @@ pub enum OAuthAccessTokenType {
     Debug, Clone, Copy, PartialEq, Eq, Hash, Display, FromStr, Serialize, Deserialize, JsonSchema,
 )]
 pub enum OAuthAuthorizationEndpointResponseType {
+    /// `code`
     #[serde(rename = "code")]
     #[display("code")]
     Code,
 
+    /// `code id_token`
     #[serde(rename = "code id_token")]
     #[display("code id_token")]
     CodeIdToken,
 
+    /// `code id_token token`
     #[serde(rename = "code id_token token")]
     #[display("code id_token token")]
     CodeIdTokenToken,
 
+    /// `code token`
     #[serde(rename = "code token")]
     #[display("code token")]
     CodeToken,
 
+    /// `id_token`
     #[serde(rename = "id_token")]
     #[display("id_token")]
     IdToken,
 
+    /// `id_token token`
     #[serde(rename = "id_token token")]
     #[display("id_token token")]
     IdTokenToken,
 
+    /// `none`
     #[serde(rename = "none")]
     #[display("none")]
     None,
 
+    /// `token`
     #[serde(rename = "token")]
     #[display("token")]
     Token,
@@ -88,14 +99,17 @@ pub enum OAuthAuthorizationEndpointResponseType {
     Debug, Clone, Copy, PartialEq, Eq, Hash, Display, FromStr, Serialize, Deserialize, JsonSchema,
 )]
 pub enum OAuthTokenTypeHint {
+    /// `access_token`
     #[serde(rename = "access_token")]
     #[display("access_token")]
     AccessToken,
 
+    /// `refresh_token`
     #[serde(rename = "refresh_token")]
     #[display("refresh_token")]
     RefreshToken,
 
+    /// `pct`
     #[serde(rename = "pct")]
     #[display("pct")]
     Pct,
@@ -108,30 +122,37 @@ pub enum OAuthTokenTypeHint {
     Debug, Clone, Copy, PartialEq, Eq, Hash, Display, FromStr, Serialize, Deserialize, JsonSchema,
 )]
 pub enum OAuthClientAuthenticationMethod {
+    /// `none`
     #[serde(rename = "none")]
     #[display("none")]
     None,
 
+    /// `client_secret_post`
     #[serde(rename = "client_secret_post")]
     #[display("client_secret_post")]
     ClientSecretPost,
 
+    /// `client_secret_basic`
     #[serde(rename = "client_secret_basic")]
     #[display("client_secret_basic")]
     ClientSecretBasic,
 
+    /// `client_secret_jwt`
     #[serde(rename = "client_secret_jwt")]
     #[display("client_secret_jwt")]
     ClientSecretJwt,
 
+    /// `private_key_jwt`
     #[serde(rename = "private_key_jwt")]
     #[display("private_key_jwt")]
     PrivateKeyJwt,
 
+    /// `tls_client_auth`
     #[serde(rename = "tls_client_auth")]
     #[display("tls_client_auth")]
     TlsClientAuth,
 
+    /// `self_signed_tls_client_auth`
     #[serde(rename = "self_signed_tls_client_auth")]
     #[display("self_signed_tls_client_auth")]
     SelfSignedTlsClientAuth,
@@ -144,10 +165,12 @@ pub enum OAuthClientAuthenticationMethod {
     Debug, Clone, Copy, PartialEq, Eq, Hash, Display, FromStr, Serialize, Deserialize, JsonSchema,
 )]
 pub enum PkceCodeChallengeMethod {
+    /// `plain`
     #[serde(rename = "plain")]
     #[display("plain")]
     Plain,
 
+    /// `S256`
     #[serde(rename = "S256")]
     #[display("S256")]
     S256,

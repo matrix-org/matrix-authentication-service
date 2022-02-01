@@ -40,7 +40,7 @@ use warp::{filters::BoxedFilter, reply::html, Filter, Rejection, Reply};
 use super::{LoginRequest, PostAuthAction};
 
 #[derive(Deserialize)]
-pub struct RegisterRequest {
+pub(crate) struct RegisterRequest {
     #[serde(flatten)]
     post_auth_action: Option<PostAuthAction>,
 }

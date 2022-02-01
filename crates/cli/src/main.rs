@@ -16,7 +16,6 @@
 #![deny(clippy::all)]
 #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
-#![allow(clippy::suspicious_else_formatting)]
 
 use std::path::PathBuf;
 

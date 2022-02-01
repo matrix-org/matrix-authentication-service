@@ -51,6 +51,10 @@ impl Encrypter {
     }
 
     /// Encrypt a payload
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` when the payload failed to encrypt
     pub fn encrypt(&self, nonce: &[u8; 12], decrypted: &[u8]) -> anyhow::Result<Vec<u8>> {
         let nonce = GenericArray::from_slice(&nonce[..]);
         let encrypted = self.aead.encrypt(nonce, decrypted)?;
@@ -58,6 +62,10 @@ impl Encrypter {
     }
 
     /// Decrypts a payload
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` when the payload failed to decrypt
     pub fn decrypt(&self, nonce: &[u8; 12], encrypted: &[u8]) -> anyhow::Result<Vec<u8>> {
         let nonce = GenericArray::from_slice(&nonce[..]);
         let encrypted = self.aead.decrypt(nonce, encrypted)?;
@@ -110,6 +118,10 @@ pub struct SecretsConfig {
 
 impl SecretsConfig {
     /// Derive a signing and verifying keystore out of the config
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when a key could not be imported
     pub async fn key_store(&self) -> anyhow::Result<StaticKeystore> {
         let mut store = StaticKeystore::new();
 

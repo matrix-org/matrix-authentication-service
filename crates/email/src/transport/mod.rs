@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Email transport backends
+
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -27,6 +29,7 @@ use mas_config::{EmailSmtpMode, EmailTransportConfig};
 
 pub mod aws_ses;
 
+/// A wrapper around many [`AsyncTransport`]s
 #[derive(Default, Clone)]
 pub struct Transport {
     inner: Arc<TransportInner>,
@@ -40,6 +43,11 @@ enum TransportInner {
 }
 
 impl Transport {
+    /// Construct a transport from a user configration
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` on invalid confiuration
     pub async fn from_config(config: &EmailTransportConfig) -> Result<Self, anyhow::Error> {
         let inner = match config {
             EmailTransportConfig::Blackhole => TransportInner::Blackhole,
@@ -85,14 +93,19 @@ impl Transport {
 }
 
 impl Transport {
+    /// Test the connection to the underlying transport. Only works with the
+    /// SMTP backend for now
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` if the connection test failed
     pub async fn test_connection(&self) -> anyhow::Result<()> {
         match self.inner.as_ref() {
-            TransportInner::Blackhole => {}
             TransportInner::Smtp(t) => {
                 t.test_connection().await?;
             }
-            &TransportInner::Sendmail(_) => {}
-            TransportInner::AwsSes(_) => {}
+            TransportInner::Blackhole | TransportInner::Sendmail(_) | TransportInner::AwsSes(_) => {
+            }
         }
 
         Ok(())

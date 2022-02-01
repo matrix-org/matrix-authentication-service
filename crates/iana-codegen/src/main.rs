@@ -13,8 +13,7 @@
 // limitations under the License.
 
 #![forbid(unsafe_code)]
-#![deny(clippy::all)]
-#![deny(rustdoc::broken_intra_doc_links)]
+#![deny(clippy::all, rustdoc::broken_intra_doc_links)]
 #![warn(clippy::pedantic)]
 
 use std::{collections::HashMap, fmt::Display, path::PathBuf, sync::Arc};
@@ -135,6 +134,8 @@ pub enum {} {{"#,
                 writeln!(f)?;
                 if let Some(description) = &member.description {
                     writeln!(f, "    /// {}", description)?;
+                } else {
+                    writeln!(f, "    /// `{}`", member.value)?;
                 }
                 writeln!(f, "    #[serde(rename = \"{}\")]", member.value)?;
                 writeln!(f, "    #[display(\"{}\")]", member.value)?;

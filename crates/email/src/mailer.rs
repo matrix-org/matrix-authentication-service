@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Send emails to users
+
 use lettre::{
     message::{Mailbox, MessageBuilder, MultiPart},
     AsyncTransport, Message,
@@ -20,6 +22,7 @@ use mas_templates::{EmailVerificationContext, Templates};
 
 use crate::MailTransport;
 
+/// Helps sending mails to users
 #[derive(Clone)]
 pub struct Mailer {
     templates: Templates,
@@ -29,6 +32,8 @@ pub struct Mailer {
 }
 
 impl Mailer {
+    /// Constructs a new [`Mailer`]
+    #[must_use]
     pub fn new(
         templates: &Templates,
         transport: &MailTransport,
@@ -76,6 +81,11 @@ impl Mailer {
         Ok(message)
     }
 
+    /// Send the verification email to a user
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` if the email failed rendering or failed sending
     pub async fn send_verification_email(
         &self,
         to: Mailbox,

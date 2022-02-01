@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Helper to deal with various unstructured errors in application code
+
 use warp::{reject::Reject, Rejection};
 
 #[derive(Debug)]
@@ -19,11 +21,14 @@ pub(crate) struct WrappedError(anyhow::Error);
 
 impl warp::reject::Reject for WrappedError {}
 
+/// Wrap any error in a [`Rejection`]
 pub fn wrapped_error<T: Into<anyhow::Error>>(e: T) -> impl Reject {
     WrappedError(e.into())
 }
 
+/// Extension trait that wraps errors in [`Rejection`]s
 pub trait WrapError<T> {
+    /// Wrap transform the [`Result`] error type to a [`Rejection`]
     fn wrap_error(self) -> Result<T, Rejection>;
 }
 

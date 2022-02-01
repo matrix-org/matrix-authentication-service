@@ -94,6 +94,7 @@ enum ClientAuthenticationError {
 
 impl Reject for ClientAuthenticationError {}
 
+#[allow(clippy::too_many_lines)]
 async fn authenticate_client<T>(
     clients_config: ClientsConfig,
     audience: String,

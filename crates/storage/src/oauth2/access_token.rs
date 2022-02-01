@@ -93,6 +93,7 @@ impl AccessTokenLookupError {
     }
 }
 
+#[allow(clippy::too_many_lines)]
 pub async fn lookup_active_access_token(
     executor: impl PgExecutor<'_>,
     token: &str,

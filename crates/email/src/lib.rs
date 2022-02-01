@@ -12,6 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Helps sending emails to users, with different email backends
+
+#![forbid(unsafe_code)]
+#![deny(clippy::all, missing_docs, rustdoc::broken_intra_doc_links)]
+#![warn(clippy::pedantic)]
+
 mod mailer;
 mod transport;
 

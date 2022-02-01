@@ -12,14 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Serve static files used by the web frontend
+
 #![forbid(unsafe_code)]
-#![deny(clippy::all)]
-#![deny(rustdoc::broken_intra_doc_links)]
+#![deny(clippy::all, missing_docs, rustdoc::broken_intra_doc_links)]
 #![warn(clippy::pedantic)]
-#![allow(clippy::module_name_repetitions)]
-#![allow(clippy::missing_panics_doc)]
-#![allow(clippy::missing_errors_doc)]
-#![allow(clippy::unused_async)]
 
 use std::path::PathBuf;
 
@@ -40,6 +37,7 @@ mod builtin {
     #[folder = "public/"]
     struct Asset;
 
+    #[allow(clippy::unused_async)]
     async fn serve_embed(
         path: Tail,
         if_none_match: Option<String>,
@@ -101,6 +99,7 @@ fn filter_for_path(path: PathBuf) -> BoxedFilter<(impl Reply,)> {
     warp::fs::dir(path).boxed()
 }
 
+/// [`warp`] filter that serves static files
 #[must_use]
 pub fn filter(path: Option<PathBuf>) -> BoxedFilter<(Box<dyn Reply>,)> {
     let f = self::builtin::filter();

@@ -134,12 +134,12 @@ where
     warp::cookie::cookie(T::cookie_key()).and_then(move |value: String| {
         let encrypter = encrypter.clone();
         async move {
-            let encrypted =
+            let encrypted_payload =
                 EncryptedCookie::from_cookie_value(&value).map_err(decryption_error::<T>)?;
-            let decrypted = encrypted
+            let decrypted_payload = encrypted_payload
                 .decrypt(&encrypter)
                 .map_err(decryption_error::<T>)?;
-            Ok::<_, Rejection>(decrypted)
+            Ok::<_, Rejection>(decrypted_payload)
         }
     })
 }
