@@ -34,8 +34,8 @@ FROM --platform=${BUILDPLATFORM} docker.io/library/rust:${RUSTC_VERSION}-slim-${
 # Install x86_64 and aarch64 cross-compiling stack
 RUN rm -f /etc/apt/apt.conf.d/docker-clean; echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
 RUN \
-  --mount=type=cache,target=/var/cache/apt \
-  --mount=type=cache,target=/var/lib/apt \
+  --mount=type=cache,sharing=locked,target=/var/cache/apt \
+  --mount=type=cache,sharing=locked,target=/var/lib/apt \
   apt update && apt install -y --no-install-recommends \
   g++-aarch64-linux-gnu \
   g++-x86-64-linux-gnu \
@@ -44,7 +44,7 @@ RUN \
 
 WORKDIR /app
 RUN \
-  --mount=type=cache,target=/usr/local/cargo/registry \
+  --mount=type=cache,sharing=private,target=/usr/local/cargo/registry \
   cargo install --locked cargo-chef
 
 ENV \
@@ -70,7 +70,7 @@ FROM --platform=${BUILDPLATFORM} chef AS planner
 COPY ./Cargo.toml ./Cargo.lock /app/
 COPY ./crates /app/crates
 RUN \
-  --mount=type=cache,target=/usr/local/cargo/registry \
+  --mount=type=cache,sharing=private,target=/usr/local/cargo/registry \
   cargo chef prepare --recipe-path recipe.json
 
 ## Actual build stage ##
@@ -81,7 +81,7 @@ ARG TARGETPLATFORM
 # Build dependencies
 COPY --from=planner /app/recipe.json recipe.json
 RUN \
-  --mount=type=cache,target=/usr/local/cargo/registry \
+  --mount=type=cache,sharing=private,target=/usr/local/cargo/registry \
   cargo chef cook \
   --release \
   --recipe-path recipe.json \
@@ -94,7 +94,7 @@ COPY ./crates /app/crates
 COPY --from=static-files /app/crates/static-files/public /app/crates/static-files/public
 ENV SQLX_OFFLINE=true
 RUN \
-  --mount=type=cache,target=/usr/local/cargo/registry \
+  --mount=type=cache,sharing=private,target=/usr/local/cargo/registry \
   cargo build \
   --release \
   --bin mas-cli \
