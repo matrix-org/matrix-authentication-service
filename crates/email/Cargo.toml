@@ -12,7 +12,7 @@ tokio = { version = "1.16.1", features = ["macros"] }
 
 mas-templates = { path = "../templates" }
 mas-config = { path = "../config" }
-tracing = "0.1.29"
+tracing = "0.1.30"
 aws-sdk-sesv2 = "0.6.0"
 aws-config = "0.6.0"
 

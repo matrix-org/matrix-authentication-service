@@ -206,9 +206,7 @@ fn otlp_meter(_endpoint: &Option<url::Url>) -> anyhow::Result<()> {
 }
 
 fn stdout_meter() {
-    sdk::export::metrics::stdout(tokio::spawn, interval)
-        .with_pretty_print(true)
-        .init();
+    sdk::export::metrics::stdout(tokio::spawn, interval).init();
 }
 
 fn meter(config: &MetricsExporterConfig) -> anyhow::Result<()> {
