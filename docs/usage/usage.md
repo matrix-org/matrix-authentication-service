@@ -46,13 +46,11 @@ The OpenID Foundation hosts a OpenID Connect Playground where one can test loggi
 Add the following section to the server configuration file `config.yaml`:
 
 ```yaml
-oauth2:
-  # ...
-  clients:
-    - client_id: oidc-playground
-      client_secret: verysecret
-      redirect_uris:
-        - "https://openidconnect.net/callback"
+clients:
+  - client_id: oidc-playground
+    client_secret: verysecret
+    redirect_uris:
+      - "https://openidconnect.net/callback"
 ```
 
 ### Step 2: Change the playground configuration

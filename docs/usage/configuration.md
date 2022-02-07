@@ -43,10 +43,12 @@ Check the next section to know about each section.
 database:
   uri: postgresql:///matrix_auth
 
-cookies:
-  secret: c7e42fb8baba8f228b2e169fdf4c8216dffd5d33ad18bafd8b928c09ca46c718
+http:
+  public_base: http://localhost:8080
 
-oauth2:
+secrets:
+  encryption: c7e42fb8baba8f228b2e169fdf4c8216dffd5d33ad18bafd8b928c09ca46c718
+
   keys:
     - type: rsa
       key: |
@@ -91,21 +93,18 @@ oauth2:
 
 ### `http`
 
-Controls on what address the server should be listening on
+Controls the web server.
 
 ```yaml
 http:
+  # On what address and port the server should listen to
   address: 0.0.0.0:8080
-```
 
-### `cookies`
+  # Path from which to serve static files
+  web_root: /var/www/static
 
-Configuration related to encrypted cookies
-
-```yaml
-cookies:
-  # Secret key used to encrypt cookies
-  secret: c7e42fb8baba8f228b2e169fdf4c8216dffd5d33ad18bafd8b928c09ca46c718
+  # Public URL base used when building absolute public URLs
+  public_base: http://localhost:8080
 ```
 
 ### `database`
@@ -149,25 +148,32 @@ templates:
   builtin: true
 ```
 
-### `oauth2`
+### `clients`
 
-Configuration related to the OAuth 2.0 endpoints
+List of OAuth 2.0/OIDC clients and their keys/secrets.
 
 ```yaml
-oauth2:
-  # URL where the server should be accessed
-  issuer: http://localhost:8080/
+clients:
+  # Confidential client
+  - client_id: first
+    client_auth_method: clent_secret_post
+    client_secret: secret
+    # List of authorized redirect URIs
+    redirect_uris:
+      - http://localhost:1234/callback
+  # Public client
+  - client_id: second
+    client_auth_method: none
+```
 
-  # List of OAuth 2.0 clients
-  clients:
-    # Confidential client
-    - client_id: first
-      client_secret: secret
-      # List of authorized redirect URIs
-      redirect_uris:
-        - http://localhost:1234/callback
-    # Public client, without client_secret
-    - client_id: second
+### `secrets`
+
+Signing and encryption secrets
+
+```yaml
+secrets:
+  # Encrytion secret (used for encrypting cookies)
+  encryption: c7e42fb8baba8f228b2e169fdf4c8216dffd5d33ad18bafd8b928c09ca46c718
 
   # Signing keys
   keys:

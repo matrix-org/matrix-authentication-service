@@ -18,14 +18,14 @@ Dump the merged configuration tree.
 ```console
 $ mas-cli config dump --config=first.yaml --config=second.yaml
 ---
-oauth2:
+clients:
   # ...
 ```
 
 ## `config generate`
 
 Generate a sample configuration file.
-It generates random signing keys (`.oauth2.keys`) and the cookie encryption secret (`.cookies.secret`).
+It generates random signing keys (`.secrets.keys`) and the cookie encryption secret (`.secrets.encryption`).
 
 ```console
 $ mas-cli config generate > config.yaml

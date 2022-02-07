@@ -1,5 +1,7 @@
 # `warp`
 
+**Warning: this document is not up to date**
+
 Warp has a pretty unique approach in terms of routing.
 It does not have a central router, rather a chain of filters composed together.
 

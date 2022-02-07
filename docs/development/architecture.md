@@ -9,10 +9,19 @@ The whole repository is a [Cargo Workspace](https://doc.rust-lang.org/book/ch14-
 
 This includes:
 
- - `oauth2-types`: Useful structures and types to deal with OAuth 2.0/OpenID Connect endpoints. This might end up published as a standalone library as it can be useful in other contexts.
- - `mas-config`: Configuration parsing and loading
- - `mas-core`: Main logic, includes templates, database interactions and HTTP routes
  - `mas-cli`: Command line utility, main entry point
+ - `mas-config`: Configuration parsing and loading
+ - `mas-data-model`: Models of objects that live in the database, regardless of the storage backend
+ - `mas-email`: High-level email sending abstraction
+ - `mas-handlers`: Main HTTP application logic
+ - `mas-iana`: Auto-generated enums from IANA registries
+ - `mas-iana-codegen`: Code generator for the `mas-iana` crate
+ - `mas-jose`: JWT/JWS/JWE/JWK abstraction
+ - `mas-static-files`: Frontend static files (CSS/JS). Includes some frontend tooling
+ - `mas-storage`: Interactions with the database
+ - `mas-tasks`: Asynchronous task runner and scheduler
+ - `mas-warp-utils`: Various filters and utilities for the `warp` web framework
+ - `oauth2-types`: Useful structures and types to deal with OAuth 2.0/OpenID Connect endpoints. This might end up published as a standalone library as it can be useful in other contexts.
 
 ## Important crates
 

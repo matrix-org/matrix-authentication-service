@@ -14,7 +14,7 @@ Preparing this flat file is done through `sqlx-cli`, and should be done everytim
 # Install the CLI
 cargo install sqlx-cli --no-default-features --features postgres
 
-cd crates/core/ # Must be in the mas-core crate folder
+cd crates/storage/ # Must be in the mas-storage crate folder
 export DATABASE_URL=postgresql:///matrix_auth
 cargo sqlx prepare
 ```
@@ -24,7 +24,7 @@ cargo sqlx prepare
 Migration files live in the `migrations` folder in the `mas-core` crate.
 
 ```sh
-cd crates/core/ # Again, in the mas-core crate folder
+cd crates/storage/ # Again, in the mas-storage crate folder
 export DATABASE_URL=postgresql:///matrix_auth
 cargo sqlx migrate run # Run pending migrations
 cargo sqlx migrate revert # Revert the last migration
