@@ -357,7 +357,11 @@ jobs:
             base.cache-to=type=registry,ref=${{ env.IMAGE }}:buildcache,mode=max
 
       - name: Sign the images with GitHub Actions provided token
-        if: github.event_name != 'pull_request'
+        # Only sign on tags and on commits on main branch
+        if: |
+          github.event_name != 'pull_request'
+          && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
+
         run: cosign sign ${TAGS}
         env:
           TAGS: "${{ steps.meta.outputs.tags }} ${{ steps.meta-debug.outputs.tags }}"
