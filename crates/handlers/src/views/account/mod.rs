@@ -26,6 +26,7 @@ use mas_templates::{AccountContext, TemplateContext, Templates};
 use mas_warp_utils::{
     errors::WrapError,
     filters::{
+        self,
         cookies::{encrypted_cookie_saver, EncryptedCookieSaver},
         csrf::updated_csrf_token,
         database::connection,
@@ -47,6 +48,7 @@ pub(super) fn filter(
     csrf_config: &CsrfConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
     let get = warp::get()
+        .and(filters::trace::name("GET /account"))
         .and(with_templates(templates))
         .and(encrypted_cookie_saver(encrypter))
         .and(updated_csrf_token(encrypter, csrf_config))

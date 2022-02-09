@@ -40,6 +40,7 @@ use mas_templates::{FormPostContext, Templates};
 use mas_warp_utils::{
     errors::WrapError,
     filters::{
+        self,
         database::transaction,
         session::{optional_session, session},
         with_templates,
@@ -222,6 +223,7 @@ pub fn filter(
     let clients_config_2 = clients_config.clone();
 
     let authorize = warp::path!("oauth2" / "authorize")
+        .and(filters::trace::name("GET /oauth2/authorize"))
         .and(warp::get())
         .map(move || clients_config.clone())
         .and(warp::query())
@@ -230,6 +232,7 @@ pub fn filter(
         .and_then(get);
 
     let step = warp::path!("oauth2" / "authorize" / "step")
+        .and(filters::trace::name("GET /oauth2/authorize/step"))
         .and(warp::get())
         .and(warp::query())
         .and(session(pool, encrypter))

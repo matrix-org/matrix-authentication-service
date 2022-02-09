@@ -23,6 +23,7 @@ use mas_templates::{EmptyContext, TemplateContext, Templates};
 use mas_warp_utils::{
     errors::WrapError,
     filters::{
+        self,
         cookies::{encrypted_cookie_saver, EncryptedCookieSaver},
         csrf::{protected_form, updated_csrf_token},
         database::transaction,
@@ -54,8 +55,12 @@ pub(super) fn filter(
         .and(protected_form(encrypter))
         .and_then(post);
 
-    let get = warp::get().and(get);
-    let post = warp::post().and(post);
+    let get = warp::get()
+        .and(get)
+        .and(filters::trace::name("GET /account/passwords"));
+    let post = warp::post()
+        .and(post)
+        .and(filters::trace::name("POST /account/passwords"));
     let filter = get.or(post).unify();
 
     warp::path!("password").and(filter).boxed()

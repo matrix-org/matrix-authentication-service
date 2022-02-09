@@ -20,7 +20,7 @@ use mas_storage::oauth2::{
 };
 use mas_warp_utils::{
     errors::WrapError,
-    filters::{client::client_authentication, database::connection, url_builder::UrlBuilder},
+    filters::{self, client::client_authentication, database::connection, url_builder::UrlBuilder},
 };
 use oauth2_types::requests::{IntrospectionRequest, IntrospectionResponse};
 use sqlx::{pool::PoolConnection, PgPool, Postgres};
@@ -37,6 +37,7 @@ pub fn filter(
         .to_string();
 
     warp::path!("oauth2" / "introspect")
+        .and(filters::trace::name("POST /oauth2/introspect"))
         .and(
             warp::post()
                 .and(connection(pool))

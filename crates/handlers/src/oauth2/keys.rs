@@ -15,12 +15,13 @@
 use std::sync::Arc;
 
 use mas_jose::{ExportJwks, StaticKeystore};
-use mas_warp_utils::errors::WrapError;
+use mas_warp_utils::{errors::WrapError, filters};
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 pub(super) fn filter(key_store: &Arc<StaticKeystore>) -> BoxedFilter<(Box<dyn Reply>,)> {
     let key_store = key_store.clone();
     warp::path!("oauth2" / "keys.json")
+        .and(filters::trace::name("GET /oauth2/keys.json"))
         .and(warp::get().map(move || key_store.clone()).and_then(get))
         .boxed()
 }

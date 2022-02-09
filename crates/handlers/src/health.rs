@@ -13,7 +13,10 @@
 // limitations under the License.
 
 use hyper::header::CONTENT_TYPE;
-use mas_warp_utils::{errors::WrapError, filters::database::connection};
+use mas_warp_utils::{
+    errors::WrapError,
+    filters::{self, database::connection},
+};
 use mime::TEXT_PLAIN;
 use sqlx::{pool::PoolConnection, PgPool, Postgres};
 use tracing::{info_span, Instrument};
@@ -21,6 +24,7 @@ use warp::{filters::BoxedFilter, reply::with_header, Filter, Rejection, Reply};
 
 pub fn filter(pool: &PgPool) -> BoxedFilter<(Box<dyn Reply>,)> {
     warp::path!("health")
+        .and(filters::trace::name("GET /health"))
         .and(warp::get())
         .and(connection(pool))
         .and_then(get)

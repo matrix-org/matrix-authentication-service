@@ -27,6 +27,7 @@ use mas_templates::{AccountEmailsContext, EmailVerificationContext, TemplateCont
 use mas_warp_utils::{
     errors::WrapError,
     filters::{
+        self,
         cookies::{encrypted_cookie_saver, EncryptedCookieSaver},
         csrf::{protected_form, updated_csrf_token},
         database::{connection, transaction},
@@ -52,6 +53,7 @@ pub(super) fn filter(
     let mailer = mailer.clone();
 
     let get = with_templates(templates)
+        .and(filters::trace::name("GET /account/emails"))
         .and(encrypted_cookie_saver(encrypter))
         .and(updated_csrf_token(encrypter, csrf_config))
         .and(session(pool, encrypter))
@@ -59,6 +61,7 @@ pub(super) fn filter(
         .and_then(get);
 
     let post = with_templates(templates)
+        .and(filters::trace::name("POST /account/emails"))
         .and(warp::any().map(move || mailer.clone()))
         .and(url_builder(http_config))
         .and(encrypted_cookie_saver(encrypter))

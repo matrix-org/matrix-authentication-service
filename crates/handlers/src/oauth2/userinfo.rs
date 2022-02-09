@@ -14,7 +14,10 @@
 
 use mas_data_model::{AccessToken, Session};
 use mas_storage::PostgresqlBackend;
-use mas_warp_utils::filters::authenticate::{authentication, recover_unauthorized};
+use mas_warp_utils::filters::{
+    self,
+    authenticate::{authentication, recover_unauthorized},
+};
 use serde::Serialize;
 use sqlx::PgPool;
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
@@ -27,6 +30,7 @@ struct UserInfo {
 
 pub(super) fn filter(pool: &PgPool) -> BoxedFilter<(Box<dyn Reply>,)> {
     warp::path!("oauth2" / "userinfo")
+        .and(filters::trace::name("GET /oauth2/userinfo"))
         .and(
             warp::get()
                 .or(warp::post())

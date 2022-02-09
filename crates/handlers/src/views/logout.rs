@@ -17,13 +17,14 @@ use mas_data_model::BrowserSession;
 use mas_storage::{user::end_session, PostgresqlBackend};
 use mas_warp_utils::{
     errors::WrapError,
-    filters::{csrf::protected_form, database::transaction, session::session},
+    filters::{self, csrf::protected_form, database::transaction, session::session},
 };
 use sqlx::{PgPool, Postgres, Transaction};
 use warp::{filters::BoxedFilter, hyper::Uri, Filter, Rejection, Reply};
 
 pub(super) fn filter(pool: &PgPool, encrypter: &Encrypter) -> BoxedFilter<(Box<dyn Reply>,)> {
     warp::path!("logout")
+        .and(filters::trace::name("POST /logout"))
         .and(warp::post())
         .and(session(pool, encrypter))
         .and(transaction(pool))

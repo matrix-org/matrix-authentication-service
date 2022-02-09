@@ -20,6 +20,7 @@ use mas_templates::{ReauthContext, TemplateContext, Templates};
 use mas_warp_utils::{
     errors::WrapError,
     filters::{
+        self,
         cookies::{encrypted_cookie_saver, EncryptedCookieSaver},
         csrf::{protected_form, updated_csrf_token},
         database::{connection, transaction},
@@ -87,6 +88,7 @@ pub(super) fn filter(
     csrf_config: &CsrfConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
     let get = warp::get()
+        .and(filters::trace::name("GET /reauth"))
         .and(with_templates(templates))
         .and(connection(pool))
         .and(encrypted_cookie_saver(encrypter))
@@ -96,6 +98,7 @@ pub(super) fn filter(
         .and_then(get);
 
     let post = warp::post()
+        .and(filters::trace::name("POST /reauth"))
         .and(session(pool, encrypter))
         .and(transaction(pool))
         .and(protected_form(encrypter))

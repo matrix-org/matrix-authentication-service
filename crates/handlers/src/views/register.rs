@@ -26,6 +26,7 @@ use mas_templates::{RegisterContext, TemplateContext, Templates};
 use mas_warp_utils::{
     errors::WrapError,
     filters::{
+        self,
         cookies::{encrypted_cookie_saver, EncryptedCookieSaver},
         csrf::{protected_form, updated_csrf_token},
         database::{connection, transaction},
@@ -96,6 +97,7 @@ pub(super) fn filter(
     csrf_config: &CsrfConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
     let get = warp::get()
+        .and(filters::trace::name("GET /register"))
         .and(with_templates(templates))
         .and(connection(pool))
         .and(encrypted_cookie_saver(encrypter))
@@ -105,6 +107,7 @@ pub(super) fn filter(
         .and_then(get);
 
     let post = warp::post()
+        .and(filters::trace::name("POST /register"))
         .and(transaction(pool))
         .and(encrypted_cookie_saver(encrypter))
         .and(protected_form(encrypter))

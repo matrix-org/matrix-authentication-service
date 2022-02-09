@@ -17,6 +17,7 @@ use mas_data_model::BrowserSession;
 use mas_storage::PostgresqlBackend;
 use mas_templates::{IndexContext, TemplateContext, Templates};
 use mas_warp_utils::filters::{
+    self,
     cookies::{encrypted_cookie_saver, EncryptedCookieSaver},
     csrf::updated_csrf_token,
     session::optional_session,
@@ -34,6 +35,7 @@ pub(super) fn filter(
     csrf_config: &CsrfConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
     warp::path::end()
+        .and(filters::trace::name("GET /"))
         .and(warp::get())
         .and(url_builder(http_config))
         .and(with_templates(templates))

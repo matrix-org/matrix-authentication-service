@@ -35,7 +35,8 @@ impl Transport {
     /// Constructs a [`Transport`] from a given AWS shared config
     #[must_use]
     pub fn new(config: &aws_config::Config) -> Self {
-        let client = Client::new(config);
+        let config = aws_sdk_sesv2::Config::from(config);
+        let client = Client::from_conf(config);
         Self { client }
     }
 }

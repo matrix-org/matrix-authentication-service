@@ -22,6 +22,7 @@ use mas_templates::{LoginContext, LoginFormField, TemplateContext, Templates};
 use mas_warp_utils::{
     errors::WrapError,
     filters::{
+        self,
         cookies::{encrypted_cookie_saver, EncryptedCookieSaver},
         csrf::{protected_form, updated_csrf_token},
         database::connection,
@@ -90,6 +91,7 @@ pub(super) fn filter(
     csrf_config: &CsrfConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
     let get = warp::get()
+        .and(filters::trace::name("GET /login"))
         .and(with_templates(templates))
         .and(connection(pool))
         .and(encrypted_cookie_saver(encrypter))
@@ -99,6 +101,7 @@ pub(super) fn filter(
         .and_then(get);
 
     let post = warp::post()
+        .and(filters::trace::name("POST /login"))
         .and(with_templates(templates))
         .and(connection(pool))
         .and(encrypted_cookie_saver(encrypter))

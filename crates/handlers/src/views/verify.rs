@@ -26,6 +26,7 @@ use mas_templates::{EmptyContext, TemplateContext, Templates};
 use mas_warp_utils::{
     errors::WrapError,
     filters::{
+        self,
         cookies::{encrypted_cookie_saver, EncryptedCookieSaver},
         csrf::updated_csrf_token,
         database::transaction,
@@ -43,6 +44,7 @@ pub(super) fn filter(
     csrf_config: &CsrfConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
     warp::path!("verify" / String)
+        .and(filters::trace::name("GET /verify"))
         .and(warp::get())
         .and(with_templates(templates))
         .and(encrypted_cookie_saver(encrypter))

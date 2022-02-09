@@ -23,7 +23,7 @@ use mas_iana::{
     },
 };
 use mas_jose::SigningKeystore;
-use mas_warp_utils::filters::url_builder::UrlBuilder;
+use mas_warp_utils::filters::{self, url_builder::UrlBuilder};
 use oauth2_types::{
     oidc::{ClaimType, Metadata, SubjectType},
     requests::{Display, GrantType, ResponseMode},
@@ -184,6 +184,7 @@ pub(super) fn filter(
     };
 
     warp::path!(".well-known" / "openid-configuration")
+        .and(filters::trace::name("GET /.well-known/configuration"))
         .and(warp::get())
         .map(move || {
             let ret: Box<dyn Reply> = Box::new(warp::reply::json(&metadata));

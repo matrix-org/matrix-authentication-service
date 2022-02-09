@@ -37,7 +37,7 @@ use mas_storage::{
 };
 use mas_warp_utils::{
     errors::WrapError,
-    filters::{client::client_authentication, database::connection, url_builder::UrlBuilder},
+    filters::{self, client::client_authentication, database::connection, url_builder::UrlBuilder},
     reply::with_typed_header,
 };
 use oauth2_types::{
@@ -108,6 +108,7 @@ pub fn filter(
     let issuer = builder.oidc_issuer();
 
     warp::path!("oauth2" / "token")
+        .and(filters::trace::name("POST /oauth2/token"))
         .and(
             warp::post()
                 .and(client_authentication(clients_config, audience))

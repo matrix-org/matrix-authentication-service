@@ -21,19 +21,14 @@ use std::{
 use anyhow::Context;
 use clap::Parser;
 use futures::{future::TryFutureExt, stream::TryStreamExt};
-use hyper::{header, Server};
+use hyper::Server;
 use mas_config::RootConfig;
 use mas_email::{MailTransport, Mailer};
 use mas_storage::MIGRATOR;
 use mas_tasks::TaskQueue;
 use mas_templates::Templates;
-use tower::{make::Shared, ServiceBuilder};
-use tower_http::{
-    compression::CompressionLayer, sensitive_headers::SetSensitiveHeadersLayer, trace::TraceLayer,
-};
+use tower::make::Shared;
 use tracing::{error, info};
-
-use crate::telemetry::{OtelMakeSpan, OtelOnResponse};
 
 #[derive(Parser, Debug, Default)]
 pub(super) struct Options {
@@ -216,23 +211,7 @@ impl Options {
 
         let warp_service = warp::service(root);
 
-        let service = ServiceBuilder::new()
-            // Add high level tracing/logging to all requests
-            .layer(
-                TraceLayer::new_for_http()
-                    .make_span_with(OtelMakeSpan)
-                    .on_response(OtelOnResponse),
-            )
-            // Set a timeout
-            .timeout(Duration::from_secs(10))
-            // Compress responses
-            .layer(CompressionLayer::new())
-            // Mark the `Authorization` and `Cookie` headers as sensitive so it doesn't show in logs
-            .layer(SetSensitiveHeadersLayer::new(vec![
-                header::AUTHORIZATION,
-                header::COOKIE,
-            ]))
-            .service(warp_service);
+        let service = mas_http::server(warp_service);
 
         info!("Listening on http://{}", listener.local_addr().unwrap());
 

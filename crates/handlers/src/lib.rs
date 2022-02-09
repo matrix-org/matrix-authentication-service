@@ -26,6 +26,7 @@ use mas_email::Mailer;
 use mas_jose::StaticKeystore;
 use mas_static_files::filter as static_files;
 use mas_templates::Templates;
+use mas_warp_utils::filters;
 use sqlx::PgPool;
 use warp::{filters::BoxedFilter, Filter, Reply};
 
@@ -61,7 +62,8 @@ pub fn root(
         &config.http,
         &config.csrf,
     );
-    let static_files = static_files(config.http.web_root.clone());
+    let static_files =
+        static_files(config.http.web_root.clone()).and(filters::trace::name("GET static file"));
 
     let filter = health.or(views).unify().or(static_files).unify().or(oauth2);
 
