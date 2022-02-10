@@ -6,6 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
+anyhow = "1.0.53"
 bytes = "1.1.0"
 http = "0.2.6"
 http-body = "0.4.4"
@@ -13,6 +14,9 @@ hyper = "0.14.16"
 hyper-rustls = { version = "0.23.0", features = ["http1", "http2"] }
 opentelemetry = "0.17.0"
 opentelemetry-http = "0.6.0"
+rustls = "0.20.2"
+tokio = { version = "1.16.1", features = ["sync"] }
 tower = { version = "0.4.11", features = ["timeout", "limit"] }
-tower-http = { version = "0.2.1", features = ["follow-redirect", "decompression-full", "set-header", "trace"] }
+tower-http = { version = "0.2.1", features = ["follow-redirect", "decompression-full", "set-header", "trace", "compression-full"] }
 tracing = "0.1.30"
+tracing-opentelemetry = "0.17.0"

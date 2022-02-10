@@ -27,7 +27,7 @@ use mas_email::{MailTransport, Mailer};
 use mas_storage::MIGRATOR;
 use mas_tasks::TaskQueue;
 use mas_templates::Templates;
-use tower::make::Shared;
+use tower::{make::Shared, Layer};
 use tracing::{error, info};
 
 #[derive(Parser, Debug, Default)]
@@ -211,7 +211,7 @@ impl Options {
 
         let warp_service = warp::service(root);
 
-        let service = mas_http::server(warp_service);
+        let service = mas_http::ServerLayer::default().layer(warp_service);
 
         info!("Listening on http://{}", listener.local_addr().unwrap());
 

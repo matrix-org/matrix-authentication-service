@@ -20,6 +20,7 @@ use mas_config::ConfigurationSection;
 
 mod config;
 mod database;
+mod debug;
 mod manage;
 mod server;
 mod templates;
@@ -40,6 +41,9 @@ enum Subcommand {
 
     /// Templates-related commands
     Templates(self::templates::Options),
+
+    /// Debug utilities
+    Debug(self::debug::Options),
 }
 
 #[derive(Parser, Debug)]
@@ -67,6 +71,7 @@ impl Options {
             Some(S::Server(c)) => c.run(self).await,
             Some(S::Manage(c)) => c.run(self).await,
             Some(S::Templates(c)) => c.run(self).await,
+            Some(S::Debug(c)) => c.run(self).await,
             None => self::server::Options::default().run(self).await,
         }
     }

@@ -1992,6 +1992,7 @@ dependencies = [
 name = "mas-http"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "bytes 1.1.0",
  "http",
  "http-body",
@@ -1999,9 +2000,12 @@ dependencies = [
  "hyper-rustls 0.23.0",
  "opentelemetry",
  "opentelemetry-http",
+ "rustls 0.20.2",
+ "tokio",
  "tower",
  "tower-http",
  "tracing",
+ "tracing-opentelemetry",
 ]
 
 [[package]]

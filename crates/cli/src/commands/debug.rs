@@ -1,0 +1,73 @@
+// Copyright 2022 The Matrix.org Foundation C.I.C.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+use clap::Parser;
+use hyper::Uri;
+use tokio::io::AsyncWriteExt;
+use tower::{Service, ServiceExt};
+
+#[derive(Parser, Debug)]
+pub(super) struct Options {
+    #[clap(subcommand)]
+    subcommand: Subcommand,
+}
+
+#[derive(Parser, Debug)]
+enum Subcommand {
+    /// Perform an HTTP request with the default HTTP client
+    Http {
+        /// Show response headers
+        #[clap(long, short = 'I')]
+        show_headers: bool,
+
+        /// URI where to perform a GET request
+        url: Uri,
+    },
+}
+
+impl Options {
+    #[tracing::instrument(skip_all)]
+    pub async fn run(&self, _root: &super::Options) -> anyhow::Result<()> {
+        use Subcommand as SC;
+        match &self.subcommand {
+            SC::Http { show_headers, url } => {
+                let mut client = mas_http::client("cli-debug-http").await?;
+                let request = hyper::Request::builder()
+                    .uri(url)
+                    .body(hyper::Body::empty())?;
+
+                let mut response = client.ready().await?.call(request).await?;
+
+                if *show_headers {
+                    let status = response.status();
+                    println!(
+                        "{:?} {} {}",
+                        response.version(),
+                        status.as_str(),
+                        status.canonical_reason().unwrap_or_default()
+                    );
+                    for (header, value) in response.headers() {
+                        println!("{}: {:?}", header, value);
+                    }
+                    println!();
+                }
+                let mut body = hyper::body::aggregate(response.body_mut()).await?;
+                let mut stdout = tokio::io::stdout();
+                stdout.write_all_buf(&mut body).await?;
+
+                Ok(())
+            }
+        }
+    }
+}
