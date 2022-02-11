@@ -21,7 +21,7 @@ anyhow = "1.0.53"
 
 # Web server
 warp = "0.3.2"
-hyper = { version = "0.14.16", features = ["full"] }
+hyper = { version = "0.14.17", features = ["full"] }
 
 # Emails
 lettre = { version = "0.10.0-rc.4", default-features = false, features = ["builder"] }

@@ -13,8 +13,9 @@ clap = { version = "3.0.14", features = ["derive"] }
 dotenv = "0.15.0"
 schemars = { version = "0.8.8", features = ["url", "chrono"] }
 tower = { version = "0.4.11", features = ["full"] }
-hyper = { version = "0.14.16", features = ["full"] }
+hyper = { version = "0.14.17", features = ["full"] }
 serde_yaml = "0.8.23"
+serde_json = "1.0.78"
 warp = "0.3.2"
 url = "2.2.2"
 argon2 = { version = "0.3.3", features = ["password-hash"] }

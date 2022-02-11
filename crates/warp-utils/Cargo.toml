@@ -10,7 +10,7 @@ tokio = { version = "1.16.1", features = ["macros"] }
 headers = "0.3.6"
 cookie = "0.16.0"
 warp = "0.3.2"
-hyper = { version = "0.14.16", features = ["full"] }
+hyper = { version = "0.14.17", features = ["full"] }
 thiserror = "1.0.30"
 anyhow = "1.0.53"
 sqlx = { version = "0.5.10", features = ["runtime-tokio-rustls", "postgres"] }
