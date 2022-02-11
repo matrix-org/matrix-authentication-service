@@ -13,7 +13,8 @@
 // limitations under the License.
 
 use clap::Parser;
-use hyper::Uri;
+use hyper::{Response, Uri};
+use mas_http::HttpServiceExt;
 use tokio::io::AsyncWriteExt;
 use tower::{Service, ServiceExt};
 
@@ -31,9 +32,27 @@ enum Subcommand {
         #[clap(long, short = 'I')]
         show_headers: bool,
 
+        /// Parse the response as JSON
+        #[clap(long, short = 'j')]
+        json: bool,
+
         /// URI where to perform a GET request
         url: Uri,
     },
+}
+
+fn print_headers(parts: &hyper::http::response::Parts) {
+    println!(
+        "{:?} {} {}",
+        parts.version,
+        parts.status.as_str(),
+        parts.status.canonical_reason().unwrap_or_default()
+    );
+
+    for (header, value) in &parts.headers {
+        println!("{}: {:?}", header, value);
+    }
+    println!();
 }
 
 impl Options {
@@ -41,30 +60,50 @@ impl Options {
     pub async fn run(&self, _root: &super::Options) -> anyhow::Result<()> {
         use Subcommand as SC;
         match &self.subcommand {
-            SC::Http { show_headers, url } => {
+            SC::Http {
+                show_headers,
+                json: false,
+                url,
+            } => {
                 let mut client = mas_http::client("cli-debug-http").await?;
                 let request = hyper::Request::builder()
                     .uri(url)
                     .body(hyper::Body::empty())?;
 
-                let mut response = client.ready().await?.call(request).await?;
+                let response = client.ready().await?.call(request).await?;
+                let (parts, body) = response.into_parts();
 
                 if *show_headers {
-                    let status = response.status();
-                    println!(
-                        "{:?} {} {}",
-                        response.version(),
-                        status.as_str(),
-                        status.canonical_reason().unwrap_or_default()
-                    );
-                    for (header, value) in response.headers() {
-                        println!("{}: {:?}", header, value);
-                    }
-                    println!();
+                    print_headers(&parts);
                 }
-                let mut body = hyper::body::aggregate(response.body_mut()).await?;
+
+                let mut body = hyper::body::aggregate(body).await?;
                 let mut stdout = tokio::io::stdout();
                 stdout.write_all_buf(&mut body).await?;
+
+                Ok(())
+            }
+
+            SC::Http {
+                show_headers,
+                json: true,
+                url,
+            } => {
+                let mut client = mas_http::client("cli-debug-http").await?.json();
+                let request = hyper::Request::builder()
+                    .uri(url)
+                    .body(hyper::Body::empty())?;
+
+                let response: Response<serde_json::Value> =
+                    client.ready().await?.call(request).await?;
+                let (parts, body) = response.into_parts();
+
+                if *show_headers {
+                    print_headers(&parts);
+                }
+
+                let body = serde_json::to_string_pretty(&body)?;
+                println!("{}", body);
 
                 Ok(())
             }
