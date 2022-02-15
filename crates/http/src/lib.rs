@@ -12,38 +12,68 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! [`tower`] layers and services to help building HTTP client and servers
+
+#![forbid(unsafe_code)]
+#![deny(
+    clippy::all,
+    rustdoc::missing_crate_level_docs,
+    rustdoc::broken_intra_doc_links
+)]
+#![warn(clippy::pedantic)]
+#![allow(clippy::module_name_repetitions)]
+
+use std::sync::Arc;
+
 use bytes::Bytes;
+use futures_util::{FutureExt, TryFutureExt};
 use http::{Request, Response};
-use http_body::Body;
+use http_body::{combinators::BoxBody, Body};
 use hyper::{client::HttpConnector, Client};
-use hyper_rustls::{ConfigBuilderExt, HttpsConnectorBuilder};
+use hyper_rustls::{ConfigBuilderExt, HttpsConnector, HttpsConnectorBuilder};
 use layers::client::ClientResponse;
-use tokio::sync::OnceCell;
+use thiserror::Error;
+use tokio::{sync::OnceCell, task::JoinError};
 use tower::{util::BoxCloneService, ServiceBuilder, ServiceExt};
 
 mod ext;
+mod future_service;
 mod layers;
 
 pub use self::{
     ext::ServiceExt as HttpServiceExt,
+    future_service::FutureService,
     layers::{client::ClientLayer, json::JsonResponseLayer, server::ServerLayer},
 };
 
-pub(crate) type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
+pub(crate) type BoxError = Box<dyn std::error::Error + Send + Sync>;
+
+/// A wrapper over a boxed error that implements ``std::error::Error``.
+/// This is helps converting to ``anyhow::Error`` with the `?` operator
+#[derive(Error, Debug)]
+pub enum ClientError {
+    #[error("failed to initialize HTTPS client")]
+    Init(#[from] ClientInitError),
+
+    #[error(transparent)]
+    Call(#[from] BoxError),
+}
+
+#[derive(Error, Debug, Clone)]
+pub enum ClientInitError {
+    #[error("failed to load system certificates")]
+    CertificateLoad {
+        #[from]
+        inner: Arc<JoinError>, // That error is in an Arc to have the error implement Clone
+    },
+}
 
 static TLS_CONFIG: OnceCell<rustls::ClientConfig> = OnceCell::const_new();
 
-pub async fn client<B, E>(
-    operation: &'static str,
-) -> anyhow::Result<
-    BoxCloneService<
-        Request<B>,
-        Response<impl http_body::Body<Data = bytes::Bytes, Error = anyhow::Error>>,
-        anyhow::Error,
-    >,
->
+async fn make_base_client<B, E>(
+) -> Result<hyper::Client<HttpsConnector<HttpConnector>, B>, ClientInitError>
 where
-    B: http_body::Body<Data = Bytes, Error = E> + Default + Send + 'static,
+    B: http_body::Body<Data = Bytes, Error = E> + Send + 'static,
     E: Into<BoxError>,
 {
     // TODO: we could probably hook a tracing DNS resolver there
@@ -64,7 +94,8 @@ where
             })
             .await
         })
-        .await?;
+        .await
+        .map_err(|e| ClientInitError::from(Arc::new(e)))?;
 
     let https = HttpsConnectorBuilder::new()
         .with_tls_config(tls_config.clone())
@@ -76,15 +107,33 @@ where
     // TODO: we should get the remote address here
     let client = Client::builder().build(https);
 
+    Ok::<_, ClientInitError>(client)
+}
+
+#[must_use]
+pub fn client<B, E: 'static>(
+    operation: &'static str,
+) -> BoxCloneService<Request<B>, Response<BoxBody<bytes::Bytes, ClientError>>, ClientError>
+where
+    B: http_body::Body<Data = Bytes, Error = E> + Default + Send + 'static,
+    E: Into<BoxError>,
+{
+    let fut = make_base_client()
+        // Map the error to a ClientError
+        .map_ok(|s| s.map_err(|e| ClientError::from(BoxError::from(e))))
+        // Wrap it in an Shared (Arc) to be able to Clone it
+        .shared();
+
+    let client: FutureService<_, _> = FutureService::new(fut);
+
     let client = ServiceBuilder::new()
-        // Convert the errors to anyhow::Error for convenience
-        .map_err(|e: BoxError| anyhow::anyhow!(e))
+        // Convert the errors to ClientError to help dealing with them
+        .map_err(ClientError::from)
         .map_response(|r: ClientResponse<hyper::Body>| {
-            r.map(|body| body.map_err(|e: BoxError| anyhow::anyhow!(e)))
+            r.map(|body| body.map_err(ClientError::from).boxed())
         })
         .layer(ClientLayer::new(operation))
-        .service(client)
-        .boxed_clone();
+        .service(client);
 
-    Ok(client)
+    client.boxed_clone()
 }

@@ -32,7 +32,7 @@ use super::trace::OtelTraceLayer;
 static MAS_USER_AGENT: HeaderValue =
     HeaderValue::from_static("matrix-authentication-service/0.0.1");
 
-type BoxError = Box<dyn std::error::Error + Send + Sync + 'static>;
+type BoxError = Box<dyn std::error::Error + Send + Sync>;
 
 #[derive(Debug, Clone)]
 pub struct ClientLayer<ReqBody> {
@@ -41,6 +41,7 @@ pub struct ClientLayer<ReqBody> {
 }
 
 impl<B> ClientLayer<B> {
+    #[must_use]
     pub fn new(operation: &'static str) -> Self {
         Self {
             operation,
@@ -65,6 +66,13 @@ where
     type Service = BoxCloneService<Request<ReqBody>, ClientResponse<ResBody>, BoxError>;
 
     fn layer(&self, inner: S) -> Self::Service {
+        // Note that most layers here just forward the error type. Two notables
+        // exceptions are:
+        //  - the TimeoutLayer
+        //  - the DecompressionLayer
+        // Those layers do type erasure of the error.
+        // The body is also type-erased because of the DecompressionLayer.
+
         ServiceBuilder::new()
             .layer(DecompressionLayer::new())
             .map_response(|r: Response<_>| r.map(BoxBody::new))
@@ -85,7 +93,7 @@ where
                 let cx = tracing::Span::current().context();
                 let mut injector = opentelemetry_http::HeaderInjector(r.headers_mut());
                 opentelemetry::global::get_text_map_propagator(|propagator| {
-                    propagator.inject_context(&cx, &mut injector)
+                    propagator.inject_context(&cx, &mut injector);
                 });
 
                 r

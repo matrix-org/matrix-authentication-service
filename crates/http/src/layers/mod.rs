@@ -13,6 +13,7 @@
 // limitations under the License.
 
 pub(crate) mod client;
+pub(crate) mod get;
 pub(crate) mod json;
 pub(crate) mod server;
 pub(crate) mod trace;

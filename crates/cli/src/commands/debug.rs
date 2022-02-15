@@ -65,7 +65,7 @@ impl Options {
                 json: false,
                 url,
             } => {
-                let mut client = mas_http::client("cli-debug-http").await?;
+                let mut client = mas_http::client("cli-debug-http");
                 let request = hyper::Request::builder()
                     .uri(url)
                     .body(hyper::Body::empty())?;
@@ -89,7 +89,7 @@ impl Options {
                 json: true,
                 url,
             } => {
-                let mut client = mas_http::client("cli-debug-http").await?.json();
+                let mut client = mas_http::client("cli-debug-http").json();
                 let request = hyper::Request::builder()
                     .uri(url)
                     .body(hyper::Body::empty())?;

@@ -12,19 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::layers::json::Json;
+use crate::layers::{get::Get, json::Json};
 
-pub trait ServiceExt {
-    fn json<T>(self) -> Json<Self, T>
-    where
-        Self: Sized;
+pub trait ServiceExt: Sized {
+    fn json<T>(self) -> Json<Self, T>;
+
+    fn get(self) -> Get<Self>;
 }
 
 impl<S> ServiceExt for S {
-    fn json<T>(self) -> Json<Self, T>
-    where
-        Self: Sized,
-    {
+    fn json<T>(self) -> Json<Self, T> {
         Json::new(self)
+    }
+
+    fn get(self) -> Get<Self> {
+        Get::new(self)
     }
 }

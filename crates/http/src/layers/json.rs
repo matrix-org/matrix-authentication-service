@@ -23,12 +23,20 @@ use tower::{Layer, Service};
 
 #[derive(Debug, Error)]
 pub enum Error<Service, Body> {
-    #[error("service")]
+    #[error(transparent)]
     Service { inner: Service },
-    #[error("body")]
-    Body { inner: Body },
-    #[error("json")]
-    Json { inner: serde_json::Error },
+
+    #[error("failed to fully read the request body")]
+    Body {
+        #[source]
+        inner: Body,
+    },
+
+    #[error("could not parse JSON payload")]
+    Json {
+        #[source]
+        inner: serde_json::Error,
+    },
 }
 
 impl<S, B> Error<S, B> {
@@ -75,15 +83,16 @@ where
         self.inner.poll_ready(cx).map_err(Error::service)
     }
 
-    fn call(&mut self, mut req: Request<B>) -> Self::Future {
-        req.headers_mut()
+    fn call(&mut self, mut request: Request<B>) -> Self::Future {
+        request
+            .headers_mut()
             .insert(ACCEPT, HeaderValue::from_static("application/json"));
 
-        let fut = self.inner.call(req);
+        let fut = self.inner.call(request);
 
         let fut = async {
-            let res = fut.await.map_err(Error::service)?;
-            let (parts, body) = res.into_parts();
+            let response = fut.await.map_err(Error::service)?;
+            let (parts, body) = response.into_parts();
 
             futures_util::pin_mut!(body);
             let bytes = hyper::body::to_bytes(&mut body)
