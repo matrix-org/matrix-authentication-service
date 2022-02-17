@@ -257,10 +257,11 @@ jobs:
           command: test
           args: --all-features --no-fail-fast --workspace
         env:
-           CARGO_INCREMENTAL: '0'
-           RUSTFLAGS: '-Zinstrument-coverage'
-           RUSTDOCFLAGS: "-Cpanic=abort -Zinstrument-coverage -Zunstable-options --persist-doctests ${{ github.workspace }}/target/debug/doctestbins"
-           LLVM_PROFILE_FILE: "cargo-test-%p-%m.profraw"
+          CARGO_INCREMENTAL: '0'
+          RUSTC_BOOTSTRAP: '1' # Use unstable flags on stable Rust
+          RUSTFLAGS: '-Zinstrument-coverage'
+          RUSTDOCFLAGS: "-Cpanic=abort -Zinstrument-coverage -Zunstable-options --persist-doctests ${{ github.workspace }}/target/debug/doctestbins"
+          LLVM_PROFILE_FILE: "cargo-test-%p-%m.profraw"
 
       - name: Build grcov report
         run: |
