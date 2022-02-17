@@ -223,7 +223,7 @@ jobs:
         id: toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
+          toolchain: stable
           target: x86_64-unknown-linux-musl
           override: true
           components: llvm-tools-preview
