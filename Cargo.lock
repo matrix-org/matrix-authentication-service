@@ -2045,7 +2045,6 @@ dependencies = [
  "tokio",
  "tower",
  "url",
- "zeroize",
 ]
 
 [[package]]
