@@ -6,7 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-tokio = "1.16.1"
+tokio = "1.17.0"
 sqlx = { version = "0.5.10", features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "offline"] }
 chrono = { version = "0.4.19", features = ["serde"] }
 serde = { version = "1.0.136", features = ["derive"] }
@@ -18,7 +18,7 @@ warp = "0.3.2"
 # Password hashing
 argon2 = { version = "0.3.3", features = ["password-hash"] }
 password-hash = { version = "0.3.2", features = ["std"] }
-rand = "0.8.4"
+rand = "0.8.5"
 url = { version = "2.2.2", features = ["serde"] }
 
 oauth2-types = { path = "../oauth2-types" }

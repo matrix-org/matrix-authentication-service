@@ -6,7 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-tokio = { version = "1.16.1", features = [] }
+tokio = { version = "1.17.0", features = [] }
 tracing = { version = "0.1.30", features = ["log"] }
 async-trait = "0.1.52"
 
@@ -19,12 +19,12 @@ chrono = { version = "0.4.19", features = ["serde"] }
 url = { version = "2.2.2", features = ["serde"] }
 
 serde = { version = "1.0.136", features = ["derive"] }
-serde_with = { version = "1.11.0", features = ["hex", "chrono"] }
-serde_json = "1.0.78"
+serde_with = { version = "1.12.0", features = ["hex", "chrono"] }
+serde_json = "1.0.79"
 sqlx = { version = "0.5.10", features = ["runtime-tokio-rustls", "postgres"] }
 lettre = { version = "0.10.0-rc.4", default-features = false, features = ["serde", "builder"] }
 
-rand = "0.8.4"
+rand = "0.8.5"
 rsa = { git = "https://github.com/RustCrypto/RSA.git" }
 p256 = { version = "0.10.1", features = ["ecdsa", "pem", "pkcs8"] }
 pkcs8 = { version = "0.8.0", features = ["pem"] }
@@ -36,7 +36,7 @@ indoc = "1.0.3"
 
 mas-jose = { path = "../jose" }
 mas-http = { path = "../http" }
-tower = { version = "0.4.11", features = ["util"] }
+tower = { version = "0.4.12", features = ["util"] }
 http = "0.2.6"
 http-body = "0.4.4"
 futures-util = "0.3.21"

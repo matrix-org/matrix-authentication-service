@@ -8,4 +8,4 @@ license = "Apache-2.0"
 [dependencies]
 serde = "1.0.136"
 schemars = "0.8.8"
-parse-display = "0.5.3"
+parse-display = "0.5.4"

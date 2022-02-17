@@ -11,7 +11,7 @@ thiserror = "1.0.30"
 serde = "1.0.136"
 url = { version = "2.2.2", features = ["serde"] }
 crc = "2.1.0"
-rand = "0.8.4"
+rand = "0.8.5"
 
 mas-iana = { path = "../iana" }
 oauth2-types = { path = "../oauth2-types" }
