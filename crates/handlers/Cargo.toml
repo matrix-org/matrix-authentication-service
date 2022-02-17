@@ -63,6 +63,7 @@ mas-static-files = { path = "../static-files" }
 mas-storage = { path = "../storage" }
 mas-templates = { path = "../templates" }
 mas-warp-utils = { path = "../warp-utils" }
+tower = "0.4.11"
 
 [dev-dependencies]
 indoc = "1.0.3"

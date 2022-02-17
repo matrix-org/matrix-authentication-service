@@ -12,21 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![forbid(unsafe_code)]
-#![deny(clippy::all, rustdoc::broken_intra_doc_links)]
-#![warn(clippy::pedantic)]
-#![allow(clippy::missing_errors_doc, clippy::module_name_repetitions)]
+mod dynamic_store;
+mod static_store;
 
-pub mod claims;
-pub(crate) mod jwk;
-pub(crate) mod jwt;
-mod keystore;
-
-pub use self::{
-    jwk::{JsonWebKey, JsonWebKeySet},
-    jwt::{DecodedJsonWebToken, JsonWebTokenParts, JwtHeader},
-    keystore::{
-        DynamicJwksStore, SharedSecret, SigningKeystore, StaticJwksStore, StaticKeystore,
-        VerifyingKeystore,
-    },
-};
+pub use self::{dynamic_store::DynamicJwksStore, static_store::StaticJwksStore};

@@ -29,15 +29,16 @@ pub struct ServerLayer<ReqBody> {
     _t: PhantomData<ReqBody>,
 }
 
-impl<ReqBody, ResBody, S> Layer<S> for ServerLayer<ReqBody>
+impl<ReqBody, ResBody, S, E> Layer<S> for ServerLayer<ReqBody>
 where
-    S: Service<Request<ReqBody>, Response = Response<ResBody>> + Clone + Send + 'static,
+    S: Service<Request<ReqBody>, Response = Response<ResBody>, Error = E> + Clone + Send + 'static,
     ReqBody: http_body::Body + 'static,
     ResBody: http_body::Body + Sync + Send + 'static,
     ResBody::Error: std::fmt::Display + 'static,
     S::Future: Send + 'static,
-    S::Error: Into<BoxError>,
+    E: Into<BoxError>,
 {
+    #[allow(clippy::type_complexity)]
     type Service = BoxCloneService<
         Request<ReqBody>,
         Response<CompressionBody<BoxBody<ResBody::Data, ResBody::Error>>>,

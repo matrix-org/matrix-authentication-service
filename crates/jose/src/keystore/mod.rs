@@ -18,8 +18,8 @@ mod static_keystore;
 mod traits;
 
 pub use self::{
-    jwks::{JwksStore, StaticJwksStore},
+    jwks::{DynamicJwksStore, StaticJwksStore},
     shared_secret::SharedSecret,
     static_keystore::StaticKeystore,
-    traits::{ExportJwks, SigningKeystore, VerifyingKeystore},
+    traits::{SigningKeystore, VerifyingKeystore},
 };

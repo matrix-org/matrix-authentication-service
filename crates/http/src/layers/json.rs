@@ -53,6 +53,7 @@ impl<S, B> Error<S, B> {
     }
 }
 
+#[derive(Clone)]
 pub struct Json<S, T> {
     inner: S,
     _t: PhantomData<T>,

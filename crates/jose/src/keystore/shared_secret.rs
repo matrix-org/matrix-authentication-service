@@ -12,16 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::HashSet;
+use std::{collections::HashSet, future::Ready};
 
 use anyhow::bail;
 use async_trait::async_trait;
+use digest::{InvalidLength, MacError};
 use hmac::{Hmac, Mac};
 use mas_iana::jose::JsonWebSignatureAlg;
 use sha2::{Sha256, Sha384, Sha512};
+use thiserror::Error;
 
 use super::{SigningKeystore, VerifyingKeystore};
 use crate::JwtHeader;
+
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error("invalid key")]
+    InvalidKey(#[from] InvalidLength),
+
+    #[error("unsupported algorithm {alg}")]
+    UnsupportedAlgorithm { alg: JsonWebSignatureAlg },
+
+    #[error("signature verification failed")]
+    Verification(#[from] MacError),
+}
 
 pub struct SharedSecret<'a> {
     inner: &'a [u8],
@@ -33,11 +47,42 @@ impl<'a> SharedSecret<'a> {
             inner: source.as_ref(),
         }
     }
+
+    fn verify_sync(
+        &self,
+        header: &JwtHeader,
+        payload: &[u8],
+        signature: &[u8],
+    ) -> Result<(), Error> {
+        match header.alg() {
+            JsonWebSignatureAlg::Hs256 => {
+                let mut mac = Hmac::<Sha256>::new_from_slice(self.inner)?;
+                mac.update(payload);
+                mac.verify(signature.into())?;
+            }
+
+            JsonWebSignatureAlg::Hs384 => {
+                let mut mac = Hmac::<Sha384>::new_from_slice(self.inner)?;
+                mac.update(payload);
+                mac.verify(signature.into())?;
+            }
+
+            JsonWebSignatureAlg::Hs512 => {
+                let mut mac = Hmac::<Sha512>::new_from_slice(self.inner)?;
+                mac.update(payload);
+                mac.verify(signature.into())?;
+            }
+
+            alg => return Err(Error::UnsupportedAlgorithm { alg }),
+        };
+
+        Ok(())
+    }
 }
 
 #[async_trait]
-impl<'a> SigningKeystore for &SharedSecret<'a> {
-    fn supported_algorithms(self) -> HashSet<JsonWebSignatureAlg> {
+impl<'a> SigningKeystore for SharedSecret<'a> {
+    fn supported_algorithms(&self) -> HashSet<JsonWebSignatureAlg> {
         let mut algorithms = HashSet::with_capacity(3);
 
         algorithms.insert(JsonWebSignatureAlg::Hs256);
@@ -47,7 +92,7 @@ impl<'a> SigningKeystore for &SharedSecret<'a> {
         algorithms
     }
 
-    async fn prepare_header(self, alg: JsonWebSignatureAlg) -> anyhow::Result<JwtHeader> {
+    async fn prepare_header(&self, alg: JsonWebSignatureAlg) -> anyhow::Result<JwtHeader> {
         if !matches!(
             alg,
             JsonWebSignatureAlg::Hs256 | JsonWebSignatureAlg::Hs384 | JsonWebSignatureAlg::Hs512,
@@ -58,7 +103,7 @@ impl<'a> SigningKeystore for &SharedSecret<'a> {
         Ok(JwtHeader::new(alg))
     }
 
-    async fn sign(self, header: &JwtHeader, msg: &[u8]) -> anyhow::Result<Vec<u8>> {
+    async fn sign(&self, header: &JwtHeader, msg: &[u8]) -> anyhow::Result<Vec<u8>> {
         // TODO: do the signing in a blocking task
         // TODO: should we bail out if the key is too small?
         let signature = match header.alg() {
@@ -87,38 +132,12 @@ impl<'a> SigningKeystore for &SharedSecret<'a> {
     }
 }
 
-#[async_trait]
-impl<'a> VerifyingKeystore for &SharedSecret<'a> {
-    async fn verify(
-        self,
-        header: &JwtHeader,
-        payload: &[u8],
-        signature: &[u8],
-    ) -> anyhow::Result<()> {
-        // TODO: do the verification in a blocking task
-        match header.alg() {
-            JsonWebSignatureAlg::Hs256 => {
-                let mut mac = Hmac::<Sha256>::new_from_slice(self.inner)?;
-                mac.update(payload);
-                mac.verify(signature.try_into()?)?;
-            }
+impl<'a> VerifyingKeystore for SharedSecret<'a> {
+    type Error = Error;
+    type Future = Ready<Result<(), Self::Error>>;
 
-            JsonWebSignatureAlg::Hs384 => {
-                let mut mac = Hmac::<Sha384>::new_from_slice(self.inner)?;
-                mac.update(payload);
-                mac.verify(signature.try_into()?)?;
-            }
-
-            JsonWebSignatureAlg::Hs512 => {
-                let mut mac = Hmac::<Sha512>::new_from_slice(self.inner)?;
-                mac.update(payload);
-                mac.verify(signature.try_into()?)?;
-            }
-
-            _ => bail!("unsupported algorithm"),
-        };
-
-        Ok(())
+    fn verify(&self, header: &JwtHeader, payload: &[u8], signature: &[u8]) -> Self::Future {
+        std::future::ready(self.verify_sync(header, payload, signature))
     }
 }
 

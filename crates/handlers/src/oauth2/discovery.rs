@@ -32,7 +32,7 @@ use warp::{filters::BoxedFilter, Filter, Reply};
 
 #[allow(clippy::too_many_lines)]
 pub(super) fn filter(
-    key_store: impl SigningKeystore,
+    key_store: &impl SigningKeystore,
     http_config: &HttpConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
     let builder = UrlBuilder::from(http_config);

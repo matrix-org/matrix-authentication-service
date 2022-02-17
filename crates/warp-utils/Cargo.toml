@@ -27,6 +27,7 @@ rand = "0.8.4"
 mime = "0.3.16"
 bincode = "1.3.3"
 crc = "2.1.0"
+url = "2.2.2"
 
 oauth2-types = { path = "../oauth2-types" }
 mas-config = { path = "../config" }
@@ -35,4 +36,6 @@ mas-data-model = { path = "../data-model" }
 mas-storage = { path = "../storage" }
 mas-jose = { path = "../jose" }
 mas-iana = { path = "../iana" }
-url = "2.2.2"
+
+[dev-dependencies]
+tower = { version = "0.4.11", features = ["util"] }

@@ -15,11 +15,15 @@
 use std::ops::{Deref, DerefMut};
 
 use async_trait::async_trait;
-use mas_jose::{JsonWebKeySet, StaticJwksStore};
+use futures_util::future::Either;
+use http::Request;
+use mas_http::HttpServiceExt;
+use mas_jose::{DynamicJwksStore, JsonWebKeySet, StaticJwksStore, VerifyingKeystore};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 use thiserror::Error;
+use tower::{BoxError, ServiceExt};
 use url::Url;
 
 use super::ConfigurationSection;
@@ -32,13 +36,37 @@ pub enum JwksOrJwksUri {
 }
 
 impl JwksOrJwksUri {
-    pub fn key_store(&self) -> StaticJwksStore {
-        let jwks = match self {
-            Self::Jwks(jwks) => jwks.clone(),
-            Self::JwksUri(_) => unimplemented!("jwks_uri are not implemented yet"),
+    pub fn key_store(&self) -> Either<StaticJwksStore, DynamicJwksStore> {
+        // Assert that the output is both a VerifyingKeystore and Send
+        fn assert<T: Send + VerifyingKeystore>(t: T) -> T {
+            t
+        }
+
+        let inner = match self {
+            Self::Jwks(jwks) => Either::Left(StaticJwksStore::new(jwks.clone())),
+            Self::JwksUri(uri) => {
+                let uri = uri.clone();
+
+                // TODO: get the client from somewhere else?
+                let exporter = mas_http::client("fetch-jwks")
+                    .json::<JsonWebKeySet>()
+                    .map_request(move |_: ()| {
+                        Request::builder()
+                            .method("GET")
+                            // TODO: change the Uri type in config to avoid reparsing here
+                            .uri(uri.to_string())
+                            .body(http_body::Empty::new())
+                            .unwrap()
+                    })
+                    .map_response(http::Response::into_body)
+                    .map_err(BoxError::from)
+                    .boxed_clone();
+
+                Either::Right(DynamicJwksStore::new(exporter))
+            }
         };
 
-        StaticJwksStore::new(jwks)
+        assert(inner)
     }
 }
 

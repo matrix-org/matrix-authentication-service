@@ -54,14 +54,14 @@ pub type ClientResponse<B> = Response<
     DecompressionBody<BoxBody<<B as http_body::Body>::Data, <B as http_body::Body>::Error>>,
 >;
 
-impl<ReqBody, ResBody, S> Layer<S> for ClientLayer<ReqBody>
+impl<ReqBody, ResBody, S, E> Layer<S> for ClientLayer<ReqBody>
 where
-    S: Service<Request<ReqBody>, Response = Response<ResBody>> + Clone + Send + 'static,
+    S: Service<Request<ReqBody>, Response = Response<ResBody>, Error = E> + Clone + Send + 'static,
     ReqBody: http_body::Body + Default + Send + 'static,
     ResBody: http_body::Body + Sync + Send + 'static,
     ResBody::Error: std::fmt::Display + 'static,
     S::Future: Send + 'static,
-    S::Error: Into<BoxError>,
+    E: Into<BoxError>,
 {
     type Service = BoxCloneService<Request<ReqBody>, ClientResponse<ResBody>, BoxError>;
 

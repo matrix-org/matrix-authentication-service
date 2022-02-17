@@ -12,7 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    convert::Infallible,
+    future::Ready,
+    task::Poll,
+};
 
 use anyhow::bail;
 use async_trait::async_trait;
@@ -26,8 +31,9 @@ use pkcs8::{DecodePrivateKey, EncodePublicKey};
 use rsa::{PublicKey as _, RsaPrivateKey, RsaPublicKey};
 use sha2::{Sha256, Sha384, Sha512};
 use signature::{Signature, Signer, Verifier};
+use tower::Service;
 
-use super::{ExportJwks, SigningKeystore, VerifyingKeystore};
+use super::{SigningKeystore, VerifyingKeystore};
 use crate::{JsonWebKey, JsonWebKeySet, JwtHeader};
 
 // Generate with
@@ -123,135 +129,9 @@ impl StaticKeystore {
         self.es256_keys.insert(kid, key);
         Ok(())
     }
-}
 
-#[async_trait]
-impl SigningKeystore for &StaticKeystore {
-    fn supported_algorithms(self) -> HashSet<JsonWebSignatureAlg> {
-        let has_rsa = !self.rsa_keys.is_empty();
-        let has_es256 = !self.es256_keys.is_empty();
-
-        let capacity = (if has_rsa { 3 } else { 0 }) + (if has_es256 { 1 } else { 0 });
-        let mut algorithms = HashSet::with_capacity(capacity);
-
-        if has_rsa {
-            algorithms.insert(JsonWebSignatureAlg::Rs256);
-            algorithms.insert(JsonWebSignatureAlg::Rs384);
-            algorithms.insert(JsonWebSignatureAlg::Rs512);
-        }
-
-        if has_es256 {
-            algorithms.insert(JsonWebSignatureAlg::Es256);
-        }
-
-        algorithms
-    }
-
-    async fn prepare_header(self, alg: JsonWebSignatureAlg) -> anyhow::Result<JwtHeader> {
-        let header = JwtHeader::new(alg);
-
-        let kid = match alg {
-            JsonWebSignatureAlg::Rs256
-            | JsonWebSignatureAlg::Rs384
-            | JsonWebSignatureAlg::Rs512 => self
-                .rsa_keys
-                .keys()
-                .next()
-                .ok_or_else(|| anyhow::anyhow!("no RSA keys in keystore"))?,
-            JsonWebSignatureAlg::Es256 => self
-                .es256_keys
-                .keys()
-                .next()
-                .ok_or_else(|| anyhow::anyhow!("no ECDSA keys in keystore"))?,
-            _ => bail!("unsupported algorithm"),
-        };
-
-        Ok(header.with_kid(kid))
-    }
-
-    async fn sign(self, header: &JwtHeader, msg: &[u8]) -> anyhow::Result<Vec<u8>> {
-        let kid = header
-            .kid()
-            .ok_or_else(|| anyhow::anyhow!("missing kid from the JWT header"))?;
-
-        // TODO: do the signing in a blocking task
-        let signature = match header.alg() {
-            JsonWebSignatureAlg::Rs256 => {
-                let key = self
-                    .rsa_keys
-                    .get(kid)
-                    .ok_or_else(|| anyhow::anyhow!("RSA key not found in key store"))?;
-
-                let digest = {
-                    let mut digest = Sha256::new();
-                    digest.update(&msg);
-                    digest.finalize()
-                };
-
-                key.sign(
-                    rsa::PaddingScheme::new_pkcs1v15_sign(Some(rsa::Hash::SHA2_256)),
-                    &digest,
-                )?
-            }
-
-            JsonWebSignatureAlg::Rs384 => {
-                let key = self
-                    .rsa_keys
-                    .get(kid)
-                    .ok_or_else(|| anyhow::anyhow!("RSA key not found in key store"))?;
-
-                let digest = {
-                    let mut digest = Sha384::new();
-                    digest.update(&msg);
-                    digest.finalize()
-                };
-
-                key.sign(
-                    rsa::PaddingScheme::new_pkcs1v15_sign(Some(rsa::Hash::SHA2_384)),
-                    &digest,
-                )?
-            }
-
-            JsonWebSignatureAlg::Rs512 => {
-                let key = self
-                    .rsa_keys
-                    .get(kid)
-                    .ok_or_else(|| anyhow::anyhow!("RSA key not found in key store"))?;
-
-                let digest = {
-                    let mut digest = Sha512::new();
-                    digest.update(&msg);
-                    digest.finalize()
-                };
-
-                key.sign(
-                    rsa::PaddingScheme::new_pkcs1v15_sign(Some(rsa::Hash::SHA2_512)),
-                    &digest,
-                )?
-            }
-
-            JsonWebSignatureAlg::Es256 => {
-                let key = self
-                    .es256_keys
-                    .get(kid)
-                    .ok_or_else(|| anyhow::anyhow!("ECDSA key not found in key store"))?;
-
-                let signature = key.try_sign(msg)?;
-                let signature: &[u8] = signature.as_ref();
-                signature.to_vec()
-            }
-
-            _ => bail!("Unsupported algorithm"),
-        };
-
-        Ok(signature)
-    }
-}
-
-#[async_trait]
-impl VerifyingKeystore for &StaticKeystore {
-    async fn verify(
-        self,
+    fn verify_sync(
+        &self,
         header: &JwtHeader,
         payload: &[u8],
         signature: &[u8],
@@ -344,8 +224,147 @@ impl VerifyingKeystore for &StaticKeystore {
 }
 
 #[async_trait]
-impl ExportJwks for StaticKeystore {
-    async fn export_jwks(&self) -> anyhow::Result<JsonWebKeySet> {
+impl SigningKeystore for StaticKeystore {
+    fn supported_algorithms(&self) -> HashSet<JsonWebSignatureAlg> {
+        let has_rsa = !self.rsa_keys.is_empty();
+        let has_es256 = !self.es256_keys.is_empty();
+
+        let capacity = (if has_rsa { 3 } else { 0 }) + (if has_es256 { 1 } else { 0 });
+        let mut algorithms = HashSet::with_capacity(capacity);
+
+        if has_rsa {
+            algorithms.insert(JsonWebSignatureAlg::Rs256);
+            algorithms.insert(JsonWebSignatureAlg::Rs384);
+            algorithms.insert(JsonWebSignatureAlg::Rs512);
+        }
+
+        if has_es256 {
+            algorithms.insert(JsonWebSignatureAlg::Es256);
+        }
+
+        algorithms
+    }
+
+    async fn prepare_header(&self, alg: JsonWebSignatureAlg) -> anyhow::Result<JwtHeader> {
+        let header = JwtHeader::new(alg);
+
+        let kid = match alg {
+            JsonWebSignatureAlg::Rs256
+            | JsonWebSignatureAlg::Rs384
+            | JsonWebSignatureAlg::Rs512 => self
+                .rsa_keys
+                .keys()
+                .next()
+                .ok_or_else(|| anyhow::anyhow!("no RSA keys in keystore"))?,
+            JsonWebSignatureAlg::Es256 => self
+                .es256_keys
+                .keys()
+                .next()
+                .ok_or_else(|| anyhow::anyhow!("no ECDSA keys in keystore"))?,
+            _ => bail!("unsupported algorithm"),
+        };
+
+        Ok(header.with_kid(kid))
+    }
+
+    async fn sign(&self, header: &JwtHeader, msg: &[u8]) -> anyhow::Result<Vec<u8>> {
+        let kid = header
+            .kid()
+            .ok_or_else(|| anyhow::anyhow!("missing kid from the JWT header"))?;
+
+        // TODO: do the signing in a blocking task
+        let signature = match header.alg() {
+            JsonWebSignatureAlg::Rs256 => {
+                let key = self
+                    .rsa_keys
+                    .get(kid)
+                    .ok_or_else(|| anyhow::anyhow!("RSA key not found in key store"))?;
+
+                let digest = {
+                    let mut digest = Sha256::new();
+                    digest.update(&msg);
+                    digest.finalize()
+                };
+
+                key.sign(
+                    rsa::PaddingScheme::new_pkcs1v15_sign(Some(rsa::Hash::SHA2_256)),
+                    &digest,
+                )?
+            }
+
+            JsonWebSignatureAlg::Rs384 => {
+                let key = self
+                    .rsa_keys
+                    .get(kid)
+                    .ok_or_else(|| anyhow::anyhow!("RSA key not found in key store"))?;
+
+                let digest = {
+                    let mut digest = Sha384::new();
+                    digest.update(&msg);
+                    digest.finalize()
+                };
+
+                key.sign(
+                    rsa::PaddingScheme::new_pkcs1v15_sign(Some(rsa::Hash::SHA2_384)),
+                    &digest,
+                )?
+            }
+
+            JsonWebSignatureAlg::Rs512 => {
+                let key = self
+                    .rsa_keys
+                    .get(kid)
+                    .ok_or_else(|| anyhow::anyhow!("RSA key not found in key store"))?;
+
+                let digest = {
+                    let mut digest = Sha512::new();
+                    digest.update(&msg);
+                    digest.finalize()
+                };
+
+                key.sign(
+                    rsa::PaddingScheme::new_pkcs1v15_sign(Some(rsa::Hash::SHA2_512)),
+                    &digest,
+                )?
+            }
+
+            JsonWebSignatureAlg::Es256 => {
+                let key = self
+                    .es256_keys
+                    .get(kid)
+                    .ok_or_else(|| anyhow::anyhow!("ECDSA key not found in key store"))?;
+
+                let signature = key.try_sign(msg)?;
+                let signature: &[u8] = signature.as_ref();
+                signature.to_vec()
+            }
+
+            _ => bail!("Unsupported algorithm"),
+        };
+
+        Ok(signature)
+    }
+}
+
+impl VerifyingKeystore for StaticKeystore {
+    type Error = anyhow::Error;
+    type Future = Ready<Result<(), Self::Error>>;
+
+    fn verify(&self, header: &JwtHeader, msg: &[u8], signature: &[u8]) -> Self::Future {
+        std::future::ready(self.verify_sync(header, msg, signature))
+    }
+}
+
+impl Service<()> for &StaticKeystore {
+    type Future = Ready<Result<Self::Response, Self::Error>>;
+    type Response = JsonWebKeySet;
+    type Error = Infallible;
+
+    fn poll_ready(&mut self, _cx: &mut std::task::Context<'_>) -> Poll<Result<(), Self::Error>> {
+        Poll::Ready(Ok(()))
+    }
+
+    fn call(&mut self, _req: ()) -> Self::Future {
         let rsa = self.rsa_keys.iter().map(|(kid, key)| {
             let pubkey = RsaPublicKey::from(key);
             JsonWebKey::new(pubkey.into())
@@ -362,7 +381,7 @@ impl ExportJwks for StaticKeystore {
         });
 
         let keys = rsa.chain(es256).collect();
-        Ok(JsonWebKeySet::new(keys))
+        std::future::ready(Ok(JsonWebKeySet::new(keys)))
     }
 }
 

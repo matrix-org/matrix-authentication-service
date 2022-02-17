@@ -95,6 +95,7 @@ enum ClientAuthenticationError {
 impl Reject for ClientAuthenticationError {}
 
 #[allow(clippy::too_many_lines)]
+#[tracing::instrument(skip_all, fields(enduser.id), err(Debug))]
 async fn authenticate_client<T>(
     clients_config: ClientsConfig,
     audience: String,
@@ -204,7 +205,8 @@ async fn authenticate_client<T>(
             let auth_method = match &client.client_auth_method {
                 ClientAuthMethodConfig::PrivateKeyJwt(jwks) => {
                     let store = jwks.key_store();
-                    token.verify(&decoded, &store).await.wrap_error()?;
+                    let fut = token.verify(&decoded, &store);
+                    fut.await.wrap_error()?;
                     OAuthClientAuthenticationMethod::PrivateKeyJwt
                 }
 
@@ -238,6 +240,8 @@ async fn authenticate_client<T>(
             (auth_method, client)
         }
     };
+
+    tracing::Span::current().record("enduser.id", &client.client_id.as_str());
 
     Ok((auth_method, client.clone(), body))
 }
@@ -291,8 +295,9 @@ struct ClientAuthForm<T> {
 mod tests {
     use headers::authorization::Credentials;
     use mas_config::{ClientAuthMethodConfig, ConfigurationSection};
-    use mas_jose::{ExportJwks, SigningKeystore, StaticKeystore};
+    use mas_jose::{SigningKeystore, StaticKeystore};
     use serde_json::json;
+    use tower::{Service, ServiceExt};
 
     use super::*;
 
@@ -343,7 +348,8 @@ mod tests {
         });
 
         let store = client_private_keystore();
-        let jwks = store.export_jwks().await.unwrap();
+        let jwks = (&store).ready().await.unwrap().call(()).await.unwrap();
+        //let jwks = store.export_jwks().await.unwrap();
         config.push(ClientConfig {
             client_id: "private-key-jwt".to_string(),
             client_auth_method: ClientAuthMethodConfig::PrivateKeyJwt(jwks.clone().into()),
