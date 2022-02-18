@@ -16,7 +16,7 @@ tracing = "0.1.30"
 warp = "0.3.2"
 
 # Password hashing
-argon2 = { version = "0.3.3", features = ["password-hash"] }
+argon2 = { version = "0.3.4", features = ["password-hash"] }
 password-hash = { version = "0.3.2", features = ["std"] }
 rand = "0.8.5"
 url = { version = "2.2.2", features = ["serde"] }

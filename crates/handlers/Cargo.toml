@@ -36,7 +36,7 @@ serde_json = "1.0.79"
 serde_urlencoded = "0.7.1"
 
 # Password hashing
-argon2 = { version = "0.3.3", features = ["password-hash"] }
+argon2 = { version = "0.3.4", features = ["password-hash"] }
 
 # Crypto, hashing and signing stuff
 rsa = { git = "https://github.com/RustCrypto/RSA.git" }
