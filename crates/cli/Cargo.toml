@@ -43,7 +43,7 @@ mas-templates = { path = "../templates" }
 mas-warp-utils = { path = "../warp-utils" }
 
 [dev-dependencies]
-indoc = "1.0.3"
+indoc = "1.0.4"
 
 [features]
 default = ["otlp", "jaeger", "zipkin"]

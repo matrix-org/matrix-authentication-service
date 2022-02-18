@@ -66,4 +66,4 @@ mas-warp-utils = { path = "../warp-utils" }
 tower = "0.4.12"
 
 [dev-dependencies]
-indoc = "1.0.3"
+indoc = "1.0.4"
