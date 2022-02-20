@@ -12,7 +12,7 @@ chrono = { version = "0.4.19", features = ["serde"] }
 serde = { version = "1.0.136", features = ["derive"] }
 thiserror = "1.0.30"
 anyhow = "1.0.53"
-tracing = "0.1.30"
+tracing = "0.1.31"
 warp = "0.3.2"
 
 # Password hashing

@@ -9,7 +9,7 @@ license = "Apache-2.0"
 anyhow = "1.0.53"
 async-trait = "0.1.52"
 tokio = { version = "1.17.0", features = ["macros"] }
-tracing = "0.1.30"
+tracing = "0.1.31"
 aws-sdk-sesv2 = "0.6.0"
 aws-config = "0.6.0"
 
