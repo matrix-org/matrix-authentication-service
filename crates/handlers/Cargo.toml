@@ -13,7 +13,7 @@ dev = ["mas-static-files/dev", "mas-templates/dev"]
 tokio = { version = "1.17.0", features = ["macros"] }
 
 # Logging and tracing
-tracing = "0.1.30"
+tracing = "0.1.31"
 
 # Error management
 thiserror = "1.0.30"
