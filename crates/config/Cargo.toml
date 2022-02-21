@@ -11,7 +11,7 @@ tracing = { version = "0.1.31", features = ["log"] }
 async-trait = "0.1.52"
 
 thiserror = "1.0.30"
-anyhow = "1.0.53"
+anyhow = "1.0.54"
 
 schemars = { version = "0.8.8", features = ["url", "chrono"] }
 figment = { version = "0.10.6", features = ["env", "yaml", "test"] }

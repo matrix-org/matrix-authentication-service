@@ -17,7 +17,7 @@ tracing = "0.1.31"
 
 # Error management
 thiserror = "1.0.30"
-anyhow = "1.0.53"
+anyhow = "1.0.54"
 
 # Web server
 warp = "0.3.2"
