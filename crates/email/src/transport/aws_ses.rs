@@ -15,7 +15,8 @@
 use async_trait::async_trait;
 use aws_sdk_sesv2::{
     model::{EmailContent, RawMessage},
-    Blob, Client,
+    types::Blob,
+    Client,
 };
 use lettre::{address::Envelope, AsyncTransport};
 
