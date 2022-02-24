@@ -23,7 +23,7 @@ use opentelemetry::{
     sdk::{
         self,
         propagation::{BaggagePropagator, TextMapCompositePropagator, TraceContextPropagator},
-        trace::Tracer,
+        trace::{Sampler, Tracer},
         Resource,
     },
 };
@@ -215,7 +215,9 @@ fn meter(config: &MetricsExporterConfig) -> anyhow::Result<()> {
 }
 
 fn trace_config() -> sdk::trace::Config {
-    sdk::trace::config().with_resource(resource())
+    sdk::trace::config()
+        .with_resource(resource())
+        .with_sampler(Sampler::AlwaysOn)
 }
 
 fn resource() -> Resource {

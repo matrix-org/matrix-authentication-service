@@ -15,7 +15,6 @@
 use std::{marker::PhantomData, time::Duration};
 
 use http::{header::USER_AGENT, HeaderValue, Request, Response};
-use http_body::combinators::BoxBody;
 use tower::{
     limit::ConcurrencyLimitLayer, timeout::TimeoutLayer, util::BoxCloneService, Layer, Service,
     ServiceBuilder, ServiceExt,
@@ -25,14 +24,12 @@ use tower_http::{
     follow_redirect::FollowRedirectLayer,
     set_header::SetRequestHeaderLayer,
 };
-use tracing_opentelemetry::OpenTelemetrySpanExt;
 
-use super::trace::OtelTraceLayer;
+use super::otel::TraceLayer;
+use crate::BoxError;
 
 static MAS_USER_AGENT: HeaderValue =
     HeaderValue::from_static("matrix-authentication-service/0.0.1");
-
-type BoxError = Box<dyn std::error::Error + Send + Sync>;
 
 #[derive(Debug, Clone)]
 pub struct ClientLayer<ReqBody> {
@@ -50,16 +47,13 @@ impl<B> ClientLayer<B> {
     }
 }
 
-pub type ClientResponse<B> = Response<
-    DecompressionBody<BoxBody<<B as http_body::Body>::Data, <B as http_body::Body>::Error>>,
->;
+pub type ClientResponse<B> = Response<DecompressionBody<B>>;
 
 impl<ReqBody, ResBody, S, E> Layer<S> for ClientLayer<ReqBody>
 where
     S: Service<Request<ReqBody>, Response = Response<ResBody>, Error = E> + Clone + Send + 'static,
     ReqBody: http_body::Body + Default + Send + 'static,
     ResBody: http_body::Body + Sync + Send + 'static,
-    ResBody::Error: std::fmt::Display + 'static,
     S::Future: Send + 'static,
     E: Into<BoxError>,
 {
@@ -71,33 +65,20 @@ where
         //  - the TimeoutLayer
         //  - the DecompressionLayer
         // Those layers do type erasure of the error.
-        // The body is also type-erased because of the DecompressionLayer.
-
         ServiceBuilder::new()
             .layer(DecompressionLayer::new())
-            .map_response(|r: Response<_>| r.map(BoxBody::new))
             .layer(SetRequestHeaderLayer::overriding(
                 USER_AGENT,
                 MAS_USER_AGENT.clone(),
             ))
-            // A trace that has the whole operation, with all the redirects, retries, rate limits
-            .layer(OtelTraceLayer::outer_client(self.operation))
+            // A trace that has the whole operation, with all the redirects, timeouts and rate
+            // limits in it
+            .layer(TraceLayer::http_client(self.operation))
             .layer(ConcurrencyLimitLayer::new(10))
             .layer(FollowRedirectLayer::new())
             // A trace for each "real" http request
-            .layer(OtelTraceLayer::inner_client())
+            .layer(TraceLayer::inner_http_client())
             .layer(TimeoutLayer::new(Duration::from_secs(10)))
-            // Propagate the span context
-            .map_request(|mut r: Request<_>| {
-                // TODO: this seems to be broken
-                let cx = tracing::Span::current().context();
-                let mut injector = opentelemetry_http::HeaderInjector(r.headers_mut());
-                opentelemetry::global::get_text_map_propagator(|propagator| {
-                    propagator.inject_context(&cx, &mut injector);
-                });
-
-                r
-            })
             .service(inner)
             .boxed_clone()
     }

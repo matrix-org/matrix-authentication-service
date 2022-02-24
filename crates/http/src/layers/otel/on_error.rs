@@ -12,7 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub(crate) mod client;
-pub(crate) mod json;
-pub mod otel;
-pub(crate) mod server;
+use opentelemetry::trace::SpanRef;
+use opentelemetry_semantic_conventions::trace::EXCEPTION_MESSAGE;
+
+pub trait OnError<E> {
+    fn on_error(&self, span: &SpanRef<'_>, err: &E);
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct DefaultOnError;
+
+impl<E> OnError<E> for DefaultOnError
+where
+    E: std::fmt::Display,
+{
+    fn on_error(&self, span: &SpanRef<'_>, err: &E) {
+        let attributes = vec![EXCEPTION_MESSAGE.string(err.to_string())];
+        span.add_event("exception".to_string(), attributes);
+    }
+}

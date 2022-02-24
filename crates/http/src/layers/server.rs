@@ -21,7 +21,7 @@ use tower::{
 };
 use tower_http::compression::{CompressionBody, CompressionLayer};
 
-use super::trace::OtelTraceLayer;
+use super::otel::TraceLayer;
 use crate::BoxError;
 
 #[derive(Debug, Default)]
@@ -36,7 +36,7 @@ where
     ResBody: http_body::Body + Sync + Send + 'static,
     ResBody::Error: std::fmt::Display + 'static,
     S::Future: Send + 'static,
-    E: Into<BoxError>,
+    E: std::error::Error + Into<BoxError>,
 {
     #[allow(clippy::type_complexity)]
     type Service = BoxCloneService<
@@ -48,8 +48,8 @@ where
     fn layer(&self, inner: S) -> Self::Service {
         ServiceBuilder::new()
             .layer(CompressionLayer::new())
+            .layer(TraceLayer::http_server())
             .map_response(|r: Response<_>| r.map(BoxBody::new))
-            .layer(OtelTraceLayer::server())
             .layer(TimeoutLayer::new(Duration::from_secs(10)))
             .service(inner)
             .boxed_clone()

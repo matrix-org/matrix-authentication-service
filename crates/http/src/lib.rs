@@ -29,9 +29,15 @@ use bytes::Bytes;
 use futures_util::{FutureExt, TryFutureExt};
 use http::{Request, Response};
 use http_body::{combinators::BoxBody, Body};
-use hyper::{client::HttpConnector, Client};
+use hyper::{
+    client::{connect::dns::GaiResolver, HttpConnector},
+    Client,
+};
 use hyper_rustls::{ConfigBuilderExt, HttpsConnector, HttpsConnectorBuilder};
-use layers::client::ClientResponse;
+use layers::{
+    client::ClientResponse,
+    otel::{TraceDns, TraceLayer},
+};
 use thiserror::Error;
 use tokio::{sync::OnceCell, task::JoinError};
 use tower::{util::BoxCloneService, ServiceBuilder, ServiceExt};
@@ -43,7 +49,7 @@ mod layers;
 pub use self::{
     ext::ServiceExt as HttpServiceExt,
     future_service::FutureService,
-    layers::{client::ClientLayer, json::JsonResponseLayer, server::ServerLayer},
+    layers::{client::ClientLayer, json::JsonResponseLayer, otel, server::ServerLayer},
 };
 
 pub(crate) type BoxError = Box<dyn std::error::Error + Send + Sync>;
@@ -71,13 +77,17 @@ pub enum ClientInitError {
 static TLS_CONFIG: OnceCell<rustls::ClientConfig> = OnceCell::const_new();
 
 async fn make_base_client<B, E>(
-) -> Result<hyper::Client<HttpsConnector<HttpConnector>, B>, ClientInitError>
+) -> Result<hyper::Client<HttpsConnector<HttpConnector<TraceDns<GaiResolver>>>, B>, ClientInitError>
 where
     B: http_body::Body<Data = Bytes, Error = E> + Send + 'static,
     E: Into<BoxError>,
 {
-    // TODO: we could probably hook a tracing DNS resolver there
-    let mut http = HttpConnector::new();
+    // Trace DNS requests
+    let resolver = ServiceBuilder::new()
+        .layer(TraceLayer::dns())
+        .service(GaiResolver::new());
+
+    let mut http = HttpConnector::new_with_resolver(resolver);
     http.enforce_http(false);
 
     let tls_config = TLS_CONFIG
