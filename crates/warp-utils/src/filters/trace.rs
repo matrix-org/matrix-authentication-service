@@ -16,7 +16,6 @@
 
 use std::convert::Infallible;
 
-use tracing::Span;
 use warp::Filter;
 
 /// Set the name of that route
@@ -26,8 +25,11 @@ pub fn name(
 ) -> impl Filter<Extract = (), Error = Infallible> + Clone + Send + Sync + 'static {
     warp::any()
         .map(move || {
-            let span = Span::current();
-            span.record("otel.name", &name);
+            // TODO: update_name has a weird signature, which is already fixed in
+            // opentelemetry-rust, just not released yet
+            // TODO: we should find another way to classify requests. Span::update_name has
+            // impacts on sampling and should not be used
+            opentelemetry::trace::get_active_span(|s| s.update_name::<String>(name.to_string()));
         })
         .untuple_one()
 }
