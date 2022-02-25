@@ -18,6 +18,8 @@ use mas_data_model::{
     AccessToken, Authentication, BrowserSession, Client, RefreshToken, Session, User, UserEmail,
 };
 use sqlx::PgExecutor;
+use thiserror::Error;
+use warp::reject::Reject;
 
 use crate::{DatabaseInconsistencyError, IdAndCreationTime, PostgresqlBackend};
 
@@ -76,11 +78,28 @@ struct OAuth2RefreshTokenLookup {
     user_email_confirmed_at: Option<DateTime<Utc>>,
 }
 
+#[derive(Error, Debug)]
+#[error("could not lookup refresh token")]
+pub enum RefreshTokenLookupError {
+    Fetch(#[from] sqlx::Error),
+    Conversion(#[from] DatabaseInconsistencyError),
+}
+
+impl Reject for RefreshTokenLookupError {}
+
+impl RefreshTokenLookupError {
+    #[must_use]
+    pub fn not_found(&self) -> bool {
+        matches!(self, Self::Fetch(sqlx::Error::RowNotFound))
+    }
+}
+
 #[allow(clippy::too_many_lines)]
 pub async fn lookup_active_refresh_token(
     executor: impl PgExecutor<'_>,
     token: &str,
-) -> anyhow::Result<(RefreshToken<PostgresqlBackend>, Session<PostgresqlBackend>)> {
+) -> Result<(RefreshToken<PostgresqlBackend>, Session<PostgresqlBackend>), RefreshTokenLookupError>
+{
     let res = sqlx::query_as!(
         OAuth2RefreshTokenLookup,
         r#"
@@ -130,8 +149,7 @@ pub async fn lookup_active_refresh_token(
         token,
     )
     .fetch_one(executor)
-    .await
-    .context("failed to fetch oauth2 refresh token")?;
+    .await?;
 
     let access_token = match (
         res.access_token_id,
@@ -204,11 +222,13 @@ pub async fn lookup_active_refresh_token(
         last_authentication,
     };
 
+    let scope = res.scope.parse().map_err(|_e| DatabaseInconsistencyError)?;
+
     let session = Session {
         data: res.session_id,
         client,
         browser_session,
-        scope: res.scope.parse().context("invalid scope in database")?,
+        scope,
     };
 
     Ok((refresh_token, session))

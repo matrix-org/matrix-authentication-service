@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, convert::Infallible, sync::Arc};
 
 use anyhow::Context;
 use chrono::{DateTime, Duration, Utc};
@@ -31,7 +31,10 @@ use mas_storage::{
         access_token::{add_access_token, revoke_access_token},
         authorization_grant::{exchange_grant, lookup_grant_by_code},
         end_oauth_session,
-        refresh_token::{add_refresh_token, lookup_active_refresh_token, replace_refresh_token},
+        refresh_token::{
+            add_refresh_token, lookup_active_refresh_token, replace_refresh_token,
+            RefreshTokenLookupError,
+        },
     },
     DatabaseInconsistencyError,
 };
@@ -41,7 +44,9 @@ use mas_warp_utils::{
     reply::with_typed_header,
 };
 use oauth2_types::{
-    errors::{InvalidGrant, InvalidRequest, OAuth2Error, OAuth2ErrorCode, UnauthorizedClient},
+    errors::{
+        InvalidGrant, InvalidRequest, OAuth2Error, OAuth2ErrorCode, ServerError, UnauthorizedClient,
+    },
     requests::{
         AccessTokenRequest, AccessTokenResponse, AuthorizationCodeGrant, RefreshTokenGrant,
     },
@@ -122,12 +127,23 @@ pub fn filter(
         .boxed()
 }
 
-async fn recover(rejection: Rejection) -> Result<Box<dyn Reply>, Rejection> {
-    if let Some(Error { json, status }) = rejection.find::<Error>() {
-        Ok(Box::new(with_status(warp::reply::json(json), *status)))
-    } else {
-        Err(rejection)
+async fn recover(rejection: Rejection) -> Result<Box<dyn Reply>, Infallible> {
+    fn reply<E: OAuth2ErrorCode>(err: E) -> Box<dyn Reply> {
+        let status = err.status();
+        Box::new(with_status(warp::reply::json(&err.into_response()), status))
     }
+
+    if let Some(Error { json, status }) = rejection.find::<Error>() {
+        return Ok(Box::new(with_status(warp::reply::json(json), *status)));
+    }
+
+    if let Some(e) = rejection.find::<RefreshTokenLookupError>() {
+        if e.not_found() {
+            return Ok(reply(InvalidGrant));
+        }
+    };
+
+    Ok(reply(ServerError))
 }
 
 async fn token(
@@ -333,9 +349,8 @@ async fn refresh_token_grant(
     conn: &mut PoolConnection<Postgres>,
 ) -> Result<AccessTokenResponse, Rejection> {
     let mut txn = conn.begin().await.wrap_error()?;
-    let (refresh_token, session) = lookup_active_refresh_token(&mut txn, &grant.refresh_token)
-        .await
-        .wrap_error()?;
+    let (refresh_token, session) =
+        lookup_active_refresh_token(&mut txn, &grant.refresh_token).await?;
 
     if client.client_id != session.client.client_id {
         // As per https://datatracker.ietf.org/doc/html/rfc6749#section-5.2
