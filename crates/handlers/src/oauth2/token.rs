@@ -22,10 +22,7 @@ use hyper::StatusCode;
 use mas_config::{ClientConfig, ClientsConfig, HttpConfig};
 use mas_data_model::{AuthorizationGrantStage, TokenType};
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
-use mas_jose::{
-    claims::{AT_HASH, AUD, AUTH_TIME, C_HASH, EXP, IAT, ISS, NONCE, SUB},
-    DecodedJsonWebToken, SigningKeystore, StaticKeystore,
-};
+use mas_jose::{claims, DecodedJsonWebToken, SigningKeystore, StaticKeystore};
 use mas_storage::{
     oauth2::{
         access_token::{add_access_token, revoke_access_token},
@@ -50,7 +47,7 @@ use oauth2_types::{
     requests::{
         AccessTokenRequest, AccessTokenResponse, AuthorizationCodeGrant, RefreshTokenGrant,
     },
-    scope::OPENID,
+    scope,
 };
 use rand::thread_rng;
 use serde::Serialize;
@@ -284,34 +281,41 @@ async fn authorization_code_grant(
         .await
         .wrap_error()?;
 
-    let id_token = if session.scope.contains(&OPENID) {
+    let id_token = if session.scope.contains(&scope::OPENID) {
         let mut claims = HashMap::new();
         let now = Utc::now();
-        ISS.insert(&mut claims, issuer.to_string()).wrap_error()?;
-        SUB.insert(&mut claims, &browser_session.user.sub)
+        claims::ISS
+            .insert(&mut claims, issuer.to_string())
             .wrap_error()?;
-        AUD.insert(&mut claims, client.client_id.clone())
+        claims::SUB
+            .insert(&mut claims, &browser_session.user.sub)
             .wrap_error()?;
-        IAT.insert(&mut claims, now).wrap_error()?;
-        EXP.insert(&mut claims, now + Duration::hours(1))
+        claims::AUD
+            .insert(&mut claims, client.client_id.clone())
+            .wrap_error()?;
+        claims::IAT.insert(&mut claims, now).wrap_error()?;
+        claims::EXP
+            .insert(&mut claims, now + Duration::hours(1))
             .wrap_error()?;
 
         if let Some(ref nonce) = authz_grant.nonce {
-            NONCE.insert(&mut claims, nonce.clone()).wrap_error()?;
+            claims::NONCE
+                .insert(&mut claims, nonce.clone())
+                .wrap_error()?;
         }
         if let Some(ref last_authentication) = browser_session.last_authentication {
-            AUTH_TIME
+            claims::AUTH_TIME
                 .insert(&mut claims, last_authentication.created_at)
                 .wrap_error()?;
         }
 
-        AT_HASH
+        claims::AT_HASH
             .insert(
                 &mut claims,
                 hash(Sha256::new(), &access_token_str).wrap_error()?,
             )
             .wrap_error()?;
-        C_HASH
+        claims::C_HASH
             .insert(&mut claims, hash(Sha256::new(), &grant.code).wrap_error()?)
             .wrap_error()?;
 

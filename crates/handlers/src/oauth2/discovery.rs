@@ -27,6 +27,7 @@ use mas_warp_utils::filters::{self, url_builder::UrlBuilder};
 use oauth2_types::{
     oidc::{ClaimType, Metadata, SubjectType},
     requests::{Display, GrantType, ResponseMode},
+    scope,
 };
 use warp::{filters::BoxedFilter, Filter, Reply};
 
@@ -72,7 +73,8 @@ pub(super) fn filter(
 
     let scopes_supported = Some({
         let mut s = HashSet::new();
-        s.insert("openid".to_string());
+        s.insert(scope::OPENID.to_string());
+        s.insert(scope::EMAIL.to_string());
         s
     });
 

@@ -18,14 +18,19 @@ use mas_warp_utils::filters::{
     self,
     authenticate::{authentication, recover_unauthorized},
 };
+use oauth2_types::scope;
 use serde::Serialize;
+use serde_with::skip_serializing_none;
 use sqlx::PgPool;
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 #[derive(Serialize)]
+#[skip_serializing_none]
 struct UserInfo {
     sub: String,
     username: String,
+    email: Option<String>,
+    email_verified: Option<bool>,
 }
 
 pub(super) fn filter(pool: &PgPool) -> BoxedFilter<(Box<dyn Reply>,)> {
@@ -48,8 +53,19 @@ async fn userinfo(
     session: Session<PostgresqlBackend>,
 ) -> Result<Box<dyn Reply>, Rejection> {
     let user = session.browser_session.user;
-    Ok(Box::new(warp::reply::json(&UserInfo {
+    let mut res = UserInfo {
         sub: user.sub,
         username: user.username,
-    })))
+        email: None,
+        email_verified: None,
+    };
+
+    if session.scope.contains(&scope::EMAIL) {
+        if let Some(email) = user.primary_email {
+            res.email_verified = Some(email.confirmed_at.is_some());
+            res.email = Some(email.email);
+        }
+    }
+
+    Ok(Box::new(warp::reply::json(&res)))
 }
