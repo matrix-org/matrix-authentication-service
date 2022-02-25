@@ -24,8 +24,7 @@ use warp::Filter;
 
 impl From<&HttpConfig> for UrlBuilder {
     fn from(config: &HttpConfig) -> Self {
-        let base = config.public_base.clone();
-        Self { base }
+        Self::new(config.public_base.clone())
     }
 }
 
@@ -36,6 +35,12 @@ pub struct UrlBuilder {
 }
 
 impl UrlBuilder {
+    /// Create a new [`UrlBuilder`] from a base URL
+    #[must_use]
+    pub fn new(base: Url) -> Self {
+        Self { base }
+    }
+
     /// OIDC issuer
     #[must_use]
     pub fn oidc_issuer(&self) -> Url {
@@ -84,7 +89,7 @@ impl UrlBuilder {
     #[must_use]
     pub fn email_verification(&self, code: &str) -> Url {
         self.base
-            .join("verify")
+            .join("verify/")
             .expect("build URL")
             .join(code)
             .expect("build URL")
@@ -98,4 +103,19 @@ pub fn url_builder(
 ) -> impl Filter<Extract = (UrlBuilder,), Error = Infallible> + Clone + Send + Sync + 'static {
     let builder: UrlBuilder = config.into();
     warp::any().map(move || builder.clone())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn build_email_verification_url() {
+        let base = Url::parse("https://example.com/").unwrap();
+        let builder = UrlBuilder::new(base);
+        assert_eq!(
+            builder.email_verification("123456abcdef").as_str(),
+            "https://example.com/verify/123456abcdef"
+        );
+    }
 }
