@@ -24,8 +24,8 @@ use serde_with::skip_serializing_none;
 use sqlx::PgPool;
 use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
-#[derive(Serialize)]
 #[skip_serializing_none]
+#[derive(Serialize)]
 struct UserInfo {
     sub: String,
     username: String,
