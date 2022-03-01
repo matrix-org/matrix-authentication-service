@@ -24,7 +24,7 @@ watchman_client = "0.7.1"
 atty = "0.2.14"
 
 tracing = "0.1.31"
-tracing-appender = "0.2.0"
+tracing-appender = "0.2.1"
 tracing-subscriber = { version = "0.3.9", features = ["env-filter"] }
 tracing-opentelemetry = "0.17.2"
 opentelemetry = { version = "0.17.0", features = ["trace", "metrics", "rt-tokio"] }
