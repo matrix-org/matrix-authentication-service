@@ -87,6 +87,10 @@ pub fn authentication(
         .untuple_one()
 }
 
+fn ensure<T: Clone + Send + Sync + 'static>(t: T) -> T {
+    t
+}
+
 async fn authenticate(
     mut conn: PoolConnection<Postgres>,
     auth: Authorization<Bearer>,
@@ -109,6 +113,9 @@ async fn authenticate(
                 warp::reject::custom(wrapped_error(e))
             }
         })?;
+
+    let session = ensure(session);
+    let token = ensure(token);
 
     Ok((token, session))
 }

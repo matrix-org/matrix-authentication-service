@@ -21,3 +21,5 @@
 
 pub mod jose;
 pub mod oauth;
+
+pub use parse_display::ParseError;

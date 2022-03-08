@@ -192,6 +192,7 @@ pub struct ClientCredentialsGrant {
 pub enum GrantType {
     AuthorizationCode,
     RefreshToken,
+    Implicit,
     ClientCredentials,
 }
 

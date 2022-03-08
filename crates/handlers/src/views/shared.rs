@@ -17,7 +17,7 @@
 use hyper::Uri;
 use mas_templates::PostAuthContext;
 use serde::{Deserialize, Serialize};
-use sqlx::PgExecutor;
+use sqlx::PgConnection;
 
 use super::super::oauth2::ContinueAuthorizationGrant;
 
@@ -36,11 +36,11 @@ impl PostAuthAction {
 
     pub async fn load_context<'e>(
         &self,
-        executor: impl PgExecutor<'e>,
+        conn: &mut PgConnection,
     ) -> anyhow::Result<PostAuthContext> {
         match self {
             Self::ContinueAuthorizationGrant(c) => {
-                let grant = c.fetch_authorization_grant(executor).await?;
+                let grant = c.fetch_authorization_grant(conn).await?;
                 let grant = grant.into();
                 Ok(PostAuthContext::ContinueAuthorizationGrant { grant })
             }

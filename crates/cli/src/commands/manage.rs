@@ -14,9 +14,13 @@
 
 use argon2::Argon2;
 use clap::Parser;
-use mas_config::DatabaseConfig;
-use mas_storage::user::{
-    lookup_user_by_username, lookup_user_email, mark_user_email_as_verified, register_user,
+use data_encoding::BASE64;
+use mas_config::{DatabaseConfig, RootConfig};
+use mas_storage::{
+    oauth2::client::{insert_client_from_config, lookup_client_by_client_id, truncate_clients},
+    user::{
+        lookup_user_by_username, lookup_user_email, mark_user_email_as_verified, register_user,
+    },
 };
 use tracing::{info, warn};
 
@@ -36,6 +40,13 @@ enum Subcommand {
 
     /// Mark email address as verified
     VerifyEmail { username: String, email: String },
+
+    /// Import clients from config
+    ImportClients {
+        /// Remove all clients before importing
+        #[clap(long)]
+        truncate: bool,
+    },
 }
 
 impl Options {
@@ -70,6 +81,65 @@ impl Options {
 
                 txn.commit().await?;
                 info!(?email, "Email marked as verified");
+
+                Ok(())
+            }
+            SC::ImportClients { truncate } => {
+                let config: RootConfig = root.load_config()?;
+                let pool = config.database.connect().await?;
+                let encrypter = config.secrets.encrypter();
+
+                let mut txn = pool.begin().await?;
+
+                if *truncate {
+                    warn!("Removing all clients first");
+                    truncate_clients(&mut txn).await?;
+                }
+
+                for client in config.clients.iter() {
+                    let client_id = &client.client_id;
+                    let res = lookup_client_by_client_id(&mut txn, client_id).await;
+                    match res {
+                        Ok(_) => {
+                            warn!(%client_id, "Skipping already imported client");
+                            continue;
+                        }
+                        Err(e) if e.not_found() => {}
+                        Err(e) => anyhow::bail!(e),
+                    }
+
+                    info!(%client_id, "Importing client");
+                    let client_secret = client.client_secret();
+                    let client_auth_method = client.client_auth_method();
+                    let jwks = client.jwks();
+                    let jwks_uri = client.jwks_uri();
+                    let redirect_uris = &client.redirect_uris;
+
+                    // TODO: should be moved somewhere else
+                    let encrypted_client_secret = client_secret
+                        .map(|client_secret| {
+                            let nonce: [u8; 12] = rand::random();
+                            let message = encrypter.encrypt(&nonce, client_secret.as_bytes())?;
+                            let concat = [&nonce[..], &message[..]].concat();
+                            let res = BASE64.encode(&concat);
+
+                            anyhow::Ok(res)
+                        })
+                        .transpose()?;
+
+                    insert_client_from_config(
+                        &mut txn,
+                        client_id,
+                        client_auth_method,
+                        encrypted_client_secret.as_deref(),
+                        jwks,
+                        jwks_uri,
+                        redirect_uris,
+                    )
+                    .await?;
+                }
+
+                txn.commit().await?;
 
                 Ok(())
             }

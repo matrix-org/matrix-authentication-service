@@ -19,6 +19,7 @@ use crate::PostgresqlBackend;
 
 pub mod access_token;
 pub mod authorization_grant;
+pub mod client;
 pub mod refresh_token;
 
 pub async fn end_oauth_session(

@@ -15,12 +15,13 @@
 use anyhow::Context;
 use chrono::{DateTime, Duration, Utc};
 use mas_data_model::{
-    AccessToken, Authentication, BrowserSession, Client, RefreshToken, Session, User, UserEmail,
+    AccessToken, Authentication, BrowserSession, RefreshToken, Session, User, UserEmail,
 };
-use sqlx::PgExecutor;
+use sqlx::{PgConnection, PgExecutor};
 use thiserror::Error;
 use warp::reject::Reject;
 
+use super::client::{lookup_client_by_client_id, ClientFetchError};
 use crate::{DatabaseInconsistencyError, IdAndCreationTime, PostgresqlBackend};
 
 pub async fn add_refresh_token(
@@ -82,6 +83,7 @@ struct OAuth2RefreshTokenLookup {
 #[error("could not lookup refresh token")]
 pub enum RefreshTokenLookupError {
     Fetch(#[from] sqlx::Error),
+    ClientFetch(#[from] ClientFetchError),
     Conversion(#[from] DatabaseInconsistencyError),
 }
 
@@ -96,7 +98,7 @@ impl RefreshTokenLookupError {
 
 #[allow(clippy::too_many_lines)]
 pub async fn lookup_active_refresh_token(
-    executor: impl PgExecutor<'_>,
+    conn: &mut PgConnection,
     token: &str,
 ) -> Result<(RefreshToken<PostgresqlBackend>, Session<PostgresqlBackend>), RefreshTokenLookupError>
 {
@@ -148,7 +150,7 @@ pub async fn lookup_active_refresh_token(
         "#,
         token,
     )
-    .fetch_one(executor)
+    .fetch_one(&mut *conn)
     .await?;
 
     let access_token = match (
@@ -175,10 +177,7 @@ pub async fn lookup_active_refresh_token(
         access_token,
     };
 
-    let client = Client {
-        data: (),
-        client_id: res.client_id,
-    };
+    let client = lookup_client_by_client_id(&mut *conn, &res.client_id).await?;
 
     let primary_email = match (
         res.user_email_id,

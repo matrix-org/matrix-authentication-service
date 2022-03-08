@@ -22,6 +22,8 @@ pub(crate) mod jwk;
 pub(crate) mod jwt;
 mod keystore;
 
+pub use futures_util::future::Either;
+
 pub use self::{
     jwk::{JsonWebKey, JsonWebKeySet},
     jwt::{DecodedJsonWebToken, JsonWebTokenParts, JwtHeader},

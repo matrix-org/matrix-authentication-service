@@ -24,15 +24,16 @@ use mas_data_model::{
 };
 use mas_iana::oauth::PkceCodeChallengeMethod;
 use oauth2_types::{requests::ResponseMode, scope::Scope};
-use sqlx::PgExecutor;
+use sqlx::{PgConnection, PgExecutor};
 use url::Url;
 
+use super::client::lookup_client_by_client_id;
 use crate::{DatabaseInconsistencyError, IdAndCreationTime, PostgresqlBackend};
 
 #[allow(clippy::too_many_arguments)]
 pub async fn new_authorization_grant(
     executor: impl PgExecutor<'_>,
-    client_id: String,
+    client: Client<PostgresqlBackend>,
     redirect_uri: Url,
     scope: Scope,
     code: Option<AuthorizationCode>,
@@ -65,7 +66,7 @@ pub async fn new_authorization_grant(
                 ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
             RETURNING id, created_at
         "#,
-        &client_id,
+        &client.client_id,
         redirect_uri.to_string(),
         scope.to_string(),
         state,
@@ -84,11 +85,6 @@ pub async fn new_authorization_grant(
     .fetch_one(executor)
     .await
     .context("could not insert oauth2 authorization grant")?;
-
-    let client = Client {
-        data: (),
-        client_id,
-    };
 
     Ok(AuthorizationGrant {
         data: res.id,
@@ -141,20 +137,21 @@ struct GrantLookup {
     user_email_confirmed_at: Option<DateTime<Utc>>,
 }
 
-impl TryInto<AuthorizationGrant<PostgresqlBackend>> for GrantLookup {
-    type Error = DatabaseInconsistencyError;
-
+impl GrantLookup {
     #[allow(clippy::too_many_lines)]
-    fn try_into(self) -> Result<AuthorizationGrant<PostgresqlBackend>, Self::Error> {
+    async fn into_authorization_grant(
+        self,
+        executor: impl PgExecutor<'_>,
+    ) -> Result<AuthorizationGrant<PostgresqlBackend>, DatabaseInconsistencyError> {
         let scope: Scope = self
             .grant_scope
             .parse()
             .map_err(|_e| DatabaseInconsistencyError)?;
 
-        let client = Client {
-            data: (),
-            client_id: self.client_id,
-        };
+        // TODO: don't unwrap
+        let client = lookup_client_by_client_id(executor, &self.client_id)
+            .await
+            .unwrap();
 
         let last_authentication = match (
             self.user_session_last_authentication_id,
@@ -323,7 +320,7 @@ impl TryInto<AuthorizationGrant<PostgresqlBackend>> for GrantLookup {
 }
 
 pub async fn get_grant_by_id(
-    executor: impl PgExecutor<'_>,
+    conn: &mut PgConnection,
     id: i64,
 ) -> anyhow::Result<AuthorizationGrant<PostgresqlBackend>> {
     // TODO: handle "not found" cases
@@ -381,17 +378,17 @@ pub async fn get_grant_by_id(
         "#,
         id,
     )
-    .fetch_one(executor)
+    .fetch_one(&mut *conn)
     .await
     .context("failed to get grant by id")?;
 
-    let grant = res.try_into()?;
+    let grant = res.into_authorization_grant(&mut *conn).await?;
 
     Ok(grant)
 }
 
 pub async fn lookup_grant_by_code(
-    executor: impl PgExecutor<'_>,
+    conn: &mut PgConnection,
     code: &str,
 ) -> anyhow::Result<AuthorizationGrant<PostgresqlBackend>> {
     // TODO: handle "not found" cases
@@ -449,11 +446,11 @@ pub async fn lookup_grant_by_code(
         "#,
         code,
     )
-    .fetch_one(executor)
+    .fetch_one(&mut *conn)
     .await
     .context("failed to lookup grant by code")?;
 
-    let grant = res.try_into()?;
+    let grant = res.into_authorization_grant(&mut *conn).await?;
 
     Ok(grant)
 }

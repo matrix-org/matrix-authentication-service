@@ -15,15 +15,12 @@
 use std::ops::{Deref, DerefMut};
 
 use async_trait::async_trait;
-use futures_util::future::Either;
-use http::Request;
-use mas_http::HttpServiceExt;
-use mas_jose::{DynamicJwksStore, JsonWebKeySet, StaticJwksStore, VerifyingKeystore};
+use mas_iana::oauth::OAuthClientAuthenticationMethod;
+use mas_jose::JsonWebKeySet;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 use thiserror::Error;
-use tower::{BoxError, ServiceExt};
 use url::Url;
 
 use super::ConfigurationSection;
@@ -33,41 +30,6 @@ use super::ConfigurationSection;
 pub enum JwksOrJwksUri {
     Jwks(JsonWebKeySet),
     JwksUri(Url),
-}
-
-impl JwksOrJwksUri {
-    pub fn key_store(&self) -> Either<StaticJwksStore, DynamicJwksStore> {
-        // Assert that the output is both a VerifyingKeystore and Send
-        fn assert<T: Send + VerifyingKeystore>(t: T) -> T {
-            t
-        }
-
-        let inner = match self {
-            Self::Jwks(jwks) => Either::Left(StaticJwksStore::new(jwks.clone())),
-            Self::JwksUri(uri) => {
-                let uri = uri.clone();
-
-                // TODO: get the client from somewhere else?
-                let exporter = mas_http::client("fetch-jwks")
-                    .json::<JsonWebKeySet>()
-                    .map_request(move |_: ()| {
-                        Request::builder()
-                            .method("GET")
-                            // TODO: change the Uri type in config to avoid reparsing here
-                            .uri(uri.to_string())
-                            .body(http_body::Empty::new())
-                            .unwrap()
-                    })
-                    .map_response(http::Response::into_body)
-                    .map_err(BoxError::from)
-                    .boxed_clone();
-
-                Either::Right(DynamicJwksStore::new(exporter))
-            }
-        };
-
-        assert(inner)
-    }
 }
 
 impl From<JsonWebKeySet> for JwksOrJwksUri {
@@ -131,24 +93,53 @@ pub struct InvalidRedirectUriError;
 
 impl ClientConfig {
     #[doc(hidden)]
-    pub fn resolve_redirect_uri<'a>(
-        &'a self,
-        suggested_uri: &'a Option<Url>,
-    ) -> Result<&'a Url, InvalidRedirectUriError> {
-        suggested_uri.as_ref().map_or_else(
-            || self.redirect_uris.get(0).ok_or(InvalidRedirectUriError),
-            |suggested_uri| self.check_redirect_uri(suggested_uri),
-        )
+    #[must_use]
+    pub fn client_secret(&self) -> Option<&str> {
+        match &self.client_auth_method {
+            ClientAuthMethodConfig::ClientSecretPost { client_secret }
+            | ClientAuthMethodConfig::ClientSecretBasic { client_secret }
+            | ClientAuthMethodConfig::ClientSecretJwt { client_secret } => Some(client_secret),
+            _ => None,
+        }
     }
 
-    fn check_redirect_uri<'a>(
-        &self,
-        redirect_uri: &'a Url,
-    ) -> Result<&'a Url, InvalidRedirectUriError> {
-        if self.redirect_uris.contains(redirect_uri) {
-            Ok(redirect_uri)
-        } else {
-            Err(InvalidRedirectUriError)
+    #[doc(hidden)]
+    #[must_use]
+    pub fn client_auth_method(&self) -> OAuthClientAuthenticationMethod {
+        match &self.client_auth_method {
+            ClientAuthMethodConfig::None => OAuthClientAuthenticationMethod::None,
+            ClientAuthMethodConfig::ClientSecretBasic { .. } => {
+                OAuthClientAuthenticationMethod::ClientSecretBasic
+            }
+            ClientAuthMethodConfig::ClientSecretPost { .. } => {
+                OAuthClientAuthenticationMethod::ClientSecretPost
+            }
+            ClientAuthMethodConfig::ClientSecretJwt { .. } => {
+                OAuthClientAuthenticationMethod::ClientSecretJwt
+            }
+            ClientAuthMethodConfig::PrivateKeyJwt(_) => {
+                OAuthClientAuthenticationMethod::PrivateKeyJwt
+            }
+        }
+    }
+
+    #[doc(hidden)]
+    #[must_use]
+    pub fn jwks(&self) -> Option<&JsonWebKeySet> {
+        match &self.client_auth_method {
+            ClientAuthMethodConfig::PrivateKeyJwt(JwksOrJwksUri::Jwks(jwks)) => Some(jwks),
+            _ => None,
+        }
+    }
+
+    #[doc(hidden)]
+    #[must_use]
+    pub fn jwks_uri(&self) -> Option<&Url> {
+        match &self.client_auth_method {
+            ClientAuthMethodConfig::PrivateKeyJwt(JwksOrJwksUri::JwksUri(jwks_uri)) => {
+                Some(jwks_uri)
+            }
+            _ => None,
         }
     }
 }

@@ -20,7 +20,7 @@ use hyper::{
     http::uri::{Parts, PathAndQuery, Uri},
     StatusCode,
 };
-use mas_config::{ClientsConfig, Encrypter};
+use mas_config::Encrypter;
 use mas_data_model::{
     Authentication, AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, BrowserSession,
     Pkce, StorageBackend, TokenType,
@@ -32,6 +32,7 @@ use mas_storage::{
         authorization_grant::{
             derive_session, fulfill_grant, get_grant_by_id, new_authorization_grant,
         },
+        client::lookup_client_by_client_id,
         refresh_token::add_refresh_token,
     },
     PostgresqlBackend,
@@ -41,7 +42,7 @@ use mas_warp_utils::{
     errors::WrapError,
     filters::{
         self,
-        database::transaction,
+        database::{connection, transaction},
         session::{optional_session, session},
         with_templates,
     },
@@ -49,19 +50,20 @@ use mas_warp_utils::{
 use oauth2_types::{
     errors::{
         ErrorResponse, InvalidGrant, InvalidRequest, LoginRequired, OAuth2Error,
-        RegistrationNotSupported, RequestNotSupported, RequestUriNotSupported,
+        RegistrationNotSupported, RequestNotSupported, RequestUriNotSupported, UnauthorizedClient,
     },
     pkce,
     prelude::*,
     requests::{
-        AccessTokenResponse, AuthorizationRequest, AuthorizationResponse, Prompt, ResponseMode,
+        AccessTokenResponse, AuthorizationRequest, AuthorizationResponse, GrantType, Prompt,
+        ResponseMode,
     },
     scope::ScopeToken,
 };
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use sqlx::{PgExecutor, PgPool, Postgres, Transaction};
+use sqlx::{pool::PoolConnection, PgConnection, PgPool, Postgres, Transaction};
 use url::Url;
 use warp::{
     filters::BoxedFilter,
@@ -217,15 +219,10 @@ pub fn filter(
     pool: &PgPool,
     templates: &Templates,
     encrypter: &Encrypter,
-    clients_config: &ClientsConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
-    let clients_config = clients_config.clone();
-    let clients_config_2 = clients_config.clone();
-
     let authorize = warp::path!("oauth2" / "authorize")
         .and(filters::trace::name("GET /oauth2/authorize"))
         .and(warp::get())
-        .map(move || clients_config.clone())
         .and(warp::query())
         .and(optional_session(pool, encrypter))
         .and(transaction(pool))
@@ -245,8 +242,8 @@ pub fn filter(
         .recover(recover)
         .unify()
         .and(warp::query())
-        .and(warp::any().map(move || clients_config_2.clone()))
         .and(with_templates(templates))
+        .and(connection(pool))
         .and_then(actually_reply)
         .boxed()
 }
@@ -262,8 +259,8 @@ async fn recover(rejection: Rejection) -> Result<ReplyOrBackToClient, Rejection>
 async fn actually_reply(
     rep: ReplyOrBackToClient,
     q: PartialParams,
-    clients: ClientsConfig,
     templates: Templates,
+    mut conn: PoolConnection<Postgres>,
 ) -> Result<Box<dyn Reply>, Rejection> {
     let (redirect_uri, response_mode, state, params) = match rep {
         ReplyOrBackToClient::Reply(r) => return Ok(r),
@@ -281,14 +278,13 @@ async fn actually_reply(
                 ..
             } = q;
 
-            // First, disover the client
-            let client = client_id
-                .and_then(|client_id| clients.iter().find(|client| client.client_id == client_id));
-
-            let client = match client {
-                Some(client) => client,
-                None => return Ok(Box::new(html(templates.render_error(&error.into()).await?))),
+            let client_id = if let Some(client_id) = client_id {
+                client_id
+            } else {
+                return Ok(Box::new(html(templates.render_error(&error.into()).await?)));
             };
+
+            let client = lookup_client_by_client_id(&mut conn, &client_id).await?;
 
             let redirect_uri: Result<Option<Url>, _> = redirect_uri.map(|r| r.parse()).transpose();
             let redirect_uri = match redirect_uri {
@@ -315,7 +311,6 @@ async fn actually_reply(
 }
 
 async fn get(
-    clients: ClientsConfig,
     params: Params,
     maybe_session: Option<BrowserSession<PostgresqlBackend>>,
     mut txn: Transaction<'_, Postgres>,
@@ -337,15 +332,17 @@ async fn get(
     }
 
     // First, find out what client it is
-    let client = clients
-        .iter()
-        .find(|client| client.client_id == params.auth.client_id)
-        .ok_or_else(|| anyhow::anyhow!("could not find client"))
-        .wrap_error()?;
+    let client = lookup_client_by_client_id(&mut txn, &params.auth.client_id).await?;
+
+    // Check if it is allowed to use this grant type
+    if !client.grant_types.contains(&GrantType::AuthorizationCode) {
+        return Ok(ReplyOrBackToClient::Error(Box::new(UnauthorizedClient)));
+    }
 
     let redirect_uri = client
         .resolve_redirect_uri(&params.auth.redirect_uri)
-        .wrap_error()?;
+        .wrap_error()?
+        .clone();
     let response_type = params.auth.response_type;
     let response_mode =
         resolve_response_mode(response_type, params.auth.response_mode).wrap_error()?;
@@ -392,8 +389,8 @@ async fn get(
 
     let grant = new_authorization_grant(
         &mut txn,
-        client.client_id.clone(),
-        redirect_uri.clone(),
+        client,
+        redirect_uri,
         scope,
         code,
         params.auth.state,
@@ -471,10 +468,10 @@ impl ContinueAuthorizationGrant {
 
     pub async fn fetch_authorization_grant(
         &self,
-        executor: impl PgExecutor<'_>,
+        conn: &mut PgConnection,
     ) -> anyhow::Result<AuthorizationGrant<PostgresqlBackend>> {
         let data = self.data.parse()?;
-        get_grant_by_id(executor, data).await
+        get_grant_by_id(conn, data).await
     }
 }
 

@@ -14,12 +14,11 @@
 
 use anyhow::Context;
 use chrono::{DateTime, Duration, Utc};
-use mas_data_model::{
-    AccessToken, Authentication, BrowserSession, Client, Session, User, UserEmail,
-};
-use sqlx::PgExecutor;
+use mas_data_model::{AccessToken, Authentication, BrowserSession, Session, User, UserEmail};
+use sqlx::{PgConnection, PgExecutor};
 use thiserror::Error;
 
+use super::client::{lookup_client_by_client_id, ClientFetchError};
 use crate::{DatabaseInconsistencyError, IdAndCreationTime, PostgresqlBackend};
 
 pub async fn add_access_token(
@@ -83,6 +82,7 @@ pub struct OAuth2AccessTokenLookup {
 #[error("failed to lookup access token")]
 pub enum AccessTokenLookupError {
     Database(#[from] sqlx::Error),
+    ClientFetch(#[from] ClientFetchError),
     Inconsistency(#[from] DatabaseInconsistencyError),
 }
 
@@ -95,7 +95,7 @@ impl AccessTokenLookupError {
 
 #[allow(clippy::too_many_lines)]
 pub async fn lookup_active_access_token(
-    executor: impl PgExecutor<'_>,
+    conn: &mut PgConnection,
     token: &str,
 ) -> Result<(AccessToken<PostgresqlBackend>, Session<PostgresqlBackend>), AccessTokenLookupError> {
     let res = sqlx::query_as!(
@@ -142,7 +142,7 @@ pub async fn lookup_active_access_token(
         "#,
         token,
     )
-    .fetch_one(executor)
+    .fetch_one(&mut *conn)
     .await?;
 
     let access_token = AccessToken {
@@ -153,10 +153,7 @@ pub async fn lookup_active_access_token(
         expires_after: Duration::seconds(res.access_token_expires_after.into()),
     };
 
-    let client = Client {
-        data: (),
-        client_id: res.client_id,
-    };
+    let client = lookup_client_by_client_id(&mut *conn, &res.client_id).await?;
 
     let primary_email = match (
         res.user_email_id,

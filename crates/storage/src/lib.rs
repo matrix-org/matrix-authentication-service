@@ -41,7 +41,7 @@ impl StorageBackend for PostgresqlBackend {
     type AuthenticationData = i64;
     type AuthorizationGrantData = i64;
     type BrowserSessionData = i64;
-    type ClientData = ();
+    type ClientData = i64;
     type RefreshTokenData = i64;
     type SessionData = i64;
     type UserData = i64;

@@ -35,8 +35,4 @@ pem-rfc7468 = "0.3.1"
 indoc = "1.0.4"
 
 mas-jose = { path = "../jose" }
-mas-http = { path = "../http" }
-tower = { version = "0.4.12", features = ["util"] }
-http = "0.2.6"
-http-body = "0.4.4"
-futures-util = "0.3.21"
+mas-iana = { path = "../iana" }

@@ -30,7 +30,8 @@ pub(crate) mod users;
 
 pub use self::{
     oauth2::{
-        AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, Client, Pkce, Session,
+        AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, Client, JwksOrJwksUri,
+        Pkce, Session,
     },
     tokens::{AccessToken, RefreshToken, TokenFormatError, TokenType},
     traits::{StorageBackend, StorageBackendMarker},

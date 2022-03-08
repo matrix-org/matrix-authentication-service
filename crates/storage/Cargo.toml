@@ -7,9 +7,10 @@ license = "Apache-2.0"
 
 [dependencies]
 tokio = "1.17.0"
-sqlx = { version = "0.5.11", features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "offline"] }
+sqlx = { version = "0.5.11", features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "offline", "json"] }
 chrono = { version = "0.4.19", features = ["serde"] }
 serde = { version = "1.0.136", features = ["derive"] }
+serde_json = "1.0.79"
 thiserror = "1.0.30"
 anyhow = "1.0.55"
 tracing = "0.1.31"
@@ -24,3 +25,4 @@ url = { version = "2.2.2", features = ["serde"] }
 oauth2-types = { path = "../oauth2-types" }
 mas-data-model = { path = "../data-model" }
 mas-iana = { path = "../iana" }
+mas-jose = { path = "../jose" }

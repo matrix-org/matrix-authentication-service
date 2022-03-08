@@ -19,8 +19,8 @@ use chrono::{DateTime, Duration, Utc};
 use data_encoding::BASE64URL_NOPAD;
 use headers::{CacheControl, Pragma};
 use hyper::StatusCode;
-use mas_config::{ClientConfig, ClientsConfig, HttpConfig};
-use mas_data_model::{AuthorizationGrantStage, TokenType};
+use mas_config::{Encrypter, HttpConfig};
+use mas_data_model::{AuthorizationGrantStage, Client, TokenType};
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
 use mas_jose::{claims, DecodedJsonWebToken, SigningKeystore, StaticKeystore};
 use mas_storage::{
@@ -33,7 +33,7 @@ use mas_storage::{
             RefreshTokenLookupError,
         },
     },
-    DatabaseInconsistencyError,
+    DatabaseInconsistencyError, PostgresqlBackend,
 };
 use mas_warp_utils::{
     errors::WrapError,
@@ -99,8 +99,8 @@ where
 
 pub fn filter(
     pool: &PgPool,
+    encrypter: &Encrypter,
     key_store: &Arc<StaticKeystore>,
-    clients_config: &ClientsConfig,
     http_config: &HttpConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
     let key_store = key_store.clone();
@@ -113,7 +113,7 @@ pub fn filter(
         .and(filters::trace::name("POST /oauth2/token"))
         .and(
             warp::post()
-                .and(client_authentication(clients_config, audience))
+                .and(client_authentication(pool, encrypter, audience))
                 .and(warp::any().map(move || key_store.clone()))
                 .and(warp::any().map(move || issuer.clone()))
                 .and(connection(pool))
@@ -145,7 +145,7 @@ async fn recover(rejection: Rejection) -> Result<Box<dyn Reply>, Infallible> {
 
 async fn token(
     _auth: OAuthClientAuthenticationMethod,
-    client: ClientConfig,
+    client: Client<PostgresqlBackend>,
     req: AccessTokenRequest,
     key_store: Arc<StaticKeystore>,
     issuer: Url,
@@ -185,7 +185,7 @@ fn hash<H: Digest>(mut hasher: H, token: &str) -> anyhow::Result<String> {
 #[allow(clippy::too_many_lines)]
 async fn authorization_code_grant(
     grant: &AuthorizationCodeGrant,
-    client: &ClientConfig,
+    client: &Client<PostgresqlBackend>,
     key_store: &StaticKeystore,
     issuer: Url,
     conn: &mut PoolConnection<Postgres>,
@@ -349,7 +349,7 @@ async fn authorization_code_grant(
 
 async fn refresh_token_grant(
     grant: &RefreshTokenGrant,
-    client: &ClientConfig,
+    client: &Client<PostgresqlBackend>,
     conn: &mut PoolConnection<Postgres>,
 ) -> Result<AccessTokenResponse, Rejection> {
     let mut txn = conn.begin().await.wrap_error()?;

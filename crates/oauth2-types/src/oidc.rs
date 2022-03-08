@@ -27,14 +27,21 @@ use url::Url;
 
 use crate::requests::{Display, GrantType, ResponseMode};
 
-#[derive(Serialize, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Serialize, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[serde(rename_all = "lowercase")]
+pub enum ApplicationType {
+    Web,
+    Native,
+}
+
+#[derive(Serialize, Clone, Copy, PartialEq, Eq, Hash, Debug)]
 #[serde(rename_all = "lowercase")]
 pub enum SubjectType {
     Public,
     Pairwise,
 }
 
-#[derive(Serialize, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Serialize, Clone, Copy, PartialEq, Eq, Hash, Debug)]
 #[serde(rename_all = "lowercase")]
 pub enum ClaimType {
     Normal,

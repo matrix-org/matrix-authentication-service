@@ -15,7 +15,7 @@
 use std::sync::Arc;
 
 use hyper::Method;
-use mas_config::{ClientsConfig, Encrypter, HttpConfig};
+use mas_config::{Encrypter, HttpConfig};
 use mas_jose::StaticKeystore;
 use mas_templates::Templates;
 use mas_warp_utils::filters::cors::cors;
@@ -41,15 +41,14 @@ pub fn filter(
     templates: &Templates,
     key_store: &Arc<StaticKeystore>,
     encrypter: &Encrypter,
-    clients_config: &ClientsConfig,
     http_config: &HttpConfig,
 ) -> BoxedFilter<(impl Reply,)> {
     let discovery = discovery(key_store.as_ref(), http_config);
     let keys = keys(key_store);
-    let authorization = authorization(pool, templates, encrypter, clients_config);
+    let authorization = authorization(pool, templates, encrypter);
     let userinfo = userinfo(pool);
-    let introspection = introspection(pool, clients_config, http_config);
-    let token = token(pool, key_store, clients_config, http_config);
+    let introspection = introspection(pool, encrypter, http_config);
+    let token = token(pool, encrypter, key_store, http_config);
 
     let filter = discovery
         .or(keys)
