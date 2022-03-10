@@ -59,7 +59,7 @@ pub fn filter(
         .unify()
         .or(introspection)
         .unify()
-        .with(cors().allow_methods([Method::POST, Method::GET]));
+        .with(cors().allow_methods([Method::POST, Method::GET]).allow_headers(["authorization"]));
 
     filter.or(authorization).boxed()
 }
