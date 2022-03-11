@@ -49,13 +49,7 @@ enum Subcommand {
 #[derive(Parser, Debug)]
 pub struct Options {
     /// Path to the configuration file
-    #[clap(
-        short,
-        long,
-        global = true,
-        default_value = "config.yaml",
-        multiple_occurrences(true)
-    )]
+    #[clap(short, long, global = true, multiple_occurrences(true))]
     config: Vec<PathBuf>,
 
     #[clap(subcommand)]
@@ -77,6 +71,12 @@ impl Options {
     }
 
     pub fn load_config<'de, T: ConfigurationSection<'de>>(&self) -> anyhow::Result<T> {
-        T::load_from_files(&self.config).context("could not load configuration")
+        let configs = if self.config.is_empty() {
+            vec![std::env::var("MAS_CONFIG").map_or_else(|_| "config.yaml".into(), PathBuf::from)]
+        } else {
+            self.config.clone()
+        };
+
+        T::load_from_files(&configs).context("could not load configuration")
     }
 }
