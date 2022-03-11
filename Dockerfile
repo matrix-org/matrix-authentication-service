@@ -101,14 +101,14 @@ RUN \
   --target $(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")
 
 # Move the binary to avoid having to guess its name in the next stage
-RUN mv target/$(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")/release/mas-cli /mas-cli
+RUN mv target/$(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")/release/mas-cli /usr/local/bin/mas-cli
 
 ## Runtime stage, debug variant ##
 FROM --platform=${TARGETPLATFORM} gcr.io/distroless/cc-debian${DEBIAN_VERSION}:debug-nonroot AS debug
-COPY --from=builder /mas-cli /mas-cli
+COPY --from=builder /usr/local/bin/mas-cli /usr/local/bin/mas-cli
 ENTRYPOINT ["/mas-cli"]
 
 ## Runtime stage ##
 FROM --platform=${TARGETPLATFORM} gcr.io/distroless/cc-debian${DEBIAN_VERSION}:nonroot
-COPY --from=builder /mas-cli /mas-cli
-ENTRYPOINT ["/mas-cli"]
+COPY --from=builder /usr/local/bin/mas-cli /usr/local/bin/mas-cli
+ENTRYPOINT ["/usr/local/bin/mas-cli"]
