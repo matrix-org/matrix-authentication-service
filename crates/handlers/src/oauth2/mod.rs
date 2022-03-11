@@ -14,7 +14,7 @@
 
 use std::sync::Arc;
 
-use hyper::Method;
+use hyper::{header::AUTHORIZATION, Method};
 use mas_config::{Encrypter, HttpConfig};
 use mas_jose::StaticKeystore;
 use mas_templates::Templates;
@@ -59,7 +59,11 @@ pub fn filter(
         .unify()
         .or(introspection)
         .unify()
-        .with(cors().allow_methods([Method::POST, Method::GET]));
+        .with(
+            cors()
+                .allow_methods([Method::POST, Method::GET])
+                .allow_headers([AUTHORIZATION]),
+        );
 
     filter.or(authorization).boxed()
 }
