@@ -14,8 +14,7 @@
 
 use std::sync::Arc;
 
-use hyper::Method;
-use hyper::header::AUTHORIZATION;
+use hyper::{header::AUTHORIZATION, Method};
 use mas_config::{Encrypter, HttpConfig};
 use mas_jose::StaticKeystore;
 use mas_templates::Templates;
