@@ -72,7 +72,14 @@ impl Options {
 
     pub fn load_config<'de, T: ConfigurationSection<'de>>(&self) -> anyhow::Result<T> {
         let configs = if self.config.is_empty() {
-            vec![std::env::var("MAS_CONFIG").map_or_else(|_| "config.yaml".into(), PathBuf::from)]
+            // Read the MAS_CONFIG environment variable
+            std::env::var("MAS_CONFIG")
+                // Default to "config.yaml"
+                .unwrap_or_else(|_| "config.yaml".to_string())
+                // Split the file list on `:`
+                .split(':')
+                .map(PathBuf::from)
+                .collect()
         } else {
             self.config.clone()
         };
