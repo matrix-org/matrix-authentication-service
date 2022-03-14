@@ -26,7 +26,7 @@ use mas_jose::SigningKeystore;
 use mas_warp_utils::filters::{self, url_builder::UrlBuilder};
 use oauth2_types::{
     oidc::{ClaimType, Metadata, SubjectType},
-    requests::{Display, GrantType, ResponseMode},
+    requests::{Display, GrantType, Prompt, ResponseMode},
     scope,
 };
 use warp::{filters::BoxedFilter, Filter, Reply};
@@ -158,6 +158,14 @@ pub(super) fn filter(
     let request_parameter_supported = Some(false);
     let request_uri_parameter_supported = Some(false);
 
+    let prompt_values_supported = Some({
+        let mut s = HashSet::new();
+        s.insert(Prompt::None);
+        s.insert(Prompt::Login);
+        s.insert(Prompt::Create);
+        s
+    });
+
     let metadata = Metadata {
         issuer,
         authorization_endpoint,
@@ -182,6 +190,7 @@ pub(super) fn filter(
         claims_parameter_supported,
         request_parameter_supported,
         request_uri_parameter_supported,
+        prompt_values_supported,
         ..Metadata::default()
     };
 

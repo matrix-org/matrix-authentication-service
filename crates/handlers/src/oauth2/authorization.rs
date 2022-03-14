@@ -73,7 +73,7 @@ use warp::{
     Filter, Rejection, Reply,
 };
 
-use crate::views::{LoginRequest, PostAuthAction, ReauthRequest};
+use crate::views::{LoginRequest, PostAuthAction, ReauthRequest, RegisterRequest};
 
 #[derive(Deserialize)]
 struct PartialParams {
@@ -310,6 +310,7 @@ async fn actually_reply(
         .wrap_error()
 }
 
+#[allow(clippy::too_many_lines)]
 async fn get(
     params: Params,
     maybe_session: Option<BrowserSession<PostgresqlBackend>>,
@@ -426,6 +427,16 @@ async fn get(
         (Some(user_session), _) => {
             // Other cases where we already have a session
             step(next, user_session, txn).await
+        }
+        (None, Some(Prompt::Create)) => {
+            // Client asked for a registration, show the registration prompt
+            txn.commit().await.wrap_error()?;
+
+            let next: PostAuthAction = next.into();
+            let next: RegisterRequest = next.into();
+            let next = next.build_uri().wrap_error()?;
+
+            Ok(ReplyOrBackToClient::Reply(Box::new(see_other(next))))
         }
         (None, _) => {
             // Other cases where we don't have a session, ask for a login

@@ -95,6 +95,7 @@ pub enum Prompt {
     Login,
     Consent,
     SelectAccount,
+    Create,
 }
 
 #[serde_as]

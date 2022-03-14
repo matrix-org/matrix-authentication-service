@@ -25,7 +25,7 @@ use serde::Serialize;
 use serde_with::skip_serializing_none;
 use url::Url;
 
-use crate::requests::{Display, GrantType, ResponseMode};
+use crate::requests::{Display, GrantType, Prompt, ResponseMode};
 
 #[derive(Serialize, Clone, Copy, PartialEq, Eq, Hash, Debug)]
 #[serde(rename_all = "lowercase")]
@@ -234,4 +234,7 @@ pub struct Metadata {
     /// Indicates whether the authorization server accepts authorization
     /// requests only via PAR.
     pub require_pushed_authorization_requests: Option<bool>,
+
+    /// Array containing the list of prompt values that this OP supports.
+    pub prompt_values_supported: Option<HashSet<Prompt>>,
 }
