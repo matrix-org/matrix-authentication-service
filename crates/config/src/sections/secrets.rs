@@ -20,6 +20,7 @@ use chacha20poly1305::{
     aead::{generic_array::GenericArray, Aead, NewAead},
     ChaCha20Poly1305,
 };
+use cookie::Key;
 use mas_jose::StaticKeystore;
 use pkcs8::DecodePrivateKey;
 use rsa::{
@@ -37,6 +38,7 @@ use super::ConfigurationSection;
 /// Helps encrypting and decrypting data
 #[derive(Clone)]
 pub struct Encrypter {
+    cookie_key: Arc<Key>,
     aead: Arc<ChaCha20Poly1305>,
 }
 
@@ -44,10 +46,12 @@ impl Encrypter {
     /// Creates an [`Encrypter`] out of an encryption key
     #[must_use]
     pub fn new(key: &[u8; 32]) -> Self {
+        let cookie_key = Key::derive_from(&key[..]);
+        let cookie_key = Arc::new(cookie_key);
         let key = GenericArray::from_slice(key);
         let aead = ChaCha20Poly1305::new(key);
         let aead = Arc::new(aead);
-        Self { aead }
+        Self { cookie_key, aead }
     }
 
     /// Encrypt a payload
@@ -70,6 +74,12 @@ impl Encrypter {
         let nonce = GenericArray::from_slice(&nonce[..]);
         let encrypted = self.aead.decrypt(nonce, encrypted)?;
         Ok(encrypted)
+    }
+}
+
+impl From<Encrypter> for Key {
+    fn from(e: Encrypter) -> Self {
+        e.cookie_key.as_ref().clone()
     }
 }
 

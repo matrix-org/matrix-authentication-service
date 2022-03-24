@@ -12,79 +12,43 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::str::FromStr;
-
 use axum::{
     extract::Extension,
     response::{Html, IntoResponse},
 };
-use mas_axum_utils::{fancy_error, FancyError};
-use mas_config::{CsrfConfig, Encrypter, HttpConfig};
-use mas_data_model::BrowserSession;
-use mas_storage::PostgresqlBackend;
-use mas_templates::{IndexContext, TemplateContext, Templates};
-use mas_warp_utils::filters::{
-    self,
-    cookies::{encrypted_cookie_saver, EncryptedCookieSaver},
-    csrf::updated_csrf_token,
-    session::optional_session,
-    url_builder::{url_builder, UrlBuilder},
-    with_templates, CsrfToken,
+use mas_axum_utils::{
+    csrf::CsrfExt, fancy_error, FancyError, PrivateCookieJar, SessionInfoExt, UrlBuilder,
 };
+use mas_config::Encrypter;
+use mas_templates::{IndexContext, TemplateContext, Templates};
 use sqlx::PgPool;
-use url::Url;
-use warp::{filters::BoxedFilter, reply::html, Filter, Rejection, Reply};
-
-/*
-pub(super) fn filter(
-    pool: &PgPool,
-    templates: &Templates,
-    encrypter: &Encrypter,
-    http_config: &HttpConfig,
-    csrf_config: &CsrfConfig,
-) -> BoxedFilter<(Box<dyn Reply>,)> {
-    warp::path::end()
-        .and(filters::trace::name("GET /"))
-        .and(warp::get())
-        .and(url_builder(http_config))
-        .and(with_templates(templates))
-        .and(encrypted_cookie_saver(encrypter))
-        .and(updated_csrf_token(encrypter, csrf_config))
-        .and(optional_session(pool, encrypter))
-        .and_then(get)
-        .boxed()
-}
-
-async fn get(
-    url_builder: UrlBuilder,
-    templates: Templates,
-    cookie_saver: EncryptedCookieSaver,
-    csrf_token: CsrfToken,
-    maybe_session: Option<BrowserSession<PostgresqlBackend>>,
-) -> Result<Box<dyn Reply>, Rejection> {
-    let ctx = IndexContext::new(url_builder.oidc_discovery())
-        .maybe_with_session(maybe_session)
-        .with_csrf(csrf_token.form_value());
-
-    let content = templates.render_index(&ctx).await?;
-    let reply = html(content);
-    let reply = cookie_saver.save_encrypted(&csrf_token, reply)?;
-    Ok(Box::new(reply))
-}
-*/
 
 pub async fn get(
     Extension(templates): Extension<Templates>,
+    Extension(url_builder): Extension<UrlBuilder>,
+    Extension(pool): Extension<PgPool>,
+    cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<impl IntoResponse, FancyError> {
-    let ctx = IndexContext::new(
-        Url::from_str("https://example.com/.well-known/openid-discovery").unwrap(),
-    )
-    .maybe_with_session::<PostgresqlBackend>(None)
-    .with_csrf("csrf_token".to_string());
+    let mut conn = pool
+        .acquire()
+        .await
+        .map_err(fancy_error(templates.clone()))?;
+
+    let (csrf_token, cookie_jar) = cookie_jar.csrf_token();
+    let (session_info, cookie_jar) = cookie_jar.session_info();
+    let session = session_info
+        .load_session(&mut conn)
+        .await
+        .map_err(fancy_error(templates.clone()))?;
+
+    let ctx = IndexContext::new(url_builder.oidc_discovery())
+        .maybe_with_session(session)
+        .with_csrf(csrf_token.form_value());
 
     let content = templates
         .render_index(&ctx)
         .await
         .map_err(fancy_error(templates))?;
-    Ok(Html(content))
+
+    Ok((cookie_jar.headers(), Html(content)))
 }

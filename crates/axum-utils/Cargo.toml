@@ -1,0 +1,28 @@
+[package]
+name = "mas-axum-utils"
+version = "0.1.0"
+authors = ["Quentin Gliech <quenting@element.io>"]
+edition = "2021"
+license = "Apache-2.0"
+
+[dependencies]
+async-trait = "0.1.52"
+axum = "0.4.8"
+bincode = "1.3.3"
+chrono = "0.4.19"
+cookie = { version = "0.16.0", features = ["signed", "private", "percent-encode"] }
+data-encoding = "2.3.2"
+futures-util = "0.3.21"
+headers = "0.3.7"
+http = "0.2.6"
+rand = "0.8.5"
+serde = "1.0.136"
+serde_with = "1.12.0"
+sqlx = "0.5.11"
+thiserror = "1.0.30"
+tracing = "0.1.32"
+url = "2.2.2"
+
+mas-templates = { path = "../templates" }
+mas-storage = { path = "../storage" }
+mas-data-model = { path = "../data-model" }

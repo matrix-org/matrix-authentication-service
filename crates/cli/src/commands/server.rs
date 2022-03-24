@@ -22,12 +22,12 @@ use anyhow::Context;
 use clap::Parser;
 use futures::{future::TryFutureExt, stream::TryStreamExt};
 use hyper::Server;
+use mas_axum_utils::UrlBuilder;
 use mas_config::RootConfig;
 use mas_email::{MailTransport, Mailer};
 use mas_storage::MIGRATOR;
 use mas_tasks::TaskQueue;
 use mas_templates::Templates;
-use tower::{make::Shared, Layer};
 use tracing::{error, info};
 
 #[derive(Parser, Debug, Default)]
@@ -191,6 +191,11 @@ impl Options {
             &config.email.reply_to,
         );
 
+        let url_builder = UrlBuilder::new(config.http.public_base.clone());
+
+        // Explicitely the config to properly zeroize secret keys
+        drop(config);
+
         // Watch for changes in templates if the --watch flag is present
         if self.watch {
             let client = watchman_client::Connector::new()
@@ -203,11 +208,14 @@ impl Options {
                 .context("could not watch for templates changes")?;
         }
 
-        let router =
-            mas_handlers::router(&pool, &templates, &key_store, &encrypter, &mailer, &config);
-
-        // Explicitely the config to properly zeroize secret keys
-        drop(config);
+        let router = mas_handlers::router(
+            &pool,
+            &templates,
+            &key_store,
+            &encrypter,
+            &mailer,
+            &url_builder,
+        );
 
         info!("Listening on http://{}", listener.local_addr().unwrap());
 

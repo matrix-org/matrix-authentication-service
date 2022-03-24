@@ -43,6 +43,7 @@ mas-storage = { path = "../storage" }
 mas-tasks = { path = "../tasks" }
 mas-templates = { path = "../templates" }
 mas-warp-utils = { path = "../warp-utils" }
+mas-axum-utils = { path = "../axum-utils" }
 
 [dev-dependencies]
 indoc = "1.0.4"
