@@ -21,12 +21,11 @@
 
 use std::sync::Arc;
 
+use axum::{extract::Extension, routing::get, Router};
 use mas_config::{Encrypter, RootConfig};
 use mas_email::Mailer;
 use mas_jose::StaticKeystore;
-use mas_static_files::filter as static_files;
 use mas_templates::Templates;
-use mas_warp_utils::filters;
 use sqlx::PgPool;
 use warp::{filters::BoxedFilter, Filter, Reply};
 
@@ -55,10 +54,26 @@ pub fn root(
         &config.http,
         &config.csrf,
     );
-    let static_files =
-        static_files(config.http.web_root.clone()).and(filters::trace::name("GET static file"));
 
-    let filter = health.or(views).unify().or(static_files).unify().or(oauth2);
+    let filter = health.or(views).unify().or(oauth2);
 
     filter.with(warp::log(module_path!())).boxed()
+}
+
+pub fn router<B: Send + 'static>(
+    pool: &PgPool,
+    templates: &Templates,
+    key_store: &Arc<StaticKeystore>,
+    encrypter: &Encrypter,
+    mailer: &Mailer,
+    config: &RootConfig,
+) -> Router<B> {
+    Router::new()
+        .route("/", get(self::views::index::get))
+        .fallback(mas_static_files::Assets)
+        .layer(Extension(pool.clone()))
+        .layer(Extension(templates.clone()))
+        .layer(Extension(key_store.clone()))
+        .layer(Extension(encrypter.clone()))
+        .layer(Extension(mailer.clone()))
 }

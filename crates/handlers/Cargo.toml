@@ -22,6 +22,8 @@ anyhow = "1.0.56"
 # Web server
 warp = "0.3.2"
 hyper = { version = "0.14.17", features = ["full"] }
+tower = "0.4.12"
+axum = "0.4.8"
 
 # Emails
 lettre = { version = "0.10.0-rc.4", default-features = false, features = ["builder"] }
@@ -63,7 +65,7 @@ mas-static-files = { path = "../static-files" }
 mas-storage = { path = "../storage" }
 mas-templates = { path = "../templates" }
 mas-warp-utils = { path = "../warp-utils" }
-tower = "0.4.12"
+mas-axum-utils = {  path = "../axum-utils" }
 
 [dev-dependencies]
 indoc = "1.0.4"
