@@ -56,13 +56,14 @@ pub trait TemplateContext: Serialize {
     }
 
     /// Attach a CSRF token to the template context
-    fn with_csrf(self, csrf_token: String) -> WithCsrf<Self>
+    fn with_csrf<C>(self, csrf_token: C) -> WithCsrf<Self>
     where
         Self: Sized,
+        C: ToString,
     {
         // TODO: make this method use a CsrfToken again
         WithCsrf {
-            csrf_token,
+            csrf_token: csrf_token.to_string(),
             inner: self,
         }
     }

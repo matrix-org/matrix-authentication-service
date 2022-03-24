@@ -22,6 +22,7 @@
 use std::sync::Arc;
 
 use axum::{extract::Extension, routing::get, Router};
+use mas_axum_utils::UrlBuilder;
 use mas_config::{Encrypter, RootConfig};
 use mas_email::Mailer;
 use mas_jose::StaticKeystore;
@@ -60,13 +61,14 @@ pub fn root(
     filter.with(warp::log(module_path!())).boxed()
 }
 
+#[must_use]
 pub fn router<B: Send + 'static>(
     pool: &PgPool,
     templates: &Templates,
     key_store: &Arc<StaticKeystore>,
     encrypter: &Encrypter,
     mailer: &Mailer,
-    config: &RootConfig,
+    url_builder: &UrlBuilder,
 ) -> Router<B> {
     Router::new()
         .route("/", get(self::views::index::get))
@@ -75,5 +77,6 @@ pub fn router<B: Send + 'static>(
         .layer(Extension(templates.clone()))
         .layer(Extension(key_store.clone()))
         .layer(Extension(encrypter.clone()))
+        .layer(Extension(url_builder.clone()))
         .layer(Extension(mailer.clone()))
 }
