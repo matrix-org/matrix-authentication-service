@@ -1,4 +1,4 @@
-// Copyright 2021 The Matrix.org Foundation C.I.C.
+// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,6 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::str::FromStr;
+
+use axum::{
+    extract::Extension,
+    response::{Html, IntoResponse},
+};
+use mas_axum_utils::{fancy_error, FancyError};
 use mas_config::{CsrfConfig, Encrypter, HttpConfig};
 use mas_data_model::BrowserSession;
 use mas_storage::PostgresqlBackend;
@@ -25,8 +32,10 @@ use mas_warp_utils::filters::{
     with_templates, CsrfToken,
 };
 use sqlx::PgPool;
+use url::Url;
 use warp::{filters::BoxedFilter, reply::html, Filter, Rejection, Reply};
 
+/*
 pub(super) fn filter(
     pool: &PgPool,
     templates: &Templates,
@@ -61,4 +70,21 @@ async fn get(
     let reply = html(content);
     let reply = cookie_saver.save_encrypted(&csrf_token, reply)?;
     Ok(Box::new(reply))
+}
+*/
+
+pub async fn get(
+    Extension(templates): Extension<Templates>,
+) -> Result<impl IntoResponse, FancyError> {
+    let ctx = IndexContext::new(
+        Url::from_str("https://example.com/.well-known/openid-discovery").unwrap(),
+    )
+    .maybe_with_session::<PostgresqlBackend>(None)
+    .with_csrf("csrf_token".to_string());
+
+    let content = templates
+        .render_index(&ctx)
+        .await
+        .map_err(fancy_error(templates))?;
+    Ok(Html(content))
 }

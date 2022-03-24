@@ -18,19 +18,18 @@ use mas_templates::Templates;
 use sqlx::PgPool;
 use warp::{filters::BoxedFilter, Filter, Reply};
 
-mod account;
-mod index;
-mod login;
-mod logout;
-mod reauth;
-mod register;
-mod shared;
-mod verify;
+pub mod account;
+pub mod index;
+pub mod login;
+pub mod logout;
+pub mod reauth;
+pub mod register;
+pub mod shared;
+pub mod verify;
 
 use self::{
-    account::filter as account, index::filter as index, login::filter as login,
-    logout::filter as logout, reauth::filter as reauth, register::filter as register,
-    verify::filter as verify,
+    account::filter as account, login::filter as login, logout::filter as logout,
+    reauth::filter as reauth, register::filter as register, verify::filter as verify,
 };
 pub(crate) use self::{
     login::LoginRequest, reauth::ReauthRequest, register::RegisterRequest, shared::PostAuthAction,
@@ -44,7 +43,6 @@ pub(super) fn filter(
     http_config: &HttpConfig,
     csrf_config: &CsrfConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
-    let index = index(pool, templates, encrypter, http_config, csrf_config);
     let account = account(pool, templates, mailer, encrypter, http_config, csrf_config);
     let login = login(pool, templates, encrypter, csrf_config);
     let register = register(pool, templates, encrypter, csrf_config);
@@ -52,9 +50,7 @@ pub(super) fn filter(
     let reauth = reauth(pool, templates, encrypter, csrf_config);
     let verify = verify(pool, templates, encrypter, csrf_config);
 
-    index
-        .or(account)
-        .unify()
+    account
         .or(login)
         .unify()
         .or(register)

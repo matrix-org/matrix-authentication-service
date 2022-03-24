@@ -203,20 +203,16 @@ impl Options {
                 .context("could not watch for templates changes")?;
         }
 
-        // Start the server
-        let root = mas_handlers::root(&pool, &templates, &key_store, &encrypter, &mailer, &config);
+        let router =
+            mas_handlers::router(&pool, &templates, &key_store, &encrypter, &mailer, &config);
 
         // Explicitely the config to properly zeroize secret keys
         drop(config);
 
-        let warp_service = warp::service(root);
-
-        let service = mas_http::ServerLayer::default().layer(warp_service);
-
         info!("Listening on http://{}", listener.local_addr().unwrap());
 
         Server::from_tcp(listener)?
-            .serve(Shared::new(service))
+            .serve(router.into_make_service())
             .with_graceful_shutdown(shutdown_signal())
             .await?;
 

@@ -18,95 +18,60 @@
 #![deny(clippy::all, missing_docs, rustdoc::broken_intra_doc_links)]
 #![warn(clippy::pedantic)]
 
-use std::path::PathBuf;
+use std::{
+    convert::Infallible,
+    future::{ready, Ready},
+};
 
-use warp::{filters::BoxedFilter, Filter, Reply};
+use axum::{
+    body::{boxed, Full},
+    response::{IntoResponse, Response},
+};
+use headers::{ContentLength, ContentType, HeaderMapExt};
+use http::{Request, StatusCode};
+use rust_embed::RustEmbed;
+use tower::Service;
 
-#[cfg(not(feature = "dev"))]
-mod builtin {
-    use std::{fmt::Write, str::FromStr};
+// TODO: read the assets live from the filesystem
 
-    use headers::{ContentLength, ContentType, ETag, HeaderMapExt};
-    use rust_embed::RustEmbed;
-    use warp::{
-        filters::BoxedFilter, hyper::StatusCode, path::Tail, reply::Response, Filter, Rejection,
-        Reply,
-    };
+/// Embedded public assets
+#[derive(RustEmbed, Clone)]
+#[folder = "public/"]
+pub struct Assets;
 
-    #[derive(RustEmbed)]
-    #[folder = "public/"]
-    struct Asset;
-
-    #[allow(clippy::unused_async)]
-    async fn serve_embed(
-        path: Tail,
-        if_none_match: Option<String>,
-    ) -> Result<Box<dyn Reply>, Rejection> {
-        let path = path.as_str();
-        let asset = Asset::get(path).ok_or_else(warp::reject::not_found)?;
-
-        // TODO: this etag calculation is ugly
-        let etag = {
-            let mut s = String::with_capacity(32 * 2 + 2);
-            write!(s, "\"").unwrap();
-            for b in asset.metadata.sha256_hash() {
-                write!(s, "{:02x}", b).unwrap();
-            }
-            write!(s, "\"").unwrap();
-            s
-        };
-
-        if Some(&etag) == if_none_match.as_ref() {
-            return Ok(Box::new(StatusCode::NOT_MODIFIED));
-        };
+impl Assets {
+    fn get_response(path: &str) -> Option<Response> {
+        let asset = Self::get(path)?;
 
         let len = asset.data.len().try_into().unwrap();
         let mime = mime_guess::from_path(path).first_or_octet_stream();
 
-        let mut res = Response::new(asset.data.into());
+        let mut res = Response::new(boxed(Full::from(asset.data)));
         res.headers_mut().typed_insert(ContentType::from(mime));
         res.headers_mut().typed_insert(ContentLength(len));
-        res.headers_mut()
-            .typed_insert(ETag::from_str(&etag).unwrap());
-        Ok(Box::new(res))
-    }
-
-    pub(crate) fn filter() -> BoxedFilter<(impl Reply,)> {
-        warp::path::tail()
-            .and(warp::filters::header::optional("If-None-Match"))
-            .and_then(serve_embed)
-            .boxed()
+        Some(res)
     }
 }
 
-#[cfg(feature = "dev")]
-mod builtin {
-    use std::path::PathBuf;
+impl<B> Service<Request<B>> for Assets {
+    type Response = Response;
+    type Error = Infallible;
+    type Future = Ready<Result<Self::Response, Self::Error>>;
 
-    use warp::{filters::BoxedFilter, Reply};
-
-    pub(crate) fn filter() -> BoxedFilter<(impl Reply,)> {
-        let path = PathBuf::from(format!("{}/public", env!("CARGO_MANIFEST_DIR")));
-        super::filter_for_path(path)
+    fn poll_ready(
+        &mut self,
+        _cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Result<(), Self::Error>> {
+        std::task::Poll::Ready(Ok(()))
     }
-}
 
-fn box_reply(reply: impl Reply + 'static) -> Box<dyn Reply> {
-    Box::new(reply)
-}
-
-fn filter_for_path(path: PathBuf) -> BoxedFilter<(impl Reply,)> {
-    warp::fs::dir(path).boxed()
-}
-
-/// [`warp`] filter that serves static files
-#[must_use]
-pub fn filter(path: Option<PathBuf>) -> BoxedFilter<(Box<dyn Reply>,)> {
-    let f = self::builtin::filter();
-
-    if let Some(path) = path {
-        f.or(filter_for_path(path)).map(box_reply).boxed()
-    } else {
-        f.map(box_reply).boxed()
+    fn call(&mut self, req: Request<B>) -> Self::Future {
+        let path = req.uri().path().trim_start_matches('/');
+        // TODO: support HEAD requests
+        // TODO: support ETag
+        // TODO: support range requests
+        let response =
+            Self::get_response(path).unwrap_or_else(|| StatusCode::NOT_FOUND.into_response());
+        ready(Ok(response))
     }
 }
