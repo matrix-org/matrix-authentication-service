@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, TimestampSeconds};
 use thiserror::Error;
 
-use crate::{CookieExt, PrivateCookieJar};
+use crate::{cookies::CookieDecodeError, CookieExt, PrivateCookieJar};
 
 /// Failed to validate CSRF token
 #[derive(Debug, Error)]
@@ -27,6 +27,14 @@ pub enum CsrfError {
     /// The token in the form did not match the token in the cookie
     #[error("CSRF token mismatch")]
     Mismatch,
+
+    /// The token in the form did not match the token in the cookie
+    #[error("Missing CSRF cookie")]
+    Missing,
+
+    /// Failed to decode the token
+    #[error("could not decode CSRF cookie")]
+    DecodeCookie(#[from] CookieDecodeError),
 
     /// The token expired
     #[error("CSRF token expired")]
@@ -89,8 +97,18 @@ impl CsrfToken {
     }
 }
 
+// A CSRF-protected form
+#[derive(Deserialize)]
+pub struct ProtectedForm<T> {
+    csrf: String,
+
+    #[serde(flatten)]
+    inner: T,
+}
+
 pub trait CsrfExt {
     fn csrf_token(self) -> (CsrfToken, Self);
+    fn verify_form<T>(&self, form: ProtectedForm<T>) -> Result<T, CsrfError>;
 }
 
 impl<K> CsrfExt for PrivateCookieJar<K> {
@@ -107,5 +125,13 @@ impl<K> CsrfExt for PrivateCookieJar<K> {
         let cookie = cookie.encode(&new_token);
         let jar = jar.add(cookie);
         (new_token, jar)
+    }
+
+    fn verify_form<T>(&self, form: ProtectedForm<T>) -> Result<T, CsrfError> {
+        let cookie = self.get("csrf").ok_or(CsrfError::Missing)?;
+        let token: CsrfToken = cookie.decode()?;
+        let token = token.verify_expiration()?;
+        token.verify_form_value(&form.csrf)?;
+        Ok(form.inner)
     }
 }

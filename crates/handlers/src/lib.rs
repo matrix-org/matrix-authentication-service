@@ -1,4 +1,4 @@
-// Copyright 2021 The Matrix.org Foundation C.I.C.
+// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
 
 use std::sync::Arc;
 
-use axum::{extract::Extension, routing::get, Router};
+use axum::{body::HttpBody, extract::Extension, routing::get, Router};
 use mas_axum_utils::UrlBuilder;
 use mas_config::{Encrypter, RootConfig};
 use mas_email::Mailer;
@@ -61,17 +61,26 @@ pub fn root(
 }
 
 #[must_use]
-pub fn router<B: Send + 'static>(
+pub fn router<B>(
     pool: &PgPool,
     templates: &Templates,
     key_store: &Arc<StaticKeystore>,
     encrypter: &Encrypter,
     mailer: &Mailer,
     url_builder: &UrlBuilder,
-) -> Router<B> {
+) -> Router<B>
+where
+    B: HttpBody + Send + 'static,
+    <B as HttpBody>::Data: Send,
+    <B as HttpBody>::Error: std::error::Error + Send + Sync,
+{
     Router::new()
         .route("/", get(self::views::index::get))
         .route("/health", get(self::health::get))
+        .route(
+            "/login",
+            get(self::views::login::get).post(self::views::login::post),
+        )
         .fallback(mas_static_files::Assets)
         .layer(Extension(pool.clone()))
         .layer(Extension(templates.clone()))
