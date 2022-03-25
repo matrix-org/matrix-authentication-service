@@ -27,7 +27,7 @@ pub mod register;
 pub mod shared;
 pub mod verify;
 
-use self::{account::filter as account, register::filter as register, verify::filter as verify};
+use self::{account::filter as account, verify::filter as verify};
 pub(crate) use self::{
     login::LoginRequest, reauth::ReauthRequest, register::RegisterRequest, shared::PostAuthAction,
 };
@@ -41,8 +41,7 @@ pub(super) fn filter(
     csrf_config: &CsrfConfig,
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
     let account = account(pool, templates, mailer, encrypter, http_config, csrf_config);
-    let register = register(pool, templates, encrypter, csrf_config);
     let verify = verify(pool, templates, encrypter, csrf_config);
 
-    account.or(register).unify().or(verify).unify().boxed()
+    account.or(verify).unify().boxed()
 }

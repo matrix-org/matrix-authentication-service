@@ -91,6 +91,10 @@ where
             "/reauth",
             get(self::views::reauth::get).post(self::views::reauth::post),
         )
+        .route(
+            "/register",
+            get(self::views::register::get).post(self::views::register::post),
+        )
         .fallback(mas_static_files::Assets)
         .layer(Extension(pool.clone()))
         .layer(Extension(templates.clone()))
