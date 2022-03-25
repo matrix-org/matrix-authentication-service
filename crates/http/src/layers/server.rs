@@ -12,45 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{marker::PhantomData, time::Duration};
+use std::marker::PhantomData;
 
 use http::{Request, Response};
-use http_body::combinators::BoxBody;
-use tower::{
-    timeout::TimeoutLayer, util::BoxCloneService, Layer, Service, ServiceBuilder, ServiceExt,
-};
-use tower_http::compression::{CompressionBody, CompressionLayer};
+use tower::{util::BoxCloneService, Layer, Service, ServiceBuilder, ServiceExt};
+use tower_http::{compression::CompressionBody, ServiceBuilderExt};
 
 use super::otel::TraceLayer;
-use crate::BoxError;
 
 #[derive(Debug, Default)]
 pub struct ServerLayer<ReqBody> {
     _t: PhantomData<ReqBody>,
 }
 
-impl<ReqBody, ResBody, S, E> Layer<S> for ServerLayer<ReqBody>
+impl<ReqBody, ResBody, S> Layer<S> for ServerLayer<ReqBody>
 where
-    S: Service<Request<ReqBody>, Response = Response<ResBody>, Error = E> + Clone + Send + 'static,
-    ReqBody: http_body::Body + 'static,
-    ResBody: http_body::Body + Sync + Send + 'static,
-    ResBody::Error: std::fmt::Display + 'static,
+    S: Service<Request<ReqBody>, Response = Response<ResBody>> + Clone + Send + 'static,
     S::Future: Send + 'static,
-    E: std::error::Error + Into<BoxError>,
+    S::Error: std::fmt::Display,
+    ReqBody: http_body::Body + 'static,
+    ResBody: http_body::Body + Send + 'static,
 {
     #[allow(clippy::type_complexity)]
-    type Service = BoxCloneService<
-        Request<ReqBody>,
-        Response<CompressionBody<BoxBody<ResBody::Data, ResBody::Error>>>,
-        BoxError,
-    >;
+    type Service = BoxCloneService<Request<ReqBody>, Response<CompressionBody<ResBody>>, S::Error>;
 
     fn layer(&self, inner: S) -> Self::Service {
         ServiceBuilder::new()
-            .layer(CompressionLayer::new())
+            .compression()
             .layer(TraceLayer::http_server())
-            .map_response(|r: Response<_>| r.map(BoxBody::new))
-            .layer(TimeoutLayer::new(Duration::from_secs(10)))
             .service(inner)
             .boxed_clone()
     }

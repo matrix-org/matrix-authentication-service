@@ -56,16 +56,17 @@ rand = "0.8.5"
 headers = "0.3.7"
 
 oauth2-types = { path = "../oauth2-types" }
+mas-axum-utils = {  path = "../axum-utils" }
 mas-config = { path = "../config" }
 mas-data-model = { path = "../data-model" }
 mas-email = { path = "../email" }
+mas-http = {  path = "../http" }
 mas-iana = { path = "../iana" }
 mas-jose = { path = "../jose" }
 mas-static-files = { path = "../static-files" }
 mas-storage = { path = "../storage" }
 mas-templates = { path = "../templates" }
 mas-warp-utils = { path = "../warp-utils" }
-mas-axum-utils = {  path = "../axum-utils" }
 
 [dev-dependencies]
 indoc = "1.0.4"
