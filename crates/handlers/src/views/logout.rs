@@ -1,4 +1,4 @@
-// Copyright 2021 The Matrix.org Foundation C.I.C.
+// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,34 +12,48 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use mas_config::Encrypter;
-use mas_data_model::BrowserSession;
-use mas_storage::{user::end_session, PostgresqlBackend};
-use mas_warp_utils::{
-    errors::WrapError,
-    filters::{self, csrf::protected_form, database::transaction, session::session},
+use axum::{
+    extract::{Extension, Form},
+    response::{IntoResponse, Redirect},
 };
-use sqlx::{PgPool, Postgres, Transaction};
-use warp::{filters::BoxedFilter, hyper::Uri, Filter, Rejection, Reply};
+use hyper::Uri;
+use mas_axum_utils::{
+    csrf::{CsrfExt, ProtectedForm},
+    fancy_error, FancyError, PrivateCookieJar, SessionInfoExt,
+};
+use mas_config::Encrypter;
+use mas_storage::user::end_session;
+use mas_templates::Templates;
+use sqlx::PgPool;
 
-pub(super) fn filter(pool: &PgPool, encrypter: &Encrypter) -> BoxedFilter<(Box<dyn Reply>,)> {
-    warp::path!("logout")
-        .and(filters::trace::name("POST /logout"))
-        .and(warp::post())
-        .and(session(pool, encrypter))
-        .and(transaction(pool))
-        .and(protected_form(encrypter))
-        .and_then(post)
-        .boxed()
-}
+pub(crate) async fn post(
+    Extension(templates): Extension<Templates>,
+    Extension(pool): Extension<PgPool>,
+    cookie_jar: PrivateCookieJar<Encrypter>,
+    Form(form): Form<ProtectedForm<()>>,
+) -> Result<impl IntoResponse, FancyError> {
+    let mut txn = pool.begin().await.map_err(fancy_error(templates.clone()))?;
 
-async fn post(
-    session: BrowserSession<PostgresqlBackend>,
-    mut txn: Transaction<'_, Postgres>,
-    _form: (),
-) -> Result<Box<dyn Reply>, Rejection> {
-    end_session(&mut txn, &session).await.wrap_error()?;
-    txn.commit().await.wrap_error()?;
+    cookie_jar
+        .verify_form(form)
+        .map_err(fancy_error(templates.clone()))?;
 
-    Ok(Box::new(warp::redirect(Uri::from_static("/login"))))
+    let (session_info, mut cookie_jar) = cookie_jar.session_info();
+
+    let maybe_session = session_info
+        .load_session(&mut txn)
+        .await
+        .map_err(fancy_error(templates.clone()))?;
+
+    if let Some(session) = maybe_session {
+        end_session(&mut txn, &session)
+            .await
+            .map_err(fancy_error(templates.clone()))?;
+        cookie_jar = cookie_jar.update_session_info(&session_info.mark_session_ended());
+    }
+
+    txn.commit().await.map_err(fancy_error(templates))?;
+
+    let to = Uri::from_static("/login");
+    Ok((cookie_jar.headers(), Redirect::to(to)))
 }
