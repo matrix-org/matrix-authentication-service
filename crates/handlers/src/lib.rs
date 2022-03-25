@@ -34,7 +34,7 @@ mod health;
 mod oauth2;
 mod views;
 
-use self::{health::filter as health, oauth2::filter as oauth2, views::filter as views};
+use self::{oauth2::filter as oauth2, views::filter as views};
 
 #[must_use]
 pub fn root(
@@ -45,7 +45,6 @@ pub fn root(
     mailer: &Mailer,
     config: &RootConfig,
 ) -> BoxedFilter<(impl Reply,)> {
-    let health = health(pool);
     let oauth2 = oauth2(pool, templates, key_store, encrypter, &config.http);
     let views = views(
         pool,
@@ -56,7 +55,7 @@ pub fn root(
         &config.csrf,
     );
 
-    let filter = health.or(views).unify().or(oauth2);
+    let filter = views.or(oauth2);
 
     filter.with(warp::log(module_path!())).boxed()
 }
@@ -72,6 +71,7 @@ pub fn router<B: Send + 'static>(
 ) -> Router<B> {
     Router::new()
         .route("/", get(self::views::index::get))
+        .route("/health", get(self::health::get))
         .fallback(mas_static_files::Assets)
         .layer(Extension(pool.clone()))
         .layer(Extension(templates.clone()))
