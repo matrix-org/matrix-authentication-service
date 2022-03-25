@@ -25,6 +25,7 @@ use hyper::Server;
 use mas_axum_utils::UrlBuilder;
 use mas_config::RootConfig;
 use mas_email::{MailTransport, Mailer};
+use mas_http::ServerLayer;
 use mas_storage::MIGRATOR;
 use mas_tasks::TaskQueue;
 use mas_templates::Templates;
@@ -215,7 +216,8 @@ impl Options {
             &encrypter,
             &mailer,
             &url_builder,
-        );
+        )
+        .layer(ServerLayer::default());
 
         info!("Listening on http://{}", listener.local_addr().unwrap());
 
