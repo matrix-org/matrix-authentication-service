@@ -38,6 +38,13 @@ impl SessionInfo {
         }
     }
 
+    /// Mark the session as ended
+    #[must_use]
+    pub fn mark_session_ended(mut self) -> Self {
+        self.current = None;
+        self
+    }
+
     /// Load the [`BrowserSession`] from database
     pub async fn load_session(
         &self,

@@ -21,7 +21,12 @@
 
 use std::sync::Arc;
 
-use axum::{body::HttpBody, extract::Extension, routing::get, Router};
+use axum::{
+    body::HttpBody,
+    extract::Extension,
+    routing::{get, post},
+    Router,
+};
 use mas_axum_utils::UrlBuilder;
 use mas_config::{Encrypter, RootConfig};
 use mas_email::Mailer;
@@ -81,6 +86,7 @@ where
             "/login",
             get(self::views::login::get).post(self::views::login::post),
         )
+        .route("/logout", post(self::views::logout::post))
         .fallback(mas_static_files::Assets)
         .layer(Extension(pool.clone()))
         .layer(Extension(templates.clone()))

@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![allow(clippy::trait_duplication_in_bounds)]
-
 use axum::{
     extract::{Extension, Form, Query},
     response::{Html, IntoResponse, Redirect, Response},

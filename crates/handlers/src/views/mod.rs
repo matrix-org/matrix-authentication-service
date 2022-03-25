@@ -28,8 +28,8 @@ pub mod shared;
 pub mod verify;
 
 use self::{
-    account::filter as account, logout::filter as logout, reauth::filter as reauth,
-    register::filter as register, verify::filter as verify,
+    account::filter as account, reauth::filter as reauth, register::filter as register,
+    verify::filter as verify,
 };
 pub(crate) use self::{
     login::LoginRequest, reauth::ReauthRequest, register::RegisterRequest, shared::PostAuthAction,
@@ -45,14 +45,11 @@ pub(super) fn filter(
 ) -> BoxedFilter<(Box<dyn Reply>,)> {
     let account = account(pool, templates, mailer, encrypter, http_config, csrf_config);
     let register = register(pool, templates, encrypter, csrf_config);
-    let logout = logout(pool, encrypter);
     let reauth = reauth(pool, templates, encrypter, csrf_config);
     let verify = verify(pool, templates, encrypter, csrf_config);
 
     account
         .or(register)
-        .unify()
-        .or(logout)
         .unify()
         .or(reauth)
         .unify()
