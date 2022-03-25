@@ -50,7 +50,9 @@ where
     }
 }
 
-pub fn fancy_error<E: Error + 'static>(templates: Templates) -> impl Fn(E) -> FancyError {
+pub fn fancy_error<E: std::fmt::Display + 'static>(
+    templates: Templates,
+) -> impl Fn(E) -> FancyError {
     move |error: E| FancyError {
         templates: Some(templates.clone()),
         error: Box::new(error),
@@ -69,7 +71,7 @@ where
 
 pub struct FancyError {
     templates: Option<Templates>,
-    error: Box<dyn Error>,
+    error: Box<dyn std::fmt::Display>,
 }
 
 impl IntoResponse for FancyError {
@@ -99,4 +101,3 @@ impl IntoResponse for FancyError {
         res
     }
 }
-
