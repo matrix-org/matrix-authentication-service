@@ -12,27 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use hyper::http::uri::{Parts, PathAndQuery};
-use mas_config::{CsrfConfig, Encrypter};
-use mas_data_model::BrowserSession;
-use mas_storage::{user::authenticate_session, PostgresqlBackend};
-use mas_templates::{ReauthContext, TemplateContext, Templates};
-use mas_warp_utils::{
-    errors::WrapError,
-    filters::{
-        self,
-        cookies::{encrypted_cookie_saver, EncryptedCookieSaver},
-        csrf::{protected_form, updated_csrf_token},
-        database::{connection, transaction},
-        session::session,
-        with_templates, CsrfToken,
-    },
+use axum::{
+    extract::{Extension, Form, Query},
+    response::{Html, IntoResponse, Redirect, Response},
 };
+use hyper::{
+    http::uri::{Parts, PathAndQuery},
+    Uri,
+};
+use mas_axum_utils::{
+    csrf::{CsrfExt, ProtectedForm},
+    fancy_error, FancyError, PrivateCookieJar, SessionInfoExt,
+};
+use mas_config::Encrypter;
+use mas_storage::user::authenticate_session;
+use mas_templates::{ReauthContext, TemplateContext, Templates};
 use serde::Deserialize;
-use sqlx::{pool::PoolConnection, PgPool, Postgres, Transaction};
-use warp::{filters::BoxedFilter, hyper::Uri, reply::html, Filter, Rejection, Reply};
+use sqlx::PgPool;
 
-use super::PostAuthAction;
+use super::{LoginRequest, PostAuthAction};
 
 #[derive(Deserialize)]
 pub(crate) struct ReauthRequest {
@@ -64,85 +62,109 @@ impl ReauthRequest {
         Ok(uri)
     }
 
-    fn redirect(self) -> Result<impl Reply, Rejection> {
-        let uri = self
-            .post_auth_action
-            .as_ref()
-            .map(PostAuthAction::build_uri)
-            .transpose()
-            .wrap_error()?
-            .unwrap_or_else(|| Uri::from_static("/"));
-        Ok(warp::redirect::see_other(uri))
+    fn redirect(self) -> Result<impl IntoResponse, anyhow::Error> {
+        let uri = if let Some(action) = self.post_auth_action {
+            action.build_uri()?
+        } else {
+            Uri::from_static("/")
+        };
+
+        Ok(Redirect::to(uri))
     }
 }
 
 #[derive(Deserialize, Debug)]
-struct ReauthForm {
+pub(crate) struct ReauthForm {
     password: String,
 }
 
-pub(super) fn filter(
-    pool: &PgPool,
-    templates: &Templates,
-    encrypter: &Encrypter,
-    csrf_config: &CsrfConfig,
-) -> BoxedFilter<(Box<dyn Reply>,)> {
-    let get = warp::get()
-        .and(filters::trace::name("GET /reauth"))
-        .and(with_templates(templates))
-        .and(connection(pool))
-        .and(encrypted_cookie_saver(encrypter))
-        .and(updated_csrf_token(encrypter, csrf_config))
-        .and(session(pool, encrypter))
-        .and(warp::query())
-        .and_then(get);
+pub(crate) async fn get(
+    Extension(templates): Extension<Templates>,
+    Extension(pool): Extension<PgPool>,
+    Query(query): Query<ReauthRequest>,
+    cookie_jar: PrivateCookieJar<Encrypter>,
+) -> Result<Response, FancyError> {
+    let mut conn = pool
+        .acquire()
+        .await
+        .map_err(fancy_error(templates.clone()))?;
 
-    let post = warp::post()
-        .and(filters::trace::name("POST /reauth"))
-        .and(session(pool, encrypter))
-        .and(transaction(pool))
-        .and(protected_form(encrypter))
-        .and(warp::query())
-        .and_then(post);
+    let (csrf_token, cookie_jar) = cookie_jar.csrf_token();
+    let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    warp::path!("reauth").and(get.or(post).unify()).boxed()
-}
+    let maybe_session = session_info
+        .load_session(&mut conn)
+        .await
+        .map_err(fancy_error(templates.clone()))?;
 
-async fn get(
-    templates: Templates,
-    mut conn: PoolConnection<Postgres>,
-    cookie_saver: EncryptedCookieSaver,
-    csrf_token: CsrfToken,
-    session: BrowserSession<PostgresqlBackend>,
-    query: ReauthRequest,
-) -> Result<Box<dyn Reply>, Rejection> {
+    let session = if let Some(session) = maybe_session {
+        session
+    } else {
+        // If there is no session, redirect to the login screen, keeping the
+        // PostAuthAction
+        let login: LoginRequest = query.post_auth_action.into();
+        let login = login.build_uri().map_err(fancy_error(templates.clone()))?;
+        return Ok((cookie_jar.headers(), Redirect::to(login)).into_response());
+    };
+
     let ctx = ReauthContext::default();
     let ctx = match query.post_auth_action {
         Some(next) => {
-            let next = next.load_context(&mut conn).await.wrap_error()?;
+            let next = next
+                .load_context(&mut conn)
+                .await
+                .map_err(fancy_error(templates.clone()))?;
             ctx.with_post_action(next)
         }
         None => ctx,
     };
     let ctx = ctx.with_session(session).with_csrf(csrf_token.form_value());
 
-    let content = templates.render_reauth(&ctx).await?;
-    let reply = html(content);
-    let reply = cookie_saver.save_encrypted(&csrf_token, reply)?;
-    Ok(Box::new(reply))
+    let content = templates
+        .render_reauth(&ctx)
+        .await
+        .map_err(fancy_error(templates.clone()))?;
+
+    Ok((cookie_jar.headers(), Html(content)).into_response())
 }
 
-async fn post(
-    mut session: BrowserSession<PostgresqlBackend>,
-    mut txn: Transaction<'_, Postgres>,
-    form: ReauthForm,
-    query: ReauthRequest,
-) -> Result<Box<dyn Reply>, Rejection> {
+pub(crate) async fn post(
+    Extension(templates): Extension<Templates>,
+    Extension(pool): Extension<PgPool>,
+    Query(query): Query<ReauthRequest>,
+    cookie_jar: PrivateCookieJar<Encrypter>,
+    Form(form): Form<ProtectedForm<ReauthForm>>,
+) -> Result<Response, FancyError> {
+    let mut txn = pool.begin().await.map_err(fancy_error(templates.clone()))?;
+
+    let form = cookie_jar
+        .verify_form(form)
+        .map_err(fancy_error(templates.clone()))?;
+
+    let (session_info, cookie_jar) = cookie_jar.session_info();
+
+    let maybe_session = session_info
+        .load_session(&mut txn)
+        .await
+        .map_err(fancy_error(templates.clone()))?;
+
+    let mut session = if let Some(session) = maybe_session {
+        session
+    } else {
+        // If there is no session, redirect to the login screen, keeping the
+        // PostAuthAction
+        let login: LoginRequest = query.post_auth_action.into();
+        let login = login.build_uri().map_err(fancy_error(templates.clone()))?;
+        return Ok((cookie_jar.headers(), Redirect::to(login)).into_response());
+    };
+
     // TODO: recover from errors here
     authenticate_session(&mut txn, &mut session, form.password)
         .await
-        .wrap_error()?;
-    txn.commit().await.wrap_error()?;
+        .map_err(fancy_error(templates.clone()))?;
+    let cookie_jar = cookie_jar.set_session(&session);
+    txn.commit().await.map_err(fancy_error(templates.clone()))?;
 
-    Ok(Box::new(query.redirect()?))
+    let redirection = query.redirect().map_err(fancy_error(templates.clone()))?;
+    Ok((cookie_jar.headers(), redirection).into_response())
 }
