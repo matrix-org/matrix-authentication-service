@@ -38,9 +38,13 @@ pub(crate) struct LoginRequest {
 
 impl From<PostAuthAction> for LoginRequest {
     fn from(post_auth_action: PostAuthAction) -> Self {
-        Self {
-            post_auth_action: Some(post_auth_action),
-        }
+        Some(post_auth_action).into()
+    }
+}
+
+impl From<Option<PostAuthAction>> for LoginRequest {
+    fn from(post_auth_action: Option<PostAuthAction>) -> Self {
+        Self { post_auth_action }
     }
 }
 

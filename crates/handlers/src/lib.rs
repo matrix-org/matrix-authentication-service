@@ -87,6 +87,10 @@ where
             get(self::views::login::get).post(self::views::login::post),
         )
         .route("/logout", post(self::views::logout::post))
+        .route(
+            "/reauth",
+            get(self::views::reauth::get).post(self::views::reauth::post),
+        )
         .fallback(mas_static_files::Assets)
         .layer(Extension(pool.clone()))
         .layer(Extension(templates.clone()))
