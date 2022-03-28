@@ -95,6 +95,7 @@ where
             "/register",
             get(self::views::register::get).post(self::views::register::post),
         )
+        .route("/verify/:code", get(self::views::verify::get))
         .fallback(mas_static_files::Assets)
         .layer(Extension(pool.clone()))
         .layer(Extension(templates.clone()))
