@@ -114,7 +114,10 @@ pub trait CsrfExt {
 impl<K> CsrfExt for PrivateCookieJar<K> {
     fn csrf_token(self) -> (CsrfToken, Self) {
         let jar = self;
-        let cookie = jar.get("csrf").unwrap_or_else(|| Cookie::new("csrf", ""));
+        let mut cookie = jar.get("csrf").unwrap_or_else(|| Cookie::new("csrf", ""));
+        cookie.set_path("/");
+        cookie.set_http_only(true);
+
         let new_token = cookie
             .decode()
             .ok()

@@ -76,9 +76,11 @@ pub trait SessionInfoExt {
 impl<K> SessionInfoExt for PrivateCookieJar<K> {
     fn session_info(self) -> (SessionInfo, Self) {
         let jar = self;
-        let cookie = jar
+        let mut cookie = jar
             .get("session")
             .unwrap_or_else(|| Cookie::new("session", ""));
+        cookie.set_path("/");
+        cookie.set_http_only(true);
         let session_info = cookie.decode().unwrap_or_default();
 
         let cookie = cookie.encode(&session_info);

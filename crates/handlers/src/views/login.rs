@@ -30,7 +30,7 @@ use sqlx::PgPool;
 
 use super::{shared::PostAuthAction, RegisterRequest};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Default)]
 pub(crate) struct LoginRequest {
     #[serde(flatten)]
     post_auth_action: Option<PostAuthAction>,

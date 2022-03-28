@@ -1,4 +1,4 @@
-// Copyright 2021-2022 The Matrix.org Foundation C.I.C.
+// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,12 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use mas_config::{CsrfConfig, Encrypter, HttpConfig};
-use mas_email::Mailer;
-use mas_templates::Templates;
-use sqlx::PgPool;
-use warp::{filters::BoxedFilter, Filter, Reply};
-
 pub mod account;
 pub mod index;
 pub mod login;
@@ -27,20 +21,6 @@ pub mod register;
 pub mod shared;
 pub mod verify;
 
-use self::account::filter as account;
 pub(crate) use self::{
     login::LoginRequest, reauth::ReauthRequest, register::RegisterRequest, shared::PostAuthAction,
 };
-
-pub(super) fn filter(
-    pool: &PgPool,
-    templates: &Templates,
-    mailer: &Mailer,
-    encrypter: &Encrypter,
-    http_config: &HttpConfig,
-    csrf_config: &CsrfConfig,
-) -> BoxedFilter<(Box<dyn Reply>,)> {
-    let account = account(pool, templates, mailer, encrypter, http_config, csrf_config);
-
-    account.boxed()
-}
