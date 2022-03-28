@@ -13,117 +13,122 @@
 // limitations under the License.
 
 use argon2::Argon2;
-use mas_config::{CsrfConfig, Encrypter};
+use axum::{
+    extract::{Extension, Form},
+    response::{Html, IntoResponse, Redirect, Response},
+};
+use mas_axum_utils::{
+    csrf::{CsrfExt, ProtectedForm},
+    fancy_error, FancyError, PrivateCookieJar, SessionInfoExt,
+};
+use mas_config::Encrypter;
 use mas_data_model::BrowserSession;
 use mas_storage::{
     user::{authenticate_session, set_password},
     PostgresqlBackend,
 };
 use mas_templates::{EmptyContext, TemplateContext, Templates};
-use mas_warp_utils::{
-    errors::WrapError,
-    filters::{
-        self,
-        cookies::{encrypted_cookie_saver, EncryptedCookieSaver},
-        csrf::{protected_form, updated_csrf_token},
-        database::transaction,
-        session::session,
-        with_templates, CsrfToken,
-    },
-};
 use serde::Deserialize;
-use sqlx::{PgPool, Postgres, Transaction};
-use warp::{filters::BoxedFilter, reply::html, Filter, Rejection, Reply};
+use sqlx::PgPool;
 
-pub(super) fn filter(
-    pool: &PgPool,
-    templates: &Templates,
-    encrypter: &Encrypter,
-    csrf_config: &CsrfConfig,
-) -> BoxedFilter<(Box<dyn Reply>,)> {
-    let get = with_templates(templates)
-        .and(encrypted_cookie_saver(encrypter))
-        .and(updated_csrf_token(encrypter, csrf_config))
-        .and(session(pool, encrypter))
-        .and_then(get);
-
-    let post = with_templates(templates)
-        .and(encrypted_cookie_saver(encrypter))
-        .and(updated_csrf_token(encrypter, csrf_config))
-        .and(session(pool, encrypter))
-        .and(transaction(pool))
-        .and(protected_form(encrypter))
-        .and_then(post);
-
-    let get = warp::get()
-        .and(get)
-        .and(filters::trace::name("GET /account/passwords"));
-    let post = warp::post()
-        .and(post)
-        .and(filters::trace::name("POST /account/passwords"));
-    let filter = get.or(post).unify();
-
-    warp::path!("password").and(filter).boxed()
-}
+use crate::views::LoginRequest;
 
 #[derive(Deserialize)]
-struct Form {
+pub struct ChangeForm {
     current_password: String,
     new_password: String,
     new_password_confirm: String,
 }
 
-async fn get(
-    templates: Templates,
-    cookie_saver: EncryptedCookieSaver,
-    csrf_token: CsrfToken,
-    session: BrowserSession<PostgresqlBackend>,
-) -> Result<Box<dyn Reply>, Rejection> {
-    render(templates, cookie_saver, csrf_token, session).await
+pub(crate) async fn get(
+    Extension(templates): Extension<Templates>,
+    Extension(pool): Extension<PgPool>,
+    cookie_jar: PrivateCookieJar<Encrypter>,
+) -> Result<Response, FancyError> {
+    let mut conn = pool
+        .acquire()
+        .await
+        .map_err(fancy_error(templates.clone()))?;
+
+    let (session_info, cookie_jar) = cookie_jar.session_info();
+
+    let maybe_session = session_info
+        .load_session(&mut conn)
+        .await
+        .map_err(fancy_error(templates.clone()))?;
+
+    if let Some(session) = maybe_session {
+        render(templates, session, cookie_jar).await
+    } else {
+        let login = LoginRequest::default();
+        let login = login.build_uri().map_err(fancy_error(templates.clone()))?;
+        Ok((cookie_jar.headers(), Redirect::to(login)).into_response())
+    }
 }
 
 async fn render(
     templates: Templates,
-    cookie_saver: EncryptedCookieSaver,
-    csrf_token: CsrfToken,
     session: BrowserSession<PostgresqlBackend>,
-) -> Result<Box<dyn Reply>, Rejection> {
+    cookie_jar: PrivateCookieJar<Encrypter>,
+) -> Result<Response, FancyError> {
+    let (csrf_token, cookie_jar) = cookie_jar.csrf_token();
+
     let ctx = EmptyContext
         .with_session(session)
         .with_csrf(csrf_token.form_value());
 
-    let content = templates.render_account_password(&ctx).await?;
-    let reply = html(content);
-    let reply = cookie_saver.save_encrypted(&csrf_token, reply)?;
+    let content = templates
+        .render_account_password(&ctx)
+        .await
+        .map_err(fancy_error(templates))?;
 
-    Ok(Box::new(reply))
+    Ok((cookie_jar.headers(), Html(content)).into_response())
 }
 
-async fn post(
-    templates: Templates,
-    cookie_saver: EncryptedCookieSaver,
-    csrf_token: CsrfToken,
-    mut session: BrowserSession<PostgresqlBackend>,
-    mut txn: Transaction<'_, Postgres>,
-    form: Form,
-) -> Result<Box<dyn Reply>, Rejection> {
+pub(crate) async fn post(
+    Extension(templates): Extension<Templates>,
+    Extension(pool): Extension<PgPool>,
+    cookie_jar: PrivateCookieJar<Encrypter>,
+    Form(form): Form<ProtectedForm<ChangeForm>>,
+) -> Result<Response, FancyError> {
+    let mut txn = pool.begin().await.map_err(fancy_error(templates.clone()))?;
+
+    let form = cookie_jar
+        .verify_form(form)
+        .map_err(fancy_error(templates.clone()))?;
+
+    let (session_info, cookie_jar) = cookie_jar.session_info();
+
+    let maybe_session = session_info
+        .load_session(&mut txn)
+        .await
+        .map_err(fancy_error(templates.clone()))?;
+
+    let mut session = if let Some(session) = maybe_session {
+        session
+    } else {
+        let login = LoginRequest::default();
+        let login = login.build_uri().map_err(fancy_error(templates.clone()))?;
+        return Ok((cookie_jar.headers(), Redirect::to(login)).into_response());
+    };
+
     authenticate_session(&mut txn, &mut session, form.current_password)
         .await
-        .wrap_error()?;
+        .map_err(fancy_error(templates.clone()))?;
 
     // TODO: display nice form errors
     if form.new_password != form.new_password_confirm {
-        return Err(anyhow::anyhow!("password mismatch")).wrap_error();
+        return Err(anyhow::anyhow!("password mismatch")).map_err(fancy_error(templates.clone()));
     }
 
     let phf = Argon2::default();
     set_password(&mut txn, phf, &session.user, &form.new_password)
         .await
-        .wrap_error()?;
+        .map_err(fancy_error(templates.clone()))?;
 
-    let reply = render(templates, cookie_saver, csrf_token, session).await?;
+    let reply = render(templates.clone(), session, cookie_jar).await?;
 
-    txn.commit().await.wrap_error()?;
+    txn.commit().await.map_err(fancy_error(templates.clone()))?;
 
     Ok(reply)
 }

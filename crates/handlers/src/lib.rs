@@ -39,7 +39,7 @@ mod health;
 mod oauth2;
 mod views;
 
-use self::{oauth2::filter as oauth2, views::filter as views};
+use self::oauth2::filter as oauth2;
 
 #[must_use]
 pub fn root(
@@ -47,20 +47,11 @@ pub fn root(
     templates: &Templates,
     key_store: &Arc<StaticKeystore>,
     encrypter: &Encrypter,
-    mailer: &Mailer,
     config: &RootConfig,
 ) -> BoxedFilter<(impl Reply,)> {
     let oauth2 = oauth2(pool, templates, key_store, encrypter, &config.http);
-    let views = views(
-        pool,
-        templates,
-        mailer,
-        encrypter,
-        &config.http,
-        &config.csrf,
-    );
 
-    let filter = views.or(oauth2);
+    let filter = oauth2;
 
     filter.with(warp::log(module_path!())).boxed()
 }
@@ -96,6 +87,15 @@ where
             get(self::views::register::get).post(self::views::register::post),
         )
         .route("/verify/:code", get(self::views::verify::get))
+        .route("/account", get(self::views::account::get))
+        .route(
+            "/account/password",
+            get(self::views::account::password::get).post(self::views::account::password::post),
+        )
+        .route(
+            "/account/emails",
+            get(self::views::account::emails::get).post(self::views::account::emails::post),
+        )
         .fallback(mas_static_files::Assets)
         .layer(Extension(pool.clone()))
         .layer(Extension(templates.clone()))

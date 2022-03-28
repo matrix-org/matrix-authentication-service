@@ -12,8 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use axum::{
+    extract::{Extension, Form},
+    response::{Html, IntoResponse, Redirect, Response},
+};
 use lettre::{message::Mailbox, Address};
-use mas_config::{CsrfConfig, Encrypter, HttpConfig};
+use mas_axum_utils::{
+    csrf::{CsrfExt, ProtectedForm},
+    fancy_error, FancyError, PrivateCookieJar, SessionInfoExt, UrlBuilder,
+};
+use mas_config::Encrypter;
 use mas_data_model::{BrowserSession, User, UserEmail};
 use mas_email::Mailer;
 use mas_storage::{
@@ -24,99 +32,70 @@ use mas_storage::{
     PostgresqlBackend,
 };
 use mas_templates::{AccountEmailsContext, EmailVerificationContext, TemplateContext, Templates};
-use mas_warp_utils::{
-    errors::WrapError,
-    filters::{
-        self,
-        cookies::{encrypted_cookie_saver, EncryptedCookieSaver},
-        csrf::{protected_form, updated_csrf_token},
-        database::{connection, transaction},
-        session::session,
-        url_builder::{url_builder, UrlBuilder},
-        with_templates, CsrfToken,
-    },
-};
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use serde::Deserialize;
-use sqlx::{pool::PoolConnection, PgExecutor, PgPool, Postgres, Transaction};
+use sqlx::{PgExecutor, PgPool};
 use tracing::info;
-use warp::{filters::BoxedFilter, reply::html, Filter, Rejection, Reply};
 
-pub(super) fn filter(
-    pool: &PgPool,
-    templates: &Templates,
-    mailer: &Mailer,
-    encrypter: &Encrypter,
-    http_config: &HttpConfig,
-    csrf_config: &CsrfConfig,
-) -> BoxedFilter<(Box<dyn Reply>,)> {
-    let mailer = mailer.clone();
-
-    let get = with_templates(templates)
-        .and(filters::trace::name("GET /account/emails"))
-        .and(encrypted_cookie_saver(encrypter))
-        .and(updated_csrf_token(encrypter, csrf_config))
-        .and(session(pool, encrypter))
-        .and(connection(pool))
-        .and_then(get);
-
-    let post = with_templates(templates)
-        .and(filters::trace::name("POST /account/emails"))
-        .and(warp::any().map(move || mailer.clone()))
-        .and(url_builder(http_config))
-        .and(encrypted_cookie_saver(encrypter))
-        .and(updated_csrf_token(encrypter, csrf_config))
-        .and(session(pool, encrypter))
-        .and(transaction(pool))
-        .and(protected_form(encrypter))
-        .and_then(post);
-
-    let get = warp::get().and(get);
-    let post = warp::post().and(post);
-    let filter = get.or(post).unify();
-
-    warp::path!("emails").and(filter).boxed()
-}
+use crate::views::LoginRequest;
 
 #[derive(Deserialize, Debug)]
 #[serde(tag = "action", rename_all = "snake_case")]
-enum Form {
+pub enum ManagementForm {
     Add { email: String },
     ResendConfirmation { data: String },
     SetPrimary { data: String },
     Remove { data: String },
 }
 
-async fn get(
-    templates: Templates,
-    cookie_saver: EncryptedCookieSaver,
-    csrf_token: CsrfToken,
-    session: BrowserSession<PostgresqlBackend>,
-    mut conn: PoolConnection<Postgres>,
-) -> Result<Box<dyn Reply>, Rejection> {
-    render(templates, cookie_saver, csrf_token, session, &mut conn).await
+pub(crate) async fn get(
+    Extension(templates): Extension<Templates>,
+    Extension(pool): Extension<PgPool>,
+    cookie_jar: PrivateCookieJar<Encrypter>,
+) -> Result<Response, FancyError> {
+    let mut conn = pool
+        .acquire()
+        .await
+        .map_err(fancy_error(templates.clone()))?;
+
+    let (session_info, cookie_jar) = cookie_jar.session_info();
+
+    let maybe_session = session_info
+        .load_session(&mut conn)
+        .await
+        .map_err(fancy_error(templates.clone()))?;
+
+    if let Some(session) = maybe_session {
+        render(templates, session, cookie_jar, &mut conn).await
+    } else {
+        let login = LoginRequest::default();
+        let login = login.build_uri().map_err(fancy_error(templates.clone()))?;
+        Ok((cookie_jar.headers(), Redirect::to(login)).into_response())
+    }
 }
 
 async fn render(
     templates: Templates,
-    cookie_saver: EncryptedCookieSaver,
-    csrf_token: CsrfToken,
     session: BrowserSession<PostgresqlBackend>,
+    cookie_jar: PrivateCookieJar<Encrypter>,
     executor: impl PgExecutor<'_>,
-) -> Result<Box<dyn Reply>, Rejection> {
+) -> Result<Response, FancyError> {
+    let (csrf_token, cookie_jar) = cookie_jar.csrf_token();
+
     let emails = get_user_emails(executor, &session.user)
         .await
-        .wrap_error()?;
+        .map_err(fancy_error(templates.clone()))?;
 
     let ctx = AccountEmailsContext::new(emails)
         .with_session(session)
         .with_csrf(csrf_token.form_value());
 
-    let content = templates.render_account_emails(&ctx).await?;
-    let reply = html(content);
-    let reply = cookie_saver.save_encrypted(&csrf_token, reply)?;
+    let content = templates
+        .render_account_emails(&ctx)
+        .await
+        .map_err(fancy_error(templates))?;
 
-    Ok(Box::new(reply))
+    Ok((cookie_jar.headers(), Html(content)).into_response())
 }
 
 async fn start_email_verification(
@@ -150,59 +129,80 @@ async fn start_email_verification(
     Ok(())
 }
 
-#[allow(clippy::too_many_arguments)]
-async fn post(
-    templates: Templates,
-    mailer: Mailer,
-    url_builder: UrlBuilder,
-    cookie_saver: EncryptedCookieSaver,
-    csrf_token: CsrfToken,
-    mut session: BrowserSession<PostgresqlBackend>,
-    mut txn: Transaction<'_, Postgres>,
-    form: Form,
-) -> Result<Box<dyn Reply>, Rejection> {
+pub(crate) async fn post(
+    Extension(templates): Extension<Templates>,
+    Extension(pool): Extension<PgPool>,
+    Extension(url_builder): Extension<UrlBuilder>,
+    Extension(mailer): Extension<Mailer>,
+    cookie_jar: PrivateCookieJar<Encrypter>,
+    Form(form): Form<ProtectedForm<ManagementForm>>,
+) -> Result<Response, FancyError> {
+    let mut txn = pool.begin().await.map_err(fancy_error(templates.clone()))?;
+
+    let (session_info, cookie_jar) = cookie_jar.session_info();
+
+    let maybe_session = session_info
+        .load_session(&mut txn)
+        .await
+        .map_err(fancy_error(templates.clone()))?;
+
+    let mut session = if let Some(session) = maybe_session {
+        session
+    } else {
+        let login = LoginRequest::default();
+        let login = login.build_uri().map_err(fancy_error(templates.clone()))?;
+        return Ok((cookie_jar.headers(), Redirect::to(login)).into_response());
+    };
+
+    let form = cookie_jar
+        .verify_form(form)
+        .map_err(fancy_error(templates.clone()))?;
+
     match form {
-        Form::Add { email } => {
+        ManagementForm::Add { email } => {
             let user_email = add_user_email(&mut txn, &session.user, email)
                 .await
-                .wrap_error()?;
+                .map_err(fancy_error(templates.clone()))?;
             start_email_verification(&mailer, &url_builder, &mut txn, &session.user, &user_email)
                 .await
-                .wrap_error()?;
+                .map_err(fancy_error(templates.clone()))?;
         }
-        Form::Remove { data } => {
-            let id = data.parse().wrap_error()?;
+        ManagementForm::Remove { data } => {
+            let id = data.parse().map_err(fancy_error(templates.clone()))?;
+
             let email = get_user_email(&mut txn, &session.user, id)
                 .await
-                .wrap_error()?;
-            remove_user_email(&mut txn, email).await.wrap_error()?;
+                .map_err(fancy_error(templates.clone()))?;
+            remove_user_email(&mut txn, email)
+                .await
+                .map_err(fancy_error(templates.clone()))?;
         }
-        Form::ResendConfirmation { data } => {
-            let id: i64 = data.parse().wrap_error()?;
+        ManagementForm::ResendConfirmation { data } => {
+            let id = data.parse().map_err(fancy_error(templates.clone()))?;
 
             let user_email = get_user_email(&mut txn, &session.user, id)
                 .await
-                .wrap_error()?;
+                .map_err(fancy_error(templates.clone()))?;
 
             start_email_verification(&mailer, &url_builder, &mut txn, &session.user, &user_email)
                 .await
-                .wrap_error()?;
+                .map_err(fancy_error(templates.clone()))?;
         }
-        Form::SetPrimary { data } => {
-            let id = data.parse().wrap_error()?;
+        ManagementForm::SetPrimary { data } => {
+            let id = data.parse().map_err(fancy_error(templates.clone()))?;
             let email = get_user_email(&mut txn, &session.user, id)
                 .await
-                .wrap_error()?;
+                .map_err(fancy_error(templates.clone()))?;
             set_user_email_as_primary(&mut txn, &email)
                 .await
-                .wrap_error()?;
+                .map_err(fancy_error(templates.clone()))?;
             session.user.primary_email = Some(email);
         }
     };
 
-    let reply = render(templates, cookie_saver, csrf_token, session, &mut txn).await?;
+    let reply = render(templates.clone(), session, cookie_jar, &mut txn).await?;
 
-    txn.commit().await.wrap_error()?;
+    txn.commit().await.map_err(fancy_error(templates.clone()))?;
 
     Ok(reply)
 }

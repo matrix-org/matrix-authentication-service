@@ -1,4 +1,4 @@
-// Copyright 2021-2022 The Matrix.org Foundation C.I.C.
+// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,81 +12,63 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod emails;
-mod password;
+pub mod emails;
+pub mod password;
 
-use mas_config::{CsrfConfig, Encrypter, HttpConfig};
-use mas_data_model::BrowserSession;
-use mas_email::Mailer;
-use mas_storage::{
-    user::{count_active_sessions, get_user_emails},
-    PostgresqlBackend,
+use axum::{
+    extract::Extension,
+    response::{Html, IntoResponse, Redirect, Response},
 };
+use mas_axum_utils::{csrf::CsrfExt, fancy_error, FancyError, PrivateCookieJar, SessionInfoExt};
+use mas_config::Encrypter;
+use mas_storage::user::{count_active_sessions, get_user_emails};
 use mas_templates::{AccountContext, TemplateContext, Templates};
-use mas_warp_utils::{
-    errors::WrapError,
-    filters::{
-        self,
-        cookies::{encrypted_cookie_saver, EncryptedCookieSaver},
-        csrf::updated_csrf_token,
-        database::connection,
-        session::session,
-        with_templates, CsrfToken,
-    },
-};
-use sqlx::{pool::PoolConnection, PgPool, Postgres};
-use warp::{filters::BoxedFilter, reply::html, Filter, Rejection, Reply};
+use sqlx::PgPool;
 
-use self::{emails::filter as emails, password::filter as password};
+use super::LoginRequest;
 
-pub(super) fn filter(
-    pool: &PgPool,
-    templates: &Templates,
-    mailer: &Mailer,
-    encrypter: &Encrypter,
-    http_config: &HttpConfig,
-    csrf_config: &CsrfConfig,
-) -> BoxedFilter<(Box<dyn Reply>,)> {
-    let get = warp::get()
-        .and(filters::trace::name("GET /account"))
-        .and(with_templates(templates))
-        .and(encrypted_cookie_saver(encrypter))
-        .and(updated_csrf_token(encrypter, csrf_config))
-        .and(session(pool, encrypter))
-        .and(connection(pool))
-        .and_then(get);
+pub(crate) async fn get(
+    Extension(templates): Extension<Templates>,
+    Extension(pool): Extension<PgPool>,
+    cookie_jar: PrivateCookieJar<Encrypter>,
+) -> Result<Response, FancyError> {
+    let mut conn = pool
+        .acquire()
+        .await
+        .map_err(fancy_error(templates.clone()))?;
 
-    let index = warp::path::end().and(get);
-    let password = password(pool, templates, encrypter, csrf_config);
-    let emails = emails(pool, templates, mailer, encrypter, http_config, csrf_config);
+    let (csrf_token, cookie_jar) = cookie_jar.csrf_token();
+    let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let filter = index.or(password).unify().or(emails).unify();
+    let maybe_session = session_info
+        .load_session(&mut conn)
+        .await
+        .map_err(fancy_error(templates.clone()))?;
 
-    warp::path::path("account").and(filter).boxed()
-}
+    let session = if let Some(session) = maybe_session {
+        session
+    } else {
+        let login = LoginRequest::default();
+        let login = login.build_uri().map_err(fancy_error(templates.clone()))?;
+        return Ok((cookie_jar.headers(), Redirect::to(login)).into_response());
+    };
 
-async fn get(
-    templates: Templates,
-    cookie_saver: EncryptedCookieSaver,
-    csrf_token: CsrfToken,
-    session: BrowserSession<PostgresqlBackend>,
-    mut conn: PoolConnection<Postgres>,
-) -> Result<Box<dyn Reply>, Rejection> {
     let active_sessions = count_active_sessions(&mut conn, &session.user)
         .await
-        .wrap_error()?;
+        .map_err(fancy_error(templates.clone()))?;
 
     let emails = get_user_emails(&mut conn, &session.user)
         .await
-        .wrap_error()?;
+        .map_err(fancy_error(templates.clone()))?;
 
     let ctx = AccountContext::new(active_sessions, emails)
         .with_session(session)
         .with_csrf(csrf_token.form_value());
 
-    let content = templates.render_account_index(&ctx).await?;
-    let reply = html(content);
-    let reply = cookie_saver.save_encrypted(&csrf_token, reply)?;
+    let content = templates
+        .render_account_index(&ctx)
+        .await
+        .map_err(fancy_error(templates.clone()))?;
 
-    Ok(Box::new(reply))
+    Ok((cookie_jar.headers(), Html(content)).into_response())
 }
