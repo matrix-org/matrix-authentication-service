@@ -123,7 +123,7 @@ use serde::{{Deserialize, Serialize}};"#,
 ///
 /// Source: <{}>
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, Display, FromStr, Serialize, Deserialize, JsonSchema,
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Display, FromStr, Serialize, Deserialize, JsonSchema,
 )]
 pub enum {} {{"#,
                 section.doc,
