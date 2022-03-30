@@ -29,7 +29,7 @@ jobs:
           override: true
 
       - name: Setup Cargo cache
-        uses: actions/cache@v2.1.7
+        uses: actions/cache@v3.0.1
         with:
           path: |
             ~/.cargo/registry/index
@@ -85,7 +85,7 @@ jobs:
           override: true
 
       - name: Setup Cargo cache
-        uses: actions/cache@v2.1.7
+        uses: actions/cache@v3.0.1
         with:
           path: |
             ~/.cargo/registry/index
@@ -94,7 +94,7 @@ jobs:
           key: ${{ runner.os }}-cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Setup build cache
-        uses: actions/cache@v2.1.7
+        uses: actions/cache@v3.0.1
         with:
           path: |
             target
@@ -130,7 +130,7 @@ jobs:
           override: true
 
       - name: Setup Cargo cache
-        uses: actions/cache@v2.1.7
+        uses: actions/cache@v3.0.1
         with:
           path: |
             ~/.cargo/registry/index
@@ -139,7 +139,7 @@ jobs:
           key: ${{ runner.os }}-cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Setup build cache
-        uses: actions/cache@v2.1.7
+        uses: actions/cache@v3.0.1
         with:
           path: |
             target
@@ -185,7 +185,7 @@ jobs:
           override: true
 
       - name: Setup Cargo cache
-        uses: actions/cache@v2.1.7
+        uses: actions/cache@v3.0.1
         with:
           path: |
             ~/.cargo/registry/index
@@ -194,7 +194,7 @@ jobs:
           key: ${{ runner.os }}-cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Setup build cache
-        uses: actions/cache@v2.1.7
+        uses: actions/cache@v3.0.1
         with:
           path: |
             target
@@ -229,7 +229,7 @@ jobs:
           components: llvm-tools-preview
 
       - name: Setup Cargo cache
-        uses: actions/cache@v2.1.7
+        uses: actions/cache@v3.0.1
         with:
           path: |
             ~/.cargo/registry/index
@@ -238,7 +238,7 @@ jobs:
           key: ${{ runner.os }}-cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Setup build cache
-        uses: actions/cache@v2.1.7
+        uses: actions/cache@v3.0.1
         with:
           path: |
             target
