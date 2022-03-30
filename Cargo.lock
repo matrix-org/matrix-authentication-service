@@ -497,6 +497,7 @@ dependencies = [
  "bitflags",
  "bytes 1.1.0",
  "futures-util",
+ "headers",
  "http",
  "http-body",
  "hyper",

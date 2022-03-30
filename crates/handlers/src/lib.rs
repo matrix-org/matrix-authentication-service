@@ -24,7 +24,7 @@ use std::sync::Arc;
 use axum::{
     body::HttpBody,
     extract::Extension,
-    routing::{get, post},
+    routing::{get, on, post, MethodFilter},
     Router,
 };
 use mas_axum_utils::UrlBuilder;
@@ -83,6 +83,13 @@ where
             get(self::oauth2::discovery::get),
         )
         .route("/oauth2/keys.json", get(self::oauth2::keys::get))
+        .route(
+            "/oauth2/userinfo",
+            on(
+                MethodFilter::POST | MethodFilter::GET,
+                self::oauth2::userinfo::get,
+            ),
+        )
         .fallback(mas_static_files::Assets)
         .layer(Extension(pool.clone()))
         .layer(Extension(templates.clone()))

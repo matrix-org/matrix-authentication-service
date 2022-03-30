@@ -1,4 +1,4 @@
-// Copyright 2021 The Matrix.org Foundation C.I.C.
+// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,17 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use mas_data_model::{AccessToken, Session};
-use mas_storage::PostgresqlBackend;
-use mas_warp_utils::filters::{
-    self,
-    authenticate::{authentication, recover_unauthorized},
+use axum::{
+    extract::Extension,
+    response::{IntoResponse, Response},
+    Json,
 };
+use mas_axum_utils::{internal_error, user_authorization::UserAuthorization};
 use oauth2_types::scope;
 use serde::Serialize;
 use serde_with::skip_serializing_none;
 use sqlx::PgPool;
-use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
 
 #[skip_serializing_none]
 #[derive(Serialize)]
@@ -33,25 +32,21 @@ struct UserInfo {
     email_verified: Option<bool>,
 }
 
-pub(super) fn filter(pool: &PgPool) -> BoxedFilter<(Box<dyn Reply>,)> {
-    warp::path!("oauth2" / "userinfo")
-        .and(filters::trace::name("GET /oauth2/userinfo"))
-        .and(
-            warp::get()
-                .or(warp::post())
-                .unify()
-                .and(authentication(pool))
-                .and_then(userinfo)
-                .recover(recover_unauthorized)
-                .unify(),
-        )
-        .boxed()
-}
+pub async fn get(
+    Extension(pool): Extension<PgPool>,
+    user_authorization: UserAuthorization,
+) -> Result<impl IntoResponse, Response> {
+    let mut conn = pool
+        .acquire()
+        .await
+        .map_err(internal_error)
+        .map_err(IntoResponse::into_response)?;
 
-async fn userinfo(
-    _token: AccessToken<PostgresqlBackend>,
-    session: Session<PostgresqlBackend>,
-) -> Result<Box<dyn Reply>, Rejection> {
+    let session = user_authorization
+        .protected(&mut conn)
+        .await
+        .map_err(IntoResponse::into_response)?;
+
     let user = session.browser_session.user;
     let mut res = UserInfo {
         sub: user.sub,
@@ -67,5 +62,5 @@ async fn userinfo(
         }
     }
 
-    Ok(Box::new(warp::reply::json(&res)))
+    Ok(Json(res))
 }

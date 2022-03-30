@@ -17,6 +17,7 @@ pub mod csrf;
 pub mod fancy_error;
 pub mod session;
 pub mod url_builder;
+pub mod user_authorization;
 
 pub use self::{
     cookies::{Cookie, CookieExt, PrivateCookieJar},
