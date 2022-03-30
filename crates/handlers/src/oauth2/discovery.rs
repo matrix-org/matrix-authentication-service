@@ -1,4 +1,4 @@
-// Copyright 2021 The Matrix.org Foundation C.I.C.
+// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::HashSet;
+use std::sync::Arc;
 
-use mas_config::HttpConfig;
+use axum::{extract::Extension, response::IntoResponse, Json};
+use mas_axum_utils::UrlBuilder;
 use mas_iana::{
     jose::JsonWebSignatureAlg,
     oauth::{
@@ -22,88 +23,71 @@ use mas_iana::{
         PkceCodeChallengeMethod,
     },
 };
-use mas_jose::SigningKeystore;
-use mas_warp_utils::filters::{self, url_builder::UrlBuilder};
+use mas_jose::{SigningKeystore, StaticKeystore};
 use oauth2_types::{
     oidc::{ClaimType, Metadata, SubjectType},
     requests::{Display, GrantType, Prompt, ResponseMode},
     scope,
 };
-use warp::{filters::BoxedFilter, Filter, Reply};
 
 #[allow(clippy::too_many_lines)]
-pub(super) fn filter(
-    key_store: &impl SigningKeystore,
-    http_config: &HttpConfig,
-) -> BoxedFilter<(Box<dyn Reply>,)> {
-    let builder = UrlBuilder::from(http_config);
-
+pub(crate) async fn get(
+    Extension(key_store): Extension<Arc<StaticKeystore>>,
+    Extension(url_builder): Extension<UrlBuilder>,
+) -> impl IntoResponse {
     // This is how clients can authenticate
-    let client_auth_methods_supported = Some({
-        let mut s = HashSet::new();
-        s.insert(OAuthClientAuthenticationMethod::ClientSecretBasic);
-        s.insert(OAuthClientAuthenticationMethod::ClientSecretPost);
-        s.insert(OAuthClientAuthenticationMethod::ClientSecretJwt);
-        s.insert(OAuthClientAuthenticationMethod::PrivateKeyJwt);
-        s.insert(OAuthClientAuthenticationMethod::None);
-        s
-    });
+    let client_auth_methods_supported = Some(vec![
+        OAuthClientAuthenticationMethod::ClientSecretBasic,
+        OAuthClientAuthenticationMethod::ClientSecretPost,
+        OAuthClientAuthenticationMethod::ClientSecretJwt,
+        OAuthClientAuthenticationMethod::PrivateKeyJwt,
+        OAuthClientAuthenticationMethod::None,
+    ]);
 
-    let client_auth_signing_alg_values_supported = Some({
-        let mut s = HashSet::new();
-        s.insert(JsonWebSignatureAlg::Hs256);
-        s.insert(JsonWebSignatureAlg::Hs384);
-        s.insert(JsonWebSignatureAlg::Hs512);
-        s.insert(JsonWebSignatureAlg::Rs256);
-        s.insert(JsonWebSignatureAlg::Rs384);
-        s.insert(JsonWebSignatureAlg::Rs512);
-        s
-    });
+    let client_auth_signing_alg_values_supported = Some(vec![
+        JsonWebSignatureAlg::Hs256,
+        JsonWebSignatureAlg::Hs384,
+        JsonWebSignatureAlg::Hs512,
+        JsonWebSignatureAlg::Rs256,
+        JsonWebSignatureAlg::Rs384,
+        JsonWebSignatureAlg::Rs512,
+    ]);
 
     // This is how we can sign stuff
-    let jwt_signing_alg_values_supported = Some(key_store.supported_algorithms());
+    let jwt_signing_alg_values_supported = Some({
+        let algs = key_store.supported_algorithms();
+        let mut algs = Vec::from_iter(algs);
+        algs.sort();
+        algs
+    });
 
     // Prepare all the endpoints
-    let issuer = Some(builder.oidc_issuer());
-    let authorization_endpoint = Some(builder.oauth_authorization_endpoint());
-    let token_endpoint = Some(builder.oauth_token_endpoint());
-    let jwks_uri = Some(builder.jwks_uri());
-    let introspection_endpoint = Some(builder.oauth_introspection_endpoint());
-    let userinfo_endpoint = Some(builder.oidc_userinfo_endpoint());
+    let issuer = Some(url_builder.oidc_issuer());
+    let authorization_endpoint = Some(url_builder.oauth_authorization_endpoint());
+    let token_endpoint = Some(url_builder.oauth_token_endpoint());
+    let jwks_uri = Some(url_builder.jwks_uri());
+    let introspection_endpoint = Some(url_builder.oauth_introspection_endpoint());
+    let userinfo_endpoint = Some(url_builder.oidc_userinfo_endpoint());
 
-    let scopes_supported = Some({
-        let mut s = HashSet::new();
-        s.insert(scope::OPENID.to_string());
-        s.insert(scope::EMAIL.to_string());
-        s
-    });
+    let scopes_supported = Some(vec![scope::OPENID.to_string(), scope::EMAIL.to_string()]);
 
-    let response_types_supported = Some({
-        let mut s = HashSet::new();
-        s.insert(OAuthAuthorizationEndpointResponseType::Code);
-        s.insert(OAuthAuthorizationEndpointResponseType::Token);
-        s.insert(OAuthAuthorizationEndpointResponseType::IdToken);
-        s.insert(OAuthAuthorizationEndpointResponseType::CodeToken);
-        s.insert(OAuthAuthorizationEndpointResponseType::CodeIdToken);
-        s.insert(OAuthAuthorizationEndpointResponseType::IdTokenToken);
-        s.insert(OAuthAuthorizationEndpointResponseType::CodeIdToken);
-        s
-    });
+    let response_types_supported = Some(vec![
+        OAuthAuthorizationEndpointResponseType::Code,
+        OAuthAuthorizationEndpointResponseType::Token,
+        OAuthAuthorizationEndpointResponseType::IdToken,
+        OAuthAuthorizationEndpointResponseType::CodeToken,
+        OAuthAuthorizationEndpointResponseType::CodeIdToken,
+        OAuthAuthorizationEndpointResponseType::IdTokenToken,
+        OAuthAuthorizationEndpointResponseType::CodeIdToken,
+    ]);
 
-    let response_modes_supported = Some({
-        let mut s = HashSet::new();
-        s.insert(ResponseMode::FormPost);
-        s.insert(ResponseMode::Query);
-        s.insert(ResponseMode::Fragment);
-        s
-    });
+    let response_modes_supported = Some(vec![
+        ResponseMode::FormPost,
+        ResponseMode::Query,
+        ResponseMode::Fragment,
+    ]);
 
-    let grant_types_supported = Some({
-        let mut s = HashSet::new();
-        s.insert(GrantType::AuthorizationCode);
-        s.insert(GrantType::RefreshToken);
-        s
-    });
+    let grant_types_supported = Some(vec![GrantType::AuthorizationCode, GrantType::RefreshToken]);
 
     let token_endpoint_auth_methods_supported = client_auth_methods_supported.clone();
     let token_endpoint_auth_signing_alg_values_supported =
@@ -113,58 +97,36 @@ pub(super) fn filter(
     let introspection_endpoint_auth_signing_alg_values_supported =
         client_auth_signing_alg_values_supported;
 
-    let code_challenge_methods_supported = Some({
-        let mut s = HashSet::new();
-        s.insert(PkceCodeChallengeMethod::Plain);
-        s.insert(PkceCodeChallengeMethod::S256);
-        s
-    });
+    let code_challenge_methods_supported = Some(vec![
+        PkceCodeChallengeMethod::Plain,
+        PkceCodeChallengeMethod::S256,
+    ]);
 
-    let subject_types_supported = Some({
-        let mut s = HashSet::new();
-        s.insert(SubjectType::Public);
-        s
-    });
+    let subject_types_supported = Some(vec![SubjectType::Public]);
 
     let id_token_signing_alg_values_supported = jwt_signing_alg_values_supported;
 
-    let display_values_supported = Some({
-        let mut s = HashSet::new();
-        s.insert(Display::Page);
-        s
-    });
+    let display_values_supported = Some(vec![Display::Page]);
 
-    let claim_types_supported = Some({
-        let mut s = HashSet::new();
-        s.insert(ClaimType::Normal);
-        s
-    });
+    let claim_types_supported = Some(vec![ClaimType::Normal]);
 
-    let claims_supported = Some({
-        let mut s = HashSet::new();
-        s.insert("iss".to_string());
-        s.insert("sub".to_string());
-        s.insert("aud".to_string());
-        s.insert("iat".to_string());
-        s.insert("exp".to_string());
-        s.insert("nonce".to_string());
-        s.insert("auth_time".to_string());
-        s.insert("at_hash".to_string());
-        s.insert("c_hash".to_string());
-        s
-    });
+    let claims_supported = Some(vec![
+        "iss".to_string(),
+        "sub".to_string(),
+        "aud".to_string(),
+        "iat".to_string(),
+        "exp".to_string(),
+        "nonce".to_string(),
+        "auth_time".to_string(),
+        "at_hash".to_string(),
+        "c_hash".to_string(),
+    ]);
 
     let claims_parameter_supported = Some(false);
     let request_parameter_supported = Some(false);
     let request_uri_parameter_supported = Some(false);
 
-    let prompt_values_supported = Some({
-        let mut s = HashSet::new();
-        s.insert(Prompt::None);
-        s.insert(Prompt::Login);
-        s.insert(Prompt::Create);
-        s
-    });
+    let prompt_values_supported = Some(vec![Prompt::None, Prompt::Login, Prompt::Create]);
 
     let metadata = Metadata {
         issuer,
@@ -194,12 +156,5 @@ pub(super) fn filter(
         ..Metadata::default()
     };
 
-    warp::path!(".well-known" / "openid-configuration")
-        .and(filters::trace::name("GET /.well-known/configuration"))
-        .and(warp::get())
-        .map(move || {
-            let ret: Box<dyn Reply> = Box::new(warp::reply::json(&metadata));
-            ret
-        })
-        .boxed()
+    Json(metadata)
 }

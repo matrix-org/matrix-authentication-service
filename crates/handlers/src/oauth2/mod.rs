@@ -1,4 +1,4 @@
-// Copyright 2021 The Matrix.org Foundation C.I.C.
+// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,58 +12,45 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::sync::Arc;
+// pub mod authorization;
+pub mod discovery;
+// pub mod introspection;
+pub mod keys;
+// pub mod token;
+// pub mod userinfo;
 
-use hyper::{header::AUTHORIZATION, Method};
-use mas_config::{Encrypter, HttpConfig};
-use mas_jose::StaticKeystore;
-use mas_templates::Templates;
-use mas_warp_utils::filters::cors::cors;
-use sqlx::PgPool;
-use warp::{filters::BoxedFilter, Filter, Reply};
-
-mod authorization;
-mod discovery;
-mod introspection;
-mod keys;
-mod token;
-mod userinfo;
-
-pub(crate) use self::authorization::ContinueAuthorizationGrant;
-use self::{
-    authorization::filter as authorization, discovery::filter as discovery,
-    introspection::filter as introspection, keys::filter as keys, token::filter as token,
-    userinfo::filter as userinfo,
+use hyper::{
+    http::uri::{Parts, PathAndQuery},
+    Uri,
 };
+use mas_data_model::AuthorizationGrant;
+use mas_storage::{oauth2::authorization_grant::get_grant_by_id, PostgresqlBackend};
+use serde::{Deserialize, Serialize};
+use sqlx::PgConnection;
 
-pub fn filter(
-    pool: &PgPool,
-    templates: &Templates,
-    key_store: &Arc<StaticKeystore>,
-    encrypter: &Encrypter,
-    http_config: &HttpConfig,
-) -> BoxedFilter<(impl Reply,)> {
-    let discovery = discovery(key_store.as_ref(), http_config);
-    let keys = keys(key_store);
-    let authorization = authorization(pool, templates, encrypter);
-    let userinfo = userinfo(pool);
-    let introspection = introspection(pool, encrypter, http_config);
-    let token = token(pool, encrypter, key_store, http_config);
+#[derive(Serialize, Deserialize, Clone)]
+pub(crate) struct ContinueAuthorizationGrant {
+    data: String,
+}
 
-    let filter = discovery
-        .or(keys)
-        .unify()
-        .or(userinfo)
-        .unify()
-        .or(token)
-        .unify()
-        .or(introspection)
-        .unify()
-        .with(
-            cors()
-                .allow_methods([Method::POST, Method::GET])
-                .allow_headers([AUTHORIZATION]),
-        );
+// TEMP
+impl ContinueAuthorizationGrant {
+    pub fn build_uri(&self) -> anyhow::Result<Uri> {
+        let qs = serde_urlencoded::to_string(self)?;
+        let path_and_query = PathAndQuery::try_from(format!("/oauth2/authorize/step?{}", qs))?;
+        let uri = Uri::from_parts({
+            let mut parts = Parts::default();
+            parts.path_and_query = Some(path_and_query);
+            parts
+        })?;
+        Ok(uri)
+    }
 
-    filter.or(authorization).boxed()
+    pub async fn fetch_authorization_grant(
+        &self,
+        conn: &mut PgConnection,
+    ) -> anyhow::Result<AuthorizationGrant<PostgresqlBackend>> {
+        let data = self.data.parse()?;
+        get_grant_by_id(conn, data).await
+    }
 }

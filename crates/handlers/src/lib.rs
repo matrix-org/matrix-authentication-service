@@ -28,33 +28,15 @@ use axum::{
     Router,
 };
 use mas_axum_utils::UrlBuilder;
-use mas_config::{Encrypter, RootConfig};
+use mas_config::Encrypter;
 use mas_email::Mailer;
 use mas_jose::StaticKeystore;
 use mas_templates::Templates;
 use sqlx::PgPool;
-use warp::{filters::BoxedFilter, Filter, Reply};
 
 mod health;
 mod oauth2;
 mod views;
-
-use self::oauth2::filter as oauth2;
-
-#[must_use]
-pub fn root(
-    pool: &PgPool,
-    templates: &Templates,
-    key_store: &Arc<StaticKeystore>,
-    encrypter: &Encrypter,
-    config: &RootConfig,
-) -> BoxedFilter<(impl Reply,)> {
-    let oauth2 = oauth2(pool, templates, key_store, encrypter, &config.http);
-
-    let filter = oauth2;
-
-    filter.with(warp::log(module_path!())).boxed()
-}
 
 #[must_use]
 pub fn router<B>(
@@ -96,6 +78,11 @@ where
             "/account/emails",
             get(self::views::account::emails::get).post(self::views::account::emails::post),
         )
+        .route(
+            "/.well-known/openid-configuration",
+            get(self::oauth2::discovery::get),
+        )
+        .route("/oauth2/keys.json", get(self::oauth2::keys::get))
         .fallback(mas_static_files::Assets)
         .layer(Extension(pool.clone()))
         .layer(Extension(templates.clone()))
