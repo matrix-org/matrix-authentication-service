@@ -30,7 +30,7 @@ use crate::{jwk::JsonWebKey, SigningKeystore, VerifyingKeystore};
 
 #[serde_as]
 #[skip_serializing_none]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct JwtHeader {
     alg: JsonWebSignatureAlg,
 
@@ -126,7 +126,7 @@ impl FromStr for JwtHeader {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct JsonWebTokenParts {
     payload: String,
     signature: Vec<u8>,
@@ -178,6 +178,14 @@ impl<T> DecodedJsonWebToken<T> {
     pub fn claims(&self) -> &T {
         &self.payload
     }
+
+    pub fn header(&self) -> &JwtHeader {
+        &self.header
+    }
+
+    pub fn split(self) -> (JwtHeader, T) {
+        (self.header, self.payload)
+    }
 }
 
 impl<T> FromStr for DecodedJsonWebToken<T>
@@ -205,15 +213,11 @@ impl JsonWebTokenParts {
         Ok(decoded)
     }
 
-    pub fn verify<T, S: VerifyingKeystore>(
-        &self,
-        decoded: &DecodedJsonWebToken<T>,
-        store: &S,
-    ) -> S::Future
+    pub fn verify<S: VerifyingKeystore>(&self, header: &JwtHeader, store: &S) -> S::Future
     where
         S::Error: std::error::Error + Send + Sync + 'static,
     {
-        store.verify(&decoded.header, self.payload.as_bytes(), &self.signature)
+        store.verify(header, self.payload.as_bytes(), &self.signature)
     }
 
     pub async fn decode_and_verify<T: DeserializeOwned, S: VerifyingKeystore>(
@@ -224,7 +228,7 @@ impl JsonWebTokenParts {
         S::Error: std::error::Error + Send + Sync + 'static,
     {
         let decoded = self.decode()?;
-        self.verify(&decoded, store).await?;
+        self.verify(&decoded.header, store).await?;
         Ok(decoded)
     }
 

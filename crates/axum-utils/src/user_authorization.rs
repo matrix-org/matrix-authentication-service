@@ -280,26 +280,34 @@ where
     ) -> Result<Self, Self::Rejection> {
         let header = TypedHeader::<Authorization<Bearer>>::from_request(req).await;
 
+        // Take the Authorization header
         let token_from_header = match header {
             Ok(header) => Some(header.token().to_string()),
             Err(err) => match err.reason() {
+                // If it's missing it is fine
                 TypedHeaderRejectionReason::Missing => None,
+                // If the header could not be parsed, return the error
                 TypedHeaderRejectionReason::Error(_) => {
                     return Err(UserAuthorizationError::InvalidHeader)
                 }
             },
         };
 
+        // Take the form value
         let (token_from_form, form) = match Form::<AuthorizedForm<F>>::from_request(req).await {
             Ok(Form(form)) => (form.access_token, Some(form.inner)),
+            // If it is not a form, continue
             Err(FormRejection::InvalidFormContentType(_err)) => (None, None),
+            // If the form could not be read, return a Bad Request error
             Err(FormRejection::FailedToDeserializeQueryString(err)) => {
                 return Err(UserAuthorizationError::BadForm(err))
             }
+            // Other errors (body read twice, byte stream broke) return an internal error
             Err(e) => return Err(UserAuthorizationError::InternalError(Box::new(e))),
         };
 
         let access_token = match (token_from_header, token_from_form) {
+            // Ensure the token should not be in both the form and the access token
             (Some(_), Some(_)) => return Err(UserAuthorizationError::TokenInFormAndHeader),
             (Some(t), None) => AccessToken::Header(t),
             (None, Some(t)) => AccessToken::Form(t),
