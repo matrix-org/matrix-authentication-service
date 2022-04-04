@@ -318,7 +318,7 @@ async fn authenticate_client<T>(
                         })?;
 
                     let store = SharedSecret::new(&client_secret);
-                    let fut = token.verify(&decoded, &store);
+                    let fut = token.verify(decoded.header(), &store);
                     fut.await.wrap_error()?;
                 }
                 OAuthClientAuthenticationMethod::PrivateKeyJwt => {
@@ -329,7 +329,7 @@ async fn authenticate_client<T>(
                     })?;
 
                     let store = jwks_key_store(jwks);
-                    let fut = token.verify(&decoded, &store);
+                    let fut = token.verify(decoded.header(), &store);
                     fut.await.wrap_error()?;
                 }
                 _ => {

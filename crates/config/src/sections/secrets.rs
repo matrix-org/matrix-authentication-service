@@ -21,6 +21,7 @@ use chacha20poly1305::{
     ChaCha20Poly1305,
 };
 use cookie::Key;
+use data_encoding::BASE64;
 use mas_jose::StaticKeystore;
 use pkcs8::DecodePrivateKey;
 use rsa::{
@@ -42,6 +43,7 @@ pub struct Encrypter {
     aead: Arc<ChaCha20Poly1305>,
 }
 
+// TODO: move this somewhere else
 impl Encrypter {
     /// Creates an [`Encrypter`] out of an encryption key
     #[must_use]
@@ -74,6 +76,41 @@ impl Encrypter {
         let nonce = GenericArray::from_slice(&nonce[..]);
         let encrypted = self.aead.decrypt(nonce, encrypted)?;
         Ok(encrypted)
+    }
+
+    /// Encrypt a payload to a self-contained base64-encoded string
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` when the payload failed to encrypt
+    pub fn encryt_to_string(&self, decrypted: &[u8]) -> anyhow::Result<String> {
+        let nonce = rand::random();
+        let encrypted = self.encrypt(&nonce, decrypted)?;
+        let encrypted = [&nonce[..], &encrypted].concat();
+        let encrypted = BASE64.encode(&encrypted);
+        Ok(encrypted)
+    }
+
+    /// Decrypt a payload from a self-contained base64-encoded string
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` when the payload failed to decrypt
+    pub fn decrypt_string(&self, encrypted: &str) -> anyhow::Result<Vec<u8>> {
+        let encrypted = BASE64.decode(encrypted.as_bytes())?;
+
+        let nonce: &[u8; 12] = encrypted
+            .get(0..12)
+            .ok_or_else(|| anyhow::anyhow!("invalid payload serialization"))?
+            .try_into()?;
+
+        let payload = encrypted
+            .get(12..)
+            .ok_or_else(|| anyhow::anyhow!("invalid payload serialization"))?;
+
+        let decrypted_client_secret = self.decrypt(nonce, payload)?;
+
+        Ok(decrypted_client_secret)
     }
 }
 
