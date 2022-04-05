@@ -90,6 +90,10 @@ where
                 self::oauth2::userinfo::get,
             ),
         )
+        .route(
+            "/oauth2/introspect",
+            post(self::oauth2::introspection::post),
+        )
         .fallback(mas_static_files::Assets)
         .layer(Extension(pool.clone()))
         .layer(Extension(templates.clone()))

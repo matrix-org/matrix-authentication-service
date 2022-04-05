@@ -213,10 +213,7 @@ impl JsonWebTokenParts {
         Ok(decoded)
     }
 
-    pub fn verify<S: VerifyingKeystore>(&self, header: &JwtHeader, store: &S) -> S::Future
-    where
-        S::Error: std::error::Error + Send + Sync + 'static,
-    {
+    pub fn verify<S: VerifyingKeystore>(&self, header: &JwtHeader, store: &S) -> S::Future {
         store.verify(header, self.payload.as_bytes(), &self.signature)
     }
 

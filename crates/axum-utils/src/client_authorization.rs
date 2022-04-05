@@ -132,8 +132,8 @@ impl Credentials {
                     .ok_or(CredentialsVerificationError::InvalidClientConfig)?;
 
                 let store: Either<StaticJwksStore, DynamicJwksStore> = jwks_key_store(jwks);
-                jwt.verify(header, &store)
-                    .await
+                let fut = jwt.verify(header, &store);
+                fut.await
                     .map_err(|_| CredentialsVerificationError::InvalidAssertionSignature)?;
             }
 
@@ -152,8 +152,8 @@ impl Credentials {
                     .map_err(|_e| CredentialsVerificationError::DecryptionError)?;
 
                 let store = SharedSecret::new(&decrypted_client_secret);
-                jwt.verify(header, &store)
-                    .await
+                let fut = jwt.verify(header, &store);
+                fut.await
                     .map_err(|_| CredentialsVerificationError::InvalidAssertionSignature)?;
             }
 
@@ -181,8 +181,8 @@ pub enum CredentialsVerificationError {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct ClientAuthorization<F = ()> {
-    credentials: Credentials,
-    form: Option<F>,
+    pub credentials: Credentials,
+    pub form: Option<F>,
 }
 
 #[derive(Debug)]
