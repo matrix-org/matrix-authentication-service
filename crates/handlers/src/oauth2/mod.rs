@@ -14,7 +14,7 @@
 
 // pub mod authorization;
 pub mod discovery;
-// pub mod introspection;
+pub mod introspection;
 pub mod keys;
 // pub mod token;
 pub mod userinfo;

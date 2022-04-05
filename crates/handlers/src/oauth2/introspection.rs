@@ -1,4 +1,4 @@
-// Copyright 2021 The Matrix.org Foundation C.I.C.
+// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,44 +12,96 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use mas_config::{Encrypter, HttpConfig};
-use mas_data_model::{Client, TokenType};
+use axum::{extract::Extension, response::IntoResponse, Json};
+use hyper::StatusCode;
+use mas_axum_utils::client_authorization::{ClientAuthorization, CredentialsVerificationError};
+use mas_config::Encrypter;
+use mas_data_model::{TokenFormatError, TokenType};
 use mas_iana::oauth::{OAuthClientAuthenticationMethod, OAuthTokenTypeHint};
-use mas_storage::{
-    oauth2::{
-        access_token::lookup_active_access_token, refresh_token::lookup_active_refresh_token,
-    },
-    PostgresqlBackend,
-};
-use mas_warp_utils::{
-    errors::WrapError,
-    filters::{self, client::client_authentication, database::connection, url_builder::UrlBuilder},
+use mas_storage::oauth2::{
+    access_token::{lookup_active_access_token, AccessTokenLookupError},
+    client::ClientFetchError,
+    refresh_token::{lookup_active_refresh_token, RefreshTokenLookupError},
 };
 use oauth2_types::requests::{IntrospectionRequest, IntrospectionResponse};
-use sqlx::{pool::PoolConnection, PgPool, Postgres};
-use tracing::{info, warn};
-use warp::{filters::BoxedFilter, Filter, Rejection, Reply};
+use sqlx::PgPool;
 
-pub fn filter(
-    pool: &PgPool,
-    encrypter: &Encrypter,
-    http_config: &HttpConfig,
-) -> BoxedFilter<(Box<dyn Reply>,)> {
-    let audience = UrlBuilder::from(http_config)
-        .oauth_introspection_endpoint()
-        .to_string();
+pub enum RouteError {
+    Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
+    ClientNotFound,
+    NotAllowed,
+    UnknownToken,
+    BadRequest,
+    ClientCredentialsVerification(CredentialsVerificationError),
+}
 
-    warp::path!("oauth2" / "introspect")
-        .and(filters::trace::name("POST /oauth2/introspect"))
-        .and(
-            warp::post()
-                .and(connection(pool))
-                .and(client_authentication(pool, encrypter, audience))
-                .and_then(introspect)
-                .recover(recover)
-                .unify(),
-        )
-        .boxed()
+impl IntoResponse for RouteError {
+    fn into_response(self) -> axum::response::Response {
+        match self {
+            Self::Internal(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+            Self::ClientNotFound => (StatusCode::UNAUTHORIZED, "client not found").into_response(),
+            Self::UnknownToken => Json(INACTIVE).into_response(),
+            Self::NotAllowed => (
+                StatusCode::UNAUTHORIZED,
+                "client can't use the introspection endpoint",
+            )
+                .into_response(),
+            Self::BadRequest => StatusCode::BAD_REQUEST.into_response(),
+            Self::ClientCredentialsVerification(_c) => (
+                StatusCode::UNAUTHORIZED,
+                "could not verify client credentials",
+            )
+                .into_response(),
+        }
+    }
+}
+
+impl From<sqlx::Error> for RouteError {
+    fn from(e: sqlx::Error) -> Self {
+        Self::Internal(Box::new(e))
+    }
+}
+
+impl From<TokenFormatError> for RouteError {
+    fn from(_e: TokenFormatError) -> Self {
+        Self::UnknownToken
+    }
+}
+
+impl From<ClientFetchError> for RouteError {
+    fn from(e: ClientFetchError) -> Self {
+        if e.not_found() {
+            Self::ClientNotFound
+        } else {
+            Self::Internal(Box::new(e))
+        }
+    }
+}
+
+impl From<AccessTokenLookupError> for RouteError {
+    fn from(e: AccessTokenLookupError) -> Self {
+        if e.not_found() {
+            Self::UnknownToken
+        } else {
+            Self::Internal(Box::new(e))
+        }
+    }
+}
+
+impl From<RefreshTokenLookupError> for RouteError {
+    fn from(e: RefreshTokenLookupError) -> Self {
+        if e.not_found() {
+            Self::UnknownToken
+        } else {
+            Self::Internal(Box::new(e))
+        }
+    }
+}
+
+impl From<CredentialsVerificationError> for RouteError {
+    fn from(e: CredentialsVerificationError) -> Self {
+        Self::ClientCredentialsVerification(e)
+    }
 }
 
 const INACTIVE: IntrospectionResponse = IntrospectionResponse {
@@ -67,33 +119,44 @@ const INACTIVE: IntrospectionResponse = IntrospectionResponse {
     jti: None,
 };
 
-async fn introspect(
-    mut conn: PoolConnection<Postgres>,
-    auth: OAuthClientAuthenticationMethod,
-    client: Client<PostgresqlBackend>,
-    params: IntrospectionRequest,
-) -> Result<Box<dyn Reply>, Rejection> {
-    // Token introspection is only allowed by confidential clients
-    if auth == OAuthClientAuthenticationMethod::None {
-        warn!(?client, "Client tried to introspect");
-        // TODO: have a nice error here
-        return Ok(Box::new(warp::reply::json(&INACTIVE)));
-    }
+pub(crate) async fn post(
+    Extension(pool): Extension<PgPool>,
+    Extension(encrypter): Extension<Encrypter>,
+    client_authorization: ClientAuthorization<IntrospectionRequest>,
+) -> Result<impl IntoResponse, RouteError> {
+    let mut conn = pool.acquire().await?;
 
-    let token = &params.token;
-    let token_type = TokenType::check(token).wrap_error()?;
-    if let Some(hint) = params.token_type_hint {
+    let client = client_authorization.credentials.fetch(&mut conn).await?;
+
+    let method = match client.token_endpoint_auth_method {
+        None | Some(OAuthClientAuthenticationMethod::None) => {
+            return Err(RouteError::NotAllowed);
+        }
+        Some(c) => c,
+    };
+
+    client_authorization
+        .credentials
+        .verify(&encrypter, method, &client)
+        .await?;
+
+    let form = if let Some(form) = client_authorization.form {
+        form
+    } else {
+        return Err(RouteError::BadRequest);
+    };
+
+    let token = &form.token;
+    let token_type = TokenType::check(token)?;
+    if let Some(hint) = form.token_type_hint {
         if token_type != hint {
-            info!("Token type hint did not match");
-            return Ok(Box::new(warp::reply::json(&INACTIVE)));
+            return Err(RouteError::UnknownToken);
         }
     }
 
     let reply = match token_type {
         TokenType::AccessToken => {
-            let (token, session) = lookup_active_access_token(&mut conn, token)
-                .await
-                .wrap_error()?;
+            let (token, session) = lookup_active_access_token(&mut conn, token).await?;
             let exp = token.exp();
 
             IntrospectionResponse {
@@ -112,9 +175,7 @@ async fn introspect(
             }
         }
         TokenType::RefreshToken => {
-            let (token, session) = lookup_active_refresh_token(&mut conn, token)
-                .await
-                .wrap_error()?;
+            let (token, session) = lookup_active_refresh_token(&mut conn, token).await?;
 
             IntrospectionResponse {
                 active: true,
@@ -133,13 +194,5 @@ async fn introspect(
         }
     };
 
-    Ok(Box::new(warp::reply::json(&reply)))
-}
-
-async fn recover(rejection: Rejection) -> Result<Box<dyn Reply>, Rejection> {
-    if rejection.is_not_found() {
-        Err(rejection)
-    } else {
-        Ok(Box::new(warp::reply::json(&INACTIVE)))
-    }
+    Ok(Json(reply))
 }
