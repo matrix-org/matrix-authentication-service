@@ -94,6 +94,7 @@ where
             "/oauth2/introspect",
             post(self::oauth2::introspection::post),
         )
+        .route("/oauth2/token", post(self::oauth2::token::post))
         .fallback(mas_static_files::Assets)
         .layer(Extension(pool.clone()))
         .layer(Extension(templates.clone()))

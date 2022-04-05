@@ -16,6 +16,11 @@ use http::status::StatusCode;
 use serde::ser::{Serialize, SerializeMap};
 use url::Url;
 
+pub struct ClientError {
+    pub error: &'static str,
+    pub error_description: &'static str,
+}
+
 pub trait OAuth2Error: std::fmt::Debug + Send + Sync {
     /// A single ASCII error code.
     ///
@@ -148,6 +153,15 @@ macro_rules! oauth2_error_error {
     };
 }
 
+macro_rules! oauth2_error_const {
+    ($const:ident, $err:literal, $description:expr) => {
+        pub const $const: ClientError = ClientError {
+            error: $err,
+            error_description: $description,
+        };
+    };
+}
+
 macro_rules! oauth2_error_description {
     ($description:expr) => {
         fn description(&self) -> Option<String> {
@@ -157,32 +171,36 @@ macro_rules! oauth2_error_description {
 }
 
 macro_rules! oauth2_error {
-    ($name:ident, $err:literal => $description:expr) => {
+    ($name:ident, $const:ident, $err:literal => $description:expr) => {
+        oauth2_error_const!($const, $err, $description);
         oauth2_error_def!($name);
         impl $crate::errors::OAuth2Error for $name {
             oauth2_error_error!($err);
             oauth2_error_description!(indoc::indoc! {$description});
         }
     };
-    ($name:ident, $err:literal) => {
+    ($name:ident, $const:ident, $err:literal) => {
         oauth2_error_def!($name);
         impl $crate::errors::OAuth2Error for $name {
             oauth2_error_error!($err);
         }
     };
-    ($name:ident, code: $code:ident, $err:literal => $description:expr) => {
-        oauth2_error!($name, $err => $description);
+    ($name:ident, $const:ident, code: $code:ident, $err:literal => $description:expr) => {
+        oauth2_error!($name, $const, $err => $description);
         oauth2_error_status!($name, $code);
     };
-    ($name:ident, code: $code:ident, $err:literal) => {
-        oauth2_error!($name, $err);
+    ($name:ident, $const:ident, code: $code:ident, $err:literal) => {
+        oauth2_error!($name, $const, $err);
         oauth2_error_status!($name, $code);
     };
 }
 
 pub mod rfc6749 {
+    use super::ClientError;
+
     oauth2_error! {
         InvalidRequest,
+        INVALID_REQUEST,
         code: BAD_REQUEST,
         "invalid_request" =>
         "The request is missing a required parameter, includes an invalid parameter value, \
@@ -191,6 +209,7 @@ pub mod rfc6749 {
 
     oauth2_error! {
         InvalidClient,
+        INVALID_CLIENT,
         code: BAD_REQUEST,
         "invalid_client" =>
         "Client authentication failed."
@@ -198,12 +217,14 @@ pub mod rfc6749 {
 
     oauth2_error! {
         InvalidGrant,
+        INVALID_GRANT,
         code: BAD_REQUEST,
         "invalid_grant"
     }
 
     oauth2_error! {
         UnauthorizedClient,
+        UNAUTHORIZED_CLIENT,
         code: BAD_REQUEST,
         "unauthorized_client" =>
         "The client is not authorized to request an access token using this method."
@@ -211,6 +232,7 @@ pub mod rfc6749 {
 
     oauth2_error! {
         UnsupportedGrantType,
+        UNSUPPORTED_GRANT_TYPE,
         code: BAD_REQUEST,
         "unsupported_grant_type" =>
         "The authorization grant type is not supported by the authorization server."
@@ -218,18 +240,21 @@ pub mod rfc6749 {
 
     oauth2_error! {
         AccessDenied,
+        ACCESS_DENIED,
         "access_denied" =>
         "The resource owner or authorization server denied the request."
     }
 
     oauth2_error! {
         UnsupportedResponseType,
+        UNSUPPORTED_RESPONSE_TYPE,
         "unsupported_response_type" =>
         "The authorization server does not support obtaining an access token using this method."
     }
 
     oauth2_error! {
         InvalidScope,
+        INVALID_SCOPE,
         code: BAD_REQUEST,
         "invalid_scope" =>
         "The requested scope is invalid, unknown, or malformed."
@@ -237,6 +262,7 @@ pub mod rfc6749 {
 
     oauth2_error! {
         ServerError,
+        SERVER_ERROR,
         code: INTERNAL_SERVER_ERROR,
         "server_error" =>
         "The authorization server encountered an unexpected \
@@ -245,6 +271,7 @@ pub mod rfc6749 {
 
     oauth2_error! {
         TemporarilyUnavailable,
+        TEMPORARILY_UNAVAILABLE,
         "temporarily_unavailable" =>
         "The authorization server is currently unable to handle \
          the request due to a temporary overloading or maintenance \
@@ -253,54 +280,65 @@ pub mod rfc6749 {
 }
 
 pub mod oidc_core {
+    use super::ClientError;
+
     oauth2_error! {
         InteractionRequired,
+        INTERACTION_REQUIRED,
         "interaction_required" =>
         "The Authorization Server requires End-User interaction of some form to proceed."
     }
 
     oauth2_error! {
         LoginRequired,
+        LOGIN_REQUIRED,
         "login_required" =>
         "The Authorization Server requires End-User authentication."
     }
 
     oauth2_error! {
         AccountSelectionRequired,
+        ACCOUNT_SELECTION_REQUIRED,
         "account_selection_required"
     }
 
     oauth2_error! {
         ConsentRequired,
+        CONSENT_REQUIRED,
         "consent_required"
     }
 
     oauth2_error! {
         InvalidRequestUri,
+        INVALID_REQUEST_URI,
         "invalid_request_uri" =>
         "The request_uri in the Authorization Request returns an error or contains invalid data. "
     }
 
     oauth2_error! {
         InvalidRequestObject,
+        INVALID_REQUEST_OBJECT,
         "invalid_request_object" =>
         "The request parameter contains an invalid Request Object."
     }
 
     oauth2_error! {
         RequestNotSupported,
+        REQUEST_NOT_SUPPORTED,
         "request_not_supported" =>
         "The provider does not support use of the request parameter."
     }
 
     oauth2_error! {
         RequestUriNotSupported,
+        REQUEST_URI_NOT_SUPPORTED,
         "request_uri_not_supported" =>
         "The provider does not support use of the request_uri parameter."
     }
 
     oauth2_error! {
         RegistrationNotSupported,
+        REGISTRATION_NOT_SUPPORTED,
         "registration_not_supported" =>
         "The provider does not support use of the registration parameter."
     }
