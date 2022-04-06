@@ -357,7 +357,10 @@ mod tests {
 
     #[test]
     fn serialize_error() {
-        let expected = json!({"error": "invalid_grant"});
+        let expected = json!({
+            "error": "invalid_grant",
+            "error_description": "The provided access grant is invalid, expired, or revoked."
+        });
         let actual = serde_json::to_value(InvalidGrant.into_response()).unwrap();
         assert_eq!(expected, actual);
     }
