@@ -25,7 +25,19 @@ use serde::{Deserialize, Serialize};
 ///
 /// Source: <https://www.iana.org/assignments/jose/web-signature-encryption-algorithms.csv>
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Display, FromStr, Serialize, Deserialize, JsonSchema,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Display,
+    FromStr,
+    Serialize,
+    Deserialize,
+    JsonSchema,
 )]
 pub enum JsonWebSignatureAlg {
     /// HMAC using SHA-256
@@ -108,7 +120,19 @@ pub enum JsonWebSignatureAlg {
 ///
 /// Source: <https://www.iana.org/assignments/jose/web-signature-encryption-algorithms.csv>
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Display, FromStr, Serialize, Deserialize, JsonSchema,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Display,
+    FromStr,
+    Serialize,
+    Deserialize,
+    JsonSchema,
 )]
 pub enum JsonWebEncryptionAlg {
     /// RSAES-PKCS1-v1_5
@@ -211,7 +235,19 @@ pub enum JsonWebEncryptionAlg {
 ///
 /// Source: <https://www.iana.org/assignments/jose/web-signature-encryption-algorithms.csv>
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Display, FromStr, Serialize, Deserialize, JsonSchema,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Display,
+    FromStr,
+    Serialize,
+    Deserialize,
+    JsonSchema,
 )]
 pub enum JsonWebEncryptionEnc {
     /// AES_128_CBC_HMAC_SHA_256 authenticated encryption algorithm
@@ -249,7 +285,19 @@ pub enum JsonWebEncryptionEnc {
 ///
 /// Source: <https://www.iana.org/assignments/jose/web-encryption-compression-algorithms.csv>
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Display, FromStr, Serialize, Deserialize, JsonSchema,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Display,
+    FromStr,
+    Serialize,
+    Deserialize,
+    JsonSchema,
 )]
 pub enum JsonWebEncryptionCompressionAlgorithm {
     /// DEFLATE
@@ -262,7 +310,19 @@ pub enum JsonWebEncryptionCompressionAlgorithm {
 ///
 /// Source: <https://www.iana.org/assignments/jose/web-key-types.csv>
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Display, FromStr, Serialize, Deserialize, JsonSchema,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Display,
+    FromStr,
+    Serialize,
+    Deserialize,
+    JsonSchema,
 )]
 pub enum JsonWebKeyType {
     /// Elliptic Curve
@@ -290,7 +350,19 @@ pub enum JsonWebKeyType {
 ///
 /// Source: <https://www.iana.org/assignments/jose/web-key-elliptic-curve.csv>
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Display, FromStr, Serialize, Deserialize, JsonSchema,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Display,
+    FromStr,
+    Serialize,
+    Deserialize,
+    JsonSchema,
 )]
 pub enum JsonWebKeyEcEllipticCurve {
     /// P-256 Curve
@@ -318,7 +390,19 @@ pub enum JsonWebKeyEcEllipticCurve {
 ///
 /// Source: <https://www.iana.org/assignments/jose/web-key-elliptic-curve.csv>
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Display, FromStr, Serialize, Deserialize, JsonSchema,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Display,
+    FromStr,
+    Serialize,
+    Deserialize,
+    JsonSchema,
 )]
 pub enum JsonWebKeyOkpEllipticCurve {
     /// Ed25519 signature algorithm key pairs
@@ -346,7 +430,19 @@ pub enum JsonWebKeyOkpEllipticCurve {
 ///
 /// Source: <https://www.iana.org/assignments/jose/web-key-use.csv>
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Display, FromStr, Serialize, Deserialize, JsonSchema,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Display,
+    FromStr,
+    Serialize,
+    Deserialize,
+    JsonSchema,
 )]
 pub enum JsonWebKeyUse {
     /// Digital Signature or MAC
@@ -364,7 +460,19 @@ pub enum JsonWebKeyUse {
 ///
 /// Source: <https://www.iana.org/assignments/jose/web-key-operations.csv>
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Display, FromStr, Serialize, Deserialize, JsonSchema,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Display,
+    FromStr,
+    Serialize,
+    Deserialize,
+    JsonSchema,
 )]
 pub enum JsonWebKeyOperation {
     /// Compute digital signature or MAC
