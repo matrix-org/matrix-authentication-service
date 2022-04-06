@@ -287,9 +287,7 @@ where
                 // If it's missing it is fine
                 TypedHeaderRejectionReason::Missing => None,
                 // If the header could not be parsed, return the error
-                TypedHeaderRejectionReason::Error(_) => {
-                    return Err(UserAuthorizationError::InvalidHeader)
-                }
+                _ => return Err(UserAuthorizationError::InvalidHeader),
             },
         };
 

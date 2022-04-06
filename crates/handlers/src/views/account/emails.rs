@@ -70,7 +70,7 @@ pub(crate) async fn get(
     } else {
         let login = LoginRequest::default();
         let login = login.build_uri().map_err(fancy_error(templates.clone()))?;
-        Ok((cookie_jar.headers(), Redirect::to(login)).into_response())
+        Ok((cookie_jar, Redirect::to(&login.to_string())).into_response())
     }
 }
 
@@ -95,7 +95,7 @@ async fn render(
         .await
         .map_err(fancy_error(templates))?;
 
-    Ok((cookie_jar.headers(), Html(content)).into_response())
+    Ok((cookie_jar, Html(content)).into_response())
 }
 
 async fn start_email_verification(
@@ -151,7 +151,7 @@ pub(crate) async fn post(
     } else {
         let login = LoginRequest::default();
         let login = login.build_uri().map_err(fancy_error(templates.clone()))?;
-        return Ok((cookie_jar.headers(), Redirect::to(login)).into_response());
+        return Ok((cookie_jar, Redirect::to(&login.to_string())).into_response());
     };
 
     let form = cookie_jar

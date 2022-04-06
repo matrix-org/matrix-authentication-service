@@ -66,5 +66,5 @@ pub(crate) async fn get(
 
     txn.commit().await.map_err(fancy_error(templates.clone()))?;
 
-    Ok((cookie_jar.headers(), Html(content)))
+    Ok((cookie_jar, Html(content)))
 }

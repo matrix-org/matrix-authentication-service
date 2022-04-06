@@ -149,12 +149,8 @@ where
                 .context("could not serialize redirect URI query params")?;
 
             redirect_uri.set_query(Some(&new_qs));
-            let redirect_uri = redirect_uri
-                .as_str()
-                .parse()
-                .context("could not convert redirect URI")?;
 
-            Ok(Redirect::to(redirect_uri).into_response())
+            Ok(Redirect::to(redirect_uri.as_str()).into_response())
         }
         ResponseMode::Fragment => {
             let existing: Option<HashMap<&str, &str>> = redirect_uri
@@ -173,12 +169,8 @@ where
                 .context("could not serialize redirect URI fragment params")?;
 
             redirect_uri.set_fragment(Some(&new_qs));
-            let redirect_uri = redirect_uri
-                .as_str()
-                .parse()
-                .context("could not convert redirect URI")?;
 
-            Ok(Redirect::to(redirect_uri).into_response())
+            Ok(Redirect::to(redirect_uri.as_str()).into_response())
         }
         ResponseMode::FormPost => {
             let merged = ParamsWithState { state, params };
@@ -389,7 +381,7 @@ pub(crate) async fn get(
                 let next: ReauthRequest = next.into();
                 let next = next.build_uri()?;
 
-                Ok(Redirect::to(next).into_response())
+                Ok(Redirect::to(&next.to_string()).into_response())
             }
             (Some(user_session), _) => {
                 // Other cases where we already have a session
@@ -403,7 +395,7 @@ pub(crate) async fn get(
                 let next: RegisterRequest = next.into();
                 let next = next.build_uri()?;
 
-                Ok(Redirect::to(next).into_response())
+                Ok(Redirect::to(&next.to_string()).into_response())
             }
             (None, _) => {
                 // Other cases where we don't have a session, ask for a login
@@ -413,7 +405,7 @@ pub(crate) async fn get(
                 let next: LoginRequest = next.into();
                 let next = next.build_uri()?;
 
-                Ok(Redirect::to(next).into_response())
+                Ok(Redirect::to(&next.to_string()).into_response())
             }
         }
     })
@@ -424,7 +416,7 @@ pub(crate) async fn get(
         Err(_e) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     };
 
-    Ok((cookie_jar.headers(), response).into_response())
+    Ok((cookie_jar, response).into_response())
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -486,7 +478,7 @@ pub(crate) async fn step_get(
         let next: PostAuthAction = next.into();
         let login: LoginRequest = next.into();
         let login = login.build_uri()?;
-        return Ok((cookie_jar.headers(), Redirect::to(login)).into_response());
+        return Ok((cookie_jar, Redirect::to(&login.to_string())).into_response());
     };
 
     step(next, session, txn, &templates).await
@@ -565,7 +557,7 @@ async fn step(
             let next: ReauthRequest = next.into();
             let next = next.build_uri()?;
 
-            Redirect::to(next).into_response()
+            Redirect::to(&next.to_string()).into_response()
         }
     };
 
