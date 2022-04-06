@@ -21,7 +21,6 @@ use oauth2_types::requests::GrantType;
 use sqlx::{PgConnection, PgExecutor};
 use thiserror::Error;
 use url::Url;
-use warp::reject::Reject;
 
 use crate::PostgresqlBackend;
 
@@ -78,8 +77,6 @@ impl ClientFetchError {
         matches!(self, Self::Database(sqlx::Error::RowNotFound))
     }
 }
-
-impl Reject for ClientFetchError {}
 
 impl TryInto<Client<PostgresqlBackend>> for OAuth2ClientLookup {
     type Error = ClientFetchError;

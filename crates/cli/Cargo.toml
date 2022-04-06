@@ -16,7 +16,6 @@ tower = { version = "0.4.12", features = ["full"] }
 hyper = { version = "0.14.17", features = ["full"] }
 serde_yaml = "0.8.23"
 serde_json = "1.0.79"
-warp = "0.3.2"
 url = "2.2.2"
 argon2 = { version = "0.3.4", features = ["password-hash"] }
 reqwest = { version = "0.11.10", features = ["rustls-tls"], default-features = false, optional = true }
@@ -42,7 +41,6 @@ mas-http = { path = "../http" }
 mas-storage = { path = "../storage" }
 mas-tasks = { path = "../tasks" }
 mas-templates = { path = "../templates" }
-mas-warp-utils = { path = "../warp-utils" }
 mas-axum-utils = { path = "../axum-utils" }
 
 [dev-dependencies]

@@ -19,7 +19,6 @@ use mas_data_model::{
 };
 use sqlx::{PgConnection, PgExecutor};
 use thiserror::Error;
-use warp::reject::Reject;
 
 use super::client::{lookup_client_by_client_id, ClientFetchError};
 use crate::{DatabaseInconsistencyError, IdAndCreationTime, PostgresqlBackend};
@@ -86,8 +85,6 @@ pub enum RefreshTokenLookupError {
     ClientFetch(#[from] ClientFetchError),
     Conversion(#[from] DatabaseInconsistencyError),
 }
-
-impl Reject for RefreshTokenLookupError {}
 
 impl RefreshTokenLookupError {
     #[must_use]

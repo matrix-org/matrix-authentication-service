@@ -27,7 +27,6 @@ use sqlx::{postgres::types::PgInterval, Acquire, PgExecutor, Postgres, Transacti
 use thiserror::Error;
 use tokio::task;
 use tracing::{info_span, Instrument};
-use warp::reject::Reject;
 
 use super::{DatabaseInconsistencyError, PostgresqlBackend};
 use crate::IdAndCreationTime;
@@ -116,8 +115,6 @@ pub enum ActiveSessionLookupError {
     Fetch(#[from] sqlx::Error),
     Conversion(#[from] DatabaseInconsistencyError),
 }
-
-impl Reject for ActiveSessionLookupError {}
 
 impl ActiveSessionLookupError {
     #[must_use]

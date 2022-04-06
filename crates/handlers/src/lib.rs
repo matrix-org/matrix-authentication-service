@@ -16,7 +16,7 @@
 #![deny(clippy::all, rustdoc::broken_intra_doc_links)]
 #![warn(clippy::pedantic)]
 #![allow(
-    clippy::unused_async // Some warp filters need that
+    clippy::unused_async // Some axum handlers need that
 )]
 
 use std::sync::Arc;

@@ -271,8 +271,6 @@ pub enum TemplateError {
     },
 }
 
-impl warp::reject::Reject for TemplateError {}
-
 register_templates! {
     extra = {
         "components/button.html",
