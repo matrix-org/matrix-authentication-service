@@ -253,11 +253,7 @@ impl ConfigurationSection<'_> for SecretsConfig {
         .context("could not join blocking task")??;
         let rsa_key = KeyConfig {
             r#type: KeyType::Rsa,
-            key: KeyOrPath::Key(
-                rsa_key
-                    .to_pkcs1_pem(pem_rfc7468::LineEnding::LF)?
-                    .to_string(),
-            ),
+            key: KeyOrPath::Key(rsa_key.to_pkcs1_pem(pkcs8::LineEnding::LF)?.to_string()),
         };
 
         let span = tracing::info_span!("ecdsa");
@@ -272,7 +268,7 @@ impl ConfigurationSection<'_> for SecretsConfig {
         .context("could not join blocking task")?;
         let ecdsa_key = KeyConfig {
             r#type: KeyType::Ecdsa,
-            key: KeyOrPath::Key(ecdsa_key.to_pem(pem_rfc7468::LineEnding::LF)?.to_string()),
+            key: KeyOrPath::Key(ecdsa_key.to_pem(pkcs8::LineEnding::LF)?.to_string()),
         };
 
         Ok(Self {

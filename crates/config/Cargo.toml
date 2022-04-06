@@ -8,7 +8,7 @@ license = "Apache-2.0"
 [dependencies]
 tokio = { version = "1.17.0", features = [] }
 tracing = { version = "0.1.32", features = ["log"] }
-async-trait = "0.1.52"
+async-trait = "0.1.53"
 
 thiserror = "1.0.30"
 anyhow = "1.0.56"
@@ -22,15 +22,15 @@ serde = { version = "1.0.136", features = ["derive"] }
 serde_with = { version = "1.12.0", features = ["hex", "chrono"] }
 serde_json = "1.0.79"
 sqlx = { version = "0.5.11", features = ["runtime-tokio-rustls", "postgres"] }
-lettre = { version = "0.10.0-rc.4", default-features = false, features = ["serde", "builder"] }
+lettre = { version = "0.10.0-rc.5", default-features = false, features = ["serde", "builder"] }
 
 rand = "0.8.5"
-rsa = { git = "https://github.com/RustCrypto/RSA.git" }
+rsa = "0.6.0-pre"
 p256 = { version = "0.10.1", features = ["ecdsa", "pem", "pkcs8"] }
 pkcs8 = { version = "0.8.0", features = ["pem"] }
-chacha20poly1305 = { version = "0.9.0", features = ["std"] }
+chacha20poly1305 = { version = "0.10.0-pre", features = ["std"] }
 elliptic-curve = { version = "0.11.12", features = ["pem", "pkcs8"] }
-pem-rfc7468 = "0.3.1"
+pem-rfc7468 = "0.5.1"
 cookie = { version = "0.16.0", features = ["private", "key-expansion"] }
 data-encoding = "2.3.2"
 

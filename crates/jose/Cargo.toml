@@ -7,8 +7,8 @@ license = "Apache-2.0"
 
 [dependencies]
 anyhow = "1.0.56"
-async-trait = "0.1.52"
-base64ct = { version = "1.0.1", features = ["std"] }
+async-trait = "0.1.53"
+base64ct = { version = "1.5.0", features = ["std"] }
 chrono = { version = "0.4.19", features = ["serde"] }
 crypto-mac = { version = "0.11.1", features = ["std"] }
 digest = "0.10.3"
@@ -21,7 +21,7 @@ p256 = { version = "0.10.1", features = ["ecdsa", "pem", "pkcs8"] }
 pkcs1 = { version = "0.3.3", features = ["pem", "pkcs8"] }
 pkcs8 = { version = "0.8.0", features = ["pem"] }
 rand = "0.8.5"
-rsa = { git = "https://github.com/RustCrypto/RSA.git" }
+rsa = "0.6.0-pre"
 schemars = "0.8.8"
 sec1 = "0.2.1"
 serde = { version = "1.0.136", features = ["derive"] }

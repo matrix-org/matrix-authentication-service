@@ -9,24 +9,24 @@ license = "Apache-2.0"
 tokio = { version = "1.17.0", features = ["full"] }
 futures = "0.3.21"
 anyhow = { version = "1.0.56", features = ["backtrace"] }
-clap = { version = "3.1.6", features = ["derive"] }
+clap = { version = "3.1.8", features = ["derive"] }
 dotenv = "0.15.0"
 schemars = { version = "0.8.8", features = ["url", "chrono"] }
 tower = { version = "0.4.12", features = ["full"] }
-hyper = { version = "0.14.17", features = ["full"] }
+hyper = { version = "0.14.18", features = ["full"] }
 serde_yaml = "0.8.23"
 serde_json = "1.0.79"
 url = "2.2.2"
-argon2 = { version = "0.3.4", features = ["password-hash"] }
+argon2 = { version = "0.4.0", features = ["password-hash"] }
 reqwest = { version = "0.11.10", features = ["rustls-tls"], default-features = false, optional = true }
-watchman_client = "0.7.1"
+watchman_client = "0.7.2"
 atty = "0.2.14"
 rand = "0.8.5"
 data-encoding = "2.3.2"
 
 tracing = "0.1.32"
 tracing-appender = "0.2.2"
-tracing-subscriber = { version = "0.3.9", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.10", features = ["env-filter"] }
 tracing-opentelemetry = "0.17.2"
 opentelemetry = { version = "0.17.0", features = ["trace", "metrics", "rt-tokio"] }
 opentelemetry-semantic-conventions = "0.9.0"
