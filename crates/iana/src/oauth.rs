@@ -25,7 +25,19 @@ use serde::{Deserialize, Serialize};
 ///
 /// Source: <https://www.iana.org/assignments/oauth-parameters/token-types.csv>
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Display, FromStr, Serialize, Deserialize, JsonSchema,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Display,
+    FromStr,
+    Serialize,
+    Deserialize,
+    JsonSchema,
 )]
 pub enum OAuthAccessTokenType {
     /// `Bearer`
@@ -48,7 +60,19 @@ pub enum OAuthAccessTokenType {
 ///
 /// Source: <https://www.iana.org/assignments/oauth-parameters/endpoint.csv>
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Display, FromStr, Serialize, Deserialize, JsonSchema,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Display,
+    FromStr,
+    Serialize,
+    Deserialize,
+    JsonSchema,
 )]
 pub enum OAuthAuthorizationEndpointResponseType {
     /// `code`
@@ -96,7 +120,19 @@ pub enum OAuthAuthorizationEndpointResponseType {
 ///
 /// Source: <https://www.iana.org/assignments/oauth-parameters/token-type-hint.csv>
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Display, FromStr, Serialize, Deserialize, JsonSchema,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Display,
+    FromStr,
+    Serialize,
+    Deserialize,
+    JsonSchema,
 )]
 pub enum OAuthTokenTypeHint {
     /// `access_token`
@@ -119,7 +155,19 @@ pub enum OAuthTokenTypeHint {
 ///
 /// Source: <https://www.iana.org/assignments/oauth-parameters/token-endpoint-auth-method.csv>
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Display, FromStr, Serialize, Deserialize, JsonSchema,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Display,
+    FromStr,
+    Serialize,
+    Deserialize,
+    JsonSchema,
 )]
 pub enum OAuthClientAuthenticationMethod {
     /// `none`
@@ -162,7 +210,19 @@ pub enum OAuthClientAuthenticationMethod {
 ///
 /// Source: <https://www.iana.org/assignments/oauth-parameters/pkce-code-challenge-method.csv>
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Display, FromStr, Serialize, Deserialize, JsonSchema,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Display,
+    FromStr,
+    Serialize,
+    Deserialize,
+    JsonSchema,
 )]
 pub enum PkceCodeChallengeMethod {
     /// `plain`
