@@ -64,13 +64,11 @@ impl RegisterRequest {
     }
 
     fn redirect(self) -> Result<impl IntoResponse, anyhow::Error> {
-        let uri = if let Some(action) = self.post_auth_action {
-            action.build_uri()?
+        if let Some(action) = self.post_auth_action {
+            Ok(Redirect::to(&action.build_uri()?.to_string()))
         } else {
-            Uri::from_static("/")
-        };
-
-        Ok(Redirect::to(uri))
+            Ok(Redirect::to("/"))
+        }
     }
 }
 
@@ -129,7 +127,7 @@ pub(crate) async fn get(
             .await
             .map_err(fancy_error(templates.clone()))?;
 
-        Ok((cookie_jar.headers(), Html(content)).into_response())
+        Ok((cookie_jar, Html(content)).into_response())
     }
 }
 
@@ -164,5 +162,5 @@ pub(crate) async fn post(
 
     let cookie_jar = cookie_jar.set_session(&session);
     let reply = query.redirect().map_err(fancy_error(templates.clone()))?;
-    Ok((cookie_jar.headers(), reply).into_response())
+    Ok((cookie_jar, reply).into_response())
 }

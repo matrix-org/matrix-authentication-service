@@ -9,7 +9,7 @@ license = "Apache-2.0"
 dev = []
 
 [dependencies]
-axum = "0.4.8"
+axum = "0.5.1"
 headers = "0.3.7"
 http = "0.2.6"
 mime_guess = "2.0.4"

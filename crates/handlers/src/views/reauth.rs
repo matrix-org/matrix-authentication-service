@@ -63,13 +63,11 @@ impl ReauthRequest {
     }
 
     fn redirect(self) -> Result<impl IntoResponse, anyhow::Error> {
-        let uri = if let Some(action) = self.post_auth_action {
-            action.build_uri()?
+        if let Some(action) = self.post_auth_action {
+            Ok(Redirect::to(&action.build_uri()?.to_string()))
         } else {
-            Uri::from_static("/")
-        };
-
-        Ok(Redirect::to(uri))
+            Ok(Redirect::to("/"))
+        }
     }
 }
 
@@ -104,7 +102,7 @@ pub(crate) async fn get(
         // PostAuthAction
         let login: LoginRequest = query.post_auth_action.into();
         let login = login.build_uri().map_err(fancy_error(templates.clone()))?;
-        return Ok((cookie_jar.headers(), Redirect::to(login)).into_response());
+        return Ok((cookie_jar, Redirect::to(&login.to_string())).into_response());
     };
 
     let ctx = ReauthContext::default();
@@ -125,7 +123,7 @@ pub(crate) async fn get(
         .await
         .map_err(fancy_error(templates.clone()))?;
 
-    Ok((cookie_jar.headers(), Html(content)).into_response())
+    Ok((cookie_jar, Html(content)).into_response())
 }
 
 pub(crate) async fn post(
@@ -155,7 +153,7 @@ pub(crate) async fn post(
         // PostAuthAction
         let login: LoginRequest = query.post_auth_action.into();
         let login = login.build_uri().map_err(fancy_error(templates.clone()))?;
-        return Ok((cookie_jar.headers(), Redirect::to(login)).into_response());
+        return Ok((cookie_jar, Redirect::to(&login.to_string())).into_response());
     };
 
     // TODO: recover from errors here
@@ -166,5 +164,5 @@ pub(crate) async fn post(
     txn.commit().await.map_err(fancy_error(templates.clone()))?;
 
     let redirection = query.redirect().map_err(fancy_error(templates.clone()))?;
-    Ok((cookie_jar.headers(), redirection).into_response())
+    Ok((cookie_jar, redirection).into_response())
 }

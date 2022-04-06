@@ -14,10 +14,13 @@
 
 //! Private (encrypted) cookie jar, based on axum-extra's cookie jar
 
-use std::marker::PhantomData;
+use std::{convert::Infallible, marker::PhantomData};
 
 use async_trait::async_trait;
-use axum::extract::{Extension, FromRequest, RequestParts};
+use axum::{
+    extract::{Extension, FromRequest, RequestParts},
+    response::IntoResponseParts,
+};
 pub use cookie::Cookie;
 use data_encoding::BASE64URL_NOPAD;
 use headers::HeaderMap;
@@ -68,12 +71,6 @@ impl<K> PrivateCookieJar<K> {
             }
         }
     }
-
-    pub fn headers(self) -> HeaderMap {
-        let mut headers = HeaderMap::new();
-        self.set_cookies(&mut headers);
-        headers
-    }
 }
 
 #[async_trait]
@@ -91,13 +88,8 @@ where
         let mut jar = cookie::CookieJar::new();
         let mut private_jar = jar.private_mut(&key);
 
-        // TODO: remove this when axum 0.5 gets released
-        // https://github.com/tokio-rs/axum/pull/698
-        let empty_headers = HeaderMap::new();
-
         let cookies = req
             .headers()
-            .unwrap_or(&empty_headers)
             .get_all(COOKIE)
             .into_iter()
             .filter_map(|value| value.to_str().ok())
@@ -115,6 +107,17 @@ where
             key,
             _marker: PhantomData,
         })
+    }
+}
+
+impl<K> IntoResponseParts for PrivateCookieJar<K> {
+    type Error = Infallible;
+    fn into_response_parts(
+        self,
+        mut res: axum::response::ResponseParts,
+    ) -> Result<axum::response::ResponseParts, Self::Error> {
+        self.set_cookies(res.headers_mut());
+        Ok(res)
     }
 }
 

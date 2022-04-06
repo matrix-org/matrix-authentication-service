@@ -16,7 +16,6 @@ use axum::{
     extract::{Extension, Form},
     response::{IntoResponse, Redirect},
 };
-use hyper::Uri;
 use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     fancy_error, FancyError, PrivateCookieJar, SessionInfoExt,
@@ -54,6 +53,5 @@ pub(crate) async fn post(
 
     txn.commit().await.map_err(fancy_error(templates))?;
 
-    let to = Uri::from_static("/login");
-    Ok((cookie_jar.headers(), Redirect::to(to)))
+    Ok((cookie_jar, Redirect::to("/login")))
 }

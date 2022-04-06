@@ -50,5 +50,5 @@ pub async fn get(
         .await
         .map_err(fancy_error(templates))?;
 
-    Ok((cookie_jar.headers(), Html(content)))
+    Ok((cookie_jar, Html(content)))
 }

@@ -71,7 +71,7 @@ impl LoginRequest {
             Uri::from_static("/")
         };
 
-        Ok(Redirect::to(uri))
+        Ok(Redirect::to(&uri.to_string()))
     }
 }
 
@@ -129,7 +129,7 @@ pub(crate) async fn get(
             .await
             .map_err(fancy_error(templates.clone()))?;
 
-        Ok((cookie_jar.headers(), Html(content)).into_response())
+        Ok((cookie_jar, Html(content)).into_response())
     }
 }
 
@@ -157,7 +157,7 @@ pub(crate) async fn post(
         Ok(session_info) => {
             let cookie_jar = cookie_jar.set_session(&session_info);
             let reply = query.redirect().map_err(fancy_error(templates.clone()))?;
-            Ok((cookie_jar.headers(), reply).into_response())
+            Ok((cookie_jar, reply).into_response())
         }
         Err(e) => {
             let errored_form = match e {
@@ -174,7 +174,7 @@ pub(crate) async fn post(
                 .await
                 .map_err(fancy_error(templates.clone()))?;
 
-            Ok((cookie_jar.headers(), Html(content)).into_response())
+            Ok((cookie_jar, Html(content)).into_response())
         }
     }
 }
