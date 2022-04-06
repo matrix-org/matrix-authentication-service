@@ -14,12 +14,17 @@
 
 use std::collections::HashMap;
 
+use anyhow::Context;
+use axum::{
+    extract::{Extension, Form, Query},
+    response::{Html, IntoResponse, Redirect, Response},
+};
 use chrono::Duration;
 use hyper::{
-    header::LOCATION,
     http::uri::{Parts, PathAndQuery, Uri},
     StatusCode,
 };
+use mas_axum_utils::{PrivateCookieJar, SessionInfoExt};
 use mas_config::Encrypter;
 use mas_data_model::{
     Authentication, AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, BrowserSession,
@@ -32,25 +37,16 @@ use mas_storage::{
         authorization_grant::{
             derive_session, fulfill_grant, get_grant_by_id, new_authorization_grant,
         },
-        client::lookup_client_by_client_id,
+        client::{lookup_client_by_client_id, ClientFetchError},
         refresh_token::add_refresh_token,
     },
     PostgresqlBackend,
 };
 use mas_templates::{FormPostContext, Templates};
-use mas_warp_utils::{
-    errors::WrapError,
-    filters::{
-        self,
-        database::{connection, transaction},
-        session::{optional_session, session},
-        with_templates,
-    },
-};
 use oauth2_types::{
     errors::{
-        ErrorResponse, InvalidGrant, InvalidRequest, LoginRequired, OAuth2Error,
-        RegistrationNotSupported, RequestNotSupported, RequestUriNotSupported, UnauthorizedClient,
+        INVALID_REQUEST, LOGIN_REQUIRED, REGISTRATION_NOT_SUPPORTED, REQUEST_NOT_SUPPORTED,
+        REQUEST_URI_NOT_SUPPORTED, UNAUTHORIZED_CLIENT,
     },
     pkce,
     prelude::*,
@@ -62,48 +58,53 @@ use oauth2_types::{
 };
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use sqlx::{pool::PoolConnection, PgConnection, PgPool, Postgres, Transaction};
+use sqlx::{PgConnection, PgPool, Postgres, Transaction};
 use url::Url;
-use warp::{
-    filters::BoxedFilter,
-    redirect::see_other,
-    reject::InvalidQuery,
-    reply::{html, with_header},
-    Filter, Rejection, Reply,
-};
 
 use crate::views::{LoginRequest, PostAuthAction, ReauthRequest, RegisterRequest};
 
-#[derive(Deserialize)]
-struct PartialParams {
-    client_id: Option<String>,
-    redirect_uri: Option<String>,
-    state: Option<String>,
-    /*
-    response_type: Option<String>,
-    response_mode: Option<String>,
-    */
+pub enum RouteError {
+    Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
+    Anyhow(anyhow::Error),
+    ClientNotFound,
+    InvalidRedirectUri,
 }
 
-enum ReplyOrBackToClient {
-    Reply(Box<dyn Reply>),
-    BackToClient {
-        params: Value,
-        redirect_uri: Url,
-        response_mode: ResponseMode,
-        state: Option<String>,
-    },
-    Error(Box<dyn OAuth2Error>),
+impl IntoResponse for RouteError {
+    fn into_response(self) -> axum::response::Response {
+        StatusCode::INTERNAL_SERVER_ERROR.into_response()
+    }
+}
+
+impl From<sqlx::Error> for RouteError {
+    fn from(e: sqlx::Error) -> Self {
+        Self::Internal(Box::new(e))
+    }
+}
+
+impl From<ClientFetchError> for RouteError {
+    fn from(e: ClientFetchError) -> Self {
+        if e.not_found() {
+            Self::ClientNotFound
+        } else {
+            Self::Internal(Box::new(e))
+        }
+    }
+}
+
+impl From<anyhow::Error> for RouteError {
+    fn from(e: anyhow::Error) -> Self {
+        Self::Anyhow(e)
+    }
 }
 
 async fn back_to_client<T>(
-    mut redirect_uri: Url,
+    redirect_uri: &Url,
     response_mode: ResponseMode,
     state: Option<String>,
     params: T,
     templates: &Templates,
-) -> anyhow::Result<Box<dyn Reply>>
+) -> Result<Response, RouteError>
 where
     T: Serialize,
 {
@@ -128,12 +129,15 @@ where
         params: T,
     }
 
+    let mut redirect_uri = redirect_uri.clone();
+
     match response_mode {
         ResponseMode::Query => {
             let existing: Option<HashMap<&str, &str>> = redirect_uri
                 .query()
                 .map(serde_urlencoded::from_str)
-                .transpose()?;
+                .transpose()
+                .map_err(|_e| RouteError::InvalidRedirectUri)?;
 
             let merged = AllParams {
                 existing,
@@ -141,21 +145,23 @@ where
                 params,
             };
 
-            let new_qs = serde_urlencoded::to_string(merged)?;
+            let new_qs = serde_urlencoded::to_string(merged)
+                .context("could not serialize redirect URI query params")?;
 
             redirect_uri.set_query(Some(&new_qs));
+            let redirect_uri = redirect_uri
+                .as_str()
+                .parse()
+                .context("could not convert redirect URI")?;
 
-            Ok(Box::new(with_header(
-                StatusCode::SEE_OTHER,
-                LOCATION,
-                redirect_uri.as_str(),
-            )))
+            Ok(Redirect::to(redirect_uri).into_response())
         }
         ResponseMode::Fragment => {
             let existing: Option<HashMap<&str, &str>> = redirect_uri
                 .fragment()
                 .map(serde_urlencoded::from_str)
-                .transpose()?;
+                .transpose()
+                .map_err(|_e| RouteError::InvalidRedirectUri)?;
 
             let merged = AllParams {
                 existing,
@@ -163,27 +169,31 @@ where
                 params,
             };
 
-            let new_qs = serde_urlencoded::to_string(merged)?;
+            let new_qs = serde_urlencoded::to_string(merged)
+                .context("could not serialize redirect URI fragment params")?;
 
             redirect_uri.set_fragment(Some(&new_qs));
+            let redirect_uri = redirect_uri
+                .as_str()
+                .parse()
+                .context("could not convert redirect URI")?;
 
-            Ok(Box::new(with_header(
-                StatusCode::SEE_OTHER,
-                LOCATION,
-                redirect_uri.as_str(),
-            )))
+            Ok(Redirect::to(redirect_uri).into_response())
         }
         ResponseMode::FormPost => {
             let merged = ParamsWithState { state, params };
             let ctx = FormPostContext::new(redirect_uri, merged);
-            let rendered = templates.render_form_post(&ctx).await?;
-            Ok(Box::new(html(rendered)))
+            let rendered = templates
+                .render_form_post(&ctx)
+                .await
+                .context("failed to render form_post.html")?;
+            Ok(Html(rendered).into_response())
         }
     }
 }
 
 #[derive(Deserialize)]
-struct Params {
+pub(crate) struct Params {
     #[serde(flatten)]
     auth: AuthorizationRequest,
 
@@ -215,240 +225,206 @@ fn resolve_response_mode(
     }
 }
 
-pub fn filter(
-    pool: &PgPool,
-    templates: &Templates,
-    encrypter: &Encrypter,
-) -> BoxedFilter<(Box<dyn Reply>,)> {
-    let authorize = warp::path!("oauth2" / "authorize")
-        .and(filters::trace::name("GET /oauth2/authorize"))
-        .and(warp::get())
-        .and(warp::query())
-        .and(optional_session(pool, encrypter))
-        .and(transaction(pool))
-        .and_then(get);
-
-    let step = warp::path!("oauth2" / "authorize" / "step")
-        .and(filters::trace::name("GET /oauth2/authorize/step"))
-        .and(warp::get())
-        .and(warp::query())
-        .and(session(pool, encrypter))
-        .and(transaction(pool))
-        .and_then(step);
-
-    authorize
-        .or(step)
-        .unify()
-        .recover(recover)
-        .unify()
-        .and(warp::query())
-        .and(with_templates(templates))
-        .and(connection(pool))
-        .and_then(actually_reply)
-        .boxed()
-}
-
-async fn recover(rejection: Rejection) -> Result<ReplyOrBackToClient, Rejection> {
-    if rejection.find::<InvalidQuery>().is_some() {
-        Ok(ReplyOrBackToClient::Error(Box::new(InvalidRequest)))
-    } else {
-        Err(rejection)
-    }
-}
-
-async fn actually_reply(
-    rep: ReplyOrBackToClient,
-    q: PartialParams,
-    templates: Templates,
-    mut conn: PoolConnection<Postgres>,
-) -> Result<Box<dyn Reply>, Rejection> {
-    let (redirect_uri, response_mode, state, params) = match rep {
-        ReplyOrBackToClient::Reply(r) => return Ok(r),
-        ReplyOrBackToClient::BackToClient {
-            redirect_uri,
-            response_mode,
-            params,
-            state,
-        } => (redirect_uri, response_mode, state, params),
-        ReplyOrBackToClient::Error(error) => {
-            let PartialParams {
-                client_id,
-                redirect_uri,
-                state,
-                ..
-            } = q;
-
-            let client_id = if let Some(client_id) = client_id {
-                client_id
-            } else {
-                return Ok(Box::new(html(templates.render_error(&error.into()).await?)));
-            };
-
-            let client = lookup_client_by_client_id(&mut conn, &client_id).await?;
-
-            let redirect_uri: Result<Option<Url>, _> = redirect_uri.map(|r| r.parse()).transpose();
-            let redirect_uri = match redirect_uri {
-                Ok(r) => r,
-                Err(_) => return Ok(Box::new(html(templates.render_error(&error.into()).await?))),
-            };
-
-            let redirect_uri = client.resolve_redirect_uri(&redirect_uri);
-            let redirect_uri = match redirect_uri {
-                Ok(r) => r,
-                Err(_) => return Ok(Box::new(html(templates.render_error(&error.into()).await?))),
-            };
-
-            let reply: ErrorResponse = error.into();
-            let reply = serde_json::to_value(&reply).wrap_error()?;
-            // TODO: resolve response mode
-            (redirect_uri.clone(), ResponseMode::Query, state, reply)
-        }
-    };
-
-    back_to_client(redirect_uri, response_mode, state, params, &templates)
-        .await
-        .wrap_error()
-}
-
 #[allow(clippy::too_many_lines)]
-async fn get(
-    params: Params,
-    maybe_session: Option<BrowserSession<PostgresqlBackend>>,
-    mut txn: Transaction<'_, Postgres>,
-) -> Result<ReplyOrBackToClient, Rejection> {
-    // Check if the request/request_uri/registration params are used. If so, reply
-    // with the right error since we don't support them.
-    if params.auth.request.is_some() {
-        return Ok(ReplyOrBackToClient::Error(Box::new(RequestNotSupported)));
-    }
+pub(crate) async fn get(
+    Extension(templates): Extension<Templates>,
+    Extension(pool): Extension<PgPool>,
+    cookie_jar: PrivateCookieJar<Encrypter>,
+    Form(params): Form<Params>,
+) -> Result<Response, RouteError> {
+    let mut txn = pool.begin().await?;
 
-    if params.auth.request_uri.is_some() {
-        return Ok(ReplyOrBackToClient::Error(Box::new(RequestUriNotSupported)));
-    }
+    // First, fetch the current session if there is one
+    let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    if params.auth.registration.is_some() {
-        return Ok(ReplyOrBackToClient::Error(Box::new(
-            RegistrationNotSupported,
-        )));
-    }
+    let maybe_session = session_info
+        .load_session(&mut txn)
+        .await
+        .context("failed to load browser session")?;
 
-    // First, find out what client it is
+    // Then, find out what client it is
     let client = lookup_client_by_client_id(&mut txn, &params.auth.client_id).await?;
-
-    // Check if it is allowed to use this grant type
-    if !client.grant_types.contains(&GrantType::AuthorizationCode) {
-        return Ok(ReplyOrBackToClient::Error(Box::new(UnauthorizedClient)));
-    }
 
     let redirect_uri = client
         .resolve_redirect_uri(&params.auth.redirect_uri)
-        .wrap_error()?
+        .map_err(|_e| RouteError::InvalidRedirectUri)?
         .clone();
     let response_type = params.auth.response_type;
-    let response_mode =
-        resolve_response_mode(response_type, params.auth.response_mode).wrap_error()?;
+    let response_mode = resolve_response_mode(response_type, params.auth.response_mode)?;
 
-    let code: Option<AuthorizationCode> = if response_type.has_code() {
-        // 32 random alphanumeric characters, about 190bit of entropy
-        let code: String = thread_rng()
+    // One day, we will have try blocks
+    let res: Result<Response, RouteError> = (async move {
+        // Check if the request/request_uri/registration params are used. If so, reply
+        // with the right error since we don't support them.
+        if params.auth.request.is_some() {
+            return back_to_client(
+                &redirect_uri,
+                response_mode,
+                params.auth.state,
+                REQUEST_NOT_SUPPORTED,
+                &templates,
+            )
+            .await;
+        }
+
+        if params.auth.request_uri.is_some() {
+            return back_to_client(
+                &redirect_uri,
+                response_mode,
+                params.auth.state,
+                REQUEST_URI_NOT_SUPPORTED,
+                &templates,
+            )
+            .await;
+        }
+
+        if params.auth.registration.is_some() {
+            return back_to_client(
+                &redirect_uri,
+                response_mode,
+                params.auth.state,
+                REGISTRATION_NOT_SUPPORTED,
+                &templates,
+            )
+            .await;
+        }
+
+        // Check if it is allowed to use this grant type
+        if !client.grant_types.contains(&GrantType::AuthorizationCode) {
+            return back_to_client(
+                &redirect_uri,
+                response_mode,
+                params.auth.state,
+                UNAUTHORIZED_CLIENT,
+                &templates,
+            )
+            .await;
+        }
+
+        let code: Option<AuthorizationCode> = if response_type.has_code() {
+            // 32 random alphanumeric characters, about 190bit of entropy
+            let code: String = thread_rng()
+                .sample_iter(&Alphanumeric)
+                .take(32)
+                .map(char::from)
+                .collect();
+
+            let pkce = params.pkce.map(|p| Pkce {
+                challenge: p.code_challenge,
+                challenge_method: p.code_challenge_method,
+            });
+
+            Some(AuthorizationCode { code, pkce })
+        } else {
+            // If the request had PKCE params but no code asked, it should get back with an
+            // error
+            if params.pkce.is_some() {
+                return back_to_client(
+                    &redirect_uri,
+                    response_mode,
+                    params.auth.state,
+                    INVALID_REQUEST,
+                    &templates,
+                )
+                .await;
+            }
+
+            None
+        };
+
+        // Generate the device ID
+        // TODO: this should probably be done somewhere else?
+        let device_id: String = thread_rng()
             .sample_iter(&Alphanumeric)
-            .take(32)
+            .take(10)
             .map(char::from)
             .collect();
+        let device_scope: ScopeToken = format!("urn:matrix:device:{}", device_id)
+            .parse()
+            .context("could not parse generated device scope")?;
 
-        let pkce = params.pkce.map(|p| Pkce {
-            challenge: p.code_challenge,
-            challenge_method: p.code_challenge_method,
-        });
+        let scope = {
+            let mut s = params.auth.scope.clone();
+            s.insert(device_scope);
+            s
+        };
 
-        Some(AuthorizationCode { code, pkce })
-    } else {
-        // If the request had PKCE params but no code asked, it should get back with an
-        // error
-        if params.pkce.is_some() {
-            return Ok(ReplyOrBackToClient::Error(Box::new(InvalidGrant)));
+        let grant = new_authorization_grant(
+            &mut txn,
+            client,
+            redirect_uri.clone(),
+            scope,
+            code,
+            params.auth.state.clone(),
+            params.auth.nonce,
+            params.auth.max_age,
+            None,
+            response_mode,
+            response_type.has_token(),
+            response_type.has_id_token(),
+        )
+        .await?;
+
+        let next = ContinueAuthorizationGrant::from_authorization_grant(&grant);
+
+        match (maybe_session, params.auth.prompt) {
+            (None, Some(Prompt::None)) => {
+                // If there is no session and prompt=none was asked, go back to the client
+                txn.commit().await?;
+                Ok(back_to_client(
+                    &redirect_uri,
+                    response_mode,
+                    params.auth.state,
+                    LOGIN_REQUIRED,
+                    &templates,
+                )
+                .await?)
+            }
+            (Some(_), Some(Prompt::Login | Prompt::Consent | Prompt::SelectAccount)) => {
+                // We're already logged in but login|consent|select_account was asked, reauth
+                // TODO: better pages here
+                txn.commit().await?;
+
+                let next: PostAuthAction = next.into();
+                let next: ReauthRequest = next.into();
+                let next = next.build_uri()?;
+
+                Ok(Redirect::to(next).into_response())
+            }
+            (Some(user_session), _) => {
+                // Other cases where we already have a session
+                step(next, user_session, txn, &templates).await
+            }
+            (None, Some(Prompt::Create)) => {
+                // Client asked for a registration, show the registration prompt
+                txn.commit().await?;
+
+                let next: PostAuthAction = next.into();
+                let next: RegisterRequest = next.into();
+                let next = next.build_uri()?;
+
+                Ok(Redirect::to(next).into_response())
+            }
+            (None, _) => {
+                // Other cases where we don't have a session, ask for a login
+                txn.commit().await?;
+
+                let next: PostAuthAction = next.into();
+                let next: LoginRequest = next.into();
+                let next = next.build_uri()?;
+
+                Ok(Redirect::to(next).into_response())
+            }
         }
+    })
+    .await;
 
-        None
+    let response = match res {
+        Ok(r) => r,
+        Err(_e) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     };
 
-    // Generate the device ID
-    // TODO: this should probably be done somewhere else?
-    let device_id: String = thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(10)
-        .map(char::from)
-        .collect();
-    let device_scope: ScopeToken = format!("urn:matrix:device:{}", device_id)
-        .parse()
-        .wrap_error()?;
-    let scope = {
-        let mut s = params.auth.scope.clone();
-        s.insert(device_scope);
-        s
-    };
-
-    let grant = new_authorization_grant(
-        &mut txn,
-        client,
-        redirect_uri,
-        scope,
-        code,
-        params.auth.state,
-        params.auth.nonce,
-        params.auth.max_age,
-        None,
-        response_mode,
-        response_type.has_token(),
-        response_type.has_id_token(),
-    )
-    .await
-    .wrap_error()?;
-
-    let next = ContinueAuthorizationGrant::from_authorization_grant(&grant);
-
-    match (maybe_session, params.auth.prompt) {
-        (None, Some(Prompt::None)) => {
-            // If there is no session and prompt=none was asked, go back to the client
-            txn.commit().await.wrap_error()?;
-            Ok(ReplyOrBackToClient::Error(Box::new(LoginRequired)))
-        }
-        (Some(_), Some(Prompt::Login | Prompt::Consent | Prompt::SelectAccount)) => {
-            // We're already logged in but login|consent|select_account was asked, reauth
-            // TODO: better pages here
-            txn.commit().await.wrap_error()?;
-
-            let next: PostAuthAction = next.into();
-            let next: ReauthRequest = next.into();
-            let next = next.build_uri().wrap_error()?;
-
-            Ok(ReplyOrBackToClient::Reply(Box::new(see_other(next))))
-        }
-        (Some(user_session), _) => {
-            // Other cases where we already have a session
-            step(next, user_session, txn).await
-        }
-        (None, Some(Prompt::Create)) => {
-            // Client asked for a registration, show the registration prompt
-            txn.commit().await.wrap_error()?;
-
-            let next: PostAuthAction = next.into();
-            let next: RegisterRequest = next.into();
-            let next = next.build_uri().wrap_error()?;
-
-            Ok(ReplyOrBackToClient::Reply(Box::new(see_other(next))))
-        }
-        (None, _) => {
-            // Other cases where we don't have a session, ask for a login
-            txn.commit().await.wrap_error()?;
-
-            let next: PostAuthAction = next.into();
-            let next: LoginRequest = next.into();
-            let next = next.build_uri().wrap_error()?;
-
-            Ok(ReplyOrBackToClient::Reply(Box::new(see_other(next))))
-        }
-    }
+    Ok((cookie_jar.headers(), response).into_response())
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -486,31 +462,55 @@ impl ContinueAuthorizationGrant {
     }
 }
 
+pub(crate) async fn step_get(
+    Extension(templates): Extension<Templates>,
+    Extension(pool): Extension<PgPool>,
+    Query(next): Query<ContinueAuthorizationGrant>,
+    cookie_jar: PrivateCookieJar<Encrypter>,
+) -> Result<Response, RouteError> {
+    let mut txn = pool.begin().await?;
+
+    let (session_info, cookie_jar) = cookie_jar.session_info();
+
+    let maybe_session = session_info
+        .load_session(&mut txn)
+        .await
+        // TODO
+        .context("could not load db session")?;
+
+    let session = if let Some(session) = maybe_session {
+        session
+    } else {
+        // If there is no session, redirect to the login screen, redirecting here after
+        // logout
+        let next: PostAuthAction = next.into();
+        let login: LoginRequest = next.into();
+        let login = login.build_uri()?;
+        return Ok((cookie_jar.headers(), Redirect::to(login)).into_response());
+    };
+
+    step(next, session, txn, &templates).await
+}
+
 async fn step(
     next: ContinueAuthorizationGrant,
     browser_session: BrowserSession<PostgresqlBackend>,
     mut txn: Transaction<'_, Postgres>,
-) -> Result<ReplyOrBackToClient, Rejection> {
+    templates: &Templates,
+) -> Result<Response, RouteError> {
     // TODO: we should check if the grant here was started by the browser doing that
     // request using a signed cookie
-    let grant = next
-        .fetch_authorization_grant(&mut txn)
-        .await
-        .wrap_error()?;
+    let grant = next.fetch_authorization_grant(&mut txn).await?;
 
     if !matches!(grant.stage, AuthorizationGrantStage::Pending) {
-        return Err(anyhow::anyhow!("authorization grant not pending")).wrap_error();
+        return Err(anyhow::anyhow!("authorization grant not pending").into());
     }
 
     let reply = match browser_session.last_authentication {
         Some(Authentication { created_at, .. }) if created_at > grant.max_auth_time() => {
-            let session = derive_session(&mut txn, &grant, browser_session)
-                .await
-                .wrap_error()?;
+            let session = derive_session(&mut txn, &grant, browser_session).await?;
 
-            let grant = fulfill_grant(&mut txn, grant, session.clone())
-                .await
-                .wrap_error()?;
+            let grant = fulfill_grant(&mut txn, grant, session.clone()).await?;
 
             // Yep! Let's complete the auth now
             let mut params = AuthorizationResponse::default();
@@ -531,14 +531,11 @@ async fn step(
                     )
                 };
 
-                let access_token = add_access_token(&mut txn, &session, &access_token_str, ttl)
-                    .await
-                    .wrap_error()?;
+                let access_token =
+                    add_access_token(&mut txn, &session, &access_token_str, ttl).await?;
 
                 let _refresh_token =
-                    add_refresh_token(&mut txn, &session, access_token, &refresh_token_str)
-                        .await
-                        .wrap_error()?;
+                    add_refresh_token(&mut txn, &session, access_token, &refresh_token_str).await?;
 
                 params.response = Some(
                     AccessTokenResponse::new(access_token_str)
@@ -553,22 +550,25 @@ async fn step(
             }
 
             let params = serde_json::to_value(&params).unwrap();
-            ReplyOrBackToClient::BackToClient {
-                redirect_uri: grant.redirect_uri,
-                response_mode: grant.response_mode,
-                state: grant.state,
+
+            back_to_client(
+                &grant.redirect_uri,
+                grant.response_mode,
+                grant.state,
                 params,
-            }
+                templates,
+            )
+            .await?
         }
         _ => {
             let next: PostAuthAction = next.into();
             let next: ReauthRequest = next.into();
-            let next = next.build_uri().wrap_error()?;
+            let next = next.build_uri()?;
 
-            ReplyOrBackToClient::Reply(Box::new(see_other(next)))
+            Redirect::to(next).into_response()
         }
     };
 
-    txn.commit().await.wrap_error()?;
+    txn.commit().await?;
     Ok(reply)
 }

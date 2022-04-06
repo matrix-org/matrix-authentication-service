@@ -95,6 +95,11 @@ where
             post(self::oauth2::introspection::post),
         )
         .route("/oauth2/token", post(self::oauth2::token::post))
+        .route("/oauth2/authorize", get(self::oauth2::authorization::get))
+        .route(
+            "/oauth2/authorize/step",
+            get(self::oauth2::authorization::step_get),
+        )
         .fallback(mas_static_files::Assets)
         .layer(Extension(pool.clone()))
         .layer(Extension(templates.clone()))
