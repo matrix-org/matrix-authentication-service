@@ -20,7 +20,6 @@ thiserror = "1.0.30"
 anyhow = "1.0.56"
 
 # Web server
-warp = "0.3.2"
 hyper = { version = "0.14.17", features = ["full"] }
 tower = "0.4.12"
 axum = "0.4.8"
@@ -67,7 +66,6 @@ mas-jose = { path = "../jose" }
 mas-static-files = { path = "../static-files" }
 mas-storage = { path = "../storage" }
 mas-templates = { path = "../templates" }
-mas-warp-utils = { path = "../warp-utils" }
 
 [dev-dependencies]
 indoc = "1.0.4"

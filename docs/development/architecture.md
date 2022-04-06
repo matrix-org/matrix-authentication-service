@@ -20,7 +20,6 @@ This includes:
  - `mas-static-files`: Frontend static files (CSS/JS). Includes some frontend tooling
  - `mas-storage`: Interactions with the database
  - `mas-tasks`: Asynchronous task runner and scheduler
- - `mas-warp-utils`: Various filters and utilities for the `warp` web framework
  - `oauth2-types`: Useful structures and types to deal with OAuth 2.0/OpenID Connect endpoints. This might end up published as a standalone library as it can be useful in other contexts.
 
 ## Important crates
@@ -73,11 +72,6 @@ Both crates work well together and complement each other.
 
 Interactions with the database are done through [`sqlx`](https://github.com/launchbadge/sqlx), an async, pure-Rust SQL library with compile-time check of queries.
 It also handles schema migrations.
-
-### Web framework: `warp`
-
-[`warp`](https://docs.rs/warp/*/warp/) is an easy, macro-free web framework.
-Its composability makes a lot of sense when implementing OAuth 2.0 endpoints, because of the need to deal with a lot of different scenarios.
 
 ### Templates: `tera`
 
