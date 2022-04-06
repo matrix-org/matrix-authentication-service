@@ -20,7 +20,7 @@ thiserror = "1.0.30"
 anyhow = "1.0.56"
 
 # Web server
-hyper = { version = "0.14.17", features = ["full"] }
+hyper = { version = "0.14.18", features = ["full"] }
 tower = "0.4.12"
 axum = "0.5.1"
 axum-macros = "0.2.0"

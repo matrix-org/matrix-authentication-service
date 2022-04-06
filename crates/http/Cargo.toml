@@ -10,7 +10,7 @@ bytes = "1.1.0"
 futures-util = "0.3.21"
 http = "0.2.6"
 http-body = "0.4.4"
-hyper = "0.14.17"
+hyper = "0.14.18"
 hyper-rustls = { version = "0.23.0", features = ["http1", "http2"] }
 opentelemetry = "0.17.0"
 opentelemetry-http = "0.6.0"
