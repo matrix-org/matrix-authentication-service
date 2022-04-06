@@ -16,6 +16,7 @@ use http::status::StatusCode;
 use serde::ser::{Serialize, SerializeMap};
 use url::Url;
 
+#[derive(serde::Serialize)]
 pub struct ClientError {
     pub error: &'static str,
     pub error_description: &'static str,
@@ -219,7 +220,8 @@ pub mod rfc6749 {
         InvalidGrant,
         INVALID_GRANT,
         code: BAD_REQUEST,
-        "invalid_grant"
+        "invalid_grant" =>
+        "The provided access grant is invalid, expired, or revoked."
     }
 
     oauth2_error! {
