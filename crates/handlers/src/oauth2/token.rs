@@ -45,6 +45,7 @@ use mas_storage::{
     DatabaseInconsistencyError, PostgresqlBackend,
 };
 use oauth2_types::{
+    errors::{INVALID_CLIENT, INVALID_GRANT, INVALID_REQUEST, SERVER_ERROR, UNAUTHORIZED_CLIENT},
     requests::{
         AccessTokenRequest, AccessTokenResponse, AuthorizationCodeGrant, RefreshTokenGrant,
     },
@@ -108,8 +109,20 @@ impl From<RefreshTokenLookupError> for RouteError {
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
-        // TODO
-        StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        match self {
+            Self::Internal(_) | Self::Anyhow(_) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(SERVER_ERROR))
+            }
+            Self::BadRequest => (StatusCode::BAD_REQUEST, Json(INVALID_REQUEST)),
+            Self::ClientNotFound | Self::ClientCredentialsVerification(_) => {
+                (StatusCode::UNAUTHORIZED, Json(INVALID_CLIENT))
+            }
+            Self::ClientNotAllowed | Self::UnauthorizedClient => {
+                (StatusCode::UNAUTHORIZED, Json(UNAUTHORIZED_CLIENT))
+            }
+            Self::InvalidGrant => (StatusCode::BAD_REQUEST, Json(INVALID_GRANT)),
+        }
+        .into_response()
     }
 }
 
