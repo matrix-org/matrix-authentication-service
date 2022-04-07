@@ -39,7 +39,7 @@ where
     fn layer(&self, inner: S) -> Self::Service {
         ServiceBuilder::new()
             .compression()
-            .layer(TraceLayer::http_server())
+            .layer(TraceLayer::axum())
             .service(inner)
             .boxed_clone()
     }

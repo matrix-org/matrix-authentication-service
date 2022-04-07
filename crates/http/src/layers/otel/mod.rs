@@ -37,6 +37,23 @@ pub type TraceHttpServer<S> = Trace<
     S,
 >;
 
+pub type TraceAxumServerLayer = TraceLayer<
+    ExtractFromHttpRequest,
+    DefaultInjectContext,
+    SpanFromAxumRequest,
+    OnHttpResponse,
+    DefaultOnError,
+>;
+
+pub type TraceAxumServer<S> = Trace<
+    ExtractFromHttpRequest,
+    DefaultInjectContext,
+    SpanFromAxumRequest,
+    OnHttpResponse,
+    DefaultOnError,
+    S,
+>;
+
 pub type TraceHttpClientLayer = TraceLayer<
     DefaultExtractContext,
     InjectInHttpRequest,
@@ -76,6 +93,16 @@ impl TraceHttpServerLayer {
     pub fn http_server() -> Self {
         TraceLayer::default()
             .make_span_builder(SpanFromHttpRequest::server())
+            .on_response(OnHttpResponse)
+            .extract_context(ExtractFromHttpRequest)
+    }
+}
+
+impl TraceAxumServerLayer {
+    #[must_use]
+    pub fn axum() -> Self {
+        TraceLayer::default()
+            .make_span_builder(SpanFromAxumRequest)
             .on_response(OnHttpResponse)
             .extract_context(ExtractFromHttpRequest)
     }

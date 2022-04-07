@@ -13,8 +13,11 @@
 // limitations under the License.
 
 use http::Response;
+use hyper::client::connect::HttpInfo;
 use opentelemetry::trace::SpanRef;
-use opentelemetry_semantic_conventions::trace::HTTP_STATUS_CODE;
+use opentelemetry_semantic_conventions::trace::{
+    HTTP_STATUS_CODE, NET_HOST_IP, NET_HOST_PORT, NET_PEER_IP, NET_PEER_PORT,
+};
 
 pub trait OnResponse<R> {
     fn on_response(&self, span: &SpanRef<'_>, response: &R);
@@ -33,5 +36,14 @@ pub struct OnHttpResponse;
 impl<B> OnResponse<Response<B>> for OnHttpResponse {
     fn on_response(&self, span: &SpanRef<'_>, response: &Response<B>) {
         span.set_attribute(HTTP_STATUS_CODE.i64(i64::from(response.status().as_u16())));
+
+        // Get local and remote address from hyper's HttpInfo injected by the
+        // HttpConnector
+        if let Some(info) = response.extensions().get::<HttpInfo>() {
+            span.set_attribute(NET_PEER_IP.string(info.remote_addr().ip().to_string()));
+            span.set_attribute(NET_PEER_PORT.i64(info.remote_addr().port().into()));
+            span.set_attribute(NET_HOST_IP.string(info.local_addr().ip().to_string()));
+            span.set_attribute(NET_HOST_PORT.i64(info.local_addr().port().into()));
+        }
     }
 }

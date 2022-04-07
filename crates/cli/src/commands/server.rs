@@ -222,7 +222,7 @@ impl Options {
         info!("Listening on http://{}", listener.local_addr().unwrap());
 
         Server::from_tcp(listener)?
-            .serve(router.into_make_service())
+            .serve(router.into_make_service_with_connect_info::<SocketAddr>())
             .with_graceful_shutdown(shutdown_signal())
             .await?;
 

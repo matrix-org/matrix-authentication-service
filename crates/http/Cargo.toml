@@ -6,6 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
+axum = "0.5.1"
 bytes = "1.1.0"
 futures-util = "0.3.21"
 http = "0.2.6"

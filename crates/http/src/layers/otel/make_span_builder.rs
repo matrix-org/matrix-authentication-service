@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::borrow::Cow;
+use std::{borrow::Cow, net::SocketAddr};
 
+use axum::extract::{ConnectInfo, MatchedPath};
 use http::{Method, Request, Version};
 use hyper::client::connect::dns::Name;
 use opentelemetry::trace::{SpanBuilder, SpanKind};
 use opentelemetry_semantic_conventions::trace::{
-    HTTP_FLAVOR, HTTP_METHOD, HTTP_URL, NET_HOST_NAME,
+    HTTP_FLAVOR, HTTP_METHOD, HTTP_URL, NET_HOST_NAME, NET_PEER_IP, NET_PEER_PORT,
 };
 
 pub trait MakeSpanBuilder<R> {
@@ -121,6 +122,34 @@ impl<B> MakeSpanBuilder<Request<B>> for SpanFromHttpRequest {
 
         SpanBuilder::from_name(self.operation)
             .with_kind(self.span_kind.clone())
+            .with_attributes(attributes)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct SpanFromAxumRequest;
+
+impl<B> MakeSpanBuilder<Request<B>> for SpanFromAxumRequest {
+    fn make_span_builder(&self, request: &Request<B>) -> SpanBuilder {
+        let mut attributes = vec![
+            HTTP_METHOD.string(http_method_str(request.method())),
+            HTTP_FLAVOR.string(http_flavor(request.version())),
+            HTTP_URL.string(request.uri().to_string()),
+        ];
+
+        if let Some(ConnectInfo(addr)) = request.extensions().get::<ConnectInfo<SocketAddr>>() {
+            attributes.push(NET_PEER_IP.string(addr.ip().to_string()));
+            attributes.push(NET_PEER_PORT.i64(addr.port().into()));
+        }
+
+        let path = if let Some(path) = request.extensions().get::<MatchedPath>() {
+            path.as_str()
+        } else {
+            request.uri().path()
+        };
+
+        SpanBuilder::from_name(path.to_string())
+            .with_kind(SpanKind::Server)
             .with_attributes(attributes)
     }
 }
