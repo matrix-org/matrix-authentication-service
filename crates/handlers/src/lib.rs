@@ -19,7 +19,7 @@
     clippy::unused_async // Some axum handlers need that
 )]
 
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use axum::{
     body::HttpBody,
@@ -27,12 +27,15 @@ use axum::{
     routing::{get, on, post, MethodFilter},
     Router,
 };
+use hyper::header::AUTHORIZATION;
 use mas_axum_utils::UrlBuilder;
 use mas_config::Encrypter;
 use mas_email::Mailer;
+use mas_http::CorsLayerExt;
 use mas_jose::StaticKeystore;
 use mas_templates::Templates;
 use sqlx::PgPool;
+use tower_http::cors::{Any, CorsLayer};
 
 mod health;
 mod oauth2;
@@ -52,6 +55,33 @@ where
     <B as HttpBody>::Data: Send,
     <B as HttpBody>::Error: std::error::Error + Send + Sync,
 {
+    // All those routes are API-like, with a common CORS layer
+    let api_router = Router::new()
+        .route(
+            "/.well-known/openid-configuration",
+            get(self::oauth2::discovery::get),
+        )
+        .route("/oauth2/keys.json", get(self::oauth2::keys::get))
+        .route(
+            "/oauth2/userinfo",
+            on(
+                MethodFilter::POST | MethodFilter::GET,
+                self::oauth2::userinfo::get,
+            ),
+        )
+        .route(
+            "/oauth2/introspect",
+            post(self::oauth2::introspection::post),
+        )
+        .route("/oauth2/token", post(self::oauth2::token::post))
+        .layer(
+            CorsLayer::new()
+                .allow_origin(Any)
+                .allow_methods(Any)
+                .allow_otel_headers([AUTHORIZATION])
+                .max_age(Duration::from_secs(60 * 60)),
+        );
+
     Router::new()
         .route("/", get(self::views::index::get))
         .route("/health", get(self::health::get))
@@ -78,28 +108,12 @@ where
             "/account/emails",
             get(self::views::account::emails::get).post(self::views::account::emails::post),
         )
-        .route(
-            "/.well-known/openid-configuration",
-            get(self::oauth2::discovery::get),
-        )
-        .route("/oauth2/keys.json", get(self::oauth2::keys::get))
-        .route(
-            "/oauth2/userinfo",
-            on(
-                MethodFilter::POST | MethodFilter::GET,
-                self::oauth2::userinfo::get,
-            ),
-        )
-        .route(
-            "/oauth2/introspect",
-            post(self::oauth2::introspection::post),
-        )
-        .route("/oauth2/token", post(self::oauth2::token::post))
         .route("/oauth2/authorize", get(self::oauth2::authorization::get))
         .route(
             "/oauth2/authorize/step",
             get(self::oauth2::authorization::step_get),
         )
+        .merge(api_router)
         .fallback(mas_static_files::Assets)
         .layer(Extension(pool.clone()))
         .layer(Extension(templates.clone()))

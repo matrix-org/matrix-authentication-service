@@ -47,7 +47,7 @@ mod future_service;
 mod layers;
 
 pub use self::{
-    ext::ServiceExt as HttpServiceExt,
+    ext::{set_propagator, CorsLayerExt, ServiceExt as HttpServiceExt},
     future_service::FutureService,
     layers::{client::ClientLayer, json::JsonResponseLayer, otel, server::ServerLayer},
 };
