@@ -19,7 +19,6 @@
 use mas_data_model::{
     errors::ErroredForm, AuthorizationGrant, BrowserSession, StorageBackend, User, UserEmail,
 };
-use oauth2_types::errors::OAuth2Error;
 use serde::{ser::SerializeStruct, Serialize};
 use url::Url;
 
@@ -597,15 +596,5 @@ impl ErrorContext {
     pub fn with_details(mut self, details: String) -> Self {
         self.details = Some(details);
         self
-    }
-}
-
-impl From<Box<dyn OAuth2Error>> for ErrorContext {
-    fn from(err: Box<dyn OAuth2Error>) -> Self {
-        let mut ctx = ErrorContext::new().with_code(err.error());
-        if let Some(desc) = err.description() {
-            ctx = ctx.with_description(desc);
-        }
-        ctx
     }
 }
