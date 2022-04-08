@@ -12,7 +12,7 @@
 # The Debian version and version name must be in sync
 ARG DEBIAN_VERSION=11
 ARG DEBIAN_VERSION_NAME=bullseye
-ARG RUSTC_VERSION=1.59.0
+ARG RUSTC_VERSION=1.60.0
 ARG NODEJS_VERSION=16
 
 ## Build stage that builds the static files/frontend ##
