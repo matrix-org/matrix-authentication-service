@@ -255,18 +255,16 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --all-features --no-fail-fast --workspace
+          args: --all-features --no-fail-fast --workspace --tests
         env:
           CARGO_INCREMENTAL: '0'
           RUSTFLAGS: '-Cinstrument-coverage'
-          RUSTDOCFLAGS: "-Cpanic=abort -Cinstrument-coverage --persist-doctests ${{ github.workspace }}/target/debug/doctestbins"
           LLVM_PROFILE_FILE: "cargo-test-%p-%m.profraw"
 
       - name: Build grcov report
         run: |
           mkdir -p target/coverage
           grcov . --binary-path ./target/debug/deps/ -s . -t lcov --branch --ignore-not-existing --ignore '../*' --ignore "/*" -o target/coverage/tests.lcov
-          grcov . --binary-path ./target/debug/doctestbins/ -s . -t lcov --branch --ignore-not-existing --ignore '../*' --ignore "/*" -o target/coverage/doctests.lcov
 
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v3
