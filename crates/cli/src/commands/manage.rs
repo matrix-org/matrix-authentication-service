@@ -14,7 +14,6 @@
 
 use argon2::Argon2;
 use clap::Parser;
-use data_encoding::BASE64;
 use mas_config::{DatabaseConfig, RootConfig};
 use mas_storage::{
     oauth2::client::{insert_client_from_config, lookup_client_by_client_id, truncate_clients},
@@ -117,14 +116,7 @@ impl Options {
 
                     // TODO: should be moved somewhere else
                     let encrypted_client_secret = client_secret
-                        .map(|client_secret| {
-                            let nonce: [u8; 12] = rand::random();
-                            let message = encrypter.encrypt(&nonce, client_secret.as_bytes())?;
-                            let concat = [&nonce[..], &message[..]].concat();
-                            let res = BASE64.encode(&concat);
-
-                            anyhow::Ok(res)
-                        })
+                        .map(|client_secret| encrypter.encryt_to_string(client_secret.as_bytes()))
                         .transpose()?;
 
                     insert_client_from_config(

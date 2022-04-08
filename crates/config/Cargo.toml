@@ -29,7 +29,6 @@ rsa = "0.6.0-pre"
 p256 = { version = "0.10.1", features = ["ecdsa", "pem", "pkcs8"] }
 pkcs8 = { version = "0.8.0", features = ["pem"] }
 chacha20poly1305 = { version = "0.10.0-pre", features = ["std"] }
-elliptic-curve = { version = "0.11.12", features = ["pem", "pkcs8"] }
 pem-rfc7468 = "0.5.1"
 cookie = { version = "0.16.0", features = ["private", "key-expansion"] }
 data-encoding = "2.3.2"

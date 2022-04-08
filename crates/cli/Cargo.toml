@@ -8,7 +8,7 @@ license = "Apache-2.0"
 [dependencies]
 tokio = { version = "1.17.0", features = ["full"] }
 futures = "0.3.21"
-anyhow = { version = "1.0.56", features = ["backtrace"] }
+anyhow = "1.0.56"
 clap = { version = "3.1.8", features = ["derive"] }
 dotenv = "0.15.0"
 schemars = { version = "0.8.8", features = ["url", "chrono"] }
@@ -21,8 +21,6 @@ argon2 = { version = "0.4.0", features = ["password-hash"] }
 reqwest = { version = "0.11.10", features = ["rustls-tls"], default-features = false, optional = true }
 watchman_client = "0.7.2"
 atty = "0.2.14"
-rand = "0.8.5"
-data-encoding = "2.3.2"
 
 tracing = "0.1.32"
 tracing-appender = "0.2.2"
