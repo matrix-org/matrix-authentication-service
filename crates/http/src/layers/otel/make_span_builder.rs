@@ -15,11 +15,13 @@
 use std::{borrow::Cow, net::SocketAddr};
 
 use axum::extract::{ConnectInfo, MatchedPath};
+use headers::{ContentLength, HeaderMapExt, Host, UserAgent};
 use http::{Method, Request, Version};
 use hyper::client::connect::dns::Name;
 use opentelemetry::trace::{SpanBuilder, SpanKind};
 use opentelemetry_semantic_conventions::trace::{
-    HTTP_FLAVOR, HTTP_METHOD, HTTP_URL, NET_HOST_NAME, NET_PEER_IP, NET_PEER_PORT,
+    HTTP_FLAVOR, HTTP_HOST, HTTP_METHOD, HTTP_REQUEST_CONTENT_LENGTH, HTTP_ROUTE, HTTP_TARGET,
+    HTTP_USER_AGENT, NET_HOST_NAME, NET_PEER_IP, NET_PEER_PORT, NET_TRANSPORT,
 };
 
 pub trait MakeSpanBuilder<R> {
@@ -114,11 +116,27 @@ impl SpanFromHttpRequest {
 
 impl<B> MakeSpanBuilder<Request<B>> for SpanFromHttpRequest {
     fn make_span_builder(&self, request: &Request<B>) -> SpanBuilder {
-        let attributes = vec![
+        let mut attributes = vec![
             HTTP_METHOD.string(http_method_str(request.method())),
             HTTP_FLAVOR.string(http_flavor(request.version())),
-            HTTP_URL.string(request.uri().to_string()),
+            HTTP_TARGET.string(request.uri().to_string()),
         ];
+
+        let headers = request.headers();
+
+        if let Some(host) = headers.typed_get::<Host>() {
+            attributes.push(HTTP_HOST.string(host.to_string()));
+        }
+
+        if let Some(user_agent) = headers.typed_get::<UserAgent>() {
+            attributes.push(HTTP_USER_AGENT.string(user_agent.to_string()));
+        }
+
+        if let Some(ContentLength(content_length)) = headers.typed_get() {
+            if let Ok(content_length) = content_length.try_into() {
+                attributes.push(HTTP_REQUEST_CONTENT_LENGTH.i64(content_length));
+            }
+        }
 
         SpanBuilder::from_name(self.operation)
             .with_kind(self.span_kind.clone())
@@ -134,21 +152,40 @@ impl<B> MakeSpanBuilder<Request<B>> for SpanFromAxumRequest {
         let mut attributes = vec![
             HTTP_METHOD.string(http_method_str(request.method())),
             HTTP_FLAVOR.string(http_flavor(request.version())),
-            HTTP_URL.string(request.uri().to_string()),
+            HTTP_TARGET.string(request.uri().to_string()),
         ];
 
+        let headers = request.headers();
+
+        if let Some(host) = headers.typed_get::<Host>() {
+            attributes.push(HTTP_HOST.string(host.to_string()));
+        }
+
+        if let Some(user_agent) = headers.typed_get::<UserAgent>() {
+            attributes.push(HTTP_USER_AGENT.string(user_agent.to_string()));
+        }
+
+        if let Some(ContentLength(content_length)) = headers.typed_get() {
+            if let Ok(content_length) = content_length.try_into() {
+                attributes.push(HTTP_REQUEST_CONTENT_LENGTH.i64(content_length));
+            }
+        }
+
         if let Some(ConnectInfo(addr)) = request.extensions().get::<ConnectInfo<SocketAddr>>() {
+            attributes.push(NET_TRANSPORT.string("ip_tcp"));
             attributes.push(NET_PEER_IP.string(addr.ip().to_string()));
             attributes.push(NET_PEER_PORT.i64(addr.port().into()));
         }
 
-        let path = if let Some(path) = request.extensions().get::<MatchedPath>() {
-            path.as_str()
+        let name = if let Some(path) = request.extensions().get::<MatchedPath>() {
+            let path = path.as_str().to_string();
+            attributes.push(HTTP_ROUTE.string(path.clone()));
+            path
         } else {
-            request.uri().path()
+            request.uri().path().to_string()
         };
 
-        SpanBuilder::from_name(path.to_string())
+        SpanBuilder::from_name(name)
             .with_kind(SpanKind::Server)
             .with_attributes(attributes)
     }

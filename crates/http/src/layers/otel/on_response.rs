@@ -12,11 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use headers::{ContentLength, HeaderMapExt};
 use http::Response;
 use hyper::client::connect::HttpInfo;
 use opentelemetry::trace::SpanRef;
 use opentelemetry_semantic_conventions::trace::{
-    HTTP_STATUS_CODE, NET_HOST_IP, NET_HOST_PORT, NET_PEER_IP, NET_PEER_PORT,
+    HTTP_RESPONSE_CONTENT_LENGTH, HTTP_STATUS_CODE, NET_HOST_IP, NET_HOST_PORT, NET_PEER_IP,
+    NET_PEER_PORT,
 };
 
 pub trait OnResponse<R> {
@@ -36,6 +38,12 @@ pub struct OnHttpResponse;
 impl<B> OnResponse<Response<B>> for OnHttpResponse {
     fn on_response(&self, span: &SpanRef<'_>, response: &Response<B>) {
         span.set_attribute(HTTP_STATUS_CODE.i64(i64::from(response.status().as_u16())));
+
+        if let Some(ContentLength(content_length)) = response.headers().typed_get() {
+            if let Ok(content_length) = content_length.try_into() {
+                span.set_attribute(HTTP_RESPONSE_CONTENT_LENGTH.i64(content_length));
+            }
+        }
 
         // Get local and remote address from hyper's HttpInfo injected by the
         // HttpConnector
