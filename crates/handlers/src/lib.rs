@@ -61,6 +61,7 @@ where
             "/.well-known/openid-configuration",
             get(self::oauth2::discovery::get),
         )
+        .route("/.well-known/webfinger", get(self::oauth2::webfinger::get))
         .route("/oauth2/keys.json", get(self::oauth2::keys::get))
         .route(
             "/oauth2/userinfo",
