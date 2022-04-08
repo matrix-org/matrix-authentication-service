@@ -169,7 +169,7 @@ async fn generate_jose(client: &Arc<Client>, path: PathBuf) -> anyhow::Result<()
 
     let file = File::new(
         "JSON Object Signing and Encryption",
-        "https://www.iana.org/assignments/jose/jose.xhtml",
+        "https://www.iana.org/assignments/oauth-parameters/oauth-parameters.xhtml",
         client.clone(),
     )
     .load::<jose::WebEncryptionSignatureAlgorithm>()
