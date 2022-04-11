@@ -24,7 +24,7 @@ atty = "0.2.14"
 
 tracing = "0.1.33"
 tracing-appender = "0.2.2"
-tracing-subscriber = { version = "0.3.10", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.11", features = ["env-filter"] }
 tracing-opentelemetry = "0.17.2"
 opentelemetry = { version = "0.17.0", features = ["trace", "metrics", "rt-tokio"] }
 opentelemetry-semantic-conventions = "0.9.0"
