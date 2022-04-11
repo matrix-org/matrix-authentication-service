@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [dependencies]
 tokio = { version = "1.17.0", features = [] }
-tracing = { version = "0.1.32", features = ["log"] }
+tracing = { version = "0.1.33", features = ["log"] }
 async-trait = "0.1.53"
 
 thiserror = "1.0.30"
