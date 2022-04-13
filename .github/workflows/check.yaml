@@ -319,7 +319,7 @@ jobs:
             jq -s '.[0] * .[1]' ${{ steps.meta.outputs.bake-file }} ${{ steps.meta-debug.outputs.bake-file }} > docker-bake.override.json
 
       - name: Setup Cosign
-        uses: sigstore/cosign-installer@v2.2.0
+        uses: sigstore/cosign-installer@v2.2.1
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
