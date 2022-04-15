@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [dependencies]
 tokio = "1.17.0"
-sqlx = { version = "0.5.11", features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "offline", "json"] }
+sqlx = { version = "0.5.12", features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "offline", "json"] }
 chrono = { version = "0.4.19", features = ["serde"] }
 serde = { version = "1.0.136", features = ["derive"] }
 serde_json = "1.0.79"
