@@ -68,6 +68,7 @@ pub(crate) async fn get(
     let jwks_uri = Some(url_builder.jwks_uri());
     let introspection_endpoint = Some(url_builder.oauth_introspection_endpoint());
     let userinfo_endpoint = Some(url_builder.oidc_userinfo_endpoint());
+    let registration_endpoint = Some(url_builder.oauth_registration_endpoint());
 
     let scopes_supported = Some(vec![scope::OPENID.to_string(), scope::EMAIL.to_string()]);
 
@@ -133,6 +134,7 @@ pub(crate) async fn get(
         authorization_endpoint,
         token_endpoint,
         jwks_uri,
+        registration_endpoint,
         scopes_supported,
         response_types_supported,
         response_modes_supported,

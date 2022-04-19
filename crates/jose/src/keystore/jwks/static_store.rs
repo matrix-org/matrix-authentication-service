@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{collections::HashMap, future::Ready};
+use std::future::Ready;
 
 use digest::Digest;
 use mas_iana::jose::{JsonWebKeyType, JsonWebSignatureAlg};
@@ -21,15 +21,15 @@ use sha2::{Sha256, Sha384, Sha512};
 use signature::{Signature, Verifier};
 use thiserror::Error;
 
-use crate::{JsonWebKeySet, JwtHeader, VerifyingKeystore};
+use crate::{JsonWebKey, JsonWebKeySet, JwtHeader, VerifyingKeystore};
 
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("key not found")]
     KeyNotFound,
 
-    #[error("invalid index")]
-    InvalidIndex,
+    #[error("multiple key matched")]
+    MultipleKeyMatched,
 
     #[error(r#"missing "kid" field in header"#)]
     MissingKid,
@@ -43,43 +43,77 @@ pub enum Error {
     #[error(transparent)]
     Signature(#[from] signature::Error),
 
-    #[error("invalid {kty} key {kid}")]
+    #[error("invalid {kty} key")]
     InvalidKey {
         kty: JsonWebKeyType,
-        kid: String,
         source: anyhow::Error,
     },
 }
 
+struct KeyConstraint<'a> {
+    kty: Option<JsonWebKeyType>,
+    alg: Option<JsonWebSignatureAlg>,
+    kid: Option<&'a str>,
+}
+
+impl<'a> KeyConstraint<'a> {
+    fn matches(&self, key: &'a JsonWebKey) -> bool {
+        // If a specific KID was asked, match the key only if it has a matching kid
+        // field
+        if let Some(kid) = self.kid {
+            if key.kid() != Some(kid) {
+                return false;
+            }
+        }
+
+        if let Some(kty) = self.kty {
+            if key.kty() != kty {
+                return false;
+            }
+        }
+
+        if let Some(alg) = self.alg {
+            if key.alg() != None && key.alg() != Some(alg) {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    fn find_keys(&self, key_set: &'a JsonWebKeySet) -> Vec<&'a JsonWebKey> {
+        key_set.iter().filter(|k| self.matches(k)).collect()
+    }
+}
+
 pub struct StaticJwksStore {
     key_set: JsonWebKeySet,
-    index: HashMap<(JsonWebKeyType, String), usize>,
 }
 
 impl StaticJwksStore {
     #[must_use]
     pub fn new(key_set: JsonWebKeySet) -> Self {
-        let index = key_set
-            .iter()
-            .enumerate()
-            .filter_map(|(index, key)| {
-                let kid = key.kid()?.to_string();
-                let kty = key.kty();
-
-                Some(((kty, kid), index))
-            })
-            .collect();
-
-        Self { key_set, index }
+        Self { key_set }
     }
 
-    fn find_rsa_key(&self, kid: String) -> Result<RsaPublicKey, Error> {
-        let index = *self
-            .index
-            .get(&(JsonWebKeyType::Rsa, kid.clone()))
-            .ok_or(Error::KeyNotFound)?;
+    fn find_key<'a>(&'a self, constraint: &KeyConstraint<'a>) -> Result<&'a JsonWebKey, Error> {
+        let keys = constraint.find_keys(&self.key_set);
 
-        let key = self.key_set.get(index).ok_or(Error::InvalidIndex)?;
+        match &keys[..] {
+            [one] => Ok(one),
+            [] => Err(Error::KeyNotFound),
+            _ => Err(Error::MultipleKeyMatched),
+        }
+    }
+
+    fn find_rsa_key(&self, kid: Option<&str>) -> Result<RsaPublicKey, Error> {
+        let constraint = KeyConstraint {
+            kty: Some(JsonWebKeyType::Rsa),
+            kid,
+            alg: None,
+        };
+
+        let key = self.find_key(&constraint)?;
 
         let key = key
             .params()
@@ -87,20 +121,23 @@ impl StaticJwksStore {
             .try_into()
             .map_err(|source| Error::InvalidKey {
                 kty: JsonWebKeyType::Rsa,
-                kid,
                 source,
             })?;
 
         Ok(key)
     }
 
-    fn find_ecdsa_key(&self, kid: String) -> Result<ecdsa::VerifyingKey<p256::NistP256>, Error> {
-        let index = *self
-            .index
-            .get(&(JsonWebKeyType::Ec, kid.clone()))
-            .ok_or(Error::KeyNotFound)?;
+    fn find_ecdsa_key(
+        &self,
+        kid: Option<&str>,
+    ) -> Result<ecdsa::VerifyingKey<p256::NistP256>, Error> {
+        let constraint = KeyConstraint {
+            kty: Some(JsonWebKeyType::Ec),
+            kid,
+            alg: None,
+        };
 
-        let key = self.key_set.get(index).ok_or(Error::InvalidIndex)?;
+        let key = self.find_key(&constraint)?;
 
         let key = key
             .params()
@@ -108,20 +145,20 @@ impl StaticJwksStore {
             .try_into()
             .map_err(|source| Error::InvalidKey {
                 kty: JsonWebKeyType::Ec,
-                kid,
                 source,
             })?;
 
         Ok(key)
     }
 
+    #[tracing::instrument(skip(self))]
     fn verify_sync(
         &self,
         header: &JwtHeader,
         payload: &[u8],
         signature: &[u8],
     ) -> Result<(), Error> {
-        let kid = header.kid().ok_or(Error::MissingKid)?.to_string();
+        let kid = header.kid();
         match header.alg() {
             JsonWebSignatureAlg::Rs256 => {
                 let key = self.find_rsa_key(kid)?;

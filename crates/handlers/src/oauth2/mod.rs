@@ -16,6 +16,7 @@ pub mod authorization;
 pub mod discovery;
 pub mod introspection;
 pub mod keys;
+pub mod registration;
 pub mod token;
 pub mod userinfo;
 pub mod webfinger;

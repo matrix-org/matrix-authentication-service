@@ -24,8 +24,9 @@ use axum::{
     response::IntoResponse,
 };
 use headers::{authorization::Basic, Authorization};
+use http::StatusCode;
 use mas_config::Encrypter;
-use mas_data_model::{Client, StorageBackend};
+use mas_data_model::{Client, JwksOrJwksUri, StorageBackend};
 use mas_iana::oauth::OAuthClientAuthenticationMethod;
 use mas_jose::{
     DecodedJsonWebToken, DynamicJwksStore, Either, JsonWebTokenParts, JwtHeader, SharedSecret,
@@ -38,6 +39,7 @@ use mas_storage::{
 use serde::{de::DeserializeOwned, Deserialize};
 use serde_json::Value;
 use sqlx::PgExecutor;
+use thiserror::Error;
 
 static JWT_BEARER_CLIENT_ASSERTION: &str = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer";
 
@@ -88,6 +90,7 @@ impl Credentials {
         lookup_client_by_client_id(executor, client_id).await
     }
 
+    #[tracing::instrument(skip_all, err)]
     pub async fn verify<S: StorageBackend>(
         &self,
         encrypter: &Encrypter,
@@ -123,7 +126,7 @@ impl Credentials {
 
             (
                 Credentials::ClientAssertionJwtBearer { jwt, header, .. },
-                OAuthClientAuthenticationMethod::ClientSecretJwt,
+                OAuthClientAuthenticationMethod::PrivateKeyJwt,
             ) => {
                 // Get the client JWKS
                 let jwks = client
@@ -139,7 +142,7 @@ impl Credentials {
 
             (
                 Credentials::ClientAssertionJwtBearer { jwt, header, .. },
-                OAuthClientAuthenticationMethod::PrivateKeyJwt,
+                OAuthClientAuthenticationMethod::ClientSecretJwt,
             ) => {
                 // Decrypt the client_secret
                 let encrypted_client_secret = client
@@ -165,17 +168,28 @@ impl Credentials {
     }
 }
 
-fn jwks_key_store(
-    _jwks: &mas_data_model::JwksOrJwksUri,
-) -> Either<StaticJwksStore, DynamicJwksStore> {
-    todo!()
+fn jwks_key_store(jwks: &JwksOrJwksUri) -> Either<StaticJwksStore, DynamicJwksStore> {
+    match jwks {
+        JwksOrJwksUri::Jwks(key_set) => Either::Left(StaticJwksStore::new(key_set.clone())),
+        JwksOrJwksUri::JwksUri(_uri) => todo!(),
+    }
 }
 
+#[derive(Debug, Error)]
 pub enum CredentialsVerificationError {
+    #[error("failed to decrypt client credentials")]
     DecryptionError,
+
+    #[error("invalid client configuration")]
     InvalidClientConfig,
+
+    #[error("client secret did not match")]
     ClientSecretMismatch,
+
+    #[error("authentication method mismatch")]
     AuthenticationMethodMismatch,
+
+    #[error("invalid assertion signature")]
     InvalidAssertionSignature,
 }
 
@@ -199,7 +213,8 @@ pub enum ClientAuthorizationError {
 
 impl IntoResponse for ClientAuthorizationError {
     fn into_response(self) -> axum::response::Response {
-        todo!()
+        // TODO
+        StatusCode::INTERNAL_SERVER_ERROR.into_response()
     }
 }
 

@@ -75,6 +75,10 @@ where
             post(self::oauth2::introspection::post),
         )
         .route("/oauth2/token", post(self::oauth2::token::post))
+        .route(
+            "/oauth2/registration",
+            post(self::oauth2::registration::post),
+        )
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)

@@ -50,6 +50,7 @@ impl ResponseTypeExt for OAuthAuthorizationEndpointResponseType {
 pub mod errors;
 pub mod oidc;
 pub mod pkce;
+pub mod registration;
 pub mod requests;
 pub mod scope;
 pub mod webfinger;

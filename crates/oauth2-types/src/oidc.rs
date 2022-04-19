@@ -19,27 +19,27 @@ use mas_iana::{
         PkceCodeChallengeMethod,
     },
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 use url::Url;
 
 use crate::requests::{Display, GrantType, Prompt, ResponseMode};
 
-#[derive(Serialize, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash, Debug)]
 #[serde(rename_all = "lowercase")]
 pub enum ApplicationType {
     Web,
     Native,
 }
 
-#[derive(Serialize, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash, Debug)]
 #[serde(rename_all = "lowercase")]
 pub enum SubjectType {
     Public,
     Pairwise,
 }
 
-#[derive(Serialize, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash, Debug)]
 #[serde(rename_all = "lowercase")]
 pub enum ClaimType {
     Normal,

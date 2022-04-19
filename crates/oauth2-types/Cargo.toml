@@ -21,3 +21,4 @@ thiserror = "1.0.30"
 itertools = "0.10.3"
 
 mas-iana = { path = "../iana" }
+mas-jose = { path = "../jose" }

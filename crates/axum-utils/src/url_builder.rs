@@ -61,7 +61,13 @@ impl UrlBuilder {
         self.base.join("oauth2/introspect").expect("build URL")
     }
 
-    /// OAuth 2.0 introspection endpoint
+    /// OAuth 2.0 client registration endpoint
+    #[must_use]
+    pub fn oauth_registration_endpoint(&self) -> Url {
+        self.base.join("oauth2/registration").expect("build URL")
+    }
+
+    /// OpenID Connect userinfo endpoint
     #[must_use]
     pub fn oidc_userinfo_endpoint(&self) -> Url {
         self.base.join("oauth2/userinfo").expect("build URL")

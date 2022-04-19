@@ -56,6 +56,7 @@ use serde::Serialize;
 use serde_with::{serde_as, skip_serializing_none};
 use sha2::{Digest, Sha256};
 use sqlx::{PgPool, Postgres, Transaction};
+use thiserror::Error;
 use tracing::debug;
 use url::Url;
 
@@ -76,14 +77,30 @@ struct CustomClaims {
     c_hash: String,
 }
 
+#[derive(Debug, Error)]
 pub(crate) enum RouteError {
+    #[error(transparent)]
     Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
-    Anyhow(anyhow::Error),
+
+    #[error(transparent)]
+    Anyhow(#[from] anyhow::Error),
+
+    #[error("bad request")]
     BadRequest,
+
+    #[error("client not found")]
     ClientNotFound,
+
+    #[error("client not allowed")]
     ClientNotAllowed,
-    ClientCredentialsVerification(CredentialsVerificationError),
+
+    #[error("could not verify client credentials")]
+    ClientCredentialsVerification(#[from] CredentialsVerificationError),
+
+    #[error("invalid grant")]
     InvalidGrant,
+
+    #[error("unauthorized client")]
     UnauthorizedClient,
 }
 
@@ -138,18 +155,7 @@ impl From<ClaimError> for RouteError {
     }
 }
 
-impl From<anyhow::Error> for RouteError {
-    fn from(e: anyhow::Error) -> Self {
-        Self::Anyhow(e)
-    }
-}
-
-impl From<CredentialsVerificationError> for RouteError {
-    fn from(e: CredentialsVerificationError) -> Self {
-        Self::ClientCredentialsVerification(e)
-    }
-}
-
+#[tracing::instrument(skip_all, err)]
 pub(crate) async fn post(
     client_authorization: ClientAuthorization<AccessTokenRequest>,
     Extension(key_store): Extension<Arc<StaticKeystore>>,

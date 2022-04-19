@@ -15,7 +15,10 @@
 use std::string::ToString;
 
 use mas_data_model::{Client, JwksOrJwksUri};
-use mas_iana::oauth::{OAuthAuthorizationEndpointResponseType, OAuthClientAuthenticationMethod};
+use mas_iana::{
+    jose::JsonWebSignatureAlg,
+    oauth::{OAuthAuthorizationEndpointResponseType, OAuthClientAuthenticationMethod},
+};
 use mas_jose::JsonWebKeySet;
 use oauth2_types::requests::GrantType;
 use sqlx::{PgConnection, PgExecutor};
@@ -298,6 +301,102 @@ pub async fn lookup_client_by_client_id(
     let client = res.try_into()?;
 
     Ok(client)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub async fn insert_client(
+    conn: &mut PgConnection,
+    client_id: &str,
+    redirect_uris: &[Url],
+    encrypted_client_secret: Option<&str>,
+    response_types: &[OAuthAuthorizationEndpointResponseType],
+    grant_types: &[GrantType],
+    contacts: &[String],
+    client_name: Option<&str>,
+    logo_uri: Option<&Url>,
+    client_uri: Option<&Url>,
+    policy_uri: Option<&Url>,
+    tos_uri: Option<&Url>,
+    jwks_uri: Option<&Url>,
+    jwks: Option<&JsonWebKeySet>,
+    id_token_signed_response_alg: Option<JsonWebSignatureAlg>,
+    token_endpoint_auth_method: Option<OAuthClientAuthenticationMethod>,
+    token_endpoint_auth_signing_alg: Option<JsonWebSignatureAlg>,
+    initiate_login_uri: Option<&Url>,
+) -> Result<(), sqlx::Error> {
+    let response_types: Vec<String> = response_types.iter().map(ToString::to_string).collect();
+    let grant_type_authorization_code = grant_types.contains(&GrantType::AuthorizationCode);
+    let grant_type_refresh_token = grant_types.contains(&GrantType::RefreshToken);
+    let logo_uri = logo_uri.map(Url::as_str);
+    let client_uri = client_uri.map(Url::as_str);
+    let policy_uri = policy_uri.map(Url::as_str);
+    let tos_uri = tos_uri.map(Url::as_str);
+    let jwks = jwks.map(serde_json::to_value).transpose().unwrap(); // TODO
+    let jwks_uri = jwks_uri.map(Url::as_str);
+    let id_token_signed_response_alg = id_token_signed_response_alg.map(|v| v.to_string());
+    let token_endpoint_auth_method = token_endpoint_auth_method.map(|v| v.to_string());
+    let token_endpoint_auth_signing_alg = token_endpoint_auth_signing_alg.map(|v| v.to_string());
+    let initiate_login_uri = initiate_login_uri.map(Url::as_str);
+
+    let id = sqlx::query_scalar!(
+        r#"
+            INSERT INTO oauth2_clients
+                (client_id,
+                 encrypted_client_secret,
+                 response_types,
+                 grant_type_authorization_code,
+                 grant_type_refresh_token,
+                 contacts,
+                 client_name,
+                 logo_uri,
+                 client_uri,
+                 policy_uri,
+                 tos_uri,
+                 jwks_uri,
+                 jwks,
+                 id_token_signed_response_alg,
+                 token_endpoint_auth_method,
+                 token_endpoint_auth_signing_alg,
+                 initiate_login_uri)
+            VALUES
+                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+            RETURNING id
+        "#,
+        client_id,
+        encrypted_client_secret,
+        &response_types,
+        grant_type_authorization_code,
+        grant_type_refresh_token,
+        contacts,
+        client_name,
+        logo_uri,
+        client_uri,
+        policy_uri,
+        tos_uri,
+        jwks_uri,
+        jwks,
+        id_token_signed_response_alg,
+        token_endpoint_auth_method,
+        token_endpoint_auth_signing_alg,
+        initiate_login_uri,
+    )
+    .fetch_one(&mut *conn)
+    .await?;
+
+    let redirect_uris: Vec<String> = redirect_uris.iter().map(ToString::to_string).collect();
+
+    sqlx::query!(
+        r#"
+            INSERT INTO oauth2_client_redirect_uris (oauth2_client_id, redirect_uri)
+            SELECT $1, uri FROM UNNEST($2::text[]) uri
+        "#,
+        id,
+        &redirect_uris,
+    )
+    .execute(&mut *conn)
+    .await?;
+
+    Ok(())
 }
 
 pub async fn insert_client_from_config(

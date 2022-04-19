@@ -2197,6 +2197,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tower",
+ "tracing",
  "url",
 ]
 
@@ -2466,6 +2467,7 @@ dependencies = [
  "itertools",
  "language-tags",
  "mas-iana",
+ "mas-jose",
  "parse-display",
  "serde",
  "serde_json",

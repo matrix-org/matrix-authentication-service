@@ -71,7 +71,7 @@ pub struct JsonWebKey {
 
 impl JsonWebKey {
     #[must_use]
-    pub fn new(parameters: JsonWebKeyParameters) -> Self {
+    pub const fn new(parameters: JsonWebKeyParameters) -> Self {
         Self {
             parameters,
             r#use: None,
@@ -86,7 +86,7 @@ impl JsonWebKey {
     }
 
     #[must_use]
-    pub fn with_use(mut self, value: JsonWebKeyUse) -> Self {
+    pub const fn with_use(mut self, value: JsonWebKeyUse) -> Self {
         self.r#use = Some(value);
         self
     }
@@ -98,7 +98,7 @@ impl JsonWebKey {
     }
 
     #[must_use]
-    pub fn with_alg(mut self, alg: JsonWebSignatureAlg) -> Self {
+    pub const fn with_alg(mut self, alg: JsonWebSignatureAlg) -> Self {
         self.alg = Some(alg);
         self
     }
@@ -110,7 +110,7 @@ impl JsonWebKey {
     }
 
     #[must_use]
-    pub fn kty(&self) -> JsonWebKeyType {
+    pub const fn kty(&self) -> JsonWebKeyType {
         match self.parameters {
             JsonWebKeyParameters::Ec { .. } => JsonWebKeyType::Ec,
             JsonWebKeyParameters::Rsa { .. } => JsonWebKeyType::Rsa,
@@ -124,7 +124,12 @@ impl JsonWebKey {
     }
 
     #[must_use]
-    pub fn params(&self) -> &JsonWebKeyParameters {
+    pub const fn alg(&self) -> Option<JsonWebSignatureAlg> {
+        self.alg
+    }
+
+    #[must_use]
+    pub const fn params(&self) -> &JsonWebKeyParameters {
         &self.parameters
     }
 }
