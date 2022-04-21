@@ -1,4 +1,4 @@
-// Copyright 2021 The Matrix.org Foundation C.I.C.
+// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -82,6 +82,9 @@ pub struct Client<T: StorageBackend> {
     /// Client
     pub id_token_signed_response_alg: Option<JsonWebSignatureAlg>,
 
+    /// JWS alg algorithm REQUIRED for signing UserInfo Responses.
+    pub userinfo_signed_response_alg: Option<JsonWebSignatureAlg>,
+
     /// Requested authentication method for the token endpoint
     pub token_endpoint_auth_method: Option<OAuthClientAuthenticationMethod>,
 
@@ -112,6 +115,7 @@ impl<S: StorageBackendMarker> From<Client<S>> for Client<()> {
             tos_uri: c.tos_uri,
             jwks: c.jwks,
             id_token_signed_response_alg: c.id_token_signed_response_alg,
+            userinfo_signed_response_alg: c.userinfo_signed_response_alg,
             token_endpoint_auth_method: c.token_endpoint_auth_method,
             token_endpoint_auth_signing_alg: c.token_endpoint_auth_signing_alg,
             initiate_login_uri: c.initiate_login_uri,

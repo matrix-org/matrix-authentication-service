@@ -12,12 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::sync::Arc;
+
 use axum::{
     extract::Extension,
     response::{IntoResponse, Response},
-    Json,
+    Json, TypedHeader,
 };
-use mas_axum_utils::{internal_error, user_authorization::UserAuthorization};
+use headers::ContentType;
+use hyper::StatusCode;
+use mas_axum_utils::{internal_error, user_authorization::UserAuthorization, UrlBuilder};
+use mas_jose::{DecodedJsonWebToken, SigningKeystore, StaticKeystore};
+use mime::Mime;
 use oauth2_types::scope;
 use serde::Serialize;
 use serde_with::skip_serializing_none;
@@ -32,10 +38,21 @@ struct UserInfo {
     email_verified: Option<bool>,
 }
 
+#[derive(Serialize)]
+struct SignedUserInfo {
+    iss: String,
+    aud: String,
+    #[serde(flatten)]
+    user_info: UserInfo,
+}
+
 pub async fn get(
+    Extension(url_builder): Extension<UrlBuilder>,
     Extension(pool): Extension<PgPool>,
+    Extension(key_store): Extension<Arc<StaticKeystore>>,
     user_authorization: UserAuthorization,
-) -> Result<impl IntoResponse, Response> {
+) -> Result<Response, Response> {
+    // TODO: error handling
     let mut conn = pool
         .acquire()
         .await
@@ -48,7 +65,7 @@ pub async fn get(
         .map_err(IntoResponse::into_response)?;
 
     let user = session.browser_session.user;
-    let mut res = UserInfo {
+    let mut user_info = UserInfo {
         sub: user.sub,
         username: user.username,
         email: None,
@@ -57,10 +74,36 @@ pub async fn get(
 
     if session.scope.contains(&scope::EMAIL) {
         if let Some(email) = user.primary_email {
-            res.email_verified = Some(email.confirmed_at.is_some());
-            res.email = Some(email.email);
+            user_info.email_verified = Some(email.confirmed_at.is_some());
+            user_info.email = Some(email.email);
         }
     }
 
-    Ok(Json(res))
+    if let Some(alg) = session.client.userinfo_signed_response_alg {
+        let header = key_store
+            .prepare_header(alg)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+            .map_err(IntoResponse::into_response)?;
+
+        let user_info = SignedUserInfo {
+            iss: url_builder.oidc_issuer().to_string(),
+            aud: session.client.client_id,
+            user_info,
+        };
+
+        let user_info = DecodedJsonWebToken::new(header, user_info);
+        let user_info = user_info
+            .sign(key_store.as_ref())
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+            .map_err(IntoResponse::into_response)?;
+
+        let token = user_info.serialize();
+        let application_jwt: Mime = "application/jwt".parse().unwrap();
+        let content_type = ContentType::from(application_jwt);
+        Ok((TypedHeader(content_type), token).into_response())
+    } else {
+        Ok(Json(user_info).into_response())
+    }
 }

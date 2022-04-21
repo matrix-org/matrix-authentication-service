@@ -45,6 +45,7 @@ pub struct OAuth2ClientLookup {
     jwks_uri: Option<String>,
     jwks: Option<serde_json::Value>,
     id_token_signed_response_alg: Option<String>,
+    userinfo_signed_response_alg: Option<String>,
     token_endpoint_auth_method: Option<String>,
     token_endpoint_auth_signing_alg: Option<String>,
     initiate_login_uri: Option<String>,
@@ -153,6 +154,15 @@ impl TryInto<Client<PostgresqlBackend>> for OAuth2ClientLookup {
                 source,
             })?;
 
+        let userinfo_signed_response_alg = self
+            .userinfo_signed_response_alg
+            .map(|s| s.parse())
+            .transpose()
+            .map_err(|source| ClientFetchError::ParseField {
+                field: "userinfo_signed_response_alg",
+                source,
+            })?;
+
         let token_endpoint_auth_method = self
             .token_endpoint_auth_method
             .map(|s| s.parse())
@@ -214,6 +224,7 @@ impl TryInto<Client<PostgresqlBackend>> for OAuth2ClientLookup {
             tos_uri,
             jwks,
             id_token_signed_response_alg,
+            userinfo_signed_response_alg,
             token_endpoint_auth_method,
             token_endpoint_auth_signing_alg,
             initiate_login_uri,
@@ -245,6 +256,7 @@ pub async fn lookup_client(
                 c.jwks_uri,
                 c.jwks,
                 c.id_token_signed_response_alg,
+                c.userinfo_signed_response_alg,
                 c.token_endpoint_auth_method,
                 c.token_endpoint_auth_signing_alg,
                 c.initiate_login_uri
@@ -286,6 +298,7 @@ pub async fn lookup_client_by_client_id(
                 c.jwks_uri,
                 c.jwks,
                 c.id_token_signed_response_alg,
+                c.userinfo_signed_response_alg,
                 c.token_endpoint_auth_method,
                 c.token_endpoint_auth_signing_alg,
                 c.initiate_login_uri
@@ -320,6 +333,7 @@ pub async fn insert_client(
     jwks_uri: Option<&Url>,
     jwks: Option<&JsonWebKeySet>,
     id_token_signed_response_alg: Option<JsonWebSignatureAlg>,
+    userinfo_signed_response_alg: Option<JsonWebSignatureAlg>,
     token_endpoint_auth_method: Option<OAuthClientAuthenticationMethod>,
     token_endpoint_auth_signing_alg: Option<JsonWebSignatureAlg>,
     initiate_login_uri: Option<&Url>,
@@ -334,6 +348,7 @@ pub async fn insert_client(
     let jwks = jwks.map(serde_json::to_value).transpose().unwrap(); // TODO
     let jwks_uri = jwks_uri.map(Url::as_str);
     let id_token_signed_response_alg = id_token_signed_response_alg.map(|v| v.to_string());
+    let userinfo_signed_response_alg = userinfo_signed_response_alg.map(|v| v.to_string());
     let token_endpoint_auth_method = token_endpoint_auth_method.map(|v| v.to_string());
     let token_endpoint_auth_signing_alg = token_endpoint_auth_signing_alg.map(|v| v.to_string());
     let initiate_login_uri = initiate_login_uri.map(Url::as_str);
@@ -355,11 +370,12 @@ pub async fn insert_client(
                  jwks_uri,
                  jwks,
                  id_token_signed_response_alg,
+                 userinfo_signed_response_alg,
                  token_endpoint_auth_method,
                  token_endpoint_auth_signing_alg,
                  initiate_login_uri)
             VALUES
-                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
             RETURNING id
         "#,
         client_id,
@@ -376,6 +392,7 @@ pub async fn insert_client(
         jwks_uri,
         jwks,
         id_token_signed_response_alg,
+        userinfo_signed_response_alg,
         token_endpoint_auth_method,
         token_endpoint_auth_signing_alg,
         initiate_login_uri,

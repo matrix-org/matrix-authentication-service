@@ -75,6 +75,7 @@ pub(crate) async fn post(
         body.jwks_uri.as_ref(),
         body.jwks.as_ref(),
         body.id_token_signed_response_alg,
+        body.userinfo_signed_response_alg,
         body.token_endpoint_auth_method,
         body.token_endpoint_auth_signing_alg,
         body.initiate_login_uri.as_ref(),

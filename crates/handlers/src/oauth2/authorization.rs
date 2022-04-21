@@ -59,14 +59,20 @@ use oauth2_types::{
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 use sqlx::{PgConnection, PgPool, Postgres, Transaction};
+use thiserror::Error;
 use url::Url;
 
 use crate::views::{LoginRequest, PostAuthAction, ReauthRequest, RegisterRequest};
 
+#[derive(Debug, Error)]
 pub enum RouteError {
+    #[error(transparent)]
     Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
+    #[error(transparent)]
     Anyhow(anyhow::Error),
+    #[error("could not find client")]
     ClientNotFound,
+    #[error("invalid redirect uri")]
     InvalidRedirectUri,
 }
 
@@ -218,6 +224,7 @@ fn resolve_response_mode(
 }
 
 #[allow(clippy::too_many_lines)]
+#[tracing::instrument(skip_all, err)]
 pub(crate) async fn get(
     Extension(templates): Extension<Templates>,
     Extension(pool): Extension<PgPool>,
@@ -413,7 +420,10 @@ pub(crate) async fn get(
 
     let response = match res {
         Ok(r) => r,
-        Err(_e) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        Err(err) => {
+            tracing::error!(%err);
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
     };
 
     Ok((cookie_jar, response).into_response())

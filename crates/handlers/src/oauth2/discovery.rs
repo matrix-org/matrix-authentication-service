@@ -105,7 +105,8 @@ pub(crate) async fn get(
 
     let subject_types_supported = Some(vec![SubjectType::Public]);
 
-    let id_token_signing_alg_values_supported = jwt_signing_alg_values_supported;
+    let id_token_signing_alg_values_supported = jwt_signing_alg_values_supported.clone();
+    let userinfo_signing_alg_values_supported = jwt_signing_alg_values_supported;
 
     let display_values_supported = Some(vec![Display::Page]);
 
@@ -148,6 +149,7 @@ pub(crate) async fn get(
         userinfo_endpoint,
         subject_types_supported,
         id_token_signing_alg_values_supported,
+        userinfo_signing_alg_values_supported,
         display_values_supported,
         claim_types_supported,
         claims_supported,

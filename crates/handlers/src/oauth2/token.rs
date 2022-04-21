@@ -317,7 +317,13 @@ async fn authorization_code_grant(
         claims::AT_HASH.insert(&mut claims, hash(Sha256::new(), &access_token_str)?)?;
         claims::C_HASH.insert(&mut claims, hash(Sha256::new(), &grant.code)?)?;
 
-        let header = key_store.prepare_header(JsonWebSignatureAlg::Rs256).await?;
+        let header = key_store
+            .prepare_header(
+                client
+                    .id_token_signed_response_alg
+                    .unwrap_or(JsonWebSignatureAlg::Rs256),
+            )
+            .await?;
         let id_token = DecodedJsonWebToken::new(header, claims);
         let id_token = id_token.sign(key_store).await?;
 
