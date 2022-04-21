@@ -189,42 +189,6 @@
     },
     "query": "\n            SELECT\n                rt.id              AS refresh_token_id,\n                rt.token           AS refresh_token,\n                rt.created_at      AS refresh_token_created_at,\n                at.id              AS \"access_token_id?\",\n                at.token           AS \"access_token?\",\n                at.expires_after   AS \"access_token_expires_after?\",\n                at.created_at      AS \"access_token_created_at?\",\n                os.id              AS \"session_id!\",\n                os.client_id       AS \"client_id!\",\n                os.scope           AS \"scope!\",\n                us.id              AS \"user_session_id!\",\n                us.created_at      AS \"user_session_created_at!\",\n                 u.id              AS \"user_id!\",\n                 u.username        AS \"user_username!\",\n                usa.id             AS \"user_session_last_authentication_id?\",\n                usa.created_at     AS \"user_session_last_authentication_created_at?\",\n                ue.id              AS \"user_email_id?\",\n                ue.email           AS \"user_email?\",\n                ue.created_at      AS \"user_email_created_at?\",\n                ue.confirmed_at    AS \"user_email_confirmed_at?\"\n            FROM oauth2_refresh_tokens rt\n            LEFT JOIN oauth2_access_tokens at\n              ON at.id = rt.oauth2_access_token_id\n            INNER JOIN oauth2_sessions os\n              ON os.id = rt.oauth2_session_id\n            INNER JOIN user_sessions us\n              ON us.id = os.user_session_id\n            INNER JOIN users u\n              ON u.id = us.user_id\n            LEFT JOIN user_session_authentications usa\n              ON usa.session_id = us.id\n            LEFT JOIN user_emails ue\n              ON ue.id = u.primary_email_id\n\n            WHERE rt.token = $1\n              AND rt.next_token_id IS NULL\n              AND us.active\n              AND os.ended_at IS NULL\n\n            ORDER BY usa.created_at DESC\n            LIMIT 1\n        "
   },
-  "2941173b834b55e4df3c3f6182b272d458484dd1933ea957bcb75b0c0063e106": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Int8"
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Text",
-          "Text",
-          "TextArray",
-          "Bool",
-          "Bool",
-          "TextArray",
-          "Text",
-          "Text",
-          "Text",
-          "Text",
-          "Text",
-          "Text",
-          "Jsonb",
-          "Text",
-          "Text",
-          "Text",
-          "Text"
-        ]
-      }
-    },
-    "query": "\n            INSERT INTO oauth2_clients\n                (client_id,\n                 encrypted_client_secret,\n                 response_types,\n                 grant_type_authorization_code,\n                 grant_type_refresh_token,\n                 contacts,\n                 client_name,\n                 logo_uri,\n                 client_uri,\n                 policy_uri,\n                 tos_uri,\n                 jwks_uri,\n                 jwks,\n                 id_token_signed_response_alg,\n                 token_endpoint_auth_method,\n                 token_endpoint_auth_signing_alg,\n                 initiate_login_uri)\n            VALUES\n                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)\n            RETURNING id\n        "
-  },
   "2e8c6507df6c0af78deca3550157b9cc0286f204b15a646c2e7e24c51100e040": {
     "describe": {
       "columns": [
@@ -596,134 +560,6 @@
     },
     "query": "\n            SELECT\n                s.id,\n                u.id AS user_id,\n                u.username,\n                s.created_at,\n                a.id               AS \"last_authentication_id?\",\n                a.created_at       AS \"last_authd_at?\",\n                ue.id              AS \"user_email_id?\",\n                ue.email           AS \"user_email?\",\n                ue.created_at      AS \"user_email_created_at?\",\n                ue.confirmed_at    AS \"user_email_confirmed_at?\"\n            FROM user_sessions s\n            INNER JOIN users u \n                ON s.user_id = u.id\n            LEFT JOIN user_session_authentications a\n                ON a.session_id = s.id\n            LEFT JOIN user_emails ue\n              ON ue.id = u.primary_email_id\n            WHERE s.id = $1 AND s.active\n            ORDER BY a.created_at DESC\n            LIMIT 1\n        "
   },
-  "4a9ed96857bbebbb56400301f6fb1c727a8a754f52d3d67a53d57a4cd9bcdca8": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Int8"
-        },
-        {
-          "name": "client_id",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "encrypted_client_secret",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "redirect_uris!",
-          "ordinal": 3,
-          "type_info": "TextArray"
-        },
-        {
-          "name": "response_types",
-          "ordinal": 4,
-          "type_info": "TextArray"
-        },
-        {
-          "name": "grant_type_authorization_code",
-          "ordinal": 5,
-          "type_info": "Bool"
-        },
-        {
-          "name": "grant_type_refresh_token",
-          "ordinal": 6,
-          "type_info": "Bool"
-        },
-        {
-          "name": "contacts",
-          "ordinal": 7,
-          "type_info": "TextArray"
-        },
-        {
-          "name": "client_name",
-          "ordinal": 8,
-          "type_info": "Text"
-        },
-        {
-          "name": "logo_uri",
-          "ordinal": 9,
-          "type_info": "Text"
-        },
-        {
-          "name": "client_uri",
-          "ordinal": 10,
-          "type_info": "Text"
-        },
-        {
-          "name": "policy_uri",
-          "ordinal": 11,
-          "type_info": "Text"
-        },
-        {
-          "name": "tos_uri",
-          "ordinal": 12,
-          "type_info": "Text"
-        },
-        {
-          "name": "jwks_uri",
-          "ordinal": 13,
-          "type_info": "Text"
-        },
-        {
-          "name": "jwks",
-          "ordinal": 14,
-          "type_info": "Jsonb"
-        },
-        {
-          "name": "id_token_signed_response_alg",
-          "ordinal": 15,
-          "type_info": "Text"
-        },
-        {
-          "name": "token_endpoint_auth_method",
-          "ordinal": 16,
-          "type_info": "Text"
-        },
-        {
-          "name": "token_endpoint_auth_signing_alg",
-          "ordinal": 17,
-          "type_info": "Text"
-        },
-        {
-          "name": "initiate_login_uri",
-          "ordinal": 18,
-          "type_info": "Text"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        true,
-        null,
-        false,
-        false,
-        false,
-        false,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true
-      ],
-      "parameters": {
-        "Left": [
-          "Text"
-        ]
-      }
-    },
-    "query": "\n            SELECT\n                c.id,\n                c.client_id,\n                c.encrypted_client_secret,\n                ARRAY(SELECT redirect_uri FROM oauth2_client_redirect_uris r WHERE r.oauth2_client_id = c.id) AS \"redirect_uris!\",\n                c.response_types,\n                c.grant_type_authorization_code,\n                c.grant_type_refresh_token,\n                c.contacts,\n                c.client_name,\n                c.logo_uri,\n                c.client_uri,\n                c.policy_uri,\n                c.tos_uri,\n                c.jwks_uri,\n                c.jwks,\n                c.id_token_signed_response_alg,\n                c.token_endpoint_auth_method,\n                c.token_endpoint_auth_signing_alg,\n                c.initiate_login_uri\n            FROM oauth2_clients c\n\n            WHERE c.client_id = $1\n        "
-  },
   "4b9de6face2e21117c947b4f550cc747ad8397b6dfadb6bc6a84124763dc66e8": {
     "describe": {
       "columns": [],
@@ -786,6 +622,43 @@
     },
     "query": "\n            DELETE FROM oauth2_access_tokens\n            WHERE created_at + (expires_after * INTERVAL '1 second') + INTERVAL '15 minutes' < now()\n        "
   },
+  "5e4a73693e45ab55b6c166621fa2d033775762f589e18b889b5e41dbfaed1ca7": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Text",
+          "TextArray",
+          "Bool",
+          "Bool",
+          "TextArray",
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Jsonb",
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n            INSERT INTO oauth2_clients\n                (client_id,\n                 encrypted_client_secret,\n                 response_types,\n                 grant_type_authorization_code,\n                 grant_type_refresh_token,\n                 contacts,\n                 client_name,\n                 logo_uri,\n                 client_uri,\n                 policy_uri,\n                 tos_uri,\n                 jwks_uri,\n                 jwks,\n                 id_token_signed_response_alg,\n                 userinfo_signed_response_alg,\n                 token_endpoint_auth_method,\n                 token_endpoint_auth_signing_alg,\n                 initiate_login_uri)\n            VALUES\n                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)\n            RETURNING id\n        "
+  },
   "647a2a5bbde39d0ed3931d0287b468bc7dedf6171e1dc6171a5d9f079b9ed0fa": {
     "describe": {
       "columns": [
@@ -806,67 +679,7 @@
     },
     "query": "\n            SELECT up.hashed_password\n            FROM user_passwords up\n            WHERE up.user_id = $1\n            ORDER BY up.created_at DESC\n            LIMIT 1\n        "
   },
-  "6da88febe6d8e45787cdd609dcea5f51dc601f4dffb07dd4c5d699c7d4c5b2d1": {
-    "describe": {
-      "columns": [
-        {
-          "name": "user_email_id",
-          "ordinal": 0,
-          "type_info": "Int8"
-        },
-        {
-          "name": "user_email",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_email_created_at",
-          "ordinal": 2,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "user_email_confirmed_at",
-          "ordinal": 3,
-          "type_info": "Timestamptz"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        true
-      ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Text"
-        ]
-      }
-    },
-    "query": "\n            INSERT INTO user_emails (user_id, email)\n            VALUES ($1, $2)\n            RETURNING \n                id           AS user_email_id,\n                email        AS user_email,\n                created_at   AS user_email_created_at,\n                confirmed_at AS user_email_confirmed_at\n        "
-  },
-  "703850ba4e001d53776d77a64cbc1ee6feb61485ce41aff1103251f9b3778128": {
-    "describe": {
-      "columns": [
-        {
-          "name": "fulfilled_at!: DateTime<Utc>",
-          "ordinal": 0,
-          "type_info": "Timestamptz"
-        }
-      ],
-      "nullable": [
-        true
-      ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Int8"
-        ]
-      }
-    },
-    "query": "\n            UPDATE oauth2_authorization_grants AS og\n            SET\n                oauth2_session_id = os.id,\n                fulfilled_at = os.created_at\n            FROM oauth2_sessions os\n            WHERE\n                og.id = $1 AND os.id = $2\n            RETURNING fulfilled_at AS \"fulfilled_at!: DateTime<Utc>\"\n        "
-  },
-  "782d74cacafeb173f8dba51c9a94708a563b72dddc45c9aca22efe787ce8c444": {
+  "685ab6c4742944fc87b4c72316b02b02e40c94ba624e8e4aade4ecfc436e7f96": {
     "describe": {
       "columns": [
         {
@@ -950,18 +763,23 @@
           "type_info": "Text"
         },
         {
-          "name": "token_endpoint_auth_method",
+          "name": "userinfo_signed_response_alg",
           "ordinal": 16,
           "type_info": "Text"
         },
         {
-          "name": "token_endpoint_auth_signing_alg",
+          "name": "token_endpoint_auth_method",
           "ordinal": 17,
           "type_info": "Text"
         },
         {
-          "name": "initiate_login_uri",
+          "name": "token_endpoint_auth_signing_alg",
           "ordinal": 18,
+          "type_info": "Text"
+        },
+        {
+          "name": "initiate_login_uri",
+          "ordinal": 19,
           "type_info": "Text"
         }
       ],
@@ -984,6 +802,201 @@
         true,
         true,
         true,
+        true,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "\n            SELECT\n                c.id,\n                c.client_id,\n                c.encrypted_client_secret,\n                ARRAY(SELECT redirect_uri FROM oauth2_client_redirect_uris r WHERE r.oauth2_client_id = c.id) AS \"redirect_uris!\",\n                c.response_types,\n                c.grant_type_authorization_code,\n                c.grant_type_refresh_token,\n                c.contacts,\n                c.client_name,\n                c.logo_uri,\n                c.client_uri,\n                c.policy_uri,\n                c.tos_uri,\n                c.jwks_uri,\n                c.jwks,\n                c.id_token_signed_response_alg,\n                c.userinfo_signed_response_alg,\n                c.token_endpoint_auth_method,\n                c.token_endpoint_auth_signing_alg,\n                c.initiate_login_uri\n            FROM oauth2_clients c\n\n            WHERE c.client_id = $1\n        "
+  },
+  "6da88febe6d8e45787cdd609dcea5f51dc601f4dffb07dd4c5d699c7d4c5b2d1": {
+    "describe": {
+      "columns": [
+        {
+          "name": "user_email_id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "user_email",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "user_email_created_at",
+          "ordinal": 2,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "user_email_confirmed_at",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n            INSERT INTO user_emails (user_id, email)\n            VALUES ($1, $2)\n            RETURNING \n                id           AS user_email_id,\n                email        AS user_email,\n                created_at   AS user_email_created_at,\n                confirmed_at AS user_email_confirmed_at\n        "
+  },
+  "703850ba4e001d53776d77a64cbc1ee6feb61485ce41aff1103251f9b3778128": {
+    "describe": {
+      "columns": [
+        {
+          "name": "fulfilled_at!: DateTime<Utc>",
+          "ordinal": 0,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8"
+        ]
+      }
+    },
+    "query": "\n            UPDATE oauth2_authorization_grants AS og\n            SET\n                oauth2_session_id = os.id,\n                fulfilled_at = os.created_at\n            FROM oauth2_sessions os\n            WHERE\n                og.id = $1 AND os.id = $2\n            RETURNING fulfilled_at AS \"fulfilled_at!: DateTime<Utc>\"\n        "
+  },
+  "795ef686860689dd89ad7b23ea242fe7108bc1dc6db76e80b654fd5560f0c28f": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "client_id",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "encrypted_client_secret",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "redirect_uris!",
+          "ordinal": 3,
+          "type_info": "TextArray"
+        },
+        {
+          "name": "response_types",
+          "ordinal": 4,
+          "type_info": "TextArray"
+        },
+        {
+          "name": "grant_type_authorization_code",
+          "ordinal": 5,
+          "type_info": "Bool"
+        },
+        {
+          "name": "grant_type_refresh_token",
+          "ordinal": 6,
+          "type_info": "Bool"
+        },
+        {
+          "name": "contacts",
+          "ordinal": 7,
+          "type_info": "TextArray"
+        },
+        {
+          "name": "client_name",
+          "ordinal": 8,
+          "type_info": "Text"
+        },
+        {
+          "name": "logo_uri",
+          "ordinal": 9,
+          "type_info": "Text"
+        },
+        {
+          "name": "client_uri",
+          "ordinal": 10,
+          "type_info": "Text"
+        },
+        {
+          "name": "policy_uri",
+          "ordinal": 11,
+          "type_info": "Text"
+        },
+        {
+          "name": "tos_uri",
+          "ordinal": 12,
+          "type_info": "Text"
+        },
+        {
+          "name": "jwks_uri",
+          "ordinal": 13,
+          "type_info": "Text"
+        },
+        {
+          "name": "jwks",
+          "ordinal": 14,
+          "type_info": "Jsonb"
+        },
+        {
+          "name": "id_token_signed_response_alg",
+          "ordinal": 15,
+          "type_info": "Text"
+        },
+        {
+          "name": "userinfo_signed_response_alg",
+          "ordinal": 16,
+          "type_info": "Text"
+        },
+        {
+          "name": "token_endpoint_auth_method",
+          "ordinal": 17,
+          "type_info": "Text"
+        },
+        {
+          "name": "token_endpoint_auth_signing_alg",
+          "ordinal": 18,
+          "type_info": "Text"
+        },
+        {
+          "name": "initiate_login_uri",
+          "ordinal": 19,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        null,
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
         true
       ],
       "parameters": {
@@ -992,7 +1005,7 @@
         ]
       }
     },
-    "query": "\n            SELECT\n                c.id,\n                c.client_id,\n                c.encrypted_client_secret,\n                ARRAY(SELECT redirect_uri FROM oauth2_client_redirect_uris r WHERE r.oauth2_client_id = c.id) AS \"redirect_uris!\",\n                c.response_types,\n                c.grant_type_authorization_code,\n                c.grant_type_refresh_token,\n                c.contacts,\n                c.client_name,\n                c.logo_uri,\n                c.client_uri,\n                c.policy_uri,\n                c.tos_uri,\n                c.jwks_uri,\n                c.jwks,\n                c.id_token_signed_response_alg,\n                c.token_endpoint_auth_method,\n                c.token_endpoint_auth_signing_alg,\n                c.initiate_login_uri\n            FROM oauth2_clients c\n\n            WHERE c.id = $1\n        "
+    "query": "\n            SELECT\n                c.id,\n                c.client_id,\n                c.encrypted_client_secret,\n                ARRAY(SELECT redirect_uri FROM oauth2_client_redirect_uris r WHERE r.oauth2_client_id = c.id) AS \"redirect_uris!\",\n                c.response_types,\n                c.grant_type_authorization_code,\n                c.grant_type_refresh_token,\n                c.contacts,\n                c.client_name,\n                c.logo_uri,\n                c.client_uri,\n                c.policy_uri,\n                c.tos_uri,\n                c.jwks_uri,\n                c.jwks,\n                c.id_token_signed_response_alg,\n                c.userinfo_signed_response_alg,\n                c.token_endpoint_auth_method,\n                c.token_endpoint_auth_signing_alg,\n                c.initiate_login_uri\n            FROM oauth2_clients c\n\n            WHERE c.id = $1\n        "
   },
   "7de9cfa6e90ba20f5b298ea387cf13a7e40d0f5b3eb903a80d06fbe33074d596": {
     "describe": {

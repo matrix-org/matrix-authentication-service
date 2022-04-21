@@ -134,5 +134,20 @@ pub mod oidc_core {
     );
 }
 
+mod rfc7591 {
+    use super::ClientError;
+
+    pub const INVALID_REDIRECT_URI: ClientError = ClientError::new(
+        "invalid_redirect_uri",
+        "The value of one or more redirection URIs is invalid.",
+    );
+
+    pub const INVALID_CLIENT_METADATA: ClientError = ClientError::new(
+        "invalid_client_metadata",
+        "The value of one of the client metadata fields is invalid",
+    );
+}
+
 pub use oidc_core::*;
 pub use rfc6749::*;
+pub use rfc7591::*;

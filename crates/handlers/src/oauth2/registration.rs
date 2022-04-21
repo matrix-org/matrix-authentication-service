@@ -14,10 +14,12 @@
 
 use axum::{response::IntoResponse, Extension, Json};
 use hyper::StatusCode;
+use mas_iana::oauth::{OAuthAuthorizationEndpointResponseType, OAuthClientAuthenticationMethod};
 use mas_storage::oauth2::client::insert_client;
 use oauth2_types::{
-    errors::SERVER_ERROR,
+    errors::{INVALID_CLIENT_METADATA, INVALID_REDIRECT_URI, SERVER_ERROR},
     registration::{ClientMetadata, ClientRegistrationResponse},
+    requests::GrantType,
 };
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use sqlx::PgPool;
@@ -28,6 +30,12 @@ use tracing::info;
 pub(crate) enum RouteError {
     #[error(transparent)]
     Internal(Box<dyn std::error::Error + Send + Sync>),
+
+    #[error("invalid redirect uri")]
+    InvalidRedirectUri,
+
+    #[error("invalid client metadata")]
+    InvalidClientMetadata,
 }
 
 impl From<sqlx::Error> for RouteError {
@@ -38,7 +46,12 @@ impl From<sqlx::Error> for RouteError {
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(SERVER_ERROR)).into_response()
+        match self {
+            Self::Internal(_) => (StatusCode::INTERNAL_SERVER_ERROR, Json(SERVER_ERROR)),
+            Self::InvalidRedirectUri => (StatusCode::BAD_REQUEST, Json(INVALID_REDIRECT_URI)),
+            Self::InvalidClientMetadata => (StatusCode::BAD_REQUEST, Json(INVALID_CLIENT_METADATA)),
+        }
+        .into_response()
     }
 }
 
@@ -48,6 +61,49 @@ pub(crate) async fn post(
     Json(body): Json<ClientMetadata>,
 ) -> Result<impl IntoResponse, RouteError> {
     info!(?body, "Client registration");
+
+    // Let's validate a bunch of things on the client body first
+    for uri in &body.redirect_uris {
+        if uri.fragment().is_some() {
+            return Err(RouteError::InvalidRedirectUri);
+        }
+    }
+
+    // Check that the client did not send both a jwks and a jwks_uri
+    if body.jwks_uri.is_some() && body.jwks.is_some() {
+        return Err(RouteError::InvalidClientMetadata);
+    }
+
+    // Check that the grant_types and the response_types are coherent
+    let has_implicit = body.grant_types.contains(&GrantType::Implicit);
+    let has_authorization_code = body.grant_types.contains(&GrantType::AuthorizationCode);
+    let has_both = has_implicit && has_authorization_code;
+
+    for response_type in &body.response_types {
+        let is_ok = match response_type {
+            OAuthAuthorizationEndpointResponseType::Code => has_authorization_code,
+            OAuthAuthorizationEndpointResponseType::CodeIdToken
+            | OAuthAuthorizationEndpointResponseType::CodeIdTokenToken
+            | OAuthAuthorizationEndpointResponseType::CodeToken => has_both,
+            OAuthAuthorizationEndpointResponseType::IdToken
+            | OAuthAuthorizationEndpointResponseType::IdTokenToken
+            | OAuthAuthorizationEndpointResponseType::Token => has_implicit,
+            OAuthAuthorizationEndpointResponseType::None => true,
+        };
+
+        if !is_ok {
+            return Err(RouteError::InvalidClientMetadata);
+        }
+    }
+
+    // If the private_key_jwt auth method is used, check that we actually have a
+    // JWKS for that client
+    if body.token_endpoint_auth_method == Some(OAuthClientAuthenticationMethod::PrivateKeyJwt)
+        && body.jwks_uri.is_none()
+        && body.jwks.is_none()
+    {
+        return Err(RouteError::InvalidClientMetadata);
+    }
 
     // Grab a txn
     let mut txn = pool.begin().await?;
