@@ -1950,8 +1950,10 @@ dependencies = [
  "futures-util",
  "headers",
  "http",
+ "http-body",
  "mas-config",
  "mas-data-model",
+ "mas-http",
  "mas-iana",
  "mas-jose",
  "mas-storage",
@@ -1965,6 +1967,7 @@ dependencies = [
  "sqlx",
  "thiserror",
  "tokio",
+ "tower",
  "tracing",
  "url",
 ]

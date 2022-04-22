@@ -22,15 +22,17 @@ use axum::{
         Form, FromRequest, RequestParts, TypedHeader,
     },
     response::IntoResponse,
+    BoxError,
 };
 use headers::{authorization::Basic, Authorization};
 use http::StatusCode;
 use mas_config::Encrypter;
 use mas_data_model::{Client, JwksOrJwksUri, StorageBackend};
+use mas_http::HttpServiceExt;
 use mas_iana::oauth::OAuthClientAuthenticationMethod;
 use mas_jose::{
-    DecodedJsonWebToken, DynamicJwksStore, Either, JsonWebTokenParts, JwtHeader, SharedSecret,
-    StaticJwksStore,
+    DecodedJsonWebToken, DynamicJwksStore, Either, JsonWebKeySet, JsonWebTokenParts, JwtHeader,
+    SharedSecret, StaticJwksStore, VerifyingKeystore,
 };
 use mas_storage::{
     oauth2::client::{lookup_client_by_client_id, ClientFetchError},
@@ -40,6 +42,7 @@ use serde::{de::DeserializeOwned, Deserialize};
 use serde_json::Value;
 use sqlx::PgExecutor;
 use thiserror::Error;
+use tower::ServiceExt;
 
 static JWT_BEARER_CLIENT_ASSERTION: &str = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer";
 
@@ -169,10 +172,36 @@ impl Credentials {
 }
 
 fn jwks_key_store(jwks: &JwksOrJwksUri) -> Either<StaticJwksStore, DynamicJwksStore> {
-    match jwks {
-        JwksOrJwksUri::Jwks(key_set) => Either::Left(StaticJwksStore::new(key_set.clone())),
-        JwksOrJwksUri::JwksUri(_uri) => todo!(),
+    // Assert that the output is both a VerifyingKeystore and Send
+    fn assert<T: Send + VerifyingKeystore>(t: T) -> T {
+        t
     }
+
+    let inner = match jwks {
+        JwksOrJwksUri::Jwks(jwks) => Either::Left(StaticJwksStore::new(jwks.clone())),
+        JwksOrJwksUri::JwksUri(uri) => {
+            let uri = uri.clone();
+
+            // TODO: get the client from somewhere else?
+            let exporter = mas_http::client("fetch-jwks")
+                .json::<JsonWebKeySet>()
+                .map_request(move |_: ()| {
+                    http::Request::builder()
+                        .method("GET")
+                        // TODO: change the Uri type in config to avoid reparsing here
+                        .uri(uri.to_string())
+                        .body(http_body::Empty::new())
+                        .unwrap()
+                })
+                .map_response(http::Response::into_body)
+                .map_err(BoxError::from)
+                .boxed_clone();
+
+            Either::Right(DynamicJwksStore::new(exporter))
+        }
+    };
+
+    assert(inner)
 }
 
 #[derive(Debug, Error)]
