@@ -27,7 +27,7 @@ use axum::{
     routing::{get, on, post, MethodFilter},
     Router,
 };
-use hyper::header::AUTHORIZATION;
+use hyper::header::{ACCEPT, ACCEPT_LANGUAGE, AUTHORIZATION, CONTENT_LANGUAGE, CONTENT_TYPE};
 use mas_axum_utils::UrlBuilder;
 use mas_config::Encrypter;
 use mas_email::Mailer;
@@ -83,7 +83,13 @@ where
             CorsLayer::new()
                 .allow_origin(Any)
                 .allow_methods(Any)
-                .allow_otel_headers([AUTHORIZATION])
+                .allow_otel_headers([
+                    AUTHORIZATION,
+                    ACCEPT,
+                    ACCEPT_LANGUAGE,
+                    CONTENT_LANGUAGE,
+                    CONTENT_TYPE,
+                ])
                 .max_age(Duration::from_secs(60 * 60)),
         );
 
