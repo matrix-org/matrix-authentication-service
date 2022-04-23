@@ -6,7 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-anyhow = "1.0.56"
+anyhow = "1.0.57"
 async-trait = "0.1.53"
 base64ct = { version = "1.5.0", features = ["std"] }
 chrono = { version = "0.4.19", features = ["serde"] }
