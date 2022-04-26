@@ -23,7 +23,7 @@ anyhow = "1.0.57"
 hyper = { version = "0.14.18", features = ["full"] }
 tower = "0.4.12"
 tower-http = { version = "0.2.5", features = ["cors"] }
-axum = "0.5.3"
+axum = "0.5.4"
 axum-macros = "0.2.0"
 
 # Emails
