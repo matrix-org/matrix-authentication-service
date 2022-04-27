@@ -10,7 +10,7 @@ dev = ["mas-static-files/dev", "mas-templates/dev"]
 
 [dependencies]
 # Async runtime
-tokio = { version = "1.17.0", features = ["macros"] }
+tokio = { version = "1.18.0", features = ["macros"] }
 
 # Logging and tracing
 tracing = "0.1.34"
