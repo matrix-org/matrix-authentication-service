@@ -27,7 +27,7 @@ use oauth2_types::{requests::ResponseMode, scope::Scope};
 use sqlx::{PgConnection, PgExecutor};
 use url::Url;
 
-use super::client::{lookup_client};
+use super::client::lookup_client;
 use crate::{DatabaseInconsistencyError, IdAndCreationTime, PostgresqlBackend};
 
 #[allow(clippy::too_many_arguments)]
