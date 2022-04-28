@@ -486,7 +486,7 @@ pub async fn insert_client_from_config(
 }
 
 pub async fn truncate_clients(executor: impl PgExecutor<'_>) -> anyhow::Result<()> {
-    sqlx::query!("TRUNCATE oauth2_client_redirect_uris, oauth2_clients")
+    sqlx::query!("TRUNCATE oauth2_client_redirect_uris, oauth2_clients RESTART IDENTITY CASCADE")
         .execute(executor)
         .await?;
     Ok(())

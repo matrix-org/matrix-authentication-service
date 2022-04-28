@@ -27,7 +27,7 @@ use oauth2_types::{requests::ResponseMode, scope::Scope};
 use sqlx::{PgConnection, PgExecutor};
 use url::Url;
 
-use super::client::lookup_client_by_client_id;
+use super::client::{lookup_client};
 use crate::{DatabaseInconsistencyError, IdAndCreationTime, PostgresqlBackend};
 
 #[allow(clippy::too_many_arguments)]
@@ -58,7 +58,7 @@ pub async fn new_authorization_grant(
         IdAndCreationTime,
         r#"
             INSERT INTO oauth2_authorization_grants
-                (client_id, redirect_uri, scope, state, nonce, max_age,
+                (oauth2_client_id, redirect_uri, scope, state, nonce, max_age,
                  acr_values, response_mode, code_challenge, code_challenge_method,
                  response_type_code, response_type_token, response_type_id_token,
                  code)
@@ -66,7 +66,7 @@ pub async fn new_authorization_grant(
                 ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
             RETURNING id, created_at
         "#,
-        &client.client_id,
+        &client.data,
         redirect_uri.to_string(),
         scope.to_string(),
         state,
@@ -123,7 +123,7 @@ struct GrantLookup {
     grant_code: Option<String>,
     grant_code_challenge: Option<String>,
     grant_code_challenge_method: Option<String>,
-    client_id: String,
+    oauth2_client_id: i64,
     session_id: Option<i64>,
     user_session_id: Option<i64>,
     user_session_created_at: Option<DateTime<Utc>>,
@@ -149,7 +149,7 @@ impl GrantLookup {
             .map_err(|_e| DatabaseInconsistencyError)?;
 
         // TODO: don't unwrap
-        let client = lookup_client_by_client_id(executor, &self.client_id)
+        let client = lookup_client(executor, self.oauth2_client_id)
             .await
             .unwrap();
 
@@ -340,7 +340,7 @@ pub async fn get_grant_by_id(
                 og.nonce         AS grant_nonce,
                 og.max_age       AS grant_max_age,
                 og.acr_values    AS grant_acr_values,
-                og.client_id     AS client_id,
+                og.oauth2_client_id AS oauth2_client_id,
                 og.code          AS grant_code,
                 og.response_type_code     AS grant_response_type_code,
                 og.response_type_token    AS grant_response_type_token,
@@ -408,7 +408,7 @@ pub async fn lookup_grant_by_code(
                 og.nonce         AS grant_nonce,
                 og.max_age       AS grant_max_age,
                 og.acr_values    AS grant_acr_values,
-                og.client_id     AS client_id,
+                og.oauth2_client_id AS oauth2_client_id,
                 og.code          AS grant_code,
                 og.response_type_code     AS grant_response_type_code,
                 og.response_type_token    AS grant_response_type_token,
@@ -464,10 +464,10 @@ pub async fn derive_session(
         IdAndCreationTime,
         r#"
             INSERT INTO oauth2_sessions
-                (user_session_id, client_id, scope)
+                (user_session_id, oauth2_client_id, scope)
             SELECT
                 $1,
-                og.client_id,
+                og.oauth2_client_id,
                 og.scope
             FROM
                 oauth2_authorization_grants og

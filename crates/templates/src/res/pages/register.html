@@ -35,7 +35,7 @@ limitations under the License.
       <div class="text-center">
         <h1 class="text-lg text-center font-medium">Create your account</h1>
         {% if next and next.kind == "continue_authorization_grant" %}
-          <p>to continue to <em>{{ next.grant.client.client_id }}</em></p>
+          <p>to continue to <em>{{ next.grant.client.client_name | default(value=next.grand.client.client_id) }}</em></p>
         {% endif %}
       </div>
       <input type="hidden" name="csrf" value="{{ csrf_token }}" />

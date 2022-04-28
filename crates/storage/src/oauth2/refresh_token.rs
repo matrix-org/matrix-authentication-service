@@ -20,7 +20,7 @@ use mas_data_model::{
 use sqlx::{PgConnection, PgExecutor};
 use thiserror::Error;
 
-use super::client::{lookup_client_by_client_id, ClientFetchError};
+use super::client::{lookup_client, ClientFetchError};
 use crate::{DatabaseInconsistencyError, IdAndCreationTime, PostgresqlBackend};
 
 pub async fn add_refresh_token(
@@ -64,7 +64,7 @@ struct OAuth2RefreshTokenLookup {
     access_token_expires_after: Option<i32>,
     access_token_created_at: Option<DateTime<Utc>>,
     session_id: i64,
-    client_id: String,
+    oauth2_client_id: i64,
     scope: String,
     user_session_id: i64,
     user_session_created_at: DateTime<Utc>,
@@ -111,7 +111,7 @@ pub async fn lookup_active_refresh_token(
                 at.expires_after   AS "access_token_expires_after?",
                 at.created_at      AS "access_token_created_at?",
                 os.id              AS "session_id!",
-                os.client_id       AS "client_id!",
+                os.oauth2_client_id AS "oauth2_client_id!",
                 os.scope           AS "scope!",
                 us.id              AS "user_session_id!",
                 us.created_at      AS "user_session_created_at!",
@@ -174,7 +174,7 @@ pub async fn lookup_active_refresh_token(
         access_token,
     };
 
-    let client = lookup_client_by_client_id(&mut *conn, &res.client_id).await?;
+    let client = lookup_client(&mut *conn, res.oauth2_client_id).await?;
 
     let primary_email = match (
         res.user_email_id,
