@@ -6,7 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-tokio = { version = "1.17.0", features = ["full"] }
+tokio = { version = "1.18.0", features = ["full"] }
 futures = "0.3.21"
 anyhow = "1.0.57"
 clap = { version = "3.1.12", features = ["derive"] }
@@ -32,21 +32,22 @@ opentelemetry-jaeger = { version = "0.16.0", features = ["rt-tokio", "reqwest_co
 opentelemetry-otlp = { version = "0.10.0", features = ["trace", "metrics"], optional = true }
 opentelemetry-zipkin = { version = "0.15.0", features = ["reqwest-client", "reqwest-rustls"], default-features = false, optional = true }
 
+mas-axum-utils = { path = "../axum-utils" }
 mas-config = { path = "../config" }
 mas-email = { path = "../email" }
 mas-handlers = { path = "../handlers" }
 mas-http = { path = "../http" }
+mas-static-files = { path = "../static-files" }
 mas-storage = { path = "../storage" }
 mas-tasks = { path = "../tasks" }
 mas-templates = { path = "../templates" }
-mas-axum-utils = { path = "../axum-utils" }
 
 [dev-dependencies]
 indoc = "1.0.4"
 
 [features]
 default = ["otlp", "jaeger", "zipkin"]
-dev = ["mas-templates/dev", "mas-handlers/dev"]
+dev = ["mas-templates/dev", "mas-static-files/dev"]
 # Enable OpenTelemetry OTLP exporter. Requires "protoc"
 otlp = ["opentelemetry-otlp"]
 # Enable OpenTelemetry Jaeger exporter and propagator.

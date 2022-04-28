@@ -125,7 +125,6 @@ where
             get(self::oauth2::authorization::step_get),
         )
         .merge(api_router)
-        .fallback(mas_static_files::Assets)
         .layer(Extension(pool.clone()))
         .layer(Extension(templates.clone()))
         .layer(Extension(key_store.clone()))

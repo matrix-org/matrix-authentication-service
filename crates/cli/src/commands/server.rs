@@ -194,6 +194,8 @@ impl Options {
 
         let url_builder = UrlBuilder::new(config.http.public_base.clone());
 
+        let static_files = mas_static_files::service(&config.http.web_root);
+
         // Explicitely the config to properly zeroize secret keys
         drop(config);
 
@@ -217,6 +219,7 @@ impl Options {
             &mailer,
             &url_builder,
         )
+        .fallback(static_files)
         .layer(ServerLayer::default());
 
         info!("Listening on http://{}", listener.local_addr().unwrap());

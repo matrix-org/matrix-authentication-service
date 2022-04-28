@@ -6,7 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-tokio = { version = "1.17.0", features = [] }
+tokio = { version = "1.18.0", features = [] }
 tracing = { version = "0.1.34", features = ["log"] }
 async-trait = "0.1.53"
 
