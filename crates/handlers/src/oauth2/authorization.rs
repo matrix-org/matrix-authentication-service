@@ -381,8 +381,17 @@ pub(crate) async fn get(
                 )
                 .await?)
             }
-            (Some(_), Some(Prompt::Login | Prompt::Consent | Prompt::SelectAccount)) => {
-                // We're already logged in but login|consent|select_account was asked, reauth
+            (Some(_), Some(Prompt::Consent)) => {
+                // We're already logged in but consent was asked
+                txn.commit().await?;
+
+                let next: ConsentRequest = next.into();
+                let next = next.build_uri()?;
+
+                Ok(Redirect::to(&next.to_string()).into_response())
+            }
+            (Some(_), Some(Prompt::Login | Prompt::SelectAccount)) => {
+                // We're already logged in but login|select_account was asked, reauth
                 // TODO: better pages here
                 txn.commit().await?;
 
