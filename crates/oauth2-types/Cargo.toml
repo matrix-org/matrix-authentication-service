@@ -6,7 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-http = "0.2.6"
+http = "0.2.7"
 serde = "1.0.136"
 serde_json = "1.0.79"
 language-tags = { version = "0.3.2", features = ["serde"] }

@@ -16,7 +16,7 @@ ecdsa = { version = "0.13.4", features = ["sign", "verify", "pem", "pkcs8"] }
 elliptic-curve = { version = "0.11.12", features = ["ecdh", "pem"] }
 futures-util = "0.3.21"
 hmac = "0.12.1"
-http = "0.2.6"
+http = "0.2.7"
 p256 = { version = "0.10.1", features = ["ecdsa", "pem", "pkcs8"] }
 pkcs1 = { version = "0.3.3", features = ["pem", "pkcs8"] }
 pkcs8 = { version = "0.8.0", features = ["pem"] }
