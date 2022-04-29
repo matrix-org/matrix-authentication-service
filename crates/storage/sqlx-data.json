@@ -1048,20 +1048,6 @@
     },
     "query": "\n            DELETE FROM oauth2_access_tokens\n            WHERE id = $1\n        "
   },
-  "8ff8e80c3af4f8ab47b30301a573dee26c85bf21f61317278a892d54875ae983": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Int8",
-          "TextArray"
-        ]
-      }
-    },
-    "query": "\n            INSERT INTO oauth2_consents (user_id, oauth2_client_id, scope_token)\n            SELECT $1, $2, scope_token FROM UNNEST($3::text[]) scope_token\n        "
-  },
   "99270fd3ddcc7421c5b26d0b8e0116356c13166887e7cf6ed6352cc879c80a68": {
     "describe": {
       "columns": [
@@ -1763,6 +1749,20 @@
       }
     },
     "query": "\n            SELECT\n                at.id              AS \"access_token_id\",\n                at.token           AS \"access_token\",\n                at.expires_after   AS \"access_token_expires_after\",\n                at.created_at      AS \"access_token_created_at\",\n                os.id              AS \"session_id!\",\n                os.oauth2_client_id AS \"oauth2_client_id!\",\n                os.scope           AS \"scope!\",\n                us.id              AS \"user_session_id!\",\n                us.created_at      AS \"user_session_created_at!\",\n                 u.id              AS \"user_id!\",\n                 u.username        AS \"user_username!\",\n                usa.id             AS \"user_session_last_authentication_id?\",\n                usa.created_at     AS \"user_session_last_authentication_created_at?\",\n                ue.id              AS \"user_email_id?\",\n                ue.email           AS \"user_email?\",\n                ue.created_at      AS \"user_email_created_at?\",\n                ue.confirmed_at    AS \"user_email_confirmed_at?\"\n\n            FROM oauth2_access_tokens at\n            INNER JOIN oauth2_sessions os\n              ON os.id = at.oauth2_session_id\n            INNER JOIN user_sessions us\n              ON us.id = os.user_session_id\n            INNER JOIN users u\n              ON u.id = us.user_id\n            LEFT JOIN user_session_authentications usa\n              ON usa.session_id = us.id\n            LEFT JOIN user_emails ue\n              ON ue.id = u.primary_email_id\n\n            WHERE at.token = $1\n              AND at.created_at + (at.expires_after * INTERVAL '1 second') >= now()\n              AND us.active\n              AND os.ended_at IS NULL\n\n            ORDER BY usa.created_at DESC\n            LIMIT 1\n        "
+  },
+  "e11a625fa2ca20f00cac0fac5b4548efad6dd2f2f4742087935345cbf5701db2": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8",
+          "TextArray"
+        ]
+      }
+    },
+    "query": "\n            INSERT INTO oauth2_consents (user_id, oauth2_client_id, scope_token)\n            SELECT $1, $2, scope_token FROM UNNEST($3::text[]) scope_token\n            ON CONFLICT (user_id, oauth2_client_id, scope_token) DO UPDATE SET updated_at = NOW()\n        "
   },
   "e5cd99bdaf9c678fc659431fecc5d76b25bb08b781fd17e50eda82ea3aa8cea8": {
     "describe": {
