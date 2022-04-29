@@ -16,16 +16,81 @@ limitations under the License.
 
 {% extends "base.html" %}
 
+{% block navbar_start %}
+  {{ back_to_client::link(
+    text="← Back",
+    uri=grant.redirect_uri,
+    mode=grant.response_mode,
+    params=dict(error="access_denied", state=grant.state)
+  ) }}
+{% endblock %}
+
 {% block content %}
   <section class="flex items-center justify-center flex-1">
     <form method="POST" class="grid grid-cols-1 gap-6 w-96 m-2">
       <div class="text-center">
         <h1 class="text-lg text-center font-medium">Authorize <em>{{ grant.client.client_name | default(value=grand.client.client_id) }}</em></h1>
       </div>
+
+      <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-2 flex flex-col">
+        <div class="flex items-center m-2">
+          <div class="bg-white rounded w-16 h-16 overflow-hidden">
+            {% if grant.client.logo_uri %}
+            <img class="w-16 h-16" src="{{ grant.client.logo_uri }}" />
+            {% endif %}
+          </div>
+          <div class="px-4 flex-1">
+            <div class="text-xl font-medium leading-6">
+              {{ grant.client.client_name }}
+            </div>
+
+            {% if grant.client.client_uri %}
+            <div class="underline text-sm leading-6">
+              <a target="_blank" href="{{ grant.client.client_uri }}">{{ grant.client.client_uri }}</a>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if grant.client.policy_uri or grant.client.tos_uri %}
+        <div class="flex my-2">
+          {% if grant.client.policy_uri %}
+          {{ button::link_ghost(href=grant.client.policy_uri, text="Privacy policy", class="flex-auto mx-2") }}
+          {% endif %}
+
+          {% if grant.client.tos_uri %}
+          {{ button::link_ghost(href=grant.client.tos_uri, text="Terms of services", class="flex-auto mx-2") }}
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+
       <div>Scope: {{ grant.scope }}</div>
+
       <input type="hidden" name="csrf" value="{{ csrf_token }}" />
-      {{ button::button(text="Allow") }}
+
+      <div class="grid grid-cols-2 gap-4">
+        {{ button::button(text="Allow") }}
+
+        {{ back_to_client::link(
+          text="Deny",
+          class=button::plain_error_class(),
+          uri=grant.redirect_uri,
+          mode=grant.response_mode,
+          params=dict(error="access_denied", state=grant.state)
+        ) }}
+      </div>
     </form>
+  </section>
+
+  <section class="self-center my-6">
+    {{ back_to_client::link(
+      text="Return to application",
+      class=button::text_class(),
+      uri=grant.redirect_uri,
+      mode=grant.response_mode,
+      params=dict(error="access_denied", state=grant.state)
+    ) }}
   </section>
 {% endblock content %}
 

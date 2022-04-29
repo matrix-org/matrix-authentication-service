@@ -18,6 +18,10 @@ limitations under the License.
   px-4 py-2 border-2 rounded-lg font-medium text-center focus:ring-0 focus:outline-0 focus:border-black dark:focus:border-white
 {%- endmacro %}
 
+{% macro plain_error_class() -%}
+  {{ self::common_class() }} border-alert bg-alert text-white hover:opacity-75
+{%- endmacro %}
+
 {% macro plain_class() -%}
   {{ self::common_class() }} border-accent bg-accent text-white hover:opacity-75
 {%- endmacro %}
