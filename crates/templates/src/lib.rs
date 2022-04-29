@@ -43,9 +43,9 @@ mod functions;
 mod macros;
 
 pub use self::context::{
-    AccountContext, AccountEmailsContext, EmailVerificationContext, EmptyContext, ErrorContext,
-    FormPostContext, IndexContext, LoginContext, LoginFormField, PostAuthContext, ReauthContext,
-    ReauthFormField, RegisterContext, RegisterFormField, TemplateContext, WithCsrf,
+    AccountContext, AccountEmailsContext, ConsentContext, EmailVerificationContext, EmptyContext,
+    ErrorContext, FormPostContext, IndexContext, LoginContext, LoginFormField, PostAuthContext,
+    ReauthContext, ReauthFormField, RegisterContext, RegisterFormField, TemplateContext, WithCsrf,
     WithOptionalSession, WithSession,
 };
 
@@ -285,6 +285,9 @@ register_templates! {
     /// Render the registration page
     pub fn render_register(WithCsrf<RegisterContext>) { "pages/register.html" }
 
+    /// Render the registration page
+    pub fn render_consent(WithCsrf<WithSession<ConsentContext>>) { "pages/consent.html" }
+
     /// Render the home page
     pub fn render_index(WithCsrf<WithOptionalSession<IndexContext>>) { "pages/index.html" }
 
@@ -322,6 +325,7 @@ impl Templates {
     pub async fn check_render(&self) -> anyhow::Result<()> {
         check::render_login(self).await?;
         check::render_register(self).await?;
+        check::render_consent(self).await?;
         check::render_index(self).await?;
         check::render_account_index(self).await?;
         check::render_account_password(self).await?;

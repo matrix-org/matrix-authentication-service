@@ -38,6 +38,7 @@ use mas_storage::{
             derive_session, fulfill_grant, get_grant_by_id, new_authorization_grant,
         },
         client::{lookup_client_by_client_id, ClientFetchError},
+        consent::fetch_client_consent,
         refresh_token::add_refresh_token,
     },
     PostgresqlBackend,
@@ -62,6 +63,7 @@ use sqlx::{PgConnection, PgPool, Postgres, Transaction};
 use thiserror::Error;
 use url::Url;
 
+use super::consent::ConsentRequest;
 use crate::views::{LoginRequest, PostAuthAction, ReauthRequest, RegisterRequest};
 
 #[derive(Debug, Error)]
@@ -508,8 +510,16 @@ async fn step(
         return Err(anyhow::anyhow!("authorization grant not pending").into());
     }
 
-    let reply = match browser_session.last_authentication {
-        Some(Authentication { created_at, .. }) if created_at > grant.max_auth_time() => {
+    let current_consent =
+        fetch_client_consent(&mut txn, &browser_session.user, &grant.client).await?;
+
+    let lacks_consent = grant
+        .scope
+        .difference(&current_consent)
+        .any(|scope| !scope.starts_with("urn:matrix:device:"));
+
+    let reply = match (lacks_consent, &browser_session.last_authentication) {
+        (false, Some(Authentication { created_at, .. })) if created_at > &grant.max_auth_time() => {
             let session = derive_session(&mut txn, &grant, browser_session).await?;
 
             let grant = fulfill_grant(&mut txn, grant, session.clone()).await?;
@@ -561,6 +571,12 @@ async fn step(
                 templates,
             )
             .await?
+        }
+        (true, Some(Authentication { created_at, .. })) if created_at > &grant.max_auth_time() => {
+            let next: ConsentRequest = next.into();
+            let next = next.build_uri()?;
+
+            Redirect::to(&next.to_string()).into_response()
         }
         _ => {
             let next: PostAuthAction = next.into();

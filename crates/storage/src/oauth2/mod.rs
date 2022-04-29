@@ -1,4 +1,4 @@
-// Copyright 2021 The Matrix.org Foundation C.I.C.
+// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ use crate::PostgresqlBackend;
 pub mod access_token;
 pub mod authorization_grant;
 pub mod client;
+pub mod consent;
 pub mod refresh_token;
 
 pub async fn end_oauth_session(

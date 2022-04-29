@@ -124,6 +124,10 @@ where
             "/oauth2/authorize/step",
             get(self::oauth2::authorization::step_get),
         )
+        .route(
+            "/consent",
+            get(self::oauth2::consent::get).post(self::oauth2::consent::post),
+        )
         .merge(api_router)
         .layer(Extension(pool.clone()))
         .layer(Extension(templates.clone()))

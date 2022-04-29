@@ -84,6 +84,14 @@ impl ToString for ScopeToken {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Scope(HashSet<ScopeToken>);
 
+impl std::ops::Deref for Scope {
+    type Target = HashSet<ScopeToken>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 impl FromStr for Scope {
     type Err = InvalidScope;
 

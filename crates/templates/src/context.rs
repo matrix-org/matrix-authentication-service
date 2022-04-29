@@ -367,6 +367,35 @@ impl Default for RegisterContext {
     }
 }
 
+/// Context used by the `consent.html` template
+#[derive(Serialize)]
+pub struct ConsentContext {
+    grant: AuthorizationGrant<()>,
+}
+
+impl TemplateContext for ConsentContext {
+    fn sample() -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        // TODO
+        vec![]
+    }
+}
+
+impl ConsentContext {
+    /// Constructs a context for the client consent page
+    #[must_use]
+    pub fn new<T>(grant: T) -> Self
+    where
+        T: Into<AuthorizationGrant<()>>,
+    {
+        Self {
+            grant: grant.into(),
+        }
+    }
+}
+
 /// Fields of the reauthentication form
 #[derive(Serialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
