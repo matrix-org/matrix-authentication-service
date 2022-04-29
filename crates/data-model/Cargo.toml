@@ -10,7 +10,7 @@ chrono = "0.4.19"
 thiserror = "1.0.30"
 serde = "1.0.136"
 url = { version = "2.2.2", features = ["serde"] }
-crc = "2.1.0"
+crc = "3.0.0"
 rand = "0.8.5"
 
 mas-iana = { path = "../iana" }
