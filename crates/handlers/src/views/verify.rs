@@ -16,8 +16,9 @@ use axum::{
     extract::{Extension, Path},
     response::{Html, IntoResponse},
 };
+use axum_extra::extract::PrivateCookieJar;
 use chrono::Duration;
-use mas_axum_utils::{csrf::CsrfExt, fancy_error, FancyError, PrivateCookieJar, SessionInfoExt};
+use mas_axum_utils::{csrf::CsrfExt, fancy_error, FancyError, SessionInfoExt};
 use mas_config::Encrypter;
 use mas_storage::user::{
     consume_email_verification, lookup_user_email_verification_code, mark_user_email_as_verified,

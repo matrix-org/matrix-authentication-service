@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use axum_extra::extract::cookie::{Cookie, PrivateCookieJar};
 use chrono::{DateTime, Duration, Utc};
-use cookie::Cookie;
 use data_encoding::{DecodeError, BASE64URL_NOPAD};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, TimestampSeconds};
 use thiserror::Error;
 
-use crate::{cookies::CookieDecodeError, CookieExt, PrivateCookieJar};
+use crate::{cookies::CookieDecodeError, CookieExt};
 
 /// Failed to validate CSRF token
 #[derive(Debug, Error)]

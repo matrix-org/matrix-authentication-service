@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use cookie::Cookie;
+use axum_extra::extract::cookie::{Cookie, PrivateCookieJar};
 use mas_data_model::BrowserSession;
 use mas_storage::{
     user::{lookup_active_session, ActiveSessionLookupError},
@@ -21,7 +21,7 @@ use mas_storage::{
 use serde::{Deserialize, Serialize};
 use sqlx::{Executor, Postgres};
 
-use crate::{CookieExt, PrivateCookieJar};
+use crate::CookieExt;
 
 /// An encrypted cookie to save the session ID
 #[derive(Serialize, Deserialize, Debug, Default)]

@@ -19,12 +19,13 @@ use axum::{
     extract::{Extension, Form, Query},
     response::{Html, IntoResponse, Redirect, Response},
 };
+use axum_extra::extract::PrivateCookieJar;
 use chrono::Duration;
 use hyper::{
     http::uri::{Parts, PathAndQuery, Uri},
     StatusCode,
 };
-use mas_axum_utils::{PrivateCookieJar, SessionInfoExt};
+use mas_axum_utils::SessionInfoExt;
 use mas_config::Encrypter;
 use mas_data_model::{
     Authentication, AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, BrowserSession,

@@ -21,7 +21,7 @@ pub mod url_builder;
 pub mod user_authorization;
 
 pub use self::{
-    cookies::{Cookie, CookieExt, PrivateCookieJar},
+    cookies::CookieExt,
     fancy_error::{fancy_error, internal_error, FancyError},
     session::{SessionInfo, SessionInfoExt},
     url_builder::UrlBuilder,

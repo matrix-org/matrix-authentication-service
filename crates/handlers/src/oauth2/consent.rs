@@ -18,10 +18,11 @@ use axum::{
     http::uri::{Parts, PathAndQuery},
     response::{Html, IntoResponse, Redirect, Response},
 };
+use axum_extra::extract::PrivateCookieJar;
 use hyper::{StatusCode, Uri};
 use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
-    PrivateCookieJar, SessionInfoExt,
+    SessionInfoExt,
 };
 use mas_config::Encrypter;
 use mas_data_model::AuthorizationGrantStage;

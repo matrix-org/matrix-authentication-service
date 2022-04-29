@@ -16,9 +16,10 @@ use axum::{
     extract::{Extension, Form},
     response::{IntoResponse, Redirect},
 };
+use axum_extra::extract::PrivateCookieJar;
 use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
-    fancy_error, FancyError, PrivateCookieJar, SessionInfoExt,
+    fancy_error, FancyError, SessionInfoExt,
 };
 use mas_config::Encrypter;
 use mas_storage::user::end_session;

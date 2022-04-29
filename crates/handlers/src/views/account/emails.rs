@@ -16,10 +16,11 @@ use axum::{
     extract::{Extension, Form},
     response::{Html, IntoResponse, Redirect, Response},
 };
+use axum_extra::extract::PrivateCookieJar;
 use lettre::{message::Mailbox, Address};
 use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
-    fancy_error, FancyError, PrivateCookieJar, SessionInfoExt, UrlBuilder,
+    fancy_error, FancyError, SessionInfoExt, UrlBuilder,
 };
 use mas_config::Encrypter;
 use mas_data_model::{BrowserSession, User, UserEmail};
