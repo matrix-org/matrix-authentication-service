@@ -23,7 +23,7 @@ serde_with = "1.13.0"
 serde_urlencoded = "0.7.1"
 serde_json = "1.0.79"
 sqlx = "0.5.13"
-thiserror = "1.0.30"
+thiserror = "1.0.31"
 tokio = "1.18.0"
 tower = { version = "0.4.12", features = ["util"] }
 tracing = "0.1.34"

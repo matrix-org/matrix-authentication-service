@@ -21,7 +21,7 @@ opentelemetry-semantic-conventions = "0.9.0"
 rustls = "0.20.4"
 serde = "1.0.136"
 serde_json = "1.0.79"
-thiserror = "1.0.30"
+thiserror = "1.0.31"
 tokio = { version = "1.18.0", features = ["sync", "parking_lot"] }
 tower = { version = "0.4.12", features = ["timeout", "limit"] }
 tower-http = { version = "0.3.2", features = ["follow-redirect", "decompression-full", "set-header", "compression-full", "cors"] }
