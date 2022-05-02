@@ -16,7 +16,7 @@ ecdsa = { version = "0.13.4", features = ["sign", "verify", "pem", "pkcs8"] }
 elliptic-curve = { version = "0.11.12", features = ["ecdh", "pem"] }
 futures-util = "0.3.21"
 hmac = "0.12.1"
-http = "0.2.6"
+http = "0.2.7"
 p256 = { version = "0.10.1", features = ["ecdsa", "pem", "pkcs8"] }
 pkcs1 = { version = "0.3.3", features = ["pem", "pkcs8"] }
 pkcs8 = { version = "0.8.0", features = ["pem"] }
@@ -29,7 +29,7 @@ serde_json = "1.0.79"
 serde_with = { version = "1.13.0", features = ["base64"] }
 sha2 = "0.10.2"
 signature = "1.4.0"
-thiserror = "1.0.30"
+thiserror = "1.0.31"
 tokio = { version = "1.18.0", features = ["macros", "rt", "sync"] }
 tower = { version = "0.4.12", features = ["util"] }
 tracing = "0.1.34"
