@@ -18,6 +18,6 @@ mas-templates = { path = "../templates" }
 mas-config = { path = "../config" }
 
 [dependencies.lettre]
-version = "0.10.0-rc.5"
+version = "0.10.0-rc.6"
 default-features = false
 features = ["tokio1-rustls-tls", "hostname", "builder", "tracing", "pool", "smtp-transport", "sendmail-transport"]
