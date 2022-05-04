@@ -14,9 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 #}
 
-{% extends "base.html" %}
+{% extends "account-base.html" %}
 
 {% block content %}
+  {{ super() }}
   {% if current_session.user.primary_email %}
     {% set primary_email = current_session.user.primary_email.email %}
   {% else %}

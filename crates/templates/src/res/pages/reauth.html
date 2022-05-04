@@ -16,32 +16,47 @@ limitations under the License.
 
 {% extends "base.html" %}
 
-{% block navbar_start %}
-  {% if next and next.kind == "continue_authorization_grant" %}
-    {{ back_to_client::link(
-      text="← Back",
-      uri=next.grant.redirect_uri,
-      mode=next.grant.response_mode,
-      params=dict(error="access_denied", state=next.grant.state)
-    ) }}
-  {% endif %}
-{% endblock %}
-
 {% block content %}
   <section class="flex items-center justify-center flex-1">
-    <form method="POST" class="grid grid-cols-1 gap-6 w-96 m-4">
-      <div class="text-center">
-        <h1 class="text-lg text-center font-medium">Hi {{ current_session.user.username }}</h1>
-        <p>To continue, first verify it's you:</p>
+    <div class="w-96 m-4">
+      <form method="POST" class="grid grid-cols-1 gap-6">
+        <div class="text-center">
+          <h1 class="text-lg text-center font-medium">Hi {{ current_session.user.username }}</h1>
+          <p>To continue, please verify it's you:</p>
+        </div>
+        <input type="hidden" name="csrf" value="{{ csrf_token }}" />
+        {# TODO: errors #}
+        {{ field::input(label="Password", name="password", type="password") }}
+        {% if next and next.kind == "continue_authorization_grant" %}
+          <div class="grid grid-cols-2 gap-4">
+            {{ back_to_client::link(
+              text="Cancel",
+              class=button::text_class(),
+              uri=next.grant.redirect_uri,
+              mode=next.grant.response_mode,
+              params=dict(error="access_denied", state=next.grant.state)
+            ) }}
+            {{ button::button(text="Next") }}
+          </div>
+        {% else %}
+          <div class="grid grid-cols-1 gap-4">    
+            {{ button::button(text="Next") }}
+          </div>
+        {% endif %}
+      </form>
+      <div class="text-center mt-4">
+        <form method="POST" action="/logout">
+          <input type="hidden" name="csrf" value="{{ csrf_token }}" />
+          <div>
+            Not {{ current_session.user.username }}?
+            {{ button::button_text(text="Sign out", name="logout", type="submit") }}
+          </div>
+        </form>  
       </div>
-      <input type="hidden" name="csrf" value="{{ csrf_token }}" />
-      {# TODO: errors #}
-      {{ field::input(label="Password", name="password", type="password") }}
-      {{ button::button(text="Next") }}
-    </form>
+    </div>
   </section>
 
-  <div class="flex justify-center">
+  <!-- <div class="flex justify-center">
     <div class="w-96 m-2">
       <h3 class="title is-3">Current session data:</h3>
       <pre class="text-sm whitespace-pre-wrap"><code>{{ current_session | json_encode(pretty=True) | safe }}</code></pre>
@@ -52,18 +67,6 @@ limitations under the License.
         <pre class="text-sm whitespace-pre-wrap"><code>{{ next | json_encode(pretty=True) | safe }}</code></pre>
       </div>
     {% endif %}
-  </div>
-
-  {% if next and next.kind == "continue_authorization_grant" %}
-    <section class="self-center my-6">
-      {{ back_to_client::link(
-        text="Cancel",
-        class=button::text_class(),
-        uri=next.grant.redirect_uri,
-        mode=next.grant.response_mode,
-        params=dict(error="access_denied", state=next.grant.state)
-      ) }}
-    </section>
-  {% endif %}
+  </div> -->
 {% endblock content %}
 

@@ -27,32 +27,6 @@ limitations under the License.
     <link rel="stylesheet" href="/tailwind.css">
   </head>
   <body class="bg-white text-black-900 dark:bg-black-800 dark:text-white flex flex-col min-h-screen">
-    <nav class="container mx-auto py-2 flex-initial flex items-center px-2" role="navigation" aria-label="main navigation">
-      {% block navbar_start %}{% endblock navbar_start %}
-
-      <div class="flex-1"></div>
-
-      {% block navbar_end %}
-        <div class="grid grid-flow-col auto-cols-max gap-4 place-items-center">
-          {% if current_session %}
-            <div class="text-grey-200 dark:text-grey-250 mx-2">
-              Logged in as <span class="font-bold">{{ current_session.user.username }}</span>.
-            </div>
-
-            {{ button::link(text="My account", href="/account") }}
-
-            <form method="POST" action="/logout">
-              <input type="hidden" name="csrf" value="{{ csrf_token }}" />
-              {{ button::button_ghost(text="Log out", name="logout", type="submit") }}
-            </form>
-          {% else %}
-            {{ button::link(text="Sign in", href="/login") }}
-            {{ button::link_ghost(text="Register", href="/register") }}
-          {% endif %}
-        </div>
-      {% endblock navbar_end %}
-    </nav>
-
     {% block content %}{% endblock content %}
   </body>
 </html>

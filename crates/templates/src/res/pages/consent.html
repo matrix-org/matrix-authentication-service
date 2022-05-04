@@ -16,81 +16,81 @@ limitations under the License.
 
 {% extends "base.html" %}
 
-{% block navbar_start %}
-  {{ back_to_client::link(
-    text="← Back",
-    uri=grant.redirect_uri,
-    mode=grant.response_mode,
-    params=dict(error="access_denied", state=grant.state)
-  ) }}
-{% endblock %}
-
 {% block content %}
   <section class="flex items-center justify-center flex-1">
-    <form method="POST" class="grid grid-cols-1 gap-6 w-96 m-2">
-      <div class="text-center">
-        <h1 class="text-lg text-center font-medium">Authorize <em>{{ grant.client.client_name | default(value=grant.client.client_id) }}</em></h1>
-      </div>
-
-      <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-2 flex flex-col">
-        <div class="flex items-center m-2">
-          <div class="bg-white rounded w-16 h-16 overflow-hidden">
-            {% if grant.client.logo_uri %}
-            <img class="w-16 h-16" src="{{ grant.client.logo_uri }}" />
-            {% endif %}
+    <div class="w-96 m-2">
+      <form method="POST" class="grid grid-cols-1 gap-6">
+        <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-2 flex flex-col">
+          <div class="text-center">
+            <div class="bg-white rounded w-16 h-16 overflow-hidden mx-auto">
+              {% if grant.client.logo_uri %}
+              <img class="w-16 h-16" src="{{ grant.client.logo_uri }}" />
+              {% endif %}
+            </div>
+            <h1 class="text-lg text-center font-medium"><a target="_blank" href="{{ grant.client.client_uri }}" class="text-accent">{{ grant.client.client_name | default(value=grant.client.client_id) }}</a></h1>
+            <h1>at {{ grant.redirect_uri }}</h1>
+            <h1>wants to access your Matrix account</h1>
           </div>
-          <div class="px-4 flex-1">
-            <div class="text-xl font-medium leading-6">
-              {{ grant.client.client_name }}
-            </div>
+          <div class="flex items-center m-2">
+            <div class="px-4 flex-1">
+              <p>This will allow <a target="_blank" href="{{ grant.client.client_uri }}" class="text-accent">{{ grant.client.client_name | default(value=grant.client.client_id) }}</a> to:</p>
 
-            {% if grant.client.client_uri %}
-            <div class="underline text-sm leading-6">
-              <a target="_blank" href="{{ grant.client.client_uri }}">{{ grant.client.client_uri }}</a>
-            </div>
-            {% endif %}
+              <p class="my-2">
+                <ul class="list-disc">
+                  {% for scope in grant.scope | split(pat=" ") %}
+                    {% if scope == "openid" %}
+                      <li>See your profile info and contact details</li>
+                    {% elif scope is matching("^urn:matrix:device:") %}
+                      <li>View your existing messages and data</li>
+                      <li>Send new messages on your behalf</li>
+                    {% else %}
+                      <li>{{ scope }}</li>
+                    {% endif %}
+                  {% endfor %}
+                </ul>  
+              </p>
+              <p class="font-bold my-2">Make sure that you trust {{ grant.client.client_name }}</p>
+              <p>
+                You may be sharing sensitive information with this site or app.
+                {% if grant.client.policy_uri or grant.client.tos_uri %}
+                  Find out how {{ grant.client.client_name }} will handle your data by reviewing it's
+                  {% if grant.client.policy_uri %}
+                    <a target="_blank" href="{{ grant.client.policy_uri }}" class="text-accent">privacy policy</a>{% if not grant.client.tos_uri %}.{% endif %}
+                  {% endif %}
+                  {% if grant.client.policy_uri and grant.client.tos_uri%}
+                    and
+                  {% endif %}
+                  {% if grant.client.tos_uri %}
+                    <a target="_blank" href="{{ grant.client.tos_uri }}" class="text-accent">terms of service</a>.
+                  {% endif %}
+                {% endif %}
+              </p>
+              </div>
           </div>
         </div>
 
-        {% if grant.client.policy_uri or grant.client.tos_uri %}
-        <div class="flex my-2">
-          {% if grant.client.policy_uri %}
-          {{ button::link_ghost(href=grant.client.policy_uri, text="Privacy policy", class="flex-auto mx-2") }}
-          {% endif %}
+        <input type="hidden" name="csrf" value="{{ csrf_token }}" />
 
-          {% if grant.client.tos_uri %}
-          {{ button::link_ghost(href=grant.client.tos_uri, text="Terms of services", class="flex-auto mx-2") }}
-          {% endif %}
+        <div class="grid grid-cols-2 gap-4">
+          {{ back_to_client::link(
+            text="Cancel",
+            class=button::text_class(),
+            uri=grant.redirect_uri,
+            mode=grant.response_mode,
+            params=dict(error="access_denied", state=grant.state)
+          ) }}
+          {{ button::button(text="Allow") }}
         </div>
-        {% endif %}
+      </form>
+      <div class="text-center mt-4">
+        <form method="POST" action="/logout">
+          <input type="hidden" name="csrf" value="{{ csrf_token }}" />
+          <div>
+            Not {{ current_session.user.username }}?
+            {{ button::button_text(text="Sign out", name="logout", type="submit") }}
+          </div>
+        </form>  
       </div>
-
-      <div>Scope: {{ grant.scope }}</div>
-
-      <input type="hidden" name="csrf" value="{{ csrf_token }}" />
-
-      <div class="grid grid-cols-2 gap-4">
-        {{ button::button(text="Allow") }}
-
-        {{ back_to_client::link(
-          text="Deny",
-          class=button::plain_error_class(),
-          uri=grant.redirect_uri,
-          mode=grant.response_mode,
-          params=dict(error="access_denied", state=grant.state)
-        ) }}
-      </div>
-    </form>
-  </section>
-
-  <section class="self-center my-6">
-    {{ back_to_client::link(
-      text="Cancel",
-      class=button::text_class(),
-      uri=grant.redirect_uri,
-      mode=grant.response_mode,
-      params=dict(error="access_denied", state=grant.state)
-    ) }}
+    </div>
   </section>
 {% endblock content %}
-
