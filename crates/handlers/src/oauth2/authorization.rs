@@ -12,12 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::HashMap;
-
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use axum::{
     extract::{Extension, Form, Query},
-    response::{Html, IntoResponse, Redirect, Response},
+    response::{IntoResponse, Redirect, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
 use chrono::Duration;
@@ -44,7 +42,7 @@ use mas_storage::{
     },
     PostgresqlBackend,
 };
-use mas_templates::{FormPostContext, Templates};
+use mas_templates::Templates;
 use oauth2_types::{
     errors::{
         INVALID_REQUEST, LOGIN_REQUIRED, REGISTRATION_NOT_SUPPORTED, REQUEST_NOT_SUPPORTED,
@@ -62,31 +60,66 @@ use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 use sqlx::{PgConnection, PgPool, Postgres, Transaction};
 use thiserror::Error;
-use url::Url;
 
+use self::callback::CallbackDestination;
 use super::consent::ConsentRequest;
 use crate::views::{LoginRequest, PostAuthAction, ReauthRequest, RegisterRequest};
+
+mod callback;
 
 #[derive(Debug, Error)]
 pub enum RouteError {
     #[error(transparent)]
     Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
+
     #[error(transparent)]
     Anyhow(anyhow::Error),
+
     #[error("could not find client")]
     ClientNotFound,
+
     #[error("invalid redirect uri")]
-    InvalidRedirectUri,
+    InvalidRedirectUri(#[from] self::callback::InvalidRedirectUriError),
+
+    #[error("invalid redirect uri")]
+    UnknownRedirectUri(#[from] mas_data_model::InvalidRedirectUriError),
 }
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
-        StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        // TODO: better error pages
+        match self {
+            RouteError::Internal(e) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
+            }
+            RouteError::Anyhow(e) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
+            }
+            RouteError::ClientNotFound => {
+                (StatusCode::BAD_REQUEST, "could not find client").into_response()
+            }
+            RouteError::InvalidRedirectUri(e) => (
+                StatusCode::BAD_REQUEST,
+                format!("Invalid redirect URI ({})", e),
+            )
+                .into_response(),
+            RouteError::UnknownRedirectUri(e) => (
+                StatusCode::BAD_REQUEST,
+                format!("Invalid redirect URI ({})", e),
+            )
+                .into_response(),
+        }
     }
 }
 
 impl From<sqlx::Error> for RouteError {
     fn from(e: sqlx::Error) -> Self {
+        Self::Internal(Box::new(e))
+    }
+}
+
+impl From<self::callback::CallbackDestinationError> for RouteError {
+    fn from(e: self::callback::CallbackDestinationError) -> Self {
         Self::Internal(Box::new(e))
     }
 }
@@ -104,92 +137,6 @@ impl From<ClientFetchError> for RouteError {
 impl From<anyhow::Error> for RouteError {
     fn from(e: anyhow::Error) -> Self {
         Self::Anyhow(e)
-    }
-}
-
-async fn back_to_client<T>(
-    redirect_uri: &Url,
-    response_mode: ResponseMode,
-    state: Option<String>,
-    params: T,
-    templates: &Templates,
-) -> Result<Response, RouteError>
-where
-    T: Serialize,
-{
-    #[derive(Serialize)]
-    struct AllParams<'s, T> {
-        #[serde(flatten, skip_serializing_if = "Option::is_none")]
-        existing: Option<HashMap<&'s str, &'s str>>,
-
-        #[serde(skip_serializing_if = "Option::is_none")]
-        state: Option<String>,
-
-        #[serde(flatten)]
-        params: T,
-    }
-
-    #[derive(Serialize)]
-    struct ParamsWithState<T> {
-        #[serde(skip_serializing_if = "Option::is_none")]
-        state: Option<String>,
-
-        #[serde(flatten)]
-        params: T,
-    }
-
-    let mut redirect_uri = redirect_uri.clone();
-
-    match response_mode {
-        ResponseMode::Query => {
-            let existing: Option<HashMap<&str, &str>> = redirect_uri
-                .query()
-                .map(serde_urlencoded::from_str)
-                .transpose()
-                .map_err(|_e| RouteError::InvalidRedirectUri)?;
-
-            let merged = AllParams {
-                existing,
-                state,
-                params,
-            };
-
-            let new_qs = serde_urlencoded::to_string(merged)
-                .context("could not serialize redirect URI query params")?;
-
-            redirect_uri.set_query(Some(&new_qs));
-
-            Ok(Redirect::to(redirect_uri.as_str()).into_response())
-        }
-        ResponseMode::Fragment => {
-            let existing: Option<HashMap<&str, &str>> = redirect_uri
-                .fragment()
-                .map(serde_urlencoded::from_str)
-                .transpose()
-                .map_err(|_e| RouteError::InvalidRedirectUri)?;
-
-            let merged = AllParams {
-                existing,
-                state,
-                params,
-            };
-
-            let new_qs = serde_urlencoded::to_string(merged)
-                .context("could not serialize redirect URI fragment params")?;
-
-            redirect_uri.set_fragment(Some(&new_qs));
-
-            Ok(Redirect::to(redirect_uri.as_str()).into_response())
-        }
-        ResponseMode::FormPost => {
-            let merged = ParamsWithState { state, params };
-            let ctx = FormPostContext::new(redirect_uri, merged);
-            let rendered = templates
-                .render_form_post(&ctx)
-                .await
-                .context("failed to render form_post.html")?;
-            Ok(Html(rendered).into_response())
-        }
     }
 }
 
@@ -217,7 +164,7 @@ fn resolve_response_mode(
     if response_type.has_token() || response_type.has_id_token() {
         match suggested_response_mode {
             None => Ok(M::Fragment),
-            Some(M::Query) => Err(anyhow::anyhow!("invalid response mode")),
+            Some(M::Query) => Err(anyhow!("invalid response mode")),
             Some(mode) => Ok(mode),
         }
     } else {
@@ -248,59 +195,44 @@ pub(crate) async fn get(
     let client = lookup_client_by_client_id(&mut txn, &params.auth.client_id).await?;
 
     let redirect_uri = client
-        .resolve_redirect_uri(&params.auth.redirect_uri)
-        .map_err(|_e| RouteError::InvalidRedirectUri)?
+        .resolve_redirect_uri(&params.auth.redirect_uri)?
         .clone();
     let response_type = params.auth.response_type;
     let response_mode = resolve_response_mode(response_type, params.auth.response_mode)?;
+
+    let callback_destination = CallbackDestination::try_new(
+        response_mode,
+        redirect_uri.clone(),
+        params.auth.state.clone(),
+    )?;
 
     // One day, we will have try blocks
     let res: Result<Response, RouteError> = (async move {
         // Check if the request/request_uri/registration params are used. If so, reply
         // with the right error since we don't support them.
         if params.auth.request.is_some() {
-            return back_to_client(
-                &redirect_uri,
-                response_mode,
-                params.auth.state,
-                REQUEST_NOT_SUPPORTED,
-                &templates,
-            )
-            .await;
+            return Ok(callback_destination
+                .go(&templates, REQUEST_NOT_SUPPORTED)
+                .await?);
         }
 
         if params.auth.request_uri.is_some() {
-            return back_to_client(
-                &redirect_uri,
-                response_mode,
-                params.auth.state,
-                REQUEST_URI_NOT_SUPPORTED,
-                &templates,
-            )
-            .await;
+            return Ok(callback_destination
+                .go(&templates, REQUEST_URI_NOT_SUPPORTED)
+                .await?);
         }
 
         if params.auth.registration.is_some() {
-            return back_to_client(
-                &redirect_uri,
-                response_mode,
-                params.auth.state,
-                REGISTRATION_NOT_SUPPORTED,
-                &templates,
-            )
-            .await;
+            return Ok(callback_destination
+                .go(&templates, REGISTRATION_NOT_SUPPORTED)
+                .await?);
         }
 
         // Check if it is allowed to use this grant type
         if !client.grant_types.contains(&GrantType::AuthorizationCode) {
-            return back_to_client(
-                &redirect_uri,
-                response_mode,
-                params.auth.state,
-                UNAUTHORIZED_CLIENT,
-                &templates,
-            )
-            .await;
+            return Ok(callback_destination
+                .go(&templates, UNAUTHORIZED_CLIENT)
+                .await?);
         }
 
         let code: Option<AuthorizationCode> = if response_type.has_code() {
@@ -321,14 +253,7 @@ pub(crate) async fn get(
             // If the request had PKCE params but no code asked, it should get back with an
             // error
             if params.pkce.is_some() {
-                return back_to_client(
-                    &redirect_uri,
-                    response_mode,
-                    params.auth.state,
-                    INVALID_REQUEST,
-                    &templates,
-                )
-                .await;
+                return Ok(callback_destination.go(&templates, INVALID_REQUEST).await?);
             }
 
             None
@@ -373,14 +298,7 @@ pub(crate) async fn get(
             (None, Some(Prompt::None)) => {
                 // If there is no session and prompt=none was asked, go back to the client
                 txn.commit().await?;
-                Ok(back_to_client(
-                    &redirect_uri,
-                    response_mode,
-                    params.auth.state,
-                    LOGIN_REQUIRED,
-                    &templates,
-                )
-                .await?)
+                Ok(callback_destination.go(&templates, LOGIN_REQUIRED).await?)
             }
             (Some(_), Some(Prompt::Consent)) => {
                 // We're already logged in but consent was asked
@@ -516,8 +434,10 @@ async fn step(
     // request using a signed cookie
     let grant = next.fetch_authorization_grant(&mut txn).await?;
 
+    let callback_destination = CallbackDestination::try_from(&grant)?;
+
     if !matches!(grant.stage, AuthorizationGrantStage::Pending) {
-        return Err(anyhow::anyhow!("authorization grant not pending").into());
+        return Err(anyhow!("authorization grant not pending").into());
     }
 
     let current_consent =
@@ -568,19 +488,14 @@ async fn step(
 
             // Did they request an ID token?
             if grant.response_type_id_token {
-                todo!("id tokens are not implemented yet");
+                return Err(RouteError::Anyhow(anyhow!(
+                    "id tokens are not implemented yet"
+                )));
             }
 
             let params = serde_json::to_value(&params).unwrap();
 
-            back_to_client(
-                &grant.redirect_uri,
-                grant.response_mode,
-                grant.state,
-                params,
-                templates,
-            )
-            .await?
+            callback_destination.go(templates, params).await?
         }
         (true, Some(Authentication { created_at, .. })) if created_at > &grant.max_auth_time() => {
             let next: ConsentRequest = next.into();
