@@ -33,7 +33,7 @@ limitations under the License.
   <section class="flex items-center justify-center flex-1">
     <form method="POST" class="grid grid-cols-1 gap-6 w-96 m-2">
       <div class="text-center">
-        <h1 class="text-lg text-center font-medium">Log in</h1>
+        <h1 class="text-lg text-center font-medium">Sign in</h1>
         {% if next and next.kind == "continue_authorization_grant" %}
           <p>to continue to <em>{{ next.grant.client.client_name | default(value=next.grand.client.client_id) }}</em></p>
         {% else %}
