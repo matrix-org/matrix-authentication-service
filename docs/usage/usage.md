@@ -35,7 +35,7 @@ docker run --rm \
 ## Registering, logging in and out
 
 Through the interface, users are able to create an account by clicking the `Register` button on the top right (or going to [`/register`](http://localhost:8080/register).
-They can then end their session by clicking the `Log out` button and log back in.
+They can then end their session by clicking the `Sign out` button and sign back in.
 
 ## Playing around with the playground
 
