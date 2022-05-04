@@ -57,7 +57,7 @@ limitations under the License.
   {% if next and next.kind == "continue_authorization_grant" %}
     <section class="self-center my-6">
       {{ back_to_client::link(
-        text="Return to application",
+        text="Cancel",
         class=button::text_class(),
         uri=next.grant.redirect_uri,
         mode=next.grant.response_mode,
