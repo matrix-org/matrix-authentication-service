@@ -339,14 +339,14 @@ jobs:
       # For pull-requests, only read from the cache, do not try to push to the
       # cache or the image itself
       - name: Build
-        uses: docker/bake-action@v1
+        uses: docker/bake-action@v2
         if: github.event_name == 'pull_request'
         with:
           set: |
             base.cache-from=type=registry,ref=${{ env.IMAGE }}:buildcache
 
       - name: Build and push
-        uses: docker/bake-action@v1
+        uses: docker/bake-action@v2
         if: github.event_name != 'pull_request'
         with:
           set: |
