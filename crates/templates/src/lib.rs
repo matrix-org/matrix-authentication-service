@@ -277,6 +277,7 @@ register_templates! {
         "components/field.html",
         "components/back_to_client.html",
         "base.html",
+        "account-base.html",
     };
 
     /// Render the login page
