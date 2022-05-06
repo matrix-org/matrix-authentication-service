@@ -22,7 +22,7 @@ serde = { version = "1.0.137", features = ["derive"] }
 serde_with = { version = "1.13.0", features = ["hex", "chrono"] }
 serde_json = "1.0.81"
 sqlx = { version = "0.5.13", features = ["runtime-tokio-rustls", "postgres"] }
-lettre = { version = "0.10.0-rc.5", default-features = false, features = ["serde", "builder"] }
+lettre = { version = "0.10.0-rc.6", default-features = false, features = ["serde", "builder"] }
 
 rand = "0.8.5"
 rsa = "0.6.1"
@@ -32,7 +32,7 @@ chacha20poly1305 = { version = "0.10.0-pre", features = ["std"] }
 cookie = { version = "0.16.0", features = ["private", "key-expansion"] }
 data-encoding = "2.3.2"
 
-indoc = "1.0.4"
+indoc = "1.0.5"
 
 mas-jose = { path = "../jose" }
 mas-iana = { path = "../iana" }
