@@ -14,7 +14,7 @@
 
 use axum::{
     extract::{Extension, Form},
-    response::{Html, IntoResponse, Redirect, Response},
+    response::{Html, IntoResponse, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
 use lettre::{message::Mailbox, Address};
@@ -70,8 +70,7 @@ pub(crate) async fn get(
         render(templates, session, cookie_jar, &mut conn).await
     } else {
         let login = LoginRequest::default();
-        let login = login.build_uri().map_err(fancy_error(templates.clone()))?;
-        Ok((cookie_jar, Redirect::to(&login.to_string())).into_response())
+        Ok((cookie_jar, login.go()).into_response())
     }
 }
 
@@ -151,8 +150,7 @@ pub(crate) async fn post(
         session
     } else {
         let login = LoginRequest::default();
-        let login = login.build_uri().map_err(fancy_error(templates.clone()))?;
-        return Ok((cookie_jar, Redirect::to(&login.to_string())).into_response());
+        return Ok((cookie_jar, login.go()).into_response());
     };
 
     let form = cookie_jar

@@ -14,13 +14,14 @@
 
 #![allow(clippy::trait_duplication_in_bounds)]
 
+use std::borrow::Cow;
+
 use argon2::Argon2;
 use axum::{
     extract::{Extension, Form, Query},
     response::{Html, IntoResponse, Redirect, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
-use hyper::http::uri::{Parts, PathAndQuery, Uri};
 use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     fancy_error, FancyError, SessionInfoExt,
@@ -48,27 +49,24 @@ impl From<PostAuthAction> for RegisterRequest {
 }
 
 impl RegisterRequest {
-    #[allow(dead_code)]
-    pub fn build_uri(&self) -> anyhow::Result<Uri> {
-        let path_and_query = if let Some(next) = &self.post_auth_action {
-            let qs = serde_urlencoded::to_string(next)?;
-            PathAndQuery::try_from(format!("/register?{}", qs))?
+    pub fn as_link(&self) -> Cow<'static, str> {
+        if let Some(next) = &self.post_auth_action {
+            let qs = serde_urlencoded::to_string(next).unwrap();
+            Cow::Owned(format!("/register?{}", qs))
         } else {
-            PathAndQuery::from_static("/register")
-        };
-        let uri = Uri::from_parts({
-            let mut parts = Parts::default();
-            parts.path_and_query = Some(path_and_query);
-            parts
-        })?;
-        Ok(uri)
+            Cow::Borrowed("/register")
+        }
     }
 
-    fn redirect(self) -> Result<impl IntoResponse, anyhow::Error> {
+    pub fn go(&self) -> Redirect {
+        Redirect::to(&self.as_link())
+    }
+
+    fn redirect(self) -> Redirect {
         if let Some(action) = self.post_auth_action {
-            Ok(Redirect::to(&action.build_uri()?.to_string()))
+            action.redirect()
         } else {
-            Ok(Redirect::to("/"))
+            Redirect::to("/")
         }
     }
 }
@@ -100,10 +98,7 @@ pub(crate) async fn get(
         .map_err(fancy_error(templates.clone()))?;
 
     if maybe_session.is_some() {
-        let response = query
-            .redirect()
-            .map_err(fancy_error(templates.clone()))?
-            .into_response();
+        let response = query.redirect().into_response();
         Ok(response)
     } else {
         let ctx = RegisterContext::default();
@@ -117,9 +112,7 @@ pub(crate) async fn get(
             }
             None => ctx,
         };
-        let login_link = LoginRequest::from(query.post_auth_action)
-            .build_uri()
-            .map_err(fancy_error(templates.clone()))?;
+        let login_link = LoginRequest::from(query.post_auth_action).as_link();
         let ctx = ctx.with_login_link(login_link.to_string());
         let ctx = ctx.with_csrf(csrf_token.form_value());
 
@@ -162,6 +155,6 @@ pub(crate) async fn post(
     txn.commit().await.map_err(fancy_error(templates.clone()))?;
 
     let cookie_jar = cookie_jar.set_session(&session);
-    let reply = query.redirect().map_err(fancy_error(templates.clone()))?;
+    let reply = query.redirect();
     Ok((cookie_jar, reply).into_response())
 }

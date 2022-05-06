@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::borrow::Cow;
+
 use axum::{
     extract::{Extension, Form, Query},
     response::{Html, IntoResponse, Redirect, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
-use hyper::http::uri::{Parts, PathAndQuery, Uri};
 use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     fancy_error, FancyError, SessionInfoExt,
@@ -31,7 +32,7 @@ use sqlx::PgPool;
 
 use super::{shared::PostAuthAction, RegisterRequest};
 
-#[derive(Deserialize, Default)]
+#[derive(Deserialize, Default, Debug)]
 pub(crate) struct LoginRequest {
     #[serde(flatten)]
     post_auth_action: Option<PostAuthAction>,
@@ -50,29 +51,25 @@ impl From<Option<PostAuthAction>> for LoginRequest {
 }
 
 impl LoginRequest {
-    pub fn build_uri(&self) -> anyhow::Result<Uri> {
-        let path_and_query = if let Some(next) = &self.post_auth_action {
-            let qs = serde_urlencoded::to_string(next)?;
-            PathAndQuery::try_from(format!("/login?{}", qs))?
+    pub fn as_link(&self) -> Cow<'static, str> {
+        if let Some(next) = &self.post_auth_action {
+            let qs = serde_urlencoded::to_string(next).unwrap();
+            Cow::Owned(format!("/login?{}", qs))
         } else {
-            PathAndQuery::from_static("/login")
-        };
-        let uri = Uri::from_parts({
-            let mut parts = Parts::default();
-            parts.path_and_query = Some(path_and_query);
-            parts
-        })?;
-        Ok(uri)
+            Cow::Borrowed("/login")
+        }
     }
 
-    fn redirect(self) -> Result<impl IntoResponse, anyhow::Error> {
-        let uri = if let Some(action) = self.post_auth_action {
-            action.build_uri()?
-        } else {
-            Uri::from_static("/")
-        };
+    pub fn go(&self) -> Redirect {
+        Redirect::to(&self.as_link())
+    }
 
-        Ok(Redirect::to(&uri.to_string()))
+    fn redirect(self) -> Redirect {
+        if let Some(action) = self.post_auth_action {
+            action.redirect()
+        } else {
+            Redirect::to("/")
+        }
     }
 }
 
@@ -82,6 +79,7 @@ pub(crate) struct LoginForm {
     password: String,
 }
 
+#[tracing::instrument(skip(templates, pool, cookie_jar))]
 pub(crate) async fn get(
     Extension(templates): Extension<Templates>,
     Extension(pool): Extension<PgPool>,
@@ -102,18 +100,13 @@ pub(crate) async fn get(
         .map_err(fancy_error(templates.clone()))?;
 
     if maybe_session.is_some() {
-        let response = query
-            .redirect()
-            .map_err(fancy_error(templates.clone()))?
-            .into_response();
+        let response = query.redirect().into_response();
         Ok(response)
     } else {
         let ctx = LoginContext::default();
         let ctx = match query.post_auth_action {
             Some(next) => {
-                let register_link = RegisterRequest::from(next.clone())
-                    .build_uri()
-                    .map_err(fancy_error(templates.clone()))?;
+                let register_link = RegisterRequest::from(next.clone()).as_link();
                 let next = next
                     .load_context(&mut conn)
                     .await
@@ -157,7 +150,7 @@ pub(crate) async fn post(
     match login(&mut conn, &form.username, form.password).await {
         Ok(session_info) => {
             let cookie_jar = cookie_jar.set_session(&session_info);
-            let reply = query.redirect().map_err(fancy_error(templates.clone()))?;
+            let reply = query.redirect();
             Ok((cookie_jar, reply).into_response())
         }
         Err(e) => {

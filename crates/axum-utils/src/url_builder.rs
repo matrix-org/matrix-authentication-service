@@ -46,7 +46,7 @@ impl UrlBuilder {
     /// OAuth 2.0 authorization endpoint
     #[must_use]
     pub fn oauth_authorization_endpoint(&self) -> Url {
-        self.base.join("oauth2/authorize").expect("build URL")
+        self.base.join("authorize").expect("build URL")
     }
 
     /// OAuth 2.0 token endpoint

@@ -21,5 +21,3 @@ pub mod registration;
 pub mod token;
 pub mod userinfo;
 pub mod webfinger;
-
-pub(crate) use authorization::ContinueAuthorizationGrant;

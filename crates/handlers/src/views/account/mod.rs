@@ -17,7 +17,7 @@ pub mod password;
 
 use axum::{
     extract::Extension,
-    response::{Html, IntoResponse, Redirect, Response},
+    response::{Html, IntoResponse, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
 use mas_axum_utils::{csrf::CsrfExt, fancy_error, FancyError, SessionInfoExt};
@@ -50,8 +50,7 @@ pub(crate) async fn get(
         session
     } else {
         let login = LoginRequest::default();
-        let login = login.build_uri().map_err(fancy_error(templates.clone()))?;
-        return Ok((cookie_jar, Redirect::to(&login.to_string())).into_response());
+        return Ok((cookie_jar, login.go()).into_response());
     };
 
     let active_sessions = count_active_sessions(&mut conn, &session.user)

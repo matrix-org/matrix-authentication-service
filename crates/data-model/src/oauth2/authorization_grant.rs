@@ -119,6 +119,14 @@ impl<T: StorageBackend> AuthorizationGrantStage<T> {
             _ => Err(InvalidTransitionError),
         }
     }
+
+    /// Returns `true` if the authorization grant stage is [`Pending`].
+    ///
+    /// [`Pending`]: AuthorizationGrantStage::Pending
+    #[must_use]
+    pub fn is_pending(&self) -> bool {
+        matches!(self, Self::Pending)
+    }
 }
 
 impl<S: StorageBackendMarker> From<AuthorizationGrantStage<S>> for AuthorizationGrantStage<()> {
@@ -166,6 +174,7 @@ pub struct AuthorizationGrant<T: StorageBackend> {
     pub response_type_token: bool,
     pub response_type_id_token: bool,
     pub created_at: DateTime<Utc>,
+    pub requires_consent: bool,
 }
 
 impl<S: StorageBackendMarker> From<AuthorizationGrant<S>> for AuthorizationGrant<()> {
@@ -185,6 +194,7 @@ impl<S: StorageBackendMarker> From<AuthorizationGrant<S>> for AuthorizationGrant
             response_type_token: g.response_type_token,
             response_type_id_token: g.response_type_id_token,
             created_at: g.created_at,
+            requires_consent: g.requires_consent,
         }
     }
 }

@@ -12,15 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::borrow::Cow;
+
 use axum::{
     extract::{Extension, Form, Query},
     response::{Html, IntoResponse, Redirect, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
-use hyper::{
-    http::uri::{Parts, PathAndQuery},
-    Uri,
-};
 use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     fancy_error, FancyError, SessionInfoExt,
@@ -48,26 +46,24 @@ impl From<PostAuthAction> for ReauthRequest {
 }
 
 impl ReauthRequest {
-    pub fn build_uri(&self) -> anyhow::Result<Uri> {
-        let path_and_query = if let Some(next) = &self.post_auth_action {
-            let qs = serde_urlencoded::to_string(next)?;
-            PathAndQuery::try_from(format!("/reauth?{}", qs))?
+    pub fn as_link(&self) -> Cow<'static, str> {
+        if let Some(next) = &self.post_auth_action {
+            let qs = serde_urlencoded::to_string(next).unwrap();
+            Cow::Owned(format!("/reauth?{}", qs))
         } else {
-            PathAndQuery::from_static("/reauth")
-        };
-        let uri = Uri::from_parts({
-            let mut parts = Parts::default();
-            parts.path_and_query = Some(path_and_query);
-            parts
-        })?;
-        Ok(uri)
+            Cow::Borrowed("/reauth")
+        }
     }
 
-    fn redirect(self) -> Result<impl IntoResponse, anyhow::Error> {
+    pub fn go(&self) -> Redirect {
+        Redirect::to(&self.as_link())
+    }
+
+    fn redirect(self) -> Redirect {
         if let Some(action) = self.post_auth_action {
-            Ok(Redirect::to(&action.build_uri()?.to_string()))
+            action.redirect()
         } else {
-            Ok(Redirect::to("/"))
+            Redirect::to("/")
         }
     }
 }
@@ -102,8 +98,7 @@ pub(crate) async fn get(
         // If there is no session, redirect to the login screen, keeping the
         // PostAuthAction
         let login: LoginRequest = query.post_auth_action.into();
-        let login = login.build_uri().map_err(fancy_error(templates.clone()))?;
-        return Ok((cookie_jar, Redirect::to(&login.to_string())).into_response());
+        return Ok((cookie_jar, login.go()).into_response());
     };
 
     let ctx = ReauthContext::default();
@@ -153,8 +148,7 @@ pub(crate) async fn post(
         // If there is no session, redirect to the login screen, keeping the
         // PostAuthAction
         let login: LoginRequest = query.post_auth_action.into();
-        let login = login.build_uri().map_err(fancy_error(templates.clone()))?;
-        return Ok((cookie_jar, Redirect::to(&login.to_string())).into_response());
+        return Ok((cookie_jar, login.go()).into_response());
     };
 
     // TODO: recover from errors here
@@ -164,6 +158,6 @@ pub(crate) async fn post(
     let cookie_jar = cookie_jar.set_session(&session);
     txn.commit().await.map_err(fancy_error(templates.clone()))?;
 
-    let redirection = query.redirect().map_err(fancy_error(templates.clone()))?;
+    let redirection = query.redirect();
     Ok((cookie_jar, redirection).into_response())
 }

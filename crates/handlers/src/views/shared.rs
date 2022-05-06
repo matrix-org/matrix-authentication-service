@@ -12,23 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use hyper::Uri;
+use axum::response::Redirect;
+use mas_data_model::AuthorizationGrant;
+use mas_storage::{oauth2::authorization_grant::get_grant_by_id, PostgresqlBackend};
 use mas_templates::PostAuthContext;
 use serde::{Deserialize, Serialize};
 use sqlx::PgConnection;
 
-use super::super::oauth2::ContinueAuthorizationGrant;
-
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 #[serde(rename_all = "snake_case", tag = "next")]
 pub(crate) enum PostAuthAction {
-    ContinueAuthorizationGrant(ContinueAuthorizationGrant),
+    ContinueAuthorizationGrant {
+        #[serde(deserialize_with = "serde_with::rust::display_fromstr::deserialize")]
+        data: i64,
+    },
 }
 
 impl PostAuthAction {
-    pub fn build_uri(&self) -> anyhow::Result<Uri> {
+    pub fn continue_grant(grant: &AuthorizationGrant<PostgresqlBackend>) -> Self {
+        Self::ContinueAuthorizationGrant { data: grant.data }
+    }
+
+    pub fn redirect(&self) -> Redirect {
         match self {
-            PostAuthAction::ContinueAuthorizationGrant(c) => c.build_uri(),
+            PostAuthAction::ContinueAuthorizationGrant { data } => {
+                let url = format!("/authorize/{}", data);
+                Redirect::to(&url)
+            }
         }
     }
 
@@ -37,8 +47,8 @@ impl PostAuthAction {
         conn: &mut PgConnection,
     ) -> anyhow::Result<PostAuthContext> {
         match self {
-            Self::ContinueAuthorizationGrant(c) => {
-                let grant = c.fetch_authorization_grant(conn).await?;
+            Self::ContinueAuthorizationGrant { data } => {
+                let grant = get_grant_by_id(conn, *data).await?;
                 let grant = grant.into();
                 Ok(PostAuthContext::ContinueAuthorizationGrant { grant })
             }
@@ -46,8 +56,18 @@ impl PostAuthAction {
     }
 }
 
-impl From<ContinueAuthorizationGrant> for PostAuthAction {
-    fn from(g: ContinueAuthorizationGrant) -> Self {
-        Self::ContinueAuthorizationGrant(g)
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_post_auth_action() {
+        let action: PostAuthAction =
+            serde_urlencoded::from_str("next=continue_authorization_grant&data=123").unwrap();
+
+        assert!(matches!(
+            action,
+            PostAuthAction::ContinueAuthorizationGrant { data: 123 }
+        ));
     }
 }

@@ -205,10 +205,6 @@ impl Templates {
             bail!("Builtin templates are not included in dev binaries")
         }
 
-        tokio::fs::create_dir_all(&path)
-            .await
-            .context("could not create destination folder")?;
-
         let templates = TEMPLATES.into_iter().chain(EXTRA_TEMPLATES);
 
         let mut options = OpenOptions::new();
@@ -223,6 +219,12 @@ impl Templates {
         for (name, source) in templates {
             if let Some(source) = source {
                 let path = path.join(name);
+
+                if let Some(parent) = path.parent() {
+                    tokio::fs::create_dir_all(&parent)
+                        .await
+                        .context("could not create destination")?;
+                }
 
                 let mut file = match options.open(&path).await {
                     Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {

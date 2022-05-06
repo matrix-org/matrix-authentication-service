@@ -24,6 +24,7 @@ use serde::Serialize;
 use thiserror::Error;
 use url::Url;
 
+#[derive(Debug, Clone)]
 enum CallbackDestinationMode {
     Query {
         existing_params: HashMap<String, String>,
@@ -32,6 +33,7 @@ enum CallbackDestinationMode {
     FormPost,
 }
 
+#[derive(Debug, Clone)]
 pub struct CallbackDestination {
     mode: CallbackDestinationMode,
     safe_redirect_uri: Url,

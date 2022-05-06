@@ -15,7 +15,7 @@
 use argon2::Argon2;
 use axum::{
     extract::{Extension, Form},
-    response::{Html, IntoResponse, Redirect, Response},
+    response::{Html, IntoResponse, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
 use mas_axum_utils::{
@@ -62,8 +62,7 @@ pub(crate) async fn get(
         render(templates, session, cookie_jar).await
     } else {
         let login = LoginRequest::default();
-        let login = login.build_uri().map_err(fancy_error(templates.clone()))?;
-        Ok((cookie_jar, Redirect::to(&login.to_string())).into_response())
+        Ok((cookie_jar, login.go()).into_response())
     }
 }
 
@@ -109,8 +108,7 @@ pub(crate) async fn post(
         session
     } else {
         let login = LoginRequest::default();
-        let login = login.build_uri().map_err(fancy_error(templates.clone()))?;
-        return Ok((cookie_jar, Redirect::to(&login.to_string())).into_response());
+        return Ok((cookie_jar, login.go()).into_response());
     };
 
     authenticate_session(&mut txn, &mut session, form.current_password)

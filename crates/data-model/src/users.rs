@@ -89,6 +89,16 @@ impl<S: StorageBackendMarker> From<BrowserSession<S>> for BrowserSession<()> {
     }
 }
 
+impl<S: StorageBackend> BrowserSession<S> {
+    pub fn was_authenticated_after(&self, after: DateTime<Utc>) -> bool {
+        if let Some(auth) = &self.last_authentication {
+            auth.created_at > after
+        } else {
+            false
+        }
+    }
+}
+
 impl<T: StorageBackend> BrowserSession<T>
 where
     T::BrowserSessionData: Default,

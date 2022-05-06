@@ -119,13 +119,13 @@ where
             "/account/emails",
             get(self::views::account::emails::get).post(self::views::account::emails::post),
         )
-        .route("/oauth2/authorize", get(self::oauth2::authorization::get))
+        .route("/authorize", get(self::oauth2::authorization::get))
         .route(
-            "/oauth2/authorize/step",
-            get(self::oauth2::authorization::step_get),
+            "/authorize/:grant_id",
+            get(self::oauth2::authorization::complete::get),
         )
         .route(
-            "/consent",
+            "/consent/:grant_id",
             get(self::oauth2::consent::get).post(self::oauth2::consent::post),
         )
         .merge(api_router)

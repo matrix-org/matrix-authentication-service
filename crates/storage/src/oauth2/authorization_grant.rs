@@ -44,6 +44,7 @@ pub async fn new_authorization_grant(
     response_mode: ResponseMode,
     response_type_token: bool,
     response_type_id_token: bool,
+    requires_consent: bool,
 ) -> anyhow::Result<AuthorizationGrant<PostgresqlBackend>> {
     let code_challenge = code
         .as_ref()
@@ -61,9 +62,9 @@ pub async fn new_authorization_grant(
                 (oauth2_client_id, redirect_uri, scope, state, nonce, max_age,
                  acr_values, response_mode, code_challenge, code_challenge_method,
                  response_type_code, response_type_token, response_type_id_token,
-                 code)
+                 code, requires_consent)
             VALUES
-                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
             RETURNING id, created_at
         "#,
         &client.data,
@@ -81,6 +82,7 @@ pub async fn new_authorization_grant(
         response_type_token,
         response_type_id_token,
         code_str,
+        requires_consent,
     )
     .fetch_one(executor)
     .await
@@ -101,9 +103,11 @@ pub async fn new_authorization_grant(
         created_at: res.created_at,
         response_type_token,
         response_type_id_token,
+        requires_consent,
     })
 }
 
+#[allow(clippy::struct_excessive_bools)]
 struct GrantLookup {
     grant_id: i64,
     grant_created_at: DateTime<Utc>,
@@ -123,6 +127,7 @@ struct GrantLookup {
     grant_code: Option<String>,
     grant_code_challenge: Option<String>,
     grant_code_challenge_method: Option<String>,
+    grant_requires_consent: bool,
     oauth2_client_id: i64,
     session_id: Option<i64>,
     user_session_id: Option<i64>,
@@ -315,6 +320,7 @@ impl GrantLookup {
             created_at: self.grant_created_at,
             response_type_token: self.grant_response_type_token,
             response_type_id_token: self.grant_response_type_id_token,
+            requires_consent: self.grant_requires_consent,
         })
     }
 }
@@ -347,6 +353,7 @@ pub async fn get_grant_by_id(
                 og.response_type_id_token AS grant_response_type_id_token,
                 og.code_challenge         AS grant_code_challenge,
                 og.code_challenge_method  AS grant_code_challenge_method,
+                og.requires_consent       AS grant_requires_consent,
                 os.id              AS "session_id?",
                 us.id              AS "user_session_id?",
                 us.created_at      AS "user_session_created_at?",
@@ -415,6 +422,7 @@ pub async fn lookup_grant_by_code(
                 og.response_type_id_token AS grant_response_type_id_token,
                 og.code_challenge         AS grant_code_challenge,
                 og.code_challenge_method  AS grant_code_challenge_method,
+                og.requires_consent       AS grant_requires_consent,
                 os.id              AS "session_id?",
                 us.id              AS "user_session_id?",
                 us.created_at      AS "user_session_created_at?",
@@ -511,9 +519,31 @@ pub async fn fulfill_grant(
     )
     .fetch_one(executor)
     .await
-    .context("could not makr grant as fulfilled")?;
+    .context("could not mark grant as fulfilled")?;
 
     grant.stage = grant.stage.fulfill(fulfilled_at, session)?;
+
+    Ok(grant)
+}
+
+pub async fn give_consent_to_grant(
+    executor: impl PgExecutor<'_>,
+    mut grant: AuthorizationGrant<PostgresqlBackend>,
+) -> Result<AuthorizationGrant<PostgresqlBackend>, sqlx::Error> {
+    sqlx::query!(
+        r#"
+            UPDATE oauth2_authorization_grants AS og
+            SET
+                requires_consent = 'f'
+            WHERE
+                og.id = $1
+        "#,
+        grant.data,
+    )
+    .execute(executor)
+    .await?;
+
+    grant.requires_consent = false;
 
     Ok(grant)
 }
