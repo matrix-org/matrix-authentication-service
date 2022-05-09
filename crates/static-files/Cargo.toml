@@ -16,5 +16,5 @@ http-body = "0.4.4"
 mime_guess = "2.0.4"
 rust-embed = "6.4.0"
 tower = "0.4.12"
-tower-http = { version = "0.3.2", features = ["fs"] }
+tower-http = { version = "0.3.3", features = ["fs"] }
 tracing = "0.1.34"
