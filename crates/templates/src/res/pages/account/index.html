@@ -31,7 +31,7 @@ limitations under the License.
         <div class="font-bold">Primary email</div>
         <div>{{ current_session.user.primary_email.email }}</div>
       {% endif %}
-      {{ button::link_ghost(text="Change password", href="/account/password", class="col-span-2 place-self-end") }}
+      {{ button::link_outline(text="Change password", href="/account/password", class="col-span-2 place-self-end") }}
     </div>
     <div class="rounded border-2 border-grey-50 dark:border-grey-450 p-4 grid gap-4 xl:grid-cols-2 grid-cols-1 place-content-start">
       <h2 class="text-xl font-bold xl:col-span-2">Current session</h2>
@@ -45,7 +45,7 @@ limitations under the License.
           Never
         {% endif %}
       </div>
-      {{ button::link_ghost(text="Revalidate", href="/reauth", class="col-span-2 place-self-end") }}
+      {{ button::link_outline(text="Revalidate", href="/reauth", class="col-span-2 place-self-end") }}
     </div>
     <div class="rounded border-2 border-grey-50 dark:border-grey-450 p-4 grid gap-4 xl:grid-cols-2 grid-cols-1 place-content-start">
       <h2 class="text-xl font-bold xl:col-span-2">Emails</h2>
@@ -53,7 +53,7 @@ limitations under the License.
         <div class="font-bold">{{ email.email }}</div>
         <div>{% if email.confirmed_at %}Confirmed{% else %}Unconfirmed{% endif %}</div>
       {% endfor %}
-      {{ button::link_ghost(text="Manage", href="/account/emails", class="col-span-2 place-self-end") }}
+      {{ button::link_outline(text="Manage", href="/account/emails", class="col-span-2 place-self-end") }}
     </div>
   </section>
 {% endblock content %}
