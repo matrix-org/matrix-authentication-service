@@ -26,7 +26,7 @@ limitations under the License.
   {{ self::common_class() }} border-accent bg-accent text-white hover:opacity-75
 {%- endmacro %}
 
-{% macro ghost_class() -%}
+{% macro outline_class() -%}
   {{ self::common_class() }} border-accent hover:bg-accent/10 text-accent
 {%- endmacro %}
 
@@ -42,8 +42,8 @@ limitations under the License.
   <a class="{{ self::text_class() }} {{ class }}" href="{{ href }}">{{ text }}</a>
 {% endmacro %}
 
-{% macro link_ghost(text, href="#", class="") %}
-  <a class="{{ self::ghost_class() }} {{ class }}" href="{{ href }}">{{ text }}</a>
+{% macro link_outline(text, href="#", class="") %}
+  <a class="{{ self::outline_class() }} {{ class }}" href="{{ href }}">{{ text }}</a>
 {% endmacro %}
 
 {% macro button(text, name="", type="submit", class="", value="") %}
@@ -54,6 +54,6 @@ limitations under the License.
   <button name="{{ name }}" value="{{ value }}" type="{{ type }}" class="{{ self::text_class() }} {{ class }}">{{ text }}</button>
 {% endmacro %}
 
-{% macro button_ghost(text, name="", type="submit", class="", value="") %}
-  <button name="{{ name }}" value="{{ value }}" type="{{ type }}" class="{{ self::ghost_class() }} {{ class }}">{{ text }}</button>
+{% macro button_outline(text, name="", type="submit", class="", value="") %}
+  <button name="{{ name }}" value="{{ value }}" type="{{ type }}" class="{{ self::outline_class() }} {{ class }}">{{ text }}</button>
 {% endmacro %}
