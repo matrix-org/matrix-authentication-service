@@ -14,10 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 #}
 
-{% extends "account-base.html" %}
+{% extends "base.html" %}
 
 {% block content %}
-  {{ super() }}
+  {{ navbar::top() }}
   <section class="flex-1 flex flex-col items-center justify-center">
     <div>
       <h1 class="my-2 text-5xl font-extrabold leading-tight">Matrix Authentication Service</h1>

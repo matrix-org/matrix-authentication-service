@@ -278,8 +278,8 @@ register_templates! {
         "components/button.html",
         "components/field.html",
         "components/back_to_client.html",
+        "components/navbar.html",
         "base.html",
-        "account-base.html",
     };
 
     /// Render the login page
