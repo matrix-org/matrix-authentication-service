@@ -1,5 +1,5 @@
 {#
-Copyright 2021 The Matrix.org Foundation C.I.C.
+Copyright 2022 The Matrix.org Foundation C.I.C.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,15 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 #}
 
-{% extends "base.html" %}
+{% macro top() %}
+  <nav class="container mx-auto py-2 flex-initial flex items-center px-2" role="navigation" aria-label="main navigation">
+    <div class="flex-1"></div>
 
-{% block content %}
-<nav class="container mx-auto py-2 flex-initial flex items-center px-2" role="navigation" aria-label="main navigation">
-  {% block navbar_start %}{% endblock navbar_start %}
-
-  <div class="flex-1"></div>
-
-  {% block navbar_end %}
     <div class="grid grid-flow-col auto-cols-max gap-4 place-items-center">
       {% if current_session %}
         <div class="text-grey-200 dark:text-grey-250 mx-2">
@@ -40,6 +35,5 @@ limitations under the License.
         {{ button::link_ghost(text="Create an account", href="/register") }}
       {% endif %}
     </div>
-  {% endblock navbar_end %}
-</nav>
-{% endblock content %}
+  </nav>
+{% endmacro top %}
