@@ -13,7 +13,7 @@ chrono = { version = "0.4.19", features = ["serde"] }
 crypto-mac = { version = "0.11.1", features = ["std"] }
 digest = "0.10.3"
 ecdsa = { version = "0.13.4", features = ["sign", "verify", "pem", "pkcs8"] }
-elliptic-curve = { version = "0.11.12", features = ["ecdh", "pem"] }
+elliptic-curve = { version = "0.12.0", features = ["ecdh", "pem"] }
 futures-util = "0.3.21"
 hmac = "0.12.1"
 http = "0.2.7"
