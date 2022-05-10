@@ -12,23 +12,23 @@ base64ct = { version = "1.5.0", features = ["std"] }
 chrono = { version = "0.4.19", features = ["serde"] }
 crypto-mac = { version = "0.11.1", features = ["std"] }
 digest = "0.10.3"
-ecdsa = { version = "0.13.4", features = ["sign", "verify", "pem", "pkcs8"] }
-elliptic-curve = { version = "0.11.12", features = ["ecdh", "pem"] }
+ecdsa = { version = "0.14.1", features = ["sign", "verify", "pem", "pkcs8"] }
+elliptic-curve = { version = "0.12.0", features = ["ecdh", "pem"] }
 futures-util = "0.3.21"
 hmac = "0.12.1"
 http = "0.2.7"
-p256 = { version = "0.10.1", features = ["ecdsa", "pem", "pkcs8"] }
-pkcs1 = { version = "0.3.3", features = ["pem", "pkcs8"] }
-pkcs8 = { version = "0.8.0", features = ["pem"] }
+p256 = { version = "0.11.0", features = ["ecdsa", "pem", "pkcs8"] }
+pkcs1 = { version = "0.4.0", features = ["pem", "pkcs8"] }
+pkcs8 = { version = "0.9.0", features = ["pem", "std"] }
 rand = "0.8.5"
-rsa = "0.6.1"
+rsa = { git = "https://github.com/sandhose/RSA.git", branch = "bump-pkcs" }
 schemars = "0.8.8"
-sec1 = "0.2.1"
+sec1 = "0.3.0"
 serde = { version = "1.0.137", features = ["derive"] }
 serde_json = "1.0.81"
 serde_with = { version = "1.13.0", features = ["base64"] }
 sha2 = "0.10.2"
-signature = "1.4.0"
+signature = "1.5.0"
 thiserror = "1.0.31"
 tokio = { version = "1.18.2", features = ["macros", "rt", "sync"] }
 tower = { version = "0.4.12", features = ["util"] }
