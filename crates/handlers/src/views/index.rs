@@ -17,7 +17,7 @@ use axum::{
     response::{Html, IntoResponse},
 };
 use axum_extra::extract::PrivateCookieJar;
-use mas_axum_utils::{csrf::CsrfExt, fancy_error, FancyError, SessionInfoExt};
+use mas_axum_utils::{csrf::CsrfExt, FancyError, SessionInfoExt};
 use mas_config::Encrypter;
 use mas_router::UrlBuilder;
 use mas_templates::{IndexContext, TemplateContext, Templates};
@@ -29,26 +29,17 @@ pub async fn get(
     Extension(pool): Extension<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<impl IntoResponse, FancyError> {
-    let mut conn = pool
-        .acquire()
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    let mut conn = pool.acquire().await?;
 
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token();
     let (session_info, cookie_jar) = cookie_jar.session_info();
-    let session = session_info
-        .load_session(&mut conn)
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    let session = session_info.load_session(&mut conn).await?;
 
     let ctx = IndexContext::new(url_builder.oidc_discovery())
         .maybe_with_session(session)
         .with_csrf(csrf_token.form_value());
 
-    let content = templates
-        .render_index(&ctx)
-        .await
-        .map_err(fancy_error(templates))?;
+    let content = templates.render_index(&ctx).await?;
 
     Ok((cookie_jar, Html(content)))
 }

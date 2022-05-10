@@ -22,7 +22,7 @@ use axum::{
 use axum_extra::extract::PrivateCookieJar;
 use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
-    fancy_error, FancyError, SessionInfoExt,
+    FancyError, SessionInfoExt,
 };
 use mas_config::Encrypter;
 use mas_router::Route;
@@ -46,28 +46,19 @@ pub(crate) async fn get(
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
-    let mut conn = pool
-        .acquire()
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    let mut conn = pool.acquire().await?;
 
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token();
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info
-        .load_session(&mut conn)
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    let maybe_session = session_info.load_session(&mut conn).await?;
 
     if maybe_session.is_some() {
         let reply = query.go_next();
         Ok((cookie_jar, reply).into_response())
     } else {
         let ctx = RegisterContext::default();
-        let next = query
-            .load_context(&mut conn)
-            .await
-            .map_err(fancy_error(templates.clone()))?;
+        let next = query.load_context(&mut conn).await?;
         let ctx = if let Some(next) = next {
             ctx.with_post_action(next)
         } else {
@@ -77,43 +68,33 @@ pub(crate) async fn get(
         let ctx = ctx.with_login_link(login_link.to_string());
         let ctx = ctx.with_csrf(csrf_token.form_value());
 
-        let content = templates
-            .render_register(&ctx)
-            .await
-            .map_err(fancy_error(templates.clone()))?;
+        let content = templates.render_register(&ctx).await?;
 
         Ok((cookie_jar, Html(content)).into_response())
     }
 }
 
 pub(crate) async fn post(
-    Extension(templates): Extension<Templates>,
     Extension(pool): Extension<PgPool>,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<RegisterForm>>,
 ) -> Result<Response, FancyError> {
     // TODO: display nice form errors
-    let mut txn = pool.begin().await.map_err(fancy_error(templates.clone()))?;
+    let mut txn = pool.begin().await?;
 
-    let form = cookie_jar
-        .verify_form(form)
-        .map_err(fancy_error(templates.clone()))?;
+    let form = cookie_jar.verify_form(form)?;
 
     if form.password != form.password_confirm {
-        return Err(anyhow::anyhow!("password mismatch")).map_err(fancy_error(templates.clone()));
+        return Err(anyhow::anyhow!("password mismatch").into());
     }
 
     let pfh = Argon2::default();
-    let user = register_user(&mut txn, pfh, &form.username, &form.password)
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    let user = register_user(&mut txn, pfh, &form.username, &form.password).await?;
 
-    let session = start_session(&mut txn, user)
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    let session = start_session(&mut txn, user).await?;
 
-    txn.commit().await.map_err(fancy_error(templates.clone()))?;
+    txn.commit().await?;
 
     let cookie_jar = cookie_jar.set_session(&session);
     let reply = query.go_next();

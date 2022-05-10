@@ -19,40 +19,31 @@ use axum::{
 use axum_extra::extract::PrivateCookieJar;
 use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
-    fancy_error, FancyError, SessionInfoExt,
+    FancyError, SessionInfoExt,
 };
 use mas_config::Encrypter;
 use mas_storage::user::end_session;
-use mas_templates::Templates;
 use sqlx::PgPool;
 
 pub(crate) async fn post(
-    Extension(templates): Extension<Templates>,
     Extension(pool): Extension<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<()>>,
 ) -> Result<impl IntoResponse, FancyError> {
-    let mut txn = pool.begin().await.map_err(fancy_error(templates.clone()))?;
+    let mut txn = pool.begin().await?;
 
-    cookie_jar
-        .verify_form(form)
-        .map_err(fancy_error(templates.clone()))?;
+    cookie_jar.verify_form(form)?;
 
     let (session_info, mut cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info
-        .load_session(&mut txn)
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    let maybe_session = session_info.load_session(&mut txn).await?;
 
     if let Some(session) = maybe_session {
-        end_session(&mut txn, &session)
-            .await
-            .map_err(fancy_error(templates.clone()))?;
+        end_session(&mut txn, &session).await?;
         cookie_jar = cookie_jar.update_session_info(&session_info.mark_session_ended());
     }
 
-    txn.commit().await.map_err(fancy_error(templates))?;
+    txn.commit().await?;
 
     Ok((cookie_jar, Redirect::to("/login")))
 }

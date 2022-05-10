@@ -555,7 +555,7 @@ impl<T> FormPostContext<T> {
 }
 
 /// Context used by the `error.html` template
-#[derive(Default, Serialize)]
+#[derive(Default, Serialize, Debug, Clone)]
 pub struct ErrorContext {
     code: Option<&'static str>,
     description: Option<String>,

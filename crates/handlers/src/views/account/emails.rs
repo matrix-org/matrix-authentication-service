@@ -20,7 +20,7 @@ use axum_extra::extract::PrivateCookieJar;
 use lettre::{message::Mailbox, Address};
 use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
-    fancy_error, FancyError, SessionInfoExt,
+    FancyError, SessionInfoExt,
 };
 use mas_config::Encrypter;
 use mas_data_model::{BrowserSession, User, UserEmail};
@@ -53,17 +53,11 @@ pub(crate) async fn get(
     Extension(pool): Extension<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
-    let mut conn = pool
-        .acquire()
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    let mut conn = pool.acquire().await?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info
-        .load_session(&mut conn)
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    let maybe_session = session_info.load_session(&mut conn).await?;
 
     if let Some(session) = maybe_session {
         render(templates, session, cookie_jar, &mut conn).await
@@ -81,18 +75,13 @@ async fn render(
 ) -> Result<Response, FancyError> {
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token();
 
-    let emails = get_user_emails(executor, &session.user)
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    let emails = get_user_emails(executor, &session.user).await?;
 
     let ctx = AccountEmailsContext::new(emails)
         .with_session(session)
         .with_csrf(csrf_token.form_value());
 
-    let content = templates
-        .render_account_emails(&ctx)
-        .await
-        .map_err(fancy_error(templates))?;
+    let content = templates.render_account_emails(&ctx).await?;
 
     Ok((cookie_jar, Html(content)).into_response())
 }
@@ -136,14 +125,11 @@ pub(crate) async fn post(
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<ManagementForm>>,
 ) -> Result<Response, FancyError> {
-    let mut txn = pool.begin().await.map_err(fancy_error(templates.clone()))?;
+    let mut txn = pool.begin().await?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info
-        .load_session(&mut txn)
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    let maybe_session = session_info.load_session(&mut txn).await?;
 
     let mut session = if let Some(session) = maybe_session {
         session
@@ -152,55 +138,39 @@ pub(crate) async fn post(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    let form = cookie_jar
-        .verify_form(form)
-        .map_err(fancy_error(templates.clone()))?;
+    let form = cookie_jar.verify_form(form)?;
 
     match form {
         ManagementForm::Add { email } => {
-            let user_email = add_user_email(&mut txn, &session.user, email)
-                .await
-                .map_err(fancy_error(templates.clone()))?;
+            let user_email = add_user_email(&mut txn, &session.user, email).await?;
             start_email_verification(&mailer, &url_builder, &mut txn, &session.user, &user_email)
-                .await
-                .map_err(fancy_error(templates.clone()))?;
+                .await?;
         }
         ManagementForm::Remove { data } => {
-            let id = data.parse().map_err(fancy_error(templates.clone()))?;
+            let id = data.parse()?;
 
-            let email = get_user_email(&mut txn, &session.user, id)
-                .await
-                .map_err(fancy_error(templates.clone()))?;
-            remove_user_email(&mut txn, email)
-                .await
-                .map_err(fancy_error(templates.clone()))?;
+            let email = get_user_email(&mut txn, &session.user, id).await?;
+            remove_user_email(&mut txn, email).await?;
         }
         ManagementForm::ResendConfirmation { data } => {
-            let id = data.parse().map_err(fancy_error(templates.clone()))?;
+            let id = data.parse()?;
 
-            let user_email = get_user_email(&mut txn, &session.user, id)
-                .await
-                .map_err(fancy_error(templates.clone()))?;
+            let user_email = get_user_email(&mut txn, &session.user, id).await?;
 
             start_email_verification(&mailer, &url_builder, &mut txn, &session.user, &user_email)
-                .await
-                .map_err(fancy_error(templates.clone()))?;
+                .await?;
         }
         ManagementForm::SetPrimary { data } => {
-            let id = data.parse().map_err(fancy_error(templates.clone()))?;
-            let email = get_user_email(&mut txn, &session.user, id)
-                .await
-                .map_err(fancy_error(templates.clone()))?;
-            set_user_email_as_primary(&mut txn, &email)
-                .await
-                .map_err(fancy_error(templates.clone()))?;
+            let id = data.parse()?;
+            let email = get_user_email(&mut txn, &session.user, id).await?;
+            set_user_email_as_primary(&mut txn, &email).await?;
             session.user.primary_email = Some(email);
         }
     };
 
     let reply = render(templates.clone(), session, cookie_jar, &mut txn).await?;
 
-    txn.commit().await.map_err(fancy_error(templates.clone()))?;
+    txn.commit().await?;
 
     Ok(reply)
 }

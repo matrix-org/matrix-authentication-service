@@ -18,7 +18,7 @@ use axum::{
 };
 use axum_extra::extract::PrivateCookieJar;
 use chrono::Duration;
-use mas_axum_utils::{csrf::CsrfExt, fancy_error, FancyError, SessionInfoExt};
+use mas_axum_utils::{csrf::CsrfExt, FancyError, SessionInfoExt};
 use mas_config::Encrypter;
 use mas_storage::user::{
     consume_email_verification, lookup_user_email_verification_code, mark_user_email_as_verified,
@@ -32,40 +32,29 @@ pub(crate) async fn get(
     Path(code): Path<String>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<impl IntoResponse, FancyError> {
-    let mut txn = pool.begin().await.map_err(fancy_error(templates.clone()))?;
+    let mut txn = pool.begin().await?;
 
     // TODO: make those 8 hours configurable
-    let verification = lookup_user_email_verification_code(&mut txn, &code, Duration::hours(8))
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    let verification =
+        lookup_user_email_verification_code(&mut txn, &code, Duration::hours(8)).await?;
 
     // TODO: display nice errors if the code was already consumed or expired
-    let verification = consume_email_verification(&mut txn, verification)
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    let verification = consume_email_verification(&mut txn, verification).await?;
 
-    let _email = mark_user_email_as_verified(&mut txn, verification.email)
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    let _email = mark_user_email_as_verified(&mut txn, verification.email).await?;
 
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token();
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info
-        .load_session(&mut txn)
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    let maybe_session = session_info.load_session(&mut txn).await?;
 
     let ctx = EmptyContext
         .maybe_with_session(maybe_session)
         .with_csrf(csrf_token.form_value());
 
-    let content = templates
-        .render_email_verification_done(&ctx)
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    let content = templates.render_email_verification_done(&ctx).await?;
 
-    txn.commit().await.map_err(fancy_error(templates.clone()))?;
+    txn.commit().await?;
 
     Ok((cookie_jar, Html(content)))
 }
