@@ -192,7 +192,7 @@ pub(crate) async fn post(
     headers.typed_insert(CacheControl::new().with_no_store());
     headers.typed_insert(Pragma::no_cache());
 
-    Ok((StatusCode::OK, headers, Json(reply)))
+    Ok((headers, Json(reply)))
 }
 
 fn hash<H: Digest>(mut hasher: H, token: &str) -> anyhow::Result<String> {
