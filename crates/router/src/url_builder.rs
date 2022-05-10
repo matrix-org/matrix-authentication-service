@@ -16,13 +16,21 @@
 
 use url::Url;
 
-/// Helps building absolute URLs
+use crate::traits::Route;
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct UrlBuilder {
     base: Url,
 }
 
 impl UrlBuilder {
+    fn url_for<U>(&self, destination: &U) -> Url
+    where
+        U: Route,
+    {
+        destination.absolute_url(&self.base)
+    }
+
     /// Create a new [`UrlBuilder`] from a base URL
     #[must_use]
     pub fn new(base: Url) -> Self {
@@ -38,55 +46,49 @@ impl UrlBuilder {
     /// OIDC dicovery document URL
     #[must_use]
     pub fn oidc_discovery(&self) -> Url {
-        self.base
-            .join(".well-known/openid-configuration")
-            .expect("build URL")
+        self.url_for(&crate::endpoints::OidcConfiguration)
     }
 
     /// OAuth 2.0 authorization endpoint
     #[must_use]
     pub fn oauth_authorization_endpoint(&self) -> Url {
-        self.base.join("authorize").expect("build URL")
+        self.url_for(&crate::endpoints::OAuth2AuthorizationEndpoint)
     }
 
     /// OAuth 2.0 token endpoint
     #[must_use]
     pub fn oauth_token_endpoint(&self) -> Url {
-        self.base.join("oauth2/token").expect("build URL")
+        self.url_for(&crate::endpoints::OAuth2TokenEndpoint)
     }
 
     /// OAuth 2.0 introspection endpoint
     #[must_use]
     pub fn oauth_introspection_endpoint(&self) -> Url {
-        self.base.join("oauth2/introspect").expect("build URL")
+        self.url_for(&crate::endpoints::OAuth2Introspection)
     }
 
     /// OAuth 2.0 client registration endpoint
     #[must_use]
     pub fn oauth_registration_endpoint(&self) -> Url {
-        self.base.join("oauth2/registration").expect("build URL")
+        self.url_for(&crate::endpoints::OAuth2RegistrationEndpoint)
     }
 
-    /// OpenID Connect userinfo endpoint
+    // OIDC userinfo endpoint
     #[must_use]
     pub fn oidc_userinfo_endpoint(&self) -> Url {
-        self.base.join("oauth2/userinfo").expect("build URL")
+        self.url_for(&crate::endpoints::OidcUserinfo)
     }
 
     /// JWKS URI
     #[must_use]
     pub fn jwks_uri(&self) -> Url {
-        self.base.join("oauth2/keys.json").expect("build URL")
+        self.url_for(&crate::endpoints::OAuth2Keys)
     }
 
     /// Email verification URL
     #[must_use]
-    pub fn email_verification(&self, code: &str) -> Url {
-        self.base
-            .join("verify/")
-            .expect("build URL")
-            .join(code)
-            .expect("build URL")
+    pub fn email_verification(&self, code: String) -> Url {
+        self.url_for(&crate::endpoints::VerifyEmail(code))
     }
 }
 
@@ -99,7 +101,7 @@ mod tests {
         let base = Url::parse("https://example.com/").unwrap();
         let builder = UrlBuilder::new(base);
         assert_eq!(
-            builder.email_verification("123456abcdef").as_str(),
+            builder.email_verification("123456abcdef".into()).as_str(),
             "https://example.com/verify/123456abcdef"
         );
     }

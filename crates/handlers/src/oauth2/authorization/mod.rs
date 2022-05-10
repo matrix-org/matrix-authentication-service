@@ -23,6 +23,7 @@ use mas_axum_utils::SessionInfoExt;
 use mas_config::Encrypter;
 use mas_data_model::{AuthorizationCode, Pkce};
 use mas_iana::oauth::OAuthAuthorizationEndpointResponseType;
+use mas_router::{PostAuthAction, Route};
 use mas_storage::oauth2::{
     authorization_grant::new_authorization_grant,
     client::{lookup_client_by_client_id, ClientFetchError},
@@ -45,8 +46,6 @@ use sqlx::PgPool;
 use thiserror::Error;
 
 use self::{callback::CallbackDestination, complete::GrantCompletionError};
-use super::consent::ConsentRequest;
-use crate::views::{LoginRequest, PostAuthAction, ReauthRequest, RegisterRequest};
 
 mod callback;
 pub mod complete;
@@ -287,8 +286,7 @@ pub(crate) async fn get(
                 requires_consent,
             )
             .await?;
-            let continue_grant = PostAuthAction::continue_grant(&grant);
-            let consent_request = ConsentRequest::for_grant(&grant);
+            let continue_grant = PostAuthAction::continue_grant(grant.data);
 
             let res = match (maybe_session, params.auth.prompt) {
                 // Cases where there is no active session, redirect to the relevant page
@@ -300,13 +298,17 @@ pub(crate) async fn get(
                     // Client asked for a registration, show the registration prompt
                     txn.commit().await?;
 
-                    RegisterRequest::from(continue_grant).go().into_response()
+                    mas_router::Register::and_then(continue_grant)
+                        .go()
+                        .into_response()
                 }
                 (None, _) => {
                     // Other cases where we don't have a session, ask for a login
                     txn.commit().await?;
 
-                    LoginRequest::from(continue_grant).go().into_response()
+                    mas_router::Login::and_then(continue_grant)
+                        .go()
+                        .into_response()
                 }
 
                 // Special case when we already have a sesion but prompt=login|select_account
@@ -314,7 +316,9 @@ pub(crate) async fn get(
                     // TODO: better pages here
                     txn.commit().await?;
 
-                    ReauthRequest::from(continue_grant).go().into_response()
+                    mas_router::Reauth::and_then(continue_grant)
+                        .go()
+                        .into_response()
                 }
 
                 // Else, we immediately try to complete the authorization grant
@@ -343,14 +347,17 @@ pub(crate) async fn get(
                     }
                 }
                 (Some(user_session), _) => {
+                    let grant_id = grant.data;
                     // Else, we show the relevant reauth/consent page if necessary
                     match self::complete::complete(grant, user_session, txn).await {
                         Ok(params) => callback_destination.go(&templates, params).await?,
                         Err(GrantCompletionError::RequiresConsent) => {
-                            consent_request.go().into_response()
+                            mas_router::Consent(grant_id).go().into_response()
                         }
                         Err(GrantCompletionError::RequiresReauth) => {
-                            ReauthRequest::from(continue_grant).go().into_response()
+                            mas_router::Reauth::and_then(continue_grant)
+                                .go()
+                                .into_response()
                         }
                         Err(GrantCompletionError::Anyhow(a)) => return Err(RouteError::Anyhow(a)),
                         Err(GrantCompletionError::Internal(e)) => {

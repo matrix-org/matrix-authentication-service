@@ -241,7 +241,7 @@ pub enum PostAuthContext {
 }
 
 /// Context used by the `login.html` template
-#[derive(Serialize)]
+#[derive(Serialize, Default)]
 pub struct LoginContext {
     form: ErroredForm<LoginFormField>,
     next: Option<PostAuthContext>,
@@ -288,16 +288,6 @@ impl LoginContext {
     }
 }
 
-impl Default for LoginContext {
-    fn default() -> Self {
-        Self {
-            form: ErroredForm::new(),
-            next: None,
-            register_link: "/register".to_string(),
-        }
-    }
-}
-
 /// Fields of the registration form
 #[derive(Serialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -313,7 +303,7 @@ pub enum RegisterFormField {
 }
 
 /// Context used by the `register.html` template
-#[derive(Serialize)]
+#[derive(Serialize, Default)]
 pub struct RegisterContext {
     form: ErroredForm<LoginFormField>,
     next: Option<PostAuthContext>,
@@ -354,16 +344,6 @@ impl RegisterContext {
     #[must_use]
     pub fn with_login_link(self, login_link: String) -> Self {
         Self { login_link, ..self }
-    }
-}
-
-impl Default for RegisterContext {
-    fn default() -> Self {
-        Self {
-            form: ErroredForm::new(),
-            next: None,
-            login_link: "/login".to_string(),
-        }
     }
 }
 

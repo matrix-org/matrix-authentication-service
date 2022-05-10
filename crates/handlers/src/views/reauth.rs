@@ -12,11 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::borrow::Cow;
-
 use axum::{
     extract::{Extension, Form, Query},
-    response::{Html, IntoResponse, Redirect, Response},
+    response::{Html, IntoResponse, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
 use mas_axum_utils::{
@@ -24,49 +22,13 @@ use mas_axum_utils::{
     fancy_error, FancyError, SessionInfoExt,
 };
 use mas_config::Encrypter;
+use mas_router::Route;
 use mas_storage::user::authenticate_session;
 use mas_templates::{ReauthContext, TemplateContext, Templates};
 use serde::Deserialize;
 use sqlx::PgPool;
 
-use super::{LoginRequest, PostAuthAction};
-
-#[derive(Deserialize)]
-pub(crate) struct ReauthRequest {
-    #[serde(flatten)]
-    post_auth_action: Option<PostAuthAction>,
-}
-
-impl From<PostAuthAction> for ReauthRequest {
-    fn from(post_auth_action: PostAuthAction) -> Self {
-        Self {
-            post_auth_action: Some(post_auth_action),
-        }
-    }
-}
-
-impl ReauthRequest {
-    pub fn as_link(&self) -> Cow<'static, str> {
-        if let Some(next) = &self.post_auth_action {
-            let qs = serde_urlencoded::to_string(next).unwrap();
-            Cow::Owned(format!("/reauth?{}", qs))
-        } else {
-            Cow::Borrowed("/reauth")
-        }
-    }
-
-    pub fn go(&self) -> Redirect {
-        Redirect::to(&self.as_link())
-    }
-
-    fn redirect(self) -> Redirect {
-        if let Some(action) = self.post_auth_action {
-            action.redirect()
-        } else {
-            Redirect::to("/")
-        }
-    }
-}
+use super::shared::OptionalPostAuthAction;
 
 #[derive(Deserialize, Debug)]
 pub(crate) struct ReauthForm {
@@ -76,7 +38,7 @@ pub(crate) struct ReauthForm {
 pub(crate) async fn get(
     Extension(templates): Extension<Templates>,
     Extension(pool): Extension<PgPool>,
-    Query(query): Query<ReauthRequest>,
+    Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
     let mut conn = pool
@@ -97,20 +59,19 @@ pub(crate) async fn get(
     } else {
         // If there is no session, redirect to the login screen, keeping the
         // PostAuthAction
-        let login: LoginRequest = query.post_auth_action.into();
+        let login = mas_router::Login::from(query.post_auth_action);
         return Ok((cookie_jar, login.go()).into_response());
     };
 
     let ctx = ReauthContext::default();
-    let ctx = match query.post_auth_action {
-        Some(next) => {
-            let next = next
-                .load_context(&mut conn)
-                .await
-                .map_err(fancy_error(templates.clone()))?;
-            ctx.with_post_action(next)
-        }
-        None => ctx,
+    let next = query
+        .load_context(&mut conn)
+        .await
+        .map_err(fancy_error(templates.clone()))?;
+    let ctx = if let Some(next) = next {
+        ctx.with_post_action(next)
+    } else {
+        ctx
     };
     let ctx = ctx.with_session(session).with_csrf(csrf_token.form_value());
 
@@ -125,7 +86,7 @@ pub(crate) async fn get(
 pub(crate) async fn post(
     Extension(templates): Extension<Templates>,
     Extension(pool): Extension<PgPool>,
-    Query(query): Query<ReauthRequest>,
+    Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<ReauthForm>>,
 ) -> Result<Response, FancyError> {
@@ -147,7 +108,7 @@ pub(crate) async fn post(
     } else {
         // If there is no session, redirect to the login screen, keeping the
         // PostAuthAction
-        let login: LoginRequest = query.post_auth_action.into();
+        let login = mas_router::Login::from(query.post_auth_action);
         return Ok((cookie_jar, login.go()).into_response());
     };
 
@@ -158,6 +119,6 @@ pub(crate) async fn post(
     let cookie_jar = cookie_jar.set_session(&session);
     txn.commit().await.map_err(fancy_error(templates.clone()))?;
 
-    let redirection = query.redirect();
-    Ok((cookie_jar, redirection).into_response())
+    let reply = query.go_next();
+    Ok((cookie_jar, reply).into_response())
 }

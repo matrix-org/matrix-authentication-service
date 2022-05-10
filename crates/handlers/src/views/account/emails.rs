@@ -20,11 +20,12 @@ use axum_extra::extract::PrivateCookieJar;
 use lettre::{message::Mailbox, Address};
 use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
-    fancy_error, FancyError, SessionInfoExt, UrlBuilder,
+    fancy_error, FancyError, SessionInfoExt,
 };
 use mas_config::Encrypter;
 use mas_data_model::{BrowserSession, User, UserEmail};
 use mas_email::Mailer;
+use mas_router::{Route, UrlBuilder};
 use mas_storage::{
     user::{
         add_user_email, add_user_email_verification_code, get_user_email, get_user_emails,
@@ -37,8 +38,6 @@ use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use serde::Deserialize;
 use sqlx::{PgExecutor, PgPool};
 use tracing::info;
-
-use crate::views::LoginRequest;
 
 #[derive(Deserialize, Debug)]
 #[serde(tag = "action", rename_all = "snake_case")]
@@ -69,7 +68,7 @@ pub(crate) async fn get(
     if let Some(session) = maybe_session {
         render(templates, session, cookie_jar, &mut conn).await
     } else {
-        let login = LoginRequest::default();
+        let login = mas_router::Login::default();
         Ok((cookie_jar, login.go()).into_response())
     }
 }
@@ -119,7 +118,7 @@ async fn start_email_verification(
 
     let mailbox = Mailbox::new(Some(user.username.clone()), address);
 
-    let link = url_builder.email_verification(&code);
+    let link = url_builder.email_verification(code);
 
     let context = EmailVerificationContext::new(user.clone().into(), link);
 
@@ -149,7 +148,7 @@ pub(crate) async fn post(
     let mut session = if let Some(session) = maybe_session {
         session
     } else {
-        let login = LoginRequest::default();
+        let login = mas_router::Login::default();
         return Ok((cookie_jar, login.go()).into_response());
     };
 

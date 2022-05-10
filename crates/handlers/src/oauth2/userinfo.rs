@@ -21,8 +21,9 @@ use axum::{
 };
 use headers::ContentType;
 use hyper::StatusCode;
-use mas_axum_utils::{internal_error, user_authorization::UserAuthorization, UrlBuilder};
+use mas_axum_utils::{internal_error, user_authorization::UserAuthorization};
 use mas_jose::{DecodedJsonWebToken, SigningKeystore, StaticKeystore};
+use mas_router::UrlBuilder;
 use mime::Mime;
 use oauth2_types::scope;
 use serde::Serialize;

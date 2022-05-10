@@ -17,8 +17,9 @@ use axum::{
     response::{Html, IntoResponse},
 };
 use axum_extra::extract::PrivateCookieJar;
-use mas_axum_utils::{csrf::CsrfExt, fancy_error, FancyError, SessionInfoExt, UrlBuilder};
+use mas_axum_utils::{csrf::CsrfExt, fancy_error, FancyError, SessionInfoExt};
 use mas_config::Encrypter;
+use mas_router::UrlBuilder;
 use mas_templates::{IndexContext, TemplateContext, Templates};
 use sqlx::PgPool;
 

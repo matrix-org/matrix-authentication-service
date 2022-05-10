@@ -14,12 +14,10 @@
 
 #![allow(clippy::trait_duplication_in_bounds)]
 
-use std::borrow::Cow;
-
 use argon2::Argon2;
 use axum::{
     extract::{Extension, Form, Query},
-    response::{Html, IntoResponse, Redirect, Response},
+    response::{Html, IntoResponse, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
 use mas_axum_utils::{
@@ -27,49 +25,13 @@ use mas_axum_utils::{
     fancy_error, FancyError, SessionInfoExt,
 };
 use mas_config::Encrypter;
+use mas_router::Route;
 use mas_storage::user::{register_user, start_session};
 use mas_templates::{RegisterContext, TemplateContext, Templates};
 use serde::Deserialize;
 use sqlx::PgPool;
 
-use super::{LoginRequest, PostAuthAction};
-
-#[derive(Deserialize)]
-pub(crate) struct RegisterRequest {
-    #[serde(flatten)]
-    post_auth_action: Option<PostAuthAction>,
-}
-
-impl From<PostAuthAction> for RegisterRequest {
-    fn from(post_auth_action: PostAuthAction) -> Self {
-        Self {
-            post_auth_action: Some(post_auth_action),
-        }
-    }
-}
-
-impl RegisterRequest {
-    pub fn as_link(&self) -> Cow<'static, str> {
-        if let Some(next) = &self.post_auth_action {
-            let qs = serde_urlencoded::to_string(next).unwrap();
-            Cow::Owned(format!("/register?{}", qs))
-        } else {
-            Cow::Borrowed("/register")
-        }
-    }
-
-    pub fn go(&self) -> Redirect {
-        Redirect::to(&self.as_link())
-    }
-
-    fn redirect(self) -> Redirect {
-        if let Some(action) = self.post_auth_action {
-            action.redirect()
-        } else {
-            Redirect::to("/")
-        }
-    }
-}
+use super::shared::OptionalPostAuthAction;
 
 #[derive(Deserialize)]
 pub(crate) struct RegisterForm {
@@ -81,7 +43,7 @@ pub(crate) struct RegisterForm {
 pub(crate) async fn get(
     Extension(templates): Extension<Templates>,
     Extension(pool): Extension<PgPool>,
-    Query(query): Query<RegisterRequest>,
+    Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
     let mut conn = pool
@@ -98,21 +60,20 @@ pub(crate) async fn get(
         .map_err(fancy_error(templates.clone()))?;
 
     if maybe_session.is_some() {
-        let response = query.redirect().into_response();
-        Ok(response)
+        let reply = query.go_next();
+        Ok((cookie_jar, reply).into_response())
     } else {
         let ctx = RegisterContext::default();
-        let ctx = match &query.post_auth_action {
-            Some(next) => {
-                let next = next
-                    .load_context(&mut conn)
-                    .await
-                    .map_err(fancy_error(templates.clone()))?;
-                ctx.with_post_action(next)
-            }
-            None => ctx,
+        let next = query
+            .load_context(&mut conn)
+            .await
+            .map_err(fancy_error(templates.clone()))?;
+        let ctx = if let Some(next) = next {
+            ctx.with_post_action(next)
+        } else {
+            ctx
         };
-        let login_link = LoginRequest::from(query.post_auth_action).as_link();
+        let login_link = mas_router::Login::from(query.post_auth_action).relative_url();
         let ctx = ctx.with_login_link(login_link.to_string());
         let ctx = ctx.with_csrf(csrf_token.form_value());
 
@@ -128,7 +89,7 @@ pub(crate) async fn get(
 pub(crate) async fn post(
     Extension(templates): Extension<Templates>,
     Extension(pool): Extension<PgPool>,
-    Query(query): Query<RegisterRequest>,
+    Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<RegisterForm>>,
 ) -> Result<Response, FancyError> {
@@ -155,6 +116,6 @@ pub(crate) async fn post(
     txn.commit().await.map_err(fancy_error(templates.clone()))?;
 
     let cookie_jar = cookie_jar.set_session(&session);
-    let reply = query.redirect();
+    let reply = query.go_next();
     Ok((cookie_jar, reply).into_response())
 }

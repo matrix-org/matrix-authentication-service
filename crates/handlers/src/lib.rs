@@ -28,11 +28,11 @@ use axum::{
     Router,
 };
 use hyper::header::{ACCEPT, ACCEPT_LANGUAGE, AUTHORIZATION, CONTENT_LANGUAGE, CONTENT_TYPE};
-use mas_axum_utils::UrlBuilder;
 use mas_config::Encrypter;
 use mas_email::Mailer;
 use mas_http::CorsLayerExt;
 use mas_jose::StaticKeystore;
+use mas_router::{Route, UrlBuilder};
 use mas_templates::Templates;
 use sqlx::PgPool;
 use tower_http::cors::{Any, CorsLayer};
@@ -58,25 +58,34 @@ where
     // All those routes are API-like, with a common CORS layer
     let api_router = Router::new()
         .route(
-            "/.well-known/openid-configuration",
+            mas_router::OidcConfiguration::route(),
             get(self::oauth2::discovery::get),
         )
-        .route("/.well-known/webfinger", get(self::oauth2::webfinger::get))
-        .route("/oauth2/keys.json", get(self::oauth2::keys::get))
         .route(
-            "/oauth2/userinfo",
+            mas_router::Webfinger::route(),
+            get(self::oauth2::webfinger::get),
+        )
+        .route(
+            mas_router::OAuth2Keys::route(),
+            get(self::oauth2::keys::get),
+        )
+        .route(
+            mas_router::OidcUserinfo::route(),
             on(
                 MethodFilter::POST | MethodFilter::GET,
                 self::oauth2::userinfo::get,
             ),
         )
         .route(
-            "/oauth2/introspect",
+            mas_router::OAuth2Introspection::route(),
             post(self::oauth2::introspection::post),
         )
-        .route("/oauth2/token", post(self::oauth2::token::post))
         .route(
-            "/oauth2/registration",
+            mas_router::OAuth2TokenEndpoint::route(),
+            post(self::oauth2::token::post),
+        )
+        .route(
+            mas_router::OAuth2RegistrationEndpoint::route(),
             post(self::oauth2::registration::post),
         )
         .layer(
@@ -94,38 +103,44 @@ where
         );
 
     Router::new()
-        .route("/", get(self::views::index::get))
-        .route("/health", get(self::health::get))
+        .route(mas_router::Index::route(), get(self::views::index::get))
+        .route(mas_router::Healthcheck::route(), get(self::health::get))
         .route(
-            "/login",
+            mas_router::Login::route(),
             get(self::views::login::get).post(self::views::login::post),
         )
-        .route("/logout", post(self::views::logout::post))
+        .route(mas_router::Logout::route(), post(self::views::logout::post))
         .route(
-            "/reauth",
+            mas_router::Reauth::route(),
             get(self::views::reauth::get).post(self::views::reauth::post),
         )
         .route(
-            "/register",
+            mas_router::Register::route(),
             get(self::views::register::get).post(self::views::register::post),
         )
-        .route("/verify/:code", get(self::views::verify::get))
-        .route("/account", get(self::views::account::get))
         .route(
-            "/account/password",
+            mas_router::VerifyEmail::route(),
+            get(self::views::verify::get),
+        )
+        .route(mas_router::Account::route(), get(self::views::account::get))
+        .route(
+            mas_router::AccountPassword::route(),
             get(self::views::account::password::get).post(self::views::account::password::post),
         )
         .route(
-            "/account/emails",
+            mas_router::AccountEmails::route(),
             get(self::views::account::emails::get).post(self::views::account::emails::post),
         )
-        .route("/authorize", get(self::oauth2::authorization::get))
         .route(
-            "/authorize/:grant_id",
+            mas_router::OAuth2AuthorizationEndpoint::route(),
+            get(self::oauth2::authorization::get),
+        )
+        .route(
+            mas_router::ContinueAuthorizationGrant::route(),
             get(self::oauth2::authorization::complete::get),
         )
         .route(
-            "/consent/:grant_id",
+            mas_router::Consent::route(),
             get(self::oauth2::consent::get).post(self::oauth2::consent::post),
         )
         .merge(api_router)

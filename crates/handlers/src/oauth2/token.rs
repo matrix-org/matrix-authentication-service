@@ -20,10 +20,7 @@ use chrono::{DateTime, Duration, Utc};
 use data_encoding::BASE64URL_NOPAD;
 use headers::{CacheControl, HeaderMap, HeaderMapExt, Pragma};
 use hyper::StatusCode;
-use mas_axum_utils::{
-    client_authorization::{ClientAuthorization, CredentialsVerificationError},
-    UrlBuilder,
-};
+use mas_axum_utils::client_authorization::{ClientAuthorization, CredentialsVerificationError};
 use mas_config::Encrypter;
 use mas_data_model::{AuthorizationGrantStage, Client, TokenType};
 use mas_iana::jose::JsonWebSignatureAlg;
@@ -31,6 +28,7 @@ use mas_jose::{
     claims::{self, ClaimError},
     DecodedJsonWebToken, SigningKeystore, StaticKeystore,
 };
+use mas_router::UrlBuilder;
 use mas_storage::{
     oauth2::{
         access_token::{add_access_token, revoke_access_token},

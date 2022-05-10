@@ -17,12 +17,10 @@ pub mod cookies;
 pub mod csrf;
 pub mod fancy_error;
 pub mod session;
-pub mod url_builder;
 pub mod user_authorization;
 
 pub use self::{
     cookies::CookieExt,
     fancy_error::{fancy_error, internal_error, FancyError},
     session::{SessionInfo, SessionInfoExt},
-    url_builder::UrlBuilder,
 };

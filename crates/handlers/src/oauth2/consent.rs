@@ -15,7 +15,7 @@
 use anyhow::Context;
 use axum::{
     extract::{Extension, Form, Path},
-    response::{Html, IntoResponse, Redirect, Response},
+    response::{Html, IntoResponse, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
 use hyper::StatusCode;
@@ -24,19 +24,15 @@ use mas_axum_utils::{
     SessionInfoExt,
 };
 use mas_config::Encrypter;
-use mas_data_model::{AuthorizationGrant, AuthorizationGrantStage};
-use mas_storage::{
-    oauth2::{
-        authorization_grant::{get_grant_by_id, give_consent_to_grant},
-        consent::insert_client_consent,
-    },
-    PostgresqlBackend,
+use mas_data_model::AuthorizationGrantStage;
+use mas_router::{PostAuthAction, Route};
+use mas_storage::oauth2::{
+    authorization_grant::{get_grant_by_id, give_consent_to_grant},
+    consent::insert_client_consent,
 };
 use mas_templates::{ConsentContext, TemplateContext, Templates};
 use sqlx::PgPool;
 use thiserror::Error;
-
-use crate::views::{LoginRequest, PostAuthAction};
 
 #[derive(Debug, Error)]
 pub enum RouteError {
@@ -47,23 +43,6 @@ pub enum RouteError {
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         StatusCode::INTERNAL_SERVER_ERROR.into_response()
-    }
-}
-
-pub(crate) struct ConsentRequest {
-    grant_id: i64,
-}
-
-impl ConsentRequest {
-    pub fn for_grant(grant: &AuthorizationGrant<PostgresqlBackend>) -> Self {
-        Self {
-            grant_id: grant.data,
-        }
-    }
-
-    pub fn go(&self) -> Redirect {
-        let uri = format!("/consent/{}", self.grant_id);
-        Redirect::to(&uri)
     }
 }
 
@@ -105,7 +84,7 @@ pub(crate) async fn get(
 
         Ok((cookie_jar, Html(content)).into_response())
     } else {
-        let login = LoginRequest::from(PostAuthAction::continue_grant(&grant));
+        let login = mas_router::Login::and_continue_grant(grant_id);
         Ok((cookie_jar, login.go()).into_response())
     }
 }
@@ -133,12 +112,12 @@ pub(crate) async fn post(
         .context("could not load session")?;
 
     let grant = get_grant_by_id(&mut txn, grant_id).await?;
-    let next = PostAuthAction::continue_grant(&grant);
+    let next = PostAuthAction::continue_grant(grant_id);
 
     let session = if let Some(session) = maybe_session {
         session
     } else {
-        let login = LoginRequest::from(next);
+        let login = mas_router::Login::and_then(next);
         return Ok((cookie_jar, login.go()).into_response());
     };
 
@@ -163,5 +142,5 @@ pub(crate) async fn post(
 
     txn.commit().await.context("could not commit txn")?;
 
-    Ok((cookie_jar, next.redirect()).into_response())
+    Ok((cookie_jar, next.go_next()).into_response())
 }

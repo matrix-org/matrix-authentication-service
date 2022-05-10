@@ -15,7 +15,6 @@
 use std::sync::Arc;
 
 use axum::{extract::Extension, response::IntoResponse, Json};
-use mas_axum_utils::UrlBuilder;
 use mas_iana::{
     jose::JsonWebSignatureAlg,
     oauth::{
@@ -24,6 +23,7 @@ use mas_iana::{
     },
 };
 use mas_jose::{SigningKeystore, StaticKeystore};
+use mas_router::UrlBuilder;
 use oauth2_types::{
     oidc::{ClaimType, Metadata, SubjectType},
     requests::{Display, GrantType, Prompt, ResponseMode},

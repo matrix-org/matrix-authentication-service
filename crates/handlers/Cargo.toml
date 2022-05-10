@@ -64,6 +64,7 @@ mas-iana = { path = "../iana" }
 mas-jose = { path = "../jose" }
 mas-storage = { path = "../storage" }
 mas-templates = { path = "../templates" }
+mas-router = { path = "../router" }
 
 [dev-dependencies]
 indoc = "1.0.6"

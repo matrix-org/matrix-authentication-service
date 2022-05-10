@@ -22,11 +22,10 @@ use axum::{
 use axum_extra::extract::PrivateCookieJar;
 use mas_axum_utils::{csrf::CsrfExt, fancy_error, FancyError, SessionInfoExt};
 use mas_config::Encrypter;
+use mas_router::Route;
 use mas_storage::user::{count_active_sessions, get_user_emails};
 use mas_templates::{AccountContext, TemplateContext, Templates};
 use sqlx::PgPool;
-
-use super::LoginRequest;
 
 pub(crate) async fn get(
     Extension(templates): Extension<Templates>,
@@ -49,7 +48,7 @@ pub(crate) async fn get(
     let session = if let Some(session) = maybe_session {
         session
     } else {
-        let login = LoginRequest::default();
+        let login = mas_router::Login::default();
         return Ok((cookie_jar, login.go()).into_response());
     };
 

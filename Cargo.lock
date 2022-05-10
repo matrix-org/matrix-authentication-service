@@ -2014,11 +2014,11 @@ dependencies = [
  "futures 0.3.21",
  "hyper",
  "indoc",
- "mas-axum-utils",
  "mas-config",
  "mas-email",
  "mas-handlers",
  "mas-http",
+ "mas-router",
  "mas-static-files",
  "mas-storage",
  "mas-tasks",
@@ -2127,6 +2127,7 @@ dependencies = [
  "mas-http",
  "mas-iana",
  "mas-jose",
+ "mas-router",
  "mas-storage",
  "mas-templates",
  "mime",
@@ -2233,6 +2234,17 @@ dependencies = [
  "tokio",
  "tower",
  "tracing",
+ "url",
+]
+
+[[package]]
+name = "mas-router"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "serde",
+ "serde_urlencoded",
+ "serde_with",
  "url",
 ]
 

@@ -14,7 +14,7 @@
 
 use axum::{extract::Query, response::IntoResponse, Extension, Json, TypedHeader};
 use headers::ContentType;
-use mas_axum_utils::UrlBuilder;
+use mas_router::UrlBuilder;
 use oauth2_types::webfinger::WebFingerResponse;
 use serde::Deserialize;
 

@@ -24,6 +24,7 @@ use mas_axum_utils::{
 };
 use mas_config::Encrypter;
 use mas_data_model::BrowserSession;
+use mas_router::Route;
 use mas_storage::{
     user::{authenticate_session, set_password},
     PostgresqlBackend,
@@ -31,8 +32,6 @@ use mas_storage::{
 use mas_templates::{EmptyContext, TemplateContext, Templates};
 use serde::Deserialize;
 use sqlx::PgPool;
-
-use crate::views::LoginRequest;
 
 #[derive(Deserialize)]
 pub struct ChangeForm {
@@ -61,7 +60,7 @@ pub(crate) async fn get(
     if let Some(session) = maybe_session {
         render(templates, session, cookie_jar).await
     } else {
-        let login = LoginRequest::default();
+        let login = mas_router::Login::default();
         Ok((cookie_jar, login.go()).into_response())
     }
 }
@@ -107,7 +106,7 @@ pub(crate) async fn post(
     let mut session = if let Some(session) = maybe_session {
         session
     } else {
-        let login = LoginRequest::default();
+        let login = mas_router::Login::default();
         return Ok((cookie_jar, login.go()).into_response());
     };
 

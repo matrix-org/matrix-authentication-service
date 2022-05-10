@@ -24,6 +24,7 @@ use hyper::StatusCode;
 use mas_axum_utils::SessionInfoExt;
 use mas_config::Encrypter;
 use mas_data_model::{AuthorizationGrant, BrowserSession, TokenType};
+use mas_router::{PostAuthAction, Route};
 use mas_storage::{
     oauth2::{
         access_token::add_access_token,
@@ -41,10 +42,6 @@ use sqlx::{PgPool, Postgres, Transaction};
 use thiserror::Error;
 
 use super::callback::{CallbackDestination, CallbackDestinationError, InvalidRedirectUriError};
-use crate::{
-    oauth2::consent::ConsentRequest,
-    views::{LoginRequest, PostAuthAction, ReauthRequest},
-};
 
 #[derive(Debug, Error)]
 pub enum RouteError {
@@ -122,15 +119,14 @@ pub(crate) async fn get(
     let grant = get_grant_by_id(&mut txn, grant_id).await?;
 
     let callback_destination = CallbackDestination::try_from(&grant)?;
-    let continue_grant = PostAuthAction::continue_grant(&grant);
-    let consent_request = ConsentRequest::for_grant(&grant);
+    let continue_grant = PostAuthAction::continue_grant(grant_id);
 
     let session = if let Some(session) = maybe_session {
         session
     } else {
         // If there is no session, redirect to the login screen, redirecting here after
         // logout
-        return Ok((cookie_jar, LoginRequest::from(continue_grant).go()).into_response());
+        return Ok((cookie_jar, mas_router::Login::and_then(continue_grant).go()).into_response());
     };
 
     match complete(grant, session, txn).await {
@@ -138,11 +134,14 @@ pub(crate) async fn get(
             let res = callback_destination.go(&templates, params).await?;
             Ok((cookie_jar, res).into_response())
         }
-        Err(GrantCompletionError::RequiresReauth) => {
-            Ok((cookie_jar, ReauthRequest::from(continue_grant).go()).into_response())
-        }
+        Err(GrantCompletionError::RequiresReauth) => Ok((
+            cookie_jar,
+            mas_router::Reauth::and_then(continue_grant).go(),
+        )
+            .into_response()),
         Err(GrantCompletionError::RequiresConsent) => {
-            Ok((cookie_jar, consent_request.go()).into_response())
+            let next = mas_router::Consent(grant_id);
+            Ok((cookie_jar, next.go()).into_response())
         }
         Err(GrantCompletionError::NotPending) => Err(RouteError::NotPending),
         Err(GrantCompletionError::Internal(e)) => Err(RouteError::Internal(e)),

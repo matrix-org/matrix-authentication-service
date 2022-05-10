@@ -32,11 +32,11 @@ opentelemetry-jaeger = { version = "0.16.0", features = ["rt-tokio", "reqwest_co
 opentelemetry-otlp = { version = "0.10.0", features = ["trace", "metrics"], optional = true }
 opentelemetry-zipkin = { version = "0.15.0", features = ["reqwest-client", "reqwest-rustls"], default-features = false, optional = true }
 
-mas-axum-utils = { path = "../axum-utils" }
 mas-config = { path = "../config" }
 mas-email = { path = "../email" }
 mas-handlers = { path = "../handlers" }
 mas-http = { path = "../http" }
+mas-router = { path = "../router" }
 mas-static-files = { path = "../static-files" }
 mas-storage = { path = "../storage" }
 mas-tasks = { path = "../tasks" }
