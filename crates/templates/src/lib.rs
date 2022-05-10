@@ -90,10 +90,11 @@ impl Templates {
     async fn roots(path: Option<&str>, builtin: bool) -> Vec<Result<PathBuf, std::io::Error>> {
         let mut paths = Vec::new();
         if builtin && cfg!(feature = "dev") {
-            paths.push(PathBuf::from(format!(
-                "{}/src/res",
-                env!("CARGO_MANIFEST_DIR")
-            )));
+            paths.push(
+                Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .join("src")
+                    .join("res"),
+            );
         }
 
         if let Some(path) = path {
