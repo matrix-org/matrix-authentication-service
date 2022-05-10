@@ -19,7 +19,7 @@ use axum::{
 use axum_extra::extract::PrivateCookieJar;
 use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
-    fancy_error, FancyError, SessionInfoExt,
+    FancyError, SessionInfoExt,
 };
 use mas_config::Encrypter;
 use mas_router::Route;
@@ -41,18 +41,12 @@ pub(crate) async fn get(
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
-    let mut conn = pool
-        .acquire()
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    let mut conn = pool.acquire().await?;
 
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token();
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info
-        .load_session(&mut conn)
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    let maybe_session = session_info.load_session(&mut conn).await?;
 
     let session = if let Some(session) = maybe_session {
         session
@@ -64,10 +58,7 @@ pub(crate) async fn get(
     };
 
     let ctx = ReauthContext::default();
-    let next = query
-        .load_context(&mut conn)
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    let next = query.load_context(&mut conn).await?;
     let ctx = if let Some(next) = next {
         ctx.with_post_action(next)
     } else {
@@ -75,33 +66,24 @@ pub(crate) async fn get(
     };
     let ctx = ctx.with_session(session).with_csrf(csrf_token.form_value());
 
-    let content = templates
-        .render_reauth(&ctx)
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    let content = templates.render_reauth(&ctx).await?;
 
     Ok((cookie_jar, Html(content)).into_response())
 }
 
 pub(crate) async fn post(
-    Extension(templates): Extension<Templates>,
     Extension(pool): Extension<PgPool>,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<ReauthForm>>,
 ) -> Result<Response, FancyError> {
-    let mut txn = pool.begin().await.map_err(fancy_error(templates.clone()))?;
+    let mut txn = pool.begin().await?;
 
-    let form = cookie_jar
-        .verify_form(form)
-        .map_err(fancy_error(templates.clone()))?;
+    let form = cookie_jar.verify_form(form)?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info
-        .load_session(&mut txn)
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    let maybe_session = session_info.load_session(&mut txn).await?;
 
     let mut session = if let Some(session) = maybe_session {
         session
@@ -113,11 +95,9 @@ pub(crate) async fn post(
     };
 
     // TODO: recover from errors here
-    authenticate_session(&mut txn, &mut session, form.password)
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    authenticate_session(&mut txn, &mut session, form.password).await?;
     let cookie_jar = cookie_jar.set_session(&session);
-    txn.commit().await.map_err(fancy_error(templates.clone()))?;
+    txn.commit().await?;
 
     let reply = query.go_next();
     Ok((cookie_jar, reply).into_response())

@@ -153,7 +153,6 @@ pub fn service<B: HttpBody + Send + 'static>(
     let builtin = self::builtin::service();
 
     let svc = if let Some(path) = path {
-        // TODO: fallback seems to have issues
         let handler = ServeDir::new(path)
             .append_index_html_on_directories(false)
             .fallback(builtin);

@@ -19,7 +19,7 @@ use axum::{
 use axum_extra::extract::PrivateCookieJar;
 use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
-    fancy_error, FancyError, SessionInfoExt,
+    FancyError, SessionInfoExt,
 };
 use mas_config::Encrypter;
 use mas_data_model::errors::WrapFormError;
@@ -44,28 +44,19 @@ pub(crate) async fn get(
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
-    let mut conn = pool
-        .acquire()
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    let mut conn = pool.acquire().await?;
 
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token();
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info
-        .load_session(&mut conn)
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    let maybe_session = session_info.load_session(&mut conn).await?;
 
     if maybe_session.is_some() {
         let reply = query.go_next();
         Ok((cookie_jar, reply).into_response())
     } else {
         let ctx = LoginContext::default();
-        let next = query
-            .load_context(&mut conn)
-            .await
-            .map_err(fancy_error(templates.clone()))?;
+        let next = query.load_context(&mut conn).await?;
         let ctx = if let Some(next) = next {
             ctx.with_post_action(next)
         } else {
@@ -76,10 +67,7 @@ pub(crate) async fn get(
             .with_register_link(register_link.to_string())
             .with_csrf(csrf_token.form_value());
 
-        let content = templates
-            .render_login(&ctx)
-            .await
-            .map_err(fancy_error(templates.clone()))?;
+        let content = templates.render_login(&ctx).await?;
 
         Ok((cookie_jar, Html(content)).into_response())
     }
@@ -93,14 +81,9 @@ pub(crate) async fn post(
     Form(form): Form<ProtectedForm<LoginForm>>,
 ) -> Result<Response, FancyError> {
     use mas_storage::user::LoginError;
-    let mut conn = pool
-        .acquire()
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    let mut conn = pool.acquire().await?;
 
-    let form = cookie_jar
-        .verify_form(form)
-        .map_err(fancy_error(templates.clone()))?;
+    let form = cookie_jar.verify_form(form)?;
 
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token();
 
@@ -121,10 +104,7 @@ pub(crate) async fn post(
                 .with_form_error(errored_form)
                 .with_csrf(csrf_token.form_value());
 
-            let content = templates
-                .render_login(&ctx)
-                .await
-                .map_err(fancy_error(templates.clone()))?;
+            let content = templates.render_login(&ctx).await?;
 
             Ok((cookie_jar, Html(content)).into_response())
         }

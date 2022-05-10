@@ -21,6 +21,6 @@ pub mod user_authorization;
 
 pub use self::{
     cookies::CookieExt,
-    fancy_error::{fancy_error, internal_error, FancyError},
+    fancy_error::FancyError,
     session::{SessionInfo, SessionInfoExt},
 };

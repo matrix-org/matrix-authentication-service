@@ -20,7 +20,7 @@ use axum::{
 use axum_extra::extract::PrivateCookieJar;
 use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
-    fancy_error, FancyError, SessionInfoExt,
+    FancyError, SessionInfoExt,
 };
 use mas_config::Encrypter;
 use mas_data_model::BrowserSession;
@@ -45,17 +45,11 @@ pub(crate) async fn get(
     Extension(pool): Extension<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
-    let mut conn = pool
-        .acquire()
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    let mut conn = pool.acquire().await?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info
-        .load_session(&mut conn)
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    let maybe_session = session_info.load_session(&mut conn).await?;
 
     if let Some(session) = maybe_session {
         render(templates, session, cookie_jar).await
@@ -76,10 +70,7 @@ async fn render(
         .with_session(session)
         .with_csrf(csrf_token.form_value());
 
-    let content = templates
-        .render_account_password(&ctx)
-        .await
-        .map_err(fancy_error(templates))?;
+    let content = templates.render_account_password(&ctx).await?;
 
     Ok((cookie_jar, Html(content)).into_response())
 }
@@ -90,18 +81,13 @@ pub(crate) async fn post(
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<ChangeForm>>,
 ) -> Result<Response, FancyError> {
-    let mut txn = pool.begin().await.map_err(fancy_error(templates.clone()))?;
+    let mut txn = pool.begin().await?;
 
-    let form = cookie_jar
-        .verify_form(form)
-        .map_err(fancy_error(templates.clone()))?;
+    let form = cookie_jar.verify_form(form)?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info
-        .load_session(&mut txn)
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    let maybe_session = session_info.load_session(&mut txn).await?;
 
     let mut session = if let Some(session) = maybe_session {
         session
@@ -110,23 +96,19 @@ pub(crate) async fn post(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    authenticate_session(&mut txn, &mut session, form.current_password)
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    authenticate_session(&mut txn, &mut session, form.current_password).await?;
 
     // TODO: display nice form errors
     if form.new_password != form.new_password_confirm {
-        return Err(anyhow::anyhow!("password mismatch")).map_err(fancy_error(templates.clone()));
+        return Err(anyhow::anyhow!("password mismatch").into());
     }
 
     let phf = Argon2::default();
-    set_password(&mut txn, phf, &session.user, &form.new_password)
-        .await
-        .map_err(fancy_error(templates.clone()))?;
+    set_password(&mut txn, phf, &session.user, &form.new_password).await?;
 
     let reply = render(templates.clone(), session, cookie_jar).await?;
 
-    txn.commit().await.map_err(fancy_error(templates.clone()))?;
+    txn.commit().await?;
 
     Ok(reply)
 }

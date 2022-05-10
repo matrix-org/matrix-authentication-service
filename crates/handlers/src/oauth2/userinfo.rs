@@ -20,8 +20,7 @@ use axum::{
     Json, TypedHeader,
 };
 use headers::ContentType;
-use hyper::StatusCode;
-use mas_axum_utils::{internal_error, user_authorization::UserAuthorization};
+use mas_axum_utils::{user_authorization::UserAuthorization, FancyError};
 use mas_jose::{DecodedJsonWebToken, SigningKeystore, StaticKeystore};
 use mas_router::UrlBuilder;
 use mime::Mime;
@@ -52,18 +51,11 @@ pub async fn get(
     Extension(pool): Extension<PgPool>,
     Extension(key_store): Extension<Arc<StaticKeystore>>,
     user_authorization: UserAuthorization,
-) -> Result<Response, Response> {
+) -> Result<Response, FancyError> {
     // TODO: error handling
-    let mut conn = pool
-        .acquire()
-        .await
-        .map_err(internal_error)
-        .map_err(IntoResponse::into_response)?;
+    let mut conn = pool.acquire().await?;
 
-    let session = user_authorization
-        .protected(&mut conn)
-        .await
-        .map_err(IntoResponse::into_response)?;
+    let session = user_authorization.protected(&mut conn).await?;
 
     let user = session.browser_session.user;
     let mut user_info = UserInfo {
@@ -81,11 +73,7 @@ pub async fn get(
     }
 
     if let Some(alg) = session.client.userinfo_signed_response_alg {
-        let header = key_store
-            .prepare_header(alg)
-            .await
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
-            .map_err(IntoResponse::into_response)?;
+        let header = key_store.prepare_header(alg).await?;
 
         let user_info = SignedUserInfo {
             iss: url_builder.oidc_issuer().to_string(),
@@ -94,11 +82,7 @@ pub async fn get(
         };
 
         let user_info = DecodedJsonWebToken::new(header, user_info);
-        let user_info = user_info
-            .sign(key_store.as_ref())
-            .await
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
-            .map_err(IntoResponse::into_response)?;
+        let user_info = user_info.sign(key_store.as_ref()).await?;
 
         let token = user_info.serialize();
         let application_jwt: Mime = "application/jwt".parse().unwrap();

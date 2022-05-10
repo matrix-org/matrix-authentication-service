@@ -32,6 +32,7 @@ use mas_storage::{
 };
 use serde::{de::DeserializeOwned, Deserialize};
 use sqlx::{Acquire, Postgres};
+use thiserror::Error;
 
 #[derive(Debug, Deserialize)]
 struct AuthorizedForm<F> {
@@ -111,10 +112,18 @@ pub enum UserAuthorizationError {
     InternalError(Box<dyn Error>),
 }
 
+#[derive(Debug, Error)]
 pub enum AuthorizationVerificationError {
+    #[error("missing token")]
     MissingToken,
+
+    #[error("invalid token")]
     InvalidToken,
+
+    #[error("missing form")]
     MissingForm,
+
+    #[error(transparent)]
     InternalError(Box<dyn Error>),
 }
 

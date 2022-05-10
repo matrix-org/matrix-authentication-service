@@ -13,19 +13,18 @@
 // limitations under the License.
 
 use axum::{extract::Extension, response::IntoResponse};
-use mas_axum_utils::{internal_error, FancyError};
+use mas_axum_utils::FancyError;
 use sqlx::PgPool;
 use tracing::{info_span, Instrument};
 
 pub async fn get(Extension(pool): Extension<PgPool>) -> Result<impl IntoResponse, FancyError> {
-    let mut conn = pool.acquire().await.map_err(internal_error)?;
+    let mut conn = pool.acquire().await?;
 
     sqlx::query("SELECT $1")
         .bind(1_i64)
         .execute(&mut conn)
         .instrument(info_span!("DB health"))
-        .await
-        .map_err(internal_error)?;
+        .await?;
 
     Ok("ok")
 }
