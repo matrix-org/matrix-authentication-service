@@ -70,7 +70,6 @@ mod builtin {
 
             let res = if is_head {
                 (
-                    StatusCode::OK,
                     TypedHeader(ContentType::from(mime)),
                     TypedHeader(ContentLength(len)),
                     TypedHeader(etag),
@@ -78,7 +77,6 @@ mod builtin {
                     .into_response()
             } else {
                 (
-                    StatusCode::OK,
                     TypedHeader(ContentType::from(mime)),
                     TypedHeader(ContentLength(len)),
                     TypedHeader(etag),
