@@ -68,21 +68,16 @@ mod builtin {
             let len = asset.data.len().try_into().unwrap();
             let mime = mime_guess::from_path(path).first_or_octet_stream();
 
+            let headers = (
+                TypedHeader(ContentType::from(mime)),
+                TypedHeader(ContentLength(len)),
+                TypedHeader(etag),
+            );
+
             let res = if is_head {
-                (
-                    TypedHeader(ContentType::from(mime)),
-                    TypedHeader(ContentLength(len)),
-                    TypedHeader(etag),
-                )
-                    .into_response()
+                headers.into_response()
             } else {
-                (
-                    TypedHeader(ContentType::from(mime)),
-                    TypedHeader(ContentLength(len)),
-                    TypedHeader(etag),
-                    asset.data,
-                )
-                    .into_response()
+                (headers, asset.data).into_response()
             };
 
             Some(res)
