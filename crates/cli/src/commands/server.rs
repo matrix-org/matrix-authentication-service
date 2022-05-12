@@ -192,6 +192,8 @@ impl Options {
 
         let static_files = mas_static_files::service(&config.http.web_root);
 
+        let matrix_config = config.matrix.clone();
+
         // Explicitely the config to properly zeroize secret keys
         drop(config);
 
@@ -214,6 +216,7 @@ impl Options {
             &encrypter,
             &mailer,
             &url_builder,
+            &matrix_config,
         )
         .fallback(static_files)
         .layer(ServerLayer::default());

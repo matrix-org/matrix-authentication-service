@@ -1,4 +1,4 @@
-// Copyright 2021 The Matrix.org Foundation C.I.C.
+// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ impl StorageBackend for PostgresqlBackend {
     type AuthorizationGrantData = i64;
     type BrowserSessionData = i64;
     type ClientData = i64;
+    type CompatAccessTokenData = i64;
     type RefreshTokenData = i64;
     type SessionData = i64;
     type UserData = i64;
@@ -56,6 +57,7 @@ struct IdAndCreationTime {
     created_at: DateTime<Utc>,
 }
 
+pub mod compat;
 pub mod oauth2;
 pub mod user;
 

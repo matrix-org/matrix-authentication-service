@@ -21,6 +21,7 @@ mod csrf;
 mod database;
 mod email;
 mod http;
+mod matrix;
 mod secrets;
 mod telemetry;
 mod templates;
@@ -31,6 +32,7 @@ pub use self::{
     database::DatabaseConfig,
     email::{EmailConfig, EmailSmtpMode, EmailTransportConfig},
     http::HttpConfig,
+    matrix::MatrixConfig,
     secrets::{Encrypter, SecretsConfig},
     telemetry::{
         MetricsConfig, MetricsExporterConfig, Propagator, TelemetryConfig, TracingConfig,
@@ -73,6 +75,10 @@ pub struct RootConfig {
 
     /// Application secrets
     pub secrets: SecretsConfig,
+
+    /// Configuration related to the homeserver
+    #[serde(default)]
+    pub matrix: MatrixConfig,
 }
 
 #[async_trait]
@@ -91,6 +97,7 @@ impl ConfigurationSection<'_> for RootConfig {
             csrf: CsrfConfig::generate().await?,
             email: EmailConfig::generate().await?,
             secrets: SecretsConfig::generate().await?,
+            matrix: MatrixConfig::generate().await?,
         })
     }
 
@@ -104,6 +111,7 @@ impl ConfigurationSection<'_> for RootConfig {
             csrf: CsrfConfig::test(),
             email: EmailConfig::test(),
             secrets: SecretsConfig::test(),
+            matrix: MatrixConfig::test(),
         }
     }
 }

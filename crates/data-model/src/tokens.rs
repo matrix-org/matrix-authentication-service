@@ -66,13 +66,26 @@ impl<S: StorageBackendMarker> From<RefreshToken<S>> for RefreshToken<()> {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct CompatAccessToken<T: StorageBackend> {
+    pub data: T::CompatAccessTokenData,
+    pub token: String,
+    pub device_id: String,
+    pub created_at: DateTime<Utc>,
+    pub deleted_at: Option<DateTime<Utc>>,
+}
+
 /// Type of token to generate or validate
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TokenType {
     /// An access token, used by Relying Parties to authenticate requests
     AccessToken,
+
     /// A refresh token, used by the refresh token grant
     RefreshToken,
+
+    /// A legacy access token
+    CompatAccessToken,
 }
 
 impl TokenType {
@@ -80,6 +93,7 @@ impl TokenType {
         match self {
             TokenType::AccessToken => "mat",
             TokenType::RefreshToken => "mar",
+            TokenType::CompatAccessToken => "mct",
         }
     }
 
@@ -87,6 +101,7 @@ impl TokenType {
         match prefix {
             "mat" => Some(TokenType::AccessToken),
             "mar" => Some(TokenType::RefreshToken),
+            "mct" => Some(TokenType::CompatAccessToken),
             _ => None,
         }
     }
@@ -163,8 +178,10 @@ impl PartialEq<OAuthTokenTypeHint> for TokenType {
     fn eq(&self, other: &OAuthTokenTypeHint) -> bool {
         matches!(
             (self, other),
-            (TokenType::AccessToken, OAuthTokenTypeHint::AccessToken)
-                | (TokenType::RefreshToken, OAuthTokenTypeHint::RefreshToken)
+            (
+                TokenType::AccessToken | TokenType::CompatAccessToken,
+                OAuthTokenTypeHint::AccessToken
+            ) | (TokenType::RefreshToken, OAuthTokenTypeHint::RefreshToken)
         )
     }
 }
@@ -217,7 +234,8 @@ mod tests {
 
     #[test]
     fn test_prefix_match() {
-        use TokenType::{AccessToken, RefreshToken};
+        use TokenType::{AccessToken, CompatAccessToken, RefreshToken};
+        assert_eq!(TokenType::match_prefix("mct"), Some(CompatAccessToken));
         assert_eq!(TokenType::match_prefix("mat"), Some(AccessToken));
         assert_eq!(TokenType::match_prefix("mar"), Some(RefreshToken));
         assert_eq!(TokenType::match_prefix("matt"), None);
