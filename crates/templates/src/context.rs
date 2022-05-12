@@ -245,8 +245,11 @@ pub enum PostAuthContext {
     /// Continue an authorization grant
     ContinueAuthorizationGrant {
         /// The authorization grant that will be continued after authentication
-        grant: AuthorizationGrant<()>,
+        grant: Box<AuthorizationGrant<()>>,
     },
+
+    /// Change the account password
+    ChangePassword,
 }
 
 /// Context used by the `login.html` template

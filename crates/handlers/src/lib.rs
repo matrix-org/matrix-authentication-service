@@ -61,6 +61,10 @@ where
     // All those routes are API-like, with a common CORS layer
     let api_router = Router::new()
         .route(
+            mas_router::ChangePasswordDiscovery::route(),
+            get(|| async { mas_router::AccountPassword.go() }),
+        )
+        .route(
             mas_router::OidcConfiguration::route(),
             get(self::oauth2::discovery::get),
         )

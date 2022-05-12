@@ -54,7 +54,7 @@ pub(crate) async fn get(
     if let Some(session) = maybe_session {
         render(templates, session, cookie_jar).await
     } else {
-        let login = mas_router::Login::default();
+        let login = mas_router::Login::and_then(mas_router::PostAuthAction::ChangePassword);
         Ok((cookie_jar, login.go()).into_response())
     }
 }
@@ -92,7 +92,7 @@ pub(crate) async fn post(
     let mut session = if let Some(session) = maybe_session {
         session
     } else {
-        let login = mas_router::Login::default();
+        let login = mas_router::Login::and_then(mas_router::PostAuthAction::ChangePassword);
         return Ok((cookie_jar, login.go()).into_response());
     };
 

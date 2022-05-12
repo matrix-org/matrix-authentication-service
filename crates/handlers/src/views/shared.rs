@@ -38,9 +38,10 @@ impl OptionalPostAuthAction {
         match &self.post_auth_action {
             Some(PostAuthAction::ContinueAuthorizationGrant { data }) => {
                 let grant = get_grant_by_id(conn, *data).await?;
-                let grant = grant.into();
+                let grant = Box::new(grant.into());
                 Ok(Some(PostAuthContext::ContinueAuthorizationGrant { grant }))
             }
+            Some(PostAuthAction::ChangePassword) => Ok(Some(PostAuthContext::ChangePassword)),
             None => Ok(None),
         }
     }

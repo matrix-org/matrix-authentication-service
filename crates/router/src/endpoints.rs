@@ -23,6 +23,7 @@ pub enum PostAuthAction {
         #[serde(deserialize_with = "serde_with::rust::display_fromstr::deserialize")]
         data: i64,
     },
+    ChangePassword,
 }
 
 impl PostAuthAction {
@@ -35,6 +36,7 @@ impl PostAuthAction {
     pub fn go_next(&self) -> axum::response::Redirect {
         match self {
             Self::ContinueAuthorizationGrant { data } => ContinueAuthorizationGrant(*data).go(),
+            Self::ChangePassword => AccountPassword.go(),
         }
     }
 }
@@ -53,6 +55,13 @@ pub struct Webfinger;
 
 impl SimpleRoute for Webfinger {
     const PATH: &'static str = "/.well-known/webfinger";
+}
+
+/// `GET /.well-known/change-password`
+pub struct ChangePasswordDiscovery;
+
+impl SimpleRoute for ChangePasswordDiscovery {
+    const PATH: &'static str = "/.well-known/change-password";
 }
 
 /// `GET /oauth2/keys.json`
