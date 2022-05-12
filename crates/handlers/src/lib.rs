@@ -39,6 +39,7 @@ use sqlx::PgPool;
 use tower::util::ThenLayer;
 use tower_http::cors::{Any, CorsLayer};
 
+mod compat;
 mod health;
 mod oauth2;
 mod views;
@@ -94,6 +95,10 @@ where
         .route(
             mas_router::OAuth2RegistrationEndpoint::route(),
             post(self::oauth2::registration::post),
+        )
+        .route(
+            mas_router::CompatLogin::route(),
+            get(self::compat::get).post(self::compat::post),
         )
         .layer(
             CorsLayer::new()

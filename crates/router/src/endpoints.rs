@@ -366,3 +366,10 @@ impl Route for Consent {
         format!("/consent/{}", self.0).into()
     }
 }
+
+/// `GET|POST /_matrix/client/v3/login`
+pub struct CompatLogin;
+
+impl SimpleRoute for CompatLogin {
+    const PATH: &'static str = "/_matrix/client/:version/login";
+}
