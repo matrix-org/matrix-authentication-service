@@ -1,5 +1,5 @@
 {#
-Copyright 2021 The Matrix.org Foundation C.I.C.
+Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,21 +14,36 @@ See the License for the specific language governing permissions and
 limitations under the License.
 #}
 
-{% macro input(label, name, type="text", errors=false, class="") %}
-  {% if errors is not empty %}
+{% macro input(label, name, type="text", form_state=false, class="") %}
+  {% if not form_state %}
+    {% set form_state = dict(errors=[], fields=dict()) %}
+  {% endif %}
+
+  {% set state = form_state.fields[name] | default(value=dict(errors=[], value="")) %}
+
+  {% if state.errors is not empty %}
     {% set border_color = "border-alert" %}
     {% set text_color = "text-alert" %}
   {% else %}
     {% set border_color = "border-grey-50 dark:border-grey-450" %}
     {% set text_color = "text-black-800 dark:text-grey-300" %}
   {% endif %}
+
   <label class="flex flex-col block {{ class }}">
     <div class="mx-2 -mb-3 -mt-2 leading-5 px-1 z-10 self-start bg-white dark:bg-black-900 border-white border-1 dark:border-2 dark:border-black-900 rounded-full text-sm {{ text_color }}">{{ label }}</div>
-    <input name="{{ name }}" class="z-0 px-3 py-2 bg-white dark:bg-black-900 rounded-lg {{ border_color }} border-1 dark:border-2 focus:border-accent focus:ring-0 focus:outline-0" type="{{ type }}" />
+    <input name="{{ name }}" class="z-0 px-3 py-2 bg-white dark:bg-black-900 rounded-lg {{ border_color }} border-1 dark:border-2 focus:border-accent focus:ring-0 focus:outline-0" type="{{ type }}" {% if state.value %} value="{{ state.value }}" {% endif %}  />
 
-    {% if errors is not empty %}
-      {% for error in errors %}
-        <div class="mx-4 text-sm text-alert">{{ error }}</div>
+    {% if state.errors is not empty %}
+      {% for error in state.errors %}
+        {% if error.kind != "unspecified" %}
+          <div class="mx-4 text-sm text-alert">
+            {% if error.kind == "required" %}
+              This field is required
+            {% else %}
+              {{ error.kind }}
+            {% endif %}
+          </div>
+        {% endif %}
       {% endfor %}
     {% endif %}
   </label>

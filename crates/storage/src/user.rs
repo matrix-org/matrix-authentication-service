@@ -18,7 +18,7 @@ use anyhow::{bail, Context};
 use argon2::Argon2;
 use chrono::{DateTime, Utc};
 use mas_data_model::{
-    errors::HtmlError, Authentication, BrowserSession, User, UserEmail, UserEmailVerification,
+    Authentication, BrowserSession, User, UserEmail, UserEmailVerification,
     UserEmailVerificationState,
 };
 use password_hash::{PasswordHash, PasswordHasher, SaltString};
@@ -61,21 +61,11 @@ pub enum LoginError {
     Other(#[from] anyhow::Error),
 }
 
-impl HtmlError for LoginError {
-    fn html_display(&self) -> String {
-        match self {
-            LoginError::NotFound { .. } => "Could not find user".to_string(),
-            LoginError::Authentication { .. } => "Failed to authenticate user".to_string(),
-            LoginError::Other(e) => format!("Internal error: <pre>{}</pre>", e),
-        }
-    }
-}
-
 #[tracing::instrument(skip(conn, password))]
 pub async fn login(
     conn: impl Acquire<'_, Database = Postgres>,
     username: &str,
-    password: String,
+    password: &str,
 ) -> Result<BrowserSession<PostgresqlBackend>, LoginError> {
     let mut txn = conn.begin().await.context("could not start transaction")?;
     let user = lookup_user_by_username(&mut txn, username)
@@ -287,7 +277,7 @@ pub enum AuthenticationError {
 pub async fn authenticate_session(
     txn: &mut Transaction<'_, Postgres>,
     session: &mut BrowserSession<PostgresqlBackend>,
-    password: String,
+    password: &str,
 ) -> Result<(), AuthenticationError> {
     // First, fetch the hashed password from the user associated with that session
     let hashed_password: String = sqlx::query_scalar!(
@@ -307,6 +297,7 @@ pub async fn authenticate_session(
 
     // TODO: pass verifiers list as parameter
     // Verify the password in a blocking thread to avoid blocking the async executor
+    let password = password.to_string();
     task::spawn_blocking(move || {
         let context = Argon2::default();
         let hasher = PasswordHash::new(&hashed_password).map_err(AuthenticationError::Password)?;

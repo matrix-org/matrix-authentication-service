@@ -16,11 +16,11 @@
 
 #![allow(clippy::trait_duplication_in_bounds)]
 
-use mas_data_model::{
-    errors::ErroredForm, AuthorizationGrant, BrowserSession, StorageBackend, User, UserEmail,
-};
-use serde::{ser::SerializeStruct, Serialize};
+use mas_data_model::{AuthorizationGrant, BrowserSession, StorageBackend, User, UserEmail};
+use serde::{ser::SerializeStruct, Deserialize, Serialize};
 use url::Url;
+
+use crate::{FormField, FormState};
 
 /// Helper trait to construct context wrappers
 pub trait TemplateContext: Serialize {
@@ -219,7 +219,7 @@ impl TemplateContext for IndexContext {
 }
 
 /// Fields of the login form
-#[derive(Serialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum LoginFormField {
     /// The username field
@@ -227,6 +227,15 @@ pub enum LoginFormField {
 
     /// The password field
     Password,
+}
+
+impl FormField for LoginFormField {
+    fn keep(&self) -> bool {
+        match self {
+            Self::Username => true,
+            Self::Password => false,
+        }
+    }
 }
 
 /// Context used in login and reauth screens, for the post-auth action to do
@@ -243,7 +252,7 @@ pub enum PostAuthContext {
 /// Context used by the `login.html` template
 #[derive(Serialize, Default)]
 pub struct LoginContext {
-    form: ErroredForm<LoginFormField>,
+    form: FormState<LoginFormField>,
     next: Option<PostAuthContext>,
     register_link: String,
 }
@@ -255,7 +264,7 @@ impl TemplateContext for LoginContext {
     {
         // TODO: samples with errors
         vec![LoginContext {
-            form: ErroredForm::default(),
+            form: FormState::default(),
             next: None,
             register_link: "/register".to_string(),
         }]
@@ -263,9 +272,9 @@ impl TemplateContext for LoginContext {
 }
 
 impl LoginContext {
-    /// Add an error on the login form
+    /// Set the form state
     #[must_use]
-    pub fn with_form_error(self, form: ErroredForm<LoginFormField>) -> Self {
+    pub fn with_form_state(self, form: FormState<LoginFormField>) -> Self {
         Self { form, ..self }
     }
 
@@ -289,7 +298,7 @@ impl LoginContext {
 }
 
 /// Fields of the registration form
-#[derive(Serialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum RegisterFormField {
     /// The username field
@@ -302,10 +311,19 @@ pub enum RegisterFormField {
     PasswordConfirm,
 }
 
+impl FormField for RegisterFormField {
+    fn keep(&self) -> bool {
+        match self {
+            Self::Username => true,
+            Self::Password | Self::PasswordConfirm => false,
+        }
+    }
+}
+
 /// Context used by the `register.html` template
 #[derive(Serialize, Default)]
 pub struct RegisterContext {
-    form: ErroredForm<LoginFormField>,
+    form: FormState<RegisterFormField>,
     next: Option<PostAuthContext>,
     login_link: String,
 }
@@ -317,7 +335,7 @@ impl TemplateContext for RegisterContext {
     {
         // TODO: samples with errors
         vec![RegisterContext {
-            form: ErroredForm::default(),
+            form: FormState::default(),
             next: None,
             login_link: "/login".to_string(),
         }]
@@ -327,7 +345,7 @@ impl TemplateContext for RegisterContext {
 impl RegisterContext {
     /// Add an error on the registration form
     #[must_use]
-    pub fn with_form_error(self, form: ErroredForm<LoginFormField>) -> Self {
+    pub fn with_form_state(self, form: FormState<RegisterFormField>) -> Self {
         Self { form, ..self }
     }
 
@@ -377,11 +395,26 @@ impl ConsentContext {
 }
 
 /// Fields of the reauthentication form
-#[derive(Serialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum ReauthFormField {
     /// The password field
     Password,
+}
+
+impl FormField for ReauthFormField {
+    fn keep(&self) -> bool {
+        match self {
+            Self::Password => false,
+        }
+    }
+}
+
+/// Context used by the `reauth.html` template
+#[derive(Serialize, Default)]
+pub struct ReauthContext {
+    form: FormState<ReauthFormField>,
+    next: Option<PostAuthContext>,
 }
 
 impl TemplateContext for ReauthContext {
@@ -391,7 +424,7 @@ impl TemplateContext for ReauthContext {
     {
         // TODO: samples with errors
         vec![ReauthContext {
-            form: ErroredForm::default(),
+            form: FormState::default(),
             next: None,
         }]
     }
@@ -400,7 +433,7 @@ impl TemplateContext for ReauthContext {
 impl ReauthContext {
     /// Add an error on the reauthentication form
     #[must_use]
-    pub fn with_form_error(self, form: ErroredForm<ReauthFormField>) -> Self {
+    pub fn with_form_state(self, form: FormState<ReauthFormField>) -> Self {
         Self { form, ..self }
     }
 
@@ -412,22 +445,6 @@ impl ReauthContext {
             ..self
         }
     }
-}
-
-impl Default for ReauthContext {
-    fn default() -> Self {
-        Self {
-            form: ErroredForm::new(),
-            next: None,
-        }
-    }
-}
-
-/// Context used by the `reauth.html` template
-#[derive(Serialize)]
-pub struct ReauthContext {
-    form: ErroredForm<ReauthFormField>,
-    next: Option<PostAuthContext>,
 }
 
 /// Context used by the `account/index.html` template

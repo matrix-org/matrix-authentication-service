@@ -95,7 +95,7 @@ pub(crate) async fn post(
     };
 
     // TODO: recover from errors here
-    authenticate_session(&mut txn, &mut session, form.password).await?;
+    authenticate_session(&mut txn, &mut session, &form.password).await?;
     let cookie_jar = cookie_jar.set_session(&session);
     txn.commit().await?;
 

@@ -37,16 +37,20 @@ use tokio::{fs::OpenOptions, io::AsyncWriteExt, sync::RwLock, task::JoinError};
 use tracing::{debug, info, warn};
 
 mod context;
+mod forms;
 mod functions;
 
 #[macro_use]
 mod macros;
 
-pub use self::context::{
-    AccountContext, AccountEmailsContext, ConsentContext, EmailVerificationContext, EmptyContext,
-    ErrorContext, FormPostContext, IndexContext, LoginContext, LoginFormField, PostAuthContext,
-    ReauthContext, ReauthFormField, RegisterContext, RegisterFormField, TemplateContext, WithCsrf,
-    WithOptionalSession, WithSession,
+pub use self::{
+    context::{
+        AccountContext, AccountEmailsContext, ConsentContext, EmailVerificationContext,
+        EmptyContext, ErrorContext, FormPostContext, IndexContext, LoginContext, LoginFormField,
+        PostAuthContext, ReauthContext, ReauthFormField, RegisterContext, RegisterFormField,
+        TemplateContext, WithCsrf, WithOptionalSession, WithSession,
+    },
+    forms::{FieldError, FormError, FormField, FormState, ToFormState},
 };
 
 /// Wrapper around [`tera::Tera`] helping rendering the various templates
@@ -280,6 +284,7 @@ register_templates! {
         "components/field.html",
         "components/back_to_client.html",
         "components/navbar.html",
+        "components/errors.html",
         "base.html",
     };
 

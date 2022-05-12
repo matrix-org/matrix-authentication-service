@@ -96,7 +96,7 @@ pub(crate) async fn post(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    authenticate_session(&mut txn, &mut session, form.current_password).await?;
+    authenticate_session(&mut txn, &mut session, &form.current_password).await?;
 
     // TODO: display nice form errors
     if form.new_password != form.new_password_confirm {

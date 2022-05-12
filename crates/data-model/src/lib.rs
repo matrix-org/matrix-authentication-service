@@ -22,7 +22,6 @@
     clippy::trait_duplication_in_bounds
 )]
 
-pub mod errors;
 pub(crate) mod oauth2;
 pub(crate) mod tokens;
 pub(crate) mod traits;

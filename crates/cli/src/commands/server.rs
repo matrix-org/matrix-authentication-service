@@ -20,7 +20,7 @@ use std::{
 
 use anyhow::Context;
 use clap::Parser;
-use futures::{future::TryFutureExt, stream::TryStreamExt};
+use futures::stream::{StreamExt, TryStreamExt};
 use hyper::Server;
 use mas_config::RootConfig;
 use mas_email::{MailTransport, Mailer};
@@ -118,20 +118,16 @@ async fn watch_templates(
             }
         });
 
-    let fut = files_changed_stream
-        .try_for_each(move |files| {
-            let templates = templates.clone();
-            async move {
-                info!(?files, "Files changed, reloading templates");
+    let fut = files_changed_stream.for_each(move |files| {
+        let templates = templates.clone();
+        async move {
+            info!(?files, "Files changed, reloading templates");
 
-                templates
-                    .clone()
-                    .reload()
-                    .await
-                    .context("Could not reload templates")
-            }
-        })
-        .inspect_err(|err| error!(%err, "Error while watching templates, stop watching"));
+            templates.clone().reload().await.unwrap_or_else(|err| {
+                error!(?err, "Error while reloading templates");
+            });
+        }
+    });
 
     tokio::spawn(fut);
 

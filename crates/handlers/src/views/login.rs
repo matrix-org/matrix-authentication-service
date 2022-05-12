@@ -18,23 +18,28 @@ use axum::{
 };
 use axum_extra::extract::PrivateCookieJar;
 use mas_axum_utils::{
-    csrf::{CsrfExt, ProtectedForm},
+    csrf::{CsrfExt, CsrfToken, ProtectedForm},
     FancyError, SessionInfoExt,
 };
 use mas_config::Encrypter;
-use mas_data_model::errors::WrapFormError;
 use mas_router::Route;
-use mas_storage::user::login;
-use mas_templates::{LoginContext, LoginFormField, TemplateContext, Templates};
-use serde::Deserialize;
-use sqlx::PgPool;
+use mas_storage::user::{login, LoginError};
+use mas_templates::{
+    FieldError, FormError, LoginContext, LoginFormField, TemplateContext, Templates, ToFormState,
+};
+use serde::{Deserialize, Serialize};
+use sqlx::{PgConnection, PgPool};
 
 use super::shared::OptionalPostAuthAction;
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub(crate) struct LoginForm {
     username: String,
     password: String,
+}
+
+impl ToFormState for LoginForm {
+    type Field = LoginFormField;
 }
 
 #[tracing::instrument(skip(templates, pool, cookie_jar))]
@@ -55,19 +60,14 @@ pub(crate) async fn get(
         let reply = query.go_next();
         Ok((cookie_jar, reply).into_response())
     } else {
-        let ctx = LoginContext::default();
-        let next = query.load_context(&mut conn).await?;
-        let ctx = if let Some(next) = next {
-            ctx.with_post_action(next)
-        } else {
-            ctx
-        };
-        let register_link = mas_router::Register::from(query.post_auth_action).relative_url();
-        let ctx = ctx
-            .with_register_link(register_link.to_string())
-            .with_csrf(csrf_token.form_value());
-
-        let content = templates.render_login(&ctx).await?;
+        let content = render(
+            LoginContext::default(),
+            query,
+            csrf_token,
+            &mut conn,
+            &templates,
+        )
+        .await?;
 
         Ok((cookie_jar, Html(content)).into_response())
     }
@@ -80,33 +80,86 @@ pub(crate) async fn post(
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<LoginForm>>,
 ) -> Result<Response, FancyError> {
-    use mas_storage::user::LoginError;
     let mut conn = pool.acquire().await?;
 
     let form = cookie_jar.verify_form(form)?;
 
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token();
 
-    // TODO: recover
-    match login(&mut conn, &form.username, form.password).await {
+    // Validate the form
+    let state = {
+        let mut state = form.to_form_state();
+
+        if form.username.is_empty() {
+            state.add_error_on_field(LoginFormField::Username, FieldError::Required);
+        }
+
+        if form.password.is_empty() {
+            state.add_error_on_field(LoginFormField::Password, FieldError::Required);
+        }
+
+        state
+    };
+
+    if !state.is_valid() {
+        let content = render(
+            LoginContext::default().with_form_state(state),
+            query,
+            csrf_token,
+            &mut conn,
+            &templates,
+        )
+        .await?;
+
+        return Ok((cookie_jar, Html(content)).into_response());
+    }
+
+    match login(&mut conn, &form.username, &form.password).await {
         Ok(session_info) => {
             let cookie_jar = cookie_jar.set_session(&session_info);
             let reply = query.go_next();
             Ok((cookie_jar, reply).into_response())
         }
         Err(e) => {
-            let errored_form = match e {
-                LoginError::NotFound { .. } => e.on_field(LoginFormField::Username),
-                LoginError::Authentication { .. } => e.on_field(LoginFormField::Password),
-                LoginError::Other(_) => e.on_form(),
+            let state = match e {
+                LoginError::NotFound { .. } | LoginError::Authentication { .. } => {
+                    state.with_error_on_form(FormError::InvalidCredentials)
+                }
+                LoginError::Other(_) => state.with_error_on_form(FormError::Internal),
             };
-            let ctx = LoginContext::default()
-                .with_form_error(errored_form)
-                .with_csrf(csrf_token.form_value());
 
-            let content = templates.render_login(&ctx).await?;
+            let content = render(
+                LoginContext::default().with_form_state(state),
+                query,
+                csrf_token,
+                &mut conn,
+                &templates,
+            )
+            .await?;
 
             Ok((cookie_jar, Html(content)).into_response())
         }
     }
+}
+
+async fn render(
+    ctx: LoginContext,
+    action: OptionalPostAuthAction,
+    csrf_token: CsrfToken,
+    conn: &mut PgConnection,
+    templates: &Templates,
+) -> Result<String, FancyError> {
+    let next = action.load_context(conn).await?;
+    let ctx = if let Some(next) = next {
+        ctx.with_post_action(next)
+    } else {
+        ctx
+    };
+    let register_link = mas_router::Register::from(action.post_auth_action).relative_url();
+    let ctx = ctx
+        .with_register_link(register_link.to_string())
+        .with_csrf(csrf_token.form_value());
+
+    let content = templates.render_login(&ctx).await?;
+    Ok(content)
 }
