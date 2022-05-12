@@ -26,7 +26,7 @@ limitations under the License.
         </div>
         <input type="hidden" name="csrf" value="{{ csrf_token }}" />
         {# TODO: errors #}
-        {{ field::input(label="Password", name="password", type="password") }}
+        {{ field::input(label="Password", name="password", type="password", form_state=form, autocomplete="password") }}
         {% if next and next.kind == "continue_authorization_grant" %}
           <div class="grid grid-cols-2 gap-4">
             {{ back_to_client::link(

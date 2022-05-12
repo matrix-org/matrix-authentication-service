@@ -32,9 +32,9 @@ limitations under the License.
       {% endif %}
 
       <input type="hidden" name="csrf" value="{{ csrf_token }}" />
-      {{ field::input(label="Username", name="username", form_state=form) }}
-      {{ field::input(label="Password", name="password", type="password", form_state=form) }}
-      {{ field::input(label="Confirm Password", name="password_confirm", type="password", form_state=form) }}
+      {{ field::input(label="Username", name="username", form_state=form, autocomplete="username") }}
+      {{ field::input(label="Password", name="password", type="password", form_state=form, autocomplete="new-password") }}
+      {{ field::input(label="Confirm Password", name="password_confirm", type="password", form_state=form, autocomplete="new-password") }}
 
       {% if next and next.kind == "continue_authorization_grant" %}
         <div class="grid grid-cols-2 gap-4">
