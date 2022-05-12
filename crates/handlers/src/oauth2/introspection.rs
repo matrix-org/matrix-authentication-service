@@ -18,21 +18,40 @@ use mas_axum_utils::client_authorization::{ClientAuthorization, CredentialsVerif
 use mas_config::Encrypter;
 use mas_data_model::{TokenFormatError, TokenType};
 use mas_iana::oauth::{OAuthClientAuthenticationMethod, OAuthTokenTypeHint};
-use mas_storage::oauth2::{
-    access_token::{lookup_active_access_token, AccessTokenLookupError},
-    client::ClientFetchError,
-    refresh_token::{lookup_active_refresh_token, RefreshTokenLookupError},
+use mas_storage::{
+    compat::{lookup_active_compat_access_token, CompatAccessTokenLookupError},
+    oauth2::{
+        access_token::{lookup_active_access_token, AccessTokenLookupError},
+        client::ClientFetchError,
+        refresh_token::{lookup_active_refresh_token, RefreshTokenLookupError},
+    },
 };
-use oauth2_types::requests::{IntrospectionRequest, IntrospectionResponse};
+use oauth2_types::{
+    requests::{IntrospectionRequest, IntrospectionResponse},
+    scope::ScopeToken,
+};
 use sqlx::PgPool;
+use thiserror::Error;
 
+#[derive(Debug, Error)]
 pub enum RouteError {
+    #[error(transparent)]
     Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
+
+    #[error("could not find client")]
     ClientNotFound,
+
+    #[error("client is not allowed to introspect")]
     NotAllowed,
+
+    #[error("unknown token")]
     UnknownToken,
+
+    #[error("bad request")]
     BadRequest,
-    ClientCredentialsVerification(CredentialsVerificationError),
+
+    #[error(transparent)]
+    ClientCredentialsVerification(#[from] CredentialsVerificationError),
 }
 
 impl IntoResponse for RouteError {
@@ -88,8 +107,8 @@ impl From<AccessTokenLookupError> for RouteError {
     }
 }
 
-impl From<RefreshTokenLookupError> for RouteError {
-    fn from(e: RefreshTokenLookupError) -> Self {
+impl From<CompatAccessTokenLookupError> for RouteError {
+    fn from(e: CompatAccessTokenLookupError) -> Self {
         if e.not_found() {
             Self::UnknownToken
         } else {
@@ -98,9 +117,13 @@ impl From<RefreshTokenLookupError> for RouteError {
     }
 }
 
-impl From<CredentialsVerificationError> for RouteError {
-    fn from(e: CredentialsVerificationError) -> Self {
-        Self::ClientCredentialsVerification(e)
+impl From<RefreshTokenLookupError> for RouteError {
+    fn from(e: RefreshTokenLookupError) -> Self {
+        if e.not_found() {
+            Self::UnknownToken
+        } else {
+            Self::Internal(Box::new(e))
+        }
     }
 }
 
@@ -119,6 +142,7 @@ const INACTIVE: IntrospectionResponse = IntrospectionResponse {
     jti: None,
 };
 
+#[tracing::instrument(skip_all, err)]
 pub(crate) async fn post(
     Extension(pool): Extension<PgPool>,
     Extension(encrypter): Extension<Encrypter>,
@@ -187,6 +211,29 @@ pub(crate) async fn post(
                 iat: Some(token.created_at),
                 nbf: Some(token.created_at),
                 sub: Some(session.browser_session.user.sub),
+                aud: None,
+                iss: None,
+                jti: None,
+            }
+        }
+        TokenType::CompatAccessToken => {
+            let (token, user) = lookup_active_compat_access_token(&mut conn, token).await?;
+
+            let device_scope: ScopeToken = format!("urn:matrix:device:{}", token.device_id)
+                .parse()
+                .unwrap();
+            let scope = [device_scope].into_iter().collect();
+
+            IntrospectionResponse {
+                active: true,
+                scope: Some(scope),
+                client_id: Some("legacy".into()),
+                username: Some(user.username),
+                token_type: Some(OAuthTokenTypeHint::AccessToken),
+                exp: None,
+                iat: Some(token.created_at),
+                nbf: Some(token.created_at),
+                sub: Some(user.sub),
                 aud: None,
                 iss: None,
                 jti: None,

@@ -29,7 +29,7 @@ use axum::{
     Router,
 };
 use hyper::header::{ACCEPT, ACCEPT_LANGUAGE, AUTHORIZATION, CONTENT_LANGUAGE, CONTENT_TYPE};
-use mas_config::Encrypter;
+use mas_config::{Encrypter, MatrixConfig};
 use mas_email::Mailer;
 use mas_http::CorsLayerExt;
 use mas_jose::StaticKeystore;
@@ -53,6 +53,7 @@ pub fn router<B>(
     encrypter: &Encrypter,
     mailer: &Mailer,
     url_builder: &UrlBuilder,
+    matrix_config: &MatrixConfig,
 ) -> Router<B>
 where
     B: HttpBody + Send + 'static,
@@ -186,4 +187,5 @@ where
         .layer(Extension(encrypter.clone()))
         .layer(Extension(url_builder.clone()))
         .layer(Extension(mailer.clone()))
+        .layer(Extension(matrix_config.clone()))
 }

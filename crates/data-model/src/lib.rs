@@ -1,4 +1,4 @@
-// Copyright 2021 The Matrix.org Foundation C.I.C.
+// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ pub use self::{
         AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, Client,
         InvalidRedirectUriError, JwksOrJwksUri, Pkce, Session,
     },
-    tokens::{AccessToken, RefreshToken, TokenFormatError, TokenType},
+    tokens::{AccessToken, CompatAccessToken, RefreshToken, TokenFormatError, TokenType},
     traits::{StorageBackend, StorageBackendMarker},
     users::{
         Authentication, BrowserSession, User, UserEmail, UserEmailVerification,
