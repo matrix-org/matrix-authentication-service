@@ -99,7 +99,11 @@ where
         )
         .route(
             mas_router::CompatLogin::route(),
-            get(self::compat::get).post(self::compat::post),
+            get(self::compat::login::get).post(self::compat::login::post),
+        )
+        .route(
+            mas_router::CompatLogout::route(),
+            post(self::compat::logout::post),
         )
         .layer(
             CorsLayer::new()
