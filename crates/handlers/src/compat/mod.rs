@@ -32,4 +32,3 @@ impl IntoResponse for MatrixError {
         (self.status, Json(self)).into_response()
     }
 }
-
