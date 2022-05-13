@@ -1557,6 +1557,18 @@
     },
     "query": "\n            UPDATE oauth2_refresh_tokens\n            SET next_token_id = $2\n            WHERE id = $1\n        "
   },
+  "c53f3f064920f8516a14b384760e2c30f18ab6f099e468cf019fb4eaa0547637": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "\n            UPDATE compat_access_tokens\n            SET deleted_at = NOW()\n            WHERE token = $1 AND deleted_at IS NULL\n        "
+  },
   "d2f767218ec2489058db9a0382ca0eea20379c30aeae9f492da4ba35b66f4dc7": {
     "describe": {
       "columns": [],

@@ -129,7 +129,7 @@ pub async fn lookup_active_compat_access_token(
     Ok((token, user))
 }
 
-#[tracing::instrument(skip(conn, password))]
+#[tracing::instrument(skip(conn, password, token))]
 pub async fn compat_login(
     conn: impl Acquire<'_, Database = Postgres>,
     username: &str,
@@ -199,4 +199,28 @@ pub async fn compat_login(
 
     txn.commit().await.context("could not commit transaction")?;
     Ok((token, user))
+}
+
+#[tracing::instrument(skip_all)]
+pub async fn compat_logout(
+    executor: impl PgExecutor<'_>,
+    token: &str,
+) -> Result<(), anyhow::Error> {
+    let res = sqlx::query!(
+        r#"
+            UPDATE compat_access_tokens
+            SET deleted_at = NOW()
+            WHERE token = $1 AND deleted_at IS NULL
+        "#,
+        token,
+    )
+    .execute(executor)
+    .await
+    .context("could not update compat access token")?;
+
+    match res.rows_affected() {
+        1 => Ok(()),
+        0 => anyhow::bail!("no row affected"),
+        _ => anyhow::bail!("too many row affected"),
+    }
 }
