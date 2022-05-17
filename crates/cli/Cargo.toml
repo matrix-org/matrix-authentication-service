@@ -11,7 +11,7 @@ futures = "0.3.21"
 anyhow = "1.0.57"
 clap = { version = "3.1.18", features = ["derive"] }
 dotenv = "0.15.0"
-schemars = { version = "0.8.8", features = ["url", "chrono"] }
+schemars = { version = "0.8.9", features = ["url", "chrono"] }
 tower = { version = "0.4.12", features = ["full"] }
 hyper = { version = "0.14.18", features = ["full"] }
 serde_yaml = "0.8.24"
