@@ -28,6 +28,7 @@ use axum::{
     routing::{get, on, post, MethodFilter},
     Router,
 };
+use headers::HeaderName;
 use hyper::header::{ACCEPT, ACCEPT_LANGUAGE, AUTHORIZATION, CONTENT_LANGUAGE, CONTENT_TYPE};
 use mas_config::{Encrypter, MatrixConfig};
 use mas_email::Mailer;
@@ -97,6 +98,21 @@ where
             mas_router::OAuth2RegistrationEndpoint::route(),
             post(self::oauth2::registration::post),
         )
+        .layer(
+            CorsLayer::new()
+                .allow_origin(Any)
+                .allow_methods(Any)
+                .allow_otel_headers([
+                    AUTHORIZATION,
+                    ACCEPT,
+                    ACCEPT_LANGUAGE,
+                    CONTENT_LANGUAGE,
+                    CONTENT_TYPE,
+                ])
+                .max_age(Duration::from_secs(60 * 60)),
+        );
+
+    let compat_router = Router::new()
         .route(
             mas_router::CompatLogin::route(),
             get(self::compat::login::get).post(self::compat::login::post),
@@ -115,6 +131,7 @@ where
                     ACCEPT_LANGUAGE,
                     CONTENT_LANGUAGE,
                     CONTENT_TYPE,
+                    HeaderName::from_static("x-requested-with"),
                 ])
                 .max_age(Duration::from_secs(60 * 60)),
         );
@@ -185,6 +202,7 @@ where
 
     human_router
         .merge(api_router)
+        .merge(compat_router)
         .layer(Extension(pool.clone()))
         .layer(Extension(templates.clone()))
         .layer(Extension(key_store.clone()))
