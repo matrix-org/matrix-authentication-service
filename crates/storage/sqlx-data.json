@@ -1106,6 +1106,33 @@
     },
     "query": "\n            DELETE FROM oauth2_access_tokens\n            WHERE id = $1\n        "
   },
+  "893b23b2385594f6c878d000b336d3c897adcffed35ee51d7dfea650b75aa0cf": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 1,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n            INSERT INTO compat_sessions (user_id, device_id)\n            VALUES ($1, $2)\n            RETURNING id, created_at\n        "
+  },
   "9882e49f34dff80c1442565f035a1b47ed4dbae1a405f58cf2db198885bb9f47": {
     "describe": {
       "columns": [
@@ -1331,34 +1358,6 @@
     },
     "query": "UPDATE user_sessions SET active = FALSE WHERE id = $1"
   },
-  "a741cb29c617fb2df97f9e4bc84dbf85ff3c02ac87066770291d7bc153451695": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Int8"
-        },
-        {
-          "name": "created_at",
-          "ordinal": 1,
-          "type_info": "Timestamptz"
-        }
-      ],
-      "nullable": [
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Text",
-          "Text"
-        ]
-      }
-    },
-    "query": "\n            INSERT INTO compat_access_tokens (user_id, token, device_id)\n            VALUES ($1, $2, $3)\n            RETURNING id, created_at\n        "
-  },
   "a80c14ba82cfc29493048d9e9578ec5ca482c9228efc7c7212dae4fed86b8367": {
     "describe": {
       "columns": [],
@@ -1421,6 +1420,18 @@
       }
     },
     "query": "\n            SELECT \n                u.id            AS user_id, \n                u.username      AS user_username,\n                ue.id           AS \"user_email_id?\",\n                ue.email        AS \"user_email?\",\n                ue.created_at   AS \"user_email_created_at?\",\n                ue.confirmed_at AS \"user_email_confirmed_at?\"\n            FROM users u\n\n            LEFT JOIN user_emails ue\n              ON ue.id = u.primary_email_id\n\n            WHERE u.username = $1\n        "
+  },
+  "af3d36161bc60593ba991a9652efca1f19a9c4b291966dd41c1883b9c303673a": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "\n            UPDATE compat_sessions\n            SET deleted_at = NOW()\n            FROM compat_access_tokens\n            WHERE compat_access_tokens.token = $1\n              AND compat_sessions.id = compat_access_tokens.id \n              AND compat_sessions.deleted_at IS NULL\n        "
   },
   "b0fec01072df856ba9cd8be0ecf7a58dd4709a0efca4035a2c6f99c43d5a12be": {
     "describe": {
@@ -1557,17 +1568,32 @@
     },
     "query": "\n            UPDATE oauth2_refresh_tokens\n            SET next_token_id = $2\n            WHERE id = $1\n        "
   },
-  "c53f3f064920f8516a14b384760e2c30f18ab6f099e468cf019fb4eaa0547637": {
+  "c2de0bb4b67834bd6dd8106c3fcf9874d0e9d1c5d54cbbedfa070dcd0b372475": {
     "describe": {
-      "columns": [],
-      "nullable": [],
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 1,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
       "parameters": {
         "Left": [
+          "Int8",
           "Text"
         ]
       }
     },
-    "query": "\n            UPDATE compat_access_tokens\n            SET deleted_at = NOW()\n            WHERE token = $1 AND deleted_at IS NULL\n        "
+    "query": "\n            INSERT INTO compat_access_tokens (compat_session_id, token)\n            VALUES ($1, $2)\n            RETURNING id, created_at\n        "
   },
   "d2f767218ec2489058db9a0382ca0eea20379c30aeae9f492da4ba35b66f4dc7": {
     "describe": {
@@ -1698,86 +1724,6 @@
       }
     },
     "query": "\n            INSERT INTO users (username)\n            VALUES ($1)\n            RETURNING id\n        "
-  },
-  "de1ed5db37e48382a38075247c001cf4d01b7eeff165aa3aa62bb21a3284d5b7": {
-    "describe": {
-      "columns": [
-        {
-          "name": "compat_access_token_id",
-          "ordinal": 0,
-          "type_info": "Int8"
-        },
-        {
-          "name": "compat_access_token",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "compat_access_token_created_at",
-          "ordinal": 2,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "compat_access_token_deleted_at",
-          "ordinal": 3,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "compat_access_token_device_id",
-          "ordinal": 4,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_id!",
-          "ordinal": 5,
-          "type_info": "Int8"
-        },
-        {
-          "name": "user_username!",
-          "ordinal": 6,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_email_id?",
-          "ordinal": 7,
-          "type_info": "Int8"
-        },
-        {
-          "name": "user_email?",
-          "ordinal": 8,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_email_created_at?",
-          "ordinal": 9,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "user_email_confirmed_at?",
-          "ordinal": 10,
-          "type_info": "Timestamptz"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        true,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        true
-      ],
-      "parameters": {
-        "Left": [
-          "Text"
-        ]
-      }
-    },
-    "query": "\n            SELECT\n                ct.id              AS \"compat_access_token_id\",\n                ct.token           AS \"compat_access_token\",\n                ct.created_at      AS \"compat_access_token_created_at\",\n                ct.deleted_at      AS \"compat_access_token_deleted_at\",\n                ct.device_id       AS \"compat_access_token_device_id\",\n                 u.id              AS \"user_id!\",\n                 u.username        AS \"user_username!\",\n                ue.id              AS \"user_email_id?\",\n                ue.email           AS \"user_email?\",\n                ue.created_at      AS \"user_email_created_at?\",\n                ue.confirmed_at    AS \"user_email_confirmed_at?\"\n\n            FROM compat_access_tokens ct\n            INNER JOIN users u\n              ON u.id = ct.user_id\n            LEFT JOIN user_emails ue\n              ON ue.id = u.primary_email_id\n\n            WHERE ct.token = $1\n              AND ct.deleted_at IS NULL\n        "
   },
   "df38de13e2f345175f9ef46b4ae2a4f6637dbf74bb28559da8f4d8969f411d14": {
     "describe": {
@@ -1928,6 +1874,86 @@
       }
     },
     "query": "\n            SELECT COUNT(*) as \"count!\"\n            FROM user_sessions s\n            WHERE s.user_id = $1 AND s.active\n        "
+  },
+  "eb12b728e0d58f6bba1a20fbc9bd01f3a6cbae7e40961b39eac3b294609edf2f": {
+    "describe": {
+      "columns": [
+        {
+          "name": "compat_access_token_id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "compat_access_token",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "compat_access_token_created_at",
+          "ordinal": 2,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "compat_session_deleted_at",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "compat_session_device_id",
+          "ordinal": 4,
+          "type_info": "Text"
+        },
+        {
+          "name": "user_id!",
+          "ordinal": 5,
+          "type_info": "Int8"
+        },
+        {
+          "name": "user_username!",
+          "ordinal": 6,
+          "type_info": "Text"
+        },
+        {
+          "name": "user_email_id?",
+          "ordinal": 7,
+          "type_info": "Int8"
+        },
+        {
+          "name": "user_email?",
+          "ordinal": 8,
+          "type_info": "Text"
+        },
+        {
+          "name": "user_email_created_at?",
+          "ordinal": 9,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "user_email_confirmed_at?",
+          "ordinal": 10,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "\n            SELECT\n                ct.id              AS \"compat_access_token_id\",\n                ct.token           AS \"compat_access_token\",\n                ct.created_at      AS \"compat_access_token_created_at\",\n                cs.deleted_at      AS \"compat_session_deleted_at\",\n                cs.device_id       AS \"compat_session_device_id\",\n                 u.id              AS \"user_id!\",\n                 u.username        AS \"user_username!\",\n                ue.id              AS \"user_email_id?\",\n                ue.email           AS \"user_email?\",\n                ue.created_at      AS \"user_email_created_at?\",\n                ue.confirmed_at    AS \"user_email_confirmed_at?\"\n\n            FROM compat_access_tokens ct\n            INNER JOIN compat_sessions cs\n              ON cs.id = ct.compat_session_id\n            INNER JOIN users u\n              ON u.id = cs.user_id\n            LEFT JOIN user_emails ue\n              ON ue.id = u.primary_email_id\n\n            WHERE ct.token = $1\n              AND cs.deleted_at IS NULL\n        "
   },
   "ebf73a609e81830b16700d2c315fffa93fd85b2886e29f234d9953b18a9f72b5": {
     "describe": {

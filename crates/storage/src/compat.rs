@@ -29,8 +29,8 @@ pub struct CompatAccessTokenLookup {
     compat_access_token_id: i64,
     compat_access_token: String,
     compat_access_token_created_at: DateTime<Utc>,
-    compat_access_token_deleted_at: Option<DateTime<Utc>>,
-    compat_access_token_device_id: String,
+    compat_session_deleted_at: Option<DateTime<Utc>>,
+    compat_session_device_id: String,
     user_id: i64,
     user_username: String,
     user_email_id: Option<i64>,
@@ -71,8 +71,8 @@ pub async fn lookup_active_compat_access_token(
                 ct.id              AS "compat_access_token_id",
                 ct.token           AS "compat_access_token",
                 ct.created_at      AS "compat_access_token_created_at",
-                ct.deleted_at      AS "compat_access_token_deleted_at",
-                ct.device_id       AS "compat_access_token_device_id",
+                cs.deleted_at      AS "compat_session_deleted_at",
+                cs.device_id       AS "compat_session_device_id",
                  u.id              AS "user_id!",
                  u.username        AS "user_username!",
                 ue.id              AS "user_email_id?",
@@ -81,13 +81,15 @@ pub async fn lookup_active_compat_access_token(
                 ue.confirmed_at    AS "user_email_confirmed_at?"
 
             FROM compat_access_tokens ct
+            INNER JOIN compat_sessions cs
+              ON cs.id = ct.compat_session_id
             INNER JOIN users u
-              ON u.id = ct.user_id
+              ON u.id = cs.user_id
             LEFT JOIN user_emails ue
               ON ue.id = u.primary_email_id
 
             WHERE ct.token = $1
-              AND ct.deleted_at IS NULL
+              AND cs.deleted_at IS NULL
         "#,
         token,
     )
@@ -99,8 +101,8 @@ pub async fn lookup_active_compat_access_token(
         data: res.compat_access_token_id,
         token: res.compat_access_token,
         created_at: res.compat_access_token_created_at,
-        deleted_at: res.compat_access_token_deleted_at,
-        device_id: res.compat_access_token_device_id,
+        deleted_at: res.compat_session_deleted_at,
+        device_id: res.compat_session_device_id,
     };
 
     let primary_email = match (
@@ -174,16 +176,29 @@ pub async fn compat_login(
     .instrument(tracing::info_span!("Verify hashed password"))
     .await??;
 
-    let res = sqlx::query_as!(
+    let session = sqlx::query_as!(
         IdAndCreationTime,
         r#"
-            INSERT INTO compat_access_tokens (user_id, token, device_id)
-            VALUES ($1, $2, $3)
+            INSERT INTO compat_sessions (user_id, device_id)
+            VALUES ($1, $2)
             RETURNING id, created_at
         "#,
         user.data,
-        token,
         device_id,
+    )
+    .fetch_one(&mut txn)
+    .await
+    .context("could not insert compat session")?;
+
+    let res = sqlx::query_as!(
+        IdAndCreationTime,
+        r#"
+            INSERT INTO compat_access_tokens (compat_session_id, token)
+            VALUES ($1, $2)
+            RETURNING id, created_at
+        "#,
+        session.id,
+        token,
     )
     .fetch_one(&mut txn)
     .await
@@ -208,9 +223,12 @@ pub async fn compat_logout(
 ) -> Result<(), anyhow::Error> {
     let res = sqlx::query!(
         r#"
-            UPDATE compat_access_tokens
+            UPDATE compat_sessions
             SET deleted_at = NOW()
-            WHERE token = $1 AND deleted_at IS NULL
+            FROM compat_access_tokens
+            WHERE compat_access_tokens.token = $1
+              AND compat_sessions.id = compat_access_tokens.id 
+              AND compat_sessions.deleted_at IS NULL
         "#,
         token,
     )
