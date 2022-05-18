@@ -14,8 +14,8 @@
 
 use anyhow::Context;
 use argon2::{Argon2, PasswordHash};
-use chrono::{DateTime, Utc};
-use mas_data_model::{CompatAccessToken, User, UserEmail};
+use chrono::{DateTime, Duration, Utc};
+use mas_data_model::{CompatAccessToken, CompatSession, Device, User, UserEmail};
 use sqlx::{Acquire, PgExecutor, Postgres};
 use thiserror::Error;
 use tokio::task;
@@ -28,7 +28,10 @@ use crate::{
 pub struct CompatAccessTokenLookup {
     compat_access_token_id: i64,
     compat_access_token: String,
+    compat_access_token_expires_after: Option<i32>,
     compat_access_token_created_at: DateTime<Utc>,
+    compat_session_id: i64,
+    compat_session_created_at: DateTime<Utc>,
     compat_session_deleted_at: Option<DateTime<Utc>>,
     compat_session_device_id: String,
     user_id: i64,
@@ -53,14 +56,14 @@ impl CompatAccessTokenLookupError {
     }
 }
 
-#[tracing::instrument(skip(executor))]
+#[tracing::instrument(skip(executor), err)]
 pub async fn lookup_active_compat_access_token(
     executor: impl PgExecutor<'_>,
     token: &str,
 ) -> Result<
     (
         CompatAccessToken<PostgresqlBackend>,
-        User<PostgresqlBackend>,
+        CompatSession<PostgresqlBackend>,
     ),
     CompatAccessTokenLookupError,
 > {
@@ -71,6 +74,9 @@ pub async fn lookup_active_compat_access_token(
                 ct.id              AS "compat_access_token_id",
                 ct.token           AS "compat_access_token",
                 ct.created_at      AS "compat_access_token_created_at",
+                ct.expires_after   AS "compat_access_token_expires_after",
+                cs.id              AS "compat_session_id",
+                cs.created_at      AS "compat_session_created_at",
                 cs.deleted_at      AS "compat_session_deleted_at",
                 cs.device_id       AS "compat_session_device_id",
                  u.id              AS "user_id!",
@@ -101,8 +107,9 @@ pub async fn lookup_active_compat_access_token(
         data: res.compat_access_token_id,
         token: res.compat_access_token,
         created_at: res.compat_access_token_created_at,
-        deleted_at: res.compat_session_deleted_at,
-        device_id: res.compat_session_device_id,
+        expires_after: res
+            .compat_access_token_expires_after
+            .map(|d| Duration::seconds(d.into())),
     };
 
     let primary_email = match (
@@ -128,20 +135,30 @@ pub async fn lookup_active_compat_access_token(
         primary_email,
     };
 
-    Ok((token, user))
+    let device = Device::try_from(res.compat_session_device_id).unwrap();
+
+    let session = CompatSession {
+        data: res.compat_session_id,
+        user,
+        device,
+        created_at: res.compat_session_created_at,
+        deleted_at: res.compat_session_deleted_at,
+    };
+
+    Ok((token, session))
 }
 
-#[tracing::instrument(skip(conn, password, token))]
+#[tracing::instrument(skip(conn, password, token), err)]
 pub async fn compat_login(
     conn: impl Acquire<'_, Database = Postgres>,
     username: &str,
     password: &str,
-    device_id: String,
+    device: Device,
     token: String,
 ) -> Result<
     (
         CompatAccessToken<PostgresqlBackend>,
-        User<PostgresqlBackend>,
+        CompatSession<PostgresqlBackend>,
     ),
     anyhow::Error,
 > {
@@ -176,7 +193,7 @@ pub async fn compat_login(
     .instrument(tracing::info_span!("Verify hashed password"))
     .await??;
 
-    let session = sqlx::query_as!(
+    let res = sqlx::query_as!(
         IdAndCreationTime,
         r#"
             INSERT INTO compat_sessions (user_id, device_id)
@@ -184,11 +201,20 @@ pub async fn compat_login(
             RETURNING id, created_at
         "#,
         user.data,
-        device_id,
+        device.as_str(),
     )
     .fetch_one(&mut txn)
+    .instrument(tracing::info_span!("Insert compat session"))
     .await
     .context("could not insert compat session")?;
+
+    let session = CompatSession {
+        data: res.id,
+        user,
+        device,
+        created_at: res.created_at,
+        deleted_at: None,
+    };
 
     let res = sqlx::query_as!(
         IdAndCreationTime,
@@ -197,10 +223,11 @@ pub async fn compat_login(
             VALUES ($1, $2)
             RETURNING id, created_at
         "#,
-        session.id,
+        session.data,
         token,
     )
     .fetch_one(&mut txn)
+    .instrument(tracing::info_span!("Insert compat access token"))
     .await
     .context("could not insert compat access token")?;
 
@@ -208,15 +235,14 @@ pub async fn compat_login(
         data: res.id,
         token,
         created_at: res.created_at,
-        deleted_at: None,
-        device_id,
+        expires_after: None,
     };
 
     txn.commit().await.context("could not commit transaction")?;
-    Ok((token, user))
+    Ok((token, session))
 }
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, err)]
 pub async fn compat_logout(
     executor: impl PgExecutor<'_>,
     token: &str,

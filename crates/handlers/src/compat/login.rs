@@ -15,11 +15,12 @@
 use axum::{response::IntoResponse, Extension, Json};
 use hyper::StatusCode;
 use mas_config::MatrixConfig;
-use mas_data_model::TokenType;
+use mas_data_model::{Device, TokenType};
 use mas_storage::compat::compat_login;
-use rand::{distributions::Alphanumeric, thread_rng, Rng};
+use rand::thread_rng;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use thiserror::Error;
 
 use super::MatrixError;
 
@@ -69,13 +70,19 @@ pub enum Identifier {
 #[derive(Debug, Serialize)]
 pub struct ResponseBody {
     access_token: String,
-    device_id: String,
+    device_id: Device,
     user_id: String,
 }
 
+#[derive(Debug, Error)]
 pub enum RouteError {
+    #[error(transparent)]
     Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
+
+    #[error("unsupported login method")]
     Unsupported,
+
+    #[error("login failed")]
     LoginFailed,
 }
 
@@ -108,6 +115,7 @@ impl IntoResponse for RouteError {
     }
 }
 
+#[tracing::instrument(skip_all, err)]
 pub(crate) async fn post(
     Extension(pool): Extension<PgPool>,
     Extension(config): Extension<MatrixConfig>,
@@ -124,26 +132,22 @@ pub(crate) async fn post(
         }
     };
 
-    let (token, device_id) = {
+    let (token, device) = {
         let mut rng = thread_rng();
         let token = TokenType::CompatAccessToken.generate(&mut rng);
-        let device_id: String = rng
-            .sample_iter(&Alphanumeric)
-            .take(10)
-            .map(char::from)
-            .collect();
-        (token, device_id)
+        let device = Device::generate(&mut rng);
+        (token, device)
     };
 
-    let (token, user) = compat_login(&mut conn, &username, &password, device_id, token)
+    let (token, session) = compat_login(&mut conn, &username, &password, device, token)
         .await
         .map_err(|_| RouteError::LoginFailed)?;
 
-    let user_id = format!("@{}:{}", user.username, config.homeserver);
+    let user_id = format!("@{}:{}", session.user.username, config.homeserver);
 
     Ok(Json(ResponseBody {
         access_token: token.token,
-        device_id: token.device_id,
+        device_id: session.device,
         user_id,
     }))
 }

@@ -26,10 +26,7 @@ use mas_storage::{
         refresh_token::{lookup_active_refresh_token, RefreshTokenLookupError},
     },
 };
-use oauth2_types::{
-    requests::{IntrospectionRequest, IntrospectionResponse},
-    scope::ScopeToken,
-};
+use oauth2_types::requests::{IntrospectionRequest, IntrospectionResponse};
 use sqlx::PgPool;
 use thiserror::Error;
 
@@ -217,27 +214,28 @@ pub(crate) async fn post(
             }
         }
         TokenType::CompatAccessToken => {
-            let (token, user) = lookup_active_compat_access_token(&mut conn, token).await?;
+            let (token, session) = lookup_active_compat_access_token(&mut conn, token).await?;
 
-            let device_scope: ScopeToken = format!("urn:matrix:device:{}", token.device_id)
-                .parse()
-                .unwrap();
+            let device_scope = session.device.to_scope_token();
             let scope = [device_scope].into_iter().collect();
 
             IntrospectionResponse {
                 active: true,
                 scope: Some(scope),
                 client_id: Some("legacy".into()),
-                username: Some(user.username),
+                username: Some(session.user.username),
                 token_type: Some(OAuthTokenTypeHint::AccessToken),
-                exp: None,
+                exp: token.exp(),
                 iat: Some(token.created_at),
                 nbf: Some(token.created_at),
-                sub: Some(user.sub),
+                sub: Some(session.user.sub),
                 aud: None,
                 iss: None,
                 jti: None,
             }
+        }
+        TokenType::CompatRefreshToken => {
+            todo!()
         }
     };
 
