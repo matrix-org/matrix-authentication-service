@@ -13,12 +13,14 @@
 // limitations under the License.
 
 use axum::{response::IntoResponse, Extension, Json};
+use chrono::Duration;
 use hyper::StatusCode;
 use mas_config::MatrixConfig;
 use mas_data_model::{Device, TokenType};
-use mas_storage::compat::compat_login;
+use mas_storage::compat::{add_compat_access_token, add_compat_refresh_token, compat_login};
 use rand::thread_rng;
 use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, skip_serializing_none, DurationMilliSeconds};
 use sqlx::PgPool;
 use thiserror::Error;
 
@@ -45,8 +47,17 @@ pub(crate) async fn get() -> impl IntoResponse {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct RequestBody {
+    #[serde(flatten)]
+    credentials: Credentials,
+
+    #[serde(default)]
+    refresh_token: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
-pub enum RequestBody {
+pub enum Credentials {
     #[serde(rename = "m.login.password")]
     Password {
         identifier: Identifier,
@@ -67,17 +78,25 @@ pub enum Identifier {
     Unsupported,
 }
 
+#[skip_serializing_none]
+#[serde_as]
 #[derive(Debug, Serialize)]
 pub struct ResponseBody {
     access_token: String,
     device_id: Device,
     user_id: String,
+    refresh_token: Option<String>,
+    #[serde_as(as = "Option<DurationMilliSeconds<i64>>")]
+    expires_in_ms: Option<Duration>,
 }
 
 #[derive(Debug, Error)]
 pub enum RouteError {
     #[error(transparent)]
     Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
+
+    #[error(transparent)]
+    Anyhow(#[from] anyhow::Error),
 
     #[error("unsupported login method")]
     Unsupported,
@@ -95,7 +114,7 @@ impl From<sqlx::Error> for RouteError {
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         match self {
-            Self::Internal(_e) => MatrixError {
+            Self::Internal(_) | Self::Anyhow(_) => MatrixError {
                 errcode: "M_UNKNOWN",
                 error: "Internal server error",
                 status: StatusCode::INTERNAL_SERVER_ERROR,
@@ -121,9 +140,8 @@ pub(crate) async fn post(
     Extension(config): Extension<MatrixConfig>,
     Json(input): Json<RequestBody>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let mut conn = pool.acquire().await?;
-    let (username, password) = match input {
-        RequestBody::Password {
+    let (username, password) = match input.credentials {
+        Credentials::Password {
             identifier: Identifier::User { user },
             password,
         } => (user, password),
@@ -132,22 +150,43 @@ pub(crate) async fn post(
         }
     };
 
-    let (token, device) = {
-        let mut rng = thread_rng();
-        let token = TokenType::CompatAccessToken.generate(&mut rng);
-        let device = Device::generate(&mut rng);
-        (token, device)
-    };
+    let mut txn = pool.begin().await?;
 
-    let (token, session) = compat_login(&mut conn, &username, &password, device, token)
+    let device = Device::generate(&mut thread_rng());
+    let session = compat_login(&mut txn, &username, &password, device)
         .await
         .map_err(|_| RouteError::LoginFailed)?;
 
     let user_id = format!("@{}:{}", session.user.username, config.homeserver);
 
+    // If the client asked for a refreshable token, make it expire
+    let expires_in = if input.refresh_token {
+        // TODO: this should be configurable
+        Some(Duration::minutes(5))
+    } else {
+        None
+    };
+
+    let access_token = TokenType::CompatAccessToken.generate(&mut thread_rng());
+    let access_token =
+        add_compat_access_token(&mut txn, &session, access_token, expires_in).await?;
+
+    let refresh_token = if input.refresh_token {
+        let refresh_token = TokenType::CompatRefreshToken.generate(&mut thread_rng());
+        let refresh_token =
+            add_compat_refresh_token(&mut txn, &session, &access_token, refresh_token).await?;
+        Some(refresh_token.token)
+    } else {
+        None
+    };
+
+    txn.commit().await?;
+
     Ok(Json(ResponseBody {
-        access_token: token.token,
+        access_token: access_token.token,
         device_id: session.device,
         user_id,
+        refresh_token,
+        expires_in_ms: expires_in,
     }))
 }

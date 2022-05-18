@@ -12,4 +12,6 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
+DROP TABLE compat_refresh_tokens;
 DROP TABLE compat_access_tokens;
+DROP TABLE compat_session;

@@ -19,7 +19,10 @@ use mas_config::Encrypter;
 use mas_data_model::{TokenFormatError, TokenType};
 use mas_iana::oauth::{OAuthClientAuthenticationMethod, OAuthTokenTypeHint};
 use mas_storage::{
-    compat::{lookup_active_compat_access_token, CompatAccessTokenLookupError},
+    compat::{
+        lookup_active_compat_access_token, lookup_active_compat_refresh_token,
+        CompatAccessTokenLookupError, CompatRefreshTokenLookupError,
+    },
     oauth2::{
         access_token::{lookup_active_access_token, AccessTokenLookupError},
         client::ClientFetchError,
@@ -116,6 +119,16 @@ impl From<CompatAccessTokenLookupError> for RouteError {
 
 impl From<RefreshTokenLookupError> for RouteError {
     fn from(e: RefreshTokenLookupError) -> Self {
+        if e.not_found() {
+            Self::UnknownToken
+        } else {
+            Self::Internal(Box::new(e))
+        }
+    }
+}
+
+impl From<CompatRefreshTokenLookupError> for RouteError {
+    fn from(e: CompatRefreshTokenLookupError) -> Self {
         if e.not_found() {
             Self::UnknownToken
         } else {
@@ -225,7 +238,7 @@ pub(crate) async fn post(
                 client_id: Some("legacy".into()),
                 username: Some(session.user.username),
                 token_type: Some(OAuthTokenTypeHint::AccessToken),
-                exp: token.exp(),
+                exp: token.expires_at,
                 iat: Some(token.created_at),
                 nbf: Some(token.created_at),
                 sub: Some(session.user.sub),
@@ -235,7 +248,25 @@ pub(crate) async fn post(
             }
         }
         TokenType::CompatRefreshToken => {
-            todo!()
+            let (token, session) = lookup_active_compat_refresh_token(&mut conn, token).await?;
+
+            let device_scope = session.device.to_scope_token();
+            let scope = [device_scope].into_iter().collect();
+
+            IntrospectionResponse {
+                active: true,
+                scope: Some(scope),
+                client_id: Some("legacy".into()),
+                username: Some(session.user.username),
+                token_type: Some(OAuthTokenTypeHint::RefreshToken),
+                exp: None,
+                iat: Some(token.created_at),
+                nbf: Some(token.created_at),
+                sub: Some(session.user.sub),
+                aud: None,
+                iss: None,
+                jti: None,
+            }
         }
     };
 
