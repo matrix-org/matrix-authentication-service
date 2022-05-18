@@ -22,17 +22,19 @@
     clippy::trait_duplication_in_bounds
 )]
 
+pub(crate) mod compat;
 pub(crate) mod oauth2;
 pub(crate) mod tokens;
 pub(crate) mod traits;
 pub(crate) mod users;
 
 pub use self::{
+    compat::{CompatAccessToken, CompatSession, Device},
     oauth2::{
         AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, Client,
         InvalidRedirectUriError, JwksOrJwksUri, Pkce, Session,
     },
-    tokens::{AccessToken, CompatAccessToken, RefreshToken, TokenFormatError, TokenType},
+    tokens::{AccessToken, RefreshToken, TokenFormatError, TokenType},
     traits::{StorageBackend, StorageBackendMarker},
     users::{
         Authentication, BrowserSession, User, UserEmail, UserEmailVerification,

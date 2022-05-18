@@ -35,6 +35,8 @@ pub trait StorageBackend {
     type AccessTokenData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
     type RefreshTokenData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
     type CompatAccessTokenData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
+    type CompatRefreshTokenData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
+    type CompatSessionData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
 }
 
 impl StorageBackend for () {
@@ -44,6 +46,8 @@ impl StorageBackend for () {
     type BrowserSessionData = ();
     type ClientData = ();
     type CompatAccessTokenData = ();
+    type CompatRefreshTokenData = ();
+    type CompatSessionData = ();
     type RefreshTokenData = ();
     type SessionData = ();
     type UserData = ();

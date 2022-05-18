@@ -66,15 +66,6 @@ impl<S: StorageBackendMarker> From<RefreshToken<S>> for RefreshToken<()> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct CompatAccessToken<T: StorageBackend> {
-    pub data: T::CompatAccessTokenData,
-    pub token: String,
-    pub device_id: String,
-    pub created_at: DateTime<Utc>,
-    pub deleted_at: Option<DateTime<Utc>>,
-}
-
 /// Type of token to generate or validate
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TokenType {
@@ -86,6 +77,9 @@ pub enum TokenType {
 
     /// A legacy access token
     CompatAccessToken,
+
+    /// A legacy refresh token
+    CompatRefreshToken,
 }
 
 impl TokenType {
@@ -94,6 +88,7 @@ impl TokenType {
             TokenType::AccessToken => "mat",
             TokenType::RefreshToken => "mar",
             TokenType::CompatAccessToken => "mct",
+            TokenType::CompatRefreshToken => "mcr",
         }
     }
 
@@ -102,6 +97,7 @@ impl TokenType {
             "mat" => Some(TokenType::AccessToken),
             "mar" => Some(TokenType::RefreshToken),
             "mct" => Some(TokenType::CompatAccessToken),
+            "mcr" => Some(TokenType::CompatRefreshToken),
             _ => None,
         }
     }
@@ -181,7 +177,10 @@ impl PartialEq<OAuthTokenTypeHint> for TokenType {
             (
                 TokenType::AccessToken | TokenType::CompatAccessToken,
                 OAuthTokenTypeHint::AccessToken
-            ) | (TokenType::RefreshToken, OAuthTokenTypeHint::RefreshToken)
+            ) | (
+                TokenType::RefreshToken | TokenType::CompatRefreshToken,
+                OAuthTokenTypeHint::RefreshToken
+            )
         )
     }
 }
@@ -234,13 +233,22 @@ mod tests {
 
     #[test]
     fn test_prefix_match() {
-        use TokenType::{AccessToken, CompatAccessToken, RefreshToken};
+        use TokenType::{AccessToken, CompatAccessToken, CompatRefreshToken, RefreshToken};
         assert_eq!(TokenType::match_prefix("mct"), Some(CompatAccessToken));
+        assert_eq!(TokenType::match_prefix("mcr"), Some(CompatRefreshToken));
         assert_eq!(TokenType::match_prefix("mat"), Some(AccessToken));
         assert_eq!(TokenType::match_prefix("mar"), Some(RefreshToken));
         assert_eq!(TokenType::match_prefix("matt"), None);
         assert_eq!(TokenType::match_prefix("marr"), None);
         assert_eq!(TokenType::match_prefix("ma"), None);
+        assert_eq!(
+            TokenType::match_prefix(TokenType::CompatAccessToken.prefix()),
+            Some(TokenType::CompatAccessToken)
+        );
+        assert_eq!(
+            TokenType::match_prefix(TokenType::CompatRefreshToken.prefix()),
+            Some(TokenType::CompatRefreshToken)
+        );
         assert_eq!(
             TokenType::match_prefix(TokenType::AccessToken.prefix()),
             Some(TokenType::AccessToken)
@@ -255,28 +263,23 @@ mod tests {
     fn test_generate_and_check() {
         const COUNT: usize = 500; // Generate 500 of each token type
         let mut rng = thread_rng();
-        // Generate many access tokens
-        let tokens: HashSet<String> = (0..COUNT)
-            .map(|_| TokenType::AccessToken.generate(&mut rng))
-            .collect();
 
-        // Check that they are all different
-        assert_eq!(tokens.len(), COUNT, "All tokens are unique");
+        for t in [
+            TokenType::CompatAccessToken,
+            TokenType::CompatRefreshToken,
+            TokenType::AccessToken,
+            TokenType::RefreshToken,
+        ] {
+            // Generate many tokens
+            let tokens: HashSet<String> = (0..COUNT).map(|_| t.generate(&mut rng)).collect();
 
-        // Check that they are all valid and detected as access tokens
-        for token in tokens {
-            assert_eq!(TokenType::check(&token).unwrap(), TokenType::AccessToken);
-        }
+            // Check that they are all different
+            assert_eq!(tokens.len(), COUNT, "All tokens are unique");
 
-        // Same, but for refresh tokens
-        let tokens: HashSet<String> = (0..COUNT)
-            .map(|_| TokenType::RefreshToken.generate(&mut rng))
-            .collect();
-
-        assert_eq!(tokens.len(), COUNT, "All tokens are unique");
-
-        for token in tokens {
-            assert_eq!(TokenType::check(&token).unwrap(), TokenType::RefreshToken);
+            // Check that they are all valid and detected as the right token type
+            for token in tokens {
+                assert_eq!(TokenType::check(&token).unwrap(), t);
+            }
         }
     }
 }

@@ -21,7 +21,7 @@ use axum_extra::extract::PrivateCookieJar;
 use hyper::StatusCode;
 use mas_axum_utils::SessionInfoExt;
 use mas_config::Encrypter;
-use mas_data_model::{AuthorizationCode, Pkce};
+use mas_data_model::{AuthorizationCode, Device, Pkce};
 use mas_iana::oauth::OAuthAuthorizationEndpointResponseType;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::oauth2::{
@@ -38,7 +38,6 @@ use oauth2_types::{
     pkce,
     prelude::*,
     requests::{AuthorizationRequest, GrantType, Prompt, ResponseMode},
-    scope::ScopeToken,
 };
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use serde::Deserialize;
@@ -252,15 +251,8 @@ pub(crate) async fn get(
             };
 
             // Generate the device ID
-            // TODO: this should probably be done somewhere else?
-            let device_id: String = thread_rng()
-                .sample_iter(&Alphanumeric)
-                .take(10)
-                .map(char::from)
-                .collect();
-            let device_scope: ScopeToken = format!("urn:matrix:device:{}", device_id)
-                .parse()
-                .context("could not parse generated device scope")?;
+            let device = Device::generate(&mut thread_rng());
+            let device_scope = device.to_scope_token();
 
             let scope = {
                 let mut s = params.auth.scope.clone();
