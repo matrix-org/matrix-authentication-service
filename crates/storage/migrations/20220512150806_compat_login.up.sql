@@ -12,12 +12,31 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-CREATE TABLE compat_access_tokens (
+CREATE TABLE compat_sessions (
   "id" BIGSERIAL PRIMARY KEY,
   "user_id" BIGINT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-  "token" TEXT UNIQUE NOT NULL,
   "device_id" TEXT UNIQUE NOT NULL,
 
   "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   "deleted_at" TIMESTAMP WITH TIME ZONE
-)
+);
+
+CREATE TABLE compat_access_tokens (
+  "id" BIGSERIAL PRIMARY KEY,
+  "compat_session_id" BIGINT NOT NULL REFERENCES compat_sessions (id) ON DELETE CASCADE,
+  "token" TEXT UNIQUE NOT NULL,
+
+  "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  "expires_at" TIMESTAMP WITH TIME ZONE
+);
+
+CREATE TABLE compat_refresh_tokens (
+  "id" BIGSERIAL PRIMARY KEY,
+  "compat_session_id" BIGINT NOT NULL REFERENCES compat_sessions (id) ON DELETE CASCADE,
+  "compat_access_token_id" BIGINT REFERENCES compat_access_tokens (id) ON DELETE SET NULL,
+
+  "token" TEXT UNIQUE NOT NULL,
+  "next_token_id" BIGINT REFERENCES compat_refresh_tokens (id),
+
+  "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
