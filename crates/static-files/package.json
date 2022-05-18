@@ -7,7 +7,7 @@
   },
   "license": "Apache-2.0",
   "devDependencies": {
-    "@tailwindcss/forms": "^0.5.1",
+    "@tailwindcss/forms": "^0.5.2",
     "autoprefixer": "^10.4.7",
     "cssnano": "^5.1.8",
     "postcss": "^8.4.13",
