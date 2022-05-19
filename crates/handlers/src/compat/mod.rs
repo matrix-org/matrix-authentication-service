@@ -17,6 +17,8 @@ use hyper::StatusCode;
 use serde::Serialize;
 
 pub(crate) mod login;
+pub(crate) mod login_sso_complete;
+pub(crate) mod login_sso_redirect;
 pub(crate) mod logout;
 pub(crate) mod refresh;
 

@@ -20,6 +20,7 @@ use rand::{
 };
 use serde::Serialize;
 use thiserror::Error;
+use url::Url;
 
 use crate::{StorageBackend, StorageBackendMarker, User};
 
@@ -113,4 +114,30 @@ impl<S: StorageBackendMarker> From<CompatAccessToken<S>> for CompatAccessToken<(
             expires_at: t.expires_at,
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(bound = "T: StorageBackend")]
+pub enum CompatSsoLoginState<T: StorageBackend> {
+    Pending,
+    Fullfilled {
+        fullfilled_at: DateTime<Utc>,
+        session: CompatSession<T>,
+    },
+    Exchanged {
+        fullfilled_at: DateTime<Utc>,
+        exchanged_at: DateTime<Utc>,
+        session: CompatSession<T>,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(bound = "T: StorageBackend")]
+pub struct CompatSsoLogin<T: StorageBackend> {
+    #[serde(skip_serializing)]
+    pub data: T::CompatSsoLoginData,
+    pub redirect_uri: Url,
+    pub token: String,
+    pub created_at: DateTime<Utc>,
+    pub state: CompatSsoLoginState<T>,
 }

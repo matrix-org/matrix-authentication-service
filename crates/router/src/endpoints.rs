@@ -23,6 +23,10 @@ pub enum PostAuthAction {
         #[serde(deserialize_with = "serde_with::rust::display_fromstr::deserialize")]
         data: i64,
     },
+    ContinueCompatSsoLogin {
+        #[serde(deserialize_with = "serde_with::rust::display_fromstr::deserialize")]
+        data: i64,
+    },
     ChangePassword,
 }
 
@@ -33,9 +37,15 @@ impl PostAuthAction {
     }
 
     #[must_use]
+    pub fn continue_compat_sso_login(data: i64) -> Self {
+        PostAuthAction::ContinueCompatSsoLogin { data }
+    }
+
+    #[must_use]
     pub fn go_next(&self) -> axum::response::Redirect {
         match self {
             Self::ContinueAuthorizationGrant { data } => ContinueAuthorizationGrant(*data).go(),
+            Self::ContinueCompatSsoLogin { data } => CompatLoginSsoComplete(*data).go(),
             Self::ChangePassword => AccountPassword.go(),
         }
     }
@@ -158,6 +168,13 @@ impl Login {
     pub fn and_continue_grant(data: i64) -> Self {
         Self {
             post_auth_action: Some(PostAuthAction::continue_grant(data)),
+        }
+    }
+
+    #[must_use]
+    pub fn and_continue_compat_sso_login(data: i64) -> Self {
+        Self {
+            post_auth_action: Some(PostAuthAction::continue_compat_sso_login(data)),
         }
     }
 
@@ -386,4 +403,32 @@ pub struct CompatRefresh;
 
 impl SimpleRoute for CompatRefresh {
     const PATH: &'static str = "/_matrix/client/:version/refresh";
+}
+
+/// `POST /_matrix/client/v3/login/sso/redirect`
+pub struct CompatLoginSsoRedirect;
+
+impl SimpleRoute for CompatLoginSsoRedirect {
+    const PATH: &'static str = "/_matrix/client/:version/login/sso/redirect";
+}
+
+/// `POST /_matrix/client/v3/login/sso/redirect/:idp`
+pub struct CompatLoginSsoRedirectIdp;
+
+impl SimpleRoute for CompatLoginSsoRedirectIdp {
+    const PATH: &'static str = "/_matrix/client/:version/login/sso/redirect/:idp";
+}
+
+/// `GET|POST /complete-compat-sso/:id`
+pub struct CompatLoginSsoComplete(pub i64);
+
+impl Route for CompatLoginSsoComplete {
+    type Query = ();
+    fn route() -> &'static str {
+        "/complete-compat-sso/:grant_id"
+    }
+
+    fn path(&self) -> std::borrow::Cow<'static, str> {
+        format!("/complete-compat-sso/{}", self.0).into()
+    }
 }

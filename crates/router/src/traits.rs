@@ -46,6 +46,10 @@ pub trait Route {
     fn go(&self) -> axum::response::Redirect {
         axum::response::Redirect::to(&self.relative_url())
     }
+
+    fn go_absolute(&self, base: &Url) -> axum::response::Redirect {
+        axum::response::Redirect::to(self.absolute_url(base).as_str())
+    }
 }
 
 pub trait SimpleRoute {

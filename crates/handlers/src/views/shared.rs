@@ -41,6 +41,9 @@ impl OptionalPostAuthAction {
                 let grant = Box::new(grant.into());
                 Ok(Some(PostAuthContext::ContinueAuthorizationGrant { grant }))
             }
+            Some(PostAuthAction::ContinueCompatSsoLogin { .. }) => {
+                Ok(Some(PostAuthContext::ContinueCompatSsoLogin))
+            }
             Some(PostAuthAction::ChangePassword) => Ok(Some(PostAuthContext::ChangePassword)),
             None => Ok(None),
         }

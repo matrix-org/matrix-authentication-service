@@ -29,7 +29,10 @@ pub(crate) mod traits;
 pub(crate) mod users;
 
 pub use self::{
-    compat::{CompatAccessToken, CompatRefreshToken, CompatSession, Device},
+    compat::{
+        CompatAccessToken, CompatRefreshToken, CompatSession, CompatSsoLogin, CompatSsoLoginState,
+        Device,
+    },
     oauth2::{
         AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, Client,
         InvalidRedirectUriError, JwksOrJwksUri, Pkce, Session,

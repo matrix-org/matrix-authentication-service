@@ -16,31 +16,56 @@ use axum::{response::IntoResponse, Extension, Json};
 use chrono::Duration;
 use hyper::StatusCode;
 use mas_config::MatrixConfig;
-use mas_data_model::{Device, TokenType};
-use mas_storage::compat::{add_compat_access_token, add_compat_refresh_token, compat_login};
+use mas_data_model::{CompatSession, Device, TokenType};
+use mas_storage::{
+    compat::{
+        add_compat_access_token, add_compat_refresh_token, compat_login,
+        get_compat_sso_login_by_token, mark_compat_sso_login_as_exchanged,
+    },
+    PostgresqlBackend,
+};
 use rand::thread_rng;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none, DurationMilliSeconds};
-use sqlx::PgPool;
+use sqlx::{PgPool, Postgres, Transaction};
 use thiserror::Error;
 
 use super::MatrixError;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
 #[serde(tag = "type")]
 enum LoginType {
     #[serde(rename = "m.login.password")]
     Password,
+
+    #[serde(rename = "m.login.sso")]
+    Sso {
+        identity_providers: Vec<SsoIdentityProvider>,
+    },
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
+struct SsoIdentityProvider {
+    id: &'static str,
+    name: &'static str,
+}
+
+#[derive(Debug, Serialize)]
 struct LoginTypes {
     flows: Vec<LoginType>,
 }
 
 pub(crate) async fn get() -> impl IntoResponse {
     let res = LoginTypes {
-        flows: vec![LoginType::Password],
+        flows: vec![
+            LoginType::Password,
+            LoginType::Sso {
+                identity_providers: vec![SsoIdentityProvider {
+                    id: "legacy",
+                    name: "SSO",
+                }],
+            },
+        ],
     };
 
     Json(res)
@@ -63,6 +88,9 @@ pub enum Credentials {
         identifier: Identifier,
         password: String,
     },
+
+    #[serde(rename = "m.login.token")]
+    Token { token: String },
 
     #[serde(other)]
     Unsupported,
@@ -140,22 +168,19 @@ pub(crate) async fn post(
     Extension(config): Extension<MatrixConfig>,
     Json(input): Json<RequestBody>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let (username, password) = match input.credentials {
+    let mut txn = pool.begin().await?;
+    let session = match input.credentials {
         Credentials::Password {
             identifier: Identifier::User { user },
             password,
-        } => (user, password),
+        } => user_password_login(&mut txn, user, password).await?,
+
+        Credentials::Token { token } => token_login(&mut txn, &token).await?,
+
         _ => {
             return Err(RouteError::Unsupported);
         }
     };
-
-    let mut txn = pool.begin().await?;
-
-    let device = Device::generate(&mut thread_rng());
-    let session = compat_login(&mut txn, &username, &password, device)
-        .await
-        .map_err(|_| RouteError::LoginFailed)?;
 
     let user_id = format!("@{}:{}", session.user.username, config.homeserver);
 
@@ -189,4 +214,30 @@ pub(crate) async fn post(
         refresh_token,
         expires_in_ms: expires_in,
     }))
+}
+
+async fn token_login(
+    txn: &mut Transaction<'_, Postgres>,
+    token: &str,
+) -> Result<CompatSession<PostgresqlBackend>, RouteError> {
+    let login = get_compat_sso_login_by_token(&mut *txn, token).await?;
+    let login = mark_compat_sso_login_as_exchanged(&mut *txn, login).await?;
+
+    match login.state {
+        mas_data_model::CompatSsoLoginState::Exchanged { session, .. } => Ok(session),
+        _ => unreachable!(),
+    }
+}
+
+async fn user_password_login(
+    txn: &mut Transaction<'_, Postgres>,
+    username: String,
+    password: String,
+) -> Result<CompatSession<PostgresqlBackend>, RouteError> {
+    let device = Device::generate(&mut thread_rng());
+    let session = compat_login(txn, &username, &password, device)
+        .await
+        .map_err(|_| RouteError::LoginFailed)?;
+
+    Ok(session)
 }

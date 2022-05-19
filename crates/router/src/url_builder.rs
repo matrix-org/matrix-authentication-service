@@ -31,6 +31,13 @@ impl UrlBuilder {
         destination.absolute_url(&self.base)
     }
 
+    pub fn absolute_redirect<U>(&self, destination: &U) -> axum::response::Redirect
+    where
+        U: Route,
+    {
+        destination.go_absolute(&self.base)
+    }
+
     /// Create a new [`UrlBuilder`] from a base URL
     #[must_use]
     pub fn new(base: Url) -> Self {
