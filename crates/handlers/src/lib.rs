@@ -121,6 +121,10 @@ where
             mas_router::CompatLogout::route(),
             post(self::compat::logout::post),
         )
+        .route(
+            mas_router::CompatRefresh::route(),
+            post(self::compat::refresh::post),
+        )
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)

@@ -1,5 +1,18 @@
 {
   "db": "PostgreSQL",
+  "02be1a7451e890cb0cc07b32c937881ac9bd1707eb498e20a3cf27737c95a949": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8"
+        ]
+      }
+    },
+    "query": "\n            UPDATE compat_refresh_tokens\n            SET next_token_id = $2\n            WHERE id = $1\n        "
+  },
   "08896e50738af687ac53dc5ac5ae0b19bcac7503230ba90e11de799978d7a026": {
     "describe": {
       "columns": [
@@ -332,6 +345,18 @@
       }
     },
     "query": "\n            INSERT INTO user_sessions (user_id)\n            VALUES ($1)\n            RETURNING id, created_at\n        "
+  },
+  "366ea127c7b220960f17fd1b651600826ac10b8baf92f0e936fd07f34a7dc0fc": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      }
+    },
+    "query": "\n            UPDATE compat_access_tokens\n            SET expires_at = NOW()\n            WHERE id = $1\n        "
   },
   "41b5ecd6860791ac6f90417ac51eb977b8c69a3dd81af4672b2592efb65963eb": {
     "describe": {
@@ -1497,6 +1522,122 @@
     },
     "query": "\n            INSERT INTO oauth2_client_redirect_uris (oauth2_client_id, redirect_uri)\n            SELECT $1, uri FROM UNNEST($2::text[]) uri\n        "
   },
+  "ab800ea65b9c703a56b6c3b7dd47402dbbe0c9900f6d965c908b84332b2aa148": {
+    "describe": {
+      "columns": [
+        {
+          "name": "compat_refresh_token_id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "compat_refresh_token",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "compat_refresh_token_created_at",
+          "ordinal": 2,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "compat_access_token_id",
+          "ordinal": 3,
+          "type_info": "Int8"
+        },
+        {
+          "name": "compat_access_token",
+          "ordinal": 4,
+          "type_info": "Text"
+        },
+        {
+          "name": "compat_access_token_created_at",
+          "ordinal": 5,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "compat_access_token_expires_at",
+          "ordinal": 6,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "compat_session_id",
+          "ordinal": 7,
+          "type_info": "Int8"
+        },
+        {
+          "name": "compat_session_created_at",
+          "ordinal": 8,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "compat_session_deleted_at",
+          "ordinal": 9,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "compat_session_device_id",
+          "ordinal": 10,
+          "type_info": "Text"
+        },
+        {
+          "name": "user_id!",
+          "ordinal": 11,
+          "type_info": "Int8"
+        },
+        {
+          "name": "user_username!",
+          "ordinal": 12,
+          "type_info": "Text"
+        },
+        {
+          "name": "user_email_id?",
+          "ordinal": 13,
+          "type_info": "Int8"
+        },
+        {
+          "name": "user_email?",
+          "ordinal": 14,
+          "type_info": "Text"
+        },
+        {
+          "name": "user_email_created_at?",
+          "ordinal": 15,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "user_email_confirmed_at?",
+          "ordinal": 16,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "\n            SELECT\n                cr.id              AS \"compat_refresh_token_id\",\n                cr.token           AS \"compat_refresh_token\",\n                cr.created_at      AS \"compat_refresh_token_created_at\",\n                ct.id              AS \"compat_access_token_id\",\n                ct.token           AS \"compat_access_token\",\n                ct.created_at      AS \"compat_access_token_created_at\",\n                ct.expires_at      AS \"compat_access_token_expires_at\",\n                cs.id              AS \"compat_session_id\",\n                cs.created_at      AS \"compat_session_created_at\",\n                cs.deleted_at      AS \"compat_session_deleted_at\",\n                cs.device_id       AS \"compat_session_device_id\",\n                 u.id              AS \"user_id!\",\n                 u.username        AS \"user_username!\",\n                ue.id              AS \"user_email_id?\",\n                ue.email           AS \"user_email?\",\n                ue.created_at      AS \"user_email_created_at?\",\n                ue.confirmed_at    AS \"user_email_confirmed_at?\"\n\n            FROM compat_refresh_tokens cr\n            INNER JOIN compat_access_tokens ct\n              ON ct.id = cr.compat_access_token_id\n            INNER JOIN compat_sessions cs\n              ON cs.id = cr.compat_session_id\n            INNER JOIN users u\n              ON u.id = cs.user_id\n            LEFT JOIN user_emails ue\n              ON ue.id = u.primary_email_id\n\n            WHERE cr.token = $1\n              AND cr.next_token_id IS NULL\n              AND cs.deleted_at IS NULL\n        "
+  },
   "aea289a04e151da235825305a5085bc6aa100fce139dbf10a2c1bed4867fc52a": {
     "describe": {
       "columns": [
@@ -2038,97 +2179,5 @@
       }
     },
     "query": "TRUNCATE oauth2_client_redirect_uris, oauth2_clients RESTART IDENTITY CASCADE"
-  },
-  "fc5d32bab9999ad383f906dbf20a45dafba1149e809155eccb4d94506ff6cf6f": {
-    "describe": {
-      "columns": [
-        {
-          "name": "compat_refresh_token_id",
-          "ordinal": 0,
-          "type_info": "Int8"
-        },
-        {
-          "name": "compat_refresh_token",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "compat_refresh_token_created_at",
-          "ordinal": 2,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "compat_session_id",
-          "ordinal": 3,
-          "type_info": "Int8"
-        },
-        {
-          "name": "compat_session_created_at",
-          "ordinal": 4,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "compat_session_deleted_at",
-          "ordinal": 5,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "compat_session_device_id",
-          "ordinal": 6,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_id!",
-          "ordinal": 7,
-          "type_info": "Int8"
-        },
-        {
-          "name": "user_username!",
-          "ordinal": 8,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_email_id?",
-          "ordinal": 9,
-          "type_info": "Int8"
-        },
-        {
-          "name": "user_email?",
-          "ordinal": 10,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_email_created_at?",
-          "ordinal": 11,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "user_email_confirmed_at?",
-          "ordinal": 12,
-          "type_info": "Timestamptz"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        true,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        true
-      ],
-      "parameters": {
-        "Left": [
-          "Text"
-        ]
-      }
-    },
-    "query": "\n            SELECT\n                cr.id              AS \"compat_refresh_token_id\",\n                cr.token           AS \"compat_refresh_token\",\n                cr.created_at      AS \"compat_refresh_token_created_at\",\n                cs.id              AS \"compat_session_id\",\n                cs.created_at      AS \"compat_session_created_at\",\n                cs.deleted_at      AS \"compat_session_deleted_at\",\n                cs.device_id       AS \"compat_session_device_id\",\n                 u.id              AS \"user_id!\",\n                 u.username        AS \"user_username!\",\n                ue.id              AS \"user_email_id?\",\n                ue.email           AS \"user_email?\",\n                ue.created_at      AS \"user_email_created_at?\",\n                ue.confirmed_at    AS \"user_email_confirmed_at?\"\n\n            FROM compat_refresh_tokens cr\n            INNER JOIN compat_sessions cs\n              ON cs.id = cr.compat_session_id\n            INNER JOIN users u\n              ON u.id = cs.user_id\n            LEFT JOIN user_emails ue\n              ON ue.id = u.primary_email_id\n\n            WHERE cr.token = $1\n              AND cs.deleted_at IS NULL\n        "
   }
 }

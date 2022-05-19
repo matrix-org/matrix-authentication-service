@@ -18,6 +18,7 @@ use serde::Serialize;
 
 pub(crate) mod login;
 pub(crate) mod logout;
+pub(crate) mod refresh;
 
 #[derive(Debug, Serialize)]
 struct MatrixError {

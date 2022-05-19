@@ -248,7 +248,8 @@ pub(crate) async fn post(
             }
         }
         TokenType::CompatRefreshToken => {
-            let (token, session) = lookup_active_compat_refresh_token(&mut conn, token).await?;
+            let (refresh_token, _access_token, session) =
+                lookup_active_compat_refresh_token(&mut conn, token).await?;
 
             let device_scope = session.device.to_scope_token();
             let scope = [device_scope].into_iter().collect();
@@ -260,8 +261,8 @@ pub(crate) async fn post(
                 username: Some(session.user.username),
                 token_type: Some(OAuthTokenTypeHint::RefreshToken),
                 exp: None,
-                iat: Some(token.created_at),
-                nbf: Some(token.created_at),
+                iat: Some(refresh_token.created_at),
+                nbf: Some(refresh_token.created_at),
                 sub: Some(session.user.sub),
                 aud: None,
                 iss: None,
