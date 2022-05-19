@@ -45,6 +45,7 @@ impl StorageBackend for PostgresqlBackend {
     type CompatAccessTokenData = i64;
     type CompatRefreshTokenData = i64;
     type CompatSessionData = i64;
+    type CompatSsoLoginData = i64;
     type RefreshTokenData = i64;
     type SessionData = i64;
     type UserData = i64;

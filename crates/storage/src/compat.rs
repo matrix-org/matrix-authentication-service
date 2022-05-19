@@ -12,16 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use anyhow::Context;
+use anyhow::{bail, Context};
 use argon2::{Argon2, PasswordHash};
 use chrono::{DateTime, Duration, Utc};
 use mas_data_model::{
-    CompatAccessToken, CompatRefreshToken, CompatSession, Device, User, UserEmail,
+    CompatAccessToken, CompatRefreshToken, CompatSession, CompatSsoLogin, CompatSsoLoginState,
+    Device, User, UserEmail,
 };
 use sqlx::{postgres::types::PgInterval, Acquire, PgExecutor, Postgres};
 use thiserror::Error;
 use tokio::task;
 use tracing::{info_span, Instrument};
+use url::Url;
 
 use crate::{
     user::lookup_user_by_username, DatabaseInconsistencyError, IdAndCreationTime, PostgresqlBackend,
@@ -98,8 +100,8 @@ pub async fn lookup_active_compat_access_token(
 
             WHERE ct.token = $1
               AND (ct.expires_at IS NULL OR ct.expires_at > NOW())
-              AND cs.deleted_at IS NULL
-        "#,
+            AND cs.deleted_at IS NULL
+            "#,
         token,
     )
     .fetch_one(executor)
@@ -210,8 +212,8 @@ pub async fn lookup_active_compat_refresh_token(
                 cs.created_at      AS "compat_session_created_at",
                 cs.deleted_at      AS "compat_session_deleted_at",
                 cs.device_id       AS "compat_session_device_id",
-                 u.id              AS "user_id!",
-                 u.username        AS "user_username!",
+                u.id               AS "user_id!",
+                u.username         AS "user_username!",
                 ue.id              AS "user_email_id?",
                 ue.email           AS "user_email?",
                 ue.created_at      AS "user_email_created_at?",
@@ -367,10 +369,10 @@ pub async fn add_compat_access_token(
         let res = sqlx::query_as!(
             IdAndCreationTime,
             r#"
-            INSERT INTO compat_access_tokens (compat_session_id, token, created_at, expires_at)
-            VALUES ($1, $2, NOW(), NOW() + $3)
-            RETURNING id, created_at
-        "#,
+                INSERT INTO compat_access_tokens (compat_session_id, token, created_at, expires_at)
+                VALUES ($1, $2, NOW(), NOW() + $3)
+                RETURNING id, created_at
+            "#,
             session.data,
             token,
             pg_expires_after,
@@ -390,10 +392,10 @@ pub async fn add_compat_access_token(
         let res = sqlx::query_as!(
             IdAndCreationTime,
             r#"
-            INSERT INTO compat_access_tokens (compat_session_id, token)
-            VALUES ($1, $2)
-            RETURNING id, created_at
-        "#,
+                INSERT INTO compat_access_tokens (compat_session_id, token)
+                VALUES ($1, $2)
+                RETURNING id, created_at
+            "#,
             session.data,
             token,
         )
@@ -517,4 +519,325 @@ pub async fn replace_compat_refresh_token(
             "no row were affected when updating refresh token"
         ))
     }
+}
+
+pub async fn insert_compat_sso_login(
+    executor: impl PgExecutor<'_>,
+    token: String,
+    redirect_uri: Url,
+) -> anyhow::Result<CompatSsoLogin<PostgresqlBackend>> {
+    let res = sqlx::query_as!(
+        IdAndCreationTime,
+        r#"
+        INSERT INTO compat_sso_logins (token, redirect_uri)
+        VALUES ($1, $2)
+        RETURNING id, created_at
+        "#,
+        &token,
+        redirect_uri.as_str(),
+    )
+    .fetch_one(executor)
+    .instrument(tracing::info_span!("Insert compat SSO login"))
+    .await
+    .context("could not insert compat SSO login")?;
+
+    Ok(CompatSsoLogin {
+        data: res.id,
+        token,
+        redirect_uri,
+        created_at: res.created_at,
+        state: CompatSsoLoginState::Pending,
+    })
+}
+
+struct CompatSsoLoginLookup {
+    compat_sso_login_id: i64,
+    compat_sso_login_token: String,
+    compat_sso_login_redirect_uri: String,
+    compat_sso_login_created_at: DateTime<Utc>,
+    compat_sso_login_fullfilled_at: Option<DateTime<Utc>>,
+    compat_sso_login_exchanged_at: Option<DateTime<Utc>>,
+    compat_session_id: Option<i64>,
+    compat_session_created_at: Option<DateTime<Utc>>,
+    compat_session_deleted_at: Option<DateTime<Utc>>,
+    compat_session_device_id: Option<String>,
+    user_id: Option<i64>,
+    user_username: Option<String>,
+    user_email_id: Option<i64>,
+    user_email: Option<String>,
+    user_email_created_at: Option<DateTime<Utc>>,
+    user_email_confirmed_at: Option<DateTime<Utc>>,
+}
+
+impl TryFrom<CompatSsoLoginLookup> for CompatSsoLogin<PostgresqlBackend> {
+    type Error = DatabaseInconsistencyError;
+
+    fn try_from(res: CompatSsoLoginLookup) -> Result<Self, Self::Error> {
+        let redirect_uri = Url::parse(&res.compat_sso_login_redirect_uri)
+            .map_err(|_| DatabaseInconsistencyError)?;
+
+        let primary_email = match (
+            res.user_email_id,
+            res.user_email,
+            res.user_email_created_at,
+            res.user_email_confirmed_at,
+        ) {
+            (Some(id), Some(email), Some(created_at), confirmed_at) => Some(UserEmail {
+                data: id,
+                email,
+                created_at,
+                confirmed_at,
+            }),
+            (None, None, None, None) => None,
+            _ => return Err(DatabaseInconsistencyError),
+        };
+
+        let user = match (res.user_id, res.user_username, primary_email) {
+            (Some(id), Some(username), primary_email) => Some(User {
+                data: id,
+                username,
+                sub: format!("fake-sub-{}", id),
+                primary_email,
+            }),
+            (None, None, None) => None,
+            _ => return Err(DatabaseInconsistencyError),
+        };
+
+        let session = match (
+            res.compat_session_id,
+            res.compat_session_device_id,
+            res.compat_session_created_at,
+            res.compat_session_deleted_at,
+            user,
+        ) {
+            (Some(id), Some(device_id), Some(created_at), deleted_at, Some(user)) => {
+                let device = Device::try_from(device_id).map_err(|_| DatabaseInconsistencyError)?;
+                Some(CompatSession {
+                    data: id,
+                    user,
+                    device,
+                    created_at,
+                    deleted_at,
+                })
+            }
+            (None, None, None, None, None) => None,
+            _ => return Err(DatabaseInconsistencyError),
+        };
+
+        let state = match (
+            res.compat_sso_login_fullfilled_at,
+            res.compat_sso_login_exchanged_at,
+            session,
+        ) {
+            (None, None, None) => CompatSsoLoginState::Pending,
+            (Some(fullfilled_at), None, Some(session)) => CompatSsoLoginState::Fullfilled {
+                fullfilled_at,
+                session,
+            },
+            (Some(fullfilled_at), Some(exchanged_at), Some(session)) => {
+                CompatSsoLoginState::Exchanged {
+                    fullfilled_at,
+                    exchanged_at,
+                    session,
+                }
+            }
+            _ => return Err(DatabaseInconsistencyError),
+        };
+
+        Ok(CompatSsoLogin {
+            data: res.compat_sso_login_id,
+            token: res.compat_sso_login_token,
+            redirect_uri,
+            created_at: res.compat_sso_login_created_at,
+            state,
+        })
+    }
+}
+
+#[allow(clippy::too_many_lines)]
+#[tracing::instrument(skip(executor), err)]
+pub async fn get_compat_sso_login_by_id(
+    executor: impl PgExecutor<'_>,
+    id: i64,
+) -> anyhow::Result<CompatSsoLogin<PostgresqlBackend>> {
+    let res = sqlx::query_as!(
+        CompatSsoLoginLookup,
+        r#"
+            SELECT
+                cl.id              AS "compat_sso_login_id",
+                cl.token           AS "compat_sso_login_token",
+                cl.redirect_uri    AS "compat_sso_login_redirect_uri",
+                cl.created_at      AS "compat_sso_login_created_at",
+                cl.fullfilled_at   AS "compat_sso_login_fullfilled_at",
+                cl.exchanged_at    AS "compat_sso_login_exchanged_at",
+                cs.id              AS "compat_session_id?",
+                cs.created_at      AS "compat_session_created_at?",
+                cs.deleted_at      AS "compat_session_deleted_at?",
+                cs.device_id       AS "compat_session_device_id?",
+                u.id               AS "user_id?",
+                u.username         AS "user_username?",
+                ue.id              AS "user_email_id?",
+                ue.email           AS "user_email?",
+                ue.created_at      AS "user_email_created_at?",
+                ue.confirmed_at    AS "user_email_confirmed_at?"
+            FROM compat_sso_logins cl
+            LEFT JOIN compat_sessions cs
+              ON cs.id = cl.compat_session_id
+            LEFT JOIN users u
+              ON u.id = cs.user_id
+            LEFT JOIN user_emails ue
+              ON ue.id = u.primary_email_id
+            WHERE cl.id = $1
+        "#,
+        id,
+    )
+    .fetch_one(executor)
+    .instrument(tracing::info_span!("Lookup compat SSO login"))
+    .await
+    .context("could not lookup compat SSO login")?;
+
+    Ok(res.try_into()?)
+}
+
+#[allow(clippy::too_many_lines)]
+#[tracing::instrument(skip(executor), err)]
+pub async fn get_compat_sso_login_by_token(
+    executor: impl PgExecutor<'_>,
+    token: &str,
+) -> anyhow::Result<CompatSsoLogin<PostgresqlBackend>> {
+    let res = sqlx::query_as!(
+        CompatSsoLoginLookup,
+        r#"
+            SELECT
+                cl.id              AS "compat_sso_login_id",
+                cl.token           AS "compat_sso_login_token",
+                cl.redirect_uri    AS "compat_sso_login_redirect_uri",
+                cl.created_at      AS "compat_sso_login_created_at",
+                cl.fullfilled_at   AS "compat_sso_login_fullfilled_at",
+                cl.exchanged_at    AS "compat_sso_login_exchanged_at",
+                cs.id              AS "compat_session_id?",
+                cs.created_at      AS "compat_session_created_at?",
+                cs.deleted_at      AS "compat_session_deleted_at?",
+                cs.device_id       AS "compat_session_device_id?",
+                u.id               AS "user_id?",
+                u.username         AS "user_username?",
+                ue.id              AS "user_email_id?",
+                ue.email           AS "user_email?",
+                ue.created_at      AS "user_email_created_at?",
+                ue.confirmed_at    AS "user_email_confirmed_at?"
+            FROM compat_sso_logins cl
+            LEFT JOIN compat_sessions cs
+              ON cs.id = cl.compat_session_id
+            LEFT JOIN users u
+              ON u.id = cs.user_id
+            LEFT JOIN user_emails ue
+              ON ue.id = u.primary_email_id
+            WHERE cl.token = $1
+        "#,
+        token,
+    )
+    .fetch_one(executor)
+    .instrument(tracing::info_span!("Lookup compat SSO login"))
+    .await
+    .context("could not lookup compat SSO login")?;
+
+    Ok(res.try_into()?)
+}
+
+pub async fn fullfill_compat_sso_login(
+    conn: impl Acquire<'_, Database = Postgres>,
+    user: User<PostgresqlBackend>,
+    mut login: CompatSsoLogin<PostgresqlBackend>,
+    device: Device,
+) -> anyhow::Result<CompatSsoLogin<PostgresqlBackend>> {
+    // TODO: check if login is in pending state
+    let mut txn = conn.begin().await.context("could not start transaction")?;
+    let res = sqlx::query_as!(
+        IdAndCreationTime,
+        r#"
+        INSERT INTO compat_sessions (user_id, device_id)
+            VALUES ($1, $2)
+            RETURNING id, created_at
+        "#,
+        user.data,
+        device.as_str(),
+    )
+    .fetch_one(&mut txn)
+    .instrument(tracing::info_span!("Insert compat session"))
+    .await
+    .context("could not insert compat session")?;
+
+    let session = CompatSession {
+        data: res.id,
+        user,
+        device,
+        created_at: res.created_at,
+        deleted_at: None,
+    };
+
+    let res = sqlx::query_scalar!(
+        r#"
+            UPDATE compat_sso_logins
+            SET
+                fullfilled_at = NOW(),
+                compat_session_id = $2
+            WHERE
+                id = $1
+            RETURNING fullfilled_at AS "fullfilled_at!"
+        "#,
+        login.data,
+        session.data,
+    )
+    .fetch_one(&mut txn)
+    .instrument(tracing::info_span!("Update compat SSO login"))
+    .await
+    .context("could not update compat SSO login")?;
+
+    let state = CompatSsoLoginState::Fullfilled {
+        fullfilled_at: res,
+        session,
+    };
+
+    login.state = state;
+
+    txn.commit().await?;
+
+    Ok(login)
+}
+
+pub async fn mark_compat_sso_login_as_exchanged(
+    executor: impl PgExecutor<'_>,
+    mut login: CompatSsoLogin<PostgresqlBackend>,
+) -> anyhow::Result<CompatSsoLogin<PostgresqlBackend>> {
+    let (fullfilled_at, session) = match login.state {
+        CompatSsoLoginState::Fullfilled {
+            fullfilled_at,
+            session,
+        } => (fullfilled_at, session),
+        _ => bail!("sso login in wrong state"),
+    };
+
+    let res = sqlx::query_scalar!(
+        r#"
+            UPDATE compat_sso_logins
+            SET
+                exchanged_at = NOW()
+            WHERE
+                id = $1
+            RETURNING exchanged_at AS "exchanged_at!"
+        "#,
+        login.data,
+    )
+    .fetch_one(executor)
+    .instrument(tracing::info_span!("Update compat SSO login"))
+    .await
+    .context("could not update compat SSO login")?;
+
+    let state = CompatSsoLoginState::Exchanged {
+        fullfilled_at,
+        exchanged_at: res,
+        session,
+    };
+    login.state = state;
+    Ok(login)
 }

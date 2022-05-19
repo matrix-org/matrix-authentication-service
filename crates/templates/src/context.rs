@@ -248,6 +248,10 @@ pub enum PostAuthContext {
         grant: Box<AuthorizationGrant<()>>,
     },
 
+    /// Continue legacy login
+    /// TODO: add the login context in there
+    ContinueCompatSsoLogin,
+
     /// Change the account password
     ChangePassword,
 }

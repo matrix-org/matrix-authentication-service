@@ -183,6 +183,18 @@ where
                 mas_router::Consent::route(),
                 get(self::oauth2::consent::get).post(self::oauth2::consent::post),
             )
+            .route(
+                mas_router::CompatLoginSsoRedirect::route(),
+                get(self::compat::login_sso_redirect::get),
+            )
+            .route(
+                mas_router::CompatLoginSsoRedirectIdp::route(),
+                get(self::compat::login_sso_redirect::get),
+            )
+            .route(
+                mas_router::CompatLoginSsoComplete::route(),
+                get(self::compat::login_sso_complete::get),
+            )
             .layer(ThenLayer::new(
                 move |result: Result<axum::response::Response, Infallible>| async move {
                     let response = result.unwrap();
