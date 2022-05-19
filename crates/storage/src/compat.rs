@@ -153,6 +153,10 @@ pub struct CompatRefreshTokenLookup {
     compat_refresh_token_id: i64,
     compat_refresh_token: String,
     compat_refresh_token_created_at: DateTime<Utc>,
+    compat_access_token_id: i64,
+    compat_access_token: String,
+    compat_access_token_created_at: DateTime<Utc>,
+    compat_access_token_expires_at: Option<DateTime<Utc>>,
     compat_session_id: i64,
     compat_session_created_at: DateTime<Utc>,
     compat_session_deleted_at: Option<DateTime<Utc>>,
@@ -186,6 +190,7 @@ pub async fn lookup_active_compat_refresh_token(
 ) -> Result<
     (
         CompatRefreshToken<PostgresqlBackend>,
+        CompatAccessToken<PostgresqlBackend>,
         CompatSession<PostgresqlBackend>,
     ),
     CompatRefreshTokenLookupError,
@@ -197,6 +202,10 @@ pub async fn lookup_active_compat_refresh_token(
                 cr.id              AS "compat_refresh_token_id",
                 cr.token           AS "compat_refresh_token",
                 cr.created_at      AS "compat_refresh_token_created_at",
+                ct.id              AS "compat_access_token_id",
+                ct.token           AS "compat_access_token",
+                ct.created_at      AS "compat_access_token_created_at",
+                ct.expires_at      AS "compat_access_token_expires_at",
                 cs.id              AS "compat_session_id",
                 cs.created_at      AS "compat_session_created_at",
                 cs.deleted_at      AS "compat_session_deleted_at",
@@ -209,6 +218,8 @@ pub async fn lookup_active_compat_refresh_token(
                 ue.confirmed_at    AS "user_email_confirmed_at?"
 
             FROM compat_refresh_tokens cr
+            INNER JOIN compat_access_tokens ct
+              ON ct.id = cr.compat_access_token_id
             INNER JOIN compat_sessions cs
               ON cs.id = cr.compat_session_id
             INNER JOIN users u
@@ -217,6 +228,7 @@ pub async fn lookup_active_compat_refresh_token(
               ON ue.id = u.primary_email_id
 
             WHERE cr.token = $1
+              AND cr.next_token_id IS NULL
               AND cs.deleted_at IS NULL
         "#,
         token,
@@ -225,10 +237,17 @@ pub async fn lookup_active_compat_refresh_token(
     .instrument(info_span!("Fetch compat refresh token"))
     .await?;
 
-    let token = CompatRefreshToken {
+    let refresh_token = CompatRefreshToken {
         data: res.compat_refresh_token_id,
         token: res.compat_refresh_token,
         created_at: res.compat_refresh_token_created_at,
+    };
+
+    let access_token = CompatAccessToken {
+        data: res.compat_access_token_id,
+        token: res.compat_access_token,
+        created_at: res.compat_access_token_created_at,
+        expires_at: res.compat_access_token_expires_at,
     };
 
     let primary_email = match (
@@ -264,7 +283,7 @@ pub async fn lookup_active_compat_refresh_token(
         deleted_at: res.compat_session_deleted_at,
     };
 
-    Ok((token, session))
+    Ok((refresh_token, access_token, session))
 }
 
 #[tracing::instrument(skip(conn, password), err)]
@@ -392,6 +411,31 @@ pub async fn add_compat_access_token(
     }
 }
 
+pub async fn expire_compat_access_token(
+    executor: impl PgExecutor<'_>,
+    access_token: CompatAccessToken<PostgresqlBackend>,
+) -> anyhow::Result<()> {
+    let res = sqlx::query!(
+        r#"
+            UPDATE compat_access_tokens
+            SET expires_at = NOW()
+            WHERE id = $1
+        "#,
+        access_token.data,
+    )
+    .execute(executor)
+    .await
+    .context("failed to update compat access token")?;
+
+    if res.rows_affected() == 1 {
+        Ok(())
+    } else {
+        Err(anyhow::anyhow!(
+            "no row were affected when updating access token"
+        ))
+    }
+}
+
 pub async fn add_compat_refresh_token(
     executor: impl PgExecutor<'_>,
     session: &CompatSession<PostgresqlBackend>,
@@ -445,5 +489,32 @@ pub async fn compat_logout(
         1 => Ok(()),
         0 => anyhow::bail!("no row affected"),
         _ => anyhow::bail!("too many row affected"),
+    }
+}
+
+pub async fn replace_compat_refresh_token(
+    executor: impl PgExecutor<'_>,
+    refresh_token: &CompatRefreshToken<PostgresqlBackend>,
+    next_refresh_token: &CompatRefreshToken<PostgresqlBackend>,
+) -> anyhow::Result<()> {
+    let res = sqlx::query!(
+        r#"
+            UPDATE compat_refresh_tokens
+            SET next_token_id = $2
+            WHERE id = $1
+        "#,
+        refresh_token.data,
+        next_refresh_token.data
+    )
+    .execute(executor)
+    .await
+    .context("failed to update compat refresh token")?;
+
+    if res.rows_affected() == 1 {
+        Ok(())
+    } else {
+        Err(anyhow::anyhow!(
+            "no row were affected when updating refresh token"
+        ))
     }
 }
