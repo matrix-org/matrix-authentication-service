@@ -45,10 +45,11 @@ mod macros;
 
 pub use self::{
     context::{
-        AccountContext, AccountEmailsContext, ConsentContext, EmailVerificationContext,
-        EmptyContext, ErrorContext, FormPostContext, IndexContext, LoginContext, LoginFormField,
-        PostAuthContext, ReauthContext, ReauthFormField, RegisterContext, RegisterFormField,
-        TemplateContext, WithCsrf, WithOptionalSession, WithSession,
+        AccountContext, AccountEmailsContext, CompatSsoContext, ConsentContext,
+        EmailVerificationContext, EmptyContext, ErrorContext, FormPostContext, IndexContext,
+        LoginContext, LoginFormField, PostAuthContext, ReauthContext, ReauthFormField,
+        RegisterContext, RegisterFormField, TemplateContext, WithCsrf, WithOptionalSession,
+        WithSession,
     },
     forms::{FieldError, FormError, FormField, FormState, ToFormState},
 };
@@ -294,8 +295,11 @@ register_templates! {
     /// Render the registration page
     pub fn render_register(WithCsrf<RegisterContext>) { "pages/register.html" }
 
-    /// Render the registration page
+    /// Render the client consent page
     pub fn render_consent(WithCsrf<WithSession<ConsentContext>>) { "pages/consent.html" }
+
+    /// Render the client consent page
+    pub fn render_sso_login(WithCsrf<WithSession<CompatSsoContext>>) { "pages/sso.html" }
 
     /// Render the home page
     pub fn render_index(WithCsrf<WithOptionalSession<IndexContext>>) { "pages/index.html" }

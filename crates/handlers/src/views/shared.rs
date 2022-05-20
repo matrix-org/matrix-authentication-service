@@ -13,7 +13,9 @@
 // limitations under the License.
 
 use mas_router::{PostAuthAction, Route};
-use mas_storage::oauth2::authorization_grant::get_grant_by_id;
+use mas_storage::{
+    compat::get_compat_sso_login_by_id, oauth2::authorization_grant::get_grant_by_id,
+};
 use mas_templates::PostAuthContext;
 use serde::{Deserialize, Serialize};
 use sqlx::PgConnection;
@@ -41,8 +43,10 @@ impl OptionalPostAuthAction {
                 let grant = Box::new(grant.into());
                 Ok(Some(PostAuthContext::ContinueAuthorizationGrant { grant }))
             }
-            Some(PostAuthAction::ContinueCompatSsoLogin { .. }) => {
-                Ok(Some(PostAuthContext::ContinueCompatSsoLogin))
+            Some(PostAuthAction::ContinueCompatSsoLogin { data }) => {
+                let login = get_compat_sso_login_by_id(conn, *data).await?;
+                let login = Box::new(login.into());
+                Ok(Some(PostAuthContext::ContinueCompatSsoLogin { login }))
             }
             Some(PostAuthAction::ChangePassword) => Ok(Some(PostAuthContext::ChangePassword)),
             None => Ok(None),

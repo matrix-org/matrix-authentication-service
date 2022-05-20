@@ -193,7 +193,8 @@ where
             )
             .route(
                 mas_router::CompatLoginSsoComplete::route(),
-                get(self::compat::login_sso_complete::get),
+                get(self::compat::login_sso_complete::get)
+                    .post(self::compat::login_sso_complete::post),
             )
             .layer(ThenLayer::new(
                 move |result: Result<axum::response::Response, Infallible>| async move {
