@@ -2294,6 +2294,7 @@ name = "mas-templates"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "chrono",
  "mas-config",
  "mas-data-model",
  "oauth2-types",

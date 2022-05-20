@@ -16,7 +16,11 @@
 
 #![allow(clippy::trait_duplication_in_bounds)]
 
-use mas_data_model::{AuthorizationGrant, BrowserSession, StorageBackend, User, UserEmail};
+use chrono::Utc;
+use mas_data_model::{
+    AuthorizationGrant, BrowserSession, CompatSsoLogin, CompatSsoLoginState, StorageBackend, User,
+    UserEmail,
+};
 use serde::{ser::SerializeStruct, Deserialize, Serialize};
 use url::Url;
 
@@ -250,7 +254,10 @@ pub enum PostAuthContext {
 
     /// Continue legacy login
     /// TODO: add the login context in there
-    ContinueCompatSsoLogin,
+    ContinueCompatSsoLogin {
+        /// The compat SSO login request
+        login: Box<CompatSsoLogin<()>>,
+    },
 
     /// Change the account password
     ChangePassword,
@@ -450,6 +457,42 @@ impl ReauthContext {
         Self {
             next: Some(next),
             ..self
+        }
+    }
+}
+
+/// Context used by the `sso.html` template
+#[derive(Serialize)]
+pub struct CompatSsoContext {
+    login: CompatSsoLogin<()>,
+}
+
+impl TemplateContext for CompatSsoContext {
+    fn sample() -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        vec![CompatSsoContext {
+            login: CompatSsoLogin {
+                data: (),
+                redirect_uri: Url::parse("https://app.element.io/").unwrap(),
+                token: "abcdefghijklmnopqrstuvwxyz012345".into(),
+                created_at: Utc::now(),
+                state: CompatSsoLoginState::Pending,
+            },
+        }]
+    }
+}
+
+impl CompatSsoContext {
+    /// Constructs a context for the legacy SSO login page
+    #[must_use]
+    pub fn new<T>(login: T) -> Self
+    where
+        T: Into<CompatSsoLogin<()>>,
+    {
+        Self {
+            login: login.into(),
         }
     }
 }

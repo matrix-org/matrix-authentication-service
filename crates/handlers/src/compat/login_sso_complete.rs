@@ -16,16 +16,20 @@
 use std::collections::HashMap;
 
 use axum::{
-    extract::Path,
-    response::{IntoResponse, Redirect, Response},
+    extract::{Form, Path},
+    response::{Html, IntoResponse, Redirect, Response},
     Extension,
 };
 use axum_extra::extract::PrivateCookieJar;
-use mas_axum_utils::{FancyError, SessionInfoExt};
+use mas_axum_utils::{
+    csrf::{CsrfExt, ProtectedForm},
+    FancyError, SessionInfoExt,
+};
 use mas_config::Encrypter;
 use mas_data_model::Device;
 use mas_router::Route;
 use mas_storage::compat::{fullfill_compat_sso_login, get_compat_sso_login_by_id};
+use mas_templates::{CompatSsoContext, TemplateContext, Templates};
 use rand::thread_rng;
 use serde::Serialize;
 use sqlx::PgPool;
@@ -41,12 +45,46 @@ struct AllParams<'s> {
 
 pub async fn get(
     Extension(pool): Extension<PgPool>,
+    Extension(templates): Extension<Templates>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(id): Path<i64>,
+) -> Result<Response, FancyError> {
+    let mut conn = pool.acquire().await?;
+
+    let (session_info, cookie_jar) = cookie_jar.session_info();
+    let (csrf_token, cookie_jar) = cookie_jar.csrf_token();
+
+    let maybe_session = session_info.load_session(&mut conn).await?;
+
+    let session = if let Some(session) = maybe_session {
+        session
+    } else {
+        // If there is no session, redirect to the login screen
+        let login = mas_router::Login::and_continue_compat_sso_login(id);
+        return Ok((cookie_jar, login.go()).into_response());
+    };
+
+    let login = get_compat_sso_login_by_id(&mut conn, id).await?;
+
+    let ctx = CompatSsoContext::new(login)
+        .with_session(session)
+        .with_csrf(csrf_token.form_value());
+
+    let content = templates.render_sso_login(&ctx).await?;
+
+    Ok((cookie_jar, Html(content)).into_response())
+}
+
+pub async fn post(
+    Extension(pool): Extension<PgPool>,
+    cookie_jar: PrivateCookieJar<Encrypter>,
+    Path(id): Path<i64>,
+    Form(form): Form<ProtectedForm<()>>,
 ) -> Result<Response, FancyError> {
     let mut txn = pool.begin().await?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
+    cookie_jar.verify_form(form)?;
 
     let maybe_session = session_info.load_session(&mut txn).await?;
 

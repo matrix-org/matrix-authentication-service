@@ -40,6 +40,7 @@ enum LoginType {
 
     #[serde(rename = "m.login.sso")]
     Sso {
+        #[serde(skip_serializing_if = "Vec::is_empty")]
         identity_providers: Vec<SsoIdentityProvider>,
     },
 }
