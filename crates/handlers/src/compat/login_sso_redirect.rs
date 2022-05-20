@@ -65,8 +65,19 @@ pub async fn get(
     Extension(url_builder): Extension<UrlBuilder>,
     Query(params): Query<Params>,
 ) -> Result<impl IntoResponse, RouteError> {
+    // Check the redirectUrl parameter
     let redirect_url = params.redirect_url.ok_or(RouteError::MissingRedirectUrl)?;
     let redirect_url = Url::parse(&redirect_url).map_err(|_| RouteError::InvalidRedirectUrl)?;
+
+    // Do not allow URLs with username or passwords in them
+    if !redirect_url.username().is_empty() || redirect_url.password().is_some() {
+        return Err(RouteError::InvalidRedirectUrl);
+    }
+
+    // On the http/https scheme, verify the URL has a host
+    if matches!(redirect_url.scheme(), "http" | "https") && !redirect_url.has_host() {
+        return Err(RouteError::InvalidRedirectUrl);
+    }
 
     let token = Alphanumeric.sample_string(&mut thread_rng(), 32);
     let mut conn = pool.acquire().await?;
