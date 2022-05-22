@@ -14,7 +14,7 @@
 
 use axum::{
     extract::{Extension, Form},
-    response::{IntoResponse, Redirect},
+    response::IntoResponse,
 };
 use axum_extra::extract::PrivateCookieJar;
 use mas_axum_utils::{
@@ -22,17 +22,18 @@ use mas_axum_utils::{
     FancyError, SessionInfoExt,
 };
 use mas_config::Encrypter;
+use mas_router::{PostAuthAction, Route};
 use mas_storage::user::end_session;
 use sqlx::PgPool;
 
 pub(crate) async fn post(
     Extension(pool): Extension<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
-    Form(form): Form<ProtectedForm<()>>,
+    Form(form): Form<ProtectedForm<Option<PostAuthAction>>>,
 ) -> Result<impl IntoResponse, FancyError> {
     let mut txn = pool.begin().await?;
 
-    cookie_jar.verify_form(form)?;
+    let form = cookie_jar.verify_form(form)?;
 
     let (session_info, mut cookie_jar) = cookie_jar.session_info();
 
@@ -45,5 +46,11 @@ pub(crate) async fn post(
 
     txn.commit().await?;
 
-    Ok((cookie_jar, Redirect::to("/login")))
+    let destination = if let Some(action) = form {
+        mas_router::Login::and_then(action)
+    } else {
+        mas_router::Login::default()
+    };
+
+    Ok((cookie_jar, destination.go()))
 }

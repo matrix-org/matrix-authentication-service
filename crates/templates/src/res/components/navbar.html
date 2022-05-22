@@ -25,11 +25,7 @@ limitations under the License.
         </div>
 
         {{ button::link(text="My account", href="/account") }}
-
-        <form method="POST" action="/logout">
-          <input type="hidden" name="csrf" value="{{ csrf_token }}" />
-          {{ button::button_outline(text="Sign out", name="logout", type="submit") }}
-        </form>
+        {{ logout::button(text="Sign out", class=button::outline_class(), csrf_token=csrf_token) }}
       {% else %}
         {{ button::link(text="Sign in", href="/login") }}
         {{ button::link_outline(text="Create an account", href="/register") }}

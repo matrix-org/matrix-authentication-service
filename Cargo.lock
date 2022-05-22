@@ -2297,6 +2297,7 @@ dependencies = [
  "chrono",
  "mas-config",
  "mas-data-model",
+ "mas-router",
  "oauth2-types",
  "serde",
  "serde_json",

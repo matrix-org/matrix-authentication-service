@@ -60,7 +60,10 @@ pub(crate) async fn get(
     let ctx = ReauthContext::default();
     let next = query.load_context(&mut conn).await?;
     let ctx = if let Some(next) = next {
-        ctx.with_post_action(next)
+        // SAFETY: we should have an action only if we have a "next" context
+        // TODO: make that cleaner
+        let action = query.post_auth_action.unwrap();
+        ctx.with_post_action(next, action)
     } else {
         ctx
     };

@@ -73,7 +73,7 @@ pub(crate) async fn get(
     if let Some(session) = maybe_session {
         let (csrf_token, cookie_jar) = cookie_jar.csrf_token();
 
-        let ctx = ConsentContext::new(grant)
+        let ctx = ConsentContext::new(grant, PostAuthAction::continue_grant(grant_id))
             .with_session(session)
             .with_csrf(csrf_token.form_value());
 

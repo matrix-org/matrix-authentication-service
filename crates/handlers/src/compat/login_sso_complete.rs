@@ -28,7 +28,7 @@ use mas_axum_utils::{
 };
 use mas_config::Encrypter;
 use mas_data_model::Device;
-use mas_router::Route;
+use mas_router::{PostAuthAction, Route};
 use mas_storage::compat::{fullfill_compat_sso_login, get_compat_sso_login_by_id};
 use mas_templates::{CompatSsoContext, ErrorContext, TemplateContext, Templates};
 use rand::thread_rng;
@@ -77,7 +77,7 @@ pub async fn get(
         return Ok((cookie_jar, Html(content)).into_response());
     }
 
-    let ctx = CompatSsoContext::new(login)
+    let ctx = CompatSsoContext::new(login, PostAuthAction::continue_compat_sso_login(id))
         .with_session(session)
         .with_csrf(csrf_token.form_value());
 
