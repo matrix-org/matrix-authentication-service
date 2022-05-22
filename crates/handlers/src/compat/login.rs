@@ -13,14 +13,15 @@
 // limitations under the License.
 
 use axum::{response::IntoResponse, Extension, Json};
-use chrono::Duration;
+use chrono::{Duration, Utc};
 use hyper::StatusCode;
 use mas_config::MatrixConfig;
-use mas_data_model::{CompatSession, Device, TokenType};
+use mas_data_model::{CompatSession, CompatSsoLoginState, Device, TokenType};
 use mas_storage::{
     compat::{
         add_compat_access_token, add_compat_refresh_token, compat_login,
         get_compat_sso_login_by_token, mark_compat_sso_login_as_exchanged,
+        CompatSsoLoginLookupError,
     },
     PostgresqlBackend,
 };
@@ -132,11 +133,27 @@ pub enum RouteError {
 
     #[error("login failed")]
     LoginFailed,
+
+    #[error("login took too long")]
+    LoginTookTooLong,
+
+    #[error("invalid login token")]
+    InvalidLoginToken,
 }
 
 impl From<sqlx::Error> for RouteError {
     fn from(e: sqlx::Error) -> Self {
         Self::Internal(Box::new(e))
+    }
+}
+
+impl From<CompatSsoLoginLookupError> for RouteError {
+    fn from(e: CompatSsoLoginLookupError) -> Self {
+        if e.not_found() {
+            Self::InvalidLoginToken
+        } else {
+            Self::Internal(Box::new(e))
+        }
     }
 }
 
@@ -156,6 +173,16 @@ impl IntoResponse for RouteError {
             Self::LoginFailed => MatrixError {
                 errcode: "M_UNAUTHORIZED",
                 error: "Invalid username/password",
+                status: StatusCode::FORBIDDEN,
+            },
+            Self::LoginTookTooLong => MatrixError {
+                errcode: "M_UNAUTHORIZED",
+                error: "Login token expired",
+                status: StatusCode::FORBIDDEN,
+            },
+            Self::InvalidLoginToken => MatrixError {
+                errcode: "M_UNAUTHORIZED",
+                error: "Invalid login token",
                 status: StatusCode::FORBIDDEN,
             },
         }
@@ -222,10 +249,38 @@ async fn token_login(
     token: &str,
 ) -> Result<CompatSession<PostgresqlBackend>, RouteError> {
     let login = get_compat_sso_login_by_token(&mut *txn, token).await?;
+
+    let now = Utc::now();
+    match login.state {
+        CompatSsoLoginState::Pending => {
+            tracing::error!(
+                login.data,
+                "Exchanged a token for a login that was not fullfilled yet"
+            );
+            return Err(RouteError::InvalidLoginToken);
+        }
+        CompatSsoLoginState::Fullfilled { fullfilled_at, .. } => {
+            if now > fullfilled_at + Duration::seconds(30) {
+                return Err(RouteError::LoginTookTooLong);
+            }
+        }
+        CompatSsoLoginState::Exchanged { exchanged_at, .. } => {
+            if now > exchanged_at + Duration::seconds(30) {
+                // TODO: log that session out
+                tracing::error!(
+                    login.data,
+                    "Login token exchanged a second time more than 30s after"
+                );
+            }
+
+            return Err(RouteError::InvalidLoginToken);
+        }
+    }
+
     let login = mark_compat_sso_login_as_exchanged(&mut *txn, login).await?;
 
     match login.state {
-        mas_data_model::CompatSsoLoginState::Exchanged { session, .. } => Ok(session),
+        CompatSsoLoginState::Exchanged { session, .. } => Ok(session),
         _ => unreachable!(),
     }
 }
