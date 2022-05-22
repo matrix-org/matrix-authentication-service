@@ -29,7 +29,7 @@ use crate::{
     user::lookup_user_by_username, DatabaseInconsistencyError, IdAndCreationTime, PostgresqlBackend,
 };
 
-pub struct CompatAccessTokenLookup {
+struct CompatAccessTokenLookup {
     compat_access_token_id: i64,
     compat_access_token: String,
     compat_access_token_created_at: DateTime<Utc>,
@@ -654,12 +654,26 @@ impl TryFrom<CompatSsoLoginLookup> for CompatSsoLogin<PostgresqlBackend> {
     }
 }
 
+#[derive(Debug, Error)]
+#[error("failed to lookup compat SSO login")]
+pub enum CompatSsoLoginLookupError {
+    Database(#[from] sqlx::Error),
+    Inconsistency(#[from] DatabaseInconsistencyError),
+}
+
+impl CompatSsoLoginLookupError {
+    #[must_use]
+    pub fn not_found(&self) -> bool {
+        matches!(self, Self::Database(sqlx::Error::RowNotFound))
+    }
+}
+
 #[allow(clippy::too_many_lines)]
 #[tracing::instrument(skip(executor), err)]
 pub async fn get_compat_sso_login_by_id(
     executor: impl PgExecutor<'_>,
     id: i64,
-) -> anyhow::Result<CompatSsoLogin<PostgresqlBackend>> {
+) -> Result<CompatSsoLogin<PostgresqlBackend>, CompatSsoLoginLookupError> {
     let res = sqlx::query_as!(
         CompatSsoLoginLookup,
         r#"
@@ -693,8 +707,7 @@ pub async fn get_compat_sso_login_by_id(
     )
     .fetch_one(executor)
     .instrument(tracing::info_span!("Lookup compat SSO login"))
-    .await
-    .context("could not lookup compat SSO login")?;
+    .await?;
 
     Ok(res.try_into()?)
 }
@@ -704,7 +717,7 @@ pub async fn get_compat_sso_login_by_id(
 pub async fn get_compat_sso_login_by_token(
     executor: impl PgExecutor<'_>,
     token: &str,
-) -> anyhow::Result<CompatSsoLogin<PostgresqlBackend>> {
+) -> Result<CompatSsoLogin<PostgresqlBackend>, CompatSsoLoginLookupError> {
     let res = sqlx::query_as!(
         CompatSsoLoginLookup,
         r#"
@@ -738,8 +751,7 @@ pub async fn get_compat_sso_login_by_token(
     )
     .fetch_one(executor)
     .instrument(tracing::info_span!("Lookup compat SSO login"))
-    .await
-    .context("could not lookup compat SSO login")?;
+    .await?;
 
     Ok(res.try_into()?)
 }
@@ -750,8 +762,12 @@ pub async fn fullfill_compat_sso_login(
     mut login: CompatSsoLogin<PostgresqlBackend>,
     device: Device,
 ) -> anyhow::Result<CompatSsoLogin<PostgresqlBackend>> {
-    // TODO: check if login is in pending state
+    if !matches!(login.state, CompatSsoLoginState::Pending) {
+        bail!("sso login in wrong state");
+    };
+
     let mut txn = conn.begin().await.context("could not start transaction")?;
+
     let res = sqlx::query_as!(
         IdAndCreationTime,
         r#"

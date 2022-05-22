@@ -21,6 +21,7 @@ use axum::{
     Extension,
 };
 use axum_extra::extract::PrivateCookieJar;
+use chrono::{Duration, Utc};
 use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     FancyError, SessionInfoExt,
@@ -29,7 +30,7 @@ use mas_config::Encrypter;
 use mas_data_model::Device;
 use mas_router::Route;
 use mas_storage::compat::{fullfill_compat_sso_login, get_compat_sso_login_by_id};
-use mas_templates::{CompatSsoContext, TemplateContext, Templates};
+use mas_templates::{CompatSsoContext, ErrorContext, TemplateContext, Templates};
 use rand::thread_rng;
 use serde::Serialize;
 use sqlx::PgPool;
@@ -66,6 +67,16 @@ pub async fn get(
 
     let login = get_compat_sso_login_by_id(&mut conn, id).await?;
 
+    // Bail out if that login session is more than 30min old
+    if Utc::now() > login.created_at + Duration::minutes(30) {
+        let ctx = ErrorContext::new()
+            .with_code("compat_sso_login_expired")
+            .with_description("This login session expired.".to_string());
+
+        let content = templates.render_error(&ctx).await?;
+        return Ok((cookie_jar, Html(content)).into_response());
+    }
+
     let ctx = CompatSsoContext::new(login)
         .with_session(session)
         .with_csrf(csrf_token.form_value());
@@ -77,6 +88,7 @@ pub async fn get(
 
 pub async fn post(
     Extension(pool): Extension<PgPool>,
+    Extension(templates): Extension<Templates>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(id): Path<i64>,
     Form(form): Form<ProtectedForm<()>>,
@@ -97,6 +109,16 @@ pub async fn post(
     };
 
     let login = get_compat_sso_login_by_id(&mut txn, id).await?;
+
+    // Bail out if that login session is more than 30min old
+    if Utc::now() > login.created_at + Duration::minutes(30) {
+        let ctx = ErrorContext::new()
+            .with_code("compat_sso_login_expired")
+            .with_description("This login session expired.".to_string());
+
+        let content = templates.render_error(&ctx).await?;
+        return Ok((cookie_jar, Html(content)).into_response());
+    }
 
     let redirect_uri = {
         let mut redirect_uri = login.redirect_uri.clone();
