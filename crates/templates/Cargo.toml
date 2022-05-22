@@ -26,3 +26,4 @@ url = "2.2.2"
 oauth2-types = { path = "../oauth2-types" }
 mas-data-model = { path = "../data-model" }
 mas-config = { path = "../config" }
+mas-router = { path = "../router" }

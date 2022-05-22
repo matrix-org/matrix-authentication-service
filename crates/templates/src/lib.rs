@@ -284,6 +284,7 @@ register_templates! {
         "components/button.html",
         "components/field.html",
         "components/back_to_client.html",
+        "components/logout.html",
         "components/navbar.html",
         "components/errors.html",
         "base.html",

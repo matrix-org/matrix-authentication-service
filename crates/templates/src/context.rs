@@ -21,6 +21,7 @@ use mas_data_model::{
     AuthorizationGrant, BrowserSession, CompatSsoLogin, CompatSsoLoginState, StorageBackend, User,
     UserEmail,
 };
+use mas_router::PostAuthAction;
 use serde::{ser::SerializeStruct, Deserialize, Serialize};
 use url::Url;
 
@@ -383,6 +384,7 @@ impl RegisterContext {
 #[derive(Serialize)]
 pub struct ConsentContext {
     grant: AuthorizationGrant<()>,
+    action: PostAuthAction,
 }
 
 impl TemplateContext for ConsentContext {
@@ -398,12 +400,13 @@ impl TemplateContext for ConsentContext {
 impl ConsentContext {
     /// Constructs a context for the client consent page
     #[must_use]
-    pub fn new<T>(grant: T) -> Self
+    pub fn new<T>(grant: T, action: PostAuthAction) -> Self
     where
         T: Into<AuthorizationGrant<()>>,
     {
         Self {
             grant: grant.into(),
+            action,
         }
     }
 }
@@ -429,6 +432,7 @@ impl FormField for ReauthFormField {
 pub struct ReauthContext {
     form: FormState<ReauthFormField>,
     next: Option<PostAuthContext>,
+    action: Option<PostAuthAction>,
 }
 
 impl TemplateContext for ReauthContext {
@@ -440,6 +444,7 @@ impl TemplateContext for ReauthContext {
         vec![ReauthContext {
             form: FormState::default(),
             next: None,
+            action: None,
         }]
     }
 }
@@ -453,9 +458,10 @@ impl ReauthContext {
 
     /// Add a post authentication action to the context
     #[must_use]
-    pub fn with_post_action(self, next: PostAuthContext) -> Self {
+    pub fn with_post_action(self, next: PostAuthContext, action: PostAuthAction) -> Self {
         Self {
             next: Some(next),
+            action: Some(action),
             ..self
         }
     }
@@ -465,6 +471,7 @@ impl ReauthContext {
 #[derive(Serialize)]
 pub struct CompatSsoContext {
     login: CompatSsoLogin<()>,
+    action: PostAuthAction,
 }
 
 impl TemplateContext for CompatSsoContext {
@@ -480,6 +487,7 @@ impl TemplateContext for CompatSsoContext {
                 created_at: Utc::now(),
                 state: CompatSsoLoginState::Pending,
             },
+            action: PostAuthAction::ContinueCompatSsoLogin { data: 1 },
         }]
     }
 }
@@ -487,12 +495,13 @@ impl TemplateContext for CompatSsoContext {
 impl CompatSsoContext {
     /// Constructs a context for the legacy SSO login page
     #[must_use]
-    pub fn new<T>(login: T) -> Self
+    pub fn new<T>(login: T, action: PostAuthAction) -> Self
     where
         T: Into<CompatSsoLogin<()>>,
     {
         Self {
             login: login.into(),
+            action,
         }
     }
 }
