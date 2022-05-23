@@ -39,6 +39,9 @@ enum LoginType {
     #[serde(rename = "m.login.password")]
     Password,
 
+    #[serde(rename = "m.login.token")]
+    Token,
+
     #[serde(rename = "m.login.sso")]
     Sso {
         #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -62,11 +65,9 @@ pub(crate) async fn get() -> impl IntoResponse {
         flows: vec![
             LoginType::Password,
             LoginType::Sso {
-                identity_providers: vec![SsoIdentityProvider {
-                    id: "legacy",
-                    name: "SSO",
-                }],
+                identity_providers: vec![],
             },
+            LoginType::Token,
         ],
     };
 
