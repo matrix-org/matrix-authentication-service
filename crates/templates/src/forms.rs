@@ -27,11 +27,14 @@ pub trait FormField: Copy + Hash + PartialEq + Eq + Serialize + for<'de> Deseria
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "snake_case", tag = "kind")]
 pub enum FieldError {
-    /// A reuired field is missing
+    /// A required field is missing
     Required,
 
     /// An unspecified error on the field
     Unspecified,
+
+    /// That value already exists
+    Exists,
 }
 
 /// An error on the whole form

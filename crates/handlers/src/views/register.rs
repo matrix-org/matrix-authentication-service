@@ -26,7 +26,7 @@ use mas_axum_utils::{
 };
 use mas_config::Encrypter;
 use mas_router::Route;
-use mas_storage::user::{register_user, start_session};
+use mas_storage::user::{register_user, start_session, username_exists};
 use mas_templates::{
     FieldError, FormError, RegisterContext, RegisterFormField, TemplateContext, Templates,
     ToFormState,
@@ -96,6 +96,8 @@ pub(crate) async fn post(
 
         if form.username.is_empty() {
             state.add_error_on_field(RegisterFormField::Username, FieldError::Required);
+        } else if username_exists(&mut txn, &form.username).await? {
+            state.add_error_on_field(RegisterFormField::Username, FieldError::Exists);
         }
 
         if form.password.is_empty() {

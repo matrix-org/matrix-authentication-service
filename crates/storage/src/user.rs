@@ -476,6 +476,22 @@ pub async fn lookup_user_by_username(
     })
 }
 
+pub async fn username_exists(
+    executor: impl PgExecutor<'_>,
+    username: &str,
+) -> Result<bool, sqlx::Error> {
+    sqlx::query_scalar!(
+        r#"
+            SELECT EXISTS(
+                SELECT 1 FROM users WHERE username = $1
+            ) AS "exists!"
+        "#,
+        username
+    )
+    .fetch_one(executor)
+    .await
+}
+
 #[derive(Debug, Clone)]
 struct UserEmailLookup {
     user_email_id: i64,

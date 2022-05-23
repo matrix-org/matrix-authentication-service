@@ -44,6 +44,8 @@ limitations under the License.
           <div class="mx-4 text-sm text-alert">
             {% if error.kind == "required" %}
               This field is required
+            {% elif error.kind == "exists" and name == "username" %}
+              This username is already taken
             {% else %}
               {{ error.kind }}
             {% endif %}

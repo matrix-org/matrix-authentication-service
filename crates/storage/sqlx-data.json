@@ -1974,6 +1974,26 @@
     },
     "query": "\n            UPDATE compat_sessions\n            SET deleted_at = NOW()\n            FROM compat_access_tokens\n            WHERE compat_access_tokens.token = $1\n              AND compat_sessions.id = compat_access_tokens.id \n              AND compat_sessions.deleted_at IS NULL\n        "
   },
+  "af77bad7259175464c5ad57f9662571c17b29552ebb70e4b6022584b41bdff0d": {
+    "describe": {
+      "columns": [
+        {
+          "name": "exists!",
+          "ordinal": 0,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "\n            SELECT EXISTS(\n                SELECT 1 FROM users WHERE username = $1\n            ) AS \"exists!\"\n        "
+  },
   "b0fec01072df856ba9cd8be0ecf7a58dd4709a0efca4035a2c6f99c43d5a12be": {
     "describe": {
       "columns": [
