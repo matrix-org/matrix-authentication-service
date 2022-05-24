@@ -39,12 +39,14 @@ use serde::Deserialize;
 use sqlx::{PgExecutor, PgPool};
 use tracing::info;
 
+pub mod add;
 pub mod verify;
 
 #[derive(Deserialize, Debug)]
 #[serde(tag = "action", rename_all = "snake_case")]
 pub enum ManagementForm {
     Add { email: String },
+    ResendConfirmation { data: String },
     SetPrimary { data: String },
     Remove { data: String },
 }
@@ -140,7 +142,16 @@ pub(crate) async fn post(
     match form {
         ManagementForm::Add { email } => {
             let user_email = add_user_email(&mut txn, &session.user, email).await?;
-            let next = mas_router::AccountVerifyEmail(user_email.data);
+            let next = mas_router::AccountVerifyEmail::new(user_email.data);
+            start_email_verification(&mailer, &mut txn, &session.user, user_email).await?;
+            txn.commit().await?;
+            return Ok((cookie_jar, next.go()).into_response());
+        }
+        ManagementForm::ResendConfirmation { data } => {
+            let id = data.parse()?;
+
+            let user_email = get_user_email(&mut txn, &session.user, id).await?;
+            let next = mas_router::AccountVerifyEmail::new(user_email.data);
             start_email_verification(&mailer, &mut txn, &session.user, user_email).await?;
             txn.commit().await?;
             return Ok((cookie_jar, next.go()).into_response());

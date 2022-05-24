@@ -315,18 +315,66 @@ impl From<Option<PostAuthAction>> for Register {
     }
 }
 
-/// `GET /account/emails/verify/:id`
+/// `GET|POST /account/emails/verify/:id`
 #[derive(Debug, Clone)]
-pub struct AccountVerifyEmail(pub i64);
+pub struct AccountVerifyEmail {
+    id: i64,
+    post_auth_action: Option<PostAuthAction>,
+}
+
+impl AccountVerifyEmail {
+    #[must_use]
+    pub fn new(id: i64) -> Self {
+        Self {
+            id,
+            post_auth_action: None,
+        }
+    }
+
+    #[must_use]
+    pub fn and_then(mut self, action: PostAuthAction) -> Self {
+        self.post_auth_action = Some(action);
+        self
+    }
+}
 
 impl Route for AccountVerifyEmail {
-    type Query = ();
+    type Query = PostAuthAction;
     fn route() -> &'static str {
         "/account/emails/verify/:id"
     }
 
     fn path(&self) -> std::borrow::Cow<'static, str> {
-        format!("/account/emails/verify/{}", self.0).into()
+        format!("/account/emails/verify/{}", self.id).into()
+    }
+
+    fn query(&self) -> Option<&Self::Query> {
+        self.post_auth_action.as_ref()
+    }
+}
+
+/// `GET /account/emails/add`
+#[derive(Default, Debug, Clone)]
+pub struct AccountAddEmail {
+    post_auth_action: Option<PostAuthAction>,
+}
+
+impl Route for AccountAddEmail {
+    type Query = PostAuthAction;
+    fn route() -> &'static str {
+        "/account/emails/add"
+    }
+
+    fn query(&self) -> Option<&Self::Query> {
+        self.post_auth_action.as_ref()
+    }
+}
+
+impl AccountAddEmail {
+    #[must_use]
+    pub fn and_then(mut self, action: PostAuthAction) -> Self {
+        self.post_auth_action = Some(action);
+        self
     }
 }
 

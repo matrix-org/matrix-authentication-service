@@ -45,7 +45,7 @@ mod macros;
 
 pub use self::{
     context::{
-        AccountContext, AccountEmailsContext, CompatSsoContext, ConsentContext,
+        AccountContext, AccountEmailsContext, CompatSsoContext, ConsentContext, EmailAddContext,
         EmailVerificationContext, EmailVerificationPageContext, EmptyContext, ErrorContext,
         FormPostContext, IndexContext, LoginContext, LoginFormField, PostAuthContext,
         ReauthContext, ReauthFormField, RegisterContext, RegisterFormField, TemplateContext,
@@ -312,7 +312,13 @@ register_templates! {
     pub fn render_account_password(WithCsrf<WithSession<EmptyContext>>) { "pages/account/password.html" }
 
     /// Render the emails management
-    pub fn render_account_emails<T: StorageBackend>(WithCsrf<WithSession<AccountEmailsContext<T>>>) { "pages/account/emails.html" }
+    pub fn render_account_emails<T: StorageBackend>(WithCsrf<WithSession<AccountEmailsContext<T>>>) { "pages/account/emails/index.html" }
+
+    /// Render the email verification page
+    pub fn render_account_verify_email(WithCsrf<WithSession<EmailVerificationPageContext>>) { "pages/account/emails/verify.html" }
+
+    /// Render the email verification page
+    pub fn render_account_add_email(WithCsrf<WithSession<EmailAddContext>>) { "pages/account/emails/add.html" }
 
     /// Render the re-authentication form
     pub fn render_reauth(WithCsrf<WithSession<ReauthContext>>) { "pages/reauth.html" }
@@ -331,9 +337,6 @@ register_templates! {
 
     /// Render the email verification subject
     pub fn render_email_verification_subject(EmailVerificationContext) { "emails/verification.subject" }
-
-    /// Render the email post-email verification page
-    pub fn render_email_verification_form(WithCsrf<WithSession<EmailVerificationPageContext>>) { "pages/account/verify.html" }
 }
 
 impl Templates {
@@ -348,13 +351,14 @@ impl Templates {
         check::render_account_index(self).await?;
         check::render_account_password(self).await?;
         check::render_account_emails::<()>(self).await?;
+        check::render_account_add_email(self).await?;
+        check::render_account_verify_email(self).await?;
         check::render_reauth(self).await?;
         check::render_form_post::<EmptyContext>(self).await?;
         check::render_error(self).await?;
         check::render_email_verification_txt(self).await?;
         check::render_email_verification_html(self).await?;
         check::render_email_verification_subject(self).await?;
-        check::render_email_verification_form(self).await?;
         Ok(())
     }
 }

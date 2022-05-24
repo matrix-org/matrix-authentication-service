@@ -13,40 +13,36 @@
 // limitations under the License.
 
 use axum::{
-    extract::{Extension, Form, Path, Query},
+    extract::{Extension, Form, Query},
     response::{Html, IntoResponse, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
-use chrono::Duration;
 use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     FancyError, SessionInfoExt,
 };
 use mas_config::Encrypter;
+use mas_email::Mailer;
 use mas_router::Route;
-use mas_storage::user::{
-    consume_email_verification, lookup_user_email_by_id, lookup_user_email_verification_code,
-    mark_user_email_as_verified, set_user_email_as_primary,
-};
-use mas_templates::{EmailVerificationPageContext, TemplateContext, Templates};
+use mas_storage::user::add_user_email;
+use mas_templates::{EmailAddContext, TemplateContext, Templates};
 use serde::Deserialize;
 use sqlx::PgPool;
 
+use super::start_email_verification;
 use crate::views::shared::OptionalPostAuthAction;
 
 #[derive(Deserialize, Debug)]
-pub struct CodeForm {
-    code: String,
+pub struct EmailForm {
+    email: String,
 }
 
 pub(crate) async fn get(
     Extension(templates): Extension<Templates>,
     Extension(pool): Extension<PgPool>,
-    Query(query): Query<OptionalPostAuthAction>,
-    Path(id): Path<i64>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
-    let mut conn = pool.acquire().await?;
+    let mut conn = pool.begin().await?;
 
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token();
     let (session_info, cookie_jar) = cookie_jar.session_info();
@@ -60,29 +56,21 @@ pub(crate) async fn get(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    let user_email = lookup_user_email_by_id(&mut conn, &session.user, id).await?;
-
-    if user_email.confirmed_at.is_some() {
-        // This email was already verified, skip
-        let destination = query.go_next_or_default(&mas_router::AccountEmails);
-        return Ok((cookie_jar, destination).into_response());
-    }
-
-    let ctx = EmailVerificationPageContext::new(user_email)
+    let ctx = EmailAddContext::new()
         .with_session(session)
         .with_csrf(csrf_token.form_value());
 
-    let content = templates.render_account_verify_email(&ctx).await?;
+    let content = templates.render_account_add_email(&ctx).await?;
 
     Ok((cookie_jar, Html(content)).into_response())
 }
 
 pub(crate) async fn post(
     Extension(pool): Extension<PgPool>,
+    Extension(mailer): Extension<Mailer>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Query(query): Query<OptionalPostAuthAction>,
-    Path(id): Path<i64>,
-    Form(form): Form<ProtectedForm<CodeForm>>,
+    Form(form): Form<ProtectedForm<EmailForm>>,
 ) -> Result<Response, FancyError> {
     let mut txn = pool.begin().await?;
 
@@ -98,24 +86,16 @@ pub(crate) async fn post(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    let email = lookup_user_email_by_id(&mut txn, &session.user, id).await?;
-
-    if session.user.primary_email.is_none() {
-        set_user_email_as_primary(&mut txn, &email).await?;
-    }
-
-    // TODO: make those 8 hours configurable
-    let verification =
-        lookup_user_email_verification_code(&mut txn, email, &form.code, Duration::hours(8))
-            .await?;
-
-    // TODO: display nice errors if the code was already consumed or expired
-    let verification = consume_email_verification(&mut txn, verification).await?;
-
-    let _email = mark_user_email_as_verified(&mut txn, verification.email).await?;
+    let user_email = add_user_email(&mut txn, &session.user, form.email).await?;
+    let next = mas_router::AccountVerifyEmail::new(user_email.data);
+    let next = if let Some(action) = query.post_auth_action {
+        next.and_then(action)
+    } else {
+        next
+    };
+    start_email_verification(&mailer, &mut txn, &session.user, user_email).await?;
 
     txn.commit().await?;
 
-    let destination = query.go_next_or_default(&mas_router::AccountEmails);
-    Ok((cookie_jar, destination).into_response())
+    Ok((cookie_jar, next.go()).into_response())
 }
