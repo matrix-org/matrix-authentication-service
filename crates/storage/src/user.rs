@@ -670,6 +670,36 @@ pub async fn lookup_user_email(
 }
 
 #[tracing::instrument(skip(executor))]
+pub async fn lookup_user_email_by_id(
+    executor: impl PgExecutor<'_>,
+    user: &User<PostgresqlBackend>,
+    id: i64,
+) -> anyhow::Result<UserEmail<PostgresqlBackend>> {
+    let res = sqlx::query_as!(
+        UserEmailLookup,
+        r#"
+            SELECT 
+                ue.id           AS "user_email_id",
+                ue.email        AS "user_email",
+                ue.created_at   AS "user_email_created_at",
+                ue.confirmed_at AS "user_email_confirmed_at"
+            FROM user_emails ue
+
+            WHERE ue.user_id = $1
+              AND ue.id = $2
+        "#,
+        user.data,
+        id,
+    )
+    .fetch_one(executor)
+    .instrument(info_span!("Lookup user email"))
+    .await
+    .context("could not lookup user email")?;
+
+    Ok(res.into())
+}
+
+#[tracing::instrument(skip(executor))]
 pub async fn mark_user_email_as_verified(
     executor: impl PgExecutor<'_>,
     mut email: UserEmail<PostgresqlBackend>,
@@ -695,18 +725,16 @@ pub async fn mark_user_email_as_verified(
 
 struct UserEmailVerificationLookup {
     verification_id: i64,
+    verification_code: String,
     verification_expired: bool,
     verification_created_at: DateTime<Utc>,
     verification_consumed_at: Option<DateTime<Utc>>,
-    user_email_id: i64,
-    user_email: String,
-    user_email_created_at: DateTime<Utc>,
-    user_email_confirmed_at: Option<DateTime<Utc>>,
 }
 
 #[tracing::instrument(skip(executor))]
 pub async fn lookup_user_email_verification_code(
     executor: impl PgExecutor<'_>,
+    email: UserEmail<PostgresqlBackend>,
     code: &str,
     max_age: chrono::Duration,
 ) -> anyhow::Result<UserEmailVerification<PostgresqlBackend>> {
@@ -720,32 +748,22 @@ pub async fn lookup_user_email_verification_code(
         r#"
             SELECT
                 ev.id              AS "verification_id",
-                (ev.created_at + $2 < NOW()) AS "verification_expired!",
+                ev.code            AS "verification_code",
+                (ev.created_at + $3 < NOW()) AS "verification_expired!",
                 ev.created_at      AS "verification_created_at",
-                ev.consumed_at     AS "verification_consumed_at",
-                ue.id              AS "user_email_id",
-                ue.email           AS "user_email",
-                ue.created_at      AS "user_email_created_at",
-                ue.confirmed_at    AS "user_email_confirmed_at"
+                ev.consumed_at     AS "verification_consumed_at"
             FROM user_email_verifications ev
-            INNER JOIN user_emails ue
-               ON ue.id = ev.user_email_id
             WHERE ev.code = $1
+              AND ev.user_email_id = $2
         "#,
         code,
+        email.data,
         max_age,
     )
     .fetch_one(executor)
     .instrument(info_span!("Lookup user email verification"))
     .await
     .context("could not lookup user email verification")?;
-
-    let email = UserEmail {
-        data: res.user_email_id,
-        email: res.user_email,
-        created_at: res.user_email_created_at,
-        confirmed_at: res.user_email_confirmed_at,
-    };
 
     let state = if res.verification_expired {
         UserEmailVerificationState::Expired
@@ -757,6 +775,7 @@ pub async fn lookup_user_email_verification_code(
 
     Ok(UserEmailVerification {
         data: res.verification_id,
+        code: res.verification_code,
         email,
         state,
         created_at: res.verification_created_at,
@@ -794,21 +813,31 @@ pub async fn consume_email_verification(
 #[tracing::instrument(skip(executor, email), fields(email.id = email.data, %email.email))]
 pub async fn add_user_email_verification_code(
     executor: impl PgExecutor<'_>,
-    email: &UserEmail<PostgresqlBackend>,
-    code: &str,
-) -> anyhow::Result<()> {
-    sqlx::query!(
+    email: UserEmail<PostgresqlBackend>,
+    code: String,
+) -> anyhow::Result<UserEmailVerification<PostgresqlBackend>> {
+    let res = sqlx::query_as!(
+        IdAndCreationTime,
         r#"
             INSERT INTO user_email_verifications (user_email_id, code)
             VALUES ($1, $2)
+            RETURNING id, created_at
         "#,
         email.data,
         code,
     )
-    .execute(executor)
+    .fetch_one(executor)
     .instrument(info_span!("Add user email verification code"))
     .await
     .context("could not insert user email verification code")?;
 
-    Ok(())
+    let verification = UserEmailVerification {
+        data: res.id,
+        email,
+        code,
+        created_at: res.created_at,
+        state: UserEmailVerificationState::Valid,
+    };
+
+    Ok(verification)
 }

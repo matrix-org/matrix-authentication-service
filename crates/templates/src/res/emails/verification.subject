@@ -14,12 +14,4 @@ See the License for the specific language governing permissions and
 limitations under the License.
 #}
 
-{% extends "base.html" %}
-
-{% block content %}
-  <section class="flex items-center justify-center flex-1">
-    <p class="font-bold text-xl">Email verified!</p>
-  </section>
-{% endblock content %}
-
-
+Your auth service verification code is: {{ verification.code }}

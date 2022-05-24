@@ -91,25 +91,4 @@ impl UrlBuilder {
     pub fn jwks_uri(&self) -> Url {
         self.url_for(&crate::endpoints::OAuth2Keys)
     }
-
-    /// Email verification URL
-    #[must_use]
-    pub fn email_verification(&self, code: String) -> Url {
-        self.url_for(&crate::endpoints::VerifyEmail(code))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn build_email_verification_url() {
-        let base = Url::parse("https://example.com/").unwrap();
-        let builder = UrlBuilder::new(base);
-        assert_eq!(
-            builder.email_verification("123456abcdef".into()).as_str(),
-            "https://example.com/verify/123456abcdef"
-        );
-    }
 }

@@ -173,6 +173,7 @@ pub enum UserEmailVerificationState {
 pub struct UserEmailVerification<T: StorageBackend> {
     pub data: T::UserEmailVerificationData,
     pub email: UserEmail<T>,
+    pub code: String,
     pub created_at: DateTime<Utc>,
     pub state: UserEmailVerificationState,
 }
@@ -182,6 +183,7 @@ impl<S: StorageBackendMarker> From<UserEmailVerification<S>> for UserEmailVerifi
         Self {
             data: (),
             email: v.email.into(),
+            code: v.code,
             created_at: v.created_at,
             state: v.state,
         }
@@ -207,6 +209,7 @@ where
             .flat_map(|state| {
                 UserEmail::samples().into_iter().map(move |email| Self {
                     data: Default::default(),
+                    code: "123456".to_string(),
                     email,
                     created_at: Utc::now() - Duration::minutes(10),
                     state: state.clone(),

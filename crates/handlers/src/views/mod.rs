@@ -19,4 +19,3 @@ pub mod logout;
 pub mod reauth;
 pub mod register;
 pub mod shared;
-pub mod verify;

@@ -27,12 +27,16 @@ pub(crate) struct OptionalPostAuthAction {
 }
 
 impl OptionalPostAuthAction {
-    pub fn go_next(&self) -> axum::response::Redirect {
-        self.post_auth_action.as_ref().map_or_else(
-            || mas_router::Index.go(),
-            mas_router::PostAuthAction::go_next,
-        )
+    pub fn go_next_or_default<T: Route>(&self, default: &T) -> axum::response::Redirect {
+        self.post_auth_action
+            .as_ref()
+            .map_or_else(|| default.go(), mas_router::PostAuthAction::go_next)
     }
+
+    pub fn go_next(&self) -> axum::response::Redirect {
+        self.go_next_or_default(&mas_router::Index)
+    }
+
     pub async fn load_context<'e>(
         &self,
         conn: &mut PgConnection,

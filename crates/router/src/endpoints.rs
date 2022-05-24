@@ -52,7 +52,7 @@ impl PostAuthAction {
 }
 
 /// `GET /.well-known/openid-configuration`
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct OidcConfiguration;
 
 impl SimpleRoute for OidcConfiguration {
@@ -60,7 +60,7 @@ impl SimpleRoute for OidcConfiguration {
 }
 
 /// `GET /.well-known/webfinger`
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Webfinger;
 
 impl SimpleRoute for Webfinger {
@@ -75,7 +75,7 @@ impl SimpleRoute for ChangePasswordDiscovery {
 }
 
 /// `GET /oauth2/keys.json`
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct OAuth2Keys;
 
 impl SimpleRoute for OAuth2Keys {
@@ -83,7 +83,7 @@ impl SimpleRoute for OAuth2Keys {
 }
 
 /// `GET /oauth2/userinfo`
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct OidcUserinfo;
 
 impl SimpleRoute for OidcUserinfo {
@@ -91,7 +91,7 @@ impl SimpleRoute for OidcUserinfo {
 }
 
 /// `POST /oauth2/userinfo`
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct OAuth2Introspection;
 
 impl SimpleRoute for OAuth2Introspection {
@@ -99,7 +99,7 @@ impl SimpleRoute for OAuth2Introspection {
 }
 
 /// `POST /oauth2/token`
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct OAuth2TokenEndpoint;
 
 impl SimpleRoute for OAuth2TokenEndpoint {
@@ -107,7 +107,7 @@ impl SimpleRoute for OAuth2TokenEndpoint {
 }
 
 /// `POST /oauth2/registration`
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct OAuth2RegistrationEndpoint;
 
 impl SimpleRoute for OAuth2RegistrationEndpoint {
@@ -115,7 +115,7 @@ impl SimpleRoute for OAuth2RegistrationEndpoint {
 }
 
 /// `GET /authorize`
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct OAuth2AuthorizationEndpoint;
 
 impl SimpleRoute for OAuth2AuthorizationEndpoint {
@@ -123,7 +123,7 @@ impl SimpleRoute for OAuth2AuthorizationEndpoint {
 }
 
 /// `GET /`
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Index;
 
 impl SimpleRoute for Index {
@@ -131,7 +131,7 @@ impl SimpleRoute for Index {
 }
 
 /// `GET /health`
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Healthcheck;
 
 impl SimpleRoute for Healthcheck {
@@ -200,7 +200,7 @@ impl From<Option<PostAuthAction>> for Login {
 }
 
 /// `POST /logout`
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Logout;
 
 impl SimpleRoute for Logout {
@@ -315,23 +315,23 @@ impl From<Option<PostAuthAction>> for Register {
     }
 }
 
-/// `GET /verify/:code`
+/// `GET /account/emails/verify/:id`
 #[derive(Debug, Clone)]
-pub struct VerifyEmail(pub String);
+pub struct AccountVerifyEmail(pub i64);
 
-impl Route for VerifyEmail {
+impl Route for AccountVerifyEmail {
     type Query = ();
     fn route() -> &'static str {
-        "/verify/:code"
+        "/account/emails/verify/:id"
     }
 
     fn path(&self) -> std::borrow::Cow<'static, str> {
-        format!("/verify/{}", self.0).into()
+        format!("/account/emails/verify/{}", self.0).into()
     }
 }
 
 /// `GET /account`
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Account;
 
 impl SimpleRoute for Account {
@@ -339,7 +339,7 @@ impl SimpleRoute for Account {
 }
 
 /// `GET|POST /account/password`
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct AccountPassword;
 
 impl SimpleRoute for AccountPassword {
@@ -347,7 +347,7 @@ impl SimpleRoute for AccountPassword {
 }
 
 /// `GET|POST /account/emails`
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct AccountEmails;
 
 impl SimpleRoute for AccountEmails {
