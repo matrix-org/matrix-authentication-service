@@ -158,11 +158,6 @@ where
                 mas_router::Register::route(),
                 get(self::views::register::get).post(self::views::register::post),
             )
-            .route(
-                mas_router::AccountVerifyEmail::route(),
-                get(self::views::account::emails::verify::get)
-                    .post(self::views::account::emails::verify::post),
-            )
             .route(mas_router::Account::route(), get(self::views::account::get))
             .route(
                 mas_router::AccountPassword::route(),
@@ -171,6 +166,16 @@ where
             .route(
                 mas_router::AccountEmails::route(),
                 get(self::views::account::emails::get).post(self::views::account::emails::post),
+            )
+            .route(
+                mas_router::AccountVerifyEmail::route(),
+                get(self::views::account::emails::verify::get)
+                    .post(self::views::account::emails::verify::post),
+            )
+            .route(
+                mas_router::AccountAddEmail::route(),
+                get(self::views::account::emails::add::get)
+                    .post(self::views::account::emails::add::post),
             )
             .route(
                 mas_router::OAuth2AuthorizationEndpoint::route(),

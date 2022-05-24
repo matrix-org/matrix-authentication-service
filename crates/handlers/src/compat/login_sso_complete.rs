@@ -65,6 +65,19 @@ pub async fn get(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
+    // TODO: make that more generic
+    if session
+        .user
+        .primary_email
+        .as_ref()
+        .and_then(|e| e.confirmed_at)
+        .is_none()
+    {
+        let destination = mas_router::AccountAddEmail::default()
+            .and_then(PostAuthAction::ContinueCompatSsoLogin { data: id });
+        return Ok((cookie_jar, destination.go()).into_response());
+    }
+
     let login = get_compat_sso_login_by_id(&mut conn, id).await?;
 
     // Bail out if that login session is more than 30min old
@@ -107,6 +120,19 @@ pub async fn post(
         let login = mas_router::Login::and_continue_compat_sso_login(id);
         return Ok((cookie_jar, login.go()).into_response());
     };
+
+    // TODO: make that more generic
+    if session
+        .user
+        .primary_email
+        .as_ref()
+        .and_then(|e| e.confirmed_at)
+        .is_none()
+    {
+        let destination = mas_router::AccountAddEmail::default()
+            .and_then(PostAuthAction::ContinueCompatSsoLogin { data: id });
+        return Ok((cookie_jar, destination.go()).into_response());
+    }
 
     let login = get_compat_sso_login_by_id(&mut txn, id).await?;
 
