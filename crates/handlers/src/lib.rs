@@ -159,8 +159,9 @@ where
                 get(self::views::register::get).post(self::views::register::post),
             )
             .route(
-                mas_router::VerifyEmail::route(),
-                get(self::views::verify::get),
+                mas_router::AccountVerifyEmail::route(),
+                get(self::views::account::emails::verify::get)
+                    .post(self::views::account::emails::verify::post),
             )
             .route(mas_router::Account::route(), get(self::views::account::get))
             .route(

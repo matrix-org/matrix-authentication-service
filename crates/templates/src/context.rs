@@ -19,7 +19,7 @@
 use chrono::Utc;
 use mas_data_model::{
     AuthorizationGrant, BrowserSession, CompatSsoLogin, CompatSsoLoginState, StorageBackend, User,
-    UserEmail,
+    UserEmail, UserEmailVerification,
 };
 use mas_router::PostAuthAction;
 use serde::{ser::SerializeStruct, Deserialize, Serialize};
@@ -562,21 +562,18 @@ impl<T: StorageBackend> TemplateContext for AccountEmailsContext<T> {
     }
 }
 
-/// Context used by the `emails/verification.{txt,html}` templates
+/// Context used by the `emails/verification.{txt,html,subject}` templates
 #[derive(Serialize)]
 pub struct EmailVerificationContext {
     user: User<()>,
-    verification_link: Url,
+    verification: UserEmailVerification<()>,
 }
 
 impl EmailVerificationContext {
     /// Constructs a context for the verification email
     #[must_use]
-    pub fn new(user: User<()>, verification_link: Url) -> Self {
-        Self {
-            user,
-            verification_link,
-        }
+    pub fn new(user: User<()>, verification: UserEmailVerification<()>) -> Self {
+        Self { user, verification }
     }
 }
 
@@ -587,13 +584,81 @@ impl TemplateContext for EmailVerificationContext {
     {
         User::samples()
             .into_iter()
-            .map(|u| {
-                Self::new(
-                    u,
-                    Url::parse("https://example.com/emails/verify?code=2134").unwrap(),
-                )
+            .map(|user| {
+                let email = UserEmail {
+                    data: (),
+                    email: "foobar@example.com".to_string(),
+                    created_at: Utc::now(),
+                    confirmed_at: None,
+                };
+
+                let verification = UserEmailVerification {
+                    data: (),
+                    code: "123456".to_string(),
+                    email,
+                    created_at: Utc::now(),
+                    state: mas_data_model::UserEmailVerificationState::Valid,
+                };
+
+                Self { user, verification }
             })
             .collect()
+    }
+}
+
+/// Fields of the email verification form
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum EmailVerificationFormField {
+    /// The code field
+    Code,
+}
+
+impl FormField for EmailVerificationFormField {
+    fn keep(&self) -> bool {
+        match self {
+            Self::Code => true,
+        }
+    }
+}
+
+/// Context used by the `pages/account/verify.html` templates
+#[derive(Serialize)]
+pub struct EmailVerificationPageContext {
+    form: FormState<EmailVerificationFormField>,
+    email: UserEmail<()>,
+}
+
+impl EmailVerificationPageContext {
+    /// Constructs a context for the email verification page
+    #[must_use]
+    pub fn new<T>(email: T) -> Self
+    where
+        T: Into<UserEmail<()>>,
+    {
+        Self {
+            form: FormState::default(),
+            email: email.into(),
+        }
+    }
+}
+
+impl TemplateContext for EmailVerificationPageContext {
+    fn sample() -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        let email = UserEmail {
+            data: (),
+            email: "foobar@example.com".to_string(),
+            created_at: Utc::now(),
+            confirmed_at: None,
+        };
+
+        vec![Self {
+            form: FormState::default(),
+            email,
+        }]
     }
 }
 

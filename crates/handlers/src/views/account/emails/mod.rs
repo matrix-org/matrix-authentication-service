@@ -25,7 +25,7 @@ use mas_axum_utils::{
 use mas_config::Encrypter;
 use mas_data_model::{BrowserSession, User, UserEmail};
 use mas_email::Mailer;
-use mas_router::{Route, UrlBuilder};
+use mas_router::Route;
 use mas_storage::{
     user::{
         add_user_email, add_user_email_verification_code, get_user_email, get_user_emails,
@@ -34,16 +34,17 @@ use mas_storage::{
     PostgresqlBackend,
 };
 use mas_templates::{AccountEmailsContext, EmailVerificationContext, TemplateContext, Templates};
-use rand::{distributions::Alphanumeric, thread_rng, Rng};
+use rand::{distributions::Uniform, thread_rng, Rng};
 use serde::Deserialize;
 use sqlx::{PgExecutor, PgPool};
 use tracing::info;
+
+pub mod verify;
 
 #[derive(Deserialize, Debug)]
 #[serde(tag = "action", rename_all = "snake_case")]
 pub enum ManagementForm {
     Add { email: String },
-    ResendConfirmation { data: String },
     SetPrimary { data: String },
     Remove { data: String },
 }
@@ -88,39 +89,35 @@ async fn render(
 
 async fn start_email_verification(
     mailer: &Mailer,
-    url_builder: &UrlBuilder,
     executor: impl PgExecutor<'_>,
     user: &User<PostgresqlBackend>,
-    user_email: &UserEmail<PostgresqlBackend>,
+    user_email: UserEmail<PostgresqlBackend>,
 ) -> anyhow::Result<()> {
     // First, generate a code
-    let code: String = thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(32)
-        .map(char::from)
-        .collect();
+    let range = Uniform::<u32>::from(0..1_000_000);
+    let code = thread_rng().sample(range).to_string();
 
-    add_user_email_verification_code(executor, user_email, &code).await?;
-
-    // And send the verification email
     let address: Address = user_email.email.parse()?;
 
+    let verification = add_user_email_verification_code(executor, user_email, code).await?;
+
+    // And send the verification email
     let mailbox = Mailbox::new(Some(user.username.clone()), address);
 
-    let link = url_builder.email_verification(code);
-
-    let context = EmailVerificationContext::new(user.clone().into(), link);
+    let context = EmailVerificationContext::new(user.clone().into(), verification.clone().into());
 
     mailer.send_verification_email(mailbox, &context).await?;
 
-    info!(email.id = user_email.data, "Verification email sent");
+    info!(
+        email.id = verification.email.data,
+        "Verification email sent"
+    );
     Ok(())
 }
 
 pub(crate) async fn post(
     Extension(templates): Extension<Templates>,
     Extension(pool): Extension<PgPool>,
-    Extension(url_builder): Extension<UrlBuilder>,
     Extension(mailer): Extension<Mailer>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<ManagementForm>>,
@@ -143,22 +140,16 @@ pub(crate) async fn post(
     match form {
         ManagementForm::Add { email } => {
             let user_email = add_user_email(&mut txn, &session.user, email).await?;
-            start_email_verification(&mailer, &url_builder, &mut txn, &session.user, &user_email)
-                .await?;
+            let next = mas_router::AccountVerifyEmail(user_email.data);
+            start_email_verification(&mailer, &mut txn, &session.user, user_email).await?;
+            txn.commit().await?;
+            return Ok((cookie_jar, next.go()).into_response());
         }
         ManagementForm::Remove { data } => {
             let id = data.parse()?;
 
             let email = get_user_email(&mut txn, &session.user, id).await?;
             remove_user_email(&mut txn, email).await?;
-        }
-        ManagementForm::ResendConfirmation { data } => {
-            let id = data.parse()?;
-
-            let user_email = get_user_email(&mut txn, &session.user, id).await?;
-
-            start_email_verification(&mailer, &url_builder, &mut txn, &session.user, &user_email)
-                .await?;
         }
         ManagementForm::SetPrimary { data } => {
             let id = data.parse()?;

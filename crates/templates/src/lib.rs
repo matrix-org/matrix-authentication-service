@@ -46,10 +46,10 @@ mod macros;
 pub use self::{
     context::{
         AccountContext, AccountEmailsContext, CompatSsoContext, ConsentContext,
-        EmailVerificationContext, EmptyContext, ErrorContext, FormPostContext, IndexContext,
-        LoginContext, LoginFormField, PostAuthContext, ReauthContext, ReauthFormField,
-        RegisterContext, RegisterFormField, TemplateContext, WithCsrf, WithOptionalSession,
-        WithSession,
+        EmailVerificationContext, EmailVerificationPageContext, EmptyContext, ErrorContext,
+        FormPostContext, IndexContext, LoginContext, LoginFormField, PostAuthContext,
+        ReauthContext, ReauthFormField, RegisterContext, RegisterFormField, TemplateContext,
+        WithCsrf, WithOptionalSession, WithSession,
     },
     forms::{FieldError, FormError, FormField, FormState, ToFormState},
 };
@@ -154,7 +154,7 @@ impl Templates {
             // This uses blocking I/Os, do that in a blocking task
             let tera = tokio::task::spawn_blocking(move || {
                 // Using `to_string_lossy` here is probably fine
-                let path = format!("{}/**/*.{{html,txt}}", root.to_string_lossy());
+                let path = format!("{}/**/*.{{html,txt,subject}}", root.to_string_lossy());
                 info!(%path, "Loading templates from filesystem");
                 Tera::parse(&path)
             })
@@ -326,11 +326,14 @@ register_templates! {
     /// Render the email verification email (plain text variant)
     pub fn render_email_verification_txt(EmailVerificationContext) { "emails/verification.txt" }
 
-    /// Render the email verification email (plain text variant)
+    /// Render the email verification email (HTML text variant)
     pub fn render_email_verification_html(EmailVerificationContext) { "emails/verification.html" }
 
+    /// Render the email verification subject
+    pub fn render_email_verification_subject(EmailVerificationContext) { "emails/verification.subject" }
+
     /// Render the email post-email verification page
-    pub fn render_email_verification_done(WithCsrf<WithOptionalSession<EmptyContext>>) { "pages/verify.html" }
+    pub fn render_email_verification_form(WithCsrf<WithSession<EmailVerificationPageContext>>) { "pages/account/verify.html" }
 }
 
 impl Templates {
@@ -340,6 +343,7 @@ impl Templates {
         check::render_login(self).await?;
         check::render_register(self).await?;
         check::render_consent(self).await?;
+        check::render_sso_login(self).await?;
         check::render_index(self).await?;
         check::render_account_index(self).await?;
         check::render_account_password(self).await?;
@@ -349,7 +353,8 @@ impl Templates {
         check::render_error(self).await?;
         check::render_email_verification_txt(self).await?;
         check::render_email_verification_html(self).await?;
-        check::render_email_verification_done(self).await?;
+        check::render_email_verification_subject(self).await?;
+        check::render_email_verification_form(self).await?;
         Ok(())
     }
 }
