@@ -17,7 +17,7 @@ thiserror = "1.0.31"
 anyhow = "1.0.57"
 
 # Web server
-hyper = { version = "0.14.18", features = ["full"] }
+hyper = { version = "0.14.19", features = ["full"] }
 tower = "0.4.12"
 tower-http = { version = "0.3.3", features = ["cors"] }
 axum = "0.5.6"
