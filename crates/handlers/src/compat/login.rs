@@ -34,11 +34,20 @@ use thiserror::Error;
 use super::MatrixError;
 
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "lowercase")]
+enum Action {
+    Login,
+    Register,
+}
+
+#[derive(Debug, Serialize)]
 #[serde(tag = "type")]
 enum LoginType {
     #[serde(rename = "m.login.password")]
-    Password,
+    Password { actions: Vec<Action> },
 
+    // we will leave MSC3824 `actions` as undefined for this auth type as unclear
+    // how it should be interpreted
     #[serde(rename = "m.login.token")]
     Token,
 
@@ -46,6 +55,7 @@ enum LoginType {
     Sso {
         #[serde(skip_serializing_if = "Vec::is_empty")]
         identity_providers: Vec<SsoIdentityProvider>,
+        actions: Vec<Action>,
     },
 }
 
@@ -63,9 +73,12 @@ struct LoginTypes {
 pub(crate) async fn get() -> impl IntoResponse {
     let res = LoginTypes {
         flows: vec![
-            LoginType::Password,
+            LoginType::Password {
+                actions: vec![Action::Login],
+            },
             LoginType::Sso {
                 identity_providers: vec![],
+                actions: vec![Action::Login, Action::Register],
             },
             LoginType::Token,
         ],
