@@ -34,18 +34,31 @@ use thiserror::Error;
 use super::MatrixError;
 
 #[derive(Debug, Serialize)]
+enum Action {
+    #[serde(rename = "login")]
+    Login,
+    #[serde(rename = "register")]
+    Register,
+}
+
+#[derive(Debug, Serialize)]
 #[serde(tag = "type")]
 enum LoginType {
     #[serde(rename = "m.login.password")]
-    Password,
+    Password {
+        actions: Vec<Action>,
+    },
 
     #[serde(rename = "m.login.token")]
-    Token,
+    Token {
+        actions: Vec<Action>,
+    },
 
     #[serde(rename = "m.login.sso")]
     Sso {
         #[serde(skip_serializing_if = "Vec::is_empty")]
         identity_providers: Vec<SsoIdentityProvider>,
+        actions: Vec<Action>,
     },
 }
 
@@ -63,11 +76,16 @@ struct LoginTypes {
 pub(crate) async fn get() -> impl IntoResponse {
     let res = LoginTypes {
         flows: vec![
-            LoginType::Password,
+            LoginType::Password {
+                actions: vec![Action::Login],
+            },
             LoginType::Sso {
                 identity_providers: vec![],
+                actions: vec![Action::Login, Action::Register],
             },
-            LoginType::Token,
+            LoginType::Token {
+                actions: vec![],
+            },
         ],
     };
 
