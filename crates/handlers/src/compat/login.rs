@@ -71,7 +71,9 @@ struct LoginTypes {
 pub(crate) async fn get() -> impl IntoResponse {
     let res = LoginTypes {
         flows: vec![
-            LoginType::Password { actions: vec![Action::Login] },
+            LoginType::Password {
+                actions: vec![Action::Login],
+            },
             LoginType::Sso {
                 identity_providers: vec![],
                 actions: vec![Action::Login, Action::Register],
