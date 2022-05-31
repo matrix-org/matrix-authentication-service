@@ -34,10 +34,9 @@ use thiserror::Error;
 use super::MatrixError;
 
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "lowercase")]
 enum Action {
-    #[serde(rename = "login")]
     Login,
-    #[serde(rename = "register")]
     Register,
 }
 
