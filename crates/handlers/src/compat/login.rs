@@ -46,8 +46,10 @@ enum LoginType {
     #[serde(rename = "m.login.password")]
     Password { actions: Vec<Action> },
 
+    // we will leave MSC3824 `actions` as undefined for this auth type as unclear
+    // how it should be interpreted
     #[serde(rename = "m.login.token")]
-    Token { actions: Vec<Action> },
+    Token,
 
     #[serde(rename = "m.login.sso")]
     Sso {
@@ -78,7 +80,7 @@ pub(crate) async fn get() -> impl IntoResponse {
                 identity_providers: vec![],
                 actions: vec![Action::Login, Action::Register],
             },
-            LoginType::Token { actions: vec![] },
+            LoginType::Token,
         ],
     };
 
