@@ -44,14 +44,10 @@ enum Action {
 #[serde(tag = "type")]
 enum LoginType {
     #[serde(rename = "m.login.password")]
-    Password {
-        actions: Vec<Action>,
-    },
+    Password { actions: Vec<Action> },
 
     #[serde(rename = "m.login.token")]
-    Token {
-        actions: Vec<Action>,
-    },
+    Token { actions: Vec<Action> },
 
     #[serde(rename = "m.login.sso")]
     Sso {
@@ -75,16 +71,12 @@ struct LoginTypes {
 pub(crate) async fn get() -> impl IntoResponse {
     let res = LoginTypes {
         flows: vec![
-            LoginType::Password {
-                actions: vec![Action::Login],
-            },
+            LoginType::Password { actions: vec![Action::Login] },
             LoginType::Sso {
                 identity_providers: vec![],
                 actions: vec![Action::Login, Action::Register],
             },
-            LoginType::Token {
-                actions: vec![],
-            },
+            LoginType::Token { actions: vec![] },
         ],
     };
 
