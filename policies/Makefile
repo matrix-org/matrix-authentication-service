@@ -3,3 +3,7 @@ policy.wasm: client_registration.rego login.rego register.rego
 	tar xzf bundle.tar.gz /policy.wasm
 	rm -f bundle.tar.gz
 	touch $@
+
+.PHONY: test
+test:
+	opa test -v .
