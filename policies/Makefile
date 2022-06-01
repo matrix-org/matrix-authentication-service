@@ -4,6 +4,10 @@ policy.wasm: client_registration.rego login.rego register.rego
 	rm -f bundle.tar.gz
 	touch $@
 
+.PHONY: fmt
+fmt:
+	opa fmt -w .
+
 .PHONY: test
 test:
 	opa test -v .
