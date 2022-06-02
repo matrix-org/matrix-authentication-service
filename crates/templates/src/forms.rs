@@ -33,6 +33,9 @@ pub enum FieldError {
     /// An unspecified error on the field
     Unspecified,
 
+    /// Invalid value for this field
+    Invalid,
+
     /// That value already exists
     Exists,
 }

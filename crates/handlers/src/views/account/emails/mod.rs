@@ -141,7 +141,7 @@ pub(crate) async fn post(
 
     match form {
         ManagementForm::Add { email } => {
-            let user_email = add_user_email(&mut txn, &session.user, email).await?;
+            let user_email = add_user_email(&mut txn, &session.user, &email).await?;
             let next = mas_router::AccountVerifyEmail::new(user_email.data);
             start_email_verification(&mailer, &mut txn, &session.user, user_email).await?;
             txn.commit().await?;

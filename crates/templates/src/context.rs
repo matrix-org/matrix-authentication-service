@@ -319,6 +319,9 @@ pub enum RegisterFormField {
     /// The username field
     Username,
 
+    /// The email field
+    Email,
+
     /// The password field
     Password,
 
@@ -329,7 +332,7 @@ pub enum RegisterFormField {
 impl FormField for RegisterFormField {
     fn keep(&self) -> bool {
         match self {
-            Self::Username => true,
+            Self::Username | Self::Email => true,
             Self::Password | Self::PasswordConfirm => false,
         }
     }
