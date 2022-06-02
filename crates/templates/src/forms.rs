@@ -52,6 +52,9 @@ pub enum FormError {
 
     /// There was an internal error
     Internal,
+
+    /// Denied by the policy
+    Policy,
 }
 
 #[derive(Debug, Default, Serialize)]
