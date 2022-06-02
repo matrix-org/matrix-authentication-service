@@ -62,6 +62,7 @@ mas-email = { path = "../email" }
 mas-http = {  path = "../http" }
 mas-iana = { path = "../iana" }
 mas-jose = { path = "../jose" }
+mas-policy = { path = "../policy" }
 mas-storage = { path = "../storage" }
 mas-templates = { path = "../templates" }
 mas-router = { path = "../router" }

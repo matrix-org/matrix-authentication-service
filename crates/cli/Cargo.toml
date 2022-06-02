@@ -36,6 +36,7 @@ mas-config = { path = "../config" }
 mas-email = { path = "../email" }
 mas-handlers = { path = "../handlers" }
 mas-http = { path = "../http" }
+mas-policy = { path = "../policy" }
 mas-router = { path = "../router" }
 mas-static-files = { path = "../static-files" }
 mas-storage = { path = "../storage" }

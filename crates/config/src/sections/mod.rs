@@ -22,6 +22,7 @@ mod database;
 mod email;
 mod http;
 mod matrix;
+mod policy;
 mod secrets;
 mod telemetry;
 mod templates;
@@ -33,6 +34,7 @@ pub use self::{
     email::{EmailConfig, EmailSmtpMode, EmailTransportConfig},
     http::HttpConfig,
     matrix::MatrixConfig,
+    policy::PolicyConfig,
     secrets::{Encrypter, SecretsConfig},
     telemetry::{
         MetricsConfig, MetricsExporterConfig, Propagator, TelemetryConfig, TracingConfig,
@@ -79,6 +81,10 @@ pub struct RootConfig {
     /// Configuration related to the homeserver
     #[serde(default)]
     pub matrix: MatrixConfig,
+
+    /// Configuration related to the OPA policies
+    #[serde(default)]
+    pub policy: PolicyConfig,
 }
 
 #[async_trait]
@@ -98,6 +104,7 @@ impl ConfigurationSection<'_> for RootConfig {
             email: EmailConfig::generate().await?,
             secrets: SecretsConfig::generate().await?,
             matrix: MatrixConfig::generate().await?,
+            policy: PolicyConfig::generate().await?,
         })
     }
 
@@ -112,6 +119,7 @@ impl ConfigurationSection<'_> for RootConfig {
             email: EmailConfig::test(),
             secrets: SecretsConfig::test(),
             matrix: MatrixConfig::test(),
+            policy: PolicyConfig::test(),
         }
     }
 }

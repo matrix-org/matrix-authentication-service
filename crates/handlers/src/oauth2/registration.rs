@@ -12,9 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::sync::Arc;
+
 use axum::{response::IntoResponse, Extension, Json};
 use hyper::StatusCode;
 use mas_iana::oauth::{OAuthAuthorizationEndpointResponseType, OAuthClientAuthenticationMethod};
+use mas_policy::PolicyFactory;
 use mas_storage::oauth2::client::insert_client;
 use oauth2_types::{
     errors::{INVALID_CLIENT_METADATA, INVALID_REDIRECT_URI, SERVER_ERROR},
@@ -31,11 +34,17 @@ pub(crate) enum RouteError {
     #[error(transparent)]
     Internal(Box<dyn std::error::Error + Send + Sync>),
 
+    #[error(transparent)]
+    Anyhow(#[from] anyhow::Error),
+
     #[error("invalid redirect uri")]
     InvalidRedirectUri,
 
     #[error("invalid client metadata")]
     InvalidClientMetadata,
+
+    #[error("denied by the policy")]
+    PolicyDenied,
 }
 
 impl From<sqlx::Error> for RouteError {
@@ -47,9 +56,12 @@ impl From<sqlx::Error> for RouteError {
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         match self {
-            Self::Internal(_) => (StatusCode::INTERNAL_SERVER_ERROR, Json(SERVER_ERROR)),
+            Self::Internal(_) | Self::Anyhow(_) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, Json(SERVER_ERROR))
+            }
             Self::InvalidRedirectUri => (StatusCode::BAD_REQUEST, Json(INVALID_REDIRECT_URI)),
             Self::InvalidClientMetadata => (StatusCode::BAD_REQUEST, Json(INVALID_CLIENT_METADATA)),
+            Self::PolicyDenied => (StatusCode::UNAUTHORIZED, Json(INVALID_CLIENT_METADATA)),
         }
         .into_response()
     }
@@ -58,6 +70,7 @@ impl IntoResponse for RouteError {
 #[tracing::instrument(skip_all, err)]
 pub(crate) async fn post(
     Extension(pool): Extension<PgPool>,
+    Extension(policy_factory): Extension<Arc<PolicyFactory>>,
     Json(body): Json<ClientMetadata>,
 ) -> Result<impl IntoResponse, RouteError> {
     info!(?body, "Client registration");
@@ -103,6 +116,12 @@ pub(crate) async fn post(
         && body.jwks.is_none()
     {
         return Err(RouteError::InvalidClientMetadata);
+    }
+
+    let mut policy = policy_factory.instanciate().await?;
+    let allowed = policy.evaluate_client_registration(&body).await?;
+    if !allowed {
+        return Err(RouteError::PolicyDenied);
     }
 
     // Grab a txn
