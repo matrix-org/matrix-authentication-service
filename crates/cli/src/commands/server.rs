@@ -25,6 +25,7 @@ use hyper::Server;
 use mas_config::RootConfig;
 use mas_email::{MailTransport, Mailer};
 use mas_http::ServerLayer;
+use mas_policy::PolicyFactory;
 use mas_router::UrlBuilder;
 use mas_storage::MIGRATOR;
 use mas_tasks::TaskQueue;
@@ -176,6 +177,20 @@ impl Options {
 
         let encrypter = config.secrets.encrypter();
 
+        // Load and compile the WASM policies
+        let mut policy = tokio::fs::File::open(&config.policy.wasm_module)
+            .await
+            .context("failed to open OPA WASM policy file")?;
+        let policy_factory = PolicyFactory::load(
+            &mut policy,
+            config.policy.data.clone().unwrap_or_default(),
+            config.policy.login_entrypoint.clone(),
+            config.policy.register_entrypoint.clone(),
+            config.policy.client_registration_entrypoint.clone(),
+        )
+        .await?;
+        let policy_factory = Arc::new(policy_factory);
+
         // Load and compile the templates
         let templates = Templates::load_from_config(&config.templates)
             .await
@@ -217,6 +232,7 @@ impl Options {
             &mailer,
             &url_builder,
             &matrix_config,
+            &policy_factory,
         )
         .fallback(static_files)
         .layer(ServerLayer::default());

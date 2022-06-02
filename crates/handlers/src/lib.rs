@@ -34,6 +34,7 @@ use mas_config::{Encrypter, MatrixConfig};
 use mas_email::Mailer;
 use mas_http::CorsLayerExt;
 use mas_jose::StaticKeystore;
+use mas_policy::PolicyFactory;
 use mas_router::{Route, UrlBuilder};
 use mas_templates::{ErrorContext, Templates};
 use sqlx::PgPool;
@@ -46,7 +47,11 @@ mod oauth2;
 mod views;
 
 #[must_use]
-#[allow(clippy::too_many_lines, clippy::missing_panics_doc)]
+#[allow(
+    clippy::too_many_lines,
+    clippy::missing_panics_doc,
+    clippy::too_many_arguments
+)]
 pub fn router<B>(
     pool: &PgPool,
     templates: &Templates,
@@ -55,6 +60,7 @@ pub fn router<B>(
     mailer: &Mailer,
     url_builder: &UrlBuilder,
     matrix_config: &MatrixConfig,
+    policy_factory: &Arc<PolicyFactory>,
 ) -> Router<B>
 where
     B: HttpBody + Send + 'static,
@@ -233,4 +239,5 @@ where
         .layer(Extension(url_builder.clone()))
         .layer(Extension(mailer.clone()))
         .layer(Extension(matrix_config.clone()))
+        .layer(Extension(policy_factory.clone()))
 }

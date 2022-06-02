@@ -1,0 +1,3 @@
+package register
+
+allow := true
