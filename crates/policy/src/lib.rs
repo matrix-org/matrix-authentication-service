@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::io::Cursor;
+
 use anyhow::bail;
 use oauth2_types::registration::ClientMetadata;
 use opa_wasm::Runtime;
@@ -19,6 +21,12 @@ use serde::Deserialize;
 use thiserror::Error;
 use tokio::io::{AsyncRead, AsyncReadExt};
 use wasmtime::{Config, Engine, Module, Store};
+
+const DEFAULT_POLICY: &[u8] = include_bytes!("../policies/policy.wasm");
+
+pub fn default_wasm_policy() -> impl AsyncRead + std::marker::Unpin {
+    Cursor::new(DEFAULT_POLICY)
+}
 
 #[derive(Debug, Error)]
 pub enum LoadError {
@@ -33,6 +41,9 @@ pub enum LoadError {
 
     #[error("failed to compile WASM module")]
     Compilation(#[source] anyhow::Error),
+
+    #[error("failed to instantiate a test instance")]
+    Instantiate(#[source] anyhow::Error),
 }
 
 pub struct PolicyFactory {
@@ -55,27 +66,39 @@ impl PolicyFactory {
         let mut config = Config::default();
         config.async_support(true);
         config.cranelift_opt_level(wasmtime::OptLevel::Speed);
+
         let engine = Engine::new(&config).map_err(LoadError::Engine)?;
+
+        // Read and compile the module
         let mut buf = Vec::new();
         source.read_to_end(&mut buf).await?;
+        // Compilation is CPU-bound, so spawn that in a blocking task
         let (engine, module) = tokio::task::spawn_blocking(move || {
-            let module = Module::new(&engine, buf);
-            (engine, module)
+            let module = Module::new(&engine, buf)?;
+            anyhow::Ok((engine, module))
         })
-        .await?;
-        let module = module.map_err(LoadError::Compilation)?;
+        .await?
+        .map_err(LoadError::Compilation)?;
 
-        Ok(Self {
+        let factory = Self {
             engine,
             module,
             data,
             login_entrypoint,
             register_entrypoint,
             client_registration_entrypoint,
-        })
+        };
+
+        // Try to instanciate
+        factory
+            .instantiate()
+            .await
+            .map_err(LoadError::Instantiate)?;
+
+        Ok(factory)
     }
 
-    pub async fn instanciate(&self) -> Result<Policy, anyhow::Error> {
+    pub async fn instantiate(&self) -> Result<Policy, anyhow::Error> {
         let mut store = Store::new(&self.engine, ());
         let runtime = Runtime::new(&mut store, &self.module).await?;
 

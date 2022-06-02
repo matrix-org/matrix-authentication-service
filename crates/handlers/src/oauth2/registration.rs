@@ -118,7 +118,7 @@ pub(crate) async fn post(
         return Err(RouteError::InvalidClientMetadata);
     }
 
-    let mut policy = policy_factory.instanciate().await?;
+    let mut policy = policy_factory.instantiate().await?;
     let allowed = policy.evaluate_client_registration(&body).await?;
     if !allowed {
         return Err(RouteError::PolicyDenied);

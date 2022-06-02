@@ -30,17 +30,27 @@ RUN find public -type f -exec touch -t 197001010000.00 {} +
 ## Build stage that builds the OPA policies ##
 FROM --platform=${BUILDPLATFORM} docker.io/library/debian:${DEBIAN_VERSION_NAME}-slim AS policy
 
+# Install make
+RUN rm -f /etc/apt/apt.conf.d/docker-clean; echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
+RUN \
+  --mount=type=cache,sharing=locked,target=/var/cache/apt \
+  --mount=type=cache,sharing=locked,target=/var/lib/apt \
+  apt update && apt install -y --no-install-recommends \
+  make
+
 ARG BUILDOS
 ARG BUILDARCH
 ARG OPA_VERSION
 
+# Download Open Policy Agent
 ADD --chmod=755 https://github.com/open-policy-agent/opa/releases/download/v${OPA_VERSION}/opa_${BUILDOS}_${BUILDARCH}_static /usr/local/bin/opa
 
-WORKDIR /policies
-COPY ./policies/ /policies
-RUN opa build -t wasm -e "client_registration/allow" -e "login/allow" -e "register/allow" client_registration.rego login.rego register.rego \
-  && tar xzf bundle.tar.gz /policy.wasm \
-  && rm -f bundle.tar.gz
+WORKDIR /app/crates/policy/policies
+COPY ./crates/policy/policies/ /app/crates/policy/policies
+RUN make -B
+
+# Change the timestamp of built files for better caching
+RUN touch -t 197001010000.00 {} policy.wasm
 
 ## Base image with cargo-chef and the right cross-compilation toolchain ##
 # cargo-chef helps with caching dependencies between builds
@@ -108,6 +118,7 @@ RUN \
 COPY ./Cargo.toml ./Cargo.lock /app/
 COPY ./crates /app/crates
 COPY --from=static-files /app/crates/static-files/public /app/crates/static-files/public
+COPY --from=policy /app/crates/policy/policies/policy.wasm /app/crates/policy/policies/policy.wasm
 ENV SQLX_OFFLINE=true
 RUN \
   --mount=type=cache,sharing=private,target=/usr/local/cargo/registry \
@@ -122,13 +133,11 @@ RUN mv target/$(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")/release/mas-
 ## Runtime stage, debug variant ##
 FROM --platform=${TARGETPLATFORM} gcr.io/distroless/cc-debian${DEBIAN_VERSION}:debug-nonroot AS debug
 COPY --from=builder /usr/local/bin/mas-cli /usr/local/bin/mas-cli
-COPY --chmod=444 --from=policy /policies/policy.wasm /policies/policy.wasm
 WORKDIR /
 ENTRYPOINT ["/mas-cli"]
 
 ## Runtime stage ##
 FROM --platform=${TARGETPLATFORM} gcr.io/distroless/cc-debian${DEBIAN_VERSION}:nonroot
 COPY --from=builder /usr/local/bin/mas-cli /usr/local/bin/mas-cli
-COPY --chmod=444 --from=policy /policies/policy.wasm /policies/policy.wasm
 WORKDIR /
 ENTRYPOINT ["/usr/local/bin/mas-cli"]

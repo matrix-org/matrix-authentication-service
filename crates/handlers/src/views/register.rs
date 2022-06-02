@@ -131,7 +131,7 @@ pub(crate) async fn post(
             state.add_error_on_field(RegisterFormField::PasswordConfirm, FieldError::Unspecified);
         }
 
-        let mut policy = policy_factory.instanciate().await?;
+        let mut policy = policy_factory.instantiate().await?;
         let res = policy
             .evaluate_register(&form.username, &form.email)
             .await?;

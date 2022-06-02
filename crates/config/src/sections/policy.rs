@@ -21,10 +21,6 @@ use serde_with::serde_as;
 
 use super::ConfigurationSection;
 
-fn default_wasm_module() -> PathBuf {
-    "./policies/policy.wasm".into()
-}
-
 fn default_client_registration_endpoint() -> String {
     "client_registration/allow".to_string()
 }
@@ -42,8 +38,8 @@ fn default_register_endpoint() -> String {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct PolicyConfig {
     /// Path to the WASM module
-    #[serde(default = "default_wasm_module")]
-    pub wasm_module: PathBuf,
+    #[serde(default)]
+    pub wasm_module: Option<PathBuf>,
 
     /// Entrypoint to use when evaluating client registrations
     #[serde(default = "default_client_registration_endpoint")]
@@ -65,7 +61,7 @@ pub struct PolicyConfig {
 impl Default for PolicyConfig {
     fn default() -> Self {
         Self {
-            wasm_module: default_wasm_module(),
+            wasm_module: None,
             client_registration_entrypoint: default_client_registration_endpoint(),
             login_entrypoint: default_login_endpoint(),
             register_entrypoint: default_register_endpoint(),
