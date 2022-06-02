@@ -12,8 +12,9 @@
 # The Debian version and version name must be in sync
 ARG DEBIAN_VERSION=11
 ARG DEBIAN_VERSION_NAME=bullseye
-ARG RUSTC_VERSION=1.60.0
+ARG RUSTC_VERSION=1.61.0
 ARG NODEJS_VERSION=16
+ARG OPA_VERSION=0.40.0
 
 ## Build stage that builds the static files/frontend ##
 FROM --platform=${BUILDPLATFORM} docker.io/library/node:${NODEJS_VERSION}-${DEBIAN_VERSION_NAME}-slim AS static-files
@@ -25,6 +26,21 @@ COPY . /app/
 RUN npm run build
 # Change the timestamp of built files for better caching
 RUN find public -type f -exec touch -t 197001010000.00 {} +
+
+## Build stage that builds the OPA policies ##
+FROM --platform=${BUILDPLATFORM} docker.io/library/debian:${DEBIAN_VERSION_NAME}-slim AS policy
+
+ARG BUILDOS
+ARG BUILDARCH
+ARG OPA_VERSION
+
+ADD --chmod=755 https://github.com/open-policy-agent/opa/releases/download/v${OPA_VERSION}/opa_${BUILDOS}_${BUILDARCH}_static /usr/local/bin/opa
+
+WORKDIR /policies
+COPY ./policies/ /policies
+RUN opa build -t wasm -e "client_registration/allow" -e "login/allow" -e "register/allow" client_registration.rego login.rego register.rego \
+  && tar xzf bundle.tar.gz /policy.wasm \
+  && rm -f bundle.tar.gz
 
 ## Base image with cargo-chef and the right cross-compilation toolchain ##
 # cargo-chef helps with caching dependencies between builds
@@ -106,9 +122,13 @@ RUN mv target/$(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")/release/mas-
 ## Runtime stage, debug variant ##
 FROM --platform=${TARGETPLATFORM} gcr.io/distroless/cc-debian${DEBIAN_VERSION}:debug-nonroot AS debug
 COPY --from=builder /usr/local/bin/mas-cli /usr/local/bin/mas-cli
+COPY --chmod=444 --from=policy /policies/policy.wasm /policies/policy.wasm
+WORKDIR /
 ENTRYPOINT ["/mas-cli"]
 
 ## Runtime stage ##
 FROM --platform=${TARGETPLATFORM} gcr.io/distroless/cc-debian${DEBIAN_VERSION}:nonroot
 COPY --from=builder /usr/local/bin/mas-cli /usr/local/bin/mas-cli
+COPY --chmod=444 --from=policy /policies/policy.wasm /policies/policy.wasm
+WORKDIR /
 ENTRYPOINT ["/usr/local/bin/mas-cli"]

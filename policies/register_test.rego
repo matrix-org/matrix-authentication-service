@@ -7,26 +7,30 @@ test_allow_all_domains {
 }
 
 test_allowed_domain {
-	allow 
-		with input.user as mock_user
+	allow with input.user as mock_user
 		with data.allowed_domains as ["*.element.io"]
 }
 
 test_not_allowed_domain {
-	not allow 
-		with input.user as mock_user
+	not allow with input.user as mock_user
 		with data.allowed_domains as ["example.com"]
 }
 
 test_banned_domain {
-	not allow 
-		with input.user as mock_user
+	not allow with input.user as mock_user
 		with data.banned_domains as ["*.element.io"]
 }
 
 test_banned_subdomain {
-	not allow 
-		with input.user as mock_user
+	not allow with input.user as mock_user
 		with data.allowed_domains as ["*.element.io"]
 		with data.banned_domains as ["staging.element.io"]
+}
+
+test_short_username {
+	not allow with input.user as {"username": "a", "email": "hello@element.io"}
+}
+
+test_long_username {
+	not allow with input.user as {"username": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "email": "hello@element.io"}
 }
