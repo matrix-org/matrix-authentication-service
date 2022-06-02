@@ -61,6 +61,31 @@ jobs:
           command: fetch
           args: --locked
 
+  opa-lint:
+    name: Lint and test OPA policies
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v3
+
+      - name: Setup OPA
+        uses: open-policy-agent/setup-opa@v1
+        with:
+          version: 0.40.0
+
+      - name: Lint policies
+        run: |
+          cd crates/policy/policies
+          make lint
+
+      - name: Run OPA tests
+        run: |
+          cd crates/policy/policies
+          make test
 
   rustfmt:
     name: Check style
@@ -109,7 +134,7 @@ jobs:
 
   clippy:
     name: Run Clippy
-    needs: [fetch]
+    needs: [opa-lint, fetch]
     runs-on: ubuntu-latest
 
     permissions:
@@ -128,6 +153,16 @@ jobs:
           components: clippy
           profile: minimal
           override: true
+
+      - name: Setup OPA
+        uses: open-policy-agent/setup-opa@v1
+        with:
+          version: 0.40.0
+
+      - name: Compile OPA policies
+        run: |
+          cd crates/policy/policies
+          make
 
       - name: Setup Cargo cache
         uses: actions/cache@v3.0.3
@@ -154,7 +189,7 @@ jobs:
 
   test:
     name: Run test suite with Rust ${{ matrix.toolchain }}
-    needs: [rustfmt, clippy, fetch]
+    needs: [rustfmt, clippy, opa-lint, fetch]
     runs-on: ubuntu-latest
 
     permissions:
@@ -184,6 +219,16 @@ jobs:
           profile: minimal
           override: true
 
+      - name: Setup OPA
+        uses: open-policy-agent/setup-opa@v1
+        with:
+          version: 0.40.0
+
+      - name: Compile OPA policies
+        run: |
+          cd crates/policy/policies
+          make
+
       - name: Setup Cargo cache
         uses: actions/cache@v3.0.3
         with:
@@ -209,7 +254,7 @@ jobs:
 
   coverage:
     name: Code coverage
-    needs: [rustfmt, clippy, fetch]
+    needs: [rustfmt, clippy, opa-lint, fetch]
     runs-on: ubuntu-latest
 
     permissions:
@@ -227,6 +272,16 @@ jobs:
           target: x86_64-unknown-linux-musl
           override: true
           components: llvm-tools-preview
+
+      - name: Setup OPA
+        uses: open-policy-agent/setup-opa@v1
+        with:
+          version: 0.40.0
+
+      - name: Compile OPA policies
+        run: |
+          cd crates/policy/policies
+          make
 
       - name: Setup Cargo cache
         uses: actions/cache@v3.0.3
@@ -274,7 +329,7 @@ jobs:
 
   build-image:
     name: Build and push Docker image
-    needs: [rustfmt, clippy]
+    needs: [rustfmt, clippy, opa-lint]
     runs-on: ubuntu-latest
     env:
       IMAGE: ghcr.io/matrix-org/matrix-authentication-service
