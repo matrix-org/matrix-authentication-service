@@ -108,6 +108,7 @@ struct EvaluationResult {
     result: bool,
 }
 
+#[derive(Debug)]
 pub struct Policy {
     store: Store<()>,
     instance: opa_wasm::Policy,
@@ -117,6 +118,7 @@ pub struct Policy {
 }
 
 impl Policy {
+    #[tracing::instrument]
     pub async fn evaluate_login(
         &mut self,
         user: &mas_data_model::User<()>,
@@ -132,6 +134,7 @@ impl Policy {
         Ok(res.result)
     }
 
+    #[tracing::instrument]
     pub async fn evaluate_register(
         &mut self,
         username: &str,
@@ -152,6 +155,7 @@ impl Policy {
         Ok(res.result)
     }
 
+    #[tracing::instrument]
     pub async fn evaluate_client_registration(
         &mut self,
         client_metadata: &ClientMetadata,
