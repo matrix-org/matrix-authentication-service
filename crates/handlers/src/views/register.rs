@@ -14,7 +14,7 @@
 
 #![allow(clippy::trait_duplication_in_bounds)]
 
-use std::str::FromStr;
+use std::{str::FromStr, sync::Arc};
 
 use argon2::Argon2;
 use axum::{
@@ -29,6 +29,7 @@ use mas_axum_utils::{
 };
 use mas_config::Encrypter;
 use mas_email::Mailer;
+use mas_policy::PolicyFactory;
 use mas_router::Route;
 use mas_storage::user::{
     add_user_email, add_user_email_verification_code, register_user, start_session, username_exists,
@@ -87,6 +88,7 @@ pub(crate) async fn get(
 
 pub(crate) async fn post(
     Extension(mailer): Extension<Mailer>,
+    Extension(policy_factory): Extension<Arc<PolicyFactory>>,
     Extension(templates): Extension<Templates>,
     Extension(pool): Extension<PgPool>,
     Query(query): Query<OptionalPostAuthAction>,
@@ -127,6 +129,15 @@ pub(crate) async fn post(
             state.add_error_on_form(FormError::PasswordMismatch);
             state.add_error_on_field(RegisterFormField::Password, FieldError::Unspecified);
             state.add_error_on_field(RegisterFormField::PasswordConfirm, FieldError::Unspecified);
+        }
+
+        let mut policy = policy_factory.instanciate().await?;
+        let res = policy
+            .evaluate_register(&form.username, &form.email)
+            .await?;
+
+        if !res {
+            state.add_error_on_form(FormError::Policy);
         }
 
         state
