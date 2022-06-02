@@ -3,7 +3,8 @@ package register
 import future.keywords.in
 
 default allow := false
-allow := true {
+
+allow {
 	count(violation) == 0
 }
 
@@ -12,7 +13,7 @@ violation[{"field": "username", "msg": "username too short"}] {
 }
 
 violation[{"field": "username", "msg": "username too long"}] {
-	count(input.user.username) >= 15 
+	count(input.user.username) >= 15
 }
 
 # Allow any domains if the data.allowed_domains array is not set
@@ -37,5 +38,3 @@ violation[{"field": "email", "msg": "email domain not allowed"}] {
 	some banned_domain in data.banned_domains
 	glob.match(banned_domain, ["."], domain)
 }
-
-
