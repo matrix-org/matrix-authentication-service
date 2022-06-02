@@ -572,7 +572,7 @@ pub async fn get_user_email(
 pub async fn add_user_email(
     executor: impl PgExecutor<'_>,
     user: &User<PostgresqlBackend>,
-    email: String,
+    email: &str,
 ) -> anyhow::Result<UserEmail<PostgresqlBackend>> {
     let res = sqlx::query_as!(
         UserEmailLookup,

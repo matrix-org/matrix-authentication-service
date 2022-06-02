@@ -332,6 +332,12 @@ impl AccountVerifyEmail {
     }
 
     #[must_use]
+    pub fn and_maybe(mut self, action: Option<PostAuthAction>) -> Self {
+        self.post_auth_action = action;
+        self
+    }
+
+    #[must_use]
     pub fn and_then(mut self, action: PostAuthAction) -> Self {
         self.post_auth_action = Some(action);
         self

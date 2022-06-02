@@ -14,23 +14,30 @@
 
 #![allow(clippy::trait_duplication_in_bounds)]
 
+use std::str::FromStr;
+
 use argon2::Argon2;
 use axum::{
     extract::{Extension, Form, Query},
     response::{Html, IntoResponse, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
+use lettre::{message::Mailbox, Address};
 use mas_axum_utils::{
     csrf::{CsrfExt, CsrfToken, ProtectedForm},
     FancyError, SessionInfoExt,
 };
 use mas_config::Encrypter;
+use mas_email::Mailer;
 use mas_router::Route;
-use mas_storage::user::{register_user, start_session, username_exists};
-use mas_templates::{
-    FieldError, FormError, RegisterContext, RegisterFormField, TemplateContext, Templates,
-    ToFormState,
+use mas_storage::user::{
+    add_user_email, add_user_email_verification_code, register_user, start_session, username_exists,
 };
+use mas_templates::{
+    EmailVerificationContext, FieldError, FormError, RegisterContext, RegisterFormField,
+    TemplateContext, Templates, ToFormState,
+};
+use rand::{distributions::Uniform, thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 use sqlx::{PgConnection, PgPool};
 
@@ -39,6 +46,7 @@ use super::shared::OptionalPostAuthAction;
 #[derive(Debug, Deserialize, Serialize)]
 pub(crate) struct RegisterForm {
     username: String,
+    email: String,
     password: String,
     password_confirm: String,
 }
@@ -78,6 +86,7 @@ pub(crate) async fn get(
 }
 
 pub(crate) async fn post(
+    Extension(mailer): Extension<Mailer>,
     Extension(templates): Extension<Templates>,
     Extension(pool): Extension<PgPool>,
     Query(query): Query<OptionalPostAuthAction>,
@@ -98,6 +107,12 @@ pub(crate) async fn post(
             state.add_error_on_field(RegisterFormField::Username, FieldError::Required);
         } else if username_exists(&mut txn, &form.username).await? {
             state.add_error_on_field(RegisterFormField::Username, FieldError::Exists);
+        }
+
+        if form.email.is_empty() {
+            state.add_error_on_field(RegisterFormField::Email, FieldError::Required);
+        } else if Address::from_str(&form.email).is_err() {
+            state.add_error_on_field(RegisterFormField::Email, FieldError::Invalid);
         }
 
         if form.password.is_empty() {
@@ -133,13 +148,32 @@ pub(crate) async fn post(
     let pfh = Argon2::default();
     let user = register_user(&mut txn, pfh, &form.username, &form.password).await?;
 
+    let user_email = add_user_email(&mut txn, &user, &form.email).await?;
+
+    // First, generate a code
+    let range = Uniform::<u32>::from(0..1_000_000);
+    let code = thread_rng().sample(range).to_string();
+
+    let address: Address = user_email.email.parse()?;
+
+    let verification = add_user_email_verification_code(&mut txn, user_email, code).await?;
+
+    // And send the verification email
+    let mailbox = Mailbox::new(Some(user.username.clone()), address);
+
+    let context = EmailVerificationContext::new(user.clone().into(), verification.clone().into());
+
+    mailer.send_verification_email(mailbox, &context).await?;
+
+    let next =
+        mas_router::AccountVerifyEmail::new(verification.data).and_maybe(query.post_auth_action);
+
     let session = start_session(&mut txn, user).await?;
 
     txn.commit().await?;
 
     let cookie_jar = cookie_jar.set_session(&session);
-    let reply = query.go_next();
-    Ok((cookie_jar, reply).into_response())
+    Ok((cookie_jar, next.go()).into_response())
 }
 
 async fn render(
