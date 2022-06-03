@@ -50,7 +50,6 @@ pub struct PolicyFactory {
     engine: Engine,
     module: Module,
     data: serde_json::Value,
-    login_entrypoint: String,
     register_entrypoint: String,
     client_registration_entrypoint: String,
 }
@@ -59,7 +58,6 @@ impl PolicyFactory {
     pub async fn load(
         mut source: impl AsyncRead + std::marker::Unpin,
         data: serde_json::Value,
-        login_entrypoint: String,
         register_entrypoint: String,
         client_registration_entrypoint: String,
     ) -> Result<Self, LoadError> {
@@ -84,7 +82,6 @@ impl PolicyFactory {
             engine,
             module,
             data,
-            login_entrypoint,
             register_entrypoint,
             client_registration_entrypoint,
         };
@@ -106,8 +103,8 @@ impl PolicyFactory {
         let entrypoints = runtime.entrypoints();
 
         for e in [
-            self.login_entrypoint.as_str(),
             self.register_entrypoint.as_str(),
+            self.client_registration_entrypoint.as_str(),
         ] {
             if !entrypoints.contains(e) {
                 bail!("missing entrypoint {e}")
@@ -119,7 +116,6 @@ impl PolicyFactory {
         Ok(Policy {
             store,
             instance,
-            login_entrypoint: self.login_entrypoint.clone(),
             register_entrypoint: self.register_entrypoint.clone(),
             client_registration_entrypoint: self.client_registration_entrypoint.clone(),
         })
@@ -148,28 +144,11 @@ impl EvaluationResult {
 pub struct Policy {
     store: Store<()>,
     instance: opa_wasm::Policy,
-    login_entrypoint: String,
     register_entrypoint: String,
     client_registration_entrypoint: String,
 }
 
 impl Policy {
-    #[tracing::instrument]
-    pub async fn evaluate_login(
-        &mut self,
-        user: &mas_data_model::User<()>,
-    ) -> Result<EvaluationResult, anyhow::Error> {
-        let user = serde_json::to_value(user)?;
-        let input = serde_json::json!({ "user": user });
-
-        let [res]: [EvaluationResult; 1] = self
-            .instance
-            .evaluate(&mut self.store, &self.login_entrypoint, &input)
-            .await?;
-
-        Ok(res)
-    }
-
     #[tracing::instrument]
     pub async fn evaluate_register(
         &mut self,
@@ -226,7 +205,6 @@ mod tests {
                 "allowed_domains": ["element.io", "*.element.io"],
                 "banned_domains": ["staging.element.io"],
             }),
-            "login/violation".to_string(),
             "register/violation".to_string(),
             "client_registration/violation".to_string(),
         )

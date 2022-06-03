@@ -194,7 +194,6 @@ impl Options {
         let policy_factory = PolicyFactory::load(
             &mut policy,
             config.policy.data.clone().unwrap_or_default(),
-            config.policy.login_entrypoint.clone(),
             config.policy.register_entrypoint.clone(),
             config.policy.client_registration_entrypoint.clone(),
         )

@@ -1,3 +1,0 @@
-package login
-
-violation := []
