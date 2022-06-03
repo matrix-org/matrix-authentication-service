@@ -127,8 +127,21 @@ impl PolicyFactory {
 }
 
 #[derive(Deserialize)]
-struct EvaluationResult {
-    result: bool,
+pub struct Violation {
+    pub msg: String,
+    pub field: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct EvaluationResult {
+    #[serde(rename = "result")]
+    pub violations: Vec<Violation>,
+}
+
+impl EvaluationResult {
+    pub fn valid(&self) -> bool {
+        self.violations.is_empty()
+    }
 }
 
 #[derive(Debug)]
@@ -145,7 +158,7 @@ impl Policy {
     pub async fn evaluate_login(
         &mut self,
         user: &mas_data_model::User<()>,
-    ) -> Result<bool, anyhow::Error> {
+    ) -> Result<EvaluationResult, anyhow::Error> {
         let user = serde_json::to_value(user)?;
         let input = serde_json::json!({ "user": user });
 
@@ -154,7 +167,7 @@ impl Policy {
             .evaluate(&mut self.store, &self.login_entrypoint, &input)
             .await?;
 
-        Ok(res.result)
+        Ok(res)
     }
 
     #[tracing::instrument]
@@ -162,7 +175,7 @@ impl Policy {
         &mut self,
         username: &str,
         email: &str,
-    ) -> Result<bool, anyhow::Error> {
+    ) -> Result<EvaluationResult, anyhow::Error> {
         let input = serde_json::json!({
             "user": {
                 "username": username,
@@ -175,14 +188,14 @@ impl Policy {
             .evaluate(&mut self.store, &self.register_entrypoint, &input)
             .await?;
 
-        Ok(res.result)
+        Ok(res)
     }
 
     #[tracing::instrument]
     pub async fn evaluate_client_registration(
         &mut self,
         client_metadata: &ClientMetadata,
-    ) -> Result<bool, anyhow::Error> {
+    ) -> Result<EvaluationResult, anyhow::Error> {
         let client_metadata = serde_json::to_value(client_metadata)?;
         let input = serde_json::json!({
             "client_metadata": client_metadata,
@@ -197,6 +210,47 @@ impl Policy {
             )
             .await?;
 
-        Ok(res.result)
+        Ok(res)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_register() {
+        let factory = PolicyFactory::load(
+            default_wasm_policy(),
+            serde_json::json!({
+                "allowed_domains": ["element.io", "*.element.io"],
+                "banned_domains": ["staging.element.io"],
+            }),
+            "login/violation".to_string(),
+            "register/violation".to_string(),
+            "client_registration/violation".to_string(),
+        )
+        .await
+        .unwrap();
+
+        let mut policy = factory.instantiate().await.unwrap();
+
+        let res = policy
+            .evaluate_register("hello", "hello@example.com")
+            .await
+            .unwrap();
+        assert!(!res.valid());
+
+        let res = policy
+            .evaluate_register("hello", "hello@foo.element.io")
+            .await
+            .unwrap();
+        assert!(res.valid());
+
+        let res = policy
+            .evaluate_register("hello", "hello@staging.element.io")
+            .await
+            .unwrap();
+        assert!(!res.valid());
     }
 }

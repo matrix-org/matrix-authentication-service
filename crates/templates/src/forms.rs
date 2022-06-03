@@ -38,6 +38,12 @@ pub enum FieldError {
 
     /// That value already exists
     Exists,
+
+    /// Denied by the policy
+    Policy {
+        /// Message for this policy violation
+        message: String,
+    },
 }
 
 /// An error on the whole form
@@ -54,7 +60,10 @@ pub enum FormError {
     Internal,
 
     /// Denied by the policy
-    Policy,
+    Policy {
+        /// Message for this policy violation
+        message: String,
+    },
 }
 
 #[derive(Debug, Default, Serialize)]

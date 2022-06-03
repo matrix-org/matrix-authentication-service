@@ -3,19 +3,21 @@ DOCKER := 0
 
 ifeq ($(DOCKER), 0)
 	OPA := opa
+	OPA_RW := opa
 else
-	OPA := docker run -v $(shell pwd):/policies -w /policies --rm docker.io/openpolicyagent/opa:0.40.0
+	OPA := docker run -v $(shell pwd):/policies:ro -w /policies --rm docker.io/openpolicyagent/opa:0.40.0
+	OPA_RW := docker run -v $(shell pwd):/policies -w /policies --rm docker.io/openpolicyagent/opa:0.40.0
 endif
 
 policy.wasm: client_registration.rego login.rego register.rego
-	$(OPA) build -t wasm -e "client_registration/allow" -e "login/allow" -e "register/allow" $^
+	$(OPA_RW) build -t wasm -e "client_registration/violation" -e "login/violation" -e "register/violation" $^
 	tar xzf bundle.tar.gz /policy.wasm
 	$(RM) bundle.tar.gz
 	touch $@
 
 .PHONY: fmt
 fmt:
-	$(OPA) fmt -w .
+	$(OPA_RW) fmt -w .
 
 .PHONY: test
 test:

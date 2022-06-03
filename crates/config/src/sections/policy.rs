@@ -22,15 +22,15 @@ use serde_with::serde_as;
 use super::ConfigurationSection;
 
 fn default_client_registration_endpoint() -> String {
-    "client_registration/allow".to_string()
+    "client_registration/violation".to_string()
 }
 
 fn default_login_endpoint() -> String {
-    "login/allow".to_string()
+    "login/violation".to_string()
 }
 
 fn default_register_endpoint() -> String {
-    "register/allow".to_string()
+    "register/violation".to_string()
 }
 
 /// Application secrets
