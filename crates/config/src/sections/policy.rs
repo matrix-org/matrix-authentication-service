@@ -25,10 +25,6 @@ fn default_client_registration_endpoint() -> String {
     "client_registration/violation".to_string()
 }
 
-fn default_login_endpoint() -> String {
-    "login/violation".to_string()
-}
-
 fn default_register_endpoint() -> String {
     "register/violation".to_string()
 }
@@ -45,10 +41,6 @@ pub struct PolicyConfig {
     #[serde(default = "default_client_registration_endpoint")]
     pub client_registration_entrypoint: String,
 
-    /// Entrypoint to use when evaluating user logins
-    #[serde(default = "default_login_endpoint")]
-    pub login_entrypoint: String,
-
     /// Entrypoint to use when evaluating user registrations
     #[serde(default = "default_register_endpoint")]
     pub register_entrypoint: String,
@@ -63,7 +55,6 @@ impl Default for PolicyConfig {
         Self {
             wasm_module: None,
             client_registration_entrypoint: default_client_registration_endpoint(),
-            login_entrypoint: default_login_endpoint(),
             register_entrypoint: default_register_endpoint(),
             data: None,
         }
