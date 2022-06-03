@@ -133,7 +133,7 @@ pub(crate) async fn post(
 
         let mut policy = policy_factory.instantiate().await?;
         let res = policy
-            .evaluate_register(&form.username, &form.email)
+            .evaluate_register(&form.username, &form.password, &form.email)
             .await?;
 
         for violation in res.violations {
@@ -146,6 +146,12 @@ pub(crate) async fn post(
                 ),
                 Some("username") => state.add_error_on_field(
                     RegisterFormField::Username,
+                    FieldError::Policy {
+                        message: violation.msg,
+                    },
+                ),
+                Some("password") => state.add_error_on_field(
+                    RegisterFormField::Password,
                     FieldError::Policy {
                         message: violation.msg,
                     },
