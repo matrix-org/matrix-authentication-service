@@ -16,6 +16,26 @@ violation[{"field": "username", "msg": "username too long"}] {
 	count(input.user.username) >= 15
 }
 
+violation[{"field": "password", "msg": msg}] {
+	count(input.user.password) < data.passwords.min_length
+	msg := sprintf("needs to be at least %d characters", [data.passwords.min_length])
+}
+
+violation[{"field": "password", "msg": "requires at least one number"}] {
+	data.passwords.require_number
+	not regex.match("[0-9]", input.user.password)
+}
+
+violation[{"field": "password", "msg": "requires at least one lowercase letter"}] {
+	data.passwords.require_lowercase
+	not regex.match("[a-z]", input.user.password)
+}
+
+violation[{"field": "password", "msg": "requires at least one uppercase letter"}] {
+	data.passwords.require_uppercase
+	not regex.match("[A-Z]", input.user.password)
+}
+
 # Allow any domains if the data.allowed_domains array is not set
 email_domain_allowed {
 	not data.allowed_domains

@@ -122,13 +122,13 @@ impl PolicyFactory {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct Violation {
     pub msg: String,
     pub field: Option<String>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct EvaluationResult {
     #[serde(rename = "result")]
     pub violations: Vec<Violation>,
@@ -153,11 +153,13 @@ impl Policy {
     pub async fn evaluate_register(
         &mut self,
         username: &str,
+        password: &str,
         email: &str,
     ) -> Result<EvaluationResult, anyhow::Error> {
         let input = serde_json::json!({
             "user": {
                 "username": username,
+                "password": password,
                 "email": email
             }
         });
