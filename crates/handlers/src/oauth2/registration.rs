@@ -119,8 +119,8 @@ pub(crate) async fn post(
     }
 
     let mut policy = policy_factory.instantiate().await?;
-    let allowed = policy.evaluate_client_registration(&body).await?;
-    if !allowed {
+    let res = policy.evaluate_client_registration(&body).await?;
+    if !res.valid() {
         return Err(RouteError::PolicyDenied);
     }
 

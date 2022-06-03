@@ -136,8 +136,24 @@ pub(crate) async fn post(
             .evaluate_register(&form.username, &form.email)
             .await?;
 
-        if !res {
-            state.add_error_on_form(FormError::Policy);
+        for violation in res.violations {
+            match violation.field.as_deref() {
+                Some("email") => state.add_error_on_field(
+                    RegisterFormField::Email,
+                    FieldError::Policy {
+                        message: violation.msg,
+                    },
+                ),
+                Some("username") => state.add_error_on_field(
+                    RegisterFormField::Username,
+                    FieldError::Policy {
+                        message: violation.msg,
+                    },
+                ),
+                _ => state.add_error_on_form(FormError::Policy {
+                    message: violation.msg,
+                }),
+            }
         }
 
         state

@@ -1,3 +1,3 @@
 package login
 
-allow := true
+violation := []
