@@ -216,19 +216,19 @@ mod tests {
         let mut policy = factory.instantiate().await.unwrap();
 
         let res = policy
-            .evaluate_register("hello", "hello@example.com", "hunter2")
+            .evaluate_register("hello", "hunter2", "hello@example.com")
             .await
             .unwrap();
         assert!(!res.valid());
 
         let res = policy
-            .evaluate_register("hello", "hello@foo.element.io", "hunter2")
+            .evaluate_register("hello", "hunter2", "hello@foo.element.io")
             .await
             .unwrap();
         assert!(res.valid());
 
         let res = policy
-            .evaluate_register("hello", "hello@staging.element.io", "hunter2")
+            .evaluate_register("hello", "hunter2", "hello@staging.element.io")
             .await
             .unwrap();
         assert!(!res.valid());
