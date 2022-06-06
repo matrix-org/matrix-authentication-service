@@ -25,7 +25,7 @@ axum-macros = "0.2.2"
 axum-extra = { version = "0.3.3", features = ["cookie-private"] }
 
 # Emails
-lettre = { version = "0.10.0-rc.6", default-features = false, features = ["builder"] }
+lettre = { version = "0.10.0-rc.7", default-features = false, features = ["builder"] }
 
 # Database access
 sqlx = { version = "0.5.13", features = ["runtime-tokio-rustls", "postgres"] }
