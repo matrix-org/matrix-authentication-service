@@ -2,8 +2,8 @@ name: Build and publish docker image
 
 on:
   push:
-    branches:
-      - main
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
@@ -22,5 +22,5 @@ jobs:
         name: Build and push
         uses: docker/build-push-action@v3
         with:
-          push: true
+          push: ${{ github.ref == 'refs/heads/main' }}
           tags: ghcr.io/matrix-org/matrix-authentication-service:sha-${{ github.sha }}
