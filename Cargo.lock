@@ -523,9 +523,9 @@ dependencies = [
 
 [[package]]
 name = "axum-extra"
-version = "0.3.3"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75330529f6b27544cedc6089108602a056d016df6aa4f2cb24408d840392ef2d"
+checksum = "4f4a22e494aab08f7fb9e9b462e49e4c1637dd9a4bfa4250e9addfdbafc1a022"
 dependencies = [
  "axum",
  "bytes 1.1.0",
@@ -533,6 +533,7 @@ dependencies = [
  "http",
  "mime",
  "pin-project-lite",
+ "tokio",
  "tower",
  "tower-http",
  "tower-layer",
