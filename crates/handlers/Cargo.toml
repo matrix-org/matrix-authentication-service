@@ -22,7 +22,7 @@ tower = "0.4.12"
 tower-http = { version = "0.3.4", features = ["cors"] }
 axum = "0.5.7"
 axum-macros = "0.2.2"
-axum-extra = { version = "0.3.3", features = ["cookie-private"] }
+axum-extra = { version = "0.3.4", features = ["cookie-private"] }
 
 # Emails
 lettre = { version = "0.10.0-rc.7", default-features = false, features = ["builder"] }
