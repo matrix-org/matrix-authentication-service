@@ -26,6 +26,7 @@ pub enum PostAuthAction {
     ContinueCompatSsoLogin {
         #[serde(deserialize_with = "serde_with::rust::display_fromstr::deserialize")]
         data: i64,
+        action: Option<Action>,
     },
     ChangePassword,
 }
@@ -37,15 +38,15 @@ impl PostAuthAction {
     }
 
     #[must_use]
-    pub fn continue_compat_sso_login(data: i64) -> Self {
-        PostAuthAction::ContinueCompatSsoLogin { data }
+    pub fn continue_compat_sso_login(data: i64, action: Option<Action>) -> Self {
+        PostAuthAction::ContinueCompatSsoLogin { data, action }
     }
 
     #[must_use]
     pub fn go_next(&self) -> axum::response::Redirect {
         match self {
             Self::ContinueAuthorizationGrant { data } => ContinueAuthorizationGrant(*data).go(),
-            Self::ContinueCompatSsoLogin { data } => CompatLoginSsoComplete(*data).go(),
+            Self::ContinueCompatSsoLogin { data, action } => CompatLoginSsoComplete(*data, ActionParams { action: *action }).go(),
             Self::ChangePassword => AccountPassword.go(),
         }
     }
@@ -174,7 +175,7 @@ impl Login {
     #[must_use]
     pub fn and_continue_compat_sso_login(data: i64) -> Self {
         Self {
-            post_auth_action: Some(PostAuthAction::continue_compat_sso_login(data)),
+            post_auth_action: Some(PostAuthAction::continue_compat_sso_login(data, Some(Action::Login))),
         }
     }
 
@@ -279,6 +280,13 @@ impl Register {
     pub fn and_continue_grant(data: i64) -> Self {
         Self {
             post_auth_action: Some(PostAuthAction::continue_grant(data)),
+        }
+    }
+
+    #[must_use]
+    pub fn and_continue_compat_sso_login(data: i64) -> Self {
+        Self {
+            post_auth_action: Some(PostAuthAction::continue_compat_sso_login(data, Some(Action::Register))),
         }
     }
 
@@ -419,11 +427,28 @@ impl SimpleRoute for CompatLoginSsoRedirectIdp {
     const PATH: &'static str = "/_matrix/client/:version/login/sso/redirect/:idp";
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[serde(rename_all = "lowercase")]
+pub enum Action {
+    Login,
+    Register,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ActionParams {
+    pub action: Option<Action>,
+}
+
 /// `GET|POST /complete-compat-sso/:id`
-pub struct CompatLoginSsoComplete(pub i64);
+pub struct CompatLoginSsoComplete(pub i64, pub ActionParams);
 
 impl Route for CompatLoginSsoComplete {
-    type Query = ();
+    type Query = ActionParams;
+
+    fn query(&self) -> Option<&ActionParams> {
+        Some(&self.1)
+    }
+
     fn route() -> &'static str {
         "/complete-compat-sso/:grant_id"
     }

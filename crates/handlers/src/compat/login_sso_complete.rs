@@ -16,7 +16,7 @@
 use std::collections::HashMap;
 
 use axum::{
-    extract::{Form, Path},
+    extract::{Form, Path, Query},
     response::{Html, IntoResponse, Redirect, Response},
     Extension,
 };
@@ -28,11 +28,12 @@ use mas_axum_utils::{
 };
 use mas_config::Encrypter;
 use mas_data_model::Device;
-use mas_router::{PostAuthAction, Route};
+use mas_router::{PostAuthAction, Route, Action};
 use mas_storage::compat::{fullfill_compat_sso_login, get_compat_sso_login_by_id};
 use mas_templates::{CompatSsoContext, ErrorContext, TemplateContext, Templates};
 use rand::thread_rng;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use serde_with::{serde};
 use sqlx::PgPool;
 
 #[derive(Serialize)]
@@ -44,11 +45,17 @@ struct AllParams<'s> {
     login_token: &'s str,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct Params {
+    action: Option<Action>,
+}
+
 pub async fn get(
     Extension(pool): Extension<PgPool>,
     Extension(templates): Extension<Templates>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(id): Path<i64>,
+    Query(params): Query<Params>,
 ) -> Result<Response, FancyError> {
     let mut conn = pool.acquire().await?;
 
@@ -60,10 +67,27 @@ pub async fn get(
     let session = if let Some(session) = maybe_session {
         session
     } else {
-        // If there is no session, redirect to the login screen
-        let login = mas_router::Login::and_continue_compat_sso_login(id);
-        return Ok((cookie_jar, login.go()).into_response());
+        // If there is no session, redirect to the login or register screen
+        if params.action.is_some() && matches!(params.action.unwrap(), Action::Login) {
+            let login = mas_router::Login::and_continue_compat_sso_login(id);
+            return Ok((cookie_jar, login.go()).into_response());
+        }
+        let register = mas_router::Register::and_continue_compat_sso_login(id);
+        return Ok((cookie_jar, register.go()).into_response());
     };
+
+    // TODO: make that more generic
+    if session
+        .user
+        .primary_email
+        .as_ref()
+        .and_then(|e| e.confirmed_at)
+        .is_none()
+    {
+        let destination = mas_router::AccountAddEmail::default()
+            .and_then(PostAuthAction::ContinueCompatSsoLogin { data: id, action: params.action });
+        return Ok((cookie_jar, destination.go()).into_response());
+    }
 
     let login = get_compat_sso_login_by_id(&mut conn, id).await?;
 
@@ -77,7 +101,7 @@ pub async fn get(
         return Ok((cookie_jar, Html(content)).into_response());
     }
 
-    let ctx = CompatSsoContext::new(login, PostAuthAction::continue_compat_sso_login(id))
+    let ctx = CompatSsoContext::new(login, PostAuthAction::continue_compat_sso_login(id, params.action))
         .with_session(session)
         .with_csrf(csrf_token.form_value());
 
@@ -92,6 +116,7 @@ pub async fn post(
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(id): Path<i64>,
     Form(form): Form<ProtectedForm<()>>,
+    Query(params): Query<Params>,
 ) -> Result<Response, FancyError> {
     let mut txn = pool.begin().await?;
 
@@ -103,10 +128,27 @@ pub async fn post(
     let session = if let Some(session) = maybe_session {
         session
     } else {
-        // If there is no session, redirect to the login screen
-        let login = mas_router::Login::and_continue_compat_sso_login(id);
-        return Ok((cookie_jar, login.go()).into_response());
+        // If there is no session, redirect to the login or register screen
+        if params.action.is_some() && matches!(params.action.unwrap(), Action::Login) {
+            let login = mas_router::Login::and_continue_compat_sso_login(id);
+            return Ok((cookie_jar, login.go()).into_response());
+        }
+        let register = mas_router::Register::and_continue_compat_sso_login(id);
+        return Ok((cookie_jar, register.go()).into_response());
     };
+
+    // TODO: make that more generic
+    if session
+        .user
+        .primary_email
+        .as_ref()
+        .and_then(|e| e.confirmed_at)
+        .is_none()
+    {
+        let destination = mas_router::AccountAddEmail::default()
+            .and_then(PostAuthAction::ContinueCompatSsoLogin { data: id, action: params.action });
+        return Ok((cookie_jar, destination.go()).into_response());
+    }
 
     let login = get_compat_sso_login_by_id(&mut txn, id).await?;
 

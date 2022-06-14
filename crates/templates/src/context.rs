@@ -21,7 +21,7 @@ use mas_data_model::{
     AuthorizationGrant, BrowserSession, CompatSsoLogin, CompatSsoLoginState, StorageBackend, User,
     UserEmail,
 };
-use mas_router::PostAuthAction;
+use mas_router::{PostAuthAction, Action};
 use serde::{ser::SerializeStruct, Deserialize, Serialize};
 use url::Url;
 
@@ -487,7 +487,7 @@ impl TemplateContext for CompatSsoContext {
                 created_at: Utc::now(),
                 state: CompatSsoLoginState::Pending,
             },
-            action: PostAuthAction::ContinueCompatSsoLogin { data: 1 },
+            action: PostAuthAction::ContinueCompatSsoLogin { data: 1, action: Some(Action::Register) },
         }]
     }
 }
