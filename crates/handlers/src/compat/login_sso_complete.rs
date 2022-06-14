@@ -69,12 +69,8 @@ pub async fn get(
     } else {
         // If there is no session, redirect to the login or register screen
         let url = match params.action {
-            Some(Action::Register) => {
-                mas_router::Register::and_continue_compat_sso_login(id).go()
-            }
-            Some(Action::Login) | None => {
-                mas_router::Login::and_continue_compat_sso_login(id).go()
-            }
+            Some(Action::Register) => mas_router::Register::and_continue_compat_sso_login(id).go(),
+            Some(Action::Login) | None => mas_router::Login::and_continue_compat_sso_login(id).go(),
         };
 
         return Ok((cookie_jar, url).into_response());
@@ -141,12 +137,8 @@ pub async fn post(
     } else {
         // If there is no session, redirect to the login or register screen
         let url = match params.action {
-            Some(Action::Register) => {
-                mas_router::Register::and_continue_compat_sso_login(id).go()
-            }
-            Some(Action::Login) | None => {
-                mas_router::Login::and_continue_compat_sso_login(id).go()
-            }
+            Some(Action::Register) => mas_router::Register::and_continue_compat_sso_login(id).go(),
+            Some(Action::Login) | None => mas_router::Login::and_continue_compat_sso_login(id).go(),
         };
 
         return Ok((cookie_jar, url).into_response());
