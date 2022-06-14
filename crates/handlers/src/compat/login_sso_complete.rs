@@ -33,7 +33,6 @@ use mas_storage::compat::{fullfill_compat_sso_login, get_compat_sso_login_by_id}
 use mas_templates::{CompatSsoContext, ErrorContext, TemplateContext, Templates};
 use rand::thread_rng;
 use serde::{Deserialize, Serialize};
-use serde_with::serde;
 use sqlx::PgPool;
 
 #[derive(Serialize)]
