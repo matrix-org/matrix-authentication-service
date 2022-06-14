@@ -33,8 +33,17 @@ pub enum FieldError {
     /// An unspecified error on the field
     Unspecified,
 
+    /// Invalid value for this field
+    Invalid,
+
     /// That value already exists
     Exists,
+
+    /// Denied by the policy
+    Policy {
+        /// Message for this policy violation
+        message: String,
+    },
 }
 
 /// An error on the whole form
@@ -49,6 +58,12 @@ pub enum FormError {
 
     /// There was an internal error
     Internal,
+
+    /// Denied by the policy
+    Policy {
+        /// Message for this policy violation
+        message: String,
+    },
 }
 
 #[derive(Debug, Default, Serialize)]

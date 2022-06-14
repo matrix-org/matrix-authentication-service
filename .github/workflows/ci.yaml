@@ -23,13 +23,13 @@ jobs:
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: "1.57.0" # MSRV
+          toolchain: "1.59.0" # MSRV
           target: x86_64-unknown-linux-musl
           profile: minimal
           override: true
 
       - name: Setup Cargo cache
-        uses: actions/cache@v3.0.2
+        uses: actions/cache@v3.0.4
         with:
           path: |
             ~/.cargo/registry/index
@@ -61,6 +61,31 @@ jobs:
           command: fetch
           args: --locked
 
+  opa-lint:
+    name: Lint and test OPA policies
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v3
+
+      - name: Setup OPA
+        uses: open-policy-agent/setup-opa@v1
+        with:
+          version: 0.40.0
+
+      - name: Lint policies
+        run: |
+          cd crates/policy/policies
+          make lint
+
+      - name: Run OPA tests
+        run: |
+          cd crates/policy/policies
+          make test
 
   rustfmt:
     name: Check style
@@ -85,7 +110,7 @@ jobs:
           override: true
 
       - name: Setup Cargo cache
-        uses: actions/cache@v3.0.2
+        uses: actions/cache@v3.0.4
         with:
           path: |
             ~/.cargo/registry/index
@@ -94,7 +119,7 @@ jobs:
           key: ${{ runner.os }}-cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Setup build cache
-        uses: actions/cache@v3.0.2
+        uses: actions/cache@v3.0.4
         with:
           path: |
             target
@@ -109,7 +134,7 @@ jobs:
 
   clippy:
     name: Run Clippy
-    needs: [fetch]
+    needs: [opa-lint, fetch]
     runs-on: ubuntu-latest
 
     permissions:
@@ -129,8 +154,18 @@ jobs:
           profile: minimal
           override: true
 
+      - name: Setup OPA
+        uses: open-policy-agent/setup-opa@v1
+        with:
+          version: 0.40.0
+
+      - name: Compile OPA policies
+        run: |
+          cd crates/policy/policies
+          make
+
       - name: Setup Cargo cache
-        uses: actions/cache@v3.0.2
+        uses: actions/cache@v3.0.4
         with:
           path: |
             ~/.cargo/registry/index
@@ -139,7 +174,7 @@ jobs:
           key: ${{ runner.os }}-cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Setup build cache
-        uses: actions/cache@v3.0.2
+        uses: actions/cache@v3.0.4
         with:
           path: |
             target
@@ -154,7 +189,7 @@ jobs:
 
   test:
     name: Run test suite with Rust ${{ matrix.toolchain }}
-    needs: [rustfmt, clippy, fetch]
+    needs: [rustfmt, clippy, opa-lint, fetch]
     runs-on: ubuntu-latest
 
     permissions:
@@ -166,7 +201,7 @@ jobs:
       fail-fast: false # Continue other jobs if one fails to help filling the cache
       matrix:
         toolchain:
-          - "1.57.0" # MSRV
+          - "1.59.0" # MSRV
           - stable
           - beta
           - nightly
@@ -184,8 +219,18 @@ jobs:
           profile: minimal
           override: true
 
+      - name: Setup OPA
+        uses: open-policy-agent/setup-opa@v1
+        with:
+          version: 0.40.0
+
+      - name: Compile OPA policies
+        run: |
+          cd crates/policy/policies
+          make
+
       - name: Setup Cargo cache
-        uses: actions/cache@v3.0.2
+        uses: actions/cache@v3.0.4
         with:
           path: |
             ~/.cargo/registry/index
@@ -194,7 +239,7 @@ jobs:
           key: ${{ runner.os }}-cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Setup build cache
-        uses: actions/cache@v3.0.2
+        uses: actions/cache@v3.0.4
         with:
           path: |
             target
@@ -209,7 +254,7 @@ jobs:
 
   coverage:
     name: Code coverage
-    needs: [rustfmt, clippy, fetch]
+    needs: [rustfmt, clippy, opa-lint, fetch]
     runs-on: ubuntu-latest
 
     permissions:
@@ -228,8 +273,18 @@ jobs:
           override: true
           components: llvm-tools-preview
 
+      - name: Setup OPA
+        uses: open-policy-agent/setup-opa@v1
+        with:
+          version: 0.40.0
+
+      - name: Compile OPA policies
+        run: |
+          cd crates/policy/policies
+          make
+
       - name: Setup Cargo cache
-        uses: actions/cache@v3.0.2
+        uses: actions/cache@v3.0.4
         with:
           path: |
             ~/.cargo/registry/index
@@ -238,7 +293,7 @@ jobs:
           key: ${{ runner.os }}-cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Setup build cache
-        uses: actions/cache@v3.0.2
+        uses: actions/cache@v3.0.4
         with:
           path: |
             target
@@ -274,7 +329,7 @@ jobs:
 
   build-image:
     name: Build and push Docker image
-    needs: [rustfmt, clippy]
+    needs: [rustfmt, clippy, opa-lint]
     runs-on: ubuntu-latest
     env:
       IMAGE: ghcr.io/matrix-org/matrix-authentication-service
@@ -319,7 +374,7 @@ jobs:
             jq -s '.[0] * .[1]' ${{ steps.meta.outputs.bake-file }} ${{ steps.meta-debug.outputs.bake-file }} > docker-bake.override.json
 
       - name: Setup Cosign
-        uses: sigstore/cosign-installer@v2.3.0
+        uses: sigstore/cosign-installer@v2.4.0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2

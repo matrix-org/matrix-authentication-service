@@ -71,10 +71,14 @@ impl Mailer {
 
         let multipart = MultiPart::alternative_plain_html(plain, html);
 
+        let subject = self
+            .templates
+            .render_email_verification_subject(context)
+            .await?;
+
         let message = self
             .base_message()
-            // TODO: template/localize this
-            .subject("Verify your email address")
+            .subject(subject.trim())
             .to(to)
             .multipart(multipart)?;
 

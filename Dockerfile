@@ -12,8 +12,9 @@
 # The Debian version and version name must be in sync
 ARG DEBIAN_VERSION=11
 ARG DEBIAN_VERSION_NAME=bullseye
-ARG RUSTC_VERSION=1.60.0
+ARG RUSTC_VERSION=1.61.0
 ARG NODEJS_VERSION=16
+ARG OPA_VERSION=0.40.0
 
 ## Build stage that builds the static files/frontend ##
 FROM --platform=${BUILDPLATFORM} docker.io/library/node:${NODEJS_VERSION}-${DEBIAN_VERSION_NAME}-slim AS static-files
@@ -25,6 +26,31 @@ COPY . /app/
 RUN npm run build
 # Change the timestamp of built files for better caching
 RUN find public -type f -exec touch -t 197001010000.00 {} +
+
+## Build stage that builds the OPA policies ##
+FROM --platform=${BUILDPLATFORM} docker.io/library/debian:${DEBIAN_VERSION_NAME}-slim AS policy
+
+# Install make
+RUN rm -f /etc/apt/apt.conf.d/docker-clean; echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
+RUN \
+  --mount=type=cache,sharing=locked,target=/var/cache/apt \
+  --mount=type=cache,sharing=locked,target=/var/lib/apt \
+  apt update && apt install -y --no-install-recommends \
+  make
+
+ARG BUILDOS
+ARG BUILDARCH
+ARG OPA_VERSION
+
+# Download Open Policy Agent
+ADD --chmod=755 https://github.com/open-policy-agent/opa/releases/download/v${OPA_VERSION}/opa_${BUILDOS}_${BUILDARCH}_static /usr/local/bin/opa
+
+WORKDIR /app/crates/policy/policies
+COPY ./crates/policy/policies/ /app/crates/policy/policies
+RUN make -B
+
+# Change the timestamp of built files for better caching
+RUN touch -t 197001010000.00 {} policy.wasm
 
 ## Base image with cargo-chef and the right cross-compilation toolchain ##
 # cargo-chef helps with caching dependencies between builds
@@ -92,6 +118,7 @@ RUN \
 COPY ./Cargo.toml ./Cargo.lock /app/
 COPY ./crates /app/crates
 COPY --from=static-files /app/crates/static-files/public /app/crates/static-files/public
+COPY --from=policy /app/crates/policy/policies/policy.wasm /app/crates/policy/policies/policy.wasm
 ENV SQLX_OFFLINE=true
 RUN \
   --mount=type=cache,sharing=private,target=/usr/local/cargo/registry \
@@ -106,9 +133,11 @@ RUN mv target/$(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")/release/mas-
 ## Runtime stage, debug variant ##
 FROM --platform=${TARGETPLATFORM} gcr.io/distroless/cc-debian${DEBIAN_VERSION}:debug-nonroot AS debug
 COPY --from=builder /usr/local/bin/mas-cli /usr/local/bin/mas-cli
+WORKDIR /
 ENTRYPOINT ["/mas-cli"]
 
 ## Runtime stage ##
 FROM --platform=${TARGETPLATFORM} gcr.io/distroless/cc-debian${DEBIAN_VERSION}:nonroot
 COPY --from=builder /usr/local/bin/mas-cli /usr/local/bin/mas-cli
+WORKDIR /
 ENTRYPOINT ["/usr/local/bin/mas-cli"]

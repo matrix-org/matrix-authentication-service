@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 #}
 
-{% macro input(label, name, type="text", form_state=false, autocomplete=false, class="") %}
+{% macro input(label, name, type="text", form_state=false, autocomplete=false, class="", inputmode="text") %}
   {% if not form_state %}
     {% set form_state = dict(errors=[], fields=dict()) %}
   {% endif %}
@@ -34,6 +34,7 @@ limitations under the License.
     <input name="{{ name }}"
       class="z-0 px-3 py-2 bg-white dark:bg-black-900 rounded-lg {{ border_color }} border-1 dark:border-2 focus:border-accent focus:ring-0 focus:outline-0"
       type="{{ type }}" 
+      inputmode="{{ inputmode }}"
       {% if autocomplete %} autocomplete="{{ autocomplete }}" {% endif %} 
       {% if state.value %} value="{{ state.value }}" {% endif %}  
       />
@@ -46,6 +47,8 @@ limitations under the License.
               This field is required
             {% elif error.kind == "exists" and name == "username" %}
               This username is already taken
+            {% elif error.kind == "policy" %}
+              Denied by policy: {{ error.message }}
             {% else %}
               {{ error.kind }}
             {% endif %}

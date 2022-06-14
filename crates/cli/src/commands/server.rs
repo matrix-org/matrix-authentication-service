@@ -25,10 +25,12 @@ use hyper::Server;
 use mas_config::RootConfig;
 use mas_email::{MailTransport, Mailer};
 use mas_http::ServerLayer;
+use mas_policy::PolicyFactory;
 use mas_router::UrlBuilder;
 use mas_storage::MIGRATOR;
 use mas_tasks::TaskQueue;
 use mas_templates::Templates;
+use tokio::io::AsyncRead;
 use tracing::{error, info};
 
 #[derive(Parser, Debug, Default)]
@@ -176,6 +178,29 @@ impl Options {
 
         let encrypter = config.secrets.encrypter();
 
+        // Load and compile the WASM policies (and fallback to the default embedded one)
+        info!("Loading and compiling the policy module");
+        let mut policy: Box<dyn AsyncRead + std::marker::Unpin> =
+            if let Some(path) = &config.policy.wasm_module {
+                Box::new(
+                    tokio::fs::File::open(path)
+                        .await
+                        .context("failed to open OPA WASM policy file")?,
+                )
+            } else {
+                Box::new(mas_policy::default_wasm_policy())
+            };
+
+        let policy_factory = PolicyFactory::load(
+            &mut policy,
+            config.policy.data.clone().unwrap_or_default(),
+            config.policy.register_entrypoint.clone(),
+            config.policy.client_registration_entrypoint.clone(),
+        )
+        .await
+        .context("failed to load the policy")?;
+        let policy_factory = Arc::new(policy_factory);
+
         // Load and compile the templates
         let templates = Templates::load_from_config(&config.templates)
             .await
@@ -217,6 +242,7 @@ impl Options {
             &mailer,
             &url_builder,
             &matrix_config,
+            &policy_factory,
         )
         .fallback(static_files)
         .layer(ServerLayer::default());
