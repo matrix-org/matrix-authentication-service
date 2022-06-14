@@ -47,7 +47,7 @@ impl OptionalPostAuthAction {
                 let grant = Box::new(grant.into());
                 Ok(Some(PostAuthContext::ContinueAuthorizationGrant { grant }))
             }
-            Some(PostAuthAction::ContinueCompatSsoLogin { data, action }) => {
+            Some(PostAuthAction::ContinueCompatSsoLogin { data }) => {
                 let login = get_compat_sso_login_by_id(conn, *data).await?;
                 let login = Box::new(login.into());
                 Ok(Some(PostAuthContext::ContinueCompatSsoLogin { login }))
