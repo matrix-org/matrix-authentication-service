@@ -68,12 +68,16 @@ pub async fn get(
         session
     } else {
         // If there is no session, redirect to the login or register screen
-        if params.action.is_some() && matches!(params.action.unwrap(), Action::Login) {
-            let login = mas_router::Login::and_continue_compat_sso_login(id);
-            return Ok((cookie_jar, login.go()).into_response());
-        }
-        let register = mas_router::Register::and_continue_compat_sso_login(id);
-        return Ok((cookie_jar, register.go()).into_response());
+        let url = match params.action {
+            Some(Action::Register) => {
+                mas_router::Register::and_continue_compat_sso_login(id).go()
+            }
+            Some(Action::Login) | None => {
+                mas_router::Login::and_continue_compat_sso_login(id).go()
+            }
+        };
+
+        return Ok((cookie_jar, url).into_response());
     };
 
     // TODO: make that more generic
