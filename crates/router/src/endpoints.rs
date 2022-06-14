@@ -46,7 +46,9 @@ impl PostAuthAction {
     pub fn go_next(&self) -> axum::response::Redirect {
         match self {
             Self::ContinueAuthorizationGrant { data } => ContinueAuthorizationGrant(*data).go(),
-            Self::ContinueCompatSsoLogin { data, action } => CompatLoginSsoComplete(*data, ActionParams { action: *action }).go(),
+            Self::ContinueCompatSsoLogin { data, action } => {
+                CompatLoginSsoComplete(*data, ActionParams { action: *action }).go()
+            }
             Self::ChangePassword => AccountPassword.go(),
         }
     }
@@ -175,7 +177,10 @@ impl Login {
     #[must_use]
     pub fn and_continue_compat_sso_login(data: i64) -> Self {
         Self {
-            post_auth_action: Some(PostAuthAction::continue_compat_sso_login(data, Some(Action::Login))),
+            post_auth_action: Some(PostAuthAction::continue_compat_sso_login(
+                data,
+                Some(Action::Login),
+            )),
         }
     }
 
@@ -286,7 +291,10 @@ impl Register {
     #[must_use]
     pub fn and_continue_compat_sso_login(data: i64) -> Self {
         Self {
-            post_auth_action: Some(PostAuthAction::continue_compat_sso_login(data, Some(Action::Register))),
+            post_auth_action: Some(PostAuthAction::continue_compat_sso_login(
+                data,
+                Some(Action::Register),
+            )),
         }
     }
 

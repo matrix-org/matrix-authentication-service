@@ -28,12 +28,12 @@ use mas_axum_utils::{
 };
 use mas_config::Encrypter;
 use mas_data_model::Device;
-use mas_router::{PostAuthAction, Route, Action};
+use mas_router::{Action, PostAuthAction, Route};
 use mas_storage::compat::{fullfill_compat_sso_login, get_compat_sso_login_by_id};
 use mas_templates::{CompatSsoContext, ErrorContext, TemplateContext, Templates};
 use rand::thread_rng;
 use serde::{Deserialize, Serialize};
-use serde_with::{serde};
+use serde_with::serde;
 use sqlx::PgPool;
 
 #[derive(Serialize)]
@@ -84,8 +84,12 @@ pub async fn get(
         .and_then(|e| e.confirmed_at)
         .is_none()
     {
-        let destination = mas_router::AccountAddEmail::default()
-            .and_then(PostAuthAction::ContinueCompatSsoLogin { data: id, action: params.action });
+        let destination = mas_router::AccountAddEmail::default().and_then(
+            PostAuthAction::ContinueCompatSsoLogin {
+                data: id,
+                action: params.action,
+            },
+        );
         return Ok((cookie_jar, destination.go()).into_response());
     }
 
@@ -101,9 +105,12 @@ pub async fn get(
         return Ok((cookie_jar, Html(content)).into_response());
     }
 
-    let ctx = CompatSsoContext::new(login, PostAuthAction::continue_compat_sso_login(id, params.action))
-        .with_session(session)
-        .with_csrf(csrf_token.form_value());
+    let ctx = CompatSsoContext::new(
+        login,
+        PostAuthAction::continue_compat_sso_login(id, params.action),
+    )
+    .with_session(session)
+    .with_csrf(csrf_token.form_value());
 
     let content = templates.render_sso_login(&ctx).await?;
 
@@ -145,8 +152,12 @@ pub async fn post(
         .and_then(|e| e.confirmed_at)
         .is_none()
     {
-        let destination = mas_router::AccountAddEmail::default()
-            .and_then(PostAuthAction::ContinueCompatSsoLogin { data: id, action: params.action });
+        let destination = mas_router::AccountAddEmail::default().and_then(
+            PostAuthAction::ContinueCompatSsoLogin {
+                data: id,
+                action: params.action,
+            },
+        );
         return Ok((cookie_jar, destination.go()).into_response());
     }
 
