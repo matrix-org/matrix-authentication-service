@@ -45,7 +45,7 @@ impl PostAuthAction {
     pub fn go_next(&self) -> axum::response::Redirect {
         match self {
             Self::ContinueAuthorizationGrant { data } => ContinueAuthorizationGrant(*data).go(),
-            Self::ContinueCompatSsoLogin { data } => CompatLoginSsoComplete(*data).go(),
+            Self::ContinueCompatSsoLogin { data } => CompatLoginSsoComplete::new(*data, None).go(),
             Self::ChangePassword => AccountPassword.go(),
         }
     }
@@ -282,6 +282,13 @@ impl Register {
         }
     }
 
+    #[must_use]
+    pub fn and_continue_compat_sso_login(data: i64) -> Self {
+        Self {
+            post_auth_action: Some(PostAuthAction::continue_compat_sso_login(data)),
+        }
+    }
+
     /// Get a reference to the reauth's post auth action.
     #[must_use]
     pub fn post_auth_action(&self) -> Option<&PostAuthAction> {
@@ -473,16 +480,46 @@ impl SimpleRoute for CompatLoginSsoRedirectIdp {
     const PATH: &'static str = "/_matrix/client/:version/login/sso/redirect/:idp";
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[serde(rename_all = "lowercase")]
+pub enum CompatLoginSsoAction {
+    Login,
+    Register,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+pub struct CompatLoginSsoActionParams {
+    action: CompatLoginSsoAction,
+}
+
 /// `GET|POST /complete-compat-sso/:id`
-pub struct CompatLoginSsoComplete(pub i64);
+pub struct CompatLoginSsoComplete {
+    id: i64,
+    query: Option<CompatLoginSsoActionParams>,
+}
+
+impl CompatLoginSsoComplete {
+    #[must_use]
+    pub fn new(id: i64, action: Option<CompatLoginSsoAction>) -> Self {
+        Self {
+            id,
+            query: action.map(|action| CompatLoginSsoActionParams { action }),
+        }
+    }
+}
 
 impl Route for CompatLoginSsoComplete {
-    type Query = ();
+    type Query = CompatLoginSsoActionParams;
+
+    fn query(&self) -> Option<&Self::Query> {
+        self.query.as_ref()
+    }
+
     fn route() -> &'static str {
         "/complete-compat-sso/:grant_id"
     }
 
     fn path(&self) -> std::borrow::Cow<'static, str> {
-        format!("/complete-compat-sso/{}", self.0).into()
+        format!("/complete-compat-sso/{}", self.id).into()
     }
 }

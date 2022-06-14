@@ -15,13 +15,14 @@
 
 use axum::{extract::Query, response::IntoResponse, Extension};
 use hyper::StatusCode;
-use mas_router::{CompatLoginSsoComplete, UrlBuilder};
+use mas_router::{CompatLoginSsoAction, CompatLoginSsoComplete, UrlBuilder};
 use mas_storage::compat::insert_compat_sso_login;
 use rand::{
     distributions::{Alphanumeric, DistString},
     thread_rng,
 };
 use serde::Deserialize;
+use serde_with::serde;
 use sqlx::PgPool;
 use thiserror::Error;
 use url::Url;
@@ -30,6 +31,7 @@ use url::Url;
 pub struct Params {
     #[serde(rename = "redirectUrl")]
     redirect_url: Option<String>,
+    action: Option<CompatLoginSsoAction>,
 }
 
 #[derive(Debug, Error)]
@@ -83,5 +85,5 @@ pub async fn get(
     let mut conn = pool.acquire().await?;
     let login = insert_compat_sso_login(&mut conn, token, redirect_url).await?;
 
-    Ok(url_builder.absolute_redirect(&CompatLoginSsoComplete(login.data)))
+    Ok(url_builder.absolute_redirect(&CompatLoginSsoComplete::new(login.data, params.action)))
 }
