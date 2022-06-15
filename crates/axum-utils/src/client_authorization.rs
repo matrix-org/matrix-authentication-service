@@ -562,6 +562,11 @@ mod tests {
     async fn client_assertion_test() {
         // Signed with client_secret = "client-secret"
         let jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjbGllbnQtaWQiLCJzdWIiOiJjbGllbnQtaWQiLCJhdWQiOiJodHRwczovL2V4YW1wbGUuY29tL29hdXRoMi9pbnRyb3NwZWN0IiwianRpIjoiYWFiYmNjIiwiZXhwIjoxNTE2MjM5MzIyLCJpYXQiOjE1MTYyMzkwMjJ9.XTaACG_Rww0GPecSZvkbem-AczNy9LLNBueCLCiQajU";
+        let body = Bytes::from(format!(
+            "client_assertion_type={}&client_assertion={}&foo=bar",
+            JWT_BEARER_CLIENT_ASSERTION, jwt,
+        ));
+
         let mut req = RequestParts::new(
             Request::builder()
                 .method(Method::POST)
@@ -569,15 +574,7 @@ mod tests {
                     http::header::CONTENT_TYPE,
                     mime::APPLICATION_WWW_FORM_URLENCODED.as_ref(),
                 )
-                .body(
-                    Full::<Bytes>::new(
-                        format!(
-                            "client_assertion_type={}&client_assertion={}&foo=bar",
-                            JWT_BEARER_CLIENT_ASSERTION, jwt,
-                        )
-                        .into(),
-                    ),
-                )
+                .body(Full::new(body))
                 .unwrap(),
         );
 
