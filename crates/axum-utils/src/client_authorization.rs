@@ -569,13 +569,15 @@ mod tests {
                     http::header::CONTENT_TYPE,
                     mime::APPLICATION_WWW_FORM_URLENCODED.as_ref(),
                 )
-                .body(Full::<Bytes>::new(
-                    format!(
-                        "client_assertion_type={}&client_assertion={}&foo=bar",
-                        JWT_BEARER_CLIENT_ASSERTION, jwt,
-                    )
-                    .into(),
-                ))
+                .body(
+                    Full::<Bytes>::new(
+                        format!(
+                            "client_assertion_type={}&client_assertion={}&foo=bar",
+                            JWT_BEARER_CLIENT_ASSERTION, jwt,
+                        )
+                        .into(),
+                    ),
+                )
                 .unwrap(),
         );
 
