@@ -48,8 +48,7 @@ enum LoginType {
     Sso {
         #[serde(skip_serializing_if = "Vec::is_empty")]
         identity_providers: Vec<SsoIdentityProvider>,
-        #[serde(rename = "org.matrix.msc3824.delegated.oidc.compatibility")]
-        compatibility: bool,
+        delegated_oidc_compatibility: bool,
     },
 }
 
@@ -70,7 +69,7 @@ pub(crate) async fn get() -> impl IntoResponse {
             LoginType::Password,
             LoginType::Sso {
                 identity_providers: vec![],
-                compatibility: true,
+                delegated_oidc_compatibility: true,
             },
             LoginType::Token,
         ],
