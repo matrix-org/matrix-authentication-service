@@ -48,6 +48,7 @@ enum LoginType {
     Sso {
         #[serde(skip_serializing_if = "Vec::is_empty")]
         identity_providers: Vec<SsoIdentityProvider>,
+        #[serde(rename = "org.matrix.msc3824.delegated_oidc_compatibility")]
         delegated_oidc_compatibility: bool,
     },
 }
