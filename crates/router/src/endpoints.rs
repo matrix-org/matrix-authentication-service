@@ -489,6 +489,7 @@ pub enum CompatLoginSsoAction {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct CompatLoginSsoActionParams {
+    #[serde(rename = "org.matrix.msc3824.action")]
     action: CompatLoginSsoAction,
 }
 
