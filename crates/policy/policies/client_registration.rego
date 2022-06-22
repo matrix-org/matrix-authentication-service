@@ -49,7 +49,7 @@ violation[{"msg": "empty redirect_uris"}] {
 	count(input.client_metadata.redirect_uris) == 0
 }
 
-violation[{"msg": "invalid redirect_uri"}] {
-	some redirect_uri in input.client_metadata.redirect_uris
-	not secure_url(redirect_uri)
-}
+# violation[{"msg": "invalid redirect_uri"}] {
+# 	some redirect_uri in input.client_metadata.redirect_uris
+# 	not secure_url(redirect_uri)
+# }

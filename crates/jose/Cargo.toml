@@ -17,7 +17,7 @@ elliptic-curve = { version = "0.12.0", features = ["ecdh", "pem"] }
 futures-util = "0.3.21"
 hmac = "0.12.1"
 http = "0.2.8"
-p256 = { version = "0.11.0", features = ["ecdsa", "pem", "pkcs8"] }
+p256 = { version = "0.11.1", features = ["ecdsa", "pem", "pkcs8"] }
 pkcs1 = { version = "0.4.0", features = ["pem", "pkcs8"] }
 pkcs8 = { version = "0.9.0", features = ["pem", "std"] }
 rand = "0.8.5"
