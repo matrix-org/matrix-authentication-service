@@ -5342,9 +5342,9 @@ dependencies = [
 
 [[package]]
 name = "watchman_client"
-version = "0.7.2"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e725bf7c0cf7cd6b413adc8f43e454fcf7caa5cfdf609188dde60eb95bafc5fe"
+checksum = "839fea2d85719bb69089290d7970bba2131f544448db8f990ea75813c30775ca"
 dependencies = [
  "anyhow",
  "bytes 1.1.0",
