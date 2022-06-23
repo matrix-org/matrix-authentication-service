@@ -14,7 +14,7 @@ tracing = "0.1.35"
 
 # Error management
 thiserror = "1.0.31"
-anyhow = "1.0.57"
+anyhow = "1.0.58"
 
 # Web server
 hyper = { version = "0.14.19", features = ["full"] }
