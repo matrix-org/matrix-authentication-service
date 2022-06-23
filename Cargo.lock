@@ -1332,9 +1332,9 @@ checksum = "21e50f3adc76d6a43f5ed73b698a87d0760ca74617f60f7c3b879003536fdd28"
 
 [[package]]
 name = "ecdsa"
-version = "0.14.1"
+version = "0.14.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1e737f9eebb44576f3ee654141a789464071eb369d02c4397b32b6a79790112"
+checksum = "9810024e6cddd0606273183fbb07af8e7f4dbf3818b492ec3481e2041c73f444"
 dependencies = [
  "der",
  "elliptic-curve",
@@ -2202,7 +2202,7 @@ dependencies = [
  "once_cell",
  "quoted_printable",
  "rustls 0.20.6",
- "rustls-pemfile 1.0.0",
+ "rustls-pemfile",
  "serde",
  "socket2",
  "tokio",
@@ -3608,9 +3608,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.11.10"
+version = "0.11.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46a1f7aa4f35e5e8b4160449f51afc758f0ce6454315a9fa7d0d113e958c41eb"
+checksum = "b75aa69a3f06bbcc66ede33af2af253c6f7a86b1ca0033f60c580a27074fbf92"
 dependencies = [
  "base64",
  "bytes 1.1.0",
@@ -3631,12 +3631,13 @@ dependencies = [
  "pin-project-lite",
  "rustls 0.20.6",
  "rustls-native-certs 0.6.2",
- "rustls-pemfile 0.3.0",
+ "rustls-pemfile",
  "serde",
  "serde_json",
  "serde_urlencoded",
  "tokio",
  "tokio-rustls 0.23.4",
+ "tower-service",
  "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -3797,18 +3798,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0167bac7a9f490495f3c33013e7722b53cb087ecbe082fb0c6387c96f634ea50"
 dependencies = [
  "openssl-probe",
- "rustls-pemfile 1.0.0",
+ "rustls-pemfile",
  "schannel",
  "security-framework",
-]
-
-[[package]]
-name = "rustls-pemfile"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ee86d63972a7c661d1536fefe8c3c8407321c3df668891286de28abcd087360"
-dependencies = [
- "base64",
 ]
 
 [[package]]
