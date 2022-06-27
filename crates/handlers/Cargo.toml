@@ -18,9 +18,9 @@ anyhow = "1.0.58"
 
 # Web server
 hyper = { version = "0.14.19", features = ["full"] }
-tower = "0.4.12"
+tower = "0.4.13"
 tower-http = { version = "0.3.4", features = ["cors"] }
-axum = "0.5.7"
+axum = "0.5.9"
 axum-macros = "0.2.2"
 axum-extra = { version = "0.3.4", features = ["cookie-private"] }
 
@@ -42,7 +42,7 @@ argon2 = { version = "0.4.0", features = ["password-hash"] }
 # Crypto, hashing and signing stuff
 rsa = { git = "https://github.com/sandhose/RSA.git", branch = "bump-pkcs" }
 pkcs8 = { version = "0.9.0", features = ["pem"] }
-elliptic-curve = { version = "0.12.0", features = ["pem"] }
+elliptic-curve = { version = "0.12.1", features = ["pem"] }
 sha2 = "0.10.2"
 crc = "3.0.0"
 
