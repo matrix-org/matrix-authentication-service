@@ -209,7 +209,7 @@ impl DatabaseConfig {
         PgPoolOptions::new()
             .max_connections(self.max_connections.into())
             .min_connections(self.min_connections)
-            .connect_timeout(self.connect_timeout)
+            .acquire_timeout(self.connect_timeout)
             .idle_timeout(self.idle_timeout)
             .max_lifetime(self.max_lifetime)
             .connect_with(options)
