@@ -16,7 +16,7 @@ anyhow = "1.0.58"
 tracing = "0.1.35"
 
 # Password hashing
-argon2 = { version = "0.4.0", features = ["password-hash"] }
+argon2 = { version = "0.4.1", features = ["password-hash"] }
 password-hash = { version = "0.4.1", features = ["std"] }
 rand = "0.8.5"
 url = { version = "2.2.2", features = ["serde"] }
