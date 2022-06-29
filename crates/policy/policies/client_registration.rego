@@ -99,11 +99,14 @@ violation[{"msg": "invalid redirect_uri"}] {
 reverse_dns_match(host, reverse_dns) {
 	is_string(host)
 	is_string(reverse_dns)
+
 	# Reverse the host
 	host_parts := array.reverse(split(host, "."))
+
 	# Split the already reversed DNS
 	dns_parts := split(reverse_dns, ".")
-  # Check that the reverse_dns strictly is a subdomain of the host
+
+	# Check that the reverse_dns strictly is a subdomain of the host
 	array.slice(dns_parts, 0, count(host_parts)) == host_parts
 }
 
@@ -131,7 +134,8 @@ valid_native_redirector(x) {
 	url := parse_uri(x)
 	url.scheme != "http"
 	url.scheme != "https"
-  # They should have no host/port
+
+	# They should have no host/port
 	url.authority == ""
 	client_uri := parse_uri(input.client_metadata.client_uri)
 	reverse_dns_match(client_uri.host, url.scheme)

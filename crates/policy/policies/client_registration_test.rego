@@ -8,9 +8,7 @@ test_valid {
 }
 
 test_missing_client_uri {
-	not allow with input.client_metadata as {
-		"redirect_uris": ["https://example.com/callback"],
-	}
+	not allow with input.client_metadata as {"redirect_uris": ["https://example.com/callback"]}
 }
 
 test_insecure_client_uri {
@@ -64,7 +62,6 @@ test_logo_uri {
 	}
 }
 
-
 test_policy_uri {
 	allow with input.client_metadata as {
 		"client_uri": "https://example.com/",
@@ -87,12 +84,9 @@ test_policy_uri {
 	}
 }
 
-
 test_redirect_uris {
 	# Missing redirect_uris
-	not allow with input.client_metadata as {
-		"client_uri": "https://example.com/",
-	}
+	not allow with input.client_metadata as {"client_uri": "https://example.com/"}
 
 	# redirect_uris is not an array
 	not allow with input.client_metadata as {
