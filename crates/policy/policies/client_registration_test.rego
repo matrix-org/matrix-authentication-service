@@ -42,6 +42,29 @@ test_tos_uri {
 	}
 }
 
+test_logo_uri {
+	allow with input.client_metadata as {
+		"client_uri": "https://example.com/",
+		"logo_uri": "https://example.com/logo.png",
+		"redirect_uris": ["https://example.com/callback"],
+	}
+
+	# Insecure
+	not allow with input.client_metadata as {
+		"client_uri": "https://example.com/",
+		"logo_uri": "http://example.com/logo.png",
+		"redirect_uris": ["https://example.com/callback"],
+	}
+
+	# Host mistmatch
+	not allow with input.client_metadata as {
+		"client_uri": "https://example.com/",
+		"logo_uri": "https://example.org/logo.png",
+		"redirect_uris": ["https://example.com/callback"],
+	}
+}
+
+
 test_policy_uri {
 	allow with input.client_metadata as {
 		"client_uri": "https://example.com/",

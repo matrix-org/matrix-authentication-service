@@ -56,6 +56,16 @@ violation[{"msg": "policy_uri not on the same domain as the client_uri"}] {
 	not host_matches_client_uri(input.client_metadata.policy_uri)
 }
 
+violation[{"msg": "invalid logo_uri"}] {
+	input.client_metadata.logo_uri
+	not secure_url(input.client_metadata.logo_uri)
+}
+
+violation[{"msg": "logo_uri not on the same domain as the client_uri"}] {
+	input.client_metadata.logo_uri
+	not host_matches_client_uri(input.client_metadata.logo_uri)
+}
+
 violation[{"msg": "missing redirect_uris"}] {
 	not input.client_metadata.redirect_uris
 }
