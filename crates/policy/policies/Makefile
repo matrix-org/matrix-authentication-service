@@ -5,8 +5,8 @@ ifeq ($(DOCKER), 0)
 	OPA := opa
 	OPA_RW := opa
 else
-	OPA := docker run -v $(shell pwd):/policies:ro -w /policies --rm docker.io/openpolicyagent/opa:0.40.0
-	OPA_RW := docker run -v $(shell pwd):/policies -w /policies --rm docker.io/openpolicyagent/opa:0.40.0
+	OPA := docker run -i -v $(shell pwd):/policies:ro -w /policies --rm docker.io/openpolicyagent/opa:0.41.0
+	OPA_RW := docker run -i -v $(shell pwd):/policies -w /policies --rm docker.io/openpolicyagent/opa:0.41.0
 endif
 
 policy.wasm: client_registration.rego register.rego
@@ -21,7 +21,14 @@ fmt:
 
 .PHONY: test
 test:
-	$(OPA) test -v .
+	$(OPA) test -v ./*.rego
+
+.PHONY: coverage
+coverage:
+	$(OPA) test --coverage ./*.rego | $(OPA) eval --format pretty \
+		--stdin-input \
+		--data util/coveralls.rego \
+		data.coveralls.from_opa > coverage.json
 
 .PHONY: lint
 lint:

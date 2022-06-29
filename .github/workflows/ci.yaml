@@ -75,7 +75,7 @@ jobs:
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v1
         with:
-          version: 0.40.0
+          version: 0.41.0
 
       - name: Lint policies
         run: |
@@ -86,6 +86,16 @@ jobs:
         run: |
           cd crates/policy/policies
           make test
+
+      - name: Run OPA tests with coverage
+        run: |
+          cd crates/policy/policies
+          make coverage
+
+      - name: Upload to codecov.io
+        uses: codecov/codecov-action@v3
+        with:
+          files: crates/policy/policies/coverage.json
 
   rustfmt:
     name: Check style
