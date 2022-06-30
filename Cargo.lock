@@ -2870,7 +2870,7 @@ checksum = "7709cef83f0c1f58f666e746a08b21e0085f7440fa6a29cc194d68aac97a4225"
 [[package]]
 name = "opa-wasm"
 version = "0.1.0"
-source = "git+https://github.com/matrix-org/rust-opa-wasm.git#611d7788f33f78943a9d2182fc2cd2e12660994b"
+source = "git+https://github.com/matrix-org/rust-opa-wasm.git#7506b3bde3fb974cf0825bbcb19f946ab91579b4"
 dependencies = [
  "anyhow",
  "base64",
@@ -3926,9 +3926,9 @@ dependencies = [
 
 [[package]]
 name = "semver"
-version = "1.0.10"
+version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a41d061efea015927ac527063765e73601444cdc344ba855bc7bd44578b25e1c"
+checksum = "3d92beeab217753479be2f74e54187a6aed4c125ff0703a866c3147a02f0c6dd"
 
 [[package]]
 name = "serde"
