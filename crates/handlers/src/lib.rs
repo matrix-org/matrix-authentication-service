@@ -50,7 +50,8 @@ mod views;
 #[allow(
     clippy::too_many_lines,
     clippy::missing_panics_doc,
-    clippy::too_many_arguments
+    clippy::too_many_arguments,
+    clippy::trait_duplication_in_bounds
 )]
 pub fn router<B>(
     pool: &PgPool,
