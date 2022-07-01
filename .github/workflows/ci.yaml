@@ -96,6 +96,7 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           files: crates/policy/policies/coverage.json
+          flags: policies
 
   rustfmt:
     name: Check style
@@ -315,7 +316,6 @@ jobs:
           curl -sL https://github.com/mozilla/grcov/releases/download/v0.8.7/grcov-x86_64-unknown-linux-gnu.tar.bz2 | tar jxf - -C "${HOME}/.local/bin"
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-
       - name: Run test suite with profiling enabled
         uses: actions-rs/cargo@v1
         with:
@@ -335,6 +335,7 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           files: target/coverage/*.lcov
+          flags: unit
 
 
   build-image:
