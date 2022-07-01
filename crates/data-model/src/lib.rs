@@ -19,7 +19,8 @@
     clippy::module_name_repetitions,
     clippy::missing_panics_doc,
     clippy::missing_errors_doc,
-    clippy::trait_duplication_in_bounds
+    clippy::trait_duplication_in_bounds,
+    clippy::type_repetition_in_bounds
 )]
 
 pub(crate) mod compat;

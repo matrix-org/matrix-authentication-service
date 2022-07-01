@@ -121,12 +121,12 @@ where
 }
 
 #[must_use]
-pub fn client<B, E: 'static>(
+pub fn client<B, E>(
     operation: &'static str,
 ) -> BoxCloneService<Request<B>, Response<BoxBody<bytes::Bytes, ClientError>>, ClientError>
 where
     B: http_body::Body<Data = Bytes, Error = E> + Default + Send + 'static,
-    E: Into<BoxError>,
+    E: Into<BoxError> + 'static,
 {
     let fut = make_base_client()
         // Map the error to a ClientError
