@@ -21,7 +21,7 @@ use axum_extra::extract::PrivateCookieJar;
 use hyper::StatusCode;
 use mas_axum_utils::SessionInfoExt;
 use mas_config::Encrypter;
-use mas_data_model::{AuthorizationCode, Device, Pkce};
+use mas_data_model::{AuthorizationCode, Pkce};
 use mas_iana::oauth::OAuthAuthorizationEndpointResponseType;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::oauth2::{
@@ -250,23 +250,13 @@ pub(crate) async fn get(
                 None
             };
 
-            // Generate the device ID
-            let device = Device::generate(&mut thread_rng());
-            let device_scope = device.to_scope_token();
-
-            let scope = {
-                let mut s = params.auth.scope.clone();
-                s.insert(device_scope);
-                s
-            };
-
             let requires_consent = params.auth.prompt == Some(Prompt::Consent);
 
             let grant = new_authorization_grant(
                 &mut txn,
                 client,
                 redirect_uri.clone(),
-                scope,
+                params.auth.scope,
                 code,
                 params.auth.state.clone(),
                 params.auth.nonce,
