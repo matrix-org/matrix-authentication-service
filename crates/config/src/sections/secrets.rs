@@ -17,8 +17,8 @@ use std::{path::PathBuf, sync::Arc};
 use anyhow::Context;
 use async_trait::async_trait;
 use chacha20poly1305::{
-    aead::{generic_array::GenericArray, Aead, NewAead},
-    ChaCha20Poly1305,
+    aead::{generic_array::GenericArray, Aead},
+    ChaCha20Poly1305, KeyInit,
 };
 use cookie::Key;
 use data_encoding::BASE64;
