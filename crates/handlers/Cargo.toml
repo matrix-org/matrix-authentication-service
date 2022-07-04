@@ -20,9 +20,9 @@ anyhow = "1.0.58"
 hyper = { version = "0.14.19", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.3.4", features = ["cors"] }
-axum = "0.5.10"
+axum = "0.5.11"
 axum-macros = "0.2.3"
-axum-extra = { version = "0.3.5", features = ["cookie-private"] }
+axum-extra = { version = "0.3.6", features = ["cookie-private"] }
 
 # Emails
 lettre = { version = "0.10.0", default-features = false, features = ["builder"] }
@@ -31,7 +31,7 @@ lettre = { version = "0.10.0", default-features = false, features = ["builder"] 
 sqlx = { version = "0.6.0", features = ["runtime-tokio-rustls", "postgres"] }
 
 # Various structure (de)serialization
-serde = { version = "1.0.137", features = ["derive"] }
+serde = { version = "1.0.138", features = ["derive"] }
 serde_with = { version = "1.14.0", features = ["hex", "chrono"] }
 serde_json = "1.0.82"
 serde_urlencoded = "0.7.1"
@@ -42,7 +42,7 @@ argon2 = { version = "0.4.1", features = ["password-hash"] }
 # Crypto, hashing and signing stuff
 rsa = { git = "https://github.com/sandhose/RSA.git", branch = "bump-pkcs" }
 pkcs8 = { version = "0.9.0", features = ["pem"] }
-elliptic-curve = { version = "0.12.1", features = ["pem"] }
+elliptic-curve = { version = "0.12.2", features = ["pem"] }
 sha2 = "0.10.2"
 crc = "3.0.0"
 

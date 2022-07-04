@@ -18,7 +18,7 @@ figment = { version = "0.10.6", features = ["env", "yaml", "test"] }
 chrono = { version = "0.4.19", features = ["serde"] }
 url = { version = "2.2.2", features = ["serde"] }
 
-serde = { version = "1.0.137", features = ["derive"] }
+serde = { version = "1.0.138", features = ["derive"] }
 serde_with = { version = "1.14.0", features = ["hex", "chrono"] }
 serde_json = "1.0.82"
 sqlx = { version = "0.6.0", features = ["runtime-tokio-rustls", "postgres"] }
@@ -28,7 +28,7 @@ rand = "0.8.5"
 rsa = { git = "https://github.com/sandhose/RSA.git", branch = "bump-pkcs" }
 p256 = { version = "0.11.1", features = ["ecdsa", "pem", "pkcs8"] }
 pkcs8 = { version = "0.9.0", features = ["pem"] }
-chacha20poly1305 = { version = "0.10.0-pre", features = ["std"] }
+chacha20poly1305 = { version = "0.10.0-pre.1", features = ["std"] }
 cookie = { version = "0.16.0", features = ["private", "key-expansion"] }
 data-encoding = "2.3.2"
 
