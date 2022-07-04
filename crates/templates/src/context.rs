@@ -414,6 +414,37 @@ impl ConsentContext {
     }
 }
 
+/// Context used by the `policy_violation.html` template
+#[derive(Serialize)]
+pub struct PolicyViolationContext {
+    grant: AuthorizationGrant<()>,
+    action: PostAuthAction,
+}
+
+impl TemplateContext for PolicyViolationContext {
+    fn sample() -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        // TODO
+        vec![]
+    }
+}
+
+impl PolicyViolationContext {
+    /// Constructs a context for the policy violation page
+    #[must_use]
+    pub fn new<T>(grant: T, action: PostAuthAction) -> Self
+    where
+        T: Into<AuthorizationGrant<()>>,
+    {
+        Self {
+            grant: grant.into(),
+            action,
+        }
+    }
+}
+
 /// Fields of the reauthentication form
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]

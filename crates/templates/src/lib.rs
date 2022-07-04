@@ -47,9 +47,9 @@ pub use self::{
     context::{
         AccountContext, AccountEmailsContext, CompatSsoContext, ConsentContext, EmailAddContext,
         EmailVerificationContext, EmailVerificationPageContext, EmptyContext, ErrorContext,
-        FormPostContext, IndexContext, LoginContext, LoginFormField, PostAuthContext,
-        ReauthContext, ReauthFormField, RegisterContext, RegisterFormField, TemplateContext,
-        WithCsrf, WithOptionalSession, WithSession,
+        FormPostContext, IndexContext, LoginContext, LoginFormField, PolicyViolationContext,
+        PostAuthContext, ReauthContext, ReauthFormField, RegisterContext, RegisterFormField,
+        TemplateContext, WithCsrf, WithOptionalSession, WithSession,
     },
     forms::{FieldError, FormError, FormField, FormState, ToFormState},
 };
@@ -299,7 +299,10 @@ register_templates! {
     /// Render the client consent page
     pub fn render_consent(WithCsrf<WithSession<ConsentContext>>) { "pages/consent.html" }
 
-    /// Render the client consent page
+    /// Render the policy violation page
+    pub fn render_policy_violation(WithCsrf<WithSession<PolicyViolationContext>>) { "pages/policy_violation.html" }
+
+    /// Render the legacy SSO login consent page
     pub fn render_sso_login(WithCsrf<WithSession<CompatSsoContext>>) { "pages/sso.html" }
 
     /// Render the home page
@@ -346,6 +349,7 @@ impl Templates {
         check::render_login(self).await?;
         check::render_register(self).await?;
         check::render_consent(self).await?;
+        check::render_policy_violation(self).await?;
         check::render_sso_login(self).await?;
         check::render_index(self).await?;
         check::render_account_index(self).await?;

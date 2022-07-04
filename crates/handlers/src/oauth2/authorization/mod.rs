@@ -352,16 +352,20 @@ pub(crate) async fn get(
                     match self::complete::complete(grant, user_session, &policy_factory, txn).await
                     {
                         Ok(params) => callback_destination.go(&templates, params).await?,
-                        Err(GrantCompletionError::RequiresConsent) => {
+                        Err(
+                            GrantCompletionError::RequiresConsent
+                            | GrantCompletionError::PolicyViolation,
+                        ) => {
+                            // We're redirecting to the consent URI in both 'consent required' and
+                            // 'policy violation' cases, because we reevaluate the policy on this
+                            // page, and show the error accordingly
+                            // XXX: is this the right approach?
                             mas_router::Consent(grant_id).go().into_response()
                         }
                         Err(GrantCompletionError::RequiresReauth) => {
                             mas_router::Reauth::and_then(continue_grant)
                                 .go()
                                 .into_response()
-                        }
-                        Err(GrantCompletionError::PolicyViolation) => {
-                            callback_destination.go(&templates, ACCESS_DENIED).await?
                         }
                         Err(GrantCompletionError::Anyhow(a)) => return Err(RouteError::Anyhow(a)),
                         Err(GrantCompletionError::Internal(e)) => {

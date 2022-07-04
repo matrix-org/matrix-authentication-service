@@ -31,3 +31,8 @@ violation[{"msg": msg}] {
 	not allowed_scope(scope)
 	msg := sprintf("scope '%s' not allowed", [scope])
 }
+
+violation[{"msg": "only one device scope is allowed at a time"}] {
+	scope_list := split(input.authorization_grant.scope, " ")
+	count({key | scope_list[key]; startswith(scope_list[key], "urn:matrix:device:")}) > 1
+}

@@ -37,6 +37,10 @@ test_device_scopes {
 	# Too short
 	not allow with input.user as user
 		with input.authorization_grant as {"scope": "urn:matrix:device:abcd"}
+
+	# Multiple device scope
+	not allow with input.user as user
+		with input.authorization_grant as {"scope": "urn:matrix:device:AAbbCCdd01 urn:matrix:device:AAbbCCdd02"}
 }
 
 test_synapse_admin_scopes {

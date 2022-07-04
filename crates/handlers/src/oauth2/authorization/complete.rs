@@ -143,7 +143,7 @@ pub(crate) async fn get(
             mas_router::Reauth::and_then(continue_grant).go(),
         )
             .into_response()),
-        Err(GrantCompletionError::RequiresConsent) => {
+        Err(GrantCompletionError::RequiresConsent | GrantCompletionError::PolicyViolation) => {
             let next = mas_router::Consent(grant_id);
             Ok((cookie_jar, next.go()).into_response())
         }
