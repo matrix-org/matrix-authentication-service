@@ -32,12 +32,28 @@ test_tos_uri {
 		"redirect_uris": ["https://example.com/callback"],
 	}
 
+	# Insecure, but allowed by the config
+	allow with input.client_metadata as {
+		"client_uri": "https://example.com/",
+		"tos_uri": "http://example.com/tos",
+		"redirect_uris": ["https://example.com/callback"],
+	}
+		with data.client_registration.allow_insecure_uris as true
+
 	# Host mistmatch
 	not allow with input.client_metadata as {
 		"client_uri": "https://example.com/",
 		"tos_uri": "https://example.org/tos",
 		"redirect_uris": ["https://example.com/callback"],
 	}
+
+	# Host mistmatch, but allowed by the config
+	allow with input.client_metadata as {
+		"client_uri": "https://example.com/",
+		"tos_uri": "https://example.org/tos",
+		"redirect_uris": ["https://example.com/callback"],
+	}
+		with data.client_registration.allow_host_mismatch as true
 }
 
 test_logo_uri {
@@ -54,12 +70,28 @@ test_logo_uri {
 		"redirect_uris": ["https://example.com/callback"],
 	}
 
+	# Insecure, but allowed by the config
+	allow with input.client_metadata as {
+		"client_uri": "https://example.com/",
+		"logo_uri": "http://example.com/logo.png",
+		"redirect_uris": ["https://example.com/callback"],
+	}
+		with data.client_registration.allow_insecure_uris as true
+
 	# Host mistmatch
 	not allow with input.client_metadata as {
 		"client_uri": "https://example.com/",
 		"logo_uri": "https://example.org/logo.png",
 		"redirect_uris": ["https://example.com/callback"],
 	}
+
+	# Host mistmatch, but allowed by the config
+	allow with input.client_metadata as {
+		"client_uri": "https://example.com/",
+		"logo_uri": "https://example.org/logo.png",
+		"redirect_uris": ["https://example.com/callback"],
+	}
+		with data.client_registration.allow_host_mismatch as true
 }
 
 test_policy_uri {
@@ -76,12 +108,28 @@ test_policy_uri {
 		"redirect_uris": ["https://example.com/callback"],
 	}
 
+	# Insecure, but allowed by the config
+	allow with input.client_metadata as {
+		"client_uri": "https://example.com/",
+		"policy_uri": "http://example.com/policy",
+		"redirect_uris": ["https://example.com/callback"],
+	}
+		with data.client_registration.allow_insecure_uris as true
+
 	# Host mistmatch
 	not allow with input.client_metadata as {
 		"client_uri": "https://example.com/",
 		"policy_uri": "https://example.org/policy",
 		"redirect_uris": ["https://example.com/callback"],
 	}
+
+	# Host mistmatch, but allowed by the config
+	allow with input.client_metadata as {
+		"client_uri": "https://example.com/",
+		"policy_uri": "https://example.org/policy",
+		"redirect_uris": ["https://example.com/callback"],
+	}
+		with data.client_registration.allow_host_mismatch as true
 }
 
 test_redirect_uris {
@@ -115,12 +163,28 @@ test_web_redirect_uri {
 		"redirect_uris": ["http://example.com/callback", "https://example.com/callback"],
 	}
 
+	# Insecure URL, but allowed by the config
+	allow with input.client_metadata as {
+		"application_type": "web",
+		"client_uri": "https://example.com/",
+		"redirect_uris": ["http://example.com/callback", "https://example.com/callback"],
+	}
+		with data.client_registration.allow_insecure_uris as true
+
 	# Host mismatch
 	not allow with input.client_metadata as {
 		"application_type": "web",
 		"client_uri": "https://example.com/",
 		"redirect_uris": ["https://example.com/second/callback", "https://example.org/callback"],
 	}
+
+	# Host mismatch, but allowed by the config
+	allow with input.client_metadata as {
+		"application_type": "web",
+		"client_uri": "https://example.com/",
+		"redirect_uris": ["https://example.com/second/callback", "https://example.org/callback"],
+	}
+		with data.client_registration.allow_host_mismatch as true
 
 	# No custom scheme allowed
 	not allow with input.client_metadata as {

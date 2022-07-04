@@ -33,36 +33,43 @@ violation[{"msg": "missing client_uri"}] {
 }
 
 violation[{"msg": "invalid client_uri"}] {
+	not data.client_registration.allow_insecure_uris
 	not secure_url(input.client_metadata.client_uri)
 }
 
 violation[{"msg": "invalid tos_uri"}] {
 	input.client_metadata.tos_uri
+	not data.client_registration.allow_insecure_uris
 	not secure_url(input.client_metadata.tos_uri)
 }
 
 violation[{"msg": "tos_uri not on the same domain as the client_uri"}] {
 	input.client_metadata.tos_uri
+	not data.client_registration.allow_host_mismatch
 	not host_matches_client_uri(input.client_metadata.tos_uri)
 }
 
 violation[{"msg": "invalid policy_uri"}] {
 	input.client_metadata.policy_uri
+	not data.client_registration.allow_insecure_uris
 	not secure_url(input.client_metadata.policy_uri)
 }
 
 violation[{"msg": "policy_uri not on the same domain as the client_uri"}] {
 	input.client_metadata.policy_uri
+	not data.client_registration.allow_host_mismatch
 	not host_matches_client_uri(input.client_metadata.policy_uri)
 }
 
 violation[{"msg": "invalid logo_uri"}] {
 	input.client_metadata.logo_uri
+	not data.client_registration.allow_insecure_uris
 	not secure_url(input.client_metadata.logo_uri)
 }
 
 violation[{"msg": "logo_uri not on the same domain as the client_uri"}] {
 	input.client_metadata.logo_uri
+	not data.client_registration.allow_host_mismatch
 	not host_matches_client_uri(input.client_metadata.logo_uri)
 }
 
@@ -82,6 +89,7 @@ violation[{"msg": "invalid redirect_uri", "redirect_uri": redirect_uri}] {
 	# For 'web' apps, we should verify that redirect_uris are secure
 	input.client_metadata.application_type != "native"
 	some redirect_uri in input.client_metadata.redirect_uris
+	not data.client_registration.allow_host_mismatch
 	not host_matches_client_uri(redirect_uri)
 }
 
@@ -89,6 +97,7 @@ violation[{"msg": "invalid redirect_uri"}] {
 	# For 'web' apps, we should verify that redirect_uris are secure
 	input.client_metadata.application_type != "native"
 	some redirect_uri in input.client_metadata.redirect_uris
+	not data.client_registration.allow_insecure_uris
 	not secure_url(redirect_uri)
 }
 
