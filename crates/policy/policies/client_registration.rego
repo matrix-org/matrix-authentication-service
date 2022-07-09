@@ -10,15 +10,21 @@ allow {
 
 parse_uri(url) = obj {
 	is_string(url)
-	[matches] := regex.find_all_string_submatch_n("^(?P<scheme>[a-z][a-z0-9+.-]*):(?://(?P<host>((?:(?:[a-z0-9]|[a-z0-9][a-z0-9-]*[a-z0-9])\\.)*(?:[a-z0-9]|[a-z0-9][a-z0-9-]*[a-z0-9])|127.0.0.1|\\[::1\\])(?::(?P<port>[0-9]+))?))?(?P<path>/[A-Za-z0-9/.-]*)$", url, 1)
+	[matches] := regex.find_all_string_submatch_n("^(?P<scheme>[a-z][a-z0-9+.-]*):(?://(?P<host>((?:(?:[a-z0-9]|[a-z0-9][a-z0-9-]*[a-z0-9])\\.)*(?:[a-z0-9]|[a-z0-9][a-z0-9-]*[a-z0-9])|127.0.0.1|0.0.0.0|\\[::1\\])(?::(?P<port>[0-9]+))?))?(?P<path>/[A-Za-z0-9/.-]*)$", url, 1)
 	obj := {"scheme": matches[1], "authority": matches[2], "host": matches[3], "port": matches[4], "path": matches[5]}
 }
 
 secure_url(x) {
 	url := parse_uri(x)
 	url.scheme == "https"
+
+	# Disallow localhost variants
+	url.host != "localhost"
 	url.host != "127.0.0.1"
+	url.host != "0.0.0.0"
 	url.host != "[::1]"
+
+	# Must be standard port for HTTPS
 	url.port == ""
 }
 
@@ -43,7 +49,7 @@ violation[{"msg": "invalid tos_uri"}] {
 	not secure_url(input.client_metadata.tos_uri)
 }
 
-violation[{"msg": "tos_uri not on the same domain as the client_uri"}] {
+violation[{"msg": "tos_uri not on the same host as the client_uri"}] {
 	input.client_metadata.tos_uri
 	not data.client_registration.allow_host_mismatch
 	not host_matches_client_uri(input.client_metadata.tos_uri)
@@ -55,7 +61,7 @@ violation[{"msg": "invalid policy_uri"}] {
 	not secure_url(input.client_metadata.policy_uri)
 }
 
-violation[{"msg": "policy_uri not on the same domain as the client_uri"}] {
+violation[{"msg": "policy_uri not on the same host as the client_uri"}] {
 	input.client_metadata.policy_uri
 	not data.client_registration.allow_host_mismatch
 	not host_matches_client_uri(input.client_metadata.policy_uri)
@@ -67,7 +73,7 @@ violation[{"msg": "invalid logo_uri"}] {
 	not secure_url(input.client_metadata.logo_uri)
 }
 
-violation[{"msg": "logo_uri not on the same domain as the client_uri"}] {
+violation[{"msg": "logo_uri not on the same host as the client_uri"}] {
 	input.client_metadata.logo_uri
 	not data.client_registration.allow_host_mismatch
 	not host_matches_client_uri(input.client_metadata.logo_uri)

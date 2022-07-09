@@ -216,3 +216,33 @@ secrets:
         V4CiFiDQsDX+3znAGxqhTuoOkVn/G5lwgE1cgTX57r9cyYkso9UY
         -----END PRIVATE KEY-----
 ```
+
+### `policy`
+
+Policy settings
+
+```yaml
+policy:
+  data:
+    admin_users:
+      - person1
+      - person2
+
+    # Dynamic Client Registration
+    client_registration:
+      # don't require URIs to be on the same host. default: false
+      allow_host_mismatch: true
+      # allow non-SSL and localhost URIs. default: false
+      allow_insecure_uris: true
+
+    # Registration using passwords
+    passwords: 
+      # minimum length of a password. default: ?
+      min_length: 8
+      # require at least one lowercase character in a password. default: false
+      require_lowercase: true
+      # require at least one uppercase character in a password. default: false
+      require_uppercase: true
+      # require at least one number in a password. default: false
+      require_number: true
+```
