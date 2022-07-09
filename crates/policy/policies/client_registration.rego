@@ -10,7 +10,7 @@ allow {
 
 parse_uri(url) = obj {
 	is_string(url)
-	[matches] := regex.find_all_string_submatch_n("^(?P<scheme>[a-z][a-z0-9+.-]*):(?://(?P<host>((?:(?:[a-z0-9]|[a-z0-9][a-z0-9-]*[a-z0-9])\\.)*(?:[a-z0-9]|[a-z0-9][a-z0-9-]*[a-z0-9])|127.0.0.1|\\[::1\\])(?::(?P<port>[0-9]+))?))?(?P<path>/[A-Za-z0-9/.-]*)$", url, 1)
+	[matches] := regex.find_all_string_submatch_n("^(?P<scheme>[a-z][a-z0-9+.-]*):(?://(?P<host>((?:(?:[a-z0-9]|[a-z0-9][a-z0-9-]*[a-z0-9])\\.)*(?:[a-z0-9]|[a-z0-9][a-z0-9-]*[a-z0-9])|127.0.0.1|0.0.0.0|\\[::1\\])(?::(?P<port>[0-9]+))?))?(?P<path>/[A-Za-z0-9/.-]*)$", url, 1)
 	obj := {"scheme": matches[1], "authority": matches[2], "host": matches[3], "port": matches[4], "path": matches[5]}
 }
 
@@ -22,7 +22,6 @@ secure_url(x) {
 	url.host != "127.0.0.1"
 	url.host != "0.0.0.0"
 	url.host != "[::1]"
-	url.host != "[::]"
 	# Must be standard port for HTTPS
 	url.port == ""
 }
