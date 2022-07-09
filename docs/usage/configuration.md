@@ -230,9 +230,9 @@ policy:
 
     # Dynamic Client Registration
     client_registration:
-      # don't require URIs to be on the same domain. default: false
+      # don't require URIs to be on the same host. default: false
       allow_host_mismatch: true
-      # allow non-SSL and localhost URIs length of a password. default: false
+      # allow non-SSL and localhost URIs. default: false
       allow_insecure_uris: true
 
     # Registration using passwords
