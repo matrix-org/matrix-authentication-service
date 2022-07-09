@@ -47,7 +47,7 @@ violation[{"msg": "invalid tos_uri"}] {
 	not secure_url(input.client_metadata.tos_uri)
 }
 
-violation[{"msg": "tos_uri not on the same domain as the client_uri"}] {
+violation[{"msg": "tos_uri not on the same host as the client_uri"}] {
 	input.client_metadata.tos_uri
 	not data.client_registration.allow_host_mismatch
 	not host_matches_client_uri(input.client_metadata.tos_uri)
@@ -59,7 +59,7 @@ violation[{"msg": "invalid policy_uri"}] {
 	not secure_url(input.client_metadata.policy_uri)
 }
 
-violation[{"msg": "policy_uri not on the same domain as the client_uri"}] {
+violation[{"msg": "policy_uri not on the same host as the client_uri"}] {
 	input.client_metadata.policy_uri
 	not data.client_registration.allow_host_mismatch
 	not host_matches_client_uri(input.client_metadata.policy_uri)
@@ -71,7 +71,7 @@ violation[{"msg": "invalid logo_uri"}] {
 	not secure_url(input.client_metadata.logo_uri)
 }
 
-violation[{"msg": "logo_uri not on the same domain as the client_uri"}] {
+violation[{"msg": "logo_uri not on the same host as the client_uri"}] {
 	input.client_metadata.logo_uri
 	not data.client_registration.allow_host_mismatch
 	not host_matches_client_uri(input.client_metadata.logo_uri)
