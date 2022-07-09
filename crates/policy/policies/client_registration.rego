@@ -17,8 +17,13 @@ parse_uri(url) = obj {
 secure_url(x) {
 	url := parse_uri(x)
 	url.scheme == "https"
+	# Disallow localhost variants
+	url.host != "localhost"
 	url.host != "127.0.0.1"
+	url.host != "0.0.0.0"
 	url.host != "[::1]"
+	url.host != "[::]"
+	# Must be standard port for HTTPS
 	url.port == ""
 }
 
