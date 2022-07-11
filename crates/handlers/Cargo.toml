@@ -20,7 +20,7 @@ anyhow = "1.0.58"
 hyper = { version = "0.14.19", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.3.4", features = ["cors"] }
-axum = "0.5.11"
+axum = "0.5.12"
 axum-macros = "0.2.3"
 axum-extra = { version = "0.3.6", features = ["cookie-private"] }
 
