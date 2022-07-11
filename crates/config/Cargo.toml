@@ -18,7 +18,7 @@ figment = { version = "0.10.6", features = ["env", "yaml", "test"] }
 chrono = { version = "0.4.19", features = ["serde"] }
 url = { version = "2.2.2", features = ["serde"] }
 
-serde = { version = "1.0.138", features = ["derive"] }
+serde = { version = "1.0.139", features = ["derive"] }
 serde_with = { version = "1.14.0", features = ["hex", "chrono"] }
 serde_json = "1.0.82"
 sqlx = { version = "0.6.0", features = ["runtime-tokio-rustls", "postgres"] }
