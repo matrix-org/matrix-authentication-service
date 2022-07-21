@@ -29,14 +29,17 @@ test_matrix_scopes {
 test_device_scopes {
 	allow with input.user as user
 		with input.authorization_grant as {"scope": "urn:matrix:device:AAbbCCdd01"}
+
 	allow with input.user as user
 		with input.authorization_grant as {"scope": "urn:matrix:device:AAbbCCdd01-asdasdsa1-2313"}
 
 	# Invalid characters
 	not allow with input.user as user
 		with input.authorization_grant as {"scope": "urn:matrix:device:AABB:CCDDEE"}
+
 	not allow with input.user as user
 		with input.authorization_grant as {"scope": "urn:matrix:device:AABB*CCDDEE"}
+
 	not allow with input.user as user
 		with input.authorization_grant as {"scope": "urn:matrix:device:AABB!CCDDEE"}
 
