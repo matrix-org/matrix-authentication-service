@@ -21,7 +21,7 @@ allowed_scope("urn:synapse:admin:*") {
 }
 
 allowed_scope(scope) {
-	regex.match("urn:matrix:device:[A-Za-z0-9]{10,}", scope)
+	regex.match("urn:matrix:device:[A-Za-z0-9-]{10,}", scope)
 }
 
 allowed_scope("urn:matrix:api:*") = true
