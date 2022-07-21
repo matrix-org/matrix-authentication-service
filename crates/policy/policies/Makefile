@@ -9,8 +9,12 @@ else
 	OPA_RW := docker run -i -v $(shell pwd):/policies -w /policies --rm docker.io/openpolicyagent/opa:0.41.0
 endif
 
-policy.wasm: client_registration.rego register.rego
-	$(OPA_RW) build -t wasm -e "client_registration/violation" -e "register/violation" $^
+policy.wasm: client_registration.rego register.rego authorization_grant.rego
+	$(OPA_RW) build -t wasm \
+		-e "client_registration/violation" \
+		-e "register/violation" \
+		-e "authorization_grant/violation" \
+		$^
 	tar xzf bundle.tar.gz /policy.wasm
 	$(RM) bundle.tar.gz
 	touch $@

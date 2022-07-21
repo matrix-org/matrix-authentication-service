@@ -196,6 +196,7 @@ impl Options {
             config.policy.data.clone().unwrap_or_default(),
             config.policy.register_entrypoint.clone(),
             config.policy.client_registration_entrypoint.clone(),
+            config.policy.authorization_grant_entrypoint.clone(),
         )
         .await
         .context("failed to load the policy")?;

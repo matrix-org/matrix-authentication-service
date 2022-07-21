@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::sync::Arc;
+
 use anyhow::Context;
 use axum::{
     extract::{Extension, Form, Path},
@@ -25,12 +27,13 @@ use mas_axum_utils::{
 };
 use mas_config::Encrypter;
 use mas_data_model::AuthorizationGrantStage;
+use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::oauth2::{
     authorization_grant::{get_grant_by_id, give_consent_to_grant},
     consent::insert_client_consent,
 };
-use mas_templates::{ConsentContext, TemplateContext, Templates};
+use mas_templates::{ConsentContext, PolicyViolationContext, TemplateContext, Templates};
 use sqlx::PgPool;
 use thiserror::Error;
 
@@ -47,6 +50,7 @@ impl IntoResponse for RouteError {
 }
 
 pub(crate) async fn get(
+    Extension(policy_factory): Extension<Arc<PolicyFactory>>,
     Extension(templates): Extension<Templates>,
     Extension(pool): Extension<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
@@ -73,16 +77,34 @@ pub(crate) async fn get(
     if let Some(session) = maybe_session {
         let (csrf_token, cookie_jar) = cookie_jar.csrf_token();
 
-        let ctx = ConsentContext::new(grant, PostAuthAction::continue_grant(grant_id))
-            .with_session(session)
-            .with_csrf(csrf_token.form_value());
+        let mut policy = policy_factory.instantiate().await?;
+        let res = policy
+            .evaluate_authorization_grant(&grant, &session.user)
+            .await?;
 
-        let content = templates
-            .render_consent(&ctx)
-            .await
-            .context("failed to render template")?;
+        if res.valid() {
+            let ctx = ConsentContext::new(grant, PostAuthAction::continue_grant(grant_id))
+                .with_session(session)
+                .with_csrf(csrf_token.form_value());
 
-        Ok((cookie_jar, Html(content)).into_response())
+            let content = templates
+                .render_consent(&ctx)
+                .await
+                .context("failed to render template")?;
+
+            Ok((cookie_jar, Html(content)).into_response())
+        } else {
+            let ctx = PolicyViolationContext::new(grant, PostAuthAction::continue_grant(grant_id))
+                .with_session(session)
+                .with_csrf(csrf_token.form_value());
+
+            let content = templates
+                .render_policy_violation(&ctx)
+                .await
+                .context("failed to render template")?;
+
+            Ok((cookie_jar, Html(content)).into_response())
+        }
     } else {
         let login = mas_router::Login::and_continue_grant(grant_id);
         Ok((cookie_jar, login.go()).into_response())
@@ -90,6 +112,7 @@ pub(crate) async fn get(
 }
 
 pub(crate) async fn post(
+    Extension(policy_factory): Extension<Arc<PolicyFactory>>,
     Extension(pool): Extension<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(grant_id): Path<i64>,
@@ -120,6 +143,15 @@ pub(crate) async fn post(
         let login = mas_router::Login::and_then(next);
         return Ok((cookie_jar, login.go()).into_response());
     };
+
+    let mut policy = policy_factory.instantiate().await?;
+    let res = policy
+        .evaluate_authorization_grant(&grant, &session.user)
+        .await?;
+
+    if !res.valid() {
+        return Err(anyhow::anyhow!("policy violation").into());
+    }
 
     // Do not consent for the "urn:matrix:device:*" scope
     let scope_without_device = grant

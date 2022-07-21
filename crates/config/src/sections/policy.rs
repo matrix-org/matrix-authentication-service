@@ -29,6 +29,10 @@ fn default_register_endpoint() -> String {
     "register/violation".to_string()
 }
 
+fn default_authorization_grant_endpoint() -> String {
+    "authorization_grant/violation".to_string()
+}
+
 /// Application secrets
 #[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -45,6 +49,10 @@ pub struct PolicyConfig {
     #[serde(default = "default_register_endpoint")]
     pub register_entrypoint: String,
 
+    /// Entrypoint to use when evaluating authorization grants
+    #[serde(default = "default_authorization_grant_endpoint")]
+    pub authorization_grant_entrypoint: String,
+
     /// Arbitrary data to pass to the policy
     #[serde(default)]
     pub data: Option<serde_json::Value>,
@@ -56,6 +64,7 @@ impl Default for PolicyConfig {
             wasm_module: None,
             client_registration_entrypoint: default_client_registration_endpoint(),
             register_entrypoint: default_register_endpoint(),
+            authorization_grant_entrypoint: default_authorization_grant_endpoint(),
             data: None,
         }
     }

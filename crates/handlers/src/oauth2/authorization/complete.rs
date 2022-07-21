@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::sync::Arc;
+
 use anyhow::anyhow;
 use axum::{
     extract::Path,
@@ -24,6 +26,7 @@ use hyper::StatusCode;
 use mas_axum_utils::SessionInfoExt;
 use mas_config::Encrypter;
 use mas_data_model::{AuthorizationGrant, BrowserSession, TokenType};
+use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{
     oauth2::{
@@ -105,6 +108,7 @@ impl From<CallbackDestinationError> for RouteError {
 }
 
 pub(crate) async fn get(
+    Extension(policy_factory): Extension<Arc<PolicyFactory>>,
     Extension(templates): Extension<Templates>,
     Extension(pool): Extension<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
@@ -129,7 +133,7 @@ pub(crate) async fn get(
         return Ok((cookie_jar, mas_router::Login::and_then(continue_grant).go()).into_response());
     };
 
-    match complete(grant, session, txn).await {
+    match complete(grant, session, &policy_factory, txn).await {
         Ok(params) => {
             let res = callback_destination.go(&templates, params).await?;
             Ok((cookie_jar, res).into_response())
@@ -139,7 +143,7 @@ pub(crate) async fn get(
             mas_router::Reauth::and_then(continue_grant).go(),
         )
             .into_response()),
-        Err(GrantCompletionError::RequiresConsent) => {
+        Err(GrantCompletionError::RequiresConsent | GrantCompletionError::PolicyViolation) => {
             let next = mas_router::Consent(grant_id);
             Ok((cookie_jar, next.go()).into_response())
         }
@@ -165,6 +169,9 @@ pub enum GrantCompletionError {
 
     #[error("client lacks consent")]
     RequiresConsent,
+
+    #[error("denied by the policy")]
+    PolicyViolation,
 }
 
 impl From<sqlx::Error> for GrantCompletionError {
@@ -182,6 +189,7 @@ impl From<InvalidRedirectUriError> for GrantCompletionError {
 pub(crate) async fn complete(
     grant: AuthorizationGrant<PostgresqlBackend>,
     browser_session: BrowserSession<PostgresqlBackend>,
+    policy_factory: &PolicyFactory,
     mut txn: Transaction<'_, Postgres>,
 ) -> Result<AuthorizationResponse<Option<AccessTokenResponse>>, GrantCompletionError> {
     // Verify that the grant is in a pending stage
@@ -193,6 +201,16 @@ pub(crate) async fn complete(
     if !browser_session.was_authenticated_after(grant.max_auth_time()) {
         txn.commit().await?;
         return Err(GrantCompletionError::RequiresReauth);
+    }
+
+    // Run through the policy
+    let mut policy = policy_factory.instantiate().await?;
+    let res = policy
+        .evaluate_authorization_grant(&grant, &browser_session.user)
+        .await?;
+
+    if !res.valid() {
+        return Err(GrantCompletionError::PolicyViolation);
     }
 
     let current_consent =

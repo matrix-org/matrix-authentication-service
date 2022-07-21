@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::sync::Arc;
+
 use anyhow::{anyhow, Context};
 use axum::{
     extract::{Extension, Form},
@@ -23,6 +25,7 @@ use mas_axum_utils::SessionInfoExt;
 use mas_config::Encrypter;
 use mas_data_model::{AuthorizationCode, Pkce};
 use mas_iana::oauth::OAuthAuthorizationEndpointResponseType;
+use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::oauth2::{
     authorization_grant::new_authorization_grant,
@@ -31,7 +34,7 @@ use mas_storage::oauth2::{
 use mas_templates::Templates;
 use oauth2_types::{
     errors::{
-        CONSENT_REQUIRED, INTERACTION_REQUIRED, INVALID_REQUEST, LOGIN_REQUIRED,
+        ACCESS_DENIED, CONSENT_REQUIRED, INTERACTION_REQUIRED, INVALID_REQUEST, LOGIN_REQUIRED,
         REGISTRATION_NOT_SUPPORTED, REQUEST_NOT_SUPPORTED, REQUEST_URI_NOT_SUPPORTED, SERVER_ERROR,
         UNAUTHORIZED_CLIENT,
     },
@@ -157,6 +160,7 @@ fn resolve_response_mode(
 
 #[allow(clippy::too_many_lines)]
 pub(crate) async fn get(
+    Extension(policy_factory): Extension<Arc<PolicyFactory>>,
     Extension(templates): Extension<Templates>,
     Extension(pool): Extension<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
@@ -306,7 +310,8 @@ pub(crate) async fn get(
                 // Else, we immediately try to complete the authorization grant
                 (Some(user_session), Some(Prompt::None)) => {
                     // With prompt=none, we should get back to the client immediately
-                    match self::complete::complete(grant, user_session, txn).await {
+                    match self::complete::complete(grant, user_session, &policy_factory, txn).await
+                    {
                         Ok(params) => callback_destination.go(&templates, params).await?,
                         Err(GrantCompletionError::RequiresConsent) => {
                             callback_destination
@@ -317,6 +322,9 @@ pub(crate) async fn get(
                             callback_destination
                                 .go(&templates, INTERACTION_REQUIRED)
                                 .await?
+                        }
+                        Err(GrantCompletionError::PolicyViolation) => {
+                            callback_destination.go(&templates, ACCESS_DENIED).await?
                         }
                         Err(GrantCompletionError::Anyhow(a)) => return Err(RouteError::Anyhow(a)),
                         Err(GrantCompletionError::Internal(e)) => {
@@ -331,9 +339,17 @@ pub(crate) async fn get(
                 (Some(user_session), _) => {
                     let grant_id = grant.data;
                     // Else, we show the relevant reauth/consent page if necessary
-                    match self::complete::complete(grant, user_session, txn).await {
+                    match self::complete::complete(grant, user_session, &policy_factory, txn).await
+                    {
                         Ok(params) => callback_destination.go(&templates, params).await?,
-                        Err(GrantCompletionError::RequiresConsent) => {
+                        Err(
+                            GrantCompletionError::RequiresConsent
+                            | GrantCompletionError::PolicyViolation,
+                        ) => {
+                            // We're redirecting to the consent URI in both 'consent required' and
+                            // 'policy violation' cases, because we reevaluate the policy on this
+                            // page, and show the error accordingly
+                            // XXX: is this the right approach?
                             mas_router::Consent(grant_id).go().into_response()
                         }
                         Err(GrantCompletionError::RequiresReauth) => {

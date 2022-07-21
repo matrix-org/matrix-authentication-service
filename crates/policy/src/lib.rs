@@ -15,6 +15,7 @@
 use std::io::Cursor;
 
 use anyhow::bail;
+use mas_data_model::{AuthorizationGrant, StorageBackend, User};
 use oauth2_types::registration::ClientMetadata;
 use opa_wasm::Runtime;
 use serde::Deserialize;
@@ -52,6 +53,7 @@ pub struct PolicyFactory {
     data: serde_json::Value,
     register_entrypoint: String,
     client_registration_entrypoint: String,
+    authorization_grant_endpoint: String,
 }
 
 impl PolicyFactory {
@@ -60,6 +62,7 @@ impl PolicyFactory {
         data: serde_json::Value,
         register_entrypoint: String,
         client_registration_entrypoint: String,
+        authorization_grant_endpoint: String,
     ) -> Result<Self, LoadError> {
         let mut config = Config::default();
         config.async_support(true);
@@ -84,6 +87,7 @@ impl PolicyFactory {
             data,
             register_entrypoint,
             client_registration_entrypoint,
+            authorization_grant_endpoint,
         };
 
         // Try to instanciate
@@ -105,6 +109,7 @@ impl PolicyFactory {
         for e in [
             self.register_entrypoint.as_str(),
             self.client_registration_entrypoint.as_str(),
+            self.authorization_grant_endpoint.as_str(),
         ] {
             if !entrypoints.contains(e) {
                 bail!("missing entrypoint {e}")
@@ -118,6 +123,7 @@ impl PolicyFactory {
             instance,
             register_entrypoint: self.register_entrypoint.clone(),
             client_registration_entrypoint: self.client_registration_entrypoint.clone(),
+            authorization_grant_endpoint: self.authorization_grant_endpoint.clone(),
         })
     }
 }
@@ -146,6 +152,7 @@ pub struct Policy {
     instance: opa_wasm::Policy,
     register_entrypoint: String,
     client_registration_entrypoint: String,
+    authorization_grant_endpoint: String,
 }
 
 impl Policy {
@@ -193,6 +200,27 @@ impl Policy {
 
         Ok(res)
     }
+
+    #[tracing::instrument]
+    pub async fn evaluate_authorization_grant<T: StorageBackend + std::fmt::Debug>(
+        &mut self,
+        authorization_grant: &AuthorizationGrant<T>,
+        user: &User<T>,
+    ) -> Result<EvaluationResult, anyhow::Error> {
+        let authorization_grant = serde_json::to_value(authorization_grant)?;
+        let user = serde_json::to_value(user)?;
+        let input = serde_json::json!({
+            "authorization_grant": authorization_grant,
+            "user": user,
+        });
+
+        let [res]: [EvaluationResult; 1] = self
+            .instance
+            .evaluate(&mut self.store, &self.authorization_grant_endpoint, &input)
+            .await?;
+
+        Ok(res)
+    }
 }
 
 #[cfg(test)]
@@ -209,6 +237,7 @@ mod tests {
             }),
             "register/violation".to_string(),
             "client_registration/violation".to_string(),
+            "authorization_grant/violation".to_string(),
         )
         .await
         .unwrap();
