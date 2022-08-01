@@ -7,31 +7,31 @@ license = "Apache-2.0"
 
 [dependencies]
 # Async runtime
-tokio = { version = "1.19.2", features = ["macros"] }
+tokio = { version = "1.20.1", features = ["macros"] }
 
 # Logging and tracing
-tracing = "0.1.35"
+tracing = "0.1.36"
 
 # Error management
 thiserror = "1.0.31"
-anyhow = "1.0.58"
+anyhow = "1.0.59"
 
 # Web server
-hyper = { version = "0.14.19", features = ["full"] }
+hyper = { version = "0.14.20", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.3.4", features = ["cors"] }
-axum = "0.5.11"
+axum = "0.5.13"
 axum-macros = "0.2.3"
 axum-extra = { version = "0.3.6", features = ["cookie-private"] }
 
 # Emails
-lettre = { version = "0.10.0", default-features = false, features = ["builder"] }
+lettre = { version = "0.10.1", default-features = false, features = ["builder"] }
 
 # Database access
 sqlx = { version = "0.6.0", features = ["runtime-tokio-rustls", "postgres"] }
 
 # Various structure (de)serialization
-serde = { version = "1.0.138", features = ["derive"] }
+serde = { version = "1.0.140", features = ["derive"] }
 serde_with = { version = "1.14.0", features = ["hex", "chrono"] }
 serde_json = "1.0.82"
 serde_urlencoded = "0.7.1"

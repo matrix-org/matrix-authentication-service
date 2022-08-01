@@ -6,29 +6,29 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-tokio = { version = "1.19.2", features = [] }
-tracing = { version = "0.1.35", features = ["log"] }
-async-trait = "0.1.56"
+tokio = { version = "1.20.1", features = [] }
+tracing = { version = "0.1.36", features = ["log"] }
+async-trait = "0.1.57"
 
 thiserror = "1.0.31"
-anyhow = "1.0.58"
+anyhow = "1.0.59"
 
 schemars = { version = "0.8.10", features = ["url", "chrono"] }
 figment = { version = "0.10.6", features = ["env", "yaml", "test"] }
 chrono = { version = "0.4.19", features = ["serde"] }
 url = { version = "2.2.2", features = ["serde"] }
 
-serde = { version = "1.0.138", features = ["derive"] }
+serde = { version = "1.0.140", features = ["derive"] }
 serde_with = { version = "1.14.0", features = ["hex", "chrono"] }
 serde_json = "1.0.82"
 sqlx = { version = "0.6.0", features = ["runtime-tokio-rustls", "postgres"] }
-lettre = { version = "0.10.0", default-features = false, features = ["serde", "builder"] }
+lettre = { version = "0.10.1", default-features = false, features = ["serde", "builder"] }
 
 rand = "0.8.5"
 rsa = { git = "https://github.com/sandhose/RSA.git", branch = "bump-pkcs" }
 p256 = { version = "0.11.1", features = ["ecdsa", "pem", "pkcs8"] }
 pkcs8 = { version = "0.9.0", features = ["pem"] }
-chacha20poly1305 = { version = "0.10.0-pre.1", features = ["std"] }
+chacha20poly1305 = { version = "0.10.0", features = ["std"] }
 cookie = { version = "0.16.0", features = ["private", "key-expansion"] }
 data-encoding = "2.3.2"
 
