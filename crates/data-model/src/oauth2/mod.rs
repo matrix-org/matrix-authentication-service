@@ -17,7 +17,9 @@ pub(self) mod client;
 pub(self) mod session;
 
 pub use self::{
-    authorization_grant::{AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, Pkce},
+    authorization_grant::{
+        AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, Pkce, PkceVerificationError,
+    },
     client::{Client, InvalidRedirectUriError, JwksOrJwksUri},
     session::Session,
 };

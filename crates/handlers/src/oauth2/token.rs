@@ -22,7 +22,7 @@ use headers::{CacheControl, HeaderMap, HeaderMapExt, Pragma};
 use hyper::StatusCode;
 use mas_axum_utils::client_authorization::{ClientAuthorization, CredentialsVerificationError};
 use mas_config::Encrypter;
-use mas_data_model::{AuthorizationGrantStage, Client, TokenType};
+use mas_data_model::{AuthorizationGrantStage, Client, PkceVerificationError, TokenType};
 use mas_iana::jose::JsonWebSignatureAlg;
 use mas_jose::{
     claims::{self, ClaimError},
@@ -86,6 +86,9 @@ pub(crate) enum RouteError {
     #[error("bad request")]
     BadRequest,
 
+    #[error("pkce verification failed")]
+    PkceVerification(#[from] PkceVerificationError),
+
     #[error("client not found")]
     ClientNotFound,
 
@@ -129,6 +132,10 @@ impl IntoResponse for RouteError {
                 (StatusCode::INTERNAL_SERVER_ERROR, Json(SERVER_ERROR))
             }
             Self::BadRequest => (StatusCode::BAD_REQUEST, Json(INVALID_REQUEST)),
+            Self::PkceVerification(err) => (
+                StatusCode::BAD_REQUEST,
+                Json(INVALID_GRANT.with_description(format!("PKCE verification failed: {err}"))),
+            ),
             Self::ClientNotFound | Self::ClientCredentialsVerification(_) => {
                 (StatusCode::UNAUTHORIZED, Json(INVALID_CLIENT))
             }
@@ -274,9 +281,7 @@ async fn authorization_code_grant(
         (Some(_), None) | (None, Some(_)) => return Err(RouteError::BadRequest),
         // If we have both, we need to check the code validity
         (Some(pkce), Some(verifier)) => {
-            if !pkce.verify(verifier) {
-                return Err(RouteError::BadRequest);
-            }
+            pkce.verify(verifier)?;
         }
     };
 

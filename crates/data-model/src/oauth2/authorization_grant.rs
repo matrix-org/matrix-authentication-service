@@ -24,6 +24,21 @@ use url::Url;
 use super::{client::Client, session::Session};
 use crate::{traits::StorageBackend, StorageBackendMarker};
 
+#[derive(Debug, Error)]
+pub enum PkceVerificationError {
+    #[error("code_verifier should be at least 43 characters long")]
+    TooShort,
+
+    #[error("code_verifier should be at most 128 characters long")]
+    TooLong,
+
+    #[error("code_verifier contains invalid characters")]
+    InvalidCharacters,
+
+    #[error("challenge verification failed")]
+    VerificationFailed,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Pkce {
     pub challenge_method: PkceCodeChallengeMethod,
@@ -39,9 +54,27 @@ impl Pkce {
         }
     }
 
-    #[must_use]
-    pub fn verify(&self, verifier: &str) -> bool {
-        self.challenge_method.verify(&self.challenge, verifier)
+    pub fn verify(&self, verifier: &str) -> Result<(), PkceVerificationError> {
+        if verifier.len() < 43 {
+            return Err(PkceVerificationError::TooShort);
+        }
+
+        if verifier.len() > 43 {
+            return Err(PkceVerificationError::TooLong);
+        }
+
+        if verifier
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '.' || c == '_' || c == '~')
+        {
+            return Err(PkceVerificationError::InvalidCharacters);
+        }
+
+        if !self.challenge_method.verify(&self.challenge, verifier) {
+            return Err(PkceVerificationError::VerificationFailed);
+        }
+
+        Ok(())
     }
 }
 

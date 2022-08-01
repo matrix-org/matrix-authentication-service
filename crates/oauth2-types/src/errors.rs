@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[derive(serde::Serialize)]
+use std::borrow::Cow;
+
+#[derive(serde::Serialize, Clone)]
 pub struct ClientError {
     pub error: &'static str,
-    pub error_description: &'static str,
+    pub error_description: Cow<'static, str>,
 }
 
 impl ClientError {
@@ -23,7 +25,15 @@ impl ClientError {
     pub const fn new(error: &'static str, error_description: &'static str) -> Self {
         Self {
             error,
-            error_description,
+            error_description: Cow::Borrowed(error_description),
+        }
+    }
+
+    #[must_use]
+    pub const fn with_description(&self, description: String) -> Self {
+        Self {
+            error: self.error,
+            error_description: Cow::Owned(description),
         }
     }
 }
