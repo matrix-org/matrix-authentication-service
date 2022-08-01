@@ -9,5 +9,5 @@ license = "Apache-2.0"
 axum = { version = "0.5.13", default-features = false }
 serde = { version = "1.0.140", features = ["derive"] }
 serde_urlencoded = "0.7.1"
-serde_with = "1.14.0"
+serde_with = "2.0.0"
 url = "2.2.2"
