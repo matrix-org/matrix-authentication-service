@@ -31,8 +31,8 @@ lettre = { version = "0.10.1", default-features = false, features = ["builder"] 
 sqlx = { version = "0.6.0", features = ["runtime-tokio-rustls", "postgres"] }
 
 # Various structure (de)serialization
-serde = { version = "1.0.140", features = ["derive"] }
-serde_with = { version = "1.14.0", features = ["hex", "chrono"] }
+serde = { version = "1.0.141", features = ["derive"] }
+serde_with = { version = "2.0.0", features = ["hex", "chrono"] }
 serde_json = "1.0.82"
 serde_urlencoded = "0.7.1"
 

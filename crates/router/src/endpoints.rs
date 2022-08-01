@@ -13,18 +13,20 @@
 // limitations under the License.
 
 use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, DisplayFromStr};
 
 pub use crate::traits::*;
 
+#[serde_as]
 #[derive(Deserialize, Serialize, Clone, Debug)]
 #[serde(rename_all = "snake_case", tag = "next")]
 pub enum PostAuthAction {
     ContinueAuthorizationGrant {
-        #[serde(deserialize_with = "serde_with::rust::display_fromstr::deserialize")]
+        #[serde_as(as = "DisplayFromStr")]
         data: i64,
     },
     ContinueCompatSsoLogin {
-        #[serde(deserialize_with = "serde_with::rust::display_fromstr::deserialize")]
+        #[serde_as(as = "DisplayFromStr")]
         data: i64,
     },
     ChangePassword,

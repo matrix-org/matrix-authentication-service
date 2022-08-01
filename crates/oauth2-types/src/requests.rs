@@ -22,8 +22,8 @@ use mas_iana::oauth::{
 use parse_display::{Display, FromStr};
 use serde::{Deserialize, Serialize};
 use serde_with::{
-    rust::StringWithSeparator, serde_as, skip_serializing_none, DisplayFromStr, DurationSeconds,
-    SpaceSeparator, TimestampSeconds,
+    formats::SpaceSeparator, serde_as, skip_serializing_none, DisplayFromStr, DurationSeconds,
+    StringWithSeparator, TimestampSeconds,
 };
 use url::Url;
 
