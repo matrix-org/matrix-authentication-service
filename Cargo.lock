@@ -2840,7 +2840,7 @@ checksum = "18a6dbe30758c9f83eb00cbea4ac95966305f5a7772f3f42ebfc7fc7eddbd8e1"
 [[package]]
 name = "opa-wasm"
 version = "0.1.0"
-source = "git+https://github.com/matrix-org/rust-opa-wasm.git#1930d78b36b33aa4714b7c3cb944035ea66fbb12"
+source = "git+https://github.com/matrix-org/rust-opa-wasm.git#be23e44ad795fc845c9b8debf687fb5161894ee8"
 dependencies = [
  "anyhow",
  "base64",
@@ -2849,6 +2849,7 @@ dependencies = [
  "hmac",
  "json-patch",
  "md-5",
+ "parse-size",
  "semver",
  "serde",
  "serde_json",
@@ -3073,6 +3074,12 @@ dependencies = [
  "structmeta",
  "syn",
 ]
+
+[[package]]
+name = "parse-size"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "944553dd59c802559559161f9816429058b869003836120e262e8caec061b7ae"
 
 [[package]]
 name = "parse-zoneinfo"
