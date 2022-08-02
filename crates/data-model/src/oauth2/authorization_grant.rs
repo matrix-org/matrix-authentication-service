@@ -59,7 +59,7 @@ impl Pkce {
             return Err(PkceVerificationError::TooShort);
         }
 
-        if verifier.len() > 43 {
+        if verifier.len() > 128 {
             return Err(PkceVerificationError::TooLong);
         }
 
