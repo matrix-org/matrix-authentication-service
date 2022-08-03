@@ -13,7 +13,7 @@ tokio = { version = "1.20.1", features = ["macros"] }
 tracing = "0.1.36"
 
 # Error management
-thiserror = "1.0.31"
+thiserror = "1.0.32"
 anyhow = "1.0.59"
 
 # Web server
