@@ -42,7 +42,7 @@ argon2 = { version = "0.4.1", features = ["password-hash"] }
 # Crypto, hashing and signing stuff
 rsa = "0.7.0-pre"
 pkcs8 = { version = "0.9.0", features = ["pem"] }
-elliptic-curve = { version = "0.12.2", features = ["pem"] }
+elliptic-curve = { version = "0.12.3", features = ["pem"] }
 sha2 = "0.10.2"
 crc = "3.0.0"
 
