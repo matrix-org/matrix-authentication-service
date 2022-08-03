@@ -68,4 +68,4 @@ mas-templates = { path = "../templates" }
 mas-router = { path = "../router" }
 
 [dev-dependencies]
-indoc = "1.0.6"
+indoc = "1.0.7"
