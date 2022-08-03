@@ -21,10 +21,10 @@ allowed_scope("urn:synapse:admin:*") {
 }
 
 allowed_scope(scope) {
-	regex.match("urn:matrix:device:[A-Za-z0-9-]{10,}", scope)
+	regex.match("urn:matrix:org.matrix.msc2967.client:device:[A-Za-z0-9-]{10,}", scope)
 }
 
-allowed_scope("urn:matrix:api:*") = true
+allowed_scope("urn:matrix:org.matrix.msc2967.client:api:*") = true
 
 violation[{"msg": msg}] {
 	some scope in split(input.authorization_grant.scope, " ")
@@ -34,5 +34,5 @@ violation[{"msg": msg}] {
 
 violation[{"msg": "only one device scope is allowed at a time"}] {
 	scope_list := split(input.authorization_grant.scope, " ")
-	count({key | scope_list[key]; startswith(scope_list[key], "urn:matrix:device:")}) > 1
+	count({key | scope_list[key]; startswith(scope_list[key], "urn:matrix:org.matrix.msc2967.client:device:")}) > 1
 }

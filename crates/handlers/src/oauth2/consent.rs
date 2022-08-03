@@ -153,11 +153,11 @@ pub(crate) async fn post(
         return Err(anyhow::anyhow!("policy violation").into());
     }
 
-    // Do not consent for the "urn:matrix:device:*" scope
+    // Do not consent for the "urn:matrix:org.matrix.msc2967.client:device:*" scope
     let scope_without_device = grant
         .scope
         .iter()
-        .filter(|s| !s.starts_with("urn:matrix:device:"))
+        .filter(|s| !s.starts_with("urn:matrix:org.matrix.msc2967.client:device:"))
         .cloned()
         .collect();
     insert_client_consent(

@@ -219,7 +219,7 @@ pub(crate) async fn complete(
     let lacks_consent = grant
         .scope
         .difference(&current_consent)
-        .any(|scope| !scope.starts_with("urn:matrix:device:"));
+        .any(|scope| !scope.starts_with("urn:matrix:org.matrix.msc2967.client:device:"));
 
     // Check if the client lacks consent *or* if consent was explicitely asked
     if lacks_consent || grant.requires_consent {

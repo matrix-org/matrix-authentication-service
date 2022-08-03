@@ -206,6 +206,6 @@ mod tests {
         );
 
         assert!(Scope::from_str("http://example.com").is_ok());
-        assert!(Scope::from_str("urn:matrix:*").is_ok());
+        assert!(Scope::from_str("urn:matrix:org.matrix.msc2967.client:*").is_ok());
     }
 }

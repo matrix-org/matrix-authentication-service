@@ -1,0 +1,48 @@
+---
+clients: []
+http:
+  address: "[::]:8090"
+  web_root: ~
+  public_base: "http://localhost:8090/"
+database:
+  uri: "postgresql://localhost:5432/element"
+  max_connections: 10
+  min_connections: 0
+  connect_timeout: 30
+  idle_timeout: 600
+  max_lifetime: 1800
+telemetry:
+  tracing:
+    exporter: none
+    propagators: []
+  metrics:
+    exporter: none
+templates:
+  path: ~
+  builtin: true
+csrf:
+  ttl: 3600
+email:
+  from: Authentication Service <root@localhost>
+  reply_to: Authentication Service <root@localhost>
+  transport: blackhole
+secrets:
+  encryption: 6ec7910abba6904a55178fb24da2fa4acd5a25d84bcf4bc0513dfad0b0cce40c
+  keys:
+    - type: rsa
+      key: "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAyPCoPNBVaHYdzO1EXmyx8AqVxrVWoICHPOIB1y89XEiv7oxJ\nmsMmLFEQ9MDIckhVNhbeljAXgSvffdwMX+vskInfxU6WOXDjLNuYHPTmYDNE2znx\n7R2+9JP7vOxBQn45iCccq2sokN2u0fgt6nKWUujZVttEmTJfw2Y8iWw24xT1sPkC\nhDndvM5R7tldOuvSyOEvX2V1JO7BVhMG1WF5v7Jp5gNO/H3cpE0olfNZvie4ApWe\n0kb+lSR6V99ju1bc/HPaDAq/DQ0TwWT1Uhu8haC4/bznAiyldMCPZOZkqLA9f89S\nxt0/sRRDAsSAVNho7y58x+F2DYBYI2Budr0IcwIDAQABAoIBAHq8vRbAbprrIxLM\njulaXWnxHUGN/Ib3WyPuLQ+ilEltQMFmQYNd1lBViBToOMfNtPbgC0ATyhelk9MN\n+SUSN6KmBOBBO3OEp877pzNwx9NVHacHAuZCOCSuy6K/cLFL5ppqwZFXWCT8s88f\nV/SP35BvGGp8bq9g3Ku/JBUQ24niauq5vVnkS0AYOzYN8L55LX630mfhWRlD9gtB\n07dTHQT91g4Y56wgyKWUH6nVAUWFeXIVkv+O9WdYpr+XztualeTmJVASb5Xk5RNv\n5XVmGDsQ2maERZYlQUXfgWIc/RD1BuKSSuYj2sA0ecgyiCo5q8Fr37y2jNuCvtyk\nJWVEcGkCgYEA8ni3sDZh6Pk5GdHth4BOP2ILY+KGjUSVhrbPgDmiSvpDQQpwmNLr\n6CEgUN77hrgWSZ1rWT+MopEyRM/b9PsNdScmiJeld65+zoS8RRTOmTdT1ddZfWib\nlgG/GGtdR4wBbmbfUbsjbQbZRbxocOoPzan3CQXGWVBUfuc2N/mskjcCgYEA1Ca8\nJOu6CGTwhpJqmUYi/uwX0QcdLKhT3I/6/k9SG0wyqYUgCYCcM5CyHSIZlugsQjby\nsSFrvS+n6S+KcsO7F+/UEryxdW/oqH+qmEZ8yi1W+ceXHaMJ6UUfaT2aITlyeQXP\nDcaLva0RgTnSxOQNy2yp4lMkxyW1C6NmaL6aDaUCgYB/kHEbXNEQD6Yx5lbv9dm0\n0PErIK8nPVDpad4rGKdAiP+/BS4NyNHh8yOcSGPOEaVwH0it0Jg9ouPufei7ryT6\nYJmOPTIJkB0Yq46dTYAP7aLGmyBysQlB1zNhNoMBtC/AlJCi4DCYGIVQgfn0hb/A\ntM3Jymb68B80EJJeypU26wKBgH3gIb/yUaYLZh8inrckwzzoDlWK2AeYNHHox+6+\nV6Q0uNaWU2Tv9z4tO1FH21ELnr8G5Uat4sQUk5crCwV/FvJj7TvU06IvbScU4L6L\nDB3VewanIwWFqCrNRY7m6x2NfVtLVAgDZwR6vKklCuahvYGWjtHnrSmwONSX9fpu\nJO+1AoGBAJ17cz/1oWR6FgdQ/OjHlg8EZYm64eSut29szJ61oKFXqUglJQOEo4uV\nfuV0ddfoRXZi93PUOoJ3AIceSFgwuL7ZKnjRPqRbaFydAw+T3E/JA4t5gHVX74FM\n1Apzwa48XrGcu074XDttEOLlQ5lYYLtyCtt64XOlPRrpyPO7qJ/x\n-----END RSA PRIVATE KEY-----\n"
+    - type: ecdsa
+      key: "-----BEGIN EC PRIVATE KEY-----\nMGsCAQEEIMnogjF1eUeRr4Up5x4T43ggL77hGebX3eai/1/HwUvMoUQDQgAEPuxs\nWnxSzi3cgdatPEyKmQgrEG7Rb8ZOZG2ZPkvIOeEUW+NYiTMBJBdTCfwE5JaK8GB2\nWpX5pDq/D5B/JdQSWg==\n-----END EC PRIVATE KEY-----\n"
+policy:
+  data:
+    admin_users:
+      - quentin
+      - hugh
+    client_registration:
+      allow_host_mismatch: true
+      allow_insecure_uris: true
+    passwords:
+      require_lowercase: false
+      require_uppercase: false
+      require_number: false
+      min_length: 6

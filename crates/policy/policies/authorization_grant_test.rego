@@ -23,33 +23,33 @@ test_standard_scopes {
 
 test_matrix_scopes {
 	allow with input.user as user
-		with input.authorization_grant as {"scope": "urn:matrix:api:*"}
+		with input.authorization_grant as {"scope": "urn:matrix:org.matrix.msc2967.client:api:*"}
 }
 
 test_device_scopes {
 	allow with input.user as user
-		with input.authorization_grant as {"scope": "urn:matrix:device:AAbbCCdd01"}
+		with input.authorization_grant as {"scope": "urn:matrix:org.matrix.msc2967.client:device:AAbbCCdd01"}
 
 	allow with input.user as user
-		with input.authorization_grant as {"scope": "urn:matrix:device:AAbbCCdd01-asdasdsa1-2313"}
+		with input.authorization_grant as {"scope": "urn:matrix:org.matrix.msc2967.client:device:AAbbCCdd01-asdasdsa1-2313"}
 
 	# Invalid characters
 	not allow with input.user as user
-		with input.authorization_grant as {"scope": "urn:matrix:device:AABB:CCDDEE"}
+		with input.authorization_grant as {"scope": "urn:matrix:org.matrix.msc2967.client:device:AABB:CCDDEE"}
 
 	not allow with input.user as user
-		with input.authorization_grant as {"scope": "urn:matrix:device:AABB*CCDDEE"}
+		with input.authorization_grant as {"scope": "urn:matrix:org.matrix.msc2967.client:device:AABB*CCDDEE"}
 
 	not allow with input.user as user
-		with input.authorization_grant as {"scope": "urn:matrix:device:AABB!CCDDEE"}
+		with input.authorization_grant as {"scope": "urn:matrix:org.matrix.msc2967.client:device:AABB!CCDDEE"}
 
 	# Too short
 	not allow with input.user as user
-		with input.authorization_grant as {"scope": "urn:matrix:device:abcd"}
+		with input.authorization_grant as {"scope": "urn:matrix:org.matrix.msc2967.client:device:abcd"}
 
 	# Multiple device scope
 	not allow with input.user as user
-		with input.authorization_grant as {"scope": "urn:matrix:device:AAbbCCdd01 urn:matrix:device:AAbbCCdd02"}
+		with input.authorization_grant as {"scope": "urn:matrix:org.matrix.msc2967.client:device:AAbbCCdd01 urn:matrix:org.matrix.msc2967.client:device:AAbbCCdd02"}
 }
 
 test_synapse_admin_scopes {
