@@ -211,8 +211,6 @@ jobs:
     permissions:
       contents: read
 
-    continue-on-error: "${{ matrix.toolchain == 'beta' || matrix.toolchain == 'nightly' }}"
-
     strategy:
       fail-fast: false # Continue other jobs if one fails to help filling the cache
       matrix:
@@ -262,10 +260,19 @@ jobs:
           key: ${{ runner.os }}-cargo-build-${{ steps.toolchain.outputs.rustc_hash }}-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Test
+        id: test
         uses: actions-rs/cargo@v1
         with:
           command: test
           args: --offline --workspace
+
+        # Ignore errors on the nightly toolchain
+        continue-on-error: "${{ matrix.toolchain == 'nightly' }}"
+
+      - name: Emit error annotation on failures
+        if: steps.test.outcome == 'failure'
+        run: |
+          echo "::error ::Test suite failed on ${{ matrix.toolchain }} toolchain"
 
 
   coverage:
