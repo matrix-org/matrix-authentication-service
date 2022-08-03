@@ -16,28 +16,16 @@ use std::num::NonZeroU32;
 
 use chrono::{DateTime, Duration, Utc};
 use mas_iana::oauth::PkceCodeChallengeMethod;
-use oauth2_types::{pkce::CodeChallengeMethodExt, requests::ResponseMode};
+use oauth2_types::{
+    pkce::{CodeChallengeError, CodeChallengeMethodExt},
+    requests::ResponseMode,
+};
 use serde::Serialize;
 use thiserror::Error;
 use url::Url;
 
 use super::{client::Client, session::Session};
 use crate::{traits::StorageBackend, StorageBackendMarker};
-
-#[derive(Debug, Error, PartialEq)]
-pub enum PkceVerificationError {
-    #[error("code_verifier should be at least 43 characters long")]
-    TooShort,
-
-    #[error("code_verifier should be at most 128 characters long")]
-    TooLong,
-
-    #[error("code_verifier contains invalid characters")]
-    InvalidCharacters,
-
-    #[error("challenge verification failed")]
-    VerificationFailed,
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Pkce {
@@ -54,27 +42,8 @@ impl Pkce {
         }
     }
 
-    pub fn verify(&self, verifier: &str) -> Result<(), PkceVerificationError> {
-        if verifier.len() < 43 {
-            return Err(PkceVerificationError::TooShort);
-        }
-
-        if verifier.len() > 128 {
-            return Err(PkceVerificationError::TooLong);
-        }
-
-        if !verifier
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '.' || c == '_' || c == '~')
-        {
-            return Err(PkceVerificationError::InvalidCharacters);
-        }
-
-        if !self.challenge_method.verify(&self.challenge, verifier) {
-            return Err(PkceVerificationError::VerificationFailed);
-        }
-
-        Ok(())
+    pub fn verify(&self, verifier: &str) -> Result<(), CodeChallengeError> {
+        self.challenge_method.verify(&self.challenge, verifier)
     }
 }
 
@@ -236,44 +205,5 @@ impl<T: StorageBackend> AuthorizationGrant<T> {
     pub fn max_auth_time(&self) -> DateTime<Utc> {
         let max_age: Option<i64> = self.max_age.map(|x| x.get().into());
         self.created_at - Duration::seconds(max_age.unwrap_or(3600 * 24 * 365))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_pkce_verification() {
-        // This challenge is taken from the RFC7636 appendices
-        let pkce = Pkce::new(
-            PkceCodeChallengeMethod::S256,
-            "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM".to_string(),
-        );
-
-        assert_eq!(
-            pkce.verify("dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"),
-            Ok(()),
-        );
-
-        assert_eq!(
-            pkce.verify("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"),
-            Err(PkceVerificationError::VerificationFailed),
-        );
-
-        assert_eq!(
-            pkce.verify("tooshort"),
-            Err(PkceVerificationError::TooShort),
-        );
-
-        assert_eq!(
-            pkce.verify("toolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolongtoolong"),
-            Err(PkceVerificationError::TooLong),
-        );
-
-        assert_eq!(
-            pkce.verify("this is long enough but has invalid characters in it"),
-            Err(PkceVerificationError::InvalidCharacters),
-        );
     }
 }

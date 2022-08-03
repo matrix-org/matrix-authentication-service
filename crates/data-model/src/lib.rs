@@ -36,7 +36,7 @@ pub use self::{
     },
     oauth2::{
         AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, Client,
-        InvalidRedirectUriError, JwksOrJwksUri, Pkce, PkceVerificationError, Session,
+        InvalidRedirectUriError, JwksOrJwksUri, Pkce, Session,
     },
     tokens::{AccessToken, RefreshToken, TokenFormatError, TokenType},
     traits::{StorageBackend, StorageBackendMarker},
