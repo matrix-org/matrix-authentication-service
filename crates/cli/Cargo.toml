@@ -44,7 +44,7 @@ mas-tasks = { path = "../tasks" }
 mas-templates = { path = "../templates" }
 
 [dev-dependencies]
-indoc = "1.0.6"
+indoc = "1.0.7"
 
 [features]
 default = ["otlp", "jaeger", "zipkin"]
