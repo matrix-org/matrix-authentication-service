@@ -22,7 +22,7 @@ use headers::{CacheControl, HeaderMap, HeaderMapExt, Pragma};
 use hyper::StatusCode;
 use mas_axum_utils::client_authorization::{ClientAuthorization, CredentialsVerificationError};
 use mas_config::Encrypter;
-use mas_data_model::{AuthorizationGrantStage, Client, PkceVerificationError, TokenType};
+use mas_data_model::{AuthorizationGrantStage, Client, TokenType};
 use mas_iana::jose::JsonWebSignatureAlg;
 use mas_jose::{
     claims::{self, ClaimError},
@@ -44,6 +44,7 @@ use mas_storage::{
 };
 use oauth2_types::{
     errors::{INVALID_CLIENT, INVALID_GRANT, INVALID_REQUEST, SERVER_ERROR, UNAUTHORIZED_CLIENT},
+    pkce::CodeChallengeError,
     requests::{
         AccessTokenRequest, AccessTokenResponse, AuthorizationCodeGrant, RefreshTokenGrant,
     },
@@ -87,7 +88,7 @@ pub(crate) enum RouteError {
     BadRequest,
 
     #[error("pkce verification failed")]
-    PkceVerification(#[from] PkceVerificationError),
+    PkceVerification(#[from] CodeChallengeError),
 
     #[error("client not found")]
     ClientNotFound,
