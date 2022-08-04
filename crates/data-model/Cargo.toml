@@ -6,7 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-chrono = "0.4.19"
+chrono = "0.4.20"
 thiserror = "1.0.32"
 serde = "1.0.142"
 url = { version = "2.2.2", features = ["serde"] }
