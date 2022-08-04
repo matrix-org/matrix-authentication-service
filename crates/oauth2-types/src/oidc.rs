@@ -224,7 +224,7 @@ pub struct Metadata {
     pub require_signed_request_object: Option<bool>,
 
     /// URL of the authorization server's pushed authorization request endpoint.
-    pub pushed_authorization_request_endpoint: Option<bool>,
+    pub pushed_authorization_request_endpoint: Option<Url>,
 
     /// Indicates whether the authorization server accepts authorization
     /// requests only via PAR.
