@@ -841,3 +841,33 @@ pub async fn add_user_email_verification_code(
 
     Ok(verification)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[sqlx::test(migrator = "crate::MIGRATOR")]
+    async fn test_user_registration_and_login(pool: sqlx::PgPool) -> anyhow::Result<()> {
+        let mut txn = pool.begin().await?;
+
+        let exists = username_exists(&mut txn, "john").await?;
+        assert!(!exists);
+
+        let hasher = Argon2::default();
+        let user = register_user(&mut txn, hasher, "john", "hunter2").await?;
+        assert_eq!(user.username, "john");
+
+        let exists = username_exists(&mut txn, "john").await?;
+        assert!(exists);
+
+        let session = login(&mut txn, "john", "hunter2").await?;
+        assert_eq!(session.user.data, user.data);
+
+        let user2 = lookup_user_by_username(&mut txn, "john").await?;
+        assert_eq!(user.data, user2.data);
+
+        txn.commit().await?;
+
+        Ok(())
+    }
+}

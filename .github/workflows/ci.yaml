@@ -259,12 +259,20 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-build-${{ steps.toolchain.outputs.rustc_hash }}-${{ hashFiles('**/Cargo.lock') }}
 
+      - name: Start PostgreSQL database
+        run: |
+          sudo systemctl start postgresql.service
+          pg_isready
+          sudo -u postgres psql --command="CREATE USER test PASSWORD 'test'" --command="\du"
+
       - name: Test
         id: test
         uses: actions-rs/cargo@v1
         with:
           command: test
           args: --offline --workspace
+        env:
+          DATABASE_URL: postgresql://test:test@localhost/postgres
 
         # Ignore errors on the nightly toolchain
         continue-on-error: "${{ matrix.toolchain == 'nightly' }}"
@@ -328,6 +336,12 @@ jobs:
           curl -sL https://github.com/mozilla/grcov/releases/download/v0.8.7/grcov-x86_64-unknown-linux-gnu.tar.bz2 | tar jxf - -C "${HOME}/.local/bin"
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
+      - name: Start PostgreSQL database
+        run: |
+          sudo systemctl start postgresql.service
+          pg_isready
+          sudo -u postgres psql --command="CREATE USER test PASSWORD 'test'" --command="\du"
+
       - name: Run test suite with profiling enabled
         uses: actions-rs/cargo@v1
         with:
@@ -337,6 +351,7 @@ jobs:
           CARGO_INCREMENTAL: '0'
           RUSTFLAGS: '-Cinstrument-coverage'
           LLVM_PROFILE_FILE: "cargo-test-%p-%m.profraw"
+          DATABASE_URL: postgresql://test:test@localhost/postgres
 
       - name: Build grcov report
         run: |
