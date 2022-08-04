@@ -273,6 +273,7 @@ jobs:
           args: --offline --workspace
         env:
           DATABASE_URL: postgresql://test:test@localhost/postgres
+          SQLX_OFFLINE: '1'
 
         # Ignore errors on the nightly toolchain
         continue-on-error: "${{ matrix.toolchain == 'nightly' }}"
@@ -352,6 +353,7 @@ jobs:
           RUSTFLAGS: '-Cinstrument-coverage'
           LLVM_PROFILE_FILE: "cargo-test-%p-%m.profraw"
           DATABASE_URL: postgresql://test:test@localhost/postgres
+          SQLX_OFFLINE: '1'
 
       - name: Build grcov report
         run: |
