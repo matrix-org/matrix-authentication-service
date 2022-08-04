@@ -11,6 +11,6 @@ async-trait = "0.1.57"
 tokio-stream = "0.1.9"
 futures-util = "0.3.21"
 tracing = "0.1.36"
-sqlx = { version = "0.6.0", features = ["runtime-tokio-rustls", "postgres"] }
+sqlx = { version = "0.6.1", features = ["runtime-tokio-rustls", "postgres"] }
 
 mas-storage = { path = "../storage" }

@@ -28,7 +28,7 @@ axum-extra = { version = "0.3.6", features = ["cookie-private"] }
 lettre = { version = "0.10.1", default-features = false, features = ["builder"] }
 
 # Database access
-sqlx = { version = "0.6.0", features = ["runtime-tokio-rustls", "postgres"] }
+sqlx = { version = "0.6.1", features = ["runtime-tokio-rustls", "postgres"] }
 
 # Various structure (de)serialization
 serde = { version = "1.0.141", features = ["derive"] }
