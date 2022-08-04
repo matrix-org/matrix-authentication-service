@@ -14,6 +14,7 @@
 
 use std::ops::Deref;
 
+use language_tags::LanguageTag;
 use mas_iana::{
     jose::{JsonWebEncryptionAlg, JsonWebEncryptionEnc, JsonWebSignatureAlg},
     oauth::{
@@ -114,11 +115,10 @@ pub struct ProviderMetadata {
     /// might want or need to know when using the authorization server.
     pub service_documentation: Option<Url>,
 
-    // TODO: type
     /// Languages and scripts supported for the user interface, represented as a
     /// JSON array of language tag values from BCP 47. If omitted, the set of
     /// supported languages and scripts is unspecified.
-    pub ui_locales_supported: Option<Vec<String>>,
+    pub ui_locales_supported: Option<Vec<LanguageTag>>,
 
     /// URL that the authorization server provides to the person registering the
     /// client to read about the authorization server's requirements on how the
@@ -215,10 +215,9 @@ pub struct ProviderMetadata {
     /// OpenID Provider MAY be able to supply values for.
     pub claims_supported: Option<Vec<String>>,
 
-    // TODO: type
     /// Languages and scripts supported for values in Claims being returned,
     /// represented as a JSON array of BCP 47 language tag values.
-    pub claims_locales_supported: Option<Vec<String>>,
+    pub claims_locales_supported: Option<Vec<LanguageTag>>,
 
     /// Boolean value specifying whether the OP supports use of the "claims"
     /// parameter.
