@@ -45,6 +45,9 @@ pub enum LoadError {
 
     #[error("failed to instantiate a test instance")]
     Instantiate(#[source] anyhow::Error),
+
+    #[error("could not load wasmtime cache configuration")]
+    CacheSetup(#[source] anyhow::Error),
 }
 
 pub struct PolicyFactory {
@@ -67,6 +70,9 @@ impl PolicyFactory {
         let mut config = Config::default();
         config.async_support(true);
         config.cranelift_opt_level(wasmtime::OptLevel::Speed);
+        config
+            .cache_config_load_default()
+            .map_err(LoadError::CacheSetup)?;
 
         let engine = Engine::new(&config).map_err(LoadError::Engine)?;
 
@@ -97,6 +103,17 @@ impl PolicyFactory {
             .map_err(LoadError::Instantiate)?;
 
         Ok(factory)
+    }
+
+    pub async fn load_default(data: serde_json::Value) -> Result<Self, LoadError> {
+        Self::load(
+            default_wasm_policy(),
+            data,
+            "register/violation".to_string(),
+            "client_registration/violation".to_string(),
+            "authorization_grant/violation".to_string(),
+        )
+        .await
     }
 
     pub async fn instantiate(&self) -> Result<Policy, anyhow::Error> {
@@ -229,16 +246,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_register() {
-        let factory = PolicyFactory::load(
-            default_wasm_policy(),
-            serde_json::json!({
-                "allowed_domains": ["element.io", "*.element.io"],
-                "banned_domains": ["staging.element.io"],
-            }),
-            "register/violation".to_string(),
-            "client_registration/violation".to_string(),
-            "authorization_grant/violation".to_string(),
-        )
+        let factory = PolicyFactory::load_default(serde_json::json!({
+            "allowed_domains": ["element.io", "*.element.io"],
+            "banned_domains": ["staging.element.io"],
+        }))
         .await
         .unwrap();
 
