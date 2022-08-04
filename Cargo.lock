@@ -2840,7 +2840,7 @@ checksum = "18a6dbe30758c9f83eb00cbea4ac95966305f5a7772f3f42ebfc7fc7eddbd8e1"
 [[package]]
 name = "opa-wasm"
 version = "0.1.0"
-source = "git+https://github.com/matrix-org/rust-opa-wasm.git#1930d78b36b33aa4714b7c3cb944035ea66fbb12"
+source = "git+https://github.com/matrix-org/rust-opa-wasm.git#b6e7c508a14266b459b6c8c23ed1453739098eb0"
 dependencies = [
  "anyhow",
  "base64",
@@ -2849,9 +2849,11 @@ dependencies = [
  "hmac",
  "json-patch",
  "md-5",
+ "parse-size",
  "semver",
  "serde",
  "serde_json",
+ "serde_yaml 0.8.26",
  "sha1",
  "sha2 0.10.2",
  "sprintf",
@@ -3073,6 +3075,12 @@ dependencies = [
  "structmeta",
  "syn",
 ]
+
+[[package]]
+name = "parse-size"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "944553dd59c802559559161f9816429058b869003836120e262e8caec061b7ae"
 
 [[package]]
 name = "parse-zoneinfo"
@@ -3892,15 +3900,15 @@ dependencies = [
 
 [[package]]
 name = "semver"
-version = "1.0.12"
+version = "1.0.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a2333e6df6d6598f2b1974829f853c2b4c5f4a6e503c10af918081aa6f8564e1"
+checksum = "93f6841e709003d68bb2deee8c343572bf446003ec20a583e76f7b15cebf3711"
 
 [[package]]
 name = "serde"
-version = "1.0.141"
+version = "1.0.142"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7af873f2c95b99fcb0bd0fe622a43e29514658873c8ceba88c4cb88833a22500"
+checksum = "e590c437916fb6b221e1d00df6e3294f3fccd70ca7e92541c475d6ed6ef5fee2"
 dependencies = [
  "serde_derive",
 ]
@@ -3920,9 +3928,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.141"
+version = "1.0.142"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75743a150d003dd863b51dc809bcad0d73f2102c53632f1e954e738192a3413f"
+checksum = "34b5b8d809babe02f538c2cfec6f2c1ed10804c0e5a6a041a049a4f5588ccc2e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3942,9 +3950,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.82"
+version = "1.0.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82c2c1fdcd807d1098552c5b9a36e425e42e9fbd7c6a37a8425f390f781f7fa7"
+checksum = "38dd04e3c8279e75b31ef29dbdceebfe5ad89f4d0937213c53f7d49d01b3d5a7"
 dependencies = [
  "itoa 1.0.2",
  "ryu",
