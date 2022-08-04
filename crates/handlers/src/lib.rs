@@ -242,3 +242,45 @@ where
         .layer(Extension(matrix_config.clone()))
         .layer(Extension(policy_factory.clone()))
 }
+
+#[cfg(test)]
+async fn test_router(pool: &PgPool) -> Result<Router, anyhow::Error> {
+    use mas_config::TemplatesConfig;
+    use mas_email::MailTransport;
+
+    let templates_config = TemplatesConfig::default();
+    let templates = Templates::load_from_config(&templates_config).await?;
+
+    let key_store = {
+        let mut k = StaticKeystore::new();
+        k.add_test_rsa_key()?;
+        k.add_test_ecdsa_key()?;
+        Arc::new(k)
+    };
+
+    let encrypter = Encrypter::new(&[0x42; 32]);
+
+    let transport = MailTransport::default();
+    let mailbox = "server@example.com".parse()?;
+    let mailer = Mailer::new(&templates, &transport, &mailbox, &mailbox);
+
+    let url_builder = UrlBuilder::new("https://example.com/".parse()?);
+
+    let matrix_config = MatrixConfig {
+        homeserver: "example.com".to_string(),
+    };
+
+    let policy_factory = PolicyFactory::load_default(serde_json::json!({})).await?;
+    let policy_factory = Arc::new(policy_factory);
+
+    Ok(router(
+        pool,
+        &templates,
+        &key_store,
+        &encrypter,
+        &mailer,
+        &url_builder,
+        &matrix_config,
+        &policy_factory,
+    ))
+}
