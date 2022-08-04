@@ -25,7 +25,7 @@ use mas_iana::{
 use mas_jose::{SigningKeystore, StaticKeystore};
 use mas_router::UrlBuilder;
 use oauth2_types::{
-    oidc::{ClaimType, Metadata, SubjectType},
+    oidc::{ClaimType, ProviderMetadata, SubjectType},
     requests::{Display, GrantType, Prompt, ResponseMode},
     scope,
 };
@@ -134,7 +134,7 @@ pub(crate) async fn get(
 
     let prompt_values_supported = Some(vec![Prompt::None, Prompt::Login, Prompt::Create]);
 
-    let metadata = Metadata {
+    let metadata = ProviderMetadata {
         issuer,
         authorization_endpoint,
         token_endpoint,
@@ -161,7 +161,7 @@ pub(crate) async fn get(
         request_parameter_supported,
         request_uri_parameter_supported,
         prompt_values_supported,
-        ..Metadata::default()
+        ..ProviderMetadata::default()
     };
 
     Json(metadata)
