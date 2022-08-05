@@ -34,8 +34,8 @@ where
     pub fn samples() -> Vec<Self> {
         vec![User {
             data: Default::default(),
-            username: "john".to_string(),
-            sub: "123-456".to_string(),
+            username: "john".to_owned(),
+            sub: "123-456".to_owned(),
             primary_email: None,
         }]
     }
@@ -147,13 +147,13 @@ where
         vec![
             Self {
                 data: T::UserEmailData::default(),
-                email: "alice@example.com".to_string(),
+                email: "alice@example.com".to_owned(),
                 created_at: Utc::now(),
                 confirmed_at: Some(Utc::now()),
             },
             Self {
                 data: T::UserEmailData::default(),
-                email: "bob@example.com".to_string(),
+                email: "bob@example.com".to_owned(),
                 created_at: Utc::now(),
                 confirmed_at: None,
             },
@@ -209,7 +209,7 @@ where
             .flat_map(|state| {
                 UserEmail::samples().into_iter().map(move |email| Self {
                     data: Default::default(),
-                    code: "123456".to_string(),
+                    code: "123456".to_owned(),
                     email,
                     created_at: Utc::now() - Duration::minutes(10),
                     state: state.clone(),

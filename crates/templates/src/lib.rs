@@ -13,7 +13,12 @@
 // limitations under the License.
 
 #![forbid(unsafe_code)]
-#![deny(clippy::all, missing_docs, rustdoc::broken_intra_doc_links)]
+#![deny(
+    clippy::all,
+    clippy::str_to_string,
+    missing_docs,
+    rustdoc::broken_intra_doc_links
+)]
 #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions, clippy::missing_errors_doc)]
 

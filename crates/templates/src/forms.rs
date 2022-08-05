@@ -203,8 +203,8 @@ mod tests {
     #[test]
     fn form_state_serialization() {
         let form = TestForm {
-            foo: "john".to_string(),
-            bar: "hunter2".to_string(),
+            foo: "john".to_owned(),
+            bar: "hunter2".to_owned(),
         };
 
         let state = form.to_form_state();
@@ -227,8 +227,8 @@ mod tests {
         );
 
         let form = TestForm {
-            foo: "".to_string(),
-            bar: "".to_string(),
+            foo: "".to_owned(),
+            bar: "".to_owned(),
         };
         let state = form
             .to_form_state()

@@ -153,7 +153,7 @@ impl TokenType {
 
         let token_type =
             TokenType::match_prefix(prefix).ok_or_else(|| TokenFormatError::UnknownPrefix {
-                prefix: prefix.to_string(),
+                prefix: prefix.to_owned(),
             })?;
 
         let base = format!("{}_{}", token_type.prefix(), random_part);
@@ -162,7 +162,7 @@ impl TokenType {
         if crc != expected_crc {
             return Err(TokenFormatError::InvalidCrc {
                 expected: expected_crc,
-                got: crc.to_string(),
+                got: crc.to_owned(),
             });
         }
 

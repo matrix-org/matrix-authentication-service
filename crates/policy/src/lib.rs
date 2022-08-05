@@ -12,6 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![forbid(unsafe_code)]
+#![deny(clippy::all, clippy::str_to_string, rustdoc::broken_intra_doc_links)]
+#![warn(clippy::pedantic)]
+#![allow(clippy::missing_errors_doc)]
+
 use std::io::Cursor;
 
 use anyhow::bail;
@@ -25,6 +30,7 @@ use wasmtime::{Config, Engine, Module, Store};
 
 const DEFAULT_POLICY: &[u8] = include_bytes!("../policies/policy.wasm");
 
+#[must_use]
 pub fn default_wasm_policy() -> impl AsyncRead + std::marker::Unpin {
     Cursor::new(DEFAULT_POLICY)
 }
@@ -109,9 +115,9 @@ impl PolicyFactory {
         Self::load(
             default_wasm_policy(),
             data,
-            "register/violation".to_string(),
-            "client_registration/violation".to_string(),
-            "authorization_grant/violation".to_string(),
+            "register/violation".to_owned(),
+            "client_registration/violation".to_owned(),
+            "authorization_grant/violation".to_owned(),
         )
         .await
     }
@@ -158,6 +164,7 @@ pub struct EvaluationResult {
 }
 
 impl EvaluationResult {
+    #[must_use]
     pub fn valid(&self) -> bool {
         self.violations.is_empty()
     }

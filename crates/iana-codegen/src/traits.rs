@@ -89,8 +89,8 @@ pub trait EnumEntry: DeserializeOwned + Send + Sync {
                         (
                             key,
                             EnumMember {
-                                value: item.name().to_string(),
-                                description: item.description().map(ToString::to_string),
+                                value: item.name().to_owned(),
+                                description: item.description().map(ToOwned::to_owned),
                                 enum_name: item.enum_name(),
                             },
                         )

@@ -29,7 +29,7 @@ use super::ConfigurationSection;
 use crate::schema;
 
 fn default_connection_string() -> String {
-    "postgresql://".to_string()
+    "postgresql://".to_owned()
 }
 
 fn default_max_connections() -> NonZeroU32 {

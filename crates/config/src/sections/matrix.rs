@@ -20,7 +20,7 @@ use serde_with::serde_as;
 use super::ConfigurationSection;
 
 fn default_homeserver() -> String {
-    "localhost:8008".to_string()
+    "localhost:8008".to_owned()
 }
 
 /// Configuration related to the Matrix homeserver
@@ -74,7 +74,7 @@ mod tests {
 
             let config = MatrixConfig::load_from_file("config.yaml")?;
 
-            assert_eq!(config.homeserver, "matrix.org".to_string());
+            assert_eq!(config.homeserver, "matrix.org".to_owned());
 
             Ok(())
         });

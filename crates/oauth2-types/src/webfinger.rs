@@ -64,7 +64,7 @@ mod tests {
 
     #[test]
     fn serialize_webfinger_response_test() {
-        let res = WebFingerResponse::new("acct:john@example.com".to_string())
+        let res = WebFingerResponse::new("acct:john@example.com".to_owned())
             .with_issuer(Url::parse("https://account.example.com/").unwrap());
 
         let res = serde_json::to_value(&res).unwrap();

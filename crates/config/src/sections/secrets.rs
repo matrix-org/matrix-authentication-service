@@ -293,7 +293,7 @@ impl ConfigurationSection<'_> for SecretsConfig {
                   Gh7BNzCeN+D6
                   -----END PRIVATE KEY-----
                 "#}
-                .to_string(),
+                .to_owned(),
             ),
         };
         let ecdsa_key = KeyConfig {
@@ -306,7 +306,7 @@ impl ConfigurationSection<'_> for SecretsConfig {
                   OhBAAUVci1RpmUA+KdCL5sw9nadAEiONeiGr+28RYHZmlB9qXnjC
                   -----END PRIVATE KEY-----
                 "#}
-                .to_string(),
+                .to_owned(),
             ),
         };
 

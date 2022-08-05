@@ -75,7 +75,7 @@ impl Options {
             // Read the MAS_CONFIG environment variable
             std::env::var("MAS_CONFIG")
                 // Default to "config.yaml"
-                .unwrap_or_else(|_| "config.yaml".to_string())
+                .unwrap_or_else(|_| "config.yaml".to_owned())
                 // Split the file list on `:`
                 .split(':')
                 .map(PathBuf::from)

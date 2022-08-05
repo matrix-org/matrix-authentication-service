@@ -17,6 +17,7 @@
 #![forbid(unsafe_code)]
 #![deny(
     clippy::all,
+    clippy::str_to_string,
     rustdoc::missing_crate_level_docs,
     rustdoc::broken_intra_doc_links
 )]

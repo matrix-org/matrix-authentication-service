@@ -28,6 +28,6 @@ where
 {
     fn on_error(&self, span: &SpanRef<'_>, err: &E) {
         let attributes = vec![EXCEPTION_MESSAGE.string(err.to_string())];
-        span.add_event("exception".to_string(), attributes);
+        span.add_event("exception".to_owned(), attributes);
     }
 }

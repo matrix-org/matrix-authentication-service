@@ -252,7 +252,7 @@ mod tests {
         let jwt: DecodedJsonWebToken<serde_json::Value> =
             jwt.decode_and_verify(&store).await.unwrap();
 
-        assert_eq!(jwt.header.typ, Some("JWT".to_string()));
+        assert_eq!(jwt.header.typ, Some("JWT".to_owned()));
         assert_eq!(jwt.header.alg, JsonWebSignatureAlg::Hs256);
         assert_eq!(
             jwt.payload,

@@ -71,7 +71,7 @@ impl<T, V> Claim<T, V> {
         let value = value.into();
         let value: serde_json::Value =
             serde_json::to_value(&value).map_err(|_| ClaimError::InvalidClaim(self.claim))?;
-        claims.insert(self.claim.to_string(), value);
+        claims.insert(self.claim.to_owned(), value);
 
         Ok(())
     }
@@ -365,8 +365,8 @@ mod tests {
 
     #[test]
     fn one_or_many_serde() {
-        let one = OneOrMany(vec!["one".to_string()]);
-        let many = OneOrMany(vec!["one".to_string(), "two".to_string()]);
+        let one = OneOrMany(vec!["one".to_owned()]);
+        let many = OneOrMany(vec!["one".to_owned(), "two".to_owned()]);
 
         assert_eq!(
             one,
@@ -424,13 +424,13 @@ mod tests {
             .unwrap();
         let jti = JTI.extract_optional(&mut claims).unwrap();
 
-        assert_eq!(iss, "https://foo.com".to_string());
-        assert_eq!(sub, Some("johndoe".to_string()));
-        assert_eq!(aud.as_deref(), Some(&vec!["abcd-efgh".to_string()]));
+        assert_eq!(iss, "https://foo.com".to_owned());
+        assert_eq!(sub, Some("johndoe".to_owned()));
+        assert_eq!(aud.as_deref(), Some(&vec!["abcd-efgh".to_owned()]));
         assert_eq!(iat.as_deref(), Some(&now));
         assert_eq!(nbf.as_deref(), Some(&now));
         assert_eq!(exp.as_deref(), Some(&expiration));
-        assert_eq!(jti, Some("1122-3344-5566-7788".to_string()));
+        assert_eq!(jti, Some("1122-3344-5566-7788".to_owned()));
 
         assert!(claims.is_empty());
     }

@@ -51,7 +51,7 @@ pub async fn add_access_token(
     Ok(AccessToken {
         data: res.id,
         expires_after,
-        token: token.to_string(),
+        token: token.to_owned(),
         jti: format!("{}", res.id),
         created_at: res.created_at,
     })

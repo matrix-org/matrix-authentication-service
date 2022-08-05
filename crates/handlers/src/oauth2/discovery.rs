@@ -117,15 +117,15 @@ pub(crate) async fn get(
     let claim_types_supported = Some(vec![ClaimType::Normal]);
 
     let claims_supported = Some(vec![
-        "iss".to_string(),
-        "sub".to_string(),
-        "aud".to_string(),
-        "iat".to_string(),
-        "exp".to_string(),
-        "nonce".to_string(),
-        "auth_time".to_string(),
-        "at_hash".to_string(),
-        "c_hash".to_string(),
+        "iss".to_owned(),
+        "sub".to_owned(),
+        "aud".to_owned(),
+        "iat".to_owned(),
+        "exp".to_owned(),
+        "nonce".to_owned(),
+        "auth_time".to_owned(),
+        "at_hash".to_owned(),
+        "c_hash".to_owned(),
     ]);
 
     let claims_parameter_supported = Some(false);

@@ -15,7 +15,12 @@
 //! Serve static files used by the web frontend
 
 #![forbid(unsafe_code)]
-#![deny(clippy::all, missing_docs, rustdoc::broken_intra_doc_links)]
+#![deny(
+    clippy::all,
+    clippy::str_to_string,
+    missing_docs,
+    rustdoc::broken_intra_doc_links
+)]
 #![warn(clippy::pedantic)]
 
 #[cfg(not(feature = "dev"))]
