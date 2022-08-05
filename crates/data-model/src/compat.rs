@@ -46,7 +46,9 @@ impl Device {
     #[must_use]
     pub fn to_scope_token(&self) -> ScopeToken {
         // SAFETY: the inner id should only have valid scope characters
-        format!("urn:matrix:device:{}", self.id).parse().unwrap()
+        format!("urn:matrix:org.matrix.msc2967.client:device:{}", self.id)
+            .parse()
+            .unwrap()
     }
 
     /// Generate a random device ID
