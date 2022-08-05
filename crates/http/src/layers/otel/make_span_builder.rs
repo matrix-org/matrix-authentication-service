@@ -178,11 +178,11 @@ impl<B> MakeSpanBuilder<Request<B>> for SpanFromAxumRequest {
         }
 
         let name = if let Some(path) = request.extensions().get::<MatchedPath>() {
-            let path = path.as_str().to_string();
+            let path = path.as_str().to_owned();
             attributes.push(HTTP_ROUTE.string(path.clone()));
             path
         } else {
-            request.uri().path().to_string()
+            request.uri().path().to_owned()
         };
 
         SpanBuilder::from_name(name)
@@ -196,7 +196,7 @@ pub struct SpanFromDnsRequest;
 
 impl MakeSpanBuilder<Name> for SpanFromDnsRequest {
     fn make_span_builder(&self, request: &Name) -> SpanBuilder {
-        let attributes = vec![NET_HOST_NAME.string(request.as_str().to_string())];
+        let attributes = vec![NET_HOST_NAME.string(request.as_str().to_owned())];
 
         SpanBuilder::from_name("resolve")
             .with_kind(SpanKind::Client)

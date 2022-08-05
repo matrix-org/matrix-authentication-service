@@ -281,7 +281,7 @@ impl TemplateContext for LoginContext {
         vec![LoginContext {
             form: FormState::default(),
             next: None,
-            register_link: "/register".to_string(),
+            register_link: "/register".to_owned(),
         }]
     }
 }
@@ -355,7 +355,7 @@ impl TemplateContext for RegisterContext {
         vec![RegisterContext {
             form: FormState::default(),
             next: None,
-            login_link: "/login".to_string(),
+            login_link: "/login".to_owned(),
         }]
     }
 }
@@ -621,14 +621,14 @@ impl TemplateContext for EmailVerificationContext {
             .map(|user| {
                 let email = UserEmail {
                     data: (),
-                    email: "foobar@example.com".to_string(),
+                    email: "foobar@example.com".to_owned(),
                     created_at: Utc::now(),
                     confirmed_at: None,
                 };
 
                 let verification = UserEmailVerification {
                     data: (),
-                    code: "123456".to_string(),
+                    code: "123456".to_owned(),
                     email,
                     created_at: Utc::now(),
                     state: mas_data_model::UserEmailVerificationState::Valid,
@@ -690,7 +690,7 @@ impl TemplateContext for EmailVerificationPageContext {
     {
         let email = UserEmail {
             data: (),
-            email: "foobar@example.com".to_string(),
+            email: "foobar@example.com".to_owned(),
             created_at: Utc::now(),
             confirmed_at: None,
         };

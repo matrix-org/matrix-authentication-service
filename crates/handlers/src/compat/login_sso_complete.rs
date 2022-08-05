@@ -98,7 +98,7 @@ pub async fn get(
     if Utc::now() > login.created_at + Duration::minutes(30) {
         let ctx = ErrorContext::new()
             .with_code("compat_sso_login_expired")
-            .with_description("This login session expired.".to_string());
+            .with_description("This login session expired.".to_owned());
 
         let content = templates.render_error(&ctx).await?;
         return Ok((cookie_jar, Html(content)).into_response());
@@ -163,7 +163,7 @@ pub async fn post(
     if Utc::now() > login.created_at + Duration::minutes(30) {
         let ctx = ErrorContext::new()
             .with_code("compat_sso_login_expired")
-            .with_description("This login session expired.".to_string());
+            .with_description("This login session expired.".to_owned());
 
         let content = templates.render_error(&ctx).await?;
         return Ok((cookie_jar, Html(content)).into_response());

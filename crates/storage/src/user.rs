@@ -73,7 +73,7 @@ pub async fn login(
         .map_err(|source| {
             if source.not_found() {
                 LoginError::NotFound {
-                    username: username.to_string(),
+                    username: username.to_owned(),
                     source,
                 }
             } else {
@@ -87,7 +87,7 @@ pub async fn login(
         .map_err(|source| {
             if matches!(source, AuthenticationError::Password { .. }) {
                 LoginError::Authentication {
-                    username: username.to_string(),
+                    username: username.to_owned(),
                     source,
                 }
             } else {
@@ -297,7 +297,7 @@ pub async fn authenticate_session(
 
     // TODO: pass verifiers list as parameter
     // Verify the password in a blocking thread to avoid blocking the async executor
-    let password = password.to_string();
+    let password = password.to_owned();
     task::spawn_blocking(move || {
         let context = Argon2::default();
         let hasher = PasswordHash::new(&hashed_password).map_err(AuthenticationError::Password)?;
@@ -353,7 +353,7 @@ pub async fn register_user(
 
     let user = User {
         data: id,
-        username: username.to_string(),
+        username: username.to_owned(),
         sub: format!("fake-sub-{}", id),
         primary_email: None,
     };

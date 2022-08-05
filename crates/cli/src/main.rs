@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #![forbid(unsafe_code)]
-#![deny(clippy::all)]
+#![deny(clippy::all, clippy::str_to_string)]
 #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 

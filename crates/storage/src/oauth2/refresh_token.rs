@@ -49,7 +49,7 @@ pub async fn add_refresh_token(
 
     Ok(RefreshToken {
         data: res.id,
-        token: token.to_string(),
+        token: token.to_owned(),
         access_token: Some(access_token),
         created_at: res.created_at,
     })

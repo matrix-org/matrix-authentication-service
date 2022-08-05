@@ -93,7 +93,7 @@ impl IntoResponse for RouteError {
                 (
                     StatusCode::UNAUTHORIZED,
                     Json(PolicyError::new(
-                        "invalid_client_metadata".to_string(),
+                        "invalid_client_metadata".to_owned(),
                         joined,
                     )),
                 )

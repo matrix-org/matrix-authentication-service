@@ -36,7 +36,7 @@ pub fn port(_gen: &mut SchemaGenerator) -> Schema {
 pub fn hostname(_gen: &mut SchemaGenerator) -> Schema {
     Schema::Object(SchemaObject {
         instance_type: Some(InstanceType::String.into()),
-        format: Some("hostname".to_string()),
+        format: Some("hostname".to_owned()),
         ..SchemaObject::default()
     })
 }

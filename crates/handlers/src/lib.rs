@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #![forbid(unsafe_code)]
-#![deny(clippy::all, rustdoc::broken_intra_doc_links)]
+#![deny(clippy::all, clippy::str_to_string, rustdoc::broken_intra_doc_links)]
 #![warn(clippy::pedantic)]
 #![allow(
     clippy::unused_async // Some axum handlers need that
@@ -267,7 +267,7 @@ async fn test_router(pool: &PgPool) -> Result<Router, anyhow::Error> {
     let url_builder = UrlBuilder::new("https://example.com/".parse()?);
 
     let matrix_config = MatrixConfig {
-        homeserver: "example.com".to_string(),
+        homeserver: "example.com".to_owned(),
     };
 
     let policy_factory = PolicyFactory::load_default(serde_json::json!({})).await?;

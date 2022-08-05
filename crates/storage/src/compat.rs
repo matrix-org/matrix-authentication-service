@@ -317,7 +317,7 @@ pub async fn compat_login(
 
     // TODO: pass verifiers list as parameter
     // Verify the password in a blocking thread to avoid blocking the async executor
-    let password = password.to_string();
+    let password = password.to_owned();
     task::spawn_blocking(move || {
         let context = Argon2::default();
         let hasher = PasswordHash::new(&hashed_password)?;

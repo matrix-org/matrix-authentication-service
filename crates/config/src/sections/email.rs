@@ -28,7 +28,7 @@ use super::ConfigurationSection;
 fn mailbox_schema(_gen: &mut SchemaGenerator) -> Schema {
     Schema::Object(SchemaObject {
         instance_type: Some(InstanceType::String.into()),
-        format: Some("email".to_string()),
+        format: Some("email".to_owned()),
         ..SchemaObject::default()
     })
 }
@@ -36,7 +36,7 @@ fn mailbox_schema(_gen: &mut SchemaGenerator) -> Schema {
 fn hostname_schema(_gen: &mut SchemaGenerator) -> Schema {
     Schema::Object(SchemaObject {
         instance_type: Some(InstanceType::String.into()),
-        format: Some("hostname".to_string()),
+        format: Some("hostname".to_owned()),
         ..SchemaObject::default()
     })
 }
@@ -107,11 +107,11 @@ impl Default for EmailTransportConfig {
 
 fn default_email() -> Mailbox {
     let address = Address::new("root", "localhost").unwrap();
-    Mailbox::new(Some("Authentication Service".to_string()), address)
+    Mailbox::new(Some("Authentication Service".to_owned()), address)
 }
 
 fn default_sendmail_command() -> String {
-    "sendmail".to_string()
+    "sendmail".to_owned()
 }
 
 /// Configuration related to sending emails
