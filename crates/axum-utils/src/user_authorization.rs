@@ -218,7 +218,7 @@ impl Header for WwwAuthenticate {
         };
 
         let params = params.into_iter().map(|(k, v)| format!(" {}={:?}", k, v));
-        let value: String = std::iter::once(scheme.to_string()).chain(params).collect();
+        let value: String = std::iter::once(scheme.to_owned()).chain(params).collect();
         let value = HeaderValue::from_str(&value).unwrap();
         values.extend(std::iter::once(value));
     }
@@ -291,7 +291,7 @@ where
 
         // Take the Authorization header
         let token_from_header = match header {
-            Ok(header) => Some(header.token().to_string()),
+            Ok(header) => Some(header.token().to_owned()),
             Err(err) => match err.reason() {
                 // If it's missing it is fine
                 TypedHeaderRejectionReason::Missing => None,

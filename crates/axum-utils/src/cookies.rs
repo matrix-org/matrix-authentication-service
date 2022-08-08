@@ -30,6 +30,7 @@ pub trait CookieExt {
     where
         T: DeserializeOwned;
 
+    #[must_use]
     fn encode<T>(self, t: &T) -> Self
     where
         T: Serialize;

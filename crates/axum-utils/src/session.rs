@@ -62,8 +62,13 @@ impl SessionInfo {
 }
 
 pub trait SessionInfoExt {
+    #[must_use]
     fn session_info(self) -> (SessionInfo, Self);
+
+    #[must_use]
     fn update_session_info(self, info: &SessionInfo) -> Self;
+
+    #[must_use]
     fn set_session(self, session: &BrowserSession<PostgresqlBackend>) -> Self
     where
         Self: Sized,
