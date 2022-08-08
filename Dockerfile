@@ -132,12 +132,22 @@ RUN mv target/$(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")/release/mas-
 
 ## Runtime stage, debug variant ##
 FROM --platform=${TARGETPLATFORM} gcr.io/distroless/cc-debian${DEBIAN_VERSION}:debug-nonroot AS debug
+
+# Inject a wasmtime config which disables cache to avoid issues running with a read-only root filesystem
+ENV XDG_CONFIG_HOME=/etc
+COPY ./misc/wasmtime-config.toml /etc/wasmtime/config.toml
+
 COPY --from=builder /usr/local/bin/mas-cli /usr/local/bin/mas-cli
 WORKDIR /
 ENTRYPOINT ["/mas-cli"]
 
 ## Runtime stage ##
 FROM --platform=${TARGETPLATFORM} gcr.io/distroless/cc-debian${DEBIAN_VERSION}:nonroot
+
+# Inject a wasmtime config which disables cache to avoid issues running with a read-only root filesystem
+ENV XDG_CONFIG_HOME=/etc
+COPY ./misc/wasmtime-config.toml /etc/wasmtime/config.toml
+
 COPY --from=builder /usr/local/bin/mas-cli /usr/local/bin/mas-cli
 WORKDIR /
 ENTRYPOINT ["/usr/local/bin/mas-cli"]

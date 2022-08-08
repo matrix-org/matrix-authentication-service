@@ -1,0 +1,4 @@
+# Disable wasmtime cache by default in the Docker image, because the rootfs is likely to be read-only
+
+[cache]
+enabled = false
