@@ -71,44 +71,89 @@ pub static DEFAULT_CLAIM_TYPES_SUPPORTED: &[ClaimType] = &[ClaimType::Normal];
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct ProviderMetadata {
     /// Authorization server's issuer identifier URL.
+    ///
+    /// This field is required. The URL must use a `https` scheme, and must not
+    /// contain a query or fragment. It must match the one used to build the
+    /// well-known URI to query this metadata.
     pub issuer: Option<Url>,
 
-    /// URL of the authorization server's authorization endpoint.
+    /// URL of the authorization server's [authorization endpoint].
+    ///
+    /// This field is required. The URL must use a `https` scheme, and must not
+    /// contain a fragment.
+    ///
+    /// [authorization endpoint]: https://www.rfc-editor.org/rfc/rfc6749.html#section-3.1
     pub authorization_endpoint: Option<Url>,
 
-    /// URL of the authorization server's token endpoint.
+    /// URL of the authorization server's [token endpoint].
+    ///
+    /// This field is required. The URL must use a `https` scheme, and must not
+    /// contain a fragment.
+    ///
+    /// [token endpoint]: https://www.rfc-editor.org/rfc/rfc6749.html#section-3.2
     pub token_endpoint: Option<Url>,
 
-    /// URL of the authorization server's JWK Set document.
+    /// URL of the authorization server's [JWK] Set document.
+    ///
+    /// This field is required. The URL must use a `https` scheme.
+    ///
+    /// [JWK]: https://www.rfc-editor.org/rfc/rfc7517.html
     pub jwks_uri: Option<Url>,
 
-    /// URL of the authorization server's OAuth 2.0 Dynamic Client Registration
-    /// endpoint.
+    /// URL of the authorization server's [OAuth 2.0 Dynamic Client
+    /// Registration] endpoint.
+    ///
+    /// If this field is present, the URL must use a `https` scheme.
+    ///
+    /// [OAuth 2.0 Dynamic Client Registration]: https://www.rfc-editor.org/rfc/rfc7591
     pub registration_endpoint: Option<Url>,
 
-    /// JSON array containing a list of the OAuth 2.0 "scope" values that this
+    /// JSON array containing a list of the OAuth 2.0 `scope` values that this
     /// authorization server supports.
+    ///
+    /// If this field is present, it must contain at least the `openid` scope
+    /// value.
     pub scopes_supported: Option<Vec<String>>,
 
-    /// JSON array containing a list of the OAuth 2.0 "response_type" values
+    /// JSON array containing a list of the [OAuth 2.0 `response_type` values]
     /// that this authorization server supports.
+    ///
+    /// This field is required.
+    ///
+    /// [OAuth 2.0 `response_type` values]: https://www.rfc-editor.org/rfc/rfc7591#page-9
     pub response_types_supported: Option<Vec<OAuthAuthorizationEndpointResponseType>>,
 
-    /// JSON array containing a list of the OAuth 2.0 "response_mode" values
+    /// JSON array containing a list of the [OAuth 2.0 `response_mode` values]
     /// that this authorization server supports.
+    ///
+    /// Defaults to [`DEFAULT_RESPONSE_MODES_SUPPORTED`].
+    ///
+    /// [OAuth 2.0 `response_mode` values]: https://openid.net/specs/oauth-v2-multiple-response-types-1_0.html
     pub response_modes_supported: Option<Vec<ResponseMode>>,
 
-    /// JSON array containing a list of the OAuth 2.0 grant type values that
+    /// JSON array containing a list of the [OAuth 2.0 `grant_type` values] that
     /// this authorization server supports.
+    ///
+    /// Defaults to [`DEFAULT_GRANT_TYPES_SUPPORTED`].
+    ///
+    /// [OAuth 2.0 `grant_type` values]: https://www.rfc-editor.org/rfc/rfc7591#page-9
     pub grant_types_supported: Option<Vec<GrantType>>,
 
     /// JSON array containing a list of client authentication methods supported
     /// by this token endpoint.
+    ///
+    /// Defaults to [`DEFAULT_AUTH_METHODS_SUPPORTED`].
     pub token_endpoint_auth_methods_supported: Option<Vec<OAuthClientAuthenticationMethod>>,
 
-    /// JSON array containing a list of the JWS signing algorithms supported by
-    /// the token endpoint for the signature on the JWT used to authenticate the
-    /// client at the token endpoint.
+    /// JSON array containing a list of the JWS signing algorithms supported
+    /// by the token endpoint for the signature on the JWT used to
+    /// authenticate the client at the token endpoint.
+    ///
+    /// If this field is present, it must not contain
+    /// [`JsonWebSignatureAlg::None`]. This field is required if
+    /// `token_endpoint_auth_methods_supported` contains
+    /// [`OAuthClientAuthenticationMethod::PrivateKeyJwt`] or
+    /// [`OAuthClientAuthenticationMethod::ClientSecretJwt`].
     pub token_endpoint_auth_signing_alg_values_supported: Option<Vec<JsonWebSignatureAlg>>,
 
     /// URL of a page containing human-readable information that developers
@@ -116,8 +161,9 @@ pub struct ProviderMetadata {
     pub service_documentation: Option<Url>,
 
     /// Languages and scripts supported for the user interface, represented as a
-    /// JSON array of language tag values from BCP 47. If omitted, the set of
-    /// supported languages and scripts is unspecified.
+    /// JSON array of language tag values from BCP 47.
+    ///
+    /// If omitted, the set of supported languages and scripts is unspecified.
     pub ui_locales_supported: Option<Vec<LanguageTag>>,
 
     /// URL that the authorization server provides to the person registering the
@@ -129,19 +175,36 @@ pub struct ProviderMetadata {
     /// client to read about the authorization server's terms of service.
     pub op_tos_uri: Option<Url>,
 
-    /// URL of the authorization server's OAuth 2.0 revocation endpoint.
+    /// URL of the authorization server's [OAuth 2.0 revocation endpoint].
+    ///
+    /// If this field is present, the URL must use a `https` scheme, and must
+    /// not contain a fragment.
+    ///
+    /// [OAuth 2.0 revocation endpoint]: https://www.rfc-editor.org/rfc/rfc7009
     pub revocation_endpoint: Option<Url>,
 
     /// JSON array containing a list of client authentication methods supported
     /// by this revocation endpoint.
+    ///
+    /// Defaults to [`DEFAULT_AUTH_METHODS_SUPPORTED`].
     pub revocation_endpoint_auth_methods_supported: Option<Vec<OAuthClientAuthenticationMethod>>,
 
     /// JSON array containing a list of the JWS signing algorithms supported by
     /// the revocation endpoint for the signature on the JWT used to
     /// authenticate the client at the revocation endpoint.
+    ///
+    /// If this field is present, it must not contain
+    /// [`JsonWebSignatureAlg::None`]. This field is required if
+    /// `revocation_endpoint_auth_methods_supported` contains
+    /// [`OAuthClientAuthenticationMethod::PrivateKeyJwt`] or
+    /// [`OAuthClientAuthenticationMethod::ClientSecretJwt`].
     pub revocation_endpoint_auth_signing_alg_values_supported: Option<Vec<JsonWebSignatureAlg>>,
 
-    /// URL of the authorization server's OAuth 2.0 introspection endpoint.
+    /// URL of the authorization server's [OAuth 2.0 introspection endpoint].
+    ///
+    /// If this field is present, the URL must use a `https` scheme.
+    ///
+    /// [OAuth 2.0 introspection endpoint]: https://www.rfc-editor.org/rfc/rfc7662
     pub introspection_endpoint: Option<Url>,
 
     /// JSON array containing a list of client authentication methods supported
@@ -151,12 +214,23 @@ pub struct ProviderMetadata {
     /// JSON array containing a list of the JWS signing algorithms supported by
     /// the introspection endpoint for the signature on the JWT used to
     /// authenticate the client at the introspection endpoint.
+    ///
+    /// If this field is present, it must not contain
+    /// [`JsonWebSignatureAlg::None`]. This field is required if
+    /// `intospection_endpoint_auth_methods_supported` contains
+    /// [`OAuthClientAuthenticationMethod::PrivateKeyJwt`] or
+    /// [`OAuthClientAuthenticationMethod::ClientSecretJwt`].
     pub introspection_endpoint_auth_signing_alg_values_supported: Option<Vec<JsonWebSignatureAlg>>,
 
-    /// PKCE code challenge methods supported by this authorization server.
+    /// [PKCE code challenge methods] supported by this authorization server.
+    /// If omitted, the authorization server does not support PKCE.
+    ///
+    /// [PKCE code challenge]: https://www.rfc-editor.org/rfc/rfc7636
     pub code_challenge_methods_supported: Option<Vec<PkceCodeChallengeMethod>>,
 
-    /// URL of the OP's UserInfo Endpoint.
+    /// URL of the OP's [UserInfo Endpoint].
+    ///
+    /// [UserInfo Endpoint]: https://openid.net/specs/openid-connect-core-1_0.html#UserInfo
     pub userinfo_endpoint: Option<Url>,
 
     /// JSON array containing a list of the Authentication Context Class
@@ -165,42 +239,46 @@ pub struct ProviderMetadata {
 
     /// JSON array containing a list of the Subject Identifier types that this
     /// OP supports.
+    ///
+    /// This field is required.
     pub subject_types_supported: Option<Vec<SubjectType>>,
 
-    /// JSON array containing a list of the JWS "alg" values supported by the OP
-    /// for the ID Token.
+    /// JSON array containing a list of the JWS signing algorithms (`alg`
+    /// values) supported by the OP for the ID Token.
+    ///
+    /// This field is required and must contain [`JsonWebSignatureAlg::Rs256`].
     pub id_token_signing_alg_values_supported: Option<Vec<JsonWebSignatureAlg>>,
 
-    /// JSON array containing a list of the JWE "alg" values supported by the OP
-    /// for the ID Token.
+    /// JSON array containing a list of the JWE encryption algorithms (`alg`
+    /// values) supported by the OP for the ID Token.
     pub id_token_encryption_alg_values_supported: Option<Vec<JsonWebEncryptionAlg>>,
 
-    /// JSON array containing a list of the JWE "enc" values supported by the OP
-    /// for the ID Token.
+    /// JSON array containing a list of the JWE encryption algorithms (`enc`
+    /// values) supported by the OP for the ID Token.
     pub id_token_encryption_enc_values_supported: Option<Vec<JsonWebEncryptionEnc>>,
 
-    /// JSON array containing a list of the JWS "alg" values supported by the
-    /// UserInfo Endpoint.
+    /// JSON array containing a list of the JWS signing algorithms (`alg`
+    /// values) supported by the UserInfo Endpoint.
     pub userinfo_signing_alg_values_supported: Option<Vec<JsonWebSignatureAlg>>,
 
-    /// JSON array containing a list of the JWE "alg" values supported by the
-    /// UserInfo Endpoint.
+    /// JSON array containing a list of the JWE encryption algorithms (`alg`
+    /// values) supported by the UserInfo Endpoint.
     pub userinfo_encryption_alg_values_supported: Option<Vec<JsonWebEncryptionAlg>>,
 
-    /// JSON array containing a list of the JWE "enc" values supported by the
-    /// UserInfo Endpoint.
+    /// JSON array containing a list of the JWE encryption algorithms (`enc`
+    /// values) supported by the UserInfo Endpoint.
     pub userinfo_encryption_enc_values_supported: Option<Vec<JsonWebEncryptionEnc>>,
 
-    /// JSON array containing a list of the JWS "alg" values supported by the OP
-    /// for Request Objects.
+    /// JSON array containing a list of the JWS signing algorithms (`alg`
+    /// values) supported by the OP for Request Objects.
     pub request_object_signing_alg_values_supported: Option<Vec<JsonWebSignatureAlg>>,
 
-    /// JSON array containing a list of the JWE "alg" values supported by the OP
-    /// for Request Objects.
+    /// JSON array containing a list of the JWE encryption algorithms (`alg`
+    /// values) supported by the OP for Request Objects.
     pub request_object_encryption_alg_values_supported: Option<Vec<JsonWebEncryptionAlg>>,
 
-    /// JSON array containing a list of the JWE "enc" values supported by the OP
-    /// for Request Objects.
+    /// JSON array containing a list of the JWE encryption algorithms (`enc`
+    /// values) supported by the OP for Request Objects.
     pub request_object_encryption_enc_values_supported: Option<Vec<JsonWebEncryptionEnc>>,
 
     /// JSON array containing a list of the "display" parameter values that the
@@ -209,6 +287,8 @@ pub struct ProviderMetadata {
 
     /// JSON array containing a list of the Claim Types that the OpenID Provider
     /// supports.
+    ///
+    /// Defaults to [`DEFAULT_CLAIM_TYPES_SUPPORTED`].
     pub claim_types_supported: Option<Vec<ClaimType>>,
 
     /// JSON array containing a list of the Claim Names of the Claims that the
@@ -219,31 +299,48 @@ pub struct ProviderMetadata {
     /// represented as a JSON array of BCP 47 language tag values.
     pub claims_locales_supported: Option<Vec<LanguageTag>>,
 
-    /// Boolean value specifying whether the OP supports use of the "claims"
+    /// Boolean value specifying whether the OP supports use of the `claims`
     /// parameter.
+    ///
+    /// Defaults to `false`.
     pub claims_parameter_supported: Option<bool>,
 
-    /// Boolean value specifying whether the OP supports use of the "request"
+    /// Boolean value specifying whether the OP supports use of the `request`
     /// parameter.
+    ///
+    /// Defaults to `false`.
     pub request_parameter_supported: Option<bool>,
 
     /// Boolean value specifying whether the OP supports use of the
-    /// "request_uri" parameter.
+    /// `request_uri` parameter.
+    ///
+    /// Defaults to `true`.
     pub request_uri_parameter_supported: Option<bool>,
 
-    /// Boolean value specifying whether the OP requires any "request_uri"
+    /// Boolean value specifying whether the OP requires any `request_uri`
     /// values used to be pre-registered.
+    ///
+    /// Defaults to `false`.
     pub require_request_uri_registration: Option<bool>,
 
-    /// Indicates where authorization request needs to be protected as Request
-    /// Object and provided through either request or request_uri parameter.
+    /// Indicates where authorization request needs to be protected as [Request
+    /// Object] and provided through either request or request_uri parameter.
+    ///
+    /// Defaults to `false`.
+    ///
+    /// [Request Object]: https://www.rfc-editor.org/rfc/rfc9101.html
     pub require_signed_request_object: Option<bool>,
 
-    /// URL of the authorization server's pushed authorization request endpoint.
+    /// URL of the authorization server's [pushed authorization request
+    /// endpoint].
+    ///
+    /// [pushed authorization request endpoint]: https://www.rfc-editor.org/rfc/rfc9126.html
     pub pushed_authorization_request_endpoint: Option<Url>,
 
     /// Indicates whether the authorization server accepts authorization
     /// requests only via PAR.
+    ///
+    /// Defaults to `false`.
     pub require_pushed_authorization_requests: Option<bool>,
 
     /// Array containing the list of prompt values that this OP supports.
