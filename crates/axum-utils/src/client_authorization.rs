@@ -257,12 +257,13 @@ where
 {
     type Rejection = ClientAuthorizationError;
 
+    #[allow(clippy::too_many_lines)]
     async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
         let header = TypedHeader::<Authorization<Basic>>::from_request(req).await;
 
         // Take the Authorization header
         let credentials_from_header = match header {
-            Ok(header) => Some((header.username().to_string(), header.password().to_string())),
+            Ok(header) => Some((header.username().to_owned(), header.password().to_owned())),
             Err(err) => match err.reason() {
                 // If it's missing it is fine
                 TypedHeaderRejectionReason::Missing => None,
@@ -423,7 +424,7 @@ mod tests {
                 .unwrap(),
             ClientAuthorization {
                 credentials: Credentials::None {
-                    client_id: "client-id".to_string(),
+                    client_id: "client-id".to_owned(),
                 },
                 form: Some(serde_json::json!({"foo": "bar"})),
             }
@@ -453,8 +454,8 @@ mod tests {
                 .unwrap(),
             ClientAuthorization {
                 credentials: Credentials::ClientSecretBasic {
-                    client_id: "client-id".to_string(),
-                    client_secret: "client-secret".to_string(),
+                    client_id: "client-id".to_owned(),
+                    client_secret: "client-secret".to_owned(),
                 },
                 form: Some(serde_json::json!({"foo": "bar"})),
             }
@@ -482,8 +483,8 @@ mod tests {
                 .unwrap(),
             ClientAuthorization {
                 credentials: Credentials::ClientSecretBasic {
-                    client_id: "client-id".to_string(),
-                    client_secret: "client-secret".to_string(),
+                    client_id: "client-id".to_owned(),
+                    client_secret: "client-secret".to_owned(),
                 },
                 form: Some(serde_json::json!({"foo": "bar"})),
             }
@@ -550,8 +551,8 @@ mod tests {
                 .unwrap(),
             ClientAuthorization {
                 credentials: Credentials::ClientSecretPost {
-                    client_id: "client-id".to_string(),
-                    client_secret: "client-secret".to_string(),
+                    client_id: "client-id".to_owned(),
+                    client_secret: "client-secret".to_owned(),
                 },
                 form: Some(serde_json::json!({"foo": "bar"})),
             }
