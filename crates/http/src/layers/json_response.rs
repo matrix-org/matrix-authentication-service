@@ -14,23 +14,17 @@
 
 use std::{marker::PhantomData, task::Poll};
 
-use futures_util::future::BoxFuture;
+use bytes::Buf;
+use futures_util::FutureExt;
 use http::{header::ACCEPT, HeaderValue, Request, Response};
-use http_body::Body;
 use serde::de::DeserializeOwned;
 use thiserror::Error;
 use tower::{Layer, Service};
 
 #[derive(Debug, Error)]
-pub enum Error<Service, Body> {
+pub enum Error<Service> {
     #[error(transparent)]
     Service { inner: Service },
-
-    #[error("failed to fully read the request body")]
-    Body {
-        #[source]
-        inner: Body,
-    },
 
     #[error("could not parse JSON payload")]
     Json {
@@ -39,13 +33,9 @@ pub enum Error<Service, Body> {
     },
 }
 
-impl<S, B> Error<S, B> {
+impl<S> Error<S> {
     fn service(source: S) -> Self {
         Self::Service { inner: source }
-    }
-
-    fn body(source: B) -> Self {
-        Self::Body { inner: source }
     }
 
     fn json(source: serde_json::Error) -> Self {
@@ -54,12 +44,12 @@ impl<S, B> Error<S, B> {
 }
 
 #[derive(Clone)]
-pub struct Json<S, T> {
+pub struct JsonResponse<S, T> {
     inner: S,
     _t: PhantomData<T>,
 }
 
-impl<S, T> Json<S, T> {
+impl<S, T> JsonResponse<S, T> {
     pub const fn new(inner: S) -> Self {
         Self {
             inner,
@@ -68,59 +58,64 @@ impl<S, T> Json<S, T> {
     }
 }
 
-impl<S, T, B, C> Service<Request<B>> for Json<S, T>
+impl<S, T, B, C> Service<Request<B>> for JsonResponse<S, T>
 where
     S: Service<Request<B>, Response = Response<C>>,
     S::Future: Send + 'static,
-    C: Body + Send + 'static,
-    C::Data: Send + 'static,
+    C: Buf,
     T: DeserializeOwned,
 {
-    type Error = Error<S::Error, C::Error>;
+    type Error = Error<S::Error>;
     type Response = Response<T>;
-    type Future = BoxFuture<'static, Result<Self::Response, Self::Error>>;
+    type Future = futures_util::future::Map<
+        S::Future,
+        fn(Result<Response<C>, S::Error>) -> Result<Self::Response, Self::Error>,
+    >;
 
     fn poll_ready(&mut self, cx: &mut std::task::Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.inner.poll_ready(cx).map_err(Error::service)
     }
 
     fn call(&mut self, mut request: Request<B>) -> Self::Future {
+        fn mapper<C, T, E>(res: Result<Response<C>, E>) -> Result<Response<T>, Error<E>>
+        where
+            C: Buf,
+            T: DeserializeOwned,
+        {
+            let response = res.map_err(Error::service)?;
+            let (parts, body) = response.into_parts();
+
+            let body = serde_json::from_reader(body.reader()).map_err(Error::json)?;
+
+            let res = Response::from_parts(parts, body);
+            Ok(res)
+        }
+
         request
             .headers_mut()
             .insert(ACCEPT, HeaderValue::from_static("application/json"));
 
-        let fut = self.inner.call(request);
-
-        let fut = async {
-            let response = fut.await.map_err(Error::service)?;
-            let (parts, body) = response.into_parts();
-
-            futures_util::pin_mut!(body);
-            let bytes = hyper::body::to_bytes(&mut body)
-                .await
-                .map_err(Error::body)?;
-
-            let body = serde_json::from_slice(&bytes).map_err(Error::json)?;
-
-            let res = Response::from_parts(parts, body);
-            Ok(res)
-        };
-
-        Box::pin(fut)
+        self.inner.call(request).map(mapper::<C, T, S::Error>)
     }
 }
 
-#[derive(Default, Clone, Copy)]
-pub struct JsonResponseLayer<T, ReqBody>(PhantomData<(T, ReqBody)>);
+#[derive(Clone, Copy)]
+pub struct JsonResponseLayer<T> {
+    _t: PhantomData<T>,
+}
 
-impl<ReqBody, ResBody, S, T> Layer<S> for JsonResponseLayer<T, ReqBody>
-where
-    S: Service<Request<ReqBody>, Response = Response<ResBody>>,
-    T: serde::de::DeserializeOwned,
-{
-    type Service = Json<S, T>;
+impl<T> Default for JsonResponseLayer<T> {
+    fn default() -> Self {
+        Self {
+            _t: PhantomData::default(),
+        }
+    }
+}
+
+impl<S, T> Layer<S> for JsonResponseLayer<T> {
+    type Service = JsonResponse<S, T>;
 
     fn layer(&self, inner: S) -> Self::Service {
-        Json::new(inner)
+        JsonResponse::new(inner)
     }
 }

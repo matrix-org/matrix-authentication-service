@@ -14,9 +14,14 @@
 
 use http::header::HeaderName;
 use once_cell::sync::OnceCell;
+use tower::{layer::util::Stack, ServiceBuilder};
 use tower_http::cors::CorsLayer;
 
-use crate::layers::json::Json;
+use crate::layers::{
+    body_to_bytes::{BodyToBytes, BodyToBytesLayer},
+    json_request::{JsonRequest, JsonRequestLayer},
+    json_response::{JsonResponse, JsonResponseLayer},
+};
 
 static PROPAGATOR_HEADERS: OnceCell<Vec<HeaderName>> = OnceCell::new();
 
@@ -60,11 +65,37 @@ impl CorsLayerExt for CorsLayer {
 }
 
 pub trait ServiceExt: Sized {
-    fn json<T>(self) -> Json<Self, T>;
+    fn response_body_to_bytes(self) -> BodyToBytes<Self> {
+        BodyToBytes::new(self)
+    }
+
+    fn json_response<T>(self) -> JsonResponse<Self, T> {
+        JsonResponse::new(self)
+    }
+
+    fn json_request<T>(self) -> JsonRequest<Self, T> {
+        JsonRequest::new(self)
+    }
 }
 
-impl<S> ServiceExt for S {
-    fn json<T>(self) -> Json<Self, T> {
-        Json::new(self)
+impl<S> ServiceExt for S {}
+
+pub trait ServiceBuilderExt<L>: Sized {
+    fn response_to_bytes(self) -> ServiceBuilder<Stack<BodyToBytesLayer, L>>;
+    fn json_response<T>(self) -> ServiceBuilder<Stack<JsonResponseLayer<T>, L>>;
+    fn json_request<T>(self) -> ServiceBuilder<Stack<JsonRequestLayer<T>, L>>;
+}
+
+impl<L> ServiceBuilderExt<L> for ServiceBuilder<L> {
+    fn response_to_bytes(self) -> ServiceBuilder<Stack<BodyToBytesLayer, L>> {
+        self.layer(BodyToBytesLayer::default())
+    }
+
+    fn json_response<T>(self) -> ServiceBuilder<Stack<JsonResponseLayer<T>, L>> {
+        self.layer(JsonResponseLayer::default())
+    }
+
+    fn json_request<T>(self) -> ServiceBuilder<Stack<JsonRequestLayer<T>, L>> {
+        self.layer(JsonRequestLayer::default())
     }
 }

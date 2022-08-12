@@ -50,7 +50,10 @@ mod layers;
 pub use self::{
     ext::{set_propagator, CorsLayerExt, ServiceExt as HttpServiceExt},
     future_service::FutureService,
-    layers::{client::ClientLayer, json::JsonResponseLayer, otel, server::ServerLayer},
+    layers::{
+        body_to_bytes::BodyToBytesLayer, client::ClientLayer, json_request::JsonRequestLayer,
+        json_response::JsonResponseLayer, otel, server::ServerLayer,
+    },
 };
 
 pub(crate) type BoxError = Box<dyn std::error::Error + Send + Sync>;

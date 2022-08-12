@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+pub(crate) mod body_to_bytes;
 pub(crate) mod client;
-pub(crate) mod json;
+pub(crate) mod json_request;
+pub(crate) mod json_response;
 pub mod otel;
 pub(crate) mod server;
