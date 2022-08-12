@@ -19,6 +19,7 @@ use tower_http::cors::CorsLayer;
 
 use crate::layers::{
     body_to_bytes::{BodyToBytes, BodyToBytesLayer},
+    form_urlencoded_request::{FormUrlencodedRequest, FormUrlencodedRequestLayer},
     json_request::{JsonRequest, JsonRequestLayer},
     json_response::{JsonResponse, JsonResponseLayer},
 };
@@ -76,6 +77,10 @@ pub trait ServiceExt: Sized {
     fn json_request<T>(self) -> JsonRequest<Self, T> {
         JsonRequest::new(self)
     }
+
+    fn form_urlencoded_request<T>(self) -> FormUrlencodedRequest<Self, T> {
+        FormUrlencodedRequest::new(self)
+    }
 }
 
 impl<S> ServiceExt for S {}
@@ -84,6 +89,7 @@ pub trait ServiceBuilderExt<L>: Sized {
     fn response_to_bytes(self) -> ServiceBuilder<Stack<BodyToBytesLayer, L>>;
     fn json_response<T>(self) -> ServiceBuilder<Stack<JsonResponseLayer<T>, L>>;
     fn json_request<T>(self) -> ServiceBuilder<Stack<JsonRequestLayer<T>, L>>;
+    fn form_urlencoded_request<T>(self) -> ServiceBuilder<Stack<FormUrlencodedRequestLayer<T>, L>>;
 }
 
 impl<L> ServiceBuilderExt<L> for ServiceBuilder<L> {
@@ -97,5 +103,9 @@ impl<L> ServiceBuilderExt<L> for ServiceBuilder<L> {
 
     fn json_request<T>(self) -> ServiceBuilder<Stack<JsonRequestLayer<T>, L>> {
         self.layer(JsonRequestLayer::default())
+    }
+
+    fn form_urlencoded_request<T>(self) -> ServiceBuilder<Stack<FormUrlencodedRequestLayer<T>, L>> {
+        self.layer(FormUrlencodedRequestLayer::default())
     }
 }

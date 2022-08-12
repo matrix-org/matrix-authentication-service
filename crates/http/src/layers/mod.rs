@@ -14,6 +14,7 @@
 
 pub(crate) mod body_to_bytes;
 pub(crate) mod client;
+pub(crate) mod form_urlencoded_request;
 pub(crate) mod json_request;
 pub(crate) mod json_response;
 pub mod otel;

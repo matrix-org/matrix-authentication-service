@@ -31,10 +31,10 @@ pub enum Error<Service> {
     #[error(transparent)]
     Service { inner: Service },
 
-    #[error("could not serialize JSON payload")]
-    Json {
+    #[error("could not serialize form payload")]
+    Serialize {
         #[source]
-        inner: serde_json::Error,
+        inner: serde_urlencoded::ser::Error,
     },
 }
 
@@ -43,18 +43,18 @@ impl<S> Error<S> {
         Self::Service { inner: source }
     }
 
-    fn json(source: serde_json::Error) -> Self {
-        Self::Json { inner: source }
+    fn serialize(source: serde_urlencoded::ser::Error) -> Self {
+        Self::Serialize { inner: source }
     }
 }
 
 #[derive(Clone)]
-pub struct JsonRequest<S, T> {
+pub struct FormUrlencodedRequest<S, T> {
     inner: S,
     _t: PhantomData<T>,
 }
 
-impl<S, T> JsonRequest<S, T> {
+impl<S, T> FormUrlencodedRequest<S, T> {
     pub const fn new(inner: S) -> Self {
         Self {
             inner,
@@ -63,7 +63,7 @@ impl<S, T> JsonRequest<S, T> {
     }
 }
 
-impl<S, T> Service<Request<T>> for JsonRequest<S, T>
+impl<S, T> Service<Request<T>> for FormUrlencodedRequest<S, T>
 where
     S: Service<Request<Full<Bytes>>>,
     S::Future: Send + 'static,
@@ -84,11 +84,11 @@ where
     fn call(&mut self, request: Request<T>) -> Self::Future {
         let (mut parts, body) = request.into_parts();
 
-        parts.headers.typed_insert(ContentType::json());
+        parts.headers.typed_insert(ContentType::form_url_encoded());
 
-        let body = match serde_json::to_vec(&body) {
+        let body = match serde_urlencoded::to_string(&body) {
             Ok(body) => Full::new(Bytes::from(body)),
-            Err(err) => return std::future::ready(Err(Error::json(err))).left_future(),
+            Err(err) => return std::future::ready(Err(Error::serialize(err))).left_future(),
         };
 
         let request = Request::from_parts(parts, body);
@@ -101,11 +101,11 @@ where
 }
 
 #[derive(Clone, Copy)]
-pub struct JsonRequestLayer<T> {
+pub struct FormUrlencodedRequestLayer<T> {
     _t: PhantomData<T>,
 }
 
-impl<T> Default for JsonRequestLayer<T> {
+impl<T> Default for FormUrlencodedRequestLayer<T> {
     fn default() -> Self {
         Self {
             _t: PhantomData::default(),
@@ -113,10 +113,10 @@ impl<T> Default for JsonRequestLayer<T> {
     }
 }
 
-impl<S, T> Layer<S> for JsonRequestLayer<T> {
-    type Service = JsonRequest<S, T>;
+impl<S, T> Layer<S> for FormUrlencodedRequestLayer<T> {
+    type Service = FormUrlencodedRequest<S, T>;
 
     fn layer(&self, inner: S) -> Self::Service {
-        JsonRequest::new(inner)
+        FormUrlencodedRequest::new(inner)
     }
 }
