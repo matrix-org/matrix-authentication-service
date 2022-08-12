@@ -184,7 +184,8 @@ fn jwks_key_store(jwks: &JwksOrJwksUri) -> Either<StaticJwksStore, DynamicJwksSt
 
             // TODO: get the client from somewhere else?
             let exporter = mas_http::client("fetch-jwks")
-                .json::<JsonWebKeySet>()
+                .response_body_to_bytes()
+                .json_response::<JsonWebKeySet>()
                 .map_request(move |_: ()| {
                     http::Request::builder()
                         .method("GET")
