@@ -12,13 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use http::header::HeaderName;
+use std::ops::RangeBounds;
+
+use http::{header::HeaderName, Request, StatusCode};
 use once_cell::sync::OnceCell;
-use tower::{layer::util::Stack, ServiceBuilder};
+use tower::{layer::util::Stack, Service, ServiceBuilder};
 use tower_http::cors::CorsLayer;
 
 use crate::layers::{
     body_to_bytes::{BodyToBytes, BodyToBytesLayer},
+    catch_http_codes::{CatchHttpCodes, CatchHttpCodesLayer},
     form_urlencoded_request::{FormUrlencodedRequest, FormUrlencodedRequestLayer},
     json_request::{JsonRequest, JsonRequestLayer},
     json_response::{JsonResponse, JsonResponseLayer},
@@ -65,7 +68,7 @@ impl CorsLayerExt for CorsLayer {
     }
 }
 
-pub trait ServiceExt: Sized {
+pub trait ServiceExt<Body>: Sized {
     fn response_body_to_bytes(self) -> BodyToBytes<Self> {
         BodyToBytes::new(self)
     }
@@ -81,19 +84,54 @@ pub trait ServiceExt: Sized {
     fn form_urlencoded_request<T>(self) -> FormUrlencodedRequest<Self, T> {
         FormUrlencodedRequest::new(self)
     }
+
+    fn catch_http_code<M>(self, status_code: StatusCode, mapper: M) -> CatchHttpCodes<Self, M>
+    where
+        M: Clone,
+    {
+        self.catch_http_codes(status_code..=status_code, mapper)
+    }
+
+    fn catch_http_codes<B, M>(self, bounds: B, mapper: M) -> CatchHttpCodes<Self, M>
+    where
+        B: RangeBounds<StatusCode>,
+        M: Clone,
+    {
+        CatchHttpCodes::new(self, bounds, mapper)
+    }
 }
 
-impl<S> ServiceExt for S {}
+impl<S, B> ServiceExt<B> for S where S: Service<Request<B>> {}
 
 pub trait ServiceBuilderExt<L>: Sized {
-    fn response_to_bytes(self) -> ServiceBuilder<Stack<BodyToBytesLayer, L>>;
+    fn response_body_to_bytes(self) -> ServiceBuilder<Stack<BodyToBytesLayer, L>>;
     fn json_response<T>(self) -> ServiceBuilder<Stack<JsonResponseLayer<T>, L>>;
     fn json_request<T>(self) -> ServiceBuilder<Stack<JsonRequestLayer<T>, L>>;
     fn form_urlencoded_request<T>(self) -> ServiceBuilder<Stack<FormUrlencodedRequestLayer<T>, L>>;
+
+    fn catch_http_code<M>(
+        self,
+        status_code: StatusCode,
+        mapper: M,
+    ) -> ServiceBuilder<Stack<CatchHttpCodesLayer<M>, L>>
+    where
+        M: Clone,
+    {
+        self.catch_http_codes(status_code..=status_code, mapper)
+    }
+
+    fn catch_http_codes<B, M>(
+        self,
+        bounds: B,
+        mapper: M,
+    ) -> ServiceBuilder<Stack<CatchHttpCodesLayer<M>, L>>
+    where
+        B: RangeBounds<StatusCode>,
+        M: Clone;
 }
 
 impl<L> ServiceBuilderExt<L> for ServiceBuilder<L> {
-    fn response_to_bytes(self) -> ServiceBuilder<Stack<BodyToBytesLayer, L>> {
+    fn response_body_to_bytes(self) -> ServiceBuilder<Stack<BodyToBytesLayer, L>> {
         self.layer(BodyToBytesLayer::default())
     }
 
@@ -107,5 +145,17 @@ impl<L> ServiceBuilderExt<L> for ServiceBuilder<L> {
 
     fn form_urlencoded_request<T>(self) -> ServiceBuilder<Stack<FormUrlencodedRequestLayer<T>, L>> {
         self.layer(FormUrlencodedRequestLayer::default())
+    }
+
+    fn catch_http_codes<B, M>(
+        self,
+        bounds: B,
+        mapper: M,
+    ) -> ServiceBuilder<Stack<CatchHttpCodesLayer<M>, L>>
+    where
+        B: RangeBounds<StatusCode>,
+        M: Clone,
+    {
+        self.layer(CatchHttpCodesLayer::new(bounds, mapper))
     }
 }

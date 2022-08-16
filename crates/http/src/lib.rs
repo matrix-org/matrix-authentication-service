@@ -35,24 +35,34 @@ use hyper::{
     Client,
 };
 use hyper_rustls::{ConfigBuilderExt, HttpsConnector, HttpsConnectorBuilder};
-use layers::{
-    client::ClientResponse,
-    otel::{TraceDns, TraceLayer},
-};
 use thiserror::Error;
 use tokio::{sync::OnceCell, task::JoinError};
 use tower::{util::BoxCloneService, ServiceBuilder, ServiceExt};
+
+use self::layers::{
+    client::ClientResponse,
+    otel::{TraceDns, TraceLayer},
+};
 
 mod ext;
 mod future_service;
 mod layers;
 
 pub use self::{
-    ext::{set_propagator, CorsLayerExt, ServiceExt as HttpServiceExt},
+    ext::{
+        set_propagator, CorsLayerExt, ServiceBuilderExt as HttpServiceBuilderExt,
+        ServiceExt as HttpServiceExt,
+    },
     future_service::FutureService,
     layers::{
-        body_to_bytes::BodyToBytesLayer, client::ClientLayer, json_request::JsonRequestLayer,
-        json_response::JsonResponseLayer, otel, server::ServerLayer,
+        body_to_bytes::{self, BodyToBytes, BodyToBytesLayer},
+        catch_http_codes::{self, CatchHttpCodes, CatchHttpCodesLayer},
+        client::ClientLayer,
+        form_urlencoded_request::{self, FormUrlencodedRequest, FormUrlencodedRequestLayer},
+        json_request::{self, JsonRequest, JsonRequestLayer},
+        json_response::{self, JsonResponse, JsonResponseLayer},
+        otel,
+        server::ServerLayer,
     },
 };
 
