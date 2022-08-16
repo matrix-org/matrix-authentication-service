@@ -28,3 +28,9 @@ tower = { version = "0.4.13", features = ["timeout", "limit"] }
 tower-http = { version = "0.3.4", features = ["follow-redirect", "decompression-full", "set-header", "compression-full", "cors"] }
 tracing = "0.1.36"
 tracing-opentelemetry = "0.17.4"
+
+[dev-dependencies]
+anyhow = "1.0.62"
+serde = { version = "1.0.142", features = ["derive"] }
+tokio = { version = "1.20.1", features = ["macros"] }
+tower = { version = "0.4.13", features = ["util"] }

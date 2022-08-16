@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub(crate) mod body_to_bytes;
-pub(crate) mod client;
-pub(crate) mod form_urlencoded_request;
-pub(crate) mod json_request;
-pub(crate) mod json_response;
+pub mod body_to_bytes;
+pub mod catch_http_codes;
+pub mod form_urlencoded_request;
+pub mod json_request;
+pub mod json_response;
 pub mod otel;
+
+pub(crate) mod client;
 pub(crate) mod server;

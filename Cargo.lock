@@ -2432,6 +2432,7 @@ dependencies = [
 name = "mas-http"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "axum",
  "bytes 1.2.1",
  "futures-util",
