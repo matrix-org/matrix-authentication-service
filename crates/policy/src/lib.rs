@@ -21,7 +21,7 @@ use std::io::Cursor;
 
 use anyhow::bail;
 use mas_data_model::{AuthorizationGrant, StorageBackend, User};
-use oauth2_types::registration::ClientMetadata;
+use oauth2_types::registration::VerifiedClientMetadata;
 use opa_wasm::Runtime;
 use serde::Deserialize;
 use thiserror::Error;
@@ -205,7 +205,7 @@ impl Policy {
     #[tracing::instrument(skip(self))]
     pub async fn evaluate_client_registration(
         &mut self,
-        client_metadata: &ClientMetadata,
+        client_metadata: &VerifiedClientMetadata,
     ) -> Result<EvaluationResult, anyhow::Error> {
         let client_metadata = serde_json::to_value(client_metadata)?;
         let input = serde_json::json!({

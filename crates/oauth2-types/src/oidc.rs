@@ -778,7 +778,7 @@ pub enum ProviderMetadataVerificationError {
     /// The given endpoint is missing auth signing algorithm values, but they
     /// are required because it supports at least one of the `client_secret_jwt`
     /// or `private_key_jwt` authentication methods.
-    #[error("{0} auth signing algorithm values contain `none`")]
+    #[error("{0} missing auth signing algorithm values")]
     MissingAuthSigningAlgValues(&'static str),
 
     /// `none` is in the given endpoint's signing algorithm values, but is not
