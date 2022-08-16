@@ -15,6 +15,7 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::all, clippy::str_to_string, rustdoc::broken_intra_doc_links)]
 #![warn(clippy::pedantic)]
+#![allow(clippy::module_name_repetitions)]
 
 use mas_iana::oauth::OAuthAuthorizationEndpointResponseType;
 

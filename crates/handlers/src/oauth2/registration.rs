@@ -16,13 +16,13 @@ use std::sync::Arc;
 
 use axum::{response::IntoResponse, Extension, Json};
 use hyper::StatusCode;
-use mas_iana::oauth::{OAuthAuthorizationEndpointResponseType, OAuthClientAuthenticationMethod};
 use mas_policy::{PolicyFactory, Violation};
 use mas_storage::oauth2::client::insert_client;
 use oauth2_types::{
     errors::{INVALID_CLIENT_METADATA, INVALID_REDIRECT_URI, SERVER_ERROR},
-    registration::{ClientMetadata, ClientRegistrationResponse},
-    requests::GrantType,
+    registration::{
+        ClientMetadata, ClientMetadataVerificationError, ClientRegistrationResponse, Localized,
+    },
 };
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use sqlx::PgPool;
@@ -50,6 +50,18 @@ pub(crate) enum RouteError {
 impl From<sqlx::Error> for RouteError {
     fn from(e: sqlx::Error) -> Self {
         Self::Internal(Box::new(e))
+    }
+}
+
+impl From<ClientMetadataVerificationError> for RouteError {
+    fn from(e: ClientMetadataVerificationError) -> Self {
+        match e {
+            ClientMetadataVerificationError::MissingRedirectUris
+            | ClientMetadataVerificationError::RedirectUriWithFragment(_) => {
+                Self::InvalidRedirectUri
+            }
+            _ => Self::InvalidClientMetadata,
+        }
     }
 }
 
@@ -111,54 +123,17 @@ pub(crate) async fn post(
 ) -> Result<impl IntoResponse, RouteError> {
     info!(?body, "Client registration");
 
-    // Let's validate a bunch of things on the client body first
-    for uri in &body.redirect_uris {
-        if uri.fragment().is_some() {
-            return Err(RouteError::InvalidRedirectUri);
-        }
-    }
-
-    // Check that the client did not send both a jwks and a jwks_uri
-    if body.jwks_uri.is_some() && body.jwks.is_some() {
-        return Err(RouteError::InvalidClientMetadata);
-    }
-
-    // Check that the grant_types and the response_types are coherent
-    let has_implicit = body.grant_types.contains(&GrantType::Implicit);
-    let has_authorization_code = body.grant_types.contains(&GrantType::AuthorizationCode);
-    let has_both = has_implicit && has_authorization_code;
-
-    for response_type in &body.response_types {
-        let is_ok = match response_type {
-            OAuthAuthorizationEndpointResponseType::Code => has_authorization_code,
-            OAuthAuthorizationEndpointResponseType::CodeIdToken
-            | OAuthAuthorizationEndpointResponseType::CodeIdTokenToken
-            | OAuthAuthorizationEndpointResponseType::CodeToken => has_both,
-            OAuthAuthorizationEndpointResponseType::IdToken
-            | OAuthAuthorizationEndpointResponseType::IdTokenToken
-            | OAuthAuthorizationEndpointResponseType::Token => has_implicit,
-            OAuthAuthorizationEndpointResponseType::None => true,
-        };
-
-        if !is_ok {
-            return Err(RouteError::InvalidClientMetadata);
-        }
-    }
-
-    // If the private_key_jwt auth method is used, check that we actually have a
-    // JWKS for that client
-    if body.token_endpoint_auth_method == Some(OAuthClientAuthenticationMethod::PrivateKeyJwt)
-        && body.jwks_uri.is_none()
-        && body.jwks.is_none()
-    {
-        return Err(RouteError::InvalidClientMetadata);
-    }
+    // Validate the body
+    let metadata = body.validate()?;
 
     let mut policy = policy_factory.instantiate().await?;
-    let res = policy.evaluate_client_registration(&body).await?;
+    let res = policy.evaluate_client_registration(&metadata).await?;
     if !res.valid() {
         return Err(RouteError::PolicyDenied(res.violations));
     }
+
+    // Contacts was checked by the policy
+    let contacts = metadata.contacts.as_deref().unwrap_or_default();
 
     // Grab a txn
     let mut txn = pool.begin().await?;
@@ -173,23 +148,26 @@ pub(crate) async fn post(
     insert_client(
         &mut txn,
         &client_id,
-        &body.redirect_uris,
+        metadata.redirect_uris(),
         None,
-        &body.response_types,
-        &body.grant_types,
-        &body.contacts,
-        body.client_name.as_deref(),
-        body.logo_uri.as_ref(),
-        body.client_uri.as_ref(),
-        body.policy_uri.as_ref(),
-        body.tos_uri.as_ref(),
-        body.jwks_uri.as_ref(),
-        body.jwks.as_ref(),
-        body.id_token_signed_response_alg,
-        body.userinfo_signed_response_alg,
-        body.token_endpoint_auth_method,
-        body.token_endpoint_auth_signing_alg,
-        body.initiate_login_uri.as_ref(),
+        metadata.response_types(),
+        metadata.grant_types(),
+        contacts,
+        metadata
+            .client_name
+            .as_ref()
+            .map(|l| l.non_localized().as_ref()),
+        metadata.logo_uri.as_ref().map(Localized::non_localized),
+        metadata.client_uri.as_ref().map(Localized::non_localized),
+        metadata.policy_uri.as_ref().map(Localized::non_localized),
+        metadata.tos_uri.as_ref().map(Localized::non_localized),
+        metadata.jwks_uri.as_ref(),
+        metadata.jwks.as_ref(),
+        metadata.id_token_signed_response_alg,
+        metadata.userinfo_signed_response_alg,
+        metadata.token_endpoint_auth_method,
+        metadata.token_endpoint_auth_signing_alg,
+        metadata.initiate_login_uri.as_ref(),
     )
     .await?;
 

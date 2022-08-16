@@ -4,17 +4,22 @@ test_valid {
 	allow with input.client_metadata as {
 		"client_uri": "https://example.com/",
 		"redirect_uris": ["https://example.com/callback"],
+		"contacts": ["contact@example.com"],
 	}
 }
 
 test_missing_client_uri {
-	not allow with input.client_metadata as {"redirect_uris": ["https://example.com/callback"]}
+	not allow with input.client_metadata as {
+		"redirect_uris": ["https://example.com/callback"],
+		"contacts": ["contact@example.com"],
+	}
 }
 
 test_insecure_client_uri {
 	not allow with input.client_metadata as {
 		"client_uri": "http://example.com/",
 		"redirect_uris": ["https://example.com/callback"],
+		"contacts": ["contact@example.com"],
 	}
 }
 
@@ -23,6 +28,7 @@ test_tos_uri {
 		"client_uri": "https://example.com/",
 		"tos_uri": "https://example.com/tos",
 		"redirect_uris": ["https://example.com/callback"],
+		"contacts": ["contact@example.com"],
 	}
 
 	# Insecure
@@ -30,6 +36,7 @@ test_tos_uri {
 		"client_uri": "https://example.com/",
 		"tos_uri": "http://example.com/tos",
 		"redirect_uris": ["https://example.com/callback"],
+		"contacts": ["contact@example.com"],
 	}
 
 	# Insecure, but allowed by the config
@@ -37,6 +44,7 @@ test_tos_uri {
 		"client_uri": "https://example.com/",
 		"tos_uri": "http://example.com/tos",
 		"redirect_uris": ["https://example.com/callback"],
+		"contacts": ["contact@example.com"],
 	}
 		with data.client_registration.allow_insecure_uris as true
 
@@ -45,6 +53,7 @@ test_tos_uri {
 		"client_uri": "https://example.com/",
 		"tos_uri": "https://example.org/tos",
 		"redirect_uris": ["https://example.com/callback"],
+		"contacts": ["contact@example.com"],
 	}
 
 	# Host mistmatch, but allowed by the config
@@ -52,6 +61,7 @@ test_tos_uri {
 		"client_uri": "https://example.com/",
 		"tos_uri": "https://example.org/tos",
 		"redirect_uris": ["https://example.com/callback"],
+		"contacts": ["contact@example.com"],
 	}
 		with data.client_registration.allow_host_mismatch as true
 }
@@ -61,6 +71,7 @@ test_logo_uri {
 		"client_uri": "https://example.com/",
 		"logo_uri": "https://example.com/logo.png",
 		"redirect_uris": ["https://example.com/callback"],
+		"contacts": ["contact@example.com"],
 	}
 
 	# Insecure
@@ -68,6 +79,7 @@ test_logo_uri {
 		"client_uri": "https://example.com/",
 		"logo_uri": "http://example.com/logo.png",
 		"redirect_uris": ["https://example.com/callback"],
+		"contacts": ["contact@example.com"],
 	}
 
 	# Insecure, but allowed by the config
@@ -75,6 +87,7 @@ test_logo_uri {
 		"client_uri": "https://example.com/",
 		"logo_uri": "http://example.com/logo.png",
 		"redirect_uris": ["https://example.com/callback"],
+		"contacts": ["contact@example.com"],
 	}
 		with data.client_registration.allow_insecure_uris as true
 
@@ -83,6 +96,7 @@ test_logo_uri {
 		"client_uri": "https://example.com/",
 		"logo_uri": "https://example.org/logo.png",
 		"redirect_uris": ["https://example.com/callback"],
+		"contacts": ["contact@example.com"],
 	}
 
 	# Host mistmatch, but allowed by the config
@@ -90,6 +104,7 @@ test_logo_uri {
 		"client_uri": "https://example.com/",
 		"logo_uri": "https://example.org/logo.png",
 		"redirect_uris": ["https://example.com/callback"],
+		"contacts": ["contact@example.com"],
 	}
 		with data.client_registration.allow_host_mismatch as true
 }
@@ -99,6 +114,7 @@ test_policy_uri {
 		"client_uri": "https://example.com/",
 		"policy_uri": "https://example.com/policy",
 		"redirect_uris": ["https://example.com/callback"],
+		"contacts": ["contact@example.com"],
 	}
 
 	# Insecure
@@ -106,6 +122,7 @@ test_policy_uri {
 		"client_uri": "https://example.com/",
 		"policy_uri": "http://example.com/policy",
 		"redirect_uris": ["https://example.com/callback"],
+		"contacts": ["contact@example.com"],
 	}
 
 	# Insecure, but allowed by the config
@@ -113,6 +130,7 @@ test_policy_uri {
 		"client_uri": "https://example.com/",
 		"policy_uri": "http://example.com/policy",
 		"redirect_uris": ["https://example.com/callback"],
+		"contacts": ["contact@example.com"],
 	}
 		with data.client_registration.allow_insecure_uris as true
 
@@ -121,6 +139,7 @@ test_policy_uri {
 		"client_uri": "https://example.com/",
 		"policy_uri": "https://example.org/policy",
 		"redirect_uris": ["https://example.com/callback"],
+		"contacts": ["contact@example.com"],
 	}
 
 	# Host mistmatch, but allowed by the config
@@ -128,24 +147,30 @@ test_policy_uri {
 		"client_uri": "https://example.com/",
 		"policy_uri": "https://example.org/policy",
 		"redirect_uris": ["https://example.com/callback"],
+		"contacts": ["contact@example.com"],
 	}
 		with data.client_registration.allow_host_mismatch as true
 }
 
 test_redirect_uris {
 	# Missing redirect_uris
-	not allow with input.client_metadata as {"client_uri": "https://example.com/"}
+	not allow with input.client_metadata as {
+		"client_uri": "https://example.com/",
+		"contacts": ["contact@example.com"],
+	}
 
 	# redirect_uris is not an array
 	not allow with input.client_metadata as {
 		"client_uri": "https://example.com/",
 		"redirect_uris": "https://example.com/callback",
+		"contacts": ["contact@example.com"],
 	}
 
 	# Empty redirect_uris
 	not allow with input.client_metadata as {
 		"client_uri": "https://example.com/",
 		"redirect_uris": [],
+		"contacts": ["contact@example.com"],
 	}
 }
 
@@ -154,6 +179,7 @@ test_web_redirect_uri {
 		"application_type": "web",
 		"client_uri": "https://example.com/",
 		"redirect_uris": ["https://example.com/second/callback", "https://example.com/callback"],
+		"contacts": ["contact@example.com"],
 	}
 
 	# Insecure URL
@@ -161,6 +187,7 @@ test_web_redirect_uri {
 		"application_type": "web",
 		"client_uri": "https://example.com/",
 		"redirect_uris": ["http://example.com/callback", "https://example.com/callback"],
+		"contacts": ["contact@example.com"],
 	}
 
 	# Insecure URL, but allowed by the config
@@ -168,6 +195,7 @@ test_web_redirect_uri {
 		"application_type": "web",
 		"client_uri": "https://example.com/",
 		"redirect_uris": ["http://example.com/callback", "https://example.com/callback"],
+		"contacts": ["contact@example.com"],
 	}
 		with data.client_registration.allow_insecure_uris as true
 
@@ -176,6 +204,7 @@ test_web_redirect_uri {
 		"application_type": "web",
 		"client_uri": "https://example.com/",
 		"redirect_uris": ["https://example.com/second/callback", "https://example.org/callback"],
+		"contacts": ["contact@example.com"],
 	}
 
 	# Host mismatch, but allowed by the config
@@ -183,6 +212,7 @@ test_web_redirect_uri {
 		"application_type": "web",
 		"client_uri": "https://example.com/",
 		"redirect_uris": ["https://example.com/second/callback", "https://example.org/callback"],
+		"contacts": ["contact@example.com"],
 	}
 		with data.client_registration.allow_host_mismatch as true
 
@@ -191,6 +221,7 @@ test_web_redirect_uri {
 		"application_type": "web",
 		"client_uri": "https://example.com/",
 		"redirect_uris": ["com.example.app:/callback"],
+		"contacts": ["contact@example.com"],
 	}
 
 	# localhost not allowed
@@ -198,6 +229,7 @@ test_web_redirect_uri {
 		"application_type": "web",
 		"client_uri": "https://example.com/",
 		"redirect_uris": ["http://locahost:1234/callback"],
+		"contacts": ["contact@example.com"],
 	}
 
 	# localhost not allowed
@@ -205,6 +237,7 @@ test_web_redirect_uri {
 		"application_type": "web",
 		"client_uri": "https://example.com/",
 		"redirect_uris": ["http://127.0.0.1:1234/callback"],
+		"contacts": ["contact@example.com"],
 	}
 
 	# localhost not allowed
@@ -212,6 +245,7 @@ test_web_redirect_uri {
 		"application_type": "web",
 		"client_uri": "https://example.com/",
 		"redirect_uris": ["http://[::1]:1234/callback"],
+		"contacts": ["contact@example.com"],
 	}
 }
 
@@ -229,6 +263,7 @@ test_native_redirect_uri {
 			"http://[::1]/callback",
 			"http://[::1]:1234/callback",
 		],
+		"contacts": ["contact@example.com"],
 	}
 
 	# We don't allow HTTP URLs other than localhost
@@ -236,12 +271,14 @@ test_native_redirect_uri {
 		"application_type": "native",
 		"client_uri": "https://example.com/",
 		"redirect_uris": ["https://example.com/"],
+		"contacts": ["contact@example.com"],
 	}
 
 	not allow with input.client_metadata as {
 		"application_type": "native",
 		"client_uri": "https://example.com/",
 		"redirect_uris": ["http://example.com/"],
+		"contacts": ["contact@example.com"],
 	}
 
 	# We don't allow HTTPS on localhost
@@ -249,6 +286,7 @@ test_native_redirect_uri {
 		"application_type": "native",
 		"client_uri": "https://example.com/",
 		"redirect_uris": ["https://localhost:1234/"],
+		"contacts": ["contact@example.com"],
 	}
 
 	# Ensure we're not allowing localhost as a prefix
@@ -256,6 +294,7 @@ test_native_redirect_uri {
 		"application_type": "native",
 		"client_uri": "https://example.com/",
 		"redirect_uris": ["http://localhost.com/"],
+		"contacts": ["contact@example.com"],
 	}
 
 	# For custom schemes, it should match the client_uri hostname
@@ -263,6 +302,7 @@ test_native_redirect_uri {
 		"application_type": "native",
 		"client_uri": "https://example.com/",
 		"redirect_uris": ["org.example.app:/callback"],
+		"contacts": ["contact@example.com"],
 	}
 }
 
@@ -270,4 +310,26 @@ test_reverse_dns_match {
 	client_uri := parse_uri("https://element.io/")
 	redirect_uri := parse_uri("io.element.app:/callback")
 	reverse_dns_match(client_uri.host, redirect_uri.scheme)
+}
+
+test_contacts {
+	# Missing contacts
+	not allow with input.client_metadata as {
+		"client_uri": "https://example.com/",
+		"redirect_uris": ["https://example.com/callback"],
+	}
+
+	# contacts is not an array
+	not allow with input.client_metadata as {
+		"client_uri": "https://example.com/",
+		"redirect_uris": ["https://example.com/callback"],
+		"contacts": "contact@example.com",
+	}
+
+	# Empty contacts
+	not allow with input.client_metadata as {
+		"client_uri": "https://example.com/",
+		"redirect_uris": ["https://example.com/callback"],
+		"contacts": [],
+	}
 }

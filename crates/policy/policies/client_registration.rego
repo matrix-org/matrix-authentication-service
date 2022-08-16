@@ -79,6 +79,18 @@ violation[{"msg": "logo_uri not on the same host as the client_uri"}] {
 	not host_matches_client_uri(input.client_metadata.logo_uri)
 }
 
+violation[{"msg": "missing contacts"}] {
+	not input.client_metadata.contacts
+}
+
+violation[{"msg": "invalid contacts"}] {
+	not is_array(input.client_metadata.contacts)
+}
+
+violation[{"msg": "empty contacts"}] {
+	count(input.client_metadata.contacts) == 0
+}
+
 violation[{"msg": "missing redirect_uris"}] {
 	not input.client_metadata.redirect_uris
 }
