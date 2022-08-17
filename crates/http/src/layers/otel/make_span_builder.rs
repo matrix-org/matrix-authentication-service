@@ -12,17 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{borrow::Cow, net::SocketAddr};
+use std::borrow::Cow;
 
+#[cfg(feature = "axum")]
 use axum::extract::{ConnectInfo, MatchedPath};
 use headers::{ContentLength, HeaderMapExt, Host, UserAgent};
 use http::{Method, Request, Version};
+#[cfg(feature = "client")]
 use hyper::client::connect::dns::Name;
 use opentelemetry::trace::{SpanBuilder, SpanKind};
-use opentelemetry_semantic_conventions::trace::{
-    HTTP_FLAVOR, HTTP_HOST, HTTP_METHOD, HTTP_REQUEST_CONTENT_LENGTH, HTTP_ROUTE, HTTP_TARGET,
-    HTTP_USER_AGENT, NET_HOST_NAME, NET_PEER_IP, NET_PEER_PORT, NET_TRANSPORT,
-};
+use opentelemetry_semantic_conventions::trace as SC;
 
 pub trait MakeSpanBuilder<R> {
     fn make_span_builder(&self, request: &R) -> SpanBuilder;
@@ -117,24 +116,24 @@ impl SpanFromHttpRequest {
 impl<B> MakeSpanBuilder<Request<B>> for SpanFromHttpRequest {
     fn make_span_builder(&self, request: &Request<B>) -> SpanBuilder {
         let mut attributes = vec![
-            HTTP_METHOD.string(http_method_str(request.method())),
-            HTTP_FLAVOR.string(http_flavor(request.version())),
-            HTTP_TARGET.string(request.uri().to_string()),
+            SC::HTTP_METHOD.string(http_method_str(request.method())),
+            SC::HTTP_FLAVOR.string(http_flavor(request.version())),
+            SC::HTTP_TARGET.string(request.uri().to_string()),
         ];
 
         let headers = request.headers();
 
         if let Some(host) = headers.typed_get::<Host>() {
-            attributes.push(HTTP_HOST.string(host.to_string()));
+            attributes.push(SC::HTTP_HOST.string(host.to_string()));
         }
 
         if let Some(user_agent) = headers.typed_get::<UserAgent>() {
-            attributes.push(HTTP_USER_AGENT.string(user_agent.to_string()));
+            attributes.push(SC::HTTP_USER_AGENT.string(user_agent.to_string()));
         }
 
         if let Some(ContentLength(content_length)) = headers.typed_get() {
             if let Ok(content_length) = content_length.try_into() {
-                attributes.push(HTTP_REQUEST_CONTENT_LENGTH.i64(content_length));
+                attributes.push(SC::HTTP_REQUEST_CONTENT_LENGTH.i64(content_length));
             }
         }
 
@@ -144,42 +143,47 @@ impl<B> MakeSpanBuilder<Request<B>> for SpanFromHttpRequest {
     }
 }
 
+#[cfg(feature = "axum")]
 #[derive(Debug, Clone)]
 pub struct SpanFromAxumRequest;
 
+#[cfg(feature = "axum")]
 impl<B> MakeSpanBuilder<Request<B>> for SpanFromAxumRequest {
     fn make_span_builder(&self, request: &Request<B>) -> SpanBuilder {
         let mut attributes = vec![
-            HTTP_METHOD.string(http_method_str(request.method())),
-            HTTP_FLAVOR.string(http_flavor(request.version())),
-            HTTP_TARGET.string(request.uri().to_string()),
+            SC::HTTP_METHOD.string(http_method_str(request.method())),
+            SC::HTTP_FLAVOR.string(http_flavor(request.version())),
+            SC::HTTP_TARGET.string(request.uri().to_string()),
         ];
 
         let headers = request.headers();
 
         if let Some(host) = headers.typed_get::<Host>() {
-            attributes.push(HTTP_HOST.string(host.to_string()));
+            attributes.push(SC::HTTP_HOST.string(host.to_string()));
         }
 
         if let Some(user_agent) = headers.typed_get::<UserAgent>() {
-            attributes.push(HTTP_USER_AGENT.string(user_agent.to_string()));
+            attributes.push(SC::HTTP_USER_AGENT.string(user_agent.to_string()));
         }
 
         if let Some(ContentLength(content_length)) = headers.typed_get() {
             if let Ok(content_length) = content_length.try_into() {
-                attributes.push(HTTP_REQUEST_CONTENT_LENGTH.i64(content_length));
+                attributes.push(SC::HTTP_REQUEST_CONTENT_LENGTH.i64(content_length));
             }
         }
 
-        if let Some(ConnectInfo(addr)) = request.extensions().get::<ConnectInfo<SocketAddr>>() {
-            attributes.push(NET_TRANSPORT.string("ip_tcp"));
-            attributes.push(NET_PEER_IP.string(addr.ip().to_string()));
-            attributes.push(NET_PEER_PORT.i64(addr.port().into()));
+        if let Some(ConnectInfo(addr)) = request
+            .extensions()
+            .get::<ConnectInfo<std::net::SocketAddr>>()
+        {
+            attributes.push(SC::NET_TRANSPORT.string("ip_tcp"));
+            attributes.push(SC::NET_PEER_IP.string(addr.ip().to_string()));
+            attributes.push(SC::NET_PEER_PORT.i64(addr.port().into()));
         }
 
         let name = if let Some(path) = request.extensions().get::<MatchedPath>() {
             let path = path.as_str().to_owned();
-            attributes.push(HTTP_ROUTE.string(path.clone()));
+            attributes.push(SC::HTTP_ROUTE.string(path.clone()));
             path
         } else {
             request.uri().path().to_owned()
@@ -191,12 +195,14 @@ impl<B> MakeSpanBuilder<Request<B>> for SpanFromAxumRequest {
     }
 }
 
+#[cfg(feature = "client")]
 #[derive(Debug, Clone, Copy, Default)]
 pub struct SpanFromDnsRequest;
 
+#[cfg(feature = "client")]
 impl MakeSpanBuilder<Name> for SpanFromDnsRequest {
     fn make_span_builder(&self, request: &Name) -> SpanBuilder {
-        let attributes = vec![NET_HOST_NAME.string(request.as_str().to_owned())];
+        let attributes = vec![SC::NET_HOST_NAME.string(request.as_str().to_owned())];
 
         SpanBuilder::from_name("resolve")
             .with_kind(SpanKind::Client)
