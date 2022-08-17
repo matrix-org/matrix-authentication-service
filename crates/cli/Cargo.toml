@@ -35,7 +35,7 @@ opentelemetry-zipkin = { version = "0.15.0", features = ["reqwest-client", "reqw
 mas-config = { path = "../config" }
 mas-email = { path = "../email" }
 mas-handlers = { path = "../handlers" }
-mas-http = { path = "../http" }
+mas-http = { path = "../http", features = ["axum"] }
 mas-policy = { path = "../policy" }
 mas-router = { path = "../router" }
 mas-static-files = { path = "../static-files" }

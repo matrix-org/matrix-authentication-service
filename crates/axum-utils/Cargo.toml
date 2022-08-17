@@ -36,4 +36,4 @@ mas-storage = { path = "../storage" }
 mas-data-model = { path = "../data-model" }
 mas-jose = { path = "../jose" }
 mas-iana = { path = "../iana" }
-mas-http = { path = "../http" }
+mas-http = { path = "../http", features = ["client"] }

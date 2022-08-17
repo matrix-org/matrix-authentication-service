@@ -37,6 +37,7 @@ pub type TraceHttpServer<S> = Trace<
     S,
 >;
 
+#[cfg(feature = "axum")]
 pub type TraceAxumServerLayer = TraceLayer<
     ExtractFromHttpRequest,
     DefaultInjectContext,
@@ -45,6 +46,7 @@ pub type TraceAxumServerLayer = TraceLayer<
     DefaultOnError,
 >;
 
+#[cfg(feature = "axum")]
 pub type TraceAxumServer<S> = Trace<
     ExtractFromHttpRequest,
     DefaultInjectContext,
@@ -71,6 +73,7 @@ pub type TraceHttpClient<S> = Trace<
     S,
 >;
 
+#[cfg(feature = "client")]
 pub type TraceDnsLayer = TraceLayer<
     DefaultExtractContext,
     DefaultInjectContext,
@@ -79,6 +82,7 @@ pub type TraceDnsLayer = TraceLayer<
     DefaultOnError,
 >;
 
+#[cfg(feature = "client")]
 pub type TraceDns<S> = Trace<
     DefaultExtractContext,
     DefaultInjectContext,
@@ -98,6 +102,7 @@ impl TraceHttpServerLayer {
     }
 }
 
+#[cfg(feature = "axum")]
 impl TraceAxumServerLayer {
     #[must_use]
     pub fn axum() -> Self {
@@ -126,6 +131,7 @@ impl TraceHttpClientLayer {
     }
 }
 
+#[cfg(feature = "client")]
 impl TraceDnsLayer {
     #[must_use]
     pub fn dns() -> Self {

@@ -37,10 +37,14 @@ where
     type Service = BoxCloneService<Request<ReqBody>, Response<CompressionBody<ResBody>>, S::Error>;
 
     fn layer(&self, inner: S) -> Self::Service {
-        ServiceBuilder::new()
-            .compression()
-            .layer(TraceLayer::axum())
-            .service(inner)
-            .boxed_clone()
+        let builder = ServiceBuilder::new().compression();
+
+        #[cfg(feature = "axum")]
+        let builder = builder.layer(TraceLayer::axum());
+
+        #[cfg(not(feature = "axum"))]
+        let builder = builder.layer(TraceLayer::http_server());
+
+        builder.service(inner).boxed_clone()
     }
 }
