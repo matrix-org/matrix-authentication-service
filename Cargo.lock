@@ -541,9 +541,9 @@ dependencies = [
 
 [[package]]
 name = "axum-extra"
-version = "0.3.6"
+version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "277c75e6c814b061ae4947d02335d9659db9771b9950cca670002ae986372f44"
+checksum = "69034b3b0fd97923eee2ce8a47540edb21e07f48f87f67d44bb4271cec622bdb"
 dependencies = [
  "axum",
  "bytes 1.2.1",
@@ -4376,9 +4376,9 @@ dependencies = [
 
 [[package]]
 name = "tera"
-version = "1.16.0"
+version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c9783d6ff395ae80cf17ed9a25360e7ba37742a79fa8fddabb073c5c7c8856d"
+checksum = "1d4685e72cb35f0eb74319c8fe2d3b61e93da5609841cde2cb87fcc3bea56d20"
 dependencies = [
  "chrono",
  "chrono-tz",
