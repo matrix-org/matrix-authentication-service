@@ -8,7 +8,7 @@ license = "Apache-2.0"
 [dependencies]
 axum = { version = "0.5.15", optional = true }
 bytes = "1.2.1"
-futures-util = "0.3.21"
+futures-util = "0.3.23"
 headers = "0.3.7"
 http = "0.2.8"
 http-body = "0.4.5"
