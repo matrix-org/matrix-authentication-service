@@ -1,4 +1,4 @@
-# syntax = docker/dockerfile:1.3
+# syntax = docker/dockerfile:1.4
 
 # Builds a minimal image with the binary only. It is multi-arch capable,
 # cross-building to aarch64 and x86_64. When cross-compiling, Docker sets two
@@ -12,9 +12,9 @@
 # The Debian version and version name must be in sync
 ARG DEBIAN_VERSION=11
 ARG DEBIAN_VERSION_NAME=bullseye
-ARG RUSTC_VERSION=1.61.0
+ARG RUSTC_VERSION=1.63.0
 ARG NODEJS_VERSION=16
-ARG OPA_VERSION=0.40.0
+ARG OPA_VERSION=0.43.0
 
 ## Build stage that builds the static files/frontend ##
 FROM --platform=${BUILDPLATFORM} docker.io/library/node:${NODEJS_VERSION}-${DEBIAN_VERSION_NAME}-slim AS static-files
