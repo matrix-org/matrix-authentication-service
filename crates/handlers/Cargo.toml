@@ -48,7 +48,7 @@ crc = "3.0.0"
 
 # Various data types and utilities
 data-encoding = "2.3.2"
-chrono = { version = "0.4.20", features = ["serde"] }
+chrono = { version = "0.4.22", features = ["serde"] }
 url = { version = "2.2.2", features = ["serde"] }
 mime = "0.3.16"
 rand = "0.8.5"
