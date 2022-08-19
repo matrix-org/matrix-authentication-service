@@ -12,7 +12,7 @@ axum-extra = { version = "0.3.6", features = ["cookie-private"] }
 bincode = "1.3.3"
 chrono = "0.4.20"
 data-encoding = "2.3.2"
-futures-util = "0.3.21"
+futures-util = "0.3.23"
 headers = "0.3.7"
 http = "0.2.8"
 http-body = "0.4.5"

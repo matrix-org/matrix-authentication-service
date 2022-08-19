@@ -14,7 +14,7 @@ crypto-mac = { version = "0.11.1", features = ["std"] }
 digest = "0.10.3"
 ecdsa = { version = "0.14.3", features = ["sign", "verify", "pem", "pkcs8"] }
 elliptic-curve = { version = "0.12.3", features = ["ecdh", "pem"] }
-futures-util = "0.3.21"
+futures-util = "0.3.23"
 hmac = "0.12.1"
 http = "0.2.8"
 p256 = { version = "0.11.1", features = ["ecdsa", "pem", "pkcs8"] }
