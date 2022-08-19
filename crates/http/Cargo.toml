@@ -38,4 +38,4 @@ tower = { version = "0.4.13", features = ["util"] }
 [features]
 default = []
 axum = ["dep:axum"]
-client = ["dep:hyper-rustls", "hyper/tcp", "tokio", "tokio/sync", "tokio/parking_lot"]
+client = ["dep:hyper-rustls", "hyper/tcp", "dep:tokio", "tokio?/sync", "tokio?/parking_lot"]

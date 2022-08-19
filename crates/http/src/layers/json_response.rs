@@ -27,7 +27,7 @@ pub enum Error<Service> {
     Service { inner: Service },
 
     #[error("could not parse JSON payload")]
-    Serialize {
+    Deserialize {
         #[source]
         inner: serde_json::Error,
     },
@@ -38,8 +38,8 @@ impl<S> Error<S> {
         Self::Service { inner: source }
     }
 
-    fn serialize(source: serde_json::Error) -> Self {
-        Self::Serialize { inner: source }
+    fn deserialize(source: serde_json::Error) -> Self {
+        Self::Deserialize { inner: source }
     }
 }
 
@@ -85,7 +85,7 @@ where
             let response = res.map_err(Error::service)?;
             let (parts, body) = response.into_parts();
 
-            let body = serde_json::from_reader(body.reader()).map_err(Error::serialize)?;
+            let body = serde_json::from_reader(body.reader()).map_err(Error::deserialize)?;
 
             let res = Response::from_parts(parts, body);
             Ok(res)

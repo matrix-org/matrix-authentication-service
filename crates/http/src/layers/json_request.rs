@@ -32,7 +32,7 @@ pub enum Error<Service> {
     Service { inner: Service },
 
     #[error("could not serialize JSON payload")]
-    Json {
+    Serialize {
         #[source]
         inner: serde_json::Error,
     },
@@ -43,8 +43,8 @@ impl<S> Error<S> {
         Self::Service { inner: source }
     }
 
-    fn json(source: serde_json::Error) -> Self {
-        Self::Json { inner: source }
+    fn serialize(source: serde_json::Error) -> Self {
+        Self::Serialize { inner: source }
     }
 }
 
@@ -88,7 +88,7 @@ where
 
         let body = match serde_json::to_vec(&body) {
             Ok(body) => Full::new(Bytes::from(body)),
-            Err(err) => return std::future::ready(Err(Error::json(err))).left_future(),
+            Err(err) => return std::future::ready(Err(Error::serialize(err))).left_future(),
         };
 
         let request = Request::from_parts(parts, body);
