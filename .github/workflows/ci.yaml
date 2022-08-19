@@ -451,11 +451,13 @@ jobs:
 
       # For pull-requests, only read from the cache, do not try to push to the
       # cache or the image itself
+      # We only build for the amd64 platform in pul-requests to speed-up CI
       - name: Build
         uses: docker/bake-action@v2
         if: github.event_name == 'pull_request'
         with:
           set: |
+            base.platform=linux/amd64
             base.cache-from=type=registry,ref=${{ env.IMAGE }}:buildcache
 
       - name: Build and push
