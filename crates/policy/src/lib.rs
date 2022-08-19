@@ -170,17 +170,16 @@ impl EvaluationResult {
     }
 }
 
-#[derive(Debug)]
 pub struct Policy {
     store: Store<()>,
-    instance: opa_wasm::Policy,
+    instance: opa_wasm::Policy<opa_wasm::DefaultContext>,
     register_entrypoint: String,
     client_registration_entrypoint: String,
     authorization_grant_endpoint: String,
 }
 
 impl Policy {
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self, password))]
     pub async fn evaluate_register(
         &mut self,
         username: &str,
@@ -203,7 +202,7 @@ impl Policy {
         Ok(res)
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     pub async fn evaluate_client_registration(
         &mut self,
         client_metadata: &ClientMetadata,
@@ -225,7 +224,7 @@ impl Policy {
         Ok(res)
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     pub async fn evaluate_authorization_grant<T: StorageBackend + std::fmt::Debug>(
         &mut self,
         authorization_grant: &AuthorizationGrant<T>,
