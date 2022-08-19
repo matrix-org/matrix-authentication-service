@@ -21,7 +21,6 @@ use futures_util::{
 };
 use headers::{ContentType, HeaderMapExt};
 use http::Request;
-use http_body::Full;
 use serde::Serialize;
 use thiserror::Error;
 use tower::{Layer, Service};
@@ -65,7 +64,7 @@ impl<S, T> FormUrlencodedRequest<S, T> {
 
 impl<S, T> Service<Request<T>> for FormUrlencodedRequest<S, T>
 where
-    S: Service<Request<Full<Bytes>>>,
+    S: Service<Request<Bytes>>,
     S::Future: Send + 'static,
     S::Error: 'static,
     T: Serialize,
@@ -87,7 +86,7 @@ where
         parts.headers.typed_insert(ContentType::form_url_encoded());
 
         let body = match serde_urlencoded::to_string(&body) {
-            Ok(body) => Full::new(Bytes::from(body)),
+            Ok(body) => Bytes::from(body),
             Err(err) => return std::future::ready(Err(Error::serialize(err))).left_future(),
         };
 

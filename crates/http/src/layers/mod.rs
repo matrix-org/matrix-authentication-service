@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub mod body_to_bytes;
+pub mod body_to_bytes_response;
+pub mod bytes_to_body_request;
 pub mod catch_http_codes;
 pub mod form_urlencoded_request;
 pub mod json_request;
