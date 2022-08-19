@@ -20,7 +20,8 @@ use tower::{layer::util::Stack, Service, ServiceBuilder};
 use tower_http::cors::CorsLayer;
 
 use crate::layers::{
-    body_to_bytes::{BodyToBytes, BodyToBytesLayer},
+    body_to_bytes_response::{BodyToBytesResponse, BodyToBytesResponseLayer},
+    bytes_to_body_request::{BytesToBodyRequest, BytesToBodyRequestLayer},
     catch_http_codes::{CatchHttpCodes, CatchHttpCodesLayer},
     form_urlencoded_request::{FormUrlencodedRequest, FormUrlencodedRequestLayer},
     json_request::{JsonRequest, JsonRequestLayer},
@@ -69,8 +70,12 @@ impl CorsLayerExt for CorsLayer {
 }
 
 pub trait ServiceExt<Body>: Sized {
-    fn response_body_to_bytes(self) -> BodyToBytes<Self> {
-        BodyToBytes::new(self)
+    fn request_bytes_to_body(self) -> BytesToBodyRequest<Self> {
+        BytesToBodyRequest::new(self)
+    }
+
+    fn response_body_to_bytes(self) -> BodyToBytesResponse<Self> {
+        BodyToBytesResponse::new(self)
     }
 
     fn json_response<T>(self) -> JsonResponse<Self, T> {
@@ -104,7 +109,8 @@ pub trait ServiceExt<Body>: Sized {
 impl<S, B> ServiceExt<B> for S where S: Service<Request<B>> {}
 
 pub trait ServiceBuilderExt<L>: Sized {
-    fn response_body_to_bytes(self) -> ServiceBuilder<Stack<BodyToBytesLayer, L>>;
+    fn request_bytes_to_body(self) -> ServiceBuilder<Stack<BytesToBodyRequestLayer, L>>;
+    fn response_body_to_bytes(self) -> ServiceBuilder<Stack<BodyToBytesResponseLayer, L>>;
     fn json_response<T>(self) -> ServiceBuilder<Stack<JsonResponseLayer<T>, L>>;
     fn json_request<T>(self) -> ServiceBuilder<Stack<JsonRequestLayer<T>, L>>;
     fn form_urlencoded_request<T>(self) -> ServiceBuilder<Stack<FormUrlencodedRequestLayer<T>, L>>;
@@ -131,8 +137,12 @@ pub trait ServiceBuilderExt<L>: Sized {
 }
 
 impl<L> ServiceBuilderExt<L> for ServiceBuilder<L> {
-    fn response_body_to_bytes(self) -> ServiceBuilder<Stack<BodyToBytesLayer, L>> {
-        self.layer(BodyToBytesLayer::default())
+    fn request_bytes_to_body(self) -> ServiceBuilder<Stack<BytesToBodyRequestLayer, L>> {
+        self.layer(BytesToBodyRequestLayer::default())
+    }
+
+    fn response_body_to_bytes(self) -> ServiceBuilder<Stack<BodyToBytesResponseLayer, L>> {
+        self.layer(BodyToBytesResponseLayer::default())
     }
 
     fn json_response<T>(self) -> ServiceBuilder<Stack<JsonResponseLayer<T>, L>> {

@@ -39,7 +39,8 @@ pub use self::{
     },
     future_service::FutureService,
     layers::{
-        body_to_bytes::{self, BodyToBytes, BodyToBytesLayer},
+        body_to_bytes_response::{self, BodyToBytesResponse, BodyToBytesResponseLayer},
+        bytes_to_body_request::{self, BytesToBodyRequest, BytesToBodyRequestLayer},
         catch_http_codes::{self, CatchHttpCodes, CatchHttpCodesLayer},
         client::ClientLayer,
         form_urlencoded_request::{self, FormUrlencodedRequest, FormUrlencodedRequestLayer},

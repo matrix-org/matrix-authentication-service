@@ -79,7 +79,10 @@ async fn test_json_request_body() {
         Ok(res)
     }
 
-    let svc = ServiceBuilder::new().json_request().service_fn(handle);
+    let svc = ServiceBuilder::new()
+        .json_request()
+        .request_bytes_to_body()
+        .service_fn(handle);
 
     let request = Request::new(serde_json::json!({"hello": "world"}));
 
@@ -141,6 +144,7 @@ async fn test_urlencoded_request_body() {
 
     let svc = ServiceBuilder::new()
         .form_urlencoded_request()
+        .request_bytes_to_body()
         .service_fn(handle);
 
     let request = Request::new(serde_json::json!({"hello": "world"}));

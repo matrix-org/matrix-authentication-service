@@ -39,17 +39,17 @@ impl<S, B> Error<S, B> {
 }
 
 #[derive(Clone)]
-pub struct BodyToBytes<S> {
+pub struct BodyToBytesResponse<S> {
     inner: S,
 }
 
-impl<S> BodyToBytes<S> {
+impl<S> BodyToBytesResponse<S> {
     pub const fn new(inner: S) -> Self {
         Self { inner }
     }
 }
 
-impl<S, ReqBody, ResBody> Service<Request<ReqBody>> for BodyToBytes<S>
+impl<S, ReqBody, ResBody> Service<Request<ReqBody>> for BodyToBytesResponse<S>
 where
     S: Service<Request<ReqBody>, Response = Response<ResBody>>,
     S::Future: Send + 'static,
@@ -85,12 +85,12 @@ where
 }
 
 #[derive(Default, Clone, Copy)]
-pub struct BodyToBytesLayer;
+pub struct BodyToBytesResponseLayer;
 
-impl<S> Layer<S> for BodyToBytesLayer {
-    type Service = BodyToBytes<S>;
+impl<S> Layer<S> for BodyToBytesResponseLayer {
+    type Service = BodyToBytesResponse<S>;
 
     fn layer(&self, inner: S) -> Self::Service {
-        BodyToBytes::new(inner)
+        BodyToBytesResponse::new(inner)
     }
 }
