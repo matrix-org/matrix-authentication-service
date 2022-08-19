@@ -387,7 +387,7 @@ jobs:
 
   build-image:
     name: Build and push Docker image
-    needs: [rustfmt, clippy, opa-lint]
+    needs: [opa-lint]
     runs-on: ubuntu-latest
     env:
       IMAGE: ghcr.io/matrix-org/matrix-authentication-service
