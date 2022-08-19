@@ -344,6 +344,11 @@ pub struct ProviderMetadata {
     pub require_pushed_authorization_requests: Option<bool>,
 
     /// Array containing the list of prompt values that this OP supports.
+    ///
+    /// This field can be used to detect if the OP supports the [prompt
+    /// `create`] value.
+    ///
+    /// [prompt `create`]: https://openid.net/specs/openid-connect-prompt-create-1_0.html
     pub prompt_values_supported: Option<Vec<Prompt>>,
 }
 
