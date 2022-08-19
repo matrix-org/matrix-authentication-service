@@ -19,7 +19,7 @@ opentelemetry = "0.17.0"
 opentelemetry-http = "0.6.0"
 opentelemetry-semantic-conventions = "0.9.0"
 rustls = "0.20.6"
-serde = "1.0.142"
+serde = "1.0.143"
 serde_json = "1.0.83"
 serde_urlencoded = "0.7.1"
 thiserror = "1.0.32"
@@ -31,7 +31,7 @@ tracing-opentelemetry = "0.17.4"
 
 [dev-dependencies]
 anyhow = "1.0.62"
-serde = { version = "1.0.142", features = ["derive"] }
+serde = { version = "1.0.143", features = ["derive"] }
 tokio = { version = "1.20.1", features = ["macros", "rt"] }
 tower = { version = "0.4.13", features = ["util"] }
 

@@ -6,6 +6,6 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-serde = "1.0.142"
+serde = "1.0.143"
 schemars = "0.8.10"
 parse-display = "0.5.5"
