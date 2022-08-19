@@ -150,7 +150,7 @@ pub struct AuthorizationResponse<R> {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct AuthorizationCodeGrant {
     pub code: String,
     #[serde(default)]
@@ -161,7 +161,7 @@ pub struct AuthorizationCodeGrant {
     pub code_verifier: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct RefreshTokenGrant {
     pub refresh_token: String,
 
@@ -169,7 +169,7 @@ pub struct RefreshTokenGrant {
     scope: Option<Scope>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct ClientCredentialsGrant {
     #[serde(default)]
     scope: Option<Scope>,
@@ -197,7 +197,7 @@ pub enum GrantType {
     ClientCredentials,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(tag = "grant_type", rename_all = "snake_case")]
 pub enum AccessTokenRequest {
     AuthorizationCode(AuthorizationCodeGrant),
@@ -209,7 +209,7 @@ pub enum AccessTokenRequest {
 
 #[serde_as]
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct AccessTokenResponse {
     access_token: String,
     refresh_token: Option<String>,
@@ -263,7 +263,7 @@ impl AccessTokenResponse {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct IntrospectionRequest {
     pub token: String,
 
@@ -273,7 +273,7 @@ pub struct IntrospectionRequest {
 
 #[serde_as]
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, PartialEq, Default)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Default)]
 pub struct IntrospectionResponse {
     pub active: bool,
 

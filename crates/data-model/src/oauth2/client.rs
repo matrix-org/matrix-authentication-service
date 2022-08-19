@@ -24,7 +24,7 @@ use url::Url;
 
 use crate::traits::{StorageBackend, StorageBackendMarker};
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum JwksOrJwksUri {
     /// Client's JSON Web Key Set document, passed by value.

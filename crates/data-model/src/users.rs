@@ -161,7 +161,7 @@ where
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub enum UserEmailVerificationState {
     AlreadyUsed { when: DateTime<Utc> },
     Expired,

@@ -33,7 +33,7 @@ use thiserror::Error;
 #[error("database query returned an inconsistent state")]
 pub struct DatabaseInconsistencyError;
 
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct PostgresqlBackend;
 
 impl StorageBackend for PostgresqlBackend {

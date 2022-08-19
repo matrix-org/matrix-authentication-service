@@ -22,3 +22,6 @@ itertools = "0.10.3"
 
 mas-iana = { path = "../iana" }
 mas-jose = { path = "../jose" }
+
+[dev-dependencies]
+assert_matches = "1.5.0"

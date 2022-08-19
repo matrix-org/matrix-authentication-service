@@ -200,7 +200,7 @@ fn base62_encode(mut num: u32) -> String {
 const CRC: Crc<u32> = Crc::<u32>::new(&CRC_32_ISO_HDLC);
 
 /// Invalid token
-#[derive(Debug, Error, PartialEq)]
+#[derive(Debug, Error, PartialEq, Eq)]
 pub enum TokenFormatError {
     /// Overall token format is invalid
     #[error("invalid token format")]

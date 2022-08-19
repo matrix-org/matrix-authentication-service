@@ -26,7 +26,7 @@ use crate::{StorageBackend, StorageBackendMarker, User};
 
 static DEVICE_ID_LENGTH: usize = 10;
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(transparent)]
 pub struct Device {
     id: String,

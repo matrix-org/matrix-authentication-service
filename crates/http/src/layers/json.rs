@@ -100,7 +100,7 @@ where
                 .await
                 .map_err(Error::body)?;
 
-            let body = serde_json::from_slice(&bytes.to_vec()).map_err(Error::json)?;
+            let body = serde_json::from_slice(&bytes).map_err(Error::json)?;
 
             let res = Response::from_parts(parts, body);
             Ok(res)
