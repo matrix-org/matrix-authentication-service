@@ -12,11 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use anyhow::Context;
 use clap::Parser;
 use hyper::{Response, Uri};
+use mas_config::PolicyConfig;
 use mas_http::HttpServiceExt;
-use tokio::io::AsyncWriteExt;
+use mas_policy::PolicyFactory;
+use tokio::io::{AsyncRead, AsyncWriteExt};
 use tower::{Service, ServiceExt};
+use tracing::info;
 
 #[derive(Parser, Debug)]
 pub(super) struct Options {
@@ -39,6 +43,9 @@ enum Subcommand {
         /// URI where to perform a GET request
         url: Uri,
     },
+
+    /// Check that the policies compile
+    Policy,
 }
 
 fn print_headers(parts: &hyper::http::response::Parts) {
@@ -57,7 +64,7 @@ fn print_headers(parts: &hyper::http::response::Parts) {
 
 impl Options {
     #[tracing::instrument(skip_all)]
-    pub async fn run(&self, _root: &super::Options) -> anyhow::Result<()> {
+    pub async fn run(&self, root: &super::Options) -> anyhow::Result<()> {
         use Subcommand as SC;
         match &self.subcommand {
             SC::Http {
@@ -107,6 +114,34 @@ impl Options {
                 let body = serde_json::to_string_pretty(&body)?;
                 println!("{}", body);
 
+                Ok(())
+            }
+
+            SC::Policy => {
+                let config: PolicyConfig = root.load_config()?;
+                info!("Loading and compiling the policy module");
+                let mut policy: Box<dyn AsyncRead + std::marker::Unpin> =
+                    if let Some(path) = &config.wasm_module {
+                        Box::new(
+                            tokio::fs::File::open(path)
+                                .await
+                                .context("failed to open OPA WASM policy file")?,
+                        )
+                    } else {
+                        Box::new(mas_policy::default_wasm_policy())
+                    };
+
+                let policy_factory = PolicyFactory::load(
+                    &mut policy,
+                    config.data.clone().unwrap_or_default(),
+                    config.register_entrypoint.clone(),
+                    config.client_registration_entrypoint.clone(),
+                    config.authorization_grant_entrypoint.clone(),
+                )
+                .await
+                .context("failed to load the policy")?;
+
+                let _instance = policy_factory.instantiate().await?;
                 Ok(())
             }
         }
