@@ -35,6 +35,7 @@ host_matches_client_uri(x) {
 }
 
 violation[{"msg": "missing client_uri"}] {
+	not data.client_registration.allow_missing_client_uri
 	not input.client_metadata.client_uri
 }
 
@@ -80,6 +81,7 @@ violation[{"msg": "logo_uri not on the same host as the client_uri"}] {
 }
 
 violation[{"msg": "missing contacts"}] {
+	not data.client_registration.allow_missing_contacts
 	not input.client_metadata.contacts
 }
 
