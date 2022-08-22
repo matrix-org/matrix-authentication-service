@@ -2,3 +2,8 @@
 
 [cache]
 enabled = false
+
+# A directory which exists *must* be specified even though the cache is
+# disabled, else wasmtime will try to create it, which might fail if the rootfs
+# is mounted as read-only
+directory = "/tmp"
