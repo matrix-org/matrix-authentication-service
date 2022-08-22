@@ -139,7 +139,7 @@ COPY ./misc/wasmtime-config.toml /etc/wasmtime/config.toml
 
 COPY --from=builder /usr/local/bin/mas-cli /usr/local/bin/mas-cli
 WORKDIR /
-ENTRYPOINT ["/mas-cli"]
+ENTRYPOINT ["/usr/local/bin/mas-cli"]
 
 ## Runtime stage ##
 FROM --platform=${TARGETPLATFORM} gcr.io/distroless/cc-debian${DEBIAN_VERSION}:nonroot
