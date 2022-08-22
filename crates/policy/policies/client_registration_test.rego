@@ -13,6 +13,12 @@ test_missing_client_uri {
 		"redirect_uris": ["https://example.com/callback"],
 		"contacts": ["contact@example.com"],
 	}
+
+	allow with input.client_metadata as {
+		"redirect_uris": ["https://example.com/callback"],
+		"contacts": ["contact@example.com"],
+	}
+		with data.client_registration.allow_missing_client_uri as true
 }
 
 test_insecure_client_uri {
@@ -318,6 +324,13 @@ test_contacts {
 		"client_uri": "https://example.com/",
 		"redirect_uris": ["https://example.com/callback"],
 	}
+
+	# Missing contacts, but allowed by config
+	allow with input.client_metadata as {
+		"client_uri": "https://example.com/",
+		"redirect_uris": ["https://example.com/callback"],
+	}
+		with data.client_registration.allow_missing_contacts as true
 
 	# contacts is not an array
 	not allow with input.client_metadata as {
