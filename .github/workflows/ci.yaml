@@ -80,7 +80,7 @@ jobs:
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v1
         with:
-          version: 0.41.0
+          version: 0.43.0
 
       - name: Lint policies
         run: |
