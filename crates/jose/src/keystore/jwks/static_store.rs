@@ -21,7 +21,7 @@ use sha2::{Sha256, Sha384, Sha512};
 use signature::{Signature, Verifier};
 use thiserror::Error;
 
-use crate::{JsonWebKey, JsonWebKeySet, JwtHeader, VerifyingKeystore};
+use crate::{JsonWebKey, JsonWebKeySet, JsonWebSignatureHeader, VerifyingKeystore};
 
 #[derive(Debug, Error)]
 pub enum Error {
@@ -154,7 +154,7 @@ impl StaticJwksStore {
     #[tracing::instrument(skip(self))]
     fn verify_sync(
         &self,
-        header: &JwtHeader,
+        header: &JsonWebSignatureHeader,
         payload: &[u8],
         signature: &[u8],
     ) -> Result<(), Error> {
@@ -227,7 +227,12 @@ impl VerifyingKeystore for StaticJwksStore {
     type Error = Error;
     type Future = Ready<Result<(), Self::Error>>;
 
-    fn verify(&self, header: &JwtHeader, payload: &[u8], signature: &[u8]) -> Self::Future {
+    fn verify(
+        &self,
+        header: &JsonWebSignatureHeader,
+        payload: &[u8],
+        signature: &[u8],
+    ) -> Self::Future {
         std::future::ready(self.verify_sync(header, payload, signature))
     }
 }

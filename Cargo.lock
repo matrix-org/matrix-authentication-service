@@ -153,6 +153,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-signature"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c57ade8a273b42906cb87145358c778667c1ca515bfe24f61ed8a4bfe756c8e3"
+dependencies = [
+ "async-trait",
+ "signature",
+]
+
+[[package]]
 name = "async-stream"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2545,6 +2555,7 @@ name = "mas-jose"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-signature",
  "async-trait",
  "base64ct",
  "chrono",
@@ -3725,8 +3736,7 @@ dependencies = [
 [[package]]
 name = "rsa"
 version = "0.7.0-pre"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6168b9a0f38e487db90dc109ad6d8f37fc5590183b7bfe8d8687e0b86116d53f"
+source = "git+https://github.com/RustCrypto/RSA.git#40242fbbb019cac4af216145bfa468a0d24d12ef"
 dependencies = [
  "byteorder",
  "digest 0.10.3",
@@ -3737,6 +3747,7 @@ dependencies = [
  "pkcs1",
  "pkcs8",
  "rand_core",
+ "signature",
  "smallvec",
  "subtle",
  "zeroize",

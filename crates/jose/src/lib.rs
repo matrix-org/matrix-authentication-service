@@ -26,7 +26,7 @@ pub use futures_util::future::Either;
 
 pub use self::{
     jwk::{JsonWebKey, JsonWebKeySet},
-    jwt::{DecodedJsonWebToken, JsonWebTokenParts, JwtHeader},
+    jwt::{DecodedJsonWebToken, JsonWebSignatureHeader, JsonWebTokenParts, Jwt, JwtSignatureError},
     keystore::{
         DynamicJwksStore, SharedSecret, SigningKeystore, StaticJwksStore, StaticKeystore,
         VerifyingKeystore,

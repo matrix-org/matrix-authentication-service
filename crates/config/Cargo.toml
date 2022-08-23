@@ -25,7 +25,7 @@ sqlx = { version = "0.6.1", features = ["runtime-tokio-rustls", "postgres"] }
 lettre = { version = "0.10.1", default-features = false, features = ["serde", "builder"] }
 
 rand = "0.8.5"
-rsa = "0.7.0-pre"
+rsa = { git = "https://github.com/RustCrypto/RSA.git" }
 p256 = { version = "0.11.1", features = ["ecdsa", "pem", "pkcs8"] }
 pkcs8 = { version = "0.9.0", features = ["pem"] }
 chacha20poly1305 = { version = "0.10.1", features = ["std"] }

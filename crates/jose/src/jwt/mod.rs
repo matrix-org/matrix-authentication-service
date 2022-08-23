@@ -15,116 +15,16 @@
 use std::str::FromStr;
 
 use base64ct::{Base64UrlUnpadded, Encoding};
-use mas_iana::jose::{
-    JsonWebEncryptionCompressionAlgorithm, JsonWebEncryptionEnc, JsonWebSignatureAlg,
-};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use serde_with::{
-    base64::{Base64, Standard, UrlSafe},
-    formats::{Padded, Unpadded},
-    serde_as, skip_serializing_none,
-};
-use url::Url;
+use serde::{de::DeserializeOwned, Serialize};
+use thiserror::Error;
 
-use crate::{jwk::JsonWebKey, SigningKeystore, VerifyingKeystore};
+use crate::{SigningKeystore, VerifyingKeystore};
 
-#[serde_as]
-#[skip_serializing_none]
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-pub struct JwtHeader {
-    alg: JsonWebSignatureAlg,
+mod header;
+mod raw;
+mod signed;
 
-    #[serde(default)]
-    enc: Option<JsonWebEncryptionEnc>,
-
-    #[serde(default)]
-    jku: Option<Url>,
-
-    #[serde(default)]
-    jwk: Option<JsonWebKey>,
-
-    #[serde(default)]
-    kid: Option<String>,
-
-    #[serde(default)]
-    x5u: Option<Url>,
-
-    #[serde(default)]
-    #[serde_as(as = "Option<Vec<Base64<Standard, Padded>>>")]
-    x5c: Option<Vec<Vec<u8>>>,
-
-    #[serde(default)]
-    #[serde_as(as = "Option<Base64<UrlSafe, Unpadded>>")]
-    x5t: Option<Vec<u8>>,
-    #[serde(default, rename = "x5t#S256")]
-    #[serde_as(as = "Option<Base64<UrlSafe, Unpadded>>")]
-    x5t_s256: Option<Vec<u8>>,
-
-    #[serde(default)]
-    typ: Option<String>,
-
-    #[serde(default)]
-    cty: Option<String>,
-
-    #[serde(default)]
-    crit: Option<Vec<String>>,
-
-    #[serde(default)]
-    zip: Option<JsonWebEncryptionCompressionAlgorithm>,
-}
-
-impl JwtHeader {
-    pub fn encode(&self) -> anyhow::Result<String> {
-        let payload = serde_json::to_string(self)?;
-        let encoded = Base64UrlUnpadded::encode_string(payload.as_bytes());
-        Ok(encoded)
-    }
-
-    #[must_use]
-    pub fn new(alg: JsonWebSignatureAlg) -> Self {
-        Self {
-            alg,
-            enc: None,
-            jku: None,
-            jwk: None,
-            kid: None,
-            x5u: None,
-            x5c: None,
-            x5t: None,
-            x5t_s256: None,
-            typ: None,
-            cty: None,
-            crit: None,
-            zip: None,
-        }
-    }
-
-    #[must_use]
-    pub fn alg(&self) -> JsonWebSignatureAlg {
-        self.alg
-    }
-
-    #[must_use]
-    pub fn kid(&self) -> Option<&str> {
-        self.kid.as_deref()
-    }
-
-    #[must_use]
-    pub fn with_kid(mut self, kid: impl Into<String>) -> Self {
-        self.kid = Some(kid.into());
-        self
-    }
-}
-
-impl FromStr for JwtHeader {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let decoded = Base64UrlUnpadded::decode_vec(s)?;
-        let parsed = serde_json::from_slice(&decoded)?;
-        Ok(parsed)
-    }
-}
+pub use self::{header::JsonWebSignatureHeader, signed::Jwt};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct JsonWebTokenParts {
@@ -132,21 +32,62 @@ pub struct JsonWebTokenParts {
     signature: Vec<u8>,
 }
 
+#[derive(Error, Debug)]
+#[error("failed to decode JWT")]
+pub enum JwtPartsDecodeError {
+    #[error("no dots found in the JWT")]
+    NoDots,
+
+    #[error("could not decode signature")]
+    SignatureEncoding {
+        #[from]
+        inner: base64ct::Error,
+    },
+}
+
 impl FromStr for JsonWebTokenParts {
-    type Err = anyhow::Error;
+    type Err = JwtPartsDecodeError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (payload, signature) = s
-            .rsplit_once('.')
-            .ok_or_else(|| anyhow::anyhow!("no dots found in JWT"))?;
+        let (payload, signature) = s.rsplit_once('.').ok_or(JwtPartsDecodeError::NoDots)?;
         let signature = Base64UrlUnpadded::decode_vec(signature)?;
         let payload = payload.to_owned();
         Ok(Self { payload, signature })
     }
 }
 
+#[derive(Error, Debug)]
+#[error("failed to serialize JWT")]
+pub enum JwtSerializeError {
+    #[error("failed to serialize JWT header")]
+    Header {
+        #[source]
+        inner: serde_json::Error,
+    },
+
+    #[error("failed to serialize payload")]
+    Payload {
+        #[source]
+        inner: serde_json::Error,
+    },
+}
+
+#[derive(Error, Debug)]
+#[error("failed to serialize JWT")]
+pub enum JwtSignatureError {
+    Serialize {
+        #[from]
+        inner: JwtSerializeError,
+    },
+
+    Sign {
+        #[source]
+        inner: anyhow::Error,
+    },
+}
+
 pub struct DecodedJsonWebToken<T> {
-    header: JwtHeader,
+    header: JsonWebSignatureHeader,
     payload: T,
 }
 
@@ -154,24 +95,33 @@ impl<T> DecodedJsonWebToken<T>
 where
     T: Serialize,
 {
-    fn serialize(&self) -> anyhow::Result<String> {
-        let header = serde_json::to_vec(&self.header)?;
+    fn serialize(&self) -> Result<String, JwtSerializeError> {
+        let header = serde_json::to_vec(&self.header)
+            .map_err(|inner| JwtSerializeError::Header { inner })?;
         let header = Base64UrlUnpadded::encode_string(&header);
-        let payload = serde_json::to_vec(&self.payload)?;
+
+        let payload = serde_json::to_vec(&self.payload)
+            .map_err(|inner| JwtSerializeError::Payload { inner })?;
         let payload = Base64UrlUnpadded::encode_string(&payload);
 
         Ok(format!("{}.{}", header, payload))
     }
 
-    pub async fn sign<S: SigningKeystore>(&self, store: &S) -> anyhow::Result<JsonWebTokenParts> {
+    pub async fn sign<S: SigningKeystore>(
+        &self,
+        store: &S,
+    ) -> Result<JsonWebTokenParts, JwtSignatureError> {
         let payload = self.serialize()?;
-        let signature = store.sign(&self.header, payload.as_bytes()).await?;
+        let signature = store
+            .sign(&self.header, payload.as_bytes())
+            .await
+            .map_err(|inner| JwtSignatureError::Sign { inner })?;
         Ok(JsonWebTokenParts { payload, signature })
     }
 }
 
 impl<T> DecodedJsonWebToken<T> {
-    pub fn new(header: JwtHeader, payload: T) -> Self {
+    pub fn new(header: JsonWebSignatureHeader, payload: T) -> Self {
         Self { header, payload }
     }
 
@@ -179,11 +129,11 @@ impl<T> DecodedJsonWebToken<T> {
         &self.payload
     }
 
-    pub fn header(&self) -> &JwtHeader {
+    pub fn header(&self) -> &JsonWebSignatureHeader {
         &self.header
     }
 
-    pub fn split(self) -> (JwtHeader, T) {
+    pub fn split(self) -> (JsonWebSignatureHeader, T) {
         (self.header, self.payload)
     }
 }
@@ -213,7 +163,11 @@ impl JsonWebTokenParts {
         Ok(decoded)
     }
 
-    pub fn verify<S: VerifyingKeystore>(&self, header: &JwtHeader, store: &S) -> S::Future {
+    pub fn verify<S: VerifyingKeystore>(
+        &self,
+        header: &JsonWebSignatureHeader,
+        store: &S,
+    ) -> S::Future {
         store.verify(header, self.payload.as_bytes(), &self.signature)
     }
 
@@ -239,6 +193,8 @@ impl JsonWebTokenParts {
 
 #[cfg(test)]
 mod tests {
+    use mas_iana::jose::JsonWebSignatureAlg;
+
     use super::*;
     use crate::SharedSecret;
 
@@ -247,13 +203,12 @@ mod tests {
         let jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
         let jwt: JsonWebTokenParts = jwt.parse().unwrap();
         let secret = "your-256-bit-secret";
-        println!("{:?}", jwt);
         let store = SharedSecret::new(&secret);
         let jwt: DecodedJsonWebToken<serde_json::Value> =
             jwt.decode_and_verify(&store).await.unwrap();
 
-        assert_eq!(jwt.header.typ, Some("JWT".to_owned()));
-        assert_eq!(jwt.header.alg, JsonWebSignatureAlg::Hs256);
+        assert_eq!(jwt.header.typ(), Some("JWT"));
+        assert_eq!(jwt.header.alg(), JsonWebSignatureAlg::Hs256);
         assert_eq!(
             jwt.payload,
             serde_json::json!({

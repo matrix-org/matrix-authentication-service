@@ -24,7 +24,7 @@ use tower::{
 };
 
 use super::StaticJwksStore;
-use crate::{JsonWebKeySet, JwtHeader, VerifyingKeystore};
+use crate::{JsonWebKeySet, JsonWebSignatureHeader, VerifyingKeystore};
 
 #[derive(Debug, Error)]
 pub enum Error {
@@ -121,7 +121,12 @@ impl VerifyingKeystore for DynamicJwksStore {
     type Error = Error;
     type Future = BoxFuture<'static, Result<(), Self::Error>>;
 
-    fn verify(&self, header: &JwtHeader, payload: &[u8], signature: &[u8]) -> Self::Future {
+    fn verify(
+        &self,
+        header: &JsonWebSignatureHeader,
+        payload: &[u8],
+        signature: &[u8],
+    ) -> Self::Future {
         let cache = self.cache.clone();
         let exporter = self.exporter.clone();
         let header = header.clone();
