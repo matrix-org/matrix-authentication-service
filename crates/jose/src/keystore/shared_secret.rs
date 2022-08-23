@@ -23,7 +23,7 @@ use sha2::{Sha256, Sha384, Sha512};
 use thiserror::Error;
 
 use super::{SigningKeystore, VerifyingKeystore};
-use crate::JwtHeader;
+use crate::JsonWebSignatureHeader;
 
 #[derive(Debug, Error)]
 pub enum Error {
@@ -50,7 +50,7 @@ impl<'a> SharedSecret<'a> {
 
     fn verify_sync(
         &self,
-        header: &JwtHeader,
+        header: &JsonWebSignatureHeader,
         payload: &[u8],
         signature: &[u8],
     ) -> Result<(), Error> {
@@ -92,7 +92,10 @@ impl<'a> SigningKeystore for SharedSecret<'a> {
         algorithms
     }
 
-    async fn prepare_header(&self, alg: JsonWebSignatureAlg) -> anyhow::Result<JwtHeader> {
+    async fn prepare_header(
+        &self,
+        alg: JsonWebSignatureAlg,
+    ) -> anyhow::Result<JsonWebSignatureHeader> {
         if !matches!(
             alg,
             JsonWebSignatureAlg::Hs256 | JsonWebSignatureAlg::Hs384 | JsonWebSignatureAlg::Hs512,
@@ -100,10 +103,10 @@ impl<'a> SigningKeystore for SharedSecret<'a> {
             bail!("unsupported algorithm")
         }
 
-        Ok(JwtHeader::new(alg))
+        Ok(JsonWebSignatureHeader::new(alg))
     }
 
-    async fn sign(&self, header: &JwtHeader, msg: &[u8]) -> anyhow::Result<Vec<u8>> {
+    async fn sign(&self, header: &JsonWebSignatureHeader, msg: &[u8]) -> anyhow::Result<Vec<u8>> {
         // TODO: do the signing in a blocking task
         // TODO: should we bail out if the key is too small?
         let signature = match header.alg() {
@@ -136,7 +139,12 @@ impl<'a> VerifyingKeystore for SharedSecret<'a> {
     type Error = Error;
     type Future = Ready<Result<(), Self::Error>>;
 
-    fn verify(&self, header: &JwtHeader, payload: &[u8], signature: &[u8]) -> Self::Future {
+    fn verify(
+        &self,
+        header: &JsonWebSignatureHeader,
+        payload: &[u8],
+        signature: &[u8],
+    ) -> Self::Future {
         std::future::ready(self.verify_sync(header, payload, signature))
     }
 }

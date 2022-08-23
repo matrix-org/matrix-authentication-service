@@ -26,7 +26,7 @@ use mas_data_model::{AuthorizationGrantStage, Client, TokenType};
 use mas_iana::jose::JsonWebSignatureAlg;
 use mas_jose::{
     claims::{self, ClaimError},
-    DecodedJsonWebToken, SigningKeystore, StaticKeystore,
+    DecodedJsonWebToken, JwtSignatureError, SigningKeystore, StaticKeystore,
 };
 use mas_router::UrlBuilder;
 use mas_storage::{
@@ -169,6 +169,12 @@ impl From<sqlx::Error> for RouteError {
 
 impl From<ClaimError> for RouteError {
     fn from(e: ClaimError) -> Self {
+        Self::Internal(Box::new(e))
+    }
+}
+
+impl From<JwtSignatureError> for RouteError {
+    fn from(e: JwtSignatureError) -> Self {
         Self::Internal(Box::new(e))
     }
 }

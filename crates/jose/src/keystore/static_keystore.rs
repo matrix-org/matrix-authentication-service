@@ -34,7 +34,7 @@ use signature::{Signature, Signer, Verifier};
 use tower::Service;
 
 use super::{SigningKeystore, VerifyingKeystore};
-use crate::{JsonWebKey, JsonWebKeySet, JwtHeader};
+use crate::{JsonWebKey, JsonWebKeySet, JsonWebSignatureHeader};
 
 // Generate with
 //  openssl genrsa 2048
@@ -132,7 +132,7 @@ impl StaticKeystore {
 
     fn verify_sync(
         &self,
-        header: &JwtHeader,
+        header: &JsonWebSignatureHeader,
         payload: &[u8],
         signature: &[u8],
     ) -> anyhow::Result<()> {
@@ -245,8 +245,11 @@ impl SigningKeystore for StaticKeystore {
         algorithms
     }
 
-    async fn prepare_header(&self, alg: JsonWebSignatureAlg) -> anyhow::Result<JwtHeader> {
-        let header = JwtHeader::new(alg);
+    async fn prepare_header(
+        &self,
+        alg: JsonWebSignatureAlg,
+    ) -> anyhow::Result<JsonWebSignatureHeader> {
+        let header = JsonWebSignatureHeader::new(alg);
 
         let kid = match alg {
             JsonWebSignatureAlg::Rs256
@@ -267,7 +270,7 @@ impl SigningKeystore for StaticKeystore {
         Ok(header.with_kid(kid))
     }
 
-    async fn sign(&self, header: &JwtHeader, msg: &[u8]) -> anyhow::Result<Vec<u8>> {
+    async fn sign(&self, header: &JsonWebSignatureHeader, msg: &[u8]) -> anyhow::Result<Vec<u8>> {
         let kid = header
             .kid()
             .ok_or_else(|| anyhow::anyhow!("missing kid from the JWT header"))?;
@@ -350,7 +353,12 @@ impl VerifyingKeystore for StaticKeystore {
     type Error = anyhow::Error;
     type Future = Ready<Result<(), Self::Error>>;
 
-    fn verify(&self, header: &JwtHeader, msg: &[u8], signature: &[u8]) -> Self::Future {
+    fn verify(
+        &self,
+        header: &JsonWebSignatureHeader,
+        msg: &[u8],
+        signature: &[u8],
+    ) -> Self::Future {
         std::future::ready(self.verify_sync(header, msg, signature))
     }
 }

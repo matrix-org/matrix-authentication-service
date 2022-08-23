@@ -31,8 +31,8 @@ use mas_data_model::{Client, JwksOrJwksUri, StorageBackend};
 use mas_http::HttpServiceExt;
 use mas_iana::oauth::OAuthClientAuthenticationMethod;
 use mas_jose::{
-    DecodedJsonWebToken, DynamicJwksStore, Either, JsonWebKeySet, JsonWebTokenParts, JwtHeader,
-    SharedSecret, StaticJwksStore, VerifyingKeystore,
+    DecodedJsonWebToken, DynamicJwksStore, Either, JsonWebKeySet, JsonWebSignatureHeader,
+    JsonWebTokenParts, SharedSecret, StaticJwksStore, VerifyingKeystore,
 };
 use mas_storage::{
     oauth2::client::{lookup_client_by_client_id, ClientFetchError},
@@ -73,7 +73,7 @@ pub enum Credentials {
     ClientAssertionJwtBearer {
         client_id: String,
         jwt: JsonWebTokenParts,
-        header: Box<JwtHeader>,
+        header: Box<JsonWebSignatureHeader>,
         claims: HashMap<String, Value>,
     },
 }

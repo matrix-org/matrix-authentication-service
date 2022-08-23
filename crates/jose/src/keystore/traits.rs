@@ -22,22 +22,26 @@ use futures_util::{
 use mas_iana::jose::JsonWebSignatureAlg;
 use thiserror::Error;
 
-use crate::JwtHeader;
+use crate::JsonWebSignatureHeader;
 
 #[async_trait]
 pub trait SigningKeystore {
     fn supported_algorithms(&self) -> HashSet<JsonWebSignatureAlg>;
 
-    async fn prepare_header(&self, alg: JsonWebSignatureAlg) -> anyhow::Result<JwtHeader>;
+    async fn prepare_header(
+        &self,
+        alg: JsonWebSignatureAlg,
+    ) -> anyhow::Result<JsonWebSignatureHeader>;
 
-    async fn sign(&self, header: &JwtHeader, msg: &[u8]) -> anyhow::Result<Vec<u8>>;
+    async fn sign(&self, header: &JsonWebSignatureHeader, msg: &[u8]) -> anyhow::Result<Vec<u8>>;
 }
 
 pub trait VerifyingKeystore {
     type Error;
     type Future: Future<Output = Result<(), Self::Error>>;
 
-    fn verify(&self, header: &JwtHeader, msg: &[u8], signature: &[u8]) -> Self::Future;
+    fn verify(&self, header: &JsonWebSignatureHeader, msg: &[u8], signature: &[u8])
+        -> Self::Future;
 }
 
 #[derive(Debug, Error)]
@@ -61,7 +65,12 @@ where
         MapErr<R::Future, fn(R::Error) -> Self::Error>,
     >;
 
-    fn verify(&self, header: &JwtHeader, msg: &[u8], signature: &[u8]) -> Self::Future {
+    fn verify(
+        &self,
+        header: &JsonWebSignatureHeader,
+        msg: &[u8],
+        signature: &[u8],
+    ) -> Self::Future {
         match self {
             Either::Left(left) => Either::Left(
                 left.verify(header, msg, signature)
@@ -83,7 +92,12 @@ where
     type Error = T::Error;
     type Future = T::Future;
 
-    fn verify(&self, header: &JwtHeader, msg: &[u8], signature: &[u8]) -> Self::Future {
+    fn verify(
+        &self,
+        header: &JsonWebSignatureHeader,
+        msg: &[u8],
+        signature: &[u8],
+    ) -> Self::Future {
         self.as_ref().verify(header, msg, signature)
     }
 }
