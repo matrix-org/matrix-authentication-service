@@ -19,7 +19,7 @@ use hyper::StatusCode;
 use mas_policy::{PolicyFactory, Violation};
 use mas_storage::oauth2::client::insert_client;
 use oauth2_types::{
-    errors::{INVALID_CLIENT_METADATA, INVALID_REDIRECT_URI, SERVER_ERROR},
+    errors::{ClientError, ClientErrorCode},
     registration::{
         ClientMetadata, ClientMetadataVerificationError, ClientRegistrationResponse, Localized,
     },
@@ -65,36 +65,24 @@ impl From<ClientMetadataVerificationError> for RouteError {
     }
 }
 
-// TODO: there is probably a better way to do achieve this. ClientError only
-// works for static strings
-#[derive(serde::Serialize)]
-struct PolicyError {
-    error: String,
-    error_description: String,
-}
-
-impl PolicyError {
-    #[must_use]
-    pub const fn new(error: String, error_description: String) -> Self {
-        Self {
-            error,
-            error_description,
-        }
-    }
-}
-
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         match self {
-            Self::Internal(_) | Self::Anyhow(_) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(SERVER_ERROR)).into_response()
-            }
-            Self::InvalidRedirectUri => {
-                (StatusCode::BAD_REQUEST, Json(INVALID_REDIRECT_URI)).into_response()
-            }
-            Self::InvalidClientMetadata => {
-                (StatusCode::BAD_REQUEST, Json(INVALID_CLIENT_METADATA)).into_response()
-            }
+            Self::Internal(_) | Self::Anyhow(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ClientError::from(ClientErrorCode::ServerError)),
+            )
+                .into_response(),
+            Self::InvalidRedirectUri => (
+                StatusCode::BAD_REQUEST,
+                Json(ClientError::from(ClientErrorCode::InvalidRedirectUri)),
+            )
+                .into_response(),
+            Self::InvalidClientMetadata => (
+                StatusCode::BAD_REQUEST,
+                Json(ClientError::from(ClientErrorCode::InvalidClientMetadata)),
+            )
+                .into_response(),
             Self::PolicyDenied(violations) => {
                 let collected = &violations
                     .iter()
@@ -104,10 +92,10 @@ impl IntoResponse for RouteError {
 
                 (
                     StatusCode::UNAUTHORIZED,
-                    Json(PolicyError::new(
-                        "invalid_client_metadata".to_owned(),
-                        joined,
-                    )),
+                    Json(
+                        ClientError::from(ClientErrorCode::InvalidClientMetadata)
+                            .with_description(joined),
+                    ),
                 )
                     .into_response()
             }
