@@ -27,7 +27,10 @@ use serde_with::skip_serializing_none;
 use thiserror::Error;
 use url::Url;
 
-use crate::requests::{Display, GrantType, Prompt, ResponseMode};
+use crate::{
+    requests::{Display, GrantType, Prompt, ResponseMode},
+    scope::ScopeToken,
+};
 
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash, Debug)]
 #[serde(rename_all = "lowercase")]
@@ -113,7 +116,7 @@ pub struct ProviderMetadata {
     ///
     /// If this field is present, it must contain at least the `openid` scope
     /// value.
-    pub scopes_supported: Option<Vec<String>>,
+    pub scopes_supported: Option<Vec<ScopeToken>>,
 
     /// JSON array containing a list of the [OAuth 2.0 `response_type` values]
     /// that this authorization server supports.
@@ -412,7 +415,7 @@ impl ProviderMetadata {
         }
 
         if let Some(scopes) = &self.scopes_supported {
-            if !scopes.iter().any(|s| s == "openid") {
+            if !scopes.iter().any(|s| *s == ScopeToken::Openid) {
                 return Err(ProviderMetadataVerificationError::ScopesMissingOpenid);
             }
         }
@@ -887,6 +890,7 @@ mod tests {
     use url::Url;
 
     use super::{ProviderMetadata, ProviderMetadataVerificationError, SubjectType};
+    use crate::scope::ScopeToken;
 
     fn valid_provider_metadata() -> (ProviderMetadata, Url) {
         let issuer = Url::parse("https://localhost").unwrap();
@@ -1091,7 +1095,7 @@ mod tests {
         let (mut metadata, issuer) = valid_provider_metadata();
 
         // Err - No `openid`
-        metadata.scopes_supported = Some(vec!["custom".to_owned()]);
+        metadata.scopes_supported = Some(vec![ScopeToken::Profile]);
         assert_matches!(
             metadata.clone().validate(&issuer),
             Err(ProviderMetadataVerificationError::ScopesMissingOpenid)
@@ -1102,7 +1106,7 @@ mod tests {
         metadata.clone().validate(&issuer).unwrap();
 
         // Ok - With `openid`
-        metadata.scopes_supported = Some(vec!["openid".to_owned(), "custom".to_owned()]);
+        metadata.scopes_supported = Some(vec![ScopeToken::Openid, ScopeToken::Profile]);
         metadata.validate(&issuer).unwrap();
     }
 

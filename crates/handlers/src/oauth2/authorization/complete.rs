@@ -39,7 +39,10 @@ use mas_storage::{
     PostgresqlBackend,
 };
 use mas_templates::Templates;
-use oauth2_types::requests::{AccessTokenResponse, AuthorizationResponse};
+use oauth2_types::{
+    requests::{AccessTokenResponse, AuthorizationResponse},
+    scope::ScopeToken,
+};
 use rand::thread_rng;
 use sqlx::{PgPool, Postgres, Transaction};
 use thiserror::Error;
@@ -219,7 +222,7 @@ pub(crate) async fn complete(
     let lacks_consent = grant
         .scope
         .difference(&current_consent)
-        .any(|scope| !scope.starts_with("urn:matrix:org.matrix.msc2967.client:device:"));
+        .any(|scope| !matches!(scope, ScopeToken::MatrixDevice(_)));
 
     // Check if the client lacks consent *or* if consent was explicitely asked
     if lacks_consent || grant.requires_consent {

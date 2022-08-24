@@ -34,6 +34,7 @@ use mas_storage::oauth2::{
     consent::insert_client_consent,
 };
 use mas_templates::{ConsentContext, PolicyViolationContext, TemplateContext, Templates};
+use oauth2_types::scope::ScopeToken;
 use sqlx::PgPool;
 use thiserror::Error;
 
@@ -157,7 +158,7 @@ pub(crate) async fn post(
     let scope_without_device = grant
         .scope
         .iter()
-        .filter(|s| !s.starts_with("urn:matrix:org.matrix.msc2967.client:device:"))
+        .filter(|s| !matches!(s, ScopeToken::MatrixDevice(_)))
         .cloned()
         .collect();
     insert_client_consent(

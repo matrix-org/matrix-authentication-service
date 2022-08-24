@@ -308,7 +308,7 @@ mod tests {
     use serde_json::json;
 
     use super::*;
-    use crate::{scope::OPENID, test_utils::assert_serde_json};
+    use crate::{scope::ScopeToken, test_utils::assert_serde_json};
 
     #[test]
     fn serde_refresh_token_grant() {
@@ -321,7 +321,7 @@ mod tests {
         // TODO: insert multiple scopes and test it. It's a bit tricky to test since
         // HashSet have no guarantees regarding the ordering of items, so right
         // now the output is unstable.
-        let scope: Option<Scope> = Some(vec![OPENID].into_iter().collect());
+        let scope: Option<Scope> = Some(vec![ScopeToken::Openid].into_iter().collect());
 
         let req = AccessTokenRequest::RefreshToken(RefreshTokenGrant {
             refresh_token: "abcd".into(),

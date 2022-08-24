@@ -14,34 +14,85 @@
 
 #![allow(clippy::module_name_repetitions)]
 
-use std::{borrow::Cow, collections::HashSet, iter::FromIterator, ops::Deref, str::FromStr};
+use std::{collections::HashSet, fmt, iter::FromIterator, str::FromStr};
 
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+use serde_with::{DeserializeFromStr, SerializeDisplay};
 use thiserror::Error;
 
 #[derive(Debug, Error, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[error("Invalid scope format")]
 pub struct InvalidScope;
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ScopeToken(Cow<'static, str>);
+/// Tokens to define the scope of an access token or to request specific claims.
+#[derive(
+    Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, SerializeDisplay, DeserializeFromStr,
+)]
+pub enum ScopeToken {
+    /// `openid`
+    ///
+    /// Required for OpenID Connect requests.
+    Openid,
 
-impl ScopeToken {
-    /// Create a `ScopeToken` from a static string. The validity of it is not
-    /// checked since it has to be valid in const contexts
-    #[must_use]
-    pub const fn from_static(token: &'static str) -> Self {
-        Self(Cow::Borrowed(token))
-    }
+    /// `profile`
+    ///
+    /// Requests access to the end-user's profile.
+    Profile,
+
+    /// `email`
+    ///
+    /// Requests access to the end-user's email address.
+    Email,
+
+    /// `address`
+    ///
+    /// Requests access to the end-user's address.
+    Address,
+
+    /// `phone`
+    ///
+    /// Requests access to the end-user's phone number.
+    Phone,
+
+    /// `offline_access`
+    ///
+    /// Requests that an OAuth 2.0 refresh token be issued that can be used to
+    /// obtain an access token that grants access to the end-user's UserInfo
+    /// Endpoint even when the end-user is not present (not logged in).
+    OfflineAccess,
+
+    /// `urn:matrix:org.matrix.msc2967.client:api:*`
+    ///
+    /// Requests access to the Matrix Client API.
+    MatrixApi,
+
+    /// `urn:matrix:org.matrix.msc2967.client:device:{device_id}`
+    ///
+    /// Requests access to the Matrix device with the given `device_id`.
+    MatrixDevice(String),
+
+    /// Another scope token.
+    Custom(String),
 }
 
-pub const OPENID: ScopeToken = ScopeToken::from_static("openid");
-pub const PROFILE: ScopeToken = ScopeToken::from_static("profile");
-pub const EMAIL: ScopeToken = ScopeToken::from_static("email");
-pub const ADDRESS: ScopeToken = ScopeToken::from_static("address");
-pub const PHONE: ScopeToken = ScopeToken::from_static("phone");
-pub const OFFLINE_ACCESS: ScopeToken = ScopeToken::from_static("offline_access");
+impl fmt::Display for ScopeToken {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ScopeToken::Openid => write!(f, "openid"),
+            ScopeToken::Profile => write!(f, "profile"),
+            ScopeToken::Email => write!(f, "email"),
+            ScopeToken::Address => write!(f, "address"),
+            ScopeToken::Phone => write!(f, "phone"),
+            ScopeToken::OfflineAccess => write!(f, "offline_access"),
+            ScopeToken::MatrixApi => write!(f, "urn:matrix:org.matrix.msc2967.client:api:*"),
+            ScopeToken::MatrixDevice(s) => {
+                write!(f, "urn:matrix:org.matrix.msc2967.client:device:{s}")
+            }
+            ScopeToken::Custom(s) => f.write_str(s),
+        }
+    }
+}
 
 // As per RFC6749 appendix A:
 // https://datatracker.ietf.org/doc/html/rfc6749#appendix-A
@@ -60,24 +111,28 @@ impl FromStr for ScopeToken {
         //
         //    scope-token = 1*NQCHAR
         if !s.is_empty() && s.chars().all(nqchar) {
-            Ok(ScopeToken(Cow::Owned(s.into())))
+            let token = match s {
+                "openid" => Self::Openid,
+                "profile" => Self::Profile,
+                "email" => Self::Email,
+                "address" => Self::Address,
+                "phone" => Self::Phone,
+                "offline_access" => Self::OfflineAccess,
+                "urn:matrix:org.matrix.msc2967.client:api:*" => Self::MatrixApi,
+                _ => {
+                    if let Some(device_id) =
+                        s.strip_prefix("urn:matrix:org.matrix.msc2967.client:device:")
+                    {
+                        Self::MatrixDevice(device_id.to_owned())
+                    } else {
+                        Self::Custom(s.to_owned())
+                    }
+                }
+            };
+            Ok(token)
         } else {
             Err(InvalidScope)
         }
-    }
-}
-
-impl Deref for ScopeToken {
-    type Target = str;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl ToString for ScopeToken {
-    fn to_string(&self) -> String {
-        self.0.to_string()
     }
 }
 
@@ -117,13 +172,6 @@ impl Scope {
     #[must_use]
     pub fn len(&self) -> usize {
         self.0.len()
-    }
-
-    #[must_use]
-    pub fn contains(&self, token: &str) -> bool {
-        ScopeToken::from_str(token)
-            .map(|token| self.0.contains(&token))
-            .unwrap_or(false)
     }
 
     pub fn insert(&mut self, value: ScopeToken) -> bool {
@@ -170,7 +218,7 @@ mod tests {
 
     #[test]
     fn parse_scope_token() {
-        assert_eq!(ScopeToken::from_str("openid"), Ok(OPENID));
+        assert_eq!(ScopeToken::from_str("openid"), Ok(ScopeToken::Openid));
 
         assert_eq!(ScopeToken::from_str("invalid\\scope"), Err(InvalidScope));
     }
@@ -179,10 +227,10 @@ mod tests {
     fn parse_scope() {
         let scope = Scope::from_str("openid profile address").unwrap();
         assert_eq!(scope.len(), 3);
-        assert!(scope.contains("openid"));
-        assert!(scope.contains("profile"));
-        assert!(scope.contains("address"));
-        assert!(!scope.contains("unknown"));
+        assert!(scope.contains(&ScopeToken::Openid));
+        assert!(scope.contains(&ScopeToken::Profile));
+        assert!(scope.contains(&ScopeToken::Address));
+        assert!(!scope.contains(&ScopeToken::OfflineAccess));
 
         assert!(
             Scope::from_str("").is_err(),
@@ -196,9 +244,9 @@ mod tests {
 
         let scope = Scope::from_str("openid").unwrap();
         assert_eq!(scope.len(), 1);
-        assert!(scope.contains("openid"));
-        assert!(!scope.contains("profile"));
-        assert!(!scope.contains("address"));
+        assert!(scope.contains(&ScopeToken::Openid));
+        assert!(!scope.contains(&ScopeToken::Profile));
+        assert!(!scope.contains(&ScopeToken::Address));
 
         assert_eq!(
             Scope::from_str("order does not matter"),
@@ -207,5 +255,15 @@ mod tests {
 
         assert!(Scope::from_str("http://example.com").is_ok());
         assert!(Scope::from_str("urn:matrix:org.matrix.msc2967.client:*").is_ok());
+
+        let device_id = "ABCDEFGHIJKL".to_owned();
+        let scope =
+            Scope::from_str("urn:matrix:org.matrix.msc2967.client:device:ABCDEFGHIJKL").unwrap();
+        let mut scope_iter = scope.iter();
+        assert_eq!(
+            scope_iter.next(),
+            Some(&ScopeToken::MatrixDevice(device_id))
+        );
+        assert_eq!(scope_iter.next(), None);
     }
 }

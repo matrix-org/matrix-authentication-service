@@ -48,7 +48,7 @@ use oauth2_types::{
     requests::{
         AccessTokenRequest, AccessTokenResponse, AuthorizationCodeGrant, RefreshTokenGrant,
     },
-    scope,
+    scope::ScopeToken,
 };
 use rand::thread_rng;
 use serde::Serialize;
@@ -302,7 +302,7 @@ async fn authorization_code_grant(
     let _refresh_token =
         add_refresh_token(&mut txn, session, access_token, &refresh_token_str).await?;
 
-    let id_token = if session.scope.contains(&scope::OPENID) {
+    let id_token = if session.scope.contains(&ScopeToken::Openid) {
         let mut claims = HashMap::new();
         let now = Utc::now();
         claims::ISS.insert(&mut claims, url_builder.oidc_issuer().to_string())?;

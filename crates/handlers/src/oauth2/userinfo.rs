@@ -24,7 +24,7 @@ use mas_axum_utils::{user_authorization::UserAuthorization, FancyError};
 use mas_jose::{DecodedJsonWebToken, SigningKeystore, StaticKeystore};
 use mas_router::UrlBuilder;
 use mime::Mime;
-use oauth2_types::scope;
+use oauth2_types::scope::ScopeToken;
 use serde::Serialize;
 use serde_with::skip_serializing_none;
 use sqlx::PgPool;
@@ -65,7 +65,7 @@ pub async fn get(
         email_verified: None,
     };
 
-    if session.scope.contains(&scope::EMAIL) {
+    if session.scope.contains(&ScopeToken::Email) {
         if let Some(email) = user.primary_email {
             user_info.email_verified = Some(email.confirmed_at.is_some());
             user_info.email = Some(email.email);
