@@ -8,7 +8,7 @@ license = "Apache-2.0"
 [dependencies]
 anyhow = "1.0.62"
 async-trait = "0.1.57"
-base64ct = { version = "1.5.1", features = ["std"] }
+base64ct = { version = "1.5.2", features = ["std"] }
 chrono = { version = "0.4.22", features = ["serde"] }
 crypto-mac = { version = "0.11.1", features = ["std"] }
 digest = "0.10.3"
