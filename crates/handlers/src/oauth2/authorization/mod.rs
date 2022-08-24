@@ -33,11 +33,7 @@ use mas_storage::oauth2::{
 };
 use mas_templates::Templates;
 use oauth2_types::{
-    errors::{
-        ACCESS_DENIED, CONSENT_REQUIRED, INTERACTION_REQUIRED, INVALID_REQUEST, LOGIN_REQUIRED,
-        REGISTRATION_NOT_SUPPORTED, REQUEST_NOT_SUPPORTED, REQUEST_URI_NOT_SUPPORTED, SERVER_ERROR,
-        UNAUTHORIZED_CLIENT,
-    },
+    errors::{ClientError, ClientErrorCode},
     pkce,
     prelude::*,
     requests::{AuthorizationRequest, GrantType, Prompt, ResponseMode},
@@ -202,32 +198,49 @@ pub(crate) async fn get(
             // with the right error since we don't support them.
             if params.auth.request.is_some() {
                 return Ok(callback_destination
-                    .go(&templates, REQUEST_NOT_SUPPORTED)
+                    .go(
+                        &templates,
+                        ClientError::from(ClientErrorCode::RequestNotSupported),
+                    )
                     .await?);
             }
 
             if params.auth.request_uri.is_some() {
                 return Ok(callback_destination
-                    .go(&templates, REQUEST_URI_NOT_SUPPORTED)
+                    .go(
+                        &templates,
+                        ClientError::from(ClientErrorCode::RequestUriNotSupported),
+                    )
                     .await?);
             }
 
             if params.auth.registration.is_some() {
                 return Ok(callback_destination
-                    .go(&templates, REGISTRATION_NOT_SUPPORTED)
+                    .go(
+                        &templates,
+                        ClientError::from(ClientErrorCode::RegistrationNotSupported),
+                    )
                     .await?);
             }
 
             // Check if it is allowed to use this grant type
             if !client.grant_types.contains(&GrantType::AuthorizationCode) {
                 return Ok(callback_destination
-                    .go(&templates, UNAUTHORIZED_CLIENT)
+                    .go(
+                        &templates,
+                        ClientError::from(ClientErrorCode::UnauthorizedClient),
+                    )
                     .await?);
             }
 
             // Fail early if prompt=none and there is no active session
             if params.auth.prompt == Some(Prompt::None) && maybe_session.is_none() {
-                return Ok(callback_destination.go(&templates, LOGIN_REQUIRED).await?);
+                return Ok(callback_destination
+                    .go(
+                        &templates,
+                        ClientError::from(ClientErrorCode::LoginRequired),
+                    )
+                    .await?);
             }
 
             let code: Option<AuthorizationCode> = if response_type.has_code() {
@@ -248,7 +261,12 @@ pub(crate) async fn get(
                 // If the request had PKCE params but no code asked, it should get back with an
                 // error
                 if params.pkce.is_some() {
-                    return Ok(callback_destination.go(&templates, INVALID_REQUEST).await?);
+                    return Ok(callback_destination
+                        .go(
+                            &templates,
+                            ClientError::from(ClientErrorCode::InvalidRequest),
+                        )
+                        .await?);
                 }
 
                 None
@@ -315,16 +333,24 @@ pub(crate) async fn get(
                         Ok(params) => callback_destination.go(&templates, params).await?,
                         Err(GrantCompletionError::RequiresConsent) => {
                             callback_destination
-                                .go(&templates, CONSENT_REQUIRED)
+                                .go(
+                                    &templates,
+                                    ClientError::from(ClientErrorCode::ConsentRequired),
+                                )
                                 .await?
                         }
                         Err(GrantCompletionError::RequiresReauth) => {
                             callback_destination
-                                .go(&templates, INTERACTION_REQUIRED)
+                                .go(
+                                    &templates,
+                                    ClientError::from(ClientErrorCode::InteractionRequired),
+                                )
                                 .await?
                         }
                         Err(GrantCompletionError::PolicyViolation) => {
-                            callback_destination.go(&templates, ACCESS_DENIED).await?
+                            callback_destination
+                                .go(&templates, ClientError::from(ClientErrorCode::AccessDenied))
+                                .await?
                         }
                         Err(GrantCompletionError::Anyhow(a)) => return Err(RouteError::Anyhow(a)),
                         Err(GrantCompletionError::Internal(e)) => {
@@ -378,7 +404,9 @@ pub(crate) async fn get(
         Ok(r) => r,
         Err(err) => {
             tracing::error!(%err);
-            callback_destination.go(&templates, SERVER_ERROR).await?
+            callback_destination
+                .go(&templates, ClientError::from(ClientErrorCode::ServerError))
+                .await?
         }
     };
 

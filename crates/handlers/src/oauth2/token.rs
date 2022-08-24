@@ -43,7 +43,7 @@ use mas_storage::{
     DatabaseInconsistencyError, PostgresqlBackend,
 };
 use oauth2_types::{
-    errors::{INVALID_CLIENT, INVALID_GRANT, INVALID_REQUEST, SERVER_ERROR, UNAUTHORIZED_CLIENT},
+    errors::{ClientError, ClientErrorCode},
     pkce::CodeChallengeError,
     requests::{
         AccessTokenRequest, AccessTokenResponse, AuthorizationCodeGrant, RefreshTokenGrant,
@@ -129,21 +129,33 @@ impl From<RefreshTokenLookupError> for RouteError {
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         match self {
-            Self::Internal(_) | Self::Anyhow(_) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, Json(SERVER_ERROR))
-            }
-            Self::BadRequest => (StatusCode::BAD_REQUEST, Json(INVALID_REQUEST)),
+            Self::Internal(_) | Self::Anyhow(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ClientError::from(ClientErrorCode::ServerError)),
+            ),
+            Self::BadRequest => (
+                StatusCode::BAD_REQUEST,
+                Json(ClientError::from(ClientErrorCode::InvalidRequest)),
+            ),
             Self::PkceVerification(err) => (
                 StatusCode::BAD_REQUEST,
-                Json(INVALID_GRANT.with_description(format!("PKCE verification failed: {err}"))),
+                Json(
+                    ClientError::from(ClientErrorCode::InvalidGrant)
+                        .with_description(format!("PKCE verification failed: {err}")),
+                ),
             ),
-            Self::ClientNotFound | Self::ClientCredentialsVerification(_) => {
-                (StatusCode::UNAUTHORIZED, Json(INVALID_CLIENT))
-            }
-            Self::ClientNotAllowed | Self::UnauthorizedClient => {
-                (StatusCode::UNAUTHORIZED, Json(UNAUTHORIZED_CLIENT))
-            }
-            Self::InvalidGrant => (StatusCode::BAD_REQUEST, Json(INVALID_GRANT)),
+            Self::ClientNotFound | Self::ClientCredentialsVerification(_) => (
+                StatusCode::UNAUTHORIZED,
+                Json(ClientError::from(ClientErrorCode::InvalidClient)),
+            ),
+            Self::ClientNotAllowed | Self::UnauthorizedClient => (
+                StatusCode::UNAUTHORIZED,
+                Json(ClientError::from(ClientErrorCode::UnauthorizedClient)),
+            ),
+            Self::InvalidGrant => (
+                StatusCode::BAD_REQUEST,
+                Json(ClientError::from(ClientErrorCode::InvalidGrant)),
+            ),
         }
         .into_response()
     }
