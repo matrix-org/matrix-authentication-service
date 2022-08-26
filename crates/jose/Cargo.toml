@@ -6,10 +6,9 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-async-signature = "0.2.0"
 anyhow = "1.0.62"
 async-trait = "0.1.57"
-base64ct = { version = "1.5.1", features = ["std"] }
+base64ct = { version = "1.5.2", features = ["std"] }
 chrono = { version = "0.4.22", features = ["serde"] }
 crypto-mac = { version = "0.11.1", features = ["std"] }
 digest = "0.10.3"
@@ -18,11 +17,13 @@ elliptic-curve = { version = "0.12.3", features = ["ecdh", "pem"] }
 futures-util = "0.3.23"
 hmac = "0.12.1"
 http = "0.2.8"
+k256 = { version = "0.11.2", features = ["ecdsa", "pem", "pkcs8"] }
 p256 = { version = "0.11.1", features = ["ecdsa", "pem", "pkcs8"] }
+p384 = { version = "0.11.2", features = ["ecdsa", "pem", "pkcs8"] }
 pkcs1 = { version = "0.4.0", features = ["pem", "pkcs8"] }
 pkcs8 = { version = "0.9.0", features = ["pem", "std"] }
 rand = "0.8.5"
-rsa = { git = "https://github.com/RustCrypto/RSA.git" }
+rsa = { git = "https://github.com/RustCrypto/RSA.git", features = ["std"] }
 schemars = "0.8.10"
 sec1 = "0.3.0"
 serde = { version = "1.0.144", features = ["derive"] }
@@ -37,6 +38,3 @@ tracing = "0.1.36"
 url = { version = "2.2.2", features = ["serde"] }
 
 mas-iana = { path = "../iana" }
-
-[dev-dependencies]
-mas-http = { path = "../http" }

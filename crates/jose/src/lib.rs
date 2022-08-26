@@ -18,9 +18,13 @@
 #![allow(clippy::missing_errors_doc, clippy::module_name_repetitions)]
 
 pub mod claims;
+pub mod constraints;
+pub mod hmac;
 pub(crate) mod jwk;
 pub(crate) mod jwt;
 mod keystore;
+pub(crate) mod rsa;
+pub mod verifier;
 
 pub use futures_util::future::Either;
 
