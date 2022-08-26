@@ -13,12 +13,11 @@
 // limitations under the License.
 
 use mas_iana::jose::{JsonWebKeyEcEllipticCurve, JsonWebSignatureAlg};
-use rsa::BigUint;
 use sha2::{Sha256, Sha384, Sha512};
 use signature::Signature;
 use thiserror::Error;
 
-use crate::jwk::JsonWebKeyParameters;
+use crate::jwk::{public_parameters::EcPublicParameters, JsonWebKeyParameters};
 
 pub enum Verifier {
     Hs256 {
@@ -104,135 +103,91 @@ impl Verifier {
         }
     }
 
-    #[allow(clippy::too_many_lines)]
     pub fn for_jwk_and_alg(
         key: &JsonWebKeyParameters,
         alg: JsonWebSignatureAlg,
     ) -> Result<Self, VerifierFromJwkError> {
         match (key, alg) {
-            (JsonWebKeyParameters::Rsa { n, e }, JsonWebSignatureAlg::Rs256) => {
-                let n = BigUint::from_bytes_be(n);
-                let e = BigUint::from_bytes_be(e);
-                let key = rsa::RsaPublicKey::new(n, e)?;
+            (JsonWebKeyParameters::Rsa(params), JsonWebSignatureAlg::Rs256) => {
+                let key = rsa::RsaPublicKey::try_from(params)?;
                 Ok(Self::Rs256 { key: key.into() })
             }
 
-            (JsonWebKeyParameters::Rsa { n, e }, JsonWebSignatureAlg::Rs384) => {
-                let n = BigUint::from_bytes_be(n);
-                let e = BigUint::from_bytes_be(e);
-                let key = rsa::RsaPublicKey::new(n, e)?;
+            (JsonWebKeyParameters::Rsa(params), JsonWebSignatureAlg::Rs384) => {
+                let key = rsa::RsaPublicKey::try_from(params)?;
                 Ok(Self::Rs384 { key: key.into() })
             }
 
-            (JsonWebKeyParameters::Rsa { n, e }, JsonWebSignatureAlg::Rs512) => {
-                let n = BigUint::from_bytes_be(n);
-                let e = BigUint::from_bytes_be(e);
-                let key = rsa::RsaPublicKey::new(n, e)?;
+            (JsonWebKeyParameters::Rsa(params), JsonWebSignatureAlg::Rs512) => {
+                let key = rsa::RsaPublicKey::try_from(params)?;
                 Ok(Self::Rs512 { key: key.into() })
             }
 
-            (JsonWebKeyParameters::Rsa { n, e }, JsonWebSignatureAlg::Ps256) => {
-                let n = BigUint::from_bytes_be(n);
-                let e = BigUint::from_bytes_be(e);
-                let key = rsa::RsaPublicKey::new(n, e)?;
+            (JsonWebKeyParameters::Rsa(params), JsonWebSignatureAlg::Ps256) => {
+                let key = rsa::RsaPublicKey::try_from(params)?;
                 Ok(Self::Ps256 { key: key.into() })
             }
 
-            (JsonWebKeyParameters::Rsa { n, e }, JsonWebSignatureAlg::Ps384) => {
-                let n = BigUint::from_bytes_be(n);
-                let e = BigUint::from_bytes_be(e);
-                let key = rsa::RsaPublicKey::new(n, e)?;
+            (JsonWebKeyParameters::Rsa(params), JsonWebSignatureAlg::Ps384) => {
+                let key = rsa::RsaPublicKey::try_from(params)?;
                 Ok(Self::Ps384 { key: key.into() })
             }
 
-            (JsonWebKeyParameters::Rsa { n, e }, JsonWebSignatureAlg::Ps512) => {
-                let n = BigUint::from_bytes_be(n);
-                let e = BigUint::from_bytes_be(e);
-                let key = rsa::RsaPublicKey::new(n, e)?;
+            (JsonWebKeyParameters::Rsa(params), JsonWebSignatureAlg::Ps512) => {
+                let key = rsa::RsaPublicKey::try_from(params)?;
                 Ok(Self::Ps512 { key: key.into() })
             }
 
             (
-                JsonWebKeyParameters::Ec {
-                    crv: JsonWebKeyEcEllipticCurve::P256,
-                    x,
-                    y,
-                },
+                JsonWebKeyParameters::Ec(
+                    params @ EcPublicParameters {
+                        crv: JsonWebKeyEcEllipticCurve::P256,
+                        ..
+                    },
+                ),
                 JsonWebSignatureAlg::Es256,
             ) => {
-                let x: &[u8; 32] = x
-                    .as_slice()
-                    .try_into()
-                    .map_err(|_| VerifierFromJwkError::InvalidCurveParameterX)?;
-                let y: &[u8; 32] = y
-                    .as_slice()
-                    .try_into()
-                    .map_err(|_| VerifierFromJwkError::InvalidCurveParameterY)?;
-
-                let point = sec1::EncodedPoint::from_affine_coordinates(x.into(), y.into(), false);
-                let key = ecdsa::VerifyingKey::from_encoded_point(&point)?;
-
+                let key = ecdsa::VerifyingKey::try_from(params)?;
                 Ok(Self::Es256 { key })
             }
 
             (
-                JsonWebKeyParameters::Ec {
-                    crv: JsonWebKeyEcEllipticCurve::P384,
-                    x,
-                    y,
-                },
+                JsonWebKeyParameters::Ec(
+                    params @ EcPublicParameters {
+                        crv: JsonWebKeyEcEllipticCurve::P384,
+                        ..
+                    },
+                ),
                 JsonWebSignatureAlg::Es384,
             ) => {
-                let x: &[u8; 48] = x
-                    .as_slice()
-                    .try_into()
-                    .map_err(|_| VerifierFromJwkError::InvalidCurveParameterX)?;
-                let y: &[u8; 48] = y
-                    .as_slice()
-                    .try_into()
-                    .map_err(|_| VerifierFromJwkError::InvalidCurveParameterY)?;
-
-                let point = sec1::EncodedPoint::from_affine_coordinates(x.into(), y.into(), false);
-                let key = ecdsa::VerifyingKey::from_encoded_point(&point)?;
-
+                let key = ecdsa::VerifyingKey::try_from(params)?;
                 Ok(Self::Es384 { key })
             }
 
             (
-                JsonWebKeyParameters::Ec {
+                JsonWebKeyParameters::Ec(EcPublicParameters {
                     crv: JsonWebKeyEcEllipticCurve::P521,
-                    x: _,
-                    y: _,
-                },
+                    ..
+                }),
                 JsonWebSignatureAlg::Es512,
             ) => Err(VerifierFromJwkError::UnsupportedAlgorithm {
                 algorithm: JsonWebSignatureAlg::Es512,
             }),
 
             (
-                JsonWebKeyParameters::Ec {
-                    crv: JsonWebKeyEcEllipticCurve::Secp256K1,
-                    x,
-                    y,
-                },
+                JsonWebKeyParameters::Ec(
+                    params @ EcPublicParameters {
+                        crv: JsonWebKeyEcEllipticCurve::Secp256K1,
+                        ..
+                    },
+                ),
                 JsonWebSignatureAlg::Es256K,
             ) => {
-                let x: &[u8; 32] = x
-                    .as_slice()
-                    .try_into()
-                    .map_err(|_| VerifierFromJwkError::InvalidCurveParameterX)?;
-                let y: &[u8; 32] = y
-                    .as_slice()
-                    .try_into()
-                    .map_err(|_| VerifierFromJwkError::InvalidCurveParameterY)?;
-
-                let point = sec1::EncodedPoint::from_affine_coordinates(x.into(), y.into(), false);
-                let key = ecdsa::VerifyingKey::from_encoded_point(&point)?;
-
+                let key = ecdsa::VerifyingKey::try_from(params)?;
                 Ok(Self::Es256K { key })
             }
 
-            (JsonWebKeyParameters::Okp { crv: _, x: _ }, JsonWebSignatureAlg::EdDsa) => {
+            (JsonWebKeyParameters::Okp(_params), JsonWebSignatureAlg::EdDsa) => {
                 Err(VerifierFromJwkError::UnsupportedAlgorithm {
                     algorithm: JsonWebSignatureAlg::EdDsa,
                 })
