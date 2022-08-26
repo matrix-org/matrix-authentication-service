@@ -21,7 +21,10 @@ use sha2::{Sha256, Sha384, Sha512};
 use signature::{Signature, Verifier};
 use thiserror::Error;
 
-use crate::{JsonWebKey, JsonWebKeySet, JsonWebSignatureHeader, VerifyingKeystore};
+use crate::{
+    constraints::Constrainable, JsonWebKey, JsonWebKeySet, JsonWebSignatureHeader,
+    VerifyingKeystore,
+};
 
 #[derive(Debug, Error)]
 pub enum Error {

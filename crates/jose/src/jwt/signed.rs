@@ -115,14 +115,17 @@ where
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         let raw = RawJwt::try_from(value)?;
 
+        let header_reader =
+            base64ct::Decoder::<'_, Base64UrlUnpadded>::new(raw.header().as_bytes())
+                .map_err(JwtDecodeError::decode_header)?;
         let header =
-            Base64UrlUnpadded::decode_vec(raw.header()).map_err(JwtDecodeError::decode_header)?;
-        let header = serde_json::from_slice(&header).map_err(JwtDecodeError::deserialize_header)?;
+            serde_json::from_reader(header_reader).map_err(JwtDecodeError::deserialize_header)?;
 
+        let payload_reader =
+            base64ct::Decoder::<'_, Base64UrlUnpadded>::new(raw.payload().as_bytes())
+                .map_err(JwtDecodeError::decode_payload)?;
         let payload =
-            Base64UrlUnpadded::decode_vec(raw.payload()).map_err(JwtDecodeError::decode_payload)?;
-        let payload =
-            serde_json::from_slice(&payload).map_err(JwtDecodeError::deserialize_payload)?;
+            serde_json::from_reader(payload_reader).map_err(JwtDecodeError::deserialize_payload)?;
 
         let signature = Base64UrlUnpadded::decode_vec(raw.signature())
             .map_err(JwtDecodeError::decode_signature)?;
@@ -162,6 +165,14 @@ impl JwtVerificationError {
 }
 
 impl<'a, T> Jwt<'a, T> {
+    pub fn header(&self) -> &JsonWebSignatureHeader {
+        &self.header
+    }
+
+    pub fn payload(&self) -> &T {
+        &self.payload
+    }
+
     pub fn verify<K, S>(&self, key: &K) -> Result<(), JwtVerificationError>
     where
         K: Verifier<S>,

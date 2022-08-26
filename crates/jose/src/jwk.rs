@@ -30,6 +30,8 @@ use serde_with::{
 };
 use url::Url;
 
+use crate::constraints::Constrainable;
+
 #[serde_as]
 #[skip_serializing_none]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
@@ -110,20 +112,6 @@ impl JsonWebKey {
     }
 
     #[must_use]
-    pub const fn kty(&self) -> JsonWebKeyType {
-        match self.parameters {
-            JsonWebKeyParameters::Ec { .. } => JsonWebKeyType::Ec,
-            JsonWebKeyParameters::Rsa { .. } => JsonWebKeyType::Rsa,
-            JsonWebKeyParameters::Okp { .. } => JsonWebKeyType::Okp,
-        }
-    }
-
-    #[must_use]
-    pub fn kid(&self) -> Option<&str> {
-        self.kid.as_deref()
-    }
-
-    #[must_use]
     pub const fn alg(&self) -> Option<JsonWebSignatureAlg> {
         self.alg
     }
@@ -131,6 +119,58 @@ impl JsonWebKey {
     #[must_use]
     pub const fn params(&self) -> &JsonWebKeyParameters {
         &self.parameters
+    }
+}
+
+impl Constrainable for JsonWebKey {
+    fn kid(&self) -> Option<&str> {
+        self.kid.as_deref()
+    }
+
+    fn kty(&self) -> JsonWebKeyType {
+        match self.parameters {
+            JsonWebKeyParameters::Ec { .. } => JsonWebKeyType::Ec,
+            JsonWebKeyParameters::Rsa { .. } => JsonWebKeyType::Rsa,
+            JsonWebKeyParameters::Okp { .. } => JsonWebKeyType::Okp,
+        }
+    }
+
+    fn algs(&self) -> Option<Vec<JsonWebSignatureAlg>> {
+        if let Some(alg) = self.alg {
+            Some(vec![alg])
+        } else {
+            match self.parameters {
+                JsonWebKeyParameters::Rsa { .. } => Some(vec![
+                    JsonWebSignatureAlg::Rs256,
+                    JsonWebSignatureAlg::Rs384,
+                    JsonWebSignatureAlg::Rs512,
+                    JsonWebSignatureAlg::Ps256,
+                    JsonWebSignatureAlg::Ps384,
+                    JsonWebSignatureAlg::Ps512,
+                ]),
+                JsonWebKeyParameters::Ec {
+                    crv: JsonWebKeyEcEllipticCurve::P256,
+                    ..
+                } => Some(vec![JsonWebSignatureAlg::Es256]),
+                JsonWebKeyParameters::Ec {
+                    crv: JsonWebKeyEcEllipticCurve::P384,
+                    ..
+                } => Some(vec![JsonWebSignatureAlg::Es384]),
+                JsonWebKeyParameters::Ec {
+                    crv: JsonWebKeyEcEllipticCurve::P521,
+                    ..
+                } => Some(vec![JsonWebSignatureAlg::Es512]),
+                JsonWebKeyParameters::Ec {
+                    crv: JsonWebKeyEcEllipticCurve::Secp256K1,
+                    ..
+                } => Some(vec![JsonWebSignatureAlg::Es256K]),
+                JsonWebKeyParameters::Okp { .. } => Some(vec![JsonWebSignatureAlg::EdDsa]),
+            }
+        }
+    }
+
+    fn use_(&self) -> Option<JsonWebKeyUse> {
+        self.r#use
     }
 }
 
@@ -251,10 +291,11 @@ impl From<rsa::RsaPublicKey> for JsonWebKeyParameters {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::constraints::ConstraintSet;
 
     #[test]
     fn load_google_keys() {
-        let jwks = r#"{
+        let jwks = serde_json::json!({
           "keys": [
             {
               "alg": "RS256",
@@ -273,19 +314,33 @@ mod tests {
               "alg": "RS256"
             }
           ]
-        }"#;
+        });
 
-        let jwks: JsonWebKeySet = serde_json::from_str(jwks).unwrap();
+        let jwks: JsonWebKeySet = serde_json::from_value(jwks).unwrap();
         // Both keys are RSA public keys
-        for jwk in jwks.keys {
-            rsa::RsaPublicKey::try_from(jwk.parameters).unwrap();
+        for jwk in &jwks.keys {
+            rsa::RsaPublicKey::try_from(jwk.parameters.clone()).unwrap();
         }
+
+        let constraints = ConstraintSet::default()
+            .use_(JsonWebKeyUse::Sig)
+            .kty(JsonWebKeyType::Rsa)
+            .alg(JsonWebSignatureAlg::Rs256);
+        let candidates = constraints.filter(&jwks.keys);
+        assert_eq!(candidates.len(), 2);
+
+        let constraints = ConstraintSet::default()
+            .use_(JsonWebKeyUse::Sig)
+            .kty(JsonWebKeyType::Rsa)
+            .kid("03e84aed4ef4431014e8617567864c4efaaaede9");
+        let candidates = constraints.filter(&jwks.keys);
+        assert_eq!(candidates.len(), 1);
     }
 
     #[allow(clippy::too_many_lines)]
     #[test]
     fn load_keycloak_keys() {
-        let jwks = r#"{
+        let jwks = serde_json::json!({
           "keys": [
             {
               "kid": "SuGUPE9Sr-1Gha2NLse33r5NQu3XoS_I3Qds3bcmfQE",
@@ -393,9 +448,9 @@ mod tests {
               "y": "Vu3rTFNn_9zWTki95UGT1Bd9PN84KDXmttCrJ1bsYHTWQCaEONk8iwA3U6mEDrg4xtZSTXXKCFdFP13ONWB9oZ4"
             }
           ]
-        }"#;
+        });
 
-        let jwks: JsonWebKeySet = serde_json::from_str(jwks).unwrap();
+        let jwks: JsonWebKeySet = serde_json::from_value(jwks).unwrap();
         // The first 6 keys are RSA, 7th is P-256
         let mut keys = jwks.keys.into_iter();
         rsa::RsaPublicKey::try_from(keys.next().unwrap().parameters).unwrap();
