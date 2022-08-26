@@ -14,13 +14,10 @@
 
 //! Ref: <https://www.rfc-editor.org/rfc/rfc7517.html>
 
-use anyhow::bail;
 use mas_iana::jose::{
-    JsonWebKeyEcEllipticCurve, JsonWebKeyOkpEllipticCurve, JsonWebKeyOperation, JsonWebKeyType,
-    JsonWebKeyUse, JsonWebSignatureAlg,
+    JsonWebKeyEcEllipticCurve, JsonWebKeyOperation, JsonWebKeyType, JsonWebKeyUse,
+    JsonWebSignatureAlg,
 };
-use p256::NistP256;
-use rsa::{BigUint, PublicKeyParts};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::{
@@ -31,6 +28,27 @@ use serde_with::{
 use url::Url;
 
 use crate::constraints::Constrainable;
+
+pub(crate) mod private_parameters;
+pub(crate) mod public_parameters;
+
+pub use self::public_parameters::JsonWebKeyPublicParameters as JsonWebKeyParameters;
+
+trait JwkEcCurve {
+    const CRV: JsonWebKeyEcEllipticCurve;
+}
+
+impl JwkEcCurve for p256::NistP256 {
+    const CRV: JsonWebKeyEcEllipticCurve = JsonWebKeyEcEllipticCurve::P256;
+}
+
+impl JwkEcCurve for p384::NistP384 {
+    const CRV: JsonWebKeyEcEllipticCurve = JsonWebKeyEcEllipticCurve::P384;
+}
+
+impl JwkEcCurve for k256::Secp256k1 {
+    const CRV: JsonWebKeyEcEllipticCurve = JsonWebKeyEcEllipticCurve::Secp256K1;
+}
 
 #[serde_as]
 #[skip_serializing_none]
@@ -139,7 +157,7 @@ impl Constrainable for JsonWebKey {
         if let Some(alg) = self.alg {
             Some(vec![alg])
         } else {
-            match self.parameters {
+            match &self.parameters {
                 JsonWebKeyParameters::Rsa { .. } => Some(vec![
                     JsonWebSignatureAlg::Rs256,
                     JsonWebSignatureAlg::Rs384,
@@ -148,22 +166,12 @@ impl Constrainable for JsonWebKey {
                     JsonWebSignatureAlg::Ps384,
                     JsonWebSignatureAlg::Ps512,
                 ]),
-                JsonWebKeyParameters::Ec {
-                    crv: JsonWebKeyEcEllipticCurve::P256,
-                    ..
-                } => Some(vec![JsonWebSignatureAlg::Es256]),
-                JsonWebKeyParameters::Ec {
-                    crv: JsonWebKeyEcEllipticCurve::P384,
-                    ..
-                } => Some(vec![JsonWebSignatureAlg::Es384]),
-                JsonWebKeyParameters::Ec {
-                    crv: JsonWebKeyEcEllipticCurve::P521,
-                    ..
-                } => Some(vec![JsonWebSignatureAlg::Es512]),
-                JsonWebKeyParameters::Ec {
-                    crv: JsonWebKeyEcEllipticCurve::Secp256K1,
-                    ..
-                } => Some(vec![JsonWebSignatureAlg::Es256K]),
+                JsonWebKeyParameters::Ec(params) => match params.crv() {
+                    JsonWebKeyEcEllipticCurve::P256 => Some(vec![JsonWebSignatureAlg::Es256]),
+                    JsonWebKeyEcEllipticCurve::P384 => Some(vec![JsonWebSignatureAlg::Es384]),
+                    JsonWebKeyEcEllipticCurve::P521 => Some(vec![JsonWebSignatureAlg::Es512]),
+                    JsonWebKeyEcEllipticCurve::Secp256K1 => Some(vec![JsonWebSignatureAlg::Es256K]),
+                },
                 JsonWebKeyParameters::Okp { .. } => Some(vec![JsonWebSignatureAlg::EdDsa]),
             }
         }
@@ -191,100 +199,6 @@ impl JsonWebKeySet {
     #[must_use]
     pub fn new(keys: Vec<JsonWebKey>) -> Self {
         Self { keys }
-    }
-}
-
-#[serde_as]
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
-#[serde(tag = "kty")]
-pub enum JsonWebKeyParameters {
-    #[serde(rename = "RSA")]
-    Rsa {
-        #[schemars(with = "String")]
-        #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-        n: Vec<u8>,
-
-        #[schemars(with = "String")]
-        #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-        e: Vec<u8>,
-    },
-    #[serde(rename = "EC")]
-    Ec {
-        crv: JsonWebKeyEcEllipticCurve,
-
-        #[schemars(with = "String")]
-        #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-        x: Vec<u8>,
-
-        #[schemars(with = "String")]
-        #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-        y: Vec<u8>,
-    },
-    #[serde(rename = "OKP")]
-    Okp {
-        crv: JsonWebKeyOkpEllipticCurve,
-
-        #[schemars(with = "String")]
-        #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-        x: Vec<u8>,
-    },
-}
-
-impl TryFrom<JsonWebKeyParameters> for ecdsa::VerifyingKey<NistP256> {
-    type Error = anyhow::Error;
-
-    fn try_from(params: JsonWebKeyParameters) -> Result<Self, Self::Error> {
-        let (x, y): ([u8; 32], [u8; 32]) = match params {
-            JsonWebKeyParameters::Ec {
-                x,
-                y,
-                crv: JsonWebKeyEcEllipticCurve::P256,
-            } => (
-                x.try_into()
-                    .map_err(|_| anyhow::anyhow!("invalid curve parameter x"))?,
-                y.try_into()
-                    .map_err(|_| anyhow::anyhow!("invalid curve parameter y"))?,
-            ),
-            _ => bail!("Wrong key type"),
-        };
-
-        let point = sec1::EncodedPoint::from_affine_coordinates(&x.into(), &y.into(), false);
-        let key = ecdsa::VerifyingKey::from_encoded_point(&point)?;
-        Ok(key)
-    }
-}
-
-impl From<ecdsa::VerifyingKey<NistP256>> for JsonWebKeyParameters {
-    fn from(key: ecdsa::VerifyingKey<NistP256>) -> Self {
-        let points = key.to_encoded_point(false);
-        JsonWebKeyParameters::Ec {
-            x: points.x().unwrap().to_vec(),
-            y: points.y().unwrap().to_vec(),
-            crv: JsonWebKeyEcEllipticCurve::P256,
-        }
-    }
-}
-
-impl TryFrom<JsonWebKeyParameters> for rsa::RsaPublicKey {
-    type Error = anyhow::Error;
-
-    fn try_from(params: JsonWebKeyParameters) -> Result<Self, Self::Error> {
-        let (n, e) = match &params {
-            JsonWebKeyParameters::Rsa { n, e } => (n, e),
-            _ => bail!("Wrong key type"),
-        };
-        let n = BigUint::from_bytes_be(n);
-        let e = BigUint::from_bytes_be(e);
-        Ok(rsa::RsaPublicKey::new(n, e)?)
-    }
-}
-
-impl From<rsa::RsaPublicKey> for JsonWebKeyParameters {
-    fn from(key: rsa::RsaPublicKey) -> Self {
-        JsonWebKeyParameters::Rsa {
-            n: key.n().to_bytes_be(),
-            e: key.e().to_bytes_be(),
-        }
     }
 }
 
