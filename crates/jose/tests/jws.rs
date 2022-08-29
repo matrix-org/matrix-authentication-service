@@ -14,7 +14,11 @@
 
 use std::ops::Deref;
 
-use mas_jose::{constraints::ConstraintSet, JsonWebKeySet, Jwt};
+use mas_jose::{
+    constraints::ConstraintSet,
+    jwk::{PrivateJsonWebKeySet, PublicJsonWebKeySet},
+    Jwt,
+};
 use serde::Deserialize;
 
 static HS256_JWT: &str = include_str!("./jwts/hs256.jwt");
@@ -34,8 +38,12 @@ static EDDSA_ED25519_JWT: &str = include_str!("./jwts/eddsa-ed25519.jwt");
 static EDDSA_ED448_JWT: &str = include_str!("./jwts/eddsa-ed448.jwt");
 static OCT_KEY: &[u8] = include_bytes!("./keys/oct.bin");
 
-fn public_jwks() -> JsonWebKeySet {
+fn public_jwks() -> PublicJsonWebKeySet {
     serde_json::from_str(include_str!("./keys/jwks.pub.json")).unwrap()
+}
+
+fn private_jwks() -> PrivateJsonWebKeySet {
+    serde_json::from_str(include_str!("./keys/jwks.priv.json")).unwrap()
 }
 
 fn oct_key() -> Vec<u8> {
@@ -105,3 +113,11 @@ asymetric_jwt_test!(test_es512, ES512_JWT, verify = false);
 asymetric_jwt_test!(test_es256k, ES256K_JWT);
 asymetric_jwt_test!(test_eddsa_ed25519, EDDSA_ED25519_JWT, verify = false);
 asymetric_jwt_test!(test_eddsa_ed448, EDDSA_ED448_JWT, verify = false);
+
+#[test]
+fn test_private_to_public_jwks() {
+    let priv_jwks = private_jwks();
+    let pub_jwks = PublicJsonWebKeySet::from(priv_jwks);
+
+    assert_eq!(pub_jwks, public_jwks());
+}

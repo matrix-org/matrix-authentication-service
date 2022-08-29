@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use mas_iana::jose::{JsonWebKeyEcEllipticCurve, JsonWebKeyOkpEllipticCurve, JsonWebKeyType};
+use mas_iana::jose::{
+    JsonWebKeyEcEllipticCurve, JsonWebKeyOkpEllipticCurve, JsonWebKeyType, JsonWebSignatureAlg,
+};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::{
@@ -20,8 +22,9 @@ use serde_with::{
     formats::Unpadded,
     serde_as,
 };
+use thiserror::Error;
 
-use super::JwkKty;
+use super::{public_parameters::JsonWebKeyPublicParameters, ParametersInfo};
 
 #[serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
@@ -40,13 +43,39 @@ pub enum JsonWebKeyPrivateParameters {
     Okp(OkpPrivateParameters),
 }
 
-impl JwkKty for JsonWebKeyPrivateParameters {
+impl ParametersInfo for JsonWebKeyPrivateParameters {
     fn kty(&self) -> JsonWebKeyType {
         match self {
             Self::Oct(_) => JsonWebKeyType::Oct,
             Self::Rsa(_) => JsonWebKeyType::Rsa,
             Self::Ec(_) => JsonWebKeyType::Ec,
             Self::Okp(_) => JsonWebKeyType::Okp,
+        }
+    }
+
+    fn possible_algs(&self) -> &'static [JsonWebSignatureAlg] {
+        match self {
+            JsonWebKeyPrivateParameters::Oct(p) => p.possible_algs(),
+            JsonWebKeyPrivateParameters::Rsa(p) => p.possible_algs(),
+            JsonWebKeyPrivateParameters::Ec(p) => p.possible_algs(),
+            JsonWebKeyPrivateParameters::Okp(p) => p.possible_algs(),
+        }
+    }
+}
+
+#[derive(Debug, Error)]
+#[error("can't extract a public key out of a symetric key")]
+pub struct SymetricKeyError;
+
+impl TryFrom<JsonWebKeyPrivateParameters> for JsonWebKeyPublicParameters {
+    type Error = SymetricKeyError;
+
+    fn try_from(value: JsonWebKeyPrivateParameters) -> Result<Self, Self::Error> {
+        match value {
+            JsonWebKeyPrivateParameters::Oct(_) => Err(SymetricKeyError),
+            JsonWebKeyPrivateParameters::Rsa(p) => Ok(JsonWebKeyPublicParameters::Rsa(p.into())),
+            JsonWebKeyPrivateParameters::Ec(p) => Ok(JsonWebKeyPublicParameters::Ec(p.into())),
+            JsonWebKeyPrivateParameters::Okp(p) => Ok(JsonWebKeyPublicParameters::Okp(p.into())),
         }
     }
 }
@@ -58,6 +87,20 @@ pub struct OctPrivateParameters {
     #[schemars(with = "String")]
     #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
     k: Vec<u8>,
+}
+
+impl ParametersInfo for OctPrivateParameters {
+    fn kty(&self) -> JsonWebKeyType {
+        JsonWebKeyType::Oct
+    }
+
+    fn possible_algs(&self) -> &'static [JsonWebSignatureAlg] {
+        &[
+            JsonWebSignatureAlg::Hs256,
+            JsonWebSignatureAlg::Hs384,
+            JsonWebSignatureAlg::Hs512,
+        ]
+    }
 }
 
 #[serde_as]
@@ -106,6 +149,29 @@ pub struct RsaPrivateParameters {
     /// Other Primes Info
     #[serde(skip_serializing_if = "Option::is_none")]
     oth: Option<Vec<RsaOtherPrimeInfo>>,
+}
+
+impl ParametersInfo for RsaPrivateParameters {
+    fn kty(&self) -> JsonWebKeyType {
+        JsonWebKeyType::Rsa
+    }
+
+    fn possible_algs(&self) -> &'static [JsonWebSignatureAlg] {
+        &[
+            JsonWebSignatureAlg::Rs256,
+            JsonWebSignatureAlg::Rs384,
+            JsonWebSignatureAlg::Rs512,
+            JsonWebSignatureAlg::Ps256,
+            JsonWebSignatureAlg::Ps384,
+            JsonWebSignatureAlg::Ps512,
+        ]
+    }
+}
+
+impl From<RsaPrivateParameters> for super::public_parameters::RsaPublicParameters {
+    fn from(params: RsaPrivateParameters) -> Self {
+        Self::new(params.n, params.e)
+    }
 }
 
 #[serde_as]
@@ -175,6 +241,27 @@ pub struct EcPrivateParameters {
     #[schemars(with = "String")]
     #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
     d: Vec<u8>,
+}
+
+impl ParametersInfo for EcPrivateParameters {
+    fn kty(&self) -> JsonWebKeyType {
+        JsonWebKeyType::Ec
+    }
+
+    fn possible_algs(&self) -> &'static [JsonWebSignatureAlg] {
+        match self.crv {
+            JsonWebKeyEcEllipticCurve::P256 => &[JsonWebSignatureAlg::Es256],
+            JsonWebKeyEcEllipticCurve::P384 => &[JsonWebSignatureAlg::Es384],
+            JsonWebKeyEcEllipticCurve::P521 => &[JsonWebSignatureAlg::Es512],
+            JsonWebKeyEcEllipticCurve::Secp256K1 => &[JsonWebSignatureAlg::Es256K],
+        }
+    }
+}
+
+impl From<EcPrivateParameters> for super::public_parameters::EcPublicParameters {
+    fn from(params: EcPrivateParameters) -> Self {
+        Self::new(params.crv, params.x, params.y)
+    }
 }
 
 mod ec_impls {
@@ -266,4 +353,20 @@ pub struct OkpPrivateParameters {
     #[schemars(with = "String")]
     #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
     x: Vec<u8>,
+}
+
+impl ParametersInfo for OkpPrivateParameters {
+    fn kty(&self) -> JsonWebKeyType {
+        JsonWebKeyType::Okp
+    }
+
+    fn possible_algs(&self) -> &'static [JsonWebSignatureAlg] {
+        &[JsonWebSignatureAlg::EdDsa]
+    }
+}
+
+impl From<OkpPrivateParameters> for super::public_parameters::OkpPublicParameters {
+    fn from(params: OkpPrivateParameters) -> Self {
+        Self::new(params.crv, params.x)
+    }
 }
