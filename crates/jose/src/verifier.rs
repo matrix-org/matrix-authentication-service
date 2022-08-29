@@ -72,18 +72,13 @@ pub enum VerifierFromJwkError {
         inner: ecdsa::Error,
     },
 
-    #[error("invalid curve parameter X")]
-    InvalidCurveParameterX,
-
-    #[error("invalid curve parameter Y")]
-    InvalidCurveParameterY,
-
     #[error("algorithm {algorithm} is not supported")]
     UnsupportedAlgorithm { algorithm: JsonWebSignatureAlg },
 
     #[error("key is not suitable for algorithm {algorithm}")]
     KeyNotSuitable { algorithm: JsonWebSignatureAlg },
 }
+
 #[derive(Debug, Error)]
 pub enum VerifierFromOctError {
     #[error("algorithm {algorithm} is not supported")]

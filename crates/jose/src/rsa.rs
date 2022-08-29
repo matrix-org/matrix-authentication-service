@@ -19,7 +19,7 @@ pub(crate) mod pkcs1v15 {
     use std::marker::PhantomData;
 
     use digest::Digest;
-    use rsa::RsaPublicKey;
+    use rsa::{RsaPrivateKey, RsaPublicKey};
     use sha2::{Sha256, Sha384, Sha512};
 
     pub struct VerifyingKey<H> {
@@ -78,14 +78,69 @@ pub(crate) mod pkcs1v15 {
             self.inner.verify(&digest, signature)
         }
     }
+
+    pub struct SigningKey<H> {
+        inner: rsa::pkcs1v15::SigningKey,
+        hash: PhantomData<H>,
+    }
+
+    impl From<RsaPrivateKey> for SigningKey<Sha256> {
+        fn from(key: RsaPrivateKey) -> Self {
+            let inner = rsa::pkcs1v15::SigningKey::new_with_hash(key, rsa::Hash::SHA2_256);
+            ensure_signer(Self {
+                inner,
+                hash: PhantomData::default(),
+            })
+        }
+    }
+
+    impl From<RsaPrivateKey> for SigningKey<Sha384> {
+        fn from(key: RsaPrivateKey) -> Self {
+            let inner = rsa::pkcs1v15::SigningKey::new_with_hash(key, rsa::Hash::SHA2_384);
+            ensure_signer(Self {
+                inner,
+                hash: PhantomData::default(),
+            })
+        }
+    }
+
+    impl From<RsaPrivateKey> for SigningKey<Sha512> {
+        fn from(key: RsaPrivateKey) -> Self {
+            let inner = rsa::pkcs1v15::SigningKey::new_with_hash(key, rsa::Hash::SHA2_512);
+            ensure_signer(Self {
+                inner,
+                hash: PhantomData::default(),
+            })
+        }
+    }
+
+    #[inline]
+    fn ensure_signer<T>(t: T) -> T
+    where
+        T: signature::Signer<rsa::pkcs1v15::Signature>,
+    {
+        t
+    }
+
+    impl<H> signature::Signer<rsa::pkcs1v15::Signature> for SigningKey<H>
+    where
+        H: Digest,
+    {
+        fn try_sign(&self, msg: &[u8]) -> Result<rsa::pkcs1v15::Signature, signature::Error> {
+            let digest = H::digest(msg);
+            self.inner.try_sign(&digest)
+        }
+    }
 }
 
 pub(crate) mod pss {
     use std::marker::PhantomData;
 
     use digest::Digest;
-    use rsa::RsaPublicKey;
+    use rand::thread_rng;
+    use rsa::{RsaPrivateKey, RsaPublicKey};
     use sha2::{Sha256, Sha384, Sha512};
+    use signature::RandomizedSigner;
 
     pub struct VerifyingKey<H> {
         inner: rsa::pss::VerifyingKey,
@@ -141,6 +196,59 @@ pub(crate) mod pss {
         ) -> Result<(), signature::Error> {
             let digest = H::digest(msg);
             self.inner.verify(&digest, signature)
+        }
+    }
+
+    pub struct SigningKey<H> {
+        inner: rsa::pss::SigningKey,
+        hash: PhantomData<H>,
+    }
+
+    impl From<RsaPrivateKey> for SigningKey<Sha256> {
+        fn from(key: RsaPrivateKey) -> Self {
+            let inner = rsa::pss::SigningKey::new(key, Box::new(Sha256::new()));
+            ensure_signer(Self {
+                inner,
+                hash: PhantomData::default(),
+            })
+        }
+    }
+
+    impl From<RsaPrivateKey> for SigningKey<Sha384> {
+        fn from(key: RsaPrivateKey) -> Self {
+            let inner = rsa::pss::SigningKey::new(key, Box::new(Sha384::new()));
+            ensure_signer(Self {
+                inner,
+                hash: PhantomData::default(),
+            })
+        }
+    }
+
+    impl From<RsaPrivateKey> for SigningKey<Sha512> {
+        fn from(key: RsaPrivateKey) -> Self {
+            let inner = rsa::pss::SigningKey::new(key, Box::new(Sha512::new()));
+            ensure_signer(Self {
+                inner,
+                hash: PhantomData::default(),
+            })
+        }
+    }
+
+    #[inline]
+    fn ensure_signer<T>(t: T) -> T
+    where
+        T: signature::Signer<rsa::pss::Signature>,
+    {
+        t
+    }
+
+    impl<H> signature::Signer<rsa::pss::Signature> for SigningKey<H>
+    where
+        H: Digest,
+    {
+        fn try_sign(&self, msg: &[u8]) -> Result<rsa::pss::Signature, signature::Error> {
+            let digest = H::digest(msg);
+            self.inner.try_sign_with_rng(thread_rng(), &digest)
         }
     }
 }

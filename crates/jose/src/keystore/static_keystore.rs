@@ -34,7 +34,10 @@ use signature::{Signature, Signer, Verifier};
 use tower::Service;
 
 use super::{SigningKeystore, VerifyingKeystore};
-use crate::{jwk::PublicJsonWebKeySet, JsonWebKey, JsonWebKeySet, JsonWebSignatureHeader};
+use crate::{
+    jwk::{JsonWebKey, JsonWebKeySet, PublicJsonWebKeySet},
+    JsonWebSignatureHeader,
+};
 
 // Generate with
 //  openssl genrsa 2048
