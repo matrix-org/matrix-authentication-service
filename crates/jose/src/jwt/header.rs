@@ -21,7 +21,7 @@ use serde_with::{
 };
 use url::Url;
 
-use crate::jwk::JsonWebKey;
+use crate::jwk::PublicJsonWebKey;
 
 #[serde_as]
 #[skip_serializing_none]
@@ -33,7 +33,7 @@ pub struct JsonWebSignatureHeader {
     jku: Option<Url>,
 
     #[serde(default)]
-    jwk: Option<JsonWebKey>,
+    jwk: Option<PublicJsonWebKey>,
 
     #[serde(default)]
     kid: Option<String>,
@@ -98,12 +98,12 @@ impl JsonWebSignatureHeader {
     }
 
     #[must_use]
-    pub const fn jwk(&self) -> Option<&JsonWebKey> {
+    pub const fn jwk(&self) -> Option<&PublicJsonWebKey> {
         self.jwk.as_ref()
     }
 
     #[must_use]
-    pub fn with_jwk(mut self, jwk: JsonWebKey) -> Self {
+    pub fn with_jwk(mut self, jwk: PublicJsonWebKey) -> Self {
         self.jwk = Some(jwk);
         self
     }

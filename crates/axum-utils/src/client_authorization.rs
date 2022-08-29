@@ -31,8 +31,8 @@ use mas_data_model::{Client, JwksOrJwksUri, StorageBackend};
 use mas_http::HttpServiceExt;
 use mas_iana::oauth::OAuthClientAuthenticationMethod;
 use mas_jose::{
-    DecodedJsonWebToken, DynamicJwksStore, Either, JsonWebKeySet, JsonWebSignatureHeader,
-    JsonWebTokenParts, SharedSecret, StaticJwksStore, VerifyingKeystore,
+    jwk::PublicJsonWebKeySet, DecodedJsonWebToken, DynamicJwksStore, Either,
+    JsonWebSignatureHeader, JsonWebTokenParts, SharedSecret, StaticJwksStore, VerifyingKeystore,
 };
 use mas_storage::{
     oauth2::client::{lookup_client_by_client_id, ClientFetchError},
@@ -185,7 +185,7 @@ fn jwks_key_store(jwks: &JwksOrJwksUri) -> Either<StaticJwksStore, DynamicJwksSt
             // TODO: get the client from somewhere else?
             let exporter = mas_http::client("fetch-jwks")
                 .response_body_to_bytes()
-                .json_response::<JsonWebKeySet>()
+                .json_response::<PublicJsonWebKeySet>()
                 .map_request(move |_: ()| {
                     http::Request::builder()
                         .method("GET")

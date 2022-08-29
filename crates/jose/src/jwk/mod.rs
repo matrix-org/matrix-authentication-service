@@ -34,6 +34,10 @@ pub(crate) mod public_parameters;
 
 pub use self::public_parameters::JsonWebKeyPublicParameters as JsonWebKeyParameters;
 
+pub trait JwkKty {
+    fn kty(&self) -> JsonWebKeyType;
+}
+
 trait JwkEcCurve {
     const CRV: JsonWebKeyEcEllipticCurve;
 }
@@ -53,9 +57,9 @@ impl JwkEcCurve for k256::Secp256k1 {
 #[serde_as]
 #[skip_serializing_none]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
-pub struct JsonWebKey {
+pub struct JsonWebKey<P> {
     #[serde(flatten)]
-    parameters: JsonWebKeyParameters,
+    parameters: P,
 
     #[serde(default)]
     r#use: Option<JsonWebKeyUse>,
@@ -89,9 +93,12 @@ pub struct JsonWebKey {
     x5t_s256: Option<Vec<u8>>,
 }
 
-impl JsonWebKey {
+pub type PublicJsonWebKey = JsonWebKey<self::public_parameters::JsonWebKeyPublicParameters>;
+pub type PrivateJsonWebKey = JsonWebKey<self::private_parameters::JsonWebKeyPrivateParameters>;
+
+impl<P> JsonWebKey<P> {
     #[must_use]
-    pub const fn new(parameters: JsonWebKeyParameters) -> Self {
+    pub const fn new(parameters: P) -> Self {
         Self {
             parameters,
             r#use: None,
@@ -135,30 +142,29 @@ impl JsonWebKey {
     }
 
     #[must_use]
-    pub const fn params(&self) -> &JsonWebKeyParameters {
+    pub const fn params(&self) -> &P {
         &self.parameters
     }
 }
 
-impl Constrainable for JsonWebKey {
+impl<P> Constrainable for JsonWebKey<P>
+where
+    P: JwkKty,
+{
     fn kid(&self) -> Option<&str> {
         self.kid.as_deref()
     }
 
     fn kty(&self) -> JsonWebKeyType {
-        match self.parameters {
-            JsonWebKeyParameters::Ec { .. } => JsonWebKeyType::Ec,
-            JsonWebKeyParameters::Rsa { .. } => JsonWebKeyType::Rsa,
-            JsonWebKeyParameters::Okp { .. } => JsonWebKeyType::Okp,
-        }
+        self.parameters.kty()
     }
 
     fn algs(&self) -> Option<Vec<JsonWebSignatureAlg>> {
         if let Some(alg) = self.alg {
             Some(vec![alg])
         } else {
-            match &self.parameters {
-                JsonWebKeyParameters::Rsa { .. } => Some(vec![
+            match self.parameters.kty() {
+                JsonWebKeyType::Rsa => Some(vec![
                     JsonWebSignatureAlg::Rs256,
                     JsonWebSignatureAlg::Rs384,
                     JsonWebSignatureAlg::Rs512,
@@ -166,13 +172,22 @@ impl Constrainable for JsonWebKey {
                     JsonWebSignatureAlg::Ps384,
                     JsonWebSignatureAlg::Ps512,
                 ]),
-                JsonWebKeyParameters::Ec(params) => match params.crv() {
-                    JsonWebKeyEcEllipticCurve::P256 => Some(vec![JsonWebSignatureAlg::Es256]),
-                    JsonWebKeyEcEllipticCurve::P384 => Some(vec![JsonWebSignatureAlg::Es384]),
-                    JsonWebKeyEcEllipticCurve::P521 => Some(vec![JsonWebSignatureAlg::Es512]),
-                    JsonWebKeyEcEllipticCurve::Secp256K1 => Some(vec![JsonWebSignatureAlg::Es256K]),
-                },
-                JsonWebKeyParameters::Okp { .. } => Some(vec![JsonWebSignatureAlg::EdDsa]),
+                JsonWebKeyType::Ec => {
+                    todo!()
+                    /*
+                        match params.crv() {
+                        JsonWebKeyEcEllipticCurve::P256 => Some(vec![JsonWebSignatureAlg::Es256]),
+                        JsonWebKeyEcEllipticCurve::P384 => Some(vec![JsonWebSignatureAlg::Es384]),
+                        JsonWebKeyEcEllipticCurve::P521 => Some(vec![JsonWebSignatureAlg::Es512]),
+                        JsonWebKeyEcEllipticCurve::Secp256K1 => Some(vec![JsonWebSignatureAlg::Es256K]),
+                    }, */
+                }
+                JsonWebKeyType::Okp => Some(vec![JsonWebSignatureAlg::EdDsa]),
+                JsonWebKeyType::Oct => Some(vec![
+                    JsonWebSignatureAlg::Hs256,
+                    JsonWebSignatureAlg::Hs384,
+                    JsonWebSignatureAlg::Hs512,
+                ]),
             }
         }
     }
@@ -183,21 +198,25 @@ impl Constrainable for JsonWebKey {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
-pub struct JsonWebKeySet {
-    keys: Vec<JsonWebKey>,
+pub struct JsonWebKeySet<P> {
+    keys: Vec<JsonWebKey<P>>,
 }
 
-impl std::ops::Deref for JsonWebKeySet {
-    type Target = Vec<JsonWebKey>;
+pub type PublicJsonWebKeySet = JsonWebKeySet<self::public_parameters::JsonWebKeyPublicParameters>;
+pub type PrivateJsonWebKeySet =
+    JsonWebKeySet<self::private_parameters::JsonWebKeyPrivateParameters>;
+
+impl<P> std::ops::Deref for JsonWebKeySet<P> {
+    type Target = Vec<JsonWebKey<P>>;
 
     fn deref(&self) -> &Self::Target {
         &self.keys
     }
 }
 
-impl JsonWebKeySet {
+impl<P> JsonWebKeySet<P> {
     #[must_use]
-    pub fn new(keys: Vec<JsonWebKey>) -> Self {
+    pub fn new(keys: Vec<JsonWebKey<P>>) -> Self {
         Self { keys }
     }
 }

@@ -24,7 +24,7 @@ use tower::{
 };
 
 use super::StaticJwksStore;
-use crate::{JsonWebKeySet, JsonWebSignatureHeader, VerifyingKeystore};
+use crate::{jwk::PublicJsonWebKeySet, JsonWebSignatureHeader, VerifyingKeystore};
 
 #[derive(Debug, Error)]
 pub enum Error {
@@ -60,7 +60,7 @@ impl<E> Default for State<E> {
 }
 
 impl<E> State<E> {
-    fn fullfill(&mut self, key_set: JsonWebKeySet) {
+    fn fullfill(&mut self, key_set: PublicJsonWebKeySet) {
         *self = Self::Fulfilled {
             at: Utc::now(),
             store: StaticJwksStore::new(key_set),
@@ -100,14 +100,14 @@ impl<E> State<E> {
 
 #[derive(Clone)]
 pub struct DynamicJwksStore {
-    exporter: BoxCloneService<(), JsonWebKeySet, BoxError>,
+    exporter: BoxCloneService<(), PublicJsonWebKeySet, BoxError>,
     cache: Arc<RwLock<State<Arc<BoxError>>>>,
 }
 
 impl DynamicJwksStore {
     pub fn new<T>(exporter: T) -> Self
     where
-        T: Service<(), Response = JsonWebKeySet, Error = BoxError> + Send + Clone + 'static,
+        T: Service<(), Response = PublicJsonWebKeySet, Error = BoxError> + Send + Clone + 'static,
         T::Future: Send,
     {
         Self {

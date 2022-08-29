@@ -16,7 +16,7 @@ use mas_iana::{
     jose::JsonWebSignatureAlg,
     oauth::{OAuthAuthorizationEndpointResponseType, OAuthClientAuthenticationMethod},
 };
-use mas_jose::JsonWebKeySet;
+use mas_jose::jwk::PublicJsonWebKeySet;
 use oauth2_types::requests::GrantType;
 use serde::Serialize;
 use thiserror::Error;
@@ -28,7 +28,7 @@ use crate::traits::{StorageBackend, StorageBackendMarker};
 #[serde(rename_all = "snake_case")]
 pub enum JwksOrJwksUri {
     /// Client's JSON Web Key Set document, passed by value.
-    Jwks(JsonWebKeySet),
+    Jwks(PublicJsonWebKeySet),
 
     /// URL for the Client's JSON Web Key Set document.
     JwksUri(Url),

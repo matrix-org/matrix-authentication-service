@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use mas_iana::jose::{JsonWebKeyEcEllipticCurve, JsonWebKeyOkpEllipticCurve};
+use mas_iana::jose::{JsonWebKeyEcEllipticCurve, JsonWebKeyOkpEllipticCurve, JsonWebKeyType};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::{
@@ -20,6 +20,8 @@ use serde_with::{
     formats::Unpadded,
     serde_as,
 };
+
+use super::JwkKty;
 
 #[serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
@@ -33,6 +35,16 @@ pub enum JsonWebKeyPublicParameters {
 
     #[serde(rename = "OKP")]
     Okp(OkpPublicParameters),
+}
+
+impl JwkKty for JsonWebKeyPublicParameters {
+    fn kty(&self) -> JsonWebKeyType {
+        match self {
+            Self::Rsa(_) => JsonWebKeyType::Rsa,
+            Self::Ec(_) => JsonWebKeyType::Ec,
+            Self::Okp(_) => JsonWebKeyType::Okp,
+        }
+    }
 }
 
 #[serde_as]

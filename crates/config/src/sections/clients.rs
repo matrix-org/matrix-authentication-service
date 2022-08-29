@@ -16,7 +16,7 @@ use std::ops::{Deref, DerefMut};
 
 use async_trait::async_trait;
 use mas_iana::oauth::OAuthClientAuthenticationMethod;
-use mas_jose::JsonWebKeySet;
+use mas_jose::jwk::PublicJsonWebKeySet;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
@@ -28,12 +28,12 @@ use super::ConfigurationSection;
 #[derive(JsonSchema, Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum JwksOrJwksUri {
-    Jwks(JsonWebKeySet),
+    Jwks(PublicJsonWebKeySet),
     JwksUri(Url),
 }
 
-impl From<JsonWebKeySet> for JwksOrJwksUri {
-    fn from(jwks: JsonWebKeySet) -> Self {
+impl From<PublicJsonWebKeySet> for JwksOrJwksUri {
+    fn from(jwks: PublicJsonWebKeySet) -> Self {
         Self::Jwks(jwks)
     }
 }
@@ -125,7 +125,7 @@ impl ClientConfig {
 
     #[doc(hidden)]
     #[must_use]
-    pub fn jwks(&self) -> Option<&JsonWebKeySet> {
+    pub fn jwks(&self) -> Option<&PublicJsonWebKeySet> {
         match &self.client_auth_method {
             ClientAuthMethodConfig::PrivateKeyJwt(JwksOrJwksUri::Jwks(jwks)) => Some(jwks),
             _ => None,
