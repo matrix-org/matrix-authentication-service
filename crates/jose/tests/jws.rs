@@ -12,15 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::ops::Deref;
-
-use mas_jose::{
-    constraints::ConstraintSet,
-    jwk::{PrivateJsonWebKeySet, PublicJsonWebKeySet},
-    Jwt,
-};
-use serde::Deserialize;
-
 static HS256_JWT: &str = include_str!("./jwts/hs256.jwt");
 static HS384_JWT: &str = include_str!("./jwts/hs384.jwt");
 static HS512_JWT: &str = include_str!("./jwts/hs512.jwt");
@@ -38,11 +29,11 @@ static EDDSA_ED25519_JWT: &str = include_str!("./jwts/eddsa-ed25519.jwt");
 static EDDSA_ED448_JWT: &str = include_str!("./jwts/eddsa-ed448.jwt");
 static OCT_KEY: &[u8] = include_bytes!("./keys/oct.bin");
 
-fn public_jwks() -> PublicJsonWebKeySet {
+fn public_jwks() -> mas_jose::jwk::PublicJsonWebKeySet {
     serde_json::from_str(include_str!("./keys/jwks.pub.json")).unwrap()
 }
 
-fn private_jwks() -> PrivateJsonWebKeySet {
+fn private_jwks() -> mas_jose::jwk::PrivateJsonWebKeySet {
     serde_json::from_str(include_str!("./keys/jwks.priv.json")).unwrap()
 }
 
@@ -50,74 +41,189 @@ fn oct_key() -> Vec<u8> {
     OCT_KEY.to_vec()
 }
 
-#[derive(Deserialize)]
+#[derive(serde::Deserialize, serde::Serialize)]
 struct Payload {
     hello: String,
 }
 
-macro_rules! asymetric_jwt_test {
-    ($test_name:ident, $jwt:ident) => {
-        asymetric_jwt_test!($test_name, $jwt, verify = true);
+macro_rules! conditional {
+    { true => $($tt:tt)* } => {
+        $($tt)*
     };
-    ($test_name:ident, $jwt:ident, verify = $verify:ident) => {
-        #[test]
-        fn $test_name() {
-            let jwks = public_jwks();
-            let jwt: Jwt<'_, Payload> = Jwt::try_from($jwt).unwrap();
-            assert_eq!(jwt.payload().hello, "world");
+    { false => $($tt:tt)* } => {};
+}
 
-            let constraints = ConstraintSet::from(jwt.header());
-            let candidates = constraints.filter(jwks.deref());
-            assert_eq!(candidates.len(), 1);
-            let candidate = candidates[0];
+macro_rules! asymetric_jwt_test {
+    ($test_name:ident, $alg:ident, $jwt:ident) => {
+        asymetric_jwt_test!($test_name, $alg, $jwt, supported = true);
+    };
+    ($test_name:ident, $alg:ident, $jwt:ident, supported = $supported:ident) => {
+        mod $test_name {
+            use std::ops::Deref;
 
-            if $verify {
-                let verifier = mas_jose::verifier::Verifier::for_jwk_and_alg(
-                    candidate.params(),
-                    jwt.header().alg(),
-                )
-                .unwrap();
-                jwt.verify(&verifier).unwrap();
+            use mas_iana::jose::JsonWebSignatureAlg;
+            use mas_jose::{constraints::ConstraintSet, Jwt};
+
+            use super::*;
+
+            #[test]
+            fn validate_jwt() {
+                let jwt: Jwt<'_, Payload> = Jwt::try_from($jwt).unwrap();
+                assert_eq!(jwt.payload().hello, "world");
+                assert_eq!(jwt.header().alg(), JsonWebSignatureAlg::$alg);
+            }
+
+            #[test]
+            fn find_public_key() {
+                let jwks = public_jwks();
+                let jwt: Jwt<'_, Payload> = Jwt::try_from($jwt).unwrap();
+
+                let constraints = ConstraintSet::from(jwt.header());
+                let candidates = constraints.filter(jwks.deref());
+                assert_eq!(candidates.len(), 1);
+            }
+
+            #[test]
+            fn find_private_key() {
+                let jwks = private_jwks();
+                let jwt: Jwt<'_, Payload> = Jwt::try_from($jwt).unwrap();
+
+                let constraints = ConstraintSet::from(jwt.header());
+                let candidates = constraints.filter(jwks.deref());
+                assert_eq!(candidates.len(), 1);
+            }
+
+            conditional! { $supported =>
+                use mas_iana::jose::JsonWebKeyUse;
+                use mas_jose::{constraints::Constraint, JsonWebSignatureHeader};
+
+                #[test]
+                fn verify_jwt() {
+                    let jwks = public_jwks();
+                    let jwt: Jwt<'_, Payload> = Jwt::try_from($jwt).unwrap();
+
+                    let key = ConstraintSet::from(jwt.header())
+                        .filter(jwks.deref())[0];
+
+                    let verifier = mas_jose::verifier::Verifier::for_jwk_and_alg(
+                        key.params(),
+                        JsonWebSignatureAlg::$alg
+                    )
+                    .unwrap();
+
+                    jwt.verify(&verifier).unwrap();
+                }
+
+                #[test]
+                fn sign_and_verify_jwt() {
+                    let payload = Payload { hello: "world".to_string() };
+                    let header = JsonWebSignatureHeader::new(JsonWebSignatureAlg::$alg);
+
+                    let jwks = private_jwks();
+                    let key = ConstraintSet::new(vec![
+                        Constraint::alg(JsonWebSignatureAlg::$alg),
+                        Constraint::use_(JsonWebKeyUse::Sig),
+                    ])
+                        .filter(jwks.deref())[0];
+
+                    let signer = mas_jose::signer::Signer::for_jwk_and_alg(
+                        key.params(),
+                        JsonWebSignatureAlg::$alg,
+                    )
+                    .unwrap();
+
+                    let jwks = public_jwks();
+                    let jwt: Jwt<'_, Payload> = Jwt::sign(header, payload, &signer).unwrap();
+                    let jwt: Jwt<'_, Payload> = Jwt::try_from(jwt.as_str()).unwrap();
+
+                    let key = ConstraintSet::from(jwt.header())
+                        .filter(jwks.deref())[0];
+
+                    let verifier = mas_jose::verifier::Verifier::for_jwk_and_alg(
+                        key.params(),
+                        JsonWebSignatureAlg::$alg
+                    )
+                    .unwrap();
+
+                    jwt.verify(&verifier).unwrap();
+                }
             }
         }
     };
 }
 
 macro_rules! symetric_jwt_test {
-    ($test_name:ident, $jwt:ident) => {
-        #[test]
-        fn $test_name() {
-            let jwt: Jwt<'_, Payload> = Jwt::try_from($jwt).unwrap();
-            let verifier =
-                mas_jose::verifier::Verifier::for_oct_and_alg(oct_key(), jwt.header().alg())
-                    .unwrap();
-            assert_eq!(jwt.payload().hello, "world");
-            jwt.verify(&verifier).unwrap();
+    ($test_name:ident, $alg:ident, $jwt:ident) => {
+        mod $test_name {
+            use mas_iana::jose::JsonWebSignatureAlg;
+            use mas_jose::{JsonWebSignatureHeader, Jwt};
+
+            use super::*;
+
+            #[test]
+            fn validate_jwt() {
+                let jwt: Jwt<'_, Payload> = Jwt::try_from($jwt).unwrap();
+                assert_eq!(jwt.payload().hello, "world");
+                assert_eq!(jwt.header().alg(), JsonWebSignatureAlg::$alg);
+            }
+
+            #[test]
+            fn verify_jwt() {
+                let jwt: Jwt<'_, Payload> = Jwt::try_from($jwt).unwrap();
+                let verifier =
+                    mas_jose::verifier::Verifier::for_oct_and_alg(oct_key(), jwt.header().alg())
+                        .unwrap();
+                assert_eq!(jwt.payload().hello, "world");
+                jwt.verify(&verifier).unwrap();
+            }
+
+            #[test]
+            fn sign_and_verify_jwt() {
+                let payload = Payload {
+                    hello: "world".to_string(),
+                };
+                let header = JsonWebSignatureHeader::new(JsonWebSignatureAlg::$alg);
+
+                let signer =
+                    mas_jose::signer::Signer::for_oct_and_alg(oct_key(), JsonWebSignatureAlg::$alg)
+                        .unwrap();
+
+                let jwt: Jwt<'_, Payload> = Jwt::sign(header, payload, &signer).unwrap();
+                let jwt: Jwt<'_, Payload> = Jwt::try_from(jwt.as_str()).unwrap();
+
+                let verifier = mas_jose::verifier::Verifier::for_oct_and_alg(
+                    oct_key(),
+                    JsonWebSignatureAlg::$alg,
+                )
+                .unwrap();
+
+                jwt.verify(&verifier).unwrap();
+            }
         }
     };
 }
 
-symetric_jwt_test!(test_hs256, HS256_JWT);
-symetric_jwt_test!(test_hs384, HS384_JWT);
-symetric_jwt_test!(test_hs512, HS512_JWT);
+symetric_jwt_test!(hs256, Hs256, HS256_JWT);
+symetric_jwt_test!(hs384, Hs384, HS384_JWT);
+symetric_jwt_test!(hs512, Hs512, HS512_JWT);
 
-asymetric_jwt_test!(test_rs256, RS256_JWT);
-asymetric_jwt_test!(test_rs384, RS384_JWT);
-asymetric_jwt_test!(test_rs512, RS512_JWT);
-asymetric_jwt_test!(test_ps256, PS256_JWT);
-asymetric_jwt_test!(test_ps384, PS384_JWT);
-asymetric_jwt_test!(test_ps512, PS512_JWT);
-asymetric_jwt_test!(test_es256, ES256_JWT);
-asymetric_jwt_test!(test_es384, ES384_JWT);
-asymetric_jwt_test!(test_es512, ES512_JWT, verify = false);
-asymetric_jwt_test!(test_es256k, ES256K_JWT);
-asymetric_jwt_test!(test_eddsa_ed25519, EDDSA_ED25519_JWT, verify = false);
-asymetric_jwt_test!(test_eddsa_ed448, EDDSA_ED448_JWT, verify = false);
+asymetric_jwt_test!(rs256, Rs256, RS256_JWT);
+asymetric_jwt_test!(rs384, Rs384, RS384_JWT);
+asymetric_jwt_test!(rs512, Rs512, RS512_JWT);
+asymetric_jwt_test!(ps256, Ps256, PS256_JWT);
+asymetric_jwt_test!(ps384, Ps384, PS384_JWT);
+asymetric_jwt_test!(ps512, Ps512, PS512_JWT);
+asymetric_jwt_test!(es256, Es256, ES256_JWT);
+asymetric_jwt_test!(es384, Es384, ES384_JWT);
+asymetric_jwt_test!(es512, Es512, ES512_JWT, supported = false);
+asymetric_jwt_test!(es256k, Es256K, ES256K_JWT);
+asymetric_jwt_test!(eddsa_ed25519, EdDsa, EDDSA_ED25519_JWT, supported = false);
+asymetric_jwt_test!(eddsa_ed448, EdDsa, EDDSA_ED448_JWT, supported = false);
 
 #[test]
 fn test_private_to_public_jwks() {
     let priv_jwks = private_jwks();
-    let pub_jwks = PublicJsonWebKeySet::from(priv_jwks);
+    let pub_jwks = mas_jose::jwk::PublicJsonWebKeySet::from(priv_jwks);
 
     assert_eq!(pub_jwks, public_jwks());
 }

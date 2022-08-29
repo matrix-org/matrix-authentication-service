@@ -24,12 +24,12 @@ pub mod jwk;
 pub(crate) mod jwt;
 mod keystore;
 pub(crate) mod rsa;
+pub mod signer;
 pub mod verifier;
 
 pub use futures_util::future::Either;
 
 pub use self::{
-    jwk::{JsonWebKey, JsonWebKeySet},
     jwt::{DecodedJsonWebToken, JsonWebSignatureHeader, JsonWebTokenParts, Jwt, JwtSignatureError},
     keystore::{
         DynamicJwksStore, SharedSecret, SigningKeystore, StaticJwksStore, StaticKeystore,
