@@ -14,9 +14,7 @@
 
 use std::{
     collections::{HashMap, HashSet},
-    convert::Infallible,
     future::Ready,
-    task::Poll,
 };
 
 use anyhow::bail;
@@ -31,11 +29,10 @@ use pkcs8::{DecodePrivateKey, EncodePublicKey};
 use rsa::{PublicKey as _, RsaPrivateKey, RsaPublicKey};
 use sha2::{Sha256, Sha384, Sha512};
 use signature::{Signature, Signer, Verifier};
-use tower::Service;
 
 use super::{SigningKeystore, VerifyingKeystore};
 use crate::{
-    jwk::{JsonWebKey, JsonWebKeySet, PublicJsonWebKeySet},
+    jwk::{JsonWebKey, PublicJsonWebKeySet},
     JsonWebSignatureHeader,
 };
 
@@ -131,6 +128,27 @@ impl StaticKeystore {
         let kid = format!("ec-{}", digest);
         self.es256_keys.insert(kid, key);
         Ok(())
+    }
+
+    #[must_use]
+    pub fn to_public_jwks(&self) -> PublicJsonWebKeySet {
+        let rsa = self.rsa_keys.iter().map(|(kid, key)| {
+            let pubkey = RsaPublicKey::from(key);
+            JsonWebKey::new(pubkey.into())
+                .with_kid(kid)
+                .with_use(JsonWebKeyUse::Sig)
+        });
+
+        let es256 = self.es256_keys.iter().map(|(kid, key)| {
+            let pubkey = ecdsa::VerifyingKey::from(key);
+            JsonWebKey::new(pubkey.into())
+                .with_kid(kid)
+                .with_use(JsonWebKeyUse::Sig)
+                .with_alg(JsonWebSignatureAlg::Es256)
+        });
+
+        let keys = rsa.chain(es256).collect();
+        PublicJsonWebKeySet::new(keys)
     }
 
     fn verify_sync(
@@ -363,36 +381,6 @@ impl VerifyingKeystore for StaticKeystore {
         signature: &[u8],
     ) -> Self::Future {
         std::future::ready(self.verify_sync(header, msg, signature))
-    }
-}
-
-impl Service<()> for &StaticKeystore {
-    type Future = Ready<Result<Self::Response, Self::Error>>;
-    type Response = PublicJsonWebKeySet;
-    type Error = Infallible;
-
-    fn poll_ready(&mut self, _cx: &mut std::task::Context<'_>) -> Poll<Result<(), Self::Error>> {
-        Poll::Ready(Ok(()))
-    }
-
-    fn call(&mut self, _req: ()) -> Self::Future {
-        let rsa = self.rsa_keys.iter().map(|(kid, key)| {
-            let pubkey = RsaPublicKey::from(key);
-            JsonWebKey::new(pubkey.into())
-                .with_kid(kid)
-                .with_use(JsonWebKeyUse::Sig)
-        });
-
-        let es256 = self.es256_keys.iter().map(|(kid, key)| {
-            let pubkey = ecdsa::VerifyingKey::from(key);
-            JsonWebKey::new(pubkey.into())
-                .with_kid(kid)
-                .with_use(JsonWebKeyUse::Sig)
-                .with_alg(JsonWebSignatureAlg::Es256)
-        });
-
-        let keys = rsa.chain(es256).collect();
-        std::future::ready(Ok(JsonWebKeySet::new(keys)))
     }
 }
 

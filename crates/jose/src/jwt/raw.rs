@@ -16,6 +16,7 @@ use std::{borrow::Cow, ops::Deref};
 
 use thiserror::Error;
 
+#[derive(Clone, PartialEq, Eq)]
 pub struct RawJwt<'a> {
     inner: Cow<'a, str>,
     first_dot: usize,
@@ -54,6 +55,14 @@ impl<'a> RawJwt<'a> {
     pub fn signed_part(&'a self) -> &'a str {
         &self.inner[..self.second_dot]
     }
+
+    pub fn into_owned(self) -> RawJwt<'static> {
+        RawJwt {
+            inner: self.inner.into_owned().into(),
+            first_dot: self.first_dot,
+            second_dot: self.second_dot,
+        }
+    }
 }
 
 impl<'a> Deref for RawJwt<'a> {
@@ -79,6 +88,28 @@ pub enum DecodeError {
 impl<'a> TryFrom<&'a str> for RawJwt<'a> {
     type Error = DecodeError;
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
+        let mut indices = value
+            .char_indices()
+            .filter_map(|(idx, c)| (c == '.').then(|| idx));
+
+        let first_dot = indices.next().ok_or(DecodeError::NoDots)?;
+        let second_dot = indices.next().ok_or(DecodeError::OnlyOneDot)?;
+
+        if indices.next().is_some() {
+            return Err(DecodeError::TooManyDots);
+        }
+
+        Ok(Self {
+            inner: value.into(),
+            first_dot,
+            second_dot,
+        })
+    }
+}
+
+impl TryFrom<String> for RawJwt<'static> {
+    type Error = DecodeError;
+    fn try_from(value: String) -> Result<Self, Self::Error> {
         let mut indices = value
             .char_indices()
             .filter_map(|(idx, c)| (c == '.').then(|| idx));

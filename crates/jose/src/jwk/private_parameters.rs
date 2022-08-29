@@ -43,6 +43,40 @@ pub enum JsonWebKeyPrivateParameters {
     Okp(OkpPrivateParameters),
 }
 
+impl JsonWebKeyPrivateParameters {
+    #[must_use]
+    pub const fn oct(&self) -> Option<&OctPrivateParameters> {
+        match self {
+            Self::Oct(params) => Some(params),
+            _ => None,
+        }
+    }
+
+    #[must_use]
+    pub const fn rsa(&self) -> Option<&RsaPrivateParameters> {
+        match self {
+            Self::Rsa(params) => Some(params),
+            _ => None,
+        }
+    }
+
+    #[must_use]
+    pub const fn ec(&self) -> Option<&EcPrivateParameters> {
+        match self {
+            Self::Ec(params) => Some(params),
+            _ => None,
+        }
+    }
+
+    #[must_use]
+    pub const fn okp(&self) -> Option<&OkpPrivateParameters> {
+        match self {
+            Self::Okp(params) => Some(params),
+            _ => None,
+        }
+    }
+}
+
 impl ParametersInfo for JsonWebKeyPrivateParameters {
     fn kty(&self) -> JsonWebKeyType {
         match self {

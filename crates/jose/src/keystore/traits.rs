@@ -12,15 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{collections::HashSet, future::Future, sync::Arc};
+use std::{collections::HashSet, future::Future};
 
 use async_trait::async_trait;
-use futures_util::{
-    future::{Either, MapErr},
-    TryFutureExt,
-};
 use mas_iana::jose::JsonWebSignatureAlg;
-use thiserror::Error;
 
 use crate::JsonWebSignatureHeader;
 
@@ -42,62 +37,4 @@ pub trait VerifyingKeystore {
 
     fn verify(&self, header: &JsonWebSignatureHeader, msg: &[u8], signature: &[u8])
         -> Self::Future;
-}
-
-#[derive(Debug, Error)]
-pub enum EitherError<A, B> {
-    #[error(transparent)]
-    Left(A),
-    #[error(transparent)]
-    Right(B),
-}
-
-impl<L, R> VerifyingKeystore for Either<L, R>
-where
-    L: VerifyingKeystore,
-    R: VerifyingKeystore,
-{
-    type Error = EitherError<L::Error, R::Error>;
-
-    #[allow(clippy::type_complexity)]
-    type Future = Either<
-        MapErr<L::Future, fn(L::Error) -> Self::Error>,
-        MapErr<R::Future, fn(R::Error) -> Self::Error>,
-    >;
-
-    fn verify(
-        &self,
-        header: &JsonWebSignatureHeader,
-        msg: &[u8],
-        signature: &[u8],
-    ) -> Self::Future {
-        match self {
-            Either::Left(left) => Either::Left(
-                left.verify(header, msg, signature)
-                    .map_err(EitherError::Left),
-            ),
-            Either::Right(right) => Either::Right(
-                right
-                    .verify(header, msg, signature)
-                    .map_err(EitherError::Right),
-            ),
-        }
-    }
-}
-
-impl<T> VerifyingKeystore for Arc<T>
-where
-    T: VerifyingKeystore,
-{
-    type Error = T::Error;
-    type Future = T::Future;
-
-    fn verify(
-        &self,
-        header: &JsonWebSignatureHeader,
-        msg: &[u8],
-        signature: &[u8],
-    ) -> Self::Future {
-        self.as_ref().verify(header, msg, signature)
-    }
 }

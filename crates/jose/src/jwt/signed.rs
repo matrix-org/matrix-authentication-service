@@ -18,7 +18,9 @@ use signature::{Signature, Signer, Verifier};
 use thiserror::Error;
 
 use super::{header::JsonWebSignatureHeader, raw::RawJwt};
+use crate::{constraints::ConstraintSet, jwk::PublicJsonWebKeySet};
 
+#[derive(Clone, PartialEq, Eq)]
 pub struct Jwt<'a, T> {
     raw: RawJwt<'a>,
     header: JsonWebSignatureHeader,
@@ -107,14 +109,12 @@ impl JwtDecodeError {
     }
 }
 
-impl<'a, T> TryFrom<&'a str> for Jwt<'a, T>
+impl<'a, T> TryFrom<RawJwt<'a>> for Jwt<'a, T>
 where
     T: DeserializeOwned,
 {
     type Error = JwtDecodeError;
-    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        let raw = RawJwt::try_from(value)?;
-
+    fn try_from(raw: RawJwt<'a>) -> Result<Self, Self::Error> {
         let header_reader =
             base64ct::Decoder::<'_, Base64UrlUnpadded>::new(raw.header().as_bytes())
                 .map_err(JwtDecodeError::decode_header)?;
@@ -136,6 +136,28 @@ where
             payload,
             signature,
         })
+    }
+}
+
+impl<'a, T> TryFrom<&'a str> for Jwt<'a, T>
+where
+    T: DeserializeOwned,
+{
+    type Error = JwtDecodeError;
+    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
+        let raw = RawJwt::try_from(value)?;
+        Self::try_from(raw)
+    }
+}
+
+impl<T> TryFrom<String> for Jwt<'static, T>
+where
+    T: DeserializeOwned,
+{
+    type Error = JwtDecodeError;
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let raw = RawJwt::try_from(value)?;
+        Self::try_from(raw)
     }
 }
 
@@ -164,6 +186,12 @@ impl JwtVerificationError {
     }
 }
 
+#[derive(Debug, Error, Default)]
+#[error("none of the keys worked")]
+pub struct NoKeyWorked {
+    _inner: (),
+}
+
 impl<'a, T> Jwt<'a, T> {
     pub fn header(&self) -> &JsonWebSignatureHeader {
         &self.header
@@ -171,6 +199,15 @@ impl<'a, T> Jwt<'a, T> {
 
     pub fn payload(&self) -> &T {
         &self.payload
+    }
+
+    pub fn into_owned(self) -> Jwt<'static, T> {
+        Jwt {
+            raw: self.raw.into_owned(),
+            header: self.header,
+            payload: self.payload,
+            signature: self.signature,
+        }
     }
 
     pub fn verify<K, S>(&self, key: &K) -> Result<(), JwtVerificationError>
@@ -183,6 +220,37 @@ impl<'a, T> Jwt<'a, T> {
 
         key.verify(self.raw.signed_part().as_bytes(), &signature)
             .map_err(JwtVerificationError::verify)
+    }
+
+    pub fn verify_from_shared_secret(&self, secret: Vec<u8>) -> Result<(), NoKeyWorked> {
+        let verifier = crate::verifier::Verifier::for_oct_and_alg(secret, self.header().alg())
+            .map_err(|_| NoKeyWorked::default())?;
+
+        self.verify(&verifier).map_err(|_| NoKeyWorked::default())?;
+
+        Ok(())
+    }
+
+    pub fn verify_from_jwks(&self, jwks: &PublicJsonWebKeySet) -> Result<(), NoKeyWorked> {
+        let constraints = ConstraintSet::from(self.header());
+        let candidates = constraints.filter(&**jwks);
+
+        for candidate in candidates {
+            let verifier = match crate::verifier::Verifier::for_jwk_and_alg(
+                candidate.params(),
+                self.header().alg(),
+            ) {
+                Ok(v) => v,
+                Err(_) => continue,
+            };
+
+            match self.verify(&verifier) {
+                Ok(_) => return Ok(()),
+                Err(_) => continue,
+            }
+        }
+
+        Err(NoKeyWorked::default())
     }
 
     pub fn as_str(&'a self) -> &'a str {
