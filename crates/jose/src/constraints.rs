@@ -221,7 +221,7 @@ impl<'a> ConstraintSet<'a> {
                     ConstraintDecision::Positive => score += 1,
                     ConstraintDecision::Neutral => {}
                     // If any constraint was negative, don't add it to the candidates
-                    ConstraintDecision::Negative => break 'outer,
+                    ConstraintDecision::Negative => continue 'outer,
                 }
             }
 
