@@ -267,4 +267,3 @@ pub struct OkpPrivateParameters {
     #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
     x: Vec<u8>,
 }
-
