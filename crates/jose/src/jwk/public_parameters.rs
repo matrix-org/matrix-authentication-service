@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use mas_iana::jose::{JsonWebKeyEcEllipticCurve, JsonWebKeyOkpEllipticCurve, JsonWebKeyType};
+use mas_iana::jose::{
+    JsonWebKeyEcEllipticCurve, JsonWebKeyOkpEllipticCurve, JsonWebKeyType, JsonWebSignatureAlg,
+};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::{
@@ -21,7 +23,7 @@ use serde_with::{
     serde_as,
 };
 
-use super::JwkKty;
+use super::ParametersInfo;
 
 #[serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
@@ -37,12 +39,20 @@ pub enum JsonWebKeyPublicParameters {
     Okp(OkpPublicParameters),
 }
 
-impl JwkKty for JsonWebKeyPublicParameters {
+impl ParametersInfo for JsonWebKeyPublicParameters {
     fn kty(&self) -> JsonWebKeyType {
         match self {
             Self::Rsa(_) => JsonWebKeyType::Rsa,
             Self::Ec(_) => JsonWebKeyType::Ec,
             Self::Okp(_) => JsonWebKeyType::Okp,
+        }
+    }
+
+    fn possible_algs(&self) -> &'static [JsonWebSignatureAlg] {
+        match self {
+            JsonWebKeyPublicParameters::Rsa(p) => p.possible_algs(),
+            JsonWebKeyPublicParameters::Ec(p) => p.possible_algs(),
+            JsonWebKeyPublicParameters::Okp(p) => p.possible_algs(),
         }
     }
 }
@@ -59,6 +69,29 @@ pub struct RsaPublicParameters {
     e: Vec<u8>,
 }
 
+impl ParametersInfo for RsaPublicParameters {
+    fn kty(&self) -> JsonWebKeyType {
+        JsonWebKeyType::Rsa
+    }
+
+    fn possible_algs(&self) -> &'static [JsonWebSignatureAlg] {
+        &[
+            JsonWebSignatureAlg::Rs256,
+            JsonWebSignatureAlg::Rs384,
+            JsonWebSignatureAlg::Rs512,
+            JsonWebSignatureAlg::Ps256,
+            JsonWebSignatureAlg::Ps384,
+            JsonWebSignatureAlg::Ps512,
+        ]
+    }
+}
+
+impl RsaPublicParameters {
+    pub const fn new(n: Vec<u8>, e: Vec<u8>) -> Self {
+        Self { n, e }
+    }
+}
+
 #[serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct EcPublicParameters {
@@ -73,6 +106,31 @@ pub struct EcPublicParameters {
     y: Vec<u8>,
 }
 
+impl EcPublicParameters {
+    pub const fn new(crv: JsonWebKeyEcEllipticCurve, x: Vec<u8>, y: Vec<u8>) -> Self {
+        Self { crv, x, y }
+    }
+
+    pub const fn crv(&self) -> JsonWebKeyEcEllipticCurve {
+        self.crv
+    }
+}
+
+impl ParametersInfo for EcPublicParameters {
+    fn kty(&self) -> JsonWebKeyType {
+        JsonWebKeyType::Ec
+    }
+
+    fn possible_algs(&self) -> &'static [JsonWebSignatureAlg] {
+        match self.crv {
+            JsonWebKeyEcEllipticCurve::P256 => &[JsonWebSignatureAlg::Es256],
+            JsonWebKeyEcEllipticCurve::P384 => &[JsonWebSignatureAlg::Es384],
+            JsonWebKeyEcEllipticCurve::P521 => &[JsonWebSignatureAlg::Es512],
+            JsonWebKeyEcEllipticCurve::Secp256K1 => &[JsonWebSignatureAlg::Es256K],
+        }
+    }
+}
+
 #[serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct OkpPublicParameters {
@@ -83,8 +141,22 @@ pub struct OkpPublicParameters {
     x: Vec<u8>,
 }
 
-impl EcPublicParameters {
-    pub const fn crv(&self) -> JsonWebKeyEcEllipticCurve {
+impl ParametersInfo for OkpPublicParameters {
+    fn kty(&self) -> JsonWebKeyType {
+        JsonWebKeyType::Okp
+    }
+
+    fn possible_algs(&self) -> &'static [JsonWebSignatureAlg] {
+        &[JsonWebSignatureAlg::EdDsa]
+    }
+}
+
+impl OkpPublicParameters {
+    pub const fn new(crv: JsonWebKeyOkpEllipticCurve, x: Vec<u8>) -> Self {
+        Self { crv, x }
+    }
+
+    pub const fn crv(&self) -> JsonWebKeyOkpEllipticCurve {
         self.crv
     }
 }

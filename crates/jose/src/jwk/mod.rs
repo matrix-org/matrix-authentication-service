@@ -32,10 +32,12 @@ use crate::constraints::Constrainable;
 pub(crate) mod private_parameters;
 pub(crate) mod public_parameters;
 
+use self::private_parameters::SymetricKeyError;
 pub use self::public_parameters::JsonWebKeyPublicParameters as JsonWebKeyParameters;
 
-pub trait JwkKty {
+pub trait ParametersInfo {
     fn kty(&self) -> JsonWebKeyType;
+    fn possible_algs(&self) -> &'static [JsonWebSignatureAlg];
 }
 
 trait JwkEcCurve {
@@ -96,6 +98,24 @@ pub struct JsonWebKey<P> {
 pub type PublicJsonWebKey = JsonWebKey<self::public_parameters::JsonWebKeyPublicParameters>;
 pub type PrivateJsonWebKey = JsonWebKey<self::private_parameters::JsonWebKeyPrivateParameters>;
 
+impl TryFrom<PrivateJsonWebKey> for PublicJsonWebKey {
+    type Error = SymetricKeyError;
+
+    fn try_from(value: PrivateJsonWebKey) -> Result<Self, Self::Error> {
+        Ok(Self {
+            parameters: value.parameters.try_into()?,
+            r#use: value.r#use,
+            key_ops: value.key_ops,
+            alg: value.alg,
+            kid: value.kid,
+            x5u: value.x5u,
+            x5c: value.x5c,
+            x5t: value.x5t,
+            x5t_s256: value.x5t_s256,
+        })
+    }
+}
+
 impl<P> JsonWebKey<P> {
     #[must_use]
     pub const fn new(parameters: P) -> Self {
@@ -149,7 +169,7 @@ impl<P> JsonWebKey<P> {
 
 impl<P> Constrainable for JsonWebKey<P>
 where
-    P: JwkKty,
+    P: ParametersInfo,
 {
     fn kid(&self) -> Option<&str> {
         self.kid.as_deref()
@@ -163,32 +183,7 @@ where
         if let Some(alg) = self.alg {
             Some(vec![alg])
         } else {
-            match self.parameters.kty() {
-                JsonWebKeyType::Rsa => Some(vec![
-                    JsonWebSignatureAlg::Rs256,
-                    JsonWebSignatureAlg::Rs384,
-                    JsonWebSignatureAlg::Rs512,
-                    JsonWebSignatureAlg::Ps256,
-                    JsonWebSignatureAlg::Ps384,
-                    JsonWebSignatureAlg::Ps512,
-                ]),
-                JsonWebKeyType::Ec => {
-                    todo!()
-                    /*
-                        match params.crv() {
-                        JsonWebKeyEcEllipticCurve::P256 => Some(vec![JsonWebSignatureAlg::Es256]),
-                        JsonWebKeyEcEllipticCurve::P384 => Some(vec![JsonWebSignatureAlg::Es384]),
-                        JsonWebKeyEcEllipticCurve::P521 => Some(vec![JsonWebSignatureAlg::Es512]),
-                        JsonWebKeyEcEllipticCurve::Secp256K1 => Some(vec![JsonWebSignatureAlg::Es256K]),
-                    }, */
-                }
-                JsonWebKeyType::Okp => Some(vec![JsonWebSignatureAlg::EdDsa]),
-                JsonWebKeyType::Oct => Some(vec![
-                    JsonWebSignatureAlg::Hs256,
-                    JsonWebSignatureAlg::Hs384,
-                    JsonWebSignatureAlg::Hs512,
-                ]),
-            }
+            Some(self.parameters.possible_algs().to_vec())
         }
     }
 
@@ -205,6 +200,17 @@ pub struct JsonWebKeySet<P> {
 pub type PublicJsonWebKeySet = JsonWebKeySet<self::public_parameters::JsonWebKeyPublicParameters>;
 pub type PrivateJsonWebKeySet =
     JsonWebKeySet<self::private_parameters::JsonWebKeyPrivateParameters>;
+
+impl From<PrivateJsonWebKeySet> for PublicJsonWebKeySet {
+    fn from(value: PrivateJsonWebKeySet) -> Self {
+        let keys = value
+            .keys
+            .into_iter()
+            .filter_map(|key: PrivateJsonWebKey| key.try_into().ok())
+            .collect();
+        Self { keys }
+    }
+}
 
 impl<P> std::ops::Deref for JsonWebKeySet<P> {
     type Target = Vec<JsonWebKey<P>>;
@@ -249,7 +255,7 @@ mod tests {
           ]
         });
 
-        let jwks: JsonWebKeySet = serde_json::from_value(jwks).unwrap();
+        let jwks: PublicJsonWebKeySet = serde_json::from_value(jwks).unwrap();
         // Both keys are RSA public keys
         for jwk in &jwks.keys {
             rsa::RsaPublicKey::try_from(jwk.parameters.clone()).unwrap();
@@ -383,7 +389,7 @@ mod tests {
           ]
         });
 
-        let jwks: JsonWebKeySet = serde_json::from_value(jwks).unwrap();
+        let jwks: PublicJsonWebKeySet = serde_json::from_value(jwks).unwrap();
         // The first 6 keys are RSA, 7th is P-256
         let mut keys = jwks.keys.into_iter();
         rsa::RsaPublicKey::try_from(keys.next().unwrap().parameters).unwrap();
