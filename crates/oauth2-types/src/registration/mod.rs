@@ -20,7 +20,7 @@ use mas_iana::{
     jose::{JsonWebEncryptionAlg, JsonWebEncryptionEnc, JsonWebSignatureAlg},
     oauth::{OAuthAuthorizationEndpointResponseType, OAuthClientAuthenticationMethod},
 };
-use mas_jose::JsonWebKeySet;
+use mas_jose::jwk::PublicJsonWebKeySet;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none, TimestampSeconds};
 use thiserror::Error;
@@ -197,7 +197,7 @@ pub struct ClientMetadata {
     /// This field is mutually exclusive with `jwks_uri`.
     ///
     /// [JWK]: https://www.rfc-editor.org/rfc/rfc7517.html
-    pub jwks: Option<JsonWebKeySet>,
+    pub jwks: Option<PublicJsonWebKeySet>,
 
     /// URL to be used in calculating pseudonymous identifiers by the OpenID
     /// Connect provider when [pairwise subject identifiers] are used.
@@ -861,7 +861,7 @@ mod tests {
         jose::{JsonWebEncryptionAlg, JsonWebEncryptionEnc, JsonWebSignatureAlg},
         oauth::{OAuthAuthorizationEndpointResponseType, OAuthClientAuthenticationMethod},
     };
-    use mas_jose::JsonWebKeySet;
+    use mas_jose::jwk::PublicJsonWebKeySet;
     use url::Url;
 
     use super::{ClientMetadata, ClientMetadataVerificationError};
@@ -874,7 +874,7 @@ mod tests {
         }
     }
 
-    fn jwks() -> JsonWebKeySet {
+    fn jwks() -> PublicJsonWebKeySet {
         serde_json::from_value(serde_json::json!({
             "keys": [
                 {

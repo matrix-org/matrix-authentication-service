@@ -19,7 +19,7 @@ use mas_iana::{
     jose::JsonWebSignatureAlg,
     oauth::{OAuthAuthorizationEndpointResponseType, OAuthClientAuthenticationMethod},
 };
-use mas_jose::JsonWebKeySet;
+use mas_jose::jwk::PublicJsonWebKeySet;
 use oauth2_types::requests::GrantType;
 use sqlx::{PgConnection, PgExecutor};
 use thiserror::Error;
@@ -331,7 +331,7 @@ pub async fn insert_client(
     policy_uri: Option<&Url>,
     tos_uri: Option<&Url>,
     jwks_uri: Option<&Url>,
-    jwks: Option<&JsonWebKeySet>,
+    jwks: Option<&PublicJsonWebKeySet>,
     id_token_signed_response_alg: Option<JsonWebSignatureAlg>,
     userinfo_signed_response_alg: Option<JsonWebSignatureAlg>,
     token_endpoint_auth_method: Option<OAuthClientAuthenticationMethod>,
@@ -421,7 +421,7 @@ pub async fn insert_client_from_config(
     client_id: &str,
     client_auth_method: OAuthClientAuthenticationMethod,
     encrypted_client_secret: Option<&str>,
-    jwks: Option<&JsonWebKeySet>,
+    jwks: Option<&PublicJsonWebKeySet>,
     jwks_uri: Option<&Url>,
     redirect_uris: &[Url],
 ) -> anyhow::Result<()> {

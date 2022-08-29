@@ -20,7 +20,7 @@ use mas_iana::{
     jose::{JsonWebEncryptionAlg, JsonWebEncryptionEnc, JsonWebSignatureAlg},
     oauth::{OAuthAuthorizationEndpointResponseType, OAuthClientAuthenticationMethod},
 };
-use mas_jose::JsonWebKeySet;
+use mas_jose::jwk::PublicJsonWebKeySet;
 use serde::{
     de::{DeserializeOwned, Error},
     ser::SerializeMap,
@@ -99,7 +99,7 @@ pub struct ClientMetadataSerdeHelper {
     application_type: Option<ApplicationType>,
     contacts: Option<Vec<String>>,
     jwks_uri: Option<Url>,
-    jwks: Option<JsonWebKeySet>,
+    jwks: Option<PublicJsonWebKeySet>,
     sector_identifier_uri: Option<Url>,
     subject_type: Option<SubjectType>,
     token_endpoint_auth_method: Option<OAuthClientAuthenticationMethod>,

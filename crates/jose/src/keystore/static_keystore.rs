@@ -34,7 +34,7 @@ use signature::{Signature, Signer, Verifier};
 use tower::Service;
 
 use super::{SigningKeystore, VerifyingKeystore};
-use crate::{JsonWebKey, JsonWebKeySet, JsonWebSignatureHeader};
+use crate::{jwk::PublicJsonWebKeySet, JsonWebKey, JsonWebKeySet, JsonWebSignatureHeader};
 
 // Generate with
 //  openssl genrsa 2048
@@ -365,7 +365,7 @@ impl VerifyingKeystore for StaticKeystore {
 
 impl Service<()> for &StaticKeystore {
     type Future = Ready<Result<Self::Response, Self::Error>>;
-    type Response = JsonWebKeySet;
+    type Response = PublicJsonWebKeySet;
     type Error = Infallible;
 
     fn poll_ready(&mut self, _cx: &mut std::task::Context<'_>) -> Poll<Result<(), Self::Error>> {

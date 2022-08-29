@@ -22,8 +22,9 @@ use signature::{Signature, Verifier};
 use thiserror::Error;
 
 use crate::{
-    constraints::Constrainable, JsonWebKey, JsonWebKeySet, JsonWebSignatureHeader,
-    VerifyingKeystore,
+    constraints::Constrainable,
+    jwk::{PublicJsonWebKey, PublicJsonWebKeySet},
+    JsonWebSignatureHeader, VerifyingKeystore,
 };
 
 #[derive(Debug, Error)]
@@ -60,7 +61,7 @@ struct KeyConstraint<'a> {
 }
 
 impl<'a> KeyConstraint<'a> {
-    fn matches(&self, key: &'a JsonWebKey) -> bool {
+    fn matches(&self, key: &'a PublicJsonWebKey) -> bool {
         // If a specific KID was asked, match the key only if it has a matching kid
         // field
         if let Some(kid) = self.kid {
@@ -84,22 +85,25 @@ impl<'a> KeyConstraint<'a> {
         true
     }
 
-    fn find_keys(&self, key_set: &'a JsonWebKeySet) -> Vec<&'a JsonWebKey> {
+    fn find_keys(&self, key_set: &'a PublicJsonWebKeySet) -> Vec<&'a PublicJsonWebKey> {
         key_set.iter().filter(|k| self.matches(k)).collect()
     }
 }
 
 pub struct StaticJwksStore {
-    key_set: JsonWebKeySet,
+    key_set: PublicJsonWebKeySet,
 }
 
 impl StaticJwksStore {
     #[must_use]
-    pub fn new(key_set: JsonWebKeySet) -> Self {
+    pub fn new(key_set: PublicJsonWebKeySet) -> Self {
         Self { key_set }
     }
 
-    fn find_key<'a>(&'a self, constraint: &KeyConstraint<'a>) -> Result<&'a JsonWebKey, Error> {
+    fn find_key<'a>(
+        &'a self,
+        constraint: &KeyConstraint<'a>,
+    ) -> Result<&'a PublicJsonWebKey, Error> {
         let keys = constraint.find_keys(&self.key_set);
 
         match &keys[..] {

@@ -20,7 +20,7 @@
 pub mod claims;
 pub mod constraints;
 pub mod hmac;
-pub(crate) mod jwk;
+pub mod jwk;
 pub(crate) mod jwt;
 mod keystore;
 pub(crate) mod rsa;
