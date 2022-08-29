@@ -162,9 +162,53 @@ impl OkpPublicParameters {
 }
 
 mod rsa_impls {
+    use digest::DynDigest;
     use rsa::{BigUint, RsaPublicKey};
 
     use super::RsaPublicParameters;
+    use crate::jwa::rsa::RsaHashIdentifier;
+
+    impl<H> TryFrom<RsaPublicParameters> for crate::jwa::rsa::pkcs1v15::VerifyingKey<H>
+    where
+        H: RsaHashIdentifier,
+    {
+        type Error = rsa::errors::Error;
+        fn try_from(value: RsaPublicParameters) -> Result<Self, Self::Error> {
+            Self::try_from(&value)
+        }
+    }
+
+    impl<H> TryFrom<&RsaPublicParameters> for crate::jwa::rsa::pkcs1v15::VerifyingKey<H>
+    where
+        H: RsaHashIdentifier,
+    {
+        type Error = rsa::errors::Error;
+        fn try_from(value: &RsaPublicParameters) -> Result<Self, Self::Error> {
+            let key: RsaPublicKey = value.try_into()?;
+            Ok(Self::from(key))
+        }
+    }
+
+    impl<H> TryFrom<RsaPublicParameters> for crate::jwa::rsa::pss::VerifyingKey<H>
+    where
+        H: DynDigest + Default + 'static,
+    {
+        type Error = rsa::errors::Error;
+        fn try_from(value: RsaPublicParameters) -> Result<Self, Self::Error> {
+            Self::try_from(&value)
+        }
+    }
+
+    impl<H> TryFrom<&RsaPublicParameters> for crate::jwa::rsa::pss::VerifyingKey<H>
+    where
+        H: DynDigest + Default + 'static,
+    {
+        type Error = rsa::errors::Error;
+        fn try_from(value: &RsaPublicParameters) -> Result<Self, Self::Error> {
+            let key: RsaPublicKey = value.try_into()?;
+            Ok(Self::from(key))
+        }
+    }
 
     impl TryFrom<RsaPublicParameters> for RsaPublicKey {
         type Error = rsa::errors::Error;

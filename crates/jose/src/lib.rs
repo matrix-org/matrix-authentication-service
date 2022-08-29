@@ -19,11 +19,10 @@
 
 pub mod claims;
 pub mod constraints;
-pub mod hmac;
+pub(crate) mod jwa;
 pub mod jwk;
 pub(crate) mod jwt;
 mod keystore;
-pub(crate) mod rsa;
 pub mod signer;
 pub mod verifier;
 

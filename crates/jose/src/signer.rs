@@ -13,49 +13,27 @@
 // limitations under the License.
 
 use mas_iana::jose::{JsonWebKeyEcEllipticCurve, JsonWebSignatureAlg};
-use sha2::{Sha256, Sha384, Sha512};
 use signature::Signature;
 use thiserror::Error;
 
-use crate::jwk::private_parameters::{EcPrivateParameters, JsonWebKeyPrivateParameters};
+use crate::{
+    jwa,
+    jwk::private_parameters::{EcPrivateParameters, JsonWebKeyPrivateParameters},
+};
 
 pub enum Signer {
-    Hs256 {
-        key: crate::hmac::Hmac<Sha256>,
-    },
-    Hs384 {
-        key: crate::hmac::Hmac<Sha384>,
-    },
-    Hs512 {
-        key: crate::hmac::Hmac<Sha512>,
-    },
-    Rs256 {
-        key: crate::rsa::pkcs1v15::SigningKey<Sha256>,
-    },
-    Rs384 {
-        key: crate::rsa::pkcs1v15::SigningKey<Sha384>,
-    },
-    Rs512 {
-        key: crate::rsa::pkcs1v15::SigningKey<Sha512>,
-    },
-    Ps256 {
-        key: crate::rsa::pss::SigningKey<Sha256>,
-    },
-    Ps384 {
-        key: crate::rsa::pss::SigningKey<Sha384>,
-    },
-    Ps512 {
-        key: crate::rsa::pss::SigningKey<Sha512>,
-    },
-    Es256 {
-        key: ecdsa::SigningKey<p256::NistP256>,
-    },
-    Es384 {
-        key: ecdsa::SigningKey<p384::NistP384>,
-    },
-    Es256K {
-        key: ecdsa::SigningKey<k256::Secp256k1>,
-    },
+    Hs256 { key: jwa::Hs256Key },
+    Hs384 { key: jwa::Hs384Key },
+    Hs512 { key: jwa::Hs512Key },
+    Rs256 { key: jwa::Rs256SigningKey },
+    Rs384 { key: jwa::Rs384SigningKey },
+    Rs512 { key: jwa::Rs512SigningKey },
+    Ps256 { key: jwa::Ps256SigningKey },
+    Ps384 { key: jwa::Ps384SigningKey },
+    Ps512 { key: jwa::Ps512SigningKey },
+    Es256 { key: jwa::Es256SigningKey },
+    Es384 { key: jwa::Es384SigningKey },
+    Es256K { key: jwa::Es256KSigningKey },
 }
 
 #[derive(Debug, Error)]
@@ -104,33 +82,39 @@ impl Signer {
     ) -> Result<Self, SignerFromJwkError> {
         match (key, alg) {
             (JsonWebKeyPrivateParameters::Rsa(params), JsonWebSignatureAlg::Rs256) => {
-                let key: rsa::RsaPrivateKey = params.try_into()?;
-                Ok(Self::Rs256 { key: key.into() })
+                Ok(Self::Rs256 {
+                    key: params.try_into()?,
+                })
             }
 
             (JsonWebKeyPrivateParameters::Rsa(params), JsonWebSignatureAlg::Rs384) => {
-                let key: rsa::RsaPrivateKey = params.try_into()?;
-                Ok(Self::Rs384 { key: key.into() })
+                Ok(Self::Rs384 {
+                    key: params.try_into()?,
+                })
             }
 
             (JsonWebKeyPrivateParameters::Rsa(params), JsonWebSignatureAlg::Rs512) => {
-                let key: rsa::RsaPrivateKey = params.try_into()?;
-                Ok(Self::Rs512 { key: key.into() })
+                Ok(Self::Rs512 {
+                    key: params.try_into()?,
+                })
             }
 
             (JsonWebKeyPrivateParameters::Rsa(params), JsonWebSignatureAlg::Ps256) => {
-                let key: rsa::RsaPrivateKey = params.try_into()?;
-                Ok(Self::Ps256 { key: key.into() })
+                Ok(Self::Ps256 {
+                    key: params.try_into()?,
+                })
             }
 
             (JsonWebKeyPrivateParameters::Rsa(params), JsonWebSignatureAlg::Ps384) => {
-                let key: rsa::RsaPrivateKey = params.try_into()?;
-                Ok(Self::Ps384 { key: key.into() })
+                Ok(Self::Ps384 {
+                    key: params.try_into()?,
+                })
             }
 
             (JsonWebKeyPrivateParameters::Rsa(params), JsonWebSignatureAlg::Ps512) => {
-                let key: rsa::RsaPrivateKey = params.try_into()?;
-                Ok(Self::Ps512 { key: key.into() })
+                Ok(Self::Ps512 {
+                    key: params.try_into()?,
+                })
             }
 
             (
@@ -141,10 +125,9 @@ impl Signer {
                     },
                 ),
                 JsonWebSignatureAlg::Es256,
-            ) => {
-                let key = ecdsa::SigningKey::try_from(params)?;
-                Ok(Self::Es256 { key })
-            }
+            ) => Ok(Self::Es256 {
+                key: params.try_into()?,
+            }),
 
             (
                 JsonWebKeyPrivateParameters::Ec(
@@ -154,10 +137,9 @@ impl Signer {
                     },
                 ),
                 JsonWebSignatureAlg::Es384,
-            ) => {
-                let key = ecdsa::SigningKey::try_from(params)?;
-                Ok(Self::Es384 { key })
-            }
+            ) => Ok(Self::Es384 {
+                key: params.try_into()?,
+            }),
 
             (
                 JsonWebKeyPrivateParameters::Ec(EcPrivateParameters {
@@ -177,10 +159,9 @@ impl Signer {
                     },
                 ),
                 JsonWebSignatureAlg::Es256K,
-            ) => {
-                let key = ecdsa::SigningKey::try_from(params)?;
-                Ok(Self::Es256K { key })
-            }
+            ) => Ok(Self::Es256K {
+                key: params.try_into()?,
+            }),
 
             (JsonWebKeyPrivateParameters::Okp(_params), JsonWebSignatureAlg::EdDsa) => {
                 Err(SignerFromJwkError::UnsupportedAlgorithm {
