@@ -190,32 +190,3 @@ impl JsonWebTokenParts {
         format!("{}.{}", payload, signature)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use mas_iana::jose::JsonWebSignatureAlg;
-
-    use super::*;
-    use crate::SharedSecret;
-
-    #[tokio::test]
-    async fn decode_hs256() {
-        let jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
-        let jwt: JsonWebTokenParts = jwt.parse().unwrap();
-        let secret = "your-256-bit-secret";
-        let store = SharedSecret::new(&secret);
-        let jwt: DecodedJsonWebToken<serde_json::Value> =
-            jwt.decode_and_verify(&store).await.unwrap();
-
-        assert_eq!(jwt.header.typ(), Some("JWT"));
-        assert_eq!(jwt.header.alg(), JsonWebSignatureAlg::Hs256);
-        assert_eq!(
-            jwt.payload,
-            serde_json::json!({
-               "sub": "1234567890",
-               "name": "John Doe",
-               "iat": 1_516_239_022
-            })
-        );
-    }
-}

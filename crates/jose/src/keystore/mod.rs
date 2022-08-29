@@ -12,14 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod jwks;
-mod shared_secret;
 mod static_keystore;
 mod traits;
 
 pub use self::{
-    jwks::{DynamicJwksStore, StaticJwksStore},
-    shared_secret::SharedSecret,
     static_keystore::StaticKeystore,
     traits::{SigningKeystore, VerifyingKeystore},
 };

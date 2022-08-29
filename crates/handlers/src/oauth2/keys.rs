@@ -16,12 +16,10 @@ use std::{convert::Infallible, sync::Arc};
 
 use axum::{extract::Extension, response::IntoResponse, Json};
 use mas_jose::StaticKeystore;
-use tower::{Service, ServiceExt};
 
 pub(crate) async fn get(
     Extension(key_store): Extension<Arc<StaticKeystore>>,
 ) -> Result<impl IntoResponse, Infallible> {
-    let mut key_store: &StaticKeystore = key_store.as_ref();
-    let jwks = key_store.ready().await?.call(()).await?;
+    let jwks = key_store.to_public_jwks();
     Ok(Json(jwks))
 }

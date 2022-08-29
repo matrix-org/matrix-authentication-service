@@ -30,10 +30,7 @@ use mas_config::Encrypter;
 use mas_data_model::{Client, JwksOrJwksUri, StorageBackend};
 use mas_http::HttpServiceExt;
 use mas_iana::oauth::OAuthClientAuthenticationMethod;
-use mas_jose::{
-    jwk::PublicJsonWebKeySet, DecodedJsonWebToken, DynamicJwksStore, Either,
-    JsonWebSignatureHeader, JsonWebTokenParts, SharedSecret, StaticJwksStore, VerifyingKeystore,
-};
+use mas_jose::{jwk::PublicJsonWebKeySet, Jwt};
 use mas_storage::{
     oauth2::client::{lookup_client_by_client_id, ClientFetchError},
     PostgresqlBackend,
@@ -72,9 +69,7 @@ pub enum Credentials {
     },
     ClientAssertionJwtBearer {
         client_id: String,
-        jwt: JsonWebTokenParts,
-        header: Box<JsonWebSignatureHeader>,
-        claims: HashMap<String, Value>,
+        jwt: Box<Jwt<'static, HashMap<String, serde_json::Value>>>,
     },
 }
 
@@ -128,7 +123,7 @@ impl Credentials {
             }
 
             (
-                Credentials::ClientAssertionJwtBearer { jwt, header, .. },
+                Credentials::ClientAssertionJwtBearer { jwt, .. },
                 OAuthClientAuthenticationMethod::PrivateKeyJwt,
             ) => {
                 // Get the client JWKS
@@ -137,14 +132,16 @@ impl Credentials {
                     .as_ref()
                     .ok_or(CredentialsVerificationError::InvalidClientConfig)?;
 
-                let store: Either<StaticJwksStore, DynamicJwksStore> = jwks_key_store(jwks);
-                let fut = jwt.verify(header, &store);
-                fut.await
+                let jwks = fetch_jwks(jwks)
+                    .await
+                    .map_err(|_| CredentialsVerificationError::JwksFetchFailed)?;
+
+                jwt.verify_from_jwks(&jwks)
                     .map_err(|_| CredentialsVerificationError::InvalidAssertionSignature)?;
             }
 
             (
-                Credentials::ClientAssertionJwtBearer { jwt, header, .. },
+                Credentials::ClientAssertionJwtBearer { jwt, .. },
                 OAuthClientAuthenticationMethod::ClientSecretJwt,
             ) => {
                 // Decrypt the client_secret
@@ -157,9 +154,7 @@ impl Credentials {
                     .decrypt_string(encrypted_client_secret)
                     .map_err(|_e| CredentialsVerificationError::DecryptionError)?;
 
-                let store = SharedSecret::new(&decrypted_client_secret);
-                let fut = jwt.verify(header, &store);
-                fut.await
+                jwt.verify_from_shared_secret(decrypted_client_secret)
                     .map_err(|_| CredentialsVerificationError::InvalidAssertionSignature)?;
             }
 
@@ -171,38 +166,25 @@ impl Credentials {
     }
 }
 
-fn jwks_key_store(jwks: &JwksOrJwksUri) -> Either<StaticJwksStore, DynamicJwksStore> {
-    // Assert that the output is both a VerifyingKeystore and Send
-    fn assert<T: Send + VerifyingKeystore>(t: T) -> T {
-        t
-    }
-
-    let inner = match jwks {
-        JwksOrJwksUri::Jwks(jwks) => Either::Left(StaticJwksStore::new(jwks.clone())),
-        JwksOrJwksUri::JwksUri(uri) => {
-            let uri = uri.clone();
-
-            // TODO: get the client from somewhere else?
-            let exporter = mas_http::client("fetch-jwks")
-                .response_body_to_bytes()
-                .json_response::<PublicJsonWebKeySet>()
-                .map_request(move |_: ()| {
-                    http::Request::builder()
-                        .method("GET")
-                        // TODO: change the Uri type in config to avoid reparsing here
-                        .uri(uri.to_string())
-                        .body(http_body::Empty::new())
-                        .unwrap()
-                })
-                .map_response(http::Response::into_body)
-                .map_err(BoxError::from)
-                .boxed_clone();
-
-            Either::Right(DynamicJwksStore::new(exporter))
-        }
+async fn fetch_jwks(jwks: &JwksOrJwksUri) -> Result<PublicJsonWebKeySet, BoxError> {
+    let uri = match jwks {
+        JwksOrJwksUri::Jwks(j) => return Ok(j.clone()),
+        JwksOrJwksUri::JwksUri(u) => u,
     };
 
-    assert(inner)
+    let request = http::Request::builder()
+        .uri(uri.as_str())
+        .body(http_body::Empty::new())
+        .unwrap();
+
+    let client = mas_http::client("fetch-jwks")
+        .response_body_to_bytes()
+        .json_response::<PublicJsonWebKeySet>()
+        .map_err(Box::new);
+
+    let response = client.oneshot(request).await?;
+
+    Ok(response.into_body())
 }
 
 #[derive(Debug, Error)]
@@ -221,6 +203,9 @@ pub enum CredentialsVerificationError {
 
     #[error("invalid assertion signature")]
     InvalidAssertionSignature,
+
+    #[error("failed to fetch jwks")]
+    JwksFetchFailed,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -344,16 +329,10 @@ where
                 Some(client_assertion),
             ) if client_assertion_type == JWT_BEARER_CLIENT_ASSERTION => {
                 // Got a JWT bearer client_assertion
-
-                let jwt: JsonWebTokenParts = client_assertion
-                    .parse()
+                let jwt: Jwt<'static, HashMap<String, Value>> = Jwt::try_from(client_assertion)
                     .map_err(|_| ClientAuthorizationError::InvalidAssertion)?;
-                let decoded: DecodedJsonWebToken<HashMap<String, Value>> = jwt
-                    .decode()
-                    .map_err(|_| ClientAuthorizationError::InvalidAssertion)?;
-                let (header, claims) = decoded.split();
 
-                let client_id = if let Some(Value::String(client_id)) = claims.get("sub") {
+                let client_id = if let Some(Value::String(client_id)) = jwt.payload().get("sub") {
                     client_id.clone()
                 } else {
                     return Err(ClientAuthorizationError::InvalidAssertion);
@@ -371,9 +350,7 @@ where
 
                 Credentials::ClientAssertionJwtBearer {
                     client_id,
-                    jwt,
-                    header: Box::new(header),
-                    claims,
+                    jwt: Box::new(jwt),
                 }
             }
 
@@ -585,19 +562,15 @@ mod tests {
             .unwrap();
         assert_eq!(authz.form, Some(serde_json::json!({"foo": "bar"})));
 
-        let (client_id, _jwt, _header, _claims) = if let Credentials::ClientAssertionJwtBearer {
-            client_id,
-            jwt,
-            header,
-            claims,
-        } = authz.credentials
-        {
-            (client_id, jwt, header, claims)
-        } else {
-            panic!("expected a JWT client_assertion");
-        };
+        let (client_id, jwt) =
+            if let Credentials::ClientAssertionJwtBearer { client_id, jwt } = authz.credentials {
+                (client_id, jwt)
+            } else {
+                panic!("expected a JWT client_assertion");
+            };
 
         assert_eq!(client_id, "client-id");
-        // TODO: test more things
+        jwt.verify_from_shared_secret(b"client-secret".to_vec())
+            .unwrap();
     }
 }

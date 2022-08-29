@@ -39,6 +39,32 @@ pub enum JsonWebKeyPublicParameters {
     Okp(OkpPublicParameters),
 }
 
+impl JsonWebKeyPublicParameters {
+    #[must_use]
+    pub const fn rsa(&self) -> Option<&RsaPublicParameters> {
+        match self {
+            Self::Rsa(params) => Some(params),
+            _ => None,
+        }
+    }
+
+    #[must_use]
+    pub const fn ec(&self) -> Option<&EcPublicParameters> {
+        match self {
+            Self::Ec(params) => Some(params),
+            _ => None,
+        }
+    }
+
+    #[must_use]
+    pub const fn okp(&self) -> Option<&OkpPublicParameters> {
+        match self {
+            Self::Okp(params) => Some(params),
+            _ => None,
+        }
+    }
+}
+
 impl ParametersInfo for JsonWebKeyPublicParameters {
     fn kty(&self) -> JsonWebKeyType {
         match self {
@@ -163,10 +189,37 @@ impl OkpPublicParameters {
 
 mod rsa_impls {
     use digest::DynDigest;
-    use rsa::{BigUint, RsaPublicKey};
+    use rsa::{BigUint, PublicKeyParts, RsaPublicKey};
 
-    use super::RsaPublicParameters;
+    use super::{JsonWebKeyPublicParameters, RsaPublicParameters};
     use crate::jwa::rsa::RsaHashIdentifier;
+
+    impl From<RsaPublicKey> for JsonWebKeyPublicParameters {
+        fn from(key: RsaPublicKey) -> Self {
+            Self::from(&key)
+        }
+    }
+
+    impl From<&RsaPublicKey> for JsonWebKeyPublicParameters {
+        fn from(key: &RsaPublicKey) -> Self {
+            Self::Rsa(key.into())
+        }
+    }
+
+    impl From<RsaPublicKey> for RsaPublicParameters {
+        fn from(key: RsaPublicKey) -> Self {
+            Self::from(&key)
+        }
+    }
+
+    impl From<&RsaPublicKey> for RsaPublicParameters {
+        fn from(key: &RsaPublicKey) -> Self {
+            Self {
+                n: key.n().to_bytes_be(),
+                e: key.e().to_bytes_be(),
+            }
+        }
+    }
 
     impl<H> TryFrom<RsaPublicParameters> for crate::jwa::rsa::pkcs1v15::VerifyingKey<H>
     where
@@ -236,7 +289,56 @@ mod ec_impls {
         AffinePoint, Curve, FieldBytes, FieldSize, ProjectiveArithmetic, PublicKey,
     };
 
-    use super::{super::JwkEcCurve, EcPublicParameters};
+    use super::{super::JwkEcCurve, EcPublicParameters, JsonWebKeyPublicParameters};
+
+    impl<C> From<ecdsa::VerifyingKey<C>> for JsonWebKeyPublicParameters
+    where
+        C: PrimeCurve + ProjectiveArithmetic + JwkEcCurve,
+        AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+        FieldSize<C>: ModulusSize,
+    {
+        fn from(key: ecdsa::VerifyingKey<C>) -> Self {
+            Self::from(&key)
+        }
+    }
+
+    impl<C> From<&ecdsa::VerifyingKey<C>> for JsonWebKeyPublicParameters
+    where
+        C: PrimeCurve + ProjectiveArithmetic + JwkEcCurve,
+        AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+        FieldSize<C>: ModulusSize,
+    {
+        fn from(key: &ecdsa::VerifyingKey<C>) -> Self {
+            Self::Ec(key.into())
+        }
+    }
+
+    impl<C> From<ecdsa::VerifyingKey<C>> for EcPublicParameters
+    where
+        C: PrimeCurve + ProjectiveArithmetic + JwkEcCurve,
+        AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+        FieldSize<C>: ModulusSize,
+    {
+        fn from(key: ecdsa::VerifyingKey<C>) -> Self {
+            Self::from(&key)
+        }
+    }
+
+    impl<C> From<&ecdsa::VerifyingKey<C>> for EcPublicParameters
+    where
+        C: PrimeCurve + ProjectiveArithmetic + JwkEcCurve,
+        AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+        FieldSize<C>: ModulusSize,
+    {
+        fn from(key: &ecdsa::VerifyingKey<C>) -> Self {
+            let points = key.to_encoded_point(false);
+            EcPublicParameters {
+                x: points.x().unwrap().to_vec(),
+                y: points.y().unwrap().to_vec(),
+                crv: C::CRV,
+            }
+        }
+    }
 
     impl<C> TryFrom<EcPublicParameters> for VerifyingKey<C>
     where
@@ -308,74 +410,6 @@ mod ec_impls {
                 x: x.to_vec(),
                 y: y.to_vec(),
             }
-        }
-    }
-}
-
-/// Some legacy implementations to remove
-mod legacy {
-    use anyhow::bail;
-    use mas_iana::jose::JsonWebKeyEcEllipticCurve;
-    use p256::NistP256;
-    use rsa::{BigUint, PublicKeyParts};
-
-    use super::{EcPublicParameters, JsonWebKeyPublicParameters, RsaPublicParameters};
-
-    impl TryFrom<JsonWebKeyPublicParameters> for ecdsa::VerifyingKey<NistP256> {
-        type Error = anyhow::Error;
-
-        fn try_from(params: JsonWebKeyPublicParameters) -> Result<Self, Self::Error> {
-            let (x, y): ([u8; 32], [u8; 32]) = match params {
-                JsonWebKeyPublicParameters::Ec(EcPublicParameters {
-                    x,
-                    y,
-                    crv: JsonWebKeyEcEllipticCurve::P256,
-                }) => (
-                    x.try_into()
-                        .map_err(|_| anyhow::anyhow!("invalid curve parameter x"))?,
-                    y.try_into()
-                        .map_err(|_| anyhow::anyhow!("invalid curve parameter y"))?,
-                ),
-                _ => bail!("Wrong curve"),
-            };
-
-            let point = sec1::EncodedPoint::from_affine_coordinates(&x.into(), &y.into(), false);
-            let key = ecdsa::VerifyingKey::from_encoded_point(&point)?;
-            Ok(key)
-        }
-    }
-
-    impl From<ecdsa::VerifyingKey<NistP256>> for JsonWebKeyPublicParameters {
-        fn from(key: ecdsa::VerifyingKey<NistP256>) -> Self {
-            let points = key.to_encoded_point(false);
-            JsonWebKeyPublicParameters::Ec(EcPublicParameters {
-                x: points.x().unwrap().to_vec(),
-                y: points.y().unwrap().to_vec(),
-                crv: JsonWebKeyEcEllipticCurve::P256,
-            })
-        }
-    }
-
-    impl TryFrom<JsonWebKeyPublicParameters> for rsa::RsaPublicKey {
-        type Error = anyhow::Error;
-
-        fn try_from(params: JsonWebKeyPublicParameters) -> Result<Self, Self::Error> {
-            let (n, e) = match &params {
-                JsonWebKeyPublicParameters::Rsa(RsaPublicParameters { n, e }) => (n, e),
-                _ => bail!("Wrong key type"),
-            };
-            let n = BigUint::from_bytes_be(n);
-            let e = BigUint::from_bytes_be(e);
-            Ok(rsa::RsaPublicKey::new(n, e)?)
-        }
-    }
-
-    impl From<rsa::RsaPublicKey> for JsonWebKeyPublicParameters {
-        fn from(key: rsa::RsaPublicKey) -> Self {
-            JsonWebKeyPublicParameters::Rsa(RsaPublicParameters {
-                n: key.n().to_bytes_be(),
-                e: key.e().to_bytes_be(),
-            })
         }
     }
 }
