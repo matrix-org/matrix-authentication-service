@@ -194,9 +194,53 @@ struct RsaOtherPrimeInfo {
 }
 
 mod rsa_impls {
+    use digest::DynDigest;
     use rsa::{BigUint, RsaPrivateKey};
 
     use super::RsaPrivateParameters;
+    use crate::jwa::rsa::RsaHashIdentifier;
+
+    impl<H> TryFrom<RsaPrivateParameters> for crate::jwa::rsa::pkcs1v15::SigningKey<H>
+    where
+        H: RsaHashIdentifier,
+    {
+        type Error = rsa::errors::Error;
+        fn try_from(value: RsaPrivateParameters) -> Result<Self, Self::Error> {
+            Self::try_from(&value)
+        }
+    }
+
+    impl<H> TryFrom<&RsaPrivateParameters> for crate::jwa::rsa::pkcs1v15::SigningKey<H>
+    where
+        H: RsaHashIdentifier,
+    {
+        type Error = rsa::errors::Error;
+        fn try_from(value: &RsaPrivateParameters) -> Result<Self, Self::Error> {
+            let key: RsaPrivateKey = value.try_into()?;
+            Ok(Self::from(key))
+        }
+    }
+
+    impl<H> TryFrom<RsaPrivateParameters> for crate::jwa::rsa::pss::SigningKey<H>
+    where
+        H: DynDigest + Default + 'static,
+    {
+        type Error = rsa::errors::Error;
+        fn try_from(value: RsaPrivateParameters) -> Result<Self, Self::Error> {
+            Self::try_from(&value)
+        }
+    }
+
+    impl<H> TryFrom<&RsaPrivateParameters> for crate::jwa::rsa::pss::SigningKey<H>
+    where
+        H: DynDigest + Default + 'static,
+    {
+        type Error = rsa::errors::Error;
+        fn try_from(value: &RsaPrivateParameters) -> Result<Self, Self::Error> {
+            let key: RsaPrivateKey = value.try_into()?;
+            Ok(Self::from(key))
+        }
+    }
 
     impl TryFrom<RsaPrivateParameters> for RsaPrivateKey {
         type Error = rsa::errors::Error;

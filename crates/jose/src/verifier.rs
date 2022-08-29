@@ -13,49 +13,27 @@
 // limitations under the License.
 
 use mas_iana::jose::{JsonWebKeyEcEllipticCurve, JsonWebSignatureAlg};
-use sha2::{Sha256, Sha384, Sha512};
 use signature::Signature;
 use thiserror::Error;
 
-use crate::jwk::{public_parameters::EcPublicParameters, JsonWebKeyParameters};
+use crate::{
+    jwa,
+    jwk::{public_parameters::EcPublicParameters, JsonWebKeyPublicParameters},
+};
 
 pub enum Verifier {
-    Hs256 {
-        key: crate::hmac::Hmac<Sha256>,
-    },
-    Hs384 {
-        key: crate::hmac::Hmac<Sha384>,
-    },
-    Hs512 {
-        key: crate::hmac::Hmac<Sha512>,
-    },
-    Rs256 {
-        key: crate::rsa::pkcs1v15::VerifyingKey<Sha256>,
-    },
-    Rs384 {
-        key: crate::rsa::pkcs1v15::VerifyingKey<Sha384>,
-    },
-    Rs512 {
-        key: crate::rsa::pkcs1v15::VerifyingKey<Sha512>,
-    },
-    Ps256 {
-        key: crate::rsa::pss::VerifyingKey<Sha256>,
-    },
-    Ps384 {
-        key: crate::rsa::pss::VerifyingKey<Sha384>,
-    },
-    Ps512 {
-        key: crate::rsa::pss::VerifyingKey<Sha512>,
-    },
-    Es256 {
-        key: ecdsa::VerifyingKey<p256::NistP256>,
-    },
-    Es384 {
-        key: ecdsa::VerifyingKey<p384::NistP384>,
-    },
-    Es256K {
-        key: ecdsa::VerifyingKey<k256::Secp256k1>,
-    },
+    Hs256 { key: jwa::Hs256Key },
+    Hs384 { key: jwa::Hs384Key },
+    Hs512 { key: jwa::Hs512Key },
+    Rs256 { key: jwa::Rs256VerifyingKey },
+    Rs384 { key: jwa::Rs384VerifyingKey },
+    Rs512 { key: jwa::Rs512VerifyingKey },
+    Ps256 { key: jwa::Ps256VerifyingKey },
+    Ps384 { key: jwa::Ps384VerifyingKey },
+    Ps512 { key: jwa::Ps512VerifyingKey },
+    Es256 { key: jwa::Es256VerifyingKey },
+    Es384 { key: jwa::Es384VerifyingKey },
+    Es256K { key: jwa::Es256KVerifyingKey },
 }
 
 #[derive(Debug, Error)]
@@ -99,68 +77,72 @@ impl Verifier {
     }
 
     pub fn for_jwk_and_alg(
-        key: &JsonWebKeyParameters,
+        key: &JsonWebKeyPublicParameters,
         alg: JsonWebSignatureAlg,
     ) -> Result<Self, VerifierFromJwkError> {
         match (key, alg) {
-            (JsonWebKeyParameters::Rsa(params), JsonWebSignatureAlg::Rs256) => {
-                let key = rsa::RsaPublicKey::try_from(params)?;
-                Ok(Self::Rs256 { key: key.into() })
+            (JsonWebKeyPublicParameters::Rsa(params), JsonWebSignatureAlg::Rs256) => {
+                Ok(Self::Rs256 {
+                    key: params.try_into()?,
+                })
             }
 
-            (JsonWebKeyParameters::Rsa(params), JsonWebSignatureAlg::Rs384) => {
-                let key = rsa::RsaPublicKey::try_from(params)?;
-                Ok(Self::Rs384 { key: key.into() })
+            (JsonWebKeyPublicParameters::Rsa(params), JsonWebSignatureAlg::Rs384) => {
+                Ok(Self::Rs384 {
+                    key: params.try_into()?,
+                })
             }
 
-            (JsonWebKeyParameters::Rsa(params), JsonWebSignatureAlg::Rs512) => {
-                let key = rsa::RsaPublicKey::try_from(params)?;
-                Ok(Self::Rs512 { key: key.into() })
+            (JsonWebKeyPublicParameters::Rsa(params), JsonWebSignatureAlg::Rs512) => {
+                Ok(Self::Rs512 {
+                    key: params.try_into()?,
+                })
             }
 
-            (JsonWebKeyParameters::Rsa(params), JsonWebSignatureAlg::Ps256) => {
-                let key = rsa::RsaPublicKey::try_from(params)?;
-                Ok(Self::Ps256 { key: key.into() })
+            (JsonWebKeyPublicParameters::Rsa(params), JsonWebSignatureAlg::Ps256) => {
+                Ok(Self::Ps256 {
+                    key: params.try_into()?,
+                })
             }
 
-            (JsonWebKeyParameters::Rsa(params), JsonWebSignatureAlg::Ps384) => {
-                let key = rsa::RsaPublicKey::try_from(params)?;
-                Ok(Self::Ps384 { key: key.into() })
+            (JsonWebKeyPublicParameters::Rsa(params), JsonWebSignatureAlg::Ps384) => {
+                Ok(Self::Ps384 {
+                    key: params.try_into()?,
+                })
             }
 
-            (JsonWebKeyParameters::Rsa(params), JsonWebSignatureAlg::Ps512) => {
-                let key = rsa::RsaPublicKey::try_from(params)?;
-                Ok(Self::Ps512 { key: key.into() })
+            (JsonWebKeyPublicParameters::Rsa(params), JsonWebSignatureAlg::Ps512) => {
+                Ok(Self::Ps512 {
+                    key: params.try_into()?,
+                })
             }
 
             (
-                JsonWebKeyParameters::Ec(
+                JsonWebKeyPublicParameters::Ec(
                     params @ EcPublicParameters {
                         crv: JsonWebKeyEcEllipticCurve::P256,
                         ..
                     },
                 ),
                 JsonWebSignatureAlg::Es256,
-            ) => {
-                let key = ecdsa::VerifyingKey::try_from(params)?;
-                Ok(Self::Es256 { key })
-            }
+            ) => Ok(Self::Es256 {
+                key: params.try_into()?,
+            }),
 
             (
-                JsonWebKeyParameters::Ec(
+                JsonWebKeyPublicParameters::Ec(
                     params @ EcPublicParameters {
                         crv: JsonWebKeyEcEllipticCurve::P384,
                         ..
                     },
                 ),
                 JsonWebSignatureAlg::Es384,
-            ) => {
-                let key = ecdsa::VerifyingKey::try_from(params)?;
-                Ok(Self::Es384 { key })
-            }
+            ) => Ok(Self::Es384 {
+                key: params.try_into()?,
+            }),
 
             (
-                JsonWebKeyParameters::Ec(EcPublicParameters {
+                JsonWebKeyPublicParameters::Ec(EcPublicParameters {
                     crv: JsonWebKeyEcEllipticCurve::P521,
                     ..
                 }),
@@ -170,19 +152,18 @@ impl Verifier {
             }),
 
             (
-                JsonWebKeyParameters::Ec(
+                JsonWebKeyPublicParameters::Ec(
                     params @ EcPublicParameters {
                         crv: JsonWebKeyEcEllipticCurve::Secp256K1,
                         ..
                     },
                 ),
                 JsonWebSignatureAlg::Es256K,
-            ) => {
-                let key = ecdsa::VerifyingKey::try_from(params)?;
-                Ok(Self::Es256K { key })
-            }
+            ) => Ok(Self::Es256K {
+                key: params.try_into()?,
+            }),
 
-            (JsonWebKeyParameters::Okp(_params), JsonWebSignatureAlg::EdDsa) => {
+            (JsonWebKeyPublicParameters::Okp(_params), JsonWebSignatureAlg::EdDsa) => {
                 Err(VerifierFromJwkError::UnsupportedAlgorithm {
                     algorithm: JsonWebSignatureAlg::EdDsa,
                 })
@@ -216,62 +197,62 @@ impl signature::Verifier<GenericSignature> for Verifier {
     fn verify(&self, msg: &[u8], signature: &GenericSignature) -> Result<(), signature::Error> {
         match self {
             Verifier::Hs256 { key } => {
-                let signature = crate::hmac::Signature::from_bytes(signature.as_bytes())?;
+                let signature = signature::Signature::from_bytes(signature.as_bytes())?;
                 key.verify(msg, &signature)?;
                 Ok(())
             }
             Verifier::Hs384 { key } => {
-                let signature = crate::hmac::Signature::from_bytes(signature.as_bytes())?;
+                let signature = signature::Signature::from_bytes(signature.as_bytes())?;
                 key.verify(msg, &signature)?;
                 Ok(())
             }
             Verifier::Hs512 { key } => {
-                let signature = crate::hmac::Signature::from_bytes(signature.as_bytes())?;
+                let signature = signature::Signature::from_bytes(signature.as_bytes())?;
                 key.verify(msg, &signature)?;
                 Ok(())
             }
             Verifier::Rs256 { key } => {
-                let signature = rsa::pkcs1v15::Signature::from_bytes(signature.as_bytes())?;
+                let signature = signature::Signature::from_bytes(signature.as_bytes())?;
                 key.verify(msg, &signature)?;
                 Ok(())
             }
             Verifier::Rs384 { key } => {
-                let signature = rsa::pkcs1v15::Signature::from_bytes(signature.as_bytes())?;
+                let signature = signature::Signature::from_bytes(signature.as_bytes())?;
                 key.verify(msg, &signature)?;
                 Ok(())
             }
             Verifier::Rs512 { key } => {
-                let signature = rsa::pkcs1v15::Signature::from_bytes(signature.as_bytes())?;
+                let signature = signature::Signature::from_bytes(signature.as_bytes())?;
                 key.verify(msg, &signature)?;
                 Ok(())
             }
             Verifier::Ps256 { key } => {
-                let signature = rsa::pss::Signature::from_bytes(signature.as_bytes())?;
+                let signature = signature::Signature::from_bytes(signature.as_bytes())?;
                 key.verify(msg, &signature)?;
                 Ok(())
             }
             Verifier::Ps384 { key } => {
-                let signature = rsa::pss::Signature::from_bytes(signature.as_bytes())?;
+                let signature = signature::Signature::from_bytes(signature.as_bytes())?;
                 key.verify(msg, &signature)?;
                 Ok(())
             }
             Verifier::Ps512 { key } => {
-                let signature = rsa::pss::Signature::from_bytes(signature.as_bytes())?;
+                let signature = signature::Signature::from_bytes(signature.as_bytes())?;
                 key.verify(msg, &signature)?;
                 Ok(())
             }
             Verifier::Es256 { key } => {
-                let signature = ecdsa::Signature::from_bytes(signature.as_bytes())?;
+                let signature = signature::Signature::from_bytes(signature.as_bytes())?;
                 key.verify(msg, &signature)?;
                 Ok(())
             }
             Verifier::Es384 { key } => {
-                let signature = ecdsa::Signature::from_bytes(signature.as_bytes())?;
+                let signature = signature::Signature::from_bytes(signature.as_bytes())?;
                 key.verify(msg, &signature)?;
                 Ok(())
             }
             Verifier::Es256K { key } => {
-                let signature = ecdsa::Signature::from_bytes(signature.as_bytes())?;
+                let signature = signature::Signature::from_bytes(signature.as_bytes())?;
                 key.verify(msg, &signature)?;
                 Ok(())
             }

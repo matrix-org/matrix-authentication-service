@@ -33,7 +33,9 @@ pub(crate) mod private_parameters;
 pub(crate) mod public_parameters;
 
 use self::private_parameters::SymetricKeyError;
-pub use self::public_parameters::JsonWebKeyPublicParameters as JsonWebKeyParameters;
+pub use self::{
+    private_parameters::JsonWebKeyPrivateParameters, public_parameters::JsonWebKeyPublicParameters,
+};
 
 pub trait ParametersInfo {
     fn kty(&self) -> JsonWebKeyType;
