@@ -14,7 +14,6 @@
 
 use std::collections::HashSet;
 
-use futures_util::future::Either;
 use mas_iana::jose::{JsonWebKeyType, JsonWebKeyUse, JsonWebSignatureAlg};
 
 use crate::JsonWebSignatureHeader;
@@ -94,40 +93,6 @@ pub trait Constrainable {
 
     /// Key type (`kty`) of this key
     fn kty(&self) -> JsonWebKeyType;
-}
-
-impl<L, R> Constrainable for Either<L, R>
-where
-    L: Constrainable,
-    R: Constrainable,
-{
-    fn algs(&self) -> Option<Vec<JsonWebSignatureAlg>> {
-        match self {
-            Either::Left(l) => l.algs(),
-            Either::Right(r) => r.algs(),
-        }
-    }
-
-    fn kid(&self) -> Option<&str> {
-        match self {
-            Either::Left(l) => l.kid(),
-            Either::Right(r) => r.kid(),
-        }
-    }
-
-    fn use_(&self) -> Option<JsonWebKeyUse> {
-        match self {
-            Either::Left(l) => l.use_(),
-            Either::Right(r) => r.use_(),
-        }
-    }
-
-    fn kty(&self) -> JsonWebKeyType {
-        match self {
-            Either::Left(l) => l.kty(),
-            Either::Right(r) => r.kty(),
-        }
-    }
 }
 
 impl<'a> Constraint<'a> {

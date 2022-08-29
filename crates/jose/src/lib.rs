@@ -26,8 +26,6 @@ mod keystore;
 pub mod signer;
 pub mod verifier;
 
-pub use futures_util::future::Either;
-
 pub use self::{
     jwt::{DecodedJsonWebToken, JsonWebSignatureHeader, JsonWebTokenParts, Jwt, JwtSignatureError},
     keystore::{SigningKeystore, StaticKeystore, VerifyingKeystore},
