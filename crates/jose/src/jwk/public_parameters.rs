@@ -152,7 +152,7 @@ mod ec_impls {
                 .get(..FieldSize::<C>::USIZE)
                 .ok_or_else(Self::Error::default)?;
             let y = value
-                .x
+                .y
                 .get(..FieldSize::<C>::USIZE)
                 .ok_or_else(Self::Error::default)?;
 
@@ -220,7 +220,7 @@ mod legacy {
                     y.try_into()
                         .map_err(|_| anyhow::anyhow!("invalid curve parameter y"))?,
                 ),
-                _ => bail!("Wrong key type"),
+                _ => bail!("Wrong curve"),
             };
 
             let point = sec1::EncodedPoint::from_affine_coordinates(&x.into(), &y.into(), false);
