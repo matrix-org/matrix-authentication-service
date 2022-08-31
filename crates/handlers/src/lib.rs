@@ -33,7 +33,7 @@ use hyper::header::{ACCEPT, ACCEPT_LANGUAGE, AUTHORIZATION, CONTENT_LANGUAGE, CO
 use mas_config::{Encrypter, MatrixConfig};
 use mas_email::Mailer;
 use mas_http::CorsLayerExt;
-use mas_jose::StaticKeystore;
+use mas_keystore::Keystore;
 use mas_policy::PolicyFactory;
 use mas_router::{Route, UrlBuilder};
 use mas_templates::{ErrorContext, Templates};
@@ -56,7 +56,7 @@ mod views;
 pub fn router<B>(
     pool: &PgPool,
     templates: &Templates,
-    key_store: &Arc<StaticKeystore>,
+    key_store: &Keystore,
     encrypter: &Encrypter,
     mailer: &Mailer,
     url_builder: &UrlBuilder,
@@ -251,12 +251,8 @@ async fn test_router(pool: &PgPool) -> Result<Router, anyhow::Error> {
     let templates_config = TemplatesConfig::default();
     let templates = Templates::load_from_config(&templates_config).await?;
 
-    let key_store = {
-        let mut k = StaticKeystore::new();
-        k.add_test_rsa_key()?;
-        k.add_test_ecdsa_key()?;
-        Arc::new(k)
-    };
+    // TODO: add test keys to the store
+    let key_store = Keystore::default();
 
     let encrypter = Encrypter::new(&[0x42; 32]);
 

@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::sync::Arc;
-
 use axum::{extract::Extension, response::IntoResponse, Json};
 use mas_iana::{
     jose::JsonWebSignatureAlg,
@@ -22,7 +20,7 @@ use mas_iana::{
         PkceCodeChallengeMethod,
     },
 };
-use mas_jose::{SigningKeystore, StaticKeystore};
+use mas_keystore::Keystore;
 use mas_router::UrlBuilder;
 use oauth2_types::{
     oidc::{ClaimType, ProviderMetadata, SubjectType},
@@ -32,7 +30,7 @@ use oauth2_types::{
 
 #[allow(clippy::too_many_lines)]
 pub(crate) async fn get(
-    Extension(key_store): Extension<Arc<StaticKeystore>>,
+    Extension(key_store): Extension<Keystore>,
     Extension(url_builder): Extension<UrlBuilder>,
 ) -> impl IntoResponse {
     // This is how clients can authenticate
@@ -54,12 +52,7 @@ pub(crate) async fn get(
     ]);
 
     // This is how we can sign stuff
-    let jwt_signing_alg_values_supported = Some({
-        let algs = key_store.supported_algorithms();
-        let mut algs = Vec::from_iter(algs);
-        algs.sort();
-        algs
-    });
+    let jwt_signing_alg_values_supported = Some(key_store.available_signing_algorithms());
 
     // Prepare all the endpoints
     let issuer = Some(url_builder.oidc_issuer());

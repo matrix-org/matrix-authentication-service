@@ -36,6 +36,78 @@ pub enum Signer {
     Es256K { key: jwa::Es256KSigningKey },
 }
 
+impl From<jwa::Hs256Key> for Signer {
+    fn from(key: jwa::Hs256Key) -> Self {
+        Self::Hs256 { key }
+    }
+}
+
+impl From<jwa::Hs384Key> for Signer {
+    fn from(key: jwa::Hs384Key) -> Self {
+        Self::Hs384 { key }
+    }
+}
+
+impl From<jwa::Hs512Key> for Signer {
+    fn from(key: jwa::Hs512Key) -> Self {
+        Self::Hs512 { key }
+    }
+}
+
+impl From<jwa::Rs256SigningKey> for Signer {
+    fn from(key: jwa::Rs256SigningKey) -> Self {
+        Self::Rs256 { key }
+    }
+}
+
+impl From<jwa::Rs384SigningKey> for Signer {
+    fn from(key: jwa::Rs384SigningKey) -> Self {
+        Self::Rs384 { key }
+    }
+}
+
+impl From<jwa::Rs512SigningKey> for Signer {
+    fn from(key: jwa::Rs512SigningKey) -> Self {
+        Self::Rs512 { key }
+    }
+}
+
+impl From<jwa::Ps256SigningKey> for Signer {
+    fn from(key: jwa::Ps256SigningKey) -> Self {
+        Self::Ps256 { key }
+    }
+}
+
+impl From<jwa::Ps384SigningKey> for Signer {
+    fn from(key: jwa::Ps384SigningKey) -> Self {
+        Self::Ps384 { key }
+    }
+}
+
+impl From<jwa::Ps512SigningKey> for Signer {
+    fn from(key: jwa::Ps512SigningKey) -> Self {
+        Self::Ps512 { key }
+    }
+}
+
+impl From<jwa::Es256SigningKey> for Signer {
+    fn from(key: jwa::Es256SigningKey) -> Self {
+        Self::Es256 { key }
+    }
+}
+
+impl From<jwa::Es384SigningKey> for Signer {
+    fn from(key: jwa::Es384SigningKey) -> Self {
+        Self::Es384 { key }
+    }
+}
+
+impl From<jwa::Es256KSigningKey> for Signer {
+    fn from(key: jwa::Es256KSigningKey) -> Self {
+        Self::Es256K { key }
+    }
+}
+
 #[derive(Debug, Error)]
 pub enum SignerFromJwkError {
     #[error("invalid RSA key")]

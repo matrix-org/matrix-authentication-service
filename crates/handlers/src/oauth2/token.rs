@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
 use anyhow::Context;
 use axum::{extract::Extension, response::IntoResponse, Json};
@@ -26,8 +26,10 @@ use mas_data_model::{AuthorizationGrantStage, Client, TokenType};
 use mas_iana::jose::JsonWebSignatureAlg;
 use mas_jose::{
     claims::{self, ClaimError},
-    DecodedJsonWebToken, JwtSignatureError, SigningKeystore, StaticKeystore,
+    constraints::Constrainable,
+    jwt::{JsonWebSignatureHeader, Jwt, JwtSignatureError},
 };
+use mas_keystore::Keystore;
 use mas_router::UrlBuilder;
 use mas_storage::{
     oauth2::{
@@ -161,6 +163,12 @@ impl IntoResponse for RouteError {
     }
 }
 
+impl From<mas_keystore::WrongAlgorithmError> for RouteError {
+    fn from(e: mas_keystore::WrongAlgorithmError) -> Self {
+        Self::Internal(Box::new(e))
+    }
+}
+
 impl From<sqlx::Error> for RouteError {
     fn from(e: sqlx::Error) -> Self {
         Self::Internal(Box::new(e))
@@ -182,7 +190,7 @@ impl From<JwtSignatureError> for RouteError {
 #[tracing::instrument(skip_all, err)]
 pub(crate) async fn post(
     client_authorization: ClientAuthorization<AccessTokenRequest>,
-    Extension(key_store): Extension<Arc<StaticKeystore>>,
+    Extension(key_store): Extension<Keystore>,
     Extension(url_builder): Extension<UrlBuilder>,
     Extension(pool): Extension<PgPool>,
     Extension(encrypter): Extension<Encrypter>,
@@ -235,7 +243,7 @@ fn hash<H: Digest>(mut hasher: H, token: &str) -> anyhow::Result<String> {
 async fn authorization_code_grant(
     grant: &AuthorizationCodeGrant,
     client: &Client<PostgresqlBackend>,
-    key_store: &StaticKeystore,
+    key_store: &Keystore,
     url_builder: &UrlBuilder,
     mut txn: Transaction<'_, Postgres>,
 ) -> Result<AccessTokenResponse, RouteError> {
@@ -339,17 +347,19 @@ async fn authorization_code_grant(
         claims::AT_HASH.insert(&mut claims, hash(Sha256::new(), &access_token_str)?)?;
         claims::C_HASH.insert(&mut claims, hash(Sha256::new(), &grant.code)?)?;
 
-        let header = key_store
-            .prepare_header(
-                client
-                    .id_token_signed_response_alg
-                    .unwrap_or(JsonWebSignatureAlg::Rs256),
-            )
-            .await?;
-        let id_token = DecodedJsonWebToken::new(header, claims);
-        let id_token = id_token.sign(key_store).await?;
+        let alg = client
+            .id_token_signed_response_alg
+            .unwrap_or(JsonWebSignatureAlg::Rs256);
+        let key = key_store
+            .signing_key_for_algorithm(alg)
+            .context("no suitable key found")?;
 
-        Some(id_token.serialize())
+        let header = JsonWebSignatureHeader::new(alg)
+            .with_kid(key.kid().context("key has no `kid` for some reason")?);
+        let signer = key.params().signer_for_alg(alg)?;
+        let id_token = Jwt::sign(header, claims, &signer)?;
+
+        Some(id_token.as_str().to_owned())
     } else {
         None
     };

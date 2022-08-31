@@ -19,14 +19,8 @@
 
 pub mod claims;
 pub mod constraints;
-pub(crate) mod jwa;
+pub mod jwa;
 pub mod jwk;
-pub(crate) mod jwt;
-mod keystore;
+pub mod jwt;
 pub mod signer;
 pub mod verifier;
-
-pub use self::{
-    jwt::{DecodedJsonWebToken, JsonWebSignatureHeader, JsonWebTokenParts, Jwt, JwtSignatureError},
-    keystore::{SigningKeystore, StaticKeystore, VerifyingKeystore},
-};
