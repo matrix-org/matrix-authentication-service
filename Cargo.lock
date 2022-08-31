@@ -28,9 +28,9 @@ dependencies = [
 
 [[package]]
 name = "aead"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae06cea71059b6b79d879afcdd237a33ac61afc052fdd605815e6f3916254abf"
+checksum = "5c192eb8f11fc081b0fe4259ba5af04217d4e0faddd02417310a927911abd7c8"
 dependencies = [
  "crypto-common",
  "generic-array",
@@ -790,7 +790,7 @@ version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "10cd79432192d1c0f4e1a0fef9527696cc039165d729fb41b3f4f4f354c2dc35"
 dependencies = [
- "aead 0.5.0",
+ "aead 0.5.1",
  "chacha20",
  "cipher 0.4.3",
  "poly1305",
@@ -1698,9 +1698,9 @@ dependencies = [
 
 [[package]]
 name = "generic-array"
-version = "0.14.5"
+version = "0.14.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd48d33ec7f05fbfa152300fdad764757cbded343c1aa1cff2fbaf4134851803"
+checksum = "bff49e947297f3312447abdca79f45f4738097cc82b06e72054d2223f601f1b9"
 dependencies = [
  "typenum",
  "version_check",
@@ -2358,11 +2358,11 @@ dependencies = [
  "headers",
  "http",
  "http-body",
- "mas-config",
  "mas-data-model",
  "mas-http",
  "mas-iana",
  "mas-jose",
+ "mas-keystore",
  "mas-storage",
  "mas-templates",
  "mime",
@@ -2426,10 +2426,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "chacha20poly1305",
  "chrono",
- "cookie",
- "data-encoding",
  "figment",
  "indoc",
  "lettre",
@@ -2616,11 +2613,16 @@ dependencies = [
 name = "mas-keystore"
 version = "0.1.0"
 dependencies = [
+ "aead 0.5.1",
  "anyhow",
+ "base64ct",
+ "chacha20poly1305",
  "const-oid",
+ "cookie",
  "der",
  "ecdsa",
  "elliptic-curve",
+ "generic-array",
  "k256",
  "mas-iana",
  "mas-jose",
@@ -2629,7 +2631,7 @@ dependencies = [
  "pem-rfc7468",
  "pkcs1",
  "pkcs8",
- "rand_core",
+ "rand",
  "rsa",
  "sec1",
  "spki",

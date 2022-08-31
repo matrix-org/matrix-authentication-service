@@ -29,11 +29,10 @@ tower = { version = "0.4.13", features = ["util"] }
 tracing = "0.1.36"
 url = "2.2.2"
 
-# TODO: remove the config dependency by moving out the encrypter
-mas-config = { path = "../config" }
-mas-templates = { path = "../templates" }
-mas-storage = { path = "../storage" }
 mas-data-model = { path = "../data-model" }
-mas-jose = { path = "../jose" }
-mas-iana = { path = "../iana" }
 mas-http = { path = "../http", features = ["client"] }
+mas-iana = { path = "../iana" }
+mas-jose = { path = "../jose" }
+mas-keystore = { path = "../keystore" }
+mas-storage = { path = "../storage" }
+mas-templates = { path = "../templates" }

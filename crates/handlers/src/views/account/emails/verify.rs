@@ -22,7 +22,7 @@ use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     FancyError, SessionInfoExt,
 };
-use mas_config::Encrypter;
+use mas_keystore::Encrypter;
 use mas_router::Route;
 use mas_storage::user::{
     consume_email_verification, lookup_user_email_by_id, lookup_user_email_verification_code,

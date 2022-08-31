@@ -26,9 +26,6 @@ lettre = { version = "0.10.1", default-features = false, features = ["serde", "b
 
 pem-rfc7468 = "0.6.0"
 rand = "0.8.5"
-chacha20poly1305 = { version = "0.10.1", features = ["std"] }
-cookie = { version = "0.16.0", features = ["private", "key-expansion"] }
-data-encoding = "2.3.2"
 
 indoc = "1.0.7"
 

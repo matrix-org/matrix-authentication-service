@@ -15,9 +15,9 @@
 use axum::{extract::Extension, response::IntoResponse, Json};
 use hyper::StatusCode;
 use mas_axum_utils::client_authorization::{ClientAuthorization, CredentialsVerificationError};
-use mas_config::Encrypter;
 use mas_data_model::{TokenFormatError, TokenType};
 use mas_iana::oauth::{OAuthClientAuthenticationMethod, OAuthTokenTypeHint};
+use mas_keystore::Encrypter;
 use mas_storage::{
     compat::{
         lookup_active_compat_access_token, lookup_active_compat_refresh_token,

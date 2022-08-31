@@ -12,18 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{borrow::Cow, path::PathBuf, sync::Arc};
+use std::{borrow::Cow, path::PathBuf};
 
 use anyhow::Context;
 use async_trait::async_trait;
-use chacha20poly1305::{
-    aead::{generic_array::GenericArray, Aead},
-    ChaCha20Poly1305, KeyInit,
-};
-use cookie::Key;
-use data_encoding::BASE64;
 use mas_jose::jwk::{JsonWebKey, JsonWebKeySet};
-use mas_keystore::{Keystore, PrivateKey};
+use mas_keystore::{Encrypter, Keystore, PrivateKey};
 use rand::{
     distributions::{Alphanumeric, DistString},
     thread_rng,
@@ -35,90 +29,6 @@ use tokio::task;
 use tracing::info;
 
 use super::ConfigurationSection;
-
-/// Helps encrypting and decrypting data
-#[derive(Clone)]
-pub struct Encrypter {
-    cookie_key: Arc<Key>,
-    aead: Arc<ChaCha20Poly1305>,
-}
-
-// TODO: move this somewhere else
-impl Encrypter {
-    /// Creates an [`Encrypter`] out of an encryption key
-    #[must_use]
-    pub fn new(key: &[u8; 32]) -> Self {
-        let cookie_key = Key::derive_from(&key[..]);
-        let cookie_key = Arc::new(cookie_key);
-        let key = GenericArray::from_slice(key);
-        let aead = ChaCha20Poly1305::new(key);
-        let aead = Arc::new(aead);
-        Self { cookie_key, aead }
-    }
-
-    /// Encrypt a payload
-    ///
-    /// # Errors
-    ///
-    /// Will return `Err` when the payload failed to encrypt
-    pub fn encrypt(&self, nonce: &[u8; 12], decrypted: &[u8]) -> anyhow::Result<Vec<u8>> {
-        let nonce = GenericArray::from_slice(&nonce[..]);
-        let encrypted = self.aead.encrypt(nonce, decrypted)?;
-        Ok(encrypted)
-    }
-
-    /// Decrypts a payload
-    ///
-    /// # Errors
-    ///
-    /// Will return `Err` when the payload failed to decrypt
-    pub fn decrypt(&self, nonce: &[u8; 12], encrypted: &[u8]) -> anyhow::Result<Vec<u8>> {
-        let nonce = GenericArray::from_slice(&nonce[..]);
-        let encrypted = self.aead.decrypt(nonce, encrypted)?;
-        Ok(encrypted)
-    }
-
-    /// Encrypt a payload to a self-contained base64-encoded string
-    ///
-    /// # Errors
-    ///
-    /// Will return `Err` when the payload failed to encrypt
-    pub fn encryt_to_string(&self, decrypted: &[u8]) -> anyhow::Result<String> {
-        let nonce = rand::random();
-        let encrypted = self.encrypt(&nonce, decrypted)?;
-        let encrypted = [&nonce[..], &encrypted].concat();
-        let encrypted = BASE64.encode(&encrypted);
-        Ok(encrypted)
-    }
-
-    /// Decrypt a payload from a self-contained base64-encoded string
-    ///
-    /// # Errors
-    ///
-    /// Will return `Err` when the payload failed to decrypt
-    pub fn decrypt_string(&self, encrypted: &str) -> anyhow::Result<Vec<u8>> {
-        let encrypted = BASE64.decode(encrypted.as_bytes())?;
-
-        let nonce: &[u8; 12] = encrypted
-            .get(0..12)
-            .ok_or_else(|| anyhow::anyhow!("invalid payload serialization"))?
-            .try_into()?;
-
-        let payload = encrypted
-            .get(12..)
-            .ok_or_else(|| anyhow::anyhow!("invalid payload serialization"))?;
-
-        let decrypted_client_secret = self.decrypt(nonce, payload)?;
-
-        Ok(decrypted_client_secret)
-    }
-}
-
-impl From<Encrypter> for Key {
-    fn from(e: Encrypter) -> Self {
-        e.cookie_key.as_ref().clone()
-    }
-}
 
 fn example_secret() -> &'static str {
     "0000111122223333444455556666777788889999aaaabbbbccccddddeeeeffff"

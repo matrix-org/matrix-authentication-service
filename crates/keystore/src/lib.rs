@@ -37,10 +37,14 @@ use mas_jose::{
 use pem_rfc7468::PemLabel;
 use pkcs1::EncodeRsaPrivateKey;
 use pkcs8::{AssociatedOid, PrivateKeyInfo};
-use rand_core::{CryptoRng, RngCore};
+use rand::{CryptoRng, RngCore};
 use rsa::BigUint;
 use sec1::EncodeEcPrivateKey;
 use thiserror::Error;
+
+mod encrypter;
+
+pub use self::encrypter::Encrypter;
 
 /// Error type used when a key could not be loaded
 #[derive(Debug, Error)]

@@ -7,21 +7,26 @@ license = "Apache-2.0"
 
 [dependencies]
 anyhow = "1.0.62"
+aead = { version = "0.5.1", features = ["std"] }
+const-oid = { version = "0.9.0", features = ["std"] }
+cookie = { version = "0.16.0", features = ["key-expansion", "private"] }
 der = { version = "0.6.0", features = ["std"] }
+ecdsa = { version = "0.14.4", features = ["std"] }
 elliptic-curve = { version = "0.12.3", features = ["std", "pem", "sec1"] }
 k256 = { version = "0.11.1", features = ["std"] }
 p256 = { version = "0.11.1", features = ["std"] }
 p384 = { version = "0.11.1", features = ["std"] }
 pem-rfc7468 = { version = "0.6.0", features = ["std"] }
 pkcs1 = { version = "0.4.0", features = ["std"] }
-spki = { version = "0.6.0", features = ["std"] }
-ecdsa = { version = "0.14.4", features = ["std"] }
 pkcs8 = { version = "0.9.0", features = ["std", "pkcs5", "encryption"] }
-const-oid = { version = "0.9.0", features = ["std"] }
+rand = "0.8.5"
 rsa = { git = "https://github.com/RustCrypto/RSA.git", features = ["std", "pem"] }
 sec1 = { version = "0.3.0", features = ["std"] }
+spki = { version = "0.6.0", features = ["std"] }
 thiserror = "1.0.32"
-rand_core = "0.6.3"
+generic-array = "0.14.6"
+chacha20poly1305 = { version = "0.10.1", features = ["std"] }
+base64ct = "1.5.2"
 
 mas-iana = { path = "../iana" }
 mas-jose = { path = "../jose" }

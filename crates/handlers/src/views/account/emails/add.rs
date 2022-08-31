@@ -21,8 +21,8 @@ use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     FancyError, SessionInfoExt,
 };
-use mas_config::Encrypter;
 use mas_email::Mailer;
+use mas_keystore::Encrypter;
 use mas_router::Route;
 use mas_storage::user::add_user_email;
 use mas_templates::{EmailAddContext, TemplateContext, Templates};
