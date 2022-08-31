@@ -343,7 +343,6 @@ impl From<EcPrivateParameters> for super::public_parameters::EcPublicParameters 
 }
 
 mod ec_impls {
-    use crypto_mac::generic_array::ArrayLength;
     use digest::typenum::Unsigned;
     use ecdsa::{hazmat::SignPrimitive, EncodedPoint, PrimeCurve, SignatureSize, SigningKey};
     use elliptic_curve::{
@@ -352,6 +351,7 @@ mod ec_impls {
         subtle::CtOption,
         AffinePoint, Curve, FieldBytes, FieldSize, ProjectiveArithmetic, Scalar, SecretKey,
     };
+    use generic_array::ArrayLength;
 
     use super::{super::JwkEcCurve, EcPrivateParameters};
 
