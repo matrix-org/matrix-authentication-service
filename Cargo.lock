@@ -1156,16 +1156,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "crypto-mac"
-version = "0.11.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1d1a86f49236c215f271d40892d5fc950490551400b02ef360692c29815c714"
-dependencies = [
- "generic-array",
- "subtle",
-]
-
-[[package]]
 name = "csv"
 version = "1.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2580,20 +2570,17 @@ name = "mas-jose"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-trait",
  "base64ct",
  "chrono",
- "crypto-mac",
  "digest 0.10.3",
  "ecdsa",
  "elliptic-curve",
+ "generic-array",
  "hmac",
  "k256",
  "mas-iana",
  "p256",
  "p384",
- "pkcs1",
- "pkcs8",
  "rand",
  "rsa",
  "schemars",
@@ -2604,7 +2591,6 @@ dependencies = [
  "sha2 0.10.2",
  "signature",
  "thiserror",
- "tokio",
  "tracing",
  "url",
 ]
