@@ -476,15 +476,15 @@ impl PrivateKey {
             }
 
             (Self::EcP256(key), JsonWebSignatureAlg::Es256) => {
-                mas_jose::jwa::Es256SigningKey::from(*key.clone()).into()
+                mas_jose::jwa::Es256SigningKey::from(key.as_ref()).into()
             }
 
             (Self::EcP384(key), JsonWebSignatureAlg::Es384) => {
-                mas_jose::jwa::Es384SigningKey::from(*key.clone()).into()
+                mas_jose::jwa::Es384SigningKey::from(key.as_ref()).into()
             }
 
             (Self::EcK256(key), JsonWebSignatureAlg::Es256K) => {
-                mas_jose::jwa::Es256KSigningKey::from(*key.clone()).into()
+                mas_jose::jwa::Es256KSigningKey::from(key.as_ref()).into()
             }
 
             _ => return Err(WrongAlgorithmError),
