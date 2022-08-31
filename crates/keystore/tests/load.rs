@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use mas_jose::{
+    jwk::ParametersInfo,
+    jwt::{JsonWebSignatureHeader, Jwt},
+};
 use mas_keystore::PrivateKey;
 
 static PASSWORD: &str = "hunter2";
@@ -34,6 +38,18 @@ macro_rules! load_encrypted_test {
             let bytes = include_bytes!($path);
             let key = PrivateKey::load_encrypted(bytes, PASSWORD).unwrap();
             assert!(matches!(key, PrivateKey::$kind(_)), "wrong key type");
+
+            let algs = key.possible_algs();
+            assert_ne!(algs.len(), 0);
+
+            for &alg in algs {
+                let header = JsonWebSignatureHeader::new(alg);
+                let payload = "hello";
+                let signer = key.signer_for_alg(alg).unwrap();
+                let jwt = Jwt::sign(header, payload, &signer).unwrap();
+                let verifier = key.verifier_for_alg(alg).unwrap();
+                jwt.verify(&verifier).unwrap();
+            }
         }
     };
 }
