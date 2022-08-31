@@ -12,14 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{convert::Infallible, sync::Arc};
-
 use axum::{extract::Extension, response::IntoResponse, Json};
-use mas_jose::StaticKeystore;
+use mas_keystore::Keystore;
 
-pub(crate) async fn get(
-    Extension(key_store): Extension<Arc<StaticKeystore>>,
-) -> Result<impl IntoResponse, Infallible> {
-    let jwks = key_store.to_public_jwks();
-    Ok(Json(jwks))
+pub(crate) async fn get(Extension(key_store): Extension<Keystore>) -> impl IntoResponse {
+    let jwks = key_store.public_jwks();
+    Json(jwks)
 }

@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::sync::Arc;
-
+use anyhow::Context;
 use axum::{
     extract::Extension,
     response::{IntoResponse, Response},
@@ -21,7 +20,11 @@ use axum::{
 };
 use headers::ContentType;
 use mas_axum_utils::{user_authorization::UserAuthorization, FancyError};
-use mas_jose::{DecodedJsonWebToken, SigningKeystore, StaticKeystore};
+use mas_jose::{
+    constraints::Constrainable,
+    jwt::{JsonWebSignatureHeader, Jwt},
+};
+use mas_keystore::Keystore;
 use mas_router::UrlBuilder;
 use mime::Mime;
 use oauth2_types::scope;
@@ -49,7 +52,7 @@ struct SignedUserInfo {
 pub async fn get(
     Extension(url_builder): Extension<UrlBuilder>,
     Extension(pool): Extension<PgPool>,
-    Extension(key_store): Extension<Arc<StaticKeystore>>,
+    Extension(key_store): Extension<Keystore>,
     user_authorization: UserAuthorization,
 ) -> Result<Response, FancyError> {
     // TODO: error handling
@@ -73,7 +76,13 @@ pub async fn get(
     }
 
     if let Some(alg) = session.client.userinfo_signed_response_alg {
-        let header = key_store.prepare_header(alg).await?;
+        let key = key_store
+            .signing_key_for_algorithm(alg)
+            .context("no suitable key found")?;
+
+        let header = JsonWebSignatureHeader::new(alg)
+            .with_kid(key.kid().context("key has no `kid` for some reason")?);
+        let signer = key.params().signer_for_alg(alg)?;
 
         let user_info = SignedUserInfo {
             iss: url_builder.oidc_issuer().to_string(),
@@ -81,13 +90,10 @@ pub async fn get(
             user_info,
         };
 
-        let user_info = DecodedJsonWebToken::new(header, user_info);
-        let user_info = user_info.sign(key_store.as_ref()).await?;
-
-        let token = user_info.serialize();
+        let token = Jwt::sign(header, user_info, &signer)?;
         let application_jwt: Mime = "application/jwt".parse().unwrap();
         let content_type = ContentType::from(application_jwt);
-        Ok((TypedHeader(content_type), token).into_response())
+        Ok((TypedHeader(content_type), token.as_str().to_owned()).into_response())
     } else {
         Ok(Json(user_info).into_response())
     }

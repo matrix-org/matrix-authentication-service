@@ -62,7 +62,7 @@ macro_rules! asymetric_jwt_test {
             use std::ops::Deref;
 
             use mas_iana::jose::JsonWebSignatureAlg;
-            use mas_jose::{constraints::ConstraintSet, Jwt};
+            use mas_jose::{constraints::ConstraintSet, jwt::Jwt};
 
             use super::*;
 
@@ -95,7 +95,7 @@ macro_rules! asymetric_jwt_test {
 
             conditional! { $supported =>
                 use mas_iana::jose::JsonWebKeyUse;
-                use mas_jose::{constraints::Constraint, JsonWebSignatureHeader};
+                use mas_jose::{constraints::Constraint, jwt::JsonWebSignatureHeader};
 
                 #[test]
                 fn verify_jwt() {
@@ -156,7 +156,7 @@ macro_rules! symetric_jwt_test {
     ($test_name:ident, $alg:ident, $jwt:ident) => {
         mod $test_name {
             use mas_iana::jose::JsonWebSignatureAlg;
-            use mas_jose::{JsonWebSignatureHeader, Jwt};
+            use mas_jose::jwt::{JsonWebSignatureHeader, Jwt};
 
             use super::*;
 

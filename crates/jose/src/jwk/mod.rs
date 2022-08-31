@@ -104,17 +104,7 @@ impl TryFrom<PrivateJsonWebKey> for PublicJsonWebKey {
     type Error = SymetricKeyError;
 
     fn try_from(value: PrivateJsonWebKey) -> Result<Self, Self::Error> {
-        Ok(Self {
-            parameters: value.parameters.try_into()?,
-            r#use: value.r#use,
-            key_ops: value.key_ops,
-            alg: value.alg,
-            kid: value.kid,
-            x5u: value.x5u,
-            x5c: value.x5c,
-            x5t: value.x5t,
-            x5t_s256: value.x5t_s256,
-        })
+        value.try_map(JsonWebKeyPublicParameters::try_from)
     }
 }
 
@@ -131,6 +121,74 @@ impl<P> JsonWebKey<P> {
             x5c: None,
             x5t: None,
             x5t_s256: None,
+        }
+    }
+
+    pub fn try_map<M, O, E>(self, mapper: M) -> Result<JsonWebKey<O>, E>
+    where
+        M: FnOnce(P) -> Result<O, E>,
+    {
+        Ok(JsonWebKey {
+            parameters: mapper(self.parameters)?,
+            r#use: self.r#use,
+            key_ops: self.key_ops,
+            alg: self.alg,
+            kid: self.kid,
+            x5u: self.x5u,
+            x5c: self.x5c,
+            x5t: self.x5t,
+            x5t_s256: self.x5t_s256,
+        })
+    }
+
+    pub fn map<M, O>(self, mapper: M) -> JsonWebKey<O>
+    where
+        M: FnOnce(P) -> O,
+    {
+        JsonWebKey {
+            parameters: mapper(self.parameters),
+            r#use: self.r#use,
+            key_ops: self.key_ops,
+            alg: self.alg,
+            kid: self.kid,
+            x5u: self.x5u,
+            x5c: self.x5c,
+            x5t: self.x5t,
+            x5t_s256: self.x5t_s256,
+        }
+    }
+
+    pub fn try_cloned_map<M, O, E>(&self, mapper: M) -> Result<JsonWebKey<O>, E>
+    where
+        M: FnOnce(&P) -> Result<O, E>,
+    {
+        Ok(JsonWebKey {
+            parameters: mapper(&self.parameters)?,
+            r#use: self.r#use,
+            key_ops: self.key_ops.clone(),
+            alg: self.alg,
+            kid: self.kid.clone(),
+            x5u: self.x5u.clone(),
+            x5c: self.x5c.clone(),
+            x5t: self.x5t.clone(),
+            x5t_s256: self.x5t_s256.clone(),
+        })
+    }
+
+    pub fn cloned_map<M, O>(&self, mapper: M) -> JsonWebKey<O>
+    where
+        M: FnOnce(&P) -> O,
+    {
+        JsonWebKey {
+            parameters: mapper(&self.parameters),
+            r#use: self.r#use,
+            key_ops: self.key_ops.clone(),
+            alg: self.alg,
+            kid: self.kid.clone(),
+            x5u: self.x5u.clone(),
+            x5c: self.x5c.clone(),
+            x5t: self.x5t.clone(),
+            x5t_s256: self.x5t_s256.clone(),
         }
     }
 
@@ -199,6 +257,14 @@ pub struct JsonWebKeySet<P> {
     keys: Vec<JsonWebKey<P>>,
 }
 
+impl<P> Default for JsonWebKeySet<P> {
+    fn default() -> Self {
+        Self {
+            keys: Vec::default(),
+        }
+    }
+}
+
 pub type PublicJsonWebKeySet = JsonWebKeySet<self::public_parameters::JsonWebKeyPublicParameters>;
 pub type PrivateJsonWebKeySet =
     JsonWebKeySet<self::private_parameters::JsonWebKeyPrivateParameters>;
@@ -225,6 +291,13 @@ impl<P> std::ops::Deref for JsonWebKeySet<P> {
 impl<P> JsonWebKeySet<P> {
     #[must_use]
     pub fn new(keys: Vec<JsonWebKey<P>>) -> Self {
+        Self { keys }
+    }
+}
+
+impl<P> FromIterator<JsonWebKey<P>> for JsonWebKeySet<P> {
+    fn from_iter<T: IntoIterator<Item = JsonWebKey<P>>>(iter: T) -> Self {
+        let keys = iter.into_iter().collect();
         Self { keys }
     }
 }

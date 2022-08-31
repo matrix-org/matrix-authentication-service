@@ -30,7 +30,7 @@ use mas_config::Encrypter;
 use mas_data_model::{Client, JwksOrJwksUri, StorageBackend};
 use mas_http::HttpServiceExt;
 use mas_iana::oauth::OAuthClientAuthenticationMethod;
-use mas_jose::{jwk::PublicJsonWebKeySet, Jwt};
+use mas_jose::{jwk::PublicJsonWebKeySet, jwt::Jwt};
 use mas_storage::{
     oauth2::client::{lookup_client_by_client_id, ClientFetchError},
     PostgresqlBackend,

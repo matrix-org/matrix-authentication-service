@@ -16,7 +16,7 @@ use std::collections::HashSet;
 
 use mas_iana::jose::{JsonWebKeyType, JsonWebKeyUse, JsonWebSignatureAlg};
 
-use crate::JsonWebSignatureHeader;
+use crate::jwt::JsonWebSignatureHeader;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Constraint<'a> {

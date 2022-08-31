@@ -1,0 +1,27 @@
+[package]
+name = "mas-keystore"
+version = "0.1.0"
+authors = ["Quentin Gliech <quenting@element.io>"]
+edition = "2021"
+license = "Apache-2.0"
+
+[dependencies]
+anyhow = "1.0.62"
+der = { version = "0.6.0", features = ["std"] }
+elliptic-curve = { version = "0.12.3", features = ["std", "pem", "sec1"] }
+k256 = { version = "0.11.1", features = ["std"] }
+p256 = { version = "0.11.1", features = ["std"] }
+p384 = { version = "0.11.1", features = ["std"] }
+pem-rfc7468 = { version = "0.6.0", features = ["std"] }
+pkcs1 = { version = "0.4.0", features = ["std"] }
+spki = { version = "0.6.0", features = ["std"] }
+ecdsa = { version = "0.14.4", features = ["std"] }
+pkcs8 = { version = "0.9.0", features = ["std", "pkcs5", "encryption"] }
+const-oid = { version = "0.9.0", features = ["std"] }
+rsa = { git = "https://github.com/RustCrypto/RSA.git", features = ["std", "pem"] }
+sec1 = { version = "0.3.0", features = ["std"] }
+thiserror = "1.0.32"
+rand_core = "0.6.3"
+
+mas-iana = { path = "../iana" }
+mas-jose = { path = "../jose" }

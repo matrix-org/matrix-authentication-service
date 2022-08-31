@@ -36,6 +36,78 @@ pub enum Verifier {
     Es256K { key: jwa::Es256KVerifyingKey },
 }
 
+impl From<jwa::Hs256Key> for Verifier {
+    fn from(key: jwa::Hs256Key) -> Self {
+        Self::Hs256 { key }
+    }
+}
+
+impl From<jwa::Hs384Key> for Verifier {
+    fn from(key: jwa::Hs384Key) -> Self {
+        Self::Hs384 { key }
+    }
+}
+
+impl From<jwa::Hs512Key> for Verifier {
+    fn from(key: jwa::Hs512Key) -> Self {
+        Self::Hs512 { key }
+    }
+}
+
+impl From<jwa::Rs256VerifyingKey> for Verifier {
+    fn from(key: jwa::Rs256VerifyingKey) -> Self {
+        Self::Rs256 { key }
+    }
+}
+
+impl From<jwa::Rs384VerifyingKey> for Verifier {
+    fn from(key: jwa::Rs384VerifyingKey) -> Self {
+        Self::Rs384 { key }
+    }
+}
+
+impl From<jwa::Rs512VerifyingKey> for Verifier {
+    fn from(key: jwa::Rs512VerifyingKey) -> Self {
+        Self::Rs512 { key }
+    }
+}
+
+impl From<jwa::Ps256VerifyingKey> for Verifier {
+    fn from(key: jwa::Ps256VerifyingKey) -> Self {
+        Self::Ps256 { key }
+    }
+}
+
+impl From<jwa::Ps384VerifyingKey> for Verifier {
+    fn from(key: jwa::Ps384VerifyingKey) -> Self {
+        Self::Ps384 { key }
+    }
+}
+
+impl From<jwa::Ps512VerifyingKey> for Verifier {
+    fn from(key: jwa::Ps512VerifyingKey) -> Self {
+        Self::Ps512 { key }
+    }
+}
+
+impl From<jwa::Es256VerifyingKey> for Verifier {
+    fn from(key: jwa::Es256VerifyingKey) -> Self {
+        Self::Es256 { key }
+    }
+}
+
+impl From<jwa::Es384VerifyingKey> for Verifier {
+    fn from(key: jwa::Es384VerifyingKey) -> Self {
+        Self::Es384 { key }
+    }
+}
+
+impl From<jwa::Es256KVerifyingKey> for Verifier {
+    fn from(key: jwa::Es256KVerifyingKey) -> Self {
+        Self::Es256K { key }
+    }
+}
+
 #[derive(Debug, Error)]
 pub enum VerifierFromJwkError {
     #[error("invalid RSA key")]
