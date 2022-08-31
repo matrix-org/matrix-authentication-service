@@ -23,8 +23,8 @@ use axum::{
 use axum_extra::extract::PrivateCookieJar;
 use hyper::StatusCode;
 use mas_axum_utils::SessionInfoExt;
-use mas_config::Encrypter;
 use mas_data_model::{AuthorizationGrant, BrowserSession};
+use mas_keystore::Encrypter;
 use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{

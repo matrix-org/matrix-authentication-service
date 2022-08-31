@@ -21,7 +21,7 @@ use axum::{
 };
 use axum_extra::extract::PrivateCookieJar;
 use mas_axum_utils::{csrf::CsrfExt, FancyError, SessionInfoExt};
-use mas_config::Encrypter;
+use mas_keystore::Encrypter;
 use mas_router::Route;
 use mas_storage::user::{count_active_sessions, get_user_emails};
 use mas_templates::{AccountContext, TemplateContext, Templates};

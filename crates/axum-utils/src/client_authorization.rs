@@ -26,7 +26,7 @@ use axum::{
 };
 use headers::{authorization::Basic, Authorization};
 use http::StatusCode;
-use mas_config::Encrypter;
+use mas_keystore::Encrypter;
 use mas_data_model::{Client, JwksOrJwksUri, StorageBackend};
 use mas_http::HttpServiceExt;
 use mas_iana::oauth::OAuthClientAuthenticationMethod;

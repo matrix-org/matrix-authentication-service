@@ -22,8 +22,8 @@ use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     FancyError, SessionInfoExt,
 };
-use mas_config::Encrypter;
 use mas_data_model::BrowserSession;
+use mas_keystore::Encrypter;
 use mas_router::Route;
 use mas_storage::{
     user::{authenticate_session, set_password},

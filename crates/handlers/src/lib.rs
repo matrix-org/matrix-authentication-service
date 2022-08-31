@@ -30,10 +30,10 @@ use axum::{
 };
 use headers::HeaderName;
 use hyper::header::{ACCEPT, ACCEPT_LANGUAGE, AUTHORIZATION, CONTENT_LANGUAGE, CONTENT_TYPE};
-use mas_config::{Encrypter, MatrixConfig};
+use mas_config::MatrixConfig;
 use mas_email::Mailer;
 use mas_http::CorsLayerExt;
-use mas_keystore::Keystore;
+use mas_keystore::{Encrypter, Keystore};
 use mas_policy::PolicyFactory;
 use mas_router::{Route, UrlBuilder};
 use mas_templates::{ErrorContext, Templates};

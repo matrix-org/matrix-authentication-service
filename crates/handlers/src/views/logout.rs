@@ -21,7 +21,7 @@ use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     FancyError, SessionInfoExt,
 };
-use mas_config::Encrypter;
+use mas_keystore::Encrypter;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::user::end_session;
 use sqlx::PgPool;

@@ -35,7 +35,7 @@ pub use self::{
     http::HttpConfig,
     matrix::MatrixConfig,
     policy::PolicyConfig,
-    secrets::{Encrypter, SecretsConfig},
+    secrets::SecretsConfig,
     telemetry::{
         MetricsConfig, MetricsExporterConfig, Propagator, TelemetryConfig, TracingConfig,
         TracingExporterConfig,

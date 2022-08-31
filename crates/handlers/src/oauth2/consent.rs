@@ -25,8 +25,8 @@ use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     SessionInfoExt,
 };
-use mas_config::Encrypter;
 use mas_data_model::AuthorizationGrantStage;
+use mas_keystore::Encrypter;
 use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::oauth2::{
