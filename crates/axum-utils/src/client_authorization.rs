@@ -26,11 +26,11 @@ use axum::{
 };
 use headers::{authorization::Basic, Authorization};
 use http::StatusCode;
-use mas_keystore::Encrypter;
 use mas_data_model::{Client, JwksOrJwksUri, StorageBackend};
 use mas_http::HttpServiceExt;
 use mas_iana::oauth::OAuthClientAuthenticationMethod;
 use mas_jose::{jwk::PublicJsonWebKeySet, jwt::Jwt};
+use mas_keystore::Encrypter;
 use mas_storage::{
     oauth2::client::{lookup_client_by_client_id, ClientFetchError},
     PostgresqlBackend,
