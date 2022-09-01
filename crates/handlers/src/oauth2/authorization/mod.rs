@@ -193,6 +193,7 @@ pub(crate) async fn get(
                 .load_session(&mut txn)
                 .await
                 .context("failed to load browser session")?;
+            let prompt = params.auth.prompt.as_deref().unwrap_or_default();
 
             // Check if the request/request_uri/registration params are used. If so, reply
             // with the right error since we don't support them.
@@ -234,7 +235,7 @@ pub(crate) async fn get(
             }
 
             // Fail early if prompt=none and there is no active session
-            if params.auth.prompt == Some(Prompt::None) && maybe_session.is_none() {
+            if prompt.contains(&Prompt::None) && maybe_session.is_none() {
                 return Ok(callback_destination
                     .go(
                         &templates,
@@ -272,7 +273,7 @@ pub(crate) async fn get(
                 None
             };
 
-            let requires_consent = params.auth.prompt == Some(Prompt::Consent);
+            let requires_consent = prompt.contains(&Prompt::Consent);
 
             let grant = new_authorization_grant(
                 &mut txn,
@@ -292,13 +293,13 @@ pub(crate) async fn get(
             .await?;
             let continue_grant = PostAuthAction::continue_grant(grant.data);
 
-            let res = match (maybe_session, params.auth.prompt) {
+            let res = match maybe_session {
                 // Cases where there is no active session, redirect to the relevant page
-                (None, Some(Prompt::None)) => {
+                None if prompt.contains(&Prompt::None) => {
                     // This case should already be handled earlier
                     unreachable!();
                 }
-                (None, Some(Prompt::Create)) => {
+                None if prompt.contains(&Prompt::Create) => {
                     // Client asked for a registration, show the registration prompt
                     txn.commit().await?;
 
@@ -306,7 +307,7 @@ pub(crate) async fn get(
                         .go()
                         .into_response()
                 }
-                (None, _) => {
+                None => {
                     // Other cases where we don't have a session, ask for a login
                     txn.commit().await?;
 
@@ -316,7 +317,10 @@ pub(crate) async fn get(
                 }
 
                 // Special case when we already have a sesion but prompt=login|select_account
-                (Some(_), Some(Prompt::Login | Prompt::SelectAccount)) => {
+                Some(_)
+                    if prompt.contains(&Prompt::Login)
+                        || prompt.contains(&Prompt::SelectAccount) =>
+                {
                     // TODO: better pages here
                     txn.commit().await?;
 
@@ -326,7 +330,7 @@ pub(crate) async fn get(
                 }
 
                 // Else, we immediately try to complete the authorization grant
-                (Some(user_session), Some(Prompt::None)) => {
+                Some(user_session) if prompt.contains(&Prompt::None) => {
                     // With prompt=none, we should get back to the client immediately
                     match self::complete::complete(grant, user_session, &policy_factory, txn).await
                     {
@@ -362,7 +366,7 @@ pub(crate) async fn get(
                         }
                     }
                 }
-                (Some(user_session), _) => {
+                Some(user_session) => {
                     let grant_id = grant.data;
                     // Else, we show the relevant reauth/consent page if necessary
                     match self::complete::complete(grant, user_session, &policy_factory, txn).await
