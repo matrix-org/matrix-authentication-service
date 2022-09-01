@@ -94,20 +94,18 @@ macro_rules! asymetric_jwt_test {
             }
 
             conditional! { $supported =>
-                use mas_iana::jose::JsonWebKeyUse;
-                use mas_jose::{constraints::Constraint, jwt::JsonWebSignatureHeader};
+                use mas_jose::jwt::JsonWebSignatureHeader;
 
                 #[test]
                 fn verify_jwt() {
                     let jwks = public_jwks();
                     let jwt: Jwt<'_, Payload> = Jwt::try_from($jwt).unwrap();
 
-                    let key = ConstraintSet::from(jwt.header())
-                        .filter(jwks.deref())[0];
+                    let key = jwks.find_key(&jwt.header().into()).unwrap();
 
                     let key = mas_jose::jwa::AsymmetricVerifyingKey::from_jwk_and_alg(
                         key.params(),
-                        JsonWebSignatureAlg::$alg
+                        JsonWebSignatureAlg::$alg,
                     )
                     .unwrap();
 
@@ -116,34 +114,27 @@ macro_rules! asymetric_jwt_test {
 
                 #[test]
                 fn sign_and_verify_jwt() {
-                    let payload = Payload { hello: "world".to_string() };
-                    let header = JsonWebSignatureHeader::new(JsonWebSignatureAlg::$alg);
+                    let alg = JsonWebSignatureAlg::$alg;
+                    let payload = Payload {
+                        hello: "world".to_string(),
+                    };
+                    let header = JsonWebSignatureHeader::new(alg);
 
                     let jwks = private_jwks();
-                    let key = ConstraintSet::new(vec![
-                        Constraint::alg(JsonWebSignatureAlg::$alg),
-                        Constraint::use_(JsonWebKeyUse::Sig),
-                    ])
-                        .filter(jwks.deref())[0];
+                    let key = jwks.signing_key_for_algorithm(alg).unwrap();
 
-                    let key = mas_jose::jwa::AsymmetricSigningKey::from_jwk_and_alg(
-                        key.params(),
-                        JsonWebSignatureAlg::$alg,
-                    )
-                    .unwrap();
+                    let key = mas_jose::jwa::AsymmetricSigningKey::from_jwk_and_alg(key.params(), alg)
+                        .unwrap();
 
-                    let jwks = public_jwks();
                     let jwt: Jwt<'_, Payload> = Jwt::sign(header, payload, &key).unwrap();
                     let jwt: Jwt<'_, Payload> = Jwt::try_from(jwt.as_str()).unwrap();
 
-                    let key = ConstraintSet::from(jwt.header())
-                        .filter(jwks.deref())[0];
+                    let jwks = public_jwks();
+                    let key = jwks.find_key(&jwt.header().into()).unwrap();
 
-                    let key = mas_jose::jwa::AsymmetricVerifyingKey::from_jwk_and_alg(
-                        key.params(),
-                        JsonWebSignatureAlg::$alg
-                    )
-                    .unwrap();
+                    let key =
+                        mas_jose::jwa::AsymmetricVerifyingKey::from_jwk_and_alg(key.params(), alg)
+                            .unwrap();
 
                     jwt.verify(&key).unwrap();
                 }
@@ -178,14 +169,13 @@ macro_rules! symetric_jwt_test {
 
             #[test]
             fn sign_and_verify_jwt() {
+                let alg = JsonWebSignatureAlg::$alg;
                 let payload = Payload {
                     hello: "world".to_string(),
                 };
-                let header = JsonWebSignatureHeader::new(JsonWebSignatureAlg::$alg);
+                let header = JsonWebSignatureHeader::new(alg);
 
-                let key =
-                    mas_jose::jwa::SymmetricKey::new_for_alg(oct_key(), JsonWebSignatureAlg::$alg)
-                        .unwrap();
+                let key = mas_jose::jwa::SymmetricKey::new_for_alg(oct_key(), alg).unwrap();
 
                 let jwt: Jwt<'_, Payload> = Jwt::sign(header, payload, &key).unwrap();
                 let jwt: Jwt<'_, Payload> = Jwt::try_from(jwt.as_str()).unwrap();

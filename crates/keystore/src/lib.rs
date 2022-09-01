@@ -114,8 +114,27 @@ pub enum LoadError {
     },
 }
 
+impl LoadError {
+    /// Returns `true` if the load error is [`Encrypted`].
+    ///
+    /// [`Encrypted`]: LoadError::Encrypted
+    #[must_use]
+    pub fn is_encrypted(&self) -> bool {
+        matches!(self, Self::Encrypted)
+    }
+
+    /// Returns `true` if the load error is [`Unencrypted`].
+    ///
+    /// [`Unencrypted`]: LoadError::Unencrypted
+    #[must_use]
+    pub fn is_unencrypted(&self) -> bool {
+        matches!(self, Self::Unencrypted)
+    }
+}
+
 /// A single private key
 #[non_exhaustive]
+#[derive(Debug)]
 pub enum PrivateKey {
     Rsa(Box<rsa::RsaPrivateKey>),
     EcP256(Box<elliptic_curve::SecretKey<p256::NistP256>>),
@@ -278,7 +297,7 @@ impl PrivateKey {
             || sec1::EcPrivateKey::from_der(der).is_ok()
             || pkcs1::RsaPrivateKey::from_der(der).is_ok()
         {
-            return Err(LoadError::Encrypted);
+            return Err(LoadError::Unencrypted);
         }
 
         Err(LoadError::UnsupportedFormat)
