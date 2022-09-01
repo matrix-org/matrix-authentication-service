@@ -143,6 +143,36 @@ pub struct AuthorizationRequest {
     pub registration: Option<String>,
 }
 
+impl AuthorizationRequest {
+    /// Creates a basic `AuthorizationRequest`.
+    #[must_use]
+    pub fn new(
+        response_type: OAuthAuthorizationEndpointResponseType,
+        client_id: String,
+        scope: Scope,
+    ) -> Self {
+        Self {
+            response_type,
+            client_id,
+            redirect_uri: None,
+            scope,
+            state: None,
+            response_mode: None,
+            nonce: None,
+            display: None,
+            prompt: None,
+            max_age: None,
+            ui_locales: None,
+            id_token_hint: None,
+            login_hint: None,
+            acr_values: None,
+            request: None,
+            request_uri: None,
+            registration: None,
+        }
+    }
+}
+
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Default, Debug, Clone)]
 pub struct AuthorizationResponse<R> {
