@@ -105,13 +105,13 @@ macro_rules! asymetric_jwt_test {
                     let key = ConstraintSet::from(jwt.header())
                         .filter(jwks.deref())[0];
 
-                    let verifier = mas_jose::verifier::Verifier::for_jwk_and_alg(
+                    let key = mas_jose::jwa::AsymmetricVerifyingKey::from_jwk_and_alg(
                         key.params(),
                         JsonWebSignatureAlg::$alg
                     )
                     .unwrap();
 
-                    jwt.verify(&verifier).unwrap();
+                    jwt.verify(&key).unwrap();
                 }
 
                 #[test]
@@ -126,26 +126,26 @@ macro_rules! asymetric_jwt_test {
                     ])
                         .filter(jwks.deref())[0];
 
-                    let signer = mas_jose::signer::Signer::for_jwk_and_alg(
+                    let key = mas_jose::jwa::AsymmetricSigningKey::from_jwk_and_alg(
                         key.params(),
                         JsonWebSignatureAlg::$alg,
                     )
                     .unwrap();
 
                     let jwks = public_jwks();
-                    let jwt: Jwt<'_, Payload> = Jwt::sign(header, payload, &signer).unwrap();
+                    let jwt: Jwt<'_, Payload> = Jwt::sign(header, payload, &key).unwrap();
                     let jwt: Jwt<'_, Payload> = Jwt::try_from(jwt.as_str()).unwrap();
 
                     let key = ConstraintSet::from(jwt.header())
                         .filter(jwks.deref())[0];
 
-                    let verifier = mas_jose::verifier::Verifier::for_jwk_and_alg(
+                    let key = mas_jose::jwa::AsymmetricVerifyingKey::from_jwk_and_alg(
                         key.params(),
                         JsonWebSignatureAlg::$alg
                     )
                     .unwrap();
 
-                    jwt.verify(&verifier).unwrap();
+                    jwt.verify(&key).unwrap();
                 }
             }
         }
@@ -170,12 +170,10 @@ macro_rules! symetric_jwt_test {
             #[test]
             fn verify_jwt() {
                 let jwt: Jwt<'_, Payload> = Jwt::try_from($jwt).unwrap();
-                let verifier = mas_jose::verifier::Verifier::for_oct_and_alg(
-                    oct_key(),
-                    JsonWebSignatureAlg::$alg,
-                )
-                .unwrap();
-                jwt.verify(&verifier).unwrap();
+                let key =
+                    mas_jose::jwa::SymmetricKey::new_for_alg(oct_key(), JsonWebSignatureAlg::$alg)
+                        .unwrap();
+                jwt.verify(&key).unwrap();
             }
 
             #[test]
@@ -185,20 +183,14 @@ macro_rules! symetric_jwt_test {
                 };
                 let header = JsonWebSignatureHeader::new(JsonWebSignatureAlg::$alg);
 
-                let signer =
-                    mas_jose::signer::Signer::for_oct_and_alg(oct_key(), JsonWebSignatureAlg::$alg)
+                let key =
+                    mas_jose::jwa::SymmetricKey::new_for_alg(oct_key(), JsonWebSignatureAlg::$alg)
                         .unwrap();
 
-                let jwt: Jwt<'_, Payload> = Jwt::sign(header, payload, &signer).unwrap();
+                let jwt: Jwt<'_, Payload> = Jwt::sign(header, payload, &key).unwrap();
                 let jwt: Jwt<'_, Payload> = Jwt::try_from(jwt.as_str()).unwrap();
 
-                let verifier = mas_jose::verifier::Verifier::for_oct_and_alg(
-                    oct_key(),
-                    JsonWebSignatureAlg::$alg,
-                )
-                .unwrap();
-
-                jwt.verify(&verifier).unwrap();
+                jwt.verify(&key).unwrap();
             }
         }
     };

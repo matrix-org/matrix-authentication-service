@@ -1,0 +1,118 @@
+// Copyright 2022 The Matrix.org Foundation C.I.C.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+use mas_iana::jose::JsonWebSignatureAlg;
+use thiserror::Error;
+
+use super::signature::Signature;
+
+// An enum of all supported symmetric signing algorithms keys
+#[non_exhaustive]
+pub enum SymmetricKey {
+    Hs256(super::Hs256Key),
+    Hs384(super::Hs384Key),
+    Hs512(super::Hs512Key),
+}
+
+#[derive(Debug, Error)]
+#[error("Invalid algorithm {alg} used for symetric key")]
+pub struct InvalidAlgorithm {
+    pub alg: JsonWebSignatureAlg,
+    pub key: Vec<u8>,
+}
+
+impl SymmetricKey {
+    pub const fn new_for_alg(
+        key: Vec<u8>,
+        alg: JsonWebSignatureAlg,
+    ) -> Result<Self, InvalidAlgorithm> {
+        match alg {
+            JsonWebSignatureAlg::Hs256 => Ok(Self::hs256(key)),
+            JsonWebSignatureAlg::Hs384 => Ok(Self::hs384(key)),
+            JsonWebSignatureAlg::Hs512 => Ok(Self::hs512(key)),
+            _ => Err(InvalidAlgorithm { alg, key }),
+        }
+    }
+
+    #[must_use]
+    pub const fn hs256(key: Vec<u8>) -> Self {
+        Self::Hs256(super::Hs256Key::new(key))
+    }
+
+    #[must_use]
+    pub const fn hs384(key: Vec<u8>) -> Self {
+        Self::Hs384(super::Hs384Key::new(key))
+    }
+
+    #[must_use]
+    pub const fn hs512(key: Vec<u8>) -> Self {
+        Self::Hs512(super::Hs512Key::new(key))
+    }
+}
+
+impl From<super::Hs256Key> for SymmetricKey {
+    fn from(key: super::Hs256Key) -> Self {
+        Self::Hs256(key)
+    }
+}
+
+impl From<super::Hs384Key> for SymmetricKey {
+    fn from(key: super::Hs384Key) -> Self {
+        Self::Hs384(key)
+    }
+}
+
+impl From<super::Hs512Key> for SymmetricKey {
+    fn from(key: super::Hs512Key) -> Self {
+        Self::Hs512(key)
+    }
+}
+
+impl signature::Signer<Signature> for SymmetricKey {
+    fn try_sign(&self, msg: &[u8]) -> Result<Signature, signature::Error> {
+        match self {
+            Self::Hs256(key) => {
+                let signature = key.try_sign(msg)?;
+                Ok(Signature::from_signature(&signature))
+            }
+            Self::Hs384(key) => {
+                let signature = key.try_sign(msg)?;
+                Ok(Signature::from_signature(&signature))
+            }
+            Self::Hs512(key) => {
+                let signature = key.try_sign(msg)?;
+                Ok(Signature::from_signature(&signature))
+            }
+        }
+    }
+}
+
+impl signature::Verifier<Signature> for SymmetricKey {
+    fn verify(&self, msg: &[u8], signature: &Signature) -> Result<(), signature::Error> {
+        match self {
+            Self::Hs256(key) => {
+                let signature = signature.to_signature()?;
+                key.verify(msg, &signature)
+            }
+            Self::Hs384(key) => {
+                let signature = signature.to_signature()?;
+                key.verify(msg, &signature)
+            }
+            Self::Hs512(key) => {
+                let signature = signature.to_signature()?;
+                key.verify(msg, &signature)
+            }
+        }
+    }
+}

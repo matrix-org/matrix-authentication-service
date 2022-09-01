@@ -63,6 +63,15 @@ pub struct Hmac<D> {
     digest: PhantomData<D>,
 }
 
+impl<D> Hmac<D> {
+    pub const fn new(key: Vec<u8>) -> Self {
+        Self {
+            key,
+            digest: PhantomData,
+        }
+    }
+}
+
 #[derive(Error, Debug)]
 #[error("invalid length")]
 pub struct InvalidLength;
@@ -71,7 +80,7 @@ impl<D> From<Vec<u8>> for Hmac<D> {
     fn from(key: Vec<u8>) -> Self {
         Self {
             key,
-            digest: PhantomData::default(),
+            digest: PhantomData,
         }
     }
 }
