@@ -66,6 +66,42 @@ macro_rules! enc_test {
     };
 }
 
+macro_rules! pem_test {
+    ($name:ident, $path:literal) => {
+        pem_test!($name, $path, compare = true);
+    };
+    ($name:ident, $path:literal, compare = $compare:literal) => {
+        #[test]
+        fn $name() {
+            let pem = include_str!(concat!("./keys/", $path, ".pem"));
+            let key = PrivateKey::load_pem(pem).unwrap();
+            let pem2 = key.to_pem(pem_rfc7468::LineEnding::LF).unwrap();
+
+            if $compare {
+                assert_eq!(pem, pem2.as_str());
+            }
+        }
+    };
+}
+
+macro_rules! der_test {
+    ($name:ident, $path:literal) => {
+        der_test!($name, $path, compare = true);
+    };
+    ($name:ident, $path:literal, compare = $compare:literal) => {
+        #[test]
+        fn $name() {
+            let der = include_bytes!(concat!("./keys/", $path, ".der"));
+            let key = PrivateKey::load_der(der).unwrap();
+            let der2 = key.to_der().unwrap();
+
+            if $compare {
+                assert_eq!(der, der2.as_slice());
+            }
+        }
+    };
+}
+
 plain_test!(plain_rsa_pkcs1_pem, Rsa, "rsa.pkcs1.pem");
 plain_test!(plain_rsa_pkcs1_der, Rsa, "rsa.pkcs1.der");
 plain_test!(plain_rsa_pkcs8_pem, Rsa, "rsa.pkcs8.pem");
@@ -91,3 +127,14 @@ enc_test!(enc_ec_p384_pkcs8_pem, EcP384, "ec-p384.pkcs8.encrypted.pem");
 enc_test!(enc_ec_p384_pkcs8_der, EcP384, "ec-p384.pkcs8.encrypted.der");
 enc_test!(enc_ec_k256_pkcs8_pem, EcK256, "ec-k256.pkcs8.encrypted.pem");
 enc_test!(enc_ec_k256_pkcs8_der, EcK256, "ec-k256.pkcs8.encrypted.der");
+
+// Test PEM/DER serialization. For some reason, DER serialization of EC keys
+// have some extra bytes
+pem_test!(serialize_rsa_pkcs1_pem, "rsa.pkcs1");
+der_test!(serialize_rsa_pkcs1_der, "rsa.pkcs1");
+pem_test!(serialize_ec_p256_sec1_pem, "ec-p256.sec1");
+der_test!(serialize_ec_p256_sec1_der, "ec-p256.sec1", compare = false);
+pem_test!(serialize_ec_p384_sec1_pem, "ec-p384.sec1");
+der_test!(serialize_ec_p384_sec1_der, "ec-p384.sec1", compare = false);
+pem_test!(serialize_ec_k256_sec1_pem, "ec-k256.sec1");
+der_test!(serialize_ec_k256_sec1_der, "ec-k256.sec1", compare = false);
