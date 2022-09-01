@@ -12,21 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![forbid(unsafe_code)]
-#![deny(clippy::all, clippy::str_to_string, rustdoc::broken_intra_doc_links)]
-#![warn(clippy::pedantic)]
-#![allow(clippy::module_name_repetitions, clippy::missing_errors_doc)]
-
-pub mod client_authorization;
-pub mod cookies;
-pub mod csrf;
-pub mod fancy_error;
-pub mod jwt;
-pub mod session;
-pub mod user_authorization;
-
-pub use self::{
-    cookies::CookieExt,
-    fancy_error::FancyError,
-    session::{SessionInfo, SessionInfoExt},
+use axum::{
+    response::{IntoResponse, Response},
+    TypedHeader,
 };
+use headers::ContentType;
+use mas_jose::jwt::Jwt;
+use mime::Mime;
+
+pub struct JwtResponse<T>(pub Jwt<'static, T>);
+
+impl<T> IntoResponse for JwtResponse<T> {
+    fn into_response(self) -> Response {
+        let application_jwt: Mime = "application/jwt".parse().unwrap();
+        let content_type = ContentType::from(application_jwt);
+        (TypedHeader(content_type), self.0.into_string()).into_response()
+    }
+}

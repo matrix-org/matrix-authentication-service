@@ -85,6 +85,12 @@ pub enum DecodeError {
     TooManyDots,
 }
 
+impl<'a> From<RawJwt<'a>> for String {
+    fn from(val: RawJwt<'a>) -> Self {
+        val.inner.into()
+    }
+}
+
 impl<'a> TryFrom<&'a str> for RawJwt<'a> {
     type Error = DecodeError;
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
