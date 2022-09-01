@@ -87,7 +87,7 @@ impl ParametersInfo for JsonWebKeyPrivateParameters {
         }
     }
 
-    fn possible_algs(&self) -> &'static [JsonWebSignatureAlg] {
+    fn possible_algs(&self) -> &[JsonWebSignatureAlg] {
         match self {
             JsonWebKeyPrivateParameters::Oct(p) => p.possible_algs(),
             JsonWebKeyPrivateParameters::Rsa(p) => p.possible_algs(),
@@ -128,7 +128,7 @@ impl ParametersInfo for OctPrivateParameters {
         JsonWebKeyType::Oct
     }
 
-    fn possible_algs(&self) -> &'static [JsonWebSignatureAlg] {
+    fn possible_algs(&self) -> &[JsonWebSignatureAlg] {
         &[
             JsonWebSignatureAlg::Hs256,
             JsonWebSignatureAlg::Hs384,
@@ -190,7 +190,7 @@ impl ParametersInfo for RsaPrivateParameters {
         JsonWebKeyType::Rsa
     }
 
-    fn possible_algs(&self) -> &'static [JsonWebSignatureAlg] {
+    fn possible_algs(&self) -> &[JsonWebSignatureAlg] {
         &[
             JsonWebSignatureAlg::Rs256,
             JsonWebSignatureAlg::Rs384,
@@ -330,7 +330,7 @@ impl ParametersInfo for EcPrivateParameters {
         JsonWebKeyType::Ec
     }
 
-    fn possible_algs(&self) -> &'static [JsonWebSignatureAlg] {
+    fn possible_algs(&self) -> &[JsonWebSignatureAlg] {
         match self.crv {
             JsonWebKeyEcEllipticCurve::P256 => &[JsonWebSignatureAlg::Es256],
             JsonWebKeyEcEllipticCurve::P384 => &[JsonWebSignatureAlg::Es384],
@@ -471,7 +471,7 @@ impl ParametersInfo for OkpPrivateParameters {
         JsonWebKeyType::Okp
     }
 
-    fn possible_algs(&self) -> &'static [JsonWebSignatureAlg] {
+    fn possible_algs(&self) -> &[JsonWebSignatureAlg] {
         &[JsonWebSignatureAlg::EdDsa]
     }
 }

@@ -17,7 +17,7 @@
 
 use super::signature::Signature;
 
-pub trait RsaHashIdentifier {
+pub(crate) trait RsaHashIdentifier {
     const HASH: rsa::Hash;
 }
 
