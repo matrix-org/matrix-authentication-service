@@ -98,8 +98,9 @@ pub enum Prompt {
     Create,
 }
 
+#[skip_serializing_none]
 #[serde_as]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AuthorizationRequest {
     pub response_type: OAuthAuthorizationEndpointResponseType,
 
@@ -115,7 +116,7 @@ pub struct AuthorizationRequest {
 
     pub nonce: Option<String>,
 
-    display: Option<Display>,
+    pub display: Option<Display>,
 
     pub prompt: Option<Prompt>,
 
@@ -125,15 +126,15 @@ pub struct AuthorizationRequest {
 
     #[serde_as(as = "Option<StringWithSeparator::<SpaceSeparator, LanguageTag>>")]
     #[serde(default)]
-    ui_locales: Option<Vec<LanguageTag>>,
+    pub ui_locales: Option<Vec<LanguageTag>>,
 
-    id_token_hint: Option<String>,
+    pub id_token_hint: Option<String>,
 
-    login_hint: Option<String>,
+    pub login_hint: Option<String>,
 
     #[serde_as(as = "Option<StringWithSeparator::<SpaceSeparator, String>>")]
     #[serde(default)]
-    acr_values: Option<HashSet<String>>,
+    pub acr_values: Option<HashSet<String>>,
 
     pub request: Option<String>,
 
@@ -142,7 +143,8 @@ pub struct AuthorizationRequest {
     pub registration: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize, Default, Debug, Clone)]
 pub struct AuthorizationResponse<R> {
     pub code: Option<String>,
     #[serde(flatten)]
@@ -150,7 +152,7 @@ pub struct AuthorizationResponse<R> {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct AuthorizationCodeGrant {
     pub code: String,
     #[serde(default)]
@@ -161,18 +163,19 @@ pub struct AuthorizationCodeGrant {
     pub code_verifier: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct RefreshTokenGrant {
     pub refresh_token: String,
 
     #[serde(default)]
-    scope: Option<Scope>,
+    pub scope: Option<Scope>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct ClientCredentialsGrant {
     #[serde(default)]
-    scope: Option<Scope>,
+    pub scope: Option<Scope>,
 }
 
 #[derive(
@@ -197,7 +200,7 @@ pub enum GrantType {
     ClientCredentials,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(tag = "grant_type", rename_all = "snake_case")]
 pub enum AccessTokenRequest {
     AuthorizationCode(AuthorizationCodeGrant),
@@ -209,19 +212,19 @@ pub enum AccessTokenRequest {
 
 #[serde_as]
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct AccessTokenResponse {
-    access_token: String,
-    refresh_token: Option<String>,
+    pub access_token: String,
+    pub refresh_token: Option<String>,
     // TODO: this should be somewhere else
-    id_token: Option<String>,
+    pub id_token: Option<String>,
 
-    token_type: OAuthAccessTokenType,
+    pub token_type: OAuthAccessTokenType,
 
     #[serde_as(as = "Option<DurationSeconds<i64>>")]
-    expires_in: Option<Duration>,
+    pub expires_in: Option<Duration>,
 
-    scope: Option<Scope>,
+    pub scope: Option<Scope>,
 }
 
 impl AccessTokenResponse {
@@ -263,7 +266,7 @@ impl AccessTokenResponse {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct IntrospectionRequest {
     pub token: String,
 
@@ -273,7 +276,7 @@ pub struct IntrospectionRequest {
 
 #[serde_as]
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Default)]
 pub struct IntrospectionResponse {
     pub active: bool,
 
