@@ -20,6 +20,8 @@ use mas_keystore::PrivateKey;
 
 static PASSWORD: &str = "hunter2";
 
+/// Generate a test which loads a key, and then tries signing and verifying a
+/// JWT for each available algorithm
 macro_rules! plain_test {
     ($name:ident, $kind:ident, $path:literal) => {
         #[test]
@@ -43,6 +45,8 @@ macro_rules! plain_test {
     };
 }
 
+/// Generate a test which loads an encrypted key, and then tries signing and
+/// verifying a JWT for each available algorithm
 macro_rules! enc_test {
     ($name:ident, $kind:ident, $path:literal) => {
         #[test]
@@ -66,6 +70,7 @@ macro_rules! enc_test {
     };
 }
 
+/// Generate a PEM decoding and encoding test
 macro_rules! pem_test {
     ($name:ident, $path:literal) => {
         pem_test!($name, $path, compare = true);
@@ -84,6 +89,7 @@ macro_rules! pem_test {
     };
 }
 
+/// Generate a DER decoding and encoding test
 macro_rules! der_test {
     ($name:ident, $path:literal) => {
         der_test!($name, $path, compare = true);
@@ -138,3 +144,25 @@ pem_test!(serialize_ec_p384_sec1_pem, "ec-p384.sec1");
 der_test!(serialize_ec_p384_sec1_der, "ec-p384.sec1", compare = false);
 pem_test!(serialize_ec_k256_sec1_pem, "ec-k256.sec1");
 der_test!(serialize_ec_k256_sec1_der, "ec-k256.sec1", compare = false);
+
+#[test]
+fn load_encrypted_as_unencrypted_error() {
+    let pem = include_str!("./keys/rsa.pkcs8.encrypted.pem");
+    assert!(PrivateKey::load_pem(pem).unwrap_err().is_encrypted());
+
+    let der = include_bytes!("./keys/rsa.pkcs8.encrypted.der");
+    assert!(PrivateKey::load_der(der).unwrap_err().is_encrypted());
+}
+
+#[test]
+fn load_unencrypted_as_encrypted_error() {
+    let pem = include_str!("./keys/rsa.pkcs8.pem");
+    assert!(PrivateKey::load_encrypted_pem(pem, PASSWORD)
+        .unwrap_err()
+        .is_unencrypted());
+
+    let der = include_bytes!("./keys/rsa.pkcs8.der");
+    assert!(PrivateKey::load_encrypted_der(der, PASSWORD)
+        .unwrap_err()
+        .is_unencrypted());
+}
