@@ -3811,7 +3811,8 @@ dependencies = [
 [[package]]
 name = "rsa"
 version = "0.7.0-pre"
-source = "git+https://github.com/RustCrypto/RSA.git#40242fbbb019cac4af216145bfa468a0d24d12ef"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6168b9a0f38e487db90dc109ad6d8f37fc5590183b7bfe8d8687e0b86116d53f"
 dependencies = [
  "byteorder",
  "digest 0.10.3",
@@ -3822,7 +3823,6 @@ dependencies = [
  "pkcs1",
  "pkcs8",
  "rand_core",
- "signature",
  "smallvec",
  "subtle",
  "zeroize",

@@ -298,7 +298,11 @@ mod rsa_impls {
                 .map(|i| BigUint::from_bytes_be(i))
                 .collect();
 
-            RsaPrivateKey::from_components(n, e, d, primes)
+            let key = RsaPrivateKey::from_components(n, e, d, primes);
+
+            key.validate()?;
+
+            Ok(key)
         }
     }
 }
