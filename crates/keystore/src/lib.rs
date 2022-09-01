@@ -144,7 +144,7 @@ impl PrivateKey {
         let first_prime = BigUint::from_bytes_be(pkcs1_key.prime1.as_bytes());
         let second_prime = BigUint::from_bytes_be(pkcs1_key.prime2.as_bytes());
         let primes = vec![first_prime, second_prime];
-        let key = rsa::RsaPrivateKey::from_components(n, e, d, primes)?;
+        let key = rsa::RsaPrivateKey::from_components(n, e, d, primes);
         Ok(Self::Rsa(Box::new(key)))
     }
 

@@ -34,6 +34,10 @@ impl signature::Signature for Signature {
 }
 
 impl Signature {
+    pub fn new(bytes: Vec<u8>) -> Self {
+        Self { bytes }
+    }
+
     pub fn from_signature<S>(signature: &S) -> Self
     where
         S: signature::Signature,

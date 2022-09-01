@@ -15,6 +15,8 @@
 // This is a temporary wrapper until the RSA crate actually hashes the input
 // See <https://github.com/RustCrypto/RSA/pull/174#issuecomment-1227330296>
 
+use super::signature::Signature;
+
 pub trait RsaHashIdentifier {
     const HASH: rsa::Hash;
 }
@@ -39,67 +41,62 @@ pub(crate) mod pkcs1v15 {
     use std::marker::PhantomData;
 
     use digest::Digest;
-    use rsa::{RsaPrivateKey, RsaPublicKey};
+    use rsa::{PaddingScheme, PublicKey, RsaPrivateKey, RsaPublicKey};
 
-    use super::RsaHashIdentifier;
+    use super::{RsaHashIdentifier, Signature};
 
     pub struct VerifyingKey<H> {
-        inner: rsa::pkcs1v15::VerifyingKey,
+        inner: RsaPublicKey,
         hash: PhantomData<H>,
     }
 
-    impl<H> From<RsaPublicKey> for VerifyingKey<H>
-    where
-        H: RsaHashIdentifier,
-    {
-        fn from(key: RsaPublicKey) -> Self {
-            let inner = rsa::pkcs1v15::VerifyingKey::new_with_hash(key, H::HASH);
+    impl<H> From<RsaPublicKey> for VerifyingKey<H> {
+        fn from(inner: RsaPublicKey) -> Self {
             Self {
                 inner,
-                hash: PhantomData::default(),
+                hash: PhantomData,
             }
         }
     }
 
-    impl<H> signature::Verifier<rsa::pkcs1v15::Signature> for VerifyingKey<H>
+    impl<H> signature::Verifier<Signature> for VerifyingKey<H>
     where
-        H: Digest,
+        H: Digest + RsaHashIdentifier,
     {
-        fn verify(
-            &self,
-            msg: &[u8],
-            signature: &rsa::pkcs1v15::Signature,
-        ) -> Result<(), signature::Error> {
+        fn verify(&self, msg: &[u8], signature: &Signature) -> Result<(), signature::Error> {
             let digest = H::digest(msg);
-            self.inner.verify(&digest, signature)
+            let padding = PaddingScheme::new_pkcs1v15_sign(Some(H::HASH));
+            self.inner
+                .verify(padding, &digest, signature.as_ref())
+                .map_err(signature::Error::from_source)
         }
     }
 
     pub struct SigningKey<H> {
-        inner: rsa::pkcs1v15::SigningKey,
+        inner: RsaPrivateKey,
         hash: PhantomData<H>,
     }
 
-    impl<H> From<RsaPrivateKey> for SigningKey<H>
-    where
-        H: RsaHashIdentifier,
-    {
-        fn from(key: RsaPrivateKey) -> Self {
-            let inner = rsa::pkcs1v15::SigningKey::new_with_hash(key, H::HASH);
+    impl<H> From<RsaPrivateKey> for SigningKey<H> {
+        fn from(inner: RsaPrivateKey) -> Self {
             Self {
                 inner,
-                hash: PhantomData::default(),
+                hash: PhantomData,
             }
         }
     }
 
-    impl<H> signature::Signer<rsa::pkcs1v15::Signature> for SigningKey<H>
+    impl<H> signature::Signer<Signature> for SigningKey<H>
     where
-        H: Digest,
+        H: Digest + RsaHashIdentifier,
     {
-        fn try_sign(&self, msg: &[u8]) -> Result<rsa::pkcs1v15::Signature, signature::Error> {
+        fn try_sign(&self, msg: &[u8]) -> Result<Signature, signature::Error> {
             let digest = H::digest(msg);
-            self.inner.try_sign(&digest)
+            let padding = PaddingScheme::new_pkcs1v15_sign(Some(H::HASH));
+            self.inner
+                .sign(padding, &digest)
+                .map_err(signature::Error::from_source)
+                .map(Signature::new)
         }
     }
 }
@@ -109,66 +106,62 @@ pub(crate) mod pss {
 
     use digest::{Digest, DynDigest};
     use rand::thread_rng;
-    use rsa::{RsaPrivateKey, RsaPublicKey};
-    use signature::RandomizedSigner;
+    use rsa::{PaddingScheme, PublicKey, RsaPrivateKey, RsaPublicKey};
+
+    use super::Signature;
 
     pub struct VerifyingKey<H> {
-        inner: rsa::pss::VerifyingKey,
+        inner: RsaPublicKey,
         hash: PhantomData<H>,
     }
 
-    impl<H> From<RsaPublicKey> for VerifyingKey<H>
-    where
-        H: DynDigest + Default + 'static,
-    {
-        fn from(key: RsaPublicKey) -> Self {
-            let inner = rsa::pss::VerifyingKey::new(key, Box::new(H::default()));
+    impl<H> From<RsaPublicKey> for VerifyingKey<H> {
+        fn from(inner: RsaPublicKey) -> Self {
             Self {
                 inner,
-                hash: PhantomData::default(),
+                hash: PhantomData,
             }
         }
     }
 
-    impl<H> signature::Verifier<rsa::pss::Signature> for VerifyingKey<H>
+    impl<H> signature::Verifier<Signature> for VerifyingKey<H>
     where
-        H: Digest,
+        H: Digest + DynDigest + 'static,
     {
-        fn verify(
-            &self,
-            msg: &[u8],
-            signature: &rsa::pss::Signature,
-        ) -> Result<(), signature::Error> {
+        fn verify(&self, msg: &[u8], signature: &Signature) -> Result<(), signature::Error> {
             let digest = H::digest(msg);
-            self.inner.verify(&digest, signature)
+            let padding = PaddingScheme::new_pss::<H, _>(thread_rng());
+            self.inner
+                .verify(padding, &digest, signature.as_ref())
+                .map_err(signature::Error::from_source)
         }
     }
 
     pub struct SigningKey<H> {
-        inner: rsa::pss::SigningKey,
+        inner: RsaPrivateKey,
         hash: PhantomData<H>,
     }
 
-    impl<H> From<RsaPrivateKey> for SigningKey<H>
-    where
-        H: DynDigest + Default + 'static,
-    {
-        fn from(key: RsaPrivateKey) -> Self {
-            let inner = rsa::pss::SigningKey::new(key, Box::new(H::default()));
+    impl<H> From<RsaPrivateKey> for SigningKey<H> {
+        fn from(inner: RsaPrivateKey) -> Self {
             Self {
                 inner,
-                hash: PhantomData::default(),
+                hash: PhantomData,
             }
         }
     }
 
-    impl<H> signature::Signer<rsa::pss::Signature> for SigningKey<H>
+    impl<H> signature::Signer<Signature> for SigningKey<H>
     where
-        H: Digest,
+        H: Digest + DynDigest + 'static,
     {
-        fn try_sign(&self, msg: &[u8]) -> Result<rsa::pss::Signature, signature::Error> {
+        fn try_sign(&self, msg: &[u8]) -> Result<Signature, signature::Error> {
             let digest = H::digest(msg);
-            self.inner.try_sign_with_rng(thread_rng(), &digest)
+            let padding = PaddingScheme::new_pss::<H, _>(thread_rng());
+            self.inner
+                .sign(padding, &digest)
+                .map_err(signature::Error::from_source)
+                .map(Signature::new)
         }
     }
 }

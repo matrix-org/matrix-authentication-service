@@ -20,22 +20,22 @@ use mas_keystore::PrivateKey;
 
 static PASSWORD: &str = "hunter2";
 
-macro_rules! load_test {
+macro_rules! plain_test {
     ($name:ident, $kind:ident, $path:literal) => {
         #[test]
         fn $name() {
-            let bytes = include_bytes!($path);
+            let bytes = include_bytes!(concat!("./keys/", $path));
             let key = PrivateKey::load(bytes).unwrap();
             assert!(matches!(key, PrivateKey::$kind(_)), "wrong key type");
         }
     };
 }
 
-macro_rules! load_encrypted_test {
+macro_rules! enc_test {
     ($name:ident, $kind:ident, $path:literal) => {
         #[test]
         fn $name() {
-            let bytes = include_bytes!($path);
+            let bytes = include_bytes!(concat!("./keys/", $path));
             let key = PrivateKey::load_encrypted(bytes, PASSWORD).unwrap();
             assert!(matches!(key, PrivateKey::$kind(_)), "wrong key type");
 
@@ -54,60 +54,28 @@ macro_rules! load_encrypted_test {
     };
 }
 
-load_test!(load_rsa_pkcs1_pem, Rsa, "./keys/rsa.pkcs1.pem");
-load_test!(load_rsa_pkcs1_der, Rsa, "./keys/rsa.pkcs1.der");
-load_test!(load_rsa_pkcs8_pem, Rsa, "./keys/rsa.pkcs8.pem");
-load_test!(load_rsa_pkcs8_der, Rsa, "./keys/rsa.pkcs8.der");
-load_test!(load_ec_p256_sec1_pem, EcP256, "./keys/ec-p256.sec1.pem");
-load_test!(load_ec_p256_sec1_der, EcP256, "./keys/ec-p256.sec1.der");
-load_test!(load_ec_p256_pkcs8_pem, EcP256, "./keys/ec-p256.pkcs8.pem");
-load_test!(load_ec_p256_pkcs8_der, EcP256, "./keys/ec-p256.pkcs8.der");
-load_test!(load_ec_p384_sec1_pem, EcP384, "./keys/ec-p384.sec1.pem");
-load_test!(load_ec_p384_sec1_der, EcP384, "./keys/ec-p384.sec1.der");
-load_test!(load_ec_p384_pkcs8_pem, EcP384, "./keys/ec-p384.pkcs8.pem");
-load_test!(load_ec_p384_pkcs8_der, EcP384, "./keys/ec-p384.pkcs8.der");
-load_test!(load_ec_k256_sec1_pem, EcK256, "./keys/ec-k256.sec1.pem");
-load_test!(load_ec_k256_sec1_der, EcK256, "./keys/ec-k256.sec1.der");
-load_test!(load_ec_k256_pkcs8_pem, EcK256, "./keys/ec-k256.pkcs8.pem");
-load_test!(load_ec_k256_pkcs8_der, EcK256, "./keys/ec-k256.pkcs8.der");
+plain_test!(plain_rsa_pkcs1_pem, Rsa, "rsa.pkcs1.pem");
+plain_test!(plain_rsa_pkcs1_der, Rsa, "rsa.pkcs1.der");
+plain_test!(plain_rsa_pkcs8_pem, Rsa, "rsa.pkcs8.pem");
+plain_test!(plain_rsa_pkcs8_der, Rsa, "rsa.pkcs8.der");
+plain_test!(plain_ec_p256_sec1_pem, EcP256, "ec-p256.sec1.pem");
+plain_test!(plain_ec_p256_sec1_der, EcP256, "ec-p256.sec1.der");
+plain_test!(plain_ec_p256_pkcs8_pem, EcP256, "ec-p256.pkcs8.pem");
+plain_test!(plain_ec_p256_pkcs8_der, EcP256, "ec-p256.pkcs8.der");
+plain_test!(plain_ec_p384_sec1_pem, EcP384, "ec-p384.sec1.pem");
+plain_test!(plain_ec_p384_sec1_der, EcP384, "ec-p384.sec1.der");
+plain_test!(plain_ec_p384_pkcs8_pem, EcP384, "ec-p384.pkcs8.pem");
+plain_test!(plain_ec_p384_pkcs8_der, EcP384, "ec-p384.pkcs8.der");
+plain_test!(plain_ec_k256_sec1_pem, EcK256, "ec-k256.sec1.pem");
+plain_test!(plain_ec_k256_sec1_der, EcK256, "ec-k256.sec1.der");
+plain_test!(plain_ec_k256_pkcs8_pem, EcK256, "ec-k256.pkcs8.pem");
+plain_test!(plain_ec_k256_pkcs8_der, EcK256, "ec-k256.pkcs8.der");
 
-load_encrypted_test!(
-    load_encrypted_rsa_pkcs8_pem,
-    Rsa,
-    "./keys/rsa.pkcs8.encrypted.pem"
-);
-load_encrypted_test!(
-    load_encrypted_rsa_pkcs8_der,
-    Rsa,
-    "./keys/rsa.pkcs8.encrypted.der"
-);
-load_encrypted_test!(
-    load_encrypted_ec_p256_pkcs8_pem,
-    EcP256,
-    "./keys/ec-p256.pkcs8.encrypted.pem"
-);
-load_encrypted_test!(
-    load_encrypted_ec_p256_pkcs8_der,
-    EcP256,
-    "./keys/ec-p256.pkcs8.encrypted.der"
-);
-load_encrypted_test!(
-    load_encrypted_ec_p384_pkcs8_pem,
-    EcP384,
-    "./keys/ec-p384.pkcs8.encrypted.pem"
-);
-load_encrypted_test!(
-    load_encrypted_ec_p384_pkcs8_der,
-    EcP384,
-    "./keys/ec-p384.pkcs8.encrypted.der"
-);
-load_encrypted_test!(
-    load_encrypted_ec_k256_pkcs8_pem,
-    EcK256,
-    "./keys/ec-k256.pkcs8.encrypted.pem"
-);
-load_encrypted_test!(
-    load_encrypted_ec_k256_pkcs8_der,
-    EcK256,
-    "./keys/ec-k256.pkcs8.encrypted.der"
-);
+enc_test!(enc_rsa_pkcs8_pem, Rsa, "rsa.pkcs8.encrypted.pem");
+enc_test!(enc_rsa_pkcs8_der, Rsa, "rsa.pkcs8.encrypted.der");
+enc_test!(enc_ec_p256_pkcs8_pem, EcP256, "ec-p256.pkcs8.encrypted.pem");
+enc_test!(enc_ec_p256_pkcs8_der, EcP256, "ec-p256.pkcs8.encrypted.der");
+enc_test!(enc_ec_p384_pkcs8_pem, EcP384, "ec-p384.pkcs8.encrypted.pem");
+enc_test!(enc_ec_p384_pkcs8_der, EcP384, "ec-p384.pkcs8.encrypted.der");
+enc_test!(enc_ec_k256_pkcs8_pem, EcK256, "ec-k256.pkcs8.encrypted.pem");
+enc_test!(enc_ec_k256_pkcs8_der, EcK256, "ec-k256.pkcs8.encrypted.der");

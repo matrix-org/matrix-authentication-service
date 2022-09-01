@@ -20,7 +20,7 @@ pem-rfc7468 = { version = "0.6.0", features = ["std"] }
 pkcs1 = { version = "0.4.0", features = ["std"] }
 pkcs8 = { version = "0.9.0", features = ["std", "pkcs5", "encryption"] }
 rand = "0.8.5"
-rsa = { git = "https://github.com/RustCrypto/RSA.git", features = ["std", "pem"] }
+rsa = { version = "0.7.0-pre", features = ["std", "pem"] }
 sec1 = { version = "0.3.0", features = ["std"] }
 spki = { version = "0.6.0", features = ["std"] }
 thiserror = "1.0.32"
