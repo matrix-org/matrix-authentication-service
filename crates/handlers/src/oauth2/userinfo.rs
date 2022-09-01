@@ -16,17 +16,15 @@ use anyhow::Context;
 use axum::{
     extract::Extension,
     response::{IntoResponse, Response},
-    Json, TypedHeader,
+    Json,
 };
-use headers::ContentType;
-use mas_axum_utils::{user_authorization::UserAuthorization, FancyError};
+use mas_axum_utils::{jwt::JwtResponse, user_authorization::UserAuthorization, FancyError};
 use mas_jose::{
     constraints::Constrainable,
     jwt::{JsonWebSignatureHeader, Jwt},
 };
 use mas_keystore::Keystore;
 use mas_router::UrlBuilder;
-use mime::Mime;
 use oauth2_types::scope;
 use serde::Serialize;
 use serde_with::skip_serializing_none;
@@ -91,9 +89,7 @@ pub async fn get(
         };
 
         let token = Jwt::sign(header, user_info, &signer)?;
-        let application_jwt: Mime = "application/jwt".parse().unwrap();
-        let content_type = ContentType::from(application_jwt);
-        Ok((TypedHeader(content_type), token.as_str().to_owned()).into_response())
+        Ok(JwtResponse(token).into_response())
     } else {
         Ok(Json(user_info).into_response())
     }

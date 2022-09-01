@@ -256,6 +256,10 @@ impl<'a, T> Jwt<'a, T> {
     pub fn as_str(&'a self) -> &'a str {
         &self.raw
     }
+
+    pub fn into_string(self) -> String {
+        self.raw.into()
+    }
 }
 
 #[derive(Debug, Error)]
