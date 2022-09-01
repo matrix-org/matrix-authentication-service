@@ -14,8 +14,16 @@
 
 use sha2::{Sha256, Sha384, Sha512};
 
+mod asymmetric;
 pub(crate) mod hmac;
 pub(crate) mod rsa;
+pub(self) mod signature;
+mod symmetric;
+
+pub use self::{
+    asymmetric::{AsymmetricKeyFromJwkError, AsymmetricSigningKey, AsymmetricVerifyingKey},
+    symmetric::{InvalidAlgorithm, SymmetricKey},
+};
 
 pub type Hs256Key = self::hmac::Hmac<Sha256>;
 pub type Hs384Key = self::hmac::Hmac<Sha384>;

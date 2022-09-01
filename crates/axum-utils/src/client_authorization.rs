@@ -136,7 +136,7 @@ impl Credentials {
                     .await
                     .map_err(|_| CredentialsVerificationError::JwksFetchFailed)?;
 
-                jwt.verify_from_jwks(&jwks)
+                jwt.verify_with_jwks(&jwks)
                     .map_err(|_| CredentialsVerificationError::InvalidAssertionSignature)?;
             }
 
@@ -154,7 +154,7 @@ impl Credentials {
                     .decrypt_string(encrypted_client_secret)
                     .map_err(|_e| CredentialsVerificationError::DecryptionError)?;
 
-                jwt.verify_from_shared_secret(decrypted_client_secret)
+                jwt.verify_with_shared_secret(decrypted_client_secret)
                     .map_err(|_| CredentialsVerificationError::InvalidAssertionSignature)?;
             }
 
@@ -570,7 +570,7 @@ mod tests {
             };
 
         assert_eq!(client_id, "client-id");
-        jwt.verify_from_shared_secret(b"client-secret".to_vec())
+        jwt.verify_with_shared_secret(b"client-secret".to_vec())
             .unwrap();
     }
 }

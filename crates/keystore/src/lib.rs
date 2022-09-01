@@ -30,9 +30,8 @@ use mas_iana::jose::{JsonWebKeyType, JsonWebSignatureAlg};
 pub use mas_jose::jwk::{JsonWebKey, JsonWebKeySet};
 use mas_jose::{
     constraints::{Constraint, ConstraintSet},
+    jwa::{AsymmetricSigningKey, AsymmetricVerifyingKey},
     jwk::{JsonWebKeyPublicParameters, ParametersInfo, PublicJsonWebKeySet},
-    signer::Signer,
-    verifier::Verifier,
 };
 use pem_rfc7468::PemLabel;
 use pkcs1::EncodeRsaPrivateKey;
@@ -390,7 +389,7 @@ impl PrivateKey {
         }
     }
 
-    /// Get a [`Verifier`] out of this key, for the specified
+    /// Get an [`AsymmetricVerifyingKey`] out of this key, for the specified
     /// [`JsonWebSignatureAlg`]
     ///
     /// # Errors
@@ -399,98 +398,79 @@ impl PrivateKey {
     pub fn verifier_for_alg(
         &self,
         alg: JsonWebSignatureAlg,
-    ) -> Result<Verifier, WrongAlgorithmError> {
-        let signer = match (self, alg) {
-            (Self::Rsa(key), JsonWebSignatureAlg::Rs256) => {
-                mas_jose::jwa::Rs256VerifyingKey::from(key.to_public_key()).into()
-            }
-
-            (Self::Rsa(key), JsonWebSignatureAlg::Rs384) => {
-                mas_jose::jwa::Rs384VerifyingKey::from(key.to_public_key()).into()
-            }
-
-            (Self::Rsa(key), JsonWebSignatureAlg::Rs512) => {
-                mas_jose::jwa::Rs512VerifyingKey::from(key.to_public_key()).into()
-            }
-
-            (Self::Rsa(key), JsonWebSignatureAlg::Ps256) => {
-                mas_jose::jwa::Ps256VerifyingKey::from(key.to_public_key()).into()
-            }
-
-            (Self::Rsa(key), JsonWebSignatureAlg::Ps384) => {
-                mas_jose::jwa::Ps384VerifyingKey::from(key.to_public_key()).into()
-            }
-
-            (Self::Rsa(key), JsonWebSignatureAlg::Ps512) => {
-                mas_jose::jwa::Ps512VerifyingKey::from(key.to_public_key()).into()
+    ) -> Result<AsymmetricVerifyingKey, WrongAlgorithmError> {
+        let key = match (self, alg) {
+            (Self::Rsa(key), _) => {
+                let key: rsa::RsaPublicKey = key.to_public_key();
+                match alg {
+                    JsonWebSignatureAlg::Rs256 => AsymmetricVerifyingKey::Rs256(key.into()),
+                    JsonWebSignatureAlg::Rs384 => AsymmetricVerifyingKey::Rs384(key.into()),
+                    JsonWebSignatureAlg::Rs512 => AsymmetricVerifyingKey::Rs512(key.into()),
+                    JsonWebSignatureAlg::Ps256 => AsymmetricVerifyingKey::Ps256(key.into()),
+                    JsonWebSignatureAlg::Ps384 => AsymmetricVerifyingKey::Ps384(key.into()),
+                    JsonWebSignatureAlg::Ps512 => AsymmetricVerifyingKey::Ps512(key.into()),
+                    _ => return Err(WrongAlgorithmError),
+                }
             }
 
             (Self::EcP256(key), JsonWebSignatureAlg::Es256) => {
-                mas_jose::jwa::Es256VerifyingKey::from(key.public_key()).into()
+                AsymmetricVerifyingKey::Es256(key.public_key().into())
             }
 
             (Self::EcP384(key), JsonWebSignatureAlg::Es384) => {
-                mas_jose::jwa::Es384VerifyingKey::from(key.public_key()).into()
+                AsymmetricVerifyingKey::Es384(key.public_key().into())
             }
 
             (Self::EcK256(key), JsonWebSignatureAlg::Es256K) => {
-                mas_jose::jwa::Es256KVerifyingKey::from(key.public_key()).into()
+                AsymmetricVerifyingKey::Es256K(key.public_key().into())
             }
 
             _ => return Err(WrongAlgorithmError),
         };
 
-        Ok(signer)
+        Ok(key)
     }
 
-    /// Get a [`Signer`] out of this key, for the specified
+    /// Get a [`AsymmetricSigningKey`] out of this key, for the specified
     /// [`JsonWebSignatureAlg`]
     ///
     /// # Errors
     ///
     /// Returns an error if the key is not suited for the selected algorithm
-    pub fn signer_for_alg(&self, alg: JsonWebSignatureAlg) -> Result<Signer, WrongAlgorithmError> {
-        let signer = match (self, alg) {
-            (Self::Rsa(key), JsonWebSignatureAlg::Rs256) => {
-                mas_jose::jwa::Rs256SigningKey::from(*key.clone()).into()
-            }
-
-            (Self::Rsa(key), JsonWebSignatureAlg::Rs384) => {
-                mas_jose::jwa::Rs384SigningKey::from(*key.clone()).into()
-            }
-
-            (Self::Rsa(key), JsonWebSignatureAlg::Rs512) => {
-                mas_jose::jwa::Rs512SigningKey::from(*key.clone()).into()
-            }
-
-            (Self::Rsa(key), JsonWebSignatureAlg::Ps256) => {
-                mas_jose::jwa::Ps256SigningKey::from(*key.clone()).into()
-            }
-
-            (Self::Rsa(key), JsonWebSignatureAlg::Ps384) => {
-                mas_jose::jwa::Ps384SigningKey::from(*key.clone()).into()
-            }
-
-            (Self::Rsa(key), JsonWebSignatureAlg::Ps512) => {
-                mas_jose::jwa::Ps512SigningKey::from(*key.clone()).into()
+    pub fn signer_for_alg(
+        &self,
+        alg: JsonWebSignatureAlg,
+    ) -> Result<AsymmetricSigningKey, WrongAlgorithmError> {
+        let key = match (self, alg) {
+            (Self::Rsa(key), _) => {
+                let key: rsa::RsaPrivateKey = *key.clone();
+                match alg {
+                    JsonWebSignatureAlg::Rs256 => AsymmetricSigningKey::Rs256(key.into()),
+                    JsonWebSignatureAlg::Rs384 => AsymmetricSigningKey::Rs384(key.into()),
+                    JsonWebSignatureAlg::Rs512 => AsymmetricSigningKey::Rs512(key.into()),
+                    JsonWebSignatureAlg::Ps256 => AsymmetricSigningKey::Ps256(key.into()),
+                    JsonWebSignatureAlg::Ps384 => AsymmetricSigningKey::Ps384(key.into()),
+                    JsonWebSignatureAlg::Ps512 => AsymmetricSigningKey::Ps512(key.into()),
+                    _ => return Err(WrongAlgorithmError),
+                }
             }
 
             (Self::EcP256(key), JsonWebSignatureAlg::Es256) => {
-                mas_jose::jwa::Es256SigningKey::from(key.as_ref()).into()
+                AsymmetricSigningKey::Es256(key.as_ref().into())
             }
 
             (Self::EcP384(key), JsonWebSignatureAlg::Es384) => {
-                mas_jose::jwa::Es384SigningKey::from(key.as_ref()).into()
+                AsymmetricSigningKey::Es384(key.as_ref().into())
             }
 
             (Self::EcK256(key), JsonWebSignatureAlg::Es256K) => {
-                mas_jose::jwa::Es256KSigningKey::from(key.as_ref()).into()
+                AsymmetricSigningKey::Es256K(key.as_ref().into())
             }
 
             _ => return Err(WrongAlgorithmError),
         };
 
-        Ok(signer)
+        Ok(key)
     }
 
     /// Generate a RSA key with 2048 bit size

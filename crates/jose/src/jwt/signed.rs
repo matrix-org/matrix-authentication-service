@@ -222,8 +222,8 @@ impl<'a, T> Jwt<'a, T> {
             .map_err(JwtVerificationError::verify)
     }
 
-    pub fn verify_from_shared_secret(&self, secret: Vec<u8>) -> Result<(), NoKeyWorked> {
-        let verifier = crate::verifier::Verifier::for_oct_and_alg(secret, self.header().alg())
+    pub fn verify_with_shared_secret(&self, secret: Vec<u8>) -> Result<(), NoKeyWorked> {
+        let verifier = crate::jwa::SymmetricKey::new_for_alg(secret, self.header().alg())
             .map_err(|_| NoKeyWorked::default())?;
 
         self.verify(&verifier).map_err(|_| NoKeyWorked::default())?;
@@ -231,12 +231,12 @@ impl<'a, T> Jwt<'a, T> {
         Ok(())
     }
 
-    pub fn verify_from_jwks(&self, jwks: &PublicJsonWebKeySet) -> Result<(), NoKeyWorked> {
+    pub fn verify_with_jwks(&self, jwks: &PublicJsonWebKeySet) -> Result<(), NoKeyWorked> {
         let constraints = ConstraintSet::from(self.header());
         let candidates = constraints.filter(&**jwks);
 
         for candidate in candidates {
-            let verifier = match crate::verifier::Verifier::for_jwk_and_alg(
+            let key = match crate::jwa::AsymmetricVerifyingKey::from_jwk_and_alg(
                 candidate.params(),
                 self.header().alg(),
             ) {
@@ -244,7 +244,7 @@ impl<'a, T> Jwt<'a, T> {
                 Err(_) => continue,
             };
 
-            match self.verify(&verifier) {
+            match self.verify(&key) {
                 Ok(_) => return Ok(()),
                 Err(_) => continue,
             }
