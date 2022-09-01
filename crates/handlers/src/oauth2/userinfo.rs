@@ -82,7 +82,7 @@ pub async fn get(
 
         let header = JsonWebSignatureHeader::new(alg)
             .with_kid(key.kid().context("key has no `kid` for some reason")?);
-        let signer = key.params().signer_for_alg(alg)?;
+        let signer = key.params().signing_key_for_alg(alg)?;
 
         let user_info = SignedUserInfo {
             iss: url_builder.oidc_issuer().to_string(),

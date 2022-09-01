@@ -23,13 +23,12 @@
 )]
 #![warn(clippy::pedantic)]
 
-use std::sync::Arc;
+use std::{ops::Deref, sync::Arc};
 
 use der::{zeroize::Zeroizing, Decode};
 use mas_iana::jose::{JsonWebKeyType, JsonWebSignatureAlg};
 pub use mas_jose::jwk::{JsonWebKey, JsonWebKeySet};
 use mas_jose::{
-    constraints::{Constraint, ConstraintSet},
     jwa::{AsymmetricSigningKey, AsymmetricVerifyingKey},
     jwk::{JsonWebKeyPublicParameters, ParametersInfo, PublicJsonWebKeySet},
 };
@@ -395,7 +394,7 @@ impl PrivateKey {
     /// # Errors
     ///
     /// Returns an error if the key is not suited for the selected algorithm
-    pub fn verifier_for_alg(
+    pub fn verifying_key_for_alg(
         &self,
         alg: JsonWebSignatureAlg,
     ) -> Result<AsymmetricVerifyingKey, WrongAlgorithmError> {
@@ -437,7 +436,7 @@ impl PrivateKey {
     /// # Errors
     ///
     /// Returns an error if the key is not suited for the selected algorithm
-    pub fn signer_for_alg(
+    pub fn signing_key_for_alg(
         &self,
         alg: JsonWebSignatureAlg,
     ) -> Result<AsymmetricSigningKey, WrongAlgorithmError> {
@@ -593,44 +592,12 @@ impl Keystore {
             })
             .collect()
     }
+}
 
-    /// Find the best key given the constraints
-    #[must_use]
-    pub fn find_key(&self, constraints: &ConstraintSet) -> Option<&JsonWebKey<PrivateKey>> {
-        constraints.filter(self.keys.iter()).pop()
-    }
+impl Deref for Keystore {
+    type Target = JsonWebKeySet<PrivateKey>;
 
-    /// Find the list of keys which match the givent constraints
-    #[must_use]
-    pub fn find_keys(&self, constraints: &ConstraintSet) -> Vec<&JsonWebKey<PrivateKey>> {
-        constraints.filter(self.keys.iter())
-    }
-
-    /// Find a key for the given algorithm. Returns `None` if no suitable key
-    /// was found.
-    #[must_use]
-    pub fn signing_key_for_algorithm(
-        &self,
-        alg: JsonWebSignatureAlg,
-    ) -> Option<&JsonWebKey<PrivateKey>> {
-        let constraints = ConstraintSet::new([
-            Constraint::alg(alg),
-            Constraint::use_(mas_iana::jose::JsonWebKeyUse::Sig),
-        ]);
-        self.find_key(&constraints)
-    }
-
-    /// Get a list of available signing algorithms for this [`Keystore`]
-    #[must_use]
-    pub fn available_signing_algorithms(&self) -> Vec<JsonWebSignatureAlg> {
-        let mut algs: Vec<_> = self
-            .keys
-            .iter()
-            .flat_map(|key| key.params().possible_algs())
-            .copied()
-            .collect();
-        algs.sort();
-        algs.dedup();
-        algs
+    fn deref(&self) -> &Self::Target {
+        &self.keys
     }
 }

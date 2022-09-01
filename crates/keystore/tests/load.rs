@@ -27,6 +27,18 @@ macro_rules! plain_test {
             let bytes = include_bytes!(concat!("./keys/", $path));
             let key = PrivateKey::load(bytes).unwrap();
             assert!(matches!(key, PrivateKey::$kind(_)), "wrong key type");
+
+            let algs = key.possible_algs();
+            assert_ne!(algs.len(), 0);
+
+            for &alg in algs {
+                let header = JsonWebSignatureHeader::new(alg);
+                let payload = "hello";
+                let signer = key.signing_key_for_alg(alg).unwrap();
+                let jwt = Jwt::sign(header, payload, &signer).unwrap();
+                let verifier = key.verifying_key_for_alg(alg).unwrap();
+                jwt.verify(&verifier).unwrap();
+            }
         }
     };
 }
@@ -45,9 +57,9 @@ macro_rules! enc_test {
             for &alg in algs {
                 let header = JsonWebSignatureHeader::new(alg);
                 let payload = "hello";
-                let signer = key.signer_for_alg(alg).unwrap();
+                let signer = key.signing_key_for_alg(alg).unwrap();
                 let jwt = Jwt::sign(header, payload, &signer).unwrap();
-                let verifier = key.verifier_for_alg(alg).unwrap();
+                let verifier = key.verifying_key_for_alg(alg).unwrap();
                 jwt.verify(&verifier).unwrap();
             }
         }

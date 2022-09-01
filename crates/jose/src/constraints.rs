@@ -76,9 +76,13 @@ pub enum ConstraintDecision {
 }
 
 pub trait Constrainable {
-    /// List of available algorithms for this key
-    fn algs(&self) -> Option<Vec<JsonWebSignatureAlg>> {
+    fn alg(&self) -> Option<JsonWebSignatureAlg> {
         None
+    }
+
+    /// List of available algorithms for this key
+    fn algs(&self) -> &[JsonWebSignatureAlg] {
+        &[]
     }
 
     /// Key ID (`kid`) of this key
@@ -99,25 +103,36 @@ impl<'a> Constraint<'a> {
     fn decide<T: Constrainable>(&self, constrainable: &T) -> ConstraintDecision {
         match self {
             Constraint::Alg { constraint_alg } => {
-                if let Some(algs) = constrainable.algs() {
-                    if algs.contains(constraint_alg) {
+                // If the constrainable has one specific alg defined, use that
+                if let Some(alg) = constrainable.alg() {
+                    if alg == *constraint_alg {
                         ConstraintDecision::Positive
                     } else {
                         ConstraintDecision::Negative
                     }
-                } else {
+                // If not, check that the requested alg is valid for this
+                // constrainable
+                } else if constrainable.algs().contains(constraint_alg) {
                     ConstraintDecision::Neutral
+                } else {
+                    ConstraintDecision::Negative
                 }
             }
             Constraint::Algs { constraint_algs } => {
-                if let Some(algs) = constrainable.algs() {
-                    if algs.iter().any(|alg| constraint_algs.contains(alg)) {
+                if let Some(alg) = constrainable.alg() {
+                    if constraint_algs.contains(&alg) {
                         ConstraintDecision::Positive
                     } else {
                         ConstraintDecision::Negative
                     }
-                } else {
+                } else if constrainable
+                    .algs()
+                    .iter()
+                    .any(|alg| constraint_algs.contains(alg))
+                {
                     ConstraintDecision::Neutral
+                } else {
+                    ConstraintDecision::Negative
                 }
             }
             Constraint::Kid { constraint_kid } => {

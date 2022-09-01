@@ -27,7 +27,7 @@ use serde_with::{
 };
 use url::Url;
 
-use crate::constraints::Constrainable;
+use crate::constraints::{Constrainable, Constraint, ConstraintSet};
 
 pub(crate) mod private_parameters;
 pub(crate) mod public_parameters;
@@ -39,9 +39,11 @@ pub use self::{
 
 pub trait ParametersInfo {
     fn kty(&self) -> JsonWebKeyType;
-    fn possible_algs(&self) -> &'static [JsonWebSignatureAlg];
+    fn possible_algs(&self) -> &[JsonWebSignatureAlg];
 }
 
+/// An utilitary trait to figure out the [`JsonWebKeyEcEllipticCurve`] value for
+/// elliptic curves
 trait JwkEcCurve {
     const CRV: JsonWebKeyEcEllipticCurve;
 }
@@ -239,12 +241,12 @@ where
         self.parameters.kty()
     }
 
-    fn algs(&self) -> Option<Vec<JsonWebSignatureAlg>> {
-        if let Some(alg) = self.alg {
-            Some(vec![alg])
-        } else {
-            Some(self.parameters.possible_algs().to_vec())
-        }
+    fn algs(&self) -> &[JsonWebSignatureAlg] {
+        self.parameters.possible_algs()
+    }
+
+    fn alg(&self) -> Option<JsonWebSignatureAlg> {
+        self.alg
     }
 
     fn use_(&self) -> Option<JsonWebKeyUse> {
@@ -292,6 +294,55 @@ impl<P> JsonWebKeySet<P> {
     #[must_use]
     pub fn new(keys: Vec<JsonWebKey<P>>) -> Self {
         Self { keys }
+    }
+
+    /// Find the best key given the constraints
+    #[must_use]
+    pub fn find_key(&self, constraints: &ConstraintSet) -> Option<&JsonWebKey<P>>
+    where
+        P: ParametersInfo,
+    {
+        constraints.filter(&self.keys).pop()
+    }
+
+    /// Find the list of keys which match the given constraints
+    #[must_use]
+    pub fn find_keys(&self, constraints: &ConstraintSet) -> Vec<&JsonWebKey<P>>
+    where
+        P: ParametersInfo,
+    {
+        constraints.filter(&self.keys)
+    }
+
+    /// Find a key for the given algorithm. Returns `None` if no suitable key
+    /// was found.
+    #[must_use]
+    pub fn signing_key_for_algorithm(&self, alg: JsonWebSignatureAlg) -> Option<&JsonWebKey<P>>
+    where
+        P: ParametersInfo,
+    {
+        let constraints = ConstraintSet::new([
+            Constraint::alg(alg),
+            Constraint::use_(mas_iana::jose::JsonWebKeyUse::Sig),
+        ]);
+        self.find_key(&constraints)
+    }
+
+    /// Get a list of available signing algorithms for this [`Keystore`]
+    #[must_use]
+    pub fn available_signing_algorithms(&self) -> Vec<JsonWebSignatureAlg>
+    where
+        P: ParametersInfo,
+    {
+        let mut algs: Vec<_> = self
+            .keys
+            .iter()
+            .flat_map(|key| key.params().possible_algs())
+            .copied()
+            .collect();
+        algs.sort();
+        algs.dedup();
+        algs
     }
 }
 

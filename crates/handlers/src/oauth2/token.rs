@@ -355,7 +355,7 @@ async fn authorization_code_grant(
 
         let header = JsonWebSignatureHeader::new(alg)
             .with_kid(key.kid().context("key has no `kid` for some reason")?);
-        let signer = key.params().signer_for_alg(alg)?;
+        let signer = key.params().signing_key_for_alg(alg)?;
         let id_token = Jwt::sign(header, claims, &signer)?;
 
         Some(id_token.as_str().to_owned())
