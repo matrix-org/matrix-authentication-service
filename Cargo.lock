@@ -917,7 +917,7 @@ dependencies = [
  "hkdf",
  "percent-encoding",
  "rand",
- "sha2 0.10.2",
+ "sha2 0.10.3",
  "subtle",
  "time 0.3.12",
  "version_check",
@@ -2219,7 +2219,7 @@ dependencies = [
  "cfg-if",
  "ecdsa",
  "elliptic-curve",
- "sha2 0.10.2",
+ "sha2 0.10.3",
 ]
 
 [[package]]
@@ -2501,7 +2501,7 @@ dependencies = [
  "serde_json",
  "serde_urlencoded",
  "serde_with",
- "sha2 0.10.2",
+ "sha2 0.10.3",
  "sqlx",
  "thiserror",
  "tokio",
@@ -2588,7 +2588,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
- "sha2 0.10.2",
+ "sha2 0.10.3",
  "signature",
  "thiserror",
  "tracing",
@@ -2931,7 +2931,7 @@ dependencies = [
  "serde-enum-str",
  "serde_json",
  "serde_with",
- "sha2 0.10.2",
+ "sha2 0.10.3",
  "thiserror",
  "url",
 ]
@@ -2982,7 +2982,7 @@ dependencies = [
  "serde_json",
  "serde_yaml 0.9.10",
  "sha1",
- "sha2 0.10.2",
+ "sha2 0.10.3",
  "sprintf",
  "thiserror",
  "tokio",
@@ -3126,7 +3126,7 @@ checksum = "51f44edd08f51e2ade572f141051021c5af22677e42b7dd28a88155151c33594"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
- "sha2 0.10.2",
+ "sha2 0.10.3",
 ]
 
 [[package]]
@@ -3137,7 +3137,7 @@ checksum = "dfc8c5bf642dde52bb9e87c0ecd8ca5a76faac2eeed98dedb7c717997e1080aa"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
- "sha2 0.10.2",
+ "sha2 0.10.3",
 ]
 
 [[package]]
@@ -3441,7 +3441,7 @@ dependencies = [
  "hmac",
  "pbkdf2",
  "scrypt",
- "sha2 0.10.2",
+ "sha2 0.10.3",
  "spki",
 ]
 
@@ -4024,7 +4024,7 @@ dependencies = [
  "hmac",
  "pbkdf2",
  "salsa20",
- "sha2 0.10.2",
+ "sha2 0.10.3",
 ]
 
 [[package]]
@@ -4277,9 +4277,9 @@ dependencies = [
 
 [[package]]
 name = "sha2"
-version = "0.10.2"
+version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "55deaec60f81eefe3cce0dc50bda92d6d8e88f2a27df7c5033b42afeb1ed2676"
+checksum = "899bf02746a2c92bf1053d9327dadb252b01af1f81f90cdb902411f518bc7215"
 dependencies = [
  "cfg-if",
  "cpufeatures",
@@ -4445,7 +4445,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha-1",
- "sha2 0.10.2",
+ "sha2 0.10.3",
  "smallvec",
  "sqlformat",
  "sqlx-rt",
@@ -4472,7 +4472,7 @@ dependencies = [
  "quote",
  "serde",
  "serde_json",
- "sha2 0.10.2",
+ "sha2 0.10.3",
  "sqlx-core",
  "sqlx-rt",
  "syn",
