@@ -15,7 +15,6 @@ aws-config = "0.47.0"
 aws-types = "0.47.0"
 
 mas-templates = { path = "../templates" }
-mas-config = { path = "../config" }
 
 [dependencies.lettre]
 version = "0.10.1"

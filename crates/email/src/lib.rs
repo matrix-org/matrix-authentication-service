@@ -26,7 +26,9 @@
 mod mailer;
 mod transport;
 
+pub use lettre::transport::smtp::authentication::Credentials as SmtpCredentials;
+
 pub use self::{
     mailer::Mailer,
-    transport::{aws_ses::Transport as AwsSesTransport, Transport as MailTransport},
+    transport::{aws_ses::Transport as AwsSesTransport, SmtpMode, Transport as MailTransport},
 };

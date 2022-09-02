@@ -30,7 +30,6 @@ use axum::{
 };
 use headers::HeaderName;
 use hyper::header::{ACCEPT, ACCEPT_LANGUAGE, AUTHORIZATION, CONTENT_LANGUAGE, CONTENT_TYPE};
-use mas_config::MatrixConfig;
 use mas_email::Mailer;
 use mas_http::CorsLayerExt;
 use mas_keystore::{Encrypter, Keystore};
@@ -46,6 +45,8 @@ mod health;
 mod oauth2;
 mod views;
 
+pub use compat::MatrixHomeserver;
+
 #[must_use]
 #[allow(
     clippy::too_many_lines,
@@ -60,7 +61,7 @@ pub fn router<B>(
     encrypter: &Encrypter,
     mailer: &Mailer,
     url_builder: &UrlBuilder,
-    matrix_config: &MatrixConfig,
+    homeserver: &MatrixHomeserver,
     policy_factory: &Arc<PolicyFactory>,
 ) -> Router<B>
 where
@@ -239,33 +240,28 @@ where
         .layer(Extension(encrypter.clone()))
         .layer(Extension(url_builder.clone()))
         .layer(Extension(mailer.clone()))
-        .layer(Extension(matrix_config.clone()))
+        .layer(Extension(homeserver.clone()))
         .layer(Extension(policy_factory.clone()))
 }
 
 #[cfg(test)]
 async fn test_router(pool: &PgPool) -> Result<Router, anyhow::Error> {
-    use mas_config::TemplatesConfig;
     use mas_email::MailTransport;
 
-    let templates_config = TemplatesConfig::default();
-    let templates = Templates::load_from_config(&templates_config).await?;
+    let templates = Templates::load(None, true).await?;
 
     // TODO: add test keys to the store
     let key_store = Keystore::default();
 
     let encrypter = Encrypter::new(&[0x42; 32]);
 
-    let transport = MailTransport::default();
+    let transport = MailTransport::blackhole();
     let mailbox = "server@example.com".parse()?;
     let mailer = Mailer::new(&templates, &transport, &mailbox, &mailbox);
 
     let url_builder = UrlBuilder::new("https://example.com/".parse()?);
 
-    let matrix_config = MatrixConfig {
-        homeserver: "example.com".to_owned(),
-    };
-
+    let homeserver = MatrixHomeserver::new("example.com".to_owned());
     let policy_factory = PolicyFactory::load_default(serde_json::json!({})).await?;
     let policy_factory = Arc::new(policy_factory);
 
@@ -276,7 +272,7 @@ async fn test_router(pool: &PgPool) -> Result<Router, anyhow::Error> {
         &encrypter,
         &mailer,
         &url_builder,
-        &matrix_config,
+        &homeserver,
         &policy_factory,
     ))
 }

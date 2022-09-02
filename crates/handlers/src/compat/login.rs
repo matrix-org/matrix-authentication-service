@@ -15,7 +15,6 @@
 use axum::{response::IntoResponse, Extension, Json};
 use chrono::{Duration, Utc};
 use hyper::StatusCode;
-use mas_config::MatrixConfig;
 use mas_data_model::{CompatSession, CompatSsoLoginState, Device, TokenType};
 use mas_storage::{
     compat::{
@@ -31,7 +30,7 @@ use serde_with::{serde_as, skip_serializing_none, DurationMilliSeconds};
 use sqlx::{PgPool, Postgres, Transaction};
 use thiserror::Error;
 
-use super::MatrixError;
+use super::{MatrixError, MatrixHomeserver};
 
 #[derive(Debug, Serialize)]
 #[serde(tag = "type")]
@@ -199,7 +198,7 @@ impl IntoResponse for RouteError {
 #[tracing::instrument(skip_all, err)]
 pub(crate) async fn post(
     Extension(pool): Extension<PgPool>,
-    Extension(config): Extension<MatrixConfig>,
+    Extension(homeserver): Extension<MatrixHomeserver>,
     Json(input): Json<RequestBody>,
 ) -> Result<impl IntoResponse, RouteError> {
     let mut txn = pool.begin().await?;
@@ -216,7 +215,7 @@ pub(crate) async fn post(
         }
     };
 
-    let user_id = format!("@{}:{}", session.user.username, config.homeserver);
+    let user_id = format!("@{}:{}", session.user.username, homeserver);
 
     // If the client asked for a refreshable token, make it expire
     let expires_in = if input.refresh_token {

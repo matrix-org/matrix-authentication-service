@@ -14,7 +14,7 @@
 
 //! Email transport backends
 
-use std::sync::Arc;
+use std::{ffi::OsString, num::NonZeroU16, sync::Arc};
 
 use async_trait::async_trait;
 use lettre::{
@@ -25,9 +25,19 @@ use lettre::{
     },
     AsyncTransport, Tokio1Executor,
 };
-use mas_config::{EmailSmtpMode, EmailTransportConfig};
 
 pub mod aws_ses;
+
+/// Encryption mode to use
+#[derive(Debug, Clone, Copy)]
+pub enum SmtpMode {
+    /// Plain text
+    Plain,
+    /// StartTLS (starts as plain text then upgrade to TLS)
+    StartTls,
+    /// TLS
+    Tls,
+}
 
 /// A wrapper around many [`AsyncTransport`]s
 #[derive(Default, Clone)]
@@ -43,52 +53,56 @@ enum TransportInner {
 }
 
 impl Transport {
-    /// Construct a transport from a user configration
+    fn new(inner: TransportInner) -> Self {
+        let inner = Arc::new(inner);
+        Self { inner }
+    }
+
+    /// Construct a blackhole transport
+    #[must_use]
+    pub fn blackhole() -> Self {
+        Self::new(TransportInner::Blackhole)
+    }
+
+    /// Construct a SMTP transport
     ///
     /// # Errors
     ///
-    /// Will return `Err` on invalid confiuration
-    pub async fn from_config(config: &EmailTransportConfig) -> Result<Self, anyhow::Error> {
-        let inner = match config {
-            EmailTransportConfig::Blackhole => TransportInner::Blackhole,
-            EmailTransportConfig::Smtp {
-                mode,
-                hostname,
-                credentials,
-                port,
-            } => {
-                let mut t = match mode {
-                    EmailSmtpMode::Plain => {
-                        AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(hostname)
-                    }
-                    EmailSmtpMode::StartTls => {
-                        AsyncSmtpTransport::<Tokio1Executor>::starttls_relay(hostname)?
-                    }
-                    EmailSmtpMode::Tls => AsyncSmtpTransport::<Tokio1Executor>::relay(hostname)?,
-                };
-
-                if let Some(credentials) = credentials {
-                    t = t.credentials(Credentials::new(
-                        credentials.username.clone(),
-                        credentials.password.clone(),
-                    ));
-                }
-
-                if let Some(port) = port {
-                    t = t.port((*port).into());
-                }
-
-                TransportInner::Smtp(t.build())
-            }
-            EmailTransportConfig::Sendmail { command } => {
-                TransportInner::Sendmail(AsyncSendmailTransport::new_with_command(command))
-            }
-            EmailTransportConfig::AwsSes => {
-                TransportInner::AwsSes(aws_ses::Transport::from_env().await)
-            }
+    /// Returns an error if the underlying SMTP transport could not be built
+    pub fn smtp(
+        mode: SmtpMode,
+        hostname: &str,
+        port: Option<NonZeroU16>,
+        credentials: Option<Credentials>,
+    ) -> Result<Self, lettre::transport::smtp::Error> {
+        let mut t = match mode {
+            SmtpMode::Plain => AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(hostname),
+            SmtpMode::StartTls => AsyncSmtpTransport::<Tokio1Executor>::starttls_relay(hostname)?,
+            SmtpMode::Tls => AsyncSmtpTransport::<Tokio1Executor>::relay(hostname)?,
         };
-        let inner = Arc::new(inner);
-        Ok(Self { inner })
+
+        if let Some(credentials) = credentials {
+            t = t.credentials(credentials);
+        }
+
+        if let Some(port) = port {
+            t = t.port(port.into());
+        }
+
+        Ok(Self::new(TransportInner::Smtp(t.build())))
+    }
+
+    /// Construct a Sendmail transport
+    #[must_use]
+    pub fn sendmail(command: impl Into<OsString>) -> Self {
+        Self::new(TransportInner::Sendmail(
+            AsyncSendmailTransport::new_with_command(command),
+        ))
+    }
+
+    /// Construct a AWS SES transport
+    pub async fn aws_ses() -> Self {
+        Self::new(TransportInner::AwsSes(aws_ses::Transport::from_env().await))
     }
 }
 
