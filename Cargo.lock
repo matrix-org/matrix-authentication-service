@@ -843,9 +843,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "3.2.18"
+version = "3.2.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b15f2ea93df33549dbe2e8eecd1ca55269d63ae0b3ba1f55db030817d1c2867f"
+checksum = "23b71c3ce99b7611011217b366d923f1d0a7e07a92bb2dbf1e84508c673ca3bd"
 dependencies = [
  "atty",
  "bitflags",
@@ -903,7 +903,7 @@ dependencies = [
  "hkdf",
  "percent-encoding",
  "rand",
- "sha2 0.10.3",
+ "sha2 0.10.4",
  "subtle",
  "time 0.3.12",
  "version_check",
@@ -1564,9 +1564,9 @@ checksum = "3a471a38ef8ed83cd6e40aa59c1ffe17db6855c18e3604d9c4ed8c08ebc28678"
 
 [[package]]
 name = "futures"
-version = "0.3.23"
+version = "0.3.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab30e97ab6aacfe635fad58f22c2bb06c8b685f7421eb1e064a729e2a5f481fa"
+checksum = "7f21eda599937fba36daeb58a22e8f5cee2d14c4a17b5b7739c7c8e5e3b8230c"
 dependencies = [
  "futures-channel",
  "futures-core",
@@ -1595,9 +1595,9 @@ checksum = "4e5aa3de05362c3fb88de6531e6296e85cde7739cccad4b9dfeeb7f6ebce56bf"
 
 [[package]]
 name = "futures-executor"
-version = "0.3.23"
+version = "0.3.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d11aa21b5b587a64682c0094c2bdd4df0076c5324961a40cc3abd7f37930528"
+checksum = "9ff63c23854bee61b6e9cd331d523909f238fc7636290b96826e9cfa5faa00ab"
 dependencies = [
  "futures-core",
  "futures-task",
@@ -2207,7 +2207,7 @@ dependencies = [
  "cfg-if",
  "ecdsa",
  "elliptic-curve",
- "sha2 0.10.3",
+ "sha2 0.10.4",
 ]
 
 [[package]]
@@ -2366,7 +2366,7 @@ dependencies = [
  "atty",
  "clap",
  "dotenv",
- "futures 0.3.23",
+ "futures 0.3.24",
  "hyper",
  "indoc",
  "mas-config",
@@ -2488,7 +2488,7 @@ dependencies = [
  "serde_json",
  "serde_urlencoded",
  "serde_with",
- "sha2 0.10.3",
+ "sha2 0.10.4",
  "sqlx",
  "thiserror",
  "tokio",
@@ -2575,7 +2575,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
- "sha2 0.10.3",
+ "sha2 0.10.4",
  "signature",
  "thiserror",
  "tracing",
@@ -2911,7 +2911,7 @@ dependencies = [
  "serde-enum-str",
  "serde_json",
  "serde_with",
- "sha2 0.10.3",
+ "sha2 0.10.4",
  "thiserror",
  "url",
 ]
@@ -2930,14 +2930,14 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.13.1"
+version = "1.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "074864da206b4973b84eb91683020dbefd6a8c3f0f38e054d93954e891935e4e"
+checksum = "2f7254b99e31cad77da24b08ebf628882739a608578bb1bcdfc1f9c21260d7c0"
 
 [[package]]
 name = "opa-wasm"
 version = "0.1.0"
-source = "git+https://github.com/matrix-org/rust-opa-wasm.git#99b2125274019c148941f3e05cba472b06a5faf1"
+source = "git+https://github.com/matrix-org/rust-opa-wasm.git#b7d8ea2a94da1d7ae23b21e2777990040b13c257"
 dependencies = [
  "anyhow",
  "base64",
@@ -2953,7 +2953,7 @@ dependencies = [
  "serde_json",
  "serde_yaml 0.9.10",
  "sha1",
- "sha2 0.10.3",
+ "sha2 0.10.4",
  "sprintf",
  "thiserror",
  "tokio",
@@ -3035,7 +3035,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d1a6ca9de4c8b00aa7f1a153bd76cb263287155cec642680d79d98706f3d28a"
 dependencies = [
  "async-trait",
- "futures 0.3.23",
+ "futures 0.3.24",
  "futures-util",
  "http",
  "opentelemetry",
@@ -3097,7 +3097,7 @@ checksum = "51f44edd08f51e2ade572f141051021c5af22677e42b7dd28a88155151c33594"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
- "sha2 0.10.3",
+ "sha2 0.10.4",
 ]
 
 [[package]]
@@ -3108,7 +3108,7 @@ checksum = "dfc8c5bf642dde52bb9e87c0ecd8ca5a76faac2eeed98dedb7c717997e1080aa"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
- "sha2 0.10.3",
+ "sha2 0.10.4",
 ]
 
 [[package]]
@@ -3161,9 +3161,9 @@ dependencies = [
 
 [[package]]
 name = "parse-display"
-version = "0.5.5"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "813e91c6232dbeb2e9deba0eb0dc5c967bd6f380676fd34419f9ddd71411faa7"
+checksum = "3b25af4ef94a8528b41fb49a696e361dc6ef975c782417268072d987ac327964"
 dependencies = [
  "once_cell",
  "parse-display-derive",
@@ -3172,9 +3172,9 @@ dependencies = [
 
 [[package]]
 name = "parse-display-derive"
-version = "0.5.5"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "007ed61a69cf7d9b95cc5dc18489dbb4f70d4adb0a0c100e2dd46f0be241711a"
+checksum = "73f106cced1f4b645e3fca6125105cdf7407e35d1af710f290aac530f6b826b9"
 dependencies = [
  "once_cell",
  "proc-macro2",
@@ -3412,7 +3412,7 @@ dependencies = [
  "hmac",
  "pbkdf2",
  "scrypt",
- "sha2 0.10.3",
+ "sha2 0.10.4",
  "spki",
 ]
 
@@ -3483,9 +3483,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.42"
+version = "1.0.43"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c278e965f1d8cf32d6e0e96de3d3e79712178ae67986d9cf9151f51e95aac89b"
+checksum = "0a2ca2c61bc9f3d74d2886294ab7b9853abd9c1ad903a3ac7815c58989bb7bab"
 dependencies = [
  "unicode-ident",
 ]
@@ -3567,9 +3567,9 @@ dependencies = [
 
 [[package]]
 name = "quote"
-version = "1.0.20"
+version = "1.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3bcdf212e9776fbcb2d23ab029360416bb1706b1aea2d1a5ba002727cbcab804"
+checksum = "bbe448f377a7d6961e30f5955f9b8d106c3f5e449d493ee1b125c1d43c2b5179"
 dependencies = [
  "proc-macro2",
 ]
@@ -3983,7 +3983,7 @@ dependencies = [
  "hmac",
  "pbkdf2",
  "salsa20",
- "sha2 0.10.3",
+ "sha2 0.10.4",
 ]
 
 [[package]]
@@ -4236,9 +4236,9 @@ dependencies = [
 
 [[package]]
 name = "sha2"
-version = "0.10.3"
+version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "899bf02746a2c92bf1053d9327dadb252b01af1f81f90cdb902411f518bc7215"
+checksum = "774e4e60efdce3075f9c44d7028b20a6a1d765d0ed642e4c19a4831edc8d576b"
 dependencies = [
  "cfg-if",
  "cpufeatures",
@@ -4404,7 +4404,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha-1",
- "sha2 0.10.3",
+ "sha2 0.10.4",
  "smallvec",
  "sqlformat",
  "sqlx-rt",
@@ -4431,7 +4431,7 @@ dependencies = [
  "quote",
  "serde",
  "serde_json",
- "sha2 0.10.3",
+ "sha2 0.10.4",
  "sqlx-core",
  "sqlx-rt",
  "syn",
@@ -4502,9 +4502,9 @@ checksum = "6bdef32e8150c2a081110b42772ffe7d7c9032b606bc226c8260fd97e0976601"
 
 [[package]]
 name = "syn"
-version = "1.0.98"
+version = "1.0.99"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c50aef8a904de4c23c788f104b7dddc7d6f79c647c7c8ce4cc8f73eb0ca773dd"
+checksum = "58dbef6ec655055e20b86b15a8cc6d439cca19b667537ac6a1369572d151ab13"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4673,9 +4673,9 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "1.20.1"
+version = "1.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a8325f63a7d4774dd041e363b2409ed1c5cbbd0f867795e661df066b2b0a581"
+checksum = "89797afd69d206ccd11fb0ea560a44bbb87731d020670e79416d442919257d42"
 dependencies = [
  "autocfg",
  "bytes 1.2.1",
@@ -5528,7 +5528,7 @@ checksum = "839fea2d85719bb69089290d7970bba2131f544448db8f990ea75813c30775ca"
 dependencies = [
  "anyhow",
  "bytes 1.2.1",
- "futures 0.3.23",
+ "futures 0.3.24",
  "maplit",
  "serde",
  "serde_bser",
