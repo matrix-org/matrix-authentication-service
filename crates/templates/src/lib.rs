@@ -33,7 +33,6 @@ use std::{
 };
 
 use anyhow::{bail, Context as _};
-use mas_config::TemplatesConfig;
 use mas_data_model::StorageBackend;
 use serde::Serialize;
 use tera::{Context, Error as TeraError, Tera};
@@ -63,7 +62,8 @@ pub use self::{
 #[derive(Debug, Clone)]
 pub struct Templates {
     tera: Arc<RwLock<Tera>>,
-    config: TemplatesConfig,
+    path: Option<String>,
+    builtin: bool,
 }
 
 /// There was an issue while loading the templates
@@ -90,7 +90,7 @@ pub enum TemplateLoadingError {
 impl Templates {
     /// List directories to watch
     pub async fn watch_roots(&self) -> Vec<PathBuf> {
-        Self::roots(self.config.path.as_deref(), self.config.builtin)
+        Self::roots(self.path.as_deref(), self.builtin)
             .await
             .into_iter()
             .filter_map(Result::ok)
@@ -133,17 +133,17 @@ impl Templates {
         Ok(tera)
     }
 
-    /// Load the templates from [the config][`TemplatesConfig`]
-    pub async fn load_from_config(config: &TemplatesConfig) -> Result<Self, TemplateLoadingError> {
-        let tera = Self::load(config.path.as_deref(), config.builtin).await?;
-
+    /// Load the templates from the given config
+    pub async fn load(path: Option<String>, builtin: bool) -> Result<Self, TemplateLoadingError> {
+        let tera = Self::load_(path.as_deref(), builtin).await?;
         Ok(Self {
             tera: Arc::new(RwLock::new(tera)),
-            config: config.clone(),
+            path,
+            builtin,
         })
     }
 
-    async fn load(path: Option<&str>, builtin: bool) -> Result<Tera, TemplateLoadingError> {
+    async fn load_(path: Option<&str>, builtin: bool) -> Result<Tera, TemplateLoadingError> {
         let mut teras = Vec::new();
 
         let roots = Self::roots(path, builtin).await;
@@ -202,7 +202,7 @@ impl Templates {
     /// Reload the templates on disk
     pub async fn reload(&self) -> anyhow::Result<()> {
         // Prepare the new Tera instance
-        let new_tera = Self::load(self.config.path.as_deref(), self.config.builtin).await?;
+        let new_tera = Self::load_(self.path.as_deref(), self.builtin).await?;
 
         // Swap it
         *self.tera.write().await = new_tera;
@@ -378,12 +378,7 @@ mod tests {
 
     #[tokio::test]
     async fn check_builtin_templates() {
-        let config = TemplatesConfig {
-            path: None,
-            builtin: true,
-        };
-
-        let templates = Templates::load_from_config(&config).await.unwrap();
+        let templates = Templates::load(None, true).await.unwrap();
         templates.check_render().await.unwrap();
     }
 }

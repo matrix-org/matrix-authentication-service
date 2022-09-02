@@ -62,7 +62,7 @@ impl Options {
                     path: Some(path.to_string()),
                     builtin: !skip_builtin,
                 };
-                let templates = Templates::load_from_config(&config).await?;
+                let templates = Templates::load(config.path.clone(), config.builtin).await?;
                 templates.check_render().await?;
 
                 Ok(())
