@@ -21,26 +21,22 @@ use axum::{
     Extension,
 };
 use axum_extra::extract::PrivateCookieJar;
-use chrono::Duration;
 use hyper::StatusCode;
 use mas_axum_utils::SessionInfoExt;
 use mas_config::Encrypter;
-use mas_data_model::{AuthorizationGrant, BrowserSession, TokenType};
+use mas_data_model::{AuthorizationGrant, BrowserSession};
 use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{
     oauth2::{
-        access_token::add_access_token,
         authorization_grant::{derive_session, fulfill_grant, get_grant_by_id},
         consent::fetch_client_consent,
-        refresh_token::add_refresh_token,
     },
     user::ActiveSessionLookupError,
     PostgresqlBackend,
 };
 use mas_templates::Templates;
 use oauth2_types::requests::{AccessTokenResponse, AuthorizationResponse};
-use rand::thread_rng;
 use sqlx::{PgPool, Postgres, Transaction};
 use thiserror::Error;
 
@@ -240,32 +236,9 @@ pub(crate) async fn complete(
         params.code = Some(code.code);
     }
 
-    // Did they request an access token?
-    // TODO: maybe we don't want to support the implicit flows
-    if grant.response_type_token {
-        let ttl = Duration::minutes(5);
-        let (access_token_str, refresh_token_str) = {
-            let mut rng = thread_rng();
-            (
-                TokenType::AccessToken.generate(&mut rng),
-                TokenType::RefreshToken.generate(&mut rng),
-            )
-        };
-
-        let access_token = add_access_token(&mut txn, &session, &access_token_str, ttl).await?;
-
-        let _refresh_token =
-            add_refresh_token(&mut txn, &session, access_token, &refresh_token_str).await?;
-
-        params.response = Some(
-            AccessTokenResponse::new(access_token_str)
-                .with_expires_in(ttl)
-                .with_refresh_token(refresh_token_str),
-        );
-    }
-
     // Did they request an ID token?
     if grant.response_type_id_token {
+        // TODO
         return Err(anyhow!("id tokens are not implemented yet").into());
     }
 

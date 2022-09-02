@@ -74,11 +74,7 @@ pub(crate) async fn get(
 
     let response_types_supported = Some(vec![
         OAuthAuthorizationEndpointResponseType::Code,
-        OAuthAuthorizationEndpointResponseType::Token,
         OAuthAuthorizationEndpointResponseType::IdToken,
-        OAuthAuthorizationEndpointResponseType::CodeToken,
-        OAuthAuthorizationEndpointResponseType::CodeIdToken,
-        OAuthAuthorizationEndpointResponseType::IdTokenToken,
         OAuthAuthorizationEndpointResponseType::CodeIdToken,
     ]);
 
@@ -88,11 +84,7 @@ pub(crate) async fn get(
         ResponseMode::Fragment,
     ]);
 
-    let grant_types_supported = Some(vec![
-        GrantType::AuthorizationCode,
-        GrantType::Implicit,
-        GrantType::RefreshToken,
-    ]);
+    let grant_types_supported = Some(vec![GrantType::AuthorizationCode, GrantType::RefreshToken]);
 
     let token_endpoint_auth_methods_supported = client_auth_methods_supported.clone();
     let token_endpoint_auth_signing_alg_values_supported =

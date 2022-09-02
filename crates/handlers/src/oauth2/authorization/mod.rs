@@ -214,21 +214,33 @@ pub(crate) async fn get(
                     .await?);
             }
 
+            // Check if the client asked for a `token` response type, and bail out if it's
+            // the case, since we don't support them
+            if response_type.has_token() {
+                return Ok(callback_destination
+                    .go(
+                        &templates,
+                        ClientError::from(ClientErrorCode::UnsupportedResponseType),
+                    )
+                    .await?);
+            }
+
+            // If the client asked for a `id_token` response type, we must check if it can
+            // use the `implicit` grant type
+            if response_type.has_id_token() && !client.grant_types.contains(&GrantType::Implicit) {
+                return Ok(callback_destination
+                    .go(
+                        &templates,
+                        ClientError::from(ClientErrorCode::UnauthorizedClient),
+                    )
+                    .await?);
+            }
+
             if params.auth.registration.is_some() {
                 return Ok(callback_destination
                     .go(
                         &templates,
                         ClientError::from(ClientErrorCode::RegistrationNotSupported),
-                    )
-                    .await?);
-            }
-
-            // Check if it is allowed to use this grant type
-            if !client.grant_types.contains(&GrantType::AuthorizationCode) {
-                return Ok(callback_destination
-                    .go(
-                        &templates,
-                        ClientError::from(ClientErrorCode::UnauthorizedClient),
                     )
                     .await?);
             }
@@ -244,6 +256,16 @@ pub(crate) async fn get(
             }
 
             let code: Option<AuthorizationCode> = if response_type.has_code() {
+                // Check if it is allowed to use this grant type
+                if !client.grant_types.contains(&GrantType::AuthorizationCode) {
+                    return Ok(callback_destination
+                        .go(
+                            &templates,
+                            ClientError::from(ClientErrorCode::UnauthorizedClient),
+                        )
+                        .await?);
+                }
+
                 // 32 random alphanumeric characters, about 190bit of entropy
                 let code: String = thread_rng()
                     .sample_iter(&Alphanumeric)
@@ -285,7 +307,6 @@ pub(crate) async fn get(
                 params.auth.max_age,
                 None,
                 response_mode,
-                response_type.has_token(),
                 response_type.has_id_token(),
                 requires_consent,
             )

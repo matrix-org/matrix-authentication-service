@@ -42,7 +42,6 @@ pub async fn new_authorization_grant(
     max_age: Option<NonZeroU32>,
     acr_values: Option<String>,
     response_mode: ResponseMode,
-    response_type_token: bool,
     response_type_id_token: bool,
     requires_consent: bool,
 ) -> anyhow::Result<AuthorizationGrant<PostgresqlBackend>> {
@@ -61,10 +60,9 @@ pub async fn new_authorization_grant(
             INSERT INTO oauth2_authorization_grants
                 (oauth2_client_id, redirect_uri, scope, state, nonce, max_age,
                  acr_values, response_mode, code_challenge, code_challenge_method,
-                 response_type_code, response_type_token, response_type_id_token,
-                 code, requires_consent)
+                 response_type_code, response_type_id_token, code, requires_consent)
             VALUES
-                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
             RETURNING id, created_at
         "#,
         &client.data,
@@ -79,7 +77,6 @@ pub async fn new_authorization_grant(
         code_challenge,
         code_challenge_method,
         code.is_some(),
-        response_type_token,
         response_type_id_token,
         code_str,
         requires_consent,
@@ -101,7 +98,6 @@ pub async fn new_authorization_grant(
         acr_values,
         response_mode,
         created_at: res.created_at,
-        response_type_token,
         response_type_id_token,
         requires_consent,
     })
@@ -122,7 +118,6 @@ struct GrantLookup {
     grant_max_age: Option<i32>,
     grant_acr_values: Option<String>,
     grant_response_type_code: bool,
-    grant_response_type_token: bool,
     grant_response_type_id_token: bool,
     grant_code: Option<String>,
     grant_code_challenge: Option<String>,
@@ -318,7 +313,6 @@ impl GrantLookup {
             response_mode,
             redirect_uri,
             created_at: self.grant_created_at,
-            response_type_token: self.grant_response_type_token,
             response_type_id_token: self.grant_response_type_id_token,
             requires_consent: self.grant_requires_consent,
         })
@@ -349,7 +343,6 @@ pub async fn get_grant_by_id(
                 og.oauth2_client_id AS oauth2_client_id,
                 og.code          AS grant_code,
                 og.response_type_code     AS grant_response_type_code,
-                og.response_type_token    AS grant_response_type_token,
                 og.response_type_id_token AS grant_response_type_id_token,
                 og.code_challenge         AS grant_code_challenge,
                 og.code_challenge_method  AS grant_code_challenge_method,
@@ -418,7 +411,6 @@ pub async fn lookup_grant_by_code(
                 og.oauth2_client_id AS oauth2_client_id,
                 og.code          AS grant_code,
                 og.response_type_code     AS grant_response_type_code,
-                og.response_type_token    AS grant_response_type_token,
                 og.response_type_id_token AS grant_response_type_id_token,
                 og.code_challenge         AS grant_code_challenge,
                 og.code_challenge_method  AS grant_code_challenge_method,
