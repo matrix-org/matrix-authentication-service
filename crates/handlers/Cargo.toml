@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [dependencies]
 # Async runtime
-tokio = { version = "1.20.1", features = ["macros"] }
+tokio = { version = "1.21.0", features = ["macros"] }
 
 # Logging and tracing
 tracing = "0.1.36"
@@ -40,7 +40,7 @@ serde_urlencoded = "0.7.1"
 argon2 = { version = "0.4.1", features = ["password-hash"] }
 
 # Crypto, hashing and signing stuff
-sha2 = "0.10.3"
+sha2 = "0.10.4"
 
 # Various data types and utilities
 data-encoding = "2.3.2"
