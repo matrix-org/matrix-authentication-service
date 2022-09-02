@@ -9,7 +9,7 @@ license = "Apache-2.0"
 axum = { version = "0.5.15", optional = true }
 bytes = "1.2.1"
 futures-util = "0.3.24"
-headers = "0.3.7"
+headers = "0.3.8"
 http = "0.2.8"
 http-body = "0.4.5"
 hyper = "0.14.20"
