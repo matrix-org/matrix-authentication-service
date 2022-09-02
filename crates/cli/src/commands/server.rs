@@ -23,7 +23,8 @@ use clap::Parser;
 use futures::stream::{StreamExt, TryStreamExt};
 use hyper::Server;
 use mas_config::RootConfig;
-use mas_email::{MailTransport, Mailer};
+use mas_email::Mailer;
+use mas_handlers::MatrixHomeserver;
 use mas_http::ServerLayer;
 use mas_policy::PolicyFactory;
 use mas_router::UrlBuilder;
@@ -148,7 +149,7 @@ impl Options {
         let listener = TcpListener::bind(addr).context("could not bind address")?;
 
         // Connect to the mail server
-        let mail_transport = MailTransport::from_config(&config.email.transport).await?;
+        let mail_transport = config.email.transport.to_transport().await?;
         mail_transport.test_connection().await?;
 
         // Connect to the database
@@ -203,7 +204,7 @@ impl Options {
         let policy_factory = Arc::new(policy_factory);
 
         // Load and compile the templates
-        let templates = Templates::load_from_config(&config.templates)
+        let templates = Templates::load(config.templates.path.clone(), config.templates.builtin)
             .await
             .context("could not load templates")?;
 
@@ -218,7 +219,7 @@ impl Options {
 
         let static_files = mas_static_files::service(&config.http.web_root);
 
-        let matrix_config = config.matrix.clone();
+        let homeserver = MatrixHomeserver::new(config.matrix.homeserver.clone());
 
         // Explicitely the config to properly zeroize secret keys
         drop(config);
@@ -242,7 +243,7 @@ impl Options {
             &encrypter,
             &mailer,
             &url_builder,
-            &matrix_config,
+            &homeserver,
             &policy_factory,
         )
         .fallback(static_files)

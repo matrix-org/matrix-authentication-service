@@ -52,7 +52,6 @@ headers = "0.3.7"
 
 oauth2-types = { path = "../oauth2-types" }
 mas-axum-utils = {  path = "../axum-utils" }
-mas-config = { path = "../config" }
 mas-data-model = { path = "../data-model" }
 mas-email = { path = "../email" }
 mas-http = {  path = "../http" }
