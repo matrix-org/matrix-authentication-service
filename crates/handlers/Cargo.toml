@@ -40,7 +40,7 @@ serde_urlencoded = "0.7.1"
 argon2 = { version = "0.4.1", features = ["password-hash"] }
 
 # Crypto, hashing and signing stuff
-sha2 = "0.10.3"
+sha2 = "0.10.4"
 
 # Various data types and utilities
 data-encoding = "2.3.2"
@@ -48,7 +48,7 @@ chrono = { version = "0.4.22", features = ["serde"] }
 url = { version = "2.2.2", features = ["serde"] }
 mime = "0.3.16"
 rand = "0.8.5"
-headers = "0.3.7"
+headers = "0.3.8"
 
 oauth2-types = { path = "../oauth2-types" }
 mas-axum-utils = {  path = "../axum-utils" }

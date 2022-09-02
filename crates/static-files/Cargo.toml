@@ -10,7 +10,7 @@ dev = []
 
 [dependencies]
 axum = "0.5.15"
-headers = "0.3.7"
+headers = "0.3.8"
 http = "0.2.8"
 http-body = "0.4.5"
 mime_guess = "2.0.4"
