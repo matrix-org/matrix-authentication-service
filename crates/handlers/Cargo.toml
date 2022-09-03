@@ -40,7 +40,7 @@ serde_urlencoded = "0.7.1"
 argon2 = { version = "0.4.1", features = ["password-hash"] }
 
 # Crypto, hashing and signing stuff
-sha2 = "0.10.4"
+sha2 = "0.10.5"
 
 # Various data types and utilities
 data-encoding = "2.3.2"
