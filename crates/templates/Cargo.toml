@@ -12,7 +12,7 @@ dev = []
 tracing = "0.1.36"
 tokio = { version = "1.20.1", features = ["macros"] }
 
-anyhow = "1.0.62"
+anyhow = "1.0.64"
 thiserror = "1.0.32"
 
 tera = "1.17.0"

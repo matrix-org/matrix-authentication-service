@@ -6,7 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-anyhow = "1.0.62"
+anyhow = "1.0.64"
 aead = { version = "0.5.1", features = ["std"] }
 const-oid = { version = "0.9.0", features = ["std"] }
 cookie = { version = "0.16.0", features = ["key-expansion", "private"] }
