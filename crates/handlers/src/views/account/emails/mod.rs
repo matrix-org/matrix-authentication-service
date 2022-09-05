@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use axum::{
-    extract::{Extension, Form},
+    extract::{Form, State},
     response::{Html, IntoResponse, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
@@ -52,8 +52,8 @@ pub enum ManagementForm {
 }
 
 pub(crate) async fn get(
-    Extension(templates): Extension<Templates>,
-    Extension(pool): Extension<PgPool>,
+    State(templates): State<Templates>,
+    State(pool): State<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
     let mut conn = pool.acquire().await?;
@@ -118,9 +118,9 @@ async fn start_email_verification(
 }
 
 pub(crate) async fn post(
-    Extension(templates): Extension<Templates>,
-    Extension(pool): Extension<PgPool>,
-    Extension(mailer): Extension<Mailer>,
+    State(templates): State<Templates>,
+    State(pool): State<PgPool>,
+    State(mailer): State<Mailer>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<ManagementForm>>,
 ) -> Result<Response, FancyError> {

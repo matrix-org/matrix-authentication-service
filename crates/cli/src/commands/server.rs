@@ -24,7 +24,7 @@ use futures::stream::{StreamExt, TryStreamExt};
 use hyper::Server;
 use mas_config::RootConfig;
 use mas_email::Mailer;
-use mas_handlers::MatrixHomeserver;
+use mas_handlers::{AppState, MatrixHomeserver};
 use mas_http::ServerLayer;
 use mas_policy::PolicyFactory;
 use mas_router::UrlBuilder;
@@ -174,8 +174,6 @@ impl Options {
             .key_store()
             .await
             .context("could not import keys from config")?;
-        // Wrap the key store in an Arc
-        let key_store = Arc::new(key_store);
 
         let encrypter = config.secrets.encrypter();
 
@@ -236,18 +234,20 @@ impl Options {
                 .context("could not watch for templates changes")?;
         }
 
-        let router = mas_handlers::router(
-            &pool,
-            &templates,
-            &key_store,
-            &encrypter,
-            &mailer,
-            &url_builder,
-            &homeserver,
-            &policy_factory,
-        )
-        .fallback(static_files)
-        .layer(ServerLayer::default());
+        let state = AppState {
+            pool,
+            templates,
+            key_store,
+            encrypter,
+            url_builder,
+            mailer,
+            homeserver,
+            policy_factory,
+        };
+
+        let router = mas_handlers::router(state)
+            .fallback_service(static_files)
+            .layer(ServerLayer::default());
 
         info!("Listening on http://{}", listener.local_addr().unwrap());
 

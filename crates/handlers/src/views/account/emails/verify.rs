@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use axum::{
-    extract::{Extension, Form, Path, Query},
+    extract::{Form, Path, Query, State},
     response::{Html, IntoResponse, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
@@ -40,8 +40,8 @@ pub struct CodeForm {
 }
 
 pub(crate) async fn get(
-    Extension(templates): Extension<Templates>,
-    Extension(pool): Extension<PgPool>,
+    State(templates): State<Templates>,
+    State(pool): State<PgPool>,
     Query(query): Query<OptionalPostAuthAction>,
     Path(id): Path<i64>,
     cookie_jar: PrivateCookieJar<Encrypter>,
@@ -78,7 +78,7 @@ pub(crate) async fn get(
 }
 
 pub(crate) async fn post(
-    Extension(pool): Extension<PgPool>,
+    State(pool): State<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Query(query): Query<OptionalPostAuthAction>,
     Path(id): Path<i64>,

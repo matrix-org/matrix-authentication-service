@@ -19,12 +19,13 @@ use axum::{
     body::HttpBody,
     extract::{
         rejection::{FailedToDeserializeQueryString, FormRejection, TypedHeaderRejectionReason},
-        Form, FromRequest, TypedHeader,
+        Form, FromRequest, FromRequestParts, TypedHeader,
     },
     response::{IntoResponse, Response},
+    BoxError,
 };
 use headers::{authorization::Bearer, Authorization, Header, HeaderMapExt, HeaderName};
-use http::{header::WWW_AUTHENTICATE, HeaderMap, HeaderValue, StatusCode};
+use http::{header::WWW_AUTHENTICATE, HeaderMap, HeaderValue, Request, StatusCode};
 use mas_data_model::Session;
 use mas_storage::{
     oauth2::access_token::{lookup_active_access_token, AccessTokenLookupError},
@@ -275,19 +276,20 @@ impl IntoResponse for AuthorizationVerificationError {
 }
 
 #[async_trait]
-impl<B, F> FromRequest<B> for UserAuthorization<F>
+impl<S, B, F> FromRequest<S, B> for UserAuthorization<F>
 where
-    B: Send + HttpBody,
-    B::Data: Send,
-    B::Error: Error + Send + Sync + 'static,
     F: DeserializeOwned,
+    B: HttpBody + Send + 'static,
+    B::Data: Send,
+    B::Error: Into<BoxError>,
+    S: Send + Sync,
 {
     type Rejection = UserAuthorizationError;
 
-    async fn from_request(
-        req: &mut axum::extract::RequestParts<B>,
-    ) -> Result<Self, Self::Rejection> {
-        let header = TypedHeader::<Authorization<Bearer>>::from_request(req).await;
+    async fn from_request(req: Request<B>, state: &S) -> Result<Self, Self::Rejection> {
+        let (mut parts, body) = req.into_parts();
+        let header =
+            TypedHeader::<Authorization<Bearer>>::from_request_parts(&mut parts, state).await;
 
         // Take the Authorization header
         let token_from_header = match header {
@@ -300,18 +302,21 @@ where
             },
         };
 
+        let req = Request::from_parts(parts, body);
+
         // Take the form value
-        let (token_from_form, form) = match Form::<AuthorizedForm<F>>::from_request(req).await {
-            Ok(Form(form)) => (form.access_token, Some(form.inner)),
-            // If it is not a form, continue
-            Err(FormRejection::InvalidFormContentType(_err)) => (None, None),
-            // If the form could not be read, return a Bad Request error
-            Err(FormRejection::FailedToDeserializeQueryString(err)) => {
-                return Err(UserAuthorizationError::BadForm(err))
-            }
-            // Other errors (body read twice, byte stream broke) return an internal error
-            Err(e) => return Err(UserAuthorizationError::InternalError(Box::new(e))),
-        };
+        let (token_from_form, form) =
+            match Form::<AuthorizedForm<F>>::from_request(req, state).await {
+                Ok(Form(form)) => (form.access_token, Some(form.inner)),
+                // If it is not a form, continue
+                Err(FormRejection::InvalidFormContentType(_err)) => (None, None),
+                // If the form could not be read, return a Bad Request error
+                Err(FormRejection::FailedToDeserializeQueryString(err)) => {
+                    return Err(UserAuthorizationError::BadForm(err))
+                }
+                // Other errors (body read twice, byte stream broke) return an internal error
+                Err(e) => return Err(UserAuthorizationError::InternalError(Box::new(e))),
+            };
 
         let access_token = match (token_from_header, token_from_form) {
             // Ensure the token should not be in both the form and the access token

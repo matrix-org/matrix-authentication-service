@@ -16,7 +16,7 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use axum::{
-    extract::{Extension, Form, Path},
+    extract::{Form, Path, State},
     response::{Html, IntoResponse, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
@@ -50,9 +50,9 @@ impl IntoResponse for RouteError {
 }
 
 pub(crate) async fn get(
-    Extension(policy_factory): Extension<Arc<PolicyFactory>>,
-    Extension(templates): Extension<Templates>,
-    Extension(pool): Extension<PgPool>,
+    State(policy_factory): State<Arc<PolicyFactory>>,
+    State(templates): State<Templates>,
+    State(pool): State<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(grant_id): Path<i64>,
 ) -> Result<Response, RouteError> {
@@ -112,8 +112,8 @@ pub(crate) async fn get(
 }
 
 pub(crate) async fn post(
-    Extension(policy_factory): Extension<Arc<PolicyFactory>>,
-    Extension(pool): Extension<PgPool>,
+    State(policy_factory): State<Arc<PolicyFactory>>,
+    State(pool): State<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(grant_id): Path<i64>,
     Form(form): Form<ProtectedForm<()>>,

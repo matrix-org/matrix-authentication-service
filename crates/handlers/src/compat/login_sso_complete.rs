@@ -16,9 +16,8 @@
 use std::collections::HashMap;
 
 use axum::{
-    extract::{Form, Path, Query},
+    extract::{Form, Path, Query, State},
     response::{Html, IntoResponse, Redirect, Response},
-    Extension,
 };
 use axum_extra::extract::PrivateCookieJar;
 use chrono::{Duration, Utc};
@@ -50,8 +49,8 @@ pub struct Params {
 }
 
 pub async fn get(
-    Extension(pool): Extension<PgPool>,
-    Extension(templates): Extension<Templates>,
+    State(pool): State<PgPool>,
+    State(templates): State<Templates>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(id): Path<i64>,
     Query(params): Query<Params>,
@@ -114,12 +113,12 @@ pub async fn get(
 }
 
 pub async fn post(
-    Extension(pool): Extension<PgPool>,
-    Extension(templates): Extension<Templates>,
+    State(pool): State<PgPool>,
+    State(templates): State<Templates>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(id): Path<i64>,
-    Form(form): Form<ProtectedForm<()>>,
     Query(params): Query<Params>,
+    Form(form): Form<ProtectedForm<()>>,
 ) -> Result<Response, FancyError> {
     let mut txn = pool.begin().await?;
 

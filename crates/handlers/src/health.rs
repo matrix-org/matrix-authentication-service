@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum::{extract::Extension, response::IntoResponse};
+use axum::{extract::State, response::IntoResponse};
 use mas_axum_utils::FancyError;
 use sqlx::PgPool;
 use tracing::{info_span, Instrument};
 
-pub async fn get(Extension(pool): Extension<PgPool>) -> Result<impl IntoResponse, FancyError> {
+pub async fn get(State(pool): State<PgPool>) -> Result<impl IntoResponse, FancyError> {
     let mut conn = pool.acquire().await?;
 
     sqlx::query("SELECT $1")
@@ -38,7 +38,9 @@ mod tests {
 
     #[sqlx::test(migrator = "mas_storage::MIGRATOR")]
     async fn test_get_health(pool: PgPool) -> Result<(), anyhow::Error> {
-        let app = crate::test_router(&pool).await?;
+        let state = crate::test_state(pool).await?;
+        let app = crate::api_router(state);
+
         let request = Request::builder().uri("/health").body(Body::empty())?;
 
         let response = app.oneshot(request).await?;

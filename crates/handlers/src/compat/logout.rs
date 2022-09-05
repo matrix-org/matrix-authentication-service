@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum::{response::IntoResponse, Extension, Json, TypedHeader};
+use axum::{extract::State, response::IntoResponse, Json, TypedHeader};
 use headers::{authorization::Bearer, Authorization};
 use hyper::StatusCode;
 use mas_data_model::{TokenFormatError, TokenType};
@@ -64,7 +64,7 @@ impl From<TokenFormatError> for RouteError {
 }
 
 pub(crate) async fn post(
-    Extension(pool): Extension<PgPool>,
+    State(pool): State<PgPool>,
     maybe_authorization: Option<TypedHeader<Authorization<Bearer>>>,
 ) -> Result<impl IntoResponse, RouteError> {
     let mut conn = pool.acquire().await?;

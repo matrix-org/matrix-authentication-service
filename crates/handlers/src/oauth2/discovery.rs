@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum::{extract::Extension, response::IntoResponse, Json};
+use axum::{extract::State, response::IntoResponse, Json};
 use mas_iana::{
     jose::JsonWebSignatureAlg,
     oauth::{
@@ -30,8 +30,8 @@ use oauth2_types::{
 
 #[allow(clippy::too_many_lines)]
 pub(crate) async fn get(
-    Extension(key_store): Extension<Keystore>,
-    Extension(url_builder): Extension<UrlBuilder>,
+    State(key_store): State<Keystore>,
+    State(url_builder): State<UrlBuilder>,
 ) -> impl IntoResponse {
     // This is how clients can authenticate
     let client_auth_methods_supported = Some(vec![

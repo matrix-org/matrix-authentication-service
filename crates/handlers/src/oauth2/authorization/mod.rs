@@ -16,7 +16,7 @@ use std::sync::Arc;
 
 use anyhow::{anyhow, Context};
 use axum::{
-    extract::{Extension, Form},
+    extract::{Form, State},
     response::{IntoResponse, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
@@ -156,9 +156,9 @@ fn resolve_response_mode(
 
 #[allow(clippy::too_many_lines)]
 pub(crate) async fn get(
-    Extension(policy_factory): Extension<Arc<PolicyFactory>>,
-    Extension(templates): Extension<Templates>,
-    Extension(pool): Extension<PgPool>,
+    State(policy_factory): State<Arc<PolicyFactory>>,
+    State(templates): State<Templates>,
+    State(pool): State<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(params): Form<Params>,
 ) -> Result<Response, RouteError> {

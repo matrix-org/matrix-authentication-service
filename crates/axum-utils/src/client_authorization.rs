@@ -19,13 +19,13 @@ use axum::{
     body::HttpBody,
     extract::{
         rejection::{FailedToDeserializeQueryString, FormRejection, TypedHeaderRejectionReason},
-        Form, FromRequest, RequestParts, TypedHeader,
+        Form, FromRequest, FromRequestParts, TypedHeader,
     },
     response::IntoResponse,
     BoxError,
 };
 use headers::{authorization::Basic, Authorization};
-use http::StatusCode;
+use http::{Request, StatusCode};
 use mas_data_model::{Client, JwksOrJwksUri, StorageBackend};
 use mas_http::HttpServiceExt;
 use mas_iana::oauth::OAuthClientAuthenticationMethod;
@@ -234,18 +234,23 @@ impl IntoResponse for ClientAuthorizationError {
 }
 
 #[async_trait]
-impl<B, F> FromRequest<B> for ClientAuthorization<F>
+impl<S, B, F> FromRequest<S, B> for ClientAuthorization<F>
 where
-    B: Send + HttpBody,
-    B::Data: Send,
-    B::Error: std::error::Error + Send + Sync + 'static,
     F: DeserializeOwned,
+    B: HttpBody + Send + 'static,
+    B::Data: Send,
+    B::Error: Into<BoxError>,
+    S: Send + Sync,
 {
     type Rejection = ClientAuthorizationError;
 
     #[allow(clippy::too_many_lines)]
-    async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
-        let header = TypedHeader::<Authorization<Basic>>::from_request(req).await;
+    async fn from_request(req: Request<B>, state: &S) -> Result<Self, Self::Rejection> {
+        // Split the request into parts so we can extract some headers
+        let (mut parts, body) = req.into_parts();
+
+        let header =
+            TypedHeader::<Authorization<Basic>>::from_request_parts(&mut parts, state).await;
 
         // Take the Authorization header
         let credentials_from_header = match header {
@@ -258,6 +263,9 @@ where
             },
         };
 
+        // Reconstruct the request from the parts
+        let req = Request::from_parts(parts, body);
+
         // Take the form value
         let (
             client_id_from_form,
@@ -265,7 +273,7 @@ where
             client_assertion_type,
             client_assertion,
             form,
-        ) = match Form::<AuthorizedForm<F>>::from_request(req).await {
+        ) = match Form::<AuthorizedForm<F>>::from_request(req, state).await {
             Ok(Form(form)) => (
                 form.client_id,
                 form.client_secret,
@@ -385,19 +393,17 @@ mod tests {
 
     #[tokio::test]
     async fn none_test() {
-        let mut req = RequestParts::new(
-            Request::builder()
-                .method(Method::POST)
-                .header(
-                    http::header::CONTENT_TYPE,
-                    mime::APPLICATION_WWW_FORM_URLENCODED.as_ref(),
-                )
-                .body(Full::<Bytes>::new("client_id=client-id&foo=bar".into()))
-                .unwrap(),
-        );
+        let req = Request::builder()
+            .method(Method::POST)
+            .header(
+                http::header::CONTENT_TYPE,
+                mime::APPLICATION_WWW_FORM_URLENCODED.as_ref(),
+            )
+            .body(Full::<Bytes>::new("client_id=client-id&foo=bar".into()))
+            .unwrap();
 
         assert_eq!(
-            ClientAuthorization::<serde_json::Value>::from_request(&mut req)
+            ClientAuthorization::<serde_json::Value>::from_request(req, &())
                 .await
                 .unwrap(),
             ClientAuthorization {
@@ -411,23 +417,21 @@ mod tests {
 
     #[tokio::test]
     async fn client_secret_basic_test() {
-        let mut req = RequestParts::new(
-            Request::builder()
-                .method(Method::POST)
-                .header(
-                    http::header::CONTENT_TYPE,
-                    mime::APPLICATION_WWW_FORM_URLENCODED.as_ref(),
-                )
-                .header(
-                    http::header::AUTHORIZATION,
-                    "Basic Y2xpZW50LWlkOmNsaWVudC1zZWNyZXQ=",
-                )
-                .body(Full::<Bytes>::new("foo=bar".into()))
-                .unwrap(),
-        );
+        let req = Request::builder()
+            .method(Method::POST)
+            .header(
+                http::header::CONTENT_TYPE,
+                mime::APPLICATION_WWW_FORM_URLENCODED.as_ref(),
+            )
+            .header(
+                http::header::AUTHORIZATION,
+                "Basic Y2xpZW50LWlkOmNsaWVudC1zZWNyZXQ=",
+            )
+            .body(Full::<Bytes>::new("foo=bar".into()))
+            .unwrap();
 
         assert_eq!(
-            ClientAuthorization::<serde_json::Value>::from_request(&mut req)
+            ClientAuthorization::<serde_json::Value>::from_request(req, &())
                 .await
                 .unwrap(),
             ClientAuthorization {
@@ -440,23 +444,21 @@ mod tests {
         );
 
         // client_id in both header and body
-        let mut req = RequestParts::new(
-            Request::builder()
-                .method(Method::POST)
-                .header(
-                    http::header::CONTENT_TYPE,
-                    mime::APPLICATION_WWW_FORM_URLENCODED.as_ref(),
-                )
-                .header(
-                    http::header::AUTHORIZATION,
-                    "Basic Y2xpZW50LWlkOmNsaWVudC1zZWNyZXQ=",
-                )
-                .body(Full::<Bytes>::new("client_id=client-id&foo=bar".into()))
-                .unwrap(),
-        );
+        let req = Request::builder()
+            .method(Method::POST)
+            .header(
+                http::header::CONTENT_TYPE,
+                mime::APPLICATION_WWW_FORM_URLENCODED.as_ref(),
+            )
+            .header(
+                http::header::AUTHORIZATION,
+                "Basic Y2xpZW50LWlkOmNsaWVudC1zZWNyZXQ=",
+            )
+            .body(Full::<Bytes>::new("client_id=client-id&foo=bar".into()))
+            .unwrap();
 
         assert_eq!(
-            ClientAuthorization::<serde_json::Value>::from_request(&mut req)
+            ClientAuthorization::<serde_json::Value>::from_request(req, &())
                 .await
                 .unwrap(),
             ClientAuthorization {
@@ -469,62 +471,56 @@ mod tests {
         );
 
         // client_id in both header and body mismatch
-        let mut req = RequestParts::new(
-            Request::builder()
-                .method(Method::POST)
-                .header(
-                    http::header::CONTENT_TYPE,
-                    mime::APPLICATION_WWW_FORM_URLENCODED.as_ref(),
-                )
-                .header(
-                    http::header::AUTHORIZATION,
-                    "Basic Y2xpZW50LWlkOmNsaWVudC1zZWNyZXQ=",
-                )
-                .body(Full::<Bytes>::new("client_id=mismatch-id&foo=bar".into()))
-                .unwrap(),
-        );
+        let req = Request::builder()
+            .method(Method::POST)
+            .header(
+                http::header::CONTENT_TYPE,
+                mime::APPLICATION_WWW_FORM_URLENCODED.as_ref(),
+            )
+            .header(
+                http::header::AUTHORIZATION,
+                "Basic Y2xpZW50LWlkOmNsaWVudC1zZWNyZXQ=",
+            )
+            .body(Full::<Bytes>::new("client_id=mismatch-id&foo=bar".into()))
+            .unwrap();
 
         assert!(matches!(
-            ClientAuthorization::<serde_json::Value>::from_request(&mut req).await,
+            ClientAuthorization::<serde_json::Value>::from_request(req, &()).await,
             Err(ClientAuthorizationError::ClientIdMismatch { .. }),
         ));
 
         // Invalid header
-        let mut req = RequestParts::new(
-            Request::builder()
-                .method(Method::POST)
-                .header(
-                    http::header::CONTENT_TYPE,
-                    mime::APPLICATION_WWW_FORM_URLENCODED.as_ref(),
-                )
-                .header(http::header::AUTHORIZATION, "Basic invalid")
-                .body(Full::<Bytes>::new("foo=bar".into()))
-                .unwrap(),
-        );
+        let req = Request::builder()
+            .method(Method::POST)
+            .header(
+                http::header::CONTENT_TYPE,
+                mime::APPLICATION_WWW_FORM_URLENCODED.as_ref(),
+            )
+            .header(http::header::AUTHORIZATION, "Basic invalid")
+            .body(Full::<Bytes>::new("foo=bar".into()))
+            .unwrap();
 
         assert!(matches!(
-            ClientAuthorization::<serde_json::Value>::from_request(&mut req).await,
+            ClientAuthorization::<serde_json::Value>::from_request(req, &()).await,
             Err(ClientAuthorizationError::InvalidHeader),
         ));
     }
 
     #[tokio::test]
     async fn client_secret_post_test() {
-        let mut req = RequestParts::new(
-            Request::builder()
-                .method(Method::POST)
-                .header(
-                    http::header::CONTENT_TYPE,
-                    mime::APPLICATION_WWW_FORM_URLENCODED.as_ref(),
-                )
-                .body(Full::<Bytes>::new(
-                    "client_id=client-id&client_secret=client-secret&foo=bar".into(),
-                ))
-                .unwrap(),
-        );
+        let req = Request::builder()
+            .method(Method::POST)
+            .header(
+                http::header::CONTENT_TYPE,
+                mime::APPLICATION_WWW_FORM_URLENCODED.as_ref(),
+            )
+            .body(Full::<Bytes>::new(
+                "client_id=client-id&client_secret=client-secret&foo=bar".into(),
+            ))
+            .unwrap();
 
         assert_eq!(
-            ClientAuthorization::<serde_json::Value>::from_request(&mut req)
+            ClientAuthorization::<serde_json::Value>::from_request(req, &())
                 .await
                 .unwrap(),
             ClientAuthorization {
@@ -546,18 +542,16 @@ mod tests {
             JWT_BEARER_CLIENT_ASSERTION, jwt,
         ));
 
-        let mut req = RequestParts::new(
-            Request::builder()
-                .method(Method::POST)
-                .header(
-                    http::header::CONTENT_TYPE,
-                    mime::APPLICATION_WWW_FORM_URLENCODED.as_ref(),
-                )
-                .body(Full::new(body))
-                .unwrap(),
-        );
+        let req = Request::builder()
+            .method(Method::POST)
+            .header(
+                http::header::CONTENT_TYPE,
+                mime::APPLICATION_WWW_FORM_URLENCODED.as_ref(),
+            )
+            .body(Full::new(body))
+            .unwrap();
 
-        let authz = ClientAuthorization::<serde_json::Value>::from_request(&mut req)
+        let authz = ClientAuthorization::<serde_json::Value>::from_request(req, &())
             .await
             .unwrap();
         assert_eq!(authz.form, Some(serde_json::json!({"foo": "bar"})));

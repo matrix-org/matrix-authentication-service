@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use axum::{
-    extract::{Extension, Form, Query},
+    extract::{Form, Query, State},
     response::{Html, IntoResponse, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
@@ -38,8 +38,8 @@ pub struct EmailForm {
 }
 
 pub(crate) async fn get(
-    Extension(templates): Extension<Templates>,
-    Extension(pool): Extension<PgPool>,
+    State(templates): State<Templates>,
+    State(pool): State<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
     let mut conn = pool.begin().await?;
@@ -66,8 +66,8 @@ pub(crate) async fn get(
 }
 
 pub(crate) async fn post(
-    Extension(pool): Extension<PgPool>,
-    Extension(mailer): Extension<Mailer>,
+    State(pool): State<PgPool>,
+    State(mailer): State<Mailer>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Query(query): Query<OptionalPostAuthAction>,
     Form(form): Form<ProtectedForm<EmailForm>>,

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum::{response::IntoResponse, Extension, Json};
+use axum::{extract::State, response::IntoResponse, Json};
 use chrono::Duration;
 use hyper::StatusCode;
 use mas_data_model::{TokenFormatError, TokenType};
@@ -96,7 +96,7 @@ pub struct ResponseBody {
 }
 
 pub(crate) async fn post(
-    Extension(pool): Extension<PgPool>,
+    State(pool): State<PgPool>,
     Json(input): Json<RequestBody>,
 ) -> Result<impl IntoResponse, RouteError> {
     let mut txn = pool.begin().await?;

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use axum::{
-    extract::{Extension, Form, Query},
+    extract::{Form, Query, State},
     response::{Html, IntoResponse, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
@@ -44,8 +44,8 @@ impl ToFormState for LoginForm {
 
 #[tracing::instrument(skip(templates, pool, cookie_jar))]
 pub(crate) async fn get(
-    Extension(templates): Extension<Templates>,
-    Extension(pool): Extension<PgPool>,
+    State(templates): State<Templates>,
+    State(pool): State<PgPool>,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
@@ -74,8 +74,8 @@ pub(crate) async fn get(
 }
 
 pub(crate) async fn post(
-    Extension(templates): Extension<Templates>,
-    Extension(pool): Extension<PgPool>,
+    State(templates): State<Templates>,
+    State(pool): State<PgPool>,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<LoginForm>>,
