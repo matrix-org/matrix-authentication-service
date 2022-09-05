@@ -366,90 +366,139 @@ impl ProviderMetadata {
     /// Will return `Err` if validation fails.
     ///
     /// [OpenID Connect Discovery Spec 1.0]: https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata
-    #[allow(clippy::too_many_lines)]
     pub fn validate(
         self,
         issuer: &Url,
     ) -> Result<VerifiedProviderMetadata, ProviderMetadataVerificationError> {
-        self.issuer
-            .as_ref()
-            .ok_or(ProviderMetadataVerificationError::MissingIssuer)
-            .and_then(|url| {
-                validate_url("issuer", url, ExtraUrlRestrictions::NoQueryOrFragment)?;
+        let metadata = self.insecure_verify_metadata()?;
 
-                if url != issuer {
-                    return Err(ProviderMetadataVerificationError::IssuerUrlsDontMatch);
-                }
+        if metadata.issuer() != issuer {
+            return Err(ProviderMetadataVerificationError::IssuerUrlsDontMatch);
+        }
 
-                Ok(())
-            })?;
+        validate_url(
+            "issuer",
+            metadata.issuer(),
+            ExtraUrlRestrictions::NoQueryOrFragment,
+        )?;
 
-        self.authorization_endpoint
-            .as_ref()
-            .ok_or(ProviderMetadataVerificationError::MissingAuthorizationEndpoint)
-            .and_then(|url| {
-                validate_url(
-                    "authorization_endpoint",
-                    url,
-                    ExtraUrlRestrictions::NoFragment,
-                )
-            })?;
+        validate_url(
+            "authorization_endpoint",
+            metadata.authorization_endpoint(),
+            ExtraUrlRestrictions::NoFragment,
+        )?;
 
-        self.token_endpoint
-            .as_ref()
-            .ok_or(ProviderMetadataVerificationError::MissingTokenEndpoint)
-            .and_then(|url| {
-                validate_url("token_endpoint", url, ExtraUrlRestrictions::NoFragment)
-            })?;
+        validate_url(
+            "token_endpoint",
+            metadata.token_endpoint(),
+            ExtraUrlRestrictions::NoFragment,
+        )?;
 
-        self.jwks_uri
-            .as_ref()
-            .ok_or(ProviderMetadataVerificationError::MissingJwksUri)
-            .and_then(|url| validate_url("jwks_uri", url, ExtraUrlRestrictions::None))?;
+        validate_url("jwks_uri", metadata.jwks_uri(), ExtraUrlRestrictions::None)?;
 
-        if let Some(url) = &self.registration_endpoint {
+        if let Some(url) = &metadata.registration_endpoint {
             validate_url("registration_endpoint", url, ExtraUrlRestrictions::None)?;
         }
 
-        if let Some(scopes) = &self.scopes_supported {
+        if let Some(scopes) = &metadata.scopes_supported {
             if !scopes.iter().any(|s| s == "openid") {
                 return Err(ProviderMetadataVerificationError::ScopesMissingOpenid);
             }
         }
 
-        self.response_types_supported
-            .as_ref()
-            .ok_or(ProviderMetadataVerificationError::MissingResponseTypesSupported)?;
-
         validate_signing_alg_values_supported(
             "token_endpoint",
-            &self.token_endpoint_auth_signing_alg_values_supported,
-            &self.token_endpoint_auth_methods_supported,
+            &metadata.token_endpoint_auth_signing_alg_values_supported,
+            &metadata.token_endpoint_auth_methods_supported,
         )?;
 
-        if let Some(url) = &self.revocation_endpoint {
+        if let Some(url) = &metadata.revocation_endpoint {
             validate_url("revocation_endpoint", url, ExtraUrlRestrictions::NoFragment)?;
         }
 
         validate_signing_alg_values_supported(
             "revocation_endpoint",
-            &self.revocation_endpoint_auth_signing_alg_values_supported,
-            &self.revocation_endpoint_auth_methods_supported,
+            &metadata.revocation_endpoint_auth_signing_alg_values_supported,
+            &metadata.revocation_endpoint_auth_methods_supported,
         )?;
 
-        if let Some(url) = &self.introspection_endpoint {
+        if let Some(url) = &metadata.introspection_endpoint {
             validate_url("introspection_endpoint", url, ExtraUrlRestrictions::None)?;
         }
 
         validate_signing_alg_values_supported(
             "introspection_endpoint",
-            &self.introspection_endpoint_auth_signing_alg_values_supported,
-            &self.introspection_endpoint_auth_methods_supported,
+            &metadata.introspection_endpoint_auth_signing_alg_values_supported,
+            &metadata.introspection_endpoint_auth_methods_supported,
         )?;
 
-        if let Some(url) = &self.userinfo_endpoint {
+        if let Some(url) = &metadata.userinfo_endpoint {
             validate_url("userinfo_endpoint", url, ExtraUrlRestrictions::None)?;
         }
+
+        if !metadata
+            .id_token_signing_alg_values_supported()
+            .contains(&JsonWebSignatureAlg::Rs256)
+        {
+            return Err(
+                ProviderMetadataVerificationError::SigningAlgValuesMissingRs256("id_token"),
+            );
+        }
+
+        if let Some(url) = &metadata.pushed_authorization_request_endpoint {
+            validate_url(
+                "pushed_authorization_request_endpoint",
+                url,
+                ExtraUrlRestrictions::None,
+            )?;
+        }
+
+        Ok(metadata)
+    }
+
+    /// Verify this `ProviderMetadata`.
+    ///
+    /// Contrary to [`ProviderMetadata::validate()`], it only checks that the
+    /// required fields are present.
+    ///
+    /// This can be used during development to test against a local OpenID
+    /// Provider, for example.
+    ///
+    /// # Parameters
+    ///
+    /// - `issuer`: The issuer that was discovered to get this
+    ///   `ProviderMetadata`.
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` if a required field is missing.
+    ///
+    /// # Warning
+    ///
+    /// It is not recommended to use this method in production as it doesn't
+    /// ensure that the issuer implements the proper security practices.
+    pub fn insecure_verify_metadata(
+        self,
+    ) -> Result<VerifiedProviderMetadata, ProviderMetadataVerificationError> {
+        self.issuer
+            .as_ref()
+            .ok_or(ProviderMetadataVerificationError::MissingIssuer)?;
+
+        self.authorization_endpoint
+            .as_ref()
+            .ok_or(ProviderMetadataVerificationError::MissingAuthorizationEndpoint)?;
+
+        self.token_endpoint
+            .as_ref()
+            .ok_or(ProviderMetadataVerificationError::MissingTokenEndpoint)?;
+
+        self.jwks_uri
+            .as_ref()
+            .ok_or(ProviderMetadataVerificationError::MissingJwksUri)?;
+
+        self.response_types_supported
+            .as_ref()
+            .ok_or(ProviderMetadataVerificationError::MissingResponseTypesSupported)?;
 
         self.subject_types_supported
             .as_ref()
@@ -457,24 +506,7 @@ impl ProviderMetadata {
 
         self.id_token_signing_alg_values_supported
             .as_ref()
-            .ok_or(ProviderMetadataVerificationError::MissingIdTokenSigningAlgValuesSupported)
-            .and_then(|types| {
-                if !types.contains(&JsonWebSignatureAlg::Rs256) {
-                    return Err(
-                        ProviderMetadataVerificationError::SigningAlgValuesMissingRs256("id_token"),
-                    );
-                }
-
-                Ok(())
-            })?;
-
-        if let Some(url) = &self.pushed_authorization_request_endpoint {
-            validate_url(
-                "pushed_authorization_request_endpoint",
-                url,
-                ExtraUrlRestrictions::None,
-            )?;
-        }
+            .ok_or(ProviderMetadataVerificationError::MissingIdTokenSigningAlgValuesSupported)?;
 
         Ok(VerifiedProviderMetadata { inner: self })
     }
