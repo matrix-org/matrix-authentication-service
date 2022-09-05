@@ -23,7 +23,7 @@ rand = "0.8.5"
 rsa = { version = "0.7.0-pre", features = ["std", "pem"] }
 sec1 = { version = "0.3.0", features = ["std"] }
 spki = { version = "0.6.0", features = ["std"] }
-thiserror = "1.0.32"
+thiserror = "1.0.34"
 generic-array = "0.14.6"
 chacha20poly1305 = { version = "0.10.1", features = ["std"] }
 base64ct = "1.5.2"
