@@ -13,7 +13,7 @@ tracing = "0.1.36"
 tokio = { version = "1.20.1", features = ["macros"] }
 
 anyhow = "1.0.64"
-thiserror = "1.0.32"
+thiserror = "1.0.34"
 
 tera = "1.17.0"
 serde = { version = "1.0.144", features = ["derive"] }
