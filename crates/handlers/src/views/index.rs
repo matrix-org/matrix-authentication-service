@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use axum::{
-    extract::Extension,
+    extract::State,
     response::{Html, IntoResponse},
 };
 use axum_extra::extract::PrivateCookieJar;
@@ -24,9 +24,9 @@ use mas_templates::{IndexContext, TemplateContext, Templates};
 use sqlx::PgPool;
 
 pub async fn get(
-    Extension(templates): Extension<Templates>,
-    Extension(url_builder): Extension<UrlBuilder>,
-    Extension(pool): Extension<PgPool>,
+    State(templates): State<Templates>,
+    State(url_builder): State<UrlBuilder>,
+    State(pool): State<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<impl IntoResponse, FancyError> {
     let mut conn = pool.acquire().await?;

@@ -15,7 +15,7 @@
 use std::collections::HashMap;
 
 use anyhow::Context;
-use axum::{extract::Extension, response::IntoResponse, Json};
+use axum::{extract::State, response::IntoResponse, Json};
 use chrono::{DateTime, Duration, Utc};
 use data_encoding::BASE64URL_NOPAD;
 use headers::{CacheControl, HeaderMap, HeaderMapExt, Pragma};
@@ -188,11 +188,11 @@ impl From<JwtSignatureError> for RouteError {
 
 #[tracing::instrument(skip_all, err)]
 pub(crate) async fn post(
+    State(key_store): State<Keystore>,
+    State(url_builder): State<UrlBuilder>,
+    State(pool): State<PgPool>,
+    State(encrypter): State<Encrypter>,
     client_authorization: ClientAuthorization<AccessTokenRequest>,
-    Extension(key_store): Extension<Keystore>,
-    Extension(url_builder): Extension<UrlBuilder>,
-    Extension(pool): Extension<PgPool>,
-    Extension(encrypter): Extension<Encrypter>,
 ) -> Result<impl IntoResponse, RouteError> {
     let mut txn = pool.begin().await?;
 

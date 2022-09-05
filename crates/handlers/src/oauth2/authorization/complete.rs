@@ -16,9 +16,8 @@ use std::sync::Arc;
 
 use anyhow::anyhow;
 use axum::{
-    extract::Path,
+    extract::{Path, State},
     response::{IntoResponse, Response},
-    Extension,
 };
 use axum_extra::extract::PrivateCookieJar;
 use hyper::StatusCode;
@@ -104,9 +103,9 @@ impl From<CallbackDestinationError> for RouteError {
 }
 
 pub(crate) async fn get(
-    Extension(policy_factory): Extension<Arc<PolicyFactory>>,
-    Extension(templates): Extension<Templates>,
-    Extension(pool): Extension<PgPool>,
+    State(policy_factory): State<Arc<PolicyFactory>>,
+    State(templates): State<Templates>,
+    State(pool): State<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(grant_id): Path<i64>,
 ) -> Result<Response, RouteError> {

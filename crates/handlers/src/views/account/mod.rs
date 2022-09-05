@@ -16,7 +16,7 @@ pub mod emails;
 pub mod password;
 
 use axum::{
-    extract::Extension,
+    extract::State,
     response::{Html, IntoResponse, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
@@ -28,8 +28,8 @@ use mas_templates::{AccountContext, TemplateContext, Templates};
 use sqlx::PgPool;
 
 pub(crate) async fn get(
-    Extension(templates): Extension<Templates>,
-    Extension(pool): Extension<PgPool>,
+    State(templates): State<Templates>,
+    State(pool): State<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
     let mut conn = pool.acquire().await?;

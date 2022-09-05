@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use axum::{
-    extract::{Extension, Form},
+    extract::{Form, State},
     response::IntoResponse,
 };
 use axum_extra::extract::PrivateCookieJar;
@@ -27,7 +27,7 @@ use mas_storage::user::end_session;
 use sqlx::PgPool;
 
 pub(crate) async fn post(
-    Extension(pool): Extension<PgPool>,
+    State(pool): State<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<Option<PostAuthAction>>>,
 ) -> Result<impl IntoResponse, FancyError> {

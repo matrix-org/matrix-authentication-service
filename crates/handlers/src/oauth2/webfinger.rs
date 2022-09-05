@@ -12,7 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum::{extract::Query, response::IntoResponse, Extension, Json, TypedHeader};
+use axum::{
+    extract::{Query, State},
+    response::IntoResponse,
+    Json, TypedHeader,
+};
 use headers::ContentType;
 use mas_router::UrlBuilder;
 use oauth2_types::webfinger::WebFingerResponse;
@@ -33,7 +37,7 @@ fn jrd() -> mime::Mime {
 
 pub(crate) async fn get(
     Query(params): Query<Params>,
-    Extension(url_builder): Extension<UrlBuilder>,
+    State(url_builder): State<UrlBuilder>,
 ) -> impl IntoResponse {
     // TODO: should we validate the subject?
     let subject = params.resource;

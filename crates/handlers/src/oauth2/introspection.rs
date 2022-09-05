@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum::{extract::Extension, response::IntoResponse, Json};
+use axum::{extract::State, response::IntoResponse, Json};
 use hyper::StatusCode;
 use mas_axum_utils::client_authorization::{ClientAuthorization, CredentialsVerificationError};
 use mas_data_model::{TokenFormatError, TokenType};
@@ -154,8 +154,8 @@ const INACTIVE: IntrospectionResponse = IntrospectionResponse {
 
 #[tracing::instrument(skip_all, err)]
 pub(crate) async fn post(
-    Extension(pool): Extension<PgPool>,
-    Extension(encrypter): Extension<Encrypter>,
+    State(pool): State<PgPool>,
+    State(encrypter): State<Encrypter>,
     client_authorization: ClientAuthorization<IntrospectionRequest>,
 ) -> Result<impl IntoResponse, RouteError> {
     let mut conn = pool.acquire().await?;

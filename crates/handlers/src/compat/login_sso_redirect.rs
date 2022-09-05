@@ -13,7 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum::{extract::Query, response::IntoResponse, Extension};
+use axum::{
+    extract::{Query, State},
+    response::IntoResponse,
+};
 use hyper::StatusCode;
 use mas_router::{CompatLoginSsoAction, CompatLoginSsoComplete, UrlBuilder};
 use mas_storage::compat::insert_compat_sso_login;
@@ -63,8 +66,8 @@ impl IntoResponse for RouteError {
 
 #[tracing::instrument(skip(pool, url_builder), err)]
 pub async fn get(
-    Extension(pool): Extension<PgPool>,
-    Extension(url_builder): Extension<UrlBuilder>,
+    State(pool): State<PgPool>,
+    State(url_builder): State<UrlBuilder>,
     Query(params): Query<Params>,
 ) -> Result<impl IntoResponse, RouteError> {
     // Check the redirectUrl parameter

@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum::{extract::Extension, response::IntoResponse, Json};
+use axum::{extract::State, response::IntoResponse, Json};
 use mas_keystore::Keystore;
 
-pub(crate) async fn get(Extension(key_store): Extension<Keystore>) -> impl IntoResponse {
+pub(crate) async fn get(State(key_store): State<Keystore>) -> impl IntoResponse {
     let jwks = key_store.public_jwks();
     Json(jwks)
 }

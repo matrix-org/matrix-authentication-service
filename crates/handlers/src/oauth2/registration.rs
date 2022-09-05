@@ -14,7 +14,7 @@
 
 use std::sync::Arc;
 
-use axum::{response::IntoResponse, Extension, Json};
+use axum::{extract::State, response::IntoResponse, Json};
 use hyper::StatusCode;
 use mas_policy::{PolicyFactory, Violation};
 use mas_storage::oauth2::client::insert_client;
@@ -105,8 +105,8 @@ impl IntoResponse for RouteError {
 
 #[tracing::instrument(skip_all, err)]
 pub(crate) async fn post(
-    Extension(pool): Extension<PgPool>,
-    Extension(policy_factory): Extension<Arc<PolicyFactory>>,
+    State(pool): State<PgPool>,
+    State(policy_factory): State<Arc<PolicyFactory>>,
     Json(body): Json<ClientMetadata>,
 ) -> Result<impl IntoResponse, RouteError> {
     info!(?body, "Client registration");

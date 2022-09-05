@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum::{response::IntoResponse, Extension, Json};
+use axum::{extract::State, response::IntoResponse, Json};
 use chrono::{Duration, Utc};
 use hyper::StatusCode;
 use mas_data_model::{CompatSession, CompatSsoLoginState, Device, TokenType};
@@ -197,8 +197,8 @@ impl IntoResponse for RouteError {
 
 #[tracing::instrument(skip_all, err)]
 pub(crate) async fn post(
-    Extension(pool): Extension<PgPool>,
-    Extension(homeserver): Extension<MatrixHomeserver>,
+    State(pool): State<PgPool>,
+    State(homeserver): State<MatrixHomeserver>,
     Json(input): Json<RequestBody>,
 ) -> Result<impl IntoResponse, RouteError> {
     let mut txn = pool.begin().await?;

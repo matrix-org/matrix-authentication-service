@@ -14,7 +14,7 @@
 
 use anyhow::Context;
 use axum::{
-    extract::Extension,
+    extract::State,
     response::{IntoResponse, Response},
     Json,
 };
@@ -48,9 +48,9 @@ struct SignedUserInfo {
 }
 
 pub async fn get(
-    Extension(url_builder): Extension<UrlBuilder>,
-    Extension(pool): Extension<PgPool>,
-    Extension(key_store): Extension<Keystore>,
+    State(url_builder): State<UrlBuilder>,
+    State(pool): State<PgPool>,
+    State(key_store): State<Keystore>,
     user_authorization: UserAuthorization,
 ) -> Result<Response, FancyError> {
     // TODO: error handling
