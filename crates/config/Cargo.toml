@@ -14,7 +14,7 @@ thiserror = "1.0.34"
 anyhow = "1.0.64"
 
 schemars = { version = "0.8.10", features = ["url", "chrono"] }
-figment = { version = "0.10.6", features = ["env", "yaml", "test"] }
+figment = { version = "0.10.7", features = ["env", "yaml", "test"] }
 chrono = { version = "0.4.22", features = ["serde"] }
 url = { version = "2.2.2", features = ["serde"] }
 
