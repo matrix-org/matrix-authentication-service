@@ -387,12 +387,12 @@ mod rfc7519 {
 mod oidc_core {
     use url::Url;
 
-    use super::{Claim, Timestamp};
+    use super::{Claim, Timestamp, TokenHash};
 
     pub const AUTH_TIME: Claim<Timestamp> = Claim::new("auth_time");
     pub const NONCE: Claim<String> = Claim::new("nonce");
-    pub const AT_HASH: Claim<String> = Claim::new("at_hash");
-    pub const C_HASH: Claim<String> = Claim::new("c_hash");
+    pub const AT_HASH: Claim<String, TokenHash> = Claim::new("at_hash");
+    pub const C_HASH: Claim<String, TokenHash> = Claim::new("c_hash");
 
     pub const NAME: Claim<String> = Claim::new("name");
     pub const GIVEN_NAME: Claim<String> = Claim::new("given_name");
