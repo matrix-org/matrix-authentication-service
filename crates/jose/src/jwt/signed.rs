@@ -260,6 +260,10 @@ impl<'a, T> Jwt<'a, T> {
     pub fn into_string(self) -> String {
         self.raw.into()
     }
+
+    pub fn into_parts(self) -> (JsonWebSignatureHeader, T) {
+        (self.header, self.payload)
+    }
 }
 
 #[derive(Debug, Error)]
