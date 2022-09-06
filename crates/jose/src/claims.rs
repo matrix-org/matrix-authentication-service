@@ -14,7 +14,11 @@
 
 use std::{collections::HashMap, marker::PhantomData, ops::Deref};
 
+use anyhow::Context;
+use base64ct::{Base64UrlUnpadded, Encoding};
+use mas_iana::jose::JsonWebSignatureAlg;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use sha2::{Digest, Sha256, Sha384, Sha512};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -232,6 +236,81 @@ impl From<TimeOptions> for TimeNotBefore {
 impl From<&TimeOptions> for TimeNotBefore {
     fn from(opt: &TimeOptions) -> Self {
         opt.clone().into()
+    }
+}
+
+/// Hash the given token with the given algorithm for an ID Token claim.
+///
+/// According to the [OpenID Connect Core 1.0 specification].
+///
+/// # Errors
+///
+/// Returns an error if the algorithm is not supported.
+///
+/// [OpenID Connect Core 1.0 specification]: https://openid.net/specs/openid-connect-core-1_0.html#CodeIDToken
+pub fn hash_token(alg: JsonWebSignatureAlg, token: &str) -> anyhow::Result<String> {
+    let bits = match alg {
+        JsonWebSignatureAlg::Hs256
+        | JsonWebSignatureAlg::Rs256
+        | JsonWebSignatureAlg::Es256
+        | JsonWebSignatureAlg::Ps256
+        | JsonWebSignatureAlg::Es256K => {
+            let mut hasher = Sha256::new();
+            hasher.update(token);
+            let hash = hasher.finalize();
+            // Left-most half
+            hash.get(..16).map(ToOwned::to_owned)
+        }
+        JsonWebSignatureAlg::Hs384
+        | JsonWebSignatureAlg::Rs384
+        | JsonWebSignatureAlg::Es384
+        | JsonWebSignatureAlg::Ps384 => {
+            let mut hasher = Sha384::new();
+            hasher.update(token);
+            let hash = hasher.finalize();
+            // Left-most half
+            hash.get(..24).map(ToOwned::to_owned)
+        }
+        JsonWebSignatureAlg::Hs512
+        | JsonWebSignatureAlg::Rs512
+        | JsonWebSignatureAlg::Es512
+        | JsonWebSignatureAlg::Ps512 => {
+            let mut hasher = Sha512::new();
+            hasher.update(token);
+            let hash = hasher.finalize();
+            // Left-most half
+            hash.get(..32).map(ToOwned::to_owned)
+        }
+        JsonWebSignatureAlg::EdDsa | JsonWebSignatureAlg::None => {
+            return Err(anyhow::anyhow!("unsupported algorithm for hashing"))
+        }
+    }
+    .context("failed to get first half of hash")?;
+
+    Ok(Base64UrlUnpadded::encode_string(&bits))
+}
+
+#[derive(Debug, Clone)]
+pub struct TokenHash<'a> {
+    alg: JsonWebSignatureAlg,
+    token: &'a str,
+}
+
+impl<'a> TokenHash<'a> {
+    /// Creates a new `TokenHash` validator for the given algorithm and token.
+    #[must_use]
+    pub fn new(alg: JsonWebSignatureAlg, token: &'a str) -> Self {
+        Self { alg, token }
+    }
+}
+
+impl<'a> Validator<String> for TokenHash<'a> {
+    fn validate(&self, value: &String) -> Result<(), anyhow::Error> {
+        if hash_token(self.alg, self.token)? == *value {
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("hashes don't match"))
+        }
     }
 }
 

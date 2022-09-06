@@ -17,14 +17,13 @@ use std::collections::HashMap;
 use anyhow::Context;
 use axum::{extract::State, response::IntoResponse, Json};
 use chrono::{DateTime, Duration, Utc};
-use data_encoding::BASE64URL_NOPAD;
 use headers::{CacheControl, HeaderMap, HeaderMapExt, Pragma};
 use hyper::StatusCode;
 use mas_axum_utils::client_authorization::{ClientAuthorization, CredentialsVerificationError};
 use mas_data_model::{AuthorizationGrantStage, Client, TokenType};
 use mas_iana::jose::JsonWebSignatureAlg;
 use mas_jose::{
-    claims::{self, ClaimError},
+    claims::{self, hash_token, ClaimError},
     constraints::Constrainable,
     jwt::{JsonWebSignatureHeader, Jwt, JwtSignatureError},
 };
@@ -54,7 +53,6 @@ use oauth2_types::{
 use rand::thread_rng;
 use serde::Serialize;
 use serde_with::{serde_as, skip_serializing_none};
-use sha2::{Digest, Sha256};
 use sqlx::{PgPool, Postgres, Transaction};
 use thiserror::Error;
 use tracing::debug;
@@ -228,16 +226,6 @@ pub(crate) async fn post(
     Ok((headers, Json(reply)))
 }
 
-fn hash<H: Digest>(mut hasher: H, token: &str) -> anyhow::Result<String> {
-    hasher.update(token);
-    let hash = hasher.finalize();
-    // Left-most 128bit
-    let bits = hash
-        .get(..16)
-        .context("failed to get first 128 bits of hash")?;
-    Ok(BASE64URL_NOPAD.encode(bits))
-}
-
 #[allow(clippy::too_many_lines)]
 async fn authorization_code_grant(
     grant: &AuthorizationCodeGrant,
@@ -343,15 +331,15 @@ async fn authorization_code_grant(
             claims::AUTH_TIME.insert(&mut claims, last_authentication.created_at)?;
         }
 
-        claims::AT_HASH.insert(&mut claims, hash(Sha256::new(), &access_token_str)?)?;
-        claims::C_HASH.insert(&mut claims, hash(Sha256::new(), &grant.code)?)?;
-
         let alg = client
             .id_token_signed_response_alg
             .unwrap_or(JsonWebSignatureAlg::Rs256);
         let key = key_store
             .signing_key_for_algorithm(alg)
             .context("no suitable key found")?;
+
+        claims::AT_HASH.insert(&mut claims, hash_token(alg, &access_token_str)?)?;
+        claims::C_HASH.insert(&mut claims, hash_token(alg, &grant.code)?)?;
 
         let header = JsonWebSignatureHeader::new(alg)
             .with_kid(key.kid().context("key has no `kid` for some reason")?);
