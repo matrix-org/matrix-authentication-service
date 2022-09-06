@@ -66,6 +66,7 @@ where
 {
     // All those routes are API-like, with a common CORS layer
     Router::with_state_arc(state)
+        .route(mas_router::Healthcheck::route(), get(self::health::get))
         .route(
             mas_router::ChangePasswordDiscovery::route(),
             get(|| async { mas_router::AccountPassword.go() }),
@@ -174,7 +175,6 @@ where
     let templates = Templates::from_ref(&state);
     Router::with_state_arc(state)
         .route(mas_router::Index::route(), get(self::views::index::get))
-        .route(mas_router::Healthcheck::route(), get(self::health::get))
         .route(
             mas_router::Login::route(),
             get(self::views::login::get).post(self::views::login::post),
