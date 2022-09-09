@@ -29,13 +29,14 @@ use url::Url;
 use crate::{
     oidc::{ApplicationType, SubjectType},
     requests::GrantType,
+    response_type::ResponseType,
 };
 
 mod client_metadata_serde;
 use client_metadata_serde::ClientMetadataSerdeHelper;
 
-pub const DEFAULT_RESPONSE_TYPES: &[OAuthAuthorizationEndpointResponseType] =
-    &[OAuthAuthorizationEndpointResponseType::Code];
+pub const DEFAULT_RESPONSE_TYPES: [OAuthAuthorizationEndpointResponseType; 1] =
+    [OAuthAuthorizationEndpointResponseType::Code];
 
 pub const DEFAULT_GRANT_TYPES: &[GrantType] = &[GrantType::AuthorizationCode];
 
@@ -134,7 +135,7 @@ pub struct ClientMetadata {
     ///
     /// [OAuth 2.0 `response_type` values]: https://www.rfc-editor.org/rfc/rfc7591#page-9
     /// [authorization endpoint]: https://www.rfc-editor.org/rfc/rfc6749.html#section-3.1
-    pub response_types: Option<Vec<OAuthAuthorizationEndpointResponseType>>,
+    pub response_types: Option<Vec<ResponseType>>,
 
     /// Array of [OAuth 2.0 `grant_type` values] that the client can use at the
     /// [token endpoint].
@@ -431,21 +432,18 @@ impl ClientMetadata {
         let has_authorization_code = grant_types.contains(&GrantType::AuthorizationCode);
         let has_both = has_implicit && has_authorization_code;
 
-        for response_type in response_types {
-            let is_ok = match response_type {
-                OAuthAuthorizationEndpointResponseType::Code => has_authorization_code,
-                OAuthAuthorizationEndpointResponseType::CodeIdToken
-                | OAuthAuthorizationEndpointResponseType::CodeIdTokenToken
-                | OAuthAuthorizationEndpointResponseType::CodeToken => has_both,
-                OAuthAuthorizationEndpointResponseType::IdToken
-                | OAuthAuthorizationEndpointResponseType::IdTokenToken
-                | OAuthAuthorizationEndpointResponseType::Token => has_implicit,
-                OAuthAuthorizationEndpointResponseType::None => true,
-            };
+        for response_type in &response_types {
+            let has_code = response_type.has_code();
+            let has_id_token = response_type.has_id_token();
+            let has_token = response_type.has_token();
+            let is_ok = has_code && has_both
+                || !has_code && has_implicit
+                || has_authorization_code && !has_id_token && !has_token
+                || !has_code && !has_id_token && !has_token;
 
             if !is_ok {
                 return Err(ClientMetadataVerificationError::IncoherentResponseType(
-                    *response_type,
+                    response_type.clone(),
                 ));
             }
         }
@@ -489,11 +487,7 @@ impl ClientMetadata {
         }
 
         if self.id_token_signed_response_alg() == JsonWebSignatureAlg::None
-            && (response_types.contains(&OAuthAuthorizationEndpointResponseType::CodeIdToken)
-                || response_types
-                    .contains(&OAuthAuthorizationEndpointResponseType::CodeIdTokenToken)
-                || response_types.contains(&OAuthAuthorizationEndpointResponseType::IdToken)
-                || response_types.contains(&OAuthAuthorizationEndpointResponseType::IdTokenToken))
+            && response_types.iter().any(ResponseType::has_id_token)
         {
             return Err(ClientMetadataVerificationError::IdTokenSigningAlgNone);
         }
@@ -547,10 +541,10 @@ impl ClientMetadata {
     /// [OAuth 2.0 `response_type` values]: https://www.rfc-editor.org/rfc/rfc7591#page-9
     /// [authorization endpoint]: https://www.rfc-editor.org/rfc/rfc6749.html#section-3.1
     #[must_use]
-    pub fn response_types(&self) -> &[OAuthAuthorizationEndpointResponseType] {
+    pub fn response_types(&self) -> Vec<ResponseType> {
         self.response_types
-            .as_deref()
-            .unwrap_or(DEFAULT_RESPONSE_TYPES)
+            .clone()
+            .unwrap_or_else(|| DEFAULT_RESPONSE_TYPES.map(ResponseType::from).into())
     }
 
     /// Array of [OAuth 2.0 `grant_type` values] that the client can use at the
@@ -801,7 +795,7 @@ pub enum ClientMetadataVerificationError {
 
     /// The given response type is not compatible with the grant types.
     #[error("'{0}' response type not compatible with grant types")]
-    IncoherentResponseType(OAuthAuthorizationEndpointResponseType),
+    IncoherentResponseType(ResponseType),
 
     /// Both the `jwks_uri` and `jwks` fields are present but only one is
     /// allowed.
@@ -865,7 +859,7 @@ mod tests {
     use url::Url;
 
     use super::{ClientMetadata, ClientMetadataVerificationError};
-    use crate::requests::GrantType;
+    use crate::{requests::GrantType, response_type::ResponseType};
 
     fn valid_client_metadata() -> ClientMetadata {
         ClientMetadata {
@@ -934,173 +928,192 @@ mod tests {
 
         // grant_type = authorization_code
         // code - Ok
-        metadata.response_types = Some(vec![OAuthAuthorizationEndpointResponseType::Code]);
+        metadata.response_types = Some(vec![OAuthAuthorizationEndpointResponseType::Code.into()]);
         metadata.clone().validate().unwrap();
 
         // code id_token - Err
-        let response_type = OAuthAuthorizationEndpointResponseType::CodeIdToken;
-        metadata.response_types = Some(vec![response_type]);
+        let response_type: ResponseType =
+            OAuthAuthorizationEndpointResponseType::CodeIdToken.into();
+        metadata.response_types = Some(vec![response_type.clone()]);
         let res = assert_matches!(metadata.clone().validate(), Err(ClientMetadataVerificationError::IncoherentResponseType(res)) => res);
         assert_eq!(res, response_type);
 
         // code id_token token - Err
-        let response_type = OAuthAuthorizationEndpointResponseType::CodeIdTokenToken;
-        metadata.response_types = Some(vec![response_type]);
+        let response_type: ResponseType =
+            OAuthAuthorizationEndpointResponseType::CodeIdTokenToken.into();
+        metadata.response_types = Some(vec![response_type.clone()]);
         let res = assert_matches!(metadata.clone().validate(), Err(ClientMetadataVerificationError::IncoherentResponseType(res)) => res);
         assert_eq!(res, response_type);
 
         // code token - Err
-        let response_type = OAuthAuthorizationEndpointResponseType::CodeToken;
-        metadata.response_types = Some(vec![response_type]);
+        let response_type: ResponseType = OAuthAuthorizationEndpointResponseType::CodeToken.into();
+        metadata.response_types = Some(vec![response_type.clone()]);
         let res = assert_matches!(metadata.clone().validate(), Err(ClientMetadataVerificationError::IncoherentResponseType(res)) => res);
         assert_eq!(res, response_type);
 
         // id_token - Err
-        let response_type = OAuthAuthorizationEndpointResponseType::IdToken;
-        metadata.response_types = Some(vec![response_type]);
+        let response_type: ResponseType = OAuthAuthorizationEndpointResponseType::IdToken.into();
+        metadata.response_types = Some(vec![response_type.clone()]);
         let res = assert_matches!(metadata.clone().validate(), Err(ClientMetadataVerificationError::IncoherentResponseType(res)) => res);
         assert_eq!(res, response_type);
 
         // id_token token - Err
-        let response_type = OAuthAuthorizationEndpointResponseType::IdTokenToken;
-        metadata.response_types = Some(vec![response_type]);
+        let response_type: ResponseType =
+            OAuthAuthorizationEndpointResponseType::IdTokenToken.into();
+        metadata.response_types = Some(vec![response_type.clone()]);
         let res = assert_matches!(metadata.clone().validate(), Err(ClientMetadataVerificationError::IncoherentResponseType(res)) => res);
         assert_eq!(res, response_type);
 
         // token - Err
-        let response_type = OAuthAuthorizationEndpointResponseType::IdTokenToken;
-        metadata.response_types = Some(vec![response_type]);
+        let response_type: ResponseType =
+            OAuthAuthorizationEndpointResponseType::IdTokenToken.into();
+        metadata.response_types = Some(vec![response_type.clone()]);
         let res = assert_matches!(metadata.clone().validate(), Err(ClientMetadataVerificationError::IncoherentResponseType(res)) => res);
         assert_eq!(res, response_type);
 
         // none - Ok
-        metadata.response_types = Some(vec![OAuthAuthorizationEndpointResponseType::None]);
+        metadata.response_types = Some(vec![OAuthAuthorizationEndpointResponseType::None.into()]);
         metadata.clone().validate().unwrap();
 
         // grant_type = implicit
         metadata.grant_types = Some(vec![GrantType::Implicit]);
         // code - Err
-        let response_type = OAuthAuthorizationEndpointResponseType::Code;
-        metadata.response_types = Some(vec![response_type]);
+        let response_type: ResponseType = OAuthAuthorizationEndpointResponseType::Code.into();
+        metadata.response_types = Some(vec![response_type.clone()]);
         let res = assert_matches!(metadata.clone().validate(), Err(ClientMetadataVerificationError::IncoherentResponseType(res)) => res);
         assert_eq!(res, response_type);
 
         // code id_token - Err
-        let response_type = OAuthAuthorizationEndpointResponseType::CodeIdToken;
-        metadata.response_types = Some(vec![response_type]);
+        let response_type: ResponseType =
+            OAuthAuthorizationEndpointResponseType::CodeIdToken.into();
+        metadata.response_types = Some(vec![response_type.clone()]);
         let res = assert_matches!(metadata.clone().validate(), Err(ClientMetadataVerificationError::IncoherentResponseType(res)) => res);
         assert_eq!(res, response_type);
 
         // code id_token token - Err
-        let response_type = OAuthAuthorizationEndpointResponseType::CodeIdTokenToken;
-        metadata.response_types = Some(vec![response_type]);
+        let response_type: ResponseType =
+            OAuthAuthorizationEndpointResponseType::CodeIdTokenToken.into();
+        metadata.response_types = Some(vec![response_type.clone()]);
         let res = assert_matches!(metadata.clone().validate(), Err(ClientMetadataVerificationError::IncoherentResponseType(res)) => res);
         assert_eq!(res, response_type);
 
         // code token - Err
-        let response_type = OAuthAuthorizationEndpointResponseType::CodeToken;
-        metadata.response_types = Some(vec![response_type]);
+        let response_type: ResponseType = OAuthAuthorizationEndpointResponseType::CodeToken.into();
+        metadata.response_types = Some(vec![response_type.clone()]);
         let res = assert_matches!(metadata.clone().validate(), Err(ClientMetadataVerificationError::IncoherentResponseType(res)) => res);
         assert_eq!(res, response_type);
 
         // id_token - Ok
-        metadata.response_types = Some(vec![OAuthAuthorizationEndpointResponseType::IdToken]);
+        metadata.response_types =
+            Some(vec![OAuthAuthorizationEndpointResponseType::IdToken.into()]);
         metadata.clone().validate().unwrap();
 
         // id_token token - Ok
-        metadata.response_types = Some(vec![OAuthAuthorizationEndpointResponseType::IdTokenToken]);
+        metadata.response_types = Some(vec![
+            OAuthAuthorizationEndpointResponseType::IdTokenToken.into()
+        ]);
         metadata.clone().validate().unwrap();
 
         // token - Ok
-        metadata.response_types = Some(vec![OAuthAuthorizationEndpointResponseType::Token]);
+        metadata.response_types = Some(vec![OAuthAuthorizationEndpointResponseType::Token.into()]);
         metadata.clone().validate().unwrap();
 
         // none - Ok
-        metadata.response_types = Some(vec![OAuthAuthorizationEndpointResponseType::None]);
+        metadata.response_types = Some(vec![OAuthAuthorizationEndpointResponseType::None.into()]);
         metadata.clone().validate().unwrap();
 
         // grant_types = [authorization_code, implicit]
         metadata.grant_types = Some(vec![GrantType::AuthorizationCode, GrantType::Implicit]);
         // code - Ok
-        metadata.response_types = Some(vec![OAuthAuthorizationEndpointResponseType::Code]);
+        metadata.response_types = Some(vec![OAuthAuthorizationEndpointResponseType::Code.into()]);
         metadata.clone().validate().unwrap();
 
         // code id_token - Ok
-        metadata.response_types = Some(vec![OAuthAuthorizationEndpointResponseType::CodeIdToken]);
+        metadata.response_types = Some(vec![
+            OAuthAuthorizationEndpointResponseType::CodeIdToken.into()
+        ]);
         metadata.clone().validate().unwrap();
 
         // code id_token token - Ok
         metadata.response_types = Some(vec![
-            OAuthAuthorizationEndpointResponseType::CodeIdTokenToken,
+            OAuthAuthorizationEndpointResponseType::CodeIdTokenToken.into(),
         ]);
         metadata.clone().validate().unwrap();
 
         // code token - Ok
-        metadata.response_types = Some(vec![OAuthAuthorizationEndpointResponseType::CodeToken]);
+        metadata.response_types = Some(vec![
+            OAuthAuthorizationEndpointResponseType::CodeToken.into()
+        ]);
         metadata.clone().validate().unwrap();
 
         // id_token - Ok
-        metadata.response_types = Some(vec![OAuthAuthorizationEndpointResponseType::IdToken]);
+        metadata.response_types =
+            Some(vec![OAuthAuthorizationEndpointResponseType::IdToken.into()]);
         metadata.clone().validate().unwrap();
 
         // id_token token - Ok
-        metadata.response_types = Some(vec![OAuthAuthorizationEndpointResponseType::IdTokenToken]);
+        metadata.response_types = Some(vec![
+            OAuthAuthorizationEndpointResponseType::IdTokenToken.into()
+        ]);
         metadata.clone().validate().unwrap();
 
         // token - Ok
-        metadata.response_types = Some(vec![OAuthAuthorizationEndpointResponseType::Token]);
+        metadata.response_types = Some(vec![OAuthAuthorizationEndpointResponseType::Token.into()]);
         metadata.clone().validate().unwrap();
 
         // none - Ok
-        metadata.response_types = Some(vec![OAuthAuthorizationEndpointResponseType::None]);
+        metadata.response_types = Some(vec![OAuthAuthorizationEndpointResponseType::None.into()]);
         metadata.clone().validate().unwrap();
 
         // other grant_types
         metadata.grant_types = Some(vec![GrantType::RefreshToken, GrantType::ClientCredentials]);
         // code - Err
-        let response_type = OAuthAuthorizationEndpointResponseType::Code;
-        metadata.response_types = Some(vec![response_type]);
+        let response_type: ResponseType = OAuthAuthorizationEndpointResponseType::Code.into();
+        metadata.response_types = Some(vec![response_type.clone()]);
         let res = assert_matches!(metadata.clone().validate(), Err(ClientMetadataVerificationError::IncoherentResponseType(res)) => res);
         assert_eq!(res, response_type);
 
         // code id_token - Err
-        let response_type = OAuthAuthorizationEndpointResponseType::CodeIdToken;
-        metadata.response_types = Some(vec![response_type]);
+        let response_type: ResponseType =
+            OAuthAuthorizationEndpointResponseType::CodeIdToken.into();
+        metadata.response_types = Some(vec![response_type.clone()]);
         let res = assert_matches!(metadata.clone().validate(), Err(ClientMetadataVerificationError::IncoherentResponseType(res)) => res);
         assert_eq!(res, response_type);
 
         // code id_token token - Err
-        let response_type = OAuthAuthorizationEndpointResponseType::CodeIdTokenToken;
-        metadata.response_types = Some(vec![response_type]);
+        let response_type: ResponseType =
+            OAuthAuthorizationEndpointResponseType::CodeIdTokenToken.into();
+        metadata.response_types = Some(vec![response_type.clone()]);
         let res = assert_matches!(metadata.clone().validate(), Err(ClientMetadataVerificationError::IncoherentResponseType(res)) => res);
         assert_eq!(res, response_type);
 
         // code token - Err
-        let response_type = OAuthAuthorizationEndpointResponseType::CodeToken;
-        metadata.response_types = Some(vec![response_type]);
+        let response_type: ResponseType = OAuthAuthorizationEndpointResponseType::CodeToken.into();
+        metadata.response_types = Some(vec![response_type.clone()]);
         let res = assert_matches!(metadata.clone().validate(), Err(ClientMetadataVerificationError::IncoherentResponseType(res)) => res);
         assert_eq!(res, response_type);
 
         // id_token - Err
-        let response_type = OAuthAuthorizationEndpointResponseType::IdToken;
-        metadata.response_types = Some(vec![response_type]);
+        let response_type: ResponseType = OAuthAuthorizationEndpointResponseType::IdToken.into();
+        metadata.response_types = Some(vec![response_type.clone()]);
         let res = assert_matches!(metadata.clone().validate(), Err(ClientMetadataVerificationError::IncoherentResponseType(res)) => res);
         assert_eq!(res, response_type);
 
         // id_token token - Err
-        let response_type = OAuthAuthorizationEndpointResponseType::IdTokenToken;
-        metadata.response_types = Some(vec![response_type]);
+        let response_type: ResponseType =
+            OAuthAuthorizationEndpointResponseType::IdTokenToken.into();
+        metadata.response_types = Some(vec![response_type.clone()]);
         let res = assert_matches!(metadata.clone().validate(), Err(ClientMetadataVerificationError::IncoherentResponseType(res)) => res);
         assert_eq!(res, response_type);
 
         // token - Err
-        let response_type = OAuthAuthorizationEndpointResponseType::Token;
-        metadata.response_types = Some(vec![response_type]);
+        let response_type: ResponseType = OAuthAuthorizationEndpointResponseType::Token.into();
+        metadata.response_types = Some(vec![response_type.clone()]);
         let res = assert_matches!(metadata.clone().validate(), Err(ClientMetadataVerificationError::IncoherentResponseType(res)) => res);
         assert_eq!(res, response_type);
 
         // none - Ok
-        metadata.response_types = Some(vec![OAuthAuthorizationEndpointResponseType::None]);
+        metadata.response_types = Some(vec![OAuthAuthorizationEndpointResponseType::None.into()]);
         metadata.validate().unwrap();
     }
 
@@ -1206,7 +1219,9 @@ mod tests {
         metadata.grant_types = Some(vec![GrantType::AuthorizationCode, GrantType::Implicit]);
 
         // Err - code id_token
-        metadata.response_types = Some(vec![OAuthAuthorizationEndpointResponseType::CodeIdToken]);
+        metadata.response_types = Some(vec![
+            OAuthAuthorizationEndpointResponseType::CodeIdToken.into()
+        ]);
         assert_matches!(
             metadata.clone().validate(),
             Err(ClientMetadataVerificationError::IdTokenSigningAlgNone)
@@ -1214,7 +1229,7 @@ mod tests {
 
         // Err - code id_token token
         metadata.response_types = Some(vec![
-            OAuthAuthorizationEndpointResponseType::CodeIdTokenToken,
+            OAuthAuthorizationEndpointResponseType::CodeIdTokenToken.into(),
         ]);
         assert_matches!(
             metadata.clone().validate(),
@@ -1222,14 +1237,17 @@ mod tests {
         );
 
         // Err - id_token
-        metadata.response_types = Some(vec![OAuthAuthorizationEndpointResponseType::IdToken]);
+        metadata.response_types =
+            Some(vec![OAuthAuthorizationEndpointResponseType::IdToken.into()]);
         assert_matches!(
             metadata.clone().validate(),
             Err(ClientMetadataVerificationError::IdTokenSigningAlgNone)
         );
 
         // Err - id_token token
-        metadata.response_types = Some(vec![OAuthAuthorizationEndpointResponseType::IdTokenToken]);
+        metadata.response_types = Some(vec![
+            OAuthAuthorizationEndpointResponseType::IdTokenToken.into()
+        ]);
         assert_matches!(
             metadata.clone().validate(),
             Err(ClientMetadataVerificationError::IdTokenSigningAlgNone)
@@ -1237,10 +1255,10 @@ mod tests {
 
         // Ok - Other response types
         metadata.response_types = Some(vec![
-            OAuthAuthorizationEndpointResponseType::Code,
-            OAuthAuthorizationEndpointResponseType::CodeToken,
-            OAuthAuthorizationEndpointResponseType::Token,
-            OAuthAuthorizationEndpointResponseType::None,
+            OAuthAuthorizationEndpointResponseType::Code.into(),
+            OAuthAuthorizationEndpointResponseType::CodeToken.into(),
+            OAuthAuthorizationEndpointResponseType::Token.into(),
+            OAuthAuthorizationEndpointResponseType::None.into(),
         ]);
         metadata.validate().unwrap();
     }

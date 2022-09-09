@@ -20,7 +20,7 @@ use mas_iana::{
     oauth::{OAuthAuthorizationEndpointResponseType, OAuthClientAuthenticationMethod},
 };
 use mas_jose::jwk::PublicJsonWebKeySet;
-use oauth2_types::requests::GrantType;
+use oauth2_types::{requests::GrantType, response_type::ResponseType};
 use sqlx::{PgConnection, PgExecutor};
 use thiserror::Error;
 use url::Url;
@@ -322,7 +322,7 @@ pub async fn insert_client(
     client_id: &str,
     redirect_uris: &[Url],
     encrypted_client_secret: Option<&str>,
-    response_types: &[OAuthAuthorizationEndpointResponseType],
+    response_types: &[ResponseType],
     grant_types: &[GrantType],
     contacts: &[String],
     client_name: Option<&str>,

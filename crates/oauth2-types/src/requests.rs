@@ -16,9 +16,7 @@ use std::{collections::HashSet, hash::Hash, num::NonZeroU32};
 
 use chrono::{DateTime, Duration, Utc};
 use language_tags::LanguageTag;
-use mas_iana::oauth::{
-    OAuthAccessTokenType, OAuthAuthorizationEndpointResponseType, OAuthTokenTypeHint,
-};
+use mas_iana::oauth::{OAuthAccessTokenType, OAuthTokenTypeHint};
 use parse_display::{Display, FromStr};
 use serde::{Deserialize, Serialize};
 use serde_with::{
@@ -27,7 +25,7 @@ use serde_with::{
 };
 use url::Url;
 
-use crate::scope::Scope;
+use crate::{response_type::ResponseType, scope::Scope};
 
 // ref: https://www.iana.org/assignments/oauth-parameters/oauth-parameters.xhtml
 
@@ -170,7 +168,7 @@ pub enum Prompt {
 pub struct AuthorizationRequest {
     /// OAuth 2.0 Response Type value that determines the authorization
     /// processing flow to be used.
-    pub response_type: OAuthAuthorizationEndpointResponseType,
+    pub response_type: ResponseType,
 
     /// OAuth 2.0 Client Identifier valid at the Authorization Server.
     pub client_id: String,
@@ -264,11 +262,7 @@ pub struct AuthorizationRequest {
 impl AuthorizationRequest {
     /// Creates a basic `AuthorizationRequest`.
     #[must_use]
-    pub fn new(
-        response_type: OAuthAuthorizationEndpointResponseType,
-        client_id: String,
-        scope: Scope,
-    ) -> Self {
+    pub fn new(response_type: ResponseType, client_id: String, scope: Scope) -> Self {
         Self {
             response_type,
             client_id,

@@ -138,7 +138,7 @@ pub(crate) async fn post(
         &client_id,
         metadata.redirect_uris(),
         None,
-        metadata.response_types(),
+        &metadata.response_types(),
         metadata.grant_types(),
         contacts,
         metadata

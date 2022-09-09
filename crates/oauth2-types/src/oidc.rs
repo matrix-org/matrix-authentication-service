@@ -17,10 +17,7 @@ use std::ops::Deref;
 use language_tags::LanguageTag;
 use mas_iana::{
     jose::{JsonWebEncryptionAlg, JsonWebEncryptionEnc, JsonWebSignatureAlg},
-    oauth::{
-        OAuthAuthorizationEndpointResponseType, OAuthClientAuthenticationMethod,
-        PkceCodeChallengeMethod,
-    },
+    oauth::{OAuthClientAuthenticationMethod, PkceCodeChallengeMethod},
 };
 use parse_display::{Display, FromStr};
 use serde::{Deserialize, Serialize};
@@ -28,7 +25,10 @@ use serde_with::{skip_serializing_none, DeserializeFromStr, SerializeDisplay};
 use thiserror::Error;
 use url::Url;
 
-use crate::requests::{Display, GrantType, Prompt, ResponseMode};
+use crate::{
+    requests::{Display, GrantType, Prompt, ResponseMode},
+    response_type::ResponseType,
+};
 
 #[derive(
     SerializeDisplay, DeserializeFromStr, Clone, Copy, PartialEq, Eq, Hash, Debug, Display, FromStr,
@@ -128,7 +128,7 @@ pub struct ProviderMetadata {
     /// This field is required.
     ///
     /// [OAuth 2.0 `response_type` values]: https://www.rfc-editor.org/rfc/rfc7591#page-9
-    pub response_types_supported: Option<Vec<OAuthAuthorizationEndpointResponseType>>,
+    pub response_types_supported: Option<Vec<ResponseType>>,
 
     /// JSON array containing a list of the [OAuth 2.0 `response_mode` values]
     /// that this authorization server supports.
@@ -707,7 +707,7 @@ impl VerifiedProviderMetadata {
     /// JSON array containing a list of the OAuth 2.0 `response_type` values
     /// that this authorization server supports.
     #[must_use]
-    pub fn response_types_supported(&self) -> &[OAuthAuthorizationEndpointResponseType] {
+    pub fn response_types_supported(&self) -> &[ResponseType] {
         match &self.response_types_supported {
             Some(u) => u,
             None => unreachable!(),
@@ -934,7 +934,9 @@ mod tests {
             authorization_endpoint: Some(Url::parse("https://localhost/auth").unwrap()),
             token_endpoint: Some(Url::parse("https://localhost/token").unwrap()),
             jwks_uri: Some(Url::parse("https://localhost/jwks").unwrap()),
-            response_types_supported: Some(vec![OAuthAuthorizationEndpointResponseType::Code]),
+            response_types_supported: Some(vec![
+                OAuthAuthorizationEndpointResponseType::Code.into()
+            ]),
             subject_types_supported: Some(vec![SubjectType::Public]),
             id_token_signing_alg_values_supported: Some(vec![JsonWebSignatureAlg::Rs256]),
             ..Default::default()
@@ -1158,7 +1160,7 @@ mod tests {
 
         // Ok - Present
         metadata.response_types_supported =
-            Some(vec![OAuthAuthorizationEndpointResponseType::Code]);
+            Some(vec![OAuthAuthorizationEndpointResponseType::Code.into()]);
         metadata.validate(&issuer).unwrap();
     }
 
