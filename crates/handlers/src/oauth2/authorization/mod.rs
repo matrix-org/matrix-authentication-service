@@ -23,7 +23,6 @@ use axum_extra::extract::PrivateCookieJar;
 use hyper::StatusCode;
 use mas_axum_utils::SessionInfoExt;
 use mas_data_model::{AuthorizationCode, Pkce};
-use mas_iana::oauth::OAuthAuthorizationEndpointResponseType;
 use mas_keystore::Encrypter;
 use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
@@ -35,8 +34,8 @@ use mas_templates::Templates;
 use oauth2_types::{
     errors::{ClientError, ClientErrorCode},
     pkce,
-    prelude::*,
     requests::{AuthorizationRequest, GrantType, Prompt, ResponseMode},
+    response_type::ResponseType,
 };
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use serde::Deserialize;
@@ -134,7 +133,7 @@ pub(crate) struct Params {
 /// figure out what response mode must be used, and emit an error if the
 /// suggested response mode isn't allowed for the given response types.
 fn resolve_response_mode(
-    response_type: OAuthAuthorizationEndpointResponseType,
+    response_type: &ResponseType,
     suggested_response_mode: Option<ResponseMode>,
 ) -> anyhow::Result<ResponseMode> {
     use ResponseMode as M;
@@ -172,7 +171,7 @@ pub(crate) async fn get(
         .resolve_redirect_uri(&params.auth.redirect_uri)?
         .clone();
     let response_type = params.auth.response_type;
-    let response_mode = resolve_response_mode(response_type, params.auth.response_mode)?;
+    let response_mode = resolve_response_mode(&response_type, params.auth.response_mode)?;
 
     // Now we have a proper callback destination to go to on error
     let callback_destination = CallbackDestination::try_new(

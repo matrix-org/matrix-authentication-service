@@ -18,7 +18,7 @@ use chrono::Duration;
 use language_tags::LanguageTag;
 use mas_iana::{
     jose::{JsonWebEncryptionAlg, JsonWebEncryptionEnc, JsonWebSignatureAlg},
-    oauth::{OAuthAuthorizationEndpointResponseType, OAuthClientAuthenticationMethod},
+    oauth::OAuthClientAuthenticationMethod,
 };
 use mas_jose::jwk::PublicJsonWebKeySet;
 use serde::{
@@ -34,6 +34,7 @@ use super::{ClientMetadata, Localized, VerifiedClientMetadata};
 use crate::{
     oidc::{ApplicationType, SubjectType},
     requests::GrantType,
+    response_type::ResponseType,
 };
 
 impl<T> Localized<T> {
@@ -94,7 +95,7 @@ impl<T> Localized<T> {
 #[derive(Serialize, Deserialize)]
 pub struct ClientMetadataSerdeHelper {
     redirect_uris: Option<Vec<Url>>,
-    response_types: Option<Vec<OAuthAuthorizationEndpointResponseType>>,
+    response_types: Option<Vec<ResponseType>>,
     grant_types: Option<Vec<GrantType>>,
     application_type: Option<ApplicationType>,
     contacts: Option<Vec<String>>,

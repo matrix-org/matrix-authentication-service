@@ -66,9 +66,9 @@ pub(crate) async fn get(
     let scopes_supported = Some(vec![scope::OPENID.to_string(), scope::EMAIL.to_string()]);
 
     let response_types_supported = Some(vec![
-        OAuthAuthorizationEndpointResponseType::Code,
-        OAuthAuthorizationEndpointResponseType::IdToken,
-        OAuthAuthorizationEndpointResponseType::CodeIdToken,
+        OAuthAuthorizationEndpointResponseType::Code.into(),
+        OAuthAuthorizationEndpointResponseType::IdToken.into(),
+        OAuthAuthorizationEndpointResponseType::CodeIdToken.into(),
     ]);
 
     let response_modes_supported = Some(vec![
