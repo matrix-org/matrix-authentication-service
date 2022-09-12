@@ -22,8 +22,8 @@ use mas_iana::oauth::{
 use parse_display::{Display, FromStr};
 use serde::{Deserialize, Serialize};
 use serde_with::{
-    formats::SpaceSeparator, serde_as, skip_serializing_none, DisplayFromStr, DurationSeconds,
-    StringWithSeparator, TimestampSeconds,
+    formats::SpaceSeparator, serde_as, skip_serializing_none, DeserializeFromStr, DisplayFromStr,
+    DurationSeconds, SerializeDisplay, StringWithSeparator, TimestampSeconds,
 };
 use url::Url;
 
@@ -46,10 +46,10 @@ use crate::scope::Scope;
     Copy,
     Display,
     FromStr,
-    Serialize,
-    Deserialize,
+    SerializeDisplay,
+    DeserializeFromStr,
 )]
-#[serde(rename_all = "snake_case")]
+#[display(style = "snake_case")]
 pub enum ResponseMode {
     /// Authorization Response parameters are encoded in the query string added
     /// to the `redirect_uri`.
@@ -84,10 +84,10 @@ pub enum ResponseMode {
     Copy,
     Display,
     FromStr,
-    Serialize,
-    Deserialize,
+    SerializeDisplay,
+    DeserializeFromStr,
 )]
-#[serde(rename_all = "snake_case")]
+#[display(style = "snake_case")]
 pub enum Display {
     /// The Authorization Server should display the authentication and consent
     /// UI consistent with a full User Agent page view.
@@ -129,11 +129,10 @@ impl Default for Display {
     Copy,
     Display,
     FromStr,
-    Serialize,
-    Deserialize,
+    SerializeDisplay,
+    DeserializeFromStr,
 )]
 #[display(style = "snake_case")]
-#[serde(rename_all = "snake_case")]
 pub enum Prompt {
     /// The Authorization Server must not display any authentication or consent
     /// user interface pages.
@@ -366,10 +365,10 @@ pub struct ClientCredentialsGrant {
     Copy,
     Display,
     FromStr,
-    Serialize,
-    Deserialize,
+    SerializeDisplay,
+    DeserializeFromStr,
 )]
-#[serde(rename_all = "snake_case")]
+#[display(style = "snake_case")]
 pub enum GrantType {
     /// [`authorization_code`](https://www.rfc-editor.org/rfc/rfc6749#section-4.1)
     AuthorizationCode,
@@ -387,11 +386,11 @@ pub enum GrantType {
     Password,
 
     /// [`urn:ietf:params:oauth:grant-type:device_code`](https://www.rfc-editor.org/rfc/rfc8628)
-    #[serde(rename = "urn:ietf:params:oauth:grant-type:device_code")]
+    #[display("urn:ietf:params:oauth:grant-type:device_code")]
     DeviceCode,
 
     /// [`urn:openid:params:grant-type:ciba`](https://openid.net/specs/openid-client-initiated-backchannel-authentication-core-1_0.html)
-    #[serde(rename = "urn:openid:params:grant-type:ciba")]
+    #[display("urn:openid:params:grant-type:ciba")]
     ClientInitiatedBackchannelAuthentication,
 }
 
@@ -665,6 +664,108 @@ mod tests {
         assert_eq!(
             serde_json::from_str::<GrantType>("\"urn:openid:params:grant-type:ciba\"").unwrap(),
             GrantType::ClientInitiatedBackchannelAuthentication
+        );
+    }
+
+    #[test]
+    fn serialize_response_mode() {
+        assert_eq!(
+            serde_json::to_string(&ResponseMode::Query).unwrap(),
+            "\"query\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ResponseMode::Fragment).unwrap(),
+            "\"fragment\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ResponseMode::FormPost).unwrap(),
+            "\"form_post\""
+        );
+    }
+
+    #[test]
+    fn deserialize_response_mode() {
+        assert_eq!(
+            serde_json::from_str::<ResponseMode>("\"query\"").unwrap(),
+            ResponseMode::Query
+        );
+        assert_eq!(
+            serde_json::from_str::<ResponseMode>("\"fragment\"").unwrap(),
+            ResponseMode::Fragment
+        );
+        assert_eq!(
+            serde_json::from_str::<ResponseMode>("\"form_post\"").unwrap(),
+            ResponseMode::FormPost
+        );
+    }
+
+    #[test]
+    fn serialize_display() {
+        assert_eq!(serde_json::to_string(&Display::Page).unwrap(), "\"page\"");
+        assert_eq!(serde_json::to_string(&Display::Popup).unwrap(), "\"popup\"");
+        assert_eq!(serde_json::to_string(&Display::Touch).unwrap(), "\"touch\"");
+        assert_eq!(serde_json::to_string(&Display::Wap).unwrap(), "\"wap\"");
+    }
+
+    #[test]
+    fn deserialize_display() {
+        assert_eq!(
+            serde_json::from_str::<Display>("\"page\"").unwrap(),
+            Display::Page
+        );
+        assert_eq!(
+            serde_json::from_str::<Display>("\"popup\"").unwrap(),
+            Display::Popup
+        );
+        assert_eq!(
+            serde_json::from_str::<Display>("\"touch\"").unwrap(),
+            Display::Touch
+        );
+        assert_eq!(
+            serde_json::from_str::<Display>("\"wap\"").unwrap(),
+            Display::Wap
+        );
+    }
+
+    #[test]
+    fn serialize_prompt() {
+        assert_eq!(serde_json::to_string(&Prompt::None).unwrap(), "\"none\"");
+        assert_eq!(serde_json::to_string(&Prompt::Login).unwrap(), "\"login\"");
+        assert_eq!(
+            serde_json::to_string(&Prompt::Consent).unwrap(),
+            "\"consent\""
+        );
+        assert_eq!(
+            serde_json::to_string(&Prompt::SelectAccount).unwrap(),
+            "\"select_account\""
+        );
+        assert_eq!(
+            serde_json::to_string(&Prompt::Create).unwrap(),
+            "\"create\""
+        );
+    }
+
+    #[test]
+    fn deserialize_prompt() {
+        assert_eq!(
+            serde_json::from_str::<Prompt>("\"none\"").unwrap(),
+            Prompt::None
+        );
+        assert_eq!(
+            serde_json::from_str::<Prompt>("\"login\"").unwrap(),
+            Prompt::Login
+        );
+        assert_eq!(
+            serde_json::from_str::<Prompt>("\"consent\"").unwrap(),
+            Prompt::Consent
+        );
+        assert_eq!(
+            serde_json::from_str::<Prompt>("\"select_account\"").unwrap(),
+            Prompt::SelectAccount
+        );
+        assert_eq!(
+            serde_json::from_str::<Prompt>("\"create\"").unwrap(),
+            Prompt::Create
         );
     }
 }

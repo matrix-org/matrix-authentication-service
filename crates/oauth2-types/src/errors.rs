@@ -14,8 +14,9 @@
 
 use std::borrow::Cow;
 
+use parse_display::{Display, FromStr};
 use serde::{Deserialize, Serialize};
-use serde_enum_str::{Deserialize_enum_str, Serialize_enum_str};
+use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 /// A client error returned by an authorization server.
 ///
@@ -55,8 +56,8 @@ impl From<ClientErrorCode> for ClientError {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize_enum_str, Deserialize_enum_str)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, PartialEq, Eq, Display, FromStr, SerializeDisplay, DeserializeFromStr)]
+#[display(style = "snake_case")]
 pub enum ClientErrorCode {
     /// `invalid_request`
     ///
@@ -225,7 +226,7 @@ pub enum ClientErrorCode {
     InvalidClientMetadata,
 
     /// Another error code.
-    #[serde(other)]
+    #[display("{0}")]
     Unknown(String),
 }
 
@@ -305,5 +306,197 @@ impl ClientErrorCode {
             }
             ClientErrorCode::Unknown(_) => "",
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn serialize_client_error_code() {
+        assert_eq!(
+            serde_json::to_string(&ClientErrorCode::InvalidRequest).unwrap(),
+            "\"invalid_request\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ClientErrorCode::InvalidClient).unwrap(),
+            "\"invalid_client\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ClientErrorCode::InvalidGrant).unwrap(),
+            "\"invalid_grant\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ClientErrorCode::UnauthorizedClient).unwrap(),
+            "\"unauthorized_client\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ClientErrorCode::UnsupportedGrantType).unwrap(),
+            "\"unsupported_grant_type\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ClientErrorCode::AccessDenied).unwrap(),
+            "\"access_denied\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ClientErrorCode::UnsupportedResponseType).unwrap(),
+            "\"unsupported_response_type\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ClientErrorCode::InvalidScope).unwrap(),
+            "\"invalid_scope\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ClientErrorCode::ServerError).unwrap(),
+            "\"server_error\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ClientErrorCode::TemporarilyUnavailable).unwrap(),
+            "\"temporarily_unavailable\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ClientErrorCode::InteractionRequired).unwrap(),
+            "\"interaction_required\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ClientErrorCode::LoginRequired).unwrap(),
+            "\"login_required\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ClientErrorCode::AccountSelectionRequired).unwrap(),
+            "\"account_selection_required\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ClientErrorCode::ConsentRequired).unwrap(),
+            "\"consent_required\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ClientErrorCode::InvalidRequestUri).unwrap(),
+            "\"invalid_request_uri\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ClientErrorCode::InvalidRequestObject).unwrap(),
+            "\"invalid_request_object\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ClientErrorCode::RequestNotSupported).unwrap(),
+            "\"request_not_supported\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ClientErrorCode::RequestUriNotSupported).unwrap(),
+            "\"request_uri_not_supported\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ClientErrorCode::RegistrationNotSupported).unwrap(),
+            "\"registration_not_supported\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ClientErrorCode::InvalidRedirectUri).unwrap(),
+            "\"invalid_redirect_uri\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ClientErrorCode::InvalidClientMetadata).unwrap(),
+            "\"invalid_client_metadata\""
+        );
+
+        assert_eq!(
+            serde_json::to_string(&ClientErrorCode::Unknown("unknown_error_code".to_owned()))
+                .unwrap(),
+            "\"unknown_error_code\""
+        );
+    }
+
+    #[test]
+    fn deserialize_client_error_code() {
+        assert_eq!(
+            serde_json::from_str::<ClientErrorCode>("\"invalid_request\"").unwrap(),
+            ClientErrorCode::InvalidRequest
+        );
+        assert_eq!(
+            serde_json::from_str::<ClientErrorCode>("\"invalid_client\"").unwrap(),
+            ClientErrorCode::InvalidClient
+        );
+        assert_eq!(
+            serde_json::from_str::<ClientErrorCode>("\"invalid_grant\"").unwrap(),
+            ClientErrorCode::InvalidGrant
+        );
+        assert_eq!(
+            serde_json::from_str::<ClientErrorCode>("\"unauthorized_client\"").unwrap(),
+            ClientErrorCode::UnauthorizedClient
+        );
+        assert_eq!(
+            serde_json::from_str::<ClientErrorCode>("\"unsupported_grant_type\"").unwrap(),
+            ClientErrorCode::UnsupportedGrantType
+        );
+        assert_eq!(
+            serde_json::from_str::<ClientErrorCode>("\"access_denied\"").unwrap(),
+            ClientErrorCode::AccessDenied
+        );
+        assert_eq!(
+            serde_json::from_str::<ClientErrorCode>("\"unsupported_response_type\"").unwrap(),
+            ClientErrorCode::UnsupportedResponseType
+        );
+        assert_eq!(
+            serde_json::from_str::<ClientErrorCode>("\"invalid_scope\"").unwrap(),
+            ClientErrorCode::InvalidScope
+        );
+        assert_eq!(
+            serde_json::from_str::<ClientErrorCode>("\"server_error\"").unwrap(),
+            ClientErrorCode::ServerError
+        );
+        assert_eq!(
+            serde_json::from_str::<ClientErrorCode>("\"temporarily_unavailable\"").unwrap(),
+            ClientErrorCode::TemporarilyUnavailable
+        );
+        assert_eq!(
+            serde_json::from_str::<ClientErrorCode>("\"interaction_required\"").unwrap(),
+            ClientErrorCode::InteractionRequired
+        );
+        assert_eq!(
+            serde_json::from_str::<ClientErrorCode>("\"login_required\"").unwrap(),
+            ClientErrorCode::LoginRequired
+        );
+        assert_eq!(
+            serde_json::from_str::<ClientErrorCode>("\"account_selection_required\"").unwrap(),
+            ClientErrorCode::AccountSelectionRequired
+        );
+        assert_eq!(
+            serde_json::from_str::<ClientErrorCode>("\"consent_required\"").unwrap(),
+            ClientErrorCode::ConsentRequired
+        );
+        assert_eq!(
+            serde_json::from_str::<ClientErrorCode>("\"invalid_request_uri\"").unwrap(),
+            ClientErrorCode::InvalidRequestUri
+        );
+        assert_eq!(
+            serde_json::from_str::<ClientErrorCode>("\"invalid_request_object\"").unwrap(),
+            ClientErrorCode::InvalidRequestObject
+        );
+        assert_eq!(
+            serde_json::from_str::<ClientErrorCode>("\"request_not_supported\"").unwrap(),
+            ClientErrorCode::RequestNotSupported
+        );
+        assert_eq!(
+            serde_json::from_str::<ClientErrorCode>("\"request_uri_not_supported\"").unwrap(),
+            ClientErrorCode::RequestUriNotSupported
+        );
+        assert_eq!(
+            serde_json::from_str::<ClientErrorCode>("\"registration_not_supported\"").unwrap(),
+            ClientErrorCode::RegistrationNotSupported
+        );
+        assert_eq!(
+            serde_json::from_str::<ClientErrorCode>("\"invalid_redirect_uri\"").unwrap(),
+            ClientErrorCode::InvalidRedirectUri
+        );
+        assert_eq!(
+            serde_json::from_str::<ClientErrorCode>("\"invalid_client_metadata\"").unwrap(),
+            ClientErrorCode::InvalidClientMetadata
+        );
+
+        assert_eq!(
+            serde_json::from_str::<ClientErrorCode>("\"unknown_error_code\"").unwrap(),
+            ClientErrorCode::Unknown("unknown_error_code".to_owned())
+        );
     }
 }
