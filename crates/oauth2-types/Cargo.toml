@@ -19,7 +19,6 @@ sha2 = "0.10.5"
 data-encoding = "2.3.2"
 thiserror = "1.0.34"
 itertools = "0.10.3"
-serde-enum-str = "0.2.5"
 
 mas-iana = { path = "../iana" }
 mas-jose = { path = "../jose" }

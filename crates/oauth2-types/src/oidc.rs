@@ -22,29 +22,36 @@ use mas_iana::{
         PkceCodeChallengeMethod,
     },
 };
+use parse_display::{Display, FromStr};
 use serde::{Deserialize, Serialize};
-use serde_with::skip_serializing_none;
+use serde_with::{skip_serializing_none, DeserializeFromStr, SerializeDisplay};
 use thiserror::Error;
 use url::Url;
 
 use crate::requests::{Display, GrantType, Prompt, ResponseMode};
 
-#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash, Debug)]
-#[serde(rename_all = "lowercase")]
+#[derive(
+    SerializeDisplay, DeserializeFromStr, Clone, Copy, PartialEq, Eq, Hash, Debug, Display, FromStr,
+)]
+#[display(style = "lowercase")]
 pub enum ApplicationType {
     Web,
     Native,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash, Debug)]
-#[serde(rename_all = "lowercase")]
+#[derive(
+    SerializeDisplay, DeserializeFromStr, Clone, Copy, PartialEq, Eq, Hash, Debug, Display, FromStr,
+)]
+#[display(style = "lowercase")]
 pub enum SubjectType {
     Public,
     Pairwise,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash, Debug)]
-#[serde(rename_all = "lowercase")]
+#[derive(
+    SerializeDisplay, DeserializeFromStr, Clone, Copy, PartialEq, Eq, Hash, Debug, Display, FromStr,
+)]
+#[display(style = "lowercase")]
 pub enum ClaimType {
     Normal,
     Aggregated,
@@ -918,7 +925,7 @@ mod tests {
     };
     use url::Url;
 
-    use super::{ProviderMetadata, ProviderMetadataVerificationError, SubjectType};
+    use super::*;
 
     fn valid_provider_metadata() -> (ProviderMetadata, Url) {
         let issuer = Url::parse("https://localhost").unwrap();
@@ -1406,5 +1413,85 @@ mod tests {
         metadata.pushed_authorization_request_endpoint =
             Some(Url::parse("https://localhost/par?query#fragment").unwrap());
         metadata.validate(&issuer).unwrap();
+    }
+
+    #[test]
+    fn serialize_application_type() {
+        assert_eq!(
+            serde_json::to_string(&ApplicationType::Web).unwrap(),
+            "\"web\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ApplicationType::Native).unwrap(),
+            "\"native\""
+        );
+    }
+
+    #[test]
+    fn deserialize_application_type() {
+        assert_eq!(
+            serde_json::from_str::<ApplicationType>("\"web\"").unwrap(),
+            ApplicationType::Web
+        );
+        assert_eq!(
+            serde_json::from_str::<ApplicationType>("\"native\"").unwrap(),
+            ApplicationType::Native
+        );
+    }
+
+    #[test]
+    fn serialize_subject_type() {
+        assert_eq!(
+            serde_json::to_string(&SubjectType::Public).unwrap(),
+            "\"public\""
+        );
+        assert_eq!(
+            serde_json::to_string(&SubjectType::Pairwise).unwrap(),
+            "\"pairwise\""
+        );
+    }
+
+    #[test]
+    fn deserialize_subject_type() {
+        assert_eq!(
+            serde_json::from_str::<SubjectType>("\"public\"").unwrap(),
+            SubjectType::Public
+        );
+        assert_eq!(
+            serde_json::from_str::<SubjectType>("\"pairwise\"").unwrap(),
+            SubjectType::Pairwise
+        );
+    }
+
+    #[test]
+    fn serialize_claim_type() {
+        assert_eq!(
+            serde_json::to_string(&ClaimType::Normal).unwrap(),
+            "\"normal\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ClaimType::Aggregated).unwrap(),
+            "\"aggregated\""
+        );
+        assert_eq!(
+            serde_json::to_string(&ClaimType::Distributed).unwrap(),
+            "\"distributed\""
+        );
+    }
+
+    #[test]
+    fn deserialize_claim_type() {
+        assert_eq!(
+            serde_json::from_str::<ClaimType>("\"normal\"").unwrap(),
+            ClaimType::Normal
+        );
+        assert_eq!(
+            serde_json::from_str::<ClaimType>("\"aggregated\"").unwrap(),
+            ClaimType::Aggregated
+        );
+        assert_eq!(
+            serde_json::from_str::<ClaimType>("\"distributed\"").unwrap(),
+            ClaimType::Distributed
+        );
     }
 }
