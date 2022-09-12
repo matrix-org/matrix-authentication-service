@@ -382,6 +382,17 @@ pub enum GrantType {
 
     /// [`client_credentials`](https://www.rfc-editor.org/rfc/rfc6749#section-4.4)
     ClientCredentials,
+
+    /// [`password`](https://www.rfc-editor.org/rfc/rfc6749#section-4.3)
+    Password,
+
+    /// [`urn:ietf:params:oauth:grant-type:device_code`](https://www.rfc-editor.org/rfc/rfc8628)
+    #[serde(rename = "urn:ietf:params:oauth:grant-type:device_code")]
+    DeviceCode,
+
+    /// [`urn:openid:params:grant-type:ciba`](https://openid.net/specs/openid-client-initiated-backchannel-authentication-core-1_0.html)
+    #[serde(rename = "urn:openid:params:grant-type:ciba")]
+    ClientInitiatedBackchannelAuthentication,
 }
 
 /// An enum representing the possible requests to the [Token Endpoint].
@@ -590,5 +601,70 @@ mod tests {
         });
 
         assert_serde_json(&req, expected);
+    }
+
+    #[test]
+    fn serialize_grant_type() {
+        assert_eq!(
+            serde_json::to_string(&GrantType::AuthorizationCode).unwrap(),
+            "\"authorization_code\""
+        );
+        assert_eq!(
+            serde_json::to_string(&GrantType::RefreshToken).unwrap(),
+            "\"refresh_token\""
+        );
+        assert_eq!(
+            serde_json::to_string(&GrantType::Implicit).unwrap(),
+            "\"implicit\""
+        );
+        assert_eq!(
+            serde_json::to_string(&GrantType::ClientCredentials).unwrap(),
+            "\"client_credentials\""
+        );
+        assert_eq!(
+            serde_json::to_string(&GrantType::Password).unwrap(),
+            "\"password\""
+        );
+        assert_eq!(
+            serde_json::to_string(&GrantType::DeviceCode).unwrap(),
+            "\"urn:ietf:params:oauth:grant-type:device_code\""
+        );
+        assert_eq!(
+            serde_json::to_string(&GrantType::ClientInitiatedBackchannelAuthentication).unwrap(),
+            "\"urn:openid:params:grant-type:ciba\""
+        );
+    }
+
+    #[test]
+    fn deserialize_grant_type() {
+        assert_eq!(
+            serde_json::from_str::<GrantType>("\"authorization_code\"").unwrap(),
+            GrantType::AuthorizationCode
+        );
+        assert_eq!(
+            serde_json::from_str::<GrantType>("\"refresh_token\"").unwrap(),
+            GrantType::RefreshToken
+        );
+        assert_eq!(
+            serde_json::from_str::<GrantType>("\"implicit\"").unwrap(),
+            GrantType::Implicit
+        );
+        assert_eq!(
+            serde_json::from_str::<GrantType>("\"client_credentials\"").unwrap(),
+            GrantType::ClientCredentials
+        );
+        assert_eq!(
+            serde_json::from_str::<GrantType>("\"password\"").unwrap(),
+            GrantType::Password
+        );
+        assert_eq!(
+            serde_json::from_str::<GrantType>("\"urn:ietf:params:oauth:grant-type:device_code\"")
+                .unwrap(),
+            GrantType::DeviceCode
+        );
+        assert_eq!(
+            serde_json::from_str::<GrantType>("\"urn:openid:params:grant-type:ciba\"").unwrap(),
+            GrantType::ClientInitiatedBackchannelAuthentication
+        );
     }
 }
