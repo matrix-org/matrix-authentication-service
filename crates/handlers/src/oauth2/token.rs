@@ -198,6 +198,7 @@ pub(crate) async fn post(
 
     let method = client
         .token_endpoint_auth_method
+        .as_ref()
         .ok_or(RouteError::ClientNotAllowed)?;
 
     client_authorization
@@ -333,17 +334,18 @@ async fn authorization_code_grant(
 
         let alg = client
             .id_token_signed_response_alg
+            .clone()
             .unwrap_or(JsonWebSignatureAlg::Rs256);
         let key = key_store
-            .signing_key_for_algorithm(alg)
+            .signing_key_for_algorithm(&alg)
             .context("no suitable key found")?;
 
-        claims::AT_HASH.insert(&mut claims, hash_token(alg, &access_token_str)?)?;
-        claims::C_HASH.insert(&mut claims, hash_token(alg, &grant.code)?)?;
+        claims::AT_HASH.insert(&mut claims, hash_token(&alg, &access_token_str)?)?;
+        claims::C_HASH.insert(&mut claims, hash_token(&alg, &grant.code)?)?;
 
+        let signer = key.params().signing_key_for_alg(&alg)?;
         let header = JsonWebSignatureHeader::new(alg)
             .with_kid(key.kid().context("key has no `kid` for some reason")?);
-        let signer = key.params().signing_key_for_alg(alg)?;
         let id_token = Jwt::sign(header, claims, &signer)?;
 
         Some(id_token.as_str().to_owned())

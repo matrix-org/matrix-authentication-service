@@ -70,7 +70,7 @@ macro_rules! asymetric_jwt_test {
             fn validate_jwt() {
                 let jwt: Jwt<'_, Payload> = Jwt::try_from($jwt).unwrap();
                 assert_eq!(jwt.payload().hello, "world");
-                assert_eq!(jwt.header().alg(), JsonWebSignatureAlg::$alg);
+                assert_eq!(*jwt.header().alg(), JsonWebSignatureAlg::$alg);
             }
 
             #[test]
@@ -105,7 +105,7 @@ macro_rules! asymetric_jwt_test {
 
                     let key = mas_jose::jwa::AsymmetricVerifyingKey::from_jwk_and_alg(
                         key.params(),
-                        JsonWebSignatureAlg::$alg,
+                        &JsonWebSignatureAlg::$alg,
                     )
                     .unwrap();
 
@@ -118,12 +118,12 @@ macro_rules! asymetric_jwt_test {
                     let payload = Payload {
                         hello: "world".to_string(),
                     };
-                    let header = JsonWebSignatureHeader::new(alg);
+                    let header = JsonWebSignatureHeader::new(alg.clone());
 
                     let jwks = private_jwks();
-                    let key = jwks.signing_key_for_algorithm(alg).unwrap();
+                    let key = jwks.signing_key_for_algorithm(&alg).unwrap();
 
-                    let key = mas_jose::jwa::AsymmetricSigningKey::from_jwk_and_alg(key.params(), alg)
+                    let key = mas_jose::jwa::AsymmetricSigningKey::from_jwk_and_alg(key.params(), &alg)
                         .unwrap();
 
                     let jwt: Jwt<'_, Payload> = Jwt::sign(header, payload, &key).unwrap();
@@ -133,7 +133,7 @@ macro_rules! asymetric_jwt_test {
                     let key = jwks.find_key(&jwt.header().into()).unwrap();
 
                     let key =
-                        mas_jose::jwa::AsymmetricVerifyingKey::from_jwk_and_alg(key.params(), alg)
+                        mas_jose::jwa::AsymmetricVerifyingKey::from_jwk_and_alg(key.params(), &alg)
                             .unwrap();
 
                     jwt.verify(&key).unwrap();
@@ -155,14 +155,14 @@ macro_rules! symetric_jwt_test {
             fn validate_jwt() {
                 let jwt: Jwt<'_, Payload> = Jwt::try_from($jwt).unwrap();
                 assert_eq!(jwt.payload().hello, "world");
-                assert_eq!(jwt.header().alg(), JsonWebSignatureAlg::$alg);
+                assert_eq!(*jwt.header().alg(), JsonWebSignatureAlg::$alg);
             }
 
             #[test]
             fn verify_jwt() {
                 let jwt: Jwt<'_, Payload> = Jwt::try_from($jwt).unwrap();
                 let key =
-                    mas_jose::jwa::SymmetricKey::new_for_alg(oct_key(), JsonWebSignatureAlg::$alg)
+                    mas_jose::jwa::SymmetricKey::new_for_alg(oct_key(), &JsonWebSignatureAlg::$alg)
                         .unwrap();
                 jwt.verify(&key).unwrap();
             }
@@ -173,9 +173,9 @@ macro_rules! symetric_jwt_test {
                 let payload = Payload {
                     hello: "world".to_string(),
                 };
-                let header = JsonWebSignatureHeader::new(alg);
+                let header = JsonWebSignatureHeader::new(alg.clone());
 
-                let key = mas_jose::jwa::SymmetricKey::new_for_alg(oct_key(), alg).unwrap();
+                let key = mas_jose::jwa::SymmetricKey::new_for_alg(oct_key(), &alg).unwrap();
 
                 let jwt: Jwt<'_, Payload> = Jwt::sign(header, payload, &key).unwrap();
                 let jwt: Jwt<'_, Payload> = Jwt::try_from(jwt.as_str()).unwrap();

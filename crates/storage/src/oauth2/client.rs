@@ -332,10 +332,10 @@ pub async fn insert_client(
     tos_uri: Option<&Url>,
     jwks_uri: Option<&Url>,
     jwks: Option<&PublicJsonWebKeySet>,
-    id_token_signed_response_alg: Option<JsonWebSignatureAlg>,
-    userinfo_signed_response_alg: Option<JsonWebSignatureAlg>,
-    token_endpoint_auth_method: Option<OAuthClientAuthenticationMethod>,
-    token_endpoint_auth_signing_alg: Option<JsonWebSignatureAlg>,
+    id_token_signed_response_alg: Option<&JsonWebSignatureAlg>,
+    userinfo_signed_response_alg: Option<&JsonWebSignatureAlg>,
+    token_endpoint_auth_method: Option<&OAuthClientAuthenticationMethod>,
+    token_endpoint_auth_signing_alg: Option<&JsonWebSignatureAlg>,
     initiate_login_uri: Option<&Url>,
 ) -> Result<(), sqlx::Error> {
     let response_types: Vec<String> = response_types.iter().map(ToString::to_string).collect();
@@ -347,10 +347,10 @@ pub async fn insert_client(
     let tos_uri = tos_uri.map(Url::as_str);
     let jwks = jwks.map(serde_json::to_value).transpose().unwrap(); // TODO
     let jwks_uri = jwks_uri.map(Url::as_str);
-    let id_token_signed_response_alg = id_token_signed_response_alg.map(|v| v.to_string());
-    let userinfo_signed_response_alg = userinfo_signed_response_alg.map(|v| v.to_string());
-    let token_endpoint_auth_method = token_endpoint_auth_method.map(|v| v.to_string());
-    let token_endpoint_auth_signing_alg = token_endpoint_auth_signing_alg.map(|v| v.to_string());
+    let id_token_signed_response_alg = id_token_signed_response_alg.map(ToString::to_string);
+    let userinfo_signed_response_alg = userinfo_signed_response_alg.map(ToString::to_string);
+    let token_endpoint_auth_method = token_endpoint_auth_method.map(ToString::to_string);
+    let token_endpoint_auth_signing_alg = token_endpoint_auth_signing_alg.map(ToString::to_string);
     let initiate_login_uri = initiate_login_uri.map(Url::as_str);
 
     let id = sqlx::query_scalar!(

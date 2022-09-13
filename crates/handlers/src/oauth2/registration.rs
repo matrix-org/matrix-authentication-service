@@ -151,10 +151,10 @@ pub(crate) async fn post(
         metadata.tos_uri.as_ref().map(Localized::non_localized),
         metadata.jwks_uri.as_ref(),
         metadata.jwks.as_ref(),
-        metadata.id_token_signed_response_alg,
-        metadata.userinfo_signed_response_alg,
-        metadata.token_endpoint_auth_method,
-        metadata.token_endpoint_auth_signing_alg,
+        metadata.id_token_signed_response_alg.as_ref(),
+        metadata.userinfo_signed_response_alg.as_ref(),
+        metadata.token_endpoint_auth_method.as_ref(),
+        metadata.token_endpoint_auth_signing_alg.as_ref(),
         metadata.initiate_login_uri.as_ref(),
     )
     .await?;

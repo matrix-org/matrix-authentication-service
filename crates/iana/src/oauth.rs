@@ -19,7 +19,7 @@
 
 use parse_display::{Display, FromStr};
 use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 /// OAuth Access Token Type
 ///
@@ -27,7 +27,6 @@ use serde::{Deserialize, Serialize};
 #[derive(
     Debug,
     Clone,
-    Copy,
     PartialEq,
     Eq,
     PartialOrd,
@@ -35,25 +34,31 @@ use serde::{Deserialize, Serialize};
     Hash,
     Display,
     FromStr,
-    Serialize,
-    Deserialize,
+    SerializeDisplay,
+    DeserializeFromStr,
     JsonSchema,
 )]
+#[non_exhaustive]
 pub enum OAuthAccessTokenType {
     /// `Bearer`
-    #[serde(rename = "Bearer")]
+    #[schemars(rename = "Bearer")]
     #[display("Bearer")]
     Bearer,
 
     /// `N_A`
-    #[serde(rename = "N_A")]
+    #[schemars(rename = "N_A")]
     #[display("N_A")]
     Na,
 
     /// `PoP`
-    #[serde(rename = "PoP")]
+    #[schemars(rename = "PoP")]
     #[display("PoP")]
     PoP,
+
+    /// An unknown value.
+    #[display("{0}")]
+    #[schemars(skip)]
+    Unknown(String),
 }
 
 /// OAuth Authorization Endpoint Response Type
@@ -62,7 +67,6 @@ pub enum OAuthAccessTokenType {
 #[derive(
     Debug,
     Clone,
-    Copy,
     PartialEq,
     Eq,
     PartialOrd,
@@ -70,48 +74,48 @@ pub enum OAuthAccessTokenType {
     Hash,
     Display,
     FromStr,
-    Serialize,
-    Deserialize,
+    SerializeDisplay,
+    DeserializeFromStr,
     JsonSchema,
 )]
 pub enum OAuthAuthorizationEndpointResponseType {
     /// `code`
-    #[serde(rename = "code")]
+    #[schemars(rename = "code")]
     #[display("code")]
     Code,
 
     /// `code id_token`
-    #[serde(rename = "code id_token")]
+    #[schemars(rename = "code id_token")]
     #[display("code id_token")]
     CodeIdToken,
 
     /// `code id_token token`
-    #[serde(rename = "code id_token token")]
+    #[schemars(rename = "code id_token token")]
     #[display("code id_token token")]
     CodeIdTokenToken,
 
     /// `code token`
-    #[serde(rename = "code token")]
+    #[schemars(rename = "code token")]
     #[display("code token")]
     CodeToken,
 
     /// `id_token`
-    #[serde(rename = "id_token")]
+    #[schemars(rename = "id_token")]
     #[display("id_token")]
     IdToken,
 
     /// `id_token token`
-    #[serde(rename = "id_token token")]
+    #[schemars(rename = "id_token token")]
     #[display("id_token token")]
     IdTokenToken,
 
     /// `none`
-    #[serde(rename = "none")]
+    #[schemars(rename = "none")]
     #[display("none")]
     None,
 
     /// `token`
-    #[serde(rename = "token")]
+    #[schemars(rename = "token")]
     #[display("token")]
     Token,
 }
@@ -122,7 +126,6 @@ pub enum OAuthAuthorizationEndpointResponseType {
 #[derive(
     Debug,
     Clone,
-    Copy,
     PartialEq,
     Eq,
     PartialOrd,
@@ -130,25 +133,31 @@ pub enum OAuthAuthorizationEndpointResponseType {
     Hash,
     Display,
     FromStr,
-    Serialize,
-    Deserialize,
+    SerializeDisplay,
+    DeserializeFromStr,
     JsonSchema,
 )]
+#[non_exhaustive]
 pub enum OAuthTokenTypeHint {
     /// `access_token`
-    #[serde(rename = "access_token")]
+    #[schemars(rename = "access_token")]
     #[display("access_token")]
     AccessToken,
 
     /// `refresh_token`
-    #[serde(rename = "refresh_token")]
+    #[schemars(rename = "refresh_token")]
     #[display("refresh_token")]
     RefreshToken,
 
     /// `pct`
-    #[serde(rename = "pct")]
+    #[schemars(rename = "pct")]
     #[display("pct")]
     Pct,
+
+    /// An unknown value.
+    #[display("{0}")]
+    #[schemars(skip)]
+    Unknown(String),
 }
 
 /// OAuth Token Endpoint Authentication Method
@@ -157,7 +166,6 @@ pub enum OAuthTokenTypeHint {
 #[derive(
     Debug,
     Clone,
-    Copy,
     PartialEq,
     Eq,
     PartialOrd,
@@ -165,45 +173,51 @@ pub enum OAuthTokenTypeHint {
     Hash,
     Display,
     FromStr,
-    Serialize,
-    Deserialize,
+    SerializeDisplay,
+    DeserializeFromStr,
     JsonSchema,
 )]
+#[non_exhaustive]
 pub enum OAuthClientAuthenticationMethod {
     /// `none`
-    #[serde(rename = "none")]
+    #[schemars(rename = "none")]
     #[display("none")]
     None,
 
     /// `client_secret_post`
-    #[serde(rename = "client_secret_post")]
+    #[schemars(rename = "client_secret_post")]
     #[display("client_secret_post")]
     ClientSecretPost,
 
     /// `client_secret_basic`
-    #[serde(rename = "client_secret_basic")]
+    #[schemars(rename = "client_secret_basic")]
     #[display("client_secret_basic")]
     ClientSecretBasic,
 
     /// `client_secret_jwt`
-    #[serde(rename = "client_secret_jwt")]
+    #[schemars(rename = "client_secret_jwt")]
     #[display("client_secret_jwt")]
     ClientSecretJwt,
 
     /// `private_key_jwt`
-    #[serde(rename = "private_key_jwt")]
+    #[schemars(rename = "private_key_jwt")]
     #[display("private_key_jwt")]
     PrivateKeyJwt,
 
     /// `tls_client_auth`
-    #[serde(rename = "tls_client_auth")]
+    #[schemars(rename = "tls_client_auth")]
     #[display("tls_client_auth")]
     TlsClientAuth,
 
     /// `self_signed_tls_client_auth`
-    #[serde(rename = "self_signed_tls_client_auth")]
+    #[schemars(rename = "self_signed_tls_client_auth")]
     #[display("self_signed_tls_client_auth")]
     SelfSignedTlsClientAuth,
+
+    /// An unknown value.
+    #[display("{0}")]
+    #[schemars(skip)]
+    Unknown(String),
 }
 
 /// PKCE Code Challenge Method
@@ -212,7 +226,6 @@ pub enum OAuthClientAuthenticationMethod {
 #[derive(
     Debug,
     Clone,
-    Copy,
     PartialEq,
     Eq,
     PartialOrd,
@@ -220,18 +233,24 @@ pub enum OAuthClientAuthenticationMethod {
     Hash,
     Display,
     FromStr,
-    Serialize,
-    Deserialize,
+    SerializeDisplay,
+    DeserializeFromStr,
     JsonSchema,
 )]
+#[non_exhaustive]
 pub enum PkceCodeChallengeMethod {
     /// `plain`
-    #[serde(rename = "plain")]
+    #[schemars(rename = "plain")]
     #[display("plain")]
     Plain,
 
     /// `S256`
-    #[serde(rename = "S256")]
+    #[schemars(rename = "S256")]
     #[display("S256")]
     S256,
+
+    /// An unknown value.
+    #[display("{0}")]
+    #[schemars(skip)]
+    Unknown(String),
 }

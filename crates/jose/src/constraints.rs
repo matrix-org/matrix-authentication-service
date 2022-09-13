@@ -21,7 +21,7 @@ use crate::jwt::JsonWebSignatureHeader;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Constraint<'a> {
     Alg {
-        constraint_alg: JsonWebSignatureAlg,
+        constraint_alg: &'a JsonWebSignatureAlg,
     },
 
     Algs {
@@ -33,17 +33,17 @@ pub enum Constraint<'a> {
     },
 
     Use {
-        constraint_use: JsonWebKeyUse,
+        constraint_use: &'a JsonWebKeyUse,
     },
 
     Kty {
-        constraint_kty: JsonWebKeyType,
+        constraint_kty: &'a JsonWebKeyType,
     },
 }
 
 impl<'a> Constraint<'a> {
     #[must_use]
-    pub fn alg(constraint_alg: JsonWebSignatureAlg) -> Self {
+    pub fn alg(constraint_alg: &'a JsonWebSignatureAlg) -> Self {
         Constraint::Alg { constraint_alg }
     }
 
@@ -58,12 +58,12 @@ impl<'a> Constraint<'a> {
     }
 
     #[must_use]
-    pub fn use_(constraint_use: JsonWebKeyUse) -> Self {
+    pub fn use_(constraint_use: &'a JsonWebKeyUse) -> Self {
         Constraint::Use { constraint_use }
     }
 
     #[must_use]
-    pub fn kty(constraint_kty: JsonWebKeyType) -> Self {
+    pub fn kty(constraint_kty: &'a JsonWebKeyType) -> Self {
         Constraint::Kty { constraint_kty }
     }
 }
@@ -76,7 +76,7 @@ pub enum ConstraintDecision {
 }
 
 pub trait Constrainable {
-    fn alg(&self) -> Option<JsonWebSignatureAlg> {
+    fn alg(&self) -> Option<&JsonWebSignatureAlg> {
         None
     }
 
@@ -91,7 +91,7 @@ pub trait Constrainable {
     }
 
     /// Usage specified for this key
-    fn use_(&self) -> Option<JsonWebKeyUse> {
+    fn use_(&self) -> Option<&JsonWebKeyUse> {
         None
     }
 
@@ -120,7 +120,7 @@ impl<'a> Constraint<'a> {
             }
             Constraint::Algs { constraint_algs } => {
                 if let Some(alg) = constrainable.alg() {
-                    if constraint_algs.contains(&alg) {
+                    if constraint_algs.contains(alg) {
                         ConstraintDecision::Positive
                     } else {
                         ConstraintDecision::Negative
@@ -158,7 +158,7 @@ impl<'a> Constraint<'a> {
                 }
             }
             Constraint::Kty { constraint_kty } => {
-                if *constraint_kty == constrainable.kty() {
+                if **constraint_kty == constrainable.kty() {
                     ConstraintDecision::Positive
                 } else {
                     ConstraintDecision::Negative
@@ -217,7 +217,7 @@ impl<'a> ConstraintSet<'a> {
     }
 
     #[must_use]
-    pub fn alg(mut self, constraint_alg: JsonWebSignatureAlg) -> Self {
+    pub fn alg(mut self, constraint_alg: &'a JsonWebSignatureAlg) -> Self {
         self.constraints.insert(Constraint::alg(constraint_alg));
         self
     }
@@ -235,13 +235,13 @@ impl<'a> ConstraintSet<'a> {
     }
 
     #[must_use]
-    pub fn use_(mut self, constraint_use: JsonWebKeyUse) -> Self {
+    pub fn use_(mut self, constraint_use: &'a JsonWebKeyUse) -> Self {
         self.constraints.insert(Constraint::use_(constraint_use));
         self
     }
 
     #[must_use]
-    pub fn kty(mut self, constraint_kty: JsonWebKeyType) -> Self {
+    pub fn kty(mut self, constraint_kty: &'a JsonWebKeyType) -> Self {
         self.constraints.insert(Constraint::kty(constraint_kty));
         self
     }

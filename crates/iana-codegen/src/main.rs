@@ -105,7 +105,7 @@ impl Display for File {
 
 use parse_display::{{Display, FromStr}};
 use schemars::JsonSchema;
-use serde::{{Deserialize, Serialize}};"#,
+use serde_with::{{DeserializeFromStr, SerializeDisplay}};"#,
             self.registry_name, self.registry_url,
         )?;
 
@@ -114,6 +114,14 @@ use serde::{{Deserialize, Serialize}};"#,
                 list
             } else {
                 continue;
+            };
+
+            let is_exhaustive = section.key == "OAuthAuthorizationEndpointResponseType";
+
+            let non_exhaustive_attr = if is_exhaustive {
+                ""
+            } else {
+                "\n#[non_exhaustive]"
             };
 
             write!(
@@ -125,7 +133,6 @@ use serde::{{Deserialize, Serialize}};"#,
 #[derive(
     Debug,
     Clone,
-    Copy,
     PartialEq,
     Eq,
     PartialOrd,
@@ -133,13 +140,14 @@ use serde::{{Deserialize, Serialize}};"#,
     Hash,
     Display,
     FromStr,
-    Serialize,
-    Deserialize,
+    SerializeDisplay,
+    DeserializeFromStr,
     JsonSchema,
-)]
+)]{}
 pub enum {} {{"#,
                 section.doc,
                 section.url.unwrap(),
+                non_exhaustive_attr,
                 section.key,
             )?;
             for member in list {
@@ -149,10 +157,20 @@ pub enum {} {{"#,
                 } else {
                     writeln!(f, "    /// `{}`", member.value)?;
                 }
-                writeln!(f, "    #[serde(rename = \"{}\")]", member.value)?;
+                writeln!(f, "    #[schemars(rename = \"{}\")]", member.value)?;
                 writeln!(f, "    #[display(\"{}\")]", member.value)?;
                 writeln!(f, "    {},", member.enum_name)?;
             }
+
+            if !is_exhaustive {
+                // Add a variant for custom enums
+                writeln!(f)?;
+                writeln!(f, "    /// An unknown value.")?;
+                writeln!(f, "    #[display(\"{{0}}\")]")?;
+                writeln!(f, "    #[schemars(skip)]")?;
+                writeln!(f, "    Unknown(String),")?;
+            }
+
             writeln!(f, "}}")?;
         }
 

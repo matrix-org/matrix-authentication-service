@@ -248,7 +248,7 @@ impl From<&TimeOptions> for TimeNotBefore {
 /// Returns an error if the algorithm is not supported.
 ///
 /// [OpenID Connect Core 1.0 specification]: https://openid.net/specs/openid-connect-core-1_0.html#CodeIDToken
-pub fn hash_token(alg: JsonWebSignatureAlg, token: &str) -> anyhow::Result<String> {
+pub fn hash_token(alg: &JsonWebSignatureAlg, token: &str) -> anyhow::Result<String> {
     let bits = match alg {
         JsonWebSignatureAlg::Hs256
         | JsonWebSignatureAlg::Rs256
@@ -281,9 +281,7 @@ pub fn hash_token(alg: JsonWebSignatureAlg, token: &str) -> anyhow::Result<Strin
             // Left-most half
             hash.get(..32).map(ToOwned::to_owned)
         }
-        JsonWebSignatureAlg::EdDsa | JsonWebSignatureAlg::None => {
-            return Err(anyhow::anyhow!("unsupported algorithm for hashing"))
-        }
+        _ => return Err(anyhow::anyhow!("unsupported algorithm for hashing")),
     }
     .context("failed to get first half of hash")?;
 
@@ -292,14 +290,14 @@ pub fn hash_token(alg: JsonWebSignatureAlg, token: &str) -> anyhow::Result<Strin
 
 #[derive(Debug, Clone)]
 pub struct TokenHash<'a> {
-    alg: JsonWebSignatureAlg,
+    alg: &'a JsonWebSignatureAlg,
     token: &'a str,
 }
 
 impl<'a> TokenHash<'a> {
     /// Creates a new `TokenHash` validator for the given algorithm and token.
     #[must_use]
-    pub fn new(alg: JsonWebSignatureAlg, token: &'a str) -> Self {
+    pub fn new(alg: &'a JsonWebSignatureAlg, token: &'a str) -> Self {
         Self { alg, token }
     }
 }

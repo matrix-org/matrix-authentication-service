@@ -162,7 +162,7 @@ pub(crate) async fn post(
 
     let client = client_authorization.credentials.fetch(&mut conn).await?;
 
-    let method = match client.token_endpoint_auth_method {
+    let method = match &client.token_endpoint_auth_method {
         None | Some(OAuthClientAuthenticationMethod::None) => {
             return Err(RouteError::NotAllowed);
         }

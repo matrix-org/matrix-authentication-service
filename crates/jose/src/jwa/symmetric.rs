@@ -33,15 +33,15 @@ pub struct InvalidAlgorithm {
 }
 
 impl SymmetricKey {
-    pub const fn new_for_alg(
-        key: Vec<u8>,
-        alg: JsonWebSignatureAlg,
-    ) -> Result<Self, InvalidAlgorithm> {
+    pub fn new_for_alg(key: Vec<u8>, alg: &JsonWebSignatureAlg) -> Result<Self, InvalidAlgorithm> {
         match alg {
             JsonWebSignatureAlg::Hs256 => Ok(Self::hs256(key)),
             JsonWebSignatureAlg::Hs384 => Ok(Self::hs384(key)),
             JsonWebSignatureAlg::Hs512 => Ok(Self::hs512(key)),
-            _ => Err(InvalidAlgorithm { alg, key }),
+            _ => Err(InvalidAlgorithm {
+                alg: alg.clone(),
+                key,
+            }),
         }
     }
 
