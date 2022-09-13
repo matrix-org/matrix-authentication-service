@@ -43,7 +43,6 @@ impl PostAuthAction {
         PostAuthAction::ContinueCompatSsoLogin { data }
     }
 
-    #[must_use]
     pub fn go_next(&self) -> axum::response::Redirect {
         match self {
             Self::ContinueAuthorizationGrant { data } => ContinueAuthorizationGrant(*data).go(),
@@ -186,7 +185,6 @@ impl Login {
         self.post_auth_action.as_ref()
     }
 
-    #[must_use]
     pub fn go_next(&self) -> axum::response::Redirect {
         match &self.post_auth_action {
             Some(action) => action.go_next(),
@@ -236,7 +234,6 @@ impl Reauth {
         self.post_auth_action.as_ref()
     }
 
-    #[must_use]
     pub fn go_next(&self) -> axum::response::Redirect {
         match &self.post_auth_action {
             Some(action) => action.go_next(),
@@ -297,7 +294,6 @@ impl Register {
         self.post_auth_action.as_ref()
     }
 
-    #[must_use]
     pub fn go_next(&self) -> axum::response::Redirect {
         match &self.post_auth_action {
             Some(action) => action.go_next(),
