@@ -2478,7 +2478,7 @@ version = "0.1.0"
 dependencies = [
  "parse-display",
  "schemars",
- "serde",
+ "serde_with",
 ]
 
 [[package]]

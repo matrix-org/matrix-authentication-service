@@ -19,7 +19,7 @@
 
 use parse_display::{Display, FromStr};
 use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 /// JSON Web Signature "alg" parameter
 ///
@@ -27,7 +27,6 @@ use serde::{Deserialize, Serialize};
 #[derive(
     Debug,
     Clone,
-    Copy,
     PartialEq,
     Eq,
     PartialOrd,
@@ -35,85 +34,91 @@ use serde::{Deserialize, Serialize};
     Hash,
     Display,
     FromStr,
-    Serialize,
-    Deserialize,
+    SerializeDisplay,
+    DeserializeFromStr,
     JsonSchema,
 )]
+#[non_exhaustive]
 pub enum JsonWebSignatureAlg {
     /// HMAC using SHA-256
-    #[serde(rename = "HS256")]
+    #[schemars(rename = "HS256")]
     #[display("HS256")]
     Hs256,
 
     /// HMAC using SHA-384
-    #[serde(rename = "HS384")]
+    #[schemars(rename = "HS384")]
     #[display("HS384")]
     Hs384,
 
     /// HMAC using SHA-512
-    #[serde(rename = "HS512")]
+    #[schemars(rename = "HS512")]
     #[display("HS512")]
     Hs512,
 
     /// RSASSA-PKCS1-v1_5 using SHA-256
-    #[serde(rename = "RS256")]
+    #[schemars(rename = "RS256")]
     #[display("RS256")]
     Rs256,
 
     /// RSASSA-PKCS1-v1_5 using SHA-384
-    #[serde(rename = "RS384")]
+    #[schemars(rename = "RS384")]
     #[display("RS384")]
     Rs384,
 
     /// RSASSA-PKCS1-v1_5 using SHA-512
-    #[serde(rename = "RS512")]
+    #[schemars(rename = "RS512")]
     #[display("RS512")]
     Rs512,
 
     /// ECDSA using P-256 and SHA-256
-    #[serde(rename = "ES256")]
+    #[schemars(rename = "ES256")]
     #[display("ES256")]
     Es256,
 
     /// ECDSA using P-384 and SHA-384
-    #[serde(rename = "ES384")]
+    #[schemars(rename = "ES384")]
     #[display("ES384")]
     Es384,
 
     /// ECDSA using P-521 and SHA-512
-    #[serde(rename = "ES512")]
+    #[schemars(rename = "ES512")]
     #[display("ES512")]
     Es512,
 
     /// RSASSA-PSS using SHA-256 and MGF1 with SHA-256
-    #[serde(rename = "PS256")]
+    #[schemars(rename = "PS256")]
     #[display("PS256")]
     Ps256,
 
     /// RSASSA-PSS using SHA-384 and MGF1 with SHA-384
-    #[serde(rename = "PS384")]
+    #[schemars(rename = "PS384")]
     #[display("PS384")]
     Ps384,
 
     /// RSASSA-PSS using SHA-512 and MGF1 with SHA-512
-    #[serde(rename = "PS512")]
+    #[schemars(rename = "PS512")]
     #[display("PS512")]
     Ps512,
 
     /// No digital signature or MAC performed
-    #[serde(rename = "none")]
+    #[schemars(rename = "none")]
     #[display("none")]
     None,
 
     /// EdDSA signature algorithms
-    #[serde(rename = "EdDSA")]
+    #[schemars(rename = "EdDSA")]
     #[display("EdDSA")]
     EdDsa,
 
     /// ECDSA using secp256k1 curve and SHA-256
-    #[serde(rename = "ES256K")]
+    #[schemars(rename = "ES256K")]
     #[display("ES256K")]
     Es256K,
+
+    /// An unknown value.
+    #[display("{0}")]
+    #[schemars(skip)]
+    Unknown(String),
 }
 
 /// JSON Web Encryption "alg" parameter
@@ -122,7 +127,6 @@ pub enum JsonWebSignatureAlg {
 #[derive(
     Debug,
     Clone,
-    Copy,
     PartialEq,
     Eq,
     PartialOrd,
@@ -130,105 +134,111 @@ pub enum JsonWebSignatureAlg {
     Hash,
     Display,
     FromStr,
-    Serialize,
-    Deserialize,
+    SerializeDisplay,
+    DeserializeFromStr,
     JsonSchema,
 )]
+#[non_exhaustive]
 pub enum JsonWebEncryptionAlg {
     /// RSAES-PKCS1-v1_5
-    #[serde(rename = "RSA1_5")]
+    #[schemars(rename = "RSA1_5")]
     #[display("RSA1_5")]
     Rsa15,
 
     /// RSAES OAEP using default parameters
-    #[serde(rename = "RSA-OAEP")]
+    #[schemars(rename = "RSA-OAEP")]
     #[display("RSA-OAEP")]
     RsaOaep,
 
     /// RSAES OAEP using SHA-256 and MGF1 with SHA-256
-    #[serde(rename = "RSA-OAEP-256")]
+    #[schemars(rename = "RSA-OAEP-256")]
     #[display("RSA-OAEP-256")]
     RsaOaep256,
 
     /// AES Key Wrap using 128-bit key
-    #[serde(rename = "A128KW")]
+    #[schemars(rename = "A128KW")]
     #[display("A128KW")]
     A128Kw,
 
     /// AES Key Wrap using 192-bit key
-    #[serde(rename = "A192KW")]
+    #[schemars(rename = "A192KW")]
     #[display("A192KW")]
     A192Kw,
 
     /// AES Key Wrap using 256-bit key
-    #[serde(rename = "A256KW")]
+    #[schemars(rename = "A256KW")]
     #[display("A256KW")]
     A256Kw,
 
     /// Direct use of a shared symmetric key
-    #[serde(rename = "dir")]
+    #[schemars(rename = "dir")]
     #[display("dir")]
     Dir,
 
     /// ECDH-ES using Concat KDF
-    #[serde(rename = "ECDH-ES")]
+    #[schemars(rename = "ECDH-ES")]
     #[display("ECDH-ES")]
     EcdhEs,
 
     /// ECDH-ES using Concat KDF and "A128KW" wrapping
-    #[serde(rename = "ECDH-ES+A128KW")]
+    #[schemars(rename = "ECDH-ES+A128KW")]
     #[display("ECDH-ES+A128KW")]
     EcdhEsA128Kw,
 
     /// ECDH-ES using Concat KDF and "A192KW" wrapping
-    #[serde(rename = "ECDH-ES+A192KW")]
+    #[schemars(rename = "ECDH-ES+A192KW")]
     #[display("ECDH-ES+A192KW")]
     EcdhEsA192Kw,
 
     /// ECDH-ES using Concat KDF and "A256KW" wrapping
-    #[serde(rename = "ECDH-ES+A256KW")]
+    #[schemars(rename = "ECDH-ES+A256KW")]
     #[display("ECDH-ES+A256KW")]
     EcdhEsA256Kw,
 
     /// Key wrapping with AES GCM using 128-bit key
-    #[serde(rename = "A128GCMKW")]
+    #[schemars(rename = "A128GCMKW")]
     #[display("A128GCMKW")]
     A128Gcmkw,
 
     /// Key wrapping with AES GCM using 192-bit key
-    #[serde(rename = "A192GCMKW")]
+    #[schemars(rename = "A192GCMKW")]
     #[display("A192GCMKW")]
     A192Gcmkw,
 
     /// Key wrapping with AES GCM using 256-bit key
-    #[serde(rename = "A256GCMKW")]
+    #[schemars(rename = "A256GCMKW")]
     #[display("A256GCMKW")]
     A256Gcmkw,
 
     /// PBES2 with HMAC SHA-256 and "A128KW" wrapping
-    #[serde(rename = "PBES2-HS256+A128KW")]
+    #[schemars(rename = "PBES2-HS256+A128KW")]
     #[display("PBES2-HS256+A128KW")]
     Pbes2Hs256A128Kw,
 
     /// PBES2 with HMAC SHA-384 and "A192KW" wrapping
-    #[serde(rename = "PBES2-HS384+A192KW")]
+    #[schemars(rename = "PBES2-HS384+A192KW")]
     #[display("PBES2-HS384+A192KW")]
     Pbes2Hs384A192Kw,
 
     /// PBES2 with HMAC SHA-512 and "A256KW" wrapping
-    #[serde(rename = "PBES2-HS512+A256KW")]
+    #[schemars(rename = "PBES2-HS512+A256KW")]
     #[display("PBES2-HS512+A256KW")]
     Pbes2Hs512A256Kw,
 
     /// RSA-OAEP using SHA-384 and MGF1 with SHA-384
-    #[serde(rename = "RSA-OAEP-384")]
+    #[schemars(rename = "RSA-OAEP-384")]
     #[display("RSA-OAEP-384")]
     RsaOaep384,
 
     /// RSA-OAEP using SHA-512 and MGF1 with SHA-512
-    #[serde(rename = "RSA-OAEP-512")]
+    #[schemars(rename = "RSA-OAEP-512")]
     #[display("RSA-OAEP-512")]
     RsaOaep512,
+
+    /// An unknown value.
+    #[display("{0}")]
+    #[schemars(skip)]
+    Unknown(String),
 }
 
 /// JSON Web Encryption "enc" parameter
@@ -237,7 +247,6 @@ pub enum JsonWebEncryptionAlg {
 #[derive(
     Debug,
     Clone,
-    Copy,
     PartialEq,
     Eq,
     PartialOrd,
@@ -245,40 +254,46 @@ pub enum JsonWebEncryptionAlg {
     Hash,
     Display,
     FromStr,
-    Serialize,
-    Deserialize,
+    SerializeDisplay,
+    DeserializeFromStr,
     JsonSchema,
 )]
+#[non_exhaustive]
 pub enum JsonWebEncryptionEnc {
     /// AES_128_CBC_HMAC_SHA_256 authenticated encryption algorithm
-    #[serde(rename = "A128CBC-HS256")]
+    #[schemars(rename = "A128CBC-HS256")]
     #[display("A128CBC-HS256")]
     A128CbcHs256,
 
     /// AES_192_CBC_HMAC_SHA_384 authenticated encryption algorithm
-    #[serde(rename = "A192CBC-HS384")]
+    #[schemars(rename = "A192CBC-HS384")]
     #[display("A192CBC-HS384")]
     A192CbcHs384,
 
     /// AES_256_CBC_HMAC_SHA_512 authenticated encryption algorithm
-    #[serde(rename = "A256CBC-HS512")]
+    #[schemars(rename = "A256CBC-HS512")]
     #[display("A256CBC-HS512")]
     A256CbcHs512,
 
     /// AES GCM using 128-bit key
-    #[serde(rename = "A128GCM")]
+    #[schemars(rename = "A128GCM")]
     #[display("A128GCM")]
     A128Gcm,
 
     /// AES GCM using 192-bit key
-    #[serde(rename = "A192GCM")]
+    #[schemars(rename = "A192GCM")]
     #[display("A192GCM")]
     A192Gcm,
 
     /// AES GCM using 256-bit key
-    #[serde(rename = "A256GCM")]
+    #[schemars(rename = "A256GCM")]
     #[display("A256GCM")]
     A256Gcm,
+
+    /// An unknown value.
+    #[display("{0}")]
+    #[schemars(skip)]
+    Unknown(String),
 }
 
 /// JSON Web Encryption Compression Algorithm
@@ -287,7 +302,6 @@ pub enum JsonWebEncryptionEnc {
 #[derive(
     Debug,
     Clone,
-    Copy,
     PartialEq,
     Eq,
     PartialOrd,
@@ -295,15 +309,21 @@ pub enum JsonWebEncryptionEnc {
     Hash,
     Display,
     FromStr,
-    Serialize,
-    Deserialize,
+    SerializeDisplay,
+    DeserializeFromStr,
     JsonSchema,
 )]
+#[non_exhaustive]
 pub enum JsonWebEncryptionCompressionAlgorithm {
     /// DEFLATE
-    #[serde(rename = "DEF")]
+    #[schemars(rename = "DEF")]
     #[display("DEF")]
     Def,
+
+    /// An unknown value.
+    #[display("{0}")]
+    #[schemars(skip)]
+    Unknown(String),
 }
 
 /// JSON Web Key Type
@@ -312,7 +332,6 @@ pub enum JsonWebEncryptionCompressionAlgorithm {
 #[derive(
     Debug,
     Clone,
-    Copy,
     PartialEq,
     Eq,
     PartialOrd,
@@ -320,30 +339,36 @@ pub enum JsonWebEncryptionCompressionAlgorithm {
     Hash,
     Display,
     FromStr,
-    Serialize,
-    Deserialize,
+    SerializeDisplay,
+    DeserializeFromStr,
     JsonSchema,
 )]
+#[non_exhaustive]
 pub enum JsonWebKeyType {
     /// Elliptic Curve
-    #[serde(rename = "EC")]
+    #[schemars(rename = "EC")]
     #[display("EC")]
     Ec,
 
     /// RSA
-    #[serde(rename = "RSA")]
+    #[schemars(rename = "RSA")]
     #[display("RSA")]
     Rsa,
 
     /// Octet sequence
-    #[serde(rename = "oct")]
+    #[schemars(rename = "oct")]
     #[display("oct")]
     Oct,
 
     /// Octet string key pairs
-    #[serde(rename = "OKP")]
+    #[schemars(rename = "OKP")]
     #[display("OKP")]
     Okp,
+
+    /// An unknown value.
+    #[display("{0}")]
+    #[schemars(skip)]
+    Unknown(String),
 }
 
 /// JSON Web Key EC Elliptic Curve
@@ -352,7 +377,6 @@ pub enum JsonWebKeyType {
 #[derive(
     Debug,
     Clone,
-    Copy,
     PartialEq,
     Eq,
     PartialOrd,
@@ -360,30 +384,36 @@ pub enum JsonWebKeyType {
     Hash,
     Display,
     FromStr,
-    Serialize,
-    Deserialize,
+    SerializeDisplay,
+    DeserializeFromStr,
     JsonSchema,
 )]
+#[non_exhaustive]
 pub enum JsonWebKeyEcEllipticCurve {
     /// P-256 Curve
-    #[serde(rename = "P-256")]
+    #[schemars(rename = "P-256")]
     #[display("P-256")]
     P256,
 
     /// P-384 Curve
-    #[serde(rename = "P-384")]
+    #[schemars(rename = "P-384")]
     #[display("P-384")]
     P384,
 
     /// P-521 Curve
-    #[serde(rename = "P-521")]
+    #[schemars(rename = "P-521")]
     #[display("P-521")]
     P521,
 
     /// SECG secp256k1 curve
-    #[serde(rename = "secp256k1")]
+    #[schemars(rename = "secp256k1")]
     #[display("secp256k1")]
     Secp256K1,
+
+    /// An unknown value.
+    #[display("{0}")]
+    #[schemars(skip)]
+    Unknown(String),
 }
 
 /// JSON Web Key OKP Elliptic Curve
@@ -392,7 +422,6 @@ pub enum JsonWebKeyEcEllipticCurve {
 #[derive(
     Debug,
     Clone,
-    Copy,
     PartialEq,
     Eq,
     PartialOrd,
@@ -400,30 +429,36 @@ pub enum JsonWebKeyEcEllipticCurve {
     Hash,
     Display,
     FromStr,
-    Serialize,
-    Deserialize,
+    SerializeDisplay,
+    DeserializeFromStr,
     JsonSchema,
 )]
+#[non_exhaustive]
 pub enum JsonWebKeyOkpEllipticCurve {
     /// Ed25519 signature algorithm key pairs
-    #[serde(rename = "Ed25519")]
+    #[schemars(rename = "Ed25519")]
     #[display("Ed25519")]
     Ed25519,
 
     /// Ed448 signature algorithm key pairs
-    #[serde(rename = "Ed448")]
+    #[schemars(rename = "Ed448")]
     #[display("Ed448")]
     Ed448,
 
     /// X25519 function key pairs
-    #[serde(rename = "X25519")]
+    #[schemars(rename = "X25519")]
     #[display("X25519")]
     X25519,
 
     /// X448 function key pairs
-    #[serde(rename = "X448")]
+    #[schemars(rename = "X448")]
     #[display("X448")]
     X448,
+
+    /// An unknown value.
+    #[display("{0}")]
+    #[schemars(skip)]
+    Unknown(String),
 }
 
 /// JSON Web Key Use
@@ -432,7 +467,6 @@ pub enum JsonWebKeyOkpEllipticCurve {
 #[derive(
     Debug,
     Clone,
-    Copy,
     PartialEq,
     Eq,
     PartialOrd,
@@ -440,20 +474,26 @@ pub enum JsonWebKeyOkpEllipticCurve {
     Hash,
     Display,
     FromStr,
-    Serialize,
-    Deserialize,
+    SerializeDisplay,
+    DeserializeFromStr,
     JsonSchema,
 )]
+#[non_exhaustive]
 pub enum JsonWebKeyUse {
     /// Digital Signature or MAC
-    #[serde(rename = "sig")]
+    #[schemars(rename = "sig")]
     #[display("sig")]
     Sig,
 
     /// Encryption
-    #[serde(rename = "enc")]
+    #[schemars(rename = "enc")]
     #[display("enc")]
     Enc,
+
+    /// An unknown value.
+    #[display("{0}")]
+    #[schemars(skip)]
+    Unknown(String),
 }
 
 /// JSON Web Key Operation
@@ -462,7 +502,6 @@ pub enum JsonWebKeyUse {
 #[derive(
     Debug,
     Clone,
-    Copy,
     PartialEq,
     Eq,
     PartialOrd,
@@ -470,48 +509,54 @@ pub enum JsonWebKeyUse {
     Hash,
     Display,
     FromStr,
-    Serialize,
-    Deserialize,
+    SerializeDisplay,
+    DeserializeFromStr,
     JsonSchema,
 )]
+#[non_exhaustive]
 pub enum JsonWebKeyOperation {
     /// Compute digital signature or MAC
-    #[serde(rename = "sign")]
+    #[schemars(rename = "sign")]
     #[display("sign")]
     Sign,
 
     /// Verify digital signature or MAC
-    #[serde(rename = "verify")]
+    #[schemars(rename = "verify")]
     #[display("verify")]
     Verify,
 
     /// Encrypt content
-    #[serde(rename = "encrypt")]
+    #[schemars(rename = "encrypt")]
     #[display("encrypt")]
     Encrypt,
 
     /// Decrypt content and validate decryption, if applicable
-    #[serde(rename = "decrypt")]
+    #[schemars(rename = "decrypt")]
     #[display("decrypt")]
     Decrypt,
 
     /// Encrypt key
-    #[serde(rename = "wrapKey")]
+    #[schemars(rename = "wrapKey")]
     #[display("wrapKey")]
     WrapKey,
 
     /// Decrypt key and validate decryption, if applicable
-    #[serde(rename = "unwrapKey")]
+    #[schemars(rename = "unwrapKey")]
     #[display("unwrapKey")]
     UnwrapKey,
 
     /// Derive key
-    #[serde(rename = "deriveKey")]
+    #[schemars(rename = "deriveKey")]
     #[display("deriveKey")]
     DeriveKey,
 
     /// Derive bits not to be used as a key
-    #[serde(rename = "deriveBits")]
+    #[schemars(rename = "deriveBits")]
     #[display("deriveBits")]
     DeriveBits,
+
+    /// An unknown value.
+    #[display("{0}")]
+    #[schemars(skip)]
+    Unknown(String),
 }

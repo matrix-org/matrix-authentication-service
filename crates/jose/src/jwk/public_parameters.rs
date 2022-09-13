@@ -137,8 +137,8 @@ impl EcPublicParameters {
         Self { crv, x, y }
     }
 
-    pub const fn crv(&self) -> JsonWebKeyEcEllipticCurve {
-        self.crv
+    pub const fn crv(&self) -> &JsonWebKeyEcEllipticCurve {
+        &self.crv
     }
 }
 
@@ -148,11 +148,12 @@ impl ParametersInfo for EcPublicParameters {
     }
 
     fn possible_algs(&self) -> &[JsonWebSignatureAlg] {
-        match self.crv {
+        match &self.crv {
             JsonWebKeyEcEllipticCurve::P256 => &[JsonWebSignatureAlg::Es256],
             JsonWebKeyEcEllipticCurve::P384 => &[JsonWebSignatureAlg::Es384],
             JsonWebKeyEcEllipticCurve::P521 => &[JsonWebSignatureAlg::Es512],
             JsonWebKeyEcEllipticCurve::Secp256K1 => &[JsonWebSignatureAlg::Es256K],
+            _ => &[],
         }
     }
 }
@@ -182,8 +183,8 @@ impl OkpPublicParameters {
         Self { crv, x }
     }
 
-    pub const fn crv(&self) -> JsonWebKeyOkpEllipticCurve {
-        self.crv
+    pub const fn crv(&self) -> &JsonWebKeyOkpEllipticCurve {
+        &self.crv
     }
 }
 
@@ -360,7 +361,7 @@ mod ec_impls {
         type Error = ecdsa::Error;
 
         fn try_from(value: &EcPublicParameters) -> Result<Self, Self::Error> {
-            if value.crv() != C::CRV {
+            if *value.crv() != C::CRV {
                 return Err(Self::Error::default());
             }
 

@@ -42,13 +42,13 @@ pub const DEFAULT_GRANT_TYPES: &[GrantType] = &[GrantType::AuthorizationCode];
 
 pub const DEFAULT_APPLICATION_TYPE: ApplicationType = ApplicationType::Web;
 
-pub const DEFAULT_TOKEN_AUTH_METHOD: OAuthClientAuthenticationMethod =
-    OAuthClientAuthenticationMethod::ClientSecretBasic;
+pub const DEFAULT_TOKEN_AUTH_METHOD: &OAuthClientAuthenticationMethod =
+    &OAuthClientAuthenticationMethod::ClientSecretBasic;
 
-pub const DEFAULT_SIGNING_ALGORITHM: JsonWebSignatureAlg = JsonWebSignatureAlg::Rs256;
+pub const DEFAULT_SIGNING_ALGORITHM: &JsonWebSignatureAlg = &JsonWebSignatureAlg::Rs256;
 
-pub const DEFAULT_ENCRYPTION_ENC_ALGORITHM: JsonWebEncryptionEnc =
-    JsonWebEncryptionEnc::A128CbcHs256;
+pub const DEFAULT_ENCRYPTION_ENC_ALGORITHM: &JsonWebEncryptionEnc =
+    &JsonWebEncryptionEnc::A128CbcHs256;
 
 /// A collection of localized variants.
 ///
@@ -463,7 +463,7 @@ impl ClientMetadata {
             ));
         }
 
-        if self.token_endpoint_auth_method() == OAuthClientAuthenticationMethod::PrivateKeyJwt
+        if *self.token_endpoint_auth_method() == OAuthClientAuthenticationMethod::PrivateKeyJwt
             && self.jwks_uri.is_none()
             && self.jwks.is_none()
         {
@@ -486,26 +486,26 @@ impl ClientMetadata {
             ));
         }
 
-        if self.id_token_signed_response_alg() == JsonWebSignatureAlg::None
+        if *self.id_token_signed_response_alg() == JsonWebSignatureAlg::None
             && response_types.iter().any(ResponseType::has_id_token)
         {
             return Err(ClientMetadataVerificationError::IdTokenSigningAlgNone);
         }
 
         if self.id_token_encrypted_response_enc.is_some() {
-            self.id_token_encrypted_response_alg.ok_or(
+            self.id_token_encrypted_response_alg.as_ref().ok_or(
                 ClientMetadataVerificationError::MissingEncryptionAlg("id_token"),
             )?;
         }
 
         if self.userinfo_encrypted_response_enc.is_some() {
-            self.userinfo_encrypted_response_alg.ok_or(
+            self.userinfo_encrypted_response_alg.as_ref().ok_or(
                 ClientMetadataVerificationError::MissingEncryptionAlg("userinfo"),
             )?;
         }
 
         if self.request_object_encryption_enc.is_some() {
-            self.request_object_encryption_alg.ok_or(
+            self.request_object_encryption_alg.as_ref().ok_or(
                 ClientMetadataVerificationError::MissingEncryptionAlg("request_object"),
             )?;
         }
@@ -522,7 +522,7 @@ impl ClientMetadata {
         }
 
         if self.introspection_encrypted_response_enc.is_some() {
-            self.introspection_encrypted_response_alg.ok_or(
+            self.introspection_encrypted_response_alg.as_ref().ok_or(
                 ClientMetadataVerificationError::MissingEncryptionAlg("introspection"),
             )?;
         }
@@ -542,9 +542,12 @@ impl ClientMetadata {
     /// [authorization endpoint]: https://www.rfc-editor.org/rfc/rfc6749.html#section-3.1
     #[must_use]
     pub fn response_types(&self) -> Vec<ResponseType> {
-        self.response_types
-            .clone()
-            .unwrap_or_else(|| DEFAULT_RESPONSE_TYPES.map(ResponseType::from).into())
+        self.response_types.clone().unwrap_or_else(|| {
+            DEFAULT_RESPONSE_TYPES
+                .into_iter()
+                .filter_map(|t| ResponseType::try_from(t).ok())
+                .collect()
+        })
     }
 
     /// Array of [OAuth 2.0 `grant_type` values] that the client can use at the
@@ -578,8 +581,9 @@ impl ClientMetadata {
     ///
     /// [token endpoint]: https://www.rfc-editor.org/rfc/rfc6749.html#section-3.2
     #[must_use]
-    pub fn token_endpoint_auth_method(&self) -> OAuthClientAuthenticationMethod {
+    pub fn token_endpoint_auth_method(&self) -> &OAuthClientAuthenticationMethod {
         self.token_endpoint_auth_method
+            .as_ref()
             .unwrap_or(DEFAULT_TOKEN_AUTH_METHOD)
     }
 
@@ -594,8 +598,9 @@ impl ClientMetadata {
     ///
     /// [JWS]: http://tools.ietf.org/html/draft-ietf-jose-json-web-signature
     #[must_use]
-    pub fn id_token_signed_response_alg(&self) -> JsonWebSignatureAlg {
+    pub fn id_token_signed_response_alg(&self) -> &JsonWebSignatureAlg {
         self.id_token_signed_response_alg
+            .as_ref()
             .unwrap_or(DEFAULT_SIGNING_ALGORITHM)
     }
 
@@ -610,11 +615,12 @@ impl ClientMetadata {
     #[must_use]
     pub fn id_token_encrypted_response(
         &self,
-    ) -> Option<(JsonWebEncryptionAlg, JsonWebEncryptionEnc)> {
-        self.id_token_encrypted_response_alg.map(|alg| {
+    ) -> Option<(&JsonWebEncryptionAlg, &JsonWebEncryptionEnc)> {
+        self.id_token_encrypted_response_alg.as_ref().map(|alg| {
             (
                 alg,
                 self.id_token_encrypted_response_enc
+                    .as_ref()
                     .unwrap_or(DEFAULT_ENCRYPTION_ENC_ALGORITHM),
             )
         })
@@ -631,11 +637,12 @@ impl ClientMetadata {
     #[must_use]
     pub fn userinfo_encrypted_response(
         &self,
-    ) -> Option<(JsonWebEncryptionAlg, JsonWebEncryptionEnc)> {
-        self.userinfo_encrypted_response_alg.map(|alg| {
+    ) -> Option<(&JsonWebEncryptionAlg, &JsonWebEncryptionEnc)> {
+        self.userinfo_encrypted_response_alg.as_ref().map(|alg| {
             (
                 alg,
                 self.userinfo_encrypted_response_enc
+                    .as_ref()
                     .unwrap_or(DEFAULT_ENCRYPTION_ENC_ALGORITHM),
             )
         })
@@ -652,11 +659,12 @@ impl ClientMetadata {
     #[must_use]
     pub fn request_object_encryption(
         &self,
-    ) -> Option<(JsonWebEncryptionAlg, JsonWebEncryptionEnc)> {
-        self.request_object_encryption_alg.map(|alg| {
+    ) -> Option<(&JsonWebEncryptionAlg, &JsonWebEncryptionEnc)> {
+        self.request_object_encryption_alg.as_ref().map(|alg| {
             (
                 alg,
                 self.request_object_encryption_enc
+                    .as_ref()
                     .unwrap_or(DEFAULT_ENCRYPTION_ENC_ALGORITHM),
             )
         })
@@ -705,14 +713,17 @@ impl ClientMetadata {
     #[must_use]
     pub fn introspection_encrypted_response(
         &self,
-    ) -> Option<(JsonWebEncryptionAlg, JsonWebEncryptionEnc)> {
-        self.introspection_encrypted_response_alg.map(|alg| {
-            (
-                alg,
-                self.introspection_encrypted_response_enc
-                    .unwrap_or(DEFAULT_ENCRYPTION_ENC_ALGORITHM),
-            )
-        })
+    ) -> Option<(&JsonWebEncryptionAlg, &JsonWebEncryptionEnc)> {
+        self.introspection_encrypted_response_alg
+            .as_ref()
+            .map(|alg| {
+                (
+                    alg,
+                    self.introspection_encrypted_response_enc
+                        .as_ref()
+                        .unwrap_or(DEFAULT_ENCRYPTION_ENC_ALGORITHM),
+                )
+            })
     }
 }
 

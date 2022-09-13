@@ -92,7 +92,7 @@ impl Credentials {
     pub async fn verify<S: StorageBackend>(
         &self,
         encrypter: &Encrypter,
-        method: OAuthClientAuthenticationMethod,
+        method: &OAuthClientAuthenticationMethod,
         client: &Client<S>,
     ) -> Result<(), CredentialsVerificationError> {
         match (self, method) {

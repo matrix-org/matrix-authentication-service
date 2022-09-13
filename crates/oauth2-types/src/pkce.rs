@@ -33,6 +33,9 @@ pub enum CodeChallengeError {
 
     #[error("challenge verification failed")]
     VerificationFailed,
+
+    #[error("unknown challenge method")]
+    UnknownChallengeMethod,
 }
 
 fn validate_verifier(verifier: &str) -> Result<(), CodeChallengeError> {
@@ -61,7 +64,7 @@ pub trait CodeChallengeMethodExt {
     ///
     /// Returns an error if the verifier did not adhere to the rules defined by
     /// the RFC in terms of length and allowed characters
-    fn compute_challenge(self, verifier: &str) -> Result<Cow<'_, str>, CodeChallengeError>;
+    fn compute_challenge<'a>(&self, verifier: &'a str) -> Result<Cow<'a, str>, CodeChallengeError>;
 
     /// Verify that a given verifier is valid for the given challenge
     ///
@@ -70,7 +73,7 @@ pub trait CodeChallengeMethodExt {
     /// Returns an error if the verifier did not match the challenge, or if the
     /// verifier did not adhere to the rules defined by the RFC in terms of
     /// length and allowed characters
-    fn verify(self, challenge: &str, verifier: &str) -> Result<(), CodeChallengeError>
+    fn verify(&self, challenge: &str, verifier: &str) -> Result<(), CodeChallengeError>
     where
         Self: Sized,
     {
@@ -83,7 +86,7 @@ pub trait CodeChallengeMethodExt {
 }
 
 impl CodeChallengeMethodExt for PkceCodeChallengeMethod {
-    fn compute_challenge(self, verifier: &str) -> Result<Cow<'_, str>, CodeChallengeError> {
+    fn compute_challenge<'a>(&self, verifier: &'a str) -> Result<Cow<'a, str>, CodeChallengeError> {
         validate_verifier(verifier)?;
 
         let challenge = match self {
@@ -95,6 +98,7 @@ impl CodeChallengeMethodExt for PkceCodeChallengeMethod {
                 let verifier = BASE64URL_NOPAD.encode(&hash);
                 verifier.into()
             }
+            _ => return Err(CodeChallengeError::UnknownChallengeMethod),
         };
 
         Ok(challenge)

@@ -75,12 +75,12 @@ pub async fn get(
 
     if let Some(alg) = session.client.userinfo_signed_response_alg {
         let key = key_store
-            .signing_key_for_algorithm(alg)
+            .signing_key_for_algorithm(&alg)
             .context("no suitable key found")?;
 
+        let signer = key.params().signing_key_for_alg(&alg)?;
         let header = JsonWebSignatureHeader::new(alg)
             .with_kid(key.kid().context("key has no `kid` for some reason")?);
-        let signer = key.params().signing_key_for_alg(alg)?;
 
         let user_info = SignedUserInfo {
             iss: url_builder.oidc_issuer().to_string(),

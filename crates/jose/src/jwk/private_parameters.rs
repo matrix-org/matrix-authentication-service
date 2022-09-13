@@ -335,6 +335,7 @@ impl ParametersInfo for EcPrivateParameters {
             JsonWebKeyEcEllipticCurve::P384 => &[JsonWebSignatureAlg::Es384],
             JsonWebKeyEcEllipticCurve::P521 => &[JsonWebSignatureAlg::Es512],
             JsonWebKeyEcEllipticCurve::Secp256K1 => &[JsonWebSignatureAlg::Es256K],
+            _ => &[],
         }
     }
 }

@@ -166,9 +166,9 @@ impl<P> JsonWebKey<P> {
     {
         Ok(JsonWebKey {
             parameters: mapper(&self.parameters)?,
-            r#use: self.r#use,
+            r#use: self.r#use.clone(),
             key_ops: self.key_ops.clone(),
-            alg: self.alg,
+            alg: self.alg.clone(),
             kid: self.kid.clone(),
             x5u: self.x5u.clone(),
             x5c: self.x5c.clone(),
@@ -183,9 +183,9 @@ impl<P> JsonWebKey<P> {
     {
         JsonWebKey {
             parameters: mapper(&self.parameters),
-            r#use: self.r#use,
+            r#use: self.r#use.clone(),
             key_ops: self.key_ops.clone(),
-            alg: self.alg,
+            alg: self.alg.clone(),
             kid: self.kid.clone(),
             x5u: self.x5u.clone(),
             x5c: self.x5c.clone(),
@@ -195,7 +195,7 @@ impl<P> JsonWebKey<P> {
     }
 
     #[must_use]
-    pub const fn with_use(mut self, value: JsonWebKeyUse) -> Self {
+    pub fn with_use(mut self, value: JsonWebKeyUse) -> Self {
         self.r#use = Some(value);
         self
     }
@@ -207,7 +207,7 @@ impl<P> JsonWebKey<P> {
     }
 
     #[must_use]
-    pub const fn with_alg(mut self, alg: JsonWebSignatureAlg) -> Self {
+    pub fn with_alg(mut self, alg: JsonWebSignatureAlg) -> Self {
         self.alg = Some(alg);
         self
     }
@@ -219,8 +219,8 @@ impl<P> JsonWebKey<P> {
     }
 
     #[must_use]
-    pub const fn alg(&self) -> Option<JsonWebSignatureAlg> {
-        self.alg
+    pub const fn alg(&self) -> Option<&JsonWebSignatureAlg> {
+        self.alg.as_ref()
     }
 
     #[must_use]
@@ -245,12 +245,12 @@ where
         self.parameters.possible_algs()
     }
 
-    fn alg(&self) -> Option<JsonWebSignatureAlg> {
-        self.alg
+    fn alg(&self) -> Option<&JsonWebSignatureAlg> {
+        self.alg.as_ref()
     }
 
-    fn use_(&self) -> Option<JsonWebKeyUse> {
-        self.r#use
+    fn use_(&self) -> Option<&JsonWebKeyUse> {
+        self.r#use.as_ref()
     }
 }
 
@@ -317,13 +317,13 @@ impl<P> JsonWebKeySet<P> {
     /// Find a key for the given algorithm. Returns `None` if no suitable key
     /// was found.
     #[must_use]
-    pub fn signing_key_for_algorithm(&self, alg: JsonWebSignatureAlg) -> Option<&JsonWebKey<P>>
+    pub fn signing_key_for_algorithm(&self, alg: &JsonWebSignatureAlg) -> Option<&JsonWebKey<P>>
     where
         P: ParametersInfo,
     {
         let constraints = ConstraintSet::new([
             Constraint::alg(alg),
-            Constraint::use_(mas_iana::jose::JsonWebKeyUse::Sig),
+            Constraint::use_(&mas_iana::jose::JsonWebKeyUse::Sig),
         ]);
         self.find_key(&constraints)
     }
@@ -338,7 +338,7 @@ impl<P> JsonWebKeySet<P> {
             .keys
             .iter()
             .flat_map(|key| key.params().possible_algs())
-            .copied()
+            .cloned()
             .collect();
         algs.sort();
         algs.dedup();
@@ -389,15 +389,15 @@ mod tests {
         }
 
         let constraints = ConstraintSet::default()
-            .use_(JsonWebKeyUse::Sig)
-            .kty(JsonWebKeyType::Rsa)
-            .alg(JsonWebSignatureAlg::Rs256);
+            .use_(&JsonWebKeyUse::Sig)
+            .kty(&JsonWebKeyType::Rsa)
+            .alg(&JsonWebSignatureAlg::Rs256);
         let candidates = constraints.filter(&jwks.keys);
         assert_eq!(candidates.len(), 2);
 
         let constraints = ConstraintSet::default()
-            .use_(JsonWebKeyUse::Sig)
-            .kty(JsonWebKeyType::Rsa)
+            .use_(&JsonWebKeyUse::Sig)
+            .kty(&JsonWebKeyType::Rsa)
             .kid("03e84aed4ef4431014e8617567864c4efaaaede9");
         let candidates = constraints.filter(&jwks.keys);
         assert_eq!(candidates.len(), 1);

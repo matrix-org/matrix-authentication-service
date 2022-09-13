@@ -33,8 +33,8 @@ macro_rules! plain_test {
             let algs = key.possible_algs();
             assert_ne!(algs.len(), 0);
 
-            for &alg in algs {
-                let header = JsonWebSignatureHeader::new(alg);
+            for alg in algs {
+                let header = JsonWebSignatureHeader::new(alg.clone());
                 let payload = "hello";
                 let signer = key.signing_key_for_alg(alg).unwrap();
                 let jwt = Jwt::sign(header, payload, &signer).unwrap();
@@ -58,8 +58,8 @@ macro_rules! enc_test {
             let algs = key.possible_algs();
             assert_ne!(algs.len(), 0);
 
-            for &alg in algs {
-                let header = JsonWebSignatureHeader::new(alg);
+            for alg in algs {
+                let header = JsonWebSignatureHeader::new(alg.clone());
                 let payload = "hello";
                 let signer = key.signing_key_for_alg(alg).unwrap();
                 let jwt = Jwt::sign(header, payload, &signer).unwrap();

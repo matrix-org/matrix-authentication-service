@@ -59,7 +59,7 @@ impl AsymmetricSigningKey {
     #[allow(dead_code)]
     pub fn from_jwk_and_alg(
         params: &JsonWebKeyPrivateParameters,
-        alg: JsonWebSignatureAlg,
+        alg: &JsonWebSignatureAlg,
     ) -> Result<Self, AsymmetricKeyFromJwkError> {
         match (params, alg) {
             (JsonWebKeyPrivateParameters::Rsa(params), alg) => match alg {
@@ -69,7 +69,7 @@ impl AsymmetricSigningKey {
                 JsonWebSignatureAlg::Ps256 => Ok(Self::Ps256(params.try_into()?)),
                 JsonWebSignatureAlg::Ps384 => Ok(Self::Ps384(params.try_into()?)),
                 JsonWebSignatureAlg::Ps512 => Ok(Self::Ps512(params.try_into()?)),
-                _ => Err(AsymmetricKeyFromJwkError::KeyNotSuitable { alg }),
+                _ => Err(AsymmetricKeyFromJwkError::KeyNotSuitable { alg: alg.clone() }),
             },
 
             (JsonWebKeyPrivateParameters::Ec(params), JsonWebSignatureAlg::Es256)
@@ -87,7 +87,7 @@ impl AsymmetricSigningKey {
             (JsonWebKeyPrivateParameters::Ec(params), JsonWebSignatureAlg::Es512)
                 if params.crv == JsonWebKeyEcEllipticCurve::P521 =>
             {
-                Err(AsymmetricKeyFromJwkError::UnsupportedAlgorithm { alg })
+                Err(AsymmetricKeyFromJwkError::UnsupportedAlgorithm { alg: alg.clone() })
             }
 
             (JsonWebKeyPrivateParameters::Ec(params), JsonWebSignatureAlg::Es256K)
@@ -97,10 +97,10 @@ impl AsymmetricSigningKey {
             }
 
             (JsonWebKeyPrivateParameters::Okp(_params), JsonWebSignatureAlg::EdDsa) => {
-                Err(AsymmetricKeyFromJwkError::UnsupportedAlgorithm { alg })
+                Err(AsymmetricKeyFromJwkError::UnsupportedAlgorithm { alg: alg.clone() })
             }
 
-            _ => Err(AsymmetricKeyFromJwkError::KeyNotSuitable { alg }),
+            _ => Err(AsymmetricKeyFromJwkError::KeyNotSuitable { alg: alg.clone() }),
         }
     }
 }
@@ -219,7 +219,7 @@ pub enum AsymmetricVerifyingKey {
 impl AsymmetricVerifyingKey {
     pub fn from_jwk_and_alg(
         params: &JsonWebKeyPublicParameters,
-        alg: JsonWebSignatureAlg,
+        alg: &JsonWebSignatureAlg,
     ) -> Result<Self, AsymmetricKeyFromJwkError> {
         match (params, alg) {
             (JsonWebKeyPublicParameters::Rsa(params), alg) => match alg {
@@ -229,7 +229,7 @@ impl AsymmetricVerifyingKey {
                 JsonWebSignatureAlg::Ps256 => Ok(Self::Ps256(params.try_into()?)),
                 JsonWebSignatureAlg::Ps384 => Ok(Self::Ps384(params.try_into()?)),
                 JsonWebSignatureAlg::Ps512 => Ok(Self::Ps512(params.try_into()?)),
-                _ => Err(AsymmetricKeyFromJwkError::KeyNotSuitable { alg }),
+                _ => Err(AsymmetricKeyFromJwkError::KeyNotSuitable { alg: alg.clone() }),
             },
 
             (JsonWebKeyPublicParameters::Ec(params), JsonWebSignatureAlg::Es256)
@@ -247,7 +247,7 @@ impl AsymmetricVerifyingKey {
             (JsonWebKeyPublicParameters::Ec(params), JsonWebSignatureAlg::Es512)
                 if params.crv == JsonWebKeyEcEllipticCurve::P521 =>
             {
-                Err(AsymmetricKeyFromJwkError::UnsupportedAlgorithm { alg })
+                Err(AsymmetricKeyFromJwkError::UnsupportedAlgorithm { alg: alg.clone() })
             }
 
             (JsonWebKeyPublicParameters::Ec(params), JsonWebSignatureAlg::Es256K)
@@ -257,10 +257,10 @@ impl AsymmetricVerifyingKey {
             }
 
             (JsonWebKeyPublicParameters::Okp(_params), JsonWebSignatureAlg::EdDsa) => {
-                Err(AsymmetricKeyFromJwkError::UnsupportedAlgorithm { alg })
+                Err(AsymmetricKeyFromJwkError::UnsupportedAlgorithm { alg: alg.clone() })
             }
 
-            _ => Err(AsymmetricKeyFromJwkError::KeyNotSuitable { alg }),
+            _ => Err(AsymmetricKeyFromJwkError::KeyNotSuitable { alg: alg.clone() }),
         }
     }
 }

@@ -33,7 +33,7 @@ use crate::{
 /// An enum for types that accept either an [`OAuthClientAuthenticationMethod`]
 /// or an [`OAuthAccessTokenType`].
 #[derive(
-    SerializeDisplay, DeserializeFromStr, Clone, Copy, PartialEq, Eq, Hash, Debug, Display, FromStr,
+    SerializeDisplay, DeserializeFromStr, Clone, PartialEq, Eq, Hash, Debug, Display, FromStr,
 )]
 pub enum AuthenticationMethodOrAccessTokenType {
     /// An authentication method.
@@ -49,9 +49,9 @@ impl AuthenticationMethodOrAccessTokenType {
     /// Get the authentication method of this
     /// `AuthenticationMethodOrAccessTokenType`.
     #[must_use]
-    pub fn authentication_method(&self) -> Option<OAuthClientAuthenticationMethod> {
+    pub fn authentication_method(&self) -> Option<&OAuthClientAuthenticationMethod> {
         match self {
-            Self::AuthenticationMethod(m) => Some(*m),
+            Self::AuthenticationMethod(m) => Some(m),
             Self::AccessTokenType(_) => None,
         }
     }
@@ -59,10 +59,10 @@ impl AuthenticationMethodOrAccessTokenType {
     /// Get the access token type of this
     /// `AuthenticationMethodOrAccessTokenType`.
     #[must_use]
-    pub fn access_token_type(&self) -> Option<OAuthAccessTokenType> {
+    pub fn access_token_type(&self) -> Option<&OAuthAccessTokenType> {
         match self {
             Self::AuthenticationMethod(_) => None,
-            Self::AccessTokenType(t) => Some(*t),
+            Self::AccessTokenType(t) => Some(t),
         }
     }
 }
@@ -470,8 +470,14 @@ impl ProviderMetadata {
 
         validate_signing_alg_values_supported(
             "token_endpoint",
-            &metadata.token_endpoint_auth_signing_alg_values_supported,
-            &metadata.token_endpoint_auth_methods_supported,
+            metadata
+                .token_endpoint_auth_signing_alg_values_supported
+                .iter()
+                .flatten(),
+            metadata
+                .token_endpoint_auth_methods_supported
+                .iter()
+                .flatten(),
         )?;
 
         if let Some(url) = &metadata.revocation_endpoint {
@@ -480,8 +486,14 @@ impl ProviderMetadata {
 
         validate_signing_alg_values_supported(
             "revocation_endpoint",
-            &metadata.revocation_endpoint_auth_signing_alg_values_supported,
-            &metadata.revocation_endpoint_auth_methods_supported,
+            metadata
+                .revocation_endpoint_auth_signing_alg_values_supported
+                .iter()
+                .flatten(),
+            metadata
+                .revocation_endpoint_auth_methods_supported
+                .iter()
+                .flatten(),
         )?;
 
         if let Some(url) = &metadata.introspection_endpoint {
@@ -500,8 +512,11 @@ impl ProviderMetadata {
             });
         validate_signing_alg_values_supported(
             "introspection_endpoint",
-            &metadata.introspection_endpoint_auth_signing_alg_values_supported,
-            &introspection_methods,
+            metadata
+                .introspection_endpoint_auth_signing_alg_values_supported
+                .iter()
+                .flatten(),
+            introspection_methods.into_iter().flatten(),
         )?;
 
         if let Some(url) = &metadata.userinfo_endpoint {
@@ -957,24 +972,32 @@ fn validate_url(
 /// - The algorithm values must not contain `none`,
 /// - If the `client_secret_jwt` or `private_key_jwt` authentication methods are
 ///   supported, the values must be present.
-fn validate_signing_alg_values_supported(
+fn validate_signing_alg_values_supported<'a>(
     endpoint: &'static str,
-    values: &Option<Vec<JsonWebSignatureAlg>>,
-    methods: &Option<Vec<OAuthClientAuthenticationMethod>>,
+    values: impl Iterator<Item = &'a JsonWebSignatureAlg>,
+    mut methods: impl Iterator<Item = &'a OAuthClientAuthenticationMethod>,
 ) -> Result<(), ProviderMetadataVerificationError> {
-    if let Some(values) = values {
-        if values.contains(&JsonWebSignatureAlg::None) {
+    let mut no_values = true;
+
+    for value in values {
+        if *value == JsonWebSignatureAlg::None {
             return Err(ProviderMetadataVerificationError::SigningAlgValuesWithNone(
                 endpoint,
             ));
         }
-    } else if methods.iter().flatten().any(|method| {
-        matches!(
-            method,
-            OAuthClientAuthenticationMethod::ClientSecretJwt
-                | OAuthClientAuthenticationMethod::PrivateKeyJwt
-        )
-    }) {
+
+        no_values = false;
+    }
+
+    if no_values
+        && methods.any(|method| {
+            matches!(
+                method,
+                OAuthClientAuthenticationMethod::ClientSecretJwt
+                    | OAuthClientAuthenticationMethod::PrivateKeyJwt
+            )
+        })
+    {
         return Err(ProviderMetadataVerificationError::MissingAuthSigningAlgValues(endpoint));
     }
 

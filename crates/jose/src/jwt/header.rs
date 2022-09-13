@@ -82,8 +82,8 @@ impl JsonWebSignatureHeader {
     }
 
     #[must_use]
-    pub const fn alg(&self) -> JsonWebSignatureAlg {
-        self.alg
+    pub const fn alg(&self) -> &JsonWebSignatureAlg {
+        &self.alg
     }
 
     #[must_use]

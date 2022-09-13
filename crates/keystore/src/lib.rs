@@ -415,7 +415,7 @@ impl PrivateKey {
     /// Returns an error if the key is not suited for the selected algorithm
     pub fn verifying_key_for_alg(
         &self,
-        alg: JsonWebSignatureAlg,
+        alg: &JsonWebSignatureAlg,
     ) -> Result<AsymmetricVerifyingKey, WrongAlgorithmError> {
         let key = match (self, alg) {
             (Self::Rsa(key), _) => {
@@ -469,7 +469,7 @@ impl PrivateKey {
     /// Returns an error if the key is not suited for the selected algorithm
     pub fn signing_key_for_alg(
         &self,
-        alg: JsonWebSignatureAlg,
+        alg: &JsonWebSignatureAlg,
     ) -> Result<AsymmetricSigningKey, WrongAlgorithmError> {
         let key = match (self, alg) {
             (Self::Rsa(key), _) => {
