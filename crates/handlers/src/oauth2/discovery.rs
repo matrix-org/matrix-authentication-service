@@ -42,6 +42,7 @@ pub(crate) async fn get(
         OAuthClientAuthenticationMethod::None,
     ]);
 
+    // Those are the algorithms supported by `mas-jose`
     let client_auth_signing_alg_values_supported = Some(vec![
         JsonWebSignatureAlg::Hs256,
         JsonWebSignatureAlg::Hs384,
@@ -49,6 +50,12 @@ pub(crate) async fn get(
         JsonWebSignatureAlg::Rs256,
         JsonWebSignatureAlg::Rs384,
         JsonWebSignatureAlg::Rs512,
+        JsonWebSignatureAlg::Ps256,
+        JsonWebSignatureAlg::Ps384,
+        JsonWebSignatureAlg::Ps512,
+        JsonWebSignatureAlg::Es256,
+        JsonWebSignatureAlg::Es384,
+        JsonWebSignatureAlg::Es256K,
     ]);
 
     // This is how we can sign stuff
