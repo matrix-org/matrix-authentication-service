@@ -357,6 +357,11 @@ pub struct ProviderMetadata {
     ///
     /// [prompt `create`]: https://openid.net/specs/openid-connect-prompt-create-1_0.html
     pub prompt_values_supported: Option<Vec<Prompt>>,
+
+    /// URL of the authorization server's [device authorization endpoint].
+    ///
+    /// [device authorization endpoint]: https://www.rfc-editor.org/rfc/rfc8628
+    pub device_authorization_endpoint: Option<Url>,
 }
 
 impl ProviderMetadata {

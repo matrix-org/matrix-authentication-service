@@ -225,6 +225,43 @@ pub enum ClientErrorCode {
     /// From [RFC7591](https://www.rfc-editor.org/rfc/rfc7591#section-3.2.2).
     InvalidClientMetadata,
 
+    /// `authorization_pending`
+    ///
+    /// The authorization request is still pending as the end user hasn't yet
+    /// completed the user-interaction steps.
+    ///
+    /// The client should repeat the access token request to the token endpoint
+    /// (a process known as polling).  Before each new request, the client
+    /// must wait at least the number of seconds specified by the `interval`
+    /// parameter of the device authorization response, or 5 seconds if none was
+    /// provided, and respect any increase in the polling interval required
+    /// by the [`ClientErrorCode::SlowDown`] error.
+    ///
+    /// From [RFC8628](https://www.rfc-editor.org/rfc/rfc8628#section-3.5).
+    AuthorizationPending,
+
+    /// `slow_down`
+    ///
+    /// A variant of [`ClientErrorCode::AuthorizationPending`], the
+    /// authorization request is still pending and polling should continue,
+    /// but the interval must be increased by 5 seconds for this and all
+    /// subsequent requests.
+    ///
+    /// From [RFC8628](https://www.rfc-editor.org/rfc/rfc8628#section-3.5).
+    SlowDown,
+
+    /// `expired_token`
+    ///
+    /// The `device_code` has expired, and the device authorization session has
+    /// concluded.
+    ///
+    /// The client may commence a new device authorization request but should
+    /// wait for user interaction before restarting to avoid unnecessary
+    /// polling.
+    ///
+    /// From [RFC8628](https://www.rfc-editor.org/rfc/rfc8628#section-3.5).
+    ExpiredToken,
+
     /// Another error code.
     #[display("{0}")]
     Unknown(String),
@@ -303,6 +340,15 @@ impl ClientErrorCode {
             }
             ClientErrorCode::InvalidClientMetadata => {
                 "The value of one of the client metadata fields is invalid"
+            }
+            ClientErrorCode::AuthorizationPending => {
+                "The authorization request is still pending"
+            }
+            ClientErrorCode::SlowDown => {
+                "The interval must be increased by 5 seconds for this and all subsequent requests"
+            }
+            ClientErrorCode::ExpiredToken => {
+                "The \"device_code\" has expired, and the device authorization session has concluded"
             }
             ClientErrorCode::Unknown(_) => "",
         }
