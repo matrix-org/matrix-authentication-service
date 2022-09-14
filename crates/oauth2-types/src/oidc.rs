@@ -17,7 +17,7 @@ use std::ops::Deref;
 use language_tags::LanguageTag;
 use mas_iana::{
     jose::{JsonWebEncryptionAlg, JsonWebEncryptionEnc, JsonWebSignatureAlg},
-    oauth::{OAuthClientAuthenticationMethod, PkceCodeChallengeMethod},
+    oauth::{OAuthAccessTokenType, OAuthClientAuthenticationMethod, PkceCodeChallengeMethod},
 };
 use parse_display::{Display, FromStr};
 use serde::{Deserialize, Serialize};
@@ -29,6 +29,55 @@ use crate::{
     requests::{Display, GrantType, Prompt, ResponseMode},
     response_type::ResponseType,
 };
+
+/// An enum for types that accept either an [`OAuthClientAuthenticationMethod`]
+/// or an [`OAuthAccessTokenType`].
+#[derive(
+    SerializeDisplay, DeserializeFromStr, Clone, Copy, PartialEq, Eq, Hash, Debug, Display, FromStr,
+)]
+pub enum AuthenticationMethodOrAccessTokenType {
+    /// An authentication method.
+    #[display("{0}")]
+    AuthenticationMethod(OAuthClientAuthenticationMethod),
+
+    /// An access token type.
+    #[display("{0}")]
+    AccessTokenType(OAuthAccessTokenType),
+}
+
+impl AuthenticationMethodOrAccessTokenType {
+    /// Get the authentication method of this
+    /// `AuthenticationMethodOrAccessTokenType`.
+    #[must_use]
+    pub fn authentication_method(&self) -> Option<OAuthClientAuthenticationMethod> {
+        match self {
+            Self::AuthenticationMethod(m) => Some(*m),
+            Self::AccessTokenType(_) => None,
+        }
+    }
+
+    /// Get the access token type of this
+    /// `AuthenticationMethodOrAccessTokenType`.
+    #[must_use]
+    pub fn access_token_type(&self) -> Option<OAuthAccessTokenType> {
+        match self {
+            Self::AuthenticationMethod(_) => None,
+            Self::AccessTokenType(t) => Some(*t),
+        }
+    }
+}
+
+impl From<OAuthClientAuthenticationMethod> for AuthenticationMethodOrAccessTokenType {
+    fn from(t: OAuthClientAuthenticationMethod) -> Self {
+        Self::AuthenticationMethod(t)
+    }
+}
+
+impl From<OAuthAccessTokenType> for AuthenticationMethodOrAccessTokenType {
+    fn from(t: OAuthAccessTokenType) -> Self {
+        Self::AccessTokenType(t)
+    }
+}
 
 #[derive(
     SerializeDisplay, DeserializeFromStr, Clone, Copy, PartialEq, Eq, Hash, Debug, Display, FromStr,
@@ -214,9 +263,10 @@ pub struct ProviderMetadata {
     /// [OAuth 2.0 introspection endpoint]: https://www.rfc-editor.org/rfc/rfc7662
     pub introspection_endpoint: Option<Url>,
 
-    /// JSON array containing a list of client authentication methods supported
-    /// by this introspection endpoint.
-    pub introspection_endpoint_auth_methods_supported: Option<Vec<OAuthClientAuthenticationMethod>>,
+    /// JSON array containing a list of client authentication methods or token
+    /// types supported by this introspection endpoint.
+    pub introspection_endpoint_auth_methods_supported:
+        Option<Vec<AuthenticationMethodOrAccessTokenType>>,
 
     /// JSON array containing a list of the JWS signing algorithms supported by
     /// the introspection endpoint for the signature on the JWT used to
@@ -433,10 +483,20 @@ impl ProviderMetadata {
             validate_url("introspection_endpoint", url, ExtraUrlRestrictions::None)?;
         }
 
+        // The list can also contain token types so remove them as we don't need to
+        // check them.
+        let introspection_methods = metadata
+            .introspection_endpoint_auth_methods_supported
+            .as_ref()
+            .map(|v| {
+                v.iter()
+                    .filter_map(AuthenticationMethodOrAccessTokenType::authentication_method)
+                    .collect::<Vec<_>>()
+            });
         validate_signing_alg_values_supported(
             "introspection_endpoint",
             &metadata.introspection_endpoint_auth_signing_alg_values_supported,
-            &metadata.introspection_endpoint_auth_methods_supported,
+            &introspection_methods,
         )?;
 
         if let Some(url) = &metadata.userinfo_endpoint {
