@@ -75,7 +75,8 @@ pub(crate) async fn get(
     let token_endpoint_auth_signing_alg_values_supported =
         client_auth_signing_alg_values_supported.clone();
 
-    let introspection_endpoint_auth_methods_supported = client_auth_methods_supported;
+    let introspection_endpoint_auth_methods_supported =
+        client_auth_methods_supported.map(|v| v.into_iter().map(Into::into).collect());
     let introspection_endpoint_auth_signing_alg_values_supported =
         client_auth_signing_alg_values_supported;
 
