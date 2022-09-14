@@ -6,12 +6,12 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-tokio = { version = "1.20.1", features = [] }
+tokio = { version = "1.21.1", features = [] }
 tracing = { version = "0.1.36", features = ["log"] }
 async-trait = "0.1.57"
 
 thiserror = "1.0.35"
-anyhow = "1.0.64"
+anyhow = "1.0.65"
 
 schemars = { version = "0.8.10", features = ["url", "chrono"] }
 figment = { version = "0.10.7", features = ["env", "yaml", "test"] }

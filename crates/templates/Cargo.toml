@@ -10,9 +10,9 @@ dev = []
 
 [dependencies]
 tracing = "0.1.36"
-tokio = { version = "1.20.1", features = ["macros"] }
+tokio = { version = "1.21.1", features = ["macros"] }
 
-anyhow = "1.0.64"
+anyhow = "1.0.65"
 thiserror = "1.0.35"
 
 tera = "1.17.0"

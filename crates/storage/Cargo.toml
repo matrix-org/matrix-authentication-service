@@ -6,13 +6,13 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-tokio = "1.20.1"
+tokio = "1.21.1"
 sqlx = { version = "0.6.1", features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "offline", "json"] }
 chrono = { version = "0.4.22", features = ["serde"] }
 serde = { version = "1.0.144", features = ["derive"] }
 serde_json = "1.0.85"
 thiserror = "1.0.35"
-anyhow = "1.0.64"
+anyhow = "1.0.65"
 tracing = "0.1.36"
 
 # Password hashing
