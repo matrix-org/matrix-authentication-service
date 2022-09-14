@@ -13,13 +13,11 @@
 // limitations under the License.
 
 use axum::{extract::State, response::IntoResponse, Json};
-use mas_iana::{
-    jose::JsonWebSignatureAlg,
-    oauth::{
-        OAuthAuthorizationEndpointResponseType, OAuthClientAuthenticationMethod,
-        PkceCodeChallengeMethod,
-    },
+use mas_iana::oauth::{
+    OAuthAuthorizationEndpointResponseType, OAuthClientAuthenticationMethod,
+    PkceCodeChallengeMethod,
 };
+use mas_jose::jwa::SUPPORTED_SIGNING_ALGORITHMS;
 use mas_keystore::Keystore;
 use mas_router::UrlBuilder;
 use oauth2_types::{
@@ -43,20 +41,7 @@ pub(crate) async fn get(
     ]);
 
     // Those are the algorithms supported by `mas-jose`
-    let client_auth_signing_alg_values_supported = Some(vec![
-        JsonWebSignatureAlg::Hs256,
-        JsonWebSignatureAlg::Hs384,
-        JsonWebSignatureAlg::Hs512,
-        JsonWebSignatureAlg::Rs256,
-        JsonWebSignatureAlg::Rs384,
-        JsonWebSignatureAlg::Rs512,
-        JsonWebSignatureAlg::Ps256,
-        JsonWebSignatureAlg::Ps384,
-        JsonWebSignatureAlg::Ps512,
-        JsonWebSignatureAlg::Es256,
-        JsonWebSignatureAlg::Es384,
-        JsonWebSignatureAlg::Es256K,
-    ]);
+    let client_auth_signing_alg_values_supported = Some(SUPPORTED_SIGNING_ALGORITHMS.to_vec());
 
     // This is how we can sign stuff
     let jwt_signing_alg_values_supported = Some(key_store.available_signing_algorithms());
