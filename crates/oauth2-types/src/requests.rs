@@ -296,6 +296,65 @@ pub struct AuthorizationResponse<R> {
     pub response: R,
 }
 
+/// A request to the [Device Authorization Endpoint].
+///
+/// [Device Authorization Endpoint]: https://www.rfc-editor.org/rfc/rfc8628
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct DeviceAuthorizationRequest {
+    /// The scope of the access request.
+    pub scope: Option<Scope>,
+}
+
+pub const DEFAULT_DEVICE_AUTHORIZATION_INTERVAL_SECONDS: i64 = 5;
+
+/// A successful response from the [Device Authorization Endpoint].
+///
+/// [Device Authorization Endpoint]: https://www.rfc-editor.org/rfc/rfc8628
+#[serde_as]
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct DeviceAuthorizationResponse {
+    /// The device verification code.
+    device_code: String,
+
+    /// The end-user verification code.
+    user_code: String,
+
+    /// The end-user verification URI on the authorization server.
+    ///
+    /// The URI should be short and easy to remember as end users will be asked
+    /// to manually type it into their user agent.
+    verification_uri: Url,
+
+    /// A verification URI that includes the `user_code` (or other information
+    /// with the same function as the `user_code`), which is designed for
+    /// non-textual transmission.
+    verification_uri_complete: Option<Url>,
+
+    /// The lifetime of the `device_code` and `user_code`.
+    #[serde_as(as = "DurationSeconds<i64>")]
+    expires_in: Duration,
+
+    /// The minimum amount of time in seconds that the client should wait
+    /// between polling requests to the token endpoint.
+    ///
+    /// Defaults to [`DEFAULT_DEVICE_AUTHORIZATION_INTERVAL_SECONDS`].
+    #[serde_as(as = "Option<DurationSeconds<i64>>")]
+    interval: Option<Duration>,
+}
+
+impl DeviceAuthorizationResponse {
+    ///The minimum amount of time in seconds that the client should wait
+    /// between polling requests to the token endpoint.
+    ///
+    /// Defaults to [`DEFAULT_DEVICE_AUTHORIZATION_INTERVAL_SECONDS`].
+    #[must_use]
+    pub fn interval(&self) -> Duration {
+        self.interval
+            .unwrap_or_else(|| Duration::seconds(DEFAULT_DEVICE_AUTHORIZATION_INTERVAL_SECONDS))
+    }
+}
+
 /// A request to the [Token Endpoint] for the [Authorization Code] grant type.
 ///
 /// [Token Endpoint]: https://www.rfc-editor.org/rfc/rfc6749#section-3.2
@@ -345,6 +404,16 @@ pub struct RefreshTokenGrant {
 pub struct ClientCredentialsGrant {
     /// The scope of the access request.
     pub scope: Option<Scope>,
+}
+
+/// A request to the [Token Endpoint] for the [Device Authorization] grant type.
+///
+/// [Token Endpoint]: https://www.rfc-editor.org/rfc/rfc6749#section-3.2
+/// [Device Authorization]: https://www.rfc-editor.org/rfc/rfc8628
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct DeviceCodeGrant {
+    /// The device verification code, from the device authorization response.
+    pub device_code: Option<Scope>,
 }
 
 /// All possible values for the `grant_type` parameter.
@@ -397,6 +466,8 @@ pub enum AccessTokenRequest {
     AuthorizationCode(AuthorizationCodeGrant),
     RefreshToken(RefreshTokenGrant),
     ClientCredentials(ClientCredentialsGrant),
+    #[serde(rename = "urn:ietf:params:oauth:grant-type:device_code")]
+    DeviceCode(DeviceCodeGrant),
     #[serde(skip, other)]
     Unsupported,
 }
