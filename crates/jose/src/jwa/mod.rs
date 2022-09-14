@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use mas_iana::jose::JsonWebSignatureAlg;
 use sha2::{Sha256, Sha384, Sha512};
 
 mod asymmetric;
@@ -49,3 +50,19 @@ pub type Es384SigningKey = ecdsa::SigningKey<p384::NistP384>;
 pub type Es384VerifyingKey = ecdsa::VerifyingKey<p384::NistP384>;
 pub type Es256KSigningKey = ecdsa::SigningKey<k256::Secp256k1>;
 pub type Es256KVerifyingKey = ecdsa::VerifyingKey<k256::Secp256k1>;
+
+/// All the signing algorithms supported by this crate.
+pub const SUPPORTED_SIGNING_ALGORITHMS: [JsonWebSignatureAlg; 12] = [
+    JsonWebSignatureAlg::Hs256,
+    JsonWebSignatureAlg::Hs384,
+    JsonWebSignatureAlg::Hs512,
+    JsonWebSignatureAlg::Rs256,
+    JsonWebSignatureAlg::Rs384,
+    JsonWebSignatureAlg::Rs512,
+    JsonWebSignatureAlg::Ps256,
+    JsonWebSignatureAlg::Ps384,
+    JsonWebSignatureAlg::Ps512,
+    JsonWebSignatureAlg::Es256,
+    JsonWebSignatureAlg::Es384,
+    JsonWebSignatureAlg::Es256K,
+];
