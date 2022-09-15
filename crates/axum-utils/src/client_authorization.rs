@@ -39,7 +39,7 @@ use serde::{de::DeserializeOwned, Deserialize};
 use serde_json::Value;
 use sqlx::PgExecutor;
 use thiserror::Error;
-use tower::ServiceExt;
+use tower::{Service, ServiceExt};
 
 static JWT_BEARER_CLIENT_ASSERTION: &str = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer";
 
@@ -177,12 +177,12 @@ async fn fetch_jwks(jwks: &JwksOrJwksUri) -> Result<PublicJsonWebKeySet, BoxErro
         .body(http_body::Empty::new())
         .unwrap();
 
-    let client = mas_http::client("fetch-jwks")
+    let mut client = mas_http::client("fetch-jwks")
+        .await?
         .response_body_to_bytes()
-        .json_response::<PublicJsonWebKeySet>()
-        .map_err(Box::new);
+        .json_response::<PublicJsonWebKeySet>();
 
-    let response = client.oneshot(request).await?;
+    let response = client.ready().await?.call(request).await?;
 
     Ok(response.into_body())
 }

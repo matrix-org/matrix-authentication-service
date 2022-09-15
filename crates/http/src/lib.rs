@@ -27,17 +27,15 @@
 #[cfg(feature = "client")]
 mod client;
 mod ext;
-mod future_service;
 mod layers;
 
 #[cfg(feature = "client")]
-pub use self::client::client;
+pub use self::client::{client, make_untraced_client};
 pub use self::{
     ext::{
         set_propagator, CorsLayerExt, ServiceBuilderExt as HttpServiceBuilderExt,
         ServiceExt as HttpServiceExt,
     },
-    future_service::FutureService,
     layers::{
         body_to_bytes_response::{self, BodyToBytesResponse, BodyToBytesResponseLayer},
         bytes_to_body_request::{self, BytesToBodyRequest, BytesToBodyRequestLayer},

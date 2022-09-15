@@ -36,3 +36,8 @@ mas-jose = { path = "../jose" }
 mas-keystore = { path = "../keystore" }
 mas-storage = { path = "../storage" }
 mas-templates = { path = "../templates" }
+
+[features]
+default = ["native-roots"]
+native-roots = ["mas-http/native-roots"]
+webpki-roots = ["mas-http/webpki-roots"]
