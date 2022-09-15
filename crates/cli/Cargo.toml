@@ -34,7 +34,7 @@ opentelemetry-zipkin = { version = "0.15.0", features = ["reqwest-client", "reqw
 
 mas-config = { path = "../config" }
 mas-email = { path = "../email" }
-mas-handlers = { path = "../handlers" }
+mas-handlers = { path = "../handlers", default-features = false }
 mas-http = { path = "../http", features = ["axum"] }
 mas-policy = { path = "../policy" }
 mas-router = { path = "../router" }
@@ -47,8 +47,16 @@ mas-templates = { path = "../templates" }
 indoc = "1.0.7"
 
 [features]
-default = ["otlp", "jaeger", "zipkin"]
+default = ["otlp", "jaeger", "zipkin", "native-roots"]
+
+# Use the native root certificates
+native-roots = ["mas-http/native-roots", "mas-handlers/native-roots"]
+# Use the webpki root certificates
+webpki-roots = ["mas-http/webpki-roots", "mas-handlers/webpki-roots"]
+
+# Read the builtin static files and templates from the source directory
 dev = ["mas-templates/dev", "mas-static-files/dev"]
+
 # Enable OpenTelemetry OTLP exporter. Requires "protoc"
 otlp = ["opentelemetry-otlp"]
 # Enable OpenTelemetry Jaeger exporter and propagator.
