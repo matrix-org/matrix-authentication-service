@@ -18,24 +18,24 @@ serde_yaml = "0.9.13"
 serde_json = "1.0.85"
 url = "2.3.1"
 argon2 = { version = "0.4.1", features = ["password-hash"] }
-reqwest = { version = "0.11.12", features = ["rustls-tls"], default-features = false, optional = true }
 watchman_client = "0.8.0"
 atty = "0.2.14"
 
 tracing = "0.1.36"
 tracing-appender = "0.2.2"
 tracing-subscriber = { version = "0.3.15", features = ["env-filter"] }
-tracing-opentelemetry = "0.17.4"
-opentelemetry = { version = "0.17.0", features = ["trace", "metrics", "rt-tokio"] }
-opentelemetry-semantic-conventions = "0.9.0"
-opentelemetry-jaeger = { version = "0.16.0", features = ["rt-tokio", "reqwest_collector_client"], optional = true }
-opentelemetry-otlp = { version = "0.10.0", features = ["trace", "metrics"], optional = true }
-opentelemetry-zipkin = { version = "0.15.0", features = ["reqwest-client", "reqwest-rustls"], default-features = false, optional = true }
+#tracing-opentelemetry = "0.17.4"
+opentelemetry = { version = "0.18.0", features = ["trace", "metrics", "rt-tokio"] }
+opentelemetry-semantic-conventions = "0.10.0"
+opentelemetry-jaeger = { version = "0.17.0", features = ["rt-tokio"], optional = true }
+opentelemetry-otlp = { version = "0.11.0", features = ["trace", "metrics", "http-proto"], optional = true }
+opentelemetry-zipkin = { version = "0.16.0", features = ["opentelemetry-http"], default-features = false, optional = true }
+opentelemetry-http = { version = "0.7.0", features = ["tokio", "hyper"], optional = true }
 
 mas-config = { path = "../config" }
 mas-email = { path = "../email" }
 mas-handlers = { path = "../handlers", default-features = false }
-mas-http = { path = "../http", features = ["axum"] }
+mas-http = { path = "../http", features = ["axum", "client", "native-roots"] }
 mas-policy = { path = "../policy" }
 mas-router = { path = "../router" }
 mas-static-files = { path = "../static-files" }
@@ -58,8 +58,8 @@ webpki-roots = ["mas-http/webpki-roots", "mas-handlers/webpki-roots"]
 dev = ["mas-templates/dev", "mas-static-files/dev"]
 
 # Enable OpenTelemetry OTLP exporter. Requires "protoc"
-otlp = ["opentelemetry-otlp"]
+otlp = ["dep:opentelemetry-otlp", "dep:opentelemetry-http"]
 # Enable OpenTelemetry Jaeger exporter and propagator.
-jaeger = ["opentelemetry-jaeger", "reqwest"]
+jaeger = ["dep:opentelemetry-jaeger"]
 # Enable OpenTelemetry Zipkin exporter and B3 propagator.
-zipkin = ["opentelemetry-zipkin", "reqwest"]
+zipkin = ["dep:opentelemetry-zipkin", "dep:opentelemetry-http"]

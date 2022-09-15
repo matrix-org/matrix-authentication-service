@@ -20,7 +20,7 @@ use std::{
 
 use anyhow::Context;
 use clap::Parser;
-use futures::stream::{StreamExt, TryStreamExt};
+use futures_util::stream::{StreamExt, TryStreamExt};
 use hyper::Server;
 use mas_config::RootConfig;
 use mas_email::Mailer;
@@ -100,7 +100,7 @@ async fn watch_templates(
             .await?;
 
         // Create a stream out of that subscription
-        let stream = futures::stream::try_unfold(subscription, |mut sub| async move {
+        let stream = futures_util::stream::try_unfold(subscription, |mut sub| async move {
             let next = sub.next().await?;
             anyhow::Ok(Some((next, sub)))
         });
@@ -109,7 +109,7 @@ async fn watch_templates(
     }
 
     let files_changed_stream =
-        futures::stream::select_all(streams).try_filter_map(|event| async move {
+        futures_util::stream::select_all(streams).try_filter_map(|event| async move {
             match event {
                 SubscriptionData::FilesChanged(QueryResult {
                     files: Some(files), ..

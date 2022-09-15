@@ -15,7 +15,6 @@
 use std::{net::SocketAddr, time::Duration};
 
 use anyhow::bail;
-use futures::stream::{Stream, StreamExt};
 use mas_config::{MetricsExporterConfig, Propagator, TelemetryConfig, TracingExporterConfig};
 use opentelemetry::{
     global,
@@ -34,7 +33,7 @@ use opentelemetry_semantic_conventions as semcov;
 use opentelemetry_zipkin::{B3Encoding, Propagator as ZipkinPropagator};
 use url::Url;
 
-pub fn setup(config: &TelemetryConfig) -> anyhow::Result<Option<Tracer>> {
+pub async fn setup(config: &TelemetryConfig) -> anyhow::Result<Option<Tracer>> {
     global::set_error_handler(|e| tracing::error!("{}", e))?;
     let propagator = propagator(&config.tracing.propagators)?;
 
@@ -43,7 +42,7 @@ pub fn setup(config: &TelemetryConfig) -> anyhow::Result<Option<Tracer>> {
     mas_http::set_propagator(&propagator);
     global::set_text_map_propagator(propagator);
 
-    let tracer = tracer(&config.tracing.exporter)?;
+    let tracer = tracer(&config.tracing.exporter).await?;
     meter(&config.metrics.exporter)?;
     Ok(tracer)
 }
@@ -86,6 +85,14 @@ fn propagator(propagators: &[Propagator]) -> anyhow::Result<impl TextMapPropagat
     Ok(TextMapCompositePropagator::new(propagators?))
 }
 
+#[cfg(any(feature = "otlp", feature = "jaeger"))]
+async fn http_client() -> anyhow::Result<impl opentelemetry_http::HttpClient + 'static> {
+    let client = mas_http::make_untraced_client().await?;
+    let client =
+        opentelemetry_http::hyper::HyperClient::new_with_timeout(client, Duration::from_secs(30));
+    Ok(client)
+}
+
 fn stdout_tracer() -> Tracer {
     sdk::export::trace::stdout::new_pipeline()
         .with_pretty_print(true)
@@ -124,12 +131,12 @@ fn jaeger_tracer(_agent_endpoint: &Option<SocketAddr>) -> anyhow::Result<Tracer>
 #[cfg(feature = "jaeger")]
 fn jaeger_tracer(agent_endpoint: &Option<SocketAddr>) -> anyhow::Result<Tracer> {
     // TODO: also support exporting to a Jaeger collector & skip the agent
-    let mut pipeline = opentelemetry_jaeger::new_pipeline()
+    let mut pipeline = opentelemetry_jaeger::new_agent_pipeline()
         .with_service_name(env!("CARGO_PKG_NAME"))
         .with_trace_config(trace_config());
 
     if let Some(agent_endpoint) = agent_endpoint {
-        pipeline = pipeline.with_agent_endpoint(agent_endpoint);
+        pipeline = pipeline.with_endpoint(agent_endpoint);
     }
 
     let tracer = pipeline.install_batch(opentelemetry::runtime::Tokio)?;
@@ -143,8 +150,8 @@ fn zipkin_tracer(_collector_endpoint: &Option<Url>) -> anyhow::Result<Tracer> {
 }
 
 #[cfg(feature = "zipkin")]
-fn zipkin_tracer(collector_endpoint: &Option<Url>) -> anyhow::Result<Tracer> {
-    let http_client = reqwest::Client::new();
+async fn zipkin_tracer(collector_endpoint: &Option<Url>) -> anyhow::Result<Tracer> {
+    let http_client = http_client().await?;
 
     let mut pipeline = opentelemetry_zipkin::new_pipeline()
         .with_http_client(http_client)
@@ -160,21 +167,18 @@ fn zipkin_tracer(collector_endpoint: &Option<Url>) -> anyhow::Result<Tracer> {
     Ok(tracer)
 }
 
-fn tracer(config: &TracingExporterConfig) -> anyhow::Result<Option<Tracer>> {
+async fn tracer(config: &TracingExporterConfig) -> anyhow::Result<Option<Tracer>> {
     let tracer = match config {
         TracingExporterConfig::None => return Ok(None),
         TracingExporterConfig::Stdout => stdout_tracer(),
         TracingExporterConfig::Otlp { endpoint } => otlp_tracer(endpoint)?,
         TracingExporterConfig::Jaeger { agent_endpoint } => jaeger_tracer(agent_endpoint)?,
-        TracingExporterConfig::Zipkin { collector_endpoint } => zipkin_tracer(collector_endpoint)?,
+        TracingExporterConfig::Zipkin { collector_endpoint } => {
+            zipkin_tracer(collector_endpoint).await?
+        }
     };
 
     Ok(Some(tracer))
-}
-
-fn interval(duration: Duration) -> impl Stream<Item = tokio::time::Instant> {
-    // Skip first immediate tick from tokio
-    opentelemetry::util::tokio_interval_stream(duration).skip(1)
 }
 
 #[cfg(feature = "otlp")]
@@ -187,9 +191,12 @@ fn otlp_meter(endpoint: &Option<url::Url>) -> anyhow::Result<()> {
     }
 
     opentelemetry_otlp::new_pipeline()
-        .metrics(tokio::spawn, interval)
+        .metrics(
+            sdk::metrics::selectors::simple::histogram([0.1, 0.2, 0.5, 1.0, 5.0, 10.0]),
+            sdk::export::metrics::aggregation::stateless_temporality_selector(),
+            opentelemetry::runtime::Tokio,
+        )
         .with_exporter(exporter)
-        .with_aggregator_selector(sdk::metrics::selectors::simple::Selector::Exact)
         .build()?;
 
     Ok(())
@@ -200,14 +207,25 @@ fn otlp_meter(_endpoint: &Option<url::Url>) -> anyhow::Result<()> {
     anyhow::bail!("The service was compiled without OTLP exporter support, but config exports metrics via OTLP.")
 }
 
-fn stdout_meter() {
-    sdk::export::metrics::stdout(tokio::spawn, interval).init();
+fn stdout_meter() -> anyhow::Result<()> {
+    let exporter = sdk::export::metrics::stdout().build()?;
+    let controller = sdk::metrics::controllers::basic(
+        sdk::metrics::processors::factory(
+            sdk::metrics::selectors::simple::histogram([0.1, 0.2, 0.5, 1.0, 5.0, 10.0]),
+            exporter.temporality_selector(),
+        )
+        .with_memory(true),
+    )
+    .with_exporter(exporter)
+    .build();
+    global::set_meter_provider(controller);
+    Ok(())
 }
 
 fn meter(config: &MetricsExporterConfig) -> anyhow::Result<()> {
     match config {
         MetricsExporterConfig::None => {}
-        MetricsExporterConfig::Stdout => stdout_meter(),
+        MetricsExporterConfig::Stdout => stdout_meter()?,
         MetricsExporterConfig::Otlp { endpoint } => otlp_meter(endpoint)?,
     };
 
