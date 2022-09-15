@@ -58,14 +58,16 @@ async fn try_main() -> anyhow::Result<()> {
         .or_else(|_| EnvFilter::try_new("info"))
         .context("could not setup logging filter")?;
 
+    /*
     // Don't fill the telemetry layer for now, we want to configure it based on the
     // app config, so we need to delay that a bit
     let (telemetry_layer, handle) = reload::Layer::new(None);
     // We only want "INFO" level spans to go through OpenTelemetry
     let telemetry_layer = telemetry_layer.with_filter(LevelFilter::INFO);
+    */
 
     let subscriber = Registry::default()
-        .with(telemetry_layer)
+        //.with(telemetry_layer)
         .with(filter_layer)
         .with(fmt_layer);
     subscriber
@@ -89,7 +91,10 @@ async fn try_main() -> anyhow::Result<()> {
     let telemetry_config: TelemetryConfig = opts.load_config().unwrap_or_default();
 
     // Setup OpenTelemtry tracing and metrics
-    let tracer = telemetry::setup(&telemetry_config).context("failed to setup opentelemetry")?;
+    let tracer = telemetry::setup(&telemetry_config)
+        .await
+        .context("failed to setup opentelemetry")?;
+    /*
     if let Some(tracer) = tracer {
         // Now we can swap out the actual opentelemetry tracing layer
         handle.reload(
@@ -98,6 +103,7 @@ async fn try_main() -> anyhow::Result<()> {
                 .with_tracked_inactivity(false),
         )?;
     }
+    */
 
     // And run the command
     tracing::trace!(?opts, "Running command");
