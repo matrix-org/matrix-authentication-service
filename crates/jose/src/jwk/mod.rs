@@ -328,7 +328,7 @@ impl<P> JsonWebKeySet<P> {
         self.find_key(&constraints)
     }
 
-    /// Get a list of available signing algorithms for this [`Keystore`]
+    /// Get a list of available signing algorithms for this [`JsonWebKeySet`]
     #[must_use]
     pub fn available_signing_algorithms(&self) -> Vec<JsonWebSignatureAlg>
     where
