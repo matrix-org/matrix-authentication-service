@@ -12,28 +12,46 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{net::SocketAddr, time::Duration};
+use std::{
+    convert::Infallible,
+    net::{SocketAddr, TcpListener},
+    time::Duration,
+};
 
-use anyhow::bail;
-use mas_config::{MetricsExporterConfig, Propagator, TelemetryConfig, TracingExporterConfig};
+use anyhow::{bail, Context as _};
+use hyper::{header::CONTENT_TYPE, service::make_service_fn, Body, Method, Request, Response};
+use mas_config::{
+    JaegerExporterProtocolConfig, MetricsExporterConfig, Propagator, TelemetryConfig,
+    TracingExporterConfig,
+};
 use opentelemetry::{
     global,
     propagation::TextMapPropagator,
     sdk::{
         self,
+        metrics::controllers::BasicController,
         propagation::{BaggagePropagator, TextMapCompositePropagator, TraceContextPropagator},
         trace::{Sampler, Tracer},
         Resource,
     },
+    Context,
 };
 #[cfg(feature = "jaeger")]
 use opentelemetry_jaeger::Propagator as JaegerPropagator;
 use opentelemetry_semantic_conventions as semcov;
 #[cfg(feature = "zipkin")]
 use opentelemetry_zipkin::{B3Encoding, Propagator as ZipkinPropagator};
+use prometheus::{Encoder, TextEncoder};
+use tokio::sync::OnceCell;
+use tower::service_fn;
+use tracing::info;
 use url::Url;
 
-pub async fn setup(config: &TelemetryConfig) -> anyhow::Result<Option<Tracer>> {
+static METRICS_BASIC_CONTROLLER: OnceCell<Option<BasicController>> = OnceCell::const_new();
+
+pub async fn setup(
+    config: &TelemetryConfig,
+) -> anyhow::Result<(Option<Tracer>, Option<BasicController>)> {
     global::set_error_handler(|e| tracing::error!("{}", e))?;
     let propagator = propagator(&config.tracing.propagators)?;
 
@@ -43,12 +61,19 @@ pub async fn setup(config: &TelemetryConfig) -> anyhow::Result<Option<Tracer>> {
     global::set_text_map_propagator(propagator);
 
     let tracer = tracer(&config.tracing.exporter).await?;
-    meter(&config.metrics.exporter)?;
-    Ok(tracer)
+    let meter = meter(&config.metrics.exporter)?;
+    METRICS_BASIC_CONTROLLER.set(meter.clone())?;
+
+    Ok((tracer, meter))
 }
 
 pub fn shutdown() {
     global::shutdown_tracer_provider();
+
+    if let Some(Some(controller)) = METRICS_BASIC_CONTROLLER.get() {
+        let cx = Context::new();
+        controller.stop(&cx).unwrap();
+    }
 }
 
 fn match_propagator(
@@ -124,19 +149,50 @@ fn otlp_tracer(_endpoint: &Option<Url>) -> anyhow::Result<Tracer> {
 }
 
 #[cfg(not(feature = "jaeger"))]
-fn jaeger_tracer(_agent_endpoint: &Option<SocketAddr>) -> anyhow::Result<Tracer> {
+fn jaeger_agent_tracer(host: &str, port: u16) -> anyhow::Result<Tracer> {
     anyhow::bail!("The service was compiled without Jaeger exporter support, but config exports traces via Jaeger.")
 }
 
 #[cfg(feature = "jaeger")]
-fn jaeger_tracer(agent_endpoint: &Option<SocketAddr>) -> anyhow::Result<Tracer> {
-    // TODO: also support exporting to a Jaeger collector & skip the agent
-    let mut pipeline = opentelemetry_jaeger::new_agent_pipeline()
+fn jaeger_agent_tracer(host: &str, port: u16) -> anyhow::Result<Tracer> {
+    let pipeline = opentelemetry_jaeger::new_agent_pipeline()
         .with_service_name(env!("CARGO_PKG_NAME"))
-        .with_trace_config(trace_config());
+        .with_trace_config(trace_config())
+        .with_endpoint((host, port));
 
-    if let Some(agent_endpoint) = agent_endpoint {
-        pipeline = pipeline.with_endpoint(agent_endpoint);
+    let tracer = pipeline.install_batch(opentelemetry::runtime::Tokio)?;
+
+    Ok(tracer)
+}
+
+#[cfg(not(feature = "jaeger"))]
+async fn jaeger_collector_tracer(
+    endpoint: &str,
+    username: Option<&str>,
+    password: Option<&str>,
+) -> anyhow::Result<Tracer> {
+    anyhow::bail!("The service was compiled without Jaeger exporter support, but config exports traces via Jaeger.")
+}
+
+#[cfg(feature = "jaeger")]
+async fn jaeger_collector_tracer(
+    endpoint: &str,
+    username: Option<&str>,
+    password: Option<&str>,
+) -> anyhow::Result<Tracer> {
+    let http_client = http_client().await?;
+    let mut pipeline = opentelemetry_jaeger::new_collector_pipeline()
+        .with_service_name(env!("CARGO_PKG_NAME"))
+        .with_trace_config(trace_config())
+        .with_http_client(http_client)
+        .with_endpoint(endpoint);
+
+    if let Some(username) = username {
+        pipeline = pipeline.with_username(username);
+    }
+
+    if let Some(password) = password {
+        pipeline = pipeline.with_password(password);
     }
 
     let tracer = pipeline.install_batch(opentelemetry::runtime::Tokio)?;
@@ -145,7 +201,7 @@ fn jaeger_tracer(agent_endpoint: &Option<SocketAddr>) -> anyhow::Result<Tracer> 
 }
 
 #[cfg(not(feature = "zipkin"))]
-fn zipkin_tracer(_collector_endpoint: &Option<Url>) -> anyhow::Result<Tracer> {
+async fn zipkin_tracer(_collector_endpoint: &Option<Url>) -> anyhow::Result<Tracer> {
     anyhow::bail!("The service was compiled without Jaeger exporter support, but config exports traces via Jaeger.")
 }
 
@@ -159,7 +215,7 @@ async fn zipkin_tracer(collector_endpoint: &Option<Url>) -> anyhow::Result<Trace
         .with_trace_config(trace_config());
 
     if let Some(collector_endpoint) = collector_endpoint {
-        pipeline = pipeline.with_collector_endpoint(collector_endpoint.to_string());
+        pipeline = pipeline.with_collector_endpoint(collector_endpoint.as_str());
     }
 
     let tracer = pipeline.install_batch(opentelemetry::runtime::Tokio)?;
@@ -172,7 +228,15 @@ async fn tracer(config: &TracingExporterConfig) -> anyhow::Result<Option<Tracer>
         TracingExporterConfig::None => return Ok(None),
         TracingExporterConfig::Stdout => stdout_tracer(),
         TracingExporterConfig::Otlp { endpoint } => otlp_tracer(endpoint)?,
-        TracingExporterConfig::Jaeger { agent_endpoint } => jaeger_tracer(agent_endpoint)?,
+        TracingExporterConfig::Jaeger(JaegerExporterProtocolConfig::UdpThriftCompact {
+            agent_host,
+            agent_port,
+        }) => jaeger_agent_tracer(agent_host, *agent_port)?,
+        TracingExporterConfig::Jaeger(JaegerExporterProtocolConfig::HttpThriftBinary {
+            endpoint,
+            username,
+            password,
+        }) => jaeger_collector_tracer(endpoint, username.as_deref(), password.as_deref()).await?,
         TracingExporterConfig::Zipkin { collector_endpoint } => {
             zipkin_tracer(collector_endpoint).await?
         }
@@ -182,7 +246,7 @@ async fn tracer(config: &TracingExporterConfig) -> anyhow::Result<Option<Tracer>
 }
 
 #[cfg(feature = "otlp")]
-fn otlp_meter(endpoint: &Option<url::Url>) -> anyhow::Result<()> {
+fn otlp_meter(endpoint: &Option<url::Url>) -> anyhow::Result<BasicController> {
     use opentelemetry_otlp::WithExportConfig;
 
     let mut exporter = opentelemetry_otlp::new_exporter().tonic();
@@ -190,46 +254,109 @@ fn otlp_meter(endpoint: &Option<url::Url>) -> anyhow::Result<()> {
         exporter = exporter.with_endpoint(endpoint.to_string());
     }
 
-    opentelemetry_otlp::new_pipeline()
+    let controller = opentelemetry_otlp::new_pipeline()
         .metrics(
-            sdk::metrics::selectors::simple::histogram([0.1, 0.2, 0.5, 1.0, 5.0, 10.0]),
-            sdk::export::metrics::aggregation::stateless_temporality_selector(),
+            sdk::metrics::selectors::simple::inexpensive(),
+            sdk::export::metrics::aggregation::cumulative_temporality_selector(),
             opentelemetry::runtime::Tokio,
         )
+        .with_resource(resource())
         .with_exporter(exporter)
         .build()?;
 
-    Ok(())
+    Ok(controller)
 }
 
 #[cfg(not(feature = "otlp"))]
-fn otlp_meter(_endpoint: &Option<url::Url>) -> anyhow::Result<()> {
+fn otlp_meter(_endpoint: &Option<url::Url>) -> anyhow::Result<BasicController> {
     anyhow::bail!("The service was compiled without OTLP exporter support, but config exports metrics via OTLP.")
 }
 
-fn stdout_meter() -> anyhow::Result<()> {
+fn stdout_meter() -> anyhow::Result<BasicController> {
     let exporter = sdk::export::metrics::stdout().build()?;
+    let controller = sdk::metrics::controllers::basic(sdk::metrics::processors::factory(
+        sdk::metrics::selectors::simple::inexpensive(),
+        exporter.temporality_selector(),
+    ))
+    .with_resource(resource())
+    .with_exporter(exporter)
+    .build();
+
+    let cx = Context::new();
+    controller.start(&cx, opentelemetry::runtime::Tokio)?;
+
+    global::set_meter_provider(controller.clone());
+    Ok(controller)
+}
+
+fn prometheus_meter(address: &str) -> anyhow::Result<BasicController> {
     let controller = sdk::metrics::controllers::basic(
         sdk::metrics::processors::factory(
-            sdk::metrics::selectors::simple::histogram([0.1, 0.2, 0.5, 1.0, 5.0, 10.0]),
-            exporter.temporality_selector(),
+            sdk::metrics::selectors::simple::histogram([1.0, 2.0, 5.0, 10.0, 20.0, 50.0]),
+            sdk::export::metrics::aggregation::cumulative_temporality_selector(),
         )
         .with_memory(true),
     )
-    .with_exporter(exporter)
     .build();
-    global::set_meter_provider(controller);
-    Ok(())
+
+    let exporter = opentelemetry_prometheus::exporter(controller.clone()).init();
+
+    let make_svc = make_service_fn(move |_conn| {
+        let exporter = exporter.clone();
+        async move {
+            Ok::<_, Infallible>(service_fn(move |req: Request<Body>| {
+                let exporter = exporter.clone();
+                async move {
+                    let response = match (req.method(), req.uri().path()) {
+                        (&Method::GET, "/metrics") => {
+                            let mut buffer = vec![];
+                            let encoder = TextEncoder::new();
+                            let metric_families = exporter.registry().gather();
+                            encoder.encode(&metric_families, &mut buffer).unwrap();
+
+                            Response::builder()
+                                .status(200)
+                                .header(CONTENT_TYPE, encoder.format_type())
+                                .body(Body::from(buffer))
+                                .unwrap()
+                        }
+                        _ => Response::builder()
+                            .status(404)
+                            .body(Body::from("404 not found"))
+                            .unwrap(),
+                    };
+
+                    Ok::<_, Infallible>(response)
+                }
+            }))
+        }
+    });
+
+    let address: SocketAddr = address
+        .parse()
+        .context("could not parse listener address")?;
+    let listener = TcpListener::bind(address).context("could not bind address")?;
+
+    info!(
+        "Prometheus exporter listening on on http://{}/metrics",
+        listener.local_addr().unwrap()
+    );
+
+    let server = hyper::server::Server::from_tcp(listener)?.serve(make_svc);
+    tokio::spawn(server);
+
+    Ok(controller)
 }
 
-fn meter(config: &MetricsExporterConfig) -> anyhow::Result<()> {
-    match config {
-        MetricsExporterConfig::None => {}
-        MetricsExporterConfig::Stdout => stdout_meter()?,
-        MetricsExporterConfig::Otlp { endpoint } => otlp_meter(endpoint)?,
+fn meter(config: &MetricsExporterConfig) -> anyhow::Result<Option<BasicController>> {
+    let controller = match config {
+        MetricsExporterConfig::None => None,
+        MetricsExporterConfig::Stdout => Some(stdout_meter()?),
+        MetricsExporterConfig::Otlp { endpoint } => Some(otlp_meter(endpoint)?),
+        MetricsExporterConfig::Prometheus { address } => Some(prometheus_meter(address)?),
     };
 
-    Ok(())
+    Ok(controller)
 }
 
 fn trace_config() -> sdk::trace::Config {

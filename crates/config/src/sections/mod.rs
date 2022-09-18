@@ -37,8 +37,8 @@ pub use self::{
     policy::PolicyConfig,
     secrets::SecretsConfig,
     telemetry::{
-        MetricsConfig, MetricsExporterConfig, Propagator, TelemetryConfig, TracingConfig,
-        TracingExporterConfig,
+        JaegerExporterProtocolConfig, MetricsConfig, MetricsExporterConfig, Propagator,
+        TelemetryConfig, TracingConfig, TracingExporterConfig,
     },
     templates::TemplatesConfig,
 };
