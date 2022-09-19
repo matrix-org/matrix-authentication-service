@@ -12,10 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{sync::Arc, task::Poll};
+use std::{sync::Arc, task::Poll, time::SystemTime};
 
 use futures_util::{future::BoxFuture, FutureExt as _};
-use opentelemetry::trace::{FutureExt as _, TraceContextExt};
+use opentelemetry::{
+    metrics::{Counter, Histogram, UpDownCounter},
+    trace::{FutureExt as _, TraceContextExt},
+};
 use tower::Service;
 
 use super::{
@@ -25,13 +28,50 @@ use super::{
 
 #[derive(Debug, Clone)]
 pub struct Trace<ExtractContext, InjectContext, MakeSpanBuilder, OnResponse, OnError, S> {
-    pub(crate) inner: S,
-    pub(crate) tracer: Arc<opentelemetry::global::BoxedTracer>,
-    pub(crate) extract_context: ExtractContext,
-    pub(crate) inject_context: InjectContext,
-    pub(crate) make_span_builder: MakeSpanBuilder,
-    pub(crate) on_response: OnResponse,
-    pub(crate) on_error: OnError,
+    inner: S,
+    tracer: Arc<opentelemetry::global::BoxedTracer>,
+    extract_context: ExtractContext,
+    inject_context: InjectContext,
+    make_span_builder: MakeSpanBuilder,
+    on_response: OnResponse,
+    on_error: OnError,
+
+    inflight_requests: UpDownCounter<i64>,
+    request_counter: Counter<u64>,
+    request_histogram: Histogram<f64>,
+}
+
+impl<ExtractContext, InjectContext, MakeSpanBuilder, OnResponse, OnError, S>
+    Trace<ExtractContext, InjectContext, MakeSpanBuilder, OnResponse, OnError, S>
+{
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        service: S,
+        tracer: Arc<opentelemetry::global::BoxedTracer>,
+        extract_context: ExtractContext,
+        inject_context: InjectContext,
+        make_span_builder: MakeSpanBuilder,
+        on_response: OnResponse,
+        on_error: OnError,
+        inflight_requests: UpDownCounter<i64>,
+        request_counter: Counter<u64>,
+        request_histogram: Histogram<f64>,
+    ) -> Self {
+        Self {
+            inner: service,
+            tracer,
+
+            extract_context,
+            inject_context,
+            make_span_builder,
+            on_response,
+            on_error,
+
+            inflight_requests,
+            request_counter,
+            request_histogram,
+        }
+    }
 }
 
 impl<Req, S, ExtractContextT, InjectContextT, MakeSpanBuilderT, OnResponseT, OnErrorT> Service<Req>
@@ -54,12 +94,19 @@ where
     }
 
     fn call(&mut self, request: Req) -> Self::Future {
+        let inflight_requests = self.inflight_requests.clone();
+        let request_counter = self.request_counter.clone();
+        let request_histogram = self.request_histogram.clone();
+        let start_time = SystemTime::now();
+
         let cx = self.extract_context.extract_context(&request);
-        let span_builder = self.make_span_builder.make_span_builder(&request);
+        let (span_builder, mut metrics_labels) = self.make_span_builder.make_span_builder(&request);
         let span = span_builder.start_with_context(self.tracer.as_ref(), &cx);
 
         let cx = cx.with_span(span);
         let request = self.inject_context.inject_context(&cx, request);
+
+        inflight_requests.add(&cx, 1, &metrics_labels);
 
         let on_response = self.on_response.clone();
         let on_error = self.on_error.clone();
@@ -69,11 +116,21 @@ where
             .call(request)
             .with_context(cx.clone())
             .inspect(move |r| {
+                inflight_requests.add(&cx, -1, &metrics_labels);
+
                 let span = cx.span();
-                match r {
+                let extra_labels = match r {
                     Ok(response) => on_response.on_response(&span, response),
                     Err(err) => on_error.on_error(&span, err),
-                }
+                };
+                metrics_labels.extend_from_slice(&extra_labels);
+
+                request_counter.add(&cx, 1, &metrics_labels);
+                request_histogram.record(
+                    &cx,
+                    start_time.elapsed().map_or(0.0, |d| d.as_secs_f64()),
+                    &metrics_labels,
+                );
 
                 span.end();
             })

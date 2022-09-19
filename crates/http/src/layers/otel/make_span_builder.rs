@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::borrow::Cow;
+use std::{borrow::Cow, vec::Vec};
 
 #[cfg(feature = "axum")]
 use axum::extract::{ConnectInfo, MatchedPath};
@@ -20,11 +20,14 @@ use headers::{ContentLength, HeaderMapExt, Host, UserAgent};
 use http::{Method, Request, Version};
 #[cfg(feature = "client")]
 use hyper::client::connect::dns::Name;
-use opentelemetry::trace::{SpanBuilder, SpanKind};
+use opentelemetry::{
+    trace::{SpanBuilder, SpanKind},
+    KeyValue,
+};
 use opentelemetry_semantic_conventions::trace as SC;
 
 pub trait MakeSpanBuilder<R> {
-    fn make_span_builder(&self, request: &R) -> SpanBuilder;
+    fn make_span_builder(&self, request: &R) -> (SpanBuilder, Vec<KeyValue>);
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -48,8 +51,8 @@ impl Default for DefaultMakeSpanBuilder {
 }
 
 impl<R> MakeSpanBuilder<R> for DefaultMakeSpanBuilder {
-    fn make_span_builder(&self, _request: &R) -> SpanBuilder {
-        SpanBuilder::from_name(self.operation)
+    fn make_span_builder(&self, _request: &R) -> (SpanBuilder, Vec<KeyValue>) {
+        (SpanBuilder::from_name(self.operation), Vec::new())
     }
 }
 
@@ -114,9 +117,10 @@ impl SpanFromHttpRequest {
 }
 
 impl<B> MakeSpanBuilder<Request<B>> for SpanFromHttpRequest {
-    fn make_span_builder(&self, request: &Request<B>) -> SpanBuilder {
+    fn make_span_builder(&self, request: &Request<B>) -> (SpanBuilder, Vec<KeyValue>) {
+        let method = SC::HTTP_METHOD.string(http_method_str(request.method()));
         let mut attributes = vec![
-            SC::HTTP_METHOD.string(http_method_str(request.method())),
+            method.clone(),
             SC::HTTP_FLAVOR.string(http_flavor(request.version())),
             SC::HTTP_TARGET.string(request.uri().to_string()),
         ];
@@ -137,9 +141,12 @@ impl<B> MakeSpanBuilder<Request<B>> for SpanFromHttpRequest {
             }
         }
 
-        SpanBuilder::from_name(self.operation)
+        let span_builder = SpanBuilder::from_name(self.operation)
             .with_kind(self.span_kind.clone())
-            .with_attributes(attributes)
+            .with_attributes(attributes);
+
+        let metrics_labels = vec![method];
+        (span_builder, metrics_labels)
     }
 }
 
@@ -149,9 +156,13 @@ pub struct SpanFromAxumRequest;
 
 #[cfg(feature = "axum")]
 impl<B> MakeSpanBuilder<Request<B>> for SpanFromAxumRequest {
-    fn make_span_builder(&self, request: &Request<B>) -> SpanBuilder {
+    fn make_span_builder(&self, request: &Request<B>) -> (SpanBuilder, Vec<KeyValue>) {
+        let method = SC::HTTP_METHOD.string(http_method_str(request.method()));
+
+        let mut metrics_labels = vec![method.clone()];
+
         let mut attributes = vec![
-            SC::HTTP_METHOD.string(http_method_str(request.method())),
+            method,
             SC::HTTP_FLAVOR.string(http_flavor(request.version())),
             SC::HTTP_TARGET.string(request.uri().to_string()),
         ];
@@ -181,17 +192,23 @@ impl<B> MakeSpanBuilder<Request<B>> for SpanFromAxumRequest {
             attributes.push(SC::NET_PEER_PORT.i64(addr.port().into()));
         }
 
-        let name = if let Some(path) = request.extensions().get::<MatchedPath>() {
-            let path = path.as_str().to_owned();
-            attributes.push(SC::HTTP_ROUTE.string(path.clone()));
-            path
+        let (name, route) = if let Some(path) = request.extensions().get::<MatchedPath>() {
+            let path = path.as_str();
+            (path, path)
         } else {
-            request.uri().path().to_owned()
+            (request.uri().path(), "FALLBACK")
         };
 
-        SpanBuilder::from_name(name)
-            .with_kind(SpanKind::Server)
-            .with_attributes(attributes)
+        let route = SC::HTTP_ROUTE.string(route.to_owned());
+        attributes.push(route.clone());
+        metrics_labels.push(route);
+
+        (
+            SpanBuilder::from_name(name.to_owned())
+                .with_kind(SpanKind::Server)
+                .with_attributes(attributes),
+            metrics_labels,
+        )
     }
 }
 
@@ -201,11 +218,14 @@ pub struct SpanFromDnsRequest;
 
 #[cfg(feature = "client")]
 impl MakeSpanBuilder<Name> for SpanFromDnsRequest {
-    fn make_span_builder(&self, request: &Name) -> SpanBuilder {
+    fn make_span_builder(&self, request: &Name) -> (SpanBuilder, Vec<KeyValue>) {
         let attributes = vec![SC::NET_HOST_NAME.string(request.as_str().to_owned())];
 
-        SpanBuilder::from_name("resolve")
-            .with_kind(SpanKind::Client)
-            .with_attributes(attributes)
+        (
+            SpanBuilder::from_name("resolve")
+                .with_kind(SpanKind::Client)
+                .with_attributes(attributes.clone()),
+            attributes,
+        )
     }
 }
