@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use opentelemetry::metrics::{Counter, Histogram, UpDownCounter};
 use tower::Layer;
 
 use super::{
@@ -22,12 +23,43 @@ pub struct TraceLayer<
     make_span_builder: MakeSpanBuilder,
     on_response: OnResponse,
     on_error: OnError,
+
+    inflight_requests: UpDownCounter<i64>,
+    request_counter: Counter<u64>,
+    request_histogram: Histogram<f64>,
 }
 
 impl Default for TraceLayer {
     fn default() -> Self {
+        Self::with_namespace("http")
+    }
+}
+
+impl TraceLayer {
+    #[must_use]
+    pub fn with_namespace(namespace: &'static str) -> Self {
         let tracer = Arc::new(opentelemetry::global::tracer("mas-http"));
-        Self::new(tracer)
+        let meter = opentelemetry::global::meter("mas-http");
+
+        let inflight_requests = meter
+            .i64_up_down_counter(format!("{namespace}.inflight_requests"))
+            .with_description("Number of in-flight requests")
+            .init();
+        let request_counter = meter
+            .u64_counter(format!("{namespace}.requests_total"))
+            .with_description("Total number of requests made.")
+            .init();
+        let request_histogram = meter
+            .f64_histogram(format!("{namespace}.request_duration_seconds"))
+            .with_description("The request latencies in seconds.")
+            .init();
+
+        Self::new(
+            tracer,
+            inflight_requests,
+            request_counter,
+            request_histogram,
+        )
     }
 }
 
@@ -35,7 +67,12 @@ impl<ExtractContext, InjectContext, MakeSpanBuilder, OnResponse, OnError>
     TraceLayer<ExtractContext, InjectContext, MakeSpanBuilder, OnResponse, OnError>
 {
     #[must_use]
-    pub fn new(tracer: Arc<opentelemetry::global::BoxedTracer>) -> Self
+    pub fn new(
+        tracer: Arc<opentelemetry::global::BoxedTracer>,
+        inflight_requests: UpDownCounter<i64>,
+        request_counter: Counter<u64>,
+        request_histogram: Histogram<f64>,
+    ) -> Self
     where
         ExtractContext: Default,
         InjectContext: Default,
@@ -50,6 +87,9 @@ impl<ExtractContext, InjectContext, MakeSpanBuilder, OnResponse, OnError>
             make_span_builder: MakeSpanBuilder::default(),
             on_response: OnResponse::default(),
             on_error: OnError::default(),
+            inflight_requests,
+            request_counter,
+            request_histogram,
         }
     }
 
@@ -65,6 +105,9 @@ impl<ExtractContext, InjectContext, MakeSpanBuilder, OnResponse, OnError>
             make_span_builder: self.make_span_builder,
             on_response: self.on_response,
             on_error: self.on_error,
+            inflight_requests: self.inflight_requests,
+            request_counter: self.request_counter,
+            request_histogram: self.request_histogram,
         }
     }
 
@@ -80,6 +123,9 @@ impl<ExtractContext, InjectContext, MakeSpanBuilder, OnResponse, OnError>
             make_span_builder: self.make_span_builder,
             on_response: self.on_response,
             on_error: self.on_error,
+            inflight_requests: self.inflight_requests,
+            request_counter: self.request_counter,
+            request_histogram: self.request_histogram,
         }
     }
 
@@ -95,6 +141,9 @@ impl<ExtractContext, InjectContext, MakeSpanBuilder, OnResponse, OnError>
             make_span_builder,
             on_response: self.on_response,
             on_error: self.on_error,
+            inflight_requests: self.inflight_requests,
+            request_counter: self.request_counter,
+            request_histogram: self.request_histogram,
         }
     }
 
@@ -110,6 +159,9 @@ impl<ExtractContext, InjectContext, MakeSpanBuilder, OnResponse, OnError>
             make_span_builder: self.make_span_builder,
             on_response,
             on_error: self.on_error,
+            inflight_requests: self.inflight_requests,
+            request_counter: self.request_counter,
+            request_histogram: self.request_histogram,
         }
     }
 
@@ -125,6 +177,9 @@ impl<ExtractContext, InjectContext, MakeSpanBuilder, OnResponse, OnError>
             make_span_builder: self.make_span_builder,
             on_response: self.on_response,
             on_error,
+            inflight_requests: self.inflight_requests,
+            request_counter: self.request_counter,
+            request_histogram: self.request_histogram,
         }
     }
 }
@@ -141,14 +196,17 @@ where
     type Service = Trace<ExtractContext, InjectContext, MakeSpanBuilder, OnResponse, OnError, S>;
 
     fn layer(&self, inner: S) -> Self::Service {
-        Trace {
+        Trace::new(
             inner,
-            tracer: self.tracer.clone(),
-            extract_context: self.extract_context.clone(),
-            inject_context: self.inject_context.clone(),
-            make_span_builder: self.make_span_builder.clone(),
-            on_response: self.on_response.clone(),
-            on_error: self.on_error.clone(),
-        }
+            self.tracer.clone(),
+            self.extract_context.clone(),
+            self.inject_context.clone(),
+            self.make_span_builder.clone(),
+            self.on_response.clone(),
+            self.on_error.clone(),
+            self.inflight_requests.clone(),
+            self.request_counter.clone(),
+            self.request_histogram.clone(),
+        )
     }
 }

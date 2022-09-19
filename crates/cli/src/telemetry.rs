@@ -292,14 +292,17 @@ fn stdout_meter() -> anyhow::Result<BasicController> {
 fn prometheus_meter(address: &str) -> anyhow::Result<BasicController> {
     let controller = sdk::metrics::controllers::basic(
         sdk::metrics::processors::factory(
-            sdk::metrics::selectors::simple::histogram([1.0, 2.0, 5.0, 10.0, 20.0, 50.0]),
+            sdk::metrics::selectors::simple::histogram([
+                0.01, 0.02, 0.05, 0.10, 0.20, 0.50, 1.0, 2.0, 5.0,
+            ]),
             sdk::export::metrics::aggregation::cumulative_temporality_selector(),
         )
         .with_memory(true),
     )
+    .with_resource(resource())
     .build();
 
-    let exporter = opentelemetry_prometheus::exporter(controller.clone()).init();
+    let exporter = opentelemetry_prometheus::exporter(controller.clone()).try_init()?;
 
     let make_svc = make_service_fn(move |_conn| {
         let exporter = exporter.clone();
@@ -322,7 +325,7 @@ fn prometheus_meter(address: &str) -> anyhow::Result<BasicController> {
                         }
                         _ => Response::builder()
                             .status(404)
-                            .body(Body::from("404 not found"))
+                            .body(Body::from("Metrics are exposed on /metrics"))
                             .unwrap(),
                     };
 

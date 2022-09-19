@@ -16,26 +16,29 @@ use headers::{ContentLength, HeaderMapExt};
 use http::Response;
 #[cfg(feature = "client")]
 use hyper::client::connect::HttpInfo;
-use opentelemetry::trace::SpanRef;
+use opentelemetry::{trace::SpanRef, KeyValue};
 use opentelemetry_semantic_conventions::trace as SC;
 
 pub trait OnResponse<R> {
-    fn on_response(&self, span: &SpanRef<'_>, response: &R);
+    fn on_response(&self, span: &SpanRef<'_>, response: &R) -> Vec<KeyValue>;
 }
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct DefaultOnResponse;
 
 impl<R> OnResponse<R> for DefaultOnResponse {
-    fn on_response(&self, _span: &SpanRef<'_>, _response: &R) {}
+    fn on_response(&self, _span: &SpanRef<'_>, _response: &R) -> Vec<KeyValue> {
+        Vec::new()
+    }
 }
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct OnHttpResponse;
 
 impl<B> OnResponse<Response<B>> for OnHttpResponse {
-    fn on_response(&self, span: &SpanRef<'_>, response: &Response<B>) {
-        span.set_attribute(SC::HTTP_STATUS_CODE.i64(i64::from(response.status().as_u16())));
+    fn on_response(&self, span: &SpanRef<'_>, response: &Response<B>) -> Vec<KeyValue> {
+        let status_code = i64::from(response.status().as_u16());
+        span.set_attribute(SC::HTTP_STATUS_CODE.i64(status_code));
 
         if let Some(ContentLength(content_length)) = response.headers().typed_get() {
             if let Ok(content_length) = content_length.try_into() {
@@ -52,5 +55,7 @@ impl<B> OnResponse<Response<B>> for OnHttpResponse {
             span.set_attribute(SC::NET_HOST_IP.string(info.local_addr().ip().to_string()));
             span.set_attribute(SC::NET_HOST_PORT.i64(info.local_addr().port().into()));
         }
+
+        vec![KeyValue::new("status_code", status_code)]
     }
 }

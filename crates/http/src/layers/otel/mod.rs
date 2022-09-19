@@ -95,7 +95,7 @@ pub type TraceDns<S> = Trace<
 impl TraceHttpServerLayer {
     #[must_use]
     pub fn http_server() -> Self {
-        TraceLayer::default()
+        TraceLayer::with_namespace("http_server")
             .make_span_builder(SpanFromHttpRequest::server())
             .on_response(OnHttpResponse)
             .extract_context(ExtractFromHttpRequest)
@@ -106,7 +106,7 @@ impl TraceHttpServerLayer {
 impl TraceAxumServerLayer {
     #[must_use]
     pub fn axum() -> Self {
-        TraceLayer::default()
+        TraceLayer::with_namespace("http_server")
             .make_span_builder(SpanFromAxumRequest)
             .on_response(OnHttpResponse)
             .extract_context(ExtractFromHttpRequest)
@@ -116,7 +116,7 @@ impl TraceAxumServerLayer {
 impl TraceHttpClientLayer {
     #[must_use]
     pub fn http_client(operation: &'static str) -> Self {
-        TraceLayer::default()
+        TraceLayer::with_namespace("http_client")
             .make_span_builder(SpanFromHttpRequest::client(operation))
             .on_response(OnHttpResponse)
             .inject_context(InjectInHttpRequest)
@@ -124,7 +124,7 @@ impl TraceHttpClientLayer {
 
     #[must_use]
     pub fn inner_http_client() -> Self {
-        TraceLayer::default()
+        TraceLayer::with_namespace("inner_http_client")
             .make_span_builder(SpanFromHttpRequest::inner_client())
             .on_response(OnHttpResponse)
             .inject_context(InjectInHttpRequest)
@@ -135,7 +135,7 @@ impl TraceHttpClientLayer {
 impl TraceDnsLayer {
     #[must_use]
     pub fn dns() -> Self {
-        TraceLayer::default().make_span_builder(SpanFromDnsRequest)
+        TraceLayer::with_namespace("dns").make_span_builder(SpanFromDnsRequest)
     }
 }
 
