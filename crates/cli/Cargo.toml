@@ -30,7 +30,7 @@ opentelemetry = { version = "0.17.0", features = ["trace", "metrics", "rt-tokio"
 opentelemetry-semantic-conventions = "0.9.0"
 opentelemetry-jaeger = { version = "0.16.0", features = ["rt-tokio", "reqwest_collector_client"], optional = true }
 opentelemetry-otlp = { version = "0.10.0", features = ["trace", "metrics"], optional = true }
-opentelemetry-zipkin = { version = "0.15.0", features = ["reqwest-client", "reqwest-rustls"], default-features = false, optional = true }
+opentelemetry-zipkin = { version = "0.16.0", features = ["reqwest-client", "reqwest-rustls"], default-features = false, optional = true }
 
 mas-config = { path = "../config" }
 mas-email = { path = "../email" }
