@@ -28,7 +28,7 @@ tokio = { version = "1.21.1", features = ["sync", "parking_lot"], optional = tru
 tower = { version = "0.4.13", features = ["timeout", "limit"] }
 tower-http = { version = "0.3.4", features = ["follow-redirect", "decompression-full", "set-header", "compression-full", "cors", "util"] }
 tracing = "0.1.36"
-tracing-opentelemetry = "0.17.4"
+tracing-opentelemetry = "0.18.0"
 webpki = { version = "0.22.0", optional = true }
 webpki-roots = { version = "0.22.4", optional = true }
 
