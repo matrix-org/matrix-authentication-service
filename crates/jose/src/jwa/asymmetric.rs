@@ -13,6 +13,8 @@
 // limitations under the License.
 
 use mas_iana::jose::{JsonWebKeyEcEllipticCurve, JsonWebSignatureAlg};
+use rand::thread_rng;
+use signature::RandomizedSigner;
 use thiserror::Error;
 
 use super::signature::Signature;
@@ -60,18 +62,15 @@ impl AsymmetricSigningKey {
         alg: JsonWebSignatureAlg,
     ) -> Result<Self, AsymmetricKeyFromJwkError> {
         match (params, alg) {
-            (JsonWebKeyPrivateParameters::Rsa(params), alg) => {
-                let key = rsa::RsaPrivateKey::try_from(params)?;
-                match alg {
-                    JsonWebSignatureAlg::Rs256 => Ok(Self::Rs256(key.into())),
-                    JsonWebSignatureAlg::Rs384 => Ok(Self::Rs384(key.into())),
-                    JsonWebSignatureAlg::Rs512 => Ok(Self::Rs512(key.into())),
-                    JsonWebSignatureAlg::Ps256 => Ok(Self::Ps256(key.into())),
-                    JsonWebSignatureAlg::Ps384 => Ok(Self::Ps384(key.into())),
-                    JsonWebSignatureAlg::Ps512 => Ok(Self::Ps512(key.into())),
-                    _ => Err(AsymmetricKeyFromJwkError::KeyNotSuitable { alg }),
-                }
-            }
+            (JsonWebKeyPrivateParameters::Rsa(params), alg) => match alg {
+                JsonWebSignatureAlg::Rs256 => Ok(Self::Rs256(params.try_into()?)),
+                JsonWebSignatureAlg::Rs384 => Ok(Self::Rs384(params.try_into()?)),
+                JsonWebSignatureAlg::Rs512 => Ok(Self::Rs512(params.try_into()?)),
+                JsonWebSignatureAlg::Ps256 => Ok(Self::Ps256(params.try_into()?)),
+                JsonWebSignatureAlg::Ps384 => Ok(Self::Ps384(params.try_into()?)),
+                JsonWebSignatureAlg::Ps512 => Ok(Self::Ps512(params.try_into()?)),
+                _ => Err(AsymmetricKeyFromJwkError::KeyNotSuitable { alg }),
+            },
 
             (JsonWebKeyPrivateParameters::Ec(params), JsonWebSignatureAlg::Es256)
                 if params.crv == JsonWebKeyEcEllipticCurve::P256 =>
@@ -176,15 +175,15 @@ impl signature::Signer<Signature> for AsymmetricSigningKey {
                 Ok(Signature::from_signature(&signature))
             }
             Self::Ps256(key) => {
-                let signature = key.try_sign(msg)?;
+                let signature = key.try_sign_with_rng(thread_rng(), msg)?;
                 Ok(Signature::from_signature(&signature))
             }
             Self::Ps384(key) => {
-                let signature = key.try_sign(msg)?;
+                let signature = key.try_sign_with_rng(thread_rng(), msg)?;
                 Ok(Signature::from_signature(&signature))
             }
             Self::Ps512(key) => {
-                let signature = key.try_sign(msg)?;
+                let signature = key.try_sign_with_rng(thread_rng(), msg)?;
                 Ok(Signature::from_signature(&signature))
             }
             Self::Es256(key) => {
@@ -223,18 +222,15 @@ impl AsymmetricVerifyingKey {
         alg: JsonWebSignatureAlg,
     ) -> Result<Self, AsymmetricKeyFromJwkError> {
         match (params, alg) {
-            (JsonWebKeyPublicParameters::Rsa(params), alg) => {
-                let key = rsa::RsaPublicKey::try_from(params)?;
-                match alg {
-                    JsonWebSignatureAlg::Rs256 => Ok(Self::Rs256(key.into())),
-                    JsonWebSignatureAlg::Rs384 => Ok(Self::Rs384(key.into())),
-                    JsonWebSignatureAlg::Rs512 => Ok(Self::Rs512(key.into())),
-                    JsonWebSignatureAlg::Ps256 => Ok(Self::Ps256(key.into())),
-                    JsonWebSignatureAlg::Ps384 => Ok(Self::Ps384(key.into())),
-                    JsonWebSignatureAlg::Ps512 => Ok(Self::Ps512(key.into())),
-                    _ => Err(AsymmetricKeyFromJwkError::KeyNotSuitable { alg }),
-                }
-            }
+            (JsonWebKeyPublicParameters::Rsa(params), alg) => match alg {
+                JsonWebSignatureAlg::Rs256 => Ok(Self::Rs256(params.try_into()?)),
+                JsonWebSignatureAlg::Rs384 => Ok(Self::Rs384(params.try_into()?)),
+                JsonWebSignatureAlg::Rs512 => Ok(Self::Rs512(params.try_into()?)),
+                JsonWebSignatureAlg::Ps256 => Ok(Self::Ps256(params.try_into()?)),
+                JsonWebSignatureAlg::Ps384 => Ok(Self::Ps384(params.try_into()?)),
+                JsonWebSignatureAlg::Ps512 => Ok(Self::Ps512(params.try_into()?)),
+                _ => Err(AsymmetricKeyFromJwkError::KeyNotSuitable { alg }),
+            },
 
             (JsonWebKeyPublicParameters::Ec(params), JsonWebSignatureAlg::Es256)
                 if params.crv == JsonWebKeyEcEllipticCurve::P256 =>

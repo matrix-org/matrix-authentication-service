@@ -228,15 +228,14 @@ struct RsaOtherPrimeInfo {
 }
 
 mod rsa_impls {
-    use digest::DynDigest;
+    use digest::{const_oid::AssociatedOid, Digest};
     use rsa::{BigUint, RsaPrivateKey};
 
     use super::RsaPrivateParameters;
-    use crate::jwa::rsa::RsaHashIdentifier;
 
-    impl<H> TryFrom<RsaPrivateParameters> for crate::jwa::rsa::pkcs1v15::SigningKey<H>
+    impl<H> TryFrom<RsaPrivateParameters> for rsa::pkcs1v15::SigningKey<H>
     where
-        H: RsaHashIdentifier,
+        H: Digest + AssociatedOid,
     {
         type Error = rsa::errors::Error;
         fn try_from(value: RsaPrivateParameters) -> Result<Self, Self::Error> {
@@ -244,20 +243,20 @@ mod rsa_impls {
         }
     }
 
-    impl<H> TryFrom<&RsaPrivateParameters> for crate::jwa::rsa::pkcs1v15::SigningKey<H>
+    impl<H> TryFrom<&RsaPrivateParameters> for rsa::pkcs1v15::SigningKey<H>
     where
-        H: RsaHashIdentifier,
+        H: Digest + AssociatedOid,
     {
         type Error = rsa::errors::Error;
         fn try_from(value: &RsaPrivateParameters) -> Result<Self, Self::Error> {
             let key: RsaPrivateKey = value.try_into()?;
-            Ok(Self::from(key))
+            Ok(Self::new_with_prefix(key))
         }
     }
 
-    impl<H> TryFrom<RsaPrivateParameters> for crate::jwa::rsa::pss::SigningKey<H>
+    impl<H> TryFrom<RsaPrivateParameters> for rsa::pss::SigningKey<H>
     where
-        H: DynDigest + Default + 'static,
+        H: Digest,
     {
         type Error = rsa::errors::Error;
         fn try_from(value: RsaPrivateParameters) -> Result<Self, Self::Error> {
@@ -265,14 +264,14 @@ mod rsa_impls {
         }
     }
 
-    impl<H> TryFrom<&RsaPrivateParameters> for crate::jwa::rsa::pss::SigningKey<H>
+    impl<H> TryFrom<&RsaPrivateParameters> for rsa::pss::SigningKey<H>
     where
-        H: DynDigest + Default + 'static,
+        H: Digest,
     {
         type Error = rsa::errors::Error;
         fn try_from(value: &RsaPrivateParameters) -> Result<Self, Self::Error> {
             let key: RsaPrivateKey = value.try_into()?;
-            Ok(Self::from(key))
+            Ok(Self::new(key))
         }
     }
 
@@ -298,7 +297,7 @@ mod rsa_impls {
                 .map(|i| BigUint::from_bytes_be(i))
                 .collect();
 
-            let key = RsaPrivateKey::from_components(n, e, d, primes);
+            let key = RsaPrivateKey::from_components(n, e, d, primes)?;
 
             key.validate()?;
 

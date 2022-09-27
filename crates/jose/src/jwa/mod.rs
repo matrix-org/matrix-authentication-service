@@ -17,7 +17,6 @@ use sha2::{Sha256, Sha384, Sha512};
 
 mod asymmetric;
 pub(crate) mod hmac;
-pub(crate) mod rsa;
 pub(self) mod signature;
 mod symmetric;
 
@@ -30,19 +29,19 @@ pub type Hs256Key = self::hmac::Hmac<Sha256>;
 pub type Hs384Key = self::hmac::Hmac<Sha384>;
 pub type Hs512Key = self::hmac::Hmac<Sha512>;
 
-pub type Rs256SigningKey = self::rsa::pkcs1v15::SigningKey<Sha256>;
-pub type Rs256VerifyingKey = self::rsa::pkcs1v15::VerifyingKey<Sha256>;
-pub type Rs384SigningKey = self::rsa::pkcs1v15::SigningKey<Sha384>;
-pub type Rs384VerifyingKey = self::rsa::pkcs1v15::VerifyingKey<Sha384>;
-pub type Rs512SigningKey = self::rsa::pkcs1v15::SigningKey<Sha512>;
-pub type Rs512VerifyingKey = self::rsa::pkcs1v15::VerifyingKey<Sha512>;
+pub type Rs256SigningKey = rsa::pkcs1v15::SigningKey<Sha256>;
+pub type Rs256VerifyingKey = rsa::pkcs1v15::VerifyingKey<Sha256>;
+pub type Rs384SigningKey = rsa::pkcs1v15::SigningKey<Sha384>;
+pub type Rs384VerifyingKey = rsa::pkcs1v15::VerifyingKey<Sha384>;
+pub type Rs512SigningKey = rsa::pkcs1v15::SigningKey<Sha512>;
+pub type Rs512VerifyingKey = rsa::pkcs1v15::VerifyingKey<Sha512>;
 
-pub type Ps256SigningKey = self::rsa::pss::SigningKey<Sha256>;
-pub type Ps256VerifyingKey = self::rsa::pss::VerifyingKey<Sha256>;
-pub type Ps384SigningKey = self::rsa::pss::SigningKey<Sha384>;
-pub type Ps384VerifyingKey = self::rsa::pss::VerifyingKey<Sha384>;
-pub type Ps512SigningKey = self::rsa::pss::SigningKey<Sha512>;
-pub type Ps512VerifyingKey = self::rsa::pss::VerifyingKey<Sha512>;
+pub type Ps256SigningKey = rsa::pss::SigningKey<Sha256>;
+pub type Ps256VerifyingKey = rsa::pss::VerifyingKey<Sha256>;
+pub type Ps384SigningKey = rsa::pss::SigningKey<Sha384>;
+pub type Ps384VerifyingKey = rsa::pss::VerifyingKey<Sha384>;
+pub type Ps512SigningKey = rsa::pss::SigningKey<Sha512>;
+pub type Ps512VerifyingKey = rsa::pss::VerifyingKey<Sha512>;
 
 pub type Es256SigningKey = ecdsa::SigningKey<p256::NistP256>;
 pub type Es256VerifyingKey = ecdsa::VerifyingKey<p256::NistP256>;

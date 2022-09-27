@@ -13,8 +13,8 @@ tokio = { version = "1.21.1", features = ["macros"] }
 tracing = "0.1.36"
 
 # Error management
-thiserror = "1.0.35"
-anyhow = "1.0.64"
+thiserror = "1.0.36"
+anyhow = "1.0.65"
 
 # Web server
 hyper = { version = "0.14.20", features = ["full"] }
@@ -28,10 +28,10 @@ axum-extra = { version = "0.4.0-rc.1", features = ["cookie-private"] }
 lettre = { version = "0.10.1", default-features = false, features = ["builder"] }
 
 # Database access
-sqlx = { version = "0.6.1", features = ["runtime-tokio-rustls", "postgres"] }
+sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres"] }
 
 # Various structure (de)serialization
-serde = { version = "1.0.144", features = ["derive"] }
+serde = { version = "1.0.145", features = ["derive"] }
 serde_with = { version = "2.0.1", features = ["hex", "chrono"] }
 serde_json = "1.0.85"
 serde_urlencoded = "0.7.1"

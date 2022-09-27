@@ -188,11 +188,10 @@ impl OkpPublicParameters {
 }
 
 mod rsa_impls {
-    use digest::DynDigest;
+    use digest::{const_oid::AssociatedOid, Digest};
     use rsa::{BigUint, PublicKeyParts, RsaPublicKey};
 
     use super::{JsonWebKeyPublicParameters, RsaPublicParameters};
-    use crate::jwa::rsa::RsaHashIdentifier;
 
     impl From<RsaPublicKey> for JsonWebKeyPublicParameters {
         fn from(key: RsaPublicKey) -> Self {
@@ -221,9 +220,9 @@ mod rsa_impls {
         }
     }
 
-    impl<H> TryFrom<RsaPublicParameters> for crate::jwa::rsa::pkcs1v15::VerifyingKey<H>
+    impl<H> TryFrom<RsaPublicParameters> for rsa::pkcs1v15::VerifyingKey<H>
     where
-        H: RsaHashIdentifier,
+        H: Digest + AssociatedOid,
     {
         type Error = rsa::errors::Error;
         fn try_from(value: RsaPublicParameters) -> Result<Self, Self::Error> {
@@ -231,20 +230,20 @@ mod rsa_impls {
         }
     }
 
-    impl<H> TryFrom<&RsaPublicParameters> for crate::jwa::rsa::pkcs1v15::VerifyingKey<H>
+    impl<H> TryFrom<&RsaPublicParameters> for rsa::pkcs1v15::VerifyingKey<H>
     where
-        H: RsaHashIdentifier,
+        H: Digest + AssociatedOid,
     {
         type Error = rsa::errors::Error;
         fn try_from(value: &RsaPublicParameters) -> Result<Self, Self::Error> {
             let key: RsaPublicKey = value.try_into()?;
-            Ok(Self::from(key))
+            Ok(Self::new_with_prefix(key))
         }
     }
 
-    impl<H> TryFrom<RsaPublicParameters> for crate::jwa::rsa::pss::VerifyingKey<H>
+    impl<H> TryFrom<RsaPublicParameters> for rsa::pss::VerifyingKey<H>
     where
-        H: DynDigest + Default + 'static,
+        H: Digest,
     {
         type Error = rsa::errors::Error;
         fn try_from(value: RsaPublicParameters) -> Result<Self, Self::Error> {
@@ -252,14 +251,14 @@ mod rsa_impls {
         }
     }
 
-    impl<H> TryFrom<&RsaPublicParameters> for crate::jwa::rsa::pss::VerifyingKey<H>
+    impl<H> TryFrom<&RsaPublicParameters> for rsa::pss::VerifyingKey<H>
     where
-        H: DynDigest + Default + 'static,
+        H: Digest,
     {
         type Error = rsa::errors::Error;
         fn try_from(value: &RsaPublicParameters) -> Result<Self, Self::Error> {
             let key: RsaPublicKey = value.try_into()?;
-            Ok(Self::from(key))
+            Ok(Self::new(key))
         }
     }
 

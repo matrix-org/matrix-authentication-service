@@ -162,7 +162,7 @@ impl PrivateKey {
         let first_prime = BigUint::from_bytes_be(pkcs1_key.prime1.as_bytes());
         let second_prime = BigUint::from_bytes_be(pkcs1_key.prime2.as_bytes());
         let primes = vec![first_prime, second_prime];
-        let key = rsa::RsaPrivateKey::from_components(n, e, d, primes);
+        let key = rsa::RsaPrivateKey::from_components(n, e, d, primes)?;
         Ok(Self::Rsa(Box::new(key)))
     }
 
@@ -421,12 +421,24 @@ impl PrivateKey {
             (Self::Rsa(key), _) => {
                 let key: rsa::RsaPublicKey = key.to_public_key();
                 match alg {
-                    JsonWebSignatureAlg::Rs256 => AsymmetricVerifyingKey::Rs256(key.into()),
-                    JsonWebSignatureAlg::Rs384 => AsymmetricVerifyingKey::Rs384(key.into()),
-                    JsonWebSignatureAlg::Rs512 => AsymmetricVerifyingKey::Rs512(key.into()),
-                    JsonWebSignatureAlg::Ps256 => AsymmetricVerifyingKey::Ps256(key.into()),
-                    JsonWebSignatureAlg::Ps384 => AsymmetricVerifyingKey::Ps384(key.into()),
-                    JsonWebSignatureAlg::Ps512 => AsymmetricVerifyingKey::Ps512(key.into()),
+                    JsonWebSignatureAlg::Rs256 => {
+                        AsymmetricVerifyingKey::Rs256(rsa::pkcs1v15::VerifyingKey::new(key))
+                    }
+                    JsonWebSignatureAlg::Rs384 => {
+                        AsymmetricVerifyingKey::Rs384(rsa::pkcs1v15::VerifyingKey::new(key))
+                    }
+                    JsonWebSignatureAlg::Rs512 => {
+                        AsymmetricVerifyingKey::Rs512(rsa::pkcs1v15::VerifyingKey::new(key))
+                    }
+                    JsonWebSignatureAlg::Ps256 => {
+                        AsymmetricVerifyingKey::Ps256(rsa::pss::VerifyingKey::new(key))
+                    }
+                    JsonWebSignatureAlg::Ps384 => {
+                        AsymmetricVerifyingKey::Ps384(rsa::pss::VerifyingKey::new(key))
+                    }
+                    JsonWebSignatureAlg::Ps512 => {
+                        AsymmetricVerifyingKey::Ps512(rsa::pss::VerifyingKey::new(key))
+                    }
                     _ => return Err(WrongAlgorithmError),
                 }
             }
@@ -463,12 +475,24 @@ impl PrivateKey {
             (Self::Rsa(key), _) => {
                 let key: rsa::RsaPrivateKey = *key.clone();
                 match alg {
-                    JsonWebSignatureAlg::Rs256 => AsymmetricSigningKey::Rs256(key.into()),
-                    JsonWebSignatureAlg::Rs384 => AsymmetricSigningKey::Rs384(key.into()),
-                    JsonWebSignatureAlg::Rs512 => AsymmetricSigningKey::Rs512(key.into()),
-                    JsonWebSignatureAlg::Ps256 => AsymmetricSigningKey::Ps256(key.into()),
-                    JsonWebSignatureAlg::Ps384 => AsymmetricSigningKey::Ps384(key.into()),
-                    JsonWebSignatureAlg::Ps512 => AsymmetricSigningKey::Ps512(key.into()),
+                    JsonWebSignatureAlg::Rs256 => {
+                        AsymmetricSigningKey::Rs256(rsa::pkcs1v15::SigningKey::new(key))
+                    }
+                    JsonWebSignatureAlg::Rs384 => {
+                        AsymmetricSigningKey::Rs384(rsa::pkcs1v15::SigningKey::new(key))
+                    }
+                    JsonWebSignatureAlg::Rs512 => {
+                        AsymmetricSigningKey::Rs512(rsa::pkcs1v15::SigningKey::new(key))
+                    }
+                    JsonWebSignatureAlg::Ps256 => {
+                        AsymmetricSigningKey::Ps256(rsa::pss::SigningKey::new(key))
+                    }
+                    JsonWebSignatureAlg::Ps384 => {
+                        AsymmetricSigningKey::Ps384(rsa::pss::SigningKey::new(key))
+                    }
+                    JsonWebSignatureAlg::Ps512 => {
+                        AsymmetricSigningKey::Ps512(rsa::pss::SigningKey::new(key))
+                    }
                     _ => return Err(WrongAlgorithmError),
                 }
             }
