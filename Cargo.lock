@@ -2455,7 +2455,7 @@ dependencies = [
  "hyper-rustls 0.23.0",
  "once_cell",
  "opentelemetry",
- "opentelemetry-http",
+ "opentelemetry-http 0.7.0",
  "opentelemetry-semantic-conventions",
  "rustls 0.20.6",
  "rustls-native-certs 0.6.2",
@@ -2954,6 +2954,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "opentelemetry-http"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1edc79add46364183ece1a4542592ca593e6421c60807232f5b8f7a31703825d"
+dependencies = [
+ "async-trait",
+ "bytes 1.2.1",
+ "http",
+ "opentelemetry_api",
+]
+
+[[package]]
 name = "opentelemetry-jaeger"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2964,7 +2976,7 @@ dependencies = [
  "http",
  "lazy_static",
  "opentelemetry",
- "opentelemetry-http",
+ "opentelemetry-http 0.6.0",
  "opentelemetry-semantic-conventions",
  "reqwest",
  "thiserror",
@@ -3009,13 +3021,28 @@ dependencies = [
  "http",
  "lazy_static",
  "opentelemetry",
- "opentelemetry-http",
+ "opentelemetry-http 0.6.0",
  "opentelemetry-semantic-conventions",
  "reqwest",
  "serde",
  "serde_json",
  "thiserror",
  "typed-builder",
+]
+
+[[package]]
+name = "opentelemetry_api"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c24f96e21e7acc813c7a8394ee94978929db2bcc46cf6b5014fc612bf7760c22"
+dependencies = [
+ "futures-channel",
+ "futures-util",
+ "indexmap",
+ "js-sys",
+ "once_cell",
+ "pin-project-lite",
+ "thiserror",
 ]
 
 [[package]]
