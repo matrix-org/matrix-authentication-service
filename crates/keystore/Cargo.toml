@@ -13,7 +13,7 @@ cookie = { version = "0.16.1", features = ["key-expansion", "private"] }
 der = { version = "0.6.0", features = ["std"] }
 ecdsa = { version = "0.14.7", features = ["std"] }
 elliptic-curve = { version = "0.12.3", features = ["std", "pem", "sec1"] }
-k256 = { version = "0.11.5", features = ["std"] }
+k256 = { version = "0.11.6", features = ["std"] }
 p256 = { version = "0.11.1", features = ["std"] }
 p384 = { version = "0.11.2", features = ["std"] }
 pem-rfc7468 = { version = "0.6.0", features = ["std"] }
