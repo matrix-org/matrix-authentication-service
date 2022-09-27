@@ -14,7 +14,7 @@ ecdsa = { version = "0.14.7", features = ["sign", "verify"] }
 elliptic-curve = "0.12.3"
 generic-array = "0.14.6"
 hmac = "0.12.1"
-k256 = { version = "0.11.5", features = ["ecdsa"] }
+k256 = { version = "0.11.6", features = ["ecdsa"] }
 p256 = { version = "0.11.1", features = ["ecdsa"] }
 p384 = { version = "0.11.2", features = ["ecdsa"] }
 rand = "0.8.5"
