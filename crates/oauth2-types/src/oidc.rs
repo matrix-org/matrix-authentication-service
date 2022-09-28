@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::ops::Deref;
+use std::{ops::Deref, str::FromStr};
 
 use language_tags::LanguageTag;
 use mas_iana::{
     jose::{JsonWebEncryptionAlg, JsonWebEncryptionEnc, JsonWebSignatureAlg},
     oauth::{OAuthAccessTokenType, OAuthClientAuthenticationMethod, PkceCodeChallengeMethod},
 };
-use parse_display::{Display, FromStr};
+use parse_display::{Display, FromStr, ParseError};
 use serde::{Deserialize, Serialize};
 use serde_with::{skip_serializing_none, DeserializeFromStr, SerializeDisplay};
 use thiserror::Error;
@@ -32,9 +32,7 @@ use crate::{
 
 /// An enum for types that accept either an [`OAuthClientAuthenticationMethod`]
 /// or an [`OAuthAccessTokenType`].
-#[derive(
-    SerializeDisplay, DeserializeFromStr, Clone, PartialEq, Eq, Hash, Debug, Display, FromStr,
-)]
+#[derive(SerializeDisplay, DeserializeFromStr, Clone, PartialEq, Eq, Hash, Debug, Display)]
 pub enum AuthenticationMethodOrAccessTokenType {
     /// An authentication method.
     #[display("{0}")]
@@ -43,6 +41,14 @@ pub enum AuthenticationMethodOrAccessTokenType {
     /// An access token type.
     #[display("{0}")]
     AccessTokenType(OAuthAccessTokenType),
+
+    /// An unknown value.
+    ///
+    /// Note that this variant should only be used as the result parsing a
+    /// string of unknown type. To build a custom variant, first parse a
+    /// string with the wanted type then use `.into()`.
+    #[display("{0}")]
+    Unknown(String),
 }
 
 impl AuthenticationMethodOrAccessTokenType {
@@ -52,7 +58,7 @@ impl AuthenticationMethodOrAccessTokenType {
     pub fn authentication_method(&self) -> Option<&OAuthClientAuthenticationMethod> {
         match self {
             Self::AuthenticationMethod(m) => Some(m),
-            Self::AccessTokenType(_) => None,
+            _ => None,
         }
     }
 
@@ -61,9 +67,31 @@ impl AuthenticationMethodOrAccessTokenType {
     #[must_use]
     pub fn access_token_type(&self) -> Option<&OAuthAccessTokenType> {
         match self {
-            Self::AuthenticationMethod(_) => None,
             Self::AccessTokenType(t) => Some(t),
+            _ => None,
         }
+    }
+}
+
+impl FromStr for AuthenticationMethodOrAccessTokenType {
+    type Err = ParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if let Ok(m) = OAuthClientAuthenticationMethod::from_str(s) {
+            match m {
+                OAuthClientAuthenticationMethod::Unknown(_) => {}
+                m => return Ok(m.into()),
+            }
+        }
+
+        if let Ok(t) = OAuthAccessTokenType::from_str(s) {
+            match t {
+                OAuthAccessTokenType::Unknown(_) => {}
+                t => return Ok(t.into()),
+            }
+        }
+
+        Ok(Self::Unknown(s.to_owned()))
     }
 }
 
@@ -1582,6 +1610,25 @@ mod tests {
         assert_eq!(
             serde_json::from_str::<ClaimType>("\"distributed\"").unwrap(),
             ClaimType::Distributed
+        );
+    }
+
+    #[test]
+    fn deserialize_auth_method_or_token_type_type() {
+        assert_eq!(
+            serde_json::from_str::<AuthenticationMethodOrAccessTokenType>("\"none\"").unwrap(),
+            AuthenticationMethodOrAccessTokenType::AuthenticationMethod(
+                OAuthClientAuthenticationMethod::None
+            )
+        );
+        assert_eq!(
+            serde_json::from_str::<AuthenticationMethodOrAccessTokenType>("\"Bearer\"").unwrap(),
+            AuthenticationMethodOrAccessTokenType::AccessTokenType(OAuthAccessTokenType::Bearer)
+        );
+        assert_eq!(
+            serde_json::from_str::<AuthenticationMethodOrAccessTokenType>("\"unknown_value\"")
+                .unwrap(),
+            AuthenticationMethodOrAccessTokenType::Unknown("unknown_value".to_owned())
         );
     }
 }
