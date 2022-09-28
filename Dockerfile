@@ -66,7 +66,8 @@ RUN \
   g++-aarch64-linux-gnu \
   g++-x86-64-linux-gnu \
   libc6-dev-arm64-cross \
-  libc6-dev-amd64-cross
+  libc6-dev-amd64-cross \
+  protobuf-compiler
 
 WORKDIR /app
 RUN \

@@ -12,14 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{
-    convert::Infallible,
-    net::{SocketAddr, TcpListener},
-    time::Duration,
-};
+use std::time::Duration;
 
 use anyhow::{bail, Context as _};
-use hyper::{header::CONTENT_TYPE, service::make_service_fn, Body, Method, Request, Response};
 use mas_config::{
     JaegerExporterProtocolConfig, MetricsExporterConfig, Propagator, TelemetryConfig,
     TracingExporterConfig,
@@ -41,10 +36,7 @@ use opentelemetry_jaeger::Propagator as JaegerPropagator;
 use opentelemetry_semantic_conventions as semcov;
 #[cfg(feature = "zipkin")]
 use opentelemetry_zipkin::{B3Encoding, Propagator as ZipkinPropagator};
-use prometheus::{Encoder, TextEncoder};
 use tokio::sync::OnceCell;
-use tower::service_fn;
-use tracing::info;
 use url::Url;
 
 static METRICS_BASIC_CONTROLLER: OnceCell<Option<BasicController>> = OnceCell::const_new();
@@ -60,8 +52,10 @@ pub async fn setup(
     mas_http::set_propagator(&propagator);
     global::set_text_map_propagator(propagator);
 
-    let tracer = tracer(&config.tracing.exporter).await?;
-    let meter = meter(&config.metrics.exporter)?;
+    let tracer = tracer(&config.tracing.exporter)
+        .await
+        .context("Failed to configure traces exporter")?;
+    let meter = meter(&config.metrics.exporter).context("Failed to configure metrics exporter")?;
     METRICS_BASIC_CONTROLLER.set(meter.clone())?;
 
     Ok((tracer, meter))
@@ -97,8 +91,7 @@ fn match_propagator(
         ))),
 
         p => bail!(
-            "The service was compiled without support for the {:?} propagator, but config uses it.",
-            p
+            "The service was compiled without support for the {p:?} propagator, but config uses it.",
         ),
     }
 }
@@ -112,7 +105,9 @@ fn propagator(propagators: &[Propagator]) -> anyhow::Result<impl TextMapPropagat
 
 #[cfg(any(feature = "otlp", feature = "jaeger"))]
 async fn http_client() -> anyhow::Result<impl opentelemetry_http::HttpClient + 'static> {
-    let client = mas_http::make_untraced_client().await?;
+    let client = mas_http::make_untraced_client()
+        .await
+        .context("Failed to build HTTP client used by telemetry exporter")?;
     let client =
         opentelemetry_http::hyper::HyperClient::new_with_timeout(client, Duration::from_secs(30));
     Ok(client)
@@ -138,18 +133,22 @@ fn otlp_tracer(endpoint: &Option<Url>) -> anyhow::Result<Tracer> {
         .tracing()
         .with_exporter(exporter)
         .with_trace_config(trace_config())
-        .install_batch(opentelemetry::runtime::Tokio)?;
+        .install_batch(opentelemetry::runtime::Tokio)
+        .context("Failed to configure OTLP trace exporter")?;
 
     Ok(tracer)
 }
 
 #[cfg(not(feature = "otlp"))]
-fn otlp_tracer(_endpoint: &Option<Url>) -> anyhow::Result<Tracer> {
+fn otlp_tracer(endpoint: &Option<Url>) -> anyhow::Result<Tracer> {
+    let _ = endpoint;
     anyhow::bail!("The service was compiled without OTLP exporter support, but config exports traces via OTLP.")
 }
 
 #[cfg(not(feature = "jaeger"))]
 fn jaeger_agent_tracer(host: &str, port: u16) -> anyhow::Result<Tracer> {
+    let _ = host;
+    let _ = port;
     anyhow::bail!("The service was compiled without Jaeger exporter support, but config exports traces via Jaeger.")
 }
 
@@ -160,7 +159,9 @@ fn jaeger_agent_tracer(host: &str, port: u16) -> anyhow::Result<Tracer> {
         .with_trace_config(trace_config())
         .with_endpoint((host, port));
 
-    let tracer = pipeline.install_batch(opentelemetry::runtime::Tokio)?;
+    let tracer = pipeline
+        .install_batch(opentelemetry::runtime::Tokio)
+        .context("Failed to configure Jaeger agent exporter")?;
 
     Ok(tracer)
 }
@@ -171,6 +172,10 @@ async fn jaeger_collector_tracer(
     username: Option<&str>,
     password: Option<&str>,
 ) -> anyhow::Result<Tracer> {
+    let _ = endpoint;
+    let _ = username;
+    let _ = password;
+    futures_util::future::ready(()).await; // Silence the "unused async" lint
     anyhow::bail!("The service was compiled without Jaeger exporter support, but config exports traces via Jaeger.")
 }
 
@@ -195,13 +200,17 @@ async fn jaeger_collector_tracer(
         pipeline = pipeline.with_password(password);
     }
 
-    let tracer = pipeline.install_batch(opentelemetry::runtime::Tokio)?;
+    let tracer = pipeline
+        .install_batch(opentelemetry::runtime::Tokio)
+        .context("Failed to configure Jaeger collector exporter")?;
 
     Ok(tracer)
 }
 
 #[cfg(not(feature = "zipkin"))]
-async fn zipkin_tracer(_collector_endpoint: &Option<Url>) -> anyhow::Result<Tracer> {
+async fn zipkin_tracer(collector_endpoint: &Option<Url>) -> anyhow::Result<Tracer> {
+    let _ = collector_endpoint;
+    futures_util::future::ready(()).await; // Silence the "unused async" lint
     anyhow::bail!("The service was compiled without Jaeger exporter support, but config exports traces via Jaeger.")
 }
 
@@ -218,7 +227,9 @@ async fn zipkin_tracer(collector_endpoint: &Option<Url>) -> anyhow::Result<Trace
         pipeline = pipeline.with_collector_endpoint(collector_endpoint.as_str());
     }
 
-    let tracer = pipeline.install_batch(opentelemetry::runtime::Tokio)?;
+    let tracer = pipeline
+        .install_batch(opentelemetry::runtime::Tokio)
+        .context("Failed to configure Zipkin exporter")?;
 
     Ok(tracer)
 }
@@ -262,13 +273,15 @@ fn otlp_meter(endpoint: &Option<url::Url>) -> anyhow::Result<BasicController> {
         )
         .with_resource(resource())
         .with_exporter(exporter)
-        .build()?;
+        .build()
+        .context("Failed to configure OTLP metrics exporter")?;
 
     Ok(controller)
 }
 
 #[cfg(not(feature = "otlp"))]
-fn otlp_meter(_endpoint: &Option<url::Url>) -> anyhow::Result<BasicController> {
+fn otlp_meter(endpoint: &Option<url::Url>) -> anyhow::Result<BasicController> {
+    let _ = endpoint;
     anyhow::bail!("The service was compiled without OTLP exporter support, but config exports metrics via OTLP.")
 }
 
@@ -289,7 +302,22 @@ fn stdout_meter() -> anyhow::Result<BasicController> {
     Ok(controller)
 }
 
+#[cfg(not(feature = "prometheus"))]
 fn prometheus_meter(address: &str) -> anyhow::Result<BasicController> {
+    let _ = address;
+    anyhow::bail!("The service was compiled without Prometheus exporter support, but config exports metrics via Prometheus.")
+}
+
+#[cfg(feature = "prometheus")]
+fn prometheus_meter(address: &str) -> anyhow::Result<BasicController> {
+    use std::{
+        convert::Infallible,
+        net::{SocketAddr, TcpListener},
+    };
+
+    use hyper::{header::CONTENT_TYPE, service::make_service_fn, Body, Method, Request, Response};
+    use prometheus::{Encoder, TextEncoder};
+
     let controller = sdk::metrics::controllers::basic(
         sdk::metrics::processors::factory(
             sdk::metrics::selectors::simple::histogram([
@@ -307,7 +335,7 @@ fn prometheus_meter(address: &str) -> anyhow::Result<BasicController> {
     let make_svc = make_service_fn(move |_conn| {
         let exporter = exporter.clone();
         async move {
-            Ok::<_, Infallible>(service_fn(move |req: Request<Body>| {
+            Ok::<_, Infallible>(tower::service_fn(move |req: Request<Body>| {
                 let exporter = exporter.clone();
                 async move {
                     let response = match (req.method(), req.uri().path()) {
@@ -340,12 +368,14 @@ fn prometheus_meter(address: &str) -> anyhow::Result<BasicController> {
         .context("could not parse listener address")?;
     let listener = TcpListener::bind(address).context("could not bind address")?;
 
-    info!(
+    tracing::info!(
         "Prometheus exporter listening on on http://{}/metrics",
         listener.local_addr().unwrap()
     );
 
-    let server = hyper::server::Server::from_tcp(listener)?.serve(make_svc);
+    let server = hyper::server::Server::from_tcp(listener)
+        .context("Failed to start HTTP server for the Prometheus metrics exporter")?
+        .serve(make_svc);
     tokio::spawn(server);
 
     Ok(controller)

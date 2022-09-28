@@ -31,8 +31,8 @@ opentelemetry-jaeger = { version = "0.17.0", features = ["rt-tokio", "collector_
 opentelemetry-otlp = { version = "0.11.0", features = ["trace", "metrics", "http-proto"], optional = true }
 opentelemetry-zipkin = { version = "0.16.0", features = ["opentelemetry-http"], default-features = false, optional = true }
 opentelemetry-http = { version = "0.7.0", features = ["tokio", "hyper"], optional = true }
-opentelemetry-prometheus = "0.11.0"
-prometheus = "0.13.2"
+opentelemetry-prometheus = { version = "0.11.0", optional = true }
+prometheus = { version = "0.13.2", optional = true }
 
 mas-config = { path = "../config" }
 mas-email = { path = "../email" }
@@ -49,7 +49,7 @@ mas-templates = { path = "../templates" }
 indoc = "1.0.7"
 
 [features]
-default = ["otlp", "jaeger", "zipkin", "native-roots"]
+default = ["otlp", "jaeger", "zipkin", "prometheus", "native-roots"]
 
 # Use the native root certificates
 native-roots = ["mas-http/native-roots", "mas-handlers/native-roots"]
@@ -59,9 +59,11 @@ webpki-roots = ["mas-http/webpki-roots", "mas-handlers/webpki-roots"]
 # Read the builtin static files and templates from the source directory
 dev = ["mas-templates/dev", "mas-static-files/dev"]
 
-# Enable OpenTelemetry OTLP exporter. Requires "protoc"
+# Enable OpenTelemetry OTLP exporter.
 otlp = ["dep:opentelemetry-otlp", "dep:opentelemetry-http"]
 # Enable OpenTelemetry Jaeger exporter and propagator.
 jaeger = ["dep:opentelemetry-jaeger"]
 # Enable OpenTelemetry Zipkin exporter and B3 propagator.
 zipkin = ["dep:opentelemetry-zipkin", "dep:opentelemetry-http"]
+# Enable OpenTelemetry Prometheus exporter. Requires "protoc"
+prometheus = ["dep:opentelemetry-prometheus", "dep:prometheus"]
