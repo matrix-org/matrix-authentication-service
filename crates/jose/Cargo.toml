@@ -10,7 +10,7 @@ anyhow = "1.0.65"
 base64ct = { version = "1.5.2", features = ["std"] }
 chrono = { version = "0.4.22", features = ["serde"] }
 digest = "0.10.5"
-ecdsa = { version = "0.14.7", features = ["sign", "verify"] }
+ecdsa = { version = "0.14.8", features = ["sign", "verify"] }
 elliptic-curve = "0.12.3"
 generic-array = "0.14.6"
 hmac = "0.12.1"

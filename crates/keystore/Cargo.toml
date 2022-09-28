@@ -11,7 +11,7 @@ aead = { version = "0.5.1", features = ["std"] }
 const-oid = { version = "0.9.0", features = ["std"] }
 cookie = { version = "0.16.1", features = ["key-expansion", "private"] }
 der = { version = "0.6.0", features = ["std"] }
-ecdsa = { version = "0.14.7", features = ["std"] }
+ecdsa = { version = "0.14.8", features = ["std"] }
 elliptic-curve = { version = "0.12.3", features = ["std", "pem", "sec1"] }
 k256 = { version = "0.11.6", features = ["std"] }
 p256 = { version = "0.11.1", features = ["std"] }
