@@ -170,6 +170,9 @@ jobs:
           profile: minimal
           override: true
 
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
+
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v1
         with:
@@ -247,6 +250,9 @@ jobs:
           target: x86_64-unknown-linux-musl
           profile: minimal
           override: true
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
 
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v1
@@ -328,6 +334,9 @@ jobs:
           target: x86_64-unknown-linux-musl
           override: true
           components: llvm-tools-preview
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
 
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v1
