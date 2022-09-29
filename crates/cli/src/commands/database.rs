@@ -19,7 +19,7 @@ use mas_storage::MIGRATOR;
 
 #[derive(Parser, Debug)]
 pub(super) struct Options {
-    #[clap(subcommand)]
+    #[command(subcommand)]
     subcommand: Subcommand,
 }
 

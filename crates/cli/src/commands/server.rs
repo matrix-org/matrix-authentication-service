@@ -37,11 +37,11 @@ use tracing::{error, info};
 #[derive(Parser, Debug, Default)]
 pub(super) struct Options {
     /// Automatically apply pending migrations
-    #[clap(long)]
+    #[arg(long)]
     migrate: bool,
 
     /// Watch for changes for templates on the filesystem
-    #[clap(short, long)]
+    #[arg(short, long)]
     watch: bool,
 }
 

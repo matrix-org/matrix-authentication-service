@@ -20,7 +20,7 @@
 use std::path::PathBuf;
 
 use anyhow::Context;
-use clap::StructOpt;
+use clap::Parser;
 use mas_config::TelemetryConfig;
 use tracing_subscriber::{
     filter::LevelFilter, layer::SubscriberExt, reload, util::SubscriberInitExt, EnvFilter, Layer,

@@ -49,10 +49,10 @@ enum Subcommand {
 #[derive(Parser, Debug)]
 pub struct Options {
     /// Path to the configuration file
-    #[clap(short, long, global = true, multiple_occurrences(true))]
+    #[arg(short, long, global = true, action = clap::ArgAction::Append)]
     config: Vec<PathBuf>,
 
-    #[clap(subcommand)]
+    #[command(subcommand)]
     subcommand: Option<Subcommand>,
 }
 
