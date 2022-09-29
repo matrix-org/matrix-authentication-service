@@ -32,7 +32,7 @@ enum Subcommand {
         path: PathBuf,
 
         /// Overwrite existing template files
-        #[clap(long)]
+        #[arg(long)]
         overwrite: bool,
     },
 
@@ -42,7 +42,7 @@ enum Subcommand {
         path: String,
 
         /// Skip loading builtin templates
-        #[clap(long)]
+        #[arg(long)]
         skip_builtin: bool,
     },
 }

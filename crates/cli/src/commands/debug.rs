@@ -24,7 +24,7 @@ use tracing::info;
 
 #[derive(Parser, Debug)]
 pub(super) struct Options {
-    #[clap(subcommand)]
+    #[command(subcommand)]
     subcommand: Subcommand,
 }
 
@@ -33,11 +33,11 @@ enum Subcommand {
     /// Perform an HTTP request with the default HTTP client
     Http {
         /// Show response headers
-        #[clap(long, short = 'I')]
+        #[arg(long, short = 'I')]
         show_headers: bool,
 
         /// Parse the response as JSON
-        #[clap(long, short = 'j')]
+        #[arg(long, short = 'j')]
         json: bool,
 
         /// URI where to perform a GET request

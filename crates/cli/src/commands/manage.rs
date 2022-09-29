@@ -25,7 +25,7 @@ use tracing::{info, warn};
 
 #[derive(Parser, Debug)]
 pub(super) struct Options {
-    #[clap(subcommand)]
+    #[command(subcommand)]
     subcommand: Subcommand,
 }
 
@@ -43,7 +43,7 @@ enum Subcommand {
     /// Import clients from config
     ImportClients {
         /// Remove all clients before importing
-        #[clap(long)]
+        #[arg(long)]
         truncate: bool,
     },
 }
