@@ -252,7 +252,7 @@ where
 
 #[must_use]
 #[allow(clippy::trait_duplication_in_bounds)]
-pub fn router<S, B>(state: S) -> Router<S, B>
+pub fn router<S, B>(state: Arc<S>) -> Router<S, B>
 where
     B: HttpBody + Send + 'static,
     <B as HttpBody>::Data: Send,
@@ -267,8 +267,6 @@ where
     Mailer: FromRef<S>,
     MatrixHomeserver: FromRef<S>,
 {
-    let state = Arc::new(state);
-
     let api_router = api_router(state.clone());
     let compat_router = compat_router(state.clone());
     let human_router = human_router(state);
