@@ -280,7 +280,9 @@ where
 async fn test_state(pool: PgPool) -> Result<Arc<AppState>, anyhow::Error> {
     use mas_email::MailTransport;
 
-    let templates = Templates::load(None, true).await?;
+    let url_builder = UrlBuilder::new("https://example.com/".parse()?);
+
+    let templates = Templates::load(None, true, url_builder.clone()).await?;
 
     // TODO: add test keys to the store
     let key_store = Keystore::default();
@@ -290,8 +292,6 @@ async fn test_state(pool: PgPool) -> Result<Arc<AppState>, anyhow::Error> {
     let transport = MailTransport::blackhole();
     let mailbox = "server@example.com".parse()?;
     let mailer = Mailer::new(&templates, &transport, &mailbox, &mailbox);
-
-    let url_builder = UrlBuilder::new("https://example.com/".parse()?);
 
     let homeserver = MatrixHomeserver::new("example.com".to_owned());
     let policy_factory = PolicyFactory::load_default(serde_json::json!({})).await?;

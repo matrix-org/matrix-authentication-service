@@ -16,14 +16,16 @@
 
 use std::{collections::HashMap, str::FromStr};
 
+use mas_router::{Route, UrlBuilder};
 use tera::{helpers::tests::number_args_allowed, Tera, Value};
 use url::Url;
 
-pub fn register(tera: &mut Tera) {
+pub fn register(tera: &mut Tera, url_builder: UrlBuilder) {
     tera.register_tester("empty", self::tester_empty);
     tera.register_function("add_params_to_uri", function_add_params_to_uri);
     tera.register_function("merge", function_merge);
     tera.register_function("dict", function_dict);
+    tera.register_function("static_asset", make_static_asset(url_builder));
 }
 
 fn tester_empty(value: Option<&Value>, params: &[Value]) -> Result<bool, tera::Error> {
@@ -114,4 +116,27 @@ fn function_merge(params: &HashMap<String, Value>) -> Result<Value, tera::Error>
 fn function_dict(params: &HashMap<String, Value>) -> Result<Value, tera::Error> {
     let ret = params.clone().into_iter().collect();
     Ok(Value::Object(ret))
+}
+
+fn make_static_asset(url_builder: UrlBuilder) -> impl tera::Function {
+    Box::new(
+        move |args: &HashMap<String, Value>| -> Result<Value, tera::Error> {
+            if let Some(path) = args.get("path").and_then(Value::as_str) {
+                let absolute = args
+                    .get("absolute")
+                    .and_then(Value::as_bool)
+                    .unwrap_or(false);
+                let path = path.to_owned();
+                let url = if absolute {
+                    url_builder.static_asset(path).into()
+                } else {
+                    let destination = mas_router::StaticAsset::new(path);
+                    destination.relative_url().into_owned()
+                };
+                Ok(Value::String(url))
+            } else {
+                Err(tera::Error::msg("Invalid parameter 'path'"))
+            }
+        },
+    )
 }

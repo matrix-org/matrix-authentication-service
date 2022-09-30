@@ -34,6 +34,7 @@ use std::{
 
 use anyhow::{bail, Context as _};
 use mas_data_model::StorageBackend;
+use mas_router::UrlBuilder;
 use serde::Serialize;
 use tera::{Context, Error as TeraError, Tera};
 use thiserror::Error;
@@ -62,6 +63,7 @@ pub use self::{
 #[derive(Debug, Clone)]
 pub struct Templates {
     tera: Arc<RwLock<Tera>>,
+    url_builder: UrlBuilder,
     path: Option<String>,
     builtin: bool,
 }
@@ -134,16 +136,25 @@ impl Templates {
     }
 
     /// Load the templates from the given config
-    pub async fn load(path: Option<String>, builtin: bool) -> Result<Self, TemplateLoadingError> {
-        let tera = Self::load_(path.as_deref(), builtin).await?;
+    pub async fn load(
+        path: Option<String>,
+        builtin: bool,
+        url_builder: UrlBuilder,
+    ) -> Result<Self, TemplateLoadingError> {
+        let tera = Self::load_(path.as_deref(), builtin, url_builder.clone()).await?;
         Ok(Self {
             tera: Arc::new(RwLock::new(tera)),
             path,
+            url_builder,
             builtin,
         })
     }
 
-    async fn load_(path: Option<&str>, builtin: bool) -> Result<Tera, TemplateLoadingError> {
+    async fn load_(
+        path: Option<&str>,
+        builtin: bool,
+        url_builder: UrlBuilder,
+    ) -> Result<Tera, TemplateLoadingError> {
         let mut teras = Vec::new();
 
         let roots = Self::roots(path, builtin).await;
@@ -183,7 +194,7 @@ impl Templates {
         tera.build_inheritance_chains()?;
         tera.check_macro_files()?;
 
-        self::functions::register(&mut tera);
+        self::functions::register(&mut tera, url_builder);
 
         let loaded: HashSet<_> = tera.get_template_names().collect();
         let needed: HashSet<_> = TEMPLATES.into_iter().map(|(name, _)| name).collect();
@@ -202,7 +213,8 @@ impl Templates {
     /// Reload the templates on disk
     pub async fn reload(&self) -> anyhow::Result<()> {
         // Prepare the new Tera instance
-        let new_tera = Self::load_(self.path.as_deref(), self.builtin).await?;
+        let new_tera =
+            Self::load_(self.path.as_deref(), self.builtin, self.url_builder.clone()).await?;
 
         // Swap it
         *self.tera.write().await = new_tera;
@@ -378,7 +390,8 @@ mod tests {
 
     #[tokio::test]
     async fn check_builtin_templates() {
-        let templates = Templates::load(None, true).await.unwrap();
+        let url_builder = UrlBuilder::new("https://example.com/".parse().unwrap());
+        let templates = Templates::load(None, true, url_builder).await.unwrap();
         templates.check_render().await.unwrap();
     }
 }

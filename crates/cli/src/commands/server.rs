@@ -27,7 +27,7 @@ use mas_email::Mailer;
 use mas_handlers::{AppState, MatrixHomeserver};
 use mas_http::ServerLayer;
 use mas_policy::PolicyFactory;
-use mas_router::UrlBuilder;
+use mas_router::{Route, UrlBuilder};
 use mas_storage::MIGRATOR;
 use mas_tasks::TaskQueue;
 use mas_templates::Templates;
@@ -201,10 +201,16 @@ impl Options {
         .context("failed to load the policy")?;
         let policy_factory = Arc::new(policy_factory);
 
+        let url_builder = UrlBuilder::new(config.http.public_base.clone());
+
         // Load and compile the templates
-        let templates = Templates::load(config.templates.path.clone(), config.templates.builtin)
-            .await
-            .context("could not load templates")?;
+        let templates = Templates::load(
+            config.templates.path.clone(),
+            config.templates.builtin,
+            url_builder.clone(),
+        )
+        .await
+        .context("could not load templates")?;
 
         let mailer = Mailer::new(
             &templates,
@@ -212,8 +218,6 @@ impl Options {
             &config.email.from,
             &config.email.reply_to,
         );
-
-        let url_builder = UrlBuilder::new(config.http.public_base.clone());
 
         let static_files = mas_static_files::service(&config.http.web_root);
 
@@ -246,7 +250,7 @@ impl Options {
         };
 
         let router = mas_handlers::router(state)
-            .fallback_service(static_files)
+            .nest(mas_router::StaticAsset::route(), static_files)
             .layer(ServerLayer::default());
 
         info!("Listening on http://{}", listener.local_addr().unwrap());
