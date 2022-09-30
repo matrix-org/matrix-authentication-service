@@ -12,15 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{
-    net::{SocketAddr, TcpListener},
-    sync::Arc,
-    time::Duration,
-};
+use std::{net::SocketAddr, sync::Arc, time::Duration};
 
 use anyhow::Context;
 use clap::Parser;
-use futures_util::stream::{StreamExt, TryStreamExt};
+use futures_util::{
+    future::FutureExt,
+    stream::{StreamExt, TryStreamExt},
+};
 use hyper::Server;
 use mas_config::RootConfig;
 use mas_email::Mailer;
@@ -138,15 +137,9 @@ async fn watch_templates(
 }
 
 impl Options {
+    #[allow(clippy::too_many_lines)]
     pub async fn run(&self, root: &super::Options) -> anyhow::Result<()> {
         let config: RootConfig = root.load_config()?;
-
-        let addr: SocketAddr = config
-            .http
-            .address
-            .parse()
-            .context("could not parse listener address")?;
-        let listener = TcpListener::bind(addr).context("could not bind address")?;
 
         // Connect to the mail server
         let mail_transport = config.email.transport.to_transport().await?;
@@ -223,6 +216,8 @@ impl Options {
 
         let homeserver = MatrixHomeserver::new(config.matrix.homeserver.clone());
 
+        let listeners_config = config.http.listeners.clone();
+
         // Explicitely the config to properly zeroize secret keys
         drop(config);
 
@@ -238,7 +233,7 @@ impl Options {
                 .context("could not watch for templates changes")?;
         }
 
-        let state = AppState {
+        let state = Arc::new(AppState {
             pool,
             templates,
             key_store,
@@ -247,18 +242,42 @@ impl Options {
             mailer,
             homeserver,
             policy_factory,
-        };
+        });
 
-        let router = mas_handlers::router(state)
-            .nest(mas_router::StaticAsset::route(), static_files)
-            .layer(ServerLayer::default());
+        let signal = shutdown_signal().shared();
+        let mut fd_manager = listenfd::ListenFd::from_env();
 
-        info!("Listening on http://{}", listener.local_addr().unwrap());
+        let futs = listeners_config
+            .into_iter()
+            .map(|listener_config| {
+                let signal = signal.clone();
+                let router = mas_handlers::router(state.clone())
+                    .nest(mas_router::StaticAsset::route(), static_files.clone())
+                    .layer(ServerLayer::default());
 
-        Server::from_tcp(listener)?
-            .serve(router.into_make_service_with_connect_info::<SocketAddr>())
-            .with_graceful_shutdown(shutdown_signal())
-            .await?;
+                let mut futs: Vec<_> = Vec::with_capacity(listener_config.binds.len());
+                for bind in listener_config.binds {
+                    let listener = bind.listener(&mut fd_manager)?;
+                    let router = router.clone();
+
+                    let addr = listener.local_addr()?;
+                    info!("Listening on http://{addr}");
+
+                    let fut = Server::from_tcp(listener)?
+                        .serve(router.into_make_service_with_connect_info::<SocketAddr>())
+                        .with_graceful_shutdown(signal.clone());
+                    futs.push(fut);
+                }
+
+                anyhow::Ok(futures_util::future::try_join_all(futs))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        futures_util::future::try_join_all(futs).await?;
+
+        // This ensures we're running, even if no listener are setup
+        // This is useful for only running the task runner
+        signal.await;
 
         Ok(())
     }

@@ -12,9 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::path::PathBuf;
+use std::{
+    net::{SocketAddr, TcpListener},
+    path::PathBuf,
+};
 
+use anyhow::Context;
 use async_trait::async_trait;
+use listenfd::ListenFd;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -42,18 +47,59 @@ fn http_address_example_4() -> &'static str {
     "0.0.0.0:8080"
 }
 
+#[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
+#[serde(untagged)]
+pub enum BindConfig {
+    Address {
+        #[schemars(
+            example = "http_address_example_1",
+            example = "http_address_example_2",
+            example = "http_address_example_3",
+            example = "http_address_example_4"
+        )]
+        address: String,
+    },
+    FileDescriptor {
+        fd: usize,
+    },
+}
+
+impl BindConfig {
+    pub fn listener(self, fd_manager: &mut ListenFd) -> Result<TcpListener, anyhow::Error> {
+        match self {
+            BindConfig::Address { address } => {
+                let addr: SocketAddr = address
+                    .parse()
+                    .context("could not parse listener address")?;
+                let listener = TcpListener::bind(addr).context("could not bind address")?;
+                Ok(listener)
+            }
+
+            BindConfig::FileDescriptor { fd } => {
+                let listener = fd_manager
+                    .take_tcp_listener(fd)?
+                    .context("no listener found on file descriptor")?;
+                // XXX: Do I need that?
+                listener.set_nonblocking(true)?;
+                Ok(listener)
+            }
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
+pub struct ListenerConfig {
+    pub name: Option<String>,
+
+    pub binds: Vec<BindConfig>,
+}
+
 /// Configuration related to the web server
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct HttpConfig {
-    /// IP and port the server should listen to
-    #[schemars(
-        example = "http_address_example_1",
-        example = "http_address_example_2",
-        example = "http_address_example_3",
-        example = "http_address_example_4"
-    )]
-    #[serde(default = "default_http_address")]
-    pub address: String,
+    /// List of listeners to run
+    #[serde(default)]
+    pub listeners: Vec<ListenerConfig>,
 
     /// Path from which to serve static files. If not specified, it will serve
     /// the static files embedded in the server binary
@@ -67,8 +113,13 @@ pub struct HttpConfig {
 impl Default for HttpConfig {
     fn default() -> Self {
         Self {
-            address: default_http_address(),
             web_root: None,
+            listeners: vec![ListenerConfig {
+                name: None,
+                binds: vec![BindConfig::Address {
+                    address: default_http_address(),
+                }],
+            }],
             public_base: default_public_base(),
         }
     }
