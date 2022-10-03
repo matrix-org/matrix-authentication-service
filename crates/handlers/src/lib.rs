@@ -51,6 +51,57 @@ pub use compat::MatrixHomeserver;
 pub use self::app_state::AppState;
 
 #[must_use]
+pub fn empty_router<S, B>(state: Arc<S>) -> Router<S, B>
+where
+    B: HttpBody + Send + 'static,
+    S: Send + Sync + 'static,
+{
+    Router::with_state_arc(state)
+}
+
+#[must_use]
+pub fn healthcheck_router<S, B>(state: Arc<S>) -> Router<S, B>
+where
+    B: HttpBody + Send + 'static,
+    S: Send + Sync + 'static,
+    PgPool: FromRef<S>,
+{
+    Router::with_state_arc(state).route(mas_router::Healthcheck::route(), get(self::health::get))
+}
+
+#[must_use]
+pub fn discovery_router<S, B>(state: Arc<S>) -> Router<S, B>
+where
+    B: HttpBody + Send + 'static,
+    S: Send + Sync + 'static,
+    Keystore: FromRef<S>,
+    UrlBuilder: FromRef<S>,
+{
+    Router::with_state_arc(state)
+        .route(
+            mas_router::OidcConfiguration::route(),
+            get(self::oauth2::discovery::get),
+        )
+        .route(
+            mas_router::Webfinger::route(),
+            get(self::oauth2::webfinger::get),
+        )
+        .layer(
+            CorsLayer::new()
+                .allow_origin(Any)
+                .allow_methods(Any)
+                .allow_otel_headers([
+                    AUTHORIZATION,
+                    ACCEPT,
+                    ACCEPT_LANGUAGE,
+                    CONTENT_LANGUAGE,
+                    CONTENT_TYPE,
+                ])
+                .max_age(Duration::from_secs(60 * 60)),
+        )
+}
+
+#[must_use]
 #[allow(clippy::trait_duplication_in_bounds)]
 pub fn api_router<S, B>(state: Arc<S>) -> Router<S, B>
 where
@@ -66,19 +117,6 @@ where
 {
     // All those routes are API-like, with a common CORS layer
     Router::with_state_arc(state)
-        .route(mas_router::Healthcheck::route(), get(self::health::get))
-        .route(
-            mas_router::ChangePasswordDiscovery::route(),
-            get(|| async { mas_router::AccountPassword.go() }),
-        )
-        .route(
-            mas_router::OidcConfiguration::route(),
-            get(self::oauth2::discovery::get),
-        )
-        .route(
-            mas_router::Webfinger::route(),
-            get(self::oauth2::webfinger::get),
-        )
         .route(
             mas_router::OAuth2Keys::route(),
             get(self::oauth2::keys::get),
@@ -116,6 +154,7 @@ where
                 .max_age(Duration::from_secs(60 * 60)),
         )
 }
+
 #[must_use]
 #[allow(clippy::trait_duplication_in_bounds)]
 pub fn compat_router<S, B>(state: Arc<S>) -> Router<S, B>
@@ -174,6 +213,10 @@ where
 {
     let templates = Templates::from_ref(&state);
     Router::with_state_arc(state)
+        .route(
+            mas_router::ChangePasswordDiscovery::route(),
+            get(|| async { mas_router::AccountPassword.go() }),
+        )
         .route(mas_router::Index::route(), get(self::views::index::get))
         .route(
             mas_router::Login::route(),
@@ -267,11 +310,18 @@ where
     Mailer: FromRef<S>,
     MatrixHomeserver: FromRef<S>,
 {
+    let healthcheck_router = healthcheck_router(state.clone());
+    let discovery_router = discovery_router(state.clone());
     let api_router = api_router(state.clone());
     let compat_router = compat_router(state.clone());
-    let human_router = human_router(state);
+    let human_router = human_router(state.clone());
 
-    human_router.merge(api_router).merge(compat_router)
+    Router::with_state_arc(state)
+        .merge(healthcheck_router)
+        .merge(discovery_router)
+        .merge(human_router)
+        .merge(api_router)
+        .merge(compat_router)
 }
 
 #[cfg(test)]

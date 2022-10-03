@@ -26,6 +26,7 @@
 use std::{ops::Deref, sync::Arc};
 
 use der::{zeroize::Zeroizing, Decode};
+use elliptic_curve::pkcs8::EncodePrivateKey;
 use mas_iana::jose::{JsonWebKeyType, JsonWebSignatureAlg};
 pub use mas_jose::jwk::{JsonWebKey, JsonWebKeySet};
 use mas_jose::{
@@ -211,6 +212,22 @@ impl PrivateKey {
         };
 
         Ok(der)
+    }
+
+    /// Serialize the key as a PKCS8 DER document
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the encoding failed
+    pub fn to_pkcs8_der(&self) -> Result<Zeroizing<Vec<u8>>, anyhow::Error> {
+        let der = match self {
+            PrivateKey::Rsa(key) => key.to_pkcs8_der()?,
+            PrivateKey::EcP256(key) => key.to_pkcs8_der()?,
+            PrivateKey::EcP384(key) => key.to_pkcs8_der()?,
+            PrivateKey::EcK256(key) => key.to_pkcs8_der()?,
+        };
+
+        Ok(der.to_bytes())
     }
 
     /// Serialize the key as a PEM document

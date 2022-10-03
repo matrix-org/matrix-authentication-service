@@ -1,0 +1,14 @@
+[package]
+name = "mas-listener"
+version = "0.1.0"
+authors = ["Quentin Gliech <quenting@element.io>"]
+edition = "2021"
+license = "Apache-2.0"
+
+[dependencies]
+tokio = { version = "1.21.2", features = ["net"] }
+pin-project-lite = "0.2.9"
+hyper = { version = "0.14.20", features = ["server"] }
+futures-util = "0.3.24"
+tracing = "0.1.36"
+tokio-rustls = "0.23.4"

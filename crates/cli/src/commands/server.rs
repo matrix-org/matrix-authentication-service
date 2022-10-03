@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{net::SocketAddr, sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 
 use anyhow::Context;
 use clap::Parser;
 use futures_util::{
-    future::FutureExt,
+    future::{FutureExt, OptionFuture},
     stream::{StreamExt, TryStreamExt},
 };
 use hyper::Server;
@@ -25,6 +25,7 @@ use mas_config::RootConfig;
 use mas_email::Mailer;
 use mas_handlers::{AppState, MatrixHomeserver};
 use mas_http::ServerLayer;
+use mas_listener::{maybe_tls::MaybeTlsAcceptor, unix_or_tcp::UnixOrTcpListener};
 use mas_policy::PolicyFactory;
 use mas_router::{Route, UrlBuilder};
 use mas_storage::MIGRATOR;
@@ -245,39 +246,103 @@ impl Options {
         });
 
         let signal = shutdown_signal().shared();
+        let shutdown_signal = signal.clone();
         let mut fd_manager = listenfd::ListenFd::from_env();
 
-        let futs = listeners_config
-            .into_iter()
-            .map(|listener_config| {
+        let listeners = listeners_config.into_iter().map(|listener_config| {
+            // We have to borrow it here, not in the nested closure
+            let fd_manager = &mut fd_manager;
+
+            // Let's first grab all the listeners in a synchronous manner
+            // This helps with the fd_manager mutable borrow
+            let listeners: Result<Vec<UnixOrTcpListener>, _> = listener_config
+                .binds
+                .iter()
+                .map(move |bind_config| bind_config.listener(fd_manager))
+                .collect();
+
+            Ok((listener_config, listeners?))
+        });
+
+        // Now that we have the listeners ready, we can do the rest concurrently
+        futures_util::stream::iter(listeners)
+            .try_for_each_concurrent(None, move |(config, listeners)| {
                 let signal = signal.clone();
-                let router = mas_handlers::router(state.clone())
-                    .nest(mas_router::StaticAsset::route(), static_files.clone())
-                    .layer(ServerLayer::default());
 
-                let mut futs: Vec<_> = Vec::with_capacity(listener_config.binds.len());
-                for bind in listener_config.binds {
-                    let listener = bind.listener(&mut fd_manager)?;
-                    let router = router.clone();
+                let mut router = mas_handlers::empty_router(state.clone());
 
-                    let addr = listener.local_addr()?;
-                    info!("Listening on http://{addr}");
-
-                    let fut = Server::from_tcp(listener)?
-                        .serve(router.into_make_service_with_connect_info::<SocketAddr>())
-                        .with_graceful_shutdown(signal.clone());
-                    futs.push(fut);
+                for resource in config.resources {
+                    router = match resource {
+                        mas_config::HttpResource::Health => {
+                            router.merge(mas_handlers::healthcheck_router(state.clone()))
+                        }
+                        mas_config::HttpResource::Discovery => {
+                            router.merge(mas_handlers::discovery_router(state.clone()))
+                        }
+                        mas_config::HttpResource::Human => {
+                            router.merge(mas_handlers::human_router(state.clone()))
+                        }
+                        mas_config::HttpResource::Static => {
+                            router.nest(mas_router::StaticAsset::route(), static_files.clone())
+                        }
+                        mas_config::HttpResource::OAuth => {
+                            router.merge(mas_handlers::api_router(state.clone()))
+                        }
+                        mas_config::HttpResource::Compat => {
+                            router.merge(mas_handlers::compat_router(state.clone()))
+                        }
+                    }
                 }
 
-                anyhow::Ok(futures_util::future::try_join_all(futs))
-            })
-            .collect::<Result<Vec<_>, _>>()?;
+                let router = router.layer(ServerLayer::default());
 
-        futures_util::future::try_join_all(futs).await?;
+                async move {
+                    let tls_config: OptionFuture<_> = config
+                        .tls
+                        .map(|tls_config| async move {
+                            let (key, chain) = tls_config.load().await?;
+                            let key = rustls::PrivateKey(key);
+                            let chain = chain.into_iter().map(rustls::Certificate).collect();
+                            let mut config = rustls::ServerConfig::builder()
+                                .with_safe_defaults()
+                                .with_no_client_auth()
+                                .with_single_cert(chain, key)
+                                .context("failed to build TLS server config")?;
+                            config.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
+                            anyhow::Ok(Arc::new(config))
+                        })
+                        .into();
+                    let tls_config = tls_config.await.transpose()?;
+
+                    futures_util::stream::iter(listeners)
+                        .map(Ok)
+                        .try_for_each_concurrent(None, move |listener| {
+                            let listener = MaybeTlsAcceptor::new(tls_config.clone(), listener);
+
+                            // Unless there is something really bad happening, we should be able to
+                            // grab the local_addr here. Panicking here if it is not the case is
+                            // probably fine.
+                            let addr = listener.local_addr().unwrap();
+                            if listener.is_secure() {
+                                info!("Listening on https://{addr:?}");
+                            } else {
+                                info!("Listening on http://{addr:?}");
+                            }
+
+                            Server::builder(listener)
+                                .serve(router.clone().into_make_service())
+                                .with_graceful_shutdown(signal.clone())
+                        })
+                        .await?;
+
+                    anyhow::Ok(())
+                }
+            })
+            .await?;
 
         // This ensures we're running, even if no listener are setup
         // This is useful for only running the task runner
-        signal.await;
+        shutdown_signal.await;
 
         Ok(())
     }
