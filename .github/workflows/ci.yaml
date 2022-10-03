@@ -34,7 +34,7 @@ jobs:
           override: true
 
       - name: Setup Cargo cache
-        uses: actions/cache@v3.0.8
+        uses: actions/cache@v3.0.10
         with:
           path: |
             ~/.cargo/registry/index
@@ -126,7 +126,7 @@ jobs:
           override: true
 
       - name: Setup Cargo cache
-        uses: actions/cache@v3.0.8
+        uses: actions/cache@v3.0.10
         with:
           path: |
             ~/.cargo/registry/index
@@ -135,7 +135,7 @@ jobs:
           key: ${{ runner.os }}-cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Setup build cache
-        uses: actions/cache@v3.0.8
+        uses: actions/cache@v3.0.10
         with:
           path: |
             target
@@ -184,7 +184,7 @@ jobs:
           make
 
       - name: Setup Cargo cache
-        uses: actions/cache@v3.0.8
+        uses: actions/cache@v3.0.10
         with:
           path: |
             ~/.cargo/registry/index
@@ -193,7 +193,7 @@ jobs:
           key: ${{ runner.os }}-cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Setup build cache
-        uses: actions/cache@v3.0.8
+        uses: actions/cache@v3.0.10
         with:
           path: |
             target
@@ -265,7 +265,7 @@ jobs:
           make
 
       - name: Setup Cargo cache
-        uses: actions/cache@v3.0.8
+        uses: actions/cache@v3.0.10
         with:
           path: |
             ~/.cargo/registry/index
@@ -274,7 +274,7 @@ jobs:
           key: ${{ runner.os }}-cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Setup build cache
-        uses: actions/cache@v3.0.8
+        uses: actions/cache@v3.0.10
         with:
           path: |
             target
@@ -349,7 +349,7 @@ jobs:
           make
 
       - name: Setup Cargo cache
-        uses: actions/cache@v3.0.8
+        uses: actions/cache@v3.0.10
         with:
           path: |
             ~/.cargo/registry/index
@@ -358,7 +358,7 @@ jobs:
           key: ${{ runner.os }}-cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Setup build cache
-        uses: actions/cache@v3.0.8
+        uses: actions/cache@v3.0.10
         with:
           path: |
             target
