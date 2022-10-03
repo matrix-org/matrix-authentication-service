@@ -20,6 +20,7 @@ argon2 = { version = "0.4.1", features = ["password-hash"] }
 watchman_client = "0.8.0"
 atty = "0.2.14"
 listenfd = "1.0.0"
+rustls = "0.20.6"
 
 tracing = "0.1.36"
 tracing-appender = "0.2.2"
@@ -44,6 +45,7 @@ mas-static-files = { path = "../static-files" }
 mas-storage = { path = "../storage" }
 mas-tasks = { path = "../tasks" }
 mas-templates = { path = "../templates" }
+mas-listener = { path = "../listener" }
 
 [dev-dependencies]
 indoc = "1.0.7"

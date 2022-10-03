@@ -32,7 +32,7 @@ pub use self::{
     csrf::CsrfConfig,
     database::DatabaseConfig,
     email::{EmailConfig, EmailSmtpMode, EmailTransportConfig},
-    http::HttpConfig,
+    http::{HttpConfig, Resource as HttpResource},
     matrix::MatrixConfig,
     policy::PolicyConfig,
     secrets::SecretsConfig,
