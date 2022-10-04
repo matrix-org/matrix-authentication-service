@@ -251,6 +251,9 @@ pub enum Resource {
     /// Healthcheck endpoint (/health)
     Health,
 
+    /// Prometheus metrics endpoint (/metrics)
+    Prometheus,
+
     /// OIDC discovery endpoints
     Discovery,
 

@@ -237,11 +237,9 @@ pub enum MetricsExporterConfig {
         endpoint: Option<Url>,
     },
 
-    /// Export metrics by exposing a Prometheus-compatible endpoint
-    Prometheus {
-        /// IP and port on which the Prometheus endpoint should be exposed
-        address: String,
-    },
+    /// Export metrics via Prometheus. An HTTP listener with the `prometheus`
+    /// resource must be setup to expose the Promethes metrics.
+    Prometheus,
 }
 
 impl Default for MetricsExporterConfig {
