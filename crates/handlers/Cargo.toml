@@ -50,7 +50,7 @@ oauth2-types = { path = "../oauth2-types" }
 mas-axum-utils = { path = "../axum-utils", default-features = false }
 mas-data-model = { path = "../data-model" }
 mas-email = { path = "../email" }
-mas-http = { path = "../http" }
+mas-http = { path = "../http", default-features = false }
 mas-iana = { path = "../iana" }
 mas-jose = { path = "../jose" }
 mas-keystore = { path = "../keystore" }

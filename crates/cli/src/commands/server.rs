@@ -32,7 +32,7 @@ use mas_storage::MIGRATOR;
 use mas_tasks::TaskQueue;
 use mas_templates::Templates;
 use tokio::io::AsyncRead;
-use tracing::{error, info};
+use tracing::{error, info, log::warn};
 
 #[derive(Parser, Debug, Default)]
 pub(super) struct Options {
@@ -271,10 +271,27 @@ impl Options {
 
                 let mut router = mas_handlers::empty_router(state.clone());
 
-                for resource in config.resources {
+                let is_tls = config.tls.is_some();
+                let adresses: Vec<String> = listeners.iter().map(|listener| {
+                    let addr = listener.local_addr();
+                    let proto = if is_tls { "https" } else { "http" };
+                    if let Ok(addr) = addr {
+                        format!("{proto}://{addr:?}")
+                    } else {
+                        warn!("Could not get local address for listener, something might be wrong!");
+                        format!("{proto}://???")
+                    }
+                }).collect();
+
+                info!("Listening on {adresses:?} with resources {resources:?}", resources = &config.resources);
+
+                for resource in &config.resources {
                     router = match resource {
                         mas_config::HttpResource::Health => {
                             router.merge(mas_handlers::healthcheck_router(state.clone()))
+                        }
+                        mas_config::HttpResource::Prometheus => {
+                            router.route_service("/metrics", crate::telemetry::prometheus_service())
                         }
                         mas_config::HttpResource::Discovery => {
                             router.merge(mas_handlers::discovery_router(state.clone()))
@@ -318,16 +335,6 @@ impl Options {
                         .map(Ok)
                         .try_for_each_concurrent(None, move |listener| {
                             let listener = MaybeTlsAcceptor::new(tls_config.clone(), listener);
-
-                            // Unless there is something really bad happening, we should be able to
-                            // grab the local_addr here. Panicking here if it is not the case is
-                            // probably fine.
-                            let addr = listener.local_addr().unwrap();
-                            if listener.is_secure() {
-                                info!("Listening on https://{addr:?}");
-                            } else {
-                                info!("Listening on http://{addr:?}");
-                            }
 
                             Server::builder(listener)
                                 .serve(router.clone().into_make_service())

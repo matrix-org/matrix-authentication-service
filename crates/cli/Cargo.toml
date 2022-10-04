@@ -38,7 +38,7 @@ prometheus = { version = "0.13.2", optional = true }
 mas-config = { path = "../config" }
 mas-email = { path = "../email" }
 mas-handlers = { path = "../handlers", default-features = false }
-mas-http = { path = "../http", features = ["axum", "client", "native-roots"] }
+mas-http = { path = "../http", default-features = false, features = ["axum", "client"] }
 mas-policy = { path = "../policy" }
 mas-router = { path = "../router" }
 mas-static-files = { path = "../static-files" }
@@ -62,9 +62,9 @@ webpki-roots = ["mas-http/webpki-roots", "mas-handlers/webpki-roots"]
 dev = ["mas-templates/dev", "mas-static-files/dev"]
 
 # Enable OpenTelemetry OTLP exporter.
-otlp = ["dep:opentelemetry-otlp", "dep:opentelemetry-http"]
+otlp = ["dep:opentelemetry-otlp"]
 # Enable OpenTelemetry Jaeger exporter and propagator.
-jaeger = ["dep:opentelemetry-jaeger"]
+jaeger = ["dep:opentelemetry-jaeger", "dep:opentelemetry-http"]
 # Enable OpenTelemetry Zipkin exporter and B3 propagator.
 zipkin = ["dep:opentelemetry-zipkin", "dep:opentelemetry-http"]
 # Enable OpenTelemetry Prometheus exporter. Requires "protoc"
