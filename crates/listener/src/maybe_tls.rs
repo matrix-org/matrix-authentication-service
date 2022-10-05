@@ -16,10 +16,10 @@ use std::{
     ops::Deref,
     pin::Pin,
     sync::Arc,
-    task::{ready, Context, Poll},
+    task::{Context, Poll},
 };
 
-use futures_util::Future;
+use futures_util::{ready, Future};
 use hyper::server::accept::Accept;
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 use tokio_rustls::rustls::{ServerConfig, ServerConnection};
