@@ -155,14 +155,11 @@ use tower_http::services::ServeDir;
 pub fn service<B: HttpBody + Send + 'static>(
     path: &Option<PathBuf>,
 ) -> BoxCloneService<Request<B>, Response, Infallible> {
-    let builtin = self::builtin::service();
-
     let svc = if let Some(path) = path {
-        let handler = ServeDir::new(path)
-            .append_index_html_on_directories(false)
-            .fallback(builtin);
+        let handler = ServeDir::new(path).append_index_html_on_directories(false);
         on_service(MethodFilter::HEAD | MethodFilter::GET, handler)
     } else {
+        let builtin = self::builtin::service();
         on_service(MethodFilter::HEAD | MethodFilter::GET, builtin)
     };
 

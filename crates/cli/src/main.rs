@@ -28,6 +28,7 @@ use tracing_subscriber::{
 };
 
 mod commands;
+mod server;
 mod telemetry;
 
 #[tokio::main]
