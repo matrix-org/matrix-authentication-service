@@ -22,7 +22,18 @@ use super::otel::TraceLayer;
 
 #[derive(Debug, Default)]
 pub struct ServerLayer<ReqBody> {
+    listener_name: Option<String>,
     _t: PhantomData<ReqBody>,
+}
+
+impl<B> ServerLayer<B> {
+    #[must_use]
+    pub fn new(listener_name: Option<String>) -> Self {
+        Self {
+            listener_name,
+            _t: PhantomData,
+        }
+    }
 }
 
 impl<ReqBody, ResBody, S> Layer<S> for ServerLayer<ReqBody>

@@ -17,7 +17,7 @@ use std::{sync::Arc, time::Duration};
 use anyhow::Context;
 use clap::Parser;
 use futures_util::{
-    future::{FutureExt, OptionFuture},
+    future::FutureExt,
     stream::{StreamExt, TryStreamExt},
 };
 use hyper::Server;
@@ -25,9 +25,9 @@ use mas_config::RootConfig;
 use mas_email::Mailer;
 use mas_handlers::{AppState, MatrixHomeserver};
 use mas_http::ServerLayer;
-use mas_listener::{maybe_tls::MaybeTlsAcceptor, unix_or_tcp::UnixOrTcpListener};
+use mas_listener::maybe_tls::MaybeTlsAcceptor;
 use mas_policy::PolicyFactory;
-use mas_router::{Route, UrlBuilder};
+use mas_router::UrlBuilder;
 use mas_storage::MIGRATOR;
 use mas_tasks::TaskQueue;
 use mas_templates::Templates;
@@ -213,8 +213,6 @@ impl Options {
             &config.email.reply_to,
         );
 
-        let static_files = mas_static_files::service(&config.http.web_root);
-
         let homeserver = MatrixHomeserver::new(config.matrix.homeserver.clone());
 
         let listeners_config = config.http.listeners.clone();
@@ -247,19 +245,11 @@ impl Options {
 
         let signal = shutdown_signal().shared();
         let shutdown_signal = signal.clone();
+
         let mut fd_manager = listenfd::ListenFd::from_env();
-
         let listeners = listeners_config.into_iter().map(|listener_config| {
-            // We have to borrow it here, not in the nested closure
-            let fd_manager = &mut fd_manager;
-
             // Let's first grab all the listeners in a synchronous manner
-            // This helps with the fd_manager mutable borrow
-            let listeners: Result<Vec<UnixOrTcpListener>, _> = listener_config
-                .binds
-                .iter()
-                .map(move |bind_config| bind_config.listener(fd_manager))
-                .collect();
+            let listeners = crate::server::build_listeners(&mut fd_manager, &listener_config.binds);
 
             Ok((listener_config, listeners?))
         });
@@ -269,10 +259,8 @@ impl Options {
             .try_for_each_concurrent(None, move |(config, listeners)| {
                 let signal = signal.clone();
 
-                let mut router = mas_handlers::empty_router(state.clone());
-
                 let is_tls = config.tls.is_some();
-                let adresses: Vec<String> = listeners.iter().map(|listener| {
+                let addresses: Vec<String> = listeners.iter().map(|listener| {
                     let addr = listener.local_addr();
                     let proto = if is_tls { "https" } else { "http" };
                     if let Ok(addr) = addr {
@@ -283,53 +271,15 @@ impl Options {
                     }
                 }).collect();
 
-                info!("Listening on {adresses:?} with resources {resources:?}", resources = &config.resources);
+                info!("Listening on {addresses:?} with resources {resources:?}", resources = &config.resources);
 
-                for resource in &config.resources {
-                    router = match resource {
-                        mas_config::HttpResource::Health => {
-                            router.merge(mas_handlers::healthcheck_router(state.clone()))
-                        }
-                        mas_config::HttpResource::Prometheus => {
-                            router.route_service("/metrics", crate::telemetry::prometheus_service())
-                        }
-                        mas_config::HttpResource::Discovery => {
-                            router.merge(mas_handlers::discovery_router(state.clone()))
-                        }
-                        mas_config::HttpResource::Human => {
-                            router.merge(mas_handlers::human_router(state.clone()))
-                        }
-                        mas_config::HttpResource::Static => {
-                            router.nest(mas_router::StaticAsset::route(), static_files.clone())
-                        }
-                        mas_config::HttpResource::OAuth => {
-                            router.merge(mas_handlers::api_router(state.clone()))
-                        }
-                        mas_config::HttpResource::Compat => {
-                            router.merge(mas_handlers::compat_router(state.clone()))
-                        }
-                    }
-                }
-
-                let router = router.layer(ServerLayer::default());
+                let router = crate::server::build_router(&state, &config.resources).layer(ServerLayer::new(config.name.clone()));
 
                 async move {
-                    let tls_config: OptionFuture<_> = config
-                        .tls
-                        .map(|tls_config| async move {
-                            let (key, chain) = tls_config.load().await?;
-                            let key = rustls::PrivateKey(key);
-                            let chain = chain.into_iter().map(rustls::Certificate).collect();
-                            let mut config = rustls::ServerConfig::builder()
-                                .with_safe_defaults()
-                                .with_no_client_auth()
-                                .with_single_cert(chain, key)
-                                .context("failed to build TLS server config")?;
-                            config.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
-                            anyhow::Ok(Arc::new(config))
-                        })
-                        .into();
-                    let tls_config = tls_config.await.transpose()?;
+                    let tls_config = if let Some(tls_config) = config.tls.as_ref() {
+                        let tls_config = crate::server::build_tls_server_config(tls_config).await?;
+                        Some(Arc::new(tls_config))
+                    } else { None };
 
                     futures_util::stream::iter(listeners)
                         .map(Ok)
