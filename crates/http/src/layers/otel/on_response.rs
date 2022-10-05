@@ -20,15 +20,14 @@ use opentelemetry::{trace::SpanRef, KeyValue};
 use opentelemetry_semantic_conventions::trace as SC;
 
 pub trait OnResponse<R> {
-    fn on_response(&self, span: &SpanRef<'_>, response: &R) -> Vec<KeyValue>;
+    fn on_response(&self, span: &SpanRef<'_>, metrics_labels: &mut Vec<KeyValue>, response: &R);
 }
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct DefaultOnResponse;
 
 impl<R> OnResponse<R> for DefaultOnResponse {
-    fn on_response(&self, _span: &SpanRef<'_>, _response: &R) -> Vec<KeyValue> {
-        Vec::new()
+    fn on_response(&self, _span: &SpanRef<'_>, _metrics_labels: &mut Vec<KeyValue>, _response: &R) {
     }
 }
 
@@ -36,9 +35,15 @@ impl<R> OnResponse<R> for DefaultOnResponse {
 pub struct OnHttpResponse;
 
 impl<B> OnResponse<Response<B>> for OnHttpResponse {
-    fn on_response(&self, span: &SpanRef<'_>, response: &Response<B>) -> Vec<KeyValue> {
+    fn on_response(
+        &self,
+        span: &SpanRef<'_>,
+        metrics_labels: &mut Vec<KeyValue>,
+        response: &Response<B>,
+    ) {
         let status_code = i64::from(response.status().as_u16());
         span.set_attribute(SC::HTTP_STATUS_CODE.i64(status_code));
+        metrics_labels.push(KeyValue::new("status_code", status_code));
 
         if let Some(ContentLength(content_length)) = response.headers().typed_get() {
             if let Ok(content_length) = content_length.try_into() {
@@ -55,7 +60,5 @@ impl<B> OnResponse<Response<B>> for OnHttpResponse {
             span.set_attribute(SC::NET_HOST_IP.string(info.local_addr().ip().to_string()));
             span.set_attribute(SC::NET_HOST_PORT.i64(info.local_addr().port().into()));
         }
-
-        vec![KeyValue::new("status_code", status_code)]
     }
 }

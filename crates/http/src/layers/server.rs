@@ -15,6 +15,7 @@
 use std::marker::PhantomData;
 
 use http::{Request, Response};
+use opentelemetry::KeyValue;
 use tower::{util::BoxCloneService, Layer, Service, ServiceBuilder, ServiceExt};
 use tower_http::{compression::CompressionBody, ServiceBuilderExt};
 
@@ -51,10 +52,17 @@ where
         let builder = ServiceBuilder::new().compression();
 
         #[cfg(feature = "axum")]
-        let builder = builder.layer(TraceLayer::axum());
+        let mut trace_layer = TraceLayer::axum();
 
         #[cfg(not(feature = "axum"))]
-        let builder = builder.layer(TraceLayer::http_server());
+        let mut trace_layer = TraceLayer::http_server();
+
+        if let Some(name) = &self.listener_name {
+            trace_layer =
+                trace_layer.with_static_attribute(KeyValue::new("listener", name.clone()));
+        }
+
+        let builder = builder.layer(trace_layer);
 
         builder.service(inner).boxed_clone()
     }

@@ -24,26 +24,37 @@ use tower::Service;
 
 use super::{
     extract_context::ExtractContext, inject_context::InjectContext,
-    make_span_builder::MakeSpanBuilder, on_error::OnError, on_response::OnResponse,
+    make_metrics_labels::MakeMetricsLabels, make_span_builder::MakeSpanBuilder, on_error::OnError,
+    on_response::OnResponse,
 };
 
 #[derive(Debug, Clone)]
-pub struct Trace<ExtractContext, InjectContext, MakeSpanBuilder, OnResponse, OnError, S> {
+pub struct Trace<
+    ExtractContext,
+    InjectContext,
+    MakeSpanBuilder,
+    MakeMetricsLabels,
+    OnResponse,
+    OnError,
+    S,
+> {
     inner: S,
     tracer: Arc<opentelemetry::global::BoxedTracer>,
     extract_context: ExtractContext,
     inject_context: InjectContext,
     make_span_builder: MakeSpanBuilder,
+    make_metrics_labels: MakeMetricsLabels,
     on_response: OnResponse,
     on_error: OnError,
 
     inflight_requests: UpDownCounter<i64>,
     request_counter: Counter<u64>,
     request_histogram: Histogram<f64>,
+    static_attributes: Vec<KeyValue>,
 }
 
-impl<ExtractContext, InjectContext, MakeSpanBuilder, OnResponse, OnError, S>
-    Trace<ExtractContext, InjectContext, MakeSpanBuilder, OnResponse, OnError, S>
+impl<ExtractContext, InjectContext, MakeSpanBuilder, MakeMetricsLabels, OnResponse, OnError, S>
+    Trace<ExtractContext, InjectContext, MakeSpanBuilder, MakeMetricsLabels, OnResponse, OnError, S>
 {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
@@ -52,11 +63,13 @@ impl<ExtractContext, InjectContext, MakeSpanBuilder, OnResponse, OnError, S>
         extract_context: ExtractContext,
         inject_context: InjectContext,
         make_span_builder: MakeSpanBuilder,
+        make_metrics_labels: MakeMetricsLabels,
         on_response: OnResponse,
         on_error: OnError,
         inflight_requests: UpDownCounter<i64>,
         request_counter: Counter<u64>,
         request_histogram: Histogram<f64>,
+        static_attributes: Vec<KeyValue>,
     ) -> Self {
         Self {
             inner: service,
@@ -65,12 +78,14 @@ impl<ExtractContext, InjectContext, MakeSpanBuilder, OnResponse, OnError, S>
             extract_context,
             inject_context,
             make_span_builder,
+            make_metrics_labels,
             on_response,
             on_error,
 
             inflight_requests,
             request_counter,
             request_histogram,
+            static_attributes,
         }
     }
 }
@@ -98,8 +113,25 @@ impl Drop for InFlightGuard {
     }
 }
 
-impl<Req, S, ExtractContextT, InjectContextT, MakeSpanBuilderT, OnResponseT, OnErrorT> Service<Req>
-    for Trace<ExtractContextT, InjectContextT, MakeSpanBuilderT, OnResponseT, OnErrorT, S>
+impl<
+        Req,
+        S,
+        ExtractContextT,
+        InjectContextT,
+        MakeSpanBuilderT,
+        MakeMetricsLabelsT,
+        OnResponseT,
+        OnErrorT,
+    > Service<Req>
+    for Trace<
+        ExtractContextT,
+        InjectContextT,
+        MakeSpanBuilderT,
+        MakeMetricsLabelsT,
+        OnResponseT,
+        OnErrorT,
+        S,
+    >
 where
     ExtractContextT: ExtractContext<Req> + Send,
     InjectContextT: InjectContext<Req> + Send,
@@ -107,6 +139,7 @@ where
     OnResponseT: OnResponse<S::Response> + Send + Clone + 'static,
     OnErrorT: OnError<S::Error> + Send + Clone + 'static,
     MakeSpanBuilderT: MakeSpanBuilder<Req> + Send,
+    MakeMetricsLabelsT: MakeMetricsLabels<Req> + Send,
     S::Future: Send + 'static,
 {
     type Response = S::Response;
@@ -123,7 +156,15 @@ where
         let start_time = SystemTime::now();
 
         let cx = self.extract_context.extract_context(&request);
-        let (span_builder, mut metrics_labels) = self.make_span_builder.make_span_builder(&request);
+        let mut span_builder = self.make_span_builder.make_span_builder(&request);
+        let mut metrics_labels = self.make_metrics_labels.make_metrics_labels(&request);
+
+        // Add the static attributes to the metrics and the span
+        metrics_labels.extend_from_slice(&self.static_attributes[..]);
+        let mut span_attributes = span_builder.attributes.unwrap_or_default();
+        span_attributes.extend(self.static_attributes.iter().cloned());
+        span_builder.attributes = Some(span_attributes);
+
         let span = span_builder.start_with_context(self.tracer.as_ref(), &cx);
 
         let cx = cx.with_span(span);
@@ -144,11 +185,10 @@ where
                 let _guard = guard;
 
                 let span = cx.span();
-                let extra_labels = match r {
-                    Ok(response) => on_response.on_response(&span, response),
-                    Err(err) => on_error.on_error(&span, err),
+                match r {
+                    Ok(response) => on_response.on_response(&span, &mut metrics_labels, response),
+                    Err(err) => on_error.on_error(&span, &mut metrics_labels, err),
                 };
-                metrics_labels.extend_from_slice(&extra_labels);
 
                 request_counter.add(&cx, 1, &metrics_labels);
                 request_histogram.record(
