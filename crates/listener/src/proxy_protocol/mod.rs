@@ -20,6 +20,6 @@ mod v1;
 pub use self::{
     acceptor::ProxyAcceptor,
     maybe::{MaybeProxyAcceptor, MaybeProxyStream},
-    stream::ProxyStream,
+    stream::{HandshakeNotDone as ProxyHandshakeNotDone, ProxyStream},
     v1::ProxyProtocolV1Info,
 };

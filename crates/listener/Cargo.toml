@@ -6,10 +6,12 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
+futures-util = "0.3.24"
+hyper = { version = "0.14.20", features = ["server"] }
+pin-project-lite = "0.2.9"
 thiserror = "1.0.37"
 tokio = { version = "1.21.2", features = ["net"] }
-pin-project-lite = "0.2.9"
-hyper = { version = "0.14.20", features = ["server"] }
-futures-util = "0.3.24"
-tracing = "0.1.36"
 tokio-rustls = "0.23.4"
+tower = "0.4.13"
+tower-http = { version = "0.3.4", features = ["add-extension"] }
+tracing = "0.1.36"

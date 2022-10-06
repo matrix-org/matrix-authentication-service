@@ -22,6 +22,7 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 
+pub mod info;
 pub mod maybe_tls;
 pub mod proxy_protocol;
 pub mod unix_or_tcp;

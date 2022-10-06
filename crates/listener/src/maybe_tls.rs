@@ -21,8 +21,31 @@ use std::{
 
 use futures_util::{ready, Future};
 use hyper::server::accept::Accept;
+use thiserror::Error;
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
-use tokio_rustls::rustls::{ServerConfig, ServerConnection};
+use tokio_rustls::rustls::{
+    Certificate, ProtocolVersion, ServerConfig, ServerConnection, SupportedCipherSuite,
+};
+
+#[derive(Debug, Clone)]
+#[non_exhaustive]
+pub struct TlsStreamInfo {
+    pub protocol_version: ProtocolVersion,
+    pub negotiated_cipher_suite: SupportedCipherSuite,
+    pub sni_hostname: Option<String>,
+    pub apln_protocol: Option<Vec<u8>>,
+    pub peer_certificates: Option<Vec<Certificate>>,
+}
+
+#[derive(Debug, Error)]
+#[non_exhaustive]
+pub enum TlsStreamInfoError {
+    #[error("TLS handshake is not done yet")]
+    HandshakingNotDone,
+
+    #[error("Some fields were not available in the TLS connection")]
+    FieldsNotAvailable,
+}
 
 pub enum MaybeTlsStream<T> {
     Handshaking(tokio_rustls::Accept<T>),
@@ -71,6 +94,44 @@ impl<T> MaybeTlsStream<T> {
             }
             Self::Handshaking(_) | Self::Insecure(_) => None,
         }
+    }
+
+    /// Gather informations about the TLS connection. Returns `None` if the
+    /// stream is not a TLS stream.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the TLS handshake is not yet done
+    pub fn tls_info(&self) -> Result<Option<TlsStreamInfo>, TlsStreamInfoError> {
+        let conn = match self {
+            Self::Streaming(stream) => stream.get_ref().1,
+            Self::Handshaking(_) => return Err(TlsStreamInfoError::HandshakingNotDone),
+            Self::Insecure(_) => return Ok(None),
+        };
+
+        // NOTE: we're getting the protocol version and cipher suite *after* the
+        // handshake, so this should never lead to an error
+        let protocol_version = conn
+            .protocol_version()
+            .ok_or(TlsStreamInfoError::FieldsNotAvailable)?;
+        let negotiated_cipher_suite = conn
+            .negotiated_cipher_suite()
+            .ok_or(TlsStreamInfoError::FieldsNotAvailable)?;
+
+        let sni_hostname = conn.sni_hostname().map(ToOwned::to_owned);
+        let apln_protocol = conn.alpn_protocol().map(ToOwned::to_owned);
+        let peer_certificates = conn.peer_certificates().map(ToOwned::to_owned);
+        Ok(Some(TlsStreamInfo {
+            protocol_version,
+            negotiated_cipher_suite,
+            sni_hostname,
+            apln_protocol,
+            peer_certificates,
+        }))
+    }
+
+    pub const fn is_tls_handshaking(&self) -> bool {
+        matches!(self, Self::Handshaking(_))
     }
 }
 

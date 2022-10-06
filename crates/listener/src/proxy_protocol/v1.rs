@@ -20,7 +20,7 @@ use std::{
 
 use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ProxyProtocolV1Info {
     Tcp {
         source: SocketAddr,
