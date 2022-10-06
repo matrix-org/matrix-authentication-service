@@ -9,7 +9,7 @@ license = "Apache-2.0"
 dev = []
 
 [dependencies]
-tracing = "0.1.36"
+tracing = "0.1.37"
 tokio = { version = "1.21.2", features = ["macros"] }
 
 anyhow = "1.0.65"

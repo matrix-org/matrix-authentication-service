@@ -10,7 +10,7 @@ license = "Apache-2.0"
 tokio = { version = "1.21.2", features = ["macros"] }
 
 # Logging and tracing
-tracing = "0.1.36"
+tracing = "0.1.37"
 
 # Error management
 thiserror = "1.0.37"
