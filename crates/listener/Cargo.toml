@@ -6,6 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
+thiserror = "1.0.37"
 tokio = { version = "1.21.2", features = ["net"] }
 pin-project-lite = "0.2.9"
 hyper = { version = "0.14.20", features = ["server"] }
