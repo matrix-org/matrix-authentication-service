@@ -19,6 +19,7 @@ use async_trait::async_trait;
 use mas_keystore::PrivateKey;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 use url::Url;
 
 use super::{secrets::PasswordOrFile, ConfigurationSection};
@@ -66,6 +67,7 @@ impl UnixOrTcp {
 }
 
 /// Configuration of a single listener
+#[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
 #[serde(untagged)]
 pub enum BindConfig {
@@ -74,6 +76,7 @@ pub enum BindConfig {
         /// Host on which to listen.
         ///
         /// Defaults to listening on all addresses
+        #[serde(default)]
         host: Option<String>,
 
         /// Port on which to listen.
@@ -107,6 +110,7 @@ pub enum BindConfig {
         /// Index of the file descriptor. Note that this is offseted by 3
         /// because of the standard input/output sockets, so setting
         /// here a value of `0` will grab the file descriptor `3`
+        #[serde(default)]
         fd: usize,
 
         /// Whether the socket is a TCP socket or a UNIX domain socket. Defaults
@@ -131,6 +135,7 @@ pub enum CertificateOrFile {
 }
 
 /// Configuration related to TLS on a listener
+#[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
 pub struct TlsConfig {
     /// PEM-encoded X509 certificate chain
@@ -214,6 +219,7 @@ impl TlsConfig {
 }
 
 /// HTTP resources to mount
+#[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
 #[serde(tag = "name", rename_all = "lowercase")]
 pub enum Resource {
@@ -245,10 +251,12 @@ pub enum Resource {
 }
 
 /// Configuration of a listener
+#[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
 pub struct ListenerConfig {
     /// A unique name for this listener which will be shown in traces and in
     /// metrics labels
+    #[serde(default)]
     pub name: Option<String>,
 
     /// List of resources to mount
@@ -257,7 +265,12 @@ pub struct ListenerConfig {
     /// List of sockets to bind
     pub binds: Vec<BindConfig>,
 
+    /// Accept HAProxy's Proxy Protocol V1
+    #[serde(default)]
+    pub proxy_protocol: bool,
+
     /// If set, makes the listener use TLS with the provided certificate and key
+    #[serde(default)]
     pub tls: Option<TlsConfig>,
 }
 
@@ -286,6 +299,7 @@ impl Default for HttpConfig {
                         Resource::Static { web_root: None },
                     ],
                     tls: None,
+                    proxy_protocol: false,
                     binds: vec![BindConfig::Address {
                         address: "[::]:8080".into(),
                     }],
@@ -294,6 +308,7 @@ impl Default for HttpConfig {
                     name: Some("internal".to_owned()),
                     resources: vec![Resource::Health],
                     tls: None,
+                    proxy_protocol: false,
                     binds: vec![BindConfig::Address {
                         address: "localhost:8081".into(),
                     }],

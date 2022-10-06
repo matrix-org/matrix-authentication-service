@@ -25,7 +25,7 @@ use mas_config::RootConfig;
 use mas_email::Mailer;
 use mas_handlers::{AppState, MatrixHomeserver};
 use mas_http::ServerLayer;
-use mas_listener::maybe_tls::MaybeTlsAcceptor;
+use mas_listener::{maybe_tls::MaybeTlsAcceptor, proxy_protocol::MaybeProxyAcceptor};
 use mas_policy::PolicyFactory;
 use mas_router::UrlBuilder;
 use mas_storage::MIGRATOR;
@@ -271,7 +271,9 @@ impl Options {
                     }
                 }).collect();
 
-                info!("Listening on {addresses:?} with resources {resources:?}", resources = &config.resources);
+                let additional = if config.proxy_protocol { "(with Proxy Protocol)" } else { "" };
+
+                info!("Listening on {addresses:?} with resources {resources:?} {additional}", resources = &config.resources);
 
                 let router = crate::server::build_router(&state, &config.resources).layer(ServerLayer::new(config.name.clone()));
 
@@ -285,6 +287,7 @@ impl Options {
                         .map(Ok)
                         .try_for_each_concurrent(None, move |listener| {
                             let listener = MaybeTlsAcceptor::new(tls_config.clone(), listener);
+                            let listener = MaybeProxyAcceptor::new(listener, config.proxy_protocol);
 
                             Server::builder(listener)
                                 .serve(router.clone().into_make_service())

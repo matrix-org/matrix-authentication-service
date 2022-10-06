@@ -13,7 +13,6 @@
 // limitations under the License.
 
 // TODO: Unlink the UNIX socket on drop?
-// TODO: Proxy protocol
 
 use std::{
     pin::Pin,
@@ -87,6 +86,12 @@ impl TryFrom<std::net::TcpListener> for UnixOrTcpListener {
 }
 
 impl UnixOrTcpListener {
+    /// Get the local address of the listener
+    ///
+    /// # Errors
+    ///
+    /// Returns an error on rare cases where the underlying [`TcpListener`] or
+    /// [`UnixListener`] couldn't provide the local address
     pub fn local_addr(&self) -> Result<SocketAddr, std::io::Error> {
         match self {
             Self::Unix(listener) => listener.local_addr().map(SocketAddr::from),
@@ -111,6 +116,12 @@ pin_project_lite::pin_project! {
 }
 
 impl UnixOrTcpConnection {
+    /// Get the local address of the stream
+    ///
+    /// # Errors
+    ///
+    /// Returns an error on rare cases where the underlying [`TcpStream`] or
+    /// [`UnixStream`] couldn't provide the local address
     pub fn local_addr(&self) -> Result<SocketAddr, std::io::Error> {
         match self {
             Self::Unix { stream, .. } => stream.local_addr().map(SocketAddr::from),
@@ -118,6 +129,12 @@ impl UnixOrTcpConnection {
         }
     }
 
+    /// Get the remote address of the stream
+    ///
+    /// # Errors
+    ///
+    /// Returns an error on rare cases where the underlying [`TcpStream`] or
+    /// [`UnixStream`] couldn't provide the remote address
     pub fn peer_addr(&self) -> Result<SocketAddr, std::io::Error> {
         match self {
             Self::Unix { stream, .. } => stream.peer_addr().map(SocketAddr::from),

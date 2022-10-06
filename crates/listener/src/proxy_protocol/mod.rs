@@ -12,16 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![forbid(unsafe_code)]
-#![deny(
-    clippy::all,
-    clippy::str_to_string,
-    rustdoc::missing_crate_level_docs,
-    rustdoc::broken_intra_doc_links
-)]
-#![warn(clippy::pedantic)]
-#![allow(clippy::module_name_repetitions)]
+mod acceptor;
+mod maybe;
+mod stream;
+mod v1;
 
-pub mod maybe_tls;
-pub mod proxy_protocol;
-pub mod unix_or_tcp;
+pub use self::{
+    acceptor::ProxyAcceptor,
+    maybe::{MaybeProxyAcceptor, MaybeProxyStream},
+    stream::ProxyStream,
+    v1::ProxyProtocolV1Info,
+};
