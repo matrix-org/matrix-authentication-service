@@ -15,6 +15,7 @@
 use std::ops::Deref;
 
 use futures_util::ready;
+use thiserror::Error;
 use tokio::io::{AsyncRead, AsyncWrite, ReadBuf};
 
 use super::ProxyProtocolV1Info;
@@ -29,6 +30,12 @@ enum ProxyStreamState {
         index: usize,
     },
     Established(ProxyProtocolV1Info),
+}
+
+impl ProxyStreamState {
+    pub const fn is_handshaking(&self) -> bool {
+        matches!(self, Self::Handshaking { .. })
+    }
 }
 
 pin_project_lite::pin_project! {
@@ -53,6 +60,10 @@ impl<S> ProxyStream<S> {
     }
 }
 
+#[derive(Debug, Error, Clone, Copy)]
+#[error("Proxy protocol handshake is not complete")]
+pub struct HandshakeNotDone;
+
 impl<S> Deref for ProxyStream<S> {
     type Target = S;
     fn deref(&self) -> &Self::Target {
@@ -61,11 +72,21 @@ impl<S> Deref for ProxyStream<S> {
 }
 
 impl<S> ProxyStream<S> {
-    pub fn proxy_info(&self) -> Option<&ProxyProtocolV1Info> {
+    /// Get informations from the proxied connection
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the stream did not complete the handshake yet
+    pub fn proxy_info(&self) -> Result<&ProxyProtocolV1Info, HandshakeNotDone> {
         match &self.state {
-            ProxyStreamState::Handshaking { .. } => None,
-            ProxyStreamState::Established(info) => Some(info),
+            ProxyStreamState::Handshaking { .. } => Err(HandshakeNotDone),
+            ProxyStreamState::Established(info) => Ok(info),
         }
+    }
+
+    /// Returns `true` if the proxy protocol is still handshaking
+    pub const fn is_handshaking(&self) -> bool {
+        self.state.is_handshaking()
     }
 }
 

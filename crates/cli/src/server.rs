@@ -19,13 +19,14 @@ use std::{
 };
 
 use anyhow::Context;
-use axum::{body::HttpBody, Router};
+use axum::{body::HttpBody, Extension, Router};
 use listenfd::ListenFd;
 use mas_config::{HttpBindConfig, HttpResource, HttpTlsConfig, UnixOrTcp};
 use mas_handlers::AppState;
-use mas_listener::unix_or_tcp::UnixOrTcpListener;
+use mas_listener::{info::Connection, unix_or_tcp::UnixOrTcpListener};
 use mas_router::Route;
 use rustls::ServerConfig;
+use tokio::sync::OnceCell;
 
 #[allow(clippy::trait_duplication_in_bounds)]
 pub fn build_router<B>(state: &Arc<AppState>, resources: &[HttpResource]) -> Router<AppState, B>
@@ -60,6 +61,16 @@ where
             mas_config::HttpResource::Compat => {
                 router.merge(mas_handlers::compat_router(state.clone()))
             }
+            // TODO: do a better handler here
+            mas_config::HttpResource::ConnectionInfo => router.route(
+                "/connection-info",
+                axum::routing::get(
+                    |connection: Extension<Arc<OnceCell<Connection>>>| async move {
+                        let connection = connection.get().unwrap();
+                        format!("{connection:?}")
+                    },
+                ),
+            ),
         }
     }
 

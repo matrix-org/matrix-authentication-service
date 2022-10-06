@@ -52,6 +52,40 @@ impl std::fmt::Debug for SocketAddr {
     }
 }
 
+impl SocketAddr {
+    #[must_use]
+    pub fn into_net(self) -> Option<std::net::SocketAddr> {
+        match self {
+            Self::Net(socket) => Some(socket),
+            Self::Unix(_) => None,
+        }
+    }
+
+    #[must_use]
+    pub fn into_unix(self) -> Option<tokio::net::unix::SocketAddr> {
+        match self {
+            Self::Net(_) => None,
+            Self::Unix(socket) => Some(socket),
+        }
+    }
+
+    #[must_use]
+    pub const fn as_net(&self) -> Option<&std::net::SocketAddr> {
+        match self {
+            Self::Net(socket) => Some(socket),
+            Self::Unix(_) => None,
+        }
+    }
+
+    #[must_use]
+    pub const fn as_unix(&self) -> Option<&tokio::net::unix::SocketAddr> {
+        match self {
+            Self::Net(_) => None,
+            Self::Unix(socket) => Some(socket),
+        }
+    }
+}
+
 pub enum UnixOrTcpListener {
     Unix(UnixListener),
     Tcp(TcpListener),
@@ -97,6 +131,14 @@ impl UnixOrTcpListener {
             Self::Unix(listener) => listener.local_addr().map(SocketAddr::from),
             Self::Tcp(listener) => listener.local_addr().map(SocketAddr::from),
         }
+    }
+
+    pub const fn is_unix(&self) -> bool {
+        matches!(self, Self::Unix(_))
+    }
+
+    pub const fn is_tcp(&self) -> bool {
+        matches!(self, Self::Tcp(_))
     }
 }
 

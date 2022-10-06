@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use std::{
+    ops::Deref,
     pin::Pin,
     task::{Context, Poll},
 };
@@ -21,7 +22,7 @@ use futures_util::ready;
 use hyper::server::accept::Accept;
 use tokio::io::{AsyncRead, AsyncWrite};
 
-use super::ProxyStream;
+use super::{stream::HandshakeNotDone, ProxyProtocolV1Info, ProxyStream};
 
 pin_project_lite::pin_project! {
     pub struct MaybeProxyAcceptor<A> {
@@ -36,6 +37,17 @@ impl<A> MaybeProxyAcceptor<A> {
     #[must_use]
     pub const fn new(inner: A, proxied: bool) -> Self {
         Self { proxied, inner }
+    }
+
+    pub const fn is_proxied(&self) -> bool {
+        self.proxied
+    }
+}
+
+impl<A> Deref for MaybeProxyAcceptor<A> {
+    type Target = A;
+    fn deref(&self) -> &Self::Target {
+        &self.inner
     }
 }
 
@@ -77,6 +89,35 @@ impl<S> MaybeProxyStream<S> {
             }
         } else {
             Self::NotProxied { stream }
+        }
+    }
+
+    /// Get informations from the proxied connection, if it was procied
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the stream did not complete the handshake yet
+    pub fn proxy_info(&self) -> Result<Option<&ProxyProtocolV1Info>, HandshakeNotDone> {
+        match self {
+            Self::Proxied { stream } => Ok(Some(stream.proxy_info()?)),
+            Self::NotProxied { .. } => Ok(None),
+        }
+    }
+
+    pub const fn is_proxy_handshaking(&self) -> bool {
+        match self {
+            Self::Proxied { stream } => stream.is_handshaking(),
+            Self::NotProxied { .. } => false,
+        }
+    }
+}
+
+impl<S> Deref for MaybeProxyStream<S> {
+    type Target = S;
+    fn deref(&self) -> &Self::Target {
+        match self {
+            Self::Proxied { stream } => &**stream,
+            Self::NotProxied { stream } => stream,
         }
     }
 }

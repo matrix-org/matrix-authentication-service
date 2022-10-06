@@ -248,6 +248,11 @@ pub enum Resource {
         #[serde(default)]
         web_root: Option<PathBuf>,
     },
+
+    /// Mount a "/connection-info" handler which helps debugging informations on
+    /// the upstream connection
+    #[serde(rename = "connection-info")]
+    ConnectionInfo,
 }
 
 /// Configuration of a listener
