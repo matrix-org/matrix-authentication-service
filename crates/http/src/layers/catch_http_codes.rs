@@ -115,14 +115,20 @@ pub struct CatchHttpCodesLayer<M> {
     mapper: M,
 }
 
-impl<M> CatchHttpCodesLayer<M> {
+impl<M> CatchHttpCodesLayer<M>
+where
+    M: Clone,
+{
     pub fn new<B>(bounds: B, mapper: M) -> Self
     where
         B: RangeBounds<StatusCode>,
-        M: Clone,
     {
         let bounds = (bounds.start_bound().cloned(), bounds.end_bound().cloned());
         Self { bounds, mapper }
+    }
+
+    pub fn exact(status_code: StatusCode, mapper: M) -> Self {
+        Self::new(status_code..=status_code, mapper)
     }
 }
 

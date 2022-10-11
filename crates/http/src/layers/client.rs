@@ -17,7 +17,7 @@ use std::{marker::PhantomData, time::Duration};
 use http::{header::USER_AGENT, HeaderValue, Request, Response};
 use tower::{
     limit::ConcurrencyLimitLayer, timeout::TimeoutLayer, util::BoxCloneService, Layer, Service,
-    ServiceBuilder, ServiceExt,
+    ServiceExt,
 };
 use tower_http::{
     decompression::{DecompressionBody, DecompressionLayer},
@@ -65,21 +65,19 @@ where
         //  - the TimeoutLayer
         //  - the DecompressionLayer
         // Those layers do type erasure of the error.
-        ServiceBuilder::new()
-            .layer(DecompressionLayer::new())
-            .layer(SetRequestHeaderLayer::overriding(
-                USER_AGENT,
-                MAS_USER_AGENT.clone(),
-            ))
+        (
+            DecompressionLayer::new(),
+            SetRequestHeaderLayer::overriding(USER_AGENT, MAS_USER_AGENT.clone()),
             // A trace that has the whole operation, with all the redirects, timeouts and rate
             // limits in it
-            .layer(TraceLayer::http_client(self.operation))
-            .layer(ConcurrencyLimitLayer::new(10))
-            .layer(FollowRedirectLayer::new())
+            TraceLayer::http_client(self.operation),
+            ConcurrencyLimitLayer::new(10),
+            FollowRedirectLayer::new(),
             // A trace for each "real" http request
-            .layer(TraceLayer::inner_http_client())
-            .layer(TimeoutLayer::new(Duration::from_secs(10)))
-            .service(inner)
+            TraceLayer::inner_http_client(),
+            TimeoutLayer::new(Duration::from_secs(10)),
+        )
+            .layer(inner)
             .boxed_clone()
     }
 }

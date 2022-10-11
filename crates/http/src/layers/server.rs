@@ -15,8 +15,8 @@
 use std::marker::PhantomData;
 
 use http::{Request, Response};
-use tower::{util::BoxCloneService, Layer, Service, ServiceBuilder, ServiceExt};
-use tower_http::{compression::CompressionBody, ServiceBuilderExt};
+use tower::{util::BoxCloneService, Layer, Service, ServiceExt};
+use tower_http::compression::{CompressionBody, CompressionLayer};
 
 use super::otel::TraceLayer;
 
@@ -37,14 +37,14 @@ where
     type Service = BoxCloneService<Request<ReqBody>, Response<CompressionBody<ResBody>>, S::Error>;
 
     fn layer(&self, inner: S) -> Self::Service {
-        let builder = ServiceBuilder::new().compression();
+        let compression = CompressionLayer::new();
 
         #[cfg(feature = "axum")]
-        let builder = builder.layer(TraceLayer::axum());
+        let trace = TraceLayer::axum();
 
         #[cfg(not(feature = "axum"))]
-        let builder = builder.layer(TraceLayer::http_server());
+        let trace = TraceLayer::http_server();
 
-        builder.service(inner).boxed_clone()
+        (compression, trace).layer(inner).boxed_clone()
     }
 }

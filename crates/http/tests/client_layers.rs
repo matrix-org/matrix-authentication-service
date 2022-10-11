@@ -18,10 +18,13 @@ use anyhow::{bail, Context};
 use bytes::{Buf, Bytes};
 use headers::{ContentType, HeaderMapExt};
 use http::{header::ACCEPT, HeaderValue, Request, Response, StatusCode};
-use mas_http::HttpServiceBuilderExt;
+use mas_http::{
+    BodyToBytesResponseLayer, BytesToBodyRequestLayer, CatchHttpCodesLayer,
+    FormUrlencodedRequestLayer, JsonRequestLayer, JsonResponseLayer,
+};
 use serde::Deserialize;
 use thiserror::Error;
-use tower::{ServiceBuilder, ServiceExt};
+use tower::{service_fn, Layer, ServiceExt};
 
 #[derive(Debug, Error, Deserialize)]
 #[error("Error code in response: {error}")]
@@ -42,10 +45,11 @@ async fn test_http_errors() {
         serde_json::from_reader(response.into_body().reader()).unwrap()
     }
 
-    let svc = ServiceBuilder::new()
-        .catch_http_code(StatusCode::BAD_REQUEST, mapper)
-        .response_body_to_bytes()
-        .service_fn(handle);
+    let layer = (
+        CatchHttpCodesLayer::exact(StatusCode::BAD_REQUEST, mapper),
+        BodyToBytesResponseLayer,
+    );
+    let svc = layer.layer(service_fn(handle));
 
     let request = Request::new(hyper::Body::empty());
 
@@ -79,10 +83,8 @@ async fn test_json_request_body() {
         Ok(res)
     }
 
-    let svc = ServiceBuilder::new()
-        .json_request()
-        .request_bytes_to_body()
-        .service_fn(handle);
+    let layer = (JsonRequestLayer::default(), BytesToBodyRequestLayer);
+    let svc = layer.layer(service_fn(handle));
 
     let request = Request::new(serde_json::json!({"hello": "world"}));
 
@@ -106,10 +108,8 @@ async fn test_json_response_body() {
         Ok(res)
     }
 
-    let svc = ServiceBuilder::new()
-        .json_response()
-        .response_body_to_bytes()
-        .service_fn(handle);
+    let layer = (JsonResponseLayer::default(), BodyToBytesResponseLayer);
+    let svc = layer.layer(service_fn(handle));
 
     let request = Request::new(hyper::Body::empty());
 
@@ -142,10 +142,11 @@ async fn test_urlencoded_request_body() {
         Ok(res)
     }
 
-    let svc = ServiceBuilder::new()
-        .form_urlencoded_request()
-        .request_bytes_to_body()
-        .service_fn(handle);
+    let layer = (
+        FormUrlencodedRequestLayer::default(),
+        BytesToBodyRequestLayer,
+    );
+    let svc = layer.layer(service_fn(handle));
 
     let request = Request::new(serde_json::json!({"hello": "world"}));
 

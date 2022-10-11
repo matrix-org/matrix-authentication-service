@@ -16,16 +16,13 @@ use std::ops::RangeBounds;
 
 use http::{header::HeaderName, Request, StatusCode};
 use once_cell::sync::OnceCell;
-use tower::{layer::util::Stack, Service, ServiceBuilder};
+use tower::Service;
 use tower_http::cors::CorsLayer;
 
 use crate::layers::{
-    body_to_bytes_response::{BodyToBytesResponse, BodyToBytesResponseLayer},
-    bytes_to_body_request::{BytesToBodyRequest, BytesToBodyRequestLayer},
-    catch_http_codes::{CatchHttpCodes, CatchHttpCodesLayer},
-    form_urlencoded_request::{FormUrlencodedRequest, FormUrlencodedRequestLayer},
-    json_request::{JsonRequest, JsonRequestLayer},
-    json_response::{JsonResponse, JsonResponseLayer},
+    body_to_bytes_response::BodyToBytesResponse, bytes_to_body_request::BytesToBodyRequest,
+    catch_http_codes::CatchHttpCodes, form_urlencoded_request::FormUrlencodedRequest,
+    json_request::JsonRequest, json_response::JsonResponse,
 };
 
 static PROPAGATOR_HEADERS: OnceCell<Vec<HeaderName>> = OnceCell::new();
@@ -107,65 +104,3 @@ pub trait ServiceExt<Body>: Sized {
 }
 
 impl<S, B> ServiceExt<B> for S where S: Service<Request<B>> {}
-
-pub trait ServiceBuilderExt<L>: Sized {
-    fn request_bytes_to_body(self) -> ServiceBuilder<Stack<BytesToBodyRequestLayer, L>>;
-    fn response_body_to_bytes(self) -> ServiceBuilder<Stack<BodyToBytesResponseLayer, L>>;
-    fn json_response<T>(self) -> ServiceBuilder<Stack<JsonResponseLayer<T>, L>>;
-    fn json_request<T>(self) -> ServiceBuilder<Stack<JsonRequestLayer<T>, L>>;
-    fn form_urlencoded_request<T>(self) -> ServiceBuilder<Stack<FormUrlencodedRequestLayer<T>, L>>;
-
-    fn catch_http_code<M>(
-        self,
-        status_code: StatusCode,
-        mapper: M,
-    ) -> ServiceBuilder<Stack<CatchHttpCodesLayer<M>, L>>
-    where
-        M: Clone,
-    {
-        self.catch_http_codes(status_code..=status_code, mapper)
-    }
-
-    fn catch_http_codes<B, M>(
-        self,
-        bounds: B,
-        mapper: M,
-    ) -> ServiceBuilder<Stack<CatchHttpCodesLayer<M>, L>>
-    where
-        B: RangeBounds<StatusCode>,
-        M: Clone;
-}
-
-impl<L> ServiceBuilderExt<L> for ServiceBuilder<L> {
-    fn request_bytes_to_body(self) -> ServiceBuilder<Stack<BytesToBodyRequestLayer, L>> {
-        self.layer(BytesToBodyRequestLayer::default())
-    }
-
-    fn response_body_to_bytes(self) -> ServiceBuilder<Stack<BodyToBytesResponseLayer, L>> {
-        self.layer(BodyToBytesResponseLayer::default())
-    }
-
-    fn json_response<T>(self) -> ServiceBuilder<Stack<JsonResponseLayer<T>, L>> {
-        self.layer(JsonResponseLayer::default())
-    }
-
-    fn json_request<T>(self) -> ServiceBuilder<Stack<JsonRequestLayer<T>, L>> {
-        self.layer(JsonRequestLayer::default())
-    }
-
-    fn form_urlencoded_request<T>(self) -> ServiceBuilder<Stack<FormUrlencodedRequestLayer<T>, L>> {
-        self.layer(FormUrlencodedRequestLayer::default())
-    }
-
-    fn catch_http_codes<B, M>(
-        self,
-        bounds: B,
-        mapper: M,
-    ) -> ServiceBuilder<Stack<CatchHttpCodesLayer<M>, L>>
-    where
-        B: RangeBounds<StatusCode>,
-        M: Clone,
-    {
-        self.layer(CatchHttpCodesLayer::new(bounds, mapper))
-    }
-}
