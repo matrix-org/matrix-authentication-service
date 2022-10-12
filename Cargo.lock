@@ -2685,6 +2685,7 @@ dependencies = [
  "hyper",
  "libc",
  "pin-project-lite",
+ "rustls-pemfile",
  "thiserror",
  "tokio",
  "tokio-rustls 0.23.4",
