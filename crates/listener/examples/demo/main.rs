@@ -14,13 +14,21 @@
 
 use std::{
     convert::Infallible,
+    io::BufReader,
     net::{Ipv4Addr, TcpListener},
+    sync::Arc,
     time::Duration,
 };
 
+use anyhow::Context;
 use hyper::{service::service_fn, Request, Response};
+use mas_listener::{server::Server, shutdown::ShutdownStream, ConnectionInfo};
 use tokio::signal::unix::SignalKind;
-use tokio_streams_util::{server::Server, shutdown::ShutdownStream, ConnectionInfo};
+use tokio_rustls::rustls::{Certificate, PrivateKey, RootCertStore, ServerConfig};
+
+static CA_CERT_PEM: &[u8] = include_bytes!("./certs/ca.pem");
+static SERVER_CERT_PEM: &[u8] = include_bytes!("./certs/server.pem");
+static SERVER_KEY_PEM: &[u8] = include_bytes!("./certs/server-key.pem");
 
 async fn handler(req: Request<hyper::Body>) -> Result<Response<String>, Infallible> {
     tracing::info!("Handling request");
@@ -34,16 +42,59 @@ async fn handler(req: Request<hyper::Body>) -> Result<Response<String>, Infallib
 async fn main() -> Result<(), anyhow::Error> {
     tracing_subscriber::fmt::init();
 
-    let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 3000))?;
-    let service = service_fn(handler);
-    let server = Server::try_new(listener, service)?;
+    let tls_config = load_tls_config()?;
 
-    tracing::info!("Listening on 127.0.0.1:3000");
+    let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 3000))?;
+    let proxy_protocol_listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 3001))?;
+    let tls_listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 3002))?;
+    let tls_proxy_protocol_listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 3003))?;
+
+    let servers = vec![
+        Server::try_new(listener, service_fn(handler))?,
+        Server::try_new(proxy_protocol_listener, service_fn(handler))?.with_proxy(),
+        Server::try_new(tls_listener, service_fn(handler))?.with_tls(tls_config.clone()),
+        Server::try_new(tls_proxy_protocol_listener, service_fn(handler))?
+            .with_proxy()
+            .with_tls(tls_config.clone()),
+    ];
+
+    tracing::info!("Listening on http://127.0.0.1:3000, http(proxy)://127.0.0.1:3001, https://127.0.0.1:3002 and https(proxy)://127.0.0.1:3003");
 
     let shutdown = ShutdownStream::default()
         .with_signal(SignalKind::interrupt())?
         .with_signal(SignalKind::terminate())?;
-    server.run(shutdown).await;
+
+    mas_listener::server::run_servers(servers, shutdown).await;
 
     Ok(())
+}
+
+fn load_tls_config() -> Result<Arc<ServerConfig>, anyhow::Error> {
+    let mut ca_cert_reader = BufReader::new(CA_CERT_PEM);
+    let ca_cert = rustls_pemfile::certs(&mut ca_cert_reader).context("Invalid CA certificate")?;
+    let mut ca_cert_store = RootCertStore::empty();
+    ca_cert_store.add_parsable_certificates(&ca_cert);
+
+    let mut server_cert_reader = BufReader::new(SERVER_CERT_PEM);
+    let server_cert: Vec<_> = rustls_pemfile::certs(&mut server_cert_reader)
+        .context("Invalid server certificate")?
+        .into_iter()
+        .map(Certificate)
+        .collect();
+
+    let mut server_key_reader = BufReader::new(SERVER_KEY_PEM);
+    let mut server_key = rustls_pemfile::rsa_private_keys(&mut server_key_reader)
+        .context("Invalid server TLS keys")?;
+    let server_key = PrivateKey(server_key.pop().context("Missing server TLS key")?);
+
+    let tls_config = ServerConfig::builder()
+        .with_safe_defaults()
+        .with_client_cert_verifier(
+            tokio_rustls::rustls::server::AllowAnyAnonymousOrAuthenticatedClient::new(
+                ca_cert_store,
+            ),
+        )
+        .with_single_cert(server_cert, server_key)?;
+
+    Ok(Arc::new(tls_config))
 }
