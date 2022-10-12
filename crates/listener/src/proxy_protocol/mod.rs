@@ -14,12 +14,10 @@
 
 mod acceptor;
 mod maybe;
-mod stream;
 mod v1;
 
 pub use self::{
-    acceptor::ProxyAcceptor,
-    maybe::{MaybeProxyAcceptor, MaybeProxyStream},
-    stream::{HandshakeNotDone as ProxyHandshakeNotDone, ProxyStream},
+    acceptor::{ProxyAcceptError, ProxyAcceptor},
+    maybe::MaybeProxyAcceptor,
     v1::ProxyProtocolV1Info,
 };

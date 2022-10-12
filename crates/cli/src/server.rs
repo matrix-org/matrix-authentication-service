@@ -23,10 +23,9 @@ use axum::{body::HttpBody, Extension, Router};
 use listenfd::ListenFd;
 use mas_config::{HttpBindConfig, HttpResource, HttpTlsConfig, UnixOrTcp};
 use mas_handlers::AppState;
-use mas_listener::{info::Connection, unix_or_tcp::UnixOrTcpListener};
+use mas_listener::{unix_or_tcp::UnixOrTcpListener, ConnectionInfo};
 use mas_router::Route;
 use rustls::ServerConfig;
-use tokio::sync::OnceCell;
 
 #[allow(clippy::trait_duplication_in_bounds)]
 pub fn build_router<B>(state: &Arc<AppState>, resources: &[HttpResource]) -> Router<AppState, B>
@@ -64,12 +63,9 @@ where
             // TODO: do a better handler here
             mas_config::HttpResource::ConnectionInfo => router.route(
                 "/connection-info",
-                axum::routing::get(
-                    |connection: Extension<Arc<OnceCell<Connection>>>| async move {
-                        let connection = connection.get().unwrap();
-                        format!("{connection:?}")
-                    },
-                ),
+                axum::routing::get(|connection: Extension<ConnectionInfo>| async move {
+                    format!("{connection:?}")
+                }),
             ),
         }
     }
@@ -77,10 +73,8 @@ where
     router
 }
 
-pub async fn build_tls_server_config(
-    config: &HttpTlsConfig,
-) -> Result<ServerConfig, anyhow::Error> {
-    let (key, chain) = config.load().await?;
+pub fn build_tls_server_config(config: &HttpTlsConfig) -> Result<ServerConfig, anyhow::Error> {
+    let (key, chain) = config.load()?;
     let key = rustls::PrivateKey(key);
     let chain = chain.into_iter().map(rustls::Certificate).collect();
 
