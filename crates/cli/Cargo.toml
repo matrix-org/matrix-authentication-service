@@ -22,6 +22,7 @@ watchman_client = "0.8.0"
 atty = "0.2.14"
 listenfd = "1.0.0"
 rustls = "0.20.6"
+itertools = "0.10.5"
 
 tracing = "0.1.36"
 tracing-appender = "0.2.2"

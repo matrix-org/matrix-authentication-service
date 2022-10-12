@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! A listener which can listen on either TCP sockets or on UNIX domain sockets
+
 // TODO: Unlink the UNIX socket on drop?
 
 use std::{
@@ -19,8 +21,6 @@ use std::{
     task::{Context, Poll},
 };
 
-use futures_util::ready;
-use hyper::server::accept::Accept;
 use tokio::{
     io::{AsyncRead, AsyncWrite},
     net::{TcpListener, TcpStream, UnixListener, UnixStream},
@@ -107,6 +107,7 @@ impl TryFrom<std::os::unix::net::UnixListener> for UnixOrTcpListener {
     type Error = std::io::Error;
 
     fn try_from(listener: std::os::unix::net::UnixListener) -> Result<Self, Self::Error> {
+        listener.set_nonblocking(true)?;
         Ok(Self::Unix(UnixListener::from_std(listener)?))
     }
 }
@@ -115,6 +116,7 @@ impl TryFrom<std::net::TcpListener> for UnixOrTcpListener {
     type Error = std::io::Error;
 
     fn try_from(listener: std::net::TcpListener) -> Result<Self, Self::Error> {
+        listener.set_nonblocking(true)?;
         Ok(Self::Tcp(TcpListener::from_std(listener)?))
     }
 }
@@ -140,6 +142,24 @@ impl UnixOrTcpListener {
     pub const fn is_tcp(&self) -> bool {
         matches!(self, Self::Tcp(_))
     }
+
+    /// Accept an incoming connection
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the underlying socket couldn't accept the connection
+    pub async fn accept(&self) -> Result<(SocketAddr, UnixOrTcpConnection), std::io::Error> {
+        match self {
+            Self::Unix(listener) => {
+                let (stream, remote_addr) = listener.accept().await?;
+                Ok((remote_addr.into(), UnixOrTcpConnection::Unix { stream }))
+            }
+            Self::Tcp(listener) => {
+                let (stream, remote_addr) = listener.accept().await?;
+                Ok((remote_addr.into(), UnixOrTcpConnection::Tcp { stream }))
+            }
+        }
+    }
 }
 
 pin_project_lite::pin_project! {
@@ -157,6 +177,12 @@ pin_project_lite::pin_project! {
     }
 }
 
+impl From<TcpStream> for UnixOrTcpConnection {
+    fn from(stream: TcpStream) -> Self {
+        Self::Tcp { stream }
+    }
+}
+
 impl UnixOrTcpConnection {
     /// Get the local address of the stream
     ///
@@ -166,8 +192,8 @@ impl UnixOrTcpConnection {
     /// [`UnixStream`] couldn't provide the local address
     pub fn local_addr(&self) -> Result<SocketAddr, std::io::Error> {
         match self {
-            Self::Unix { stream, .. } => stream.local_addr().map(SocketAddr::from),
-            Self::Tcp { stream, .. } => stream.local_addr().map(SocketAddr::from),
+            Self::Unix { stream } => stream.local_addr().map(SocketAddr::from),
+            Self::Tcp { stream } => stream.local_addr().map(SocketAddr::from),
         }
     }
 
@@ -179,33 +205,9 @@ impl UnixOrTcpConnection {
     /// [`UnixStream`] couldn't provide the remote address
     pub fn peer_addr(&self) -> Result<SocketAddr, std::io::Error> {
         match self {
-            Self::Unix { stream, .. } => stream.peer_addr().map(SocketAddr::from),
-            Self::Tcp { stream, .. } => stream.peer_addr().map(SocketAddr::from),
+            Self::Unix { stream } => stream.peer_addr().map(SocketAddr::from),
+            Self::Tcp { stream } => stream.peer_addr().map(SocketAddr::from),
         }
-    }
-}
-
-impl Accept for UnixOrTcpListener {
-    type Error = std::io::Error;
-    type Conn = UnixOrTcpConnection;
-
-    fn poll_accept(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-    ) -> std::task::Poll<Option<Result<Self::Conn, Self::Error>>> {
-        let conn = match &*self {
-            Self::Unix(listener) => {
-                let (stream, _remote_addr) = ready!(listener.poll_accept(cx))?;
-                UnixOrTcpConnection::Unix { stream }
-            }
-
-            Self::Tcp(listener) => {
-                let (stream, _remote_addr) = ready!(listener.poll_accept(cx))?;
-                UnixOrTcpConnection::Tcp { stream }
-            }
-        };
-
-        Poll::Ready(Some(Ok(conn)))
     }
 }
 
@@ -234,23 +236,6 @@ impl AsyncWrite for UnixOrTcpConnection {
         }
     }
 
-    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), std::io::Error>> {
-        match self.project() {
-            UnixOrTcpConnectionProj::Unix { stream } => stream.poll_flush(cx),
-            UnixOrTcpConnectionProj::Tcp { stream } => stream.poll_flush(cx),
-        }
-    }
-
-    fn poll_shutdown(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-    ) -> Poll<Result<(), std::io::Error>> {
-        match self.project() {
-            UnixOrTcpConnectionProj::Unix { stream } => stream.poll_shutdown(cx),
-            UnixOrTcpConnectionProj::Tcp { stream } => stream.poll_shutdown(cx),
-        }
-    }
-
     fn poll_write_vectored(
         self: Pin<&mut Self>,
         cx: &mut Context<'_>,
@@ -266,6 +251,23 @@ impl AsyncWrite for UnixOrTcpConnection {
         match self {
             UnixOrTcpConnection::Unix { stream } => stream.is_write_vectored(),
             UnixOrTcpConnection::Tcp { stream } => stream.is_write_vectored(),
+        }
+    }
+
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), std::io::Error>> {
+        match self.project() {
+            UnixOrTcpConnectionProj::Unix { stream } => stream.poll_flush(cx),
+            UnixOrTcpConnectionProj::Tcp { stream } => stream.poll_flush(cx),
+        }
+    }
+
+    fn poll_shutdown(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> Poll<Result<(), std::io::Error>> {
+        match self.project() {
+            UnixOrTcpConnectionProj::Unix { stream } => stream.poll_shutdown(cx),
+            UnixOrTcpConnectionProj::Tcp { stream } => stream.poll_shutdown(cx),
         }
     }
 }

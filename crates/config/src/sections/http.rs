@@ -163,11 +163,11 @@ impl TlsConfig {
     ///   - a password was provided but the key was not encrypted
     ///   - decoding the certificate chain as PEM
     ///   - the certificate chain is empty
-    pub async fn load(&self) -> Result<(Vec<u8>, Vec<Vec<u8>>), anyhow::Error> {
+    pub fn load(&self) -> Result<(Vec<u8>, Vec<Vec<u8>>), anyhow::Error> {
         let password = match &self.password {
             Some(PasswordOrFile::Password(password)) => Some(Cow::Borrowed(password.as_str())),
             Some(PasswordOrFile::PasswordFile(path)) => {
-                Some(Cow::Owned(tokio::fs::read_to_string(path).await?))
+                Some(Cow::Owned(std::fs::read_to_string(path)?))
             }
             None => None,
         };
@@ -185,7 +185,7 @@ impl TlsConfig {
             KeyOrFile::KeyFile(path) => {
                 // When reading from disk, it might be either PEM or DER. `PrivateKey::load*`
                 // will try both.
-                let key = tokio::fs::read(path).await?;
+                let key = std::fs::read(path)?;
                 if let Some(password) = password {
                     PrivateKey::load_encrypted(&key, password.as_bytes())?
                 } else {
@@ -202,9 +202,7 @@ impl TlsConfig {
 
         let certificate_chain_pem = match &self.certificate {
             CertificateOrFile::Certificate(pem) => Cow::Borrowed(pem.as_str()),
-            CertificateOrFile::CertificateFile(path) => {
-                Cow::Owned(tokio::fs::read_to_string(path).await?)
-            }
+            CertificateOrFile::CertificateFile(path) => Cow::Owned(std::fs::read_to_string(path)?),
         };
 
         let mut certificate_chain_reader = Cursor::new(certificate_chain_pem.as_bytes());

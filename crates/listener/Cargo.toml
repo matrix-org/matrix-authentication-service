@@ -6,12 +6,25 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
+bytes = "1.2.1"
 futures-util = "0.3.24"
-hyper = { version = "0.14.20", features = ["server"] }
+http-body = "0.4.2"
+hyper = { version = "0.14.20", features = ["server", "http1", "http2"] }
 pin-project-lite = "0.2.9"
 thiserror = "1.0.37"
-tokio = { version = "1.21.2", features = ["net"] }
+tokio = { version = "1.21.2", features = ["net", "rt", "macros", "signal", "time"] }
 tokio-rustls = "0.23.4"
-tower = "0.4.13"
 tower-http = { version = "0.3.4", features = ["add-extension"] }
-tracing = "0.1.36"
+tower-service = "0.3.2"
+tracing = "0.1.37"
+libc = "0.2.135"
+
+[dev-dependencies]
+tokio-test = "0.4.2"
+anyhow = "1.0.65"
+tokio = { version = "1.21.2", features = ["net", "rt", "macros", "signal", "time", "rt-multi-thread"] }
+tracing-subscriber = "0.3.16"
+
+[[example]]
+name = "demo"
+path = "examples/demo/main.rs"

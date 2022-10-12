@@ -12,41 +12,57 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use futures_util::ready;
-use hyper::server::accept::Accept;
+use bytes::BytesMut;
+use thiserror::Error;
+use tokio::io::{AsyncRead, AsyncReadExt};
 
-use super::ProxyStream;
+use super::ProxyProtocolV1Info;
+use crate::rewind::Rewind;
 
-pin_project_lite::pin_project! {
-    pub struct ProxyAcceptor<A> {
-        #[pin]
-        inner: A,
-    }
+#[derive(Clone, Debug)]
+pub struct ProxyAcceptor {
+    _private: (),
 }
 
-impl<A> ProxyAcceptor<A> {
-    pub const fn new(inner: A) -> Self {
-        Self { inner }
-    }
+#[derive(Debug, Error)]
+#[error(transparent)]
+pub enum ProxyAcceptError {
+    Parse(#[from] super::v1::ParseError),
+    Read(#[from] std::io::Error),
 }
 
-impl<A> Accept for ProxyAcceptor<A>
-where
-    A: Accept,
-{
-    type Conn = ProxyStream<A::Conn>;
-    type Error = A::Error;
+impl ProxyAcceptor {
+    #[must_use]
+    pub const fn new() -> Self {
+        Self { _private: () }
+    }
 
-    fn poll_accept(
-        self: std::pin::Pin<&mut Self>,
-        cx: &mut std::task::Context<'_>,
-    ) -> std::task::Poll<Option<Result<Self::Conn, Self::Error>>> {
-        let res = match ready!(self.project().inner.poll_accept(cx)) {
-            Some(Ok(stream)) => Some(Ok(ProxyStream::new(stream))),
-            Some(Err(e)) => Some(Err(e)),
-            None => None,
+    /// Accept a proxy-protocol stream
+    ///
+    /// # Errors
+    ///
+    /// Returns an error on read error on the underlying stream, or when the
+    /// proxy protocol preamble couldn't be parsed
+    pub async fn accept<T>(
+        &self,
+        mut stream: T,
+    ) -> Result<(ProxyProtocolV1Info, Rewind<T>), ProxyAcceptError>
+    where
+        T: AsyncRead + Unpin,
+    {
+        let mut buf = BytesMut::new();
+        let info = loop {
+            stream.read_buf(&mut buf).await?;
+
+            match ProxyProtocolV1Info::parse(&mut buf) {
+                Ok(info) => break info,
+                Err(e) if e.not_enough_bytes() => {}
+                Err(e) => return Err(e.into()),
+            }
         };
 
-        std::task::Poll::Ready(res)
+        let stream = Rewind::new_buffered(stream, buf.into());
+
+        Ok((info, stream))
     }
 }

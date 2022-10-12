@@ -18,6 +18,7 @@ use std::{
     str::Utf8Error,
 };
 
+use bytes::Buf;
 use thiserror::Error;
 
 #[derive(Debug, Clone)]
@@ -35,7 +36,7 @@ pub enum ProxyProtocolV1Info {
 
 #[derive(Error, Debug)]
 #[error("Invalid proxy protocol header")]
-pub(super) enum ParseError {
+pub enum ParseError {
     #[error("Not enough bytes provided")]
     NotEnoughBytes,
     NoCrLf,
@@ -60,17 +61,21 @@ impl ParseError {
 
 impl ProxyProtocolV1Info {
     #[allow(clippy::too_many_lines)]
-    pub(super) fn parse(bytes: &[u8]) -> Result<(Self, &[u8]), ParseError> {
+    pub(super) fn parse<B>(mut buf: B) -> Result<Self, ParseError>
+    where
+        B: Buf + AsRef<[u8]>,
+    {
         use ParseError as E;
         // First, check if we *possibly* have enough bytes.
         // Minimum is 15: "PROXY UNKNOWN\r\n"
 
-        if bytes.len() < 15 {
+        if buf.remaining() < 15 {
             return Err(E::NotEnoughBytes);
         }
 
         // Let's check in the first 108 bytes if we find a CRLF
-        let crlf = if let Some(crlf) = bytes
+        let crlf = if let Some(crlf) = buf
+            .as_ref()
             .windows(2)
             .take(108)
             .position(|needle| needle == [0x0D, 0x0A])
@@ -78,7 +83,7 @@ impl ProxyProtocolV1Info {
             crlf
         } else {
             // If not, it might be because we don't have enough bytes
-            return if bytes.len() < 108 {
+            return if buf.remaining() < 108 {
                 Err(E::NotEnoughBytes)
             } else {
                 // Else it's just invalid
@@ -86,10 +91,8 @@ impl ProxyProtocolV1Info {
             };
         };
 
-        // Keep the rest of the buffer to pass it to the underlying protocol
-        let rest = &bytes[crlf + 2..];
         // Trim to everything before the CRLF
-        let bytes = &bytes[..crlf];
+        let bytes = &buf.as_ref()[..crlf];
 
         let mut it = bytes.splitn(6, |c| c == &b' ');
         // Check for the preamble
@@ -187,7 +190,9 @@ impl ProxyProtocolV1Info {
             None => return Err(E::NoProtocol),
         };
 
-        Ok((result, rest))
+        buf.advance(crlf + 2);
+
+        Ok(result)
     }
 
     #[must_use]
@@ -258,39 +263,42 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        let (info, rest) = ProxyProtocolV1Info::parse(
-            b"PROXY TCP4 255.255.255.255 255.255.255.255 65535 65535\r\nhello world",
-        )
-        .unwrap();
-        assert_eq!(rest, b"hello world");
+        let mut buf =
+            b"PROXY TCP4 255.255.255.255 255.255.255.255 65535 65535\r\nhello world"
+            .as_slice();
+        let info = ProxyProtocolV1Info::parse(&mut buf).unwrap();
+        assert_eq!(buf, b"hello world");
         assert!(info.is_tcp());
         assert!(!info.is_udp());
         assert!(!info.is_unknown());
         assert!(info.is_ipv4());
         assert!(!info.is_ipv6());
 
-        let (info, rest) = ProxyProtocolV1Info::parse(
+        let mut buf = 
             b"PROXY TCP6 ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff 65535 65535\r\nhello world"
-        ).unwrap();
-        assert_eq!(rest, b"hello world");
+            .as_slice();
+        let info = ProxyProtocolV1Info::parse(&mut buf).unwrap();
+        assert_eq!(buf, b"hello world");
         assert!(info.is_tcp());
         assert!(!info.is_udp());
         assert!(!info.is_unknown());
         assert!(!info.is_ipv4());
         assert!(info.is_ipv6());
 
-        let (info, rest) = ProxyProtocolV1Info::parse(b"PROXY UNKNOWN\r\nhello world").unwrap();
-        assert_eq!(rest, b"hello world");
+        let mut buf = b"PROXY UNKNOWN\r\nhello world".as_slice();
+        let info = ProxyProtocolV1Info::parse(&mut buf).unwrap();
+        assert_eq!(buf, b"hello world");
         assert!(!info.is_tcp());
         assert!(!info.is_udp());
         assert!(info.is_unknown());
         assert!(!info.is_ipv4());
         assert!(!info.is_ipv6());
 
-        let (info, rest) = ProxyProtocolV1Info::parse(
+        let mut buf = 
             b"PROXY UNKNOWN ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff 65535 65535\r\nhello world"
-        ).unwrap();
-        assert_eq!(rest, b"hello world");
+            .as_slice();
+        let info = ProxyProtocolV1Info::parse(&mut buf).unwrap();
+        assert_eq!(buf, b"hello world");
         assert!(!info.is_tcp());
         assert!(!info.is_udp());
         assert!(info.is_unknown());
