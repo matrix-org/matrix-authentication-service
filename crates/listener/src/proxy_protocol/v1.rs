@@ -264,8 +264,7 @@ mod tests {
     #[test]
     fn test_parse() {
         let mut buf =
-            b"PROXY TCP4 255.255.255.255 255.255.255.255 65535 65535\r\nhello world"
-            .as_slice();
+            b"PROXY TCP4 255.255.255.255 255.255.255.255 65535 65535\r\nhello world".as_slice();
         let info = ProxyProtocolV1Info::parse(&mut buf).unwrap();
         assert_eq!(buf, b"hello world");
         assert!(info.is_tcp());
@@ -274,7 +273,7 @@ mod tests {
         assert!(info.is_ipv4());
         assert!(!info.is_ipv6());
 
-        let mut buf = 
+        let mut buf =
             b"PROXY TCP6 ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff 65535 65535\r\nhello world"
             .as_slice();
         let info = ProxyProtocolV1Info::parse(&mut buf).unwrap();
@@ -294,7 +293,7 @@ mod tests {
         assert!(!info.is_ipv4());
         assert!(!info.is_ipv6());
 
-        let mut buf = 
+        let mut buf =
             b"PROXY UNKNOWN ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff 65535 65535\r\nhello world"
             .as_slice();
         let info = ProxyProtocolV1Info::parse(&mut buf).unwrap();
