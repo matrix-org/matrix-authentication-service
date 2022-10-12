@@ -61,6 +61,7 @@ async fn main() -> Result<(), anyhow::Error> {
     tracing::info!("Listening on http://127.0.0.1:3000, http(proxy)://127.0.0.1:3001, https://127.0.0.1:3002 and https(proxy)://127.0.0.1:3003");
 
     let shutdown = ShutdownStream::default()
+        .with_timeout(Duration::from_secs(1))
         .with_signal(SignalKind::interrupt())?
         .with_signal(SignalKind::terminate())?;
 
@@ -87,7 +88,7 @@ fn load_tls_config() -> Result<Arc<ServerConfig>, anyhow::Error> {
         .context("Invalid server TLS keys")?;
     let server_key = PrivateKey(server_key.pop().context("Missing server TLS key")?);
 
-    let tls_config = ServerConfig::builder()
+    let mut config = ServerConfig::builder()
         .with_safe_defaults()
         .with_client_cert_verifier(
             tokio_rustls::rustls::server::AllowAnyAnonymousOrAuthenticatedClient::new(
@@ -95,6 +96,7 @@ fn load_tls_config() -> Result<Arc<ServerConfig>, anyhow::Error> {
             ),
         )
         .with_single_cert(server_cert, server_key)?;
+    config.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
 
-    Ok(Arc::new(tls_config))
+    Ok(Arc::new(config))
 }
