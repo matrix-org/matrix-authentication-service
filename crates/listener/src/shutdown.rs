@@ -51,16 +51,18 @@ impl Display for ShutdownReason {
     }
 }
 
-#[derive(Default)]
 pub enum ShutdownStreamState {
-    #[default]
     Waiting,
 
-    Graceful {
-        sleep: Option<Pin<Box<Sleep>>>,
-    },
+    Graceful { sleep: Option<Pin<Box<Sleep>>> },
 
     Done,
+}
+
+impl Default for ShutdownStreamState {
+    fn default() -> Self {
+        Self::Waiting
+    }
 }
 
 impl ShutdownStreamState {
