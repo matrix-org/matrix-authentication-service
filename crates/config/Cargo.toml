@@ -13,7 +13,7 @@ async-trait = "0.1.57"
 thiserror = "1.0.37"
 anyhow = "1.0.65"
 
-schemars = { version = "0.8.10", features = ["url", "chrono"] }
+schemars = { version = "0.8.11", features = ["url", "chrono"] }
 figment = { version = "0.10.7", features = ["env", "yaml", "test"] }
 chrono = { version = "0.4.22", features = ["serde"] }
 url = { version = "2.3.1", features = ["serde"] }
