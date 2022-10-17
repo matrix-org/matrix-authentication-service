@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#[cfg(feature = "axum")]
 use std::borrow::Cow;
 
 #[cfg(feature = "axum")]

@@ -153,9 +153,11 @@ impl TraceDnsLayer {
     }
 }
 
-use self::make_metrics_labels::{
-    DefaultMakeMetricsLabels, MetricsLabelsFromAxumRequest, MetricsLabelsFromHttpRequest,
-};
+#[cfg(feature = "client")]
+use self::make_metrics_labels::DefaultMakeMetricsLabels;
+#[cfg(feature = "axum")]
+use self::make_metrics_labels::MetricsLabelsFromAxumRequest;
+use self::make_metrics_labels::MetricsLabelsFromHttpRequest;
 pub use self::{
     extract_context::*, inject_context::*, layer::*, make_span_builder::*, on_error::*,
     on_response::*, service::*,
