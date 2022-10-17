@@ -228,52 +228,9 @@ struct RsaOtherPrimeInfo {
 }
 
 mod rsa_impls {
-    use digest::{const_oid::AssociatedOid, Digest};
     use rsa::{BigUint, RsaPrivateKey};
 
     use super::RsaPrivateParameters;
-
-    impl<H> TryFrom<RsaPrivateParameters> for rsa::pkcs1v15::SigningKey<H>
-    where
-        H: Digest + AssociatedOid,
-    {
-        type Error = rsa::errors::Error;
-        fn try_from(value: RsaPrivateParameters) -> Result<Self, Self::Error> {
-            Self::try_from(&value)
-        }
-    }
-
-    impl<H> TryFrom<&RsaPrivateParameters> for rsa::pkcs1v15::SigningKey<H>
-    where
-        H: Digest + AssociatedOid,
-    {
-        type Error = rsa::errors::Error;
-        fn try_from(value: &RsaPrivateParameters) -> Result<Self, Self::Error> {
-            let key: RsaPrivateKey = value.try_into()?;
-            Ok(Self::new_with_prefix(key))
-        }
-    }
-
-    impl<H> TryFrom<RsaPrivateParameters> for rsa::pss::SigningKey<H>
-    where
-        H: Digest,
-    {
-        type Error = rsa::errors::Error;
-        fn try_from(value: RsaPrivateParameters) -> Result<Self, Self::Error> {
-            Self::try_from(&value)
-        }
-    }
-
-    impl<H> TryFrom<&RsaPrivateParameters> for rsa::pss::SigningKey<H>
-    where
-        H: Digest,
-    {
-        type Error = rsa::errors::Error;
-        fn try_from(value: &RsaPrivateParameters) -> Result<Self, Self::Error> {
-            let key: RsaPrivateKey = value.try_into()?;
-            Ok(Self::new_with_salt_len(key, <H as Digest>::output_size()))
-        }
-    }
 
     impl TryFrom<RsaPrivateParameters> for RsaPrivateKey {
         type Error = rsa::errors::Error;
@@ -347,48 +304,16 @@ impl From<EcPrivateParameters> for super::public_parameters::EcPublicParameters 
 }
 
 mod ec_impls {
-    use digest::typenum::Unsigned;
-    use ecdsa::{hazmat::SignPrimitive, EncodedPoint, PrimeCurve, SignatureSize, SigningKey};
     use elliptic_curve::{
-        ops::{Invert, Reduce},
-        sec1::{Coordinates, FromEncodedPoint, ModulusSize, ToEncodedPoint, ValidatePublicKey},
-        subtle::CtOption,
-        AffinePoint, Curve, FieldBytes, FieldSize, ProjectiveArithmetic, Scalar, SecretKey,
+        sec1::{Coordinates, FromEncodedPoint, ModulusSize, ToEncodedPoint},
+        AffinePoint, Curve, FieldSize, SecretKey,
     };
-    use generic_array::ArrayLength;
 
     use super::{super::JwkEcCurve, EcPrivateParameters};
 
-    impl<C> TryFrom<EcPrivateParameters> for SigningKey<C>
-    where
-        C: PrimeCurve + ProjectiveArithmetic,
-        Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + Reduce<C::UInt> + SignPrimitive<C>,
-        SignatureSize<C>: ArrayLength<u8>,
-    {
-        type Error = ecdsa::Error;
-
-        fn try_from(value: EcPrivateParameters) -> Result<Self, Self::Error> {
-            Self::try_from(&value)
-        }
-    }
-
-    impl<C> TryFrom<&EcPrivateParameters> for SigningKey<C>
-    where
-        C: PrimeCurve + ProjectiveArithmetic,
-        Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + Reduce<C::UInt> + SignPrimitive<C>,
-        SignatureSize<C>: ArrayLength<u8>,
-    {
-        type Error = ecdsa::Error;
-
-        fn try_from(value: &EcPrivateParameters) -> Result<Self, Self::Error> {
-            SigningKey::from_bytes(&value.d)
-        }
-    }
-
     impl<C> TryFrom<EcPrivateParameters> for SecretKey<C>
     where
-        C: Curve + ValidatePublicKey,
-        FieldSize<C>: ModulusSize,
+        C: Curve,
     {
         type Error = elliptic_curve::Error;
         fn try_from(value: EcPrivateParameters) -> Result<Self, Self::Error> {
@@ -398,27 +323,12 @@ mod ec_impls {
 
     impl<C> TryFrom<&EcPrivateParameters> for SecretKey<C>
     where
-        C: Curve + ValidatePublicKey,
-        FieldSize<C>: ModulusSize,
+        C: Curve,
     {
         type Error = elliptic_curve::Error;
 
         fn try_from(value: &EcPrivateParameters) -> Result<Self, Self::Error> {
-            let x = value
-                .x
-                .get(..FieldSize::<C>::USIZE)
-                .ok_or(elliptic_curve::Error)?;
-            let y = value
-                .x
-                .get(..FieldSize::<C>::USIZE)
-                .ok_or(elliptic_curve::Error)?;
-
-            let x = FieldBytes::<C>::from_slice(x);
-            let y = FieldBytes::<C>::from_slice(y);
-            let pubkey = EncodedPoint::<C>::from_affine_coordinates(x, y, false);
-            let privkey = SecretKey::from_be_bytes(&value.d)?;
-            C::validate_public_key(&privkey, &pubkey)?;
-            Ok(privkey)
+            SecretKey::from_be_bytes(&value.d)
         }
     }
 

@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use digest::Digest;
 use mas_iana::jose::{JsonWebKeyEcEllipticCurve, JsonWebSignatureAlg};
+use sha2::{Sha256, Sha384, Sha512};
 use thiserror::Error;
 
 use super::signature::Signature;
@@ -27,9 +29,9 @@ pub enum AsymmetricKeyFromJwkError {
     },
 
     #[error("Invalid Elliptic Curve parameters")]
-    Ecdsa {
+    EllipticCurve {
         #[from]
-        inner: ecdsa::Error,
+        inner: elliptic_curve::Error,
     },
 
     #[error("Unsupported algorithm {alg}")]
@@ -54,32 +56,85 @@ pub enum AsymmetricSigningKey {
 }
 
 impl AsymmetricSigningKey {
-    #[allow(dead_code)]
+    #[must_use]
+    pub fn rs256(key: rsa::RsaPrivateKey) -> Self {
+        Self::Rs256(rsa::pkcs1v15::SigningKey::new_with_prefix(key))
+    }
+
+    #[must_use]
+    pub fn rs384(key: rsa::RsaPrivateKey) -> Self {
+        Self::Rs384(rsa::pkcs1v15::SigningKey::new_with_prefix(key))
+    }
+
+    #[must_use]
+    pub fn rs512(key: rsa::RsaPrivateKey) -> Self {
+        Self::Rs512(rsa::pkcs1v15::SigningKey::new_with_prefix(key))
+    }
+
+    #[must_use]
+    pub fn ps256(key: rsa::RsaPrivateKey) -> Self {
+        Self::Ps256(rsa::pss::SigningKey::new_with_salt_len(
+            key,
+            Sha256::output_size(),
+        ))
+    }
+
+    #[must_use]
+    pub fn ps384(key: rsa::RsaPrivateKey) -> Self {
+        Self::Ps384(rsa::pss::SigningKey::new_with_salt_len(
+            key,
+            Sha384::output_size(),
+        ))
+    }
+
+    #[must_use]
+    pub fn ps512(key: rsa::RsaPrivateKey) -> Self {
+        Self::Ps512(rsa::pss::SigningKey::new_with_salt_len(
+            key,
+            Sha512::output_size(),
+        ))
+    }
+
+    #[must_use]
+    pub fn es256(key: elliptic_curve::SecretKey<p256::NistP256>) -> Self {
+        Self::Es256(ecdsa::SigningKey::from(key))
+    }
+
+    #[must_use]
+    pub fn es384(key: elliptic_curve::SecretKey<p384::NistP384>) -> Self {
+        Self::Es384(ecdsa::SigningKey::from(key))
+    }
+
+    #[must_use]
+    pub fn es256k(key: elliptic_curve::SecretKey<k256::Secp256k1>) -> Self {
+        Self::Es256K(ecdsa::SigningKey::from(key))
+    }
+
     pub fn from_jwk_and_alg(
         params: &JsonWebKeyPrivateParameters,
         alg: &JsonWebSignatureAlg,
     ) -> Result<Self, AsymmetricKeyFromJwkError> {
         match (params, alg) {
             (JsonWebKeyPrivateParameters::Rsa(params), alg) => match alg {
-                JsonWebSignatureAlg::Rs256 => Ok(Self::Rs256(params.try_into()?)),
-                JsonWebSignatureAlg::Rs384 => Ok(Self::Rs384(params.try_into()?)),
-                JsonWebSignatureAlg::Rs512 => Ok(Self::Rs512(params.try_into()?)),
-                JsonWebSignatureAlg::Ps256 => Ok(Self::Ps256(params.try_into()?)),
-                JsonWebSignatureAlg::Ps384 => Ok(Self::Ps384(params.try_into()?)),
-                JsonWebSignatureAlg::Ps512 => Ok(Self::Ps512(params.try_into()?)),
+                JsonWebSignatureAlg::Rs256 => Ok(Self::rs256(params.try_into()?)),
+                JsonWebSignatureAlg::Rs384 => Ok(Self::rs384(params.try_into()?)),
+                JsonWebSignatureAlg::Rs512 => Ok(Self::rs512(params.try_into()?)),
+                JsonWebSignatureAlg::Ps256 => Ok(Self::ps256(params.try_into()?)),
+                JsonWebSignatureAlg::Ps384 => Ok(Self::ps384(params.try_into()?)),
+                JsonWebSignatureAlg::Ps512 => Ok(Self::ps512(params.try_into()?)),
                 _ => Err(AsymmetricKeyFromJwkError::KeyNotSuitable { alg: alg.clone() }),
             },
 
             (JsonWebKeyPrivateParameters::Ec(params), JsonWebSignatureAlg::Es256)
                 if params.crv == JsonWebKeyEcEllipticCurve::P256 =>
             {
-                Ok(Self::Es256(params.try_into()?))
+                Ok(Self::es256(params.try_into()?))
             }
 
             (JsonWebKeyPrivateParameters::Ec(params), JsonWebSignatureAlg::Es384)
                 if params.crv == JsonWebKeyEcEllipticCurve::P384 =>
             {
-                Ok(Self::Es384(params.try_into()?))
+                Ok(Self::es384(params.try_into()?))
             }
 
             (JsonWebKeyPrivateParameters::Ec(params), JsonWebSignatureAlg::Es512)
@@ -91,7 +146,7 @@ impl AsymmetricSigningKey {
             (JsonWebKeyPrivateParameters::Ec(params), JsonWebSignatureAlg::Es256K)
                 if params.crv == JsonWebKeyEcEllipticCurve::Secp256K1 =>
             {
-                Ok(Self::Es256K(params.try_into()?))
+                Ok(Self::es256k(params.try_into()?))
             }
 
             (JsonWebKeyPrivateParameters::Okp(_params), JsonWebSignatureAlg::EdDsa) => {
@@ -219,31 +274,76 @@ pub enum AsymmetricVerifyingKey {
 }
 
 impl AsymmetricVerifyingKey {
+    #[must_use]
+    pub fn rs256(key: rsa::RsaPublicKey) -> Self {
+        Self::Rs256(rsa::pkcs1v15::VerifyingKey::new_with_prefix(key))
+    }
+
+    #[must_use]
+    pub fn rs384(key: rsa::RsaPublicKey) -> Self {
+        Self::Rs384(rsa::pkcs1v15::VerifyingKey::new_with_prefix(key))
+    }
+
+    #[must_use]
+    pub fn rs512(key: rsa::RsaPublicKey) -> Self {
+        Self::Rs512(rsa::pkcs1v15::VerifyingKey::new_with_prefix(key))
+    }
+
+    #[must_use]
+    pub fn ps256(key: rsa::RsaPublicKey) -> Self {
+        Self::Ps256(rsa::pss::VerifyingKey::new(key))
+    }
+
+    #[must_use]
+    pub fn ps384(key: rsa::RsaPublicKey) -> Self {
+        Self::Ps384(rsa::pss::VerifyingKey::new(key))
+    }
+
+    #[must_use]
+    pub fn ps512(key: rsa::RsaPublicKey) -> Self {
+        Self::Ps512(rsa::pss::VerifyingKey::new(key))
+    }
+
+    #[must_use]
+    pub fn es256(key: elliptic_curve::PublicKey<p256::NistP256>) -> Self {
+        Self::Es256(ecdsa::VerifyingKey::from(key))
+    }
+
+    #[must_use]
+    pub fn es384(key: elliptic_curve::PublicKey<p384::NistP384>) -> Self {
+        Self::Es384(ecdsa::VerifyingKey::from(key))
+    }
+
+    #[must_use]
+    pub fn es256k(key: elliptic_curve::PublicKey<k256::Secp256k1>) -> Self {
+        Self::Es256K(ecdsa::VerifyingKey::from(key))
+    }
+
     pub fn from_jwk_and_alg(
         params: &JsonWebKeyPublicParameters,
         alg: &JsonWebSignatureAlg,
     ) -> Result<Self, AsymmetricKeyFromJwkError> {
         match (params, alg) {
             (JsonWebKeyPublicParameters::Rsa(params), alg) => match alg {
-                JsonWebSignatureAlg::Rs256 => Ok(Self::Rs256(params.try_into()?)),
-                JsonWebSignatureAlg::Rs384 => Ok(Self::Rs384(params.try_into()?)),
-                JsonWebSignatureAlg::Rs512 => Ok(Self::Rs512(params.try_into()?)),
-                JsonWebSignatureAlg::Ps256 => Ok(Self::Ps256(params.try_into()?)),
-                JsonWebSignatureAlg::Ps384 => Ok(Self::Ps384(params.try_into()?)),
-                JsonWebSignatureAlg::Ps512 => Ok(Self::Ps512(params.try_into()?)),
+                JsonWebSignatureAlg::Rs256 => Ok(Self::rs256(params.try_into()?)),
+                JsonWebSignatureAlg::Rs384 => Ok(Self::rs384(params.try_into()?)),
+                JsonWebSignatureAlg::Rs512 => Ok(Self::rs512(params.try_into()?)),
+                JsonWebSignatureAlg::Ps256 => Ok(Self::ps256(params.try_into()?)),
+                JsonWebSignatureAlg::Ps384 => Ok(Self::ps384(params.try_into()?)),
+                JsonWebSignatureAlg::Ps512 => Ok(Self::ps512(params.try_into()?)),
                 _ => Err(AsymmetricKeyFromJwkError::KeyNotSuitable { alg: alg.clone() }),
             },
 
             (JsonWebKeyPublicParameters::Ec(params), JsonWebSignatureAlg::Es256)
                 if params.crv == JsonWebKeyEcEllipticCurve::P256 =>
             {
-                Ok(Self::Es256(params.try_into()?))
+                Ok(Self::es256(params.try_into()?))
             }
 
             (JsonWebKeyPublicParameters::Ec(params), JsonWebSignatureAlg::Es384)
                 if params.crv == JsonWebKeyEcEllipticCurve::P384 =>
             {
-                Ok(Self::Es384(params.try_into()?))
+                Ok(Self::es384(params.try_into()?))
             }
 
             (JsonWebKeyPublicParameters::Ec(params), JsonWebSignatureAlg::Es512)
@@ -255,7 +355,7 @@ impl AsymmetricVerifyingKey {
             (JsonWebKeyPublicParameters::Ec(params), JsonWebSignatureAlg::Es256K)
                 if params.crv == JsonWebKeyEcEllipticCurve::Secp256K1 =>
             {
-                Ok(Self::Es256K(params.try_into()?))
+                Ok(Self::es256k(params.try_into()?))
             }
 
             (JsonWebKeyPublicParameters::Okp(_params), JsonWebSignatureAlg::EdDsa) => {

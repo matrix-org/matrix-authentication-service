@@ -526,12 +526,12 @@ mod tests {
         rsa::RsaPublicKey::try_from(keys.next().unwrap().params().rsa().unwrap()).unwrap();
         rsa::RsaPublicKey::try_from(keys.next().unwrap().params().rsa().unwrap()).unwrap();
         // 7th is P-256
-        ecdsa::VerifyingKey::<p256::NistP256>::try_from(
+        elliptic_curve::PublicKey::<p256::NistP256>::try_from(
             keys.next().unwrap().params().ec().unwrap(),
         )
         .unwrap();
         // 8th is P-384
-        ecdsa::VerifyingKey::<p384::NistP384>::try_from(
+        elliptic_curve::PublicKey::<p384::NistP384>::try_from(
             keys.next().unwrap().params().ec().unwrap(),
         )
         .unwrap();

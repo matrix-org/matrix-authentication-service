@@ -136,10 +136,6 @@ impl EcPublicParameters {
     pub const fn new(crv: JsonWebKeyEcEllipticCurve, x: Vec<u8>, y: Vec<u8>) -> Self {
         Self { crv, x, y }
     }
-
-    pub const fn crv(&self) -> &JsonWebKeyEcEllipticCurve {
-        &self.crv
-    }
 }
 
 impl ParametersInfo for EcPublicParameters {
@@ -182,14 +178,9 @@ impl OkpPublicParameters {
     pub const fn new(crv: JsonWebKeyOkpEllipticCurve, x: Vec<u8>) -> Self {
         Self { crv, x }
     }
-
-    pub const fn crv(&self) -> &JsonWebKeyOkpEllipticCurve {
-        &self.crv
-    }
 }
 
 mod rsa_impls {
-    use digest::{const_oid::AssociatedOid, Digest};
     use rsa::{BigUint, PublicKeyParts, RsaPublicKey};
 
     use super::{JsonWebKeyPublicParameters, RsaPublicParameters};
@@ -221,48 +212,6 @@ mod rsa_impls {
         }
     }
 
-    impl<H> TryFrom<RsaPublicParameters> for rsa::pkcs1v15::VerifyingKey<H>
-    where
-        H: Digest + AssociatedOid,
-    {
-        type Error = rsa::errors::Error;
-        fn try_from(value: RsaPublicParameters) -> Result<Self, Self::Error> {
-            Self::try_from(&value)
-        }
-    }
-
-    impl<H> TryFrom<&RsaPublicParameters> for rsa::pkcs1v15::VerifyingKey<H>
-    where
-        H: Digest + AssociatedOid,
-    {
-        type Error = rsa::errors::Error;
-        fn try_from(value: &RsaPublicParameters) -> Result<Self, Self::Error> {
-            let key: RsaPublicKey = value.try_into()?;
-            Ok(Self::new_with_prefix(key))
-        }
-    }
-
-    impl<H> TryFrom<RsaPublicParameters> for rsa::pss::VerifyingKey<H>
-    where
-        H: Digest,
-    {
-        type Error = rsa::errors::Error;
-        fn try_from(value: RsaPublicParameters) -> Result<Self, Self::Error> {
-            Self::try_from(&value)
-        }
-    }
-
-    impl<H> TryFrom<&RsaPublicParameters> for rsa::pss::VerifyingKey<H>
-    where
-        H: Digest,
-    {
-        type Error = rsa::errors::Error;
-        fn try_from(value: &RsaPublicParameters) -> Result<Self, Self::Error> {
-            let key: RsaPublicKey = value.try_into()?;
-            Ok(Self::new(key))
-        }
-    }
-
     impl TryFrom<RsaPublicParameters> for RsaPublicKey {
         type Error = rsa::errors::Error;
         fn try_from(value: RsaPublicParameters) -> Result<Self, Self::Error> {
@@ -283,102 +232,58 @@ mod rsa_impls {
 
 mod ec_impls {
     use digest::typenum::Unsigned;
-    use ecdsa::{EncodedPoint, PrimeCurve, VerifyingKey};
+    use ecdsa::EncodedPoint;
     use elliptic_curve::{
         sec1::{Coordinates, FromEncodedPoint, ModulusSize, ToEncodedPoint},
-        AffinePoint, Curve, FieldBytes, FieldSize, ProjectiveArithmetic, PublicKey,
+        AffinePoint, Curve, FieldBytes, FieldSize, PublicKey,
     };
 
     use super::{super::JwkEcCurve, EcPublicParameters, JsonWebKeyPublicParameters};
 
-    impl<C> From<ecdsa::VerifyingKey<C>> for JsonWebKeyPublicParameters
+    impl<C> TryFrom<&EcPublicParameters> for PublicKey<C>
     where
-        C: PrimeCurve + ProjectiveArithmetic + JwkEcCurve,
+        C: Curve + elliptic_curve::ProjectiveArithmetic,
         AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
         FieldSize<C>: ModulusSize,
     {
-        fn from(key: ecdsa::VerifyingKey<C>) -> Self {
-            Self::from(&key)
-        }
-    }
-
-    impl<C> From<&ecdsa::VerifyingKey<C>> for JsonWebKeyPublicParameters
-    where
-        C: PrimeCurve + ProjectiveArithmetic + JwkEcCurve,
-        AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-        FieldSize<C>: ModulusSize,
-    {
-        fn from(key: &ecdsa::VerifyingKey<C>) -> Self {
-            Self::Ec(key.into())
-        }
-    }
-
-    impl<C> From<ecdsa::VerifyingKey<C>> for EcPublicParameters
-    where
-        C: PrimeCurve + ProjectiveArithmetic + JwkEcCurve,
-        AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-        FieldSize<C>: ModulusSize,
-    {
-        fn from(key: ecdsa::VerifyingKey<C>) -> Self {
-            Self::from(&key)
-        }
-    }
-
-    impl<C> From<&ecdsa::VerifyingKey<C>> for EcPublicParameters
-    where
-        C: PrimeCurve + ProjectiveArithmetic + JwkEcCurve,
-        AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-        FieldSize<C>: ModulusSize,
-    {
-        fn from(key: &ecdsa::VerifyingKey<C>) -> Self {
-            let points = key.to_encoded_point(false);
-            EcPublicParameters {
-                x: points.x().unwrap().to_vec(),
-                y: points.y().unwrap().to_vec(),
-                crv: C::CRV,
-            }
-        }
-    }
-
-    impl<C> TryFrom<EcPublicParameters> for VerifyingKey<C>
-    where
-        C: PrimeCurve + ProjectiveArithmetic + JwkEcCurve,
-        AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-        FieldSize<C>: ModulusSize,
-    {
-        type Error = ecdsa::Error;
-        fn try_from(value: EcPublicParameters) -> Result<Self, Self::Error> {
-            (&value).try_into()
-        }
-    }
-
-    impl<C> TryFrom<&EcPublicParameters> for VerifyingKey<C>
-    where
-        C: PrimeCurve + ProjectiveArithmetic + JwkEcCurve,
-        AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-        FieldSize<C>: ModulusSize,
-    {
-        type Error = ecdsa::Error;
-
+        type Error = elliptic_curve::Error;
         fn try_from(value: &EcPublicParameters) -> Result<Self, Self::Error> {
-            if *value.crv() != C::CRV {
-                return Err(Self::Error::default());
-            }
-
             let x = value
                 .x
                 .get(..FieldSize::<C>::USIZE)
-                .ok_or_else(Self::Error::default)?;
+                .ok_or(elliptic_curve::Error)?;
             let y = value
                 .y
                 .get(..FieldSize::<C>::USIZE)
-                .ok_or_else(Self::Error::default)?;
+                .ok_or(elliptic_curve::Error)?;
 
             let x = FieldBytes::<C>::from_slice(x);
             let y = FieldBytes::<C>::from_slice(y);
             let pubkey = EncodedPoint::<C>::from_affine_coordinates(x, y, false);
-            let pubkey = VerifyingKey::from_encoded_point(&pubkey)?;
-            Ok(pubkey)
+            let pubkey: Option<_> = PublicKey::from_encoded_point(&pubkey).into();
+            pubkey.ok_or(elliptic_curve::Error)
+        }
+    }
+
+    impl<C> From<PublicKey<C>> for JsonWebKeyPublicParameters
+    where
+        C: Curve + elliptic_curve::ProjectiveArithmetic + JwkEcCurve,
+        AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+        FieldSize<C>: ModulusSize,
+    {
+        fn from(key: PublicKey<C>) -> Self {
+            (&key).into()
+        }
+    }
+
+    impl<C> From<&PublicKey<C>> for JsonWebKeyPublicParameters
+    where
+        C: Curve + elliptic_curve::ProjectiveArithmetic + JwkEcCurve,
+        AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+        FieldSize<C>: ModulusSize,
+    {
+        fn from(key: &PublicKey<C>) -> Self {
+            Self::Ec(key.into())
         }
     }
 
