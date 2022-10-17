@@ -26,7 +26,10 @@ use hyper::{
 };
 use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
 use thiserror::Error;
-use tower::{util::BoxCloneService, Service, ServiceBuilder, ServiceExt};
+use tower::{
+    util::{BoxCloneService, MapErrLayer, MapResponseLayer},
+    Layer, Service, ServiceExt,
+};
 
 use crate::{
     layers::{
@@ -172,9 +175,7 @@ where
     E: Into<BoxError>,
 {
     // Trace DNS requests
-    let resolver = ServiceBuilder::new()
-        .layer(TraceLayer::dns())
-        .service(GaiResolver::new());
+    let resolver = TraceLayer::dns().layer(GaiResolver::new());
 
     let roots = tls_roots().await?;
     let tls_config = rustls::ClientConfig::builder()
@@ -228,15 +229,15 @@ where
 {
     let client = make_base_client().await?;
 
-    let client = ServiceBuilder::new()
+    let layer = (
         // Convert the errors to ClientError to help dealing with them
-        .map_err(ClientError::from)
-        .map_response(|r: ClientResponse<hyper::Body>| {
+        MapErrLayer::new(ClientError::from),
+        MapResponseLayer::new(|r: ClientResponse<hyper::Body>| {
             r.map(|body| body.map_err(ClientError::from).boxed())
-        })
-        .layer(ClientLayer::new(operation))
-        .service(client)
-        .boxed_clone();
+        }),
+        ClientLayer::new(operation),
+    );
+    let client = layer.layer(client).boxed_clone();
 
     Ok(client)
 }
