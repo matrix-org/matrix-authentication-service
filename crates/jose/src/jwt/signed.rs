@@ -13,8 +13,9 @@
 // limitations under the License.
 
 use base64ct::{Base64UrlUnpadded, Encoding};
+use rand::{thread_rng, CryptoRng, RngCore};
 use serde::{de::DeserializeOwned, Serialize};
-use signature::{Signature, Signer, Verifier};
+use signature::{RandomizedSigner, Signature, Verifier};
 use thiserror::Error;
 
 use super::{header::JsonWebSignatureHeader, raw::RawJwt};
@@ -279,6 +280,12 @@ pub enum JwtSignatureError {
         #[source]
         inner: serde_json::Error,
     },
+
+    #[error("failed to sign")]
+    Signature {
+        #[from]
+        inner: signature::Error,
+    },
 }
 
 impl JwtSignatureError {
@@ -298,7 +305,22 @@ impl<T> Jwt<'static, T> {
         key: &K,
     ) -> Result<Self, JwtSignatureError>
     where
-        K: Signer<S>,
+        K: RandomizedSigner<S>,
+        S: Signature,
+        T: Serialize,
+    {
+        Self::sign_with_rng(thread_rng(), header, payload, key)
+    }
+
+    pub fn sign_with_rng<R, K, S>(
+        rng: R,
+        header: JsonWebSignatureHeader,
+        payload: T,
+        key: &K,
+    ) -> Result<Self, JwtSignatureError>
+    where
+        R: CryptoRng + RngCore,
+        K: RandomizedSigner<S>,
         S: Signature,
         T: Serialize,
     {
@@ -313,7 +335,10 @@ impl<T> Jwt<'static, T> {
         let first_dot = header_.len();
         let second_dot = inner.len();
 
-        let signature = key.sign(inner.as_bytes()).as_bytes().to_vec();
+        let signature = key
+            .try_sign_with_rng(rng, inner.as_bytes())?
+            .as_bytes()
+            .to_vec();
         let signature_ = Base64UrlUnpadded::encode_string(&signature);
         inner.reserve_exact(1 + signature_.len());
         inner.push('.');

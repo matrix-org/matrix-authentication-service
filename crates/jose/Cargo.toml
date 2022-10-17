@@ -18,7 +18,7 @@ k256 = { version = "0.11.6", features = ["ecdsa"] }
 p256 = { version = "0.11.1", features = ["ecdsa"] }
 p384 = { version = "0.11.2", features = ["ecdsa"] }
 rand = "0.8.5"
-rsa = "0.7.0-rc.0"
+rsa = "0.7.0"
 schemars = "0.8.10"
 sec1 = "0.3.0"
 serde = { version = "1.0.145", features = ["derive"] }
@@ -31,3 +31,7 @@ tracing = "0.1.36"
 url = { version = "2.3.1", features = ["serde"] }
 
 mas-iana = { path = "../iana" }
+
+[dev-dependencies]
+insta = { version = "1.21.0" }
+rand_chacha = "0.3.1"

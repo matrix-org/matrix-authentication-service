@@ -79,6 +79,17 @@ impl From<super::Hs512Key> for SymmetricKey {
     }
 }
 
+impl signature::RandomizedSigner<Signature> for SymmetricKey {
+    fn try_sign_with_rng(
+        &self,
+        _rng: impl rand::CryptoRng + rand::RngCore,
+        msg: &[u8],
+    ) -> Result<Signature, signature::Error> {
+        // XXX: is that implementation alright?
+        signature::Signer::try_sign(self, msg)
+    }
+}
+
 impl signature::Signer<Signature> for SymmetricKey {
     fn try_sign(&self, msg: &[u8]) -> Result<Signature, signature::Error> {
         match self {
