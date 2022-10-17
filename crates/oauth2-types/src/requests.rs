@@ -41,13 +41,13 @@ use crate::{response_type::ResponseType, scope::Scope};
     PartialOrd,
     Ord,
     Clone,
-    Copy,
     Display,
     FromStr,
     SerializeDisplay,
     DeserializeFromStr,
 )]
 #[display(style = "snake_case")]
+#[non_exhaustive]
 pub enum ResponseMode {
     /// Authorization Response parameters are encoded in the query string added
     /// to the `redirect_uri`.
@@ -65,6 +65,10 @@ pub enum ResponseMode {
     ///
     /// Defined in [OAuth 2.0 Form Post Response Mode](https://openid.net/specs/oauth-v2-form-post-response-mode-1_0.html).
     FormPost,
+
+    /// An unknown value.
+    #[display("{0}")]
+    Unknown(String),
 }
 
 /// Value that specifies how the Authorization Server displays the
@@ -79,13 +83,13 @@ pub enum ResponseMode {
     PartialOrd,
     Ord,
     Clone,
-    Copy,
     Display,
     FromStr,
     SerializeDisplay,
     DeserializeFromStr,
 )]
 #[display(style = "snake_case")]
+#[non_exhaustive]
 pub enum Display {
     /// The Authorization Server should display the authentication and consent
     /// UI consistent with a full User Agent page view.
@@ -104,6 +108,10 @@ pub enum Display {
     /// The Authorization Server should display the authentication and consent
     /// UI consistent with a "feature phone" type display.
     Wap,
+
+    /// An unknown value.
+    #[display("{0}")]
+    Unknown(String),
 }
 
 impl Default for Display {
@@ -124,13 +132,13 @@ impl Default for Display {
     PartialOrd,
     Ord,
     Clone,
-    Copy,
     Display,
     FromStr,
     SerializeDisplay,
     DeserializeFromStr,
 )]
 #[display(style = "snake_case")]
+#[non_exhaustive]
 pub enum Prompt {
     /// The Authorization Server must not display any authentication or consent
     /// user interface pages.
@@ -157,6 +165,10 @@ pub enum Prompt {
     ///
     /// Defined in [Initiating User Registration via OpenID Connect](https://openid.net/specs/openid-connect-prompt-create-1_0.html).
     Create,
+
+    /// An unknown value.
+    #[display("{0}")]
+    Unknown(String),
 }
 
 /// The body of a request to the [Authorization Endpoint].
