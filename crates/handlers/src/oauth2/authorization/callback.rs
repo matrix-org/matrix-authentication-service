@@ -41,12 +41,15 @@ pub struct CallbackDestination {
 }
 
 #[derive(Debug, Error)]
-pub enum InvalidRedirectUriError {
+pub enum IntoCallbackDestinationError {
     #[error("Redirect URI can't have a fragment")]
-    FragmentNotAllowed,
+    RedirectUriFragmentNotAllowed,
 
     #[error("Existing query parameters are not valid")]
-    InvalidQueryParams(#[from] serde_urlencoded::de::Error),
+    RedirectUriInvalidQueryParams(#[from] serde_urlencoded::de::Error),
+
+    #[error("Requested response_mode is not supported")]
+    UnsupportedResponseMode,
 }
 
 #[derive(Debug, Error)]
@@ -59,11 +62,11 @@ pub enum CallbackDestinationError {
 }
 
 impl<S: StorageBackend> TryFrom<&AuthorizationGrant<S>> for CallbackDestination {
-    type Error = InvalidRedirectUriError;
+    type Error = IntoCallbackDestinationError;
 
     fn try_from(value: &AuthorizationGrant<S>) -> Result<Self, Self::Error> {
         Self::try_new(
-            value.response_mode,
+            &value.response_mode,
             value.redirect_uri.clone(),
             value.state.clone(),
         )
@@ -72,12 +75,12 @@ impl<S: StorageBackend> TryFrom<&AuthorizationGrant<S>> for CallbackDestination 
 
 impl CallbackDestination {
     pub fn try_new(
-        mode: ResponseMode,
+        mode: &ResponseMode,
         mut redirect_uri: Url,
         state: Option<String>,
-    ) -> Result<Self, InvalidRedirectUriError> {
+    ) -> Result<Self, IntoCallbackDestinationError> {
         if redirect_uri.fragment().is_some() {
-            return Err(InvalidRedirectUriError::FragmentNotAllowed);
+            return Err(IntoCallbackDestinationError::RedirectUriFragmentNotAllowed);
         }
 
         let mode = match mode {
@@ -95,6 +98,7 @@ impl CallbackDestination {
             }
             ResponseMode::Fragment => CallbackDestinationMode::Fragment,
             ResponseMode::FormPost => CallbackDestinationMode::FormPost,
+            _ => return Err(IntoCallbackDestinationError::UnsupportedResponseMode),
         };
 
         Ok(Self {
