@@ -438,38 +438,26 @@ impl PrivateKey {
             (Self::Rsa(key), _) => {
                 let key: rsa::RsaPublicKey = key.to_public_key();
                 match alg {
-                    JsonWebSignatureAlg::Rs256 => {
-                        AsymmetricVerifyingKey::Rs256(rsa::pkcs1v15::VerifyingKey::new(key))
-                    }
-                    JsonWebSignatureAlg::Rs384 => {
-                        AsymmetricVerifyingKey::Rs384(rsa::pkcs1v15::VerifyingKey::new(key))
-                    }
-                    JsonWebSignatureAlg::Rs512 => {
-                        AsymmetricVerifyingKey::Rs512(rsa::pkcs1v15::VerifyingKey::new(key))
-                    }
-                    JsonWebSignatureAlg::Ps256 => {
-                        AsymmetricVerifyingKey::Ps256(rsa::pss::VerifyingKey::new(key))
-                    }
-                    JsonWebSignatureAlg::Ps384 => {
-                        AsymmetricVerifyingKey::Ps384(rsa::pss::VerifyingKey::new(key))
-                    }
-                    JsonWebSignatureAlg::Ps512 => {
-                        AsymmetricVerifyingKey::Ps512(rsa::pss::VerifyingKey::new(key))
-                    }
+                    JsonWebSignatureAlg::Rs256 => AsymmetricVerifyingKey::rs256(key),
+                    JsonWebSignatureAlg::Rs384 => AsymmetricVerifyingKey::rs384(key),
+                    JsonWebSignatureAlg::Rs512 => AsymmetricVerifyingKey::rs512(key),
+                    JsonWebSignatureAlg::Ps256 => AsymmetricVerifyingKey::ps256(key),
+                    JsonWebSignatureAlg::Ps384 => AsymmetricVerifyingKey::ps384(key),
+                    JsonWebSignatureAlg::Ps512 => AsymmetricVerifyingKey::ps512(key),
                     _ => return Err(WrongAlgorithmError),
                 }
             }
 
             (Self::EcP256(key), JsonWebSignatureAlg::Es256) => {
-                AsymmetricVerifyingKey::Es256(key.public_key().into())
+                AsymmetricVerifyingKey::es256(key.public_key())
             }
 
             (Self::EcP384(key), JsonWebSignatureAlg::Es384) => {
-                AsymmetricVerifyingKey::Es384(key.public_key().into())
+                AsymmetricVerifyingKey::es384(key.public_key())
             }
 
             (Self::EcK256(key), JsonWebSignatureAlg::Es256K) => {
-                AsymmetricVerifyingKey::Es256K(key.public_key().into())
+                AsymmetricVerifyingKey::es256k(key.public_key())
             }
 
             _ => return Err(WrongAlgorithmError),
@@ -492,38 +480,26 @@ impl PrivateKey {
             (Self::Rsa(key), _) => {
                 let key: rsa::RsaPrivateKey = *key.clone();
                 match alg {
-                    JsonWebSignatureAlg::Rs256 => {
-                        AsymmetricSigningKey::Rs256(rsa::pkcs1v15::SigningKey::new(key))
-                    }
-                    JsonWebSignatureAlg::Rs384 => {
-                        AsymmetricSigningKey::Rs384(rsa::pkcs1v15::SigningKey::new(key))
-                    }
-                    JsonWebSignatureAlg::Rs512 => {
-                        AsymmetricSigningKey::Rs512(rsa::pkcs1v15::SigningKey::new(key))
-                    }
-                    JsonWebSignatureAlg::Ps256 => {
-                        AsymmetricSigningKey::Ps256(rsa::pss::SigningKey::new(key))
-                    }
-                    JsonWebSignatureAlg::Ps384 => {
-                        AsymmetricSigningKey::Ps384(rsa::pss::SigningKey::new(key))
-                    }
-                    JsonWebSignatureAlg::Ps512 => {
-                        AsymmetricSigningKey::Ps512(rsa::pss::SigningKey::new(key))
-                    }
+                    JsonWebSignatureAlg::Rs256 => AsymmetricSigningKey::rs256(key),
+                    JsonWebSignatureAlg::Rs384 => AsymmetricSigningKey::rs384(key),
+                    JsonWebSignatureAlg::Rs512 => AsymmetricSigningKey::rs512(key),
+                    JsonWebSignatureAlg::Ps256 => AsymmetricSigningKey::ps256(key),
+                    JsonWebSignatureAlg::Ps384 => AsymmetricSigningKey::ps384(key),
+                    JsonWebSignatureAlg::Ps512 => AsymmetricSigningKey::ps512(key),
                     _ => return Err(WrongAlgorithmError),
                 }
             }
 
             (Self::EcP256(key), JsonWebSignatureAlg::Es256) => {
-                AsymmetricSigningKey::Es256(key.as_ref().into())
+                AsymmetricSigningKey::es256(*key.clone())
             }
 
             (Self::EcP384(key), JsonWebSignatureAlg::Es384) => {
-                AsymmetricSigningKey::Es384(key.as_ref().into())
+                AsymmetricSigningKey::es384(*key.clone())
             }
 
             (Self::EcK256(key), JsonWebSignatureAlg::Es256K) => {
-                AsymmetricSigningKey::Es256K(key.as_ref().into())
+                AsymmetricSigningKey::es256k(*key.clone())
             }
 
             _ => return Err(WrongAlgorithmError),
@@ -565,18 +541,9 @@ impl From<&PrivateKey> for JsonWebKeyPublicParameters {
     fn from(val: &PrivateKey) -> Self {
         match val {
             PrivateKey::Rsa(key) => key.to_public_key().into(),
-            PrivateKey::EcP256(key) => {
-                let key: ecdsa::VerifyingKey<_> = key.public_key().into();
-                key.into()
-            }
-            PrivateKey::EcP384(key) => {
-                let key: ecdsa::VerifyingKey<_> = key.public_key().into();
-                key.into()
-            }
-            PrivateKey::EcK256(key) => {
-                let key: ecdsa::VerifyingKey<_> = key.public_key().into();
-                key.into()
-            }
+            PrivateKey::EcP256(key) => key.public_key().into(),
+            PrivateKey::EcP384(key) => key.public_key().into(),
+            PrivateKey::EcK256(key) => key.public_key().into(),
         }
     }
 }
