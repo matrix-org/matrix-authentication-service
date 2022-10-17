@@ -58,9 +58,49 @@
     "http": {
       "description": "Configuration of the HTTP server",
       "default": {
-        "address": "[::]:8080",
-        "public_base": "http://[::]:8080/",
-        "web_root": null
+        "listeners": [
+          {
+            "binds": [
+              {
+                "address": "[::]:8080"
+              }
+            ],
+            "name": "web",
+            "proxy_protocol": false,
+            "resources": [
+              {
+                "name": "discovery"
+              },
+              {
+                "name": "human"
+              },
+              {
+                "name": "oauth"
+              },
+              {
+                "name": "compat"
+              },
+              {
+                "name": "static"
+              }
+            ]
+          },
+          {
+            "binds": [
+              {
+                "address": "localhost:8081"
+              }
+            ],
+            "name": "internal",
+            "proxy_protocol": false,
+            "resources": [
+              {
+                "name": "health"
+              }
+            ]
+          }
+        ],
+        "public_base": "http://[::]:8080/"
       },
       "allOf": [
         {
@@ -133,6 +173,84 @@
     }
   },
   "definitions": {
+    "BindConfig": {
+      "description": "Configuration of a single listener",
+      "anyOf": [
+        {
+          "description": "Listen on the specified host and port",
+          "type": "object",
+          "required": [
+            "port"
+          ],
+          "properties": {
+            "host": {
+              "description": "Host on which to listen.\n\nDefaults to listening on all addresses",
+              "type": "string"
+            },
+            "port": {
+              "description": "Port on which to listen.",
+              "type": "integer",
+              "format": "uint16",
+              "minimum": 0.0
+            }
+          }
+        },
+        {
+          "description": "Listen on the specified address",
+          "type": "object",
+          "required": [
+            "address"
+          ],
+          "properties": {
+            "address": {
+              "description": "Host and port on which to listen",
+              "examples": [
+                "[::1]:8080",
+                "[::]:8080",
+                "127.0.0.1:8080",
+                "0.0.0.0:8080"
+              ],
+              "type": "string"
+            }
+          }
+        },
+        {
+          "description": "Listen on a UNIX domain socket",
+          "type": "object",
+          "required": [
+            "socket"
+          ],
+          "properties": {
+            "socket": {
+              "description": "Path to the socket",
+              "type": "string"
+            }
+          }
+        },
+        {
+          "description": "Accept connections on file descriptors passed by the parent process.\n\nThis is useful for grabbing sockets passed by systemd.\n\nSee <https://www.freedesktop.org/software/systemd/man/sd_listen_fds.html>",
+          "type": "object",
+          "properties": {
+            "fd": {
+              "description": "Index of the file descriptor. Note that this is offseted by 3 because of the standard input/output sockets, so setting here a value of `0` will grab the file descriptor `3`",
+              "default": 0,
+              "type": "integer",
+              "format": "uint",
+              "minimum": 0.0
+            },
+            "kind": {
+              "description": "Whether the socket is a TCP socket or a UNIX domain socket. Defaults to TCP.",
+              "default": "tcp",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/UnixOrTcp"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
     "ClientConfig": {
       "description": "An OAuth 2.0 client configuration",
       "type": "object",
@@ -496,11 +614,28 @@
     },
     "EmailSmtpMode": {
       "description": "Encryption mode to use",
-      "type": "string",
-      "enum": [
-        "plain",
-        "starttls",
-        "tls"
+      "oneOf": [
+        {
+          "description": "Plain text",
+          "type": "string",
+          "enum": [
+            "plain"
+          ]
+        },
+        {
+          "description": "StartTLS (starts as plain text then upgrade to TLS)",
+          "type": "string",
+          "enum": [
+            "starttls"
+          ]
+        },
+        {
+          "description": "TLS",
+          "type": "string",
+          "enum": [
+            "tls"
+          ]
+        }
       ]
     },
     "HttpConfig": {
@@ -510,61 +645,146 @@
         "public_base"
       ],
       "properties": {
-        "address": {
-          "description": "IP and port the server should listen to",
-          "default": "[::]:8080",
-          "examples": [
-            "[::1]:8080",
-            "[::]:8080",
-            "127.0.0.1:8080",
-            "0.0.0.0:8080"
-          ],
-          "type": "string"
+        "listeners": {
+          "description": "List of listeners to run",
+          "default": [],
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ListenerConfig"
+          }
         },
         "public_base": {
           "description": "Public URL base from where the authentication service is reachable",
           "type": "string",
           "format": "uri"
-        },
-        "web_root": {
-          "description": "Path from which to serve static files. If not specified, it will serve the static files embedded in the server binary",
-          "default": null,
-          "type": "string"
         }
       }
     },
     "JsonWebKeyEcEllipticCurve": {
       "description": "JSON Web Key EC Elliptic Curve\n\nSource: <https://www.iana.org/assignments/jose/web-key-elliptic-curve.csv>",
-      "type": "string",
-      "enum": [
-        "P-256",
-        "P-384",
-        "P-521",
-        "secp256k1"
+      "oneOf": [
+        {
+          "description": "P-256 Curve",
+          "type": "string",
+          "enum": [
+            "P-256"
+          ]
+        },
+        {
+          "description": "P-384 Curve",
+          "type": "string",
+          "enum": [
+            "P-384"
+          ]
+        },
+        {
+          "description": "P-521 Curve",
+          "type": "string",
+          "enum": [
+            "P-521"
+          ]
+        },
+        {
+          "description": "SECG secp256k1 curve",
+          "type": "string",
+          "enum": [
+            "secp256k1"
+          ]
+        }
       ]
     },
     "JsonWebKeyOkpEllipticCurve": {
       "description": "JSON Web Key OKP Elliptic Curve\n\nSource: <https://www.iana.org/assignments/jose/web-key-elliptic-curve.csv>",
-      "type": "string",
-      "enum": [
-        "Ed25519",
-        "Ed448",
-        "X25519",
-        "X448"
+      "oneOf": [
+        {
+          "description": "Ed25519 signature algorithm key pairs",
+          "type": "string",
+          "enum": [
+            "Ed25519"
+          ]
+        },
+        {
+          "description": "Ed448 signature algorithm key pairs",
+          "type": "string",
+          "enum": [
+            "Ed448"
+          ]
+        },
+        {
+          "description": "X25519 function key pairs",
+          "type": "string",
+          "enum": [
+            "X25519"
+          ]
+        },
+        {
+          "description": "X448 function key pairs",
+          "type": "string",
+          "enum": [
+            "X448"
+          ]
+        }
       ]
     },
     "JsonWebKeyOperation": {
       "description": "JSON Web Key Operation\n\nSource: <https://www.iana.org/assignments/jose/web-key-operations.csv>",
-      "type": "string",
-      "enum": [
-        "sign",
-        "verify",
-        "encrypt",
-        "decrypt",
-        "wrapKey",
-        "unwrapKey",
-        "deriveKey",
-        "deriveBits"
+      "oneOf": [
+        {
+          "description": "Compute digital signature or MAC",
+          "type": "string",
+          "enum": [
+            "sign"
+          ]
+        },
+        {
+          "description": "Verify digital signature or MAC",
+          "type": "string",
+          "enum": [
+            "verify"
+          ]
+        },
+        {
+          "description": "Encrypt content",
+          "type": "string",
+          "enum": [
+            "encrypt"
+          ]
+        },
+        {
+          "description": "Decrypt content and validate decryption, if applicable",
+          "type": "string",
+          "enum": [
+            "decrypt"
+          ]
+        },
+        {
+          "description": "Encrypt key",
+          "type": "string",
+          "enum": [
+            "wrapKey"
+          ]
+        },
+        {
+          "description": "Decrypt key and validate decryption, if applicable",
+          "type": "string",
+          "enum": [
+            "unwrapKey"
+          ]
+        },
+        {
+          "description": "Derive key",
+          "type": "string",
+          "enum": [
+            "deriveKey"
+          ]
+        },
+        {
+          "description": "Derive bits not to be used as a key",
+          "type": "string",
+          "enum": [
+            "deriveBits"
+          ]
+        }
       ]
     },
     "JsonWebKeySet_for_JsonWebKeyPublicParameters": {
@@ -583,10 +803,21 @@
     },
     "JsonWebKeyUse": {
       "description": "JSON Web Key Use\n\nSource: <https://www.iana.org/assignments/jose/web-key-use.csv>",
-      "type": "string",
-      "enum": [
-        "sig",
-        "enc"
+      "oneOf": [
+        {
+          "description": "Digital Signature or MAC",
+          "type": "string",
+          "enum": [
+            "sig"
+          ]
+        },
+        {
+          "description": "Encryption",
+          "type": "string",
+          "enum": [
+            "enc"
+          ]
+        }
       ]
     },
     "JsonWebKey_for_JsonWebKeyPublicParameters": {
@@ -698,23 +929,112 @@
     },
     "JsonWebSignatureAlg": {
       "description": "JSON Web Signature \"alg\" parameter\n\nSource: <https://www.iana.org/assignments/jose/web-signature-encryption-algorithms.csv>",
-      "type": "string",
-      "enum": [
-        "HS256",
-        "HS384",
-        "HS512",
-        "RS256",
-        "RS384",
-        "RS512",
-        "ES256",
-        "ES384",
-        "ES512",
-        "PS256",
-        "PS384",
-        "PS512",
-        "none",
-        "EdDSA",
-        "ES256K"
+      "oneOf": [
+        {
+          "description": "HMAC using SHA-256",
+          "type": "string",
+          "enum": [
+            "HS256"
+          ]
+        },
+        {
+          "description": "HMAC using SHA-384",
+          "type": "string",
+          "enum": [
+            "HS384"
+          ]
+        },
+        {
+          "description": "HMAC using SHA-512",
+          "type": "string",
+          "enum": [
+            "HS512"
+          ]
+        },
+        {
+          "description": "RSASSA-PKCS1-v1_5 using SHA-256",
+          "type": "string",
+          "enum": [
+            "RS256"
+          ]
+        },
+        {
+          "description": "RSASSA-PKCS1-v1_5 using SHA-384",
+          "type": "string",
+          "enum": [
+            "RS384"
+          ]
+        },
+        {
+          "description": "RSASSA-PKCS1-v1_5 using SHA-512",
+          "type": "string",
+          "enum": [
+            "RS512"
+          ]
+        },
+        {
+          "description": "ECDSA using P-256 and SHA-256",
+          "type": "string",
+          "enum": [
+            "ES256"
+          ]
+        },
+        {
+          "description": "ECDSA using P-384 and SHA-384",
+          "type": "string",
+          "enum": [
+            "ES384"
+          ]
+        },
+        {
+          "description": "ECDSA using P-521 and SHA-512",
+          "type": "string",
+          "enum": [
+            "ES512"
+          ]
+        },
+        {
+          "description": "RSASSA-PSS using SHA-256 and MGF1 with SHA-256",
+          "type": "string",
+          "enum": [
+            "PS256"
+          ]
+        },
+        {
+          "description": "RSASSA-PSS using SHA-384 and MGF1 with SHA-384",
+          "type": "string",
+          "enum": [
+            "PS384"
+          ]
+        },
+        {
+          "description": "RSASSA-PSS using SHA-512 and MGF1 with SHA-512",
+          "type": "string",
+          "enum": [
+            "PS512"
+          ]
+        },
+        {
+          "description": "No digital signature or MAC performed",
+          "type": "string",
+          "enum": [
+            "none"
+          ]
+        },
+        {
+          "description": "EdDSA signature algorithms",
+          "type": "string",
+          "enum": [
+            "EdDSA"
+          ]
+        },
+        {
+          "description": "ECDSA using secp256k1 curve and SHA-256",
+          "type": "string",
+          "enum": [
+            "ES256K"
+          ]
+        }
       ]
     },
     "KeyConfig": {
@@ -751,6 +1071,47 @@
       "properties": {
         "kid": {
           "type": "string"
+        }
+      }
+    },
+    "ListenerConfig": {
+      "description": "Configuration of a listener",
+      "type": "object",
+      "required": [
+        "binds",
+        "resources"
+      ],
+      "properties": {
+        "binds": {
+          "description": "List of sockets to bind",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/BindConfig"
+          }
+        },
+        "name": {
+          "description": "A unique name for this listener which will be shown in traces and in metrics labels",
+          "type": "string"
+        },
+        "proxy_protocol": {
+          "description": "Accept HAProxy's Proxy Protocol V1",
+          "default": false,
+          "type": "boolean"
+        },
+        "resources": {
+          "description": "List of resources to mount",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Resource"
+          }
+        },
+        "tls": {
+          "description": "If set, makes the listener use TLS with the provided certificate and key",
+          "allOf": [
+            {
+              "$ref": "#/definitions/TlsConfig"
+            }
+          ]
         }
       }
     },
@@ -823,17 +1184,12 @@
           }
         },
         {
-          "description": "Export metrics by exposing a Prometheus-compatible endpoint",
+          "description": "Export metrics via Prometheus. An HTTP listener with the `prometheus` resource must be setup to expose the Promethes metrics.",
           "type": "object",
           "required": [
-            "address",
             "exporter"
           ],
           "properties": {
-            "address": {
-              "description": "IP and port on which the Prometheus endpoint should be exposed",
-              "type": "string"
-            },
             "exporter": {
               "type": "string",
               "enum": [
@@ -876,13 +1232,171 @@
     },
     "Propagator": {
       "description": "Propagation format for incoming and outgoing requests",
-      "type": "string",
-      "enum": [
-        "tracecontext",
-        "baggage",
-        "jaeger",
-        "b3",
-        "b3multi"
+      "oneOf": [
+        {
+          "description": "Propagate according to the W3C Trace Context specification",
+          "type": "string",
+          "enum": [
+            "tracecontext"
+          ]
+        },
+        {
+          "description": "Propagate according to the W3C Baggage specification",
+          "type": "string",
+          "enum": [
+            "baggage"
+          ]
+        },
+        {
+          "description": "Propagate trace context with Jaeger compatible headers",
+          "type": "string",
+          "enum": [
+            "jaeger"
+          ]
+        },
+        {
+          "description": "Propagate trace context with Zipkin compatible headers (single `b3` header variant)",
+          "type": "string",
+          "enum": [
+            "b3"
+          ]
+        },
+        {
+          "description": "Propagate trace context with Zipkin compatible headers (multiple `x-b3-*` headers variant)",
+          "type": "string",
+          "enum": [
+            "b3multi"
+          ]
+        }
+      ]
+    },
+    "Resource": {
+      "description": "HTTP resources to mount",
+      "oneOf": [
+        {
+          "description": "Healthcheck endpoint (/health)",
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "enum": [
+                "health"
+              ]
+            }
+          }
+        },
+        {
+          "description": "Prometheus metrics endpoint (/metrics)",
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "enum": [
+                "prometheus"
+              ]
+            }
+          }
+        },
+        {
+          "description": "OIDC discovery endpoints",
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "enum": [
+                "discovery"
+              ]
+            }
+          }
+        },
+        {
+          "description": "Pages destined to be viewed by humans",
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "enum": [
+                "human"
+              ]
+            }
+          }
+        },
+        {
+          "description": "OAuth-related APIs",
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "enum": [
+                "oauth"
+              ]
+            }
+          }
+        },
+        {
+          "description": "Matrix compatibility API",
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "enum": [
+                "compat"
+              ]
+            }
+          }
+        },
+        {
+          "description": "Static files",
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "enum": [
+                "static"
+              ]
+            },
+            "web_root": {
+              "description": "Path from which to serve static files. If not specified, it will serve the static files embedded in the server binary",
+              "type": "string"
+            }
+          }
+        },
+        {
+          "description": "Mount a \"/connection-info\" handler which helps debugging informations on the upstream connection",
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "enum": [
+                "connection-info"
+              ]
+            }
+          }
+        }
       ]
     },
     "SecretsConfig": {
@@ -954,6 +1468,36 @@
           "type": "string"
         }
       }
+    },
+    "TlsConfig": {
+      "description": "Configuration related to TLS on a listener",
+      "type": "object",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "certificate"
+          ],
+          "properties": {
+            "certificate": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "certificate_file"
+          ],
+          "properties": {
+            "certificate_file": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
     },
     "TracingConfig": {
       "description": "Configuration related to exporting traces",
@@ -1125,6 +1669,25 @@
           }
         }
       }
+    },
+    "UnixOrTcp": {
+      "description": "Kind of socket",
+      "oneOf": [
+        {
+          "description": "UNIX domain socket",
+          "type": "string",
+          "enum": [
+            "unix"
+          ]
+        },
+        {
+          "description": "TCP socket",
+          "type": "string",
+          "enum": [
+            "tcp"
+          ]
+        }
+      ]
     }
   }
 }
