@@ -15,7 +15,6 @@
 use std::path::PathBuf;
 
 use clap::Parser;
-use mas_config::TemplatesConfig;
 use mas_templates::Templates;
 
 #[derive(Parser, Debug)]
@@ -58,11 +57,9 @@ impl Options {
             }
 
             SC::Check { path, skip_builtin } => {
-                let config = TemplatesConfig {
-                    path: Some(path.to_string()),
-                    builtin: !skip_builtin,
-                };
-                let templates = Templates::load(config.path.clone(), config.builtin).await?;
+                let url_builder = mas_router::UrlBuilder::new("https://example.com/".parse()?);
+                let templates =
+                    Templates::load(Some(path.into()), !skip_builtin, url_builder).await?;
                 templates.check_render().await?;
 
                 Ok(())

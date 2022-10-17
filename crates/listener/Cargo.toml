@@ -1,0 +1,31 @@
+[package]
+name = "mas-listener"
+version = "0.1.0"
+authors = ["Quentin Gliech <quenting@element.io>"]
+edition = "2021"
+license = "Apache-2.0"
+
+[dependencies]
+bytes = "1.2.1"
+futures-util = "0.3.24"
+http-body = "0.4.2"
+hyper = { version = "0.14.20", features = ["server", "http1", "http2", "tcp"] }
+pin-project-lite = "0.2.9"
+thiserror = "1.0.37"
+tokio = { version = "1.21.2", features = ["net", "rt", "macros", "signal", "time"] }
+tokio-rustls = "0.23.4"
+tower-http = { version = "0.3.4", features = ["add-extension"] }
+tower-service = "0.3.2"
+tracing = "0.1.37"
+libc = "0.2.135"
+
+[dev-dependencies]
+anyhow = "1.0.65"
+rustls-pemfile = "1.0.1"
+tokio = { version = "1.21.2", features = ["net", "rt", "macros", "signal", "time", "rt-multi-thread"] }
+tokio-test = "0.4.2"
+tracing-subscriber = "0.3.16"
+
+[[example]]
+name = "demo"
+path = "examples/demo/main.rs"

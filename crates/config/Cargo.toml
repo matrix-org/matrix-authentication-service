@@ -25,6 +25,7 @@ sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres"] }
 lettre = { version = "0.10.1", default-features = false, features = ["serde", "builder"] }
 
 pem-rfc7468 = "0.6.0"
+rustls-pemfile = "1.0.1"
 rand = "0.8.5"
 
 indoc = "1.0.7"
@@ -33,3 +34,6 @@ mas-jose = { path = "../jose" }
 mas-keystore = { path = "../keystore" }
 mas-iana = { path = "../iana" }
 mas-email = { path = "../email" }
+
+[[bin]]
+name = "schema"

@@ -15,6 +15,7 @@
 use std::time::Duration;
 
 use anyhow::{bail, Context as _};
+use hyper::{header::CONTENT_TYPE, Body, Response};
 use mas_config::{
     JaegerExporterProtocolConfig, MetricsExporterConfig, Propagator, TelemetryConfig,
     TracingExporterConfig,
@@ -33,13 +34,18 @@ use opentelemetry::{
 };
 #[cfg(feature = "jaeger")]
 use opentelemetry_jaeger::Propagator as JaegerPropagator;
+#[cfg(feature = "prometheus")]
+use opentelemetry_prometheus::PrometheusExporter;
 use opentelemetry_semantic_conventions as semcov;
 #[cfg(feature = "zipkin")]
 use opentelemetry_zipkin::{B3Encoding, Propagator as ZipkinPropagator};
 use tokio::sync::OnceCell;
 use url::Url;
 
-static METRICS_BASIC_CONTROLLER: OnceCell<Option<BasicController>> = OnceCell::const_new();
+static METRICS_BASIC_CONTROLLER: OnceCell<BasicController> = OnceCell::const_new();
+
+#[cfg(feature = "prometheus")]
+static PROMETHEUS_EXPORTER: OnceCell<PrometheusExporter> = OnceCell::const_new();
 
 pub async fn setup(
     config: &TelemetryConfig,
@@ -55,8 +61,11 @@ pub async fn setup(
     let tracer = tracer(&config.tracing.exporter)
         .await
         .context("Failed to configure traces exporter")?;
+
     let meter = meter(&config.metrics.exporter).context("Failed to configure metrics exporter")?;
-    METRICS_BASIC_CONTROLLER.set(meter.clone())?;
+    if let Some(meter) = meter.as_ref() {
+        METRICS_BASIC_CONTROLLER.set(meter.clone())?;
+    }
 
     Ok((tracer, meter))
 }
@@ -64,7 +73,7 @@ pub async fn setup(
 pub fn shutdown() {
     global::shutdown_tracer_provider();
 
-    if let Some(Some(controller)) = METRICS_BASIC_CONTROLLER.get() {
+    if let Some(controller) = METRICS_BASIC_CONTROLLER.get() {
         let cx = Context::new();
         controller.stop(&cx).unwrap();
     }
@@ -103,7 +112,7 @@ fn propagator(propagators: &[Propagator]) -> anyhow::Result<impl TextMapPropagat
     Ok(TextMapCompositePropagator::new(propagators?))
 }
 
-#[cfg(any(feature = "otlp", feature = "jaeger"))]
+#[cfg(any(feature = "zipkin", feature = "jaeger"))]
 async fn http_client() -> anyhow::Result<impl opentelemetry_http::HttpClient + 'static> {
     let client = mas_http::make_untraced_client()
         .await
@@ -303,21 +312,67 @@ fn stdout_meter() -> anyhow::Result<BasicController> {
 }
 
 #[cfg(not(feature = "prometheus"))]
-fn prometheus_meter(address: &str) -> anyhow::Result<BasicController> {
-    let _ = address;
+pub fn prometheus_service<T>() -> tower::util::ServiceFn<
+    impl FnMut(T) -> std::future::Ready<Result<Response<Body>, std::convert::Infallible>> + Clone,
+> {
+    tracing::warn!("Prometheus exporter was not enabled at compilation time, but the Prometheus resource was mounted on a listener");
+
+    tower::service_fn(move |_req| {
+        let response = Response::builder()
+            .status(500)
+            .header(CONTENT_TYPE, "text/plain")
+            .body(Body::from(
+                "Prometheus exporter was not enabled at compilation time",
+            ))
+            .unwrap();
+
+        std::future::ready(Ok(response))
+    })
+}
+
+#[cfg(feature = "prometheus")]
+pub fn prometheus_service<T>() -> tower::util::ServiceFn<
+    impl FnMut(T) -> std::future::Ready<Result<Response<Body>, std::convert::Infallible>> + Clone,
+> {
+    use prometheus::{Encoder, TextEncoder};
+
+    if !PROMETHEUS_EXPORTER.initialized() {
+        tracing::warn!("A Prometheus resource was mounted on a listener, but the Prometheus exporter was not setup in the config");
+    }
+
+    tower::service_fn(move |_req| {
+        let response = if let Some(exporter) = PROMETHEUS_EXPORTER.get() {
+            let mut buffer = vec![];
+            let encoder = TextEncoder::new();
+            let metric_families = exporter.registry().gather();
+
+            // That shouldn't panic, unless we're constructing invalid labels
+            encoder.encode(&metric_families, &mut buffer).unwrap();
+
+            Response::builder()
+                .status(200)
+                .header(CONTENT_TYPE, encoder.format_type())
+                .body(Body::from(buffer))
+                .unwrap()
+        } else {
+            Response::builder()
+                .status(500)
+                .header(CONTENT_TYPE, "text/plain")
+                .body(Body::from("Prometheus exporter was not enabled in config"))
+                .unwrap()
+        };
+
+        std::future::ready(Ok(response))
+    })
+}
+
+#[cfg(not(feature = "prometheus"))]
+fn prometheus_meter() -> anyhow::Result<BasicController> {
     anyhow::bail!("The service was compiled without Prometheus exporter support, but config exports metrics via Prometheus.")
 }
 
 #[cfg(feature = "prometheus")]
-fn prometheus_meter(address: &str) -> anyhow::Result<BasicController> {
-    use std::{
-        convert::Infallible,
-        net::{SocketAddr, TcpListener},
-    };
-
-    use hyper::{header::CONTENT_TYPE, service::make_service_fn, Body, Method, Request, Response};
-    use prometheus::{Encoder, TextEncoder};
-
+fn prometheus_meter() -> anyhow::Result<BasicController> {
     let controller = sdk::metrics::controllers::basic(
         sdk::metrics::processors::factory(
             sdk::metrics::selectors::simple::histogram([
@@ -331,52 +386,7 @@ fn prometheus_meter(address: &str) -> anyhow::Result<BasicController> {
     .build();
 
     let exporter = opentelemetry_prometheus::exporter(controller.clone()).try_init()?;
-
-    let make_svc = make_service_fn(move |_conn| {
-        let exporter = exporter.clone();
-        async move {
-            Ok::<_, Infallible>(tower::service_fn(move |req: Request<Body>| {
-                let exporter = exporter.clone();
-                async move {
-                    let response = match (req.method(), req.uri().path()) {
-                        (&Method::GET, "/metrics") => {
-                            let mut buffer = vec![];
-                            let encoder = TextEncoder::new();
-                            let metric_families = exporter.registry().gather();
-                            encoder.encode(&metric_families, &mut buffer).unwrap();
-
-                            Response::builder()
-                                .status(200)
-                                .header(CONTENT_TYPE, encoder.format_type())
-                                .body(Body::from(buffer))
-                                .unwrap()
-                        }
-                        _ => Response::builder()
-                            .status(404)
-                            .body(Body::from("Metrics are exposed on /metrics"))
-                            .unwrap(),
-                    };
-
-                    Ok::<_, Infallible>(response)
-                }
-            }))
-        }
-    });
-
-    let address: SocketAddr = address
-        .parse()
-        .context("could not parse listener address")?;
-    let listener = TcpListener::bind(address).context("could not bind address")?;
-
-    tracing::info!(
-        "Prometheus exporter listening on on http://{}/metrics",
-        listener.local_addr().unwrap()
-    );
-
-    let server = hyper::server::Server::from_tcp(listener)
-        .context("Failed to start HTTP server for the Prometheus metrics exporter")?
-        .serve(make_svc);
-    tokio::spawn(server);
+    PROMETHEUS_EXPORTER.set(exporter)?;
 
     Ok(controller)
 }
@@ -386,7 +396,7 @@ fn meter(config: &MetricsExporterConfig) -> anyhow::Result<Option<BasicControlle
         MetricsExporterConfig::None => None,
         MetricsExporterConfig::Stdout => Some(stdout_meter()?),
         MetricsExporterConfig::Otlp { endpoint } => Some(otlp_meter(endpoint)?),
-        MetricsExporterConfig::Prometheus { address } => Some(prometheus_meter(address)?),
+        MetricsExporterConfig::Prometheus => Some(prometheus_meter()?),
     };
 
     Ok(controller)

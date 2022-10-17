@@ -12,27 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{
-    net::{SocketAddr, TcpListener},
-    sync::Arc,
-    time::Duration,
-};
+use std::{sync::Arc, time::Duration};
 
 use anyhow::Context;
 use clap::Parser;
 use futures_util::stream::{StreamExt, TryStreamExt};
-use hyper::Server;
+use itertools::Itertools;
 use mas_config::RootConfig;
 use mas_email::Mailer;
 use mas_handlers::{AppState, MatrixHomeserver};
 use mas_http::ServerLayer;
+use mas_listener::{server::Server, shutdown::ShutdownStream};
 use mas_policy::PolicyFactory;
 use mas_router::UrlBuilder;
 use mas_storage::MIGRATOR;
 use mas_tasks::TaskQueue;
 use mas_templates::Templates;
-use tokio::io::AsyncRead;
-use tracing::{error, info};
+use tokio::{io::AsyncRead, signal::unix::SignalKind};
+use tracing::{error, info, log::warn};
 
 #[derive(Parser, Debug, Default)]
 pub(super) struct Options {
@@ -43,32 +40,6 @@ pub(super) struct Options {
     /// Watch for changes for templates on the filesystem
     #[arg(short, long)]
     watch: bool,
-}
-
-#[cfg(not(unix))]
-async fn shutdown_signal() {
-    // Wait for the CTRL+C signal
-    tokio::signal::ctrl_c()
-        .await
-        .expect("failed to install Ctrl+C signal handler");
-
-    tracing::info!("Got Ctrl+C, shutting down");
-}
-
-#[cfg(unix)]
-async fn shutdown_signal() {
-    use tokio::signal::unix::{signal, SignalKind};
-
-    // Wait for SIGTERM and SIGINT signals
-    // This might panic but should be fine
-    let mut term =
-        signal(SignalKind::terminate()).expect("failed to install SIGTERM signal handler");
-    let mut int = signal(SignalKind::interrupt()).expect("failed to install SIGINT signal handler");
-
-    tokio::select! {
-        _ = term.recv() => tracing::info!("Got SIGTERM, shutting down"),
-        _ = int.recv() => tracing::info!("Got SIGINT, shutting down"),
-    };
 }
 
 /// Watch for changes in the templates folders
@@ -138,15 +109,9 @@ async fn watch_templates(
 }
 
 impl Options {
+    #[allow(clippy::too_many_lines)]
     pub async fn run(&self, root: &super::Options) -> anyhow::Result<()> {
         let config: RootConfig = root.load_config()?;
-
-        let addr: SocketAddr = config
-            .http
-            .address
-            .parse()
-            .context("could not parse listener address")?;
-        let listener = TcpListener::bind(addr).context("could not bind address")?;
 
         // Connect to the mail server
         let mail_transport = config.email.transport.to_transport().await?;
@@ -201,10 +166,16 @@ impl Options {
         .context("failed to load the policy")?;
         let policy_factory = Arc::new(policy_factory);
 
+        let url_builder = UrlBuilder::new(config.http.public_base.clone());
+
         // Load and compile the templates
-        let templates = Templates::load(config.templates.path.clone(), config.templates.builtin)
-            .await
-            .context("could not load templates")?;
+        let templates = Templates::load(
+            config.templates.path.clone(),
+            config.templates.builtin,
+            url_builder.clone(),
+        )
+        .await
+        .context("could not load templates")?;
 
         let mailer = Mailer::new(
             &templates,
@@ -213,11 +184,9 @@ impl Options {
             &config.email.reply_to,
         );
 
-        let url_builder = UrlBuilder::new(config.http.public_base.clone());
-
-        let static_files = mas_static_files::service(&config.http.web_root);
-
         let homeserver = MatrixHomeserver::new(config.matrix.homeserver.clone());
+
+        let listeners_config = config.http.listeners.clone();
 
         // Explicitely the config to properly zeroize secret keys
         drop(config);
@@ -234,7 +203,7 @@ impl Options {
                 .context("could not watch for templates changes")?;
         }
 
-        let state = AppState {
+        let state = Arc::new(AppState {
             pool,
             templates,
             key_store,
@@ -243,18 +212,77 @@ impl Options {
             mailer,
             homeserver,
             policy_factory,
-        };
+        });
 
-        let router = mas_handlers::router(state)
-            .fallback_service(static_files)
-            .layer(ServerLayer::default());
+        let mut fd_manager = listenfd::ListenFd::from_env();
 
-        info!("Listening on http://{}", listener.local_addr().unwrap());
+        let servers: Vec<Server<_>> = listeners_config
+            .into_iter()
+            .map(|config| {
+                // Let's first grab all the listeners
+                let listeners = crate::server::build_listeners(&mut fd_manager, &config.binds)?;
 
-        Server::from_tcp(listener)?
-            .serve(router.into_make_service_with_connect_info::<SocketAddr>())
-            .with_graceful_shutdown(shutdown_signal())
-            .await?;
+                // Load the TLS config
+                let tls_config = if let Some(tls_config) = config.tls.as_ref() {
+                    let tls_config = crate::server::build_tls_server_config(tls_config)?;
+                    Some(Arc::new(tls_config))
+                } else {
+                    None
+                };
+
+                // and build the router
+                let router = crate::server::build_router(&state, &config.resources)
+                    .layer(ServerLayer::new(config.name.clone()));
+
+                // Display some informations about where we'll be serving connections
+                let is_tls = config.tls.is_some();
+                let addresses: Vec<String> = listeners
+                    .iter()
+                    .map(|listener| {
+                        let addr = listener.local_addr();
+                        let proto = if is_tls { "https" } else { "http" };
+                        if let Ok(addr) = addr {
+                            format!("{proto}://{addr:?}")
+                        } else {
+                            warn!(
+                            "Could not get local address for listener, something might be wrong!"
+                        );
+                            format!("{proto}://???")
+                        }
+                    })
+                    .collect();
+
+                let additional = if config.proxy_protocol {
+                    "(with Proxy Protocol)"
+                } else {
+                    ""
+                };
+
+                info!(
+                    "Listening on {addresses:?} with resources {resources:?} {additional}",
+                    resources = &config.resources
+                );
+
+                anyhow::Ok(listeners.into_iter().map(move |listener| {
+                    let mut server = Server::new(listener, router.clone());
+                    if let Some(tls_config) = &tls_config {
+                        server = server.with_tls(tls_config.clone());
+                    }
+                    if config.proxy_protocol {
+                        server = server.with_proxy();
+                    }
+                    server
+                }))
+            })
+            .flatten_ok()
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let shutdown = ShutdownStream::default()
+            .with_timeout(Duration::from_secs(60))
+            .with_signal(SignalKind::terminate())?
+            .with_signal(SignalKind::interrupt())?;
+
+        mas_listener::server::run_servers(servers, shutdown).await;
 
         Ok(())
     }

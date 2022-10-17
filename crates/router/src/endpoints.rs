@@ -522,3 +522,26 @@ impl Route for CompatLoginSsoComplete {
         format!("/complete-compat-sso/{}", self.id).into()
     }
 }
+
+/// `GET /assets`
+pub struct StaticAsset {
+    path: String,
+}
+
+impl StaticAsset {
+    #[must_use]
+    pub fn new(path: String) -> Self {
+        Self { path }
+    }
+}
+
+impl Route for StaticAsset {
+    type Query = ();
+    fn route() -> &'static str {
+        "/assets"
+    }
+
+    fn path(&self) -> std::borrow::Cow<'static, str> {
+        format!("/assets/{}", self.path).into()
+    }
+}

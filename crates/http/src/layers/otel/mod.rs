@@ -15,15 +15,18 @@
 mod extract_context;
 mod inject_context;
 mod layer;
+mod make_metrics_labels;
 mod make_span_builder;
 mod on_error;
 mod on_response;
 mod service;
+mod utils;
 
 pub type TraceHttpServerLayer = TraceLayer<
     ExtractFromHttpRequest,
     DefaultInjectContext,
     SpanFromHttpRequest,
+    MetricsLabelsFromHttpRequest,
     OnHttpResponse,
     DefaultOnError,
 >;
@@ -32,6 +35,7 @@ pub type TraceHttpServer<S> = Trace<
     ExtractFromHttpRequest,
     DefaultInjectContext,
     SpanFromHttpRequest,
+    MetricsLabelsFromHttpRequest,
     OnHttpResponse,
     DefaultOnError,
     S,
@@ -42,6 +46,7 @@ pub type TraceAxumServerLayer = TraceLayer<
     ExtractFromHttpRequest,
     DefaultInjectContext,
     SpanFromAxumRequest,
+    MetricsLabelsFromAxumRequest,
     OnHttpResponse,
     DefaultOnError,
 >;
@@ -51,6 +56,7 @@ pub type TraceAxumServer<S> = Trace<
     ExtractFromHttpRequest,
     DefaultInjectContext,
     SpanFromAxumRequest,
+    MetricsLabelsFromAxumRequest,
     OnHttpResponse,
     DefaultOnError,
     S,
@@ -60,6 +66,7 @@ pub type TraceHttpClientLayer = TraceLayer<
     DefaultExtractContext,
     InjectInHttpRequest,
     SpanFromHttpRequest,
+    MetricsLabelsFromHttpRequest,
     OnHttpResponse,
     DefaultOnError,
 >;
@@ -68,6 +75,7 @@ pub type TraceHttpClient<S> = Trace<
     DefaultExtractContext,
     InjectInHttpRequest,
     SpanFromHttpRequest,
+    MetricsLabelsFromHttpRequest,
     OnHttpResponse,
     DefaultOnError,
     S,
@@ -78,6 +86,7 @@ pub type TraceDnsLayer = TraceLayer<
     DefaultExtractContext,
     DefaultInjectContext,
     SpanFromDnsRequest,
+    DefaultMakeMetricsLabels,
     DefaultOnResponse,
     DefaultOnError,
 >;
@@ -87,6 +96,7 @@ pub type TraceDns<S> = Trace<
     DefaultExtractContext,
     DefaultInjectContext,
     SpanFromDnsRequest,
+    DefaultMakeMetricsLabels,
     DefaultOnResponse,
     DefaultOnError,
     S,
@@ -97,6 +107,7 @@ impl TraceHttpServerLayer {
     pub fn http_server() -> Self {
         TraceLayer::with_namespace("http_server")
             .make_span_builder(SpanFromHttpRequest::server())
+            .make_metrics_labels(MetricsLabelsFromHttpRequest::default())
             .on_response(OnHttpResponse)
             .extract_context(ExtractFromHttpRequest)
     }
@@ -108,6 +119,7 @@ impl TraceAxumServerLayer {
     pub fn axum() -> Self {
         TraceLayer::with_namespace("http_server")
             .make_span_builder(SpanFromAxumRequest)
+            .make_metrics_labels(MetricsLabelsFromAxumRequest::default())
             .on_response(OnHttpResponse)
             .extract_context(ExtractFromHttpRequest)
     }
@@ -118,6 +130,7 @@ impl TraceHttpClientLayer {
     pub fn http_client(operation: &'static str) -> Self {
         TraceLayer::with_namespace("http_client")
             .make_span_builder(SpanFromHttpRequest::client(operation))
+            .make_metrics_labels(MetricsLabelsFromHttpRequest::default())
             .on_response(OnHttpResponse)
             .inject_context(InjectInHttpRequest)
     }
@@ -126,6 +139,7 @@ impl TraceHttpClientLayer {
     pub fn inner_http_client() -> Self {
         TraceLayer::with_namespace("inner_http_client")
             .make_span_builder(SpanFromHttpRequest::inner_client())
+            .make_metrics_labels(MetricsLabelsFromHttpRequest::default())
             .on_response(OnHttpResponse)
             .inject_context(InjectInHttpRequest)
     }
@@ -139,6 +153,11 @@ impl TraceDnsLayer {
     }
 }
 
+#[cfg(feature = "client")]
+use self::make_metrics_labels::DefaultMakeMetricsLabels;
+#[cfg(feature = "axum")]
+use self::make_metrics_labels::MetricsLabelsFromAxumRequest;
+use self::make_metrics_labels::MetricsLabelsFromHttpRequest;
 pub use self::{
     extract_context::*, inject_context::*, layer::*, make_span_builder::*, on_error::*,
     on_response::*, service::*,

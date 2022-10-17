@@ -186,6 +186,7 @@ impl CompatRefreshTokenLookupError {
 }
 
 #[tracing::instrument(skip_all, err)]
+#[allow(clippy::type_complexity)]
 pub async fn lookup_active_compat_refresh_token(
     executor: impl PgExecutor<'_>,
     token: &str,

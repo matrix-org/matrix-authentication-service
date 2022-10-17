@@ -14,7 +14,7 @@
 
 #![allow(clippy::module_name_repetitions)]
 
-use std::{borrow::Cow, collections::HashSet, iter::FromIterator, ops::Deref, str::FromStr};
+use std::{borrow::Cow, collections::BTreeSet, iter::FromIterator, ops::Deref, str::FromStr};
 
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -82,10 +82,10 @@ impl ToString for ScopeToken {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Scope(HashSet<ScopeToken>);
+pub struct Scope(BTreeSet<ScopeToken>);
 
 impl std::ops::Deref for Scope {
-    type Target = HashSet<ScopeToken>;
+    type Target = BTreeSet<ScopeToken>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -100,7 +100,7 @@ impl FromStr for Scope {
         // https://datatracker.ietf.org/doc/html/rfc6749#appendix-A.4
         //
         //    scope       = scope-token *( SP scope-token )
-        let scopes: Result<HashSet<ScopeToken>, InvalidScope> =
+        let scopes: Result<BTreeSet<ScopeToken>, InvalidScope> =
             s.split(' ').map(ScopeToken::from_str).collect();
 
         Ok(Self(scopes?))
@@ -160,7 +160,7 @@ impl<'de> Deserialize<'de> for Scope {
 
 impl FromIterator<ScopeToken> for Scope {
     fn from_iter<T: IntoIterator<Item = ScopeToken>>(iter: T) -> Self {
-        Self(HashSet::from_iter(iter))
+        Self(BTreeSet::from_iter(iter))
     }
 }
 

@@ -39,7 +39,9 @@ use oauth2_types::requests::{AccessTokenResponse, AuthorizationResponse};
 use sqlx::{PgPool, Postgres, Transaction};
 use thiserror::Error;
 
-use super::callback::{CallbackDestination, CallbackDestinationError, InvalidRedirectUriError};
+use super::callback::{
+    CallbackDestination, CallbackDestinationError, IntoCallbackDestinationError,
+};
 
 #[derive(Debug, Error)]
 pub enum RouteError {
@@ -90,8 +92,8 @@ impl From<ActiveSessionLookupError> for RouteError {
     }
 }
 
-impl From<InvalidRedirectUriError> for RouteError {
-    fn from(e: InvalidRedirectUriError) -> Self {
+impl From<IntoCallbackDestinationError> for RouteError {
+    fn from(e: IntoCallbackDestinationError) -> Self {
         Self::Internal(Box::new(e))
     }
 }
@@ -175,8 +177,8 @@ impl From<sqlx::Error> for GrantCompletionError {
     }
 }
 
-impl From<InvalidRedirectUriError> for GrantCompletionError {
-    fn from(e: InvalidRedirectUriError) -> Self {
+impl From<IntoCallbackDestinationError> for GrantCompletionError {
+    fn from(e: IntoCallbackDestinationError) -> Self {
         Self::Internal(Box::new(e))
     }
 }

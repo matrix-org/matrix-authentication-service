@@ -91,4 +91,10 @@ impl UrlBuilder {
     pub fn jwks_uri(&self) -> Url {
         self.url_for(&crate::endpoints::OAuth2Keys)
     }
+
+    /// Static asset
+    #[must_use]
+    pub fn static_asset(&self, path: String) -> Url {
+        self.url_for(&crate::endpoints::StaticAsset::new(path))
+    }
 }

@@ -58,8 +58,8 @@ pub enum RouteError {
     #[error("could not find client")]
     ClientNotFound,
 
-    #[error("invalid redirect uri")]
-    InvalidRedirectUri(#[from] self::callback::InvalidRedirectUriError),
+    #[error("invalid parameters")]
+    IntoCallbackDestination(#[from] self::callback::IntoCallbackDestinationError),
 
     #[error("invalid redirect uri")]
     UnknownRedirectUri(#[from] mas_data_model::InvalidRedirectUriError),
@@ -78,11 +78,9 @@ impl IntoResponse for RouteError {
             RouteError::ClientNotFound => {
                 (StatusCode::BAD_REQUEST, "could not find client").into_response()
             }
-            RouteError::InvalidRedirectUri(e) => (
-                StatusCode::BAD_REQUEST,
-                format!("Invalid redirect URI ({})", e),
-            )
-                .into_response(),
+            RouteError::IntoCallbackDestination(e) => {
+                (StatusCode::BAD_REQUEST, e.to_string()).into_response()
+            }
             RouteError::UnknownRedirectUri(e) => (
                 StatusCode::BAD_REQUEST,
                 format!("Invalid redirect URI ({})", e),
@@ -175,7 +173,7 @@ pub(crate) async fn get(
 
     // Now we have a proper callback destination to go to on error
     let callback_destination = CallbackDestination::try_new(
-        response_mode,
+        &response_mode,
         redirect_uri.clone(),
         params.auth.state.clone(),
     )?;

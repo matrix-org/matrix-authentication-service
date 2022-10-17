@@ -16,7 +16,7 @@ use opentelemetry::{trace::SpanRef, KeyValue};
 use opentelemetry_semantic_conventions::trace::EXCEPTION_MESSAGE;
 
 pub trait OnError<E> {
-    fn on_error(&self, span: &SpanRef<'_>, err: &E) -> Vec<KeyValue>;
+    fn on_error(&self, span: &SpanRef<'_>, metrics_labels: &mut Vec<KeyValue>, err: &E);
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -26,10 +26,8 @@ impl<E> OnError<E> for DefaultOnError
 where
     E: std::fmt::Display,
 {
-    fn on_error(&self, span: &SpanRef<'_>, err: &E) -> Vec<KeyValue> {
+    fn on_error(&self, span: &SpanRef<'_>, _metrics_labels: &mut Vec<KeyValue>, err: &E) {
         let attributes = vec![EXCEPTION_MESSAGE.string(err.to_string())];
         span.add_event("exception".to_owned(), attributes);
-
-        Vec::new()
     }
 }

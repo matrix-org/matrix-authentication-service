@@ -15,6 +15,7 @@
 use std::marker::PhantomData;
 
 use http::{Request, Response};
+use opentelemetry::KeyValue;
 use tower::{util::BoxCloneService, Layer, Service, ServiceExt};
 use tower_http::compression::{CompressionBody, CompressionLayer};
 
@@ -22,7 +23,18 @@ use super::otel::TraceLayer;
 
 #[derive(Debug, Default)]
 pub struct ServerLayer<ReqBody> {
+    listener_name: Option<String>,
     _t: PhantomData<ReqBody>,
+}
+
+impl<B> ServerLayer<B> {
+    #[must_use]
+    pub fn new(listener_name: Option<String>) -> Self {
+        Self {
+            listener_name,
+            _t: PhantomData,
+        }
+    }
 }
 
 impl<ReqBody, ResBody, S> Layer<S> for ServerLayer<ReqBody>
@@ -40,10 +52,14 @@ where
         let compression = CompressionLayer::new();
 
         #[cfg(feature = "axum")]
-        let trace = TraceLayer::axum();
+        let mut trace = TraceLayer::axum();
 
         #[cfg(not(feature = "axum"))]
-        let trace = TraceLayer::http_server();
+        let mut trace = TraceLayer::http_server();
+
+        if let Some(name) = &self.listener_name {
+            trace = trace.with_static_attribute(KeyValue::new("listener", name.clone()));
+        }
 
         (compression, trace).layer(inner).boxed_clone()
     }
