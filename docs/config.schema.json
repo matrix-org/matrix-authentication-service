@@ -1,0 +1,1130 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RootConfig",
+  "description": "Application configuration root",
+  "type": "object",
+  "required": [
+    "secrets"
+  ],
+  "properties": {
+    "clients": {
+      "description": "List of OAuth 2.0/OIDC clients config",
+      "default": [],
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/ClientConfig"
+      }
+    },
+    "csrf": {
+      "description": "Configuration related to Cross-Site Request Forgery protections",
+      "default": {
+        "ttl": 3600
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/CsrfConfig"
+        }
+      ]
+    },
+    "database": {
+      "description": "Database connection configuration",
+      "default": {
+        "connect_timeout": 30,
+        "idle_timeout": 600,
+        "max_connections": 10,
+        "max_lifetime": 1800,
+        "min_connections": 0,
+        "uri": "postgresql://"
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/DatabaseConfig"
+        }
+      ]
+    },
+    "email": {
+      "description": "Configuration related to sending emails",
+      "default": {
+        "from": "Authentication Service <root@localhost>",
+        "reply_to": "Authentication Service <root@localhost>",
+        "transport": "blackhole"
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/EmailConfig"
+        }
+      ]
+    },
+    "http": {
+      "description": "Configuration of the HTTP server",
+      "default": {
+        "address": "[::]:8080",
+        "public_base": "http://[::]:8080/",
+        "web_root": null
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/HttpConfig"
+        }
+      ]
+    },
+    "matrix": {
+      "description": "Configuration related to the homeserver",
+      "default": {
+        "homeserver": "localhost:8008"
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/MatrixConfig"
+        }
+      ]
+    },
+    "policy": {
+      "description": "Configuration related to the OPA policies",
+      "default": {
+        "authorization_grant_entrypoint": "authorization_grant/violation",
+        "client_registration_entrypoint": "client_registration/violation",
+        "data": null,
+        "register_entrypoint": "register/violation",
+        "wasm_module": null
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/PolicyConfig"
+        }
+      ]
+    },
+    "secrets": {
+      "description": "Application secrets",
+      "allOf": [
+        {
+          "$ref": "#/definitions/SecretsConfig"
+        }
+      ]
+    },
+    "telemetry": {
+      "description": "Configuration related to sending monitoring data",
+      "default": {
+        "metrics": {
+          "exporter": "none"
+        },
+        "tracing": {
+          "exporter": "none",
+          "propagators": []
+        }
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/TelemetryConfig"
+        }
+      ]
+    },
+    "templates": {
+      "description": "Configuration related to templates",
+      "default": {
+        "builtin": true,
+        "path": null
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/TemplatesConfig"
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "ClientConfig": {
+      "description": "An OAuth 2.0 client configuration",
+      "type": "object",
+      "oneOf": [
+        {
+          "description": "`none`: No authentication",
+          "type": "object",
+          "required": [
+            "client_auth_method"
+          ],
+          "properties": {
+            "client_auth_method": {
+              "type": "string",
+              "enum": [
+                "none"
+              ]
+            }
+          }
+        },
+        {
+          "description": "`client_secret_basic`: `client_id` and `client_secret` used as basic authorization credentials",
+          "type": "object",
+          "required": [
+            "client_auth_method",
+            "client_secret"
+          ],
+          "properties": {
+            "client_auth_method": {
+              "type": "string",
+              "enum": [
+                "client_secret_basic"
+              ]
+            },
+            "client_secret": {
+              "description": "The client secret",
+              "type": "string"
+            }
+          }
+        },
+        {
+          "description": "`client_secret_post`: `client_id` and `client_secret` sent in the request body",
+          "type": "object",
+          "required": [
+            "client_auth_method",
+            "client_secret"
+          ],
+          "properties": {
+            "client_auth_method": {
+              "type": "string",
+              "enum": [
+                "client_secret_post"
+              ]
+            },
+            "client_secret": {
+              "description": "The client secret",
+              "type": "string"
+            }
+          }
+        },
+        {
+          "description": "`client_secret_basic`: a `client_assertion` sent in the request body and signed using the `client_secret`",
+          "type": "object",
+          "required": [
+            "client_auth_method",
+            "client_secret"
+          ],
+          "properties": {
+            "client_auth_method": {
+              "type": "string",
+              "enum": [
+                "client_secret_jwt"
+              ]
+            },
+            "client_secret": {
+              "description": "The client secret",
+              "type": "string"
+            }
+          }
+        },
+        {
+          "description": "`client_secret_basic`: a `client_assertion` sent in the request body and signed by an asymetric key",
+          "type": "object",
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "jwks"
+              ],
+              "properties": {
+                "jwks": {
+                  "$ref": "#/definitions/JsonWebKeySet_for_JsonWebKeyPublicParameters"
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": [
+                "jwks_uri"
+              ],
+              "properties": {
+                "jwks_uri": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              },
+              "additionalProperties": false
+            }
+          ],
+          "required": [
+            "client_auth_method"
+          ],
+          "properties": {
+            "client_auth_method": {
+              "type": "string",
+              "enum": [
+                "private_key_jwt"
+              ]
+            }
+          }
+        }
+      ],
+      "required": [
+        "client_id"
+      ],
+      "properties": {
+        "client_id": {
+          "description": "The client ID",
+          "type": "string"
+        },
+        "redirect_uris": {
+          "description": "List of allowed redirect URIs",
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      }
+    },
+    "CsrfConfig": {
+      "description": "Configuration related to Cross-Site Request Forgery protections",
+      "type": "object",
+      "properties": {
+        "ttl": {
+          "description": "Time-to-live of a CSRF token in seconds",
+          "default": 3600,
+          "type": "integer",
+          "format": "uint64",
+          "maximum": 86400.0,
+          "minimum": 60.0
+        }
+      }
+    },
+    "DatabaseConfig": {
+      "description": "Database connection configuration",
+      "type": "object",
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "uri": {
+              "description": "Connection URI",
+              "default": "postgresql://",
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "database": {
+              "description": "The database name",
+              "default": null,
+              "type": "string"
+            },
+            "host": {
+              "description": "Name of host to connect to",
+              "default": null,
+              "type": "string",
+              "format": "hostname"
+            },
+            "password": {
+              "description": "Password to be used if the server demands password authentication",
+              "default": null,
+              "type": "string"
+            },
+            "port": {
+              "description": "Port number to connect at the server host",
+              "default": null,
+              "type": "integer",
+              "maximum": 65535.0,
+              "minimum": 1.0
+            },
+            "socket": {
+              "description": "Directory containing the UNIX socket to connect to",
+              "default": null,
+              "type": "string"
+            },
+            "username": {
+              "description": "PostgreSQL user name to connect as",
+              "default": null,
+              "type": "string"
+            }
+          }
+        }
+      ],
+      "properties": {
+        "connect_timeout": {
+          "description": "Set the amount of time to attempt connecting to the database",
+          "default": 30,
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "idle_timeout": {
+          "description": "Set a maximum idle duration for individual connections",
+          "default": 600,
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "max_connections": {
+          "description": "Set the maximum number of connections the pool should maintain",
+          "default": 10,
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 1.0
+        },
+        "max_lifetime": {
+          "description": "Set the maximum lifetime of individual connections",
+          "default": 1800,
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "min_connections": {
+          "description": "Set the minimum number of connections the pool should maintain",
+          "default": 0,
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        }
+      }
+    },
+    "EmailConfig": {
+      "description": "Configuration related to sending emails",
+      "type": "object",
+      "oneOf": [
+        {
+          "description": "Don't send emails anywhere",
+          "type": "object",
+          "required": [
+            "transport"
+          ],
+          "properties": {
+            "transport": {
+              "type": "string",
+              "enum": [
+                "blackhole"
+              ]
+            }
+          }
+        },
+        {
+          "description": "Send emails via an SMTP relay",
+          "type": "object",
+          "required": [
+            "hostname",
+            "mode",
+            "transport"
+          ],
+          "properties": {
+            "hostname": {
+              "description": "Hostname to connect to",
+              "type": "string",
+              "format": "hostname"
+            },
+            "mode": {
+              "description": "Connection mode to the relay",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/EmailSmtpMode"
+                }
+              ]
+            },
+            "password": {
+              "description": "Password for use to authenticate when connecting to the SMTP server",
+              "type": "string"
+            },
+            "port": {
+              "description": "Port to connect to. Default is 25 for plain, 465 for TLS and 587 for StartTLS",
+              "type": "integer",
+              "format": "uint16",
+              "minimum": 1.0
+            },
+            "transport": {
+              "type": "string",
+              "enum": [
+                "smtp"
+              ]
+            },
+            "username": {
+              "description": "Username for use to authenticate when connecting to the SMTP server",
+              "type": "string"
+            }
+          }
+        },
+        {
+          "description": "Send emails by calling sendmail",
+          "type": "object",
+          "required": [
+            "transport"
+          ],
+          "properties": {
+            "command": {
+              "description": "Command to execute",
+              "default": "sendmail",
+              "type": "string"
+            },
+            "transport": {
+              "type": "string",
+              "enum": [
+                "sendmail"
+              ]
+            }
+          }
+        },
+        {
+          "description": "Send emails via the AWS SESv2 API",
+          "type": "object",
+          "required": [
+            "transport"
+          ],
+          "properties": {
+            "transport": {
+              "type": "string",
+              "enum": [
+                "aws_ses"
+              ]
+            }
+          }
+        }
+      ],
+      "properties": {
+        "from": {
+          "description": "Email address to use as From when sending emails",
+          "default": "Authentication Service <root@localhost>",
+          "type": "string",
+          "format": "email"
+        },
+        "reply_to": {
+          "description": "Email address to use as Reply-To when sending emails",
+          "default": "Authentication Service <root@localhost>",
+          "type": "string",
+          "format": "email"
+        }
+      }
+    },
+    "EmailSmtpMode": {
+      "description": "Encryption mode to use",
+      "type": "string",
+      "enum": [
+        "plain",
+        "starttls",
+        "tls"
+      ]
+    },
+    "HttpConfig": {
+      "description": "Configuration related to the web server",
+      "type": "object",
+      "required": [
+        "public_base"
+      ],
+      "properties": {
+        "address": {
+          "description": "IP and port the server should listen to",
+          "default": "[::]:8080",
+          "examples": [
+            "[::1]:8080",
+            "[::]:8080",
+            "127.0.0.1:8080",
+            "0.0.0.0:8080"
+          ],
+          "type": "string"
+        },
+        "public_base": {
+          "description": "Public URL base from where the authentication service is reachable",
+          "type": "string",
+          "format": "uri"
+        },
+        "web_root": {
+          "description": "Path from which to serve static files. If not specified, it will serve the static files embedded in the server binary",
+          "default": null,
+          "type": "string"
+        }
+      }
+    },
+    "JsonWebKeyEcEllipticCurve": {
+      "description": "JSON Web Key EC Elliptic Curve\n\nSource: <https://www.iana.org/assignments/jose/web-key-elliptic-curve.csv>",
+      "type": "string",
+      "enum": [
+        "P-256",
+        "P-384",
+        "P-521",
+        "secp256k1"
+      ]
+    },
+    "JsonWebKeyOkpEllipticCurve": {
+      "description": "JSON Web Key OKP Elliptic Curve\n\nSource: <https://www.iana.org/assignments/jose/web-key-elliptic-curve.csv>",
+      "type": "string",
+      "enum": [
+        "Ed25519",
+        "Ed448",
+        "X25519",
+        "X448"
+      ]
+    },
+    "JsonWebKeyOperation": {
+      "description": "JSON Web Key Operation\n\nSource: <https://www.iana.org/assignments/jose/web-key-operations.csv>",
+      "type": "string",
+      "enum": [
+        "sign",
+        "verify",
+        "encrypt",
+        "decrypt",
+        "wrapKey",
+        "unwrapKey",
+        "deriveKey",
+        "deriveBits"
+      ]
+    },
+    "JsonWebKeySet_for_JsonWebKeyPublicParameters": {
+      "type": "object",
+      "required": [
+        "keys"
+      ],
+      "properties": {
+        "keys": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/JsonWebKey_for_JsonWebKeyPublicParameters"
+          }
+        }
+      }
+    },
+    "JsonWebKeyUse": {
+      "description": "JSON Web Key Use\n\nSource: <https://www.iana.org/assignments/jose/web-key-use.csv>",
+      "type": "string",
+      "enum": [
+        "sig",
+        "enc"
+      ]
+    },
+    "JsonWebKey_for_JsonWebKeyPublicParameters": {
+      "type": "object",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "e",
+            "kty",
+            "n"
+          ],
+          "properties": {
+            "e": {
+              "type": "string"
+            },
+            "kty": {
+              "type": "string",
+              "enum": [
+                "RSA"
+              ]
+            },
+            "n": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "crv",
+            "kty",
+            "x",
+            "y"
+          ],
+          "properties": {
+            "crv": {
+              "$ref": "#/definitions/JsonWebKeyEcEllipticCurve"
+            },
+            "kty": {
+              "type": "string",
+              "enum": [
+                "EC"
+              ]
+            },
+            "x": {
+              "type": "string"
+            },
+            "y": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "crv",
+            "kty",
+            "x"
+          ],
+          "properties": {
+            "crv": {
+              "$ref": "#/definitions/JsonWebKeyOkpEllipticCurve"
+            },
+            "kty": {
+              "type": "string",
+              "enum": [
+                "OKP"
+              ]
+            },
+            "x": {
+              "type": "string"
+            }
+          }
+        }
+      ],
+      "properties": {
+        "alg": {
+          "$ref": "#/definitions/JsonWebSignatureAlg"
+        },
+        "key_ops": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/JsonWebKeyOperation"
+          }
+        },
+        "kid": {
+          "type": "string"
+        },
+        "use": {
+          "$ref": "#/definitions/JsonWebKeyUse"
+        },
+        "x5c": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "x5t": {
+          "type": "string"
+        },
+        "x5t#S256": {
+          "type": "string"
+        },
+        "x5u": {
+          "type": "string"
+        }
+      }
+    },
+    "JsonWebSignatureAlg": {
+      "description": "JSON Web Signature \"alg\" parameter\n\nSource: <https://www.iana.org/assignments/jose/web-signature-encryption-algorithms.csv>",
+      "type": "string",
+      "enum": [
+        "HS256",
+        "HS384",
+        "HS512",
+        "RS256",
+        "RS384",
+        "RS512",
+        "ES256",
+        "ES384",
+        "ES512",
+        "PS256",
+        "PS384",
+        "PS512",
+        "none",
+        "EdDSA",
+        "ES256K"
+      ]
+    },
+    "KeyConfig": {
+      "type": "object",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "password"
+          ],
+          "properties": {
+            "password": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "password_file"
+          ],
+          "properties": {
+            "password_file": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "required": [
+        "kid"
+      ],
+      "properties": {
+        "kid": {
+          "type": "string"
+        }
+      }
+    },
+    "MatrixConfig": {
+      "description": "Configuration related to the Matrix homeserver",
+      "type": "object",
+      "properties": {
+        "homeserver": {
+          "description": "Time-to-live of a CSRF token in seconds",
+          "default": "localhost:8008",
+          "type": "string"
+        }
+      }
+    },
+    "MetricsConfig": {
+      "description": "Configuration related to exporting metrics",
+      "type": "object",
+      "oneOf": [
+        {
+          "description": "Don't export metrics",
+          "type": "object",
+          "required": [
+            "exporter"
+          ],
+          "properties": {
+            "exporter": {
+              "type": "string",
+              "enum": [
+                "none"
+              ]
+            }
+          }
+        },
+        {
+          "description": "Export metrics to stdout. Only useful for debugging",
+          "type": "object",
+          "required": [
+            "exporter"
+          ],
+          "properties": {
+            "exporter": {
+              "type": "string",
+              "enum": [
+                "stdout"
+              ]
+            }
+          }
+        },
+        {
+          "description": "Export metrics to an OpenTelemetry protocol compatible endpoint",
+          "type": "object",
+          "required": [
+            "exporter"
+          ],
+          "properties": {
+            "endpoint": {
+              "description": "OTLP compatible endpoint",
+              "examples": [
+                "https://localhost:4317"
+              ],
+              "type": "string",
+              "format": "uri"
+            },
+            "exporter": {
+              "type": "string",
+              "enum": [
+                "otlp"
+              ]
+            }
+          }
+        },
+        {
+          "description": "Export metrics by exposing a Prometheus-compatible endpoint",
+          "type": "object",
+          "required": [
+            "address",
+            "exporter"
+          ],
+          "properties": {
+            "address": {
+              "description": "IP and port on which the Prometheus endpoint should be exposed",
+              "type": "string"
+            },
+            "exporter": {
+              "type": "string",
+              "enum": [
+                "prometheus"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "PolicyConfig": {
+      "description": "Application secrets",
+      "type": "object",
+      "properties": {
+        "authorization_grant_entrypoint": {
+          "description": "Entrypoint to use when evaluating authorization grants",
+          "default": "authorization_grant/violation",
+          "type": "string"
+        },
+        "client_registration_entrypoint": {
+          "description": "Entrypoint to use when evaluating client registrations",
+          "default": "client_registration/violation",
+          "type": "string"
+        },
+        "data": {
+          "description": "Arbitrary data to pass to the policy",
+          "default": null
+        },
+        "register_entrypoint": {
+          "description": "Entrypoint to use when evaluating user registrations",
+          "default": "register/violation",
+          "type": "string"
+        },
+        "wasm_module": {
+          "description": "Path to the WASM module",
+          "default": null,
+          "type": "string"
+        }
+      }
+    },
+    "Propagator": {
+      "description": "Propagation format for incoming and outgoing requests",
+      "type": "string",
+      "enum": [
+        "tracecontext",
+        "baggage",
+        "jaeger",
+        "b3",
+        "b3multi"
+      ]
+    },
+    "SecretsConfig": {
+      "description": "Application secrets",
+      "type": "object",
+      "required": [
+        "encryption"
+      ],
+      "properties": {
+        "encryption": {
+          "description": "Encryption key for secure cookies",
+          "examples": [
+            "0000111122223333444455556666777788889999aaaabbbbccccddddeeeeffff"
+          ],
+          "type": "string",
+          "pattern": "[0-9a-fA-F]{64}"
+        },
+        "keys": {
+          "description": "List of private keys to use for signing and encrypting payloads",
+          "default": [],
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/KeyConfig"
+          }
+        }
+      }
+    },
+    "TelemetryConfig": {
+      "description": "Configuration related to sending monitoring data",
+      "type": "object",
+      "properties": {
+        "metrics": {
+          "description": "Configuration related to exporting metrics",
+          "default": {
+            "exporter": "none"
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/MetricsConfig"
+            }
+          ]
+        },
+        "tracing": {
+          "description": "Configuration related to exporting traces",
+          "default": {
+            "exporter": "none",
+            "propagators": []
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/TracingConfig"
+            }
+          ]
+        }
+      }
+    },
+    "TemplatesConfig": {
+      "description": "Configuration related to templates",
+      "type": "object",
+      "properties": {
+        "builtin": {
+          "description": "Load the templates embedded in the binary",
+          "default": true,
+          "type": "boolean"
+        },
+        "path": {
+          "description": "Path to the folder that holds the custom templates",
+          "default": null,
+          "type": "string"
+        }
+      }
+    },
+    "TracingConfig": {
+      "description": "Configuration related to exporting traces",
+      "type": "object",
+      "oneOf": [
+        {
+          "description": "Don't export traces",
+          "type": "object",
+          "required": [
+            "exporter"
+          ],
+          "properties": {
+            "exporter": {
+              "type": "string",
+              "enum": [
+                "none"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "Export traces to the standard output. Only useful for debugging",
+          "type": "object",
+          "required": [
+            "exporter"
+          ],
+          "properties": {
+            "exporter": {
+              "type": "string",
+              "enum": [
+                "stdout"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "Export traces to an OpenTelemetry protocol compatible endpoint",
+          "type": "object",
+          "required": [
+            "exporter"
+          ],
+          "properties": {
+            "endpoint": {
+              "description": "OTLP compatible endpoint",
+              "examples": [
+                "https://localhost:4317"
+              ],
+              "type": "string",
+              "format": "uri"
+            },
+            "exporter": {
+              "type": "string",
+              "enum": [
+                "otlp"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "Export traces to a Jaeger agent",
+          "type": "object",
+          "oneOf": [
+            {
+              "description": "Thrift over HTTP",
+              "type": "object",
+              "required": [
+                "endpoint",
+                "protocol"
+              ],
+              "properties": {
+                "endpoint": {
+                  "description": "Full URL of the Jaeger HTTP endpoint\n\nDefaults to `http://localhost:14268/api/traces`",
+                  "type": "string"
+                },
+                "password": {
+                  "description": "Password to be used for HTTP basic authentication",
+                  "type": "string"
+                },
+                "protocol": {
+                  "type": "string",
+                  "enum": [
+                    "http/thrift.binary"
+                  ]
+                },
+                "username": {
+                  "description": "Username to be used for HTTP basic authentication",
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "description": "Thrift with compact encoding over UDP",
+              "type": "object",
+              "required": [
+                "agent_host",
+                "agent_port",
+                "protocol"
+              ],
+              "properties": {
+                "agent_host": {
+                  "description": "Hostname of the Jaeger agent\n\nDefaults to `localhost`",
+                  "type": "string"
+                },
+                "agent_port": {
+                  "description": "`udp/thrift.compact` port of the Jaeger agent\n\nDefaults to `6831`",
+                  "type": "integer",
+                  "format": "uint16",
+                  "minimum": 0.0
+                },
+                "protocol": {
+                  "type": "string",
+                  "enum": [
+                    "udp/thrift.compact"
+                  ]
+                }
+              }
+            }
+          ],
+          "required": [
+            "exporter"
+          ],
+          "properties": {
+            "exporter": {
+              "type": "string",
+              "enum": [
+                "jaeger"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "Export traces to a Zipkin collector",
+          "type": "object",
+          "required": [
+            "exporter"
+          ],
+          "properties": {
+            "collector_endpoint": {
+              "description": "Zipkin collector endpoint",
+              "examples": [
+                "http://127.0.0.1:9411/api/v2/spans"
+              ],
+              "type": "string",
+              "format": "uri"
+            },
+            "exporter": {
+              "type": "string",
+              "enum": [
+                "zipkin"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "required": [
+        "propagators"
+      ],
+      "properties": {
+        "propagators": {
+          "description": "List of propagation formats to use for incoming and outgoing requests",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Propagator"
+          }
+        }
+      }
+    }
+  }
+}

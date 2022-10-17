@@ -14,7 +14,6 @@
 
 use clap::Parser;
 use mas_config::{ConfigurationSection, RootConfig};
-use schemars::gen::SchemaSettings;
 use tracing::info;
 
 #[derive(Parser, Debug)]
@@ -27,9 +26,6 @@ pub(super) struct Options {
 enum Subcommand {
     /// Dump the current config as YAML
     Dump,
-
-    /// Print the JSON Schema that validates configuration files
-    Schema,
 
     /// Check a config file
     Check,
@@ -46,18 +42,6 @@ impl Options {
                 let config: RootConfig = root.load_config()?;
 
                 serde_yaml::to_writer(std::io::stdout(), &config)?;
-
-                Ok(())
-            }
-            SC::Schema => {
-                let settings = SchemaSettings::draft07().with(|s| {
-                    s.option_nullable = false;
-                    s.option_add_null_type = false;
-                });
-                let gen = settings.into_generator();
-                let schema = gen.into_root_schema_for::<RootConfig>();
-
-                serde_yaml::to_writer(std::io::stdout(), &schema)?;
 
                 Ok(())
             }
