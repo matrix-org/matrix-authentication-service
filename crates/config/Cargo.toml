@@ -33,3 +33,6 @@ mas-jose = { path = "../jose" }
 mas-keystore = { path = "../keystore" }
 mas-iana = { path = "../iana" }
 mas-email = { path = "../email" }
+
+[[bin]]
+name = "schema"

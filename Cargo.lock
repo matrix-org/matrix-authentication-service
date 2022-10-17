@@ -2368,7 +2368,6 @@ dependencies = [
  "opentelemetry-semantic-conventions",
  "opentelemetry-zipkin",
  "prometheus",
- "schemars",
  "serde_json",
  "serde_yaml",
  "tokio",
