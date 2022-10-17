@@ -612,7 +612,7 @@ pub struct IntrospectionResponse {
 /// [Pushed Authorization Request Endpoint]: https://datatracker.ietf.org/doc/html/rfc9126
 #[serde_as]
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct PushedAuthorizationResponse {
     /// The `request_uri` to use for the request to the authorization endpoint.
     pub request_uri: String,
