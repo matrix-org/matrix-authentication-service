@@ -271,7 +271,7 @@ mod rsa_impls {
         type Error = rsa::errors::Error;
         fn try_from(value: &RsaPrivateParameters) -> Result<Self, Self::Error> {
             let key: RsaPrivateKey = value.try_into()?;
-            Ok(Self::new(key))
+            Ok(Self::new_with_salt_len(key, <H as Digest>::output_size()))
         }
     }
 

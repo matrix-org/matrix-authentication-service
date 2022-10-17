@@ -2,7 +2,3 @@
 
 default-members = ["crates/cli"]
 members = ["crates/*"]
-
-[patch.crates-io]
-# XXX: temporary override waiting on a new version of the sha2 crate
-sha2 = { git = "https://github.com/RustCrypto/hashes.git", rev = "f9af45fdde84bb24c25f90011d7b2316783eb29f" }

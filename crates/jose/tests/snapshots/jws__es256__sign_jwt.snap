@@ -1,0 +1,5 @@
+---
+source: crates/jose/tests/jws.rs
+expression: jwt.as_str()
+---
+eyJhbGciOiJFUzI1NiJ9.eyJoZWxsbyI6IndvcmxkIn0._3wYtQklt0l_fhcwpQUSWbySVA3uJjVNgoudkvUInWjPpS7tO0sgmPf8Bwb3Rv9oTJncQfavs4rEw2kmgouPBw

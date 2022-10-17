@@ -95,6 +95,8 @@ macro_rules! asymetric_jwt_test {
 
             conditional! { $supported =>
                 use mas_jose::jwt::JsonWebSignatureHeader;
+                use rand_chacha::ChaCha8Rng;
+                use rand::SeedableRng;
 
                 #[test]
                 fn verify_jwt() {
@@ -110,6 +112,25 @@ macro_rules! asymetric_jwt_test {
                     .unwrap();
 
                     jwt.verify(&key).unwrap();
+                }
+
+                #[test]
+                fn sign_jwt() {
+                    let rng = ChaCha8Rng::seed_from_u64(42);
+                    let alg = JsonWebSignatureAlg::$alg;
+                    let payload = Payload {
+                        hello: "world".to_string(),
+                    };
+                    let header = JsonWebSignatureHeader::new(alg.clone());
+
+                    let jwks = private_jwks();
+                    let key = jwks.signing_key_for_algorithm(&alg).unwrap();
+
+                    let key = mas_jose::jwa::AsymmetricSigningKey::from_jwk_and_alg(key.params(), &alg)
+                        .unwrap();
+
+                    let jwt: Jwt<'_, Payload> = Jwt::sign_with_rng(rng, header, payload, &key).unwrap();
+                    insta::assert_snapshot!(jwt.as_str());
                 }
 
                 #[test]

@@ -13,8 +13,6 @@
 // limitations under the License.
 
 use mas_iana::jose::{JsonWebKeyEcEllipticCurve, JsonWebSignatureAlg};
-use rand::thread_rng;
-use signature::RandomizedSigner;
 use thiserror::Error;
 
 use super::signature::Signature;
@@ -159,43 +157,47 @@ impl From<super::Es256KSigningKey> for AsymmetricSigningKey {
     }
 }
 
-impl signature::Signer<Signature> for AsymmetricSigningKey {
-    fn try_sign(&self, msg: &[u8]) -> Result<Signature, signature::Error> {
+impl signature::RandomizedSigner<Signature> for AsymmetricSigningKey {
+    fn try_sign_with_rng(
+        &self,
+        rng: impl rand::CryptoRng + rand::RngCore,
+        msg: &[u8],
+    ) -> Result<Signature, signature::Error> {
         match self {
             Self::Rs256(key) => {
-                let signature = key.try_sign(msg)?;
+                let signature = key.try_sign_with_rng(rng, msg)?;
                 Ok(Signature::from_signature(&signature))
             }
             Self::Rs384(key) => {
-                let signature = key.try_sign(msg)?;
+                let signature = key.try_sign_with_rng(rng, msg)?;
                 Ok(Signature::from_signature(&signature))
             }
             Self::Rs512(key) => {
-                let signature = key.try_sign(msg)?;
+                let signature = key.try_sign_with_rng(rng, msg)?;
                 Ok(Signature::from_signature(&signature))
             }
             Self::Ps256(key) => {
-                let signature = key.try_sign_with_rng(thread_rng(), msg)?;
+                let signature = key.try_sign_with_rng(rng, msg)?;
                 Ok(Signature::from_signature(&signature))
             }
             Self::Ps384(key) => {
-                let signature = key.try_sign_with_rng(thread_rng(), msg)?;
+                let signature = key.try_sign_with_rng(rng, msg)?;
                 Ok(Signature::from_signature(&signature))
             }
             Self::Ps512(key) => {
-                let signature = key.try_sign_with_rng(thread_rng(), msg)?;
+                let signature = key.try_sign_with_rng(rng, msg)?;
                 Ok(Signature::from_signature(&signature))
             }
             Self::Es256(key) => {
-                let signature = key.try_sign(msg)?;
+                let signature = key.try_sign_with_rng(rng, msg)?;
                 Ok(Signature::from_signature(&signature))
             }
             Self::Es384(key) => {
-                let signature = key.try_sign(msg)?;
+                let signature = key.try_sign_with_rng(rng, msg)?;
                 Ok(Signature::from_signature(&signature))
             }
             Self::Es256K(key) => {
-                let signature = key.try_sign(msg)?;
+                let signature = key.try_sign_with_rng(rng, msg)?;
                 Ok(Signature::from_signature(&signature))
             }
         }
