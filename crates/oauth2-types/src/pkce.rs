@@ -105,13 +105,13 @@ impl CodeChallengeMethodExt for PkceCodeChallengeMethod {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct AuthorizationRequest {
     pub code_challenge_method: PkceCodeChallengeMethod,
     pub code_challenge: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct TokenRequest {
     pub code_challenge_verifier: String,
 }

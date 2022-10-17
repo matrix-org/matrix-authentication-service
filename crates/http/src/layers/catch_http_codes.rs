@@ -45,6 +45,7 @@ impl<S, E> Error<S, E> {
     }
 }
 
+#[derive(Clone)]
 pub struct CatchHttpCodes<S, M> {
     inner: S,
     bounds: (Bound<StatusCode>, Bound<StatusCode>),
