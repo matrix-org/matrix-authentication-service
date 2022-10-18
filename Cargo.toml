@@ -1,4 +1,6 @@
 [workspace]
-
 default-members = ["crates/cli"]
 members = ["crates/*"]
+
+[profile.dev.package.num-bigint-dig]
+opt-level = 3
