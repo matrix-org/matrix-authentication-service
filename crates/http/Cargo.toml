@@ -21,16 +21,16 @@ opentelemetry-semantic-conventions = "0.10.0"
 rustls = { version = "0.20.6", optional = true }
 rustls-native-certs = { version = "0.6.2", optional = true }
 serde = "1.0.145"
-serde_json = "1.0.85"
+serde_json = "1.0.86"
 serde_urlencoded = "0.7.1"
 thiserror = "1.0.37"
 tokio = { version = "1.21.2", features = ["sync", "parking_lot"], optional = true }
 tower = { version = "0.4.13", features = ["timeout", "limit"] }
 tower-http = { version = "0.3.4", features = ["follow-redirect", "decompression-full", "set-header", "compression-full", "cors", "util"] }
-tracing = "0.1.36"
+tracing = "0.1.37"
 tracing-opentelemetry = "0.18.0"
 webpki = { version = "0.22.0", optional = true }
-webpki-roots = { version = "0.22.4", optional = true }
+webpki-roots = { version = "0.22.5", optional = true }
 
 [dev-dependencies]
 anyhow = "1.0.65"

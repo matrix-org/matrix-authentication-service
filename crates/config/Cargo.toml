@@ -7,20 +7,20 @@ license = "Apache-2.0"
 
 [dependencies]
 tokio = { version = "1.21.2", features = [] }
-tracing = { version = "0.1.36", features = ["log"] }
+tracing = { version = "0.1.37", features = ["log"] }
 async-trait = "0.1.57"
 
 thiserror = "1.0.37"
 anyhow = "1.0.65"
 
-schemars = { version = "0.8.10", features = ["url", "chrono"] }
-figment = { version = "0.10.7", features = ["env", "yaml", "test"] }
+schemars = { version = "0.8.11", features = ["url", "chrono"] }
+figment = { version = "0.10.8", features = ["env", "yaml", "test"] }
 chrono = { version = "0.4.22", features = ["serde"] }
 url = { version = "2.3.1", features = ["serde"] }
 
 serde = { version = "1.0.145", features = ["derive"] }
 serde_with = { version = "2.0.1", features = ["hex", "chrono"] }
-serde_json = "1.0.85"
+serde_json = "1.0.86"
 sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres"] }
 lettre = { version = "0.10.1", default-features = false, features = ["serde", "builder"] }
 

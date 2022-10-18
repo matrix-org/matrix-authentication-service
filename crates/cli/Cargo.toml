@@ -10,12 +10,12 @@ axum = "0.6.0-rc.2"
 tokio = { version = "1.21.2", features = ["full"] }
 futures-util = "0.3.24"
 anyhow = "1.0.65"
-clap = { version = "4.0.2", features = ["derive"] }
+clap = { version = "4.0.16", features = ["derive"] }
 dotenv = "0.15.0"
 tower = { version = "0.4.13", features = ["full"] }
 hyper = { version = "0.14.20", features = ["full"] }
 serde_yaml = "0.9.13"
-serde_json = "1.0.85"
+serde_json = "1.0.86"
 url = "2.3.1"
 argon2 = { version = "0.4.1", features = ["password-hash"] }
 watchman_client = "0.8.0"
@@ -24,9 +24,9 @@ listenfd = "1.0.0"
 rustls = "0.20.6"
 itertools = "0.10.5"
 
-tracing = "0.1.36"
+tracing = "0.1.37"
 tracing-appender = "0.2.2"
-tracing-subscriber = { version = "0.3.15", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
 tracing-opentelemetry = "0.18.0"
 opentelemetry = { version = "0.18.0", features = ["trace", "metrics", "rt-tokio"] }
 opentelemetry-semantic-conventions = "0.10.0"

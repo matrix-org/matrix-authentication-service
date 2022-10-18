@@ -19,15 +19,15 @@ p256 = { version = "0.11.1", features = ["ecdsa"] }
 p384 = { version = "0.11.2", features = ["ecdsa"] }
 rand = "0.8.5"
 rsa = "0.7.0"
-schemars = "0.8.10"
+schemars = "0.8.11"
 sec1 = "0.3.0"
 serde = { version = "1.0.145", features = ["derive"] }
-serde_json = "1.0.85"
+serde_json = "1.0.86"
 serde_with = { version = "2.0.1", features = ["base64"] }
 sha2 = { version = "0.10.6", features = ["oid"] }
-signature = "1.6.3"
+signature = "1.6.4"
 thiserror = "1.0.37"
-tracing = "0.1.36"
+tracing = "0.1.37"
 url = { version = "2.3.1", features = ["serde"] }
 
 mas-iana = { path = "../iana" }
