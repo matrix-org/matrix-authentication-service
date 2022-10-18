@@ -8,7 +8,7 @@ license = "Apache-2.0"
 [dependencies]
 bytes = "1.2.1"
 futures-util = "0.3.24"
-http-body = "0.4.2"
+http-body = "0.4.5"
 hyper = { version = "0.14.20", features = ["server", "http1", "http2", "tcp"] }
 pin-project-lite = "0.2.9"
 thiserror = "1.0.37"
