@@ -12,11 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use der::pem::LineEnding;
+use mas_iana::jose::JsonWebSignatureAlg;
 use mas_jose::{
     jwk::ParametersInfo,
     jwt::{JsonWebSignatureHeader, Jwt},
 };
-use mas_keystore::PrivateKey;
+use mas_keystore::{JsonWebKey, JsonWebKeySet, Keystore, PrivateKey};
+use rand::SeedableRng;
 
 static PASSWORD: &str = "hunter2";
 
@@ -165,4 +168,57 @@ fn load_unencrypted_as_encrypted_error() {
     assert!(PrivateKey::load_encrypted_der(der, PASSWORD)
         .unwrap_err()
         .is_unencrypted());
+}
+
+#[test]
+fn generate_sign_and_verify() {
+    // Use a seeded RNG to keep the snapshot stable
+    let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(42);
+
+    let rsa = PrivateKey::generate_rsa(&mut rng).expect("Failed to generate RSA key");
+    insta::assert_snapshot!(rsa.to_pem(LineEnding::LF).unwrap());
+
+    let ec_p256 = PrivateKey::generate_ec_p256(&mut rng);
+    insta::assert_snapshot!(ec_p256.to_pem(LineEnding::LF).unwrap());
+
+    let ec_p384 = PrivateKey::generate_ec_p384(&mut rng);
+    insta::assert_snapshot!(ec_p384.to_pem(LineEnding::LF).unwrap());
+
+    let ec_k256 = PrivateKey::generate_ec_k256(&mut rng);
+    insta::assert_snapshot!(ec_k256.to_pem(LineEnding::LF).unwrap());
+
+    // Create a keystore out of the keys
+    let keyset = Keystore::new(JsonWebKeySet::new(vec![
+        JsonWebKey::new(rsa),
+        JsonWebKey::new(ec_p256),
+        JsonWebKey::new(ec_p384),
+        JsonWebKey::new(ec_k256),
+    ]));
+
+    // And extract the public JWKS
+    let jwks = keyset.public_jwks();
+    insta::assert_yaml_snapshot!(jwks);
+
+    // Try signing for each supported algorithm
+    for alg in [
+        JsonWebSignatureAlg::Rs256,
+        JsonWebSignatureAlg::Rs384,
+        JsonWebSignatureAlg::Rs512,
+        JsonWebSignatureAlg::Ps256,
+        JsonWebSignatureAlg::Ps384,
+        JsonWebSignatureAlg::Ps512,
+        JsonWebSignatureAlg::Es256,
+        JsonWebSignatureAlg::Es384,
+        JsonWebSignatureAlg::Es256K,
+    ] {
+        // Find a matching key and sign with it
+        let key = keyset.signing_key_for_algorithm(&alg).unwrap();
+        let signer = key.params().signing_key_for_alg(&alg).unwrap();
+        let header = JsonWebSignatureHeader::new(alg.clone());
+        let token = Jwt::sign_with_rng(&mut rng, header, "", &signer).unwrap();
+        insta::assert_snapshot!(format!("jwt_{alg}"), token.as_str());
+
+        // Then try to verify from the public JWKS
+        token.verify_with_jwks(&jwks).unwrap();
+    }
 }

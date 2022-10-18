@@ -2152,6 +2152,7 @@ dependencies = [
  "console",
  "lazy_static",
  "linked-hash-map",
+ "serde",
  "similar",
  "yaml-rust",
 ]
@@ -2699,6 +2700,7 @@ dependencies = [
  "ecdsa",
  "elliptic-curve",
  "generic-array",
+ "insta",
  "k256",
  "mas-iana",
  "mas-jose",
@@ -2708,6 +2710,7 @@ dependencies = [
  "pkcs1",
  "pkcs8",
  "rand",
+ "rand_chacha",
  "rsa",
  "sec1",
  "spki",
