@@ -10,7 +10,7 @@ anyhow = "1.0.65"
 async-trait = "0.1.58"
 convert_case = "0.6.0"
 csv = "1.1.6"
-futures-util = "0.3.24"
+futures-util = "0.3.25"
 reqwest = { version = "0.11.12", features = ["blocking", "rustls-tls"], default-features = false }
 serde = { version = "1.0.145", features = ["derive"] }
 tokio = { version = "1.21.2", features = ["full"] }
