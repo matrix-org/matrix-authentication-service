@@ -277,20 +277,6 @@
     },
     "query": "\n            UPDATE user_emails\n            SET confirmed_at = $2\n            WHERE user_email_id = $1\n        "
   },
-  "116b387c52deeaf4f3c04ed13a37d9b81e085c0bb420eaee8323806719ab79a3": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Uuid",
-          "Uuid",
-          "Text"
-        ]
-      }
-    },
-    "query": "\n                INSERT INTO oauth2_client_redirect_uris\n                    (oauth2_client_redirect_uri_id, oauth2_client_id, redirect_uri)\n                VALUES ($1, $2, $3)\n            "
-  },
   "1eb6d13e75d8f526c2785749a020731c18012f03e07995213acd38ab560ce497": {
     "describe": {
       "columns": [],
@@ -836,6 +822,20 @@
       }
     },
     "query": "\n            INSERT INTO oauth2_access_tokens\n                (oauth2_access_token_id, oauth2_session_id, access_token, created_at, expires_at)\n            VALUES\n                ($1, $2, $3, $4, $5)\n        "
+  },
+  "4693f2b9b3d51ff4a05e233b6667161ebc97f331d96bf5f1c61069e1c8492105": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "UuidArray",
+          "Uuid",
+          "TextArray"
+        ]
+      }
+    },
+    "query": "\n            INSERT INTO oauth2_client_redirect_uris\n                (oauth2_client_redirect_uri_id, oauth2_client_id, redirect_uri)\n            SELECT id, $2, redirect_uri\n            FROM UNNEST($1::uuid[], $3::text[]) r(id, redirect_uri)\n        "
   },
   "46c5ae7052504bfd7b94f20e61b9cf92570779a794bccda23dd654fb8523f340": {
     "describe": {
