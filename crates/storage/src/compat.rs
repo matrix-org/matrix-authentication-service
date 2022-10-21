@@ -102,9 +102,7 @@ pub async fn lookup_active_compat_access_token(
             LEFT JOIN user_emails ue
               ON ue.user_email_id = u.primary_user_email_id
 
-            WHERE ct.access_token = $1
-              AND (ct.expires_at IS NULL OR ct.expires_at > NOW())
-            AND cs.finished_at IS NULL
+            WHERE ct.access_token = $1 AND cs.finished_at IS NULL
         "#,
         token,
     )
