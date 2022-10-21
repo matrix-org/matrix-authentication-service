@@ -391,21 +391,24 @@ pub async fn insert_client(
     .execute(&mut *conn)
     .await?;
 
-    for redirect_uri in redirect_uris {
-        let id = Ulid::new();
-        sqlx::query!(
-            r#"
-                INSERT INTO oauth2_client_redirect_uris
-                    (oauth2_client_redirect_uri_id, oauth2_client_id, redirect_uri)
-                VALUES ($1, $2, $3)
-            "#,
-            Uuid::from(id),
-            Uuid::from(client_id),
-            redirect_uri.as_str(),
-        )
-        .execute(&mut *conn)
-        .await?;
-    }
+    let (ids, redirect_uris): (Vec<Uuid>, Vec<String>) = redirect_uris
+        .iter()
+        .map(|uri| (Uuid::from(Ulid::new()), uri.as_str().to_owned()))
+        .unzip();
+
+    sqlx::query!(
+        r#"
+            INSERT INTO oauth2_client_redirect_uris
+                (oauth2_client_redirect_uri_id, oauth2_client_id, redirect_uri)
+            SELECT id, $2, redirect_uri
+            FROM UNNEST($1::uuid[], $3::text[]) r(id, redirect_uri)
+        "#,
+        &ids,
+        Uuid::from(client_id),
+        &redirect_uris,
+    )
+    .execute(&mut *conn)
+    .await?;
 
     Ok(())
 }
@@ -448,21 +451,24 @@ pub async fn insert_client_from_config(
     .execute(&mut *conn)
     .await?;
 
-    for redirect_uri in redirect_uris {
-        let id = Ulid::new();
-        sqlx::query!(
-            r#"
-                INSERT INTO oauth2_client_redirect_uris
-                    (oauth2_client_redirect_uri_id, oauth2_client_id, redirect_uri)
-                VALUES ($1, $2, $3)
-            "#,
-            Uuid::from(id),
-            Uuid::from(client_id),
-            redirect_uri.as_str(),
-        )
-        .execute(&mut *conn)
-        .await?;
-    }
+    let (ids, redirect_uris): (Vec<Uuid>, Vec<String>) = redirect_uris
+        .iter()
+        .map(|uri| (Uuid::from(Ulid::new()), uri.as_str().to_owned()))
+        .unzip();
+
+    sqlx::query!(
+        r#"
+            INSERT INTO oauth2_client_redirect_uris
+                (oauth2_client_redirect_uri_id, oauth2_client_id, redirect_uri)
+            SELECT id, $2, redirect_uri
+            FROM UNNEST($1::uuid[], $3::text[]) r(id, redirect_uri)
+        "#,
+        &ids,
+        Uuid::from(client_id),
+        &redirect_uris,
+    )
+    .execute(&mut *conn)
+    .await?;
 
     Ok(())
 }
