@@ -14,6 +14,7 @@
 
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
+use ulid::Ulid;
 
 pub use crate::traits::*;
 
@@ -23,23 +24,23 @@ pub use crate::traits::*;
 pub enum PostAuthAction {
     ContinueAuthorizationGrant {
         #[serde_as(as = "DisplayFromStr")]
-        data: i64,
+        data: Ulid,
     },
     ContinueCompatSsoLogin {
         #[serde_as(as = "DisplayFromStr")]
-        data: i64,
+        data: Ulid,
     },
     ChangePassword,
 }
 
 impl PostAuthAction {
     #[must_use]
-    pub fn continue_grant(data: i64) -> Self {
+    pub fn continue_grant(data: Ulid) -> Self {
         PostAuthAction::ContinueAuthorizationGrant { data }
     }
 
     #[must_use]
-    pub fn continue_compat_sso_login(data: i64) -> Self {
+    pub fn continue_compat_sso_login(data: Ulid) -> Self {
         PostAuthAction::ContinueCompatSsoLogin { data }
     }
 
@@ -166,14 +167,14 @@ impl Login {
     }
 
     #[must_use]
-    pub fn and_continue_grant(data: i64) -> Self {
+    pub fn and_continue_grant(data: Ulid) -> Self {
         Self {
             post_auth_action: Some(PostAuthAction::continue_grant(data)),
         }
     }
 
     #[must_use]
-    pub fn and_continue_compat_sso_login(data: i64) -> Self {
+    pub fn and_continue_compat_sso_login(data: Ulid) -> Self {
         Self {
             post_auth_action: Some(PostAuthAction::continue_compat_sso_login(data)),
         }
@@ -222,7 +223,7 @@ impl Reauth {
     }
 
     #[must_use]
-    pub fn and_continue_grant(data: i64) -> Self {
+    pub fn and_continue_grant(data: Ulid) -> Self {
         Self {
             post_auth_action: Some(PostAuthAction::continue_grant(data)),
         }
@@ -275,14 +276,14 @@ impl Register {
     }
 
     #[must_use]
-    pub fn and_continue_grant(data: i64) -> Self {
+    pub fn and_continue_grant(data: Ulid) -> Self {
         Self {
             post_auth_action: Some(PostAuthAction::continue_grant(data)),
         }
     }
 
     #[must_use]
-    pub fn and_continue_compat_sso_login(data: i64) -> Self {
+    pub fn and_continue_compat_sso_login(data: Ulid) -> Self {
         Self {
             post_auth_action: Some(PostAuthAction::continue_compat_sso_login(data)),
         }
@@ -323,13 +324,13 @@ impl From<Option<PostAuthAction>> for Register {
 /// `GET|POST /account/emails/verify/:id`
 #[derive(Debug, Clone)]
 pub struct AccountVerifyEmail {
-    id: i64,
+    id: Ulid,
     post_auth_action: Option<PostAuthAction>,
 }
 
 impl AccountVerifyEmail {
     #[must_use]
-    pub fn new(id: i64) -> Self {
+    pub fn new(id: Ulid) -> Self {
         Self {
             id,
             post_auth_action: None,
@@ -415,7 +416,7 @@ impl SimpleRoute for AccountEmails {
 
 /// `GET /authorize/:grant_id`
 #[derive(Debug, Clone)]
-pub struct ContinueAuthorizationGrant(pub i64);
+pub struct ContinueAuthorizationGrant(pub Ulid);
 
 impl Route for ContinueAuthorizationGrant {
     type Query = ();
@@ -430,7 +431,7 @@ impl Route for ContinueAuthorizationGrant {
 
 /// `GET /consent/:grant_id`
 #[derive(Debug, Clone)]
-pub struct Consent(pub i64);
+pub struct Consent(pub Ulid);
 
 impl Route for Consent {
     type Query = ();
@@ -493,13 +494,13 @@ pub struct CompatLoginSsoActionParams {
 
 /// `GET|POST /complete-compat-sso/:id`
 pub struct CompatLoginSsoComplete {
-    id: i64,
+    id: Ulid,
     query: Option<CompatLoginSsoActionParams>,
 }
 
 impl CompatLoginSsoComplete {
     #[must_use]
-    pub fn new(id: i64, action: Option<CompatLoginSsoAction>) -> Self {
+    pub fn new(id: Ulid, action: Option<CompatLoginSsoAction>) -> Self {
         Self {
             id,
             query: action.map(|action| CompatLoginSsoActionParams { action }),

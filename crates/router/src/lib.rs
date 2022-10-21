@@ -30,6 +30,7 @@ pub use self::{endpoints::*, traits::Route, url_builder::UrlBuilder};
 mod tests {
     use std::borrow::Cow;
 
+    use ulid::Ulid;
     use url::Url;
 
     use super::*;
@@ -42,8 +43,10 @@ mod tests {
         );
         assert_eq!(Index.relative_url(), Cow::Borrowed("/"));
         assert_eq!(
-            Login::and_continue_grant(42).relative_url(),
-            Cow::Borrowed("/login?next=continue_authorization_grant&data=42")
+            Login::and_continue_grant(Ulid::nil()).relative_url(),
+            Cow::Borrowed(
+                "/login?next=continue_authorization_grant&data=00000000000000000000000000"
+            )
         );
     }
 

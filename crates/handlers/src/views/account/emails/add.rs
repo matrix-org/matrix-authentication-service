@@ -86,7 +86,7 @@ pub(crate) async fn post(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    let user_email = add_user_email(&mut txn, &session.user, &form.email).await?;
+    let user_email = add_user_email(&mut txn, &session.user, form.email).await?;
     let next = mas_router::AccountVerifyEmail::new(user_email.data);
     let next = if let Some(action) = query.post_auth_action {
         next.and_then(action)

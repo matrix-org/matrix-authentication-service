@@ -20,23 +20,25 @@ use mas_iana::{
     oauth::{OAuthAuthorizationEndpointResponseType, OAuthClientAuthenticationMethod},
 };
 use mas_jose::jwk::PublicJsonWebKeySet;
-use oauth2_types::{requests::GrantType, response_type::ResponseType};
+use oauth2_types::requests::GrantType;
 use sqlx::{PgConnection, PgExecutor};
 use thiserror::Error;
+use ulid::Ulid;
 use url::Url;
+use uuid::Uuid;
 
 use crate::PostgresqlBackend;
 
+// XXX: response_types & contacts
 #[derive(Debug)]
 pub struct OAuth2ClientLookup {
-    id: i64,
-    client_id: String,
+    oauth2_client_id: Uuid,
     encrypted_client_secret: Option<String>,
     redirect_uris: Vec<String>,
-    response_types: Vec<String>,
+    // response_types: Vec<String>,
     grant_type_authorization_code: bool,
     grant_type_refresh_token: bool,
-    contacts: Vec<String>,
+    // contacts: Vec<String>,
     client_name: Option<String>,
     logo_uri: Option<String>,
     client_uri: Option<String>,
@@ -53,6 +55,9 @@ pub struct OAuth2ClientLookup {
 
 #[derive(Debug, Error)]
 pub enum ClientFetchError {
+    #[error("invalid client ID")]
+    InvalidClientId(#[from] ulid::DecodeError),
+
     #[error("malformed jwks column")]
     MalformedJwks(#[source] serde_json::Error),
 
@@ -78,7 +83,10 @@ pub enum ClientFetchError {
 impl ClientFetchError {
     #[must_use]
     pub fn not_found(&self) -> bool {
-        matches!(self, Self::Database(sqlx::Error::RowNotFound))
+        matches!(
+            self,
+            Self::Database(sqlx::Error::RowNotFound) | Self::InvalidClientId(_)
+        )
     }
 }
 
@@ -94,12 +102,19 @@ impl TryInto<Client<PostgresqlBackend>> for OAuth2ClientLookup {
             source,
         })?;
 
+        let response_types = vec![
+            OAuthAuthorizationEndpointResponseType::Code,
+            OAuthAuthorizationEndpointResponseType::IdToken,
+            OAuthAuthorizationEndpointResponseType::None,
+        ];
+        /* XXX
         let response_types: Result<Vec<OAuthAuthorizationEndpointResponseType>, _> =
             self.response_types.iter().map(|s| s.parse()).collect();
         let response_types = response_types.map_err(|source| ClientFetchError::ParseField {
             field: "response_types",
             source,
         })?;
+        */
 
         let mut grant_types = Vec::new();
         if self.grant_type_authorization_code {
@@ -210,13 +225,14 @@ impl TryInto<Client<PostgresqlBackend>> for OAuth2ClientLookup {
         };
 
         Ok(Client {
-            data: self.id,
-            client_id: self.client_id,
+            data: self.oauth2_client_id.into(),
+            client_id: self.oauth2_client_id.to_string(),
             encrypted_client_secret: self.encrypted_client_secret,
             redirect_uris,
             response_types,
             grant_types,
-            contacts: self.contacts,
+            // contacts: self.contacts,
+            contacts: vec![],
             client_name: self.client_name,
             logo_uri,
             client_uri,
@@ -234,20 +250,21 @@ impl TryInto<Client<PostgresqlBackend>> for OAuth2ClientLookup {
 
 pub async fn lookup_client(
     executor: impl PgExecutor<'_>,
-    id: i64,
+    id: Ulid,
 ) -> Result<Client<PostgresqlBackend>, ClientFetchError> {
     let res = sqlx::query_as!(
         OAuth2ClientLookup,
         r#"
             SELECT
-                c.id,
-                c.client_id,
+                c.oauth2_client_id,
                 c.encrypted_client_secret,
-                ARRAY(SELECT redirect_uri FROM oauth2_client_redirect_uris r WHERE r.oauth2_client_id = c.id) AS "redirect_uris!",
-                c.response_types,
+                ARRAY(
+                    SELECT redirect_uri 
+                    FROM oauth2_client_redirect_uris r 
+                    WHERE r.oauth2_client_id = c.oauth2_client_id
+                ) AS "redirect_uris!",
                 c.grant_type_authorization_code,
                 c.grant_type_refresh_token,
-                c.contacts,
                 c.client_name,
                 c.logo_uri,
                 c.client_uri,
@@ -262,9 +279,9 @@ pub async fn lookup_client(
                 c.initiate_login_uri
             FROM oauth2_clients c
 
-            WHERE c.id = $1
+            WHERE c.oauth2_client_id = $1
         "#,
-        id,
+        Uuid::from(id),
     )
     .fetch_one(executor)
     .await?;
@@ -278,53 +295,18 @@ pub async fn lookup_client_by_client_id(
     executor: impl PgExecutor<'_>,
     client_id: &str,
 ) -> Result<Client<PostgresqlBackend>, ClientFetchError> {
-    let res = sqlx::query_as!(
-        OAuth2ClientLookup,
-        r#"
-            SELECT
-                c.id,
-                c.client_id,
-                c.encrypted_client_secret,
-                ARRAY(SELECT redirect_uri FROM oauth2_client_redirect_uris r WHERE r.oauth2_client_id = c.id) AS "redirect_uris!",
-                c.response_types,
-                c.grant_type_authorization_code,
-                c.grant_type_refresh_token,
-                c.contacts,
-                c.client_name,
-                c.logo_uri,
-                c.client_uri,
-                c.policy_uri,
-                c.tos_uri,
-                c.jwks_uri,
-                c.jwks,
-                c.id_token_signed_response_alg,
-                c.userinfo_signed_response_alg,
-                c.token_endpoint_auth_method,
-                c.token_endpoint_auth_signing_alg,
-                c.initiate_login_uri
-            FROM oauth2_clients c
-
-            WHERE c.client_id = $1
-        "#,
-        client_id,
-    )
-    .fetch_one(executor)
-    .await?;
-
-    let client = res.try_into()?;
-
-    Ok(client)
+    let id: Ulid = client_id.parse()?;
+    lookup_client(executor, id).await
 }
 
 #[allow(clippy::too_many_arguments)]
 pub async fn insert_client(
     conn: &mut PgConnection,
-    client_id: &str,
+    client_id: Ulid,
     redirect_uris: &[Url],
     encrypted_client_secret: Option<&str>,
-    response_types: &[ResponseType],
     grant_types: &[GrantType],
-    contacts: &[String],
+    _contacts: &[String],
     client_name: Option<&str>,
     logo_uri: Option<&Url>,
     client_uri: Option<&Url>,
@@ -338,7 +320,6 @@ pub async fn insert_client(
     token_endpoint_auth_signing_alg: Option<&JsonWebSignatureAlg>,
     initiate_login_uri: Option<&Url>,
 ) -> Result<(), sqlx::Error> {
-    let response_types: Vec<String> = response_types.iter().map(ToString::to_string).collect();
     let grant_type_authorization_code = grant_types.contains(&GrantType::AuthorizationCode);
     let grant_type_refresh_token = grant_types.contains(&GrantType::RefreshToken);
     let logo_uri = logo_uri.map(Url::as_str);
@@ -353,15 +334,13 @@ pub async fn insert_client(
     let token_endpoint_auth_signing_alg = token_endpoint_auth_signing_alg.map(ToString::to_string);
     let initiate_login_uri = initiate_login_uri.map(Url::as_str);
 
-    let id = sqlx::query_scalar!(
+    sqlx::query!(
         r#"
             INSERT INTO oauth2_clients
-                (client_id,
+                (oauth2_client_id,
                  encrypted_client_secret,
-                 response_types,
                  grant_type_authorization_code,
                  grant_type_refresh_token,
-                 contacts,
                  client_name,
                  logo_uri,
                  client_uri,
@@ -375,15 +354,12 @@ pub async fn insert_client(
                  token_endpoint_auth_signing_alg,
                  initiate_login_uri)
             VALUES
-                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
-            RETURNING id
+                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
         "#,
-        client_id,
+        Uuid::from(client_id),
         encrypted_client_secret,
-        &response_types,
         grant_type_authorization_code,
         grant_type_refresh_token,
-        contacts,
         client_name,
         logo_uri,
         client_uri,
@@ -397,96 +373,87 @@ pub async fn insert_client(
         token_endpoint_auth_signing_alg,
         initiate_login_uri,
     )
-    .fetch_one(&mut *conn)
-    .await?;
-
-    let redirect_uris: Vec<String> = redirect_uris.iter().map(ToString::to_string).collect();
-
-    sqlx::query!(
-        r#"
-            INSERT INTO oauth2_client_redirect_uris (oauth2_client_id, redirect_uri)
-            SELECT $1, uri FROM UNNEST($2::text[]) uri
-        "#,
-        id,
-        &redirect_uris,
-    )
     .execute(&mut *conn)
     .await?;
+
+    for redirect_uri in redirect_uris {
+        let id = Ulid::new();
+        sqlx::query!(
+            r#"
+                INSERT INTO oauth2_client_redirect_uris 
+                    (oauth2_client_redirect_uri_id, oauth2_client_id, redirect_uri)
+                VALUES ($1, $2, $3)
+            "#,
+            Uuid::from(id),
+            Uuid::from(client_id),
+            redirect_uri.as_str(),
+        )
+        .execute(&mut *conn)
+        .await?;
+    }
 
     Ok(())
 }
 
 pub async fn insert_client_from_config(
     conn: &mut PgConnection,
-    client_id: &str,
+    client_id: Ulid,
     client_auth_method: OAuthClientAuthenticationMethod,
     encrypted_client_secret: Option<&str>,
     jwks: Option<&PublicJsonWebKeySet>,
     jwks_uri: Option<&Url>,
     redirect_uris: &[Url],
 ) -> anyhow::Result<()> {
-    let response_types = vec![
-        OAuthAuthorizationEndpointResponseType::Code.to_string(),
-        OAuthAuthorizationEndpointResponseType::CodeIdToken.to_string(),
-        OAuthAuthorizationEndpointResponseType::CodeIdTokenToken.to_string(),
-        OAuthAuthorizationEndpointResponseType::CodeToken.to_string(),
-        OAuthAuthorizationEndpointResponseType::IdToken.to_string(),
-        OAuthAuthorizationEndpointResponseType::IdTokenToken.to_string(),
-        OAuthAuthorizationEndpointResponseType::None.to_string(),
-        OAuthAuthorizationEndpointResponseType::Token.to_string(),
-    ];
-
     let jwks = jwks.map(serde_json::to_value).transpose()?;
     let jwks_uri = jwks_uri.map(Url::as_str);
 
     let client_auth_method = client_auth_method.to_string();
 
-    let id = sqlx::query_scalar!(
+    sqlx::query!(
         r#"
             INSERT INTO oauth2_clients
-                (client_id,
+                (oauth2_client_id,
                  encrypted_client_secret,
-                 response_types,
                  grant_type_authorization_code,
                  grant_type_refresh_token,
                  token_endpoint_auth_method,
                  jwks,
-                 jwks_uri,
-                 contacts)
+                 jwks_uri)
             VALUES
-                ($1, $2, $3, $4, $5, $6, $7, $8, '{}')
-            RETURNING id
+                ($1, $2, $3, $4, $5, $6, $7)
         "#,
-        client_id,
+        Uuid::from(client_id),
         encrypted_client_secret,
-        &response_types,
         true,
         true,
         client_auth_method,
         jwks,
         jwks_uri,
     )
-    .fetch_one(&mut *conn)
-    .await?;
-
-    let redirect_uris: Vec<String> = redirect_uris.iter().map(ToString::to_string).collect();
-
-    sqlx::query!(
-        r#"
-            INSERT INTO oauth2_client_redirect_uris (oauth2_client_id, redirect_uri)
-            SELECT $1, uri FROM UNNEST($2::text[]) uri
-        "#,
-        id,
-        &redirect_uris,
-    )
     .execute(&mut *conn)
     .await?;
+
+    for redirect_uri in redirect_uris {
+        let id = Ulid::new();
+        sqlx::query!(
+            r#"
+                INSERT INTO oauth2_client_redirect_uris 
+                    (oauth2_client_redirect_uri_id, oauth2_client_id, redirect_uri)
+                VALUES ($1, $2, $3)
+            "#,
+            Uuid::from(id),
+            Uuid::from(client_id),
+            redirect_uri.as_str(),
+        )
+        .execute(&mut *conn)
+        .await?;
+    }
 
     Ok(())
 }
 
 pub async fn truncate_clients(executor: impl PgExecutor<'_>) -> anyhow::Result<()> {
-    sqlx::query!("TRUNCATE oauth2_client_redirect_uris, oauth2_clients RESTART IDENTITY CASCADE")
+    sqlx::query!("TRUNCATE oauth2_client_redirect_uris, oauth2_clients CASCADE")
         .execute(executor)
         .await?;
     Ok(())

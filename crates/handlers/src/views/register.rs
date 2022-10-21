@@ -22,6 +22,7 @@ use axum::{
     response::{Html, IntoResponse, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
+use chrono::Duration;
 use lettre::{message::Mailbox, Address};
 use mas_axum_utils::{
     csrf::{CsrfExt, CsrfToken, ProtectedForm},
@@ -181,7 +182,7 @@ pub(crate) async fn post(
     let pfh = Argon2::default();
     let user = register_user(&mut txn, pfh, &form.username, &form.password).await?;
 
-    let user_email = add_user_email(&mut txn, &user, &form.email).await?;
+    let user_email = add_user_email(&mut txn, &user, form.email).await?;
 
     // First, generate a code
     let range = Uniform::<u32>::from(0..1_000_000);
@@ -189,7 +190,8 @@ pub(crate) async fn post(
 
     let address: Address = user_email.email.parse()?;
 
-    let verification = add_user_email_verification_code(&mut txn, user_email, code).await?;
+    let verification =
+        add_user_email_verification_code(&mut txn, user_email, Duration::hours(8), code).await?;
 
     // And send the verification email
     let mailbox = Mailbox::new(Some(user.username.clone()), address);

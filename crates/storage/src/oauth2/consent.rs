@@ -14,9 +14,12 @@
 
 use std::str::FromStr;
 
+use chrono::Utc;
 use mas_data_model::{Client, User};
 use oauth2_types::scope::{Scope, ScopeToken};
 use sqlx::PgExecutor;
+use ulid::Ulid;
+use uuid::Uuid;
 
 use crate::PostgresqlBackend;
 
@@ -31,8 +34,8 @@ pub async fn fetch_client_consent(
             FROM oauth2_consents
             WHERE user_id = $1 AND oauth2_client_id = $2
         "#,
-        user.data,
-        client.data,
+        Uuid::from(user.data),
+        Uuid::from(client.data),
     )
     .fetch_all(executor)
     .await?;
@@ -51,17 +54,29 @@ pub async fn insert_client_consent(
     client: &Client<PostgresqlBackend>,
     scope: &Scope,
 ) -> anyhow::Result<()> {
-    let tokens: Vec<String> = scope.iter().map(ToString::to_string).collect();
+    let now = Utc::now();
+    let (tokens, ids): (Vec<String>, Vec<Uuid>) = scope
+        .iter()
+        .map(|token| {
+            (
+                token.to_string(),
+                Uuid::from(Ulid::from_datetime(now.into())),
+            )
+        })
+        .unzip();
 
     sqlx::query!(
         r#"
-            INSERT INTO oauth2_consents (user_id, oauth2_client_id, scope_token)
-            SELECT $1, $2, scope_token FROM UNNEST($3::text[]) scope_token
-            ON CONFLICT (user_id, oauth2_client_id, scope_token) DO UPDATE SET updated_at = NOW()
+            INSERT INTO oauth2_consents 
+                (oauth2_consent_id, user_id, oauth2_client_id, scope_token, created_at)
+            SELECT id, $2, $3, scope_token, $5 FROM UNNEST($1::uuid[], $4::text[]) u(id, scope_token)
+            ON CONFLICT (user_id, oauth2_client_id, scope_token) DO UPDATE SET refreshed_at = $5
         "#,
-        user.data,
-        client.data,
+        &ids,
+        Uuid::from(user.data),
+        Uuid::from(client.data),
         &tokens,
+        now,
     )
     .execute(executor)
     .await?;

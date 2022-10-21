@@ -1,4 +1,4 @@
--- Copyright 2021 The Matrix.org Foundation C.I.C.
+-- Copyright 2022 The Matrix.org Foundation C.I.C.
 --
 -- Licensed under the Apache License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
@@ -12,13 +12,3 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
-CREATE TABLE user_emails (
-  "id" BIGSERIAL PRIMARY KEY,
-  "user_id" BIGINT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-  "email" TEXT NOT NULL,
-  "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  "confirmed_at" TIMESTAMP WITH TIME ZONE DEFAULT NULL
-);
-
-ALTER TABLE users
-  ADD COLUMN "primary_email_id" BIGINT REFERENCES user_emails (id) ON DELETE SET NULL;

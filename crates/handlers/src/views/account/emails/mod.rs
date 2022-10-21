@@ -17,6 +17,7 @@ use axum::{
     response::{Html, IntoResponse, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
+use chrono::Duration;
 use lettre::{message::Mailbox, Address};
 use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
@@ -101,7 +102,8 @@ async fn start_email_verification(
 
     let address: Address = user_email.email.parse()?;
 
-    let verification = add_user_email_verification_code(executor, user_email, code).await?;
+    let verification =
+        add_user_email_verification_code(executor, user_email, Duration::hours(8), code).await?;
 
     // And send the verification email
     let mailbox = Mailbox::new(Some(user.username.clone()), address);
@@ -111,7 +113,7 @@ async fn start_email_verification(
     mailer.send_verification_email(mailbox, &context).await?;
 
     info!(
-        email.id = verification.email.data,
+        email.id = %verification.email.data,
         "Verification email sent"
     );
     Ok(())
@@ -141,7 +143,7 @@ pub(crate) async fn post(
 
     match form {
         ManagementForm::Add { email } => {
-            let user_email = add_user_email(&mut txn, &session.user, &email).await?;
+            let user_email = add_user_email(&mut txn, &session.user, email).await?;
             let next = mas_router::AccountVerifyEmail::new(user_email.data);
             start_email_verification(&mailer, &mut txn, &session.user, user_email).await?;
             txn.commit().await?;

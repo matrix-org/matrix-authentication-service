@@ -24,10 +24,10 @@ use oauth2_types::{
         ClientMetadata, ClientMetadataVerificationError, ClientRegistrationResponse, Localized,
     },
 };
-use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use sqlx::PgPool;
 use thiserror::Error;
 use tracing::info;
+use ulid::Ulid;
 
 #[derive(Debug, Error)]
 pub(crate) enum RouteError {
@@ -127,18 +127,14 @@ pub(crate) async fn post(
     let mut txn = pool.begin().await?;
 
     // Let's generate a random client ID
-    let client_id: String = thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(10)
-        .map(char::from)
-        .collect();
+    let client_id = Ulid::new();
 
     insert_client(
         &mut txn,
-        &client_id,
+        client_id,
         metadata.redirect_uris(),
         None,
-        &metadata.response_types(),
+        //&metadata.response_types(),
         metadata.grant_types(),
         contacts,
         metadata
@@ -162,7 +158,7 @@ pub(crate) async fn post(
     txn.commit().await?;
 
     let response = ClientRegistrationResponse {
-        client_id,
+        client_id: client_id.to_string(),
         client_secret: None,
         client_id_issued_at: None,
         client_secret_expires_at: None,

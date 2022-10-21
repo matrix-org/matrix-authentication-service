@@ -23,9 +23,11 @@ pub struct FancyError {
     context: ErrorContext,
 }
 
-impl<E: std::fmt::Display> From<E> for FancyError {
+impl<E: std::fmt::Debug + std::fmt::Display> From<E> for FancyError {
     fn from(err: E) -> Self {
-        let context = ErrorContext::new().with_description(err.to_string());
+        let context = ErrorContext::new()
+            .with_description(format!("{err}"))
+            .with_details(format!("{err:?}"));
         FancyError { context }
     }
 }

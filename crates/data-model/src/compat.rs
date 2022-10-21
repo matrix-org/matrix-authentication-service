@@ -89,7 +89,7 @@ pub struct CompatSession<T: StorageBackend> {
     pub user: User<T>,
     pub device: Device,
     pub created_at: DateTime<Utc>,
-    pub deleted_at: Option<DateTime<Utc>>,
+    pub finished_at: Option<DateTime<Utc>>,
 }
 
 impl<S: StorageBackendMarker> From<CompatSession<S>> for CompatSession<()> {
@@ -99,7 +99,7 @@ impl<S: StorageBackendMarker> From<CompatSession<S>> for CompatSession<()> {
             user: t.user.into(),
             device: t.device,
             created_at: t.created_at,
-            deleted_at: t.deleted_at,
+            finished_at: t.finished_at,
         }
     }
 }
@@ -144,12 +144,12 @@ impl<S: StorageBackendMarker> From<CompatRefreshToken<S>> for CompatRefreshToken
 #[serde(bound = "T: StorageBackend")]
 pub enum CompatSsoLoginState<T: StorageBackend> {
     Pending,
-    Fullfilled {
-        fullfilled_at: DateTime<Utc>,
+    Fulfilled {
+        fulfilled_at: DateTime<Utc>,
         session: CompatSession<T>,
     },
     Exchanged {
-        fullfilled_at: DateTime<Utc>,
+        fulfilled_at: DateTime<Utc>,
         exchanged_at: DateTime<Utc>,
         session: CompatSession<T>,
     },
@@ -159,19 +159,19 @@ impl<S: StorageBackendMarker> From<CompatSsoLoginState<S>> for CompatSsoLoginSta
     fn from(t: CompatSsoLoginState<S>) -> Self {
         match t {
             CompatSsoLoginState::Pending => Self::Pending,
-            CompatSsoLoginState::Fullfilled {
-                fullfilled_at,
+            CompatSsoLoginState::Fulfilled {
+                fulfilled_at,
                 session,
-            } => Self::Fullfilled {
-                fullfilled_at,
+            } => Self::Fulfilled {
+                fulfilled_at,
                 session: session.into(),
             },
             CompatSsoLoginState::Exchanged {
-                fullfilled_at,
+                fulfilled_at,
                 exchanged_at,
                 session,
             } => Self::Exchanged {
-                fullfilled_at,
+                fulfilled_at,
                 exchanged_at,
                 session: session.into(),
             },
@@ -185,7 +185,7 @@ pub struct CompatSsoLogin<T: StorageBackend> {
     #[serde(skip_serializing)]
     pub data: T::CompatSsoLoginData,
     pub redirect_uri: Url,
-    pub token: String,
+    pub login_token: String,
     pub created_at: DateTime<Utc>,
     pub state: CompatSsoLoginState<T>,
 }
@@ -195,7 +195,7 @@ impl<S: StorageBackendMarker> From<CompatSsoLogin<S>> for CompatSsoLogin<()> {
         Self {
             data: (),
             redirect_uri: t.redirect_uri,
-            token: t.token,
+            login_token: t.login_token,
             created_at: t.created_at,
             state: t.state.into(),
         }

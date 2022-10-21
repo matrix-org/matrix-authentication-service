@@ -164,7 +164,7 @@ where
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub enum UserEmailVerificationState {
     AlreadyUsed { when: DateTime<Utc> },
-    Expired,
+    Expired { when: DateTime<Utc> },
     Valid,
 }
 
@@ -200,7 +200,9 @@ where
             UserEmailVerificationState::AlreadyUsed {
                 when: Utc::now() - Duration::minutes(5),
             },
-            UserEmailVerificationState::Expired,
+            UserEmailVerificationState::Expired {
+                when: Utc::now() - Duration::hours(5),
+            },
             UserEmailVerificationState::Valid,
         ];
 

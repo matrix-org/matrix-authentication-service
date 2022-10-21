@@ -13,66 +13,71 @@
 // limitations under the License.
 
 use anyhow::Context;
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Utc};
 use mas_data_model::{
     AccessToken, Authentication, BrowserSession, RefreshToken, Session, User, UserEmail,
 };
 use sqlx::{PgConnection, PgExecutor};
 use thiserror::Error;
+use ulid::Ulid;
+use uuid::Uuid;
 
 use super::client::{lookup_client, ClientFetchError};
-use crate::{DatabaseInconsistencyError, IdAndCreationTime, PostgresqlBackend};
+use crate::{DatabaseInconsistencyError, PostgresqlBackend};
 
 pub async fn add_refresh_token(
     executor: impl PgExecutor<'_>,
     session: &Session<PostgresqlBackend>,
     access_token: AccessToken<PostgresqlBackend>,
-    token: &str,
+    refresh_token: String,
 ) -> anyhow::Result<RefreshToken<PostgresqlBackend>> {
-    let res = sqlx::query_as!(
-        IdAndCreationTime,
+    let created_at = Utc::now();
+    let id = Ulid::from_datetime(created_at.into());
+
+    sqlx::query!(
         r#"
             INSERT INTO oauth2_refresh_tokens
-                (oauth2_session_id, oauth2_access_token_id, token)
+                (oauth2_refresh_token_id, oauth2_session_id, oauth2_access_token_id,
+                 refresh_token, created_at)
             VALUES
-                ($1, $2, $3)
-            RETURNING
-                id, created_at
+                ($1, $2, $3, $4, $5)
         "#,
-        session.data,
-        access_token.data,
-        token,
+        Uuid::from(id),
+        Uuid::from(session.data),
+        Uuid::from(access_token.data),
+        refresh_token,
+        created_at,
     )
-    .fetch_one(executor)
+    .execute(executor)
     .await
     .context("could not insert oauth2 refresh token")?;
 
     Ok(RefreshToken {
-        data: res.id,
-        token: token.to_owned(),
+        data: id,
+        refresh_token,
         access_token: Some(access_token),
-        created_at: res.created_at,
+        created_at,
     })
 }
 
 struct OAuth2RefreshTokenLookup {
-    refresh_token_id: i64,
-    refresh_token: String,
-    refresh_token_created_at: DateTime<Utc>,
-    access_token_id: Option<i64>,
-    access_token: Option<String>,
-    access_token_expires_after: Option<i32>,
-    access_token_created_at: Option<DateTime<Utc>>,
-    session_id: i64,
-    oauth2_client_id: i64,
-    scope: String,
-    user_session_id: i64,
+    oauth2_refresh_token_id: Uuid,
+    oauth2_refresh_token: String,
+    oauth2_refresh_token_created_at: DateTime<Utc>,
+    oauth2_access_token_id: Option<Uuid>,
+    oauth2_access_token: Option<String>,
+    oauth2_access_token_created_at: Option<DateTime<Utc>>,
+    oauth2_access_token_expires_at: Option<DateTime<Utc>>,
+    oauth2_session_id: Uuid,
+    oauth2_client_id: Uuid,
+    oauth2_session_scope: String,
+    user_session_id: Uuid,
     user_session_created_at: DateTime<Utc>,
-    user_id: i64,
+    user_id: Uuid,
     user_username: String,
-    user_session_last_authentication_id: Option<i64>,
+    user_session_last_authentication_id: Option<Uuid>,
     user_session_last_authentication_created_at: Option<DateTime<Utc>>,
-    user_email_id: Option<i64>,
+    user_email_id: Option<Uuid>,
     user_email: Option<String>,
     user_email_created_at: Option<DateTime<Utc>>,
     user_email_confirmed_at: Option<DateTime<Utc>>,
@@ -103,44 +108,45 @@ pub async fn lookup_active_refresh_token(
         OAuth2RefreshTokenLookup,
         r#"
             SELECT
-                rt.id              AS refresh_token_id,
-                rt.token           AS refresh_token,
-                rt.created_at      AS refresh_token_created_at,
-                at.id              AS "access_token_id?",
-                at.token           AS "access_token?",
-                at.expires_after   AS "access_token_expires_after?",
-                at.created_at      AS "access_token_created_at?",
-                os.id              AS "session_id!",
-                os.oauth2_client_id AS "oauth2_client_id!",
-                os.scope           AS "scope!",
-                us.id              AS "user_session_id!",
-                us.created_at      AS "user_session_created_at!",
-                 u.id              AS "user_id!",
-                 u.username        AS "user_username!",
-                usa.id             AS "user_session_last_authentication_id?",
-                usa.created_at     AS "user_session_last_authentication_created_at?",
-                ue.id              AS "user_email_id?",
-                ue.email           AS "user_email?",
-                ue.created_at      AS "user_email_created_at?",
-                ue.confirmed_at    AS "user_email_confirmed_at?"
+                rt.oauth2_refresh_token_id,
+                rt.refresh_token     AS oauth2_refresh_token,
+                rt.created_at        AS oauth2_refresh_token_created_at,
+                at.oauth2_access_token_id AS "oauth2_access_token_id?",
+                at.access_token      AS "oauth2_access_token?",
+                at.created_at        AS "oauth2_access_token_created_at?",
+                at.expires_at        AS "oauth2_access_token_expires_at?",
+                os.oauth2_session_id AS "oauth2_session_id!",
+                os.oauth2_client_id  AS "oauth2_client_id!",
+                os.scope             AS "oauth2_session_scope!",
+                us.user_session_id   AS "user_session_id!",
+                us.created_at        AS "user_session_created_at!",
+                 u.user_id           AS "user_id!",
+                 u.username          AS "user_username!",
+                usa.user_session_authentication_id AS "user_session_last_authentication_id?",
+                usa.created_at       AS "user_session_last_authentication_created_at?",
+                ue.user_email_id     AS "user_email_id?",
+                ue.email             AS "user_email?",
+                ue.created_at        AS "user_email_created_at?",
+                ue.confirmed_at      AS "user_email_confirmed_at?"
             FROM oauth2_refresh_tokens rt
-            LEFT JOIN oauth2_access_tokens at
-              ON at.id = rt.oauth2_access_token_id
             INNER JOIN oauth2_sessions os
-              ON os.id = rt.oauth2_session_id
+              USING (oauth2_session_id)
+            LEFT JOIN oauth2_access_tokens at
+              USING (oauth2_access_token_id)
             INNER JOIN user_sessions us
-              ON us.id = os.user_session_id
+              USING (user_session_id)
             INNER JOIN users u
-              ON u.id = us.user_id
+              USING (user_id)
             LEFT JOIN user_session_authentications usa
-              ON usa.session_id = us.id
+              USING (user_session_id)
             LEFT JOIN user_emails ue
-              ON ue.id = u.primary_email_id
+              ON ue.user_email_id = u.primary_user_email_id
 
-            WHERE rt.token = $1
-              AND rt.next_token_id IS NULL
-              AND us.active
-              AND os.ended_at IS NULL
+            WHERE rt.refresh_token = $1
+              AND rt.consumed_at IS NULL
+              AND rt.revoked_at  IS NULL
+              AND us.finished_at IS NULL
+              AND os.finished_at IS NULL
 
             ORDER BY usa.created_at DESC
             LIMIT 1
@@ -151,30 +157,31 @@ pub async fn lookup_active_refresh_token(
     .await?;
 
     let access_token = match (
-        res.access_token_id,
-        res.access_token,
-        res.access_token_created_at,
-        res.access_token_expires_after,
+        res.oauth2_access_token_id,
+        res.oauth2_access_token,
+        res.oauth2_access_token_created_at,
+        res.oauth2_access_token_expires_at,
     ) {
         (None, None, None, None) => None,
-        (Some(id), Some(token), Some(created_at), Some(expires_after)) => Some(AccessToken {
-            data: id,
-            jti: format!("{}", id),
-            token,
+        (Some(id), Some(access_token), Some(created_at), Some(expires_at)) => Some(AccessToken {
+            data: id.into(),
+            // XXX: are we doing that everywhere?
+            jti: Ulid::from(id).to_string(),
+            access_token,
             created_at,
-            expires_after: Duration::seconds(expires_after.into()),
+            expires_at,
         }),
         _ => return Err(DatabaseInconsistencyError.into()),
     };
 
     let refresh_token = RefreshToken {
-        data: res.refresh_token_id,
-        token: res.refresh_token,
-        created_at: res.refresh_token_created_at,
+        data: res.oauth2_refresh_token_id.into(),
+        refresh_token: res.oauth2_refresh_token,
+        created_at: res.oauth2_refresh_token_created_at,
         access_token,
     };
 
-    let client = lookup_client(&mut *conn, res.oauth2_client_id).await?;
+    let client = lookup_client(&mut *conn, res.oauth2_client_id.into()).await?;
 
     let primary_email = match (
         res.user_email_id,
@@ -183,7 +190,7 @@ pub async fn lookup_active_refresh_token(
         res.user_email_confirmed_at,
     ) {
         (Some(id), Some(email), Some(created_at), confirmed_at) => Some(UserEmail {
-            data: id,
+            data: id.into(),
             email,
             created_at,
             confirmed_at,
@@ -192,10 +199,11 @@ pub async fn lookup_active_refresh_token(
         _ => return Err(DatabaseInconsistencyError.into()),
     };
 
+    let id = Ulid::from(res.user_id);
     let user = User {
-        data: res.user_id,
+        data: id,
         username: res.user_username,
-        sub: format!("fake-sub-{}", res.user_id),
+        sub: id.to_string(),
         primary_email,
     };
 
@@ -205,23 +213,26 @@ pub async fn lookup_active_refresh_token(
     ) {
         (None, None) => None,
         (Some(id), Some(created_at)) => Some(Authentication {
-            data: id,
+            data: id.into(),
             created_at,
         }),
         _ => return Err(DatabaseInconsistencyError.into()),
     };
 
     let browser_session = BrowserSession {
-        data: res.user_session_id,
+        data: res.user_session_id.into(),
         created_at: res.user_session_created_at,
         user,
         last_authentication,
     };
 
-    let scope = res.scope.parse().map_err(|_e| DatabaseInconsistencyError)?;
+    let scope = res
+        .oauth2_session_scope
+        .parse()
+        .map_err(|_e| DatabaseInconsistencyError)?;
 
     let session = Session {
-        data: res.session_id,
+        data: res.oauth2_session_id.into(),
         client,
         browser_session,
         scope,
@@ -230,19 +241,19 @@ pub async fn lookup_active_refresh_token(
     Ok((refresh_token, session))
 }
 
-pub async fn replace_refresh_token(
+pub async fn consume_refresh_token(
     executor: impl PgExecutor<'_>,
     refresh_token: &RefreshToken<PostgresqlBackend>,
-    next_refresh_token: &RefreshToken<PostgresqlBackend>,
 ) -> anyhow::Result<()> {
+    let consumed_at = Utc::now();
     let res = sqlx::query!(
         r#"
             UPDATE oauth2_refresh_tokens
-            SET next_token_id = $2
-            WHERE id = $1
+            SET consumed_at = $2
+            WHERE oauth2_refresh_token_id = $1
         "#,
-        refresh_token.data,
-        next_refresh_token.data
+        Uuid::from(refresh_token.data),
+        consumed_at,
     )
     .execute(executor)
     .await

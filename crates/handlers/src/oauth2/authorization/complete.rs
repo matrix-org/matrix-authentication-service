@@ -38,6 +38,7 @@ use mas_templates::Templates;
 use oauth2_types::requests::{AccessTokenResponse, AuthorizationResponse};
 use sqlx::{PgPool, Postgres, Transaction};
 use thiserror::Error;
+use ulid::Ulid;
 
 use super::callback::{
     CallbackDestination, CallbackDestinationError, IntoCallbackDestinationError,
@@ -109,7 +110,7 @@ pub(crate) async fn get(
     State(templates): State<Templates>,
     State(pool): State<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
-    Path(grant_id): Path<i64>,
+    Path(grant_id): Path<Ulid>,
 ) -> Result<Response, RouteError> {
     let mut txn = pool.begin().await?;
 

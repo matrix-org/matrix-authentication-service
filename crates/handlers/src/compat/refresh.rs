@@ -17,9 +17,8 @@ use chrono::Duration;
 use hyper::StatusCode;
 use mas_data_model::{TokenFormatError, TokenType};
 use mas_storage::compat::{
-    add_compat_access_token, add_compat_refresh_token, expire_compat_access_token,
-    lookup_active_compat_refresh_token, replace_compat_refresh_token,
-    CompatRefreshTokenLookupError,
+    add_compat_access_token, add_compat_refresh_token, consume_compat_refresh_token,
+    expire_compat_access_token, lookup_active_compat_refresh_token, CompatRefreshTokenLookupError,
 };
 use rand::thread_rng;
 use serde::{Deserialize, Serialize};
@@ -125,7 +124,7 @@ pub(crate) async fn post(
         add_compat_refresh_token(&mut txn, &session, &new_access_token, new_refresh_token_str)
             .await?;
 
-    replace_compat_refresh_token(&mut txn, &refresh_token, &new_refresh_token).await?;
+    consume_compat_refresh_token(&mut txn, refresh_token).await?;
     expire_compat_access_token(&mut txn, access_token).await?;
 
     txn.commit().await?;

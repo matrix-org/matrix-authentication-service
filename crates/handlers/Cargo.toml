@@ -45,6 +45,7 @@ url = { version = "2.3.1", features = ["serde"] }
 mime = "0.3.16"
 rand = "0.8.5"
 headers = "0.3.8"
+ulid = "1.0.0"
 
 oauth2-types = { path = "../oauth2-types" }
 mas-axum-utils = { path = "../axum-utils", default-features = false }
