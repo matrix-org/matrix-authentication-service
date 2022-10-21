@@ -1,33 +1,111 @@
 {
   "db": "PostgreSQL",
-  "028302788438b399be2eca6fb40c85b270c364a6ae58d256d52e6eafb4b8e6c3": {
+  "05b50b7ae0109063c50fe70e83635a31920e44a7fbaa2b4f07552ba2f83a28d7": {
     "describe": {
       "columns": [
         {
-          "name": "user_email_id",
+          "name": "oauth2_client_id",
           "ordinal": 0,
           "type_info": "Uuid"
         },
         {
-          "name": "user_email",
+          "name": "encrypted_client_secret",
           "ordinal": 1,
           "type_info": "Text"
         },
         {
-          "name": "user_email_created_at",
+          "name": "redirect_uris!",
           "ordinal": 2,
-          "type_info": "Timestamptz"
+          "type_info": "TextArray"
         },
         {
-          "name": "user_email_confirmed_at",
+          "name": "grant_type_authorization_code",
           "ordinal": 3,
-          "type_info": "Timestamptz"
+          "type_info": "Bool"
+        },
+        {
+          "name": "grant_type_refresh_token",
+          "ordinal": 4,
+          "type_info": "Bool"
+        },
+        {
+          "name": "client_name",
+          "ordinal": 5,
+          "type_info": "Text"
+        },
+        {
+          "name": "logo_uri",
+          "ordinal": 6,
+          "type_info": "Text"
+        },
+        {
+          "name": "client_uri",
+          "ordinal": 7,
+          "type_info": "Text"
+        },
+        {
+          "name": "policy_uri",
+          "ordinal": 8,
+          "type_info": "Text"
+        },
+        {
+          "name": "tos_uri",
+          "ordinal": 9,
+          "type_info": "Text"
+        },
+        {
+          "name": "jwks_uri",
+          "ordinal": 10,
+          "type_info": "Text"
+        },
+        {
+          "name": "jwks",
+          "ordinal": 11,
+          "type_info": "Jsonb"
+        },
+        {
+          "name": "id_token_signed_response_alg",
+          "ordinal": 12,
+          "type_info": "Text"
+        },
+        {
+          "name": "userinfo_signed_response_alg",
+          "ordinal": 13,
+          "type_info": "Text"
+        },
+        {
+          "name": "token_endpoint_auth_method",
+          "ordinal": 14,
+          "type_info": "Text"
+        },
+        {
+          "name": "token_endpoint_auth_signing_alg",
+          "ordinal": 15,
+          "type_info": "Text"
+        },
+        {
+          "name": "initiate_login_uri",
+          "ordinal": 16,
+          "type_info": "Text"
         }
       ],
       "nullable": [
         false,
+        true,
+        null,
         false,
         false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
         true
       ],
       "parameters": {
@@ -36,22 +114,57 @@
         ]
       }
     },
-    "query": "\n            SELECT \n                ue.user_email_id,\n                ue.email        AS \"user_email\",\n                ue.created_at   AS \"user_email_created_at\",\n                ue.confirmed_at AS \"user_email_confirmed_at\"\n            FROM user_emails ue\n\n            WHERE ue.user_id = $1\n\n            ORDER BY ue.email ASC\n        "
+    "query": "\n            SELECT\n                c.oauth2_client_id,\n                c.encrypted_client_secret,\n                ARRAY(\n                    SELECT redirect_uri\n                    FROM oauth2_client_redirect_uris r\n                    WHERE r.oauth2_client_id = c.oauth2_client_id\n                ) AS \"redirect_uris!\",\n                c.grant_type_authorization_code,\n                c.grant_type_refresh_token,\n                c.client_name,\n                c.logo_uri,\n                c.client_uri,\n                c.policy_uri,\n                c.tos_uri,\n                c.jwks_uri,\n                c.jwks,\n                c.id_token_signed_response_alg,\n                c.userinfo_signed_response_alg,\n                c.token_endpoint_auth_method,\n                c.token_endpoint_auth_signing_alg,\n                c.initiate_login_uri\n            FROM oauth2_clients c\n\n            WHERE c.oauth2_client_id = $1\n        "
   },
-  "039a1c4c5234f381449de3d401dd5ebc79fb3794f614aa5012b8e28e6d26a847": {
+  "0b49cde0b7b79f79ec261502ab89bcffa81f9f5ed2f922a41b1718274b9e3073": {
     "describe": {
-      "columns": [],
-      "nullable": [],
+      "columns": [
+        {
+          "name": "user_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "user_username",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "user_email_id?",
+          "ordinal": 2,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "user_email?",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "user_email_created_at?",
+          "ordinal": 4,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "user_email_confirmed_at?",
+          "ordinal": 5,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ],
       "parameters": {
         "Left": [
-          "Uuid",
-          "Uuid",
-          "Text",
-          "Timestamptz"
+          "Text"
         ]
       }
     },
-    "query": "\n            INSERT INTO compat_sessions \n              (compat_session_id, user_id, device_id, created_at)\n            VALUES ($1, $2, $3, $4)\n        "
+    "query": "\n            SELECT\n                u.user_id,\n                u.username       AS user_username,\n                ue.user_email_id AS \"user_email_id?\",\n                ue.email         AS \"user_email?\",\n                ue.created_at    AS \"user_email_created_at?\",\n                ue.confirmed_at  AS \"user_email_confirmed_at?\"\n            FROM users u\n\n            LEFT JOIN user_emails ue\n              USING (user_id)\n\n            WHERE u.username = $1\n        "
   },
   "1166343ad1563cb66ab387368f67320a53c34edf388bdb991359ebdf324497d5": {
     "describe": {
@@ -66,6 +179,20 @@
     },
     "query": "\n            UPDATE user_emails\n            SET confirmed_at = $2\n            WHERE user_email_id = $1\n        "
   },
+  "116b387c52deeaf4f3c04ed13a37d9b81e085c0bb420eaee8323806719ab79a3": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n                INSERT INTO oauth2_client_redirect_uris\n                    (oauth2_client_redirect_uri_id, oauth2_client_id, redirect_uri)\n                VALUES ($1, $2, $3)\n            "
+  },
   "1a10e6189300563e79684eb7ccc6c29b0418aadfdeea6f8bc5a700a411409c73": {
     "describe": {
       "columns": [],
@@ -79,7 +206,7 @@
     },
     "query": "\n            UPDATE compat_sessions cs\n            SET finished_at = $2\n            FROM compat_access_tokens ca\n            WHERE ca.access_token = $1\n              AND ca.compat_session_id = cs.compat_session_id\n              AND cs.finished_at IS NULL\n        "
   },
-  "1e6d4799268af538a8dd05ce95ab34d2e359ecba544d7c3022ba95c5dda44a7e": {
+  "1eb6d13e75d8f526c2785749a020731c18012f03e07995213acd38ab560ce497": {
     "describe": {
       "columns": [],
       "nullable": [],
@@ -91,9 +218,9 @@
         ]
       }
     },
-    "query": "\n            INSERT INTO user_session_authentications \n                (user_session_authentication_id, user_session_id, created_at)\n            VALUES ($1, $2, $3)\n        "
+    "query": "\n            INSERT INTO user_session_authentications\n                (user_session_authentication_id, user_session_id, created_at)\n            VALUES ($1, $2, $3)\n        "
   },
-  "224f5b9acd93dbeae223ee94286fce25e6fe0f94926bea983916bc5facbc67b6": {
+  "2153118b364a33582e7f598acce3789fcb8d938948a819b15cf0b6d37edf58b2": {
     "describe": {
       "columns": [],
       "nullable": [],
@@ -102,11 +229,12 @@
           "Uuid",
           "Uuid",
           "Text",
+          "Timestamptz",
           "Timestamptz"
         ]
       }
     },
-    "query": "\n            INSERT INTO user_email_confirmation_codes \n              (user_email_confirmation_code_id, user_email_id, code, created_at)\n            VALUES ($1, $2, $3, $4)\n        "
+    "query": "\n            INSERT INTO compat_access_tokens\n                (compat_access_token_id, compat_session_id, access_token, created_at, expires_at)\n            VALUES ($1, $2, $3, $4, $5)\n        "
   },
   "24d6154b138a5e9105b996d6447e45a5c208e157f6583b4220cf58813d6f436c": {
     "describe": {
@@ -354,61 +482,6 @@
     },
     "query": "\n            UPDATE compat_sso_logins\n            SET\n                exchanged_at = $2\n            WHERE\n                compat_sso_login_id = $1\n        "
   },
-  "2e885c30ae28a14f136b6529614bdbde9d6c3d48f3a24edf2373c28718f55f07": {
-    "describe": {
-      "columns": [
-        {
-          "name": "user_email_confirmation_code_id",
-          "ordinal": 0,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "code",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "created_at",
-          "ordinal": 2,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "consumed_at",
-          "ordinal": 3,
-          "type_info": "Timestamptz"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        true
-      ],
-      "parameters": {
-        "Left": [
-          "Text",
-          "Uuid"
-        ]
-      }
-    },
-    "query": "\n            SELECT\n                ec.user_email_confirmation_code_id,\n                ec.code,\n                ec.created_at,\n                ec.consumed_at\n            FROM user_email_confirmation_codes ec\n            WHERE ec.code = $1\n              AND ec.user_email_id = $2\n        "
-  },
-  "31d583a4e76e39f14f2ba300dc360ca44aea5f8d69d8675368513fbd0fc2d93c": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Uuid",
-          "Uuid",
-          "Uuid",
-          "TextArray",
-          "Timestamptz"
-        ]
-      }
-    },
-    "query": "\n            INSERT INTO oauth2_consents \n                (oauth2_consent_id, user_id, oauth2_client_id, scope_token, created_at)\n            SELECT $1, $2, $3, scope_token, $5 FROM UNNEST($4::text[]) scope_token\n            ON CONFLICT (user_id, oauth2_client_id, scope_token) DO UPDATE SET refreshed_at = $5\n        "
-  },
   "360466ff599c67c9af2ac75399c0b536a22c1178972a0172b707bcc81d47357b": {
     "describe": {
       "columns": [],
@@ -424,6 +497,45 @@
       }
     },
     "query": "\n            INSERT INTO compat_refresh_tokens\n                (compat_refresh_token_id, compat_session_id,\n                 compat_access_token_id, refresh_token, created_at)\n            VALUES ($1, $2, $3, $4, $5)\n        "
+  },
+  "3a19b087ae9e4dab770f102de1cb62628525fc72c7b052e1c146161ab088c02b": {
+    "describe": {
+      "columns": [
+        {
+          "name": "user_email_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "user_email",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "user_email_created_at",
+          "ordinal": 2,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "user_email_confirmed_at",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n            SELECT\n                ue.user_email_id,\n                ue.email        AS \"user_email\",\n                ue.created_at   AS \"user_email_created_at\",\n                ue.confirmed_at AS \"user_email_confirmed_at\"\n            FROM user_emails ue\n\n            WHERE ue.user_id = $1\n              AND ue.email = $2\n        "
   },
   "3d94de9d292a91c091595215f898ef21c6ede2bb1bd1d59f6aed76429098909a": {
     "describe": {
@@ -522,6 +634,80 @@
       }
     },
     "query": "\n            SELECT\n                ct.compat_access_token_id,\n                ct.access_token    AS \"compat_access_token\",\n                ct.created_at      AS \"compat_access_token_created_at\",\n                ct.expires_at      AS \"compat_access_token_expires_at\",\n                cs.compat_session_id,\n                cs.created_at      AS \"compat_session_created_at\",\n                cs.finished_at     AS \"compat_session_finished_at\",\n                cs.device_id       AS \"compat_session_device_id\",\n                 u.user_id         AS \"user_id!\",\n                 u.username        AS \"user_username!\",\n                ue.user_email_id   AS \"user_email_id?\",\n                ue.email           AS \"user_email?\",\n                ue.created_at      AS \"user_email_created_at?\",\n                ue.confirmed_at    AS \"user_email_confirmed_at?\"\n\n            FROM compat_access_tokens ct\n            INNER JOIN compat_sessions cs\n              USING (compat_session_id)\n            INNER JOIN users u\n              USING (user_id)\n            LEFT JOIN user_emails ue\n              ON ue.user_email_id = u.primary_user_email_id\n\n            WHERE ct.access_token = $1\n              AND (ct.expires_at IS NULL OR ct.expires_at > NOW())\n            AND cs.finished_at IS NULL\n        "
+  },
+  "3df0838b660466f69ee681337fe6753133748defb715e53c8381badcc3e8bca9": {
+    "describe": {
+      "columns": [
+        {
+          "name": "user_session_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "user_id",
+          "ordinal": 1,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "username",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "last_authentication_id?",
+          "ordinal": 4,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "last_authd_at?",
+          "ordinal": 5,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "user_email_id?",
+          "ordinal": 6,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "user_email?",
+          "ordinal": 7,
+          "type_info": "Text"
+        },
+        {
+          "name": "user_email_created_at?",
+          "ordinal": 8,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "user_email_confirmed_at?",
+          "ordinal": 9,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n            SELECT\n                s.user_session_id,\n                u.user_id,\n                u.username,\n                s.created_at,\n                a.user_session_authentication_id AS \"last_authentication_id?\",\n                a.created_at                     AS \"last_authd_at?\",\n                ue.user_email_id   AS \"user_email_id?\",\n                ue.email           AS \"user_email?\",\n                ue.created_at      AS \"user_email_created_at?\",\n                ue.confirmed_at    AS \"user_email_confirmed_at?\"\n            FROM user_sessions s\n            INNER JOIN users u\n                USING (user_id)\n            LEFT JOIN user_session_authentications a\n                USING (user_session_id)\n            LEFT JOIN user_emails ue\n              ON ue.user_email_id = u.primary_user_email_id\n            WHERE s.user_session_id = $1 AND s.finished_at IS NULL\n            ORDER BY a.created_at DESC\n            LIMIT 1\n        "
   },
   "3e8f862ed05ce3e58c181ac6e0bd71e0a6a88419611af6f4117d14d9c36cb1ef": {
     "describe": {
@@ -837,6 +1023,56 @@
     },
     "query": "\n            SELECT scope_token\n            FROM oauth2_consents\n            WHERE user_id = $1 AND oauth2_client_id = $2\n        "
   },
+  "5b5d5c82da37c6f2d8affacfb02119965c04d1f2a9cc53dbf5bd4c12584969a0": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n            DELETE FROM oauth2_access_tokens\n            WHERE expires_at < $1\n        "
+  },
+  "5ccde09ee3fe43e7b492d73fa67708b5dcb2b7496c4d05bcfcf0ea63c7576d48": {
+    "describe": {
+      "columns": [
+        {
+          "name": "user_email_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "user_email",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "user_email_created_at",
+          "ordinal": 2,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "user_email_confirmed_at",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n            SELECT\n                ue.user_email_id,\n                ue.email        AS \"user_email\",\n                ue.created_at   AS \"user_email_created_at\",\n                ue.confirmed_at AS \"user_email_confirmed_at\"\n            FROM user_emails ue\n\n            WHERE ue.user_id = $1\n\n            ORDER BY ue.email ASC\n        "
+  },
   "60d039442cfa57e187602c0ff5e386e32fb774b5ad2d2f2c616040819b76873e": {
     "describe": {
       "columns": [],
@@ -851,79 +1087,21 @@
     },
     "query": "\n            UPDATE compat_sso_logins\n            SET\n                compat_session_id = $2,\n                fulfilled_at = $3\n            WHERE\n                compat_sso_login_id = $1\n        "
   },
-  "613aaff56efa9081dcaabb72219ed6c067d4e38db92e472f40ddd21dc2bddf82": {
+  "62d05e8e4317bdb180298737d422e64d161c5ad3813913a6f7d67a53569ea76a": {
     "describe": {
-      "columns": [
-        {
-          "name": "user_session_id",
-          "ordinal": 0,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_id",
-          "ordinal": 1,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "username",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "created_at",
-          "ordinal": 3,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "last_authentication_id?",
-          "ordinal": 4,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "last_authd_at?",
-          "ordinal": 5,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "user_email_id?",
-          "ordinal": 6,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_email?",
-          "ordinal": 7,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_email_created_at?",
-          "ordinal": 8,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "user_email_confirmed_at?",
-          "ordinal": 9,
-          "type_info": "Timestamptz"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        true
-      ],
+      "columns": [],
+      "nullable": [],
       "parameters": {
         "Left": [
-          "Uuid"
+          "UuidArray",
+          "Uuid",
+          "Uuid",
+          "TextArray",
+          "Timestamptz"
         ]
       }
     },
-    "query": "\n            SELECT\n                s.user_session_id,\n                u.user_id,\n                u.username,\n                s.created_at,\n                a.user_session_authentication_id AS \"last_authentication_id?\",\n                a.created_at                     AS \"last_authd_at?\",\n                ue.user_email_id   AS \"user_email_id?\",\n                ue.email           AS \"user_email?\",\n                ue.created_at      AS \"user_email_created_at?\",\n                ue.confirmed_at    AS \"user_email_confirmed_at?\"\n            FROM user_sessions s\n            INNER JOIN users u \n                USING (user_id)\n            LEFT JOIN user_session_authentications a\n                USING (user_session_id)\n            LEFT JOIN user_emails ue\n              ON ue.user_email_id = u.primary_user_email_id\n            WHERE s.user_session_id = $1 AND s.finished_at IS NULL\n            ORDER BY a.created_at DESC\n            LIMIT 1\n        "
+    "query": "\n            INSERT INTO oauth2_consents\n                (oauth2_consent_id, user_id, oauth2_client_id, scope_token, created_at)\n            SELECT id, $2, $3, scope_token, $5 FROM UNNEST($1::uuid[], $4::text[]) u(id, scope_token)\n            ON CONFLICT (user_id, oauth2_client_id, scope_token) DO UPDATE SET refreshed_at = $5\n        "
   },
   "647a2a5bbde39d0ed3931d0287b468bc7dedf6171e1dc6171a5d9f079b9ed0fa": {
     "describe": {
@@ -970,6 +1148,22 @@
       }
     },
     "query": "\n            UPDATE oauth2_access_tokens\n            SET revoked_at = $2\n            WHERE oauth2_access_token_id = $1\n        "
+  },
+  "7262f81a335a984c4051383d2ede7455ff65ed90fbd3151d625f8a21fd26cb05": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid",
+          "Text",
+          "Timestamptz",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n            INSERT INTO user_email_confirmation_codes\n              (user_email_confirmation_code_id, user_email_id, code, created_at, expires_at)\n            VALUES ($1, $2, $3, $4, $5)\n        "
   },
   "75a16693cabdf57012f741e789b19d0a0f96fcd1e41bb2af92f2991b722cc9f1": {
     "describe": {
@@ -1293,121 +1487,50 @@
     },
     "query": "\n            SELECT\n                rt.oauth2_refresh_token_id,\n                rt.refresh_token     AS oauth2_refresh_token,\n                rt.created_at        AS oauth2_refresh_token_created_at,\n                at.oauth2_access_token_id AS \"oauth2_access_token_id?\",\n                at.access_token      AS \"oauth2_access_token?\",\n                at.created_at        AS \"oauth2_access_token_created_at?\",\n                at.expires_at        AS \"oauth2_access_token_expires_at?\",\n                os.oauth2_session_id AS \"oauth2_session_id!\",\n                os.oauth2_client_id  AS \"oauth2_client_id!\",\n                os.scope             AS \"oauth2_session_scope!\",\n                us.user_session_id   AS \"user_session_id!\",\n                us.created_at        AS \"user_session_created_at!\",\n                 u.user_id           AS \"user_id!\",\n                 u.username          AS \"user_username!\",\n                usa.user_session_authentication_id AS \"user_session_last_authentication_id?\",\n                usa.created_at       AS \"user_session_last_authentication_created_at?\",\n                ue.user_email_id     AS \"user_email_id?\",\n                ue.email             AS \"user_email?\",\n                ue.created_at        AS \"user_email_created_at?\",\n                ue.confirmed_at      AS \"user_email_confirmed_at?\"\n            FROM oauth2_refresh_tokens rt\n            INNER JOIN oauth2_sessions os\n              USING (oauth2_session_id)\n            LEFT JOIN oauth2_access_tokens at\n              USING (oauth2_access_token_id)\n            INNER JOIN user_sessions us\n              USING (user_session_id)\n            INNER JOIN users u\n              USING (user_id)\n            LEFT JOIN user_session_authentications usa\n              USING (user_session_id)\n            LEFT JOIN user_emails ue\n              ON ue.user_email_id = u.primary_user_email_id\n\n            WHERE rt.refresh_token = $1\n              AND rt.consumed_at IS NULL\n              AND rt.revoked_at  IS NULL\n              AND us.finished_at IS NULL\n              AND os.finished_at IS NULL\n\n            ORDER BY usa.created_at DESC\n            LIMIT 1\n        "
   },
-  "7d9fe18c9fd346d51dac4552a1fee5e6a5da8512c5640f5b68aa0af8301a9611": {
+  "7d600dd15e9dac72c8071c854799fc2ac69777ade5e2d7d2d944b0dedf8ecdf8": {
     "describe": {
       "columns": [
         {
-          "name": "oauth2_client_id",
+          "name": "user_email_confirmation_code_id",
           "ordinal": 0,
           "type_info": "Uuid"
         },
         {
-          "name": "encrypted_client_secret",
+          "name": "code",
           "ordinal": 1,
           "type_info": "Text"
         },
         {
-          "name": "redirect_uris!",
+          "name": "created_at",
           "ordinal": 2,
-          "type_info": "TextArray"
+          "type_info": "Timestamptz"
         },
         {
-          "name": "grant_type_authorization_code",
+          "name": "expires_at",
           "ordinal": 3,
-          "type_info": "Bool"
+          "type_info": "Timestamptz"
         },
         {
-          "name": "grant_type_refresh_token",
+          "name": "consumed_at",
           "ordinal": 4,
-          "type_info": "Bool"
-        },
-        {
-          "name": "client_name",
-          "ordinal": 5,
-          "type_info": "Text"
-        },
-        {
-          "name": "logo_uri",
-          "ordinal": 6,
-          "type_info": "Text"
-        },
-        {
-          "name": "client_uri",
-          "ordinal": 7,
-          "type_info": "Text"
-        },
-        {
-          "name": "policy_uri",
-          "ordinal": 8,
-          "type_info": "Text"
-        },
-        {
-          "name": "tos_uri",
-          "ordinal": 9,
-          "type_info": "Text"
-        },
-        {
-          "name": "jwks_uri",
-          "ordinal": 10,
-          "type_info": "Text"
-        },
-        {
-          "name": "jwks",
-          "ordinal": 11,
-          "type_info": "Jsonb"
-        },
-        {
-          "name": "id_token_signed_response_alg",
-          "ordinal": 12,
-          "type_info": "Text"
-        },
-        {
-          "name": "userinfo_signed_response_alg",
-          "ordinal": 13,
-          "type_info": "Text"
-        },
-        {
-          "name": "token_endpoint_auth_method",
-          "ordinal": 14,
-          "type_info": "Text"
-        },
-        {
-          "name": "token_endpoint_auth_signing_alg",
-          "ordinal": 15,
-          "type_info": "Text"
-        },
-        {
-          "name": "initiate_login_uri",
-          "ordinal": 16,
-          "type_info": "Text"
+          "type_info": "Timestamptz"
         }
       ],
       "nullable": [
         false,
-        true,
-        null,
         false,
         false,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
+        false,
         true
       ],
       "parameters": {
         "Left": [
+          "Text",
           "Uuid"
         ]
       }
     },
-    "query": "\n            SELECT\n                c.oauth2_client_id,\n                c.encrypted_client_secret,\n                ARRAY(\n                    SELECT redirect_uri \n                    FROM oauth2_client_redirect_uris r \n                    WHERE r.oauth2_client_id = c.oauth2_client_id\n                ) AS \"redirect_uris!\",\n                c.grant_type_authorization_code,\n                c.grant_type_refresh_token,\n                c.client_name,\n                c.logo_uri,\n                c.client_uri,\n                c.policy_uri,\n                c.tos_uri,\n                c.jwks_uri,\n                c.jwks,\n                c.id_token_signed_response_alg,\n                c.userinfo_signed_response_alg,\n                c.token_endpoint_auth_method,\n                c.token_endpoint_auth_signing_alg,\n                c.initiate_login_uri\n            FROM oauth2_clients c\n\n            WHERE c.oauth2_client_id = $1\n        "
+    "query": "\n            SELECT\n                ec.user_email_confirmation_code_id,\n                ec.code,\n                ec.created_at,\n                ec.expires_at,\n                ec.consumed_at\n            FROM user_email_confirmation_codes ec\n            WHERE ec.code = $1\n              AND ec.user_email_id = $2\n        "
   },
   "7e3247e35ecf5335f0656c53bcde27264a9efb8dccb6246344950614f487dcaf": {
     "describe": {
@@ -1447,68 +1570,6 @@
     },
     "query": "\n            UPDATE oauth2_refresh_tokens\n            SET consumed_at = $2\n            WHERE oauth2_refresh_token_id = $1\n        "
   },
-  "8bafcb5ab5a7cabccededbe60b1cc438fe3d7ba4c86e2d7ea26aea80d92a4af8": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Timestamptz"
-        ]
-      }
-    },
-    "query": "\n            DELETE FROM oauth2_access_tokens\n            WHERE expires_at < $1 \n        "
-  },
-  "97a90983e07a1e18eeacd379484c9b5317e0d90c23bc5d12ba98269497a47e00": {
-    "describe": {
-      "columns": [
-        {
-          "name": "user_id",
-          "ordinal": 0,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_username",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_email_id?",
-          "ordinal": 2,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_email?",
-          "ordinal": 3,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_email_created_at?",
-          "ordinal": 4,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "user_email_confirmed_at?",
-          "ordinal": 5,
-          "type_info": "Timestamptz"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        true
-      ],
-      "parameters": {
-        "Left": [
-          "Text"
-        ]
-      }
-    },
-    "query": "\n            SELECT \n                u.user_id,\n                u.username       AS user_username,\n                ue.user_email_id AS \"user_email_id?\",\n                ue.email         AS \"user_email?\",\n                ue.created_at    AS \"user_email_created_at?\",\n                ue.confirmed_at  AS \"user_email_confirmed_at?\"\n            FROM users u\n\n            LEFT JOIN user_emails ue\n              USING (user_id)\n\n            WHERE u.username = $1\n        "
-  },
   "99f5f9eb0adc5ec120ed8194cbf6a8545155bef09e6d94d92fb67fd1b14d4f28": {
     "describe": {
       "columns": [],
@@ -1535,44 +1596,20 @@
     },
     "query": "\n            UPDATE oauth2_sessions\n            SET finished_at = $2\n            WHERE oauth2_session_id = $1\n        "
   },
-  "9dbaaf32ecf2ba8ff65d47dbe871c21ec80675431a890dfa21c64ccb0a664326": {
+  "9e14584cd114b1cf82e52d835facf6c8e6f19f6026f53de17c3834e9ae15affe": {
     "describe": {
-      "columns": [
-        {
-          "name": "user_email_id",
-          "ordinal": 0,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_email",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_email_created_at",
-          "ordinal": 2,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "user_email_confirmed_at",
-          "ordinal": 3,
-          "type_info": "Timestamptz"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        true
-      ],
+      "columns": [],
+      "nullable": [],
       "parameters": {
         "Left": [
           "Uuid",
-          "Uuid"
+          "Uuid",
+          "Text",
+          "Timestamptz"
         ]
       }
     },
-    "query": "\n            SELECT \n                ue.user_email_id,\n                ue.email        AS \"user_email\",\n                ue.created_at   AS \"user_email_created_at\",\n                ue.confirmed_at AS \"user_email_confirmed_at\"\n            FROM user_emails ue\n\n            WHERE ue.user_id = $1\n              AND ue.user_email_id = $2\n        "
+    "query": "\n            INSERT INTO compat_sessions\n              (compat_session_id, user_id, device_id, created_at)\n            VALUES ($1, $2, $3, $4)\n        "
   },
   "9edf5e8a3e00a7cdd8e55b97105df7831ee580096299df4bd6c1ed7c96b95e83": {
     "describe": {
@@ -1605,19 +1642,6 @@
       }
     },
     "query": "\n            UPDATE oauth2_authorization_grants AS og\n            SET\n                requires_consent = 'f'\n            WHERE\n                og.oauth2_authorization_grant_id = $1\n        "
-  },
-  "a80c14ba82cfc29493048d9e9578ec5ca482c9228efc7c7212dae4fed86b8367": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Uuid",
-          "TextArray"
-        ]
-      }
-    },
-    "query": "\n            INSERT INTO oauth2_client_redirect_uris (oauth2_client_id, redirect_uri)\n            SELECT $1, uri FROM UNNEST($2::text[]) uri\n        "
   },
   "a8117b4dd167167b477fb4ebda52789e376defbdc67f3d9093aa06308b2f856e": {
     "describe": {
@@ -1748,6 +1772,45 @@
       }
     },
     "query": "\n            SELECT EXISTS(\n                SELECT 1 FROM users WHERE username = $1\n            ) AS \"exists!\"\n        "
+  },
+  "b5b955169ebe6c399e53b74627c11c8219c0736ef2b5b6b44be568a35fd5389f": {
+    "describe": {
+      "columns": [
+        {
+          "name": "user_email_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "user_email",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "user_email_created_at",
+          "ordinal": 2,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "user_email_confirmed_at",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n            SELECT\n                ue.user_email_id,\n                ue.email        AS \"user_email\",\n                ue.created_at   AS \"user_email_created_at\",\n                ue.confirmed_at AS \"user_email_confirmed_at\"\n            FROM user_emails ue\n\n            WHERE ue.user_id = $1\n              AND ue.user_email_id = $2\n        "
   },
   "bc768c63a7737818967bc28560de714bbbd262bdf3ab73d297263bb73dcd9f5e": {
     "describe": {
@@ -1958,21 +2021,20 @@
     },
     "query": "\n            INSERT INTO oauth2_clients\n                (oauth2_client_id,\n                 encrypted_client_secret,\n                 grant_type_authorization_code,\n                 grant_type_refresh_token,\n                 client_name,\n                 logo_uri,\n                 client_uri,\n                 policy_uri,\n                 tos_uri,\n                 jwks_uri,\n                 jwks,\n                 id_token_signed_response_alg,\n                 userinfo_signed_response_alg,\n                 token_endpoint_auth_method,\n                 token_endpoint_auth_signing_alg,\n                 initiate_login_uri)\n            VALUES\n                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)\n        "
   },
-  "d2a5766f319bb006c0814d365938644b8d713955bc7e2fa2c14fa1066083be77": {
+  "d1738c27339b81f0844da4bd9b040b9b07a91aa4d9b199b98f24c9cee5709b2b": {
     "describe": {
       "columns": [],
       "nullable": [],
       "parameters": {
         "Left": [
           "Uuid",
-          "Uuid",
           "Text",
-          "Timestamptz",
+          "Text",
           "Timestamptz"
         ]
       }
     },
-    "query": "\n            INSERT INTO compat_access_tokens \n                (compat_access_token_id, compat_session_id, access_token, created_at, expires_at)\n            VALUES ($1, $2, $3, $4, $5)\n        "
+    "query": "\n            INSERT INTO compat_sso_logins\n                (compat_sso_login_id, login_token, redirect_uri, created_at)\n            VALUES ($1, $2, $3, $4)\n        "
   },
   "d55a321e8935f4effda29d9620a0f622125cb38472785049ee21c2616a6bd068": {
     "describe": {
@@ -2028,59 +2090,5 @@
       }
     },
     "query": "\n            INSERT INTO user_sessions (user_session_id, user_id, created_at)\n            VALUES ($1, $2, $3)\n        "
-  },
-  "ea74353fdeca30a2aca252e54c07442c21ee96c3d1bda1049aa26085ec2d0ba2": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Uuid",
-          "Text",
-          "Text",
-          "Timestamptz"
-        ]
-      }
-    },
-    "query": "\n            INSERT INTO compat_sso_logins \n                (compat_sso_login_id, login_token, redirect_uri, created_at)\n            VALUES ($1, $2, $3, $4)\n        "
-  },
-  "f6c4742f613dafe79315c1e8e31b0662e5b1e9f8151e8c3751189f0222819094": {
-    "describe": {
-      "columns": [
-        {
-          "name": "user_email_id",
-          "ordinal": 0,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_email",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_email_created_at",
-          "ordinal": 2,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "user_email_confirmed_at",
-          "ordinal": 3,
-          "type_info": "Timestamptz"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        true
-      ],
-      "parameters": {
-        "Left": [
-          "Uuid",
-          "Text"
-        ]
-      }
-    },
-    "query": "\n            SELECT \n                ue.user_email_id,\n                ue.email        AS \"user_email\",\n                ue.created_at   AS \"user_email_created_at\",\n                ue.confirmed_at AS \"user_email_confirmed_at\"\n            FROM user_emails ue\n\n            WHERE ue.user_id = $1\n              AND ue.email = $2\n        "
   }
 }
