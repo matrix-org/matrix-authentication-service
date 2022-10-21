@@ -3085,7 +3085,7 @@ checksum = "e82dad04139b71a90c080c8463fe0dc7902db5192d939bd0950f074d014339e1"
 [[package]]
 name = "opa-wasm"
 version = "0.1.0"
-source = "git+https://github.com/matrix-org/rust-opa-wasm.git#aeb05644f106421405bffb98eddd9ba2fa8a1f35"
+source = "git+https://github.com/matrix-org/rust-opa-wasm.git#799b12d4353d327b90aa5158193980ee5ec9b703"
 dependencies = [
  "anyhow",
  "base64",
