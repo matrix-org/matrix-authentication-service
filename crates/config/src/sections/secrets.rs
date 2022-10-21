@@ -20,7 +20,7 @@ use mas_jose::jwk::{JsonWebKey, JsonWebKeySet};
 use mas_keystore::{Encrypter, Keystore, PrivateKey};
 use rand::{
     distributions::{Alphanumeric, DistString},
-    thread_rng,
+    thread_rng, SeedableRng,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -139,64 +139,72 @@ impl ConfigurationSection<'_> for SecretsConfig {
 
     #[tracing::instrument]
     async fn generate() -> anyhow::Result<Self> {
+        // XXX: that RNG should come from somewhere else
+        #[allow(clippy::disallowed_methods)]
+        let mut rng = rand_chacha::ChaChaRng::from_rng(thread_rng())?;
+
         info!("Generating keys...");
 
         let span = tracing::info_span!("rsa");
+        let key_rng = rand_chacha::ChaChaRng::from_rng(&mut rng)?;
         let rsa_key = task::spawn_blocking(move || {
             let _entered = span.enter();
-            let ret = PrivateKey::generate_rsa(thread_rng()).unwrap();
+            let ret = PrivateKey::generate_rsa(key_rng).unwrap();
             info!("Done generating RSA key");
             ret
         })
         .await
         .context("could not join blocking task")?;
         let rsa_key = KeyConfig {
-            kid: Alphanumeric.sample_string(&mut thread_rng(), 10),
+            kid: Alphanumeric.sample_string(&mut rng, 10),
             password: None,
             key: KeyOrFile::Key(rsa_key.to_pem(pem_rfc7468::LineEnding::LF)?.to_string()),
         };
 
         let span = tracing::info_span!("ec_p256");
+        let key_rng = rand_chacha::ChaChaRng::from_rng(&mut rng)?;
         let ec_p256_key = task::spawn_blocking(move || {
             let _entered = span.enter();
-            let ret = PrivateKey::generate_ec_p256(thread_rng());
+            let ret = PrivateKey::generate_ec_p256(key_rng);
             info!("Done generating EC P-256 key");
             ret
         })
         .await
         .context("could not join blocking task")?;
         let ec_p256_key = KeyConfig {
-            kid: Alphanumeric.sample_string(&mut thread_rng(), 10),
+            kid: Alphanumeric.sample_string(&mut rng, 10),
             password: None,
             key: KeyOrFile::Key(ec_p256_key.to_pem(pem_rfc7468::LineEnding::LF)?.to_string()),
         };
 
         let span = tracing::info_span!("ec_p384");
+        let key_rng = rand_chacha::ChaChaRng::from_rng(&mut rng)?;
         let ec_p384_key = task::spawn_blocking(move || {
             let _entered = span.enter();
-            let ret = PrivateKey::generate_ec_p384(thread_rng());
+            let ret = PrivateKey::generate_ec_p384(key_rng);
             info!("Done generating EC P-256 key");
             ret
         })
         .await
         .context("could not join blocking task")?;
         let ec_p384_key = KeyConfig {
-            kid: Alphanumeric.sample_string(&mut thread_rng(), 10),
+            kid: Alphanumeric.sample_string(&mut rng, 10),
             password: None,
             key: KeyOrFile::Key(ec_p384_key.to_pem(pem_rfc7468::LineEnding::LF)?.to_string()),
         };
 
         let span = tracing::info_span!("ec_k256");
+        let key_rng = rand_chacha::ChaChaRng::from_rng(&mut rng)?;
         let ec_k256_key = task::spawn_blocking(move || {
             let _entered = span.enter();
-            let ret = PrivateKey::generate_ec_k256(thread_rng());
+            let ret = PrivateKey::generate_ec_k256(key_rng);
             info!("Done generating EC secp256k1 key");
             ret
         })
         .await
         .context("could not join blocking task")?;
         let ec_k256_key = KeyConfig {
-            kid: Alphanumeric.sample_string(&mut thread_rng(), 10),
+            kid: Alphanumeric.sample_string(&mut rng, 10),
             password: None,
             key: KeyOrFile::Key(ec_k256_key.to_pem(pem_rfc7468::LineEnding::LF)?.to_string()),
         };

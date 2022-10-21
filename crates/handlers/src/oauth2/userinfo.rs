@@ -54,6 +54,7 @@ pub async fn get(
     user_authorization: UserAuthorization,
 ) -> Result<Response, FancyError> {
     // TODO: error handling
+    let (_clock, mut rng) = crate::rng_and_clock()?;
     let mut conn = pool.acquire().await?;
 
     let session = user_authorization.protected(&mut conn).await?;
@@ -88,7 +89,7 @@ pub async fn get(
             user_info,
         };
 
-        let token = Jwt::sign(header, user_info, &signer)?;
+        let token = Jwt::sign_with_rng(&mut rng, header, user_info, &signer)?;
         Ok(JwtResponse(token).into_response())
     } else {
         Ok(Json(user_info).into_response())

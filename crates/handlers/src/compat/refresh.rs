@@ -20,7 +20,6 @@ use mas_storage::compat::{
     add_compat_access_token, add_compat_refresh_token, consume_compat_refresh_token,
     expire_compat_access_token, lookup_active_compat_refresh_token, CompatRefreshTokenLookupError,
 };
-use rand::thread_rng;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DurationMilliSeconds};
 use sqlx::PgPool;
@@ -98,6 +97,7 @@ pub(crate) async fn post(
     State(pool): State<PgPool>,
     Json(input): Json<RequestBody>,
 ) -> Result<impl IntoResponse, RouteError> {
+    let (clock, mut rng) = crate::rng_and_clock()?;
     let mut txn = pool.begin().await?;
 
     let token_type = TokenType::check(&input.refresh_token)?;
@@ -109,23 +109,31 @@ pub(crate) async fn post(
     let (refresh_token, access_token, session) =
         lookup_active_compat_refresh_token(&mut txn, &input.refresh_token).await?;
 
-    let (new_refresh_token_str, new_access_token_str) = {
-        let mut rng = thread_rng();
-        (
-            TokenType::CompatRefreshToken.generate(&mut rng),
-            TokenType::CompatAccessToken.generate(&mut rng),
-        )
-    };
+    let new_refresh_token_str = TokenType::CompatRefreshToken.generate(&mut rng);
+    let new_access_token_str = TokenType::CompatAccessToken.generate(&mut rng);
 
     let expires_in = Duration::minutes(5);
-    let new_access_token =
-        add_compat_access_token(&mut txn, &session, new_access_token_str, Some(expires_in)).await?;
-    let new_refresh_token =
-        add_compat_refresh_token(&mut txn, &session, &new_access_token, new_refresh_token_str)
-            .await?;
+    let new_access_token = add_compat_access_token(
+        &mut txn,
+        &mut rng,
+        &clock,
+        &session,
+        new_access_token_str,
+        Some(expires_in),
+    )
+    .await?;
+    let new_refresh_token = add_compat_refresh_token(
+        &mut txn,
+        &mut rng,
+        &clock,
+        &session,
+        &new_access_token,
+        new_refresh_token_str,
+    )
+    .await?;
 
-    consume_compat_refresh_token(&mut txn, refresh_token).await?;
-    expire_compat_access_token(&mut txn, access_token).await?;
+    consume_compat_refresh_token(&mut txn, &clock, refresh_token).await?;
+    expire_compat_access_token(&mut txn, &clock, access_token).await?;
 
     txn.commit().await?;
 

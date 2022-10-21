@@ -17,13 +17,14 @@ use chrono::{DateTime, Utc};
 use mas_data_model::{
     AccessToken, Authentication, BrowserSession, RefreshToken, Session, User, UserEmail,
 };
+use rand::Rng;
 use sqlx::{PgConnection, PgExecutor};
 use thiserror::Error;
 use ulid::Ulid;
 use uuid::Uuid;
 
 use super::client::{lookup_client, ClientFetchError};
-use crate::{DatabaseInconsistencyError, PostgresqlBackend};
+use crate::{Clock, DatabaseInconsistencyError, PostgresqlBackend};
 
 #[tracing::instrument(
     skip_all,
@@ -38,12 +39,14 @@ use crate::{DatabaseInconsistencyError, PostgresqlBackend};
 )]
 pub async fn add_refresh_token(
     executor: impl PgExecutor<'_>,
+    mut rng: impl Rng + Send,
+    clock: &Clock,
     session: &Session<PostgresqlBackend>,
     access_token: AccessToken<PostgresqlBackend>,
     refresh_token: String,
 ) -> anyhow::Result<RefreshToken<PostgresqlBackend>> {
-    let created_at = Utc::now();
-    let id = Ulid::from_datetime(created_at.into());
+    let created_at = clock.now();
+    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
     tracing::Span::current().record("refresh_token.id", tracing::field::display(id));
 
     sqlx::query!(
@@ -263,9 +266,10 @@ pub async fn lookup_active_refresh_token(
 )]
 pub async fn consume_refresh_token(
     executor: impl PgExecutor<'_>,
+    clock: &Clock,
     refresh_token: &RefreshToken<PostgresqlBackend>,
 ) -> Result<(), anyhow::Error> {
-    let consumed_at = Utc::now();
+    let consumed_at = clock.now();
     let res = sqlx::query!(
         r#"
             UPDATE oauth2_refresh_tokens

@@ -15,6 +15,7 @@
 use axum_extra::extract::cookie::{Cookie, PrivateCookieJar};
 use chrono::{DateTime, Duration, Utc};
 use data_encoding::{DecodeError, BASE64URL_NOPAD};
+use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, TimestampSeconds};
 use thiserror::Error;
@@ -56,20 +57,20 @@ pub struct CsrfToken {
 
 impl CsrfToken {
     /// Create a new token from a defined value valid for a specified duration
-    fn new(token: [u8; 32], ttl: Duration) -> Self {
-        let expiration = Utc::now() + ttl;
+    fn new(token: [u8; 32], now: DateTime<Utc>, ttl: Duration) -> Self {
+        let expiration = now + ttl;
         Self { expiration, token }
     }
 
     /// Generate a new random token valid for a specified duration
-    fn generate(ttl: Duration) -> Self {
-        let token = rand::random();
-        Self::new(token, ttl)
+    fn generate(now: DateTime<Utc>, mut rng: impl Rng, ttl: Duration) -> Self {
+        let token = rng.gen();
+        Self::new(token, now, ttl)
     }
 
     /// Generate a new token with the same value but an up to date expiration
-    fn refresh(self, ttl: Duration) -> Self {
-        Self::new(self.token, ttl)
+    fn refresh(self, now: DateTime<Utc>, ttl: Duration) -> Self {
+        Self::new(self.token, now, ttl)
     }
 
     /// Get the value to include in HTML forms
@@ -88,8 +89,8 @@ impl CsrfToken {
         }
     }
 
-    fn verify_expiration(self) -> Result<Self, CsrfError> {
-        if Utc::now() < self.expiration {
+    fn verify_expiration(self, now: DateTime<Utc>) -> Result<Self, CsrfError> {
+        if now < self.expiration {
             Ok(self)
         } else {
             Err(CsrfError::Expired)
@@ -118,12 +119,18 @@ impl<K> CsrfExt for PrivateCookieJar<K> {
         cookie.set_path("/");
         cookie.set_http_only(true);
 
+        // XXX: the rng source and clock should come from somewhere else
+        #[allow(clippy::disallowed_methods)]
+        let now = Utc::now();
+        #[allow(clippy::disallowed_methods)]
+        let rng = thread_rng();
+
         let new_token = cookie
             .decode()
             .ok()
-            .and_then(|token: CsrfToken| token.verify_expiration().ok())
-            .unwrap_or_else(|| CsrfToken::generate(Duration::hours(1)))
-            .refresh(Duration::hours(1));
+            .and_then(|token: CsrfToken| token.verify_expiration(now).ok())
+            .unwrap_or_else(|| CsrfToken::generate(now, rng, Duration::hours(1)))
+            .refresh(now, Duration::hours(1));
 
         let cookie = cookie.encode(&new_token);
         let jar = jar.add(cookie);
@@ -131,9 +138,13 @@ impl<K> CsrfExt for PrivateCookieJar<K> {
     }
 
     fn verify_form<T>(&self, form: ProtectedForm<T>) -> Result<T, CsrfError> {
+        // XXX: the clock should come from somewhere else
+        #[allow(clippy::disallowed_methods)]
+        let now = Utc::now();
+
         let cookie = self.get("csrf").ok_or(CsrfError::Missing)?;
         let token: CsrfToken = cookie.decode()?;
-        let token = token.verify_expiration()?;
+        let token = token.verify_expiration(now)?;
         token.verify_form_value(&form.csrf)?;
         Ok(form.inner)
     }

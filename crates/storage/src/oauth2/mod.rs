@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use chrono::Utc;
 use mas_data_model::Session;
 use sqlx::PgExecutor;
 use uuid::Uuid;
 
-use crate::PostgresqlBackend;
+use crate::{Clock, PostgresqlBackend};
 
 pub mod access_token;
 pub mod authorization_grant;
@@ -37,9 +36,10 @@ pub mod refresh_token;
 )]
 pub async fn end_oauth_session(
     executor: impl PgExecutor<'_>,
+    clock: &Clock,
     session: Session<PostgresqlBackend>,
 ) -> Result<(), anyhow::Error> {
-    let finished_at = Utc::now();
+    let finished_at = clock.now();
     let res = sqlx::query!(
         r#"
             UPDATE oauth2_sessions

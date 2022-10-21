@@ -20,7 +20,9 @@ use mas_storage::{
     user::{
         lookup_user_by_username, lookup_user_email, mark_user_email_as_verified, register_user,
     },
+    Clock,
 };
+use rand::SeedableRng;
 use tracing::{info, warn};
 
 #[derive(Parser, Debug)]
@@ -51,14 +53,17 @@ enum Subcommand {
 impl Options {
     pub async fn run(&self, root: &super::Options) -> anyhow::Result<()> {
         use Subcommand as SC;
+        let clock = Clock::default();
+
         match &self.subcommand {
             SC::Register { username, password } => {
                 let config: DatabaseConfig = root.load_config()?;
                 let pool = config.connect().await?;
                 let mut txn = pool.begin().await?;
                 let hasher = Argon2::default();
+                let rng = rand_chacha::ChaChaRng::from_entropy();
 
-                let user = register_user(&mut txn, hasher, username, password).await?;
+                let user = register_user(&mut txn, rng, &clock, hasher, username, password).await?;
                 txn.commit().await?;
                 info!(?user, "User registered");
 
@@ -76,7 +81,7 @@ impl Options {
 
                 let user = lookup_user_by_username(&mut txn, username).await?;
                 let email = lookup_user_email(&mut txn, &user, email).await?;
-                let email = mark_user_email_as_verified(&mut txn, email).await?;
+                let email = mark_user_email_as_verified(&mut txn, &clock, email).await?;
 
                 txn.commit().await?;
                 info!(?email, "Email marked as verified");

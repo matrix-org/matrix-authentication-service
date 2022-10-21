@@ -19,6 +19,7 @@ use mas_data_model::{
     CompatAccessToken, CompatRefreshToken, CompatSession, CompatSsoLogin, CompatSsoLoginState,
     Device, User, UserEmail,
 };
+use rand::Rng;
 use sqlx::{Acquire, PgExecutor, Postgres};
 use thiserror::Error;
 use tokio::task;
@@ -27,7 +28,7 @@ use ulid::Ulid;
 use url::Url;
 use uuid::Uuid;
 
-use crate::{user::lookup_user_by_username, DatabaseInconsistencyError, PostgresqlBackend};
+use crate::{user::lookup_user_by_username, Clock, DatabaseInconsistencyError, PostgresqlBackend};
 
 struct CompatAccessTokenLookup {
     compat_access_token_id: Uuid,
@@ -67,6 +68,7 @@ impl CompatAccessTokenLookupError {
 #[tracing::instrument(skip_all, err)]
 pub async fn lookup_active_compat_access_token(
     executor: impl PgExecutor<'_>,
+    clock: &Clock,
     token: &str,
 ) -> Result<
     (
@@ -112,7 +114,7 @@ pub async fn lookup_active_compat_access_token(
 
     // Check for token expiration
     if let Some(expires_at) = res.compat_access_token_expires_at {
-        if expires_at < Utc::now() {
+        if expires_at < clock.now() {
             return Err(CompatAccessTokenLookupError::Expired { when: expires_at });
         }
     }
@@ -311,7 +313,9 @@ pub async fn lookup_active_compat_refresh_token(
     err(Display),
 )]
 pub async fn compat_login(
-    conn: impl Acquire<'_, Database = Postgres>,
+    conn: impl Acquire<'_, Database = Postgres> + Send,
+    mut rng: impl Rng + Send,
+    clock: &Clock,
     username: &str,
     password: &str,
     device: Device,
@@ -348,8 +352,8 @@ pub async fn compat_login(
     .instrument(tracing::info_span!("Verify hashed password"))
     .await??;
 
-    let created_at = Utc::now();
-    let id = Ulid::from_datetime(created_at.into());
+    let created_at = clock.now();
+    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
     tracing::Span::current().record("compat_session.id", tracing::field::display(id));
 
     sqlx::query!(
@@ -392,12 +396,14 @@ pub async fn compat_login(
 )]
 pub async fn add_compat_access_token(
     executor: impl PgExecutor<'_>,
+    mut rng: impl Rng + Send,
+    clock: &Clock,
     session: &CompatSession<PostgresqlBackend>,
     token: String,
     expires_after: Option<Duration>,
 ) -> Result<CompatAccessToken<PostgresqlBackend>, anyhow::Error> {
-    let created_at = Utc::now();
-    let id = Ulid::from_datetime(created_at.into());
+    let created_at = clock.now();
+    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
     tracing::Span::current().record("compat_access_token.id", tracing::field::display(id));
 
     let expires_at = expires_after.map(|expires_after| created_at + expires_after);
@@ -436,9 +442,10 @@ pub async fn add_compat_access_token(
 )]
 pub async fn expire_compat_access_token(
     executor: impl PgExecutor<'_>,
+    clock: &Clock,
     access_token: CompatAccessToken<PostgresqlBackend>,
 ) -> Result<(), anyhow::Error> {
-    let expires_at = Utc::now();
+    let expires_at = clock.now();
     let res = sqlx::query!(
         r#"
             UPDATE compat_access_tokens
@@ -474,12 +481,14 @@ pub async fn expire_compat_access_token(
 )]
 pub async fn add_compat_refresh_token(
     executor: impl PgExecutor<'_>,
+    mut rng: impl Rng + Send,
+    clock: &Clock,
     session: &CompatSession<PostgresqlBackend>,
     access_token: &CompatAccessToken<PostgresqlBackend>,
     token: String,
 ) -> Result<CompatRefreshToken<PostgresqlBackend>, anyhow::Error> {
-    let created_at = Utc::now();
-    let id = Ulid::from_datetime(created_at.into());
+    let created_at = clock.now();
+    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
     tracing::Span::current().record("compat_refresh_token.id", tracing::field::display(id));
 
     sqlx::query!(
@@ -514,9 +523,10 @@ pub async fn add_compat_refresh_token(
 )]
 pub async fn compat_logout(
     executor: impl PgExecutor<'_>,
+    clock: &Clock,
     token: &str,
 ) -> Result<(), anyhow::Error> {
-    let finished_at = Utc::now();
+    let finished_at = clock.now();
     // TODO: this does not check for token expiration
     let compat_session_id = sqlx::query_scalar!(
         r#"
@@ -552,9 +562,10 @@ pub async fn compat_logout(
 )]
 pub async fn consume_compat_refresh_token(
     executor: impl PgExecutor<'_>,
+    clock: &Clock,
     refresh_token: CompatRefreshToken<PostgresqlBackend>,
 ) -> Result<(), anyhow::Error> {
-    let consumed_at = Utc::now();
+    let consumed_at = clock.now();
     let res = sqlx::query!(
         r#"
             UPDATE compat_refresh_tokens
@@ -587,11 +598,13 @@ pub async fn consume_compat_refresh_token(
 )]
 pub async fn insert_compat_sso_login(
     executor: impl PgExecutor<'_>,
+    mut rng: impl Rng + Send,
+    clock: &Clock,
     login_token: String,
     redirect_uri: Url,
 ) -> Result<CompatSsoLogin<PostgresqlBackend>, anyhow::Error> {
-    let created_at = Utc::now();
-    let id = Ulid::from_datetime(created_at.into());
+    let created_at = clock.now();
+    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
     tracing::Span::current().record("compat_sso_login.id", tracing::field::display(id));
 
     sqlx::query!(
@@ -845,7 +858,9 @@ pub async fn get_compat_sso_login_by_token(
     err(Display),
 )]
 pub async fn fullfill_compat_sso_login(
-    conn: impl Acquire<'_, Database = Postgres>,
+    conn: impl Acquire<'_, Database = Postgres> + Send,
+    mut rng: impl Rng + Send,
+    clock: &Clock,
     user: User<PostgresqlBackend>,
     mut login: CompatSsoLogin<PostgresqlBackend>,
     device: Device,
@@ -856,8 +871,8 @@ pub async fn fullfill_compat_sso_login(
 
     let mut txn = conn.begin().await.context("could not start transaction")?;
 
-    let created_at = Utc::now();
-    let id = Ulid::from_datetime(created_at.into());
+    let created_at = clock.now();
+    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
     tracing::Span::current().record("user.id", tracing::field::display(user.data));
 
     sqlx::query!(
@@ -883,7 +898,7 @@ pub async fn fullfill_compat_sso_login(
         finished_at: None,
     };
 
-    let fulfilled_at = Utc::now();
+    let fulfilled_at = clock.now();
     sqlx::query!(
         r#"
             UPDATE compat_sso_logins
@@ -924,6 +939,7 @@ pub async fn fullfill_compat_sso_login(
 )]
 pub async fn mark_compat_sso_login_as_exchanged(
     executor: impl PgExecutor<'_>,
+    clock: &Clock,
     mut login: CompatSsoLogin<PostgresqlBackend>,
 ) -> Result<CompatSsoLogin<PostgresqlBackend>, anyhow::Error> {
     let (fulfilled_at, session) = match login.state {
@@ -934,7 +950,7 @@ pub async fn mark_compat_sso_login_as_exchanged(
         _ => bail!("sso login in wrong state"),
     };
 
-    let exchanged_at = Utc::now();
+    let exchanged_at = clock.now();
     sqlx::query!(
         r#"
             UPDATE compat_sso_logins

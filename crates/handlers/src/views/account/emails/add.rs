@@ -72,6 +72,7 @@ pub(crate) async fn post(
     Query(query): Query<OptionalPostAuthAction>,
     Form(form): Form<ProtectedForm<EmailForm>>,
 ) -> Result<Response, FancyError> {
+    let (clock, mut rng) = crate::rng_and_clock()?;
     let mut txn = pool.begin().await?;
 
     let form = cookie_jar.verify_form(form)?;
@@ -86,14 +87,22 @@ pub(crate) async fn post(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    let user_email = add_user_email(&mut txn, &session.user, form.email).await?;
+    let user_email = add_user_email(&mut txn, &mut rng, &clock, &session.user, form.email).await?;
     let next = mas_router::AccountVerifyEmail::new(user_email.data);
     let next = if let Some(action) = query.post_auth_action {
         next.and_then(action)
     } else {
         next
     };
-    start_email_verification(&mailer, &mut txn, &session.user, user_email).await?;
+    start_email_verification(
+        &mailer,
+        &mut txn,
+        &mut rng,
+        &clock,
+        &session.user,
+        user_email,
+    )
+    .await?;
 
     txn.commit().await?;
 

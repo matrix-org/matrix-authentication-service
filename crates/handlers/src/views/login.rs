@@ -80,6 +80,7 @@ pub(crate) async fn post(
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<LoginForm>>,
 ) -> Result<Response, FancyError> {
+    let (clock, mut rng) = crate::rng_and_clock()?;
     let mut conn = pool.acquire().await?;
 
     let form = cookie_jar.verify_form(form)?;
@@ -114,7 +115,7 @@ pub(crate) async fn post(
         return Ok((cookie_jar, Html(content)).into_response());
     }
 
-    match login(&mut conn, &form.username, &form.password).await {
+    match login(&mut conn, &mut rng, &clock, &form.username, &form.password).await {
         Ok(session_info) => {
             let cookie_jar = cookie_jar.set_session(&session_info);
             let reply = query.go_next();

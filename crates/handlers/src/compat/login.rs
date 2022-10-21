@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use axum::{extract::State, response::IntoResponse, Json};
-use chrono::{Duration, Utc};
+use chrono::Duration;
 use hyper::StatusCode;
 use mas_data_model::{CompatSession, CompatSsoLoginState, Device, TokenType};
 use mas_storage::{
@@ -22,9 +22,8 @@ use mas_storage::{
         get_compat_sso_login_by_token, mark_compat_sso_login_as_exchanged,
         CompatSsoLoginLookupError,
     },
-    PostgresqlBackend,
+    Clock, PostgresqlBackend,
 };
-use rand::thread_rng;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none, DurationMilliSeconds};
 use sqlx::{PgPool, Postgres, Transaction};
@@ -201,6 +200,7 @@ pub(crate) async fn post(
     State(homeserver): State<MatrixHomeserver>,
     Json(input): Json<RequestBody>,
 ) -> Result<impl IntoResponse, RouteError> {
+    let (clock, mut rng) = crate::rng_and_clock()?;
     let mut txn = pool.begin().await?;
     let session = match input.credentials {
         Credentials::Password {
@@ -208,7 +208,7 @@ pub(crate) async fn post(
             password,
         } => user_password_login(&mut txn, user, password).await?,
 
-        Credentials::Token { token } => token_login(&mut txn, &token).await?,
+        Credentials::Token { token } => token_login(&mut txn, &clock, &token).await?,
 
         _ => {
             return Err(RouteError::Unsupported);
@@ -225,14 +225,28 @@ pub(crate) async fn post(
         None
     };
 
-    let access_token = TokenType::CompatAccessToken.generate(&mut thread_rng());
-    let access_token =
-        add_compat_access_token(&mut txn, &session, access_token, expires_in).await?;
+    let access_token = TokenType::CompatAccessToken.generate(&mut rng);
+    let access_token = add_compat_access_token(
+        &mut txn,
+        &mut rng,
+        &clock,
+        &session,
+        access_token,
+        expires_in,
+    )
+    .await?;
 
     let refresh_token = if input.refresh_token {
-        let refresh_token = TokenType::CompatRefreshToken.generate(&mut thread_rng());
-        let refresh_token =
-            add_compat_refresh_token(&mut txn, &session, &access_token, refresh_token).await?;
+        let refresh_token = TokenType::CompatRefreshToken.generate(&mut rng);
+        let refresh_token = add_compat_refresh_token(
+            &mut txn,
+            &mut rng,
+            &clock,
+            &session,
+            &access_token,
+            refresh_token,
+        )
+        .await?;
         Some(refresh_token.token)
     } else {
         None
@@ -251,11 +265,12 @@ pub(crate) async fn post(
 
 async fn token_login(
     txn: &mut Transaction<'_, Postgres>,
+    clock: &Clock,
     token: &str,
 ) -> Result<CompatSession<PostgresqlBackend>, RouteError> {
     let login = get_compat_sso_login_by_token(&mut *txn, token).await?;
 
-    let now = Utc::now();
+    let now = clock.now();
     match login.state {
         CompatSsoLoginState::Pending => {
             tracing::error!(
@@ -285,7 +300,7 @@ async fn token_login(
         }
     }
 
-    let login = mark_compat_sso_login_as_exchanged(&mut *txn, login).await?;
+    let login = mark_compat_sso_login_as_exchanged(&mut *txn, clock, login).await?;
 
     match login.state {
         CompatSsoLoginState::Exchanged { session, .. } => Ok(session),
@@ -298,8 +313,10 @@ async fn user_password_login(
     username: String,
     password: String,
 ) -> Result<CompatSession<PostgresqlBackend>, RouteError> {
-    let device = Device::generate(&mut thread_rng());
-    let session = compat_login(txn, &username, &password, device)
+    let (clock, mut rng) = crate::rng_and_clock()?;
+
+    let device = Device::generate(&mut rng);
+    let session = compat_login(txn, &mut rng, &clock, &username, &password, device)
         .await
         .map_err(|_| RouteError::LoginFailed)?;
 

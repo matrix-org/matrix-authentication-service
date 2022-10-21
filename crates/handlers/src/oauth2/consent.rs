@@ -119,6 +119,7 @@ pub(crate) async fn post(
     Path(grant_id): Path<Ulid>,
     Form(form): Form<ProtectedForm<()>>,
 ) -> Result<Response, RouteError> {
+    let (clock, mut rng) = crate::rng_and_clock()?;
     let mut txn = pool
         .begin()
         .await
@@ -163,6 +164,8 @@ pub(crate) async fn post(
         .collect();
     insert_client_consent(
         &mut txn,
+        &mut rng,
+        &clock,
         &session.user,
         &grant.client,
         &scope_without_device,

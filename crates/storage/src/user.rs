@@ -22,7 +22,7 @@ use mas_data_model::{
     UserEmailVerificationState,
 };
 use password_hash::{PasswordHash, PasswordHasher, SaltString};
-use rand::thread_rng;
+use rand::{CryptoRng, Rng};
 use sqlx::{Acquire, PgExecutor, Postgres, Transaction};
 use thiserror::Error;
 use tokio::task;
@@ -31,6 +31,7 @@ use ulid::Ulid;
 use uuid::Uuid;
 
 use super::{DatabaseInconsistencyError, PostgresqlBackend};
+use crate::Clock;
 
 #[derive(Debug, Clone)]
 struct UserLookup {
@@ -68,7 +69,9 @@ pub enum LoginError {
     err,
 )]
 pub async fn login(
-    conn: impl Acquire<'_, Database = Postgres>,
+    conn: impl Acquire<'_, Database = Postgres> + Send,
+    mut rng: impl Rng + Send,
+    clock: &Clock,
     username: &str,
     password: &str,
 ) -> Result<BrowserSession<PostgresqlBackend>, LoginError> {
@@ -86,8 +89,8 @@ pub async fn login(
             }
         })?;
 
-    let mut session = start_session(&mut txn, user).await?;
-    authenticate_session(&mut txn, &mut session, password)
+    let mut session = start_session(&mut txn, &mut rng, clock, user).await?;
+    authenticate_session(&mut txn, &mut rng, clock, &mut session, password)
         .await
         .map_err(|source| {
             if matches!(source, AuthenticationError::Password { .. }) {
@@ -230,10 +233,12 @@ pub async fn lookup_active_session(
 )]
 pub async fn start_session(
     executor: impl PgExecutor<'_>,
+    mut rng: impl Rng + Send,
+    clock: &Clock,
     user: User<PostgresqlBackend>,
 ) -> Result<BrowserSession<PostgresqlBackend>, anyhow::Error> {
-    let created_at = Utc::now();
-    let id = Ulid::from_datetime(created_at.into());
+    let created_at = clock.now();
+    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
     tracing::Span::current().record("user_session.id", tracing::field::display(id));
 
     sqlx::query!(
@@ -301,13 +306,16 @@ pub enum AuthenticationError {
 #[tracing::instrument(
     skip_all,
     fields(
-        session.id = %session.data,
-        user.id = %session.user.data
+        user.id = %session.user.data,
+        user_session.id = %session.data,
+        user_session_authentication.id,
     ),
     err,
 )]
 pub async fn authenticate_session(
     txn: &mut Transaction<'_, Postgres>,
+    mut rng: impl Rng + Send,
+    clock: &Clock,
     session: &mut BrowserSession<PostgresqlBackend>,
     password: &str,
 ) -> Result<(), AuthenticationError> {
@@ -341,8 +349,13 @@ pub async fn authenticate_session(
     .await??;
 
     // That went well, let's insert the auth info
-    let created_at = Utc::now();
-    let id = Ulid::from_datetime(created_at.into());
+    let created_at = clock.now();
+    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
+    tracing::Span::current().record(
+        "user_session_authentication.id",
+        tracing::field::display(id),
+    );
+
     sqlx::query!(
         r#"
             INSERT INTO user_session_authentications
@@ -376,12 +389,14 @@ pub async fn authenticate_session(
 )]
 pub async fn register_user(
     txn: &mut Transaction<'_, Postgres>,
-    phf: impl PasswordHasher,
+    mut rng: impl CryptoRng + Rng + Send,
+    clock: &Clock,
+    phf: impl PasswordHasher + Send,
     username: &str,
     password: &str,
 ) -> Result<User<PostgresqlBackend>, anyhow::Error> {
-    let created_at = Utc::now();
-    let id = Ulid::from_datetime(created_at.into());
+    let created_at = clock.now();
+    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
     tracing::Span::current().record("user.id", tracing::field::display(id));
 
     sqlx::query!(
@@ -405,7 +420,7 @@ pub async fn register_user(
         primary_email: None,
     };
 
-    set_password(txn.borrow_mut(), phf, &user, password).await?;
+    set_password(txn.borrow_mut(), &mut rng, clock, phf, &user, password).await?;
 
     Ok(user)
 }
@@ -420,15 +435,17 @@ pub async fn register_user(
 )]
 pub async fn set_password(
     executor: impl PgExecutor<'_>,
-    phf: impl PasswordHasher,
+    mut rng: impl CryptoRng + Rng + Send,
+    clock: &Clock,
+    phf: impl PasswordHasher + Send,
     user: &User<PostgresqlBackend>,
     password: &str,
 ) -> Result<(), anyhow::Error> {
-    let created_at = Utc::now();
+    let created_at = clock.now();
     let id = Ulid::from_datetime(created_at.into());
     tracing::Span::current().record("user_password.id", tracing::field::display(id));
 
-    let salt = SaltString::generate(thread_rng());
+    let salt = SaltString::generate(&mut rng);
     let hashed_password = PasswordHash::generate(phf, password, salt.as_str())?;
 
     sqlx::query_scalar!(
@@ -456,9 +473,10 @@ pub async fn set_password(
 )]
 pub async fn end_session(
     executor: impl PgExecutor<'_>,
+    clock: &Clock,
     session: &BrowserSession<PostgresqlBackend>,
 ) -> Result<(), anyhow::Error> {
-    let now = Utc::now();
+    let now = clock.now();
     let res = sqlx::query!(
         r#"
             UPDATE user_sessions
@@ -672,11 +690,13 @@ pub async fn get_user_email(
 )]
 pub async fn add_user_email(
     executor: impl PgExecutor<'_>,
+    mut rng: impl Rng + Send,
+    clock: &Clock,
     user: &User<PostgresqlBackend>,
     email: String,
 ) -> Result<UserEmail<PostgresqlBackend>, anyhow::Error> {
-    let created_at = Utc::now();
-    let id = Ulid::from_datetime(created_at.into());
+    let created_at = clock.now();
+    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
     tracing::Span::current().record("user_email.id", tracing::field::display(id));
 
     sqlx::query!(
@@ -842,9 +862,10 @@ pub async fn lookup_user_email_by_id(
 )]
 pub async fn mark_user_email_as_verified(
     executor: impl PgExecutor<'_>,
+    clock: &Clock,
     mut email: UserEmail<PostgresqlBackend>,
 ) -> Result<UserEmail<PostgresqlBackend>, anyhow::Error> {
-    let confirmed_at = Utc::now();
+    let confirmed_at = clock.now();
     sqlx::query!(
         r#"
             UPDATE user_emails
@@ -881,10 +902,11 @@ struct UserEmailConfirmationCodeLookup {
 )]
 pub async fn lookup_user_email_verification_code(
     executor: impl PgExecutor<'_>,
+    clock: &Clock,
     email: UserEmail<PostgresqlBackend>,
     code: &str,
 ) -> Result<UserEmailVerification<PostgresqlBackend>, anyhow::Error> {
-    let now = Utc::now();
+    let now = clock.now();
 
     let res = sqlx::query_as!(
         UserEmailConfirmationCodeLookup,
@@ -935,13 +957,14 @@ pub async fn lookup_user_email_verification_code(
 )]
 pub async fn consume_email_verification(
     executor: impl PgExecutor<'_>,
+    clock: &Clock,
     mut verification: UserEmailVerification<PostgresqlBackend>,
 ) -> Result<UserEmailVerification<PostgresqlBackend>, anyhow::Error> {
     if !matches!(verification.state, UserEmailVerificationState::Valid) {
         bail!("user email verification in wrong state");
     }
 
-    let consumed_at = Utc::now();
+    let consumed_at = clock.now();
 
     sqlx::query!(
         r#"
@@ -974,12 +997,14 @@ pub async fn consume_email_verification(
 )]
 pub async fn add_user_email_verification_code(
     executor: impl PgExecutor<'_>,
+    mut rng: impl Rng + Send,
+    clock: &Clock,
     email: UserEmail<PostgresqlBackend>,
     max_age: chrono::Duration,
     code: String,
 ) -> Result<UserEmailVerification<PostgresqlBackend>, anyhow::Error> {
-    let created_at = Utc::now();
-    let id = Ulid::from_datetime(created_at.into());
+    let created_at = clock.now();
+    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
     tracing::Span::current().record("user_email_confirmation.id", tracing::field::display(id));
     let expires_at = created_at + max_age;
 
@@ -1013,23 +1038,27 @@ pub async fn add_user_email_verification_code(
 
 #[cfg(test)]
 mod tests {
+    use rand::SeedableRng;
+
     use super::*;
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]
     async fn test_user_registration_and_login(pool: sqlx::PgPool) -> anyhow::Result<()> {
+        let clock = Clock::default();
+        let mut rng = rand_chacha::ChaChaRng::seed_from_u64(42);
         let mut txn = pool.begin().await?;
 
         let exists = username_exists(&mut txn, "john").await?;
         assert!(!exists);
 
         let hasher = Argon2::default();
-        let user = register_user(&mut txn, hasher, "john", "hunter2").await?;
+        let user = register_user(&mut txn, &mut rng, &clock, hasher, "john", "hunter2").await?;
         assert_eq!(user.username, "john");
 
         let exists = username_exists(&mut txn, "john").await?;
         assert!(exists);
 
-        let session = login(&mut txn, "john", "hunter2").await?;
+        let session = login(&mut txn, &mut rng, &clock, "john", "hunter2").await?;
         assert_eq!(session.user.data, user.data);
 
         let user2 = lookup_user_by_username(&mut txn, "john").await?;

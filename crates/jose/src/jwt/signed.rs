@@ -309,6 +309,7 @@ impl<T> Jwt<'static, T> {
         S: Signature,
         T: Serialize,
     {
+        #[allow(clippy::disallowed_methods)]
         Self::sign_with_rng(thread_rng(), header, payload, key)
     }
 
@@ -357,6 +358,7 @@ impl<T> Jwt<'static, T> {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::disallowed_methods)]
     use mas_iana::jose::JsonWebSignatureAlg;
     use rand::thread_rng;
 

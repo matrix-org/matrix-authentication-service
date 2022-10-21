@@ -2468,6 +2468,8 @@ dependencies = [
  "opentelemetry-semantic-conventions",
  "opentelemetry-zipkin",
  "prometheus",
+ "rand",
+ "rand_chacha",
  "rustls",
  "serde_json",
  "serde_yaml",
@@ -2497,6 +2499,7 @@ dependencies = [
  "mas-keystore",
  "pem-rfc7468",
  "rand",
+ "rand_chacha",
  "rustls-pemfile",
  "schemars",
  "serde",
@@ -2567,6 +2570,7 @@ dependencies = [
  "mime",
  "oauth2-types",
  "rand",
+ "rand_chacha",
  "serde",
  "serde_json",
  "serde_urlencoded",
@@ -2779,6 +2783,7 @@ dependencies = [
  "oauth2-types",
  "password-hash",
  "rand",
+ "rand_chacha",
  "serde",
  "serde_json",
  "sqlx",
@@ -3068,7 +3073,7 @@ checksum = "86f0b0d4bf799edbc74508c1e8bf170ff5f41238e5f8225603ca7caaae2b7860"
 [[package]]
 name = "opa-wasm"
 version = "0.1.0"
-source = "git+https://github.com/matrix-org/rust-opa-wasm.git#325071ee8a2a7d18cc611365edd3235945a8cdf4"
+source = "git+https://github.com/matrix-org/rust-opa-wasm.git#f838595670747b0644b6bfd9829fca5d63bbee66"
 dependencies = [
  "anyhow",
  "base64",
@@ -3079,6 +3084,7 @@ dependencies = [
  "md-5",
  "parse-size",
  "rand",
+ "rayon-core",
  "semver",
  "serde",
  "serde_json",

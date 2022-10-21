@@ -263,6 +263,8 @@ mod tests {
     #[test]
     fn test_generate_and_check() {
         const COUNT: usize = 500; // Generate 500 of each token type
+
+        #[allow(clippy::disallowed_methods)]
         let mut rng = thread_rng();
 
         for t in [

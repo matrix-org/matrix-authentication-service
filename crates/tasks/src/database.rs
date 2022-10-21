@@ -14,13 +14,14 @@
 
 //! Database-related tasks
 
+use mas_storage::Clock;
 use sqlx::{Pool, Postgres};
 use tracing::{debug, error, info};
 
 use super::Task;
 
 #[derive(Clone)]
-struct CleanupExpired(Pool<Postgres>);
+struct CleanupExpired(Pool<Postgres>, Clock);
 
 impl std::fmt::Debug for CleanupExpired {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -31,7 +32,7 @@ impl std::fmt::Debug for CleanupExpired {
 #[async_trait::async_trait]
 impl Task for CleanupExpired {
     async fn run(&self) {
-        let res = mas_storage::oauth2::access_token::cleanup_expired(&self.0).await;
+        let res = mas_storage::oauth2::access_token::cleanup_expired(&self.0, &self.1).await;
         match res {
             Ok(0) => {
                 debug!("no token to clean up");
@@ -49,5 +50,6 @@ impl Task for CleanupExpired {
 /// Cleanup expired tokens
 #[must_use]
 pub fn cleanup_expired(pool: &Pool<Postgres>) -> impl Task + Clone {
-    CleanupExpired(pool.clone())
+    // XXX: the clock should come from somewhere else
+    CleanupExpired(pool.clone(), Clock::default())
 }

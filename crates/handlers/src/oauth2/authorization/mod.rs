@@ -37,7 +37,7 @@ use oauth2_types::{
     requests::{AuthorizationRequest, GrantType, Prompt, ResponseMode},
     response_type::ResponseType,
 };
-use rand::{distributions::Alphanumeric, thread_rng, Rng};
+use rand::{distributions::Alphanumeric, Rng};
 use serde::Deserialize;
 use sqlx::PgPool;
 use thiserror::Error;
@@ -159,6 +159,7 @@ pub(crate) async fn get(
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(params): Form<Params>,
 ) -> Result<Response, RouteError> {
+    let (clock, mut rng) = crate::rng_and_clock()?;
     let mut txn = pool.begin().await?;
 
     // First, figure out what client it is
@@ -265,7 +266,7 @@ pub(crate) async fn get(
                 }
 
                 // 32 random alphanumeric characters, about 190bit of entropy
-                let code: String = thread_rng()
+                let code: String = (&mut rng)
                     .sample_iter(&Alphanumeric)
                     .take(32)
                     .map(char::from)
@@ -296,6 +297,8 @@ pub(crate) async fn get(
 
             let grant = new_authorization_grant(
                 &mut txn,
+                &mut rng,
+                &clock,
                 client,
                 redirect_uri.clone(),
                 params.auth.scope,

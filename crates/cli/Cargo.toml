@@ -6,23 +6,25 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-axum = "0.6.0-rc.2"
-tokio = { version = "1.21.2", features = ["full"] }
-futures-util = "0.3.25"
 anyhow = "1.0.66"
+argon2 = { version = "0.4.1", features = ["password-hash"] }
+atty = "0.2.14"
+axum = "0.6.0-rc.2"
 clap = { version = "4.0.18", features = ["derive"] }
 dotenv = "0.15.0"
-tower = { version = "0.4.13", features = ["full"] }
+futures-util = "0.3.25"
 hyper = { version = "0.14.22", features = ["full"] }
-serde_yaml = "0.9.14"
-serde_json = "1.0.87"
-url = "2.3.1"
-argon2 = { version = "0.4.1", features = ["password-hash"] }
-watchman_client = "0.8.0"
-atty = "0.2.14"
-listenfd = "1.0.0"
-rustls = "0.20.7"
 itertools = "0.10.5"
+listenfd = "1.0.0"
+rand = "0.8.5"
+rand_chacha = "0.3.1"
+rustls = "0.20.7"
+serde_json = "1.0.87"
+serde_yaml = "0.9.14"
+tokio = { version = "1.21.2", features = ["full"] }
+tower = { version = "0.4.13", features = ["full"] }
+url = "2.3.1"
+watchman_client = "0.8.0"
 
 tracing = "0.1.37"
 tracing-appender = "0.2.2"
