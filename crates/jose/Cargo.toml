@@ -6,7 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-anyhow = "1.0.65"
+anyhow = "1.0.66"
 base64ct = { version = "1.5.3", features = ["std"] }
 chrono = { version = "0.4.22", features = ["serde"] }
 digest = "0.10.5"
