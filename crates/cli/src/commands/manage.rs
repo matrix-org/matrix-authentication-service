@@ -54,6 +54,8 @@ impl Options {
     pub async fn run(&self, root: &super::Options) -> anyhow::Result<()> {
         use Subcommand as SC;
         let clock = Clock::default();
+        // XXX: we should disallow SeedableRng::from_entropy
+        let mut rng = rand_chacha::ChaChaRng::from_entropy();
 
         match &self.subcommand {
             SC::Register { username, password } => {
@@ -61,9 +63,9 @@ impl Options {
                 let pool = config.connect().await?;
                 let mut txn = pool.begin().await?;
                 let hasher = Argon2::default();
-                let rng = rand_chacha::ChaChaRng::from_entropy();
 
-                let user = register_user(&mut txn, rng, &clock, hasher, username, password).await?;
+                let user =
+                    register_user(&mut txn, &mut rng, &clock, hasher, username, password).await?;
                 txn.commit().await?;
                 info!(?user, "User registered");
 
@@ -126,6 +128,8 @@ impl Options {
 
                     insert_client_from_config(
                         &mut txn,
+                        &mut rng,
+                        &clock,
                         client_id,
                         client_auth_method,
                         encrypted_client_secret.as_deref(),
