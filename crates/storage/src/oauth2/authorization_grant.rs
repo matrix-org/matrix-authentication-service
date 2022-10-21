@@ -33,7 +33,7 @@ use super::client::lookup_client;
 use crate::{DatabaseInconsistencyError, PostgresqlBackend};
 
 #[tracing::instrument(
-    skip_all, 
+    skip_all,
     fields(
         client.id = %client.data,
         grant.id,
@@ -352,7 +352,7 @@ impl GrantLookup {
 }
 
 #[tracing::instrument(
-    skip_all, 
+    skip_all,
     fields(grant.id = %id),
     err(Debug),
 )]
@@ -492,7 +492,7 @@ pub async fn lookup_grant_by_code(
 }
 
 #[tracing::instrument(
-    skip_all, 
+    skip_all,
     fields(
         grant.id = %grant.data,
         client.id = %grant.client.data,
@@ -544,7 +544,7 @@ pub async fn derive_session(
 }
 
 #[tracing::instrument(
-    skip_all, 
+    skip_all,
     fields(
         grant.id = %grant.data,
         client.id = %grant.client.data,
@@ -584,7 +584,7 @@ pub async fn fulfill_grant(
 }
 
 #[tracing::instrument(
-    skip_all, 
+    skip_all,
     fields(
         grant.id = %grant.data,
         client.id = %grant.client.data,
@@ -614,7 +614,7 @@ pub async fn give_consent_to_grant(
 }
 
 #[tracing::instrument(
-    skip_all, 
+    skip_all,
     fields(
         grant.id = %grant.data,
         client.id = %grant.client.data,
