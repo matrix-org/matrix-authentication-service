@@ -4,3 +4,6 @@ members = ["crates/*"]
 
 [profile.dev.package.num-bigint-dig]
 opt-level = 3
+
+[profile.dev.package.sqlx-macros]
+opt-level = 3

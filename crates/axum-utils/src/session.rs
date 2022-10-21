@@ -20,13 +20,14 @@ use mas_storage::{
 };
 use serde::{Deserialize, Serialize};
 use sqlx::{Executor, Postgres};
+use ulid::Ulid;
 
 use crate::CookieExt;
 
 /// An encrypted cookie to save the session ID
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct SessionInfo {
-    current: Option<i64>,
+    current: Option<Ulid>,
 }
 
 impl SessionInfo {

@@ -2430,6 +2430,7 @@ dependencies = [
  "tokio",
  "tower",
  "tracing",
+ "ulid",
  "url",
 ]
 
@@ -2505,6 +2506,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
+ "ulid",
  "url",
 ]
 
@@ -2575,6 +2577,7 @@ dependencies = [
  "tower",
  "tower-http",
  "tracing",
+ "ulid",
  "url",
 ]
 
@@ -2744,6 +2747,7 @@ dependencies = [
  "serde",
  "serde_urlencoded",
  "serde_with",
+ "ulid",
  "url",
 ]
 
@@ -2781,7 +2785,9 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
+ "ulid",
  "url",
+ "uuid",
 ]
 
 [[package]]
@@ -2813,6 +2819,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
+ "ulid",
  "url",
 ]
 
@@ -4525,6 +4532,7 @@ dependencies = [
  "thiserror",
  "tokio-stream",
  "url",
+ "uuid",
  "webpki-roots",
  "whoami",
 ]
@@ -5152,6 +5160,17 @@ name = "ucd-trie"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e79c4d996edb816c91e4308506774452e55e95c3c9de07b6729e17e15a5ef81"
+
+[[package]]
+name = "ulid"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "13a3aaa69b04e5b66cc27309710a569ea23593612387d67daaf102e73aa974fd"
+dependencies = [
+ "rand",
+ "serde",
+ "uuid",
+]
 
 [[package]]
 name = "uncased"

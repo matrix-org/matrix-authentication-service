@@ -23,11 +23,11 @@
     clippy::module_name_repetitions
 )]
 
-use chrono::{DateTime, Utc};
 use mas_data_model::{StorageBackend, StorageBackendMarker};
 use serde::Serialize;
 use sqlx::migrate::Migrator;
 use thiserror::Error;
+use ulid::Ulid;
 
 #[derive(Debug, Error)]
 #[error("database query returned an inconsistent state")]
@@ -37,28 +37,23 @@ pub struct DatabaseInconsistencyError;
 pub struct PostgresqlBackend;
 
 impl StorageBackend for PostgresqlBackend {
-    type AccessTokenData = i64;
-    type AuthenticationData = i64;
-    type AuthorizationGrantData = i64;
-    type BrowserSessionData = i64;
-    type ClientData = i64;
-    type CompatAccessTokenData = i64;
-    type CompatRefreshTokenData = i64;
-    type CompatSessionData = i64;
-    type CompatSsoLoginData = i64;
-    type RefreshTokenData = i64;
-    type SessionData = i64;
-    type UserData = i64;
-    type UserEmailData = i64;
-    type UserEmailVerificationData = i64;
+    type AccessTokenData = Ulid;
+    type AuthenticationData = Ulid;
+    type AuthorizationGrantData = Ulid;
+    type BrowserSessionData = Ulid;
+    type ClientData = Ulid;
+    type CompatAccessTokenData = Ulid;
+    type CompatRefreshTokenData = Ulid;
+    type CompatSessionData = Ulid;
+    type CompatSsoLoginData = Ulid;
+    type RefreshTokenData = Ulid;
+    type SessionData = Ulid;
+    type UserData = Ulid;
+    type UserEmailData = Ulid;
+    type UserEmailVerificationData = Ulid;
 }
 
 impl StorageBackendMarker for PostgresqlBackend {}
-
-struct IdAndCreationTime {
-    id: i64,
-    created_at: DateTime<Utc>,
-}
 
 pub mod compat;
 pub mod oauth2;

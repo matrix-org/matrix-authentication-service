@@ -259,12 +259,15 @@ async fn token_login(
     match login.state {
         CompatSsoLoginState::Pending => {
             tracing::error!(
-                login.data,
+                compat_sso_login.id = %login.data,
                 "Exchanged a token for a login that was not fullfilled yet"
             );
             return Err(RouteError::InvalidLoginToken);
         }
-        CompatSsoLoginState::Fullfilled { fullfilled_at, .. } => {
+        CompatSsoLoginState::Fulfilled {
+            fulfilled_at: fullfilled_at,
+            ..
+        } => {
             if now > fullfilled_at + Duration::seconds(30) {
                 return Err(RouteError::LoginTookTooLong);
             }
@@ -273,7 +276,7 @@ async fn token_login(
             if now > exchanged_at + Duration::seconds(30) {
                 // TODO: log that session out
                 tracing::error!(
-                    login.data,
+                    compat_sso_login.id = %login.data,
                     "Login token exchanged a second time more than 30s after"
                 );
             }

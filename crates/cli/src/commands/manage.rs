@@ -16,7 +16,7 @@ use argon2::Argon2;
 use clap::Parser;
 use mas_config::{DatabaseConfig, RootConfig};
 use mas_storage::{
-    oauth2::client::{insert_client_from_config, lookup_client_by_client_id, truncate_clients},
+    oauth2::client::{insert_client_from_config, lookup_client, truncate_clients},
     user::{
         lookup_user_by_username, lookup_user_email, mark_user_email_as_verified, register_user,
     },
@@ -96,8 +96,8 @@ impl Options {
                 }
 
                 for client in config.clients.iter() {
-                    let client_id = &client.client_id;
-                    let res = lookup_client_by_client_id(&mut txn, client_id).await;
+                    let client_id = client.client_id;
+                    let res = lookup_client(&mut txn, client_id).await;
                     match res {
                         Ok(_) => {
                             warn!(%client_id, "Skipping already imported client");

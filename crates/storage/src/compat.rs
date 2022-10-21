@@ -19,28 +19,28 @@ use mas_data_model::{
     CompatAccessToken, CompatRefreshToken, CompatSession, CompatSsoLogin, CompatSsoLoginState,
     Device, User, UserEmail,
 };
-use sqlx::{postgres::types::PgInterval, Acquire, PgExecutor, Postgres};
+use sqlx::{Acquire, PgExecutor, Postgres};
 use thiserror::Error;
 use tokio::task;
 use tracing::{info_span, Instrument};
+use ulid::Ulid;
 use url::Url;
+use uuid::Uuid;
 
-use crate::{
-    user::lookup_user_by_username, DatabaseInconsistencyError, IdAndCreationTime, PostgresqlBackend,
-};
+use crate::{user::lookup_user_by_username, DatabaseInconsistencyError, PostgresqlBackend};
 
 struct CompatAccessTokenLookup {
-    compat_access_token_id: i64,
+    compat_access_token_id: Uuid,
     compat_access_token: String,
     compat_access_token_created_at: DateTime<Utc>,
     compat_access_token_expires_at: Option<DateTime<Utc>>,
-    compat_session_id: i64,
+    compat_session_id: Uuid,
     compat_session_created_at: DateTime<Utc>,
-    compat_session_deleted_at: Option<DateTime<Utc>>,
+    compat_session_finished_at: Option<DateTime<Utc>>,
     compat_session_device_id: String,
-    user_id: i64,
+    user_id: Uuid,
     user_username: String,
-    user_email_id: Option<i64>,
+    user_email_id: Option<Uuid>,
     user_email: Option<String>,
     user_email_created_at: Option<DateTime<Utc>>,
     user_email_confirmed_at: Option<DateTime<Utc>>,
@@ -49,6 +49,7 @@ struct CompatAccessTokenLookup {
 #[derive(Debug, Error)]
 #[error("failed to lookup compat access token")]
 pub enum CompatAccessTokenLookupError {
+    Expired { when: DateTime<Utc> },
     Database(#[from] sqlx::Error),
     Inconsistency(#[from] DatabaseInconsistencyError),
 }
@@ -56,7 +57,10 @@ pub enum CompatAccessTokenLookupError {
 impl CompatAccessTokenLookupError {
     #[must_use]
     pub fn not_found(&self) -> bool {
-        matches!(self, Self::Database(sqlx::Error::RowNotFound))
+        matches!(
+            self,
+            Self::Database(sqlx::Error::RowNotFound) | Self::Expired { .. }
+        )
     }
 }
 
@@ -75,41 +79,48 @@ pub async fn lookup_active_compat_access_token(
         CompatAccessTokenLookup,
         r#"
             SELECT
-                ct.id              AS "compat_access_token_id",
-                ct.token           AS "compat_access_token",
+                ct.compat_access_token_id,
+                ct.access_token    AS "compat_access_token",
                 ct.created_at      AS "compat_access_token_created_at",
                 ct.expires_at      AS "compat_access_token_expires_at",
-                cs.id              AS "compat_session_id",
+                cs.compat_session_id,
                 cs.created_at      AS "compat_session_created_at",
-                cs.deleted_at      AS "compat_session_deleted_at",
+                cs.finished_at     AS "compat_session_finished_at",
                 cs.device_id       AS "compat_session_device_id",
-                 u.id              AS "user_id!",
+                 u.user_id         AS "user_id!",
                  u.username        AS "user_username!",
-                ue.id              AS "user_email_id?",
+                ue.user_email_id   AS "user_email_id?",
                 ue.email           AS "user_email?",
                 ue.created_at      AS "user_email_created_at?",
                 ue.confirmed_at    AS "user_email_confirmed_at?"
 
             FROM compat_access_tokens ct
             INNER JOIN compat_sessions cs
-              ON cs.id = ct.compat_session_id
+              USING (compat_session_id)
             INNER JOIN users u
-              ON u.id = cs.user_id
+              USING (user_id)
             LEFT JOIN user_emails ue
-              ON ue.id = u.primary_email_id
+              ON ue.user_email_id = u.primary_user_email_id
 
-            WHERE ct.token = $1
+            WHERE ct.access_token = $1
               AND (ct.expires_at IS NULL OR ct.expires_at > NOW())
-            AND cs.deleted_at IS NULL
-            "#,
+            AND cs.finished_at IS NULL
+        "#,
         token,
     )
     .fetch_one(executor)
     .instrument(info_span!("Fetch compat access token"))
     .await?;
 
+    // Check for token expiration
+    if let Some(expires_at) = res.compat_access_token_expires_at {
+        if expires_at < Utc::now() {
+            return Err(CompatAccessTokenLookupError::Expired { when: expires_at });
+        }
+    }
+
     let token = CompatAccessToken {
-        data: res.compat_access_token_id,
+        data: res.compat_access_token_id.into(),
         token: res.compat_access_token,
         created_at: res.compat_access_token_created_at,
         expires_at: res.compat_access_token_expires_at,
@@ -122,7 +133,7 @@ pub async fn lookup_active_compat_access_token(
         res.user_email_confirmed_at,
     ) {
         (Some(id), Some(email), Some(created_at), confirmed_at) => Some(UserEmail {
-            data: id,
+            data: id.into(),
             email,
             created_at,
             confirmed_at,
@@ -131,41 +142,42 @@ pub async fn lookup_active_compat_access_token(
         _ => return Err(DatabaseInconsistencyError.into()),
     };
 
+    let id = Ulid::from(res.user_id);
     let user = User {
-        data: res.user_id,
+        data: id,
         username: res.user_username,
-        sub: format!("fake-sub-{}", res.user_id),
+        sub: id.to_string(),
         primary_email,
     };
 
     let device = Device::try_from(res.compat_session_device_id).unwrap();
 
     let session = CompatSession {
-        data: res.compat_session_id,
+        data: res.compat_session_id.into(),
         user,
         device,
         created_at: res.compat_session_created_at,
-        deleted_at: res.compat_session_deleted_at,
+        finished_at: res.compat_session_finished_at,
     };
 
     Ok((token, session))
 }
 
 pub struct CompatRefreshTokenLookup {
-    compat_refresh_token_id: i64,
+    compat_refresh_token_id: Uuid,
     compat_refresh_token: String,
     compat_refresh_token_created_at: DateTime<Utc>,
-    compat_access_token_id: i64,
+    compat_access_token_id: Uuid,
     compat_access_token: String,
     compat_access_token_created_at: DateTime<Utc>,
     compat_access_token_expires_at: Option<DateTime<Utc>>,
-    compat_session_id: i64,
+    compat_session_id: Uuid,
     compat_session_created_at: DateTime<Utc>,
-    compat_session_deleted_at: Option<DateTime<Utc>>,
+    compat_session_finished_at: Option<DateTime<Utc>>,
     compat_session_device_id: String,
-    user_id: i64,
+    user_id: Uuid,
     user_username: String,
-    user_email_id: Option<i64>,
+    user_email_id: Option<Uuid>,
     user_email: Option<String>,
     user_email_created_at: Option<DateTime<Utc>>,
     user_email_confirmed_at: Option<DateTime<Utc>>,
@@ -202,37 +214,37 @@ pub async fn lookup_active_compat_refresh_token(
         CompatRefreshTokenLookup,
         r#"
             SELECT
-                cr.id              AS "compat_refresh_token_id",
-                cr.token           AS "compat_refresh_token",
+                cr.compat_refresh_token_id,
+                cr.refresh_token   AS "compat_refresh_token",
                 cr.created_at      AS "compat_refresh_token_created_at",
-                ct.id              AS "compat_access_token_id",
-                ct.token           AS "compat_access_token",
+                ct.compat_access_token_id,
+                ct.access_token    AS "compat_access_token",
                 ct.created_at      AS "compat_access_token_created_at",
                 ct.expires_at      AS "compat_access_token_expires_at",
-                cs.id              AS "compat_session_id",
+                cs.compat_session_id,
                 cs.created_at      AS "compat_session_created_at",
-                cs.deleted_at      AS "compat_session_deleted_at",
+                cs.finished_at     AS "compat_session_finished_at",
                 cs.device_id       AS "compat_session_device_id",
-                u.id               AS "user_id!",
+                u.user_id,
                 u.username         AS "user_username!",
-                ue.id              AS "user_email_id?",
+                ue.user_email_id   AS "user_email_id?",
                 ue.email           AS "user_email?",
                 ue.created_at      AS "user_email_created_at?",
                 ue.confirmed_at    AS "user_email_confirmed_at?"
 
             FROM compat_refresh_tokens cr
-            INNER JOIN compat_access_tokens ct
-              ON ct.id = cr.compat_access_token_id
             INNER JOIN compat_sessions cs
-              ON cs.id = cr.compat_session_id
+              USING (compat_session_id)
+            INNER JOIN compat_access_tokens ct
+              USING (compat_access_token_id)
             INNER JOIN users u
-              ON u.id = cs.user_id
+              USING (user_id)
             LEFT JOIN user_emails ue
-              ON ue.id = u.primary_email_id
+              ON ue.user_email_id = u.primary_user_email_id
 
-            WHERE cr.token = $1
-              AND cr.next_token_id IS NULL
-              AND cs.deleted_at IS NULL
+            WHERE cr.refresh_token = $1
+              AND cr.consumed_at IS NULL
+              AND cs.finished_at IS NULL
         "#,
         token,
     )
@@ -241,13 +253,13 @@ pub async fn lookup_active_compat_refresh_token(
     .await?;
 
     let refresh_token = CompatRefreshToken {
-        data: res.compat_refresh_token_id,
+        data: res.compat_refresh_token_id.into(),
         token: res.compat_refresh_token,
         created_at: res.compat_refresh_token_created_at,
     };
 
     let access_token = CompatAccessToken {
-        data: res.compat_access_token_id,
+        data: res.compat_access_token_id.into(),
         token: res.compat_access_token,
         created_at: res.compat_access_token_created_at,
         expires_at: res.compat_access_token_expires_at,
@@ -260,7 +272,7 @@ pub async fn lookup_active_compat_refresh_token(
         res.user_email_confirmed_at,
     ) {
         (Some(id), Some(email), Some(created_at), confirmed_at) => Some(UserEmail {
-            data: id,
+            data: id.into(),
             email,
             created_at,
             confirmed_at,
@@ -269,21 +281,22 @@ pub async fn lookup_active_compat_refresh_token(
         _ => return Err(DatabaseInconsistencyError.into()),
     };
 
+    let id = Ulid::from(res.user_id);
     let user = User {
-        data: res.user_id,
+        data: id,
         username: res.user_username,
-        sub: format!("fake-sub-{}", res.user_id),
+        sub: id.to_string(),
         primary_email,
     };
 
     let device = Device::try_from(res.compat_session_device_id).unwrap();
 
     let session = CompatSession {
-        data: res.compat_session_id,
+        data: res.compat_session_id.into(),
         user,
         device,
         created_at: res.compat_session_created_at,
-        deleted_at: res.compat_session_deleted_at,
+        finished_at: res.compat_session_finished_at,
     };
 
     Ok((refresh_token, access_token, session))
@@ -310,7 +323,7 @@ pub async fn compat_login(
             ORDER BY up.created_at DESC
             LIMIT 1
         "#,
-        user.data,
+        Uuid::from(user.data),
     )
     .fetch_one(&mut txn)
     .instrument(tracing::info_span!("Lookup hashed password"))
@@ -327,27 +340,30 @@ pub async fn compat_login(
     .instrument(tracing::info_span!("Verify hashed password"))
     .await??;
 
-    let res = sqlx::query_as!(
-        IdAndCreationTime,
+    let created_at = Utc::now();
+    let id = Ulid::from_datetime(created_at.into());
+    sqlx::query!(
         r#"
-            INSERT INTO compat_sessions (user_id, device_id)
-            VALUES ($1, $2)
-            RETURNING id, created_at
+            INSERT INTO compat_sessions 
+              (compat_session_id, user_id, device_id, created_at)
+            VALUES ($1, $2, $3, $4)
         "#,
-        user.data,
+        Uuid::from(id),
+        Uuid::from(user.data),
         device.as_str(),
+        created_at,
     )
-    .fetch_one(&mut txn)
+    .execute(&mut txn)
     .instrument(tracing::info_span!("Insert compat session"))
     .await
     .context("could not insert compat session")?;
 
     let session = CompatSession {
-        data: res.id,
+        data: id,
         user,
         device,
-        created_at: res.created_at,
-        deleted_at: None,
+        created_at,
+        finished_at: None,
     };
 
     txn.commit().await.context("could not commit transaction")?;
@@ -361,70 +377,48 @@ pub async fn add_compat_access_token(
     token: String,
     expires_after: Option<Duration>,
 ) -> Result<CompatAccessToken<PostgresqlBackend>, anyhow::Error> {
-    if let Some(expires_after) = expires_after {
-        // For some reason, we need to convert the type first
-        let pg_expires_after = PgInterval::try_from(expires_after)
-            // For some reason, this error type does not let me to just bubble up the error here
-            .map_err(|e| anyhow::anyhow!("failed to encode duration: {}", e))?;
+    let created_at = Utc::now();
+    let id = Ulid::from_datetime(created_at.into());
+    let expires_at = expires_after.map(|expires_after| created_at + expires_after);
 
-        let res = sqlx::query_as!(
-            IdAndCreationTime,
-            r#"
-                INSERT INTO compat_access_tokens (compat_session_id, token, created_at, expires_at)
-                VALUES ($1, $2, NOW(), NOW() + $3)
-                RETURNING id, created_at
-            "#,
-            session.data,
-            token,
-            pg_expires_after,
-        )
-        .fetch_one(executor)
-        .instrument(tracing::info_span!("Insert compat access token"))
-        .await
-        .context("could not insert compat access token")?;
+    sqlx::query!(
+        r#"
+            INSERT INTO compat_access_tokens 
+                (compat_access_token_id, compat_session_id, access_token, created_at, expires_at)
+            VALUES ($1, $2, $3, $4, $5)
+        "#,
+        Uuid::from(id),
+        Uuid::from(session.data),
+        token,
+        created_at,
+        expires_at,
+    )
+    .execute(executor)
+    .instrument(tracing::info_span!("Insert compat access token"))
+    .await
+    .context("could not insert compat access token")?;
 
-        Ok(CompatAccessToken {
-            data: res.id,
-            token,
-            created_at: res.created_at,
-            expires_at: Some(res.created_at + expires_after),
-        })
-    } else {
-        let res = sqlx::query_as!(
-            IdAndCreationTime,
-            r#"
-                INSERT INTO compat_access_tokens (compat_session_id, token)
-                VALUES ($1, $2)
-                RETURNING id, created_at
-            "#,
-            session.data,
-            token,
-        )
-        .fetch_one(executor)
-        .instrument(tracing::info_span!("Insert compat access token"))
-        .await
-        .context("could not insert compat access token")?;
-
-        Ok(CompatAccessToken {
-            data: res.id,
-            token,
-            created_at: res.created_at,
-            expires_at: None,
-        })
-    }
+    Ok(CompatAccessToken {
+        data: id,
+        token,
+        created_at,
+        expires_at,
+    })
 }
 
 pub async fn expire_compat_access_token(
     executor: impl PgExecutor<'_>,
     access_token: CompatAccessToken<PostgresqlBackend>,
 ) -> anyhow::Result<()> {
+    let expires_at = Utc::now();
     let res = sqlx::query!(
         r#"
             UPDATE compat_access_tokens
-            SET expires_at = NOW()
-            WHERE id = $1
+            SET expires_at = $2
+            WHERE compat_access_token_id = $1
         "#,
-        access_token.data,
+        Uuid::from(access_token.data),
+        expires_at,
     )
     .execute(executor)
     .await
@@ -445,26 +439,30 @@ pub async fn add_compat_refresh_token(
     access_token: &CompatAccessToken<PostgresqlBackend>,
     token: String,
 ) -> Result<CompatRefreshToken<PostgresqlBackend>, anyhow::Error> {
-    let res = sqlx::query_as!(
-        IdAndCreationTime,
+    let created_at = Utc::now();
+    let id = Ulid::from_datetime(created_at.into());
+    sqlx::query!(
         r#"
-            INSERT INTO compat_refresh_tokens (compat_session_id, compat_access_token_id, token)
-            VALUES ($1, $2, $3)
-            RETURNING id, created_at
+            INSERT INTO compat_refresh_tokens
+                (compat_refresh_token_id, compat_session_id,
+                 compat_access_token_id, refresh_token, created_at)
+            VALUES ($1, $2, $3, $4, $5)
         "#,
-        session.data,
-        access_token.data,
+        Uuid::from(id),
+        Uuid::from(session.data),
+        Uuid::from(access_token.data),
         token,
+        created_at,
     )
-    .fetch_one(executor)
+    .execute(executor)
     .instrument(tracing::info_span!("Insert compat refresh token"))
     .await
     .context("could not insert compat refresh token")?;
 
     Ok(CompatRefreshToken {
-        data: res.id,
+        data: id,
         token,
-        created_at: res.created_at,
+        created_at,
     })
 }
 
@@ -473,16 +471,19 @@ pub async fn compat_logout(
     executor: impl PgExecutor<'_>,
     token: &str,
 ) -> Result<(), anyhow::Error> {
+    let finished_at = Utc::now();
+    // TODO: this does not check for token expiration
     let res = sqlx::query!(
         r#"
-            UPDATE compat_sessions
-            SET deleted_at = NOW()
-            FROM compat_access_tokens
-            WHERE compat_access_tokens.token = $1
-              AND compat_sessions.id = compat_access_tokens.id 
-              AND compat_sessions.deleted_at IS NULL
+            UPDATE compat_sessions cs
+            SET finished_at = $2
+            FROM compat_access_tokens ca
+            WHERE ca.access_token = $1
+              AND ca.compat_session_id = cs.compat_session_id
+              AND cs.finished_at IS NULL
         "#,
         token,
+        finished_at,
     )
     .execute(executor)
     .await
@@ -495,19 +496,19 @@ pub async fn compat_logout(
     }
 }
 
-pub async fn replace_compat_refresh_token(
+pub async fn consume_compat_refresh_token(
     executor: impl PgExecutor<'_>,
-    refresh_token: &CompatRefreshToken<PostgresqlBackend>,
-    next_refresh_token: &CompatRefreshToken<PostgresqlBackend>,
+    refresh_token: CompatRefreshToken<PostgresqlBackend>,
 ) -> anyhow::Result<()> {
+    let consumed_at = Utc::now();
     let res = sqlx::query!(
         r#"
             UPDATE compat_refresh_tokens
-            SET next_token_id = $2
-            WHERE id = $1
+            SET consumed_at = $2
+            WHERE compat_refresh_token_id = $1
         "#,
-        refresh_token.data,
-        next_refresh_token.data
+        Uuid::from(refresh_token.data),
+        consumed_at,
     )
     .execute(executor)
     .await
@@ -524,47 +525,50 @@ pub async fn replace_compat_refresh_token(
 
 pub async fn insert_compat_sso_login(
     executor: impl PgExecutor<'_>,
-    token: String,
+    login_token: String,
     redirect_uri: Url,
 ) -> anyhow::Result<CompatSsoLogin<PostgresqlBackend>> {
-    let res = sqlx::query_as!(
-        IdAndCreationTime,
+    let created_at = Utc::now();
+    let id = Ulid::from_datetime(created_at.into());
+    sqlx::query!(
         r#"
-        INSERT INTO compat_sso_logins (token, redirect_uri)
-        VALUES ($1, $2)
-        RETURNING id, created_at
+            INSERT INTO compat_sso_logins 
+                (compat_sso_login_id, login_token, redirect_uri, created_at)
+            VALUES ($1, $2, $3, $4)
         "#,
-        &token,
+        Uuid::from(id),
+        &login_token,
         redirect_uri.as_str(),
+        created_at,
     )
-    .fetch_one(executor)
+    .execute(executor)
     .instrument(tracing::info_span!("Insert compat SSO login"))
     .await
     .context("could not insert compat SSO login")?;
 
     Ok(CompatSsoLogin {
-        data: res.id,
-        token,
+        data: id,
+        login_token,
         redirect_uri,
-        created_at: res.created_at,
+        created_at,
         state: CompatSsoLoginState::Pending,
     })
 }
 
 struct CompatSsoLoginLookup {
-    compat_sso_login_id: i64,
+    compat_sso_login_id: Uuid,
     compat_sso_login_token: String,
     compat_sso_login_redirect_uri: String,
     compat_sso_login_created_at: DateTime<Utc>,
-    compat_sso_login_fullfilled_at: Option<DateTime<Utc>>,
+    compat_sso_login_fulfilled_at: Option<DateTime<Utc>>,
     compat_sso_login_exchanged_at: Option<DateTime<Utc>>,
-    compat_session_id: Option<i64>,
+    compat_session_id: Option<Uuid>,
     compat_session_created_at: Option<DateTime<Utc>>,
-    compat_session_deleted_at: Option<DateTime<Utc>>,
+    compat_session_finished_at: Option<DateTime<Utc>>,
     compat_session_device_id: Option<String>,
-    user_id: Option<i64>,
+    user_id: Option<Uuid>,
     user_username: Option<String>,
-    user_email_id: Option<i64>,
+    user_email_id: Option<Uuid>,
     user_email: Option<String>,
     user_email_created_at: Option<DateTime<Utc>>,
     user_email_confirmed_at: Option<DateTime<Utc>>,
@@ -584,7 +588,7 @@ impl TryFrom<CompatSsoLoginLookup> for CompatSsoLogin<PostgresqlBackend> {
             res.user_email_confirmed_at,
         ) {
             (Some(id), Some(email), Some(created_at), confirmed_at) => Some(UserEmail {
-                data: id,
+                data: id.into(),
                 email,
                 created_at,
                 confirmed_at,
@@ -594,12 +598,16 @@ impl TryFrom<CompatSsoLoginLookup> for CompatSsoLogin<PostgresqlBackend> {
         };
 
         let user = match (res.user_id, res.user_username, primary_email) {
-            (Some(id), Some(username), primary_email) => Some(User {
-                data: id,
-                username,
-                sub: format!("fake-sub-{}", id),
-                primary_email,
-            }),
+            (Some(id), Some(username), primary_email) => {
+                let id = Ulid::from(id);
+                Some(User {
+                    data: id,
+                    username,
+                    sub: id.to_string(),
+                    primary_email,
+                })
+            }
+
             (None, None, None) => None,
             _ => return Err(DatabaseInconsistencyError),
         };
@@ -608,17 +616,17 @@ impl TryFrom<CompatSsoLoginLookup> for CompatSsoLogin<PostgresqlBackend> {
             res.compat_session_id,
             res.compat_session_device_id,
             res.compat_session_created_at,
-            res.compat_session_deleted_at,
+            res.compat_session_finished_at,
             user,
         ) {
-            (Some(id), Some(device_id), Some(created_at), deleted_at, Some(user)) => {
+            (Some(id), Some(device_id), Some(created_at), finished_at, Some(user)) => {
                 let device = Device::try_from(device_id).map_err(|_| DatabaseInconsistencyError)?;
                 Some(CompatSession {
-                    data: id,
+                    data: id.into(),
                     user,
                     device,
                     created_at,
-                    deleted_at,
+                    finished_at,
                 })
             }
             (None, None, None, None, None) => None,
@@ -626,18 +634,18 @@ impl TryFrom<CompatSsoLoginLookup> for CompatSsoLogin<PostgresqlBackend> {
         };
 
         let state = match (
-            res.compat_sso_login_fullfilled_at,
+            res.compat_sso_login_fulfilled_at,
             res.compat_sso_login_exchanged_at,
             session,
         ) {
             (None, None, None) => CompatSsoLoginState::Pending,
-            (Some(fullfilled_at), None, Some(session)) => CompatSsoLoginState::Fullfilled {
-                fullfilled_at,
+            (Some(fulfilled_at), None, Some(session)) => CompatSsoLoginState::Fulfilled {
+                fulfilled_at,
                 session,
             },
-            (Some(fullfilled_at), Some(exchanged_at), Some(session)) => {
+            (Some(fulfilled_at), Some(exchanged_at), Some(session)) => {
                 CompatSsoLoginState::Exchanged {
-                    fullfilled_at,
+                    fulfilled_at,
                     exchanged_at,
                     session,
                 }
@@ -646,8 +654,8 @@ impl TryFrom<CompatSsoLoginLookup> for CompatSsoLogin<PostgresqlBackend> {
         };
 
         Ok(CompatSsoLogin {
-            data: res.compat_sso_login_id,
-            token: res.compat_sso_login_token,
+            data: res.compat_sso_login_id.into(),
+            login_token: res.compat_sso_login_token,
             redirect_uri,
             created_at: res.compat_sso_login_created_at,
             state,
@@ -673,38 +681,38 @@ impl CompatSsoLoginLookupError {
 #[tracing::instrument(skip(executor), err)]
 pub async fn get_compat_sso_login_by_id(
     executor: impl PgExecutor<'_>,
-    id: i64,
+    id: Ulid,
 ) -> Result<CompatSsoLogin<PostgresqlBackend>, CompatSsoLoginLookupError> {
     let res = sqlx::query_as!(
         CompatSsoLoginLookup,
         r#"
             SELECT
-                cl.id              AS "compat_sso_login_id",
-                cl.token           AS "compat_sso_login_token",
+                cl.compat_sso_login_id,
+                cl.login_token     AS "compat_sso_login_token",
                 cl.redirect_uri    AS "compat_sso_login_redirect_uri",
                 cl.created_at      AS "compat_sso_login_created_at",
-                cl.fullfilled_at   AS "compat_sso_login_fullfilled_at",
+                cl.fulfilled_at    AS "compat_sso_login_fulfilled_at",
                 cl.exchanged_at    AS "compat_sso_login_exchanged_at",
-                cs.id              AS "compat_session_id?",
+                cs.compat_session_id AS "compat_session_id?",
                 cs.created_at      AS "compat_session_created_at?",
-                cs.deleted_at      AS "compat_session_deleted_at?",
+                cs.finished_at     AS "compat_session_finished_at?",
                 cs.device_id       AS "compat_session_device_id?",
-                u.id               AS "user_id?",
+                u.user_id          AS "user_id?",
                 u.username         AS "user_username?",
-                ue.id              AS "user_email_id?",
+                ue.user_email_id   AS "user_email_id?",
                 ue.email           AS "user_email?",
                 ue.created_at      AS "user_email_created_at?",
                 ue.confirmed_at    AS "user_email_confirmed_at?"
             FROM compat_sso_logins cl
             LEFT JOIN compat_sessions cs
-              ON cs.id = cl.compat_session_id
+              USING (compat_session_id)
             LEFT JOIN users u
-              ON u.id = cs.user_id
+              USING (user_id)
             LEFT JOIN user_emails ue
-              ON ue.id = u.primary_email_id
-            WHERE cl.id = $1
+              ON ue.user_email_id = u.primary_user_email_id
+            WHERE cl.compat_sso_login_id = $1
         "#,
-        id,
+        Uuid::from(id),
     )
     .fetch_one(executor)
     .instrument(tracing::info_span!("Lookup compat SSO login"))
@@ -723,30 +731,30 @@ pub async fn get_compat_sso_login_by_token(
         CompatSsoLoginLookup,
         r#"
             SELECT
-                cl.id              AS "compat_sso_login_id",
-                cl.token           AS "compat_sso_login_token",
+                cl.compat_sso_login_id,
+                cl.login_token     AS "compat_sso_login_token",
                 cl.redirect_uri    AS "compat_sso_login_redirect_uri",
                 cl.created_at      AS "compat_sso_login_created_at",
-                cl.fullfilled_at   AS "compat_sso_login_fullfilled_at",
+                cl.fulfilled_at    AS "compat_sso_login_fulfilled_at",
                 cl.exchanged_at    AS "compat_sso_login_exchanged_at",
-                cs.id              AS "compat_session_id?",
+                cs.compat_session_id AS "compat_session_id?",
                 cs.created_at      AS "compat_session_created_at?",
-                cs.deleted_at      AS "compat_session_deleted_at?",
+                cs.finished_at     AS "compat_session_finished_at?",
                 cs.device_id       AS "compat_session_device_id?",
-                u.id               AS "user_id?",
+                u.user_id          AS "user_id?",
                 u.username         AS "user_username?",
-                ue.id              AS "user_email_id?",
+                ue.user_email_id   AS "user_email_id?",
                 ue.email           AS "user_email?",
                 ue.created_at      AS "user_email_created_at?",
                 ue.confirmed_at    AS "user_email_confirmed_at?"
             FROM compat_sso_logins cl
             LEFT JOIN compat_sessions cs
-              ON cs.id = cl.compat_session_id
+              USING (compat_session_id)
             LEFT JOIN users u
-              ON u.id = cs.user_id
+              USING (user_id)
             LEFT JOIN user_emails ue
-              ON ue.id = u.primary_email_id
-            WHERE cl.token = $1
+              ON ue.user_email_id = u.primary_user_email_id
+            WHERE cl.login_token = $1
         "#,
         token,
     )
@@ -769,49 +777,52 @@ pub async fn fullfill_compat_sso_login(
 
     let mut txn = conn.begin().await.context("could not start transaction")?;
 
-    let res = sqlx::query_as!(
-        IdAndCreationTime,
+    let created_at = Utc::now();
+    let id = Ulid::from_datetime(created_at.into());
+    sqlx::query!(
         r#"
-        INSERT INTO compat_sessions (user_id, device_id)
-            VALUES ($1, $2)
-            RETURNING id, created_at
+            INSERT INTO compat_sessions (compat_session_id, user_id, device_id, created_at)
+            VALUES ($1, $2, $3, $4)
         "#,
-        user.data,
+        Uuid::from(id),
+        Uuid::from(user.data),
         device.as_str(),
+        created_at,
     )
-    .fetch_one(&mut txn)
+    .execute(&mut txn)
     .instrument(tracing::info_span!("Insert compat session"))
     .await
     .context("could not insert compat session")?;
 
     let session = CompatSession {
-        data: res.id,
+        data: id,
         user,
         device,
-        created_at: res.created_at,
-        deleted_at: None,
+        created_at,
+        finished_at: None,
     };
 
-    let res = sqlx::query_scalar!(
+    let fulfilled_at = Utc::now();
+    sqlx::query!(
         r#"
             UPDATE compat_sso_logins
             SET
-                fullfilled_at = NOW(),
-                compat_session_id = $2
+                compat_session_id = $2,
+                fulfilled_at = $3
             WHERE
-                id = $1
-            RETURNING fullfilled_at AS "fullfilled_at!"
+                compat_sso_login_id = $1
         "#,
-        login.data,
-        session.data,
+        Uuid::from(login.data),
+        Uuid::from(session.data),
+        fulfilled_at,
     )
-    .fetch_one(&mut txn)
+    .execute(&mut txn)
     .instrument(tracing::info_span!("Update compat SSO login"))
     .await
     .context("could not update compat SSO login")?;
 
-    let state = CompatSsoLoginState::Fullfilled {
-        fullfilled_at: res,
+    let state = CompatSsoLoginState::Fulfilled {
+        fulfilled_at,
         session,
     };
 
@@ -826,33 +837,34 @@ pub async fn mark_compat_sso_login_as_exchanged(
     executor: impl PgExecutor<'_>,
     mut login: CompatSsoLogin<PostgresqlBackend>,
 ) -> anyhow::Result<CompatSsoLogin<PostgresqlBackend>> {
-    let (fullfilled_at, session) = match login.state {
-        CompatSsoLoginState::Fullfilled {
-            fullfilled_at,
+    let (fulfilled_at, session) = match login.state {
+        CompatSsoLoginState::Fulfilled {
+            fulfilled_at,
             session,
-        } => (fullfilled_at, session),
+        } => (fulfilled_at, session),
         _ => bail!("sso login in wrong state"),
     };
 
-    let res = sqlx::query_scalar!(
+    let exchanged_at = Utc::now();
+    sqlx::query!(
         r#"
             UPDATE compat_sso_logins
             SET
-                exchanged_at = NOW()
+                exchanged_at = $2
             WHERE
-                id = $1
-            RETURNING exchanged_at AS "exchanged_at!"
+                compat_sso_login_id = $1
         "#,
-        login.data,
+        Uuid::from(login.data),
+        exchanged_at,
     )
-    .fetch_one(executor)
+    .execute(executor)
     .instrument(tracing::info_span!("Update compat SSO login"))
     .await
     .context("could not update compat SSO login")?;
 
     let state = CompatSsoLoginState::Exchanged {
-        fullfilled_at,
-        exchanged_at: res,
+        fulfilled_at,
+        exchanged_at,
         session,
     };
     login.state = state;

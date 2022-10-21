@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Utc};
 use crc::{Crc, CRC_32_ISO_HDLC};
 use mas_iana::oauth::OAuthTokenTypeHint;
 use rand::{distributions::Alphanumeric, Rng};
@@ -24,9 +24,9 @@ use crate::traits::{StorageBackend, StorageBackendMarker};
 pub struct AccessToken<T: StorageBackend> {
     pub data: T::AccessTokenData,
     pub jti: String,
-    pub token: String,
-    pub expires_after: Duration,
+    pub access_token: String,
     pub created_at: DateTime<Utc>,
+    pub expires_at: DateTime<Utc>,
 }
 
 impl<S: StorageBackendMarker> From<AccessToken<S>> for AccessToken<()> {
@@ -34,23 +34,24 @@ impl<S: StorageBackendMarker> From<AccessToken<S>> for AccessToken<()> {
         AccessToken {
             data: (),
             jti: t.jti,
-            token: t.token,
-            expires_after: t.expires_after,
+            access_token: t.access_token,
+            expires_at: t.expires_at,
             created_at: t.created_at,
         }
     }
 }
 
 impl<T: StorageBackend> AccessToken<T> {
+    // XXX
     pub fn exp(&self) -> DateTime<Utc> {
-        self.created_at + self.expires_after
+        self.expires_at
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct RefreshToken<T: StorageBackend> {
     pub data: T::RefreshTokenData,
-    pub token: String,
+    pub refresh_token: String,
     pub created_at: DateTime<Utc>,
     pub access_token: Option<AccessToken<T>>,
 }
@@ -59,7 +60,7 @@ impl<S: StorageBackendMarker> From<RefreshToken<S>> for RefreshToken<()> {
     fn from(t: RefreshToken<S>) -> Self {
         RefreshToken {
             data: (),
-            token: t.token,
+            refresh_token: t.refresh_token,
             created_at: t.created_at,
             access_token: t.access_token.map(Into::into),
         }

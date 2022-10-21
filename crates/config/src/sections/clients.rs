@@ -21,6 +21,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 use thiserror::Error;
+use ulid::Ulid;
 use url::Url;
 
 use super::ConfigurationSection;
@@ -76,7 +77,8 @@ pub enum ClientAuthMethodConfig {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct ClientConfig {
     /// The client ID
-    pub client_id: String,
+    #[schemars(with = "String")]
+    pub client_id: Ulid,
 
     /// Authentication method used for this client
     #[serde(flatten)]
@@ -181,6 +183,8 @@ impl ConfigurationSection<'_> for ClientsConfig {
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use figment::Jail;
 
     use super::*;
@@ -192,24 +196,24 @@ mod tests {
                 "config.yaml",
                 r#"
                   clients:
-                    - client_id: public
+                    - client_id: 01GFWR28C4KNE04WG3HKXB7C9R
                       client_auth_method: none
                       redirect_uris:
                         - https://exemple.fr/callback
 
-                    - client_id: secret-basic
+                    - client_id: 01GFWR32NCQ12B8Z0J8CPXRRB6
                       client_auth_method: client_secret_basic
                       client_secret: hello
 
-                    - client_id: secret-post
+                    - client_id: 01GFWR3WHR93Y5HK389H28VHZ9
                       client_auth_method: client_secret_post
                       client_secret: hello
 
-                    - client_id: secret-jwk
+                    - client_id: 01GFWR43R2ZZ8HX9CVBNW9TJWG
                       client_auth_method: client_secret_jwt
                       client_secret: hello
 
-                    - client_id: jwks
+                    - client_id: 01GFWR4BNFDCC4QDG6AMSP1VRR
                       client_auth_method: private_key_jwt
                       jwks:
                         keys:
@@ -233,13 +237,19 @@ mod tests {
 
             assert_eq!(config.0.len(), 5);
 
-            assert_eq!(config.0[0].client_id, "public");
+            assert_eq!(
+                config.0[0].client_id,
+                Ulid::from_str("01GFWR28C4KNE04WG3HKXB7C9R").unwrap()
+            );
             assert_eq!(
                 config.0[0].redirect_uris,
                 vec!["https://exemple.fr/callback".parse().unwrap()]
             );
 
-            assert_eq!(config.0[1].client_id, "secret-basic");
+            assert_eq!(
+                config.0[1].client_id,
+                Ulid::from_str("01GFWR32NCQ12B8Z0J8CPXRRB6").unwrap()
+            );
             assert_eq!(config.0[1].redirect_uris, Vec::new());
 
             Ok(())

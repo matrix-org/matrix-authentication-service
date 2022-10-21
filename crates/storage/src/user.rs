@@ -22,20 +22,21 @@ use mas_data_model::{
     UserEmailVerificationState,
 };
 use password_hash::{PasswordHash, PasswordHasher, SaltString};
-use rand::rngs::OsRng;
-use sqlx::{postgres::types::PgInterval, Acquire, PgExecutor, Postgres, Transaction};
+use rand::thread_rng;
+use sqlx::{Acquire, PgExecutor, Postgres, Transaction};
 use thiserror::Error;
 use tokio::task;
 use tracing::{info_span, Instrument};
+use ulid::Ulid;
+use uuid::Uuid;
 
 use super::{DatabaseInconsistencyError, PostgresqlBackend};
-use crate::IdAndCreationTime;
 
 #[derive(Debug, Clone)]
 struct UserLookup {
-    user_id: i64,
+    user_id: Uuid,
     user_username: String,
-    user_email_id: Option<i64>,
+    user_email_id: Option<Uuid>,
     user_email: Option<String>,
     user_email_created_at: Option<DateTime<Utc>>,
     user_email_confirmed_at: Option<DateTime<Utc>>,
@@ -114,13 +115,13 @@ impl ActiveSessionLookupError {
 }
 
 struct SessionLookup {
-    id: i64,
-    user_id: i64,
+    user_session_id: Uuid,
+    user_id: Uuid,
     username: String,
     created_at: DateTime<Utc>,
-    last_authentication_id: Option<i64>,
+    last_authentication_id: Option<Uuid>,
     last_authd_at: Option<DateTime<Utc>>,
-    user_email_id: Option<i64>,
+    user_email_id: Option<Uuid>,
     user_email: Option<String>,
     user_email_created_at: Option<DateTime<Utc>>,
     user_email_confirmed_at: Option<DateTime<Utc>>,
@@ -137,7 +138,7 @@ impl TryInto<BrowserSession<PostgresqlBackend>> for SessionLookup {
             self.user_email_confirmed_at,
         ) {
             (Some(id), Some(email), Some(created_at), confirmed_at) => Some(UserEmail {
-                data: id,
+                data: id.into(),
                 email,
                 created_at,
                 confirmed_at,
@@ -146,16 +147,17 @@ impl TryInto<BrowserSession<PostgresqlBackend>> for SessionLookup {
             _ => return Err(DatabaseInconsistencyError),
         };
 
+        let id = Ulid::from(self.user_id);
         let user = User {
-            data: self.user_id,
+            data: id,
             username: self.username,
-            sub: format!("fake-sub-{}", self.user_id),
+            sub: id.to_string(),
             primary_email,
         };
 
         let last_authentication = match (self.last_authentication_id, self.last_authd_at) {
             (Some(id), Some(created_at)) => Some(Authentication {
-                data: id,
+                data: id.into(),
                 created_at,
             }),
             (None, None) => None,
@@ -163,7 +165,7 @@ impl TryInto<BrowserSession<PostgresqlBackend>> for SessionLookup {
         };
 
         Ok(BrowserSession {
-            data: self.id,
+            data: self.user_session_id.into(),
             user,
             created_at: self.created_at,
             last_authentication,
@@ -171,37 +173,37 @@ impl TryInto<BrowserSession<PostgresqlBackend>> for SessionLookup {
     }
 }
 
-#[tracing::instrument(skip_all, fields(session.id = id))]
+#[tracing::instrument(skip_all, fields(session.id = %id))]
 pub async fn lookup_active_session(
     executor: impl PgExecutor<'_>,
-    id: i64,
+    id: Ulid,
 ) -> Result<BrowserSession<PostgresqlBackend>, ActiveSessionLookupError> {
     let res = sqlx::query_as!(
         SessionLookup,
         r#"
             SELECT
-                s.id,
-                u.id AS user_id,
+                s.user_session_id,
+                u.user_id,
                 u.username,
                 s.created_at,
-                a.id               AS "last_authentication_id?",
-                a.created_at       AS "last_authd_at?",
-                ue.id              AS "user_email_id?",
+                a.user_session_authentication_id AS "last_authentication_id?",
+                a.created_at                     AS "last_authd_at?",
+                ue.user_email_id   AS "user_email_id?",
                 ue.email           AS "user_email?",
                 ue.created_at      AS "user_email_created_at?",
                 ue.confirmed_at    AS "user_email_confirmed_at?"
             FROM user_sessions s
             INNER JOIN users u 
-                ON s.user_id = u.id
+                USING (user_id)
             LEFT JOIN user_session_authentications a
-                ON a.session_id = s.id
+                USING (user_session_id)
             LEFT JOIN user_emails ue
-              ON ue.id = u.primary_email_id
-            WHERE s.id = $1 AND s.active
+              ON ue.user_email_id = u.primary_user_email_id
+            WHERE s.user_session_id = $1 AND s.finished_at IS NULL
             ORDER BY a.created_at DESC
             LIMIT 1
         "#,
-        id,
+        Uuid::from(id),
     )
     .fetch_one(executor)
     .await?
@@ -210,35 +212,37 @@ pub async fn lookup_active_session(
     Ok(res)
 }
 
-#[tracing::instrument(skip_all, fields(user.id = user.data))]
+#[tracing::instrument(skip_all, fields(user.id = %user.data))]
 pub async fn start_session(
     executor: impl PgExecutor<'_>,
     user: User<PostgresqlBackend>,
 ) -> anyhow::Result<BrowserSession<PostgresqlBackend>> {
-    let res = sqlx::query_as!(
-        IdAndCreationTime,
+    let created_at = Utc::now();
+    let id = Ulid::from_datetime(created_at.into());
+    sqlx::query!(
         r#"
-            INSERT INTO user_sessions (user_id)
-            VALUES ($1)
-            RETURNING id, created_at
+            INSERT INTO user_sessions (user_session_id, user_id, created_at)
+            VALUES ($1, $2, $3)
         "#,
-        user.data,
+        Uuid::from(id),
+        Uuid::from(user.data),
+        created_at,
     )
-    .fetch_one(executor)
+    .execute(executor)
     .await
     .context("could not create session")?;
 
     let session = BrowserSession {
-        data: res.id,
+        data: id,
         user,
-        created_at: res.created_at,
+        created_at,
         last_authentication: None,
     };
 
     Ok(session)
 }
 
-#[tracing::instrument(skip_all, fields(user.id = user.data))]
+#[tracing::instrument(skip_all, fields(user.id = %user.data))]
 pub async fn count_active_sessions(
     executor: impl PgExecutor<'_>,
     user: &User<PostgresqlBackend>,
@@ -247,9 +251,9 @@ pub async fn count_active_sessions(
         r#"
             SELECT COUNT(*) as "count!"
             FROM user_sessions s
-            WHERE s.user_id = $1 AND s.active
+            WHERE s.user_id = $1 AND s.finished_at IS NULL
         "#,
-        user.data,
+        Uuid::from(user.data),
     )
     .fetch_one(executor)
     .await?
@@ -273,7 +277,7 @@ pub enum AuthenticationError {
     Internal(#[from] tokio::task::JoinError),
 }
 
-#[tracing::instrument(skip_all, fields(session.id = session.data, user.id = session.user.data))]
+#[tracing::instrument(skip_all, fields(session.id = %session.data, user.id = %session.user.data))]
 pub async fn authenticate_session(
     txn: &mut Transaction<'_, Postgres>,
     session: &mut BrowserSession<PostgresqlBackend>,
@@ -288,7 +292,7 @@ pub async fn authenticate_session(
             ORDER BY up.created_at DESC
             LIMIT 1
         "#,
-        session.user.data,
+        Uuid::from(session.user.data),
     )
     .fetch_one(txn.borrow_mut())
     .instrument(tracing::info_span!("Lookup hashed password"))
@@ -309,44 +313,50 @@ pub async fn authenticate_session(
     .await??;
 
     // That went well, let's insert the auth info
-    let res = sqlx::query_as!(
-        IdAndCreationTime,
+    let created_at = Utc::now();
+    let id = Ulid::from_datetime(created_at.into());
+    sqlx::query!(
         r#"
-            INSERT INTO user_session_authentications (session_id)
-            VALUES ($1)
-            RETURNING id, created_at
+            INSERT INTO user_session_authentications 
+                (user_session_authentication_id, user_session_id, created_at)
+            VALUES ($1, $2, $3)
         "#,
-        session.data,
+        Uuid::from(id),
+        Uuid::from(session.data),
+        created_at,
     )
-    .fetch_one(txn.borrow_mut())
+    .execute(txn.borrow_mut())
     .instrument(tracing::info_span!("Save authentication"))
     .await
     .map_err(AuthenticationError::Save)?;
 
     session.last_authentication = Some(Authentication {
-        data: res.id,
-        created_at: res.created_at,
+        data: id,
+        created_at,
     });
 
     Ok(())
 }
 
-#[tracing::instrument(skip(txn, phf, password))]
+#[tracing::instrument(skip(txn, phf, password), err)]
 pub async fn register_user(
     txn: &mut Transaction<'_, Postgres>,
     phf: impl PasswordHasher,
     username: &str,
     password: &str,
 ) -> anyhow::Result<User<PostgresqlBackend>> {
-    let id: i64 = sqlx::query_scalar!(
+    let created_at = Utc::now();
+    let id = Ulid::from_datetime(created_at.into());
+    sqlx::query!(
         r#"
-            INSERT INTO users (username)
-            VALUES ($1)
-            RETURNING id
+            INSERT INTO users (user_id, username, created_at)
+            VALUES ($1, $2, $3)
         "#,
+        Uuid::from(id),
         username,
+        created_at,
     )
-    .fetch_one(txn.borrow_mut())
+    .execute(txn.borrow_mut())
     .instrument(info_span!("Register user"))
     .await
     .context("could not insert user")?;
@@ -354,7 +364,7 @@ pub async fn register_user(
     let user = User {
         data: id,
         username: username.to_owned(),
-        sub: format!("fake-sub-{}", id),
+        sub: id.to_string(),
         primary_email: None,
     };
 
@@ -363,23 +373,28 @@ pub async fn register_user(
     Ok(user)
 }
 
-#[tracing::instrument(skip_all, fields(user.id = user.data))]
+#[tracing::instrument(skip_all, fields(user.id = %user.data))]
 pub async fn set_password(
     executor: impl PgExecutor<'_>,
     phf: impl PasswordHasher,
     user: &User<PostgresqlBackend>,
     password: &str,
 ) -> anyhow::Result<()> {
-    let salt = SaltString::generate(&mut OsRng);
+    let created_at = Utc::now();
+    let id = Ulid::from_datetime(created_at.into());
+
+    let salt = SaltString::generate(thread_rng());
     let hashed_password = PasswordHash::generate(phf, password, salt.as_str())?;
 
     sqlx::query_scalar!(
         r#"
-            INSERT INTO user_passwords (user_id, hashed_password)
-            VALUES ($1, $2)
+            INSERT INTO user_passwords (user_password_id, user_id, hashed_password, created_at)
+            VALUES ($1, $2, $3, $4)
         "#,
-        user.data,
+        Uuid::from(id),
+        Uuid::from(user.data),
         hashed_password.to_string(),
+        created_at,
     )
     .execute(executor)
     .instrument(info_span!("Save user credentials"))
@@ -389,14 +404,20 @@ pub async fn set_password(
     Ok(())
 }
 
-#[tracing::instrument(skip_all, fields(session.id = session.data))]
+#[tracing::instrument(skip_all, fields(session.id = %session.data))]
 pub async fn end_session(
     executor: impl PgExecutor<'_>,
     session: &BrowserSession<PostgresqlBackend>,
 ) -> anyhow::Result<()> {
+    let now = Utc::now();
     let res = sqlx::query!(
-        "UPDATE user_sessions SET active = FALSE WHERE id = $1",
-        session.data,
+        r#"
+            UPDATE user_sessions
+            SET finished_at = $1
+            WHERE user_session_id = $2
+        "#,
+        now,
+        Uuid::from(session.data),
     )
     .execute(executor)
     .instrument(info_span!("End session"))
@@ -433,16 +454,16 @@ pub async fn lookup_user_by_username(
         UserLookup,
         r#"
             SELECT 
-                u.id            AS user_id, 
-                u.username      AS user_username,
-                ue.id           AS "user_email_id?",
-                ue.email        AS "user_email?",
-                ue.created_at   AS "user_email_created_at?",
-                ue.confirmed_at AS "user_email_confirmed_at?"
+                u.user_id,
+                u.username       AS user_username,
+                ue.user_email_id AS "user_email_id?",
+                ue.email         AS "user_email?",
+                ue.created_at    AS "user_email_created_at?",
+                ue.confirmed_at  AS "user_email_confirmed_at?"
             FROM users u
 
             LEFT JOIN user_emails ue
-              ON ue.id = u.primary_email_id
+              USING (user_id)
 
             WHERE u.username = $1
         "#,
@@ -459,7 +480,7 @@ pub async fn lookup_user_by_username(
         res.user_email_confirmed_at,
     ) {
         (Some(id), Some(email), Some(created_at), confirmed_at) => Some(UserEmail {
-            data: id,
+            data: id.into(),
             email,
             created_at,
             confirmed_at,
@@ -468,10 +489,11 @@ pub async fn lookup_user_by_username(
         _ => return Err(DatabaseInconsistencyError.into()),
     };
 
+    let id = Ulid::from(res.user_id);
     Ok(User {
-        data: res.user_id,
+        data: id,
         username: res.user_username,
-        sub: format!("fake-sub-{}", res.user_id),
+        sub: id.to_string(),
         primary_email,
     })
 }
@@ -494,7 +516,7 @@ pub async fn username_exists(
 
 #[derive(Debug, Clone)]
 struct UserEmailLookup {
-    user_email_id: i64,
+    user_email_id: Uuid,
     user_email: String,
     user_email_created_at: DateTime<Utc>,
     user_email_confirmed_at: Option<DateTime<Utc>>,
@@ -503,7 +525,7 @@ struct UserEmailLookup {
 impl From<UserEmailLookup> for UserEmail<PostgresqlBackend> {
     fn from(e: UserEmailLookup) -> UserEmail<PostgresqlBackend> {
         UserEmail {
-            data: e.user_email_id,
+            data: e.user_email_id.into(),
             email: e.user_email,
             created_at: e.user_email_created_at,
             confirmed_at: e.user_email_confirmed_at,
@@ -511,7 +533,7 @@ impl From<UserEmailLookup> for UserEmail<PostgresqlBackend> {
     }
 }
 
-#[tracing::instrument(skip_all, fields(user.id = user.data, %user.username))]
+#[tracing::instrument(skip_all, fields(user.id = %user.data, %user.username))]
 pub async fn get_user_emails(
     executor: impl PgExecutor<'_>,
     user: &User<PostgresqlBackend>,
@@ -520,7 +542,7 @@ pub async fn get_user_emails(
         UserEmailLookup,
         r#"
             SELECT 
-                ue.id           AS "user_email_id",
+                ue.user_email_id,
                 ue.email        AS "user_email",
                 ue.created_at   AS "user_email_created_at",
                 ue.confirmed_at AS "user_email_confirmed_at"
@@ -530,7 +552,7 @@ pub async fn get_user_emails(
 
             ORDER BY ue.email ASC
         "#,
-        user.data,
+        Uuid::from(user.data),
     )
     .fetch_all(executor)
     .instrument(info_span!("Fetch user emails"))
@@ -539,27 +561,27 @@ pub async fn get_user_emails(
     Ok(res.into_iter().map(Into::into).collect())
 }
 
-#[tracing::instrument(skip_all, fields(user.id = user.data, %user.username, email.id = id))]
+#[tracing::instrument(skip_all, fields(user.id = %user.data, %user.username, email.id = %id))]
 pub async fn get_user_email(
     executor: impl PgExecutor<'_>,
     user: &User<PostgresqlBackend>,
-    id: i64,
+    id: Ulid,
 ) -> Result<UserEmail<PostgresqlBackend>, anyhow::Error> {
     let res = sqlx::query_as!(
         UserEmailLookup,
         r#"
             SELECT 
-                ue.id           AS "user_email_id",
+                ue.user_email_id,
                 ue.email        AS "user_email",
                 ue.created_at   AS "user_email_created_at",
                 ue.confirmed_at AS "user_email_confirmed_at"
             FROM user_emails ue
 
             WHERE ue.user_id = $1
-              AND ue.id = $2
+              AND ue.user_email_id = $2
         "#,
-        user.data,
-        id,
+        Uuid::from(user.data),
+        Uuid::from(id),
     )
     .fetch_one(executor)
     .instrument(info_span!("Fetch user emails"))
@@ -568,32 +590,35 @@ pub async fn get_user_email(
     Ok(res.into())
 }
 
-#[tracing::instrument(skip(executor, user), fields(user.id = user.data, %user.username))]
+#[tracing::instrument(skip(executor, user), fields(user.id = %user.data, %user.username))]
 pub async fn add_user_email(
     executor: impl PgExecutor<'_>,
     user: &User<PostgresqlBackend>,
-    email: &str,
+    email: String,
 ) -> anyhow::Result<UserEmail<PostgresqlBackend>> {
-    let res = sqlx::query_as!(
-        UserEmailLookup,
+    let created_at = Utc::now();
+    let id = Ulid::from_datetime(created_at.into());
+    sqlx::query!(
         r#"
-            INSERT INTO user_emails (user_id, email)
-            VALUES ($1, $2)
-            RETURNING 
-                id           AS user_email_id,
-                email        AS user_email,
-                created_at   AS user_email_created_at,
-                confirmed_at AS user_email_confirmed_at
+            INSERT INTO user_emails (user_email_id, user_id, email, created_at)
+            VALUES ($1, $2, $3, $4)
         "#,
-        user.data,
-        email,
+        Uuid::from(id),
+        Uuid::from(user.data),
+        &email,
+        created_at,
     )
-    .fetch_one(executor)
+    .execute(executor)
     .instrument(info_span!("Add user email"))
     .await
     .context("could not insert user email")?;
 
-    Ok(res.into())
+    Ok(UserEmail {
+        data: id,
+        email,
+        created_at,
+        confirmed_at: None,
+    })
 }
 
 #[tracing::instrument(skip(executor))]
@@ -604,12 +629,12 @@ pub async fn set_user_email_as_primary(
     sqlx::query!(
         r#"
             UPDATE users
-            SET primary_email_id = user_emails.id 
+            SET primary_user_email_id = user_emails.user_email_id
             FROM user_emails
-            WHERE user_emails.id = $1
-              AND users.id       = user_emails.user_id
+            WHERE user_emails.user_email_id = $1
+              AND users.user_id = user_emails.user_id
         "#,
-        email.data,
+        Uuid::from(email.data),
     )
     .execute(executor)
     .instrument(info_span!("Add user email"))
@@ -627,9 +652,9 @@ pub async fn remove_user_email(
     sqlx::query!(
         r#"
             DELETE FROM user_emails
-            WHERE user_emails.id = $1
+            WHERE user_emails.user_email_id = $1
         "#,
-        email.data,
+        Uuid::from(email.data),
     )
     .execute(executor)
     .instrument(info_span!("Remove user email"))
@@ -649,7 +674,7 @@ pub async fn lookup_user_email(
         UserEmailLookup,
         r#"
             SELECT 
-                ue.id           AS "user_email_id",
+                ue.user_email_id,
                 ue.email        AS "user_email",
                 ue.created_at   AS "user_email_created_at",
                 ue.confirmed_at AS "user_email_confirmed_at"
@@ -658,7 +683,7 @@ pub async fn lookup_user_email(
             WHERE ue.user_id = $1
               AND ue.email = $2
         "#,
-        user.data,
+        Uuid::from(user.data),
         email,
     )
     .fetch_one(executor)
@@ -673,23 +698,23 @@ pub async fn lookup_user_email(
 pub async fn lookup_user_email_by_id(
     executor: impl PgExecutor<'_>,
     user: &User<PostgresqlBackend>,
-    id: i64,
+    id: Ulid,
 ) -> anyhow::Result<UserEmail<PostgresqlBackend>> {
     let res = sqlx::query_as!(
         UserEmailLookup,
         r#"
             SELECT 
-                ue.id           AS "user_email_id",
+                ue.user_email_id,
                 ue.email        AS "user_email",
                 ue.created_at   AS "user_email_created_at",
                 ue.confirmed_at AS "user_email_confirmed_at"
             FROM user_emails ue
 
             WHERE ue.user_id = $1
-              AND ue.id = $2
+              AND ue.user_email_id = $2
         "#,
-        user.data,
-        id,
+        Uuid::from(user.data),
+        Uuid::from(id),
     )
     .fetch_one(executor)
     .instrument(info_span!("Lookup user email"))
@@ -704,31 +729,32 @@ pub async fn mark_user_email_as_verified(
     executor: impl PgExecutor<'_>,
     mut email: UserEmail<PostgresqlBackend>,
 ) -> anyhow::Result<UserEmail<PostgresqlBackend>> {
-    let confirmed_at = sqlx::query_scalar!(
+    let confirmed_at = Utc::now();
+    sqlx::query!(
         r#"
             UPDATE user_emails
-            SET confirmed_at = NOW()
-            WHERE id = $1
-            RETURNING confirmed_at
+            SET confirmed_at = $2
+            WHERE user_email_id = $1
         "#,
-        email.data,
+        Uuid::from(email.data),
+        confirmed_at,
     )
-    .fetch_one(executor)
+    .execute(executor)
     .instrument(info_span!("Confirm user email"))
     .await
     .context("could not update user email")?;
 
-    email.confirmed_at = confirmed_at;
+    email.confirmed_at = Some(confirmed_at);
 
     Ok(email)
 }
 
-struct UserEmailVerificationLookup {
-    verification_id: i64,
-    verification_code: String,
-    verification_expired: bool,
-    verification_created_at: DateTime<Utc>,
-    verification_consumed_at: Option<DateTime<Utc>>,
+struct UserEmailConfirmationCodeLookup {
+    user_email_confirmation_code_id: Uuid,
+    code: String,
+    created_at: DateTime<Utc>,
+    expires_at: DateTime<Utc>,
+    consumed_at: Option<DateTime<Utc>>,
 }
 
 #[tracing::instrument(skip(executor))]
@@ -736,49 +762,46 @@ pub async fn lookup_user_email_verification_code(
     executor: impl PgExecutor<'_>,
     email: UserEmail<PostgresqlBackend>,
     code: &str,
-    max_age: chrono::Duration,
 ) -> anyhow::Result<UserEmailVerification<PostgresqlBackend>> {
-    // For some reason, we need to convert the type first
-    let max_age = PgInterval::try_from(max_age)
-        // For some reason, this error type does not let me to just bubble up the error here
-        .map_err(|e| anyhow::anyhow!("failed to encode duration: {}", e))?;
+    let now = Utc::now();
 
     let res = sqlx::query_as!(
-        UserEmailVerificationLookup,
+        UserEmailConfirmationCodeLookup,
         r#"
             SELECT
-                ev.id              AS "verification_id",
-                ev.code            AS "verification_code",
-                (ev.created_at + $3 < NOW()) AS "verification_expired!",
-                ev.created_at      AS "verification_created_at",
-                ev.consumed_at     AS "verification_consumed_at"
-            FROM user_email_verifications ev
-            WHERE ev.code = $1
-              AND ev.user_email_id = $2
+                ec.user_email_confirmation_code_id,
+                ec.code,
+                ec.created_at,
+                ec.expires_at,
+                ec.consumed_at
+            FROM user_email_confirmation_codes ec
+            WHERE ec.code = $1
+              AND ec.user_email_id = $2
         "#,
         code,
-        email.data,
-        max_age,
+        Uuid::from(email.data),
     )
     .fetch_one(executor)
     .instrument(info_span!("Lookup user email verification"))
     .await
     .context("could not lookup user email verification")?;
 
-    let state = if res.verification_expired {
-        UserEmailVerificationState::Expired
-    } else if let Some(when) = res.verification_consumed_at {
+    let state = if let Some(when) = res.consumed_at {
         UserEmailVerificationState::AlreadyUsed { when }
+    } else if res.expires_at < now {
+        UserEmailVerificationState::Expired {
+            when: res.expires_at,
+        }
     } else {
         UserEmailVerificationState::Valid
     };
 
     Ok(UserEmailVerification {
-        data: res.verification_id,
-        code: res.verification_code,
+        data: res.user_email_confirmation_code_id.into(),
+        code: res.code,
         email,
         state,
-        created_at: res.verification_created_at,
+        created_at: res.created_at,
     })
 }
 
@@ -791,16 +814,18 @@ pub async fn consume_email_verification(
         bail!("user email verification in wrong state");
     }
 
-    let consumed_at = sqlx::query_scalar!(
+    let consumed_at = Utc::now();
+
+    sqlx::query!(
         r#"
-            UPDATE user_email_verifications
-            SET consumed_at = NOW()
-            WHERE id = $1
-            RETURNING consumed_at AS "consumed_at!"
+            UPDATE user_email_confirmation_codes
+            SET consumed_at = $2
+            WHERE user_email_confirmation_code_id = $1
         "#,
-        verification.data,
+        Uuid::from(verification.data),
+        consumed_at
     )
-    .fetch_one(executor)
+    .execute(executor)
     .instrument(info_span!("Consume user email verification"))
     .await
     .context("could not update user email verification")?;
@@ -810,32 +835,39 @@ pub async fn consume_email_verification(
     Ok(verification)
 }
 
-#[tracing::instrument(skip(executor, email), fields(email.id = email.data, %email.email))]
+#[tracing::instrument(skip(executor, email), fields(email.id = %email.data, %email.email))]
 pub async fn add_user_email_verification_code(
     executor: impl PgExecutor<'_>,
     email: UserEmail<PostgresqlBackend>,
+    max_age: chrono::Duration,
     code: String,
 ) -> anyhow::Result<UserEmailVerification<PostgresqlBackend>> {
-    let res = sqlx::query_as!(
-        IdAndCreationTime,
+    let created_at = Utc::now();
+    let id = Ulid::from_datetime(created_at.into());
+    let expires_at = created_at + max_age;
+
+    sqlx::query!(
         r#"
-            INSERT INTO user_email_verifications (user_email_id, code)
-            VALUES ($1, $2)
-            RETURNING id, created_at
+            INSERT INTO user_email_confirmation_codes 
+              (user_email_confirmation_code_id, user_email_id, code, created_at, expires_at)
+            VALUES ($1, $2, $3, $4, $5)
         "#,
-        email.data,
+        Uuid::from(id),
+        Uuid::from(email.data),
         code,
+        created_at,
+        expires_at,
     )
-    .fetch_one(executor)
+    .execute(executor)
     .instrument(info_span!("Add user email verification code"))
     .await
     .context("could not insert user email verification code")?;
 
     let verification = UserEmailVerification {
-        data: res.id,
+        data: id,
         email,
         code,
-        created_at: res.created_at,
+        created_at,
         state: UserEmailVerificationState::Valid,
     };
 

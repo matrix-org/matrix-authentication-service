@@ -17,7 +17,6 @@ use axum::{
     response::{Html, IntoResponse, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
-use chrono::Duration;
 use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     FancyError, SessionInfoExt,
@@ -31,6 +30,7 @@ use mas_storage::user::{
 use mas_templates::{EmailVerificationPageContext, TemplateContext, Templates};
 use serde::Deserialize;
 use sqlx::PgPool;
+use ulid::Ulid;
 
 use crate::views::shared::OptionalPostAuthAction;
 
@@ -43,7 +43,7 @@ pub(crate) async fn get(
     State(templates): State<Templates>,
     State(pool): State<PgPool>,
     Query(query): Query<OptionalPostAuthAction>,
-    Path(id): Path<i64>,
+    Path(id): Path<Ulid>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
     let mut conn = pool.acquire().await?;
@@ -81,7 +81,7 @@ pub(crate) async fn post(
     State(pool): State<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Query(query): Query<OptionalPostAuthAction>,
-    Path(id): Path<i64>,
+    Path(id): Path<Ulid>,
     Form(form): Form<ProtectedForm<CodeForm>>,
 ) -> Result<Response, FancyError> {
     let mut txn = pool.begin().await?;
@@ -105,9 +105,7 @@ pub(crate) async fn post(
     }
 
     // TODO: make those 8 hours configurable
-    let verification =
-        lookup_user_email_verification_code(&mut txn, email, &form.code, Duration::hours(8))
-            .await?;
+    let verification = lookup_user_email_verification_code(&mut txn, email, &form.code).await?;
 
     // TODO: display nice errors if the code was already consumed or expired
     let verification = consume_email_verification(&mut txn, verification).await?;

@@ -12,8 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use chrono::Utc;
 use mas_data_model::Session;
 use sqlx::PgExecutor;
+use uuid::Uuid;
 
 use crate::PostgresqlBackend;
 
@@ -27,13 +29,15 @@ pub async fn end_oauth_session(
     executor: impl PgExecutor<'_>,
     session: Session<PostgresqlBackend>,
 ) -> anyhow::Result<()> {
+    let finished_at = Utc::now();
     let res = sqlx::query!(
         r#"
             UPDATE oauth2_sessions
-            SET ended_at = NOW()
-            WHERE id = $1
+            SET finished_at = $2
+            WHERE oauth2_session_id = $1
         "#,
-        session.data,
+        Uuid::from(session.data),
+        finished_at,
     )
     .execute(executor)
     .await?;

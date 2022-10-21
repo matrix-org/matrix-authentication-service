@@ -23,6 +23,7 @@ use mas_data_model::{
 };
 use mas_router::PostAuthAction;
 use serde::{ser::SerializeStruct, Deserialize, Serialize};
+use ulid::Ulid;
 use url::Url;
 
 use crate::{FormField, FormState};
@@ -517,11 +518,11 @@ impl TemplateContext for CompatSsoContext {
             login: CompatSsoLogin {
                 data: (),
                 redirect_uri: Url::parse("https://app.element.io/").unwrap(),
-                token: "abcdefghijklmnopqrstuvwxyz012345".into(),
+                login_token: "abcdefghijklmnopqrstuvwxyz012345".into(),
                 created_at: Utc::now(),
                 state: CompatSsoLoginState::Pending,
             },
-            action: PostAuthAction::ContinueCompatSsoLogin { data: 1 },
+            action: PostAuthAction::ContinueCompatSsoLogin { data: Ulid::new() },
         }]
     }
 }

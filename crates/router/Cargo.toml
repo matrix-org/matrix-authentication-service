@@ -11,3 +11,4 @@ serde = { version = "1.0.147", features = ["derive"] }
 serde_urlencoded = "0.7.1"
 serde_with = "2.0.1"
 url = "2.3.1"
+ulid = "1.0.0"

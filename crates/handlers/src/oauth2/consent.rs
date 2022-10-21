@@ -36,6 +36,7 @@ use mas_storage::oauth2::{
 use mas_templates::{ConsentContext, PolicyViolationContext, TemplateContext, Templates};
 use sqlx::PgPool;
 use thiserror::Error;
+use ulid::Ulid;
 
 #[derive(Debug, Error)]
 pub enum RouteError {
@@ -54,7 +55,7 @@ pub(crate) async fn get(
     State(templates): State<Templates>,
     State(pool): State<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
-    Path(grant_id): Path<i64>,
+    Path(grant_id): Path<Ulid>,
 ) -> Result<Response, RouteError> {
     let mut conn = pool
         .acquire()
@@ -115,7 +116,7 @@ pub(crate) async fn post(
     State(policy_factory): State<Arc<PolicyFactory>>,
     State(pool): State<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
-    Path(grant_id): Path<i64>,
+    Path(grant_id): Path<Ulid>,
     Form(form): Form<ProtectedForm<()>>,
 ) -> Result<Response, RouteError> {
     let mut txn = pool

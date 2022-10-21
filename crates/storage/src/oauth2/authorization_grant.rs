@@ -25,11 +25,21 @@ use mas_data_model::{
 use mas_iana::oauth::PkceCodeChallengeMethod;
 use oauth2_types::{requests::ResponseMode, scope::Scope};
 use sqlx::{PgConnection, PgExecutor};
+use ulid::Ulid;
 use url::Url;
+use uuid::Uuid;
 
 use super::client::lookup_client;
-use crate::{DatabaseInconsistencyError, IdAndCreationTime, PostgresqlBackend};
+use crate::{DatabaseInconsistencyError, PostgresqlBackend};
 
+#[tracing::instrument(
+    skip_all, 
+    fields(
+        client.id = %client.data,
+        grant.id,
+    ),
+    err(Debug),
+)]
 #[allow(clippy::too_many_arguments)]
 pub async fn new_authorization_grant(
     executor: impl PgExecutor<'_>,
@@ -40,7 +50,7 @@ pub async fn new_authorization_grant(
     state: Option<String>,
     nonce: Option<String>,
     max_age: Option<NonZeroU32>,
-    acr_values: Option<String>,
+    _acr_values: Option<String>,
     response_mode: ResponseMode,
     response_type_id_token: bool,
     requires_consent: bool,
@@ -53,26 +63,43 @@ pub async fn new_authorization_grant(
         .as_ref()
         .and_then(|c| c.pkce.as_ref())
         .map(|p| p.challenge_method.to_string());
+    // TODO: this conversion is a bit ugly
+    let max_age_i32 = max_age.map(|x| i32::try_from(u32::from(x)).unwrap_or(i32::MAX));
     let code_str = code.as_ref().map(|c| &c.code);
-    let res = sqlx::query_as!(
-        IdAndCreationTime,
+
+    let created_at = Utc::now();
+    let id = Ulid::from_datetime(created_at.into());
+    tracing::Span::current().record("grant.id", tracing::field::display(id));
+
+    sqlx::query!(
         r#"
-            INSERT INTO oauth2_authorization_grants
-                (oauth2_client_id, redirect_uri, scope, state, nonce, max_age,
-                 acr_values, response_mode, code_challenge, code_challenge_method,
-                 response_type_code, response_type_id_token, code, requires_consent)
+            INSERT INTO oauth2_authorization_grants (
+                 oauth2_authorization_grant_id,
+                 oauth2_client_id,
+                 redirect_uri,
+                 scope,
+                 state,
+                 nonce,
+                 max_age,
+                 response_mode,
+                 code_challenge,
+                 code_challenge_method,
+                 response_type_code,
+                 response_type_id_token,
+                 authorization_code,
+                 requires_consent,
+                 created_at
+            )
             VALUES
-                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-            RETURNING id, created_at
+                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
         "#,
-        &client.data,
+        Uuid::from(id),
+        Uuid::from(client.data),
         redirect_uri.to_string(),
         scope.to_string(),
         state,
         nonce,
-        // TODO: this conversion is a bit ugly
-        max_age.map(|x| i32::try_from(u32::from(x)).unwrap_or(i32::MAX)),
-        acr_values,
+        max_age_i32,
         response_mode.to_string(),
         code_challenge,
         code_challenge_method,
@@ -80,13 +107,14 @@ pub async fn new_authorization_grant(
         response_type_id_token,
         code_str,
         requires_consent,
+        created_at,
     )
-    .fetch_one(executor)
+    .execute(executor)
     .await
     .context("could not insert oauth2 authorization grant")?;
 
     Ok(AuthorizationGrant {
-        data: res.id,
+        data: id,
         stage: AuthorizationGrantStage::Pending,
         code,
         redirect_uri,
@@ -95,9 +123,8 @@ pub async fn new_authorization_grant(
         state,
         nonce,
         max_age,
-        acr_values,
         response_mode,
-        created_at: res.created_at,
+        created_at,
         response_type_id_token,
         requires_consent,
     })
@@ -105,33 +132,32 @@ pub async fn new_authorization_grant(
 
 #[allow(clippy::struct_excessive_bools)]
 struct GrantLookup {
-    grant_id: i64,
-    grant_created_at: DateTime<Utc>,
-    grant_cancelled_at: Option<DateTime<Utc>>,
-    grant_fulfilled_at: Option<DateTime<Utc>>,
-    grant_exchanged_at: Option<DateTime<Utc>>,
-    grant_scope: String,
-    grant_state: Option<String>,
-    grant_redirect_uri: String,
-    grant_response_mode: String,
-    grant_nonce: Option<String>,
-    grant_max_age: Option<i32>,
-    grant_acr_values: Option<String>,
-    grant_response_type_code: bool,
-    grant_response_type_id_token: bool,
-    grant_code: Option<String>,
-    grant_code_challenge: Option<String>,
-    grant_code_challenge_method: Option<String>,
-    grant_requires_consent: bool,
-    oauth2_client_id: i64,
-    session_id: Option<i64>,
-    user_session_id: Option<i64>,
+    oauth2_authorization_grant_id: Uuid,
+    oauth2_authorization_grant_created_at: DateTime<Utc>,
+    oauth2_authorization_grant_cancelled_at: Option<DateTime<Utc>>,
+    oauth2_authorization_grant_fulfilled_at: Option<DateTime<Utc>>,
+    oauth2_authorization_grant_exchanged_at: Option<DateTime<Utc>>,
+    oauth2_authorization_grant_scope: String,
+    oauth2_authorization_grant_state: Option<String>,
+    oauth2_authorization_grant_nonce: Option<String>,
+    oauth2_authorization_grant_redirect_uri: String,
+    oauth2_authorization_grant_response_mode: String,
+    oauth2_authorization_grant_max_age: Option<i32>,
+    oauth2_authorization_grant_response_type_code: bool,
+    oauth2_authorization_grant_response_type_id_token: bool,
+    oauth2_authorization_grant_code: Option<String>,
+    oauth2_authorization_grant_code_challenge: Option<String>,
+    oauth2_authorization_grant_code_challenge_method: Option<String>,
+    oauth2_authorization_grant_requires_consent: bool,
+    oauth2_client_id: Uuid,
+    oauth2_session_id: Option<Uuid>,
+    user_session_id: Option<Uuid>,
     user_session_created_at: Option<DateTime<Utc>>,
-    user_id: Option<i64>,
+    user_id: Option<Uuid>,
     user_username: Option<String>,
-    user_session_last_authentication_id: Option<i64>,
+    user_session_last_authentication_id: Option<Uuid>,
     user_session_last_authentication_created_at: Option<DateTime<Utc>>,
-    user_email_id: Option<i64>,
+    user_email_id: Option<Uuid>,
     user_email: Option<String>,
     user_email_created_at: Option<DateTime<Utc>>,
     user_email_confirmed_at: Option<DateTime<Utc>>,
@@ -144,12 +170,12 @@ impl GrantLookup {
         executor: impl PgExecutor<'_>,
     ) -> Result<AuthorizationGrant<PostgresqlBackend>, DatabaseInconsistencyError> {
         let scope: Scope = self
-            .grant_scope
+            .oauth2_authorization_grant_scope
             .parse()
             .map_err(|_e| DatabaseInconsistencyError)?;
 
         // TODO: don't unwrap
-        let client = lookup_client(executor, self.oauth2_client_id)
+        let client = lookup_client(executor, self.oauth2_client_id.into())
             .await
             .unwrap();
 
@@ -158,7 +184,7 @@ impl GrantLookup {
             self.user_session_last_authentication_created_at,
         ) {
             (Some(id), Some(created_at)) => Some(Authentication {
-                data: id,
+                data: id.into(),
                 created_at,
             }),
             (None, None) => None,
@@ -172,7 +198,7 @@ impl GrantLookup {
             self.user_email_confirmed_at,
         ) {
             (Some(id), Some(email), Some(created_at), confirmed_at) => Some(UserEmail {
-                data: id,
+                data: id.into(),
                 email,
                 created_at,
                 confirmed_at,
@@ -182,7 +208,7 @@ impl GrantLookup {
         };
 
         let session = match (
-            self.session_id,
+            self.oauth2_session_id,
             self.user_session_id,
             self.user_session_created_at,
             self.user_id,
@@ -199,15 +225,16 @@ impl GrantLookup {
                 last_authentication,
                 primary_email,
             ) => {
+                let user_id = Ulid::from(user_id);
                 let user = User {
                     data: user_id,
                     username: user_username,
-                    sub: format!("fake-sub-{}", user_id),
+                    sub: user_id.to_string(),
                     primary_email,
                 };
 
                 let browser_session = BrowserSession {
-                    data: user_session_id,
+                    data: user_session_id.into(),
                     user,
                     created_at: user_session_created_at,
                     last_authentication,
@@ -217,7 +244,7 @@ impl GrantLookup {
                 let scope = scope.clone();
 
                 let session = Session {
-                    data: session_id,
+                    data: session_id.into(),
                     client,
                     browser_session,
                     scope,
@@ -230,9 +257,9 @@ impl GrantLookup {
         };
 
         let stage = match (
-            self.grant_fulfilled_at,
-            self.grant_exchanged_at,
-            self.grant_cancelled_at,
+            self.oauth2_authorization_grant_fulfilled_at,
+            self.oauth2_authorization_grant_exchanged_at,
+            self.oauth2_authorization_grant_cancelled_at,
             session,
         ) {
             (None, None, None, None) => AuthorizationGrantStage::Pending,
@@ -255,7 +282,10 @@ impl GrantLookup {
             }
         };
 
-        let pkce = match (self.grant_code_challenge, self.grant_code_challenge_method) {
+        let pkce = match (
+            self.oauth2_authorization_grant_code_challenge,
+            self.oauth2_authorization_grant_code_challenge_method,
+        ) {
             (Some(challenge), Some(challenge_method)) if challenge_method == "plain" => {
                 Some(Pkce {
                     challenge_method: PkceCodeChallengeMethod::Plain,
@@ -272,27 +302,30 @@ impl GrantLookup {
             }
         };
 
-        let code: Option<AuthorizationCode> =
-            match (self.grant_response_type_code, self.grant_code, pkce) {
-                (false, None, None) => None,
-                (true, Some(code), pkce) => Some(AuthorizationCode { code, pkce }),
-                _ => {
-                    return Err(DatabaseInconsistencyError);
-                }
-            };
+        let code: Option<AuthorizationCode> = match (
+            self.oauth2_authorization_grant_response_type_code,
+            self.oauth2_authorization_grant_code,
+            pkce,
+        ) {
+            (false, None, None) => None,
+            (true, Some(code), pkce) => Some(AuthorizationCode { code, pkce }),
+            _ => {
+                return Err(DatabaseInconsistencyError);
+            }
+        };
 
         let redirect_uri = self
-            .grant_redirect_uri
+            .oauth2_authorization_grant_redirect_uri
             .parse()
             .map_err(|_e| DatabaseInconsistencyError)?;
 
         let response_mode = self
-            .grant_response_mode
+            .oauth2_authorization_grant_response_mode
             .parse()
             .map_err(|_e| DatabaseInconsistencyError)?;
 
         let max_age = self
-            .grant_max_age
+            .oauth2_authorization_grant_max_age
             .map(u32::try_from)
             .transpose()
             .map_err(|_e| DatabaseInconsistencyError)?
@@ -301,82 +334,85 @@ impl GrantLookup {
             .map_err(|_e| DatabaseInconsistencyError)?;
 
         Ok(AuthorizationGrant {
-            data: self.grant_id,
+            data: self.oauth2_authorization_grant_id.into(),
             stage,
             client,
             code,
-            acr_values: self.grant_acr_values,
             scope,
-            state: self.grant_state,
-            nonce: self.grant_nonce,
+            state: self.oauth2_authorization_grant_state,
+            nonce: self.oauth2_authorization_grant_nonce,
             max_age, // TODO
             response_mode,
             redirect_uri,
-            created_at: self.grant_created_at,
-            response_type_id_token: self.grant_response_type_id_token,
-            requires_consent: self.grant_requires_consent,
+            created_at: self.oauth2_authorization_grant_created_at,
+            response_type_id_token: self.oauth2_authorization_grant_response_type_id_token,
+            requires_consent: self.oauth2_authorization_grant_requires_consent,
         })
     }
 }
 
+#[tracing::instrument(
+    skip_all, 
+    fields(grant.id = %id),
+    err(Debug),
+)]
 pub async fn get_grant_by_id(
     conn: &mut PgConnection,
-    id: i64,
+    id: Ulid,
 ) -> anyhow::Result<AuthorizationGrant<PostgresqlBackend>> {
     // TODO: handle "not found" cases
     let res = sqlx::query_as!(
         GrantLookup,
         r#"
             SELECT
-                og.id            AS grant_id,
-                og.created_at    AS grant_created_at,
-                og.cancelled_at  AS grant_cancelled_at,
-                og.fulfilled_at  AS grant_fulfilled_at,
-                og.exchanged_at  AS grant_exchanged_at,
-                og.scope         AS grant_scope,
-                og.state         AS grant_state,
-                og.redirect_uri  AS grant_redirect_uri,
-                og.response_mode AS grant_response_mode,
-                og.nonce         AS grant_nonce,
-                og.max_age       AS grant_max_age,
-                og.acr_values    AS grant_acr_values,
-                og.oauth2_client_id AS oauth2_client_id,
-                og.code          AS grant_code,
-                og.response_type_code     AS grant_response_type_code,
-                og.response_type_id_token AS grant_response_type_id_token,
-                og.code_challenge         AS grant_code_challenge,
-                og.code_challenge_method  AS grant_code_challenge_method,
-                og.requires_consent       AS grant_requires_consent,
-                os.id              AS "session_id?",
-                us.id              AS "user_session_id?",
-                us.created_at      AS "user_session_created_at?",
-                 u.id              AS "user_id?",
-                 u.username        AS "user_username?",
-                usa.id             AS "user_session_last_authentication_id?",
-                usa.created_at     AS "user_session_last_authentication_created_at?",
-                ue.id              AS "user_email_id?",
-                ue.email           AS "user_email?",
-                ue.created_at      AS "user_email_created_at?",
-                ue.confirmed_at    AS "user_email_confirmed_at?"
+                og.oauth2_authorization_grant_id,
+                og.created_at              AS oauth2_authorization_grant_created_at,
+                og.cancelled_at            AS oauth2_authorization_grant_cancelled_at,
+                og.fulfilled_at            AS oauth2_authorization_grant_fulfilled_at,
+                og.exchanged_at            AS oauth2_authorization_grant_exchanged_at,
+                og.scope                   AS oauth2_authorization_grant_scope,
+                og.state                   AS oauth2_authorization_grant_state,
+                og.redirect_uri            AS oauth2_authorization_grant_redirect_uri,
+                og.response_mode           AS oauth2_authorization_grant_response_mode,
+                og.nonce                   AS oauth2_authorization_grant_nonce,
+                og.max_age                 AS oauth2_authorization_grant_max_age,
+                og.oauth2_client_id        AS oauth2_client_id,
+                og.authorization_code      AS oauth2_authorization_grant_code,
+                og.response_type_code      AS oauth2_authorization_grant_response_type_code,
+                og.response_type_id_token  AS oauth2_authorization_grant_response_type_id_token,
+                og.code_challenge          AS oauth2_authorization_grant_code_challenge,
+                og.code_challenge_method   AS oauth2_authorization_grant_code_challenge_method,
+                og.requires_consent        AS oauth2_authorization_grant_requires_consent,
+                os.oauth2_session_id       AS "oauth2_session_id?",
+                us.user_session_id         AS "user_session_id?",
+                us.created_at              AS "user_session_created_at?",
+                 u.user_id                 AS "user_id?",
+                 u.username                AS "user_username?",
+                usa.user_session_authentication_id AS "user_session_last_authentication_id?",
+                usa.created_at             AS "user_session_last_authentication_created_at?",
+                ue.user_email_id           AS "user_email_id?",
+                ue.email                   AS "user_email?",
+                ue.created_at              AS "user_email_created_at?",
+                ue.confirmed_at            AS "user_email_confirmed_at?"
             FROM
                 oauth2_authorization_grants og
             LEFT JOIN oauth2_sessions os
-                ON os.id = og.oauth2_session_id
+              USING (oauth2_session_id)
             LEFT JOIN user_sessions us
-              ON us.id = os.user_session_id
+              USING (user_session_id)
             LEFT JOIN users u
-              ON u.id = us.user_id
+              USING (user_id)
             LEFT JOIN user_session_authentications usa
-              ON usa.session_id = us.id
+              USING (user_session_id)
             LEFT JOIN user_emails ue
-              ON ue.id = u.primary_email_id
+              ON ue.user_email_id = u.primary_user_email_id
 
-            WHERE og.id = $1
+            WHERE og.oauth2_authorization_grant_id = $1
 
             ORDER BY usa.created_at DESC
             LIMIT 1
         "#,
-        id,
+        Uuid::from(id),
     )
     .fetch_one(&mut *conn)
     .await
@@ -387,6 +423,7 @@ pub async fn get_grant_by_id(
     Ok(grant)
 }
 
+#[tracing::instrument(skip_all, err(Debug))]
 pub async fn lookup_grant_by_code(
     conn: &mut PgConnection,
     code: &str,
@@ -396,50 +433,49 @@ pub async fn lookup_grant_by_code(
         GrantLookup,
         r#"
             SELECT
-                og.id            AS grant_id,
-                og.created_at    AS grant_created_at,
-                og.cancelled_at  AS grant_cancelled_at,
-                og.fulfilled_at  AS grant_fulfilled_at,
-                og.exchanged_at  AS grant_exchanged_at,
-                og.scope         AS grant_scope,
-                og.state         AS grant_state,
-                og.redirect_uri  AS grant_redirect_uri,
-                og.response_mode AS grant_response_mode,
-                og.nonce         AS grant_nonce,
-                og.max_age       AS grant_max_age,
-                og.acr_values    AS grant_acr_values,
-                og.oauth2_client_id AS oauth2_client_id,
-                og.code          AS grant_code,
-                og.response_type_code     AS grant_response_type_code,
-                og.response_type_id_token AS grant_response_type_id_token,
-                og.code_challenge         AS grant_code_challenge,
-                og.code_challenge_method  AS grant_code_challenge_method,
-                og.requires_consent       AS grant_requires_consent,
-                os.id              AS "session_id?",
-                us.id              AS "user_session_id?",
-                us.created_at      AS "user_session_created_at?",
-                 u.id              AS "user_id?",
-                 u.username        AS "user_username?",
-                usa.id             AS "user_session_last_authentication_id?",
-                usa.created_at     AS "user_session_last_authentication_created_at?",
-                ue.id              AS "user_email_id?",
-                ue.email           AS "user_email?",
-                ue.created_at      AS "user_email_created_at?",
-                ue.confirmed_at    AS "user_email_confirmed_at?"
+                og.oauth2_authorization_grant_id,
+                og.created_at              AS oauth2_authorization_grant_created_at,
+                og.cancelled_at            AS oauth2_authorization_grant_cancelled_at,
+                og.fulfilled_at            AS oauth2_authorization_grant_fulfilled_at,
+                og.exchanged_at            AS oauth2_authorization_grant_exchanged_at,
+                og.scope                   AS oauth2_authorization_grant_scope,
+                og.state                   AS oauth2_authorization_grant_state,
+                og.redirect_uri            AS oauth2_authorization_grant_redirect_uri,
+                og.response_mode           AS oauth2_authorization_grant_response_mode,
+                og.nonce                   AS oauth2_authorization_grant_nonce,
+                og.max_age                 AS oauth2_authorization_grant_max_age,
+                og.oauth2_client_id        AS oauth2_client_id,
+                og.authorization_code      AS oauth2_authorization_grant_code,
+                og.response_type_code      AS oauth2_authorization_grant_response_type_code,
+                og.response_type_id_token  AS oauth2_authorization_grant_response_type_id_token,
+                og.code_challenge          AS oauth2_authorization_grant_code_challenge,
+                og.code_challenge_method   AS oauth2_authorization_grant_code_challenge_method,
+                og.requires_consent        AS oauth2_authorization_grant_requires_consent,
+                os.oauth2_session_id       AS "oauth2_session_id?",
+                us.user_session_id         AS "user_session_id?",
+                us.created_at              AS "user_session_created_at?",
+                 u.user_id                 AS "user_id?",
+                 u.username                AS "user_username?",
+                usa.user_session_authentication_id AS "user_session_last_authentication_id?",
+                usa.created_at             AS "user_session_last_authentication_created_at?",
+                ue.user_email_id           AS "user_email_id?",
+                ue.email                   AS "user_email?",
+                ue.created_at              AS "user_email_created_at?",
+                ue.confirmed_at            AS "user_email_confirmed_at?"
             FROM
                 oauth2_authorization_grants og
             LEFT JOIN oauth2_sessions os
-                ON os.id = og.oauth2_session_id
+              USING (oauth2_session_id)
             LEFT JOIN user_sessions us
-              ON us.id = os.user_session_id
+              USING (user_session_id)
             LEFT JOIN users u
-              ON u.id = us.user_id
+              USING (user_id)
             LEFT JOIN user_session_authentications usa
-              ON usa.session_id = us.id
+              USING (user_session_id)
             LEFT JOIN user_emails ue
-              ON ue.id = u.primary_email_id
+              ON ue.user_email_id = u.primary_user_email_id
 
-            WHERE og.code = $1
+            WHERE og.authorization_code = $1
 
             ORDER BY usa.created_at DESC
             LIMIT 1
@@ -455,41 +491,69 @@ pub async fn lookup_grant_by_code(
     Ok(grant)
 }
 
+#[tracing::instrument(
+    skip_all, 
+    fields(
+        grant.id = %grant.data,
+        client.id = %grant.client.data,
+        session.id,
+        user_session.id = %browser_session.data,
+        user.id = %browser_session.user.data,
+    ),
+    err(Debug),
+)]
 pub async fn derive_session(
     executor: impl PgExecutor<'_>,
     grant: &AuthorizationGrant<PostgresqlBackend>,
     browser_session: BrowserSession<PostgresqlBackend>,
 ) -> anyhow::Result<Session<PostgresqlBackend>> {
-    let res = sqlx::query_as!(
-        IdAndCreationTime,
+    let created_at = Utc::now();
+    let id = Ulid::from_datetime(created_at.into());
+    tracing::Span::current().record("session.id", tracing::field::display(id));
+
+    sqlx::query!(
         r#"
             INSERT INTO oauth2_sessions
-                (user_session_id, oauth2_client_id, scope)
+                (oauth2_session_id, user_session_id, oauth2_client_id, scope, created_at)
             SELECT
                 $1,
+                $2,
                 og.oauth2_client_id,
-                og.scope
+                og.scope,
+                $3
             FROM
                 oauth2_authorization_grants og
             WHERE
-                og.id = $2
-            RETURNING id, created_at
+                og.oauth2_authorization_grant_id = $4
         "#,
-        browser_session.data,
-        grant.data,
+        Uuid::from(id),
+        Uuid::from(browser_session.data),
+        created_at,
+        Uuid::from(grant.data),
     )
-    .fetch_one(executor)
+    .execute(executor)
     .await
     .context("could not insert oauth2 session")?;
 
     Ok(Session {
-        data: res.id,
+        data: id,
         browser_session,
         client: grant.client.clone(),
         scope: grant.scope.clone(),
     })
 }
 
+#[tracing::instrument(
+    skip_all, 
+    fields(
+        grant.id = %grant.data,
+        client.id = %grant.client.data,
+        session.id = %session.data,
+        user_session.id = %session.browser_session.data,
+        user.id = %session.browser_session.user.data,
+    ),
+    err(Debug),
+)]
 pub async fn fulfill_grant(
     executor: impl PgExecutor<'_>,
     mut grant: AuthorizationGrant<PostgresqlBackend>,
@@ -499,15 +563,16 @@ pub async fn fulfill_grant(
         r#"
             UPDATE oauth2_authorization_grants AS og
             SET
-                oauth2_session_id = os.id,
+                oauth2_session_id = os.oauth2_session_id,
                 fulfilled_at = os.created_at
             FROM oauth2_sessions os
             WHERE
-                og.id = $1 AND os.id = $2
+                og.oauth2_authorization_grant_id = $1
+                AND os.oauth2_session_id = $2
             RETURNING fulfilled_at AS "fulfilled_at!: DateTime<Utc>"
         "#,
-        grant.data,
-        session.data,
+        Uuid::from(grant.data),
+        Uuid::from(session.data),
     )
     .fetch_one(executor)
     .await
@@ -518,6 +583,14 @@ pub async fn fulfill_grant(
     Ok(grant)
 }
 
+#[tracing::instrument(
+    skip_all, 
+    fields(
+        grant.id = %grant.data,
+        client.id = %grant.client.data,
+    ),
+    err(Debug),
+)]
 pub async fn give_consent_to_grant(
     executor: impl PgExecutor<'_>,
     mut grant: AuthorizationGrant<PostgresqlBackend>,
@@ -528,9 +601,9 @@ pub async fn give_consent_to_grant(
             SET
                 requires_consent = 'f'
             WHERE
-                og.id = $1
+                og.oauth2_authorization_grant_id = $1
         "#,
-        grant.data,
+        Uuid::from(grant.data),
     )
     .execute(executor)
     .await?;
@@ -540,22 +613,29 @@ pub async fn give_consent_to_grant(
     Ok(grant)
 }
 
+#[tracing::instrument(
+    skip_all, 
+    fields(
+        grant.id = %grant.data,
+        client.id = %grant.client.data,
+    ),
+    err(Debug),
+)]
 pub async fn exchange_grant(
     executor: impl PgExecutor<'_>,
     mut grant: AuthorizationGrant<PostgresqlBackend>,
 ) -> anyhow::Result<AuthorizationGrant<PostgresqlBackend>> {
-    let exchanged_at = sqlx::query_scalar!(
+    let exchanged_at = Utc::now();
+    sqlx::query!(
         r#"
             UPDATE oauth2_authorization_grants
-            SET
-                exchanged_at = NOW()
-            WHERE
-                id = $1
-            RETURNING exchanged_at AS "exchanged_at!: DateTime<Utc>"
+            SET exchanged_at = $2
+            WHERE oauth2_authorization_grant_id = $1
         "#,
-        grant.data,
+        Uuid::from(grant.data),
+        exchanged_at,
     )
-    .fetch_one(executor)
+    .execute(executor)
     .await
     .context("could not mark grant as exchanged")?;
 

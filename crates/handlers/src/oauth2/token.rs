@@ -36,7 +36,7 @@ use mas_storage::{
         client::ClientFetchError,
         end_oauth_session,
         refresh_token::{
-            add_refresh_token, lookup_active_refresh_token, replace_refresh_token,
+            add_refresh_token, consume_refresh_token, lookup_active_refresh_token,
             RefreshTokenLookupError,
         },
     },
@@ -311,10 +311,10 @@ async fn authorization_code_grant(
         )
     };
 
-    let access_token = add_access_token(&mut txn, session, &access_token_str, ttl).await?;
+    let access_token = add_access_token(&mut txn, session, access_token_str.clone(), ttl).await?;
 
     let _refresh_token =
-        add_refresh_token(&mut txn, session, access_token, &refresh_token_str).await?;
+        add_refresh_token(&mut txn, session, access_token, refresh_token_str.clone()).await?;
 
     let id_token = if session.scope.contains(&scope::OPENID) {
         let mut claims = HashMap::new();
@@ -391,20 +391,21 @@ async fn refresh_token_grant(
         )
     };
 
-    let new_access_token = add_access_token(&mut txn, &session, &access_token_str, ttl).await?;
+    let new_access_token =
+        add_access_token(&mut txn, &session, access_token_str.clone(), ttl).await?;
 
     let new_refresh_token =
-        add_refresh_token(&mut txn, &session, new_access_token, &refresh_token_str).await?;
+        add_refresh_token(&mut txn, &session, new_access_token, refresh_token_str).await?;
 
-    replace_refresh_token(&mut txn, &refresh_token, &new_refresh_token).await?;
+    consume_refresh_token(&mut txn, &refresh_token).await?;
 
     if let Some(access_token) = refresh_token.access_token {
-        revoke_access_token(&mut txn, &access_token).await?;
+        revoke_access_token(&mut txn, access_token).await?;
     }
 
     let params = AccessTokenResponse::new(access_token_str)
         .with_expires_in(ttl)
-        .with_refresh_token(refresh_token_str)
+        .with_refresh_token(new_refresh_token.refresh_token)
         .with_scope(session.scope);
 
     txn.commit().await?;

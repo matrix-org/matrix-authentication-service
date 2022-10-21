@@ -33,6 +33,7 @@ use mas_templates::{CompatSsoContext, ErrorContext, TemplateContext, Templates};
 use rand::thread_rng;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use ulid::Ulid;
 
 #[derive(Serialize)]
 struct AllParams<'s> {
@@ -52,7 +53,7 @@ pub async fn get(
     State(pool): State<PgPool>,
     State(templates): State<Templates>,
     cookie_jar: PrivateCookieJar<Encrypter>,
-    Path(id): Path<i64>,
+    Path(id): Path<Ulid>,
     Query(params): Query<Params>,
 ) -> Result<Response, FancyError> {
     let mut conn = pool.acquire().await?;
@@ -116,7 +117,7 @@ pub async fn post(
     State(pool): State<PgPool>,
     State(templates): State<Templates>,
     cookie_jar: PrivateCookieJar<Encrypter>,
-    Path(id): Path<i64>,
+    Path(id): Path<Ulid>,
     Query(params): Query<Params>,
     Form(form): Form<ProtectedForm<()>>,
 ) -> Result<Response, FancyError> {
@@ -178,7 +179,7 @@ pub async fn post(
 
         let params = AllParams {
             existing_params,
-            login_token: &login.token,
+            login_token: &login.login_token,
         };
         let query = serde_urlencoded::to_string(&params)?;
         redirect_uri.set_query(Some(&query));
