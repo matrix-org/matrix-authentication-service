@@ -23,11 +23,19 @@ use uuid::Uuid;
 
 use crate::PostgresqlBackend;
 
+#[tracing::instrument(
+    skip_all,
+    fields(
+        user.id = %user.data,
+        client.id = %client.data,
+    ),
+    err(Debug),
+)]
 pub async fn fetch_client_consent(
     executor: impl PgExecutor<'_>,
     user: &User<PostgresqlBackend>,
     client: &Client<PostgresqlBackend>,
-) -> anyhow::Result<Scope> {
+) -> Result<Scope, anyhow::Error> {
     let scope_tokens: Vec<String> = sqlx::query_scalar!(
         r#"
             SELECT scope_token
@@ -48,12 +56,21 @@ pub async fn fetch_client_consent(
     Ok(scope?)
 }
 
+#[tracing::instrument(
+    skip_all,
+    fields(
+        user.id = %user.data,
+        client.id = %client.data,
+        scope = scope.to_string(),
+    ),
+    err(Debug),
+)]
 pub async fn insert_client_consent(
     executor: impl PgExecutor<'_>,
     user: &User<PostgresqlBackend>,
     client: &Client<PostgresqlBackend>,
     scope: &Scope,
-) -> anyhow::Result<()> {
+) -> Result<(), anyhow::Error> {
     let now = Utc::now();
     let (tokens, ids): (Vec<String>, Vec<Uuid>) = scope
         .iter()
