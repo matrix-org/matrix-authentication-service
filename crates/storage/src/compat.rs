@@ -344,7 +344,7 @@ pub async fn compat_login(
     let id = Ulid::from_datetime(created_at.into());
     sqlx::query!(
         r#"
-            INSERT INTO compat_sessions 
+            INSERT INTO compat_sessions
               (compat_session_id, user_id, device_id, created_at)
             VALUES ($1, $2, $3, $4)
         "#,
@@ -383,7 +383,7 @@ pub async fn add_compat_access_token(
 
     sqlx::query!(
         r#"
-            INSERT INTO compat_access_tokens 
+            INSERT INTO compat_access_tokens
                 (compat_access_token_id, compat_session_id, access_token, created_at, expires_at)
             VALUES ($1, $2, $3, $4, $5)
         "#,
@@ -532,7 +532,7 @@ pub async fn insert_compat_sso_login(
     let id = Ulid::from_datetime(created_at.into());
     sqlx::query!(
         r#"
-            INSERT INTO compat_sso_logins 
+            INSERT INTO compat_sso_logins
                 (compat_sso_login_id, login_token, redirect_uri, created_at)
             VALUES ($1, $2, $3, $4)
         "#,

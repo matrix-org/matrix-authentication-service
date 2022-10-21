@@ -18,11 +18,11 @@
 
 CREATE TABLE "users" (
   "user_id" UUID NOT NULL
-    CONSTRAINT "users_pkey" 
+    CONSTRAINT "users_pkey"
     PRIMARY KEY,
 
   "username" TEXT NOT NULL
-    CONSTRAINT "users_username_unique" 
+    CONSTRAINT "users_username_unique"
     UNIQUE,
 
   "created_at" TIMESTAMP WITH TIME ZONE NOT NULL
@@ -58,7 +58,7 @@ CREATE TABLE "user_emails" (
 
 ALTER TABLE "users"
   ADD COLUMN "primary_user_email_id" UUID
-    CONSTRAINT "users_primary_user_email_id_fkey" 
+    CONSTRAINT "users_primary_user_email_id_fkey"
     REFERENCES "user_emails" ("user_email_id")
     ON DELETE SET NULL;
 
@@ -95,7 +95,7 @@ CREATE TABLE "user_sessions" (
 
 CREATE TABLE "user_session_authentications" (
   "user_session_authentication_id" UUID NOT NULL
-    CONSTRAINT "user_session_authentications_pkey" 
+    CONSTRAINT "user_session_authentications_pkey"
     PRIMARY KEY,
 
   "user_session_id" UUID NOT NULL
@@ -137,7 +137,7 @@ CREATE TABLE "compat_sso_logins" (
     CONSTRAINT "compat_sessions_login_token_unique"
     UNIQUE,
 
-  "compat_session_id" UUID 
+  "compat_session_id" UUID
     CONSTRAINT "compat_sso_logins_compat_session_id_fkey"
     REFERENCES "compat_sessions" ("compat_session_id")
     ON DELETE SET NULL,
@@ -213,7 +213,7 @@ CREATE TABLE "oauth2_clients" (
   "token_endpoint_auth_signing_alg" TEXT,
   "initiate_login_uri" TEXT,
   "userinfo_signed_response_alg" TEXT,
- 
+
   "created_at" TIMESTAMP WITH TIME ZONE NULL
 );
 

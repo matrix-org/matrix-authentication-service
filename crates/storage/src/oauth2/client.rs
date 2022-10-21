@@ -259,8 +259,8 @@ pub async fn lookup_client(
                 c.oauth2_client_id,
                 c.encrypted_client_secret,
                 ARRAY(
-                    SELECT redirect_uri 
-                    FROM oauth2_client_redirect_uris r 
+                    SELECT redirect_uri
+                    FROM oauth2_client_redirect_uris r
                     WHERE r.oauth2_client_id = c.oauth2_client_id
                 ) AS "redirect_uris!",
                 c.grant_type_authorization_code,
@@ -380,7 +380,7 @@ pub async fn insert_client(
         let id = Ulid::new();
         sqlx::query!(
             r#"
-                INSERT INTO oauth2_client_redirect_uris 
+                INSERT INTO oauth2_client_redirect_uris
                     (oauth2_client_redirect_uri_id, oauth2_client_id, redirect_uri)
                 VALUES ($1, $2, $3)
             "#,
@@ -437,7 +437,7 @@ pub async fn insert_client_from_config(
         let id = Ulid::new();
         sqlx::query!(
             r#"
-                INSERT INTO oauth2_client_redirect_uris 
+                INSERT INTO oauth2_client_redirect_uris
                     (oauth2_client_redirect_uri_id, oauth2_client_id, redirect_uri)
                 VALUES ($1, $2, $3)
             "#,

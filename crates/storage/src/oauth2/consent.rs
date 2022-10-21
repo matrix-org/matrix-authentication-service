@@ -67,7 +67,7 @@ pub async fn insert_client_consent(
 
     sqlx::query!(
         r#"
-            INSERT INTO oauth2_consents 
+            INSERT INTO oauth2_consents
                 (oauth2_consent_id, user_id, oauth2_client_id, scope_token, created_at)
             SELECT id, $2, $3, scope_token, $5 FROM UNNEST($1::uuid[], $4::text[]) u(id, scope_token)
             ON CONFLICT (user_id, oauth2_client_id, scope_token) DO UPDATE SET refreshed_at = $5

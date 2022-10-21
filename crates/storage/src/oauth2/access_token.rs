@@ -24,7 +24,7 @@ use super::client::{lookup_client, ClientFetchError};
 use crate::{DatabaseInconsistencyError, PostgresqlBackend};
 
 #[tracing::instrument(
-    skip_all, 
+    skip_all,
     fields(
         session.id = %session.data,
         client.id = %session.client.data,
@@ -237,7 +237,7 @@ where
 }
 
 #[tracing::instrument(
-    skip_all, 
+    skip_all,
     fields(access_token.id = %access_token.data),
     err(Debug),
 )]
@@ -272,7 +272,7 @@ pub async fn cleanup_expired(executor: impl PgExecutor<'_>) -> anyhow::Result<u6
     let res = sqlx::query!(
         r#"
             DELETE FROM oauth2_access_tokens
-            WHERE expires_at < $1 
+            WHERE expires_at < $1
         "#,
         threshold,
     )

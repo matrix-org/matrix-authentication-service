@@ -193,7 +193,7 @@ pub async fn lookup_active_session(
                 ue.created_at      AS "user_email_created_at?",
                 ue.confirmed_at    AS "user_email_confirmed_at?"
             FROM user_sessions s
-            INNER JOIN users u 
+            INNER JOIN users u
                 USING (user_id)
             LEFT JOIN user_session_authentications a
                 USING (user_session_id)
@@ -317,7 +317,7 @@ pub async fn authenticate_session(
     let id = Ulid::from_datetime(created_at.into());
     sqlx::query!(
         r#"
-            INSERT INTO user_session_authentications 
+            INSERT INTO user_session_authentications
                 (user_session_authentication_id, user_session_id, created_at)
             VALUES ($1, $2, $3)
         "#,
@@ -453,7 +453,7 @@ pub async fn lookup_user_by_username(
     let res = sqlx::query_as!(
         UserLookup,
         r#"
-            SELECT 
+            SELECT
                 u.user_id,
                 u.username       AS user_username,
                 ue.user_email_id AS "user_email_id?",
@@ -541,7 +541,7 @@ pub async fn get_user_emails(
     let res = sqlx::query_as!(
         UserEmailLookup,
         r#"
-            SELECT 
+            SELECT
                 ue.user_email_id,
                 ue.email        AS "user_email",
                 ue.created_at   AS "user_email_created_at",
@@ -570,7 +570,7 @@ pub async fn get_user_email(
     let res = sqlx::query_as!(
         UserEmailLookup,
         r#"
-            SELECT 
+            SELECT
                 ue.user_email_id,
                 ue.email        AS "user_email",
                 ue.created_at   AS "user_email_created_at",
@@ -673,7 +673,7 @@ pub async fn lookup_user_email(
     let res = sqlx::query_as!(
         UserEmailLookup,
         r#"
-            SELECT 
+            SELECT
                 ue.user_email_id,
                 ue.email        AS "user_email",
                 ue.created_at   AS "user_email_created_at",
@@ -703,7 +703,7 @@ pub async fn lookup_user_email_by_id(
     let res = sqlx::query_as!(
         UserEmailLookup,
         r#"
-            SELECT 
+            SELECT
                 ue.user_email_id,
                 ue.email        AS "user_email",
                 ue.created_at   AS "user_email_created_at",
@@ -848,7 +848,7 @@ pub async fn add_user_email_verification_code(
 
     sqlx::query!(
         r#"
-            INSERT INTO user_email_confirmation_codes 
+            INSERT INTO user_email_confirmation_codes
               (user_email_confirmation_code_id, user_email_id, code, created_at, expires_at)
             VALUES ($1, $2, $3, $4, $5)
         "#,
