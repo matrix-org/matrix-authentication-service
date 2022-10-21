@@ -109,6 +109,7 @@ pub(crate) async fn post(
     State(policy_factory): State<Arc<PolicyFactory>>,
     Json(body): Json<ClientMetadata>,
 ) -> Result<impl IntoResponse, RouteError> {
+    let (clock, mut rng) = crate::rng_and_clock()?;
     info!(?body, "Client registration");
 
     // Validate the body
@@ -127,10 +128,12 @@ pub(crate) async fn post(
     let mut txn = pool.begin().await?;
 
     // Let's generate a random client ID
-    let client_id = Ulid::new();
+    let client_id = Ulid::from_datetime_with_source(clock.now().into(), &mut rng);
 
     insert_client(
         &mut txn,
+        &mut rng,
+        &clock,
         client_id,
         metadata.redirect_uris(),
         None,

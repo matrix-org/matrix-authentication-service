@@ -442,7 +442,7 @@ pub async fn set_password(
     password: &str,
 ) -> Result<(), anyhow::Error> {
     let created_at = clock.now();
-    let id = Ulid::from_datetime(created_at.into());
+    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
     tracing::Span::current().record("user_password.id", tracing::field::display(id));
 
     let salt = SaltString::generate(&mut rng);

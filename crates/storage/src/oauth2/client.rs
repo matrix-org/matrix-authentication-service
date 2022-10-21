@@ -21,13 +21,14 @@ use mas_iana::{
 };
 use mas_jose::jwk::PublicJsonWebKeySet;
 use oauth2_types::requests::GrantType;
+use rand::Rng;
 use sqlx::{PgConnection, PgExecutor};
 use thiserror::Error;
 use ulid::Ulid;
 use url::Url;
 use uuid::Uuid;
 
-use crate::PostgresqlBackend;
+use crate::{Clock, PostgresqlBackend};
 
 // XXX: response_types & contacts
 #[derive(Debug)]
@@ -317,6 +318,8 @@ pub async fn lookup_client_by_client_id(
 #[allow(clippy::too_many_arguments)]
 pub async fn insert_client(
     conn: &mut PgConnection,
+    mut rng: impl Rng + Send,
+    clock: &Clock,
     client_id: Ulid,
     redirect_uris: &[Url],
     encrypted_client_secret: Option<&str>,
@@ -391,9 +394,15 @@ pub async fn insert_client(
     .execute(&mut *conn)
     .await?;
 
+    let now = clock.now();
     let (ids, redirect_uris): (Vec<Uuid>, Vec<String>) = redirect_uris
         .iter()
-        .map(|uri| (Uuid::from(Ulid::new()), uri.as_str().to_owned()))
+        .map(|uri| {
+            (
+                Uuid::from(Ulid::from_datetime_with_source(now.into(), &mut rng)),
+                uri.as_str().to_owned(),
+            )
+        })
         .unzip();
 
     sqlx::query!(
@@ -413,8 +422,11 @@ pub async fn insert_client(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn insert_client_from_config(
     conn: &mut PgConnection,
+    mut rng: impl Rng + Send,
+    clock: &Clock,
     client_id: Ulid,
     client_auth_method: OAuthClientAuthenticationMethod,
     encrypted_client_secret: Option<&str>,
@@ -451,9 +463,15 @@ pub async fn insert_client_from_config(
     .execute(&mut *conn)
     .await?;
 
+    let now = clock.now();
     let (ids, redirect_uris): (Vec<Uuid>, Vec<String>) = redirect_uris
         .iter()
-        .map(|uri| (Uuid::from(Ulid::new()), uri.as_str().to_owned()))
+        .map(|uri| {
+            (
+                Uuid::from(Ulid::from_datetime_with_source(now.into(), &mut rng)),
+                uri.as_str().to_owned(),
+            )
+        })
         .unzip();
 
     sqlx::query!(
