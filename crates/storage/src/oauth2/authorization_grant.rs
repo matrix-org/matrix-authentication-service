@@ -54,7 +54,7 @@ pub async fn new_authorization_grant(
     response_mode: ResponseMode,
     response_type_id_token: bool,
     requires_consent: bool,
-) -> anyhow::Result<AuthorizationGrant<PostgresqlBackend>> {
+) -> Result<AuthorizationGrant<PostgresqlBackend>, anyhow::Error> {
     let code_challenge = code
         .as_ref()
         .and_then(|c| c.pkce.as_ref())
@@ -359,7 +359,7 @@ impl GrantLookup {
 pub async fn get_grant_by_id(
     conn: &mut PgConnection,
     id: Ulid,
-) -> anyhow::Result<AuthorizationGrant<PostgresqlBackend>> {
+) -> Result<AuthorizationGrant<PostgresqlBackend>, anyhow::Error> {
     // TODO: handle "not found" cases
     let res = sqlx::query_as!(
         GrantLookup,
@@ -427,7 +427,7 @@ pub async fn get_grant_by_id(
 pub async fn lookup_grant_by_code(
     conn: &mut PgConnection,
     code: &str,
-) -> anyhow::Result<AuthorizationGrant<PostgresqlBackend>> {
+) -> Result<AuthorizationGrant<PostgresqlBackend>, anyhow::Error> {
     // TODO: handle "not found" cases
     let res = sqlx::query_as!(
         GrantLookup,
@@ -506,7 +506,7 @@ pub async fn derive_session(
     executor: impl PgExecutor<'_>,
     grant: &AuthorizationGrant<PostgresqlBackend>,
     browser_session: BrowserSession<PostgresqlBackend>,
-) -> anyhow::Result<Session<PostgresqlBackend>> {
+) -> Result<Session<PostgresqlBackend>, anyhow::Error> {
     let created_at = Utc::now();
     let id = Ulid::from_datetime(created_at.into());
     tracing::Span::current().record("session.id", tracing::field::display(id));
@@ -558,7 +558,7 @@ pub async fn fulfill_grant(
     executor: impl PgExecutor<'_>,
     mut grant: AuthorizationGrant<PostgresqlBackend>,
     session: Session<PostgresqlBackend>,
-) -> anyhow::Result<AuthorizationGrant<PostgresqlBackend>> {
+) -> Result<AuthorizationGrant<PostgresqlBackend>, anyhow::Error> {
     let fulfilled_at = sqlx::query_scalar!(
         r#"
             UPDATE oauth2_authorization_grants AS og
@@ -624,7 +624,7 @@ pub async fn give_consent_to_grant(
 pub async fn exchange_grant(
     executor: impl PgExecutor<'_>,
     mut grant: AuthorizationGrant<PostgresqlBackend>,
-) -> anyhow::Result<AuthorizationGrant<PostgresqlBackend>> {
+) -> Result<AuthorizationGrant<PostgresqlBackend>, anyhow::Error> {
     let exchanged_at = Utc::now();
     sqlx::query!(
         r#"

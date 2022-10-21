@@ -248,6 +248,11 @@ impl TryInto<Client<PostgresqlBackend>> for OAuth2ClientLookup {
     }
 }
 
+#[tracing::instrument(
+    skip_all,
+    fields(client.id = %id),
+    err,
+)]
 pub async fn lookup_client(
     executor: impl PgExecutor<'_>,
     id: Ulid,
@@ -291,6 +296,11 @@ pub async fn lookup_client(
     Ok(client)
 }
 
+#[tracing::instrument(
+    skip_all,
+    fields(client.id = client_id),
+    err,
+)]
 pub async fn lookup_client_by_client_id(
     executor: impl PgExecutor<'_>,
     client_id: &str,
@@ -299,6 +309,11 @@ pub async fn lookup_client_by_client_id(
     lookup_client(executor, id).await
 }
 
+#[tracing::instrument(
+    skip_all,
+    fields(client.id = %client_id, client.name = client_name),
+    err,
+)]
 #[allow(clippy::too_many_arguments)]
 pub async fn insert_client(
     conn: &mut PgConnection,
@@ -403,7 +418,7 @@ pub async fn insert_client_from_config(
     jwks: Option<&PublicJsonWebKeySet>,
     jwks_uri: Option<&Url>,
     redirect_uris: &[Url],
-) -> anyhow::Result<()> {
+) -> Result<(), anyhow::Error> {
     let jwks = jwks.map(serde_json::to_value).transpose()?;
     let jwks_uri = jwks_uri.map(Url::as_str);
 
@@ -452,7 +467,7 @@ pub async fn insert_client_from_config(
     Ok(())
 }
 
-pub async fn truncate_clients(executor: impl PgExecutor<'_>) -> anyhow::Result<()> {
+pub async fn truncate_clients(executor: impl PgExecutor<'_>) -> Result<(), anyhow::Error> {
     sqlx::query!("TRUNCATE oauth2_client_redirect_uris, oauth2_clients CASCADE")
         .execute(executor)
         .await?;

@@ -25,10 +25,20 @@ pub mod client;
 pub mod consent;
 pub mod refresh_token;
 
+#[tracing::instrument(
+    skip_all,
+    fields(
+        session.id = %session.data,
+        user.id = %session.browser_session.user.data,
+        user_session.id = %session.browser_session.data,
+        client.id = %session.client.data,
+    ),
+    err(Debug),
+)]
 pub async fn end_oauth_session(
     executor: impl PgExecutor<'_>,
     session: Session<PostgresqlBackend>,
-) -> anyhow::Result<()> {
+) -> Result<(), anyhow::Error> {
     let finished_at = Utc::now();
     let res = sqlx::query!(
         r#"

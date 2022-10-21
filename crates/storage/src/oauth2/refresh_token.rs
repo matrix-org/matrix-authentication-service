@@ -25,6 +25,17 @@ use uuid::Uuid;
 use super::client::{lookup_client, ClientFetchError};
 use crate::{DatabaseInconsistencyError, PostgresqlBackend};
 
+#[tracing::instrument(
+    skip_all,
+    fields(
+        session.id = %session.data,
+        user.id = %session.browser_session.user.data,
+        user_session.id = %session.browser_session.data,
+        client.id = %session.client.data,
+        refresh_token.id,
+    ),
+    err(Debug),
+)]
 pub async fn add_refresh_token(
     executor: impl PgExecutor<'_>,
     session: &Session<PostgresqlBackend>,
@@ -33,6 +44,7 @@ pub async fn add_refresh_token(
 ) -> anyhow::Result<RefreshToken<PostgresqlBackend>> {
     let created_at = Utc::now();
     let id = Ulid::from_datetime(created_at.into());
+    tracing::Span::current().record("refresh_token.id", tracing::field::display(id));
 
     sqlx::query!(
         r#"
@@ -98,6 +110,7 @@ impl RefreshTokenLookupError {
     }
 }
 
+#[tracing::instrument(skip_all, err)]
 #[allow(clippy::too_many_lines)]
 pub async fn lookup_active_refresh_token(
     conn: &mut PgConnection,
@@ -241,10 +254,17 @@ pub async fn lookup_active_refresh_token(
     Ok((refresh_token, session))
 }
 
+#[tracing::instrument(
+    skip_all,
+    fields(
+        refresh_token.id = %refresh_token.data,
+    ),
+    err(Debug),
+)]
 pub async fn consume_refresh_token(
     executor: impl PgExecutor<'_>,
     refresh_token: &RefreshToken<PostgresqlBackend>,
-) -> anyhow::Result<()> {
+) -> Result<(), anyhow::Error> {
     let consumed_at = Utc::now();
     let res = sqlx::query!(
         r#"

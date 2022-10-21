@@ -38,7 +38,7 @@ pub async fn add_access_token(
     session: &Session<PostgresqlBackend>,
     access_token: String,
     expires_after: Duration,
-) -> anyhow::Result<AccessToken<PostgresqlBackend>> {
+) -> Result<AccessToken<PostgresqlBackend>, anyhow::Error> {
     let created_at = Utc::now();
     let expires_at = created_at + expires_after;
     let id = Ulid::from_datetime(created_at.into());

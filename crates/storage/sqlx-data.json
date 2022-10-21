@@ -291,19 +291,6 @@
     },
     "query": "\n                INSERT INTO oauth2_client_redirect_uris\n                    (oauth2_client_redirect_uri_id, oauth2_client_id, redirect_uri)\n                VALUES ($1, $2, $3)\n            "
   },
-  "1a10e6189300563e79684eb7ccc6c29b0418aadfdeea6f8bc5a700a411409c73": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Text",
-          "Timestamptz"
-        ]
-      }
-    },
-    "query": "\n            UPDATE compat_sessions cs\n            SET finished_at = $2\n            FROM compat_access_tokens ca\n            WHERE ca.access_token = $1\n              AND ca.compat_session_id = cs.compat_session_id\n              AND cs.finished_at IS NULL\n        "
-  },
   "1eb6d13e75d8f526c2785749a020731c18012f03e07995213acd38ab560ce497": {
     "describe": {
       "columns": [],
@@ -1022,6 +1009,27 @@
       }
     },
     "query": "\n            SELECT scope_token\n            FROM oauth2_consents\n            WHERE user_id = $1 AND oauth2_client_id = $2\n        "
+  },
+  "559a486756d08d101eb7188ef6637b9d24c024d056795b8121f7f04a7f9db6a3": {
+    "describe": {
+      "columns": [
+        {
+          "name": "compat_session_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n            UPDATE compat_sessions cs\n            SET finished_at = $2\n            FROM compat_access_tokens ca\n            WHERE ca.access_token = $1\n              AND ca.compat_session_id = cs.compat_session_id\n              AND cs.finished_at IS NULL\n            RETURNING cs.compat_session_id\n        "
   },
   "5b5d5c82da37c6f2d8affacfb02119965c04d1f2a9cc53dbf5bd4c12584969a0": {
     "describe": {
