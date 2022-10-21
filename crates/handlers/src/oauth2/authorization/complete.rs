@@ -190,6 +190,8 @@ pub(crate) async fn complete(
     policy_factory: &PolicyFactory,
     mut txn: Transaction<'_, Postgres>,
 ) -> Result<AuthorizationResponse<Option<AccessTokenResponse>>, GrantCompletionError> {
+    let (clock, mut rng) = crate::rng_and_clock()?;
+
     // Verify that the grant is in a pending stage
     if !grant.stage.is_pending() {
         return Err(GrantCompletionError::NotPending);
@@ -226,7 +228,7 @@ pub(crate) async fn complete(
     }
 
     // All good, let's start the session
-    let session = derive_session(&mut txn, &grant, browser_session).await?;
+    let session = derive_session(&mut txn, &mut rng, &clock, &grant, browser_session).await?;
 
     let grant = fulfill_grant(&mut txn, grant, session.clone()).await?;
 

@@ -20,7 +20,7 @@ use axum::{
     response::{Html, IntoResponse, Redirect, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
-use chrono::{Duration, Utc};
+use chrono::Duration;
 use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     FancyError, SessionInfoExt,
@@ -28,9 +28,11 @@ use mas_axum_utils::{
 use mas_data_model::Device;
 use mas_keystore::Encrypter;
 use mas_router::{CompatLoginSsoAction, PostAuthAction, Route};
-use mas_storage::compat::{fullfill_compat_sso_login, get_compat_sso_login_by_id};
+use mas_storage::{
+    compat::{fullfill_compat_sso_login, get_compat_sso_login_by_id},
+    Clock,
+};
 use mas_templates::{CompatSsoContext, ErrorContext, TemplateContext, Templates};
-use rand::thread_rng;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use ulid::Ulid;
@@ -56,6 +58,7 @@ pub async fn get(
     Path(id): Path<Ulid>,
     Query(params): Query<Params>,
 ) -> Result<Response, FancyError> {
+    let clock = Clock::default();
     let mut conn = pool.acquire().await?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
@@ -95,7 +98,7 @@ pub async fn get(
     let login = get_compat_sso_login_by_id(&mut conn, id).await?;
 
     // Bail out if that login session is more than 30min old
-    if Utc::now() > login.created_at + Duration::minutes(30) {
+    if clock.now() > login.created_at + Duration::minutes(30) {
         let ctx = ErrorContext::new()
             .with_code("compat_sso_login_expired")
             .with_description("This login session expired.".to_owned());
@@ -121,6 +124,7 @@ pub async fn post(
     Query(params): Query<Params>,
     Form(form): Form<ProtectedForm<()>>,
 ) -> Result<Response, FancyError> {
+    let (clock, mut rng) = crate::rng_and_clock()?;
     let mut txn = pool.begin().await?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
@@ -160,7 +164,7 @@ pub async fn post(
     let login = get_compat_sso_login_by_id(&mut txn, id).await?;
 
     // Bail out if that login session is more than 30min old
-    if Utc::now() > login.created_at + Duration::minutes(30) {
+    if clock.now() > login.created_at + Duration::minutes(30) {
         let ctx = ErrorContext::new()
             .with_code("compat_sso_login_expired")
             .with_description("This login session expired.".to_owned());
@@ -186,8 +190,9 @@ pub async fn post(
         redirect_uri
     };
 
-    let device = Device::generate(&mut thread_rng());
-    let _login = fullfill_compat_sso_login(&mut txn, session.user, login, device).await?;
+    let device = Device::generate(&mut rng);
+    let _login =
+        fullfill_compat_sso_login(&mut txn, &mut rng, &clock, session.user, login, device).await?;
 
     txn.commit().await?;
 

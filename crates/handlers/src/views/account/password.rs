@@ -81,6 +81,7 @@ pub(crate) async fn post(
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<ChangeForm>>,
 ) -> Result<Response, FancyError> {
+    let (clock, mut rng) = crate::rng_and_clock()?;
     let mut txn = pool.begin().await?;
 
     let form = cookie_jar.verify_form(form)?;
@@ -96,7 +97,14 @@ pub(crate) async fn post(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    authenticate_session(&mut txn, &mut session, &form.current_password).await?;
+    authenticate_session(
+        &mut txn,
+        &mut rng,
+        &clock,
+        &mut session,
+        &form.current_password,
+    )
+    .await?;
 
     // TODO: display nice form errors
     if form.new_password != form.new_password_confirm {
@@ -104,7 +112,15 @@ pub(crate) async fn post(
     }
 
     let phf = Argon2::default();
-    set_password(&mut txn, phf, &session.user, &form.new_password).await?;
+    set_password(
+        &mut txn,
+        &mut rng,
+        &clock,
+        phf,
+        &session.user,
+        &form.new_password,
+    )
+    .await?;
 
     let reply = render(templates.clone(), session, cookie_jar).await?;
 

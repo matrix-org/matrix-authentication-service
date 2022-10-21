@@ -50,7 +50,6 @@ use oauth2_types::{
     },
     scope,
 };
-use rand::thread_rng;
 use serde::Serialize;
 use serde_with::{serde_as, skip_serializing_none};
 use sqlx::{PgPool, Postgres, Transaction};
@@ -235,12 +234,13 @@ async fn authorization_code_grant(
     url_builder: &UrlBuilder,
     mut txn: Transaction<'_, Postgres>,
 ) -> Result<AccessTokenResponse, RouteError> {
+    let (clock, mut rng) = crate::rng_and_clock()?;
+
     // TODO: there is a bunch of unnecessary cloning here
     // TODO: handle "not found" cases
     let authz_grant = lookup_grant_by_code(&mut txn, &grant.code).await?;
 
-    // TODO: that's not a timestamp from the DB. Let's assume they are in sync
-    let now = Utc::now();
+    let now = clock.now();
 
     let session = match authz_grant.stage {
         AuthorizationGrantStage::Cancelled { cancelled_at } => {
@@ -257,7 +257,7 @@ async fn authorization_code_grant(
             // Ending the session if the token was already exchanged more than 20s ago
             if now - exchanged_at > Duration::seconds(20) {
                 debug!("Ending potentially compromised session");
-                end_oauth_session(&mut txn, session).await?;
+                end_oauth_session(&mut txn, &clock, session).await?;
                 txn.commit().await?;
             }
 
@@ -303,22 +303,32 @@ async fn authorization_code_grant(
     let browser_session = &session.browser_session;
 
     let ttl = Duration::minutes(5);
-    let (access_token_str, refresh_token_str) = {
-        let mut rng = thread_rng();
-        (
-            TokenType::AccessToken.generate(&mut rng),
-            TokenType::RefreshToken.generate(&mut rng),
-        )
-    };
+    let access_token_str = TokenType::AccessToken.generate(&mut rng);
+    let refresh_token_str = TokenType::RefreshToken.generate(&mut rng);
 
-    let access_token = add_access_token(&mut txn, session, access_token_str.clone(), ttl).await?;
+    let access_token = add_access_token(
+        &mut txn,
+        &mut rng,
+        &clock,
+        session,
+        access_token_str.clone(),
+        ttl,
+    )
+    .await?;
 
-    let _refresh_token =
-        add_refresh_token(&mut txn, session, access_token, refresh_token_str.clone()).await?;
+    let _refresh_token = add_refresh_token(
+        &mut txn,
+        &mut rng,
+        &clock,
+        session,
+        access_token,
+        refresh_token_str.clone(),
+    )
+    .await?;
 
     let id_token = if session.scope.contains(&scope::OPENID) {
         let mut claims = HashMap::new();
-        let now = Utc::now();
+        let now = clock.now();
         claims::ISS.insert(&mut claims, url_builder.oidc_issuer().to_string())?;
         claims::SUB.insert(&mut claims, &browser_session.user.sub)?;
         claims::AUD.insert(&mut claims, client.client_id.clone())?;
@@ -346,7 +356,7 @@ async fn authorization_code_grant(
         let signer = key.params().signing_key_for_alg(&alg)?;
         let header = JsonWebSignatureHeader::new(alg)
             .with_kid(key.kid().context("key has no `kid` for some reason")?);
-        let id_token = Jwt::sign(header, claims, &signer)?;
+        let id_token = Jwt::sign_with_rng(&mut rng, header, claims, &signer)?;
 
         Some(id_token.as_str().to_owned())
     } else {
@@ -362,7 +372,7 @@ async fn authorization_code_grant(
         params = params.with_id_token(id_token);
     }
 
-    exchange_grant(&mut txn, authz_grant).await?;
+    exchange_grant(&mut txn, &clock, authz_grant).await?;
 
     txn.commit().await?;
 
@@ -374,6 +384,8 @@ async fn refresh_token_grant(
     client: &Client<PostgresqlBackend>,
     mut txn: Transaction<'_, Postgres>,
 ) -> Result<AccessTokenResponse, RouteError> {
+    let (clock, mut rng) = crate::rng_and_clock()?;
+
     let (refresh_token, session) =
         lookup_active_refresh_token(&mut txn, &grant.refresh_token).await?;
 
@@ -383,24 +395,33 @@ async fn refresh_token_grant(
     }
 
     let ttl = Duration::minutes(5);
-    let (access_token_str, refresh_token_str) = {
-        let mut rng = thread_rng();
-        (
-            TokenType::AccessToken.generate(&mut rng),
-            TokenType::RefreshToken.generate(&mut rng),
-        )
-    };
+    let access_token_str = TokenType::AccessToken.generate(&mut rng);
+    let refresh_token_str = TokenType::RefreshToken.generate(&mut rng);
 
-    let new_access_token =
-        add_access_token(&mut txn, &session, access_token_str.clone(), ttl).await?;
+    let new_access_token = add_access_token(
+        &mut txn,
+        &mut rng,
+        &clock,
+        &session,
+        access_token_str.clone(),
+        ttl,
+    )
+    .await?;
 
-    let new_refresh_token =
-        add_refresh_token(&mut txn, &session, new_access_token, refresh_token_str).await?;
+    let new_refresh_token = add_refresh_token(
+        &mut txn,
+        &mut rng,
+        &clock,
+        &session,
+        new_access_token,
+        refresh_token_str,
+    )
+    .await?;
 
-    consume_refresh_token(&mut txn, &refresh_token).await?;
+    consume_refresh_token(&mut txn, &clock, &refresh_token).await?;
 
     if let Some(access_token) = refresh_token.access_token {
-        revoke_access_token(&mut txn, access_token).await?;
+        revoke_access_token(&mut txn, &clock, access_token).await?;
     }
 
     let params = AccessTokenResponse::new(access_token_str)

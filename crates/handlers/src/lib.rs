@@ -21,6 +21,7 @@
 
 use std::{convert::Infallible, sync::Arc, time::Duration};
 
+use anyhow::Context;
 use axum::{
     body::HttpBody,
     extract::FromRef,
@@ -36,6 +37,7 @@ use mas_keystore::{Encrypter, Keystore};
 use mas_policy::PolicyFactory;
 use mas_router::{Route, UrlBuilder};
 use mas_templates::{ErrorContext, Templates};
+use rand::SeedableRng;
 use sqlx::PgPool;
 use tower::util::AndThenLayer;
 use tower_http::cors::{Any, CorsLayer};
@@ -355,4 +357,16 @@ async fn test_state(pool: PgPool) -> Result<Arc<AppState>, anyhow::Error> {
         homeserver,
         policy_factory,
     }))
+}
+
+// XXX: that should be moved somewhere else
+fn rng_and_clock() -> Result<(mas_storage::Clock, rand_chacha::ChaChaRng), anyhow::Error> {
+    let clock = mas_storage::Clock::default();
+
+    // This rng is used to source the local rng
+    #[allow(clippy::disallowed_methods)]
+    let rng = rand::thread_rng();
+
+    let rng = rand_chacha::ChaChaRng::from_rng(rng).context("Failed to seed RNG")?;
+    Ok((clock, rng))
 }

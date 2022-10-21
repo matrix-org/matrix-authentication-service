@@ -80,6 +80,7 @@ pub(crate) async fn post(
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<ReauthForm>>,
 ) -> Result<Response, FancyError> {
+    let (clock, mut rng) = crate::rng_and_clock()?;
     let mut txn = pool.begin().await?;
 
     let form = cookie_jar.verify_form(form)?;
@@ -98,7 +99,7 @@ pub(crate) async fn post(
     };
 
     // TODO: recover from errors here
-    authenticate_session(&mut txn, &mut session, &form.password).await?;
+    authenticate_session(&mut txn, &mut rng, &clock, &mut session, &form.password).await?;
     let cookie_jar = cookie_jar.set_session(&session);
     txn.commit().await?;
 

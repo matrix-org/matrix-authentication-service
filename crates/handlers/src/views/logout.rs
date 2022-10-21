@@ -23,7 +23,7 @@ use mas_axum_utils::{
 };
 use mas_keystore::Encrypter;
 use mas_router::{PostAuthAction, Route};
-use mas_storage::user::end_session;
+use mas_storage::{user::end_session, Clock};
 use sqlx::PgPool;
 
 pub(crate) async fn post(
@@ -31,6 +31,7 @@ pub(crate) async fn post(
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<Option<PostAuthAction>>>,
 ) -> Result<impl IntoResponse, FancyError> {
+    let clock = Clock::default();
     let mut txn = pool.begin().await?;
 
     let form = cookie_jar.verify_form(form)?;
@@ -40,7 +41,7 @@ pub(crate) async fn post(
     let maybe_session = session_info.load_session(&mut txn).await?;
 
     if let Some(session) = maybe_session {
-        end_session(&mut txn, &session).await?;
+        end_session(&mut txn, &clock, &session).await?;
         cookie_jar = cookie_jar.update_session_info(&session_info.mark_session_ended());
     }
 

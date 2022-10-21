@@ -32,10 +32,10 @@ use mas_storage::{
         add_user_email, add_user_email_verification_code, get_user_email, get_user_emails,
         remove_user_email, set_user_email_as_primary,
     },
-    PostgresqlBackend,
+    Clock, PostgresqlBackend,
 };
 use mas_templates::{AccountEmailsContext, EmailVerificationContext, TemplateContext, Templates};
-use rand::{distributions::Uniform, thread_rng, Rng};
+use rand::{distributions::Uniform, Rng};
 use serde::Deserialize;
 use sqlx::{PgExecutor, PgPool};
 use tracing::info;
@@ -93,17 +93,26 @@ async fn render(
 async fn start_email_verification(
     mailer: &Mailer,
     executor: impl PgExecutor<'_>,
+    mut rng: impl Rng + Send,
+    clock: &Clock,
     user: &User<PostgresqlBackend>,
     user_email: UserEmail<PostgresqlBackend>,
 ) -> anyhow::Result<()> {
     // First, generate a code
     let range = Uniform::<u32>::from(0..1_000_000);
-    let code = thread_rng().sample(range).to_string();
+    let code = rng.sample(range).to_string();
 
     let address: Address = user_email.email.parse()?;
 
-    let verification =
-        add_user_email_verification_code(executor, user_email, Duration::hours(8), code).await?;
+    let verification = add_user_email_verification_code(
+        executor,
+        &mut rng,
+        clock,
+        user_email,
+        Duration::hours(8),
+        code,
+    )
+    .await?;
 
     // And send the verification email
     let mailbox = Mailbox::new(Some(user.username.clone()), address);
@@ -126,6 +135,7 @@ pub(crate) async fn post(
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<ManagementForm>>,
 ) -> Result<Response, FancyError> {
+    let (clock, mut rng) = crate::rng_and_clock()?;
     let mut txn = pool.begin().await?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
@@ -143,9 +153,18 @@ pub(crate) async fn post(
 
     match form {
         ManagementForm::Add { email } => {
-            let user_email = add_user_email(&mut txn, &session.user, email).await?;
+            let user_email =
+                add_user_email(&mut txn, &mut rng, &clock, &session.user, email).await?;
             let next = mas_router::AccountVerifyEmail::new(user_email.data);
-            start_email_verification(&mailer, &mut txn, &session.user, user_email).await?;
+            start_email_verification(
+                &mailer,
+                &mut txn,
+                &mut rng,
+                &clock,
+                &session.user,
+                user_email,
+            )
+            .await?;
             txn.commit().await?;
             return Ok((cookie_jar, next.go()).into_response());
         }
@@ -154,7 +173,15 @@ pub(crate) async fn post(
 
             let user_email = get_user_email(&mut txn, &session.user, id).await?;
             let next = mas_router::AccountVerifyEmail::new(user_email.data);
-            start_email_verification(&mailer, &mut txn, &session.user, user_email).await?;
+            start_email_verification(
+                &mailer,
+                &mut txn,
+                &mut rng,
+                &clock,
+                &session.user,
+                user_email,
+            )
+            .await?;
             txn.commit().await?;
             return Ok((cookie_jar, next.go()).into_response());
         }

@@ -16,7 +16,7 @@ use axum::{extract::State, response::IntoResponse, Json, TypedHeader};
 use headers::{authorization::Bearer, Authorization};
 use hyper::StatusCode;
 use mas_data_model::{TokenFormatError, TokenType};
-use mas_storage::compat::compat_logout;
+use mas_storage::{compat::compat_logout, Clock};
 use sqlx::PgPool;
 
 use super::MatrixError;
@@ -67,6 +67,7 @@ pub(crate) async fn post(
     State(pool): State<PgPool>,
     maybe_authorization: Option<TypedHeader<Authorization<Bearer>>>,
 ) -> Result<impl IntoResponse, RouteError> {
+    let clock = Clock::default();
     let mut conn = pool.acquire().await?;
 
     let TypedHeader(authorization) = maybe_authorization.ok_or(RouteError::MissingAuthorization)?;
@@ -78,7 +79,7 @@ pub(crate) async fn post(
         return Err(RouteError::InvalidAuthorization);
     }
 
-    compat_logout(&mut conn, token)
+    compat_logout(&mut conn, &clock, token)
         .await
         .map_err(|_| RouteError::LogoutFailed)?;
 

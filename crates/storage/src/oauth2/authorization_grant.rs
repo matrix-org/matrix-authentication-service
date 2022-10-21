@@ -24,13 +24,14 @@ use mas_data_model::{
 };
 use mas_iana::oauth::PkceCodeChallengeMethod;
 use oauth2_types::{requests::ResponseMode, scope::Scope};
+use rand::Rng;
 use sqlx::{PgConnection, PgExecutor};
 use ulid::Ulid;
 use url::Url;
 use uuid::Uuid;
 
 use super::client::lookup_client;
-use crate::{DatabaseInconsistencyError, PostgresqlBackend};
+use crate::{Clock, DatabaseInconsistencyError, PostgresqlBackend};
 
 #[tracing::instrument(
     skip_all,
@@ -43,6 +44,8 @@ use crate::{DatabaseInconsistencyError, PostgresqlBackend};
 #[allow(clippy::too_many_arguments)]
 pub async fn new_authorization_grant(
     executor: impl PgExecutor<'_>,
+    mut rng: impl Rng + Send,
+    clock: &Clock,
     client: Client<PostgresqlBackend>,
     redirect_uri: Url,
     scope: Scope,
@@ -67,8 +70,8 @@ pub async fn new_authorization_grant(
     let max_age_i32 = max_age.map(|x| i32::try_from(u32::from(x)).unwrap_or(i32::MAX));
     let code_str = code.as_ref().map(|c| &c.code);
 
-    let created_at = Utc::now();
-    let id = Ulid::from_datetime(created_at.into());
+    let created_at = clock.now();
+    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
     tracing::Span::current().record("grant.id", tracing::field::display(id));
 
     sqlx::query!(
@@ -504,11 +507,13 @@ pub async fn lookup_grant_by_code(
 )]
 pub async fn derive_session(
     executor: impl PgExecutor<'_>,
+    mut rng: impl Rng + Send,
+    clock: &Clock,
     grant: &AuthorizationGrant<PostgresqlBackend>,
     browser_session: BrowserSession<PostgresqlBackend>,
 ) -> Result<Session<PostgresqlBackend>, anyhow::Error> {
-    let created_at = Utc::now();
-    let id = Ulid::from_datetime(created_at.into());
+    let created_at = clock.now();
+    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
     tracing::Span::current().record("session.id", tracing::field::display(id));
 
     sqlx::query!(
@@ -623,9 +628,10 @@ pub async fn give_consent_to_grant(
 )]
 pub async fn exchange_grant(
     executor: impl PgExecutor<'_>,
+    clock: &Clock,
     mut grant: AuthorizationGrant<PostgresqlBackend>,
 ) -> Result<AuthorizationGrant<PostgresqlBackend>, anyhow::Error> {
-    let exchanged_at = Utc::now();
+    let exchanged_at = clock.now();
     sqlx::query!(
         r#"
             UPDATE oauth2_authorization_grants

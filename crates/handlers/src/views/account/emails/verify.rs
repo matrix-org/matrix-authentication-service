@@ -23,9 +23,12 @@ use mas_axum_utils::{
 };
 use mas_keystore::Encrypter;
 use mas_router::Route;
-use mas_storage::user::{
-    consume_email_verification, lookup_user_email_by_id, lookup_user_email_verification_code,
-    mark_user_email_as_verified, set_user_email_as_primary,
+use mas_storage::{
+    user::{
+        consume_email_verification, lookup_user_email_by_id, lookup_user_email_verification_code,
+        mark_user_email_as_verified, set_user_email_as_primary,
+    },
+    Clock,
 };
 use mas_templates::{EmailVerificationPageContext, TemplateContext, Templates};
 use serde::Deserialize;
@@ -84,6 +87,7 @@ pub(crate) async fn post(
     Path(id): Path<Ulid>,
     Form(form): Form<ProtectedForm<CodeForm>>,
 ) -> Result<Response, FancyError> {
+    let clock = Clock::default();
     let mut txn = pool.begin().await?;
 
     let form = cookie_jar.verify_form(form)?;
@@ -105,12 +109,13 @@ pub(crate) async fn post(
     }
 
     // TODO: make those 8 hours configurable
-    let verification = lookup_user_email_verification_code(&mut txn, email, &form.code).await?;
+    let verification =
+        lookup_user_email_verification_code(&mut txn, &clock, email, &form.code).await?;
 
     // TODO: display nice errors if the code was already consumed or expired
-    let verification = consume_email_verification(&mut txn, verification).await?;
+    let verification = consume_email_verification(&mut txn, &clock, verification).await?;
 
-    let _email = mark_user_email_as_verified(&mut txn, verification.email).await?;
+    let _email = mark_user_email_as_verified(&mut txn, &clock, verification.email).await?;
 
     txn.commit().await?;
 

@@ -15,13 +15,14 @@
 use anyhow::Context;
 use chrono::{DateTime, Duration, Utc};
 use mas_data_model::{AccessToken, Authentication, BrowserSession, Session, User, UserEmail};
+use rand::Rng;
 use sqlx::{Acquire, PgExecutor, Postgres};
 use thiserror::Error;
 use ulid::Ulid;
 use uuid::Uuid;
 
 use super::client::{lookup_client, ClientFetchError};
-use crate::{DatabaseInconsistencyError, PostgresqlBackend};
+use crate::{Clock, DatabaseInconsistencyError, PostgresqlBackend};
 
 #[tracing::instrument(
     skip_all,
@@ -35,13 +36,15 @@ use crate::{DatabaseInconsistencyError, PostgresqlBackend};
 )]
 pub async fn add_access_token(
     executor: impl PgExecutor<'_>,
+    mut rng: impl Rng + Send,
+    clock: &Clock,
     session: &Session<PostgresqlBackend>,
     access_token: String,
     expires_after: Duration,
 ) -> Result<AccessToken<PostgresqlBackend>, anyhow::Error> {
-    let created_at = Utc::now();
+    let created_at = clock.now();
     let expires_at = created_at + expires_after;
-    let id = Ulid::from_datetime(created_at.into());
+    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
 
     tracing::Span::current().record("access_token.id", tracing::field::display(id));
 
@@ -243,9 +246,10 @@ where
 )]
 pub async fn revoke_access_token(
     executor: impl PgExecutor<'_>,
+    clock: &Clock,
     access_token: AccessToken<PostgresqlBackend>,
 ) -> anyhow::Result<()> {
-    let revoked_at = Utc::now();
+    let revoked_at = clock.now();
     let res = sqlx::query!(
         r#"
             UPDATE oauth2_access_tokens
@@ -266,9 +270,9 @@ pub async fn revoke_access_token(
     }
 }
 
-pub async fn cleanup_expired(executor: impl PgExecutor<'_>) -> anyhow::Result<u64> {
+pub async fn cleanup_expired(executor: impl PgExecutor<'_>, clock: &Clock) -> anyhow::Result<u64> {
     // Cleanup token which expired more than 15 minutes ago
-    let threshold = Utc::now() - Duration::minutes(15);
+    let threshold = clock.now() - Duration::minutes(15);
     let res = sqlx::query!(
         r#"
             DELETE FROM oauth2_access_tokens

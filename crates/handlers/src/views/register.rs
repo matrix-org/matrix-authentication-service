@@ -39,7 +39,7 @@ use mas_templates::{
     EmailVerificationContext, FieldError, FormError, RegisterContext, RegisterFormField,
     TemplateContext, Templates, ToFormState,
 };
-use rand::{distributions::Uniform, thread_rng, Rng};
+use rand::{distributions::Uniform, Rng};
 use serde::{Deserialize, Serialize};
 use sqlx::{PgConnection, PgPool};
 
@@ -87,6 +87,7 @@ pub(crate) async fn get(
     }
 }
 
+#[allow(clippy::too_many_lines)]
 pub(crate) async fn post(
     State(mailer): State<Mailer>,
     State(policy_factory): State<Arc<PolicyFactory>>,
@@ -96,6 +97,7 @@ pub(crate) async fn post(
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<RegisterForm>>,
 ) -> Result<Response, FancyError> {
+    let (clock, mut rng) = crate::rng_and_clock()?;
     let mut txn = pool.begin().await?;
 
     let form = cookie_jar.verify_form(form)?;
@@ -180,18 +182,34 @@ pub(crate) async fn post(
     }
 
     let pfh = Argon2::default();
-    let user = register_user(&mut txn, pfh, &form.username, &form.password).await?;
+    let user = register_user(
+        &mut txn,
+        &mut rng,
+        &clock,
+        pfh,
+        &form.username,
+        &form.password,
+    )
+    .await?;
 
-    let user_email = add_user_email(&mut txn, &user, form.email).await?;
+    let user_email = add_user_email(&mut txn, &mut rng, &clock, &user, form.email).await?;
 
     // First, generate a code
     let range = Uniform::<u32>::from(0..1_000_000);
-    let code = thread_rng().sample(range).to_string();
+    let code = rng.sample(range);
+    let code = format!("{code:06}");
 
     let address: Address = user_email.email.parse()?;
 
-    let verification =
-        add_user_email_verification_code(&mut txn, user_email, Duration::hours(8), code).await?;
+    let verification = add_user_email_verification_code(
+        &mut txn,
+        &mut rng,
+        &clock,
+        user_email,
+        Duration::hours(8),
+        code,
+    )
+    .await?;
 
     // And send the verification email
     let mailbox = Mailbox::new(Some(user.username.clone()), address);
@@ -203,7 +221,7 @@ pub(crate) async fn post(
     let next = mas_router::AccountVerifyEmail::new(verification.email.data)
         .and_maybe(query.post_auth_action);
 
-    let session = start_session(&mut txn, user).await?;
+    let session = start_session(&mut txn, &mut rng, &clock, user).await?;
 
     txn.commit().await?;
 

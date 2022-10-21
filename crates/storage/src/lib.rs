@@ -15,7 +15,12 @@
 //! Interactions with the database
 
 #![forbid(unsafe_code)]
-#![deny(clippy::all, clippy::str_to_string, rustdoc::broken_intra_doc_links)]
+#![deny(
+    clippy::all,
+    clippy::str_to_string,
+    clippy::future_not_send,
+    rustdoc::broken_intra_doc_links
+)]
 #![warn(clippy::pedantic)]
 #![allow(
     clippy::missing_errors_doc,
@@ -23,11 +28,26 @@
     clippy::module_name_repetitions
 )]
 
+use chrono::{DateTime, Utc};
 use mas_data_model::{StorageBackend, StorageBackendMarker};
 use serde::Serialize;
 use sqlx::migrate::Migrator;
 use thiserror::Error;
 use ulid::Ulid;
+
+#[derive(Default, Debug, Clone, Copy)]
+pub struct Clock {
+    _private: (),
+}
+
+impl Clock {
+    #[must_use]
+    pub fn now(&self) -> DateTime<Utc> {
+        // This is the clock used elsewhere, it's fine to call Utc::now here
+        #[allow(clippy::disallowed_methods)]
+        Utc::now()
+    }
+}
 
 #[derive(Debug, Error)]
 #[error("database query returned an inconsistent state")]

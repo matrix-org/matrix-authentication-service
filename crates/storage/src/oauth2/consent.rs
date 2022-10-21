@@ -14,14 +14,14 @@
 
 use std::str::FromStr;
 
-use chrono::Utc;
 use mas_data_model::{Client, User};
 use oauth2_types::scope::{Scope, ScopeToken};
+use rand::Rng;
 use sqlx::PgExecutor;
 use ulid::Ulid;
 use uuid::Uuid;
 
-use crate::PostgresqlBackend;
+use crate::{Clock, PostgresqlBackend};
 
 #[tracing::instrument(
     skip_all,
@@ -67,17 +67,19 @@ pub async fn fetch_client_consent(
 )]
 pub async fn insert_client_consent(
     executor: impl PgExecutor<'_>,
+    mut rng: impl Rng + Send,
+    clock: &Clock,
     user: &User<PostgresqlBackend>,
     client: &Client<PostgresqlBackend>,
     scope: &Scope,
 ) -> Result<(), anyhow::Error> {
-    let now = Utc::now();
+    let now = clock.now();
     let (tokens, ids): (Vec<String>, Vec<Uuid>) = scope
         .iter()
         .map(|token| {
             (
                 token.to_string(),
-                Uuid::from(Ulid::from_datetime(now.into())),
+                Uuid::from(Ulid::from_datetime_with_source(now.into(), &mut rng)),
             )
         })
         .unzip();

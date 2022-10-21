@@ -28,6 +28,7 @@ use mas_storage::{
         client::ClientFetchError,
         refresh_token::{lookup_active_refresh_token, RefreshTokenLookupError},
     },
+    Clock,
 };
 use oauth2_types::requests::{IntrospectionRequest, IntrospectionResponse};
 use sqlx::PgPool;
@@ -158,6 +159,7 @@ pub(crate) async fn post(
     State(encrypter): State<Encrypter>,
     client_authorization: ClientAuthorization<IntrospectionRequest>,
 ) -> Result<impl IntoResponse, RouteError> {
+    let clock = Clock::default();
     let mut conn = pool.acquire().await?;
 
     let client = client_authorization.credentials.fetch(&mut conn).await?;
@@ -227,7 +229,8 @@ pub(crate) async fn post(
             }
         }
         TokenType::CompatAccessToken => {
-            let (token, session) = lookup_active_compat_access_token(&mut conn, token).await?;
+            let (token, session) =
+                lookup_active_compat_access_token(&mut conn, &clock, token).await?;
 
             let device_scope = session.device.to_scope_token();
             let scope = [device_scope].into_iter().collect();
