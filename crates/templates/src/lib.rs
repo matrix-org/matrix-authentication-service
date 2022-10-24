@@ -362,24 +362,24 @@ register_templates! {
 impl Templates {
     /// Render all templates with the generated samples to check if they render
     /// properly
-    pub async fn check_render(&self) -> anyhow::Result<()> {
-        check::render_login(self).await?;
-        check::render_register(self).await?;
-        check::render_consent(self).await?;
-        check::render_policy_violation(self).await?;
-        check::render_sso_login(self).await?;
-        check::render_index(self).await?;
-        check::render_account_index(self).await?;
-        check::render_account_password(self).await?;
-        check::render_account_emails::<()>(self).await?;
-        check::render_account_add_email(self).await?;
-        check::render_account_verify_email(self).await?;
-        check::render_reauth(self).await?;
-        check::render_form_post::<EmptyContext>(self).await?;
-        check::render_error(self).await?;
-        check::render_email_verification_txt(self).await?;
-        check::render_email_verification_html(self).await?;
-        check::render_email_verification_subject(self).await?;
+    pub async fn check_render(&self, now: chrono::DateTime<chrono::Utc>) -> anyhow::Result<()> {
+        check::render_login(self, now).await?;
+        check::render_register(self, now).await?;
+        check::render_consent(self, now).await?;
+        check::render_policy_violation(self, now).await?;
+        check::render_sso_login(self, now).await?;
+        check::render_index(self, now).await?;
+        check::render_account_index(self, now).await?;
+        check::render_account_password(self, now).await?;
+        check::render_account_emails::<()>(self, now).await?;
+        check::render_account_add_email(self, now).await?;
+        check::render_account_verify_email(self, now).await?;
+        check::render_reauth(self, now).await?;
+        check::render_form_post::<EmptyContext>(self, now).await?;
+        check::render_error(self, now).await?;
+        check::render_email_verification_txt(self, now).await?;
+        check::render_email_verification_html(self, now).await?;
+        check::render_email_verification_subject(self, now).await?;
         Ok(())
     }
 }
@@ -390,8 +390,11 @@ mod tests {
 
     #[tokio::test]
     async fn check_builtin_templates() {
+        #[allow(clippy::disallowed_methods)]
+        let now = chrono::Utc::now();
+
         let url_builder = UrlBuilder::new("https://example.com/".parse().unwrap());
         let templates = Templates::load(None, true, url_builder).await.unwrap();
-        templates.check_render().await.unwrap();
+        templates.check_render(now).await.unwrap();
     }
 }

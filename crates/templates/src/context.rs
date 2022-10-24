@@ -77,13 +77,13 @@ pub trait TemplateContext: Serialize {
     ///
     /// This is then used to check for template validity in unit tests and in
     /// the CLI (`cargo run -- templates check`)
-    fn sample() -> Vec<Self>
+    fn sample(now: chrono::DateTime<Utc>) -> Vec<Self>
     where
         Self: Sized;
 }
 
 impl TemplateContext for () {
-    fn sample() -> Vec<Self>
+    fn sample(_now: chrono::DateTime<Utc>) -> Vec<Self>
     where
         Self: Sized,
     {
@@ -101,11 +101,11 @@ pub struct WithCsrf<T> {
 }
 
 impl<T: TemplateContext> TemplateContext for WithCsrf<T> {
-    fn sample() -> Vec<Self>
+    fn sample(now: chrono::DateTime<Utc>) -> Vec<Self>
     where
         Self: Sized,
     {
-        T::sample()
+        T::sample(now)
             .into_iter()
             .map(|inner| WithCsrf {
                 csrf_token: "fake_csrf_token".into(),
@@ -125,14 +125,14 @@ pub struct WithSession<T> {
 }
 
 impl<T: TemplateContext> TemplateContext for WithSession<T> {
-    fn sample() -> Vec<Self>
+    fn sample(now: chrono::DateTime<Utc>) -> Vec<Self>
     where
         Self: Sized,
     {
-        BrowserSession::samples()
+        BrowserSession::samples(now)
             .into_iter()
             .flat_map(|session| {
-                T::sample().into_iter().map(move |inner| WithSession {
+                T::sample(now).into_iter().map(move |inner| WithSession {
                     current_session: session.clone(),
                     inner,
                 })
@@ -151,16 +151,16 @@ pub struct WithOptionalSession<T> {
 }
 
 impl<T: TemplateContext> TemplateContext for WithOptionalSession<T> {
-    fn sample() -> Vec<Self>
+    fn sample(now: chrono::DateTime<Utc>) -> Vec<Self>
     where
         Self: Sized,
     {
-        BrowserSession::samples()
+        BrowserSession::samples(now)
             .into_iter()
             .map(Some) // Wrap all samples in an Option
             .chain(std::iter::once(None)) // Add the "None" option
             .flat_map(|session| {
-                T::sample()
+                T::sample(now)
                     .into_iter()
                     .map(move |inner| WithOptionalSession {
                         current_session: session.clone(),
@@ -188,7 +188,7 @@ impl Serialize for EmptyContext {
 }
 
 impl TemplateContext for EmptyContext {
-    fn sample() -> Vec<Self>
+    fn sample(_now: chrono::DateTime<Utc>) -> Vec<Self>
     where
         Self: Sized,
     {
@@ -212,7 +212,7 @@ impl IndexContext {
 }
 
 impl TemplateContext for IndexContext {
-    fn sample() -> Vec<Self>
+    fn sample(_now: chrono::DateTime<Utc>) -> Vec<Self>
     where
         Self: Sized,
     {
@@ -274,7 +274,7 @@ pub struct LoginContext {
 }
 
 impl TemplateContext for LoginContext {
-    fn sample() -> Vec<Self>
+    fn sample(_now: chrono::DateTime<Utc>) -> Vec<Self>
     where
         Self: Sized,
     {
@@ -348,7 +348,7 @@ pub struct RegisterContext {
 }
 
 impl TemplateContext for RegisterContext {
-    fn sample() -> Vec<Self>
+    fn sample(_now: chrono::DateTime<Utc>) -> Vec<Self>
     where
         Self: Sized,
     {
@@ -392,7 +392,7 @@ pub struct ConsentContext {
 }
 
 impl TemplateContext for ConsentContext {
-    fn sample() -> Vec<Self>
+    fn sample(_now: chrono::DateTime<Utc>) -> Vec<Self>
     where
         Self: Sized,
     {
@@ -423,7 +423,7 @@ pub struct PolicyViolationContext {
 }
 
 impl TemplateContext for PolicyViolationContext {
-    fn sample() -> Vec<Self>
+    fn sample(_now: chrono::DateTime<Utc>) -> Vec<Self>
     where
         Self: Sized,
     {
@@ -471,7 +471,7 @@ pub struct ReauthContext {
 }
 
 impl TemplateContext for ReauthContext {
-    fn sample() -> Vec<Self>
+    fn sample(_now: chrono::DateTime<Utc>) -> Vec<Self>
     where
         Self: Sized,
     {
@@ -510,7 +510,7 @@ pub struct CompatSsoContext {
 }
 
 impl TemplateContext for CompatSsoContext {
-    fn sample() -> Vec<Self>
+    fn sample(now: chrono::DateTime<Utc>) -> Vec<Self>
     where
         Self: Sized,
     {
@@ -519,10 +519,10 @@ impl TemplateContext for CompatSsoContext {
                 data: (),
                 redirect_uri: Url::parse("https://app.element.io/").unwrap(),
                 login_token: "abcdefghijklmnopqrstuvwxyz012345".into(),
-                created_at: Utc::now(),
+                created_at: now,
                 state: CompatSsoLoginState::Pending,
             },
-            action: PostAuthAction::ContinueCompatSsoLogin { data: Ulid::new() },
+            action: PostAuthAction::ContinueCompatSsoLogin { data: Ulid::nil() },
         }]
     }
 }
@@ -563,11 +563,11 @@ impl AccountContext {
 }
 
 impl TemplateContext for AccountContext {
-    fn sample() -> Vec<Self>
+    fn sample(now: chrono::DateTime<Utc>) -> Vec<Self>
     where
         Self: Sized,
     {
-        let emails: Vec<UserEmail<()>> = UserEmail::samples();
+        let emails: Vec<UserEmail<()>> = UserEmail::samples(now);
         vec![Self::new(5, emails)]
     }
 }
@@ -588,11 +588,11 @@ impl<T: StorageBackend> AccountEmailsContext<T> {
 }
 
 impl<T: StorageBackend> TemplateContext for AccountEmailsContext<T> {
-    fn sample() -> Vec<Self>
+    fn sample(now: chrono::DateTime<Utc>) -> Vec<Self>
     where
         Self: Sized,
     {
-        let emails: Vec<UserEmail<T>> = UserEmail::samples();
+        let emails: Vec<UserEmail<T>> = UserEmail::samples(now);
         vec![Self::new(emails)]
     }
 }
@@ -613,17 +613,17 @@ impl EmailVerificationContext {
 }
 
 impl TemplateContext for EmailVerificationContext {
-    fn sample() -> Vec<Self>
+    fn sample(now: chrono::DateTime<Utc>) -> Vec<Self>
     where
         Self: Sized,
     {
-        User::samples()
+        User::samples(now)
             .into_iter()
             .map(|user| {
                 let email = UserEmail {
                     data: (),
                     email: "foobar@example.com".to_owned(),
-                    created_at: Utc::now(),
+                    created_at: now,
                     confirmed_at: None,
                 };
 
@@ -631,7 +631,7 @@ impl TemplateContext for EmailVerificationContext {
                     data: (),
                     code: "123456".to_owned(),
                     email,
-                    created_at: Utc::now(),
+                    created_at: now,
                     state: mas_data_model::UserEmailVerificationState::Valid,
                 };
 
@@ -685,14 +685,14 @@ impl EmailVerificationPageContext {
 }
 
 impl TemplateContext for EmailVerificationPageContext {
-    fn sample() -> Vec<Self>
+    fn sample(now: chrono::DateTime<Utc>) -> Vec<Self>
     where
         Self: Sized,
     {
         let email = UserEmail {
             data: (),
             email: "foobar@example.com".to_owned(),
-            created_at: Utc::now(),
+            created_at: now,
             confirmed_at: None,
         };
 
@@ -740,7 +740,7 @@ impl EmailAddContext {
 }
 
 impl TemplateContext for EmailAddContext {
-    fn sample() -> Vec<Self>
+    fn sample(_now: chrono::DateTime<Utc>) -> Vec<Self>
     where
         Self: Sized,
     {
@@ -756,11 +756,11 @@ pub struct FormPostContext<T> {
 }
 
 impl<T: TemplateContext> TemplateContext for FormPostContext<T> {
-    fn sample() -> Vec<Self>
+    fn sample(now: chrono::DateTime<Utc>) -> Vec<Self>
     where
         Self: Sized,
     {
-        let sample_params = T::sample();
+        let sample_params = T::sample(now);
         sample_params
             .into_iter()
             .map(|params| FormPostContext {
@@ -790,7 +790,7 @@ pub struct ErrorContext {
 }
 
 impl TemplateContext for ErrorContext {
-    fn sample() -> Vec<Self>
+    fn sample(_now: chrono::DateTime<Utc>) -> Vec<Self>
     where
         Self: Sized,
     {

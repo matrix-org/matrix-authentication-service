@@ -15,6 +15,7 @@
 use std::path::PathBuf;
 
 use clap::Parser;
+use mas_storage::Clock;
 use mas_templates::Templates;
 
 #[derive(Parser, Debug)]
@@ -57,10 +58,11 @@ impl Options {
             }
 
             SC::Check { path, skip_builtin } => {
+                let clock = Clock::default();
                 let url_builder = mas_router::UrlBuilder::new("https://example.com/".parse()?);
                 let templates =
                     Templates::load(Some(path.into()), !skip_builtin, url_builder).await?;
-                templates.check_render().await?;
+                templates.check_render(clock.now()).await?;
 
                 Ok(())
             }

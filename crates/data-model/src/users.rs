@@ -31,7 +31,7 @@ where
     T::UserData: Default,
 {
     #[must_use]
-    pub fn samples() -> Vec<Self> {
+    pub fn samples(_now: chrono::DateTime<Utc>) -> Vec<Self> {
         vec![User {
             data: Default::default(),
             username: "john".to_owned(),
@@ -105,13 +105,13 @@ where
     T::UserData: Default,
 {
     #[must_use]
-    pub fn samples() -> Vec<Self> {
-        User::<T>::samples()
+    pub fn samples(now: chrono::DateTime<Utc>) -> Vec<Self> {
+        User::<T>::samples(now)
             .into_iter()
             .map(|user| BrowserSession {
                 data: Default::default(),
                 user,
-                created_at: Utc::now(),
+                created_at: now,
                 last_authentication: None,
             })
             .collect()
@@ -143,18 +143,18 @@ where
     T::UserEmailData: Default,
 {
     #[must_use]
-    pub fn samples() -> Vec<Self> {
+    pub fn samples(now: chrono::DateTime<Utc>) -> Vec<Self> {
         vec![
             Self {
                 data: T::UserEmailData::default(),
                 email: "alice@example.com".to_owned(),
-                created_at: Utc::now(),
-                confirmed_at: Some(Utc::now()),
+                created_at: now,
+                confirmed_at: Some(now),
             },
             Self {
                 data: T::UserEmailData::default(),
                 email: "bob@example.com".to_owned(),
-                created_at: Utc::now(),
+                created_at: now,
                 confirmed_at: None,
             },
         ]
@@ -195,13 +195,13 @@ where
     T::UserEmailData: Default + Clone,
 {
     #[must_use]
-    pub fn samples() -> Vec<Self> {
+    pub fn samples(now: chrono::DateTime<Utc>) -> Vec<Self> {
         let states = [
             UserEmailVerificationState::AlreadyUsed {
-                when: Utc::now() - Duration::minutes(5),
+                when: now - Duration::minutes(5),
             },
             UserEmailVerificationState::Expired {
-                when: Utc::now() - Duration::hours(5),
+                when: now - Duration::hours(5),
             },
             UserEmailVerificationState::Valid,
         ];
@@ -209,11 +209,11 @@ where
         states
             .into_iter()
             .flat_map(|state| {
-                UserEmail::samples().into_iter().map(move |email| Self {
+                UserEmail::samples(now).into_iter().map(move |email| Self {
                     data: Default::default(),
                     code: "123456".to_owned(),
                     email,
-                    created_at: Utc::now() - Duration::minutes(10),
+                    created_at: now - Duration::minutes(10),
                     state: state.clone(),
                 })
             })
