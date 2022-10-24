@@ -150,32 +150,17 @@ impl<T, V> Claim<T, V> {
 
 #[derive(Debug, Clone)]
 pub struct TimeOptions {
-    when: Option<chrono::DateTime<chrono::Utc>>,
+    when: chrono::DateTime<chrono::Utc>,
     leeway: chrono::Duration,
-}
-
-impl Default for TimeOptions {
-    fn default() -> Self {
-        Self {
-            when: None,
-            leeway: chrono::Duration::minutes(5),
-        }
-    }
 }
 
 impl TimeOptions {
     #[must_use]
     pub fn new(when: chrono::DateTime<chrono::Utc>) -> Self {
         Self {
-            when: Some(when),
-            ..Self::default()
+            when,
+            leeway: chrono::Duration::minutes(5),
         }
-    }
-
-    #[must_use]
-    pub fn freeze(mut self) -> Self {
-        self.when = Some(chrono::Utc::now());
-        self
     }
 
     #[must_use]
@@ -183,18 +168,14 @@ impl TimeOptions {
         self.leeway = leeway;
         self
     }
-
-    fn when(&self) -> chrono::DateTime<chrono::Utc> {
-        self.when.unwrap_or_else(chrono::Utc::now)
-    }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct TimeNotAfter(TimeOptions);
 
 impl Validator<Timestamp> for TimeNotAfter {
     fn validate(&self, value: &Timestamp) -> Result<(), anyhow::Error> {
-        if self.0.when() <= value.0 + self.0.leeway {
+        if self.0.when <= value.0 + self.0.leeway {
             Ok(())
         } else {
             Err(anyhow::anyhow!("current time is too far away"))
@@ -214,12 +195,12 @@ impl From<&TimeOptions> for TimeNotAfter {
     }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct TimeNotBefore(TimeOptions);
 
 impl Validator<Timestamp> for TimeNotBefore {
     fn validate(&self, value: &Timestamp) -> Result<(), anyhow::Error> {
-        if self.0.when() >= value.0 - self.0.leeway {
+        if self.0.when >= value.0 - self.0.leeway {
             Ok(())
         } else {
             Err(anyhow::anyhow!("current time is too far before"))
