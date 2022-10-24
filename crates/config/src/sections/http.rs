@@ -17,6 +17,7 @@ use std::{borrow::Cow, io::Cursor, ops::Deref, path::PathBuf};
 use anyhow::bail;
 use async_trait::async_trait;
 use mas_keystore::PrivateKey;
+use rand::Rng;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
@@ -328,7 +329,10 @@ impl ConfigurationSection<'_> for HttpConfig {
         "http"
     }
 
-    async fn generate() -> anyhow::Result<Self> {
+    async fn generate<R>(_rng: R) -> anyhow::Result<Self>
+    where
+        R: Rng + Send,
+    {
         Ok(Self::default())
     }
 

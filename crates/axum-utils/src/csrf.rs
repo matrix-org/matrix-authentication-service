@@ -15,7 +15,7 @@
 use axum_extra::extract::cookie::{Cookie, PrivateCookieJar};
 use chrono::{DateTime, Duration, Utc};
 use data_encoding::{DecodeError, BASE64URL_NOPAD};
-use rand::{thread_rng, Rng};
+use rand::{Rng, RngCore};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, TimestampSeconds};
 use thiserror::Error;
@@ -108,22 +108,21 @@ pub struct ProtectedForm<T> {
 }
 
 pub trait CsrfExt {
-    fn csrf_token(self) -> (CsrfToken, Self);
-    fn verify_form<T>(&self, form: ProtectedForm<T>) -> Result<T, CsrfError>;
+    fn csrf_token<R>(self, now: DateTime<Utc>, rng: R) -> (CsrfToken, Self)
+    where
+        R: RngCore;
+    fn verify_form<T>(&self, now: DateTime<Utc>, form: ProtectedForm<T>) -> Result<T, CsrfError>;
 }
 
 impl<K> CsrfExt for PrivateCookieJar<K> {
-    fn csrf_token(self) -> (CsrfToken, Self) {
+    fn csrf_token<R>(self, now: DateTime<Utc>, rng: R) -> (CsrfToken, Self)
+    where
+        R: RngCore,
+    {
         let jar = self;
         let mut cookie = jar.get("csrf").unwrap_or_else(|| Cookie::new("csrf", ""));
         cookie.set_path("/");
         cookie.set_http_only(true);
-
-        // XXX: the rng source and clock should come from somewhere else
-        #[allow(clippy::disallowed_methods)]
-        let now = Utc::now();
-        #[allow(clippy::disallowed_methods)]
-        let rng = thread_rng();
 
         let new_token = cookie
             .decode()
@@ -137,11 +136,7 @@ impl<K> CsrfExt for PrivateCookieJar<K> {
         (new_token, jar)
     }
 
-    fn verify_form<T>(&self, form: ProtectedForm<T>) -> Result<T, CsrfError> {
-        // XXX: the clock should come from somewhere else
-        #[allow(clippy::disallowed_methods)]
-        let now = Utc::now();
-
+    fn verify_form<T>(&self, now: DateTime<Utc>, form: ProtectedForm<T>) -> Result<T, CsrfError> {
         let cookie = self.get("csrf").ok_or(CsrfError::Missing)?;
         let token: CsrfToken = cookie.decode()?;
         let token = token.verify_expiration(now)?;

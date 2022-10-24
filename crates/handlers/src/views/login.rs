@@ -42,16 +42,16 @@ impl ToFormState for LoginForm {
     type Field = LoginFormField;
 }
 
-#[tracing::instrument(skip(templates, pool, cookie_jar))]
 pub(crate) async fn get(
     State(templates): State<Templates>,
     State(pool): State<PgPool>,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
+    let (clock, mut rng) = crate::rng_and_clock()?;
     let mut conn = pool.acquire().await?;
 
-    let (csrf_token, cookie_jar) = cookie_jar.csrf_token();
+    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
     let maybe_session = session_info.load_session(&mut conn).await?;
@@ -83,9 +83,9 @@ pub(crate) async fn post(
     let (clock, mut rng) = crate::rng_and_clock()?;
     let mut conn = pool.acquire().await?;
 
-    let form = cookie_jar.verify_form(form)?;
+    let form = cookie_jar.verify_form(clock.now(), form)?;
 
-    let (csrf_token, cookie_jar) = cookie_jar.csrf_token();
+    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
 
     // Validate the form
     let state = {

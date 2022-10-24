@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use async_trait::async_trait;
+use rand::Rng;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -96,18 +97,21 @@ impl ConfigurationSection<'_> for RootConfig {
         ""
     }
 
-    async fn generate() -> anyhow::Result<Self> {
+    async fn generate<R>(mut rng: R) -> anyhow::Result<Self>
+    where
+        R: Rng + Send,
+    {
         Ok(Self {
-            clients: ClientsConfig::generate().await?,
-            http: HttpConfig::generate().await?,
-            database: DatabaseConfig::generate().await?,
-            telemetry: TelemetryConfig::generate().await?,
-            templates: TemplatesConfig::generate().await?,
-            csrf: CsrfConfig::generate().await?,
-            email: EmailConfig::generate().await?,
-            secrets: SecretsConfig::generate().await?,
-            matrix: MatrixConfig::generate().await?,
-            policy: PolicyConfig::generate().await?,
+            clients: ClientsConfig::generate(&mut rng).await?,
+            http: HttpConfig::generate(&mut rng).await?,
+            database: DatabaseConfig::generate(&mut rng).await?,
+            telemetry: TelemetryConfig::generate(&mut rng).await?,
+            templates: TemplatesConfig::generate(&mut rng).await?,
+            csrf: CsrfConfig::generate(&mut rng).await?,
+            email: EmailConfig::generate(&mut rng).await?,
+            secrets: SecretsConfig::generate(&mut rng).await?,
+            matrix: MatrixConfig::generate(&mut rng).await?,
+            policy: PolicyConfig::generate(&mut rng).await?,
         })
     }
 

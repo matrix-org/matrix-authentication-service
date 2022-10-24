@@ -34,7 +34,7 @@ pub(crate) async fn post(
     let clock = Clock::default();
     let mut txn = pool.begin().await?;
 
-    let form = cookie_jar.verify_form(form)?;
+    let form = cookie_jar.verify_form(clock.now(), form)?;
 
     let (session_info, mut cookie_jar) = cookie_jar.session_info();
 

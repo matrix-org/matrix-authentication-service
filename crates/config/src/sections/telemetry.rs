@@ -15,6 +15,7 @@
 use std::num::NonZeroU16;
 
 use async_trait::async_trait;
+use rand::Rng;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
@@ -274,7 +275,10 @@ impl ConfigurationSection<'_> for TelemetryConfig {
         "telemetry"
     }
 
-    async fn generate() -> anyhow::Result<Self> {
+    async fn generate<R>(_rng: R) -> anyhow::Result<Self>
+    where
+        R: Rng + Send,
+    {
         Ok(Self::default())
     }
 

@@ -28,10 +28,7 @@ use mas_axum_utils::{
 use mas_data_model::Device;
 use mas_keystore::Encrypter;
 use mas_router::{CompatLoginSsoAction, PostAuthAction, Route};
-use mas_storage::{
-    compat::{fullfill_compat_sso_login, get_compat_sso_login_by_id},
-    Clock,
-};
+use mas_storage::compat::{fullfill_compat_sso_login, get_compat_sso_login_by_id};
 use mas_templates::{CompatSsoContext, ErrorContext, TemplateContext, Templates};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -58,11 +55,11 @@ pub async fn get(
     Path(id): Path<Ulid>,
     Query(params): Query<Params>,
 ) -> Result<Response, FancyError> {
-    let clock = Clock::default();
+    let (clock, mut rng) = crate::rng_and_clock()?;
     let mut conn = pool.acquire().await?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
-    let (csrf_token, cookie_jar) = cookie_jar.csrf_token();
+    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
 
     let maybe_session = session_info.load_session(&mut conn).await?;
 
@@ -128,7 +125,7 @@ pub async fn post(
     let mut txn = pool.begin().await?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
-    cookie_jar.verify_form(form)?;
+    cookie_jar.verify_form(clock.now(), form)?;
 
     let maybe_session = session_info.load_session(&mut txn).await?;
 

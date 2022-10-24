@@ -32,9 +32,10 @@ pub(crate) async fn get(
     State(pool): State<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
+    let (clock, mut rng) = crate::rng_and_clock()?;
     let mut conn = pool.acquire().await?;
 
-    let (csrf_token, cookie_jar) = cookie_jar.csrf_token();
+    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
     let maybe_session = session_info.load_session(&mut conn).await?;
