@@ -21,6 +21,7 @@ use figment::{
     providers::{Env, Format, Serialized, Yaml},
     Figment, Profile,
 };
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 
 #[async_trait]
@@ -31,7 +32,9 @@ pub trait ConfigurationSection<'a>: Sized + Deserialize<'a> + Serialize {
     fn path() -> &'static str;
 
     /// Generate a sample configuration for this section.
-    async fn generate() -> anyhow::Result<Self>;
+    async fn generate<R>(rng: R) -> anyhow::Result<Self>
+    where
+        R: Rng + Send;
 
     /// Generate a sample configuration and override it with environment
     /// variables.
@@ -44,8 +47,11 @@ pub trait ConfigurationSection<'a>: Sized + Deserialize<'a> + Serialize {
     /// export MAS_HTTP_ADDRESS=127.0.0.1:1234
     /// matrix-authentication-service config generate
     /// ```
-    async fn load_and_generate() -> anyhow::Result<Self> {
-        let base = Self::generate()
+    async fn load_and_generate<R>(rng: R) -> anyhow::Result<Self>
+    where
+        R: Rng + Send,
+    {
+        let base = Self::generate(rng)
             .await
             .context("could not generate configuration")?;
 

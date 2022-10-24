@@ -15,6 +15,7 @@
 use std::path::PathBuf;
 
 use async_trait::async_trait;
+use rand::Rng;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
@@ -76,7 +77,10 @@ impl ConfigurationSection<'_> for PolicyConfig {
         "policy"
     }
 
-    async fn generate() -> anyhow::Result<Self> {
+    async fn generate<R>(_rng: R) -> anyhow::Result<Self>
+    where
+        R: Rng + Send,
+    {
         Ok(Self::default())
     }
 

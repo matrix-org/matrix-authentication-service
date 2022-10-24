@@ -57,6 +57,7 @@ pub(crate) async fn get(
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(grant_id): Path<Ulid>,
 ) -> Result<Response, RouteError> {
+    let (clock, mut rng) = crate::rng_and_clock()?;
     let mut conn = pool
         .acquire()
         .await
@@ -76,7 +77,7 @@ pub(crate) async fn get(
     }
 
     if let Some(session) = maybe_session {
-        let (csrf_token, cookie_jar) = cookie_jar.csrf_token();
+        let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
 
         let mut policy = policy_factory.instantiate().await?;
         let res = policy
@@ -126,7 +127,7 @@ pub(crate) async fn post(
         .context("failed to begin db transaction")?;
 
     cookie_jar
-        .verify_form(form)
+        .verify_form(clock.now(), form)
         .context("csrf verification failed")?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();

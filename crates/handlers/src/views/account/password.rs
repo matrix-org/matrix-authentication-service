@@ -27,9 +27,10 @@ use mas_keystore::Encrypter;
 use mas_router::Route;
 use mas_storage::{
     user::{authenticate_session, set_password},
-    PostgresqlBackend,
+    Clock, PostgresqlBackend,
 };
 use mas_templates::{EmptyContext, TemplateContext, Templates};
+use rand::Rng;
 use serde::Deserialize;
 use sqlx::PgPool;
 
@@ -45,6 +46,7 @@ pub(crate) async fn get(
     State(pool): State<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
+    let (clock, mut rng) = crate::rng_and_clock()?;
     let mut conn = pool.acquire().await?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
@@ -52,7 +54,7 @@ pub(crate) async fn get(
     let maybe_session = session_info.load_session(&mut conn).await?;
 
     if let Some(session) = maybe_session {
-        render(templates, session, cookie_jar).await
+        render(&mut rng, &clock, templates, session, cookie_jar).await
     } else {
         let login = mas_router::Login::and_then(mas_router::PostAuthAction::ChangePassword);
         Ok((cookie_jar, login.go()).into_response())
@@ -60,11 +62,13 @@ pub(crate) async fn get(
 }
 
 async fn render(
+    rng: impl Rng,
+    clock: &Clock,
     templates: Templates,
     session: BrowserSession<PostgresqlBackend>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
-    let (csrf_token, cookie_jar) = cookie_jar.csrf_token();
+    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), rng);
 
     let ctx = EmptyContext
         .with_session(session)
@@ -84,7 +88,7 @@ pub(crate) async fn post(
     let (clock, mut rng) = crate::rng_and_clock()?;
     let mut txn = pool.begin().await?;
 
-    let form = cookie_jar.verify_form(form)?;
+    let form = cookie_jar.verify_form(clock.now(), form)?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
@@ -122,7 +126,7 @@ pub(crate) async fn post(
     )
     .await?;
 
-    let reply = render(templates.clone(), session, cookie_jar).await?;
+    let reply = render(&mut rng, &clock, templates.clone(), session, cookie_jar).await?;
 
     txn.commit().await?;
 

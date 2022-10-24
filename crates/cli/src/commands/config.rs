@@ -14,6 +14,7 @@
 
 use clap::Parser;
 use mas_config::{ConfigurationSection, RootConfig};
+use rand::SeedableRng;
 use tracing::info;
 
 #[derive(Parser, Debug)]
@@ -51,7 +52,9 @@ impl Options {
                 Ok(())
             }
             SC::Generate => {
-                let config = RootConfig::load_and_generate().await?;
+                // XXX: we should disallow SeedableRng::from_entropy
+                let rng = rand_chacha::ChaChaRng::from_entropy();
+                let config = RootConfig::load_and_generate(rng).await?;
 
                 serde_yaml::to_writer(std::io::stdout(), &config)?;
 

@@ -18,6 +18,7 @@ use anyhow::Context;
 use async_trait::async_trait;
 use lettre::{message::Mailbox, Address};
 use mas_email::MailTransport;
+use rand::Rng;
 use schemars::{
     gen::SchemaGenerator,
     schema::{InstanceType, Schema, SchemaObject},
@@ -160,7 +161,10 @@ impl ConfigurationSection<'_> for EmailConfig {
         "email"
     }
 
-    async fn generate() -> anyhow::Result<Self> {
+    async fn generate<R>(_rng: R) -> anyhow::Result<Self>
+    where
+        R: Rng + Send,
+    {
         Ok(Self::default())
     }
 

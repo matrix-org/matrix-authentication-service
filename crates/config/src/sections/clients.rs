@@ -17,6 +17,7 @@ use std::ops::{Deref, DerefMut};
 use async_trait::async_trait;
 use mas_iana::oauth::OAuthClientAuthenticationMethod;
 use mas_jose::jwk::PublicJsonWebKeySet;
+use rand::Rng;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
@@ -171,8 +172,10 @@ impl ConfigurationSection<'_> for ClientsConfig {
         "clients"
     }
 
-    #[tracing::instrument]
-    async fn generate() -> anyhow::Result<Self> {
+    async fn generate<R>(_rng: R) -> anyhow::Result<Self>
+    where
+        R: Rng + Send,
+    {
         Ok(Self::default())
     }
 

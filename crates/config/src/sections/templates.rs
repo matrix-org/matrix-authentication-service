@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use async_trait::async_trait;
+use rand::Rng;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -49,7 +50,10 @@ impl ConfigurationSection<'_> for TemplatesConfig {
         "templates"
     }
 
-    async fn generate() -> anyhow::Result<Self> {
+    async fn generate<R>(_rng: R) -> anyhow::Result<Self>
+    where
+        R: Rng + Send,
+    {
         Ok(Self::default())
     }
 

@@ -20,7 +20,7 @@ use mas_jose::jwk::{JsonWebKey, JsonWebKeySet};
 use mas_keystore::{Encrypter, Keystore, PrivateKey};
 use rand::{
     distributions::{Alphanumeric, DistString},
-    thread_rng, SeedableRng,
+    Rng, SeedableRng,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -137,12 +137,11 @@ impl ConfigurationSection<'_> for SecretsConfig {
         "secrets"
     }
 
-    #[tracing::instrument]
-    async fn generate() -> anyhow::Result<Self> {
-        // XXX: that RNG should come from somewhere else
-        #[allow(clippy::disallowed_methods)]
-        let mut rng = rand_chacha::ChaChaRng::from_rng(thread_rng())?;
-
+    #[tracing::instrument(skip_all)]
+    async fn generate<R>(mut rng: R) -> anyhow::Result<Self>
+    where
+        R: Rng + Send,
+    {
         info!("Generating keys...");
 
         let span = tracing::info_span!("rsa");
