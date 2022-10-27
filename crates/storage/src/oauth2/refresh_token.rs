@@ -179,14 +179,16 @@ pub async fn lookup_active_refresh_token(
         res.oauth2_access_token_expires_at,
     ) {
         (None, None, None, None) => None,
-        (Some(id), Some(access_token), Some(created_at), Some(expires_at)) => Some(AccessToken {
-            data: id.into(),
-            // XXX: are we doing that everywhere?
-            jti: Ulid::from(id).to_string(),
-            access_token,
-            created_at,
-            expires_at,
-        }),
+        (Some(id), Some(access_token), Some(created_at), Some(expires_at)) => {
+            let id = Ulid::from(id);
+            Some(AccessToken {
+                data: id,
+                jti: id.to_string(),
+                access_token,
+                created_at,
+                expires_at,
+            })
+        }
         _ => return Err(DatabaseInconsistencyError.into()),
     };
 

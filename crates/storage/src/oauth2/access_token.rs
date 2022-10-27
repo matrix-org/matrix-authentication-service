@@ -110,26 +110,18 @@ impl AccessTokenLookupError {
     }
 }
 
-// TODO: remove that manual async
-#[allow(clippy::too_many_lines, clippy::manual_async_fn)]
-pub fn lookup_active_access_token<'a, 'c, A>(
+#[allow(clippy::too_many_lines)]
+pub async fn lookup_active_access_token<'a, 'c, A>(
     conn: A,
     token: &'a str,
-) -> impl std::future::Future<
-    Output = Result<
-        (AccessToken<PostgresqlBackend>, Session<PostgresqlBackend>),
-        AccessTokenLookupError,
-    >,
-> + Send
-       + 'a
+) -> Result<(AccessToken<PostgresqlBackend>, Session<PostgresqlBackend>), AccessTokenLookupError>
 where
     A: Acquire<'c, Database = Postgres> + Send + 'a,
 {
-    async move {
-        let mut conn = conn.acquire().await?;
-        let res = sqlx::query_as!(
-            OAuth2AccessTokenLookup,
-            r#"
+    let mut conn = conn.acquire().await?;
+    let res = sqlx::query_as!(
+        OAuth2AccessTokenLookup,
+        r#"
             SELECT
                 at.oauth2_access_token_id,
                 at.access_token    AS "oauth2_access_token",
@@ -168,75 +160,75 @@ where
             ORDER BY usa.created_at DESC
             LIMIT 1
         "#,
-            token,
-        )
-        .fetch_one(&mut *conn)
-        .await?;
+        token,
+    )
+    .fetch_one(&mut *conn)
+    .await?;
 
-        let access_token = AccessToken {
-            data: res.oauth2_access_token_id.into(),
-            jti: res.oauth2_access_token_id.to_string(),
-            access_token: res.oauth2_access_token,
-            created_at: res.oauth2_access_token_created_at,
-            expires_at: res.oauth2_access_token_expires_at,
-        };
+    let id = Ulid::from(res.oauth2_access_token_id);
+    let access_token = AccessToken {
+        data: id,
+        jti: id.to_string(),
+        access_token: res.oauth2_access_token,
+        created_at: res.oauth2_access_token_created_at,
+        expires_at: res.oauth2_access_token_expires_at,
+    };
 
-        let client = lookup_client(&mut *conn, res.oauth2_client_id.into()).await?;
+    let client = lookup_client(&mut *conn, res.oauth2_client_id.into()).await?;
 
-        let primary_email = match (
-            res.user_email_id,
-            res.user_email,
-            res.user_email_created_at,
-            res.user_email_confirmed_at,
-        ) {
-            (Some(id), Some(email), Some(created_at), confirmed_at) => Some(UserEmail {
-                data: id.into(),
-                email,
-                created_at,
-                confirmed_at,
-            }),
-            (None, None, None, None) => None,
-            _ => return Err(DatabaseInconsistencyError.into()),
-        };
+    let primary_email = match (
+        res.user_email_id,
+        res.user_email,
+        res.user_email_created_at,
+        res.user_email_confirmed_at,
+    ) {
+        (Some(id), Some(email), Some(created_at), confirmed_at) => Some(UserEmail {
+            data: id.into(),
+            email,
+            created_at,
+            confirmed_at,
+        }),
+        (None, None, None, None) => None,
+        _ => return Err(DatabaseInconsistencyError.into()),
+    };
 
-        let id = Ulid::from(res.user_id);
-        let user = User {
-            data: id,
-            username: res.user_username,
-            sub: id.to_string(),
-            primary_email,
-        };
+    let id = Ulid::from(res.user_id);
+    let user = User {
+        data: id,
+        username: res.user_username,
+        sub: id.to_string(),
+        primary_email,
+    };
 
-        let last_authentication = match (
-            res.user_session_last_authentication_id,
-            res.user_session_last_authentication_created_at,
-        ) {
-            (None, None) => None,
-            (Some(id), Some(created_at)) => Some(Authentication {
-                data: id.into(),
-                created_at,
-            }),
-            _ => return Err(DatabaseInconsistencyError.into()),
-        };
+    let last_authentication = match (
+        res.user_session_last_authentication_id,
+        res.user_session_last_authentication_created_at,
+    ) {
+        (None, None) => None,
+        (Some(id), Some(created_at)) => Some(Authentication {
+            data: id.into(),
+            created_at,
+        }),
+        _ => return Err(DatabaseInconsistencyError.into()),
+    };
 
-        let browser_session = BrowserSession {
-            data: res.user_session_id.into(),
-            created_at: res.user_session_created_at,
-            user,
-            last_authentication,
-        };
+    let browser_session = BrowserSession {
+        data: res.user_session_id.into(),
+        created_at: res.user_session_created_at,
+        user,
+        last_authentication,
+    };
 
-        let scope = res.scope.parse().map_err(|_e| DatabaseInconsistencyError)?;
+    let scope = res.scope.parse().map_err(|_e| DatabaseInconsistencyError)?;
 
-        let session = Session {
-            data: res.oauth2_session_id.into(),
-            client,
-            browser_session,
-            scope,
-        };
+    let session = Session {
+        data: res.oauth2_session_id.into(),
+        client,
+        browser_session,
+        scope,
+    };
 
-        Ok((access_token, session))
-    }
+    Ok((access_token, session))
 }
 
 #[tracing::instrument(
