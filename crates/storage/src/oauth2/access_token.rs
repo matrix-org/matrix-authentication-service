@@ -16,7 +16,7 @@ use anyhow::Context;
 use chrono::{DateTime, Duration, Utc};
 use mas_data_model::{AccessToken, Authentication, BrowserSession, Session, User, UserEmail};
 use rand::Rng;
-use sqlx::{Acquire, PgExecutor, Postgres};
+use sqlx::{PgConnection, PgExecutor};
 use thiserror::Error;
 use ulid::Ulid;
 use uuid::Uuid;
@@ -111,14 +111,10 @@ impl AccessTokenLookupError {
 }
 
 #[allow(clippy::too_many_lines)]
-pub async fn lookup_active_access_token<'a, 'c, A>(
-    conn: A,
-    token: &'a str,
-) -> Result<(AccessToken<PostgresqlBackend>, Session<PostgresqlBackend>), AccessTokenLookupError>
-where
-    A: Acquire<'c, Database = Postgres> + Send + 'a,
-{
-    let mut conn = conn.acquire().await?;
+pub async fn lookup_active_access_token(
+    conn: &mut PgConnection,
+    token: &str,
+) -> Result<(AccessToken<PostgresqlBackend>, Session<PostgresqlBackend>), AccessTokenLookupError> {
     let res = sqlx::query_as!(
         OAuth2AccessTokenLookup,
         r#"

@@ -13,7 +13,12 @@
 // limitations under the License.
 
 #![forbid(unsafe_code)]
-#![deny(clippy::all, clippy::str_to_string, rustdoc::broken_intra_doc_links)]
+#![deny(
+    clippy::all,
+    clippy::str_to_string,
+    rustdoc::broken_intra_doc_links,
+    clippy::future_not_send
+)]
 #![warn(clippy::pedantic)]
 #![allow(
     clippy::unused_async // Some axum handlers need that

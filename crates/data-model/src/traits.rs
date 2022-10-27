@@ -18,26 +18,32 @@ use serde::{de::DeserializeOwned, Serialize};
 
 pub trait StorageBackendMarker: StorageBackend {}
 
+/// Marker trait of traits that should be implemented by primary keys
+pub trait Data:
+    Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default + Sync + Send
+{
+}
+
+impl<T: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default + Sync + Send> Data
+    for T
+{
+}
+
 pub trait StorageBackend {
-    type UserData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
-    type UserEmailData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
-    type UserEmailVerificationData: Clone
-        + Debug
-        + PartialEq
-        + Serialize
-        + DeserializeOwned
-        + Default;
-    type AuthenticationData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
-    type BrowserSessionData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
-    type ClientData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
-    type SessionData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
-    type AuthorizationGrantData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
-    type AccessTokenData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
-    type RefreshTokenData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
-    type CompatAccessTokenData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
-    type CompatRefreshTokenData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
-    type CompatSessionData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
-    type CompatSsoLoginData: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default;
+    type UserData: Data;
+    type UserEmailData: Data;
+    type UserEmailVerificationData: Data;
+    type AuthenticationData: Data;
+    type BrowserSessionData: Data;
+    type ClientData: Data;
+    type SessionData: Data;
+    type AuthorizationGrantData: Data;
+    type AccessTokenData: Data;
+    type RefreshTokenData: Data;
+    type CompatAccessTokenData: Data;
+    type CompatRefreshTokenData: Data;
+    type CompatSessionData: Data;
+    type CompatSsoLoginData: Data;
 }
 
 impl StorageBackend for () {

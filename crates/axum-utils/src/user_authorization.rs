@@ -32,7 +32,7 @@ use mas_storage::{
     PostgresqlBackend,
 };
 use serde::{de::DeserializeOwned, Deserialize};
-use sqlx::{Acquire, Postgres};
+use sqlx::PgConnection;
 use thiserror::Error;
 
 #[derive(Debug, Deserialize)]
@@ -54,7 +54,7 @@ enum AccessToken {
 impl AccessToken {
     pub async fn fetch(
         &self,
-        conn: impl Acquire<'_, Database = Postgres> + Send,
+        conn: &mut PgConnection,
     ) -> Result<
         (
             mas_data_model::AccessToken<PostgresqlBackend>,
@@ -62,12 +62,12 @@ impl AccessToken {
         ),
         AuthorizationVerificationError,
     > {
-        let token = match &self {
+        let token = match self {
             AccessToken::Form(t) | AccessToken::Header(t) => t,
             AccessToken::None => return Err(AuthorizationVerificationError::MissingToken),
         };
 
-        let (token, session) = lookup_active_access_token(conn, token).await?;
+        let (token, session) = lookup_active_access_token(conn, token.as_str()).await?;
 
         Ok((token, session))
     }
@@ -79,11 +79,11 @@ pub struct UserAuthorization<F = ()> {
     form: Option<F>,
 }
 
-impl<F> UserAuthorization<F> {
+impl<F: Send> UserAuthorization<F> {
     // TODO: take scopes to validate as parameter
     pub async fn protected_form(
         self,
-        conn: impl Acquire<'_, Database = Postgres> + Send,
+        conn: &mut PgConnection,
     ) -> Result<(Session<PostgresqlBackend>, F), AuthorizationVerificationError> {
         let form = match self.form {
             Some(f) => f,
@@ -98,7 +98,7 @@ impl<F> UserAuthorization<F> {
     // TODO: take scopes to validate as parameter
     pub async fn protected(
         self,
-        conn: impl Acquire<'_, Database = Postgres> + Send,
+        conn: &mut PgConnection,
     ) -> Result<Session<PostgresqlBackend>, AuthorizationVerificationError> {
         let (_token, session) = self.access_token.fetch(conn).await?;
 

@@ -74,7 +74,7 @@ pub(crate) async fn get(
 }
 
 async fn render(
-    rng: impl Rng,
+    rng: impl Rng + Send,
     clock: &Clock,
     templates: Templates,
     session: BrowserSession<PostgresqlBackend>,

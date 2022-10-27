@@ -153,7 +153,7 @@ const INACTIVE: IntrospectionResponse = IntrospectionResponse {
     jti: None,
 };
 
-#[tracing::instrument(skip_all, err)]
+#[allow(clippy::too_many_lines)]
 pub(crate) async fn post(
     State(pool): State<PgPool>,
     State(encrypter): State<Encrypter>,
