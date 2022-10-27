@@ -300,9 +300,10 @@ CREATE TABLE "oauth2_refresh_tokens" (
     CONSTRAINT "oauth2_access_tokens_oauth2_session_id_fkey"
     REFERENCES "oauth2_sessions" ("oauth2_session_id"),
 
-  "oauth2_access_token_id" UUID NOT NULL
+  "oauth2_access_token_id" UUID
     CONSTRAINT "oauth2_refresh_tokens_oauth2_access_token_id_fkey"
-    REFERENCES "oauth2_access_tokens" ("oauth2_access_token_id"),
+    REFERENCES "oauth2_access_tokens" ("oauth2_access_token_id")
+    ON DELETE SET NULL,
 
   "refresh_token" TEXT NOT NULL
     CONSTRAINT "oauth2_refresh_tokens_unique"
