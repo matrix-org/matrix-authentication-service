@@ -225,9 +225,10 @@ impl TryInto<Client<PostgresqlBackend>> for OAuth2ClientLookup {
             _ => return Err(ClientFetchError::BothJwksAndJwksUri),
         };
 
+        let id = Ulid::from(self.oauth2_client_id);
         Ok(Client {
-            data: self.oauth2_client_id.into(),
-            client_id: self.oauth2_client_id.to_string(),
+            data: id,
+            client_id: id.to_string(),
             encrypted_client_secret: self.encrypted_client_secret,
             redirect_uris,
             response_types,
