@@ -41,13 +41,6 @@ impl<S: StorageBackendMarker> From<AccessToken<S>> for AccessToken<()> {
     }
 }
 
-impl<T: StorageBackend> AccessToken<T> {
-    // XXX
-    pub fn exp(&self) -> DateTime<Utc> {
-        self.expires_at
-    }
-}
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct RefreshToken<T: StorageBackend> {
     pub data: T::RefreshTokenData,

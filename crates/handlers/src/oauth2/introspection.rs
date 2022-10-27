@@ -193,7 +193,6 @@ pub(crate) async fn post(
     let reply = match token_type {
         TokenType::AccessToken => {
             let (token, session) = lookup_active_access_token(&mut conn, token).await?;
-            let exp = token.exp();
 
             IntrospectionResponse {
                 active: true,
@@ -201,7 +200,7 @@ pub(crate) async fn post(
                 client_id: Some(session.client.client_id),
                 username: Some(session.browser_session.user.username),
                 token_type: Some(OAuthTokenTypeHint::AccessToken),
-                exp: Some(exp),
+                exp: Some(token.expires_at),
                 iat: Some(token.created_at),
                 nbf: Some(token.created_at),
                 sub: Some(session.browser_session.user.sub),
