@@ -12,9 +12,9 @@
 # The Debian version and version name must be in sync
 ARG DEBIAN_VERSION=11
 ARG DEBIAN_VERSION_NAME=bullseye
-ARG RUSTC_VERSION=1.63.0
-ARG NODEJS_VERSION=16
-ARG OPA_VERSION=0.43.0
+ARG RUSTC_VERSION=1.64.0
+ARG NODEJS_VERSION=18
+ARG OPA_VERSION=0.45.0
 
 ## Build stage that builds the static files/frontend ##
 FROM --platform=${BUILDPLATFORM} docker.io/library/node:${NODEJS_VERSION}-${DEBIAN_VERSION_NAME}-slim AS static-files

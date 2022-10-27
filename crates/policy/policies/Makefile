@@ -1,6 +1,6 @@
 # Set to 1 to run OPA through Docker
 DOCKER := 0
-OPA_DOCKER_IMAGE := docker.io/openpolicyagent/opa:0.43.0
+OPA_DOCKER_IMAGE := docker.io/openpolicyagent/opa:0.45.0
 
 ifeq ($(DOCKER), 0)
 	OPA := opa
