@@ -108,7 +108,7 @@ impl CallbackDestination {
         })
     }
 
-    pub async fn go<T: Serialize>(
+    pub async fn go<T: Serialize + Send + Sync>(
         self,
         templates: &Templates,
         params: T,

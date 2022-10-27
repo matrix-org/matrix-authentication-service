@@ -57,7 +57,7 @@ pub async fn get(
     let (_clock, mut rng) = crate::rng_and_clock()?;
     let mut conn = pool.acquire().await?;
 
-    let session = user_authorization.protected(&mut conn).await?;
+    let session = user_authorization.protected(&mut *conn).await?;
 
     let user = session.browser_session.user;
     let mut user_info = UserInfo {
