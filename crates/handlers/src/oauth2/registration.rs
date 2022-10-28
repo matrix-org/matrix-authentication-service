@@ -16,6 +16,8 @@ use std::sync::Arc;
 
 use axum::{extract::State, response::IntoResponse, Json};
 use hyper::StatusCode;
+use mas_iana::oauth::OAuthClientAuthenticationMethod;
+use mas_keystore::Encrypter;
 use mas_policy::{PolicyFactory, Violation};
 use mas_storage::oauth2::client::insert_client;
 use oauth2_types::{
@@ -24,6 +26,7 @@ use oauth2_types::{
         ClientMetadata, ClientMetadataVerificationError, ClientRegistrationResponse, Localized,
     },
 };
+use rand::distributions::{Alphanumeric, DistString};
 use sqlx::PgPool;
 use thiserror::Error;
 use tracing::info;
@@ -107,6 +110,7 @@ impl IntoResponse for RouteError {
 pub(crate) async fn post(
     State(pool): State<PgPool>,
     State(policy_factory): State<Arc<PolicyFactory>>,
+    State(encrypter): State<Encrypter>,
     Json(body): Json<ClientMetadata>,
 ) -> Result<impl IntoResponse, RouteError> {
     let (clock, mut rng) = crate::rng_and_clock()?;
@@ -127,8 +131,23 @@ pub(crate) async fn post(
     // Grab a txn
     let mut txn = pool.begin().await?;
 
+    let now = clock.now();
     // Let's generate a random client ID
-    let client_id = Ulid::from_datetime_with_source(clock.now().into(), &mut rng);
+    let client_id = Ulid::from_datetime_with_source(now.into(), &mut rng);
+
+    let (client_secret, encrypted_client_secret) = match metadata.token_endpoint_auth_method {
+        Some(
+            OAuthClientAuthenticationMethod::ClientSecretJwt
+            | OAuthClientAuthenticationMethod::ClientSecretPost
+            | OAuthClientAuthenticationMethod::ClientSecretBasic,
+        ) => {
+            // Let's generate a random client secret
+            let client_secret = Alphanumeric.sample_string(&mut rng, 20);
+            let encrypted_client_secret = encrypter.encryt_to_string(client_secret.as_bytes())?;
+            (Some(client_secret), Some(encrypted_client_secret))
+        }
+        _ => (None, None),
+    };
 
     insert_client(
         &mut txn,
@@ -136,7 +155,7 @@ pub(crate) async fn post(
         &clock,
         client_id,
         metadata.redirect_uris(),
-        None,
+        encrypted_client_secret.as_deref(),
         //&metadata.response_types(),
         metadata.grant_types(),
         contacts,
@@ -150,6 +169,7 @@ pub(crate) async fn post(
         metadata.tos_uri.as_ref().map(Localized::non_localized),
         metadata.jwks_uri.as_ref(),
         metadata.jwks.as_ref(),
+        // XXX: those might not be right, should be function calls
         metadata.id_token_signed_response_alg.as_ref(),
         metadata.userinfo_signed_response_alg.as_ref(),
         metadata.token_endpoint_auth_method.as_ref(),
@@ -162,8 +182,8 @@ pub(crate) async fn post(
 
     let response = ClientRegistrationResponse {
         client_id: client_id.to_string(),
-        client_secret: None,
-        client_id_issued_at: None,
+        client_secret,
+        client_id_issued_at: Some(now),
         client_secret_expires_at: None,
     };
 
