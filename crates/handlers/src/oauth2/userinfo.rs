@@ -18,7 +18,11 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
-use mas_axum_utils::{jwt::JwtResponse, user_authorization::UserAuthorization, FancyError};
+use hyper::StatusCode;
+use mas_axum_utils::{
+    jwt::JwtResponse,
+    user_authorization::{AuthorizationVerificationError, UserAuthorization},
+};
 use mas_jose::{
     constraints::Constrainable,
     jwt::{JsonWebSignatureHeader, Jwt},
@@ -29,6 +33,7 @@ use oauth2_types::scope;
 use serde::Serialize;
 use serde_with::skip_serializing_none;
 use sqlx::PgPool;
+use thiserror::Error;
 
 #[skip_serializing_none]
 #[derive(Serialize)]
@@ -47,13 +52,52 @@ struct SignedUserInfo {
     user_info: UserInfo,
 }
 
+#[derive(Debug, Error)]
+pub enum RouteError {
+    #[error(transparent)]
+    Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
+
+    #[error(transparent)]
+    Anyhow(#[from] anyhow::Error),
+
+    #[error("failed to authenticate")]
+    AuthorizationVerificationError(#[from] AuthorizationVerificationError),
+}
+
+impl IntoResponse for RouteError {
+    fn into_response(self) -> axum::response::Response {
+        match self {
+            Self::Internal(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+            Self::Anyhow(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+            Self::AuthorizationVerificationError(_e) => StatusCode::UNAUTHORIZED.into_response(),
+        }
+    }
+}
+
+impl From<sqlx::Error> for RouteError {
+    fn from(e: sqlx::Error) -> Self {
+        Self::Internal(Box::new(e))
+    }
+}
+
+impl From<mas_keystore::WrongAlgorithmError> for RouteError {
+    fn from(e: mas_keystore::WrongAlgorithmError) -> Self {
+        Self::Internal(Box::new(e))
+    }
+}
+
+impl From<mas_jose::jwt::JwtSignatureError> for RouteError {
+    fn from(e: mas_jose::jwt::JwtSignatureError) -> Self {
+        Self::Internal(Box::new(e))
+    }
+}
+
 pub async fn get(
     State(url_builder): State<UrlBuilder>,
     State(pool): State<PgPool>,
     State(key_store): State<Keystore>,
     user_authorization: UserAuthorization,
-) -> Result<Response, FancyError> {
-    // TODO: error handling
+) -> Result<Response, RouteError> {
     let (_clock, mut rng) = crate::rng_and_clock()?;
     let mut conn = pool.acquire().await?;
 
