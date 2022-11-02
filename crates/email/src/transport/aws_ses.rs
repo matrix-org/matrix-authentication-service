@@ -30,13 +30,13 @@ impl Transport {
     /// Construct a [`Transport`] from the environment
     pub async fn from_env() -> Self {
         let config = aws_config::from_env().load().await;
-        Self::new(&config)
+        let config = aws_sdk_sesv2::Config::from(&config);
+        Self::new(config)
     }
 
-    /// Constructs a [`Transport`] from a given AWS shared config
+    /// Constructs a [`Transport`] from a given AWS SES SDK config
     #[must_use]
-    pub fn new(config: &aws_types::SdkConfig) -> Self {
-        let config = aws_sdk_sesv2::Config::from(config);
+    pub fn new(config: aws_sdk_sesv2::Config) -> Self {
         let client = Client::from_conf(config);
         Self { client }
     }
