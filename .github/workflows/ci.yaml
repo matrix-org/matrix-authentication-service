@@ -14,58 +14,6 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  fetch:
-    name: Fetch Cargo dependencies
-    runs-on: ubuntu-latest
-
-    permissions:
-      contents: read
-
-    steps:
-      - name: Checkout the code
-        uses: actions/checkout@v3
-
-      - name: Install toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: "1.61.0" # MSRV
-          target: x86_64-unknown-linux-musl
-          profile: minimal
-          override: true
-
-      - name: Setup Cargo cache
-        uses: actions/cache@v3.0.11
-        with:
-          path: |
-            ~/.cargo/registry/index
-            ~/.cargo/registry/cache
-            ~/.cargo/git/db
-          key: ${{ runner.os }}-cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Fetch dependencies
-        id: fetch
-        uses: actions-rs/cargo@v1
-        continue-on-error: true
-        with:
-          command: fetch
-          args: --locked
-
-      - name: Fetch dependencies (retry)
-        id: fetch-2
-        uses: actions-rs/cargo@v1
-        if: steps.fetch.outcome == 'failure'
-        continue-on-error: true
-        with:
-          command: fetch
-          args: --locked
-
-      - name: Fetch dependencies (second retry)
-        uses: actions-rs/cargo@v1
-        if: steps.fetch.outcome == 'failure' && steps.fetch-2.outcome == 'failure'
-        with:
-          command: fetch
-          args: --locked
-
   opa-lint:
     name: Lint and test OPA policies
     runs-on: ubuntu-latest
@@ -103,9 +51,9 @@ jobs:
           files: crates/policy/policies/coverage.json
           flags: policies
 
+
   rustfmt:
     name: Check style
-    needs: [fetch]
     runs-on: ubuntu-latest
 
     permissions:
@@ -116,41 +64,18 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Install toolchain
-        id: toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          target: x86_64-unknown-linux-musl
-          components: rustfmt
-          profile: minimal
-          override: true
-
-      - name: Setup Cargo cache
-        uses: actions/cache@v3.0.11
-        with:
-          path: |
-            ~/.cargo/registry/index
-            ~/.cargo/registry/cache
-            ~/.cargo/git/db
-          key: ${{ runner.os }}-cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Setup build cache
-        uses: actions/cache@v3.0.11
-        with:
-          path: |
-            target
-          key: cargo-fmt-${{ hashFiles('**/Cargo.lock') }}-${{ steps.toolchain.outputs.rustc_hash }}
+        run: |
+          rustup toolchain install nightly
+          rustup default nightly
+          rustup component add rustfmt
 
       - name: Check style
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+        run: cargo fmt --all -- --check
 
 
   clippy:
     name: Run Clippy
-    needs: [opa-lint, fetch]
+    needs: [rustfmt, opa-lint]
     runs-on: ubuntu-latest
 
     permissions:
@@ -161,14 +86,10 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Install toolchain
-        id: toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: x86_64-unknown-linux-musl
-          components: clippy
-          profile: minimal
-          override: true
+        run: |
+          rustup toolchain install stable
+          rustup default stable
+          rustup component add clippy
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
@@ -183,32 +104,17 @@ jobs:
           cd crates/policy/policies
           make
 
-      - name: Setup Cargo cache
-        uses: actions/cache@v3.0.11
-        with:
-          path: |
-            ~/.cargo/registry/index
-            ~/.cargo/registry/cache
-            ~/.cargo/git/db
-          key: ${{ runner.os }}-cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
 
-      - name: Setup build cache
-        uses: actions/cache@v3.0.11
-        with:
-          path: |
-            target
-          key: cargo-clippy-${{ hashFiles('**/Cargo.lock') }}-${{ steps.toolchain.outputs.rustc_hash }}
-
-      - name: Run Clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --workspace -- -D warnings
+      - name: Run clippy
+        run: |
+          cargo clippy --workspace -- -D warnings
 
 
   test:
     name: Run test suite with Rust ${{ matrix.toolchain }}
-    needs: [rustfmt, clippy, opa-lint, fetch]
+    needs: [rustfmt, opa-lint]
     runs-on: ubuntu-latest
 
     permissions:
@@ -218,7 +124,6 @@ jobs:
       fail-fast: false # Continue other jobs if one fails to help filling the cache
       matrix:
         toolchain:
-          - "1.61.0" # MSRV
           - stable
           - beta
           - nightly
@@ -243,13 +148,9 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Install toolchain
-        id: toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.toolchain }}
-          target: x86_64-unknown-linux-musl
-          profile: minimal
-          override: true
+        run: |
+          rustup toolchain install ${{ matrix.toolchain }}
+          rustup default ${{ matrix.toolchain }}
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
@@ -264,31 +165,16 @@ jobs:
           cd crates/policy/policies
           make
 
-      - name: Setup Cargo cache
-        uses: actions/cache@v3.0.11
-        with:
-          path: |
-            ~/.cargo/registry/index
-            ~/.cargo/registry/cache
-            ~/.cargo/git/db
-          key: ${{ runner.os }}-cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Setup build cache
-        uses: actions/cache@v3.0.11
-        with:
-          path: |
-            target
-          key: ${{ runner.os }}-cargo-build-${{ steps.toolchain.outputs.rustc_hash }}-${{ hashFiles('**/Cargo.lock') }}
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
 
       - name: Test
         id: test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --offline --workspace
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost/postgres
           SQLX_OFFLINE: '1'
+        run: |
+          cargo test --workspace
 
         # Ignore errors on the nightly toolchain
         continue-on-error: "${{ matrix.toolchain == 'nightly' }}"
@@ -301,7 +187,7 @@ jobs:
 
   coverage:
     name: Code coverage
-    needs: [rustfmt, clippy, opa-lint, fetch]
+    needs: [rustfmt, opa-lint]
     runs-on: ubuntu-latest
 
     permissions:
@@ -327,13 +213,10 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Install toolchain
-        id: toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: x86_64-unknown-linux-musl
-          override: true
-          components: llvm-tools-preview
+        run: |
+          rustup toolchain install stable
+          rustup default stable
+          rustup component add llvm-tools-preview
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
@@ -348,35 +231,19 @@ jobs:
           cd crates/policy/policies
           make
 
-      - name: Setup Cargo cache
-        uses: actions/cache@v3.0.11
-        with:
-          path: |
-            ~/.cargo/registry/index
-            ~/.cargo/registry/cache
-            ~/.cargo/git/db
-          key: ${{ runner.os }}-cargo-deps-msrv-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Setup build cache
-        uses: actions/cache@v3.0.11
-        with:
-          path: |
-            target
-          key: ${{ runner.os }}-cargo-coverage-${{ steps.toolchain.outputs.rustc_hash }}-${{ hashFiles('**/Cargo.lock') }}
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
 
       - name: Download grcov
         run: |
           mkdir -p "${HOME}/.local/bin"
-          curl -sL https://github.com/mozilla/grcov/releases/download/v0.8.7/grcov-x86_64-unknown-linux-gnu.tar.bz2 | tar jxf - -C "${HOME}/.local/bin"
+          curl -sL https://github.com/mozilla/grcov/releases/download/v0.8.13/grcov-x86_64-unknown-linux-gnu.tar.bz2 | tar jxf - -C "${HOME}/.local/bin"
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Run test suite with profiling enabled
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --no-fail-fast --workspace
+        run: |
+          cargo test --no-fail-fast --workspace
         env:
-          CARGO_INCREMENTAL: '0'
           RUSTFLAGS: '-Cinstrument-coverage'
           LLVM_PROFILE_FILE: "cargo-test-%p-%m.profraw"
           DATABASE_URL: postgresql://postgres:postgres@localhost/postgres
@@ -396,7 +263,7 @@ jobs:
 
   build-image:
     name: Build and push Docker image
-    needs: [opa-lint]
+    needs: [rustfmt, opa-lint]
     runs-on: ubuntu-latest
     env:
       IMAGE: ghcr.io/matrix-org/matrix-authentication-service
@@ -436,10 +303,6 @@ jobs:
             type=semver,pattern={{major}},suffix=-debug
             type=sha,suffix=-debug
 
-      - name: Merge buildx bake files
-        run: |
-            jq -s '.[0] * .[1]' ${{ steps.meta.outputs.bake-file }} ${{ steps.meta-debug.outputs.bake-file }} > docker-bake.override.json
-
       - name: Setup Cosign
         uses: sigstore/cosign-installer@v2.8.1
 
@@ -460,11 +323,15 @@ jobs:
 
       # For pull-requests, only read from the cache, do not try to push to the
       # cache or the image itself
-      # We only build for the amd64 platform in pul-requests to speed-up CI
+      # We only build for the amd64 platform in pull-requests to speed-up CI
       - name: Build
         uses: docker/bake-action@v2
         if: github.event_name == 'pull_request'
         with:
+          files: |
+            docker-bake.hcl
+            ${{ steps.meta.outputs.bake-file }}
+            ${{ steps.meta-debug.outputs.bake-file }}
           set: |
             base.platform=linux/amd64
             base.cache-from=type=registry,ref=${{ env.IMAGE }}:buildcache
@@ -473,6 +340,10 @@ jobs:
         uses: docker/bake-action@v2
         if: github.event_name != 'pull_request'
         with:
+          files: |
+            docker-bake.hcl
+            ${{ steps.meta.outputs.bake-file }}
+            ${{ steps.meta-debug.outputs.bake-file }}
           set: |
             base.output=type=image,push=true
             base.cache-from=type=registry,ref=${{ env.IMAGE }}:buildcache
