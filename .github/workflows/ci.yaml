@@ -274,9 +274,6 @@ jobs:
       id-token: write
 
     steps:
-      - name: Checkout the code
-        uses: actions/checkout@v3
-
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v4
@@ -335,6 +332,7 @@ jobs:
           set: |
             base.platform=linux/amd64
             base.cache-from=type=registry,ref=${{ env.IMAGE }}:buildcache
+          source: https://github.com/${{ github.repository }}#${{ github.ref }}
 
       - name: Build and push
         uses: docker/bake-action@v2
@@ -348,6 +346,7 @@ jobs:
             base.output=type=image,push=true
             base.cache-from=type=registry,ref=${{ env.IMAGE }}:buildcache
             base.cache-to=type=registry,ref=${{ env.IMAGE }}:buildcache,mode=max
+          source: https://github.com/${{ github.repository }}#${{ github.ref }}
 
       - name: Sign the images with GitHub Actions provided token
         # Only sign on tags and on commits on main branch
