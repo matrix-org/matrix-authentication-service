@@ -115,6 +115,8 @@ RUN cargo chef cook \
   --bin mas-cli \
   --release \
   --recipe-path recipe.json \
+  --no-default-features \
+  --features docker \
   --target $(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}") \
   --package mas-cli
 
@@ -128,6 +130,8 @@ RUN cargo auditable zigbuild \
   --locked \
   --release \
   --bin mas-cli \
+  --no-default-features \
+  --features docker \
   --target $(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")
 
 # Move the binary to avoid having to guess its name in the next stage
@@ -138,10 +142,6 @@ RUN mv target/$(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")/release/mas-
 ##################################
 FROM --platform=${TARGETPLATFORM} gcr.io/distroless/cc-debian${DEBIAN_VERSION}:debug-nonroot AS debug
 
-# Inject a wasmtime config which disables cache to avoid issues running with a read-only root filesystem
-ENV XDG_CONFIG_HOME=/etc
-COPY ./misc/wasmtime-config.toml /etc/wasmtime/config.toml
-
 COPY --from=builder /usr/local/bin/mas-cli /usr/local/bin/mas-cli
 WORKDIR /
 ENTRYPOINT ["/usr/local/bin/mas-cli"]
@@ -150,10 +150,6 @@ ENTRYPOINT ["/usr/local/bin/mas-cli"]
 ## Runtime stage ##
 ###################
 FROM --platform=${TARGETPLATFORM} gcr.io/distroless/cc-debian${DEBIAN_VERSION}:nonroot
-
-# Inject a wasmtime config which disables cache to avoid issues running with a read-only root filesystem
-ENV XDG_CONFIG_HOME=/etc
-COPY ./misc/wasmtime-config.toml /etc/wasmtime/config.toml
 
 COPY --from=builder /usr/local/bin/mas-cli /usr/local/bin/mas-cli
 WORKDIR /

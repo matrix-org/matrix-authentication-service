@@ -52,6 +52,7 @@ pub enum LoadError {
     #[error("failed to instantiate a test instance")]
     Instantiate(#[source] anyhow::Error),
 
+    #[cfg(feature = "cache")]
     #[error("could not load wasmtime cache configuration")]
     CacheSetup(#[source] anyhow::Error),
 }
@@ -76,6 +77,8 @@ impl PolicyFactory {
         let mut config = Config::default();
         config.async_support(true);
         config.cranelift_opt_level(wasmtime::OptLevel::Speed);
+
+        #[cfg(feature = "cache")]
         config
             .cache_config_load_default()
             .map_err(LoadError::CacheSetup)?;

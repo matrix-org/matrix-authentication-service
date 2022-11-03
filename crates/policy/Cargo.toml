@@ -13,7 +13,10 @@ serde_json = "1.0.87"
 thiserror = "1.0.37"
 tokio = { version = "1.21.2", features = ["io-util", "rt"] }
 tracing = "0.1.37"
-wasmtime = "1.0.1"
+wasmtime = { version = "1.0.1", default-features = false, features = ["async", "cranelift"] }
 
 mas-data-model = { path = "../data-model" }
 oauth2-types = { path = "../oauth2-types" }
+
+[features]
+cache = ["wasmtime/cache"]
