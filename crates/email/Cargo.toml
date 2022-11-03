@@ -10,10 +10,14 @@ anyhow = "1.0.66"
 async-trait = "0.1.58"
 tokio = { version = "1.21.2", features = ["macros"] }
 tracing = "0.1.37"
-aws-sdk-sesv2 = "0.21.0"
-aws-config = "0.51.0"
+
+aws-sdk-sesv2 = { version = "0.21.0", default-features = false }
+aws-config = { version = "0.51.0", default-features = false }
+aws-smithy-client = { version = "0.51.0", default-features = false, features = ["client-hyper"] }
+aws-smithy-async = { version = "0.51.0", default-features = false, features = ["rt-tokio"] }
 
 mas-templates = { path = "../templates" }
+mas-http = { path = "../http" }
 
 [dependencies.lettre]
 version = "0.10.1"

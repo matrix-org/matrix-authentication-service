@@ -12,13 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::sync::Arc;
+
 use async_trait::async_trait;
+use aws_config::provider_config::ProviderConfig;
 use aws_sdk_sesv2::{
+    middleware::DefaultMiddleware,
     model::{EmailContent, RawMessage},
     types::Blob,
     Client,
 };
+use aws_smithy_async::rt::sleep::TokioSleep;
+use aws_smithy_client::erase::{DynConnector, DynMiddleware};
 use lettre::{address::Envelope, AsyncTransport};
+use mas_http::{otel::TraceLayer, ClientInitError};
 
 /// An asynchronous email transport that sends email via the AWS Simple Email
 /// Service v2 API
@@ -28,17 +35,47 @@ pub struct Transport {
 
 impl Transport {
     /// Construct a [`Transport`] from the environment
-    pub async fn from_env() -> Self {
-        let config = aws_config::from_env().load().await;
-        let config = aws_sdk_sesv2::Config::from(&config);
-        Self::new(config)
-    }
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the HTTP client failed to initialize
+    pub async fn from_env() -> Result<Self, ClientInitError> {
+        let sleep = Arc::new(TokioSleep::new());
 
-    /// Constructs a [`Transport`] from a given AWS SES SDK config
-    #[must_use]
-    pub fn new(config: aws_sdk_sesv2::Config) -> Self {
-        let client = Client::from_conf(config);
-        Self { client }
+        // Create the TCP connector from mas-http. This way we share the root
+        // certificate loader with it
+        let http_connector = mas_http::make_traced_connector()
+            .await
+            .expect("failed to create HTTPS connector");
+
+        let http_connector = aws_smithy_client::hyper_ext::Adapter::builder()
+            .sleep_impl(sleep.clone())
+            .build(http_connector);
+
+        let http_connector = DynConnector::new(http_connector);
+
+        // Middleware to add tracing to AWS SDK operations
+        let middleware = DynMiddleware::new((
+            TraceLayer::with_namespace("aws_sdk")
+                .make_span_builder(mas_http::otel::DefaultMakeSpanBuilder::new("aws_sdk"))
+                .on_error(mas_http::otel::DebugOnError),
+            DefaultMiddleware::default(),
+        ));
+
+        // Use that connector for discovering the config
+        let config = ProviderConfig::default().with_http_connector(http_connector.clone());
+        let config = aws_config::from_env().configure(config).load().await;
+        let config = aws_sdk_sesv2::Config::from(&config);
+
+        // As well as for the client itself
+        let client = aws_smithy_client::Client::builder()
+            .sleep_impl(sleep)
+            .connector(http_connector)
+            .middleware(middleware)
+            .build_dyn();
+
+        let client = Client::with_config(client, config);
+        Ok(Self { client })
     }
 }
 

@@ -30,7 +30,7 @@ mod ext;
 mod layers;
 
 #[cfg(feature = "client")]
-pub use self::client::{client, make_untraced_client};
+pub use self::client::{client, make_traced_connector, make_untraced_client, ClientInitError};
 pub use self::{
     ext::{set_propagator, CorsLayerExt, ServiceExt as HttpServiceExt},
     layers::{

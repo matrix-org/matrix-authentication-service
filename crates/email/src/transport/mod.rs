@@ -25,6 +25,7 @@ use lettre::{
     },
     AsyncTransport, Tokio1Executor,
 };
+use mas_http::ClientInitError;
 
 pub mod aws_ses;
 
@@ -101,8 +102,13 @@ impl Transport {
     }
 
     /// Construct a AWS SES transport
-    pub async fn aws_ses() -> Self {
-        Self::new(TransportInner::AwsSes(aws_ses::Transport::from_env().await))
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the HTTP client failed to initialize
+    pub async fn aws_ses() -> Result<Self, ClientInitError> {
+        let transport = aws_ses::Transport::from_env().await?;
+        Ok(Self::new(TransportInner::AwsSes(transport)))
     }
 }
 
