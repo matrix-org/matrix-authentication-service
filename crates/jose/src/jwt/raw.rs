@@ -96,7 +96,7 @@ impl<'a> TryFrom<&'a str> for RawJwt<'a> {
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         let mut indices = value
             .char_indices()
-            .filter_map(|(idx, c)| (c == '.').then(|| idx));
+            .filter_map(|(idx, c)| (c == '.').then_some(idx));
 
         let first_dot = indices.next().ok_or(DecodeError::NoDots)?;
         let second_dot = indices.next().ok_or(DecodeError::OnlyOneDot)?;
@@ -118,7 +118,7 @@ impl TryFrom<String> for RawJwt<'static> {
     fn try_from(value: String) -> Result<Self, Self::Error> {
         let mut indices = value
             .char_indices()
-            .filter_map(|(idx, c)| (c == '.').then(|| idx));
+            .filter_map(|(idx, c)| (c == '.').then_some(idx));
 
         let first_dot = indices.next().ok_or(DecodeError::NoDots)?;
         let second_dot = indices.next().ok_or(DecodeError::OnlyOneDot)?;
