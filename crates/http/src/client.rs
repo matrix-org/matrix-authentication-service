@@ -84,6 +84,7 @@ async fn tls_roots() -> Result<rustls::RootCertStore, NativeRootsInitError> {
 }
 
 #[cfg(feature = "webpki-roots")]
+#[allow(clippy::unused_async)]
 async fn tls_roots() -> Result<rustls::RootCertStore, Infallible> {
     let mut roots = rustls::RootCertStore::empty();
     roots.add_server_trust_anchors(webpki_roots::TLS_SERVER_ROOTS.0.iter().map(|ta| {

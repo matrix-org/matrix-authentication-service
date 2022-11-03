@@ -65,8 +65,6 @@ mas-templates = { path = "../templates" }
 indoc = "1.0.7"
 
 [features]
-default = ["native-roots"]
-
 # Use the native root certificates
 native-roots = ["mas-axum-utils/native-roots", "mas-http/native-roots"]
 # Use the webpki root certificates
