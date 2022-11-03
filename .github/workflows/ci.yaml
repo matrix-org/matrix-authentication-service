@@ -88,8 +88,8 @@ jobs:
 
       - name: Install toolchain
         run: |
-          rustup toolchain install stable
-          rustup default stable
+          rustup toolchain install 1.64.0
+          rustup default 1.64.0
           rustup component add clippy
 
       - name: Install Protoc
