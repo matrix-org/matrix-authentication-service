@@ -106,7 +106,7 @@ impl<K: FormField> FormState<K> {
         let fields = fields
             .into_iter()
             .map(|(key, value)| {
-                let value = key.keep().then(|| value).flatten();
+                let value = key.keep().then_some(value).flatten();
                 let field = FieldState {
                     value,
                     errors: Vec::new(),
