@@ -56,7 +56,7 @@ impl File {
 
     #[tracing::instrument(skip_all, fields(url))]
     async fn load<T: EnumEntry>(mut self) -> anyhow::Result<Self> {
-        tracing::Span::current().record("url", &T::URL);
+        tracing::Span::current().record("url", T::URL);
         self.sections.extend(T::sections());
         for (key, value) in T::fetch(&self.client).await? {
             self.items.entry(key).or_default().push(value);
