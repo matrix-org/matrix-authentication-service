@@ -55,7 +55,13 @@ mas-listener = { path = "../listener" }
 indoc = "1.0.7"
 
 [features]
-default = ["otlp", "jaeger", "zipkin", "prometheus", "native-roots"]
+default = ["otlp", "jaeger", "zipkin", "prometheus", "webpki-roots", "policy-cache"]
+
+# Features used in the Docker image
+docker = ["otlp", "jaeger", "zipkin", "prometheus", "native-roots"]
+
+# Enable wasmtime compilation cache
+policy-cache = ["mas-policy/cache"]
 
 # Use the native root certificates
 native-roots = ["mas-http/native-roots", "mas-handlers/native-roots"]
