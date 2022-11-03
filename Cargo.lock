@@ -390,8 +390,6 @@ dependencies = [
  "http",
  "http-body",
  "hyper",
- "hyper-rustls",
- "lazy_static",
  "pin-project-lite",
  "tokio",
  "tower",
@@ -415,8 +413,6 @@ dependencies = [
  "percent-encoding",
  "pin-project-lite",
  "pin-utils",
- "tokio",
- "tokio-util 0.7.4",
  "tracing",
 ]
 
@@ -1980,9 +1976,7 @@ checksum = "d87c48c02e0dc5e3b849a2041db3029fd066650f8f717c07bf8ed78ccb895cac"
 dependencies = [
  "http",
  "hyper",
- "log",
  "rustls",
- "rustls-native-certs",
  "tokio",
  "tokio-rustls",
 ]
@@ -2486,7 +2480,10 @@ dependencies = [
  "async-trait",
  "aws-config",
  "aws-sdk-sesv2",
+ "aws-smithy-async",
+ "aws-smithy-client",
  "lettre",
+ "mas-http",
  "mas-templates",
  "tokio",
  "tracing",

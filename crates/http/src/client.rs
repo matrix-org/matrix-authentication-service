@@ -148,6 +148,16 @@ pub enum NativeRootsLoadError {
     Empty,
 }
 
+async fn make_tls_config() -> Result<rustls::ClientConfig, ClientInitError> {
+    let roots = tls_roots().await?;
+    let tls_config = rustls::ClientConfig::builder()
+        .with_safe_defaults()
+        .with_root_certificates(roots)
+        .with_no_client_auth();
+
+    Ok(tls_config)
+}
+
 /// Create a basic Hyper HTTP & HTTPS client without any tracing
 ///
 /// # Errors
@@ -159,57 +169,63 @@ where
     B: http_body::Body<Data = Bytes, Error = E> + Send + 'static,
     E: Into<BoxError>,
 {
-    let resolver = GaiResolver::new();
-    let roots = tls_roots().await?;
-    let tls_config = rustls::ClientConfig::builder()
-        .with_safe_defaults()
-        .with_root_certificates(roots)
-        .with_no_client_auth();
-
-    Ok(make_client(resolver, tls_config))
+    let https = make_untraced_connector().await?;
+    Ok(Client::builder().build(https))
 }
 
-async fn make_base_client<B, E>(
+async fn make_traced_client<B, E>(
 ) -> Result<hyper::Client<HttpsConnector<HttpConnector<TraceDns<GaiResolver>>>, B>, ClientInitError>
 where
     B: http_body::Body<Data = Bytes, Error = E> + Send + 'static,
     E: Into<BoxError>,
 {
-    // Trace DNS requests
-    let resolver = TraceLayer::dns().layer(GaiResolver::new());
-
-    let roots = tls_roots().await?;
-    let tls_config = rustls::ClientConfig::builder()
-        .with_safe_defaults()
-        .with_root_certificates(roots)
-        .with_no_client_auth();
-
-    Ok(make_client(resolver, tls_config))
+    let https = make_traced_connector().await?;
+    Ok(Client::builder().build(https))
 }
 
-fn make_client<R, B, E>(
+/// Create a traced HTTP and HTTPS connector
+///
+/// # Errors
+///
+/// Returns an error if it failed to load the TLS certificates
+pub async fn make_traced_connector(
+) -> Result<HttpsConnector<HttpConnector<TraceDns<GaiResolver>>>, ClientInitError>
+where
+{
+    // Trace DNS requests
+    let resolver = TraceLayer::dns().layer(GaiResolver::new());
+    let tls_config = make_tls_config().await?;
+    Ok(make_connector(resolver, tls_config))
+}
+
+async fn make_untraced_connector(
+) -> Result<HttpsConnector<HttpConnector<GaiResolver>>, ClientInitError>
+where
+{
+    let resolver = GaiResolver::new();
+    let tls_config = make_tls_config().await?;
+    Ok(make_connector(resolver, tls_config))
+}
+
+fn make_connector<R>(
     resolver: R,
     tls_config: rustls::ClientConfig,
-) -> hyper::Client<HttpsConnector<HttpConnector<R>>, B>
+) -> HttpsConnector<HttpConnector<R>>
 where
     R: Service<Name> + Send + Sync + Clone + 'static,
     R::Error: std::error::Error + Send + Sync,
     R::Future: Send,
     R::Response: Iterator<Item = SocketAddr>,
-    B: http_body::Body<Data = Bytes, Error = E> + Send + 'static,
-    E: Into<BoxError>,
 {
     let mut http = HttpConnector::new_with_resolver(resolver);
     http.enforce_http(false);
 
-    let https = HttpsConnectorBuilder::new()
+    HttpsConnectorBuilder::new()
         .with_tls_config(tls_config)
         .https_or_http()
         .enable_http1()
         .enable_http2()
-        .wrap_connector(http);
-
-    Client::builder().build(https)
+        .wrap_connector(http)
 }
 
 /// Create a traced HTTP client, with a default timeout, which follows redirects
@@ -228,7 +244,7 @@ where
     B: http_body::Body<Data = Bytes, Error = E> + Default + Send + 'static,
     E: Into<BoxError> + 'static,
 {
-    let client = make_base_client().await?;
+    let client = make_traced_client().await?;
 
     let layer = (
         // Convert the errors to ClientError to help dealing with them

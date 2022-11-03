@@ -67,6 +67,7 @@ pub struct PolicyFactory {
 }
 
 impl PolicyFactory {
+    #[tracing::instrument(skip(source), err(Display))]
     pub async fn load(
         mut source: impl AsyncRead + std::marker::Unpin,
         data: serde_json::Value,
@@ -125,6 +126,7 @@ impl PolicyFactory {
         .await
     }
 
+    #[tracing::instrument(skip(self), err)]
     pub async fn instantiate(&self) -> Result<Policy, anyhow::Error> {
         let mut store = Store::new(&self.engine, ());
         let runtime = Runtime::new(&mut store, &self.module).await?;

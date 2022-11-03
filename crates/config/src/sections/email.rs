@@ -195,7 +195,7 @@ impl EmailTransportConfig {
                     .context("failed to build SMTP transport")
             }
             EmailTransportConfig::Sendmail { command } => Ok(MailTransport::sendmail(command)),
-            EmailTransportConfig::AwsSes => Ok(MailTransport::aws_ses().await),
+            EmailTransportConfig::AwsSes => Ok(MailTransport::aws_ses().await?),
         }
     }
 }

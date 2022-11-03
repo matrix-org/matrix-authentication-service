@@ -31,3 +31,16 @@ where
         span.add_event("exception".to_owned(), attributes);
     }
 }
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct DebugOnError;
+
+impl<E> OnError<E> for DebugOnError
+where
+    E: std::fmt::Debug,
+{
+    fn on_error(&self, span: &SpanRef<'_>, _metrics_labels: &mut Vec<KeyValue>, err: &E) {
+        let attributes = vec![EXCEPTION_MESSAGE.string(format!("{err:?}"))];
+        span.add_event("exception".to_owned(), attributes);
+    }
+}
