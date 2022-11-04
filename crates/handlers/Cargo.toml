@@ -8,6 +8,8 @@ license = "Apache-2.0"
 [dependencies]
 # Async runtime
 tokio = { version = "1.21.2", features = ["macros"] }
+tokio-stream = "0.1.11"
+futures-util = "0.3.25"
 
 # Logging and tracing
 tracing = "0.1.37"
@@ -20,9 +22,11 @@ anyhow = "1.0.66"
 hyper = { version = "0.14.22", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.3.4", features = ["cors"] }
-axum = "0.6.0-rc.2"
+axum = { version = "0.6.0-rc.2", features = ["ws"] }
 axum-macros = "0.3.0-rc.1"
 axum-extra = { version = "0.4.0-rc.1", features = ["cookie-private"] }
+
+async-graphql = { version = "4.0.16", features = ["tracing", "apollo_tracing"] }
 
 # Emails
 lettre = { version = "0.10.1", default-features = false, features = ["builder"] }

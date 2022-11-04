@@ -25,7 +25,7 @@ use ulid::Ulid;
 use crate::CookieExt;
 
 /// An encrypted cookie to save the session ID
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct SessionInfo {
     current: Option<Ulid>,
 }

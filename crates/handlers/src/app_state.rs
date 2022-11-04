@@ -22,7 +22,7 @@ use mas_router::UrlBuilder;
 use mas_templates::Templates;
 use sqlx::PgPool;
 
-use crate::MatrixHomeserver;
+use crate::{GraphQLSchema, MatrixHomeserver};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -34,11 +34,18 @@ pub struct AppState {
     pub mailer: Mailer,
     pub homeserver: MatrixHomeserver,
     pub policy_factory: Arc<PolicyFactory>,
+    pub graphql_schema: GraphQLSchema,
 }
 
 impl FromRef<AppState> for PgPool {
     fn from_ref(input: &AppState) -> Self {
         input.pool.clone()
+    }
+}
+
+impl FromRef<AppState> for GraphQLSchema {
+    fn from_ref(input: &AppState) -> Self {
+        input.graphql_schema.clone()
     }
 }
 

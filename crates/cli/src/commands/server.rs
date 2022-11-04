@@ -203,6 +203,8 @@ impl Options {
                 .context("could not watch for templates changes")?;
         }
 
+        let graphql_schema = mas_handlers::graphql_schema(&pool);
+
         let state = Arc::new(AppState {
             pool,
             templates,
@@ -212,6 +214,7 @@ impl Options {
             mailer,
             homeserver,
             policy_factory,
+            graphql_schema,
         });
 
         let mut fd_manager = listenfd::ListenFd::from_env();

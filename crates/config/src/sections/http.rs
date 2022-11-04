@@ -234,6 +234,13 @@ pub enum Resource {
     /// Pages destined to be viewed by humans
     Human,
 
+    /// GraphQL endpoint
+    GraphQL {
+        /// Enabled the GraphQL playground
+        #[serde(default)]
+        playground: bool,
+    },
+
     /// OAuth-related APIs
     OAuth,
 
@@ -300,6 +307,7 @@ impl Default for HttpConfig {
                         Resource::Human,
                         Resource::OAuth,
                         Resource::Compat,
+                        Resource::GraphQL { playground: true },
                         Resource::Static { web_root: None },
                     ],
                     tls: None,
