@@ -28,7 +28,7 @@ use std::{convert::Infallible, sync::Arc, time::Duration};
 
 use anyhow::Context;
 use axum::{
-    body::HttpBody,
+    body::{Bytes, HttpBody},
     extract::FromRef,
     response::{Html, IntoResponse},
     routing::{get, on, post, MethodFilter},
@@ -49,13 +49,17 @@ use tower_http::cors::{Any, CorsLayer};
 
 mod app_state;
 mod compat;
+mod graphql;
 mod health;
 mod oauth2;
 mod views;
 
 pub use compat::MatrixHomeserver;
 
-pub use self::app_state::AppState;
+pub use self::{
+    app_state::AppState,
+    graphql::{schema as graphql_schema, Schema as GraphQLSchema},
+};
 
 #[must_use]
 pub fn empty_router<S, B>(state: Arc<S>) -> Router<S, B>
@@ -74,6 +78,30 @@ where
     PgPool: FromRef<S>,
 {
     Router::with_state_arc(state).route(mas_router::Healthcheck::route(), get(self::health::get))
+}
+
+#[must_use]
+pub fn graphql_router<S, B>(state: Arc<S>, playground: bool) -> Router<S, B>
+where
+    B: HttpBody + Send + 'static,
+    <B as HttpBody>::Data: Into<Bytes>,
+    <B as HttpBody>::Error: std::error::Error + Send + Sync,
+    S: Send + Sync + 'static,
+    GraphQLSchema: FromRef<S>,
+    Encrypter: FromRef<S>,
+{
+    let mut router = Router::with_state_arc(state)
+        .route(
+            "/graphql",
+            get(self::graphql::get).post(self::graphql::post),
+        )
+        .route("/graphql/ws", get(self::graphql::ws));
+
+    if playground {
+        router = router.route("/graphql/playground", get(self::graphql::playground));
+    }
+
+    router
 }
 
 #[must_use]
@@ -305,7 +333,7 @@ where
 pub fn router<S, B>(state: Arc<S>) -> Router<S, B>
 where
     B: HttpBody + Send + 'static,
-    <B as HttpBody>::Data: Send,
+    <B as HttpBody>::Data: Into<Bytes> + Send,
     <B as HttpBody>::Error: std::error::Error + Send + Sync,
     S: Send + Sync + 'static,
     Keystore: FromRef<S>,
@@ -316,10 +344,12 @@ where
     Templates: FromRef<S>,
     Mailer: FromRef<S>,
     MatrixHomeserver: FromRef<S>,
+    GraphQLSchema: FromRef<S>,
 {
     let healthcheck_router = healthcheck_router(state.clone());
     let discovery_router = discovery_router(state.clone());
     let api_router = api_router(state.clone());
+    let graphql_router = graphql_router(state.clone(), true);
     let compat_router = compat_router(state.clone());
     let human_router = human_router(state.clone());
 
@@ -328,6 +358,7 @@ where
         .merge(discovery_router)
         .merge(human_router)
         .merge(api_router)
+        .merge(graphql_router)
         .merge(compat_router)
 }
 
@@ -352,6 +383,8 @@ async fn test_state(pool: PgPool) -> Result<Arc<AppState>, anyhow::Error> {
     let policy_factory = PolicyFactory::load_default(serde_json::json!({})).await?;
     let policy_factory = Arc::new(policy_factory);
 
+    let graphql_schema = graphql_schema(&pool);
+
     Ok(Arc::new(AppState {
         pool,
         templates,
@@ -361,6 +394,7 @@ async fn test_state(pool: PgPool) -> Result<Arc<AppState>, anyhow::Error> {
         mailer,
         homeserver,
         policy_factory,
+        graphql_schema,
     }))
 }
 

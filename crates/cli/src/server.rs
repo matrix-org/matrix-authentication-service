@@ -31,7 +31,7 @@ use rustls::ServerConfig;
 pub fn build_router<B>(state: &Arc<AppState>, resources: &[HttpResource]) -> Router<AppState, B>
 where
     B: HttpBody + Send + 'static,
-    <B as HttpBody>::Data: Send,
+    <B as HttpBody>::Data: Into<axum::body::Bytes> + Send,
     <B as HttpBody>::Error: std::error::Error + Send + Sync,
 {
     let mut router = Router::with_state_arc(state.clone());
@@ -49,6 +49,9 @@ where
             }
             mas_config::HttpResource::Human => {
                 router.merge(mas_handlers::human_router(state.clone()))
+            }
+            mas_config::HttpResource::GraphQL { playground } => {
+                router.merge(mas_handlers::graphql_router(state.clone(), *playground))
             }
             mas_config::HttpResource::Static { web_root } => {
                 let handler = mas_static_files::service(web_root);

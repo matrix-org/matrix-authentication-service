@@ -171,12 +171,14 @@ where
         hyper::server::conn::Http::new()
             .http2_only(true)
             .serve_connection(stream, service)
+            .with_upgrades()
             .await?;
     } else {
         hyper::server::conn::Http::new()
             .http1_only(true)
             .http1_keep_alive(false)
             .serve_connection(stream, service)
+            .with_upgrades()
             .await?;
     };
 
