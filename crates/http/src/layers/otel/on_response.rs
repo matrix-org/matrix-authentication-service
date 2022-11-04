@@ -63,9 +63,11 @@ impl<B> OnResponse<Response<B>> for OnHttpResponse {
     }
 }
 
+#[cfg(feature = "aws-sdk")]
 #[derive(Debug, Clone, Copy, Default)]
 pub struct OnAwsResponse;
 
+#[cfg(feature = "aws-sdk")]
 impl OnResponse<aws_smithy_http::operation::Response> for OnAwsResponse {
     fn on_response(
         &self,

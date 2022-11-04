@@ -2593,6 +2593,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "mas-graphql"
+version = "0.1.0"
+dependencies = [
+ "async-graphql",
+ "mas-axum-utils",
+ "sqlx",
+ "tokio",
+ "tokio-stream",
+]
+
+[[package]]
 name = "mas-handlers"
 version = "0.1.0"
 dependencies = [
@@ -2611,6 +2622,7 @@ dependencies = [
  "mas-axum-utils",
  "mas-data-model",
  "mas-email",
+ "mas-graphql",
  "mas-http",
  "mas-iana",
  "mas-jose",
@@ -2630,7 +2642,6 @@ dependencies = [
  "sqlx",
  "thiserror",
  "tokio",
- "tokio-stream",
  "tower",
  "tower-http",
  "tracing",
