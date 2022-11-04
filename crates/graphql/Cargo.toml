@@ -1,0 +1,17 @@
+[package]
+name = "mas-graphql"
+version = "0.1.0"
+authors = ["Quentin Gliech <quenting@element.io>"]
+edition = "2021"
+license = "Apache-2.0"
+
+[dependencies]
+async-graphql = "4.0.16"
+sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres"] }
+tokio = { version = "1.21.2", features = ["time"] }
+tokio-stream = "0.1.11"
+
+mas-axum-utils = { path = "../axum-utils" }
+
+[[bin]]
+name = "schema"

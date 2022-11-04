@@ -8,7 +8,6 @@ license = "Apache-2.0"
 [dependencies]
 # Async runtime
 tokio = { version = "1.21.2", features = ["macros"] }
-tokio-stream = "0.1.11"
 futures-util = "0.3.25"
 
 # Logging and tracing
@@ -56,6 +55,7 @@ oauth2-types = { path = "../oauth2-types" }
 mas-axum-utils = { path = "../axum-utils", default-features = false }
 mas-data-model = { path = "../data-model" }
 mas-email = { path = "../email" }
+mas-graphql = { path = "../graphql" }
 mas-http = { path = "../http", default-features = false }
 mas-iana = { path = "../iana" }
 mas-jose = { path = "../jose" }

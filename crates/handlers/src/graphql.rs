@@ -12,16 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{borrow::Cow, str::FromStr, time::Duration};
+use std::{borrow::Cow, str::FromStr};
 
 use async_graphql::{
     extensions::{ApolloTracing, Tracing},
-    futures_util::TryStreamExt,
     http::{
         playground_source, GraphQLPlaygroundConfig, MultipartOptions, WebSocketProtocols,
         WsMessage, ALL_WEBSOCKET_PROTOCOLS,
     },
-    Context, Data, EmptyMutation,
+    Data,
 };
 use axum::{
     extract::{
@@ -32,19 +31,19 @@ use axum::{
     Json, TypedHeader,
 };
 use axum_extra::extract::PrivateCookieJar;
-use futures_util::{SinkExt, Stream, StreamExt};
+use futures_util::{SinkExt, StreamExt, TryStreamExt};
 use headers::{ContentType, Header, HeaderValue};
 use hyper::header::{CACHE_CONTROL, SEC_WEBSOCKET_PROTOCOL};
-use mas_axum_utils::{FancyError, SessionInfo, SessionInfoExt};
+use mas_axum_utils::{FancyError, SessionInfoExt};
+use mas_graphql::Schema;
 use mas_keystore::Encrypter;
 use sqlx::PgPool;
 use tracing::{info_span, Instrument};
 
-pub type Schema = async_graphql::Schema<Query, EmptyMutation, Subscription>;
-
 #[must_use]
 pub fn schema(pool: &PgPool) -> Schema {
-    async_graphql::Schema::build(Query::new(pool), EmptyMutation, Subscription)
+    mas_graphql::schema_builder()
+        .data(pool.clone())
         .extension(Tracing)
         .extension(ApolloTracing)
         .finish()
@@ -211,41 +210,4 @@ pub async fn playground() -> impl IntoResponse {
             .subscription_endpoint("/graphql/ws")
             .with_setting("request.credentials", "include"),
     ))
-}
-
-pub struct Query {
-    database: PgPool,
-}
-
-impl Query {
-    fn new(pool: &PgPool) -> Self {
-        Self {
-            database: pool.clone(),
-        }
-    }
-}
-
-#[async_graphql::Object]
-impl Query {
-    async fn username(&self, ctx: &Context<'_>) -> Result<Option<String>, async_graphql::Error> {
-        let mut conn = self.database.acquire().await?;
-        let session_info = ctx.data::<SessionInfo>()?;
-        let session = session_info.load_session(&mut conn).await?;
-
-        Ok(session.map(|s| s.user.username))
-    }
-}
-
-pub struct Subscription;
-
-#[async_graphql::Subscription]
-impl Subscription {
-    async fn integers(&self, #[graphql(default = 1)] step: i32) -> impl Stream<Item = i32> {
-        let mut value = 0;
-        tokio_stream::wrappers::IntervalStream::new(tokio::time::interval(Duration::from_secs(1)))
-            .map(move |_| {
-                value += step;
-                value
-            })
-    }
 }

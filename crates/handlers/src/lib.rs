@@ -56,10 +56,7 @@ mod views;
 
 pub use compat::MatrixHomeserver;
 
-pub use self::{
-    app_state::AppState,
-    graphql::{schema as graphql_schema, Schema as GraphQLSchema},
-};
+pub use self::{app_state::AppState, graphql::schema as graphql_schema};
 
 #[must_use]
 pub fn empty_router<S, B>(state: Arc<S>) -> Router<S, B>
@@ -87,7 +84,7 @@ where
     <B as HttpBody>::Data: Into<Bytes>,
     <B as HttpBody>::Error: std::error::Error + Send + Sync,
     S: Send + Sync + 'static,
-    GraphQLSchema: FromRef<S>,
+    mas_graphql::Schema: FromRef<S>,
     Encrypter: FromRef<S>,
 {
     let mut router = Router::with_state_arc(state)
@@ -344,7 +341,7 @@ where
     Templates: FromRef<S>,
     Mailer: FromRef<S>,
     MatrixHomeserver: FromRef<S>,
-    GraphQLSchema: FromRef<S>,
+    mas_graphql::Schema: FromRef<S>,
 {
     let healthcheck_router = healthcheck_router(state.clone());
     let discovery_router = discovery_router(state.clone());
