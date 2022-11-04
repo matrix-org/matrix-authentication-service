@@ -17,7 +17,7 @@ aws-smithy-client = { version = "0.51.0", default-features = false, features = [
 aws-smithy-async = { version = "0.51.0", default-features = false, features = ["rt-tokio"] }
 
 mas-templates = { path = "../templates" }
-mas-http = { path = "../http" }
+mas-http = { path = "../http", features = ["aws-sdk", "client"] }
 
 [dependencies.lettre]
 version = "0.10.1"

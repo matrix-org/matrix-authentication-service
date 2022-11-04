@@ -50,3 +50,27 @@ impl<T> InjectContext<Request<T>> for InjectInHttpRequest {
         request
     }
 }
+
+#[cfg(feature = "aws-sdk")]
+#[derive(Debug, Clone, Copy, Default)]
+pub struct InjectInAwsRequest;
+
+#[cfg(feature = "aws-sdk")]
+impl InjectContext<aws_smithy_http::operation::Request> for InjectInAwsRequest {
+    type Output = aws_smithy_http::operation::Request;
+
+    fn inject_context(
+        &self,
+        cx: &Context,
+        mut request: aws_smithy_http::operation::Request,
+    ) -> Self::Output {
+        let headers = request.http_mut().headers_mut();
+        let mut injector = HeaderInjector(headers);
+
+        opentelemetry::global::get_text_map_propagator(|propagator| {
+            propagator.inject_context(cx, &mut injector);
+        });
+
+        request
+    }
+}

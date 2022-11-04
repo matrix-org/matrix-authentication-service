@@ -55,12 +55,7 @@ impl Transport {
         let http_connector = DynConnector::new(http_connector);
 
         // Middleware to add tracing to AWS SDK operations
-        let middleware = DynMiddleware::new((
-            TraceLayer::with_namespace("aws_sdk")
-                .make_span_builder(mas_http::otel::DefaultMakeSpanBuilder::new("aws_sdk"))
-                .on_error(mas_http::otel::DebugOnError),
-            DefaultMiddleware::default(),
-        ));
+        let middleware = DynMiddleware::new((TraceLayer::aws_sdk(), DefaultMiddleware::default()));
 
         // Use that connector for discovering the config
         let config = ProviderConfig::default().with_http_connector(http_connector.clone());

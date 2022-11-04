@@ -186,3 +186,50 @@ impl MakeSpanBuilder<Name> for SpanFromDnsRequest {
             .with_attributes(attributes)
     }
 }
+
+#[cfg(feature = "aws-sdk")]
+#[derive(Debug, Clone, Copy, Default)]
+pub struct SpanFromAwsRequest;
+
+#[cfg(feature = "aws-sdk")]
+impl MakeSpanBuilder<aws_smithy_http::operation::Request> for SpanFromAwsRequest {
+    fn make_span_builder(&self, request: &aws_smithy_http::operation::Request) -> SpanBuilder {
+        let properties = request.properties();
+        let request = request.http();
+        let mut attributes = vec![
+            SC::RPC_SYSTEM.string("aws-api"),
+            SC::HTTP_METHOD.string(http_method_str(request.method())),
+            SC::HTTP_FLAVOR.string(http_flavor(request.version())),
+            SC::HTTP_TARGET.string(request.uri().to_string()),
+        ];
+
+        let mut name = Cow::Borrowed("aws_sdk");
+        if let Some(metadata) = properties.get::<aws_smithy_http::operation::Metadata>() {
+            attributes.push(SC::RPC_SERVICE.string(metadata.service().to_owned()));
+            attributes.push(SC::RPC_METHOD.string(metadata.name().to_owned()));
+            name = Cow::Owned(metadata.name().to_owned());
+        } else if let Some(service) = properties.get::<aws_types::SigningService>() {
+            attributes.push(SC::RPC_SERVICE.string(service.as_ref().to_owned()));
+        }
+
+        let headers = request.headers();
+
+        if let Some(host) = headers.typed_get::<Host>() {
+            attributes.push(SC::HTTP_HOST.string(host.to_string()));
+        }
+
+        if let Some(user_agent) = headers.typed_get::<UserAgent>() {
+            attributes.push(SC::HTTP_USER_AGENT.string(user_agent.to_string()));
+        }
+
+        if let Some(ContentLength(content_length)) = headers.typed_get() {
+            if let Ok(content_length) = content_length.try_into() {
+                attributes.push(SC::HTTP_REQUEST_CONTENT_LENGTH.i64(content_length));
+            }
+        }
+
+        SpanBuilder::from_name(name)
+            .with_kind(SpanKind::Client)
+            .with_attributes(attributes)
+    }
+}

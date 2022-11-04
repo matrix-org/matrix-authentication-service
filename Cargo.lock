@@ -2537,6 +2537,8 @@ name = "mas-http"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "aws-smithy-http",
+ "aws-types",
  "axum 0.6.0-rc.2",
  "bytes 1.2.1",
  "futures-util",

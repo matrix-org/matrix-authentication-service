@@ -6,6 +6,8 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
+aws-smithy-http = { version = "0.51.0", optional = true }
+aws-types = { version = "0.51.0", optional = true }
 axum = { version = "0.6.0-rc.2", optional = true }
 bytes = "1.2.1"
 futures-util = "0.3.25"
@@ -40,6 +42,7 @@ tower = { version = "0.4.13", features = ["util"] }
 
 [features]
 axum = ["dep:axum"]
+aws-sdk = ["dep:aws-smithy-http", "dep:aws-types"]
 native-roots = ["dep:rustls-native-certs"]
 webpki-roots = ["dep:webpki-roots"]
 client = [

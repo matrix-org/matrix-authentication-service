@@ -102,6 +102,27 @@ pub type TraceDns<S> = Trace<
     S,
 >;
 
+#[cfg(feature = "aws-sdk")]
+pub type TraceAwsSdkClientLayer = TraceLayer<
+    DefaultExtractContext,
+    InjectInAwsRequest,
+    SpanFromAwsRequest,
+    DefaultMakeMetricsLabels,
+    OnAwsResponse,
+    DebugOnError,
+>;
+
+#[cfg(feature = "aws-sdk")]
+pub type TraceAwsSdkClient<S> = Trace<
+    DefaultExtractContext,
+    InjectInAwsRequest,
+    SpanFromAwsRequest,
+    DefaultMakeMetricsLabels,
+    OnAwsResponse,
+    DebugOnError,
+    S,
+>;
+
 impl TraceHttpServerLayer {
     #[must_use]
     pub fn http_server() -> Self {
@@ -150,6 +171,18 @@ impl TraceDnsLayer {
     #[must_use]
     pub fn dns() -> Self {
         TraceLayer::with_namespace("dns").make_span_builder(SpanFromDnsRequest)
+    }
+}
+
+#[cfg(feature = "aws-sdk")]
+impl TraceAwsSdkClientLayer {
+    #[must_use]
+    pub fn aws_sdk() -> Self {
+        TraceLayer::with_namespace("aws_sdk")
+            .make_span_builder(SpanFromAwsRequest)
+            .on_response(OnAwsResponse)
+            .on_error(DebugOnError)
+            .inject_context(InjectInAwsRequest)
     }
 }
 

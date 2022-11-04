@@ -62,3 +62,36 @@ impl<B> OnResponse<Response<B>> for OnHttpResponse {
         }
     }
 }
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct OnAwsResponse;
+
+impl OnResponse<aws_smithy_http::operation::Response> for OnAwsResponse {
+    fn on_response(
+        &self,
+        span: &SpanRef<'_>,
+        metrics_labels: &mut Vec<KeyValue>,
+        response: &aws_smithy_http::operation::Response,
+    ) {
+        let response = response.http();
+        let status_code = i64::from(response.status().as_u16());
+        span.set_attribute(SC::HTTP_STATUS_CODE.i64(status_code));
+        metrics_labels.push(KeyValue::new("status_code", status_code));
+
+        if let Some(ContentLength(content_length)) = response.headers().typed_get() {
+            if let Ok(content_length) = content_length.try_into() {
+                span.set_attribute(SC::HTTP_RESPONSE_CONTENT_LENGTH.i64(content_length));
+            }
+        }
+
+        #[cfg(feature = "client")]
+        // Get local and remote address from hyper's HttpInfo injected by the
+        // HttpConnector
+        if let Some(info) = response.extensions().get::<HttpInfo>() {
+            span.set_attribute(SC::NET_PEER_IP.string(info.remote_addr().ip().to_string()));
+            span.set_attribute(SC::NET_PEER_PORT.i64(info.remote_addr().port().into()));
+            span.set_attribute(SC::NET_HOST_IP.string(info.local_addr().ip().to_string()));
+            span.set_attribute(SC::NET_HOST_PORT.i64(info.local_addr().port().into()));
+        }
+    }
+}
