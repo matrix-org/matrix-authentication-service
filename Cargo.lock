@@ -2597,10 +2597,15 @@ name = "mas-graphql"
 version = "0.1.0"
 dependencies = [
  "async-graphql",
+ "chrono",
  "mas-axum-utils",
+ "mas-data-model",
+ "mas-storage",
+ "serde",
  "sqlx",
  "tokio",
  "tokio-stream",
+ "ulid",
 ]
 
 [[package]]

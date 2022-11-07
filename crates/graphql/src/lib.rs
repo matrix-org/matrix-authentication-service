@@ -29,6 +29,10 @@ use mas_axum_utils::SessionInfo;
 use sqlx::PgPool;
 use tokio_stream::{Stream, StreamExt};
 
+use self::model::{BrowserSession, User};
+
+mod model;
+
 pub type Schema = async_graphql::Schema<Query, Mutation, Subscription>;
 pub type SchemaBuilder = async_graphql::SchemaBuilder<Query, Mutation, Subscription>;
 
@@ -51,14 +55,25 @@ impl Query {
 
 #[async_graphql::Object]
 impl Query {
-    /// A simple property which uses the DB pool and the current session
-    async fn username(&self, ctx: &Context<'_>) -> Result<Option<String>, async_graphql::Error> {
+    async fn current_session(
+        &self,
+        ctx: &Context<'_>,
+    ) -> Result<Option<BrowserSession>, async_graphql::Error> {
         let database = ctx.data::<PgPool>()?;
         let session_info = ctx.data::<SessionInfo>()?;
         let mut conn = database.acquire().await?;
         let session = session_info.load_session(&mut conn).await?;
 
-        Ok(session.map(|s| s.user.username))
+        Ok(session.map(BrowserSession::from))
+    }
+
+    async fn current_user(&self, ctx: &Context<'_>) -> Result<Option<User>, async_graphql::Error> {
+        let database = ctx.data::<PgPool>()?;
+        let session_info = ctx.data::<SessionInfo>()?;
+        let mut conn = database.acquire().await?;
+        let session = session_info.load_session(&mut conn).await?;
+
+        Ok(session.map(User::from))
     }
 }
 

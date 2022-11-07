@@ -23,7 +23,7 @@ use mas_data_model::{
 };
 use password_hash::{PasswordHash, PasswordHasher, SaltString};
 use rand::{CryptoRng, Rng};
-use sqlx::{Acquire, PgExecutor, Postgres, Transaction};
+use sqlx::{postgres::PgArguments, Acquire, Arguments, PgExecutor, Postgres, Transaction};
 use thiserror::Error;
 use tokio::task;
 use tracing::{info_span, Instrument};
@@ -590,7 +590,7 @@ pub async fn username_exists(
     .await
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, sqlx::FromRow)]
 struct UserEmailLookup {
     user_email_id: Uuid,
     user_email: String,
@@ -639,6 +639,126 @@ pub async fn get_user_emails(
     .await?;
 
     Ok(res.into_iter().map(Into::into).collect())
+}
+
+#[tracing::instrument(
+    skip_all,
+    fields(user.id = %user.data, user.username = user.username),
+    err(Display),
+)]
+pub async fn count_user_emails(
+    executor: impl PgExecutor<'_>,
+    user: &User<PostgresqlBackend>,
+) -> Result<i64, anyhow::Error> {
+    let res = sqlx::query_scalar!(
+        r#"
+            SELECT COUNT(*)
+            FROM user_emails ue
+            WHERE ue.user_id = $1
+        "#,
+        Uuid::from(user.data),
+    )
+    .fetch_one(executor)
+    .instrument(info_span!("Count user emails"))
+    .await?;
+
+    Ok(res.unwrap_or_default())
+}
+
+#[tracing::instrument(
+    skip_all,
+    fields(
+        user.id = %user.data,
+        user.username = user.username,
+    ),
+    err(Display),
+)]
+pub async fn get_paginated_user_emails(
+    executor: impl PgExecutor<'_>,
+    user: &User<PostgresqlBackend>,
+    before: Option<Ulid>,
+    after: Option<Ulid>,
+    first: Option<usize>,
+    last: Option<usize>,
+) -> Result<(bool, bool, Vec<UserEmail<PostgresqlBackend>>), anyhow::Error> {
+    // ref: https://github.com/graphql/graphql-relay-js/issues/94#issuecomment-232410564
+    // 1. Start from the greedy query: SELECT * FROM table
+    let mut query = String::from(
+        r#"
+            SELECT
+                ue.user_email_id,
+                ue.email        AS "user_email",
+                ue.created_at   AS "user_email_created_at",
+                ue.confirmed_at AS "user_email_confirmed_at"
+            FROM user_emails ue
+        "#,
+    );
+
+    let mut arguments = PgArguments::default();
+
+    query += " WHERE ue.user_id = ";
+    arguments.add(Uuid::from(user.data));
+    arguments.format_placeholder(&mut query)?;
+
+    // 2. If the after argument is provided, add `id > parsed_cursor` to the `WHERE`
+    // clause
+    if let Some(after) = after {
+        query += " AND ue.user_email_id > ";
+        arguments.add(Uuid::from(after));
+        arguments.format_placeholder(&mut query)?;
+    }
+
+    // 3. If the before argument is provided, add `id < parsed_cursor` to the
+    // `WHERE` clause
+    if let Some(before) = before {
+        query += " AND ue.user_email_id < ";
+        arguments.add(Uuid::from(before));
+        arguments.format_placeholder(&mut query)?;
+    }
+
+    // 4. If the first argument is provided, add `ORDER BY id ASC LIMIT first+1` to
+    // the query
+    let limit = if let Some(count) = first {
+        query += " ORDER BY ue.user_email_id ASC LIMIT ";
+        arguments.add((count + 1) as i64);
+        arguments.format_placeholder(&mut query)?;
+        count
+    // 5. If the first argument is provided, add `ORDER BY id DESC LIMIT last+1`
+    // to the query
+    } else if let Some(count) = last {
+        query += " ORDER BY ue.user_email_id DESC LIMIT ";
+        arguments.add((count + 1) as i64);
+        arguments.format_placeholder(&mut query)?;
+        count
+    } else {
+        bail!("Either 'first' or 'last' must be specified");
+    };
+
+    let mut res: Vec<UserEmailLookup> = sqlx::query_as_with(&query, arguments)
+        .fetch_all(executor)
+        .instrument(info_span!("Fetch paginated user emails", query = query))
+        .await?;
+
+    let is_full = res.len() == (limit + 1);
+    if is_full {
+        res.pop();
+    }
+
+    let (has_previous_page, has_next_page) = if first.is_some() {
+        (false, is_full)
+    } else if last.is_some() {
+        // 5. If the last argument is provided, I reverse the order of the results
+        res.reverse();
+        (is_full, false)
+    } else {
+        unreachable!()
+    };
+
+    Ok((
+        has_previous_page,
+        has_next_page,
+        res.into_iter().map(Into::into).collect(),
+    ))
 }
 
 #[tracing::instrument(
