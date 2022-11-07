@@ -1,0 +1,32 @@
+
+
+
+
+type Mutation {
+	"""
+	A dummy mutation so that the mutation object is not empty
+	"""
+	hello: Boolean!
+}
+
+type Query {
+	"""
+	A simple property which uses the DB pool and the current session
+	"""
+	username: String
+}
+
+
+type Subscription {
+	"""
+	A dump subscription to try out the websocket
+	"""
+	integers(step: Int! = 1): Int!
+}
+
+schema {
+	query: Query
+	mutation: Mutation
+	subscription: Subscription
+}
+

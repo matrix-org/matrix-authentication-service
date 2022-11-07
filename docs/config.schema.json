@@ -81,6 +81,10 @@
                 "name": "compat"
               },
               {
+                "name": "graphql",
+                "playground": true
+              },
+              {
                 "name": "static"
               }
             ]
@@ -1330,6 +1334,26 @@
               "enum": [
                 "human"
               ]
+            }
+          }
+        },
+        {
+          "description": "GraphQL endpoint",
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "enum": [
+                "graphql"
+              ]
+            },
+            "playground": {
+              "description": "Enabled the GraphQL playground",
+              "default": false,
+              "type": "boolean"
             }
           }
         },
