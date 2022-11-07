@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{collections::HashSet, hash::Hash, num::NonZeroU32};
+use std::{collections::HashSet, fmt, hash::Hash, num::NonZeroU32};
 
 use chrono::{DateTime, Duration, Utc};
 use language_tags::LanguageTag;
@@ -176,7 +176,7 @@ pub enum Prompt {
 /// [Authorization Endpoint]: https://www.rfc-editor.org/rfc/rfc6749.html#section-3.1
 #[skip_serializing_none]
 #[serde_as]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct AuthorizationRequest {
     /// OAuth 2.0 Response Type value that determines the authorization
     /// processing flow to be used.
@@ -297,15 +297,43 @@ impl AuthorizationRequest {
     }
 }
 
+impl fmt::Debug for AuthorizationRequest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("AuthorizationRequest")
+            .field("response_type", &self.response_type)
+            .field("redirect_uri", &self.redirect_uri)
+            .field("scope", &self.scope)
+            .field("response_mode", &self.response_mode)
+            .field("display", &self.display)
+            .field("prompt", &self.prompt)
+            .field("max_age", &self.max_age)
+            .field("ui_locales", &self.ui_locales)
+            .field("login_hint", &self.login_hint)
+            .field("acr_values", &self.acr_values)
+            .field("request", &self.request)
+            .field("request_uri", &self.request_uri)
+            .field("registration", &self.registration)
+            .finish()
+    }
+}
+
 /// A successful response from the [Authorization Endpoint].
 ///
 /// [Authorization Endpoint]: https://www.rfc-editor.org/rfc/rfc6749.html#section-3.1
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Default, Debug, Clone)]
+#[derive(Serialize, Deserialize, Default, Clone)]
 pub struct AuthorizationResponse<R> {
     pub code: Option<String>,
     #[serde(flatten)]
     pub response: R,
+}
+
+impl<R: fmt::Debug> fmt::Debug for AuthorizationResponse<R> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("AuthorizationResponse")
+            .field("response", &self.response)
+            .finish_non_exhaustive()
+    }
 }
 
 /// A request to the [Device Authorization Endpoint].
@@ -324,7 +352,7 @@ pub const DEFAULT_DEVICE_AUTHORIZATION_INTERVAL_SECONDS: i64 = 5;
 /// [Device Authorization Endpoint]: https://www.rfc-editor.org/rfc/rfc8628
 #[serde_as]
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct DeviceAuthorizationResponse {
     /// The device verification code.
     device_code: String,
@@ -367,12 +395,22 @@ impl DeviceAuthorizationResponse {
     }
 }
 
+impl fmt::Debug for DeviceAuthorizationResponse {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("DeviceAuthorizationResponse")
+            .field("verification_uri", &self.verification_uri)
+            .field("expires_in", &self.expires_in)
+            .field("interval", &self.interval)
+            .finish()
+    }
+}
+
 /// A request to the [Token Endpoint] for the [Authorization Code] grant type.
 ///
 /// [Token Endpoint]: https://www.rfc-editor.org/rfc/rfc6749#section-3.2
 /// [Authorization Code]: https://www.rfc-editor.org/rfc/rfc6749#section-4.1
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct AuthorizationCodeGrant {
     /// The authorization code that was returned from the authorization
     /// endpoint.
@@ -390,12 +428,20 @@ pub struct AuthorizationCodeGrant {
     pub code_verifier: Option<String>,
 }
 
+impl fmt::Debug for AuthorizationCodeGrant {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("AuthorizationCodeGrant")
+            .field("redirect_uri", &self.redirect_uri)
+            .finish_non_exhaustive()
+    }
+}
+
 /// A request to the [Token Endpoint] for [refreshing an access token].
 ///
 /// [Token Endpoint]: https://www.rfc-editor.org/rfc/rfc6749#section-3.2
 /// [refreshing an access token]: https://www.rfc-editor.org/rfc/rfc6749#section-6
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct RefreshTokenGrant {
     /// The refresh token issued to the client.
     pub refresh_token: String,
@@ -406,6 +452,14 @@ pub struct RefreshTokenGrant {
     /// the resource owner, and if omitted is treated as equal to the scope
     /// originally granted by the resource owner.
     pub scope: Option<Scope>,
+}
+
+impl fmt::Debug for RefreshTokenGrant {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("RefreshTokenGrant")
+            .field("scope", &self.scope)
+            .finish_non_exhaustive()
+    }
 }
 
 /// A request to the [Token Endpoint] for the [Client Credentials] grant type.
@@ -422,10 +476,16 @@ pub struct ClientCredentialsGrant {
 ///
 /// [Token Endpoint]: https://www.rfc-editor.org/rfc/rfc6749#section-3.2
 /// [Device Authorization]: https://www.rfc-editor.org/rfc/rfc8628
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct DeviceCodeGrant {
     /// The device verification code, from the device authorization response.
     pub device_code: Option<Scope>,
+}
+
+impl fmt::Debug for DeviceCodeGrant {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("DeviceCodeGrant").finish_non_exhaustive()
+    }
 }
 
 /// All possible values for the `grant_type` parameter.
@@ -489,7 +549,7 @@ pub enum AccessTokenRequest {
 /// [Token Endpoint]: https://www.rfc-editor.org/rfc/rfc6749#section-3.2
 #[serde_as]
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct AccessTokenResponse {
     /// The access token to access the requested scope.
     pub access_token: String,
@@ -555,17 +615,35 @@ impl AccessTokenResponse {
     }
 }
 
+impl fmt::Debug for AccessTokenResponse {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("AccessTokenResponse")
+            .field("token_type", &self.token_type)
+            .field("expires_in", &self.expires_in)
+            .field("scope", &self.scope)
+            .finish_non_exhaustive()
+    }
+}
+
 /// A request to the [Introspection Endpoint].
 ///
 /// [Introspection Endpoint]: https://www.rfc-editor.org/rfc/rfc7662#section-2
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct IntrospectionRequest {
     /// The value of the token.
     pub token: String,
 
     /// A hint about the type of the token submitted for introspection.
     pub token_type_hint: Option<OAuthTokenTypeHint>,
+}
+
+impl fmt::Debug for IntrospectionRequest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("IntrospectionRequest")
+            .field("token_type_hint", &self.token_type_hint)
+            .finish_non_exhaustive()
+    }
 }
 
 /// A successful response from the [Introspection Endpoint].
