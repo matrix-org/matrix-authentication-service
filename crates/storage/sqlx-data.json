@@ -1578,6 +1578,26 @@
     },
     "query": "\n            UPDATE oauth2_refresh_tokens\n            SET consumed_at = $2\n            WHERE oauth2_refresh_token_id = $1\n        "
   },
+  "89e0d338348588831a7a810763a1901073f7a7cb81d51c18bb987a5be10c1202": {
+    "describe": {
+      "columns": [
+        {
+          "name": "count",
+          "ordinal": 0,
+          "type_info": "Int8"
+        }
+      ],
+      "nullable": [
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n            SELECT COUNT(*)\n            FROM user_emails ue\n            WHERE ue.user_id = $1\n        "
+  },
   "99f5f9eb0adc5ec120ed8194cbf6a8545155bef09e6d94d92fb67fd1b14d4f28": {
     "describe": {
       "columns": [],
