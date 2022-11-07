@@ -1,0 +1,242 @@
+// Copyright 2022 Kévin Commaille.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+use std::collections::HashMap;
+
+use assert_matches::assert_matches;
+use chrono::{DateTime, Duration, Utc};
+use mas_iana::jose::JsonWebSignatureAlg;
+use mas_jose::{
+    claims,
+    constraints::Constrainable,
+    jwk::PublicJsonWebKeySet,
+    jwt::{JsonWebSignatureHeader, Jwt},
+};
+use mas_oidc_client::{
+    error::{IdTokenError, JwtVerificationError},
+    requests::jose::{verify_id_token, JwtVerificationData},
+    types::IdToken,
+};
+use url::Url;
+
+use crate::{keystore, now, CLIENT_ID, ID_TOKEN_SIGNING_ALG, SUBJECT_IDENTIFIER};
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum IdTokenFlag {
+    WrongExpiration,
+    WrongSubject,
+}
+
+/// Generate an ID token with the given settings.
+fn id_token(
+    issuer: &Url,
+    flag: Option<IdTokenFlag>,
+    auth_time: Option<DateTime<Utc>>,
+) -> (IdToken, PublicJsonWebKeySet) {
+    let signing_alg = ID_TOKEN_SIGNING_ALG;
+
+    let keystore = keystore(&signing_alg);
+    let mut claims = HashMap::new();
+    let now = now();
+
+    claims::ISS.insert(&mut claims, issuer.to_string()).unwrap();
+    claims::AUD
+        .insert(&mut claims, CLIENT_ID.to_owned())
+        .unwrap();
+
+    if flag == Some(IdTokenFlag::WrongSubject) {
+        claims::SUB
+            .insert(&mut claims, "wrong_subject".to_owned())
+            .unwrap();
+    } else {
+        claims::SUB
+            .insert(&mut claims, SUBJECT_IDENTIFIER.to_owned())
+            .unwrap();
+    }
+
+    claims::IAT.insert(&mut claims, now).unwrap();
+
+    if flag == Some(IdTokenFlag::WrongExpiration) {
+        claims::EXP
+            .insert(&mut claims, now - Duration::hours(1))
+            .unwrap();
+    } else {
+        claims::EXP
+            .insert(&mut claims, now + Duration::hours(1))
+            .unwrap();
+    }
+
+    if let Some(auth_time) = auth_time {
+        claims::AUTH_TIME.insert(&mut claims, auth_time).unwrap();
+    }
+
+    let key = keystore.signing_key_for_algorithm(&signing_alg).unwrap();
+    let signer = key.params().signing_key_for_alg(&signing_alg).unwrap();
+    let header = JsonWebSignatureHeader::new(signing_alg).with_kid(key.kid().unwrap());
+    let id_token = Jwt::sign(header, claims, &signer).unwrap();
+
+    (id_token, keystore.public_jwks())
+}
+
+#[tokio::test]
+async fn pass_verify_id_token() {
+    let issuer = Url::parse("http://localhost/").unwrap();
+    let now = now();
+    let (auth_id_token, _) = id_token(&issuer, None, Some(now));
+    let (id_token, jwks) = id_token(&issuer, None, Some(now));
+
+    let verification_data = JwtVerificationData {
+        issuer: &issuer,
+        jwks: &jwks,
+        client_id: &CLIENT_ID.to_owned(),
+        signing_algorithm: &ID_TOKEN_SIGNING_ALG,
+    };
+
+    verify_id_token(
+        id_token.as_str(),
+        verification_data,
+        Some(&auth_id_token),
+        now,
+    )
+    .unwrap();
+}
+
+#[tokio::test]
+async fn fail_verify_id_token_wrong_issuer() {
+    let issuer = Url::parse("http://localhost/").unwrap();
+    let wrong_issuer = Url::parse("http://distanthost/").unwrap();
+    let (id_token, jwks) = id_token(&issuer, None, None);
+    let now = now();
+
+    let verification_data = JwtVerificationData {
+        issuer: &wrong_issuer,
+        jwks: &jwks,
+        client_id: &CLIENT_ID.to_owned(),
+        signing_algorithm: &ID_TOKEN_SIGNING_ALG,
+    };
+
+    let error = verify_id_token(id_token.as_str(), verification_data, None, now).unwrap_err();
+
+    assert_matches!(error, IdTokenError::Jwt(JwtVerificationError::WrongIssuer));
+}
+
+#[tokio::test]
+async fn fail_verify_id_token_wrong_audience() {
+    let issuer = Url::parse("http://localhost/").unwrap();
+    let (id_token, jwks) = id_token(&issuer, None, None);
+    let now = now();
+
+    let verification_data = JwtVerificationData {
+        issuer: &issuer,
+        jwks: &jwks,
+        client_id: &"wrong_client_id".to_owned(),
+        signing_algorithm: &ID_TOKEN_SIGNING_ALG,
+    };
+
+    let error = verify_id_token(id_token.as_str(), verification_data, None, now).unwrap_err();
+
+    assert_matches!(
+        error,
+        IdTokenError::Jwt(JwtVerificationError::WrongAudience)
+    );
+}
+
+#[tokio::test]
+async fn fail_verify_id_token_wrong_signing_algorithm() {
+    let issuer = Url::parse("http://localhost/").unwrap();
+    let (id_token, jwks) = id_token(&issuer, None, None);
+    let now = now();
+
+    let verification_data = JwtVerificationData {
+        issuer: &issuer,
+        jwks: &jwks,
+        client_id: &CLIENT_ID.to_owned(),
+        signing_algorithm: &JsonWebSignatureAlg::Unknown("wrong_algorithm".to_owned()),
+    };
+
+    let error = verify_id_token(id_token.as_str(), verification_data, None, now).unwrap_err();
+
+    assert_matches!(
+        error,
+        IdTokenError::Jwt(JwtVerificationError::WrongSignatureAlg)
+    );
+}
+
+#[tokio::test]
+async fn fail_verify_id_token_wrong_expiration() {
+    let issuer = Url::parse("http://localhost/").unwrap();
+    let (id_token, jwks) = id_token(&issuer, Some(IdTokenFlag::WrongExpiration), None);
+    let now = now();
+
+    let verification_data = JwtVerificationData {
+        issuer: &issuer,
+        jwks: &jwks,
+        client_id: &CLIENT_ID.to_owned(),
+        signing_algorithm: &ID_TOKEN_SIGNING_ALG,
+    };
+
+    let error = verify_id_token(id_token.as_str(), verification_data, None, now).unwrap_err();
+
+    assert_matches!(error, IdTokenError::Claim(_));
+}
+
+#[tokio::test]
+async fn fail_verify_id_token_wrong_subject() {
+    let issuer = Url::parse("http://localhost/").unwrap();
+    let now = now();
+    let (auth_id_token, _) = id_token(&issuer, None, Some(now));
+    let (id_token, jwks) = id_token(&issuer, Some(IdTokenFlag::WrongSubject), None);
+
+    let verification_data = JwtVerificationData {
+        issuer: &issuer,
+        jwks: &jwks,
+        client_id: &CLIENT_ID.to_owned(),
+        signing_algorithm: &ID_TOKEN_SIGNING_ALG,
+    };
+
+    let error = verify_id_token(
+        id_token.as_str(),
+        verification_data,
+        Some(&auth_id_token),
+        now,
+    )
+    .unwrap_err();
+
+    assert_matches!(error, IdTokenError::WrongSubjectIdentifier);
+}
+
+#[tokio::test]
+async fn fail_verify_id_token_wrong_auth_time() {
+    let issuer = Url::parse("http://localhost/").unwrap();
+    let now = now();
+    let (auth_id_token, _) = id_token(&issuer, None, Some(now));
+    let (id_token, jwks) = id_token(&issuer, None, Some(now + Duration::hours(1)));
+
+    let verification_data = JwtVerificationData {
+        issuer: &issuer,
+        jwks: &jwks,
+        client_id: &CLIENT_ID.to_owned(),
+        signing_algorithm: &ID_TOKEN_SIGNING_ALG,
+    };
+
+    let error = verify_id_token(
+        id_token.as_str(),
+        verification_data,
+        Some(&auth_id_token),
+        now,
+    )
+    .unwrap_err();
+
+    assert_matches!(error, IdTokenError::WrongAuthTime)
+}
