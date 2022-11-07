@@ -73,6 +73,33 @@ jobs:
       - name: Check style
         run: cargo fmt --all -- --check
 
+  
+  check-schema:
+    name: Check schema
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v3
+
+      - name: Install toolchain
+        run: |
+          rustup toolchain install stable
+          rustup default stable
+
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Update the schemas
+        run: sh ./misc/update-schemas.sh
+
+      - name: Check that the workspace is clean
+        run: |
+          [[ -z $(git status -s) ]]
+
 
   clippy:
     name: Run Clippy
@@ -362,3 +389,22 @@ jobs:
         env:
           TAGS: "${{ steps.meta.outputs.tags }} ${{ steps.meta-debug.outputs.tags }}"
           COSIGN_EXPERIMENTAL: 1
+
+
+  tests-done:
+    name: Tests done
+    if: ${{ always() }}
+    needs:
+      - opa-lint
+      - rustfmt
+      - clippy
+      - check-schema
+      - test
+      - coverage
+      - build-image
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: matrix-org/done-action@v2
+        with:
+          needs: ${{ toJSON(needs) }}

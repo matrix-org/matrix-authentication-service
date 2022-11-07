@@ -13,5 +13,9 @@ tokio-stream = "0.1.11"
 
 mas-axum-utils = { path = "../axum-utils" }
 
+[features]
+native-roots = ["mas-axum-utils/native-roots"]
+webpki-roots = ["mas-axum-utils/webpki-roots"]
+
 [[bin]]
 name = "schema"

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[cfg(feature = "axum")]
+#[cfg(any(feature = "axum", feature = "aws-sdk"))]
 use std::borrow::Cow;
 
 #[cfg(feature = "axum")]
