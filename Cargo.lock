@@ -188,6 +188,7 @@ dependencies = [
  "thiserror",
  "tracing",
  "tracing-futures",
+ "url",
 ]
 
 [[package]]
@@ -2605,6 +2606,7 @@ dependencies = [
  "sqlx",
  "tokio",
  "ulid",
+ "url",
 ]
 
 [[package]]

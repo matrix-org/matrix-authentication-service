@@ -21,6 +21,7 @@ use ulid::Ulid;
 pub enum NodeType {
     UserEmail,
     BrowserSession,
+    CompatSsoLogin,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq)]

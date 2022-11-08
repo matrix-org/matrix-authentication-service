@@ -20,7 +20,7 @@ use mas_data_model::{
     Device, User, UserEmail,
 };
 use rand::Rng;
-use sqlx::{Acquire, PgExecutor, Postgres};
+use sqlx::{postgres::PgArguments, Acquire, Arguments, PgExecutor, Postgres};
 use thiserror::Error;
 use tokio::task;
 use tracing::{info_span, Instrument};
@@ -28,7 +28,11 @@ use ulid::Ulid;
 use url::Url;
 use uuid::Uuid;
 
-use crate::{user::lookup_user_by_username, Clock, DatabaseInconsistencyError, PostgresqlBackend};
+use crate::{
+    pagination::{generate_pagination, process_page},
+    user::lookup_user_by_username,
+    Clock, DatabaseInconsistencyError, PostgresqlBackend,
+};
 
 struct CompatAccessTokenLookup {
     compat_access_token_id: Uuid,
@@ -632,6 +636,7 @@ pub async fn insert_compat_sso_login(
     })
 }
 
+#[derive(sqlx::FromRow)]
 struct CompatSsoLoginLookup {
     compat_sso_login_id: Uuid,
     compat_sso_login_token: String,
@@ -801,6 +806,83 @@ pub async fn get_compat_sso_login_by_id(
     .await?;
 
     Ok(res.try_into()?)
+}
+
+#[tracing::instrument(
+    skip_all,
+    fields(
+        user.id = %user.data,
+        user.username = user.username,
+    ),
+    err(Display),
+)]
+pub async fn get_paginated_user_compat_sso_logins(
+    executor: impl PgExecutor<'_>,
+    user: &User<PostgresqlBackend>,
+    before: Option<Ulid>,
+    after: Option<Ulid>,
+    first: Option<usize>,
+    last: Option<usize>,
+) -> Result<(bool, bool, Vec<CompatSsoLogin<PostgresqlBackend>>), anyhow::Error> {
+    // TODO: this queries too much (like user info) which we probably don't need
+    // because we already have them
+    let mut query = String::from(
+        r#"
+            SELECT
+                cl.compat_sso_login_id,
+                cl.login_token     AS "compat_sso_login_token",
+                cl.redirect_uri    AS "compat_sso_login_redirect_uri",
+                cl.created_at      AS "compat_sso_login_created_at",
+                cl.fulfilled_at    AS "compat_sso_login_fulfilled_at",
+                cl.exchanged_at    AS "compat_sso_login_exchanged_at",
+                cs.compat_session_id AS "compat_session_id",
+                cs.created_at      AS "compat_session_created_at",
+                cs.finished_at     AS "compat_session_finished_at",
+                cs.device_id       AS "compat_session_device_id",
+                u.user_id          AS "user_id",
+                u.username         AS "user_username",
+                ue.user_email_id   AS "user_email_id",
+                ue.email           AS "user_email",
+                ue.created_at      AS "user_email_created_at",
+                ue.confirmed_at    AS "user_email_confirmed_at"
+            FROM compat_sso_logins cl
+            LEFT JOIN compat_sessions cs
+              USING (compat_session_id)
+            LEFT JOIN users u
+              USING (user_id)
+            LEFT JOIN user_emails ue
+              ON ue.user_email_id = u.primary_user_email_id
+        "#,
+    );
+
+    let mut arguments = PgArguments::default();
+
+    query += " WHERE cs.user_id = ";
+    arguments.add(Uuid::from(user.data));
+    arguments.format_placeholder(&mut query)?;
+
+    generate_pagination(
+        &mut query,
+        "cl.compat_sso_login_id",
+        &mut arguments,
+        before,
+        after,
+        first,
+        last,
+    )?;
+
+    let page: Vec<CompatSsoLoginLookup> = sqlx::query_as_with(&query, arguments)
+        .fetch_all(executor)
+        .instrument(info_span!(
+            "Fetch paginated user compat SSO logins",
+            query = query
+        ))
+        .await?;
+
+    let (has_previous_page, has_next_page, page) = process_page(page, first, last)?;
+
+    let page: Result<Vec<_>, _> = page.into_iter().map(TryInto::try_into).collect();
+    Ok((has_previous_page, has_next_page, page?))
 }
 
 #[tracing::instrument(skip_all, err)]
