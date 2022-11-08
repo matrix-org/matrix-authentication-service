@@ -22,23 +22,20 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions, clippy::missing_errors_doc)]
 
-use std::time::Duration;
-
-use async_graphql::Context;
+use async_graphql::{Context, EmptyMutation, EmptySubscription};
 use mas_axum_utils::SessionInfo;
 use sqlx::PgPool;
-use tokio_stream::{Stream, StreamExt};
 
 use self::model::{BrowserSession, User};
 
 mod model;
 
-pub type Schema = async_graphql::Schema<Query, Mutation, Subscription>;
-pub type SchemaBuilder = async_graphql::SchemaBuilder<Query, Mutation, Subscription>;
+pub type Schema = async_graphql::Schema<Query, EmptyMutation, EmptySubscription>;
+pub type SchemaBuilder = async_graphql::SchemaBuilder<Query, EmptyMutation, EmptySubscription>;
 
 #[must_use]
 pub fn schema_builder() -> SchemaBuilder {
-    async_graphql::Schema::build(Query::new(), Mutation::new(), Subscription::new())
+    async_graphql::Schema::build(Query::new(), EmptyMutation, EmptySubscription)
 }
 
 #[derive(Default)]
@@ -55,7 +52,8 @@ impl Query {
 
 #[async_graphql::Object]
 impl Query {
-    async fn current_session(
+    /// Get the current logged in browser session
+    async fn current_browser_session(
         &self,
         ctx: &Context<'_>,
     ) -> Result<Option<BrowserSession>, async_graphql::Error> {
@@ -67,6 +65,7 @@ impl Query {
         Ok(session.map(BrowserSession::from))
     }
 
+    /// Get the current logged in user
     async fn current_user(&self, ctx: &Context<'_>) -> Result<Option<User>, async_graphql::Error> {
         let database = ctx.data::<PgPool>()?;
         let session_info = ctx.data::<SessionInfo>()?;
@@ -74,50 +73,5 @@ impl Query {
         let session = session_info.load_session(&mut conn).await?;
 
         Ok(session.map(User::from))
-    }
-}
-
-#[derive(Default)]
-pub struct Mutation {
-    _private: (),
-}
-
-impl Mutation {
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-}
-
-#[async_graphql::Object]
-impl Mutation {
-    /// A dummy mutation so that the mutation object is not empty
-    async fn hello(&self) -> bool {
-        true
-    }
-}
-
-#[derive(Default)]
-pub struct Subscription {
-    _private: (),
-}
-
-impl Subscription {
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-}
-
-#[async_graphql::Subscription]
-impl Subscription {
-    /// A dump subscription to try out the websocket
-    async fn integers(&self, #[graphql(default = 1)] step: i32) -> impl Stream<Item = i32> {
-        let mut value = 0;
-        tokio_stream::wrappers::IntervalStream::new(tokio::time::interval(Duration::from_secs(1)))
-            .map(move |_| {
-                value += step;
-                value
-            })
     }
 }

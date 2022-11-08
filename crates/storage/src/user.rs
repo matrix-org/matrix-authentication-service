@@ -1,4 +1,4 @@
-// Copyright 2021 The Matrix.org Foundation C.I.C.
+// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,7 +31,10 @@ use ulid::Ulid;
 use uuid::Uuid;
 
 use super::{DatabaseInconsistencyError, PostgresqlBackend};
-use crate::Clock;
+use crate::{
+    pagination::{generate_pagination, process_page},
+    Clock,
+};
 
 #[derive(Debug, Clone)]
 struct UserLookup {
@@ -121,6 +124,7 @@ impl ActiveSessionLookupError {
     }
 }
 
+#[derive(sqlx::FromRow)]
 struct SessionLookup {
     user_session_id: Uuid,
     user_id: Uuid,
@@ -221,6 +225,72 @@ pub async fn lookup_active_session(
     .try_into()?;
 
     Ok(res)
+}
+
+#[tracing::instrument(
+    skip_all,
+    fields(
+        user.id = %user.data,
+        user.username = user.username,
+    ),
+    err(Display),
+)]
+pub async fn get_paginated_user_sessions(
+    executor: impl PgExecutor<'_>,
+    user: &User<PostgresqlBackend>,
+    before: Option<Ulid>,
+    after: Option<Ulid>,
+    first: Option<usize>,
+    last: Option<usize>,
+) -> Result<(bool, bool, Vec<BrowserSession<PostgresqlBackend>>), anyhow::Error> {
+    let mut query = String::from(
+        r#"
+            SELECT
+                s.user_session_id,
+                u.user_id,
+                u.username,
+                s.created_at,
+                a.user_session_authentication_id AS "last_authentication_id",
+                a.created_at                     AS "last_authd_at",
+                ue.user_email_id   AS "user_email_id",
+                ue.email           AS "user_email",
+                ue.created_at      AS "user_email_created_at",
+                ue.confirmed_at    AS "user_email_confirmed_at"
+            FROM user_sessions s
+            INNER JOIN users u
+                USING (user_id)
+            LEFT JOIN user_session_authentications a
+                USING (user_session_id)
+            LEFT JOIN user_emails ue
+              ON ue.user_email_id = u.primary_user_email_id
+        "#,
+    );
+
+    let mut arguments = PgArguments::default();
+
+    query += " WHERE s.finished_at IS NULL AND s.user_id = ";
+    arguments.add(Uuid::from(user.data));
+    arguments.format_placeholder(&mut query)?;
+
+    generate_pagination(
+        &mut query,
+        "s.user_session_id",
+        &mut arguments,
+        before,
+        after,
+        first,
+        last,
+    )?;
+
+    let page: Vec<SessionLookup> = sqlx::query_as_with(&query, arguments)
+        .fetch_all(executor)
+        .instrument(info_span!("Fetch paginated user emails", query = query))
+        .await?;
+
+    let (has_previous_page, has_next_page, page) = process_page(page, first, last)?;
+
+    let page: Result<Vec<_>, _> = page.into_iter().map(TryInto::try_into).collect();
+    Ok((has_previous_page, has_next_page, page?))
 }
 
 #[tracing::instrument(
@@ -681,8 +751,6 @@ pub async fn get_paginated_user_emails(
     first: Option<usize>,
     last: Option<usize>,
 ) -> Result<(bool, bool, Vec<UserEmail<PostgresqlBackend>>), anyhow::Error> {
-    // ref: https://github.com/graphql/graphql-relay-js/issues/94#issuecomment-232410564
-    // 1. Start from the greedy query: SELECT * FROM table
     let mut query = String::from(
         r#"
             SELECT
@@ -700,64 +768,27 @@ pub async fn get_paginated_user_emails(
     arguments.add(Uuid::from(user.data));
     arguments.format_placeholder(&mut query)?;
 
-    // 2. If the after argument is provided, add `id > parsed_cursor` to the `WHERE`
-    // clause
-    if let Some(after) = after {
-        query += " AND ue.user_email_id > ";
-        arguments.add(Uuid::from(after));
-        arguments.format_placeholder(&mut query)?;
-    }
+    generate_pagination(
+        &mut query,
+        "ue.user_email_id",
+        &mut arguments,
+        before,
+        after,
+        first,
+        last,
+    )?;
 
-    // 3. If the before argument is provided, add `id < parsed_cursor` to the
-    // `WHERE` clause
-    if let Some(before) = before {
-        query += " AND ue.user_email_id < ";
-        arguments.add(Uuid::from(before));
-        arguments.format_placeholder(&mut query)?;
-    }
-
-    // 4. If the first argument is provided, add `ORDER BY id ASC LIMIT first+1` to
-    // the query
-    let limit = if let Some(count) = first {
-        query += " ORDER BY ue.user_email_id ASC LIMIT ";
-        arguments.add((count + 1) as i64);
-        arguments.format_placeholder(&mut query)?;
-        count
-    // 5. If the first argument is provided, add `ORDER BY id DESC LIMIT last+1`
-    // to the query
-    } else if let Some(count) = last {
-        query += " ORDER BY ue.user_email_id DESC LIMIT ";
-        arguments.add((count + 1) as i64);
-        arguments.format_placeholder(&mut query)?;
-        count
-    } else {
-        bail!("Either 'first' or 'last' must be specified");
-    };
-
-    let mut res: Vec<UserEmailLookup> = sqlx::query_as_with(&query, arguments)
+    let page: Vec<UserEmailLookup> = sqlx::query_as_with(&query, arguments)
         .fetch_all(executor)
-        .instrument(info_span!("Fetch paginated user emails", query = query))
+        .instrument(info_span!("Fetch paginated user sessions", query = query))
         .await?;
 
-    let is_full = res.len() == (limit + 1);
-    if is_full {
-        res.pop();
-    }
-
-    let (has_previous_page, has_next_page) = if first.is_some() {
-        (false, is_full)
-    } else if last.is_some() {
-        // 5. If the last argument is provided, I reverse the order of the results
-        res.reverse();
-        (is_full, false)
-    } else {
-        unreachable!()
-    };
+    let (has_previous_page, has_next_page, page) = process_page(page, first, last)?;
 
     Ok((
         has_previous_page,
         has_next_page,
-        res.into_iter().map(Into::into).collect(),
+        page.into_iter().map(Into::into).collect(),
     ))
 }
 

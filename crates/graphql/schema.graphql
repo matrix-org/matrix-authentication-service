@@ -11,6 +11,35 @@ type BrowserSession {
 	createdAt: DateTime!
 }
 
+type BrowserSessionConnection {
+	"""
+	Information to aid in pagination.
+	"""
+	pageInfo: PageInfo!
+	"""
+	A list of edges.
+	"""
+	edges: [BrowserSessionEdge!]!
+	"""
+	A list of nodes.
+	"""
+	nodes: [BrowserSession!]!
+}
+
+"""
+An edge in a connection.
+"""
+type BrowserSessionEdge {
+	"""
+	A cursor for use in pagination
+	"""
+	cursor: String!
+	"""
+	The item at the end of the edge
+	"""
+	node: BrowserSession!
+}
+
 """
 Implement the DateTime<Utc> scalar
 
@@ -20,13 +49,6 @@ scalar DateTime
 
 
 
-
-type Mutation {
-	"""
-	A dummy mutation so that the mutation object is not empty
-	"""
-	hello: Boolean!
-}
 
 """
 Information about pagination in a connection
@@ -51,22 +73,22 @@ type PageInfo {
 }
 
 type Query {
-	currentSession: BrowserSession
+	"""
+	Get the current logged in browser session
+	"""
+	currentBrowserSession: BrowserSession
+	"""
+	Get the current logged in user
+	"""
 	currentUser: User
 }
 
-
-type Subscription {
-	"""
-	A dump subscription to try out the websocket
-	"""
-	integers(step: Int! = 1): Int!
-}
 
 type User {
 	id: ID!
 	username: String!
 	primaryEmail: UserEmail
+	browserSessions(after: String, before: String, first: Int, last: Int): BrowserSessionConnection!
 	emails(after: String, before: String, first: Int, last: Int): UserEmailConnection!
 }
 
@@ -109,7 +131,5 @@ type UserEmailEdge {
 
 schema {
 	query: Query
-	mutation: Mutation
-	subscription: Subscription
 }
 
