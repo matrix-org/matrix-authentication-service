@@ -13,6 +13,7 @@
 // limitations under the License.
 
 mod browser_sessions;
+mod compat_sessions;
 mod cursor;
 mod users;
 
