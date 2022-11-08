@@ -2604,7 +2604,6 @@ dependencies = [
  "serde",
  "sqlx",
  "tokio",
- "tokio-stream",
  "ulid",
 ]
 

@@ -77,6 +77,7 @@ impl StorageBackendMarker for PostgresqlBackend {}
 
 pub mod compat;
 pub mod oauth2;
+pub(crate) mod pagination;
 pub mod user;
 
 /// Embedded migrations, allowing them to run on startup
