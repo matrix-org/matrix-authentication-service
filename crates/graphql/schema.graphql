@@ -1,13 +1,38 @@
-type Authentication {
+"""
+An authentication records when a user enter their credential in a browser
+session.
+"""
+type Authentication implements CreationEvent & Node {
+	"""
+	ID of the object.
+	"""
 	id: ID!
+	"""
+	When the object was created.
+	"""
 	createdAt: DateTime!
 }
 
 
-type BrowserSession {
+"""
+A browser session represents a logged in user in a browser.
+"""
+type BrowserSession implements Node & CreationEvent {
+	"""
+	ID of the object.
+	"""
 	id: ID!
+	"""
+	The user logged in this session.
+	"""
 	user: User!
+	"""
+	The most recent authentication of this session.
+	"""
 	lastAuthentication: Authentication
+	"""
+	When the object was created.
+	"""
 	createdAt: DateTime!
 }
 
@@ -40,20 +65,62 @@ type BrowserSessionEdge {
 	node: BrowserSession!
 }
 
-type CompatSession {
+"""
+A compat session represents a client session which used the legacy Matrix
+login API.
+"""
+type CompatSession implements Node & CreationEvent {
+	"""
+	ID of the object.
+	"""
 	id: ID!
+	"""
+	The user authorized for this session.
+	"""
 	user: User!
+	"""
+	The Matrix Device ID of this session.
+	"""
 	deviceId: String!
+	"""
+	When the object was created.
+	"""
 	createdAt: DateTime!
+	"""
+	When the session ended.
+	"""
 	finishedAt: DateTime
 }
 
-type CompatSsoLogin {
+"""
+A compat SSO login represents a login done through the legacy Matrix login
+API, via the `m.login.sso` login method.
+"""
+type CompatSsoLogin implements Node {
+	"""
+	ID of the object.
+	"""
 	id: ID!
+	"""
+	When the object was created.
+	"""
 	createdAt: DateTime!
+	"""
+	The redirect URI used during the login.
+	"""
 	redirectUri: Url!
+	"""
+	When the login was fulfilled, and the user was redirected back to the
+	client.
+	"""
 	fulfilledAt: DateTime
+	"""
+	When the client exchanged the login token sent during the redirection.
+	"""
 	exchangedAt: DateTime
+	"""
+	The compat session which was started by this login.
+	"""
 	session: CompatSession
 }
 
@@ -86,6 +153,13 @@ type CompatSsoLoginEdge {
 	node: CompatSsoLogin!
 }
 
+interface CreationEvent {
+	"""
+	When the object was created.
+	"""
+	createdAt: DateTime!
+}
+
 """
 Implement the DateTime<Utc> scalar
 
@@ -96,21 +170,71 @@ scalar DateTime
 
 
 
-type Oauth2Client {
+interface Node {
+	"""
+	ID of the object.
+	"""
 	id: ID!
+}
+
+"""
+An OAuth 2.0 client
+"""
+type Oauth2Client implements Node {
+	"""
+	ID of the object.
+	"""
+	id: ID!
+	"""
+	OAuth 2.0 client ID
+	"""
 	clientId: String!
+	"""
+	Client name advertised by the client.
+	"""
 	clientName: String
+	"""
+	Client URI advertised by the client.
+	"""
 	clientUri: Url
+	"""
+	Terms of services URI advertised by the client.
+	"""
 	tosUri: Url
+	"""
+	Privacy policy URI advertised by the client.
+	"""
 	policyUri: Url
+	"""
+	List of redirect URIs used for authorization grants by the client.
+	"""
 	redirectUris: [Url!]!
 }
 
-type Oauth2Session {
+"""
+An OAuth 2.0 session represents a client session which used the OAuth APIs
+to login.
+"""
+type Oauth2Session implements Node {
+	"""
+	ID of the object.
+	"""
 	id: ID!
+	"""
+	OAuth 2.0 client used by this session.
+	"""
 	client: Oauth2Client!
+	"""
+	Scope granted for this session.
+	"""
 	scope: String!
+	"""
+	The browser session which started this OAuth 2.0 session.
+	"""
 	browserSession: BrowserSession!
+	"""
+	User authorized for this session.
+	"""
 	user: User!
 }
 
@@ -165,7 +289,10 @@ type PageInfo {
 	endCursor: String
 }
 
-type Query {
+"""
+The query root of the GraphQL interface.
+"""
+type RootQuery {
 	"""
 	Get the current logged in browser session
 	"""
@@ -182,20 +309,60 @@ URL is a String implementing the [URL Standard](http://url.spec.whatwg.org/)
 """
 scalar Url
 
-type User {
+"""
+A user is an individual's account.
+"""
+type User implements Node {
+	"""
+	ID of the object.
+	"""
 	id: ID!
+	"""
+	Username chosen by the user.
+	"""
 	username: String!
+	"""
+	Primary email address of the user.
+	"""
 	primaryEmail: UserEmail
+	"""
+	Get the list of compatibility SSO logins, chronologically sorted
+	"""
 	compatSsoLogins(after: String, before: String, first: Int, last: Int): CompatSsoLoginConnection!
+	"""
+	Get the list of active browser sessions, chronologically sorted
+	"""
 	browserSessions(after: String, before: String, first: Int, last: Int): BrowserSessionConnection!
+	"""
+	Get the list of emails, chronologically sorted
+	"""
 	emails(after: String, before: String, first: Int, last: Int): UserEmailConnection!
+	"""
+	Get the list of OAuth 2.0 sessions, chronologically sorted
+	"""
 	oauth2Sessions(after: String, before: String, first: Int, last: Int): Oauth2SessionConnection!
 }
 
-type UserEmail {
+"""
+A user email address
+"""
+type UserEmail implements CreationEvent & Node {
+	"""
+	ID of the object.
+	"""
 	id: ID!
+	"""
+	Email address
+	"""
 	email: String!
+	"""
+	When the object was created.
+	"""
 	createdAt: DateTime!
+	"""
+	When the email address was confirmed. Is `null` if the email was never
+	verified by the user.
+	"""
 	confirmedAt: DateTime
 }
 
@@ -212,6 +379,9 @@ type UserEmailConnection {
 	A list of nodes.
 	"""
 	nodes: [UserEmail!]!
+	"""
+	Identifies the total count of items in the connection.
+	"""
 	totalCount: Int!
 }
 
@@ -230,6 +400,6 @@ type UserEmailEdge {
 }
 
 schema {
-	query: Query
+	query: RootQuery
 }
 

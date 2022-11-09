@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use async_graphql::{Object, ID};
+use async_graphql::{Description, Object, ID};
 use chrono::{DateTime, Utc};
 use mas_data_model::CompatSsoLoginState;
 use mas_storage::PostgresqlBackend;
@@ -20,47 +20,63 @@ use url::Url;
 
 use super::User;
 
+/// A compat session represents a client session which used the legacy Matrix
+/// login API.
+#[derive(Description)]
 pub struct CompatSession(pub mas_data_model::CompatSession<PostgresqlBackend>);
 
-#[Object]
+#[Object(use_type_description)]
 impl CompatSession {
-    async fn id(&self) -> ID {
+    /// ID of the object.
+    pub async fn id(&self) -> ID {
         ID(self.0.data.to_string())
     }
 
+    /// The user authorized for this session.
     async fn user(&self) -> User {
         User(self.0.user.clone())
     }
 
+    /// The Matrix Device ID of this session.
     async fn device_id(&self) -> &str {
         self.0.device.as_str()
     }
 
-    async fn created_at(&self) -> DateTime<Utc> {
+    /// When the object was created.
+    pub async fn created_at(&self) -> DateTime<Utc> {
         self.0.created_at
     }
 
-    async fn finished_at(&self) -> Option<DateTime<Utc>> {
+    /// When the session ended.
+    pub async fn finished_at(&self) -> Option<DateTime<Utc>> {
         self.0.finished_at
     }
 }
 
+/// A compat SSO login represents a login done through the legacy Matrix login
+/// API, via the `m.login.sso` login method.
+#[derive(Description)]
 pub struct CompatSsoLogin(pub mas_data_model::CompatSsoLogin<PostgresqlBackend>);
 
-#[Object]
+#[Object(use_type_description)]
 impl CompatSsoLogin {
-    async fn id(&self) -> ID {
+    /// ID of the object.
+    pub async fn id(&self) -> ID {
         ID(self.0.data.to_string())
     }
 
-    async fn created_at(&self) -> DateTime<Utc> {
+    /// When the object was created.
+    pub async fn created_at(&self) -> DateTime<Utc> {
         self.0.created_at
     }
 
+    /// The redirect URI used during the login.
     async fn redirect_uri(&self) -> &Url {
         &self.0.redirect_uri
     }
 
+    /// When the login was fulfilled, and the user was redirected back to the
+    /// client.
     async fn fulfilled_at(&self) -> Option<DateTime<Utc>> {
         match &self.0.state {
             CompatSsoLoginState::Pending => None,
@@ -69,6 +85,7 @@ impl CompatSsoLogin {
         }
     }
 
+    /// When the client exchanged the login token sent during the redirection.
     async fn exchanged_at(&self) -> Option<DateTime<Utc>> {
         match &self.0.state {
             CompatSsoLoginState::Pending | CompatSsoLoginState::Fulfilled { .. } => None,
@@ -76,6 +93,7 @@ impl CompatSsoLogin {
         }
     }
 
+    /// The compat session which was started by this login.
     async fn session(&self) -> Option<CompatSession> {
         match &self.0.state {
             CompatSsoLoginState::Pending => None,

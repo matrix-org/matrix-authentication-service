@@ -22,36 +22,40 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions, clippy::missing_errors_doc)]
 
-use async_graphql::{Context, EmptyMutation, EmptySubscription};
+use async_graphql::{Context, Description, EmptyMutation, EmptySubscription};
 use mas_axum_utils::SessionInfo;
+use model::CreationEvent;
 use sqlx::PgPool;
 
-use self::model::{BrowserSession, User};
+use self::model::{BrowserSession, Node, User};
 
 mod model;
 
-pub type Schema = async_graphql::Schema<Query, EmptyMutation, EmptySubscription>;
-pub type SchemaBuilder = async_graphql::SchemaBuilder<Query, EmptyMutation, EmptySubscription>;
+pub type Schema = async_graphql::Schema<RootQuery, EmptyMutation, EmptySubscription>;
+pub type SchemaBuilder = async_graphql::SchemaBuilder<RootQuery, EmptyMutation, EmptySubscription>;
 
 #[must_use]
 pub fn schema_builder() -> SchemaBuilder {
-    async_graphql::Schema::build(Query::new(), EmptyMutation, EmptySubscription)
+    async_graphql::Schema::build(RootQuery::new(), EmptyMutation, EmptySubscription)
+        .register_output_type::<Node>()
+        .register_output_type::<CreationEvent>()
 }
 
-#[derive(Default)]
-pub struct Query {
+/// The query root of the GraphQL interface.
+#[derive(Default, Description)]
+pub struct RootQuery {
     _private: (),
 }
 
-impl Query {
+impl RootQuery {
     #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 }
 
-#[async_graphql::Object]
-impl Query {
+#[async_graphql::Object(use_type_description)]
+impl RootQuery {
     /// Get the current logged in browser session
     async fn current_browser_session(
         &self,

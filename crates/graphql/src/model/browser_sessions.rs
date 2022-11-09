@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use async_graphql::{Object, ID};
+use async_graphql::{Description, Object, ID};
 use chrono::{DateTime, Utc};
 use mas_storage::PostgresqlBackend;
 
 use super::User;
 
+/// A browser session represents a logged in user in a browser.
+#[derive(Description)]
 pub struct BrowserSession(pub mas_data_model::BrowserSession<PostgresqlBackend>);
 
 impl From<mas_data_model::BrowserSession<PostgresqlBackend>> for BrowserSession {
@@ -26,34 +28,43 @@ impl From<mas_data_model::BrowserSession<PostgresqlBackend>> for BrowserSession 
     }
 }
 
-#[Object]
+#[Object(use_type_description)]
 impl BrowserSession {
-    async fn id(&self) -> ID {
+    /// ID of the object.
+    pub async fn id(&self) -> ID {
         ID(self.0.data.to_string())
     }
 
+    /// The user logged in this session.
     async fn user(&self) -> User {
         User(self.0.user.clone())
     }
 
+    /// The most recent authentication of this session.
     async fn last_authentication(&self) -> Option<Authentication> {
         self.0.last_authentication.clone().map(Authentication)
     }
 
-    async fn created_at(&self) -> DateTime<Utc> {
+    /// When the object was created.
+    pub async fn created_at(&self) -> DateTime<Utc> {
         self.0.created_at
     }
 }
 
+/// An authentication records when a user enter their credential in a browser
+/// session.
+#[derive(Description)]
 pub struct Authentication(pub mas_data_model::Authentication<PostgresqlBackend>);
 
-#[Object]
+#[Object(use_type_description)]
 impl Authentication {
-    async fn id(&self) -> ID {
+    /// ID of the object.
+    pub async fn id(&self) -> ID {
         ID(self.0.data.to_string())
     }
 
-    async fn created_at(&self) -> DateTime<Utc> {
+    /// When the object was created.
+    pub async fn created_at(&self) -> DateTime<Utc> {
         self.0.created_at
     }
 }
