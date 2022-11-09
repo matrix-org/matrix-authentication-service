@@ -20,7 +20,7 @@ use mas_data_model::{
     Device, User, UserEmail,
 };
 use rand::Rng;
-use sqlx::{postgres::PgArguments, Acquire, Arguments, PgExecutor, Postgres};
+use sqlx::{Acquire, PgExecutor, Postgres, QueryBuilder};
 use thiserror::Error;
 use tokio::task;
 use tracing::{info_span, Instrument};
@@ -29,7 +29,7 @@ use url::Url;
 use uuid::Uuid;
 
 use crate::{
-    pagination::{generate_pagination, process_page},
+    pagination::{process_page, QueryBuilderExt},
     user::lookup_user_by_username,
     Clock, DatabaseInconsistencyError, PostgresqlBackend,
 };
@@ -826,7 +826,7 @@ pub async fn get_paginated_user_compat_sso_logins(
 ) -> Result<(bool, bool, Vec<CompatSsoLogin<PostgresqlBackend>>), anyhow::Error> {
     // TODO: this queries too much (like user info) which we probably don't need
     // because we already have them
-    let mut query = String::from(
+    let mut query = QueryBuilder::new(
         r#"
             SELECT
                 cl.compat_sso_login_id,
@@ -855,28 +855,19 @@ pub async fn get_paginated_user_compat_sso_logins(
         "#,
     );
 
-    let mut arguments = PgArguments::default();
+    query
+        .push(" WHERE cs.user_id = ")
+        .push_bind(Uuid::from(user.data))
+        .generate_pagination("cl.compat_sso_login_id", before, after, first, last)?;
 
-    query += " WHERE cs.user_id = ";
-    arguments.add(Uuid::from(user.data));
-    arguments.format_placeholder(&mut query)?;
-
-    generate_pagination(
-        &mut query,
-        "cl.compat_sso_login_id",
-        &mut arguments,
-        before,
-        after,
-        first,
-        last,
-    )?;
-
-    let page: Vec<CompatSsoLoginLookup> = sqlx::query_as_with(&query, arguments)
+    let span = info_span!(
+        "Fetch paginated user compat SSO logins",
+        db.statement = query.sql()
+    );
+    let page: Vec<CompatSsoLoginLookup> = query
+        .build_query_as()
         .fetch_all(executor)
-        .instrument(info_span!(
-            "Fetch paginated user compat SSO logins",
-            query = query
-        ))
+        .instrument(span)
         .await?;
 
     let (has_previous_page, has_next_page, page) = process_page(page, first, last)?;

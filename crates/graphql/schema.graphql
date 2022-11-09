@@ -40,6 +40,52 @@ type BrowserSessionEdge {
 	node: BrowserSession!
 }
 
+type CompatSession {
+	id: ID!
+	user: User!
+	deviceId: String!
+	createdAt: DateTime!
+	finishedAt: DateTime
+}
+
+type CompatSsoLogin {
+	id: ID!
+	createdAt: DateTime!
+	redirectUri: Url!
+	fulfilledAt: DateTime
+	exchangedAt: DateTime
+	session: CompatSession
+}
+
+type CompatSsoLoginConnection {
+	"""
+	Information to aid in pagination.
+	"""
+	pageInfo: PageInfo!
+	"""
+	A list of edges.
+	"""
+	edges: [CompatSsoLoginEdge!]!
+	"""
+	A list of nodes.
+	"""
+	nodes: [CompatSsoLogin!]!
+}
+
+"""
+An edge in a connection.
+"""
+type CompatSsoLoginEdge {
+	"""
+	A cursor for use in pagination
+	"""
+	cursor: String!
+	"""
+	The item at the end of the edge
+	"""
+	node: CompatSsoLogin!
+}
+
 """
 Implement the DateTime<Utc> scalar
 
@@ -49,6 +95,53 @@ scalar DateTime
 
 
 
+
+type Oauth2Client {
+	id: ID!
+	clientId: String!
+	clientName: String
+	clientUri: Url
+	tosUri: Url
+	policyUri: Url
+	redirectUris: [Url!]!
+}
+
+type Oauth2Session {
+	id: ID!
+	client: Oauth2Client!
+	scope: String!
+	browserSession: BrowserSession!
+	user: User!
+}
+
+type Oauth2SessionConnection {
+	"""
+	Information to aid in pagination.
+	"""
+	pageInfo: PageInfo!
+	"""
+	A list of edges.
+	"""
+	edges: [Oauth2SessionEdge!]!
+	"""
+	A list of nodes.
+	"""
+	nodes: [Oauth2Session!]!
+}
+
+"""
+An edge in a connection.
+"""
+type Oauth2SessionEdge {
+	"""
+	A cursor for use in pagination
+	"""
+	cursor: String!
+	"""
+	The item at the end of the edge
+	"""
+	node: Oauth2Session!
+}
 
 """
 Information about pagination in a connection
@@ -84,12 +177,19 @@ type Query {
 }
 
 
+"""
+URL is a String implementing the [URL Standard](http://url.spec.whatwg.org/)
+"""
+scalar Url
+
 type User {
 	id: ID!
 	username: String!
 	primaryEmail: UserEmail
+	compatSsoLogins(after: String, before: String, first: Int, last: Int): CompatSsoLoginConnection!
 	browserSessions(after: String, before: String, first: Int, last: Int): BrowserSessionConnection!
 	emails(after: String, before: String, first: Int, last: Int): UserEmailConnection!
+	oauth2Sessions(after: String, before: String, first: Int, last: Int): Oauth2SessionConnection!
 }
 
 type UserEmail {
