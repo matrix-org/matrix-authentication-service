@@ -14,7 +14,7 @@
 
 use async_graphql::{
     connection::{query, Connection, Edge, OpaqueCursor},
-    Context, Object, ID,
+    Context, Description, Object, ID,
 };
 use chrono::{DateTime, Utc};
 use mas_storage::PostgresqlBackend;
@@ -24,6 +24,8 @@ use super::{
     compat_sessions::CompatSsoLogin, BrowserSession, Cursor, NodeCursor, NodeType, OAuth2Session,
 };
 
+#[derive(Description)]
+/// A user is an individual's account.
 pub struct User(pub mas_data_model::User<PostgresqlBackend>);
 
 impl From<mas_data_model::User<PostgresqlBackend>> for User {
@@ -38,27 +40,34 @@ impl From<mas_data_model::BrowserSession<PostgresqlBackend>> for User {
     }
 }
 
-#[Object]
+#[Object(use_type_description)]
 impl User {
-    async fn id(&self) -> ID {
+    /// ID of the object.
+    pub async fn id(&self) -> ID {
         ID(self.0.data.to_string())
     }
 
+    /// Username chosen by the user.
     async fn username(&self) -> &str {
         &self.0.username
     }
 
+    /// Primary email address of the user.
     async fn primary_email(&self) -> Option<UserEmail> {
         self.0.primary_email.clone().map(UserEmail)
     }
 
+    /// Get the list of compatibility SSO logins, chronologically sorted
     async fn compat_sso_logins(
         &self,
         ctx: &Context<'_>,
+
+        #[graphql(desc = "Returns the elements in the list that come after the cursor.")]
         after: Option<String>,
+        #[graphql(desc = "Returns the elements in the list that come before the cursor.")]
         before: Option<String>,
-        first: Option<i32>,
-        last: Option<i32>,
+        #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
+        #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
     ) -> Result<Connection<Cursor, CompatSsoLogin>, async_graphql::Error> {
         let database = ctx.data::<PgPool>()?;
 
@@ -96,13 +105,17 @@ impl User {
         .await
     }
 
+    /// Get the list of active browser sessions, chronologically sorted
     async fn browser_sessions(
         &self,
         ctx: &Context<'_>,
+
+        #[graphql(desc = "Returns the elements in the list that come after the cursor.")]
         after: Option<String>,
+        #[graphql(desc = "Returns the elements in the list that come before the cursor.")]
         before: Option<String>,
-        first: Option<i32>,
-        last: Option<i32>,
+        #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
+        #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
     ) -> Result<Connection<Cursor, BrowserSession>, async_graphql::Error> {
         let database = ctx.data::<PgPool>()?;
 
@@ -140,13 +153,17 @@ impl User {
         .await
     }
 
+    /// Get the list of emails, chronologically sorted
     async fn emails(
         &self,
         ctx: &Context<'_>,
+
+        #[graphql(desc = "Returns the elements in the list that come after the cursor.")]
         after: Option<String>,
+        #[graphql(desc = "Returns the elements in the list that come before the cursor.")]
         before: Option<String>,
-        first: Option<i32>,
-        last: Option<i32>,
+        #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
+        #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
     ) -> Result<Connection<Cursor, UserEmail, UserEmailsPagination>, async_graphql::Error> {
         let database = ctx.data::<PgPool>()?;
 
@@ -188,13 +205,17 @@ impl User {
         .await
     }
 
+    /// Get the list of OAuth 2.0 sessions, chronologically sorted
     async fn oauth2_sessions(
         &self,
         ctx: &Context<'_>,
+
+        #[graphql(desc = "Returns the elements in the list that come after the cursor.")]
         after: Option<String>,
+        #[graphql(desc = "Returns the elements in the list that come before the cursor.")]
         before: Option<String>,
-        first: Option<i32>,
-        last: Option<i32>,
+        #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
+        #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
     ) -> Result<Connection<Cursor, OAuth2Session>, async_graphql::Error> {
         let database = ctx.data::<PgPool>()?;
 
@@ -233,22 +254,29 @@ impl User {
     }
 }
 
+/// A user email address
+#[derive(Description)]
 pub struct UserEmail(mas_data_model::UserEmail<PostgresqlBackend>);
 
-#[Object]
+#[Object(use_type_description)]
 impl UserEmail {
-    async fn id(&self) -> ID {
+    /// ID of the object.
+    pub async fn id(&self) -> ID {
         ID(self.0.data.to_string())
     }
 
+    /// Email address
     async fn email(&self) -> &str {
         &self.0.email
     }
 
-    async fn created_at(&self) -> DateTime<Utc> {
+    /// When the object was created.
+    pub async fn created_at(&self) -> DateTime<Utc> {
         self.0.created_at
     }
 
+    /// When the email address was confirmed. Is `null` if the email was never
+    /// verified by the user.
     async fn confirmed_at(&self) -> Option<DateTime<Utc>> {
         self.0.confirmed_at
     }
@@ -258,6 +286,7 @@ pub struct UserEmailsPagination(mas_data_model::User<PostgresqlBackend>);
 
 #[Object]
 impl UserEmailsPagination {
+    /// Identifies the total count of items in the connection.
     async fn total_count(&self, ctx: &Context<'_>) -> Result<i64, async_graphql::Error> {
         let mut conn = ctx.data::<PgPool>()?.acquire().await?;
         let count = mas_storage::user::count_user_emails(&mut conn, &self.0).await?;

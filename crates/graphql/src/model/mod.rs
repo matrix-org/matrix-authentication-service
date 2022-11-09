@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use async_graphql::{Interface, ID};
+use chrono::{DateTime, Utc};
+
 mod browser_sessions;
 mod compat_sessions;
 mod cursor;
@@ -20,7 +23,34 @@ mod users;
 
 pub use self::{
     browser_sessions::{Authentication, BrowserSession},
+    compat_sessions::{CompatSession, CompatSsoLogin},
     cursor::{Cursor, NodeCursor, NodeType},
     oauth::{OAuth2Client, OAuth2Consent, OAuth2Session},
     users::{User, UserEmail},
 };
+
+#[derive(Interface)]
+#[graphql(field(name = "id", desc = "ID of the object.", type = "ID"))]
+pub enum Node {
+    Authentication(Box<Authentication>),
+    BrowserSession(Box<BrowserSession>),
+    CompatSession(Box<CompatSession>),
+    CompatSsoLogin(Box<CompatSsoLogin>),
+    OAuth2Client(Box<OAuth2Client>),
+    OAuth2Session(Box<OAuth2Session>),
+    User(Box<User>),
+    UserEmail(Box<UserEmail>),
+}
+
+#[derive(Interface)]
+#[graphql(field(
+    name = "created_at",
+    desc = "When the object was created.",
+    type = "DateTime<Utc>"
+))]
+pub enum CreationEvent {
+    Authentication(Box<Authentication>),
+    CompatSession(Box<CompatSession>),
+    BrowserSession(Box<BrowserSession>),
+    UserEmail(Box<UserEmail>),
+}

@@ -13,9 +13,16 @@
 // limitations under the License.
 
 use sqlx::{Database, QueryBuilder};
+use thiserror::Error;
 use ulid::Ulid;
 use uuid::Uuid;
 
+#[derive(Debug, Error)]
+#[error("Either 'first' or 'last' must be specified")]
+pub struct InvalidPagination;
+
+/// Add cursor-based pagination to a query, as used in paginated GraphQL
+/// connections
 pub fn generate_pagination<'a, DB>(
     query: &mut QueryBuilder<'a, DB>,
     id_field: &'static str,
@@ -23,7 +30,7 @@ pub fn generate_pagination<'a, DB>(
     after: Option<Ulid>,
     first: Option<usize>,
     last: Option<usize>,
-) -> Result<(), anyhow::Error>
+) -> Result<(), InvalidPagination>
 where
     DB: Database,
     Uuid: sqlx::Type<DB> + sqlx::Encode<'a, DB>,
@@ -69,20 +76,21 @@ where
             .push(" DESC LIMIT ")
             .push_bind((count + 1) as i64);
     } else {
-        anyhow::bail!("Either 'first' or 'last' must be specified");
+        return Err(InvalidPagination);
     }
 
     Ok(())
 }
 
+/// Process a page returned by a paginated query
 pub fn process_page<T>(
     mut page: Vec<T>,
     first: Option<usize>,
     last: Option<usize>,
-) -> Result<(bool, bool, Vec<T>), anyhow::Error> {
+) -> Result<(bool, bool, Vec<T>), InvalidPagination> {
     let limit = match (first, last) {
         (Some(count), _) | (_, Some(count)) => count,
-        _ => anyhow::bail!("Either 'first' or 'last' must be specified"),
+        _ => return Err(InvalidPagination),
     };
 
     let is_full = page.len() == (limit + 1);
