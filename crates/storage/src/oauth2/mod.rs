@@ -16,14 +16,14 @@ use std::collections::{BTreeSet, HashMap};
 
 use anyhow::Context;
 use mas_data_model::{BrowserSession, Session, User};
-use sqlx::{postgres::PgArguments, Arguments, PgConnection, PgExecutor};
+use sqlx::{PgConnection, PgExecutor, QueryBuilder};
 use tracing::{info_span, Instrument};
 use ulid::Ulid;
 use uuid::Uuid;
 
 use self::client::lookup_clients;
 use crate::{
-    pagination::{generate_pagination, process_page},
+    pagination::{process_page, QueryBuilderExt},
     user::lookup_active_session,
     Clock, PostgresqlBackend,
 };
@@ -91,7 +91,7 @@ pub async fn get_paginated_user_oauth_sessions(
     first: Option<usize>,
     last: Option<usize>,
 ) -> Result<(bool, bool, Vec<Session<PostgresqlBackend>>), anyhow::Error> {
-    let mut query = String::from(
+    let mut query = QueryBuilder::new(
         r#"
             SELECT
                 os.oauth2_session_id,
@@ -106,28 +106,19 @@ pub async fn get_paginated_user_oauth_sessions(
         "#,
     );
 
-    let mut arguments = PgArguments::default();
+    query
+        .push(" WHERE us.user_id = ")
+        .push_bind(Uuid::from(user.data))
+        .generate_pagination("oauth2_session_id", before, after, first, last)?;
 
-    query += " WHERE us.user_id = ";
-    arguments.add(Uuid::from(user.data));
-    arguments.format_placeholder(&mut query)?;
-
-    generate_pagination(
-        &mut query,
-        "oauth2_session_id",
-        &mut arguments,
-        before,
-        after,
-        first,
-        last,
-    )?;
-
-    let page: Vec<OAuthSessionLookup> = sqlx::query_as_with(&query, arguments)
+    let span = info_span!(
+        "Fetch paginated user oauth sessions",
+        db.statement = query.sql()
+    );
+    let page: Vec<OAuthSessionLookup> = query
+        .build_query_as()
         .fetch_all(&mut *conn)
-        .instrument(info_span!(
-            "Fetch paginated user oauth sessions",
-            query = query
-        ))
+        .instrument(span)
         .await?;
 
     let (has_previous_page, has_next_page, page) = process_page(page, first, last)?;

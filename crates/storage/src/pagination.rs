@@ -12,26 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::fmt::Write;
-
-use sqlx::Arguments;
+use sqlx::{Database, QueryBuilder};
 use ulid::Ulid;
 use uuid::Uuid;
 
-pub fn generate_pagination<'a, A, W>(
-    query: &mut W,
+pub fn generate_pagination<'a, DB>(
+    query: &mut QueryBuilder<'a, DB>,
     id_field: &'static str,
-    arguments: &mut A,
     before: Option<Ulid>,
     after: Option<Ulid>,
     first: Option<usize>,
     last: Option<usize>,
 ) -> Result<(), anyhow::Error>
 where
-    W: Write,
-    A: Arguments<'a>,
-    Uuid: sqlx::Type<A::Database> + sqlx::Encode<'a, A::Database>,
-    i64: sqlx::Type<A::Database> + sqlx::Encode<'a, A::Database>,
+    DB: Database,
+    Uuid: sqlx::Type<DB> + sqlx::Encode<'a, DB>,
+    i64: sqlx::Type<DB> + sqlx::Encode<'a, DB>,
 {
     // ref: https://github.com/graphql/graphql-relay-js/issues/94#issuecomment-232410564
     // 1. Start from the greedy query: SELECT * FROM table
@@ -39,31 +35,39 @@ where
     // 2. If the after argument is provided, add `id > parsed_cursor` to the `WHERE`
     // clause
     if let Some(after) = after {
-        write!(query, " AND {id_field} > ")?;
-        arguments.add(Uuid::from(after));
-        arguments.format_placeholder(query)?;
+        query
+            .push(" AND ")
+            .push(id_field)
+            .push(" > ")
+            .push_bind(Uuid::from(after));
     }
 
     // 3. If the before argument is provided, add `id < parsed_cursor` to the
     // `WHERE` clause
     if let Some(before) = before {
-        write!(query, " AND {id_field} < ")?;
-        arguments.add(Uuid::from(before));
-        arguments.format_placeholder(query)?;
+        query
+            .push(" AND ")
+            .push(id_field)
+            .push(" < ")
+            .push_bind(Uuid::from(before));
     }
 
     // 4. If the first argument is provided, add `ORDER BY id ASC LIMIT first+1` to
     // the query
     if let Some(count) = first {
-        write!(query, " ORDER BY {id_field} ASC LIMIT ")?;
-        arguments.add((count + 1) as i64);
-        arguments.format_placeholder(query)?;
+        query
+            .push(" ORDER BY ")
+            .push(id_field)
+            .push(" ASC LIMIT ")
+            .push_bind((count + 1) as i64);
     // 5. If the first argument is provided, add `ORDER BY id DESC LIMIT last+1`
     // to the query
     } else if let Some(count) = last {
-        write!(query, " ORDER BY ue.user_email_id DESC LIMIT ")?;
-        arguments.add((count + 1) as i64);
-        arguments.format_placeholder(query)?;
+        query
+            .push(" ORDER BY ")
+            .push(id_field)
+            .push(" DESC LIMIT ")
+            .push_bind((count + 1) as i64);
     } else {
         anyhow::bail!("Either 'first' or 'last' must be specified");
     }
@@ -97,4 +101,34 @@ pub fn process_page<T>(
     };
 
     Ok((has_previous_page, has_next_page, page))
+}
+
+pub trait QueryBuilderExt {
+    fn generate_pagination(
+        &mut self,
+        id_field: &'static str,
+        before: Option<Ulid>,
+        after: Option<Ulid>,
+        first: Option<usize>,
+        last: Option<usize>,
+    ) -> Result<&mut Self, anyhow::Error>;
+}
+
+impl<'a, DB> QueryBuilderExt for QueryBuilder<'a, DB>
+where
+    DB: Database,
+    Uuid: sqlx::Type<DB> + sqlx::Encode<'a, DB>,
+    i64: sqlx::Type<DB> + sqlx::Encode<'a, DB>,
+{
+    fn generate_pagination(
+        &mut self,
+        id_field: &'static str,
+        before: Option<Ulid>,
+        after: Option<Ulid>,
+        first: Option<usize>,
+        last: Option<usize>,
+    ) -> Result<&mut Self, anyhow::Error> {
+        generate_pagination(self, id_field, before, after, first, last)?;
+        Ok(self)
+    }
 }

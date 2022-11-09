@@ -1361,6 +1361,122 @@
     },
     "query": "\n            SELECT\n                og.oauth2_authorization_grant_id,\n                og.created_at              AS oauth2_authorization_grant_created_at,\n                og.cancelled_at            AS oauth2_authorization_grant_cancelled_at,\n                og.fulfilled_at            AS oauth2_authorization_grant_fulfilled_at,\n                og.exchanged_at            AS oauth2_authorization_grant_exchanged_at,\n                og.scope                   AS oauth2_authorization_grant_scope,\n                og.state                   AS oauth2_authorization_grant_state,\n                og.redirect_uri            AS oauth2_authorization_grant_redirect_uri,\n                og.response_mode           AS oauth2_authorization_grant_response_mode,\n                og.nonce                   AS oauth2_authorization_grant_nonce,\n                og.max_age                 AS oauth2_authorization_grant_max_age,\n                og.oauth2_client_id        AS oauth2_client_id,\n                og.authorization_code      AS oauth2_authorization_grant_code,\n                og.response_type_code      AS oauth2_authorization_grant_response_type_code,\n                og.response_type_id_token  AS oauth2_authorization_grant_response_type_id_token,\n                og.code_challenge          AS oauth2_authorization_grant_code_challenge,\n                og.code_challenge_method   AS oauth2_authorization_grant_code_challenge_method,\n                og.requires_consent        AS oauth2_authorization_grant_requires_consent,\n                os.oauth2_session_id       AS \"oauth2_session_id?\",\n                us.user_session_id         AS \"user_session_id?\",\n                us.created_at              AS \"user_session_created_at?\",\n                 u.user_id                 AS \"user_id?\",\n                 u.username                AS \"user_username?\",\n                usa.user_session_authentication_id AS \"user_session_last_authentication_id?\",\n                usa.created_at             AS \"user_session_last_authentication_created_at?\",\n                ue.user_email_id           AS \"user_email_id?\",\n                ue.email                   AS \"user_email?\",\n                ue.created_at              AS \"user_email_created_at?\",\n                ue.confirmed_at            AS \"user_email_confirmed_at?\"\n            FROM\n                oauth2_authorization_grants og\n            LEFT JOIN oauth2_sessions os\n              USING (oauth2_session_id)\n            LEFT JOIN user_sessions us\n              USING (user_session_id)\n            LEFT JOIN users u\n              USING (user_id)\n            LEFT JOIN user_session_authentications usa\n              USING (user_session_id)\n            LEFT JOIN user_emails ue\n              ON ue.user_email_id = u.primary_user_email_id\n\n            WHERE og.oauth2_authorization_grant_id = $1\n\n            ORDER BY usa.created_at DESC\n            LIMIT 1\n        "
   },
+  "7756a60c36a64a259f7450d6eb77ee92303638ca374a63f23ac4944ccf9f4436": {
+    "describe": {
+      "columns": [
+        {
+          "name": "oauth2_client_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "encrypted_client_secret",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "redirect_uris!",
+          "ordinal": 2,
+          "type_info": "TextArray"
+        },
+        {
+          "name": "grant_type_authorization_code",
+          "ordinal": 3,
+          "type_info": "Bool"
+        },
+        {
+          "name": "grant_type_refresh_token",
+          "ordinal": 4,
+          "type_info": "Bool"
+        },
+        {
+          "name": "client_name",
+          "ordinal": 5,
+          "type_info": "Text"
+        },
+        {
+          "name": "logo_uri",
+          "ordinal": 6,
+          "type_info": "Text"
+        },
+        {
+          "name": "client_uri",
+          "ordinal": 7,
+          "type_info": "Text"
+        },
+        {
+          "name": "policy_uri",
+          "ordinal": 8,
+          "type_info": "Text"
+        },
+        {
+          "name": "tos_uri",
+          "ordinal": 9,
+          "type_info": "Text"
+        },
+        {
+          "name": "jwks_uri",
+          "ordinal": 10,
+          "type_info": "Text"
+        },
+        {
+          "name": "jwks",
+          "ordinal": 11,
+          "type_info": "Jsonb"
+        },
+        {
+          "name": "id_token_signed_response_alg",
+          "ordinal": 12,
+          "type_info": "Text"
+        },
+        {
+          "name": "userinfo_signed_response_alg",
+          "ordinal": 13,
+          "type_info": "Text"
+        },
+        {
+          "name": "token_endpoint_auth_method",
+          "ordinal": 14,
+          "type_info": "Text"
+        },
+        {
+          "name": "token_endpoint_auth_signing_alg",
+          "ordinal": 15,
+          "type_info": "Text"
+        },
+        {
+          "name": "initiate_login_uri",
+          "ordinal": 16,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        true,
+        null,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "UuidArray"
+        ]
+      }
+    },
+    "query": "\n            SELECT\n                c.oauth2_client_id,\n                c.encrypted_client_secret,\n                ARRAY(\n                    SELECT redirect_uri\n                    FROM oauth2_client_redirect_uris r\n                    WHERE r.oauth2_client_id = c.oauth2_client_id\n                ) AS \"redirect_uris!\",\n                c.grant_type_authorization_code,\n                c.grant_type_refresh_token,\n                c.client_name,\n                c.logo_uri,\n                c.client_uri,\n                c.policy_uri,\n                c.tos_uri,\n                c.jwks_uri,\n                c.jwks,\n                c.id_token_signed_response_alg,\n                c.userinfo_signed_response_alg,\n                c.token_endpoint_auth_method,\n                c.token_endpoint_auth_signing_alg,\n                c.initiate_login_uri\n            FROM oauth2_clients c\n\n            WHERE c.oauth2_client_id = ANY($1::uuid[])\n        "
+  },
   "7cf5ae665b15ba78b01bb1dfa304150a89fd7203f4ee15b0753cb2143049a3dc": {
     "describe": {
       "columns": [

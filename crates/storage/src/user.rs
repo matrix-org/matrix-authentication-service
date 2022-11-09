@@ -23,7 +23,7 @@ use mas_data_model::{
 };
 use password_hash::{PasswordHash, PasswordHasher, SaltString};
 use rand::{CryptoRng, Rng};
-use sqlx::{postgres::PgArguments, Acquire, Arguments, PgExecutor, Postgres, Transaction};
+use sqlx::{Acquire, PgExecutor, Postgres, QueryBuilder, Transaction};
 use thiserror::Error;
 use tokio::task;
 use tracing::{info_span, Instrument};
@@ -32,7 +32,7 @@ use uuid::Uuid;
 
 use super::{DatabaseInconsistencyError, PostgresqlBackend};
 use crate::{
-    pagination::{generate_pagination, process_page},
+    pagination::{process_page, QueryBuilderExt},
     Clock,
 };
 
@@ -243,7 +243,7 @@ pub async fn get_paginated_user_sessions(
     first: Option<usize>,
     last: Option<usize>,
 ) -> Result<(bool, bool, Vec<BrowserSession<PostgresqlBackend>>), anyhow::Error> {
-    let mut query = String::from(
+    let mut query = QueryBuilder::new(
         r#"
             SELECT
                 s.user_session_id,
@@ -266,25 +266,16 @@ pub async fn get_paginated_user_sessions(
         "#,
     );
 
-    let mut arguments = PgArguments::default();
+    query
+        .push(" WHERE s.finished_at IS NULL AND s.user_id = ")
+        .push_bind(Uuid::from(user.data))
+        .generate_pagination("s.user_session_id", before, after, first, last)?;
 
-    query += " WHERE s.finished_at IS NULL AND s.user_id = ";
-    arguments.add(Uuid::from(user.data));
-    arguments.format_placeholder(&mut query)?;
-
-    generate_pagination(
-        &mut query,
-        "s.user_session_id",
-        &mut arguments,
-        before,
-        after,
-        first,
-        last,
-    )?;
-
-    let page: Vec<SessionLookup> = sqlx::query_as_with(&query, arguments)
+    let span = info_span!("Fetch paginated user emails", db.statement = query.sql());
+    let page: Vec<SessionLookup> = query
+        .build_query_as()
         .fetch_all(executor)
-        .instrument(info_span!("Fetch paginated user emails", query = query))
+        .instrument(span)
         .await?;
 
     let (has_previous_page, has_next_page, page) = process_page(page, first, last)?;
@@ -751,7 +742,7 @@ pub async fn get_paginated_user_emails(
     first: Option<usize>,
     last: Option<usize>,
 ) -> Result<(bool, bool, Vec<UserEmail<PostgresqlBackend>>), anyhow::Error> {
-    let mut query = String::from(
+    let mut query = QueryBuilder::new(
         r#"
             SELECT
                 ue.user_email_id,
@@ -762,25 +753,16 @@ pub async fn get_paginated_user_emails(
         "#,
     );
 
-    let mut arguments = PgArguments::default();
+    query
+        .push(" WHERE ue.user_id = ")
+        .push_bind(Uuid::from(user.data))
+        .generate_pagination("ue.user_email_id", before, after, first, last)?;
 
-    query += " WHERE ue.user_id = ";
-    arguments.add(Uuid::from(user.data));
-    arguments.format_placeholder(&mut query)?;
-
-    generate_pagination(
-        &mut query,
-        "ue.user_email_id",
-        &mut arguments,
-        before,
-        after,
-        first,
-        last,
-    )?;
-
-    let page: Vec<UserEmailLookup> = sqlx::query_as_with(&query, arguments)
+    let span = info_span!("Fetch paginated user sessions", db.statement = query.sql());
+    let page: Vec<UserEmailLookup> = query
+        .build_query_as()
         .fetch_all(executor)
-        .instrument(info_span!("Fetch paginated user sessions", query = query))
+        .instrument(span)
         .await?;
 
     let (has_previous_page, has_next_page, page) = process_page(page, first, last)?;
