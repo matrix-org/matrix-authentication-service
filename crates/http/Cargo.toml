@@ -14,7 +14,7 @@ futures-util = "0.3.25"
 headers = "0.3.8"
 http = "0.2.8"
 http-body = "0.4.5"
-hyper = "0.14.22"
+hyper = "0.14.23"
 hyper-rustls = { version = "0.23.0", features = ["http1", "http2"], default-features = false, optional = true }
 once_cell = "1.16.0"
 opentelemetry = "0.18.0"
