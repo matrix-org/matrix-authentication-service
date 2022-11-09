@@ -15,10 +15,12 @@
 mod browser_sessions;
 mod compat_sessions;
 mod cursor;
+mod oauth;
 mod users;
 
 pub use self::{
     browser_sessions::{Authentication, BrowserSession},
     cursor::{Cursor, NodeCursor, NodeType},
+    oauth::{OAuth2Client, OAuth2Consent, OAuth2Session},
     users::{User, UserEmail},
 };

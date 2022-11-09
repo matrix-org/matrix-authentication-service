@@ -22,6 +22,7 @@ pub enum NodeType {
     UserEmail,
     BrowserSession,
     CompatSsoLogin,
+    OAuth2Session,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq)]

@@ -20,7 +20,9 @@ use chrono::{DateTime, Utc};
 use mas_storage::PostgresqlBackend;
 use sqlx::PgPool;
 
-use super::{compat_sessions::CompatSsoLogin, BrowserSession, Cursor, NodeCursor, NodeType};
+use super::{
+    compat_sessions::CompatSsoLogin, BrowserSession, Cursor, NodeCursor, NodeType, OAuth2Session,
+};
 
 pub struct User(pub mas_data_model::User<PostgresqlBackend>);
 
@@ -177,6 +179,50 @@ impl User {
                     Edge::new(
                         OpaqueCursor(NodeCursor(NodeType::UserEmail, u.data)),
                         UserEmail(u),
+                    )
+                }));
+
+                Ok::<_, async_graphql::Error>(connection)
+            },
+        )
+        .await
+    }
+
+    async fn oauth2_sessions(
+        &self,
+        ctx: &Context<'_>,
+        after: Option<String>,
+        before: Option<String>,
+        first: Option<i32>,
+        last: Option<i32>,
+    ) -> Result<Connection<Cursor, OAuth2Session>, async_graphql::Error> {
+        let database = ctx.data::<PgPool>()?;
+
+        query(
+            after,
+            before,
+            first,
+            last,
+            |after, before, first, last| async move {
+                let mut conn = database.acquire().await?;
+                let after_id = after
+                    .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::OAuth2Session))
+                    .transpose()?;
+                let before_id = before
+                    .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::OAuth2Session))
+                    .transpose()?;
+
+                let (has_previous_page, has_next_page, edges) =
+                    mas_storage::oauth2::get_paginated_user_oauth_sessions(
+                        &mut conn, &self.0, before_id, after_id, first, last,
+                    )
+                    .await?;
+
+                let mut connection = Connection::new(has_previous_page, has_next_page);
+                connection.edges.extend(edges.into_iter().map(|s| {
+                    Edge::new(
+                        OpaqueCursor(NodeCursor(NodeType::OAuth2Session, s.data)),
+                        OAuth2Session(s),
                     )
                 }));
 

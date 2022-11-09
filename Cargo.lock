@@ -2602,6 +2602,7 @@ dependencies = [
  "mas-axum-utils",
  "mas-data-model",
  "mas-storage",
+ "oauth2-types",
  "serde",
  "sqlx",
  "tokio",

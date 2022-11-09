@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::string::ToString;
+use std::{collections::HashMap, string::ToString};
 
 use mas_data_model::{Client, JwksOrJwksUri};
 use mas_iana::{
@@ -248,6 +248,54 @@ impl TryInto<Client<PostgresqlBackend>> for OAuth2ClientLookup {
             initiate_login_uri,
         })
     }
+}
+
+#[tracing::instrument(skip_all, err)]
+pub async fn lookup_clients(
+    executor: impl PgExecutor<'_>,
+    ids: impl IntoIterator<Item = Ulid> + Send,
+) -> Result<HashMap<Ulid, Client<PostgresqlBackend>>, ClientFetchError> {
+    let ids: Vec<Uuid> = ids.into_iter().map(Uuid::from).collect();
+    let res = sqlx::query_as!(
+        OAuth2ClientLookup,
+        r#"
+            SELECT
+                c.oauth2_client_id,
+                c.encrypted_client_secret,
+                ARRAY(
+                    SELECT redirect_uri
+                    FROM oauth2_client_redirect_uris r
+                    WHERE r.oauth2_client_id = c.oauth2_client_id
+                ) AS "redirect_uris!",
+                c.grant_type_authorization_code,
+                c.grant_type_refresh_token,
+                c.client_name,
+                c.logo_uri,
+                c.client_uri,
+                c.policy_uri,
+                c.tos_uri,
+                c.jwks_uri,
+                c.jwks,
+                c.id_token_signed_response_alg,
+                c.userinfo_signed_response_alg,
+                c.token_endpoint_auth_method,
+                c.token_endpoint_auth_signing_alg,
+                c.initiate_login_uri
+            FROM oauth2_clients c
+
+            WHERE c.oauth2_client_id = ANY($1::uuid[])
+        "#,
+        &ids,
+    )
+    .fetch_all(executor)
+    .await?;
+
+    let clients: Result<HashMap<Ulid, Client<PostgresqlBackend>>, _> = res
+        .into_iter()
+        .map(|r| r.try_into().map(|c: Client<PostgresqlBackend>| (c.data, c)))
+        .collect();
+
+    clients
 }
 
 #[tracing::instrument(
