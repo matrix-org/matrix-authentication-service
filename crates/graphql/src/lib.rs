@@ -24,7 +24,6 @@
 
 use async_graphql::{Context, Description, EmptyMutation, EmptySubscription};
 use mas_axum_utils::SessionInfo;
-use model::CreationEvent;
 use sqlx::PgPool;
 
 use self::model::{BrowserSession, Node, User};
@@ -38,7 +37,8 @@ pub type SchemaBuilder = async_graphql::SchemaBuilder<RootQuery, EmptyMutation, 
 pub fn schema_builder() -> SchemaBuilder {
     async_graphql::Schema::build(RootQuery::new(), EmptyMutation, EmptySubscription)
         .register_output_type::<Node>()
-        .register_output_type::<CreationEvent>()
+    // TODO: ordering of interface implementations is not stable
+    //.register_output_type::<CreationEvent>()
 }
 
 /// The query root of the GraphQL interface.
