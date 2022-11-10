@@ -12,3 +12,7 @@ updates:
     directory: "/crates/static-files/"
     schedule:
       interval: "daily"
+  - package-ecosystem: "npm"
+    directory: "/frontend/"
+    schedule:
+      interval: "daily"
