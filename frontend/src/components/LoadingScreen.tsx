@@ -12,21 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React, { lazy } from "react";
-import ReactDOM from "react-dom/client";
-import { RelayEnvironmentProvider } from "react-relay";
+import LoadingSpinner from "./LoadingSpinner";
 
-import LoadingScreen from "./components/LoadingScreen";
-import RelayEnvironment from "./RelayEnvironment";
-
-const Router = lazy(() => import("./Router"));
-
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-  <React.StrictMode>
-    <RelayEnvironmentProvider environment={RelayEnvironment}>
-      <React.Suspense fallback={<LoadingScreen />}>
-        <Router />
-      </React.Suspense>
-    </RelayEnvironmentProvider>
-  </React.StrictMode>
+const LoadingScreen: React.FC = () => (
+  <main className="bg-white dark:bg-black-800 min-h-screen flex justify-center items-center">
+    <LoadingSpinner />
+  </main>
 );
+
+export default LoadingScreen;
