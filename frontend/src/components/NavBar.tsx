@@ -12,29 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React from "react";
-import { graphql, useLazyLoadQuery } from "react-relay";
+const NavBar: React.FC<{
+  className: string;
+  children: React.ReactNode;
+}> = ({ className, children }) => (
+  <nav className={className}>
+    <ul className="flex bg-grey-50 dark:bg-black-950 rounded-lg">{children}</ul>
+  </nav>
+);
 
-import type { AppQuery } from "./__generated__/AppQuery.graphql";
-
-export const App: React.FC = () => {
-  const data = useLazyLoadQuery<AppQuery>(
-    graphql`
-      query AppQuery {
-        currentUser {
-          id
-          username
-        }
-      }
-    `,
-    {}
-  );
-
-  if (data.currentUser) {
-    return (
-      <h1 className="font-bold text-2xl">Hello {data.currentUser.username}!</h1>
-    );
-  } else {
-    return <div className="font-bold text-alert">You're not logged in.</div>;
-  }
-};
+export default NavBar;

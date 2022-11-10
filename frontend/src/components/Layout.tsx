@@ -12,21 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React, { lazy } from "react";
-import ReactDOM from "react-dom/client";
-import { RelayEnvironmentProvider } from "react-relay";
+import NavBar from "./NavBar";
+import NavItem from "./NavItem";
 
-import LoadingScreen from "./components/LoadingScreen";
-import RelayEnvironment from "./RelayEnvironment";
+const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+  return (
+    <div className="bg-grey-25 text-black-900 dark:bg-black-800 dark:text-white flex flex-col min-h-screen">
+      <NavBar className="mx-auto px-3 py-4 container">
+        <NavItem to="/">Home</NavItem>
+        <NavItem to="/dumb">Dumb</NavItem>
+      </NavBar>
 
-const Router = lazy(() => import("./Router"));
+      <main className="mx-auto p-4 container">{children}</main>
+    </div>
+  );
+};
 
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-  <React.StrictMode>
-    <RelayEnvironmentProvider environment={RelayEnvironment}>
-      <React.Suspense fallback={<LoadingScreen />}>
-        <Router />
-      </React.Suspense>
-    </RelayEnvironmentProvider>
-  </React.StrictMode>
-);
+export default Layout;
