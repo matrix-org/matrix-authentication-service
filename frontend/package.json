@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "lint": "eslint src/ .eslintrc.cjs tailwind.config.cjs vite.config.ts",
+    "generate": "relay-compiler && eslint --fix .",
+    "lint": "relay-compiler --validate && eslint . && tsc",
     "relay": "relay-compiler",
-    "build": "tsc && vite build",
+    "build": "npm run lint && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -17,6 +18,7 @@
     "relay-runtime": "^14.1.0"
   },
   "devDependencies": {
+    "@graphql-eslint/eslint-plugin": "^3.13.1",
     "@types/node": "^18.11.9",
     "@types/react": "^18.0.25",
     "@types/react-dom": "^18.0.8",

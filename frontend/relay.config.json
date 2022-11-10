@@ -1,6 +1,6 @@
 {
   "src": "./src",
-  "schema": "../crates/graphql/schema.graphql",
+  "schema": "./schema.graphql",
   "language": "typescript",
   "eagerEsModules": true,
   "exclude": [
