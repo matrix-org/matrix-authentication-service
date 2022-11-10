@@ -52,9 +52,35 @@ jobs:
           files: crates/policy/policies/coverage.json
           flags: policies
 
+  frontend-lint:
+    name: Check frontend style
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v3
+
+      - name: Install Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Node dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Lint
+        working-directory: ./frontend
+        run: npm run lint
+
 
   rustfmt:
-    name: Check style
+    name: Check Rust style
     runs-on: ubuntu-latest
 
     permissions:
@@ -85,7 +111,7 @@ jobs:
       - name: Checkout the code
         uses: actions/checkout@v3
 
-      - name: Install toolchain
+      - name: Install Rust toolchain
         run: |
           rustup toolchain install stable
           rustup default stable
@@ -93,8 +119,19 @@ jobs:
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
 
+      - name: Install Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Node dependencies
+        working-directory: ./frontend
+        run: npm ci
+
       - name: Update the schemas
-        run: sh ./misc/update-schemas.sh
+        run: sh ./misc/update.sh
 
       - name: Check that the workspace is clean
         run: |
@@ -396,6 +433,7 @@ jobs:
     if: ${{ always() }}
     needs:
       - opa-lint
+      - frontend-lint
       - rustfmt
       - clippy
       - check-schema

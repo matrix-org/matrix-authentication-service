@@ -22,6 +22,7 @@ export const App: React.FC = () => {
     graphql`
       query AppQuery {
         currentUser {
+          id
           username
         }
       }

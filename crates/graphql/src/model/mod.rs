@@ -29,6 +29,7 @@ pub use self::{
     users::{User, UserEmail},
 };
 
+/// An object with an ID.
 #[derive(Interface)]
 #[graphql(field(name = "id", desc = "ID of the object.", type = "ID"))]
 pub enum Node {
