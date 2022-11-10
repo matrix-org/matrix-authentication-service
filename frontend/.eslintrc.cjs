@@ -15,7 +15,7 @@
 /** @type {import('eslint').Linter.Config} */
 
 module.exports = {
-  ignorePatterns: ["**/dist/**", "**/__generated__/**"],
+  ignorePatterns: ["**/dist/**", "**/__generated__/**", "**/coverage/**"],
   overrides: [
     // General rules for JS/TS files
     {
