@@ -8,7 +8,7 @@ license = "Apache-2.0"
 [dependencies]
 anyhow = "1.0.66"
 aead = { version = "0.5.1", features = ["std"] }
-const-oid = { version = "0.9.0", features = ["std"] }
+const-oid = { version = "0.9.1", features = ["std"] }
 cookie = { version = "0.16.1", features = ["key-expansion", "private"] }
 der = { version = "0.6.0", features = ["std"] }
 ecdsa = { version = "0.14.8", features = ["std"] }
