@@ -14,6 +14,7 @@
 
 import { graphql, useLazyLoadQuery } from "react-relay";
 
+import CompatSsoLoginList from "../components/CompatSsoLoginList";
 import type { HomeQuery } from "./__generated__/HomeQuery.graphql";
 
 const Home: React.FC = () => {
@@ -23,6 +24,8 @@ const Home: React.FC = () => {
         currentUser {
           id
           username
+
+          ...CompatSsoLoginList_user
         }
       }
     `,
@@ -35,6 +38,7 @@ const Home: React.FC = () => {
         <h1 className="font-bold text-2xl">
           Hello {data.currentUser.username}!
         </h1>
+        <CompatSsoLoginList user={data.currentUser} />
       </>
     );
   } else {

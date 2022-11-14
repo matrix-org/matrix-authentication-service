@@ -86,6 +86,12 @@ module.exports = {
       files: "./src/**/*.graphql",
       extends: ["plugin:@graphql-eslint/operations-recommended"],
       rules: {
+        "@graphql-eslint/known-fragment-names": "off",
+        "@graphql-eslint/no-unused-fragments": "off",
+        "@graphql-eslint/known-directives": [
+          "error",
+          { ignoreClientDirectives: ["connection", "refetchable"] },
+        ],
         // This rule is copied from the 'operations-recommended' config,
         // but without the 'Query' forbidden suffix on operations,
         // since it directly clashes with the relay operation naming convention
@@ -99,7 +105,6 @@ module.exports = {
               forbiddenSuffixes: [/* "Query", */ "Mutation", "Subscription"],
             },
             FragmentDefinition: {
-              style: "PascalCase",
               forbiddenPrefixes: ["Fragment"],
               forbiddenSuffixes: ["Fragment"],
             },
