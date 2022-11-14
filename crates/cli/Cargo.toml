@@ -10,7 +10,7 @@ anyhow = "1.0.66"
 argon2 = { version = "0.4.1", features = ["password-hash"] }
 atty = "0.2.14"
 axum = "0.6.0-rc.2"
-clap = { version = "4.0.23", features = ["derive"] }
+clap = { version = "4.0.24", features = ["derive"] }
 dotenv = "0.15.0"
 futures-util = "0.3.25"
 hyper = { version = "0.14.23", features = ["full"] }
