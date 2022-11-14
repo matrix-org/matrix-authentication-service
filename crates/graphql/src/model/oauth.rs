@@ -19,7 +19,7 @@ use sqlx::PgPool;
 use ulid::Ulid;
 use url::Url;
 
-use super::{BrowserSession, User};
+use super::{BrowserSession, NodeType, User};
 
 /// An OAuth 2.0 session represents a client session which used the OAuth APIs
 /// to login.
@@ -30,7 +30,7 @@ pub struct OAuth2Session(pub mas_data_model::Session<PostgresqlBackend>);
 impl OAuth2Session {
     /// ID of the object.
     pub async fn id(&self) -> ID {
-        ID(self.0.data.to_string())
+        NodeType::OAuth2Session.id(self.0.data)
     }
 
     /// OAuth 2.0 client used by this session.
@@ -62,7 +62,7 @@ pub struct OAuth2Client(pub mas_data_model::Client<PostgresqlBackend>);
 impl OAuth2Client {
     /// ID of the object.
     pub async fn id(&self) -> ID {
-        ID(self.0.data.to_string())
+        NodeType::OAuth2Client.id(self.0.data)
     }
 
     /// OAuth 2.0 client ID

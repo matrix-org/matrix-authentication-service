@@ -20,7 +20,7 @@ import type { HomeQuery } from "./__generated__/HomeQuery.graphql";
 const Home: React.FC = () => {
   const data = useLazyLoadQuery<HomeQuery>(
     graphql`
-      query HomeQuery {
+      query HomeQuery($count: Int!, $cursor: String) {
         currentUser {
           id
           username
@@ -29,7 +29,7 @@ const Home: React.FC = () => {
         }
       }
     `,
-    {}
+    { count: 2 }
   );
 
   if (data.currentUser) {

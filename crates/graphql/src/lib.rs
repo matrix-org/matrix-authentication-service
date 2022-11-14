@@ -22,8 +22,9 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions, clippy::missing_errors_doc)]
 
-use async_graphql::{Context, Description, EmptyMutation, EmptySubscription};
+use async_graphql::{Context, Description, EmptyMutation, EmptySubscription, ID};
 use mas_axum_utils::SessionInfo;
+use model::NodeType;
 use sqlx::PgPool;
 
 use self::model::{BrowserSession, Node, User};
@@ -77,5 +78,35 @@ impl RootQuery {
         let session = session_info.load_session(&mut conn).await?;
 
         Ok(session.map(User::from))
+    }
+
+    /// Fetches an object given its ID.
+    async fn node(&self, ctx: &Context<'_>, id: ID) -> Result<Option<Node>, async_graphql::Error> {
+        let (node_type, id) = NodeType::from_id(&id)?;
+        let database = ctx.data::<PgPool>()?;
+        let session_info = ctx.data::<SessionInfo>()?;
+        let mut conn = database.acquire().await?;
+        let session = session_info.load_session(&mut conn).await?;
+
+        let Some(session) = session else { return Ok(None) };
+
+        match node_type {
+            // TODO
+            NodeType::Authentication
+            | NodeType::BrowserSession
+            | NodeType::CompatSession
+            | NodeType::CompatSsoLogin
+            | NodeType::OAuth2Client
+            | NodeType::UserEmail
+            | NodeType::OAuth2Session => Ok(None),
+
+            NodeType::User => {
+                if session.user.data == id {
+                    Ok(Some(Box::new(User(session.user)).into()))
+                } else {
+                    Ok(None)
+                }
+            }
+        }
     }
 }

@@ -2605,7 +2605,9 @@ dependencies = [
  "oauth2-types",
  "serde",
  "sqlx",
+ "thiserror",
  "tokio",
+ "tracing",
  "ulid",
  "url",
 ]

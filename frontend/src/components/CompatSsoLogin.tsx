@@ -25,12 +25,53 @@ const CompatSsoLogin: React.FC<Props> = ({ login }) => {
       fragment CompatSsoLogin_login on CompatSsoLogin {
         id
         redirectUri
+        createdAt
+        session {
+          id
+          createdAt
+          deviceId
+          finishedAt
+        }
       }
     `,
     login
   );
 
-  return <>{data.redirectUri}</>;
+  let info = null;
+  if (data.session) {
+    info = (
+      <>
+        <div>
+          Started:{" "}
+          <span className="font-mono text-sm">{data.session.createdAt}</span>
+        </div>
+        {data.session.finishedAt ? (
+          <div className="text-alert">
+            Finished:{" "}
+            <span className="font-mono text-sm">{data.session.createdAt}</span>
+          </div>
+        ) : null}
+        <div>
+          Device ID:{" "}
+          <span className="font-mono text-sm font-semibold">
+            {data.session.deviceId}
+          </span>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <div className="p-2 my-1 bg-grey-50 dark:bg-grey-450 rounded">
+      <div>
+        Requested: <span className="font-mono text-sm">{data.createdAt}</span>
+      </div>
+      {info}
+      <div>
+        Redirect URI: <span className="font-semibold">{data.redirectUri}</span>
+      </div>
+    </div>
+  );
 };
 
 export default CompatSsoLogin;

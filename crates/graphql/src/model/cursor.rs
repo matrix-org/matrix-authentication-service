@@ -16,14 +16,7 @@ use async_graphql::connection::OpaqueCursor;
 use serde::{Deserialize, Serialize};
 use ulid::Ulid;
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone, Copy)]
-#[serde(rename = "snake_case")]
-pub enum NodeType {
-    UserEmail,
-    BrowserSession,
-    CompatSsoLogin,
-    OAuth2Session,
-}
+pub use super::NodeType;
 
 #[derive(Serialize, Deserialize, PartialEq, Eq)]
 pub struct NodeCursor(pub NodeType, pub Ulid);

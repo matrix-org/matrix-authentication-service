@@ -88,10 +88,8 @@ module.exports = {
       rules: {
         "@graphql-eslint/known-fragment-names": "off",
         "@graphql-eslint/no-unused-fragments": "off",
-        "@graphql-eslint/known-directives": [
-          "error",
-          { ignoreClientDirectives: ["connection", "refetchable"] },
-        ],
+        "@graphql-eslint/unused-arguments": "off",
+        "@graphql-eslint/known-directives": "off",
         // This rule is copied from the 'operations-recommended' config,
         // but without the 'Query' forbidden suffix on operations,
         // since it directly clashes with the relay operation naming convention

@@ -44,7 +44,7 @@ impl From<mas_data_model::BrowserSession<PostgresqlBackend>> for User {
 impl User {
     /// ID of the object.
     pub async fn id(&self) -> ID {
-        ID(self.0.data.to_string())
+        NodeType::User.id(self.0.data)
     }
 
     /// Username chosen by the user.
@@ -79,10 +79,10 @@ impl User {
             |after, before, first, last| async move {
                 let mut conn = database.acquire().await?;
                 let after_id = after
-                    .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::UserEmail))
+                    .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::CompatSsoLogin))
                     .transpose()?;
                 let before_id = before
-                    .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::UserEmail))
+                    .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::CompatSsoLogin))
                     .transpose()?;
 
                 let (has_previous_page, has_next_page, edges) =
@@ -262,7 +262,7 @@ pub struct UserEmail(mas_data_model::UserEmail<PostgresqlBackend>);
 impl UserEmail {
     /// ID of the object.
     pub async fn id(&self) -> ID {
-        ID(self.0.data.to_string())
+        NodeType::UserEmail.id(self.0.data)
     }
 
     /// Email address
