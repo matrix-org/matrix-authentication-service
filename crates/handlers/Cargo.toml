@@ -23,7 +23,7 @@ tower = "0.4.13"
 tower-http = { version = "0.3.4", features = ["cors"] }
 axum = { version = "0.6.0-rc.2", features = ["ws"] }
 axum-macros = "0.3.0-rc.1"
-axum-extra = { version = "0.4.0-rc.1", features = ["cookie-private"] }
+axum-extra = { version = "0.4.0-rc.2", features = ["cookie-private"] }
 
 async-graphql = { version = "4.0.16", features = ["tracing", "apollo_tracing"] }
 
