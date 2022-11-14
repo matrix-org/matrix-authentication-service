@@ -18,7 +18,7 @@ use mas_data_model::CompatSsoLoginState;
 use mas_storage::PostgresqlBackend;
 use url::Url;
 
-use super::User;
+use super::{NodeType, User};
 
 /// A compat session represents a client session which used the legacy Matrix
 /// login API.
@@ -29,7 +29,7 @@ pub struct CompatSession(pub mas_data_model::CompatSession<PostgresqlBackend>);
 impl CompatSession {
     /// ID of the object.
     pub async fn id(&self) -> ID {
-        ID(self.0.data.to_string())
+        NodeType::CompatSession.id(self.0.data)
     }
 
     /// The user authorized for this session.
@@ -62,7 +62,7 @@ pub struct CompatSsoLogin(pub mas_data_model::CompatSsoLogin<PostgresqlBackend>)
 impl CompatSsoLogin {
     /// ID of the object.
     pub async fn id(&self) -> ID {
-        ID(self.0.data.to_string())
+        NodeType::CompatSsoLogin.id(self.0.data)
     }
 
     /// When the object was created.

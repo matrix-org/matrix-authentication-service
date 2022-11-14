@@ -293,6 +293,10 @@ type RootQuery {
   Get the current logged in user
   """
   currentUser: User
+  """
+  Fetches an object given its ID.
+  """
+  node(id: ID!): Node
 }
 
 """

@@ -10,7 +10,9 @@ async-graphql = { version = "4.0.16", features = ["chrono", "url"] }
 chrono = "0.4.22"
 serde = { version = "1.0.147", features = ["derive"] }
 sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres"] }
+thiserror = "1.0.37"
 tokio = { version = "1.21.2", features = ["time"] }
+tracing = "0.1.37"
 ulid = "1.0.0"
 url = "2.3.1"
 

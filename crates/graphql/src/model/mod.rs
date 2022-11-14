@@ -12,36 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use async_graphql::{Interface, ID};
+use async_graphql::Interface;
 use chrono::{DateTime, Utc};
 
 mod browser_sessions;
 mod compat_sessions;
 mod cursor;
+mod node;
 mod oauth;
 mod users;
 
 pub use self::{
     browser_sessions::{Authentication, BrowserSession},
     compat_sessions::{CompatSession, CompatSsoLogin},
-    cursor::{Cursor, NodeCursor, NodeType},
+    cursor::{Cursor, NodeCursor},
+    node::{Node, NodeType},
     oauth::{OAuth2Client, OAuth2Consent, OAuth2Session},
     users::{User, UserEmail},
 };
-
-/// An object with an ID.
-#[derive(Interface)]
-#[graphql(field(name = "id", desc = "ID of the object.", type = "ID"))]
-pub enum Node {
-    Authentication(Box<Authentication>),
-    BrowserSession(Box<BrowserSession>),
-    CompatSession(Box<CompatSession>),
-    CompatSsoLogin(Box<CompatSsoLogin>),
-    OAuth2Client(Box<OAuth2Client>),
-    OAuth2Session(Box<OAuth2Session>),
-    User(Box<User>),
-    UserEmail(Box<UserEmail>),
-}
 
 #[derive(Interface)]
 #[graphql(field(
