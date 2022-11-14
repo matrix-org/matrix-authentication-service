@@ -12,11 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/** @type {import('@babel/core').TransformOptions} */
-module.exports = {
-  presets: [
-    ["@babel/preset-env", { targets: { node: "current" } }],
-    ["@babel/preset-react", { runtime: "automatic" }],
-    "@babel/preset-typescript",
-  ],
+/** @type {import('@babel/core').ConfigFunction} */
+module.exports = (api) => {
+  // For some reason, `vite-plugin-realy` loads the babel config.
+  // This ensures we only really do transforms when loaded for Jest
+  if (api.env("test")) {
+    return {
+      plugins: ["relay"],
+      presets: [
+        ["@babel/preset-env", { targets: { node: "current" } }],
+        ["@babel/preset-react", { runtime: "automatic" }],
+        "@babel/preset-typescript",
+      ],
+    };
+  } else {
+    return {};
+  }
 };
