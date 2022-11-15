@@ -17,6 +17,7 @@ import BrowserSessionList from "../components/BrowserSessionList";
 
 import CompatSsoLoginList from "../components/CompatSsoLoginList";
 import OAuth2SessionList from "../components/OAuth2SessionList";
+import Typography from "../components/Typography";
 import type { HomeQuery } from "./__generated__/HomeQuery.graphql";
 
 const Home: React.FC = () => {
@@ -45,7 +46,7 @@ const Home: React.FC = () => {
 
     return (
       <>
-        <h1 className="font-bold text-2xl">Hello {user.username}!</h1>
+        <Typography variant="headline">Hello {user.username}!</Typography>
         <div className="grid lg:grid-cols-3 gap-1">
           <OAuth2SessionList user={user} />
           <CompatSsoLoginList user={user} />

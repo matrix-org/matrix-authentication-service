@@ -14,6 +14,7 @@
 
 import type { OAuth2Session_session$key } from "./__generated__/OAuth2Session_session.graphql";
 import { graphql, useFragment } from "react-relay";
+import Typography, { Bold, Code } from "./Typography";
 
 type Props = {
   session: OAuth2Session_session$key;
@@ -39,18 +40,18 @@ const OAuth2Session: React.FC<Props> = ({ session }) => {
   return (
     <div className="p-2 my-1 bg-grey-50 dark:bg-grey-450 dark:text-white rounded">
       <div>
-        Client ID:{" "}
-        <span className="font-mono text-sm">{data.client.clientId}</span>
+        <Typography variant="body">
+          Client ID: <Code>{data.scope}</Code>
+        </Typography>
       </div>
       {data.client.clientName && (
-        <div>
-          Client name:{" "}
-          <span className="font-semibold">{data.client.clientName}</span>
-        </div>
+        <Typography variant="body">
+          Client name: <Bold>{data.client.clientName}</Bold>
+        </Typography>
       )}
-      <div>
-        Scope: <span className="font-mono text-sm">{data.scope}</span>
-      </div>
+      <Typography variant="body">
+        Scope: <Code>{data.scope}</Code>
+      </Typography>
     </div>
   );
 };
