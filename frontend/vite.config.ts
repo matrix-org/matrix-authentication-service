@@ -19,7 +19,14 @@ import relay from "vite-plugin-relay";
 
 export default defineConfig({
   base: "/app/",
-  plugins: [react(), eslint(), relay],
+  plugins: [
+    react(),
+    eslint({
+      // Explicitly set the config file, else storybook gets confused
+      overrideConfigFile: "./.eslintrc.cjs",
+    }),
+    relay,
+  ],
   server: {
     proxy: {
       // Routes mostly extracted from crates/router/src/endpoints.rs
