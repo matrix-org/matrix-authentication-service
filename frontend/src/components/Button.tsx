@@ -13,9 +13,16 @@
 // limitations under the License.
 
 type Props = {
+  /** The label of the button */
   children: string;
+
+  /** Makes the button more compact */
   compact?: boolean;
+
+  /** Uses the 'ghotst' (outline) alternative */
   ghost?: boolean;
+
+  /** Disables all interactions with the button */
   disabled?: boolean;
 } & React.HTMLProps<HTMLButtonElement>;
 
