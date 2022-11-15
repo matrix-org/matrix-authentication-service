@@ -13,24 +13,26 @@
 // limitations under the License.
 
 import { graphql, usePaginationFragment } from "react-relay";
-import CompatSsoLogin from "./CompatSsoLogin";
-import { CompatSsoLoginList_user$key } from "./__generated__/CompatSsoLoginList_user.graphql";
+import OAuth2Session from "./OAuth2Session";
+
+import { OAuth2SessionList_user$key } from "./__generated__/OAuth2SessionList_user.graphql";
 
 type Props = {
-  user: CompatSsoLoginList_user$key;
+  user: OAuth2SessionList_user$key;
 };
 
-const CompatSsoLoginList: React.FC<Props> = ({ user }) => {
+const OAuth2SessionList: React.FC<Props> = ({ user }) => {
   const { data, loadNext, hasNext } = usePaginationFragment(
     graphql`
-      fragment CompatSsoLoginList_user on User
-      @refetchable(queryName: "CompatSsoLoginListQuery") {
-        compatSsoLogins(first: $count, after: $cursor)
-          @connection(key: "CompatSsoLoginList_user_compatSsoLogins") {
+      fragment OAuth2SessionList_user on User
+      @refetchable(queryName: "OAuth2SessionListQuery") {
+        oauth2Sessions(first: $count, after: $cursor)
+          @connection(key: "OAuth2SessionList_user_oauth2Sessions") {
           edges {
+            cursor
             node {
               id
-              ...CompatSsoLogin_login
+              ...OAuth2Session_session
             }
           }
         }
@@ -41,9 +43,9 @@ const CompatSsoLoginList: React.FC<Props> = ({ user }) => {
 
   return (
     <div>
-      <h2 className="text-lg">List of compatibility sessions:</h2>
-      {data.compatSsoLogins.edges.map((n) => (
-        <CompatSsoLogin login={n.node} key={n.node.id} />
+      <h2 className="text-lg">List of OAuth 2.0 sessions:</h2>
+      {data.oauth2Sessions.edges.map((n) => (
+        <OAuth2Session key={n.cursor} session={n.node} />
       ))}
       {hasNext ? (
         <button className="bg-accent p-2 rounded" onClick={() => loadNext(2)}>
@@ -54,4 +56,4 @@ const CompatSsoLoginList: React.FC<Props> = ({ user }) => {
   );
 };
 
-export default CompatSsoLoginList;
+export default OAuth2SessionList;
