@@ -13,32 +13,44 @@
 // limitations under the License.
 
 import { graphql, useLazyLoadQuery } from "react-relay";
+import BrowserSessionList from "../components/BrowserSessionList";
 
 import CompatSsoLoginList from "../components/CompatSsoLoginList";
+import OAuth2SessionList from "../components/OAuth2SessionList";
 import type { HomeQuery } from "./__generated__/HomeQuery.graphql";
 
 const Home: React.FC = () => {
   const data = useLazyLoadQuery<HomeQuery>(
     graphql`
       query HomeQuery($count: Int!, $cursor: String) {
-        currentUser {
+        currentBrowserSession {
           id
-          username
+          user {
+            id
+            username
 
-          ...CompatSsoLoginList_user
+            ...CompatSsoLoginList_user
+            ...BrowserSessionList_user
+            ...OAuth2SessionList_user
+          }
         }
       }
     `,
     { count: 2 }
   );
 
-  if (data.currentUser) {
+  if (data.currentBrowserSession) {
+    const session = data.currentBrowserSession;
+    const user = session.user;
+
     return (
       <>
-        <h1 className="font-bold text-2xl">
-          Hello {data.currentUser.username}!
-        </h1>
-        <CompatSsoLoginList user={data.currentUser} />
+        <h1 className="font-bold text-2xl">Hello {user.username}!</h1>
+        <div className="grid lg:grid-cols-3 gap-1">
+          <OAuth2SessionList user={user} />
+          <CompatSsoLoginList user={user} />
+          <BrowserSessionList user={user} currentSessionId={session.id} />
+        </div>
       </>
     );
   } else {

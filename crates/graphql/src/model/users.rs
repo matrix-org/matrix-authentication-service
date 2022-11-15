@@ -127,10 +127,10 @@ impl User {
             |after, before, first, last| async move {
                 let mut conn = database.acquire().await?;
                 let after_id = after
-                    .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::UserEmail))
+                    .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::BrowserSession))
                     .transpose()?;
                 let before_id = before
-                    .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::UserEmail))
+                    .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::BrowserSession))
                     .transpose()?;
 
                 let (has_previous_page, has_next_page, edges) =

@@ -13,24 +13,27 @@
 // limitations under the License.
 
 import { graphql, usePaginationFragment } from "react-relay";
-import CompatSsoLogin from "./CompatSsoLogin";
-import { CompatSsoLoginList_user$key } from "./__generated__/CompatSsoLoginList_user.graphql";
+import BrowserSession from "./BrowserSession";
+
+import { BrowserSessionList_user$key } from "./__generated__/BrowserSessionList_user.graphql";
 
 type Props = {
-  user: CompatSsoLoginList_user$key;
+  user: BrowserSessionList_user$key;
+  currentSessionId: string;
 };
 
-const CompatSsoLoginList: React.FC<Props> = ({ user }) => {
+const BrowserSessionList: React.FC<Props> = ({ user, currentSessionId }) => {
   const { data, loadNext, hasNext } = usePaginationFragment(
     graphql`
-      fragment CompatSsoLoginList_user on User
-      @refetchable(queryName: "CompatSsoLoginListQuery") {
-        compatSsoLogins(first: $count, after: $cursor)
-          @connection(key: "CompatSsoLoginList_user_compatSsoLogins") {
+      fragment BrowserSessionList_user on User
+      @refetchable(queryName: "BrowserSessionListQuery") {
+        browserSessions(first: $count, after: $cursor)
+          @connection(key: "BrowserSessionList_user_browserSessions") {
           edges {
+            cursor
             node {
               id
-              ...CompatSsoLogin_login
+              ...BrowserSession_session
             }
           }
         }
@@ -41,9 +44,13 @@ const CompatSsoLoginList: React.FC<Props> = ({ user }) => {
 
   return (
     <div>
-      <h2 className="text-lg">List of compatibility sessions:</h2>
-      {data.compatSsoLogins.edges.map((n) => (
-        <CompatSsoLogin login={n.node} key={n.node.id} />
+      <h2 className="text-lg">List of browser sessions:</h2>
+      {data.browserSessions.edges.map((n) => (
+        <BrowserSession
+          key={n.cursor}
+          session={n.node}
+          isCurrent={n.node.id === currentSessionId}
+        />
       ))}
       {hasNext ? (
         <button className="bg-accent p-2 rounded" onClick={() => loadNext(2)}>
@@ -54,4 +61,4 @@ const CompatSsoLoginList: React.FC<Props> = ({ user }) => {
   );
 };
 
-export default CompatSsoLoginList;
+export default BrowserSessionList;
