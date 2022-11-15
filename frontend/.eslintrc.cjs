@@ -15,7 +15,12 @@
 /** @type {import('eslint').Linter.Config} */
 
 module.exports = {
-  ignorePatterns: ["**/dist/**", "**/__generated__/**", "**/coverage/**"],
+  ignorePatterns: [
+    "**/dist/**",
+    "**/__generated__/**",
+    "**/coverage/**",
+    "!.storybook",
+  ],
   overrides: [
     // General rules for JS/TS files
     {
@@ -25,9 +30,10 @@ module.exports = {
         "prettier",
         "plugin:prettier/recommended",
         "plugin:jsx-a11y/recommended",
+        "plugin:storybook/recommended",
       ],
       plugins: ["jsx-a11y"],
-      files: ["*.ts", "*.tsx", "*.cjs"],
+      files: ["*.ts", "*.tsx", "*.cjs", "*.js"],
     },
 
     // Processor to extract GraphQL operations embedded in TS files

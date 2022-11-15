@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import { graphql, usePaginationFragment } from "react-relay";
+import Button from "./Button";
 import CompatSsoLogin from "./CompatSsoLogin";
 import { CompatSsoLoginList_user$key } from "./__generated__/CompatSsoLoginList_user.graphql";
 
@@ -45,11 +46,7 @@ const CompatSsoLoginList: React.FC<Props> = ({ user }) => {
       {data.compatSsoLogins.edges.map((n) => (
         <CompatSsoLogin login={n.node} key={n.node.id} />
       ))}
-      {hasNext ? (
-        <button className="bg-accent p-2 rounded" onClick={() => loadNext(2)}>
-          Load more
-        </button>
-      ) : null}
+      {hasNext && <Button onClick={() => loadNext(2)}>Load more</Button>}
     </div>
   );
 };

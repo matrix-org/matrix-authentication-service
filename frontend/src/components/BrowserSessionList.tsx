@@ -14,6 +14,7 @@
 
 import { graphql, usePaginationFragment } from "react-relay";
 import BrowserSession from "./BrowserSession";
+import Button from "./Button";
 
 import { BrowserSessionList_user$key } from "./__generated__/BrowserSessionList_user.graphql";
 
@@ -52,11 +53,7 @@ const BrowserSessionList: React.FC<Props> = ({ user, currentSessionId }) => {
           isCurrent={n.node.id === currentSessionId}
         />
       ))}
-      {hasNext ? (
-        <button className="bg-accent p-2 rounded" onClick={() => loadNext(2)}>
-          Load more
-        </button>
-      ) : null}
+      {hasNext && <Button onClick={() => loadNext(2)}>Load more</Button>}
     </div>
   );
 };
