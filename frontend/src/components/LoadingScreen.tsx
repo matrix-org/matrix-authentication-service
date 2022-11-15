@@ -15,7 +15,7 @@
 import LoadingSpinner from "./LoadingSpinner";
 
 const LoadingScreen: React.FC = () => (
-  <main className="bg-white dark:bg-black-800 min-h-screen flex justify-center items-center">
+  <main className="min-h-screen flex justify-center items-center">
     <LoadingSpinner />
   </main>
 );

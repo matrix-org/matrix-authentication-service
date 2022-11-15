@@ -16,3 +16,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body, .docs-story {
+  @apply bg-grey-25 text-black-900 dark:bg-black-800 dark:text-white;
+}

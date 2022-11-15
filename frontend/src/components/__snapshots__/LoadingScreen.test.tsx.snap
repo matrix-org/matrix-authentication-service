@@ -2,7 +2,7 @@
 
 exports[`render <LoadingScreen /> 1`] = `
 <main
-  className="bg-white dark:bg-black-800 min-h-screen flex justify-center items-center"
+  className="min-h-screen flex justify-center items-center"
 >
   <div
     role="status"
