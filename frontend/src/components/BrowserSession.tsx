@@ -36,7 +36,7 @@ const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
   );
 
   return (
-    <div className="p-2 my-1 bg-grey-50 dark:bg-grey-450 rounded">
+    <div className="p-2 my-1 bg-grey-50 dark:bg-grey-450 dark:text-white rounded">
       {isCurrent && <div className="font-bold">Current session</div>}
       <div>
         Started: <span className="font-mono text-sm">{data.createdAt}</span>
