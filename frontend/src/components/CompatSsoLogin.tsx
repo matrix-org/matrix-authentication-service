@@ -16,6 +16,7 @@ import type { CompatSsoLogin_login$key } from "./__generated__/CompatSsoLogin_lo
 import { graphql, useFragment } from "react-relay";
 import Block from "./Block";
 import { Body, Bold, Code } from "./Typography";
+import DateTime from "./DateTime";
 
 type Props = {
   login: CompatSsoLogin_login$key;
@@ -44,11 +45,11 @@ const CompatSsoLogin: React.FC<Props> = ({ login }) => {
     info = (
       <>
         <Body>
-          Started: <Code>{data.session.createdAt}</Code>
+          Started: <DateTime datetime={data.session.createdAt} />
         </Body>
         {data.session.finishedAt ? (
           <Body>
-            Finished: <Code>{data.session.createdAt}</Code>
+            Finished: <DateTime datetime={data.session.finishedAt} />
           </Body>
         ) : null}
         <Body>
@@ -61,7 +62,7 @@ const CompatSsoLogin: React.FC<Props> = ({ login }) => {
   return (
     <Block>
       <Body>
-        Requested: <Code>{data.createdAt}</Code>
+        Requested: <DateTime datetime={data.createdAt} />
       </Body>
       {info}
       <Body>
