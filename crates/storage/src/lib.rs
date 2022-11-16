@@ -35,6 +35,54 @@ use sqlx::migrate::Migrator;
 use thiserror::Error;
 use ulid::Ulid;
 
+#[derive(Debug, Error)]
+#[error("failed to lookup {what}")]
+pub struct GenericLookupError {
+    what: &'static str,
+    source: sqlx::Error,
+}
+
+impl GenericLookupError {
+    #[must_use]
+    pub fn what(what: &'static str) -> Box<dyn Fn(sqlx::Error) -> Self> {
+        Box::new(move |source: sqlx::Error| Self { what, source })
+    }
+}
+
+impl LookupError for GenericLookupError {
+    fn not_found(&self) -> bool {
+        matches!(self.source, sqlx::Error::RowNotFound)
+    }
+}
+
+pub trait LookupError {
+    fn not_found(&self) -> bool;
+}
+
+pub trait LookupResultExt {
+    type Error;
+    type Output;
+
+    /// Transform a [`Result`] with a [`LookupError`] to transform "not
+    /// found" errors into [`None`]
+    fn to_option(self) -> Result<Option<Self::Output>, Self::Error>;
+}
+
+impl<T, E> LookupResultExt for Result<T, E>
+where
+    E: LookupError,
+{
+    type Output = T;
+    type Error = E;
+    fn to_option(self) -> Result<Option<Self::Output>, Self::Error> {
+        match self {
+            Ok(v) => Ok(Some(v)),
+            Err(e) if e.not_found() => Ok(None),
+            Err(e) => Err(e),
+        }
+    }
+}
+
 #[derive(Default, Debug, Clone, Copy)]
 pub struct Clock {
     _private: (),

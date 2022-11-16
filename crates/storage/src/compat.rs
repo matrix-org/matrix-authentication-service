@@ -31,7 +31,7 @@ use uuid::Uuid;
 use crate::{
     pagination::{process_page, QueryBuilderExt},
     user::lookup_user_by_username,
-    Clock, DatabaseInconsistencyError, PostgresqlBackend,
+    Clock, DatabaseInconsistencyError, LookupError, PostgresqlBackend,
 };
 
 struct CompatAccessTokenLookup {
@@ -59,9 +59,8 @@ pub enum CompatAccessTokenLookupError {
     Inconsistency(#[from] DatabaseInconsistencyError),
 }
 
-impl CompatAccessTokenLookupError {
-    #[must_use]
-    pub fn not_found(&self) -> bool {
+impl LookupError for CompatAccessTokenLookupError {
+    fn not_found(&self) -> bool {
         matches!(
             self,
             Self::Database(sqlx::Error::RowNotFound) | Self::Expired { .. }
@@ -194,9 +193,8 @@ pub enum CompatRefreshTokenLookupError {
     Inconsistency(#[from] DatabaseInconsistencyError),
 }
 
-impl CompatRefreshTokenLookupError {
-    #[must_use]
-    pub fn not_found(&self) -> bool {
+impl LookupError for CompatRefreshTokenLookupError {
+    fn not_found(&self) -> bool {
         matches!(self, Self::Database(sqlx::Error::RowNotFound))
     }
 }
@@ -752,9 +750,8 @@ pub enum CompatSsoLoginLookupError {
     Inconsistency(#[from] DatabaseInconsistencyError),
 }
 
-impl CompatSsoLoginLookupError {
-    #[must_use]
-    pub fn not_found(&self) -> bool {
+impl LookupError for CompatSsoLoginLookupError {
+    fn not_found(&self) -> bool {
         matches!(self, Self::Database(sqlx::Error::RowNotFound))
     }
 }

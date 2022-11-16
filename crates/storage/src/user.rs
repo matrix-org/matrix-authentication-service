@@ -33,7 +33,7 @@ use uuid::Uuid;
 use super::{DatabaseInconsistencyError, PostgresqlBackend};
 use crate::{
     pagination::{process_page, QueryBuilderExt},
-    Clock,
+    Clock, GenericLookupError, LookupError,
 };
 
 #[derive(Debug, Clone)]
@@ -117,9 +117,8 @@ pub enum ActiveSessionLookupError {
     Conversion(#[from] DatabaseInconsistencyError),
 }
 
-impl ActiveSessionLookupError {
-    #[must_use]
-    pub fn not_found(&self) -> bool {
+impl LookupError for ActiveSessionLookupError {
+    fn not_found(&self) -> bool {
         matches!(self, Self::Fetch(sqlx::Error::RowNotFound))
     }
 }
@@ -566,9 +565,8 @@ pub enum UserLookupError {
     Inconsistency(#[from] DatabaseInconsistencyError),
 }
 
-impl UserLookupError {
-    #[must_use]
-    pub fn not_found(&self) -> bool {
+impl LookupError for UserLookupError {
+    fn not_found(&self) -> bool {
         matches!(self, Self::Database(sqlx::Error::RowNotFound))
     }
 }
@@ -955,13 +953,13 @@ pub async fn lookup_user_email(
         user.id = %user.data,
         user_email.id = %id,
     ),
-    err(Display),
+    err,
 )]
 pub async fn lookup_user_email_by_id(
     executor: impl PgExecutor<'_>,
     user: &User<PostgresqlBackend>,
     id: Ulid,
-) -> Result<UserEmail<PostgresqlBackend>, anyhow::Error> {
+) -> Result<UserEmail<PostgresqlBackend>, GenericLookupError> {
     let res = sqlx::query_as!(
         UserEmailLookup,
         r#"
@@ -981,7 +979,7 @@ pub async fn lookup_user_email_by_id(
     .fetch_one(executor)
     .instrument(info_span!("Lookup user email"))
     .await
-    .context("could not lookup user email")?;
+    .map_err(GenericLookupError::what("user email"))?;
 
     Ok(res.into())
 }

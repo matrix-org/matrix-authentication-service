@@ -16,9 +16,13 @@ use axum::{extract::State, response::IntoResponse, Json};
 use chrono::Duration;
 use hyper::StatusCode;
 use mas_data_model::{TokenFormatError, TokenType};
-use mas_storage::compat::{
-    add_compat_access_token, add_compat_refresh_token, consume_compat_refresh_token,
-    expire_compat_access_token, lookup_active_compat_refresh_token, CompatRefreshTokenLookupError,
+use mas_storage::{
+    compat::{
+        add_compat_access_token, add_compat_refresh_token, consume_compat_refresh_token,
+        expire_compat_access_token, lookup_active_compat_refresh_token,
+        CompatRefreshTokenLookupError,
+    },
+    LookupError,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DurationMilliSeconds};

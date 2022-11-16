@@ -28,7 +28,7 @@ use mas_storage::{
         client::ClientFetchError,
         refresh_token::{lookup_active_refresh_token, RefreshTokenLookupError},
     },
-    Clock,
+    Clock, LookupError,
 };
 use oauth2_types::requests::{IntrospectionRequest, IntrospectionResponse};
 use sqlx::PgPool;

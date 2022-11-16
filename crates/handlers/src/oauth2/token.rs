@@ -40,7 +40,7 @@ use mas_storage::{
             RefreshTokenLookupError,
         },
     },
-    DatabaseInconsistencyError, PostgresqlBackend,
+    DatabaseInconsistencyError, LookupError, PostgresqlBackend,
 };
 use oauth2_types::{
     errors::{ClientError, ClientErrorCode},
