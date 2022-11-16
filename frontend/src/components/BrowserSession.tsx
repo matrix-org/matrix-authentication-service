@@ -18,6 +18,7 @@ import { graphql, useFragment } from "react-relay";
 import Block from "./Block";
 import { Body, Subtitle } from "./Typography";
 import DateTime from "./DateTime";
+import { Link } from "react-router-dom";
 
 type Props = {
   session: BrowserSession_session$key;
@@ -46,7 +47,12 @@ const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
     <Block>
       {isCurrent && <Subtitle>Current session</Subtitle>}
       <Body>
-        Started: <DateTime datetime={createdAt} />
+        <Link
+          to={`/session/${data.id}`}
+          className="text-links hover:text-links/75"
+        >
+          Started: <DateTime datetime={createdAt} />
+        </Link>
       </Body>
       <Body>
         Last authentication:{" "}

@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { NavLink } from "react-router-dom";
+import { NavLink, To } from "react-router-dom";
 
-const NavItem: React.FC<{ to: string; children: React.ReactNode }> = ({
+const NavItem: React.FC<{ to: To; children: React.ReactNode }> = ({
   to,
   children,
 }) => (
