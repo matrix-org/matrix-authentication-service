@@ -41,7 +41,7 @@ const OAuth2Session: React.FC<Props> = ({ session }) => {
     <div className="p-2 my-1 bg-grey-50 dark:bg-grey-450 dark:text-white rounded">
       <div>
         <Typography variant="body">
-          Client ID: <Code>{data.scope}</Code>
+          Client ID: <Code>{data.client.clientId}</Code>
         </Typography>
       </div>
       {data.client.clientName && (

@@ -15,9 +15,26 @@
 module.exports = {
   stories: ["../src/**/*.stories.mdx", "../src/**/*.stories.@(js|jsx|ts|tsx)"],
   addons: [
-    "@storybook/addon-links",
-    "@storybook/addon-essentials",
-    "@storybook/addon-interactions",
+    // Automatic docs pages
+    "@storybook/addon-docs",
+
+    // Controls of components props
+    "@storybook/addon-controls",
+
+    // Document components actions
+    "@storybook/addon-actions",
+
+    // Helps measuring elements
+    "@storybook/addon-measure",
+
+    // Helps showing components boundaries
+    "@storybook/addon-outline",
+
+    // Quickly change viewport size
+    "@storybook/addon-viewport",
+
+    // Theme switch toolbar
+    "@storybook/addon-toolbars",
   ],
   framework: {
     name: "@storybook/react-vite",

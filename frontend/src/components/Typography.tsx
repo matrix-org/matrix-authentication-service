@@ -35,24 +35,38 @@ const classMap: Record<Variant, string> = {
   headline: "text-3xl font-semibold",
   title: "text-2xl font-semibold",
   subtitle: "text-lg",
-  body: "text-base",
+  body: "text-base text-justify",
   caption: "text-sm",
   micro: "text-xs",
 };
 
-const Typography: React.FC<Props> = ({ variant, children, bold }) => {
+const Typography = ({ variant, children, bold }: Props) => {
   const element = elementMap[variant];
   const boldClass = bold ? "font-semibold" : "";
   const className = `text-black dark:text-white ${boldClass} ${classMap[variant]}`;
   return createElement(element, { className }, ...Children.toArray(children));
 };
 
-export const Bold: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+type SimpleProps = { children: React.ReactNode };
+
+export const Bold = ({ children }: SimpleProps) => (
   <em className="font-semibold">{children}</em>
 );
 
-export const Code: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+export const Code = ({ children }: SimpleProps) => (
   <code className="font-mono text-sm">{children}</code>
+);
+
+export const Title = ({ children }: SimpleProps) => (
+  <Typography variant="title" children={children} />
+);
+
+export const Subtitle = ({ children }: SimpleProps) => (
+  <Typography variant="subtitle" children={children} />
+);
+
+export const Body = ({ children }: SimpleProps) => (
+  <Typography variant="body" children={children} />
 );
 
 export default Typography;
