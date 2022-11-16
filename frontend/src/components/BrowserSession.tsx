@@ -14,6 +14,8 @@
 
 import type { BrowserSession_session$key } from "./__generated__/BrowserSession_session.graphql";
 import { graphql, useFragment } from "react-relay";
+import Block from "./Block";
+import { Body, Code, Subtitle } from "./Typography";
 
 type Props = {
   session: BrowserSession_session$key;
@@ -35,19 +37,19 @@ const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
     session
   );
 
+  const lastAuthentication = data.lastAuthentication?.createdAt || "never";
+  const createdAt = data.createdAt;
+
   return (
-    <div className="p-2 my-1 bg-grey-50 dark:bg-grey-450 dark:text-white rounded">
-      {isCurrent && <div className="font-bold">Current session</div>}
-      <div>
-        Started: <span className="font-mono text-sm">{data.createdAt}</span>
-      </div>
-      <div>
-        Last authentication:{" "}
-        <span className="font-semibold">
-          {data.lastAuthentication?.createdAt || "never"}
-        </span>
-      </div>
-    </div>
+    <Block>
+      {isCurrent && <Subtitle>Current session</Subtitle>}
+      <Body>
+        Started: <Code>{createdAt}</Code>
+      </Body>
+      <Body>
+        Last authentication: <Code>{lastAuthentication}</Code>
+      </Body>
+    </Block>
   );
 };
 

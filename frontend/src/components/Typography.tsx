@@ -20,6 +20,7 @@ type Props = {
   children: React.ReactNode;
   variant: Variant;
   bold?: boolean;
+  justified?: boolean;
 };
 
 const elementMap: Record<Variant, "h1" | "h2" | "h3" | "p" | "small"> = {
@@ -35,22 +36,23 @@ const classMap: Record<Variant, string> = {
   headline: "text-3xl font-semibold",
   title: "text-2xl font-semibold",
   subtitle: "text-lg",
-  body: "text-base text-justify",
+  body: "text-base",
   caption: "text-sm",
   micro: "text-xs",
 };
 
-const Typography = ({ variant, children, bold }: Props) => {
+const Typography = ({ variant, children, bold, justified }: Props) => {
   const element = elementMap[variant];
   const boldClass = bold ? "font-semibold" : "";
-  const className = `text-black dark:text-white ${boldClass} ${classMap[variant]}`;
+  const justifiedClass = justified ? "text-justify" : "";
+  const className = `text-black dark:text-white ${boldClass} ${justifiedClass} ${classMap[variant]}`;
   return createElement(element, { className }, ...Children.toArray(children));
 };
 
 type SimpleProps = { children: React.ReactNode };
 
 export const Bold = ({ children }: SimpleProps) => (
-  <em className="font-semibold">{children}</em>
+  <strong className="font-semibold">{children}</strong>
 );
 
 export const Code = ({ children }: SimpleProps) => (
@@ -65,8 +67,12 @@ export const Subtitle = ({ children }: SimpleProps) => (
   <Typography variant="subtitle" children={children} />
 );
 
-export const Body = ({ children }: SimpleProps) => (
-  <Typography variant="body" children={children} />
-);
+export const Body = ({
+  children,
+  justified,
+}: {
+  children: React.ReactNode;
+  justified?: boolean;
+}) => <Typography variant="body" children={children} justified={justified} />;
 
 export default Typography;

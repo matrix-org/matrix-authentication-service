@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useLayoutEffect } from "react";
 import "../src/index.css";
 
 export const parameters = {
@@ -35,12 +35,14 @@ export const globalTypes = {
 };
 
 const ThemeSwitcher = ({ theme }) => {
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (theme === "dark") {
       document.documentElement.classList.add("dark");
     } else {
       document.documentElement.classList.remove("dark");
     }
+
+    return () => document.documentElement.classList.remove("dark");
   }, [theme]);
 
   return null;

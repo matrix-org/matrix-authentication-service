@@ -47,7 +47,7 @@ const Home: React.FC = () => {
     return (
       <>
         <Typography variant="headline">Hello {user.username}!</Typography>
-        <div className="grid lg:grid-cols-3 gap-1">
+        <div className="mt-4 grid lg:grid-cols-3 gap-1">
           <OAuth2SessionList user={user} />
           <CompatSsoLoginList user={user} />
           <BrowserSessionList user={user} currentSessionId={session.id} />
