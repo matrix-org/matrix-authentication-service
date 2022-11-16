@@ -1,4 +1,5 @@
 import { useLayoutEffect } from "react";
+import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import "../src/index.css";
 
 export const parameters = {
@@ -57,4 +58,15 @@ const withThemeProvider = (Story, context) => {
   );
 };
 
-export const decorators = [withThemeProvider];
+const withRouter = (Story, context) => {
+  const router = createMemoryRouter([
+    {
+      path: "/*",
+      element: <Story />,
+    },
+  ]);
+
+  return <RouterProvider router={router} />;
+};
+
+export const decorators = [withThemeProvider, withRouter];

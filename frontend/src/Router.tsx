@@ -19,6 +19,8 @@ import Layout from "./components/Layout";
 import LoadingSpinner from "./components/LoadingSpinner";
 
 const Home = lazy(() => import("./pages/Home"));
+const OAuth2Client = lazy(() => import("./pages/OAuth2Client"));
+const BrowserSession = lazy(() => import("./pages/BrowserSession"));
 
 export const router = createHashRouter([
   {
@@ -38,6 +40,14 @@ export const router = createHashRouter([
       {
         path: "dumb",
         element: <>Hello from another dumb page.</>,
+      },
+      {
+        path: "client/:id",
+        element: <OAuth2Client />,
+      },
+      {
+        path: "session/:id",
+        element: <BrowserSession />,
       },
     ],
   },

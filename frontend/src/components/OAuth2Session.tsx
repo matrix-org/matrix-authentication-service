@@ -16,6 +16,7 @@ import type { OAuth2Session_session$key } from "./__generated__/OAuth2Session_se
 import { graphql, useFragment } from "react-relay";
 import { Body, Bold, Code } from "./Typography";
 import Block from "./Block";
+import { Link } from "react-router-dom";
 
 type Props = {
   session: OAuth2Session_session$key;
@@ -41,7 +42,12 @@ const OAuth2Session: React.FC<Props> = ({ session }) => {
   return (
     <Block>
       <Body>
-        Client ID: <Code>{data.client.clientId}</Code>
+        <Link
+          to={`/client/${data.client.id}`}
+          className="text-links hover:text-links/75"
+        >
+          Client ID: <Code>{data.client.clientId}</Code>
+        </Link>
       </Body>
       {data.client.clientName && (
         <Body>
