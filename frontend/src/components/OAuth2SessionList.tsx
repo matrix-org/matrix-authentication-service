@@ -13,7 +13,6 @@
 // limitations under the License.
 
 import { graphql, usePaginationFragment } from "react-relay";
-import Block from "./Block";
 import BlockList from "./BlockList";
 import Button from "./Button";
 import OAuth2Session from "./OAuth2Session";

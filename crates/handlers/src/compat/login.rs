@@ -22,7 +22,7 @@ use mas_storage::{
         get_compat_sso_login_by_token, mark_compat_sso_login_as_exchanged,
         CompatSsoLoginLookupError,
     },
-    Clock, PostgresqlBackend,
+    Clock, LookupError, PostgresqlBackend,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none, DurationMilliSeconds};

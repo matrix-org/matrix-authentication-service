@@ -294,6 +294,22 @@ type RootQuery {
   """
   currentUser: User
   """
+  Fetch an OAuth 2.0 client by its ID.
+  """
+  oauth2Client(id: ID!): Oauth2Client
+  """
+  Fetch a user by its ID.
+  """
+  user(id: ID!): User
+  """
+  Fetch a browser session by its ID.
+  """
+  browserSession(id: ID!): BrowserSession
+  """
+  Fetch a user email by its ID.
+  """
+  userEmail(id: ID!): UserEmail
+  """
   Fetches an object given its ID.
   """
   node(id: ID!): Node

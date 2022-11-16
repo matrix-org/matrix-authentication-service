@@ -40,6 +40,7 @@ pub enum InvalidID {
     InvalidFormat,
     InvalidUlid(#[from] ulid::DecodeError),
     UnknownPrefix,
+    TypeMismatch { got: NodeType, expected: NodeType },
 }
 
 impl NodeType {
@@ -89,6 +90,19 @@ impl NodeType {
 
     pub fn from_id(id: &ID) -> Result<(Self, Ulid), InvalidID> {
         Self::deserialize(&id.0)
+    }
+
+    pub fn extract_ulid(self, id: &ID) -> Result<Ulid, InvalidID> {
+        let (node_type, ulid) = Self::deserialize(&id.0)?;
+
+        if node_type == self {
+            Ok(ulid)
+        } else {
+            Err(InvalidID::TypeMismatch {
+                got: node_type,
+                expected: self,
+            })
+        }
     }
 }
 

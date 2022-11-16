@@ -28,7 +28,7 @@ use ulid::Ulid;
 use url::Url;
 use uuid::Uuid;
 
-use crate::{Clock, PostgresqlBackend};
+use crate::{Clock, LookupError, PostgresqlBackend};
 
 // XXX: response_types & contacts
 #[derive(Debug)]
@@ -81,9 +81,8 @@ pub enum ClientFetchError {
     Database(#[from] sqlx::Error),
 }
 
-impl ClientFetchError {
-    #[must_use]
-    pub fn not_found(&self) -> bool {
+impl LookupError for ClientFetchError {
+    fn not_found(&self) -> bool {
         matches!(
             self,
             Self::Database(sqlx::Error::RowNotFound) | Self::InvalidClientId(_)

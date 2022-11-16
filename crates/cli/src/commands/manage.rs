@@ -20,7 +20,7 @@ use mas_storage::{
     user::{
         lookup_user_by_username, lookup_user_email, mark_user_email_as_verified, register_user,
     },
-    Clock,
+    Clock, LookupError,
 };
 use rand::SeedableRng;
 use tracing::{info, warn};

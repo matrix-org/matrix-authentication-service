@@ -29,7 +29,7 @@ use http::{header::WWW_AUTHENTICATE, HeaderMap, HeaderValue, Request, StatusCode
 use mas_data_model::Session;
 use mas_storage::{
     oauth2::access_token::{lookup_active_access_token, AccessTokenLookupError},
-    PostgresqlBackend,
+    LookupError, PostgresqlBackend,
 };
 use serde::{de::DeserializeOwned, Deserialize};
 use sqlx::PgConnection;

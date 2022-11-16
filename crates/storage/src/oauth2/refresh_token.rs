@@ -24,7 +24,7 @@ use ulid::Ulid;
 use uuid::Uuid;
 
 use super::client::{lookup_client, ClientFetchError};
-use crate::{Clock, DatabaseInconsistencyError, PostgresqlBackend};
+use crate::{Clock, DatabaseInconsistencyError, LookupError, PostgresqlBackend};
 
 #[tracing::instrument(
     skip_all,
@@ -106,9 +106,8 @@ pub enum RefreshTokenLookupError {
     Conversion(#[from] DatabaseInconsistencyError),
 }
 
-impl RefreshTokenLookupError {
-    #[must_use]
-    pub fn not_found(&self) -> bool {
+impl LookupError for RefreshTokenLookupError {
+    fn not_found(&self) -> bool {
         matches!(self, Self::Fetch(sqlx::Error::RowNotFound))
     }
 }

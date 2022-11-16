@@ -26,9 +26,12 @@ use mas_data_model::{AuthorizationCode, Pkce};
 use mas_keystore::Encrypter;
 use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
-use mas_storage::oauth2::{
-    authorization_grant::new_authorization_grant,
-    client::{lookup_client_by_client_id, ClientFetchError},
+use mas_storage::{
+    oauth2::{
+        authorization_grant::new_authorization_grant,
+        client::{lookup_client_by_client_id, ClientFetchError},
+    },
+    LookupError,
 };
 use mas_templates::Templates;
 use oauth2_types::{

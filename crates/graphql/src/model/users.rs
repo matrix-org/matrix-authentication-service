@@ -256,7 +256,7 @@ impl User {
 
 /// A user email address
 #[derive(Description)]
-pub struct UserEmail(mas_data_model::UserEmail<PostgresqlBackend>);
+pub struct UserEmail(pub mas_data_model::UserEmail<PostgresqlBackend>);
 
 #[Object(use_type_description)]
 impl UserEmail {
