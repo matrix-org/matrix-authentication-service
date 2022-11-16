@@ -13,8 +13,11 @@
 // limitations under the License.
 
 import { graphql, usePaginationFragment } from "react-relay";
+import Block from "./Block";
+import BlockList from "./BlockList";
 import Button from "./Button";
 import OAuth2Session from "./OAuth2Session";
+import { Title } from "./Typography";
 
 import { OAuth2SessionList_user$key } from "./__generated__/OAuth2SessionList_user.graphql";
 
@@ -43,13 +46,13 @@ const OAuth2SessionList: React.FC<Props> = ({ user }) => {
   );
 
   return (
-    <div>
-      <h2 className="text-lg">List of OAuth 2.0 sessions:</h2>
+    <BlockList>
+      <Title>List of OAuth 2.0 sessions:</Title>
       {data.oauth2Sessions.edges.map((n) => (
         <OAuth2Session key={n.cursor} session={n.node} />
       ))}
       {hasNext && <Button onClick={() => loadNext(2)}>Load more</Button>}
-    </div>
+    </BlockList>
   );
 };
 

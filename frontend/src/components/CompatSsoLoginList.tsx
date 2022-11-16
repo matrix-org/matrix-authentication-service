@@ -13,8 +13,10 @@
 // limitations under the License.
 
 import { graphql, usePaginationFragment } from "react-relay";
+import BlockList from "./BlockList";
 import Button from "./Button";
 import CompatSsoLogin from "./CompatSsoLogin";
+import { Title } from "./Typography";
 import { CompatSsoLoginList_user$key } from "./__generated__/CompatSsoLoginList_user.graphql";
 
 type Props = {
@@ -41,13 +43,13 @@ const CompatSsoLoginList: React.FC<Props> = ({ user }) => {
   );
 
   return (
-    <div>
-      <h2 className="text-lg">List of compatibility sessions:</h2>
+    <BlockList>
+      <Title>List of compatibility sessions:</Title>
       {data.compatSsoLogins.edges.map((n) => (
         <CompatSsoLogin login={n.node} key={n.node.id} />
       ))}
       {hasNext && <Button onClick={() => loadNext(2)}>Load more</Button>}
-    </div>
+    </BlockList>
   );
 };
 

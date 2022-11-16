@@ -13,8 +13,10 @@
 // limitations under the License.
 
 import { graphql, usePaginationFragment } from "react-relay";
+import BlockList from "./BlockList";
 import BrowserSession from "./BrowserSession";
 import Button from "./Button";
+import { Title } from "./Typography";
 
 import { BrowserSessionList_user$key } from "./__generated__/BrowserSessionList_user.graphql";
 
@@ -44,8 +46,8 @@ const BrowserSessionList: React.FC<Props> = ({ user, currentSessionId }) => {
   );
 
   return (
-    <div>
-      <h2 className="text-lg">List of browser sessions:</h2>
+    <BlockList>
+      <Title>List of browser sessions:</Title>
       {data.browserSessions.edges.map((n) => (
         <BrowserSession
           key={n.cursor}
@@ -54,7 +56,7 @@ const BrowserSessionList: React.FC<Props> = ({ user, currentSessionId }) => {
         />
       ))}
       {hasNext && <Button onClick={() => loadNext(2)}>Load more</Button>}
-    </div>
+    </BlockList>
   );
 };
 

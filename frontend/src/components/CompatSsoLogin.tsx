@@ -14,6 +14,8 @@
 
 import type { CompatSsoLogin_login$key } from "./__generated__/CompatSsoLogin_login.graphql";
 import { graphql, useFragment } from "react-relay";
+import Block from "./Block";
+import { Body, Bold, Code } from "./Typography";
 
 type Props = {
   login: CompatSsoLogin_login$key;
@@ -41,36 +43,31 @@ const CompatSsoLogin: React.FC<Props> = ({ login }) => {
   if (data.session) {
     info = (
       <>
-        <div>
-          Started:{" "}
-          <span className="font-mono text-sm">{data.session.createdAt}</span>
-        </div>
+        <Body>
+          Started: <Code>{data.session.createdAt}</Code>
+        </Body>
         {data.session.finishedAt ? (
-          <div className="text-alert">
-            Finished:{" "}
-            <span className="font-mono text-sm">{data.session.createdAt}</span>
-          </div>
+          <Body>
+            Finished: <Code>{data.session.createdAt}</Code>
+          </Body>
         ) : null}
-        <div>
-          Device ID:{" "}
-          <span className="font-mono text-sm font-semibold">
-            {data.session.deviceId}
-          </span>
-        </div>
+        <Body>
+          Device ID: <Code>{data.session.deviceId}</Code>
+        </Body>
       </>
     );
   }
 
   return (
-    <div className="p-2 my-1 bg-grey-50 dark:bg-grey-450 dark:text-white rounded">
-      <div>
-        Requested: <span className="font-mono text-sm">{data.createdAt}</span>
-      </div>
+    <Block>
+      <Body>
+        Requested: <Code>{data.createdAt}</Code>
+      </Body>
       {info}
-      <div>
-        Redirect URI: <span className="font-semibold">{data.redirectUri}</span>
-      </div>
-    </div>
+      <Body>
+        Redirect URI: <Bold>{data.redirectUri}</Bold>
+      </Body>
+    </Block>
   );
 };
 
