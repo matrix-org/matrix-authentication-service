@@ -17,6 +17,7 @@
 module.exports = {
   mode: "jit",
   content: ["./src/**/*.tsx", "./index.html"],
+  darkMode: "class",
   theme: {
     colors: {
       white: "#FFFFFF",

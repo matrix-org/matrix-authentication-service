@@ -22,6 +22,22 @@ limitations under the License.
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="/src/index.css" />
   <title>matrix-authentication-service</title>
+
+  <script>
+    (function () {
+      const query = window.matchMedia("(prefers-color-scheme: dark)");
+      function handleChange(e) {
+        if (e.matches) {
+          document.documentElement.classList.add("dark")
+        } else {
+          document.documentElement.classList.remove("dark")
+        }
+      }
+
+      query.addListener(handleChange);
+      handleChange(query);
+    })();
+  </script>
 </head>
 
 <body>
