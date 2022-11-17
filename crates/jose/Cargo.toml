@@ -9,7 +9,7 @@ license = "Apache-2.0"
 anyhow = "1.0.66"
 base64ct = { version = "1.5.3", features = ["std"] }
 chrono = { version = "0.4.23", features = ["serde"] }
-digest = "0.10.5"
+digest = "0.10.6"
 ecdsa = { version = "0.14.8", features = ["sign", "verify"] }
 elliptic-curve = "0.12.3"
 generic-array = "0.14.6"
