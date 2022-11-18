@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { lazy, Suspense } from "react";
-import { createHashRouter, Outlet, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, Outlet, RouterProvider } from "react-router-dom";
 
 import Layout from "./components/Layout";
 import LoadingSpinner from "./components/LoadingSpinner";
@@ -22,36 +22,41 @@ const Home = lazy(() => import("./pages/Home"));
 const OAuth2Client = lazy(() => import("./pages/OAuth2Client"));
 const BrowserSession = lazy(() => import("./pages/BrowserSession"));
 
-export const router = createHashRouter([
+export const router = createBrowserRouter(
+  [
+    {
+      path: "/",
+      element: (
+        <Layout>
+          <Suspense fallback={<LoadingSpinner />}>
+            <Outlet />
+          </Suspense>
+        </Layout>
+      ),
+      children: [
+        {
+          index: true,
+          element: <Home />,
+        },
+        {
+          path: "dumb",
+          element: <>Hello from another dumb page.</>,
+        },
+        {
+          path: "client/:id",
+          element: <OAuth2Client />,
+        },
+        {
+          path: "session/:id",
+          element: <BrowserSession />,
+        },
+      ],
+    },
+  ],
   {
-    path: "/",
-    element: (
-      <Layout>
-        <Suspense fallback={<LoadingSpinner />}>
-          <Outlet />
-        </Suspense>
-      </Layout>
-    ),
-    children: [
-      {
-        index: true,
-        element: <Home />,
-      },
-      {
-        path: "dumb",
-        element: <>Hello from another dumb page.</>,
-      },
-      {
-        path: "client/:id",
-        element: <OAuth2Client />,
-      },
-      {
-        path: "session/:id",
-        element: <BrowserSession />,
-      },
-    ],
-  },
-]);
+    basename: window.APP_CONFIG.root,
+  }
+);
 
 const Router = () => <RouterProvider router={router} />;
 

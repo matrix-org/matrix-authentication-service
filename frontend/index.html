@@ -24,17 +24,18 @@ limitations under the License.
   <title>matrix-authentication-service</title>
 
   <script>
+    window.APP_CONFIG = {root: "/app/"};
     (function () {
       const query = window.matchMedia("(prefers-color-scheme: dark)");
-      function handleChange(e) {
-        if (e.matches) {
-          document.documentElement.classList.add("dark")
+      function handleChange(list) {
+        if (list.matches) {
+          document.documentElement.classList.add("dark");
         } else {
-          document.documentElement.classList.remove("dark")
+          document.documentElement.classList.remove("dark");
         }
       }
 
-      query.addListener(handleChange);
+      query.addEventListener("change", handleChange);
       handleChange(query);
     })();
   </script>

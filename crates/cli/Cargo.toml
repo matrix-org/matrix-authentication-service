@@ -23,6 +23,7 @@ serde_json = "1.0.87"
 serde_yaml = "0.9.14"
 tokio = { version = "1.21.2", features = ["full"] }
 tower = { version = "0.4.13", features = ["full"] }
+tower-http = { version = "0.3.4", features = ["fs"] }
 url = "2.3.1"
 watchman_client = "0.8.0"
 
@@ -43,13 +44,14 @@ mas-config = { path = "../config" }
 mas-email = { path = "../email" }
 mas-handlers = { path = "../handlers", default-features = false }
 mas-http = { path = "../http", default-features = false, features = ["axum", "client"] }
+mas-listener = { path = "../listener" }
 mas-policy = { path = "../policy" }
 mas-router = { path = "../router" }
+mas-spa = { path = "../spa" }
 mas-static-files = { path = "../static-files" }
 mas-storage = { path = "../storage" }
 mas-tasks = { path = "../tasks" }
 mas-templates = { path = "../templates" }
-mas-listener = { path = "../listener" }
 
 [dev-dependencies]
 indoc = "1.0.7"
@@ -58,7 +60,7 @@ indoc = "1.0.7"
 default = ["otlp", "jaeger", "zipkin", "prometheus", "webpki-roots", "policy-cache"]
 
 # Features used in the Docker image
-docker = ["otlp", "jaeger", "zipkin", "prometheus", "native-roots"]
+docker = ["otlp", "jaeger", "zipkin", "prometheus", "native-roots", "mas-config/docker"]
 
 # Enable wasmtime compilation cache
 policy-cache = ["mas-policy/cache"]

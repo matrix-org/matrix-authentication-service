@@ -851,6 +851,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "camino"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "88ad0e1e3e88dd237a156ab9f571021b8a158caa0ae44b1968a241efb5144c1e"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "cbc"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2504,6 +2513,7 @@ dependencies = [
  "mas-listener",
  "mas-policy",
  "mas-router",
+ "mas-spa",
  "mas-static-files",
  "mas-storage",
  "mas-tasks",
@@ -2523,6 +2533,7 @@ dependencies = [
  "serde_yaml",
  "tokio",
  "tower",
+ "tower-http",
  "tracing",
  "tracing-appender",
  "tracing-opentelemetry",
@@ -2828,6 +2839,21 @@ dependencies = [
  "serde_with",
  "ulid",
  "url",
+]
+
+[[package]]
+name = "mas-spa"
+version = "0.1.0"
+dependencies = [
+ "camino",
+ "headers",
+ "http",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tower-http",
+ "tower-service",
 ]
 
 [[package]]

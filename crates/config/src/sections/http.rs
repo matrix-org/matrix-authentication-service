@@ -259,6 +259,15 @@ pub enum Resource {
     /// the upstream connection
     #[serde(rename = "connection-info")]
     ConnectionInfo,
+
+    /// Mount the single page app
+    Spa {
+        /// Path to the vite manifest
+        manifest: PathBuf,
+
+        /// Path to the assets to server
+        assets: PathBuf,
+    },
 }
 
 /// Configuration of a listener
@@ -309,6 +318,18 @@ impl Default for HttpConfig {
                         Resource::Compat,
                         Resource::GraphQL { playground: true },
                         Resource::Static { web_root: None },
+                        #[cfg(not(feature = "docker"))]
+                        Resource::Spa {
+                            manifest: "./frontend/dist/manifest.json".into(),
+                            assets: "./frontend/dist/".into(),
+                        },
+                        #[cfg(feature = "docker")]
+                        Resource::Spa {
+                            // This is where the frontend files are mounted in the docker image by
+                            // default
+                            manifest: "/usr/local/share/mas-cli/frontend-manifest.json".into(),
+                            assets: "/usr/local/share/mas-cli/frontend-assets/".into(),
+                        },
                     ],
                     tls: None,
                     proxy_protocol: false,

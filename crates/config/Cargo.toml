@@ -40,6 +40,7 @@ mas-email = { path = "../email" }
 [features]
 native-roots = ["mas-email/native-roots"]
 webpki-roots = ["mas-email/webpki-roots"]
+docker = []
 
 [[bin]]
 name = "schema"

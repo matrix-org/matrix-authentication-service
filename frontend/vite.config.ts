@@ -19,6 +19,11 @@ import relay from "vite-plugin-relay";
 
 export default defineConfig({
   base: "/app/",
+  build: {
+    manifest: true,
+    assetsDir: "",
+    sourcemap: true,
+  },
   plugins: [
     react(),
     eslint({

@@ -86,6 +86,11 @@
               },
               {
                 "name": "static"
+              },
+              {
+                "assets": "./frontend/dist/",
+                "manifest": "./frontend/dist/manifest.json",
+                "name": "spa"
               }
             ]
           },
@@ -1417,6 +1422,31 @@
               "type": "string",
               "enum": [
                 "connection-info"
+              ]
+            }
+          }
+        },
+        {
+          "description": "Mount the single page app",
+          "type": "object",
+          "required": [
+            "assets",
+            "manifest",
+            "name"
+          ],
+          "properties": {
+            "assets": {
+              "description": "Path to the assets to server",
+              "type": "string"
+            },
+            "manifest": {
+              "description": "Path to the vite manifest",
+              "type": "string"
+            },
+            "name": {
+              "type": "string",
+              "enum": [
+                "spa"
               ]
             }
           }
