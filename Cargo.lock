@@ -610,12 +610,12 @@ dependencies = [
 
 [[package]]
 name = "axum"
-version = "0.6.0-rc.2"
+version = "0.6.0-rc.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2628a243073c55aef15a1c1fe45c87f21b84f9e89ca9e7b262a180d3d03543d"
+checksum = "11ce1fe515f70a98649f95d9434e8ad2ce8d581b5c9763a15470da5f6ef2e481"
 dependencies = [
  "async-trait",
- "axum-core 0.3.0-rc.2",
+ "axum-core 0.3.0-rc.3",
  "base64",
  "bitflags",
  "bytes 1.2.1",
@@ -632,6 +632,7 @@ dependencies = [
  "pin-project-lite",
  "serde",
  "serde_json",
+ "serde_path_to_error",
  "serde_urlencoded",
  "sha-1",
  "sync_wrapper",
@@ -661,9 +662,9 @@ dependencies = [
 
 [[package]]
 name = "axum-core"
-version = "0.3.0-rc.2"
+version = "0.3.0-rc.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "473bd0762170028bb6b5068be9e97de2a9f0af3bf2084498d840498f47194d3d"
+checksum = "5d1aa274f0599e5100cbc24e1f184d437d8086ea0bba0b5f68326e2ad5a48567"
 dependencies = [
  "async-trait",
  "bytes 1.2.1",
@@ -681,7 +682,7 @@ version = "0.4.0-rc.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "090ae29ae83a40882fb99bce421d8dce4a819325a013bb301dad4cc4b74ab40c"
 dependencies = [
- "axum 0.6.0-rc.2",
+ "axum 0.6.0-rc.4",
  "bytes 1.2.1",
  "cookie",
  "futures-util",
@@ -2460,7 +2461,7 @@ name = "mas-axum-utils"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "axum 0.6.0-rc.2",
+ "axum 0.6.0-rc.4",
  "axum-extra",
  "bincode",
  "chrono",
@@ -2498,7 +2499,7 @@ dependencies = [
  "anyhow",
  "argon2",
  "atty",
- "axum 0.6.0-rc.2",
+ "axum 0.6.0-rc.4",
  "clap",
  "dotenv",
  "futures-util",
@@ -2630,7 +2631,7 @@ dependencies = [
  "anyhow",
  "argon2",
  "async-graphql",
- "axum 0.6.0-rc.2",
+ "axum 0.6.0-rc.4",
  "axum-extra",
  "axum-macros",
  "chrono",
@@ -2676,7 +2677,7 @@ dependencies = [
  "anyhow",
  "aws-smithy-http",
  "aws-types",
- "axum 0.6.0-rc.2",
+ "axum 0.6.0-rc.4",
  "bytes 1.2.1",
  "futures-util",
  "headers",
@@ -2833,7 +2834,7 @@ dependencies = [
 name = "mas-router"
 version = "0.1.0"
 dependencies = [
- "axum 0.6.0-rc.2",
+ "axum 0.6.0-rc.4",
  "serde",
  "serde_urlencoded",
  "serde_with",
@@ -2860,7 +2861,7 @@ dependencies = [
 name = "mas-static-files"
 version = "0.1.0"
 dependencies = [
- "axum 0.6.0-rc.2",
+ "axum 0.6.0-rc.4",
  "headers",
  "http",
  "http-body",
@@ -4371,6 +4372,15 @@ checksum = "6ce777b7b150d76b9cf60d28b55f5847135a003f7d7350c6be7a773508ce7d45"
 dependencies = [
  "itoa 1.0.4",
  "ryu",
+ "serde",
+]
+
+[[package]]
+name = "serde_path_to_error"
+version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "184c643044780f7ceb59104cef98a5a6f12cb2288a7bc701ab93a362b49fd47d"
+dependencies = [
  "serde",
 ]
 
