@@ -35,7 +35,7 @@
     "@storybook/addon-outline": "^7.0.0-alpha.49",
     "@storybook/addon-toolbars": "^7.0.0-alpha.49",
     "@storybook/addon-viewport": "^7.0.0-alpha.49",
-    "@storybook/react": "^7.0.0-alpha.49",
+    "@storybook/react": "^7.0.0-alpha.50",
     "@storybook/react-vite": "^7.0.0-alpha.49",
     "@types/jest": "^29.2.2",
     "@types/node": "^18.11.9",
