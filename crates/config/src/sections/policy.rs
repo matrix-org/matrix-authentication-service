@@ -12,9 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::path::PathBuf;
-
 use async_trait::async_trait;
+use camino::Utf8PathBuf;
 use rand::Rng;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -40,7 +39,8 @@ fn default_authorization_grant_endpoint() -> String {
 pub struct PolicyConfig {
     /// Path to the WASM module
     #[serde(default)]
-    pub wasm_module: Option<PathBuf>,
+    #[schemars(with = "Option<String>")]
+    pub wasm_module: Option<Utf8PathBuf>,
 
     /// Entrypoint to use when evaluating client registrations
     #[serde(default = "default_client_registration_endpoint")]

@@ -16,8 +16,9 @@
 #![deny(clippy::all, clippy::str_to_string, rustdoc::broken_intra_doc_links)]
 #![warn(clippy::pedantic)]
 
-use std::{collections::HashMap, fmt::Display, path::PathBuf, sync::Arc};
+use std::{collections::HashMap, fmt::Display, sync::Arc};
 
+use camino::{Utf8Path, Utf8PathBuf};
 use reqwest::Client;
 use tokio::io::AsyncWriteExt;
 use tracing::Level;
@@ -35,8 +36,8 @@ struct File {
     items: HashMap<&'static str, Vec<EnumMember>>,
 }
 
-fn resolve_path(relative: PathBuf) -> PathBuf {
-    let crate_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+fn resolve_path(relative: impl AsRef<Utf8Path>) -> Utf8PathBuf {
+    let crate_root = Utf8Path::new(env!("CARGO_MANIFEST_DIR"));
     let workspace_root = crate_root.parent().unwrap().parent().unwrap();
     workspace_root.join(relative)
 }
@@ -65,12 +66,12 @@ impl File {
     }
 
     #[tracing::instrument(skip_all)]
-    async fn write(&self, path: PathBuf) -> anyhow::Result<()> {
+    async fn write(&self, path: impl AsRef<Utf8Path>) -> anyhow::Result<()> {
         let mut file = tokio::fs::OpenOptions::new()
             .create(true)
             .truncate(true)
             .write(true)
-            .open(path)
+            .open(path.as_ref())
             .await?;
 
         tracing::info!("Writing file");
@@ -180,8 +181,11 @@ pub enum {} {{"#,
 
 use self::traits::{EnumEntry, EnumMember, Section};
 
-#[tracing::instrument(skip(client))]
-async fn generate_jose(client: &Arc<Client>, path: PathBuf) -> anyhow::Result<()> {
+#[tracing::instrument(skip_all, fields(%path))]
+async fn generate_jose(
+    client: &Arc<Client>,
+    path: impl AsRef<Utf8Path> + std::fmt::Display,
+) -> anyhow::Result<()> {
     let path = resolve_path(path);
     let client = client.clone();
 
@@ -208,8 +212,11 @@ async fn generate_jose(client: &Arc<Client>, path: PathBuf) -> anyhow::Result<()
     Ok(())
 }
 
-#[tracing::instrument(skip(client))]
-async fn generate_oauth(client: &Arc<Client>, path: PathBuf) -> anyhow::Result<()> {
+#[tracing::instrument(skip_all, fields(%path))]
+async fn generate_oauth(
+    client: &Arc<Client>,
+    path: impl AsRef<Utf8Path> + std::fmt::Display,
+) -> anyhow::Result<()> {
     let path = resolve_path(path);
     let client = client.clone();
 
@@ -244,7 +251,7 @@ async fn main() -> anyhow::Result<()> {
     let client = Client::builder().user_agent("iana-parser/0.0.1").build()?;
     let client = Arc::new(client);
 
-    let iana_crate_root = PathBuf::from("crates/iana/");
+    let iana_crate_root = Utf8Path::new("crates/iana/");
 
     generate_jose(&client, iana_crate_root.join("src/jose.rs")).await?;
     generate_oauth(&client, iana_crate_root.join("src/oauth.rs")).await?;

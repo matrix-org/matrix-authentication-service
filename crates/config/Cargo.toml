@@ -13,11 +13,12 @@ async-trait = "0.1.58"
 thiserror = "1.0.37"
 anyhow = "1.0.66"
 
-schemars = { version = "0.8.11", features = ["url", "chrono"] }
-figment = { version = "0.10.8", features = ["env", "yaml", "test"] }
+camino = { version = "1.1.1", features = ["serde1"] }
 chrono = { version = "0.4.23", features = ["serde"] }
-url = { version = "2.3.1", features = ["serde"] }
+figment = { version = "0.10.8", features = ["env", "yaml", "test"] }
+schemars = { version = "0.8.11", features = ["url", "chrono"] }
 ulid = { version = "1.0.0", features = ["serde"] }
+url = { version = "2.3.1", features = ["serde"] }
 
 serde = { version = "1.0.147", features = ["derive"] }
 serde_with = { version = "2.1.0", features = ["hex", "chrono"] }

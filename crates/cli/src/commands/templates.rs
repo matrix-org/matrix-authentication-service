@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::path::PathBuf;
-
+use camino::Utf8PathBuf;
 use clap::Parser;
 use mas_storage::Clock;
 use mas_templates::Templates;
@@ -29,7 +28,7 @@ enum Subcommand {
     /// Save the builtin templates to a folder
     Save {
         /// Where the templates should be saved
-        path: PathBuf,
+        path: Utf8PathBuf,
 
         /// Overwrite existing template files
         #[arg(long)]

@@ -25,6 +25,9 @@
 
 #[cfg(not(feature = "dev"))]
 mod builtin {
+    // the RustEmbed derive uses std::path::Path
+    #![allow(clippy::disallowed_types)]
+
     use std::{
         fmt::Write,
         future::{ready, Ready},
@@ -127,25 +130,25 @@ mod builtin {
 
 #[cfg(feature = "dev")]
 mod builtin {
-    use std::path::PathBuf;
-
+    use camnio::Utf8Path;
     use tower_http::services::ServeDir;
 
     /// Serve static files in dev mode
     #[must_use]
     pub fn service() -> ServeDir {
-        let path = PathBuf::from(format!("{}/public", env!("CARGO_MANIFEST_DIR")));
+        let path = Utf8Path::new(format!("{}/public", env!("CARGO_MANIFEST_DIR")));
         ServeDir::new(path).append_index_html_on_directories(false)
     }
 }
 
-use std::{convert::Infallible, future::ready, path::PathBuf};
+use std::{convert::Infallible, future::ready};
 
 use axum::{
     body::HttpBody,
     response::Response,
     routing::{on_service, MethodFilter},
 };
+use camino::Utf8Path;
 use http::{Request, StatusCode};
 use tower::{util::BoxCloneService, ServiceExt};
 use tower_http::services::ServeDir;
@@ -153,7 +156,7 @@ use tower_http::services::ServeDir;
 /// Serve static files
 #[must_use]
 pub fn service<B: HttpBody + Send + 'static>(
-    path: &Option<PathBuf>,
+    path: Option<&Utf8Path>,
 ) -> BoxCloneService<Request<B>, Response, Infallible> {
     let svc = if let Some(path) = path {
         let handler = ServeDir::new(path).append_index_html_on_directories(false);

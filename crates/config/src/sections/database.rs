@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{num::NonZeroU32, path::PathBuf, time::Duration};
+use std::{num::NonZeroU32, time::Duration};
 
 use anyhow::Context;
 use async_trait::async_trait;
+use camino::Utf8PathBuf;
 use rand::Rng;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -85,7 +86,8 @@ enum ConnectConfig {
 
         /// Directory containing the UNIX socket to connect to
         #[serde(default)]
-        socket: Option<PathBuf>,
+        #[schemars(with = "Option<String>")]
+        socket: Option<Utf8PathBuf>,
 
         /// PostgreSQL user name to connect as
         #[serde(default)]
