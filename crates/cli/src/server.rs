@@ -16,11 +16,10 @@ use std::{
     future::ready,
     net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, TcpListener, ToSocketAddrs},
     os::unix::net::UnixListener,
-    sync::Arc,
 };
 
 use anyhow::Context;
-use axum::{body::HttpBody, error_handling::HandleErrorLayer, Extension, Router};
+use axum::{body::HttpBody, error_handling::HandleErrorLayer, extract::FromRef, Extension, Router};
 use hyper::StatusCode;
 use listenfd::ListenFd;
 use mas_config::{HttpBindConfig, HttpResource, HttpTlsConfig, UnixOrTcp};
@@ -28,45 +27,47 @@ use mas_handlers::AppState;
 use mas_listener::{unix_or_tcp::UnixOrTcpListener, ConnectionInfo};
 use mas_router::Route;
 use mas_spa::ViteManifestService;
+use mas_templates::Templates;
 use rustls::ServerConfig;
 use tower::Layer;
 use tower_http::services::ServeDir;
 
 #[allow(clippy::trait_duplication_in_bounds)]
-pub fn build_router<B>(state: &Arc<AppState>, resources: &[HttpResource]) -> Router<AppState, B>
+pub fn build_router<B>(state: AppState, resources: &[HttpResource]) -> Router<AppState, B>
 where
     B: HttpBody + Send + 'static,
     <B as HttpBody>::Data: Into<axum::body::Bytes> + Send,
     <B as HttpBody>::Error: std::error::Error + Send + Sync,
 {
-    let mut router = Router::with_state_arc(state.clone());
+    let templates = Templates::from_ref(&state);
+    let mut router = Router::with_state(state);
 
     for resource in resources {
         router = match resource {
             mas_config::HttpResource::Health => {
-                router.merge(mas_handlers::healthcheck_router(state.clone()))
+                router.merge(mas_handlers::healthcheck_router::<AppState, B>())
             }
             mas_config::HttpResource::Prometheus => {
                 router.route_service("/metrics", crate::telemetry::prometheus_service())
             }
             mas_config::HttpResource::Discovery => {
-                router.merge(mas_handlers::discovery_router(state.clone()))
+                router.merge(mas_handlers::discovery_router::<AppState, B>())
             }
             mas_config::HttpResource::Human => {
-                router.merge(mas_handlers::human_router(state.clone()))
+                router.merge(mas_handlers::human_router::<AppState, B>(templates.clone()))
             }
             mas_config::HttpResource::GraphQL { playground } => {
-                router.merge(mas_handlers::graphql_router(state.clone(), *playground))
+                router.merge(mas_handlers::graphql_router::<AppState, B>(*playground))
             }
             mas_config::HttpResource::Static { web_root } => {
                 let handler = mas_static_files::service(web_root);
-                router.nest(mas_router::StaticAsset::route(), handler)
+                router.nest_service(mas_router::StaticAsset::route(), handler)
             }
             mas_config::HttpResource::OAuth => {
-                router.merge(mas_handlers::api_router(state.clone()))
+                router.merge(mas_handlers::api_router::<AppState, B>())
             }
             mas_config::HttpResource::Compat => {
-                router.merge(mas_handlers::compat_router(state.clone()))
+                router.merge(mas_handlers::compat_router::<AppState, B>())
             }
             // TODO: do a better handler here
             mas_config::HttpResource::ConnectionInfo => router.route(
@@ -99,8 +100,8 @@ where
                 let static_service = ServeDir::new(assets).append_index_html_on_directories(false);
 
                 router
-                    .nest(app_base, error_layer.layer(index_service))
-                    .nest(assets_base, error_layer.layer(static_service))
+                    .nest_service(app_base, error_layer.layer(index_service))
+                    .nest_service(assets_base, error_layer.layer(static_service))
             }
         }
     }

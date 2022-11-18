@@ -21,9 +21,9 @@ anyhow = "1.0.66"
 hyper = { version = "0.14.23", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.3.4", features = ["cors"] }
-axum = { version = "0.6.0-rc.2", features = ["ws"] }
-axum-macros = "0.3.0-rc.1"
-axum-extra = { version = "0.4.0-rc.1", features = ["cookie-private"] }
+axum = { version = "0.6.0-rc.4", features = ["ws"] }
+axum-macros = "0.3.0-rc.2"
+axum-extra = { version = "0.4.0-rc.2", features = ["cookie-private"] }
 
 async-graphql = { version = "4.0.16", features = ["tracing", "apollo_tracing"] }
 
@@ -36,7 +36,7 @@ sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres"] }
 # Various structure (de)serialization
 serde = { version = "1.0.147", features = ["derive"] }
 serde_with = { version = "2.1.0", features = ["hex", "chrono"] }
-serde_json = "1.0.87"
+serde_json = "1.0.88"
 serde_urlencoded = "0.7.1"
 
 # Password hashing

@@ -21,7 +21,7 @@ ulid = { version = "1.0.0", features = ["serde"] }
 
 serde = { version = "1.0.147", features = ["derive"] }
 serde_with = { version = "2.1.0", features = ["hex", "chrono"] }
-serde_json = "1.0.87"
+serde_json = "1.0.88"
 sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres"] }
 lettre = { version = "0.10.1", default-features = false, features = ["serde", "builder"] }
 

@@ -9,7 +9,7 @@ license = "Apache-2.0"
 dev = []
 
 [dependencies]
-axum = { version = "0.6.0-rc.2", features = ["headers"] }
+axum = { version = "0.6.0-rc.4", features = ["headers"] }
 headers = "0.3.8"
 http = "0.2.8"
 http-body = "0.4.5"

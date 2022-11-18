@@ -18,7 +18,7 @@ use async_trait::async_trait;
 use axum::{
     body::HttpBody,
     extract::{
-        rejection::{FailedToDeserializeQueryString, FormRejection, TypedHeaderRejectionReason},
+        rejection::{FailedToDeserializeForm, FormRejection, TypedHeaderRejectionReason},
         Form, FromRequest, FromRequestParts, TypedHeader,
     },
     response::{IntoResponse, Response},
@@ -109,7 +109,7 @@ impl<F: Send> UserAuthorization<F> {
 pub enum UserAuthorizationError {
     InvalidHeader,
     TokenInFormAndHeader,
-    BadForm(FailedToDeserializeQueryString),
+    BadForm(FailedToDeserializeForm),
     InternalError(Box<dyn Error>),
 }
 
@@ -311,7 +311,7 @@ where
                 // If it is not a form, continue
                 Err(FormRejection::InvalidFormContentType(_err)) => (None, None),
                 // If the form could not be read, return a Bad Request error
-                Err(FormRejection::FailedToDeserializeQueryString(err)) => {
+                Err(FormRejection::FailedToDeserializeForm(err)) => {
                     return Err(UserAuthorizationError::BadForm(err))
                 }
                 // Other errors (body read twice, byte stream broke) return an internal error

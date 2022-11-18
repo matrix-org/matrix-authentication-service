@@ -27,6 +27,15 @@ pub struct ServerLayer<ReqBody> {
     _t: PhantomData<ReqBody>,
 }
 
+impl<B> Clone for ServerLayer<B> {
+    fn clone(&self) -> Self {
+        Self {
+            listener_name: self.listener_name.clone(),
+            _t: PhantomData,
+        }
+    }
+}
+
 impl<B> ServerLayer<B> {
     #[must_use]
     pub fn new(listener_name: Option<String>) -> Self {
