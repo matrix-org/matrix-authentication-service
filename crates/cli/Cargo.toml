@@ -57,7 +57,7 @@ mas-templates = { path = "../templates" }
 indoc = "1.0.7"
 
 [features]
-default = ["jaeger", "zipkin", "prometheus", "webpki-roots", "policy-cache"]
+default = ["jaeger", "zipkin", "webpki-roots", "policy-cache"]
 
 # Features used in the Docker image
 docker = ["otlp", "jaeger", "zipkin", "prometheus", "native-roots", "mas-config/docker"]

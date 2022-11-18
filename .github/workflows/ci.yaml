@@ -186,9 +186,6 @@ jobs:
           rustup default 1.65.0
           rustup component add clippy
 
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v1
-
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.0.1
         with:
@@ -245,9 +242,6 @@ jobs:
         run: |
           rustup toolchain install ${{ matrix.toolchain }}
           rustup default ${{ matrix.toolchain }}
-
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v1
 
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.0.1
@@ -310,9 +304,6 @@ jobs:
           rustup toolchain install stable
           rustup default stable
           rustup component add llvm-tools-preview
-
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v1
 
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.0.1
