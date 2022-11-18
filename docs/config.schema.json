@@ -135,7 +135,7 @@
         "client_registration_entrypoint": "client_registration/violation",
         "data": null,
         "register_entrypoint": "register/violation",
-        "wasm_module": null
+        "wasm_module": "./policies/policy.wasm"
       },
       "allOf": [
         {
@@ -1234,7 +1234,7 @@
         },
         "wasm_module": {
           "description": "Path to the WASM module",
-          "default": null,
+          "default": "./policies/policy.wasm",
           "type": "string"
         }
       }
@@ -1430,17 +1430,17 @@
           "description": "Mount the single page app",
           "type": "object",
           "required": [
-            "assets",
-            "manifest",
             "name"
           ],
           "properties": {
             "assets": {
               "description": "Path to the assets to server",
+              "default": "./frontend/dist/",
               "type": "string"
             },
             "manifest": {
-              "description": "Path to the vite manifest",
+              "description": "Path to the vite mamanifest.jsonnifest",
+              "default": "./frontend/dist/manifest.json",
               "type": "string"
             },
             "name": {

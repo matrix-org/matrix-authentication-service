@@ -74,8 +74,8 @@ ARG OPA_VERSION
 # Download Open Policy Agent
 ADD --chmod=755 https://github.com/open-policy-agent/opa/releases/download/v${OPA_VERSION}/opa_${BUILDOS}_${BUILDARCH}_static /usr/local/bin/opa
 
-WORKDIR /app/crates/policy/policies
-COPY ./crates/policy/policies/ /app/crates/policy/policies
+WORKDIR /app/policies
+COPY ./policies /app/policies
 RUN make -B
 
 # Change the timestamp of built files for better caching
@@ -148,7 +148,6 @@ RUN cargo chef cook \
 COPY ./Cargo.toml ./Cargo.lock /app/
 COPY ./crates /app/crates
 COPY --from=static-files /app/crates/static-files/public /app/crates/static-files/public
-COPY --from=policy /app/crates/policy/policies/policy.wasm /app/crates/policy/policies/policy.wasm
 ENV SQLX_OFFLINE=true
 RUN cargo auditable zigbuild \
   --locked \
@@ -168,6 +167,8 @@ FROM --platform=${TARGETPLATFORM} gcr.io/distroless/cc-debian${DEBIAN_VERSION}:d
 
 COPY --from=builder /usr/local/bin/mas-cli /usr/local/bin/mas-cli
 COPY --from=frontend /usr/local/share/mas-cli /usr/local/share/mas-cli
+COPY --from=policy /app/policies/policy.wasm /usr/local/share/mas-cli/policy.wasm
+
 WORKDIR /
 ENTRYPOINT ["/usr/local/bin/mas-cli"]
 
@@ -178,5 +179,7 @@ FROM --platform=${TARGETPLATFORM} gcr.io/distroless/cc-debian${DEBIAN_VERSION}:n
 
 COPY --from=builder /usr/local/bin/mas-cli /usr/local/bin/mas-cli
 COPY --from=frontend /usr/local/share/mas-cli /usr/local/share/mas-cli
+COPY --from=policy /app/policies/policy.wasm /usr/local/share/mas-cli/policy.wasm
+
 WORKDIR /
 ENTRYPOINT ["/usr/local/bin/mas-cli"]

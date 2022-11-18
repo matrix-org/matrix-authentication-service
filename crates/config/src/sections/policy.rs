@@ -21,6 +21,16 @@ use serde_with::serde_as;
 
 use super::ConfigurationSection;
 
+#[cfg(not(feature = "docker"))]
+fn default_policy_path() -> Utf8PathBuf {
+    "./policies/policy.wasm".into()
+}
+
+#[cfg(feature = "docker")]
+fn default_policy_path() -> Utf8PathBuf {
+    "/usr/local/share/mas-cli/policy.wasm".into()
+}
+
 fn default_client_registration_endpoint() -> String {
     "client_registration/violation".to_owned()
 }
@@ -38,9 +48,9 @@ fn default_authorization_grant_endpoint() -> String {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct PolicyConfig {
     /// Path to the WASM module
-    #[serde(default)]
-    #[schemars(with = "Option<String>")]
-    pub wasm_module: Option<Utf8PathBuf>,
+    #[serde(default = "default_policy_path")]
+    #[schemars(with = "String")]
+    pub wasm_module: Utf8PathBuf,
 
     /// Entrypoint to use when evaluating client registrations
     #[serde(default = "default_client_registration_endpoint")]
@@ -62,7 +72,7 @@ pub struct PolicyConfig {
 impl Default for PolicyConfig {
     fn default() -> Self {
         Self {
-            wasm_module: None,
+            wasm_module: default_policy_path(),
             client_registration_entrypoint: default_client_registration_endpoint(),
             register_entrypoint: default_register_endpoint(),
             authorization_grant_entrypoint: default_authorization_grant_endpoint(),

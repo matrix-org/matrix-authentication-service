@@ -11,16 +11,23 @@ See the [Documentation](https://matrix-org.github.io/matrix-authentication-servi
 - [Install Node.js and npm](https://nodejs.org/)
 - [Install Open Policy Agent](https://www.openpolicyagent.org/docs/latest/#1-download-opa)
 - Clone this repository
-- Generate the frontend:
+- Generate the static-files:
   ```sh
   cd crates/static-files
   npm ci
   npm run build
   cd ../..
   ```
+- Build the frontend
+  ```sh
+  cd frontend
+  npm ci
+  npm run build
+  cd ../..
+  ```
 - Build the Open Policy Agent policies
   ```sh
-  cd crates/policy/policies
+  cd policies
   make
   # OR, if you don't have `opa` installed and want to build through the OPA docker image
   make DOCKER=1

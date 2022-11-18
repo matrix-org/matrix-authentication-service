@@ -32,24 +32,21 @@ jobs:
           version: 0.45.0
 
       - name: Lint policies
-        run: |
-          cd crates/policy/policies
-          make lint
+        working-directory: ./policies
+        run: make lint
 
       - name: Run OPA tests
-        run: |
-          cd crates/policy/policies
-          make test
+        working-directory: ./policies
+        run: make test
 
       - name: Run OPA tests with coverage
-        run: |
-          cd crates/policy/policies
-          make coverage
+        working-directory: ./policies
+        run: make coverage
 
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v3
         with:
-          files: crates/policy/policies/coverage.json
+          files: policies/coverage.json
           flags: policies
 
   frontend-lint:
@@ -198,9 +195,8 @@ jobs:
           version: 0.45.0
 
       - name: Compile OPA policies
-        run: |
-          cd crates/policy/policies
-          make
+        working-directory: ./policies
+        run: make
 
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
@@ -259,9 +255,8 @@ jobs:
           version: 0.45.0
 
       - name: Compile OPA policies
-        run: |
-          cd crates/policy/policies
-          make
+        working-directory: ./policies
+        run: make
 
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
@@ -325,9 +320,8 @@ jobs:
           version: 0.45.0
 
       - name: Compile OPA policies
-        run: |
-          cd crates/policy/policies
-          make
+        working-directory: ./policies
+        run: make
 
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
