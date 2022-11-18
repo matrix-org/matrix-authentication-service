@@ -11,13 +11,6 @@ See the [Documentation](https://matrix-org.github.io/matrix-authentication-servi
 - [Install Node.js and npm](https://nodejs.org/)
 - [Install Open Policy Agent](https://www.openpolicyagent.org/docs/latest/#1-download-opa)
 - Clone this repository
-- Generate the static-files:
-  ```sh
-  cd crates/static-files
-  npm ci
-  npm run build
-  cd ../..
-  ```
 - Build the frontend
   ```sh
   cd frontend

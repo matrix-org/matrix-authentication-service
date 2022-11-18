@@ -59,9 +59,15 @@ where
             mas_config::HttpResource::GraphQL { playground } => {
                 router.merge(mas_handlers::graphql_router::<AppState, B>(*playground))
             }
-            mas_config::HttpResource::Static { web_root } => {
-                let handler = mas_static_files::service(web_root.as_deref());
-                router.nest_service(mas_router::StaticAsset::route(), handler)
+            mas_config::HttpResource::Assets { path } => {
+                let static_service = ServeDir::new(path).append_index_html_on_directories(false);
+                let error_layer =
+                    HandleErrorLayer::new(|_e| ready(StatusCode::INTERNAL_SERVER_ERROR));
+
+                router.nest_service(
+                    mas_router::StaticAsset::route(),
+                    error_layer.layer(static_service),
+                )
             }
             mas_config::HttpResource::OAuth => {
                 router.merge(mas_handlers::api_router::<AppState, B>())
@@ -77,13 +83,11 @@ where
                 }),
             ),
 
-            mas_config::HttpResource::Spa { assets, manifest } => {
+            mas_config::HttpResource::Spa { manifest } => {
                 let error_layer =
                     HandleErrorLayer::new(|_e| ready(StatusCode::INTERNAL_SERVER_ERROR));
 
-                // TODO: split the assets service and the index service, and make those paths
-                // configurable
-                let assets_base = "/app-assets/";
+                // TODO: make those paths configurable
                 let app_base = "/app/";
 
                 // TODO: make that config typed and configurable
@@ -91,14 +95,13 @@ where
                     "root": app_base,
                 });
 
-                let index_service =
-                    ViteManifestService::new(manifest.clone(), assets_base.into(), config);
+                let index_service = ViteManifestService::new(
+                    manifest.clone(),
+                    mas_router::StaticAsset::route().into(),
+                    config,
+                );
 
-                let static_service = ServeDir::new(assets).append_index_html_on_directories(false);
-
-                router
-                    .nest_service(app_base, error_layer.layer(index_service))
-                    .nest_service(assets_base, error_layer.layer(static_service))
+                router.nest_service(app_base, error_layer.layer(index_service))
             }
         }
     }

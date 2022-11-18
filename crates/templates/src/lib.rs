@@ -24,16 +24,16 @@
 
 //! Templates rendering
 
-use std::{collections::HashSet, io::Cursor, string::ToString, sync::Arc};
+use std::{collections::HashSet, string::ToString, sync::Arc};
 
-use anyhow::{bail, Context as _};
+use anyhow::Context as _;
 use camino::{Utf8Path, Utf8PathBuf};
 use mas_data_model::StorageBackend;
 use mas_router::UrlBuilder;
 use serde::Serialize;
 use tera::{Context, Error as TeraError, Tera};
 use thiserror::Error;
-use tokio::{fs::OpenOptions, io::AsyncWriteExt, sync::RwLock, task::JoinError};
+use tokio::{sync::RwLock, task::JoinError};
 use tracing::{debug, info, warn};
 
 mod context;
@@ -59,13 +59,16 @@ pub use self::{
 pub struct Templates {
     tera: Arc<RwLock<Tera>>,
     url_builder: UrlBuilder,
-    path: Option<Utf8PathBuf>,
-    builtin: bool,
+    path: Utf8PathBuf,
 }
 
 /// There was an issue while loading the templates
 #[derive(Error, Debug)]
 pub enum TemplateLoadingError {
+    /// I/O error
+    #[error(transparent)]
+    IO(#[from] std::io::Error),
+
     /// Some templates failed to compile
     #[error("could not load and compile some templates")]
     Compile(#[from] TeraError),
@@ -85,116 +88,42 @@ pub enum TemplateLoadingError {
 }
 
 impl Templates {
-    /// List directories to watch
-    pub async fn watch_roots(&self) -> Vec<Utf8PathBuf> {
-        Self::roots(self.path.as_deref(), self.builtin)
-            .await
-            .into_iter()
-            .filter_map(Result::ok)
-            .collect()
-    }
-
-    async fn roots(
-        path: Option<&Utf8Path>,
-        builtin: bool,
-    ) -> Vec<Result<Utf8PathBuf, std::io::Error>> {
-        let mut paths = Vec::new();
-        if builtin && cfg!(feature = "dev") {
-            paths.push(
-                Utf8Path::new(env!("CARGO_MANIFEST_DIR"))
-                    .join("src")
-                    .join("res"),
-            );
-        }
-
-        if let Some(path) = path {
-            paths.push(Utf8PathBuf::from(path));
-        }
-
-        let mut ret = Vec::new();
-        for path in paths {
-            ret.push(tokio::fs::read_dir(&path).await.map(|_| path));
-        }
-
-        ret
-    }
-
-    fn load_builtin() -> Result<Tera, TemplateLoadingError> {
-        let mut tera = Tera::default();
-        info!("Loading builtin templates");
-
-        tera.add_raw_templates(
-            EXTRA_TEMPLATES
-                .into_iter()
-                .chain(TEMPLATES)
-                .filter_map(|(name, content)| content.map(|c| (name, c))),
-        )?;
-
-        Ok(tera)
+    /// Directories to watch
+    #[must_use]
+    pub fn watch_root(&self) -> &Utf8Path {
+        &self.path
     }
 
     /// Load the templates from the given config
     pub async fn load(
-        path: Option<Utf8PathBuf>,
-        builtin: bool,
+        path: Utf8PathBuf,
         url_builder: UrlBuilder,
     ) -> Result<Self, TemplateLoadingError> {
-        let tera = Self::load_(path.as_deref(), builtin, url_builder.clone()).await?;
+        let tera = Self::load_(&path, url_builder.clone()).await?;
         Ok(Self {
             tera: Arc::new(RwLock::new(tera)),
             path,
             url_builder,
-            builtin,
         })
     }
 
-    async fn load_(
-        path: Option<&Utf8Path>,
-        builtin: bool,
-        url_builder: UrlBuilder,
-    ) -> Result<Tera, TemplateLoadingError> {
-        let mut teras = Vec::new();
+    async fn load_(path: &Utf8Path, url_builder: UrlBuilder) -> Result<Tera, TemplateLoadingError> {
+        let path = path.to_owned();
 
-        let roots = Self::roots(path, builtin).await;
-        for maybe_root in roots {
-            let root = match maybe_root {
-                Ok(root) => root,
-                Err(err) => {
-                    warn!(%err, "Could not open a template folder, skipping it");
-                    continue;
-                }
-            };
+        // This uses blocking I/Os, do that in a blocking task
+        let mut tera = tokio::task::spawn_blocking(move || {
+            let path = path.canonicalize_utf8()?;
+            let path = format!("{}/**/*.{{html,txt,subject}}", path);
 
-            // This uses blocking I/Os, do that in a blocking task
-            let tera = tokio::task::spawn_blocking(move || {
-                let path = format!("{}/**/*.{{html,txt,subject}}", root);
-                info!(%path, "Loading templates from filesystem");
-                Tera::parse(&path)
-            })
-            .await??;
-
-            teras.push(tera);
-        }
-
-        if builtin {
-            teras.push(Self::load_builtin()?);
-        }
-
-        // Merging all Tera instances into a single one
-        let mut tera = teras
-            .into_iter()
-            .try_fold(Tera::default(), |mut acc, tera| {
-                acc.extend(&tera)?;
-                Ok::<_, TemplateLoadingError>(acc)
-            })?;
-
-        tera.build_inheritance_chains()?;
-        tera.check_macro_files()?;
+            info!(%path, "Loading templates from filesystem");
+            Tera::new(&path)
+        })
+        .await??;
 
         self::functions::register(&mut tera, url_builder);
 
         let loaded: HashSet<_> = tera.get_template_names().collect();
-        let needed: HashSet<_> = TEMPLATES.into_iter().map(|(name, _)| name).collect();
+        let needed: HashSet<_> = TEMPLATES.into_iter().collect();
         debug!(?loaded, ?needed, "Templates loaded");
         let missing: HashSet<_> = needed.difference(&loaded).collect();
 
@@ -210,58 +139,10 @@ impl Templates {
     /// Reload the templates on disk
     pub async fn reload(&self) -> anyhow::Result<()> {
         // Prepare the new Tera instance
-        let new_tera =
-            Self::load_(self.path.as_deref(), self.builtin, self.url_builder.clone()).await?;
+        let new_tera = Self::load_(&self.path, self.url_builder.clone()).await?;
 
         // Swap it
         *self.tera.write().await = new_tera;
-
-        Ok(())
-    }
-
-    /// Save the builtin templates to a folder
-    pub async fn save(path: &Utf8Path, overwrite: bool) -> anyhow::Result<()> {
-        if cfg!(feature = "dev") {
-            bail!("Builtin templates are not included in dev binaries")
-        }
-
-        let templates = TEMPLATES.into_iter().chain(EXTRA_TEMPLATES);
-
-        let mut options = OpenOptions::new();
-        if overwrite {
-            options.create(true).truncate(true).write(true);
-        } else {
-            // With the `create_new` flag, `open` fails with an `AlreadyExists` error to
-            // avoid overwriting
-            options.create_new(true).write(true);
-        };
-
-        for (name, source) in templates {
-            if let Some(source) = source {
-                let path = path.join(name);
-
-                if let Some(parent) = path.parent() {
-                    tokio::fs::create_dir_all(&parent)
-                        .await
-                        .context("could not create destination")?;
-                }
-
-                let mut file = match options.open(&path).await {
-                    Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
-                        // Not overwriting a template is a soft error
-                        warn!(?path, "Not overwriting template");
-                        continue;
-                    }
-                    x => x.context(format!("could not open file {:?}", path))?,
-                };
-
-                let mut buffer = Cursor::new(source);
-                file.write_all_buf(&mut buffer)
-                    .await
-                    .context(format!("could not write file {:?}", path))?;
-                info!(?path, "Wrote template");
-            }
-        }
 
         Ok(())
     }
@@ -294,16 +175,6 @@ pub enum TemplateError {
 }
 
 register_templates! {
-    extra = {
-        "components/button.html",
-        "components/field.html",
-        "components/back_to_client.html",
-        "components/logout.html",
-        "components/navbar.html",
-        "components/errors.html",
-        "base.html",
-    };
-
     /// Render the login page
     pub fn render_login(WithCsrf<LoginContext>) { "pages/login.html" }
 
@@ -390,8 +261,9 @@ mod tests {
         #[allow(clippy::disallowed_methods)]
         let now = chrono::Utc::now();
 
+        let path = Utf8Path::new(env!("CARGO_MANIFEST_DIR")).join("../../templates/");
         let url_builder = UrlBuilder::new("https://example.com/".parse().unwrap());
-        let templates = Templates::load(None, true, url_builder).await.unwrap();
+        let templates = Templates::load(path, url_builder).await.unwrap();
         templates.check_render(now).await.unwrap();
     }
 }

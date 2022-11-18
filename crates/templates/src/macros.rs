@@ -49,28 +49,7 @@ macro_rules! register_templates {
         )*
     } => {
         /// List of registered templates
-        static TEMPLATES: [(&'static str, Option<&'static str>); count!( $( $template )* )] = [
-            $( (
-                $template,
-                if cfg!(feature = "dev") {
-                    None
-                } else {
-                    Some(include_str!(concat!("res/", $template)))
-                }
-            ) ),*
-        ];
-
-        /// List of extra templates used by other templates
-        static EXTRA_TEMPLATES: [(&'static str, Option<&'static str>); count!( $( $( $extra_template )* )? )] = [
-            $( $( (
-                $extra_template,
-                if cfg!(feature = "dev") {
-                    None
-                } else {
-                    Some(include_str!(concat!("res/", $extra_template)))
-                }
-            ) ),* )?
-        ];
+        static TEMPLATES: [&'static str; count!( $( $template )* )] = [ $( $template, )* ];
 
         impl Templates {
             $(

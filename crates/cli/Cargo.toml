@@ -49,7 +49,6 @@ mas-listener = { path = "../listener" }
 mas-policy = { path = "../policy" }
 mas-router = { path = "../router" }
 mas-spa = { path = "../spa" }
-mas-static-files = { path = "../static-files" }
 mas-storage = { path = "../storage" }
 mas-tasks = { path = "../tasks" }
 mas-templates = { path = "../templates" }
@@ -70,9 +69,6 @@ policy-cache = ["mas-policy/cache"]
 native-roots = ["mas-http/native-roots", "mas-handlers/native-roots"]
 # Use the webpki root certificates
 webpki-roots = ["mas-http/webpki-roots", "mas-handlers/webpki-roots"]
-
-# Read the builtin static files and templates from the source directory
-dev = ["mas-templates/dev", "mas-static-files/dev"]
 
 # Enable OpenTelemetry OTLP exporter.
 otlp = ["dep:opentelemetry-otlp"]

@@ -411,8 +411,7 @@ mod tests {
     fn timestamp_serde() {
         let datetime = Timestamp(
             chrono::Utc
-                .ymd_opt(2018, 1, 18)
-                .and_hms_opt(1, 30, 22)
+                .with_ymd_and_hms(2018, 1, 18, 1, 30, 22)
                 .unwrap(),
         );
         let timestamp = serde_json::Value::Number(1_516_239_022.into());
@@ -451,8 +450,7 @@ mod tests {
     #[test]
     fn extract_claims() {
         let now = chrono::Utc
-            .ymd_opt(2018, 1, 18)
-            .and_hms_opt(1, 30, 22)
+            .with_ymd_and_hms(2018, 1, 18, 1, 30, 22)
             .unwrap();
         let expiration = now + chrono::Duration::minutes(5);
         let time_options = TimeOptions::new(now).leeway(chrono::Duration::zero());
@@ -496,8 +494,7 @@ mod tests {
     #[test]
     fn time_validation() {
         let now = chrono::Utc
-            .ymd_opt(2018, 1, 18)
-            .and_hms_opt(1, 30, 22)
+            .with_ymd_and_hms(2018, 1, 18, 1, 30, 22)
             .unwrap();
 
         let claims = serde_json::json!({
@@ -604,8 +601,7 @@ mod tests {
     #[test]
     fn invalid_claims() {
         let now = chrono::Utc
-            .ymd_opt(2018, 1, 18)
-            .and_hms_opt(1, 30, 22)
+            .with_ymd_and_hms(2018, 1, 18, 1, 30, 22)
             .unwrap();
         let time_options = TimeOptions::new(now).leeway(chrono::Duration::zero());
 

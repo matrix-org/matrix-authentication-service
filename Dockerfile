@@ -17,23 +17,6 @@ ARG ZIG_VERSION=0.9.1
 ARG NODEJS_VERSION=18
 ARG OPA_VERSION=0.45.0
 
-##############################################
-## Build stage that builds the static files ##
-##############################################
-
-FROM --platform=${BUILDPLATFORM} docker.io/library/node:${NODEJS_VERSION}-${DEBIAN_VERSION_NAME}-slim AS static-files
-
-WORKDIR /app/crates/static-files
-
-COPY ./crates/static-files/package.json ./crates/static-files/package-lock.json /app/crates/static-files/
-RUN npm ci
-
-COPY . /app/
-RUN npm run build
-
-# Change the timestamp of built files for better caching
-RUN find public -type f -exec touch -t 197001010000.00 {} +
-
 ##########################################
 ## Build stage that builds the frontend ##
 ##########################################
@@ -50,13 +33,10 @@ RUN npm run build
 
 # Move the built files
 RUN \
-  mkdir -p /usr/local/share/mas-cli/frontend-assets && \
-  cp ./dist/manifest.json /usr/local/share/mas-cli/frontend-manifest.json && \
+  mkdir -p /share/assets && \
+  cp ./dist/manifest.json /share/manifest.json && \
   rm -f ./dist/index.html* ./dist/manifest.json* && \
-  cp ./dist/* /usr/local/share/mas-cli/frontend-assets/
-
-# Change the timestamp of built files for better caching
-RUN find /usr/local/share/mas-cli -exec touch -t 197001010000.00 {} +
+  cp ./dist/* /share/assets/
 
 ##############################################
 ## Build stage that builds the OPA policies ##
@@ -147,7 +127,6 @@ RUN cargo chef cook \
 # Build the rest
 COPY ./Cargo.toml ./Cargo.lock /app/
 COPY ./crates /app/crates
-COPY --from=static-files /app/crates/static-files/public /app/crates/static-files/public
 ENV SQLX_OFFLINE=true
 RUN cargo auditable zigbuild \
   --locked \
@@ -160,14 +139,22 @@ RUN cargo auditable zigbuild \
 # Move the binary to avoid having to guess its name in the next stage
 RUN mv target/$(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")/release/mas-cli /usr/local/bin/mas-cli
 
+#######################################
+## Prepare /usr/local/share/mas-cli/ ##
+#######################################
+FROM --platform=${BUILDPLATFORM} scratch AS share
+
+COPY --from=frontend /share /share
+COPY --from=policy /app/policies/policy.wasm /share/policy.wasm
+COPY ./templates/ /share/templates
+
 ##################################
 ## Runtime stage, debug variant ##
 ##################################
 FROM --platform=${TARGETPLATFORM} gcr.io/distroless/cc-debian${DEBIAN_VERSION}:debug-nonroot AS debug
 
 COPY --from=builder /usr/local/bin/mas-cli /usr/local/bin/mas-cli
-COPY --from=frontend /usr/local/share/mas-cli /usr/local/share/mas-cli
-COPY --from=policy /app/policies/policy.wasm /usr/local/share/mas-cli/policy.wasm
+COPY --from=share /share /usr/local/share/mas-cli
 
 WORKDIR /
 ENTRYPOINT ["/usr/local/bin/mas-cli"]
@@ -178,8 +165,7 @@ ENTRYPOINT ["/usr/local/bin/mas-cli"]
 FROM --platform=${TARGETPLATFORM} gcr.io/distroless/cc-debian${DEBIAN_VERSION}:nonroot
 
 COPY --from=builder /usr/local/bin/mas-cli /usr/local/bin/mas-cli
-COPY --from=frontend /usr/local/share/mas-cli /usr/local/share/mas-cli
-COPY --from=policy /app/policies/policy.wasm /usr/local/share/mas-cli/policy.wasm
+COPY --from=share /share /usr/local/share/mas-cli
 
 WORKDIR /
 ENTRYPOINT ["/usr/local/bin/mas-cli"]
