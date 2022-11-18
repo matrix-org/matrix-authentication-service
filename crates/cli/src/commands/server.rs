@@ -205,7 +205,7 @@ impl Options {
 
         let graphql_schema = mas_handlers::graphql_schema(&pool);
 
-        let state = Arc::new(AppState {
+        let state = AppState {
             pool,
             templates,
             key_store,
@@ -215,7 +215,7 @@ impl Options {
             homeserver,
             policy_factory,
             graphql_schema,
-        });
+        };
 
         let mut fd_manager = listenfd::ListenFd::from_env();
 
@@ -234,8 +234,9 @@ impl Options {
                 };
 
                 // and build the router
-                let router = crate::server::build_router(&state, &config.resources)
-                    .layer(ServerLayer::new(config.name.clone()));
+                let router = crate::server::build_router(state.clone(), &config.resources)
+                    .layer(ServerLayer::new(config.name.clone()))
+                    .into_service();
 
                 // Display some informations about where we'll be serving connections
                 let is_tls = config.tls.is_some();

@@ -39,7 +39,7 @@ mod tests {
     #[sqlx::test(migrator = "mas_storage::MIGRATOR")]
     async fn test_get_health(pool: PgPool) -> Result<(), anyhow::Error> {
         let state = crate::test_state(pool).await?;
-        let app = crate::router(state);
+        let app = crate::router(state).into_service();
 
         let request = Request::builder().uri("/health").body(Body::empty())?;
 

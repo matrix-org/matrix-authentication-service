@@ -18,7 +18,7 @@ use async_trait::async_trait;
 use axum::{
     body::HttpBody,
     extract::{
-        rejection::{FailedToDeserializeQueryString, FormRejection, TypedHeaderRejectionReason},
+        rejection::{FailedToDeserializeForm, FormRejection, TypedHeaderRejectionReason},
         Form, FromRequest, FromRequestParts, TypedHeader,
     },
     response::IntoResponse,
@@ -217,7 +217,7 @@ pub struct ClientAuthorization<F = ()> {
 #[derive(Debug)]
 pub enum ClientAuthorizationError {
     InvalidHeader,
-    BadForm(FailedToDeserializeQueryString),
+    BadForm(FailedToDeserializeForm),
     ClientIdMismatch { credential: String, form: String },
     UnsupportedClientAssertion { client_assertion_type: String },
     MissingCredentials,
@@ -284,7 +284,7 @@ where
             // If it is not a form, continue
             Err(FormRejection::InvalidFormContentType(_err)) => (None, None, None, None, None),
             // If the form could not be read, return a Bad Request error
-            Err(FormRejection::FailedToDeserializeQueryString(err)) => {
+            Err(FormRejection::FailedToDeserializeForm(err)) => {
                 return Err(ClientAuthorizationError::BadForm(err))
             }
             // Other errors (body read twice, byte stream broke) return an internal error

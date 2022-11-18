@@ -59,35 +59,35 @@ pub use compat::MatrixHomeserver;
 pub use self::{app_state::AppState, graphql::schema as graphql_schema};
 
 #[must_use]
-pub fn empty_router<S, B>(state: Arc<S>) -> Router<S, B>
+pub fn empty_router<S, B>(state: S) -> Router<S, B>
 where
     B: HttpBody + Send + 'static,
-    S: Send + Sync + 'static,
+    S: Clone + Send + Sync + 'static,
 {
-    Router::with_state_arc(state)
+    Router::with_state(state)
 }
 
 #[must_use]
-pub fn healthcheck_router<S, B>(state: Arc<S>) -> Router<S, B>
+pub fn healthcheck_router<S, B>() -> Router<S, B>
 where
     B: HttpBody + Send + 'static,
-    S: Send + Sync + 'static,
+    S: Clone + Send + Sync + 'static,
     PgPool: FromRef<S>,
 {
-    Router::with_state_arc(state).route(mas_router::Healthcheck::route(), get(self::health::get))
+    Router::inherit_state().route(mas_router::Healthcheck::route(), get(self::health::get))
 }
 
 #[must_use]
-pub fn graphql_router<S, B>(state: Arc<S>, playground: bool) -> Router<S, B>
+pub fn graphql_router<S, B>(playground: bool) -> Router<S, B>
 where
     B: HttpBody + Send + 'static,
     <B as HttpBody>::Data: Into<Bytes>,
     <B as HttpBody>::Error: std::error::Error + Send + Sync,
-    S: Send + Sync + 'static,
+    S: Clone + Send + Sync + 'static,
     mas_graphql::Schema: FromRef<S>,
     Encrypter: FromRef<S>,
 {
-    let mut router = Router::with_state_arc(state)
+    let mut router = Router::inherit_state()
         .route(
             "/graphql",
             get(self::graphql::get).post(self::graphql::post),
@@ -102,14 +102,14 @@ where
 }
 
 #[must_use]
-pub fn discovery_router<S, B>(state: Arc<S>) -> Router<S, B>
+pub fn discovery_router<S, B>() -> Router<S, B>
 where
     B: HttpBody + Send + 'static,
-    S: Send + Sync + 'static,
+    S: Clone + Send + Sync + 'static,
     Keystore: FromRef<S>,
     UrlBuilder: FromRef<S>,
 {
-    Router::with_state_arc(state)
+    Router::inherit_state()
         .route(
             mas_router::OidcConfiguration::route(),
             get(self::oauth2::discovery::get),
@@ -135,12 +135,12 @@ where
 
 #[must_use]
 #[allow(clippy::trait_duplication_in_bounds)]
-pub fn api_router<S, B>(state: Arc<S>) -> Router<S, B>
+pub fn api_router<S, B>() -> Router<S, B>
 where
     B: HttpBody + Send + 'static,
     <B as HttpBody>::Data: Send,
     <B as HttpBody>::Error: std::error::Error + Send + Sync,
-    S: Send + Sync + 'static,
+    S: Clone + Send + Sync + 'static,
     Keystore: FromRef<S>,
     UrlBuilder: FromRef<S>,
     Arc<PolicyFactory>: FromRef<S>,
@@ -148,7 +148,7 @@ where
     Encrypter: FromRef<S>,
 {
     // All those routes are API-like, with a common CORS layer
-    Router::with_state_arc(state)
+    Router::inherit_state()
         .route(
             mas_router::OAuth2Keys::route(),
             get(self::oauth2::keys::get),
@@ -189,17 +189,17 @@ where
 
 #[must_use]
 #[allow(clippy::trait_duplication_in_bounds)]
-pub fn compat_router<S, B>(state: Arc<S>) -> Router<S, B>
+pub fn compat_router<S, B>() -> Router<S, B>
 where
     B: HttpBody + Send + 'static,
     <B as HttpBody>::Data: Send,
     <B as HttpBody>::Error: std::error::Error + Send + Sync,
-    S: Send + Sync + 'static,
+    S: Clone + Send + Sync + 'static,
     UrlBuilder: FromRef<S>,
     PgPool: FromRef<S>,
     MatrixHomeserver: FromRef<S>,
 {
-    Router::with_state_arc(state)
+    Router::inherit_state()
         .route(
             mas_router::CompatLogin::route(),
             get(self::compat::login::get).post(self::compat::login::post),
@@ -230,12 +230,12 @@ where
 
 #[must_use]
 #[allow(clippy::trait_duplication_in_bounds)]
-pub fn human_router<S, B>(state: Arc<S>) -> Router<S, B>
+pub fn human_router<S, B>(templates: Templates) -> Router<S, B>
 where
     B: HttpBody + Send + 'static,
     <B as HttpBody>::Data: Send,
     <B as HttpBody>::Error: std::error::Error + Send + Sync,
-    S: Send + Sync + 'static,
+    S: Clone + Send + Sync + 'static,
     UrlBuilder: FromRef<S>,
     Arc<PolicyFactory>: FromRef<S>,
     PgPool: FromRef<S>,
@@ -243,8 +243,7 @@ where
     Templates: FromRef<S>,
     Mailer: FromRef<S>,
 {
-    let templates = Templates::from_ref(&state);
-    Router::with_state_arc(state)
+    Router::inherit_state()
         .route(
             mas_router::ChangePasswordDiscovery::route(),
             get(|| async { mas_router::AccountPassword.go() }),
@@ -327,12 +326,12 @@ where
 
 #[must_use]
 #[allow(clippy::trait_duplication_in_bounds)]
-pub fn router<S, B>(state: Arc<S>) -> Router<S, B>
+pub fn router<S, B>(state: S) -> Router<S, B>
 where
     B: HttpBody + Send + 'static,
     <B as HttpBody>::Data: Into<Bytes> + Send,
     <B as HttpBody>::Error: std::error::Error + Send + Sync,
-    S: Send + Sync + 'static,
+    S: Clone + Send + Sync + 'static,
     Keystore: FromRef<S>,
     UrlBuilder: FromRef<S>,
     Arc<PolicyFactory>: FromRef<S>,
@@ -343,14 +342,14 @@ where
     MatrixHomeserver: FromRef<S>,
     mas_graphql::Schema: FromRef<S>,
 {
-    let healthcheck_router = healthcheck_router(state.clone());
-    let discovery_router = discovery_router(state.clone());
-    let api_router = api_router(state.clone());
-    let graphql_router = graphql_router(state.clone(), true);
-    let compat_router = compat_router(state.clone());
-    let human_router = human_router(state.clone());
+    let healthcheck_router = healthcheck_router();
+    let discovery_router = discovery_router();
+    let api_router = api_router();
+    let graphql_router = graphql_router(true);
+    let compat_router = compat_router();
+    let human_router = human_router(Templates::from_ref(&state));
 
-    Router::with_state_arc(state)
+    Router::with_state(state)
         .merge(healthcheck_router)
         .merge(discovery_router)
         .merge(human_router)
@@ -360,7 +359,7 @@ where
 }
 
 #[cfg(test)]
-async fn test_state(pool: PgPool) -> Result<Arc<AppState>, anyhow::Error> {
+async fn test_state(pool: PgPool) -> Result<AppState, anyhow::Error> {
     use mas_email::MailTransport;
 
     let url_builder = UrlBuilder::new("https://example.com/".parse()?);
@@ -382,7 +381,7 @@ async fn test_state(pool: PgPool) -> Result<Arc<AppState>, anyhow::Error> {
 
     let graphql_schema = graphql_schema(&pool);
 
-    Ok(Arc::new(AppState {
+    Ok(AppState {
         pool,
         templates,
         key_store,
@@ -392,7 +391,7 @@ async fn test_state(pool: PgPool) -> Result<Arc<AppState>, anyhow::Error> {
         homeserver,
         policy_factory,
         graphql_schema,
-    }))
+    })
 }
 
 // XXX: that should be moved somewhere else
