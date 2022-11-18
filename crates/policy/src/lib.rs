@@ -17,8 +17,6 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::missing_errors_doc)]
 
-use std::io::Cursor;
-
 use anyhow::bail;
 use mas_data_model::{AuthorizationGrant, StorageBackend, User};
 use oauth2_types::registration::VerifiedClientMetadata;
@@ -27,13 +25,6 @@ use serde::Deserialize;
 use thiserror::Error;
 use tokio::io::{AsyncRead, AsyncReadExt};
 use wasmtime::{Config, Engine, Module, Store};
-
-const DEFAULT_POLICY: &[u8] = include_bytes!("../policies/policy.wasm");
-
-#[must_use]
-pub fn default_wasm_policy() -> impl AsyncRead + std::marker::Unpin {
-    Cursor::new(DEFAULT_POLICY)
-}
 
 #[derive(Debug, Error)]
 pub enum LoadError {
@@ -113,17 +104,6 @@ impl PolicyFactory {
             .map_err(LoadError::Instantiate)?;
 
         Ok(factory)
-    }
-
-    pub async fn load_default(data: serde_json::Value) -> Result<Self, LoadError> {
-        Self::load(
-            default_wasm_policy(),
-            data,
-            "register/violation".to_owned(),
-            "client_registration/violation".to_owned(),
-            "authorization_grant/violation".to_owned(),
-        )
-        .await
     }
 
     #[tracing::instrument(skip(self), err)]
@@ -257,10 +237,27 @@ mod tests {
 
     #[tokio::test]
     async fn test_register() {
-        let factory = PolicyFactory::load_default(serde_json::json!({
+        let data = serde_json::json!({
             "allowed_domains": ["element.io", "*.element.io"],
             "banned_domains": ["staging.element.io"],
-        }))
+        });
+
+        #[allow(clippy::disallowed_types)]
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("..")
+            .join("policies")
+            .join("policy.wasm");
+
+        let file = tokio::fs::File::open(path).await.unwrap();
+
+        let factory = PolicyFactory::load(
+            file,
+            data,
+            "register/violation".to_owned(),
+            "client_registration/violation".to_owned(),
+            "authorization_grant/violation".to_owned(),
+        )
         .await
         .unwrap();
 

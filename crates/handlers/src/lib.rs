@@ -376,7 +376,25 @@ async fn test_state(pool: PgPool) -> Result<AppState, anyhow::Error> {
     let mailer = Mailer::new(&templates, &transport, &mailbox, &mailbox);
 
     let homeserver = MatrixHomeserver::new("example.com".to_owned());
-    let policy_factory = PolicyFactory::load_default(serde_json::json!({})).await?;
+
+    #[allow(clippy::disallowed_types)]
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+        .join("policies")
+        .join("policy.wasm");
+
+    let file = tokio::fs::File::open(path).await?;
+
+    let policy_factory = PolicyFactory::load(
+        file,
+        serde_json::json!({}),
+        "register/violation".to_owned(),
+        "client_registration/violation".to_owned(),
+        "authorization_grant/violation".to_owned(),
+    )
+    .await?;
+
     let policy_factory = Arc::new(policy_factory);
 
     let graphql_schema = graphql_schema(&pool);

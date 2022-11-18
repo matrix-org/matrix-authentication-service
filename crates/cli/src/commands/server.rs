@@ -28,7 +28,7 @@ use mas_router::UrlBuilder;
 use mas_storage::MIGRATOR;
 use mas_tasks::TaskQueue;
 use mas_templates::Templates;
-use tokio::{io::AsyncRead, signal::unix::SignalKind};
+use tokio::signal::unix::SignalKind;
 use tracing::{error, info, log::warn};
 
 #[derive(Parser, Debug, Default)]
@@ -144,19 +144,12 @@ impl Options {
 
         // Load and compile the WASM policies (and fallback to the default embedded one)
         info!("Loading and compiling the policy module");
-        let mut policy: Box<dyn AsyncRead + std::marker::Unpin> =
-            if let Some(path) = &config.policy.wasm_module {
-                Box::new(
-                    tokio::fs::File::open(path)
-                        .await
-                        .context("failed to open OPA WASM policy file")?,
-                )
-            } else {
-                Box::new(mas_policy::default_wasm_policy())
-            };
+        let policy_file = tokio::fs::File::open(&config.policy.wasm_module)
+            .await
+            .context("failed to open OPA WASM policy file")?;
 
         let policy_factory = PolicyFactory::load(
-            &mut policy,
+            policy_file,
             config.policy.data.clone().unwrap_or_default(),
             config.policy.register_entrypoint.clone(),
             config.policy.client_registration_entrypoint.clone(),

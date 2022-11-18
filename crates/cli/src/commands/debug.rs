@@ -18,7 +18,7 @@ use hyper::{Response, Uri};
 use mas_config::PolicyConfig;
 use mas_http::HttpServiceExt;
 use mas_policy::PolicyFactory;
-use tokio::io::{AsyncRead, AsyncWriteExt};
+use tokio::io::AsyncWriteExt;
 use tower::{Service, ServiceExt};
 use tracing::info;
 
@@ -121,19 +121,12 @@ impl Options {
             SC::Policy => {
                 let config: PolicyConfig = root.load_config()?;
                 info!("Loading and compiling the policy module");
-                let mut policy: Box<dyn AsyncRead + std::marker::Unpin> =
-                    if let Some(path) = &config.wasm_module {
-                        Box::new(
-                            tokio::fs::File::open(path)
-                                .await
-                                .context("failed to open OPA WASM policy file")?,
-                        )
-                    } else {
-                        Box::new(mas_policy::default_wasm_policy())
-                    };
+                let policy_file = tokio::fs::File::open(&config.wasm_module)
+                    .await
+                    .context("failed to open OPA WASM policy file")?;
 
                 let policy_factory = PolicyFactory::load(
-                    &mut policy,
+                    policy_file,
                     config.data.clone().unwrap_or_default(),
                     config.register_entrypoint.clone(),
                     config.client_registration_entrypoint.clone(),

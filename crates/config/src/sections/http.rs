@@ -43,6 +43,26 @@ fn http_address_example_4() -> &'static str {
     "0.0.0.0:8080"
 }
 
+#[cfg(not(feature = "docker"))]
+fn http_listener_spa_manifest_default() -> Utf8PathBuf {
+    "./frontend/dist/manifest.json".into()
+}
+
+#[cfg(not(feature = "docker"))]
+fn http_listener_spa_assets_default() -> Utf8PathBuf {
+    "./frontend/dist/".into()
+}
+
+#[cfg(feature = "docker")]
+fn http_listener_spa_manifest_default() -> Utf8PathBuf {
+    "/usr/local/share/mas-cli/frontend-manifest.json".into()
+}
+
+#[cfg(feature = "docker")]
+fn http_listener_spa_assets_default() -> Utf8PathBuf {
+    "/usr/local/share/mas-cli/frontend-assets/".into()
+}
+
 /// Kind of socket
 #[derive(Debug, Serialize, Deserialize, JsonSchema, Clone, Copy)]
 #[serde(rename_all = "lowercase")]
@@ -267,11 +287,13 @@ pub enum Resource {
 
     /// Mount the single page app
     Spa {
-        /// Path to the vite manifest
+        /// Path to the vite mamanifest.jsonnifest
+        #[serde(default = "http_listener_spa_manifest_default")]
         #[schemars(with = "String")]
         manifest: Utf8PathBuf,
 
         /// Path to the assets to server
+        #[serde(default = "http_listener_spa_assets_default")]
         #[schemars(with = "String")]
         assets: Utf8PathBuf,
     },
@@ -325,17 +347,9 @@ impl Default for HttpConfig {
                         Resource::Compat,
                         Resource::GraphQL { playground: true },
                         Resource::Static { web_root: None },
-                        #[cfg(not(feature = "docker"))]
                         Resource::Spa {
-                            manifest: "./frontend/dist/manifest.json".into(),
-                            assets: "./frontend/dist/".into(),
-                        },
-                        #[cfg(feature = "docker")]
-                        Resource::Spa {
-                            // This is where the frontend files are mounted in the docker image by
-                            // default
-                            manifest: "/usr/local/share/mas-cli/frontend-manifest.json".into(),
-                            assets: "/usr/local/share/mas-cli/frontend-assets/".into(),
+                            manifest: http_listener_spa_manifest_default(),
+                            assets: http_listener_spa_assets_default(),
                         },
                     ],
                     tls: None,
