@@ -12,20 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React from "react";
-import ReactDOM from "react-dom/client";
-import { RelayEnvironmentProvider } from "react-relay";
+type AppConfig = {
+  root: string;
+};
 
-import LoadingScreen from "./components/LoadingScreen";
-import RelayEnvironment from "./RelayEnvironment";
-import Router from "./Router";
-
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-  <React.StrictMode>
-    <RelayEnvironmentProvider environment={RelayEnvironment}>
-      <React.Suspense fallback={<LoadingScreen />}>
-        <Router />
-      </React.Suspense>
-    </RelayEnvironmentProvider>
-  </React.StrictMode>
-);
+interface Window {
+  APP_CONFIG: AppConfig;
+}

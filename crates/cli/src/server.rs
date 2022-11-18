@@ -13,19 +13,24 @@
 // limitations under the License.
 
 use std::{
+    future::ready,
     net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, TcpListener, ToSocketAddrs},
     os::unix::net::UnixListener,
     sync::Arc,
 };
 
 use anyhow::Context;
-use axum::{body::HttpBody, Extension, Router};
+use axum::{body::HttpBody, error_handling::HandleErrorLayer, Extension, Router};
+use hyper::StatusCode;
 use listenfd::ListenFd;
 use mas_config::{HttpBindConfig, HttpResource, HttpTlsConfig, UnixOrTcp};
 use mas_handlers::AppState;
 use mas_listener::{unix_or_tcp::UnixOrTcpListener, ConnectionInfo};
 use mas_router::Route;
+use mas_spa::ViteManifestService;
 use rustls::ServerConfig;
+use tower::Layer;
+use tower_http::services::ServeDir;
 
 #[allow(clippy::trait_duplication_in_bounds)]
 pub fn build_router<B>(state: &Arc<AppState>, resources: &[HttpResource]) -> Router<AppState, B>
@@ -70,6 +75,33 @@ where
                     format!("{connection:?}")
                 }),
             ),
+
+            mas_config::HttpResource::Spa { assets, manifest } => {
+                let error_layer =
+                    HandleErrorLayer::new(|_e| ready(StatusCode::INTERNAL_SERVER_ERROR));
+
+                // TODO: split the assets service and the index service, and make those paths
+                // configurable
+                let assets_base = "/app-assets/";
+                let app_base = "/app/";
+
+                // TODO: make that config typed and configurable
+                let config = serde_json::json!({
+                    "root": app_base,
+                });
+
+                let index_service = ViteManifestService::new(
+                    manifest.clone().try_into().unwrap(),
+                    assets_base.into(),
+                    config,
+                );
+
+                let static_service = ServeDir::new(assets).append_index_html_on_directories(false);
+
+                router
+                    .nest(app_base, error_layer.layer(index_service))
+                    .nest(assets_base, error_layer.layer(static_service))
+            }
         }
     }
 

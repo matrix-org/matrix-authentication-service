@@ -12,20 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React from "react";
-import ReactDOM from "react-dom/client";
-import { RelayEnvironmentProvider } from "react-relay";
+use camino::Utf8Path;
+use mas_spa::ViteManifest;
 
-import LoadingScreen from "./components/LoadingScreen";
-import RelayEnvironment from "./RelayEnvironment";
-import Router from "./Router";
+fn main() {
+    let mut stdin = std::io::stdin();
+    let manifest: ViteManifest =
+        serde_json::from_reader(&mut stdin).expect("failed to read manifest from stdin");
+    let assets_base = Utf8Path::new("/assets/");
 
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-  <React.StrictMode>
-    <RelayEnvironmentProvider environment={RelayEnvironment}>
-      <React.Suspense fallback={<LoadingScreen />}>
-        <Router />
-      </React.Suspense>
-    </RelayEnvironmentProvider>
-  </React.StrictMode>
-);
+    let config = serde_json::json!({
+        "root": "/app/",
+    });
+
+    let html = manifest
+        .render(assets_base, &config)
+        .expect("failed to render");
+    println!("{html}");
+}

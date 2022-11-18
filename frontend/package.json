@@ -8,7 +8,7 @@
     "generate": "relay-compiler && eslint --fix .",
     "lint": "relay-compiler --validate && eslint . && tsc",
     "relay": "relay-compiler",
-    "build": "npm run lint && vite build",
+    "build": "npm run lint && vite build --base=./",
     "preview": "vite preview",
     "test": "jest",
     "storybook": "storybook dev -p 6006",
