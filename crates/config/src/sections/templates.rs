@@ -20,28 +20,29 @@ use serde::{Deserialize, Serialize};
 
 use super::ConfigurationSection;
 
-fn default_builtin() -> bool {
-    true
+#[cfg(not(feature = "docker"))]
+fn default_path() -> Utf8PathBuf {
+    "./templates/".into()
+}
+
+#[cfg(feature = "docker")]
+fn default_path() -> Utf8PathBuf {
+    "/usr/local/share/mas-cli/templates/".into()
 }
 
 /// Configuration related to templates
 #[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
 pub struct TemplatesConfig {
-    /// Path to the folder that holds the custom templates
-    #[serde(default)]
+    /// Path to the folder which holds the templates
+    #[serde(default = "default_path")]
     #[schemars(with = "Option<String>")]
-    pub path: Option<Utf8PathBuf>,
-
-    /// Load the templates embedded in the binary
-    #[serde(default = "default_builtin")]
-    pub builtin: bool,
+    pub path: Utf8PathBuf,
 }
 
 impl Default for TemplatesConfig {
     fn default() -> Self {
         Self {
-            path: None,
-            builtin: default_builtin(),
+            path: default_path(),
         }
     }
 }

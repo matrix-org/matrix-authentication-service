@@ -43,6 +43,7 @@ serde_urlencoded = "0.7.1"
 argon2 = { version = "0.4.1", features = ["password-hash"] }
 
 # Various data types and utilities
+camino = "1.1.1"
 chrono = { version = "0.4.23", features = ["serde"] }
 url = { version = "2.3.1", features = ["serde"] }
 mime = "0.3.16"

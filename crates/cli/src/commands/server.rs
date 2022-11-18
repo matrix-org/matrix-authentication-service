@@ -55,44 +55,36 @@ async fn watch_templates(
 
     let templates = templates.clone();
 
-    // Find which roots we're supposed to watch
-    let roots = templates.watch_roots().await;
-    let mut streams = Vec::new();
+    // Find which root we're supposed to watch
+    let root = templates.watch_root();
 
-    for root in roots {
-        // For each root, create a subscription
-        let resolved = client
-            .resolve_root(CanonicalPath::canonicalize(root)?)
-            .await?;
+    // For each root, create a subscription
+    let resolved = client
+        .resolve_root(CanonicalPath::canonicalize(root)?)
+        .await?;
 
-        // TODO: we could subscribe to less, properly filter here
-        let (subscription, _) = client
-            .subscribe::<NameOnly>(&resolved, SubscribeRequest::default())
-            .await?;
+    // TODO: we could subscribe to less, properly filter here
+    let (subscription, _) = client
+        .subscribe::<NameOnly>(&resolved, SubscribeRequest::default())
+        .await?;
 
-        // Create a stream out of that subscription
-        let stream = futures_util::stream::try_unfold(subscription, |mut sub| async move {
-            let next = sub.next().await?;
-            anyhow::Ok(Some((next, sub)))
-        });
-
-        streams.push(Box::pin(stream));
-    }
-
-    let files_changed_stream =
-        futures_util::stream::select_all(streams).try_filter_map(|event| async move {
-            match event {
-                SubscriptionData::FilesChanged(QueryResult {
-                    files: Some(files), ..
-                }) => {
-                    let files: Vec<_> = files.into_iter().map(|f| f.name.into_inner()).collect();
-                    Ok(Some(files))
-                }
-                _ => Ok(None),
+    // Create a stream out of that subscription
+    let fut = futures_util::stream::try_unfold(subscription, |mut sub| async move {
+        let next = sub.next().await?;
+        anyhow::Ok(Some((next, sub)))
+    })
+    .try_filter_map(|event| async move {
+        match event {
+            SubscriptionData::FilesChanged(QueryResult {
+                files: Some(files), ..
+            }) => {
+                let files: Vec<_> = files.into_iter().map(|f| f.name.into_inner()).collect();
+                Ok(Some(files))
             }
-        });
-
-    let fut = files_changed_stream.for_each(move |files| {
+            _ => Ok(None),
+        }
+    })
+    .for_each(move |files| {
         let templates = templates.clone();
         async move {
             info!(?files, "Files changed, reloading templates");
@@ -162,13 +154,9 @@ impl Options {
         let url_builder = UrlBuilder::new(config.http.public_base.clone());
 
         // Load and compile the templates
-        let templates = Templates::load(
-            config.templates.path.clone(),
-            config.templates.builtin,
-            url_builder.clone(),
-        )
-        .await
-        .context("could not load templates")?;
+        let templates = Templates::load(config.templates.path.clone(), url_builder.clone())
+            .await
+            .context("could not load templates")?;
 
         let mailer = Mailer::new(
             &templates,

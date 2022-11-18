@@ -539,7 +539,7 @@ impl StaticAsset {
 impl Route for StaticAsset {
     type Query = ();
     fn route() -> &'static str {
-        "/assets"
+        "/assets/"
     }
 
     fn path(&self) -> std::borrow::Cow<'static, str> {

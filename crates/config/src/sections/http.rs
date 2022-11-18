@@ -49,18 +49,18 @@ fn http_listener_spa_manifest_default() -> Utf8PathBuf {
 }
 
 #[cfg(not(feature = "docker"))]
-fn http_listener_spa_assets_default() -> Utf8PathBuf {
+fn http_listener_assets_path_default() -> Utf8PathBuf {
     "./frontend/dist/".into()
 }
 
 #[cfg(feature = "docker")]
 fn http_listener_spa_manifest_default() -> Utf8PathBuf {
-    "/usr/local/share/mas-cli/frontend-manifest.json".into()
+    "/usr/local/share/mas-cli/manifest.json".into()
 }
 
 #[cfg(feature = "docker")]
-fn http_listener_spa_assets_default() -> Utf8PathBuf {
-    "/usr/local/share/mas-cli/frontend-assets/".into()
+fn http_listener_assets_path_default() -> Utf8PathBuf {
+    "/usr/local/share/mas-cli/assets/".into()
 }
 
 /// Kind of socket
@@ -272,12 +272,11 @@ pub enum Resource {
     Compat,
 
     /// Static files
-    Static {
-        /// Path from which to serve static files. If not specified, it will
-        /// serve the static files embedded in the server binary
-        #[serde(default)]
-        #[schemars(with = "Option<String>")]
-        web_root: Option<Utf8PathBuf>,
+    Assets {
+        /// Path to the directory to serve.
+        #[serde(default = "http_listener_assets_path_default")]
+        #[schemars(with = "String")]
+        path: Utf8PathBuf,
     },
 
     /// Mount a "/connection-info" handler which helps debugging informations on
@@ -287,15 +286,10 @@ pub enum Resource {
 
     /// Mount the single page app
     Spa {
-        /// Path to the vite mamanifest.jsonnifest
+        /// Path to the vite manifest.json
         #[serde(default = "http_listener_spa_manifest_default")]
         #[schemars(with = "String")]
         manifest: Utf8PathBuf,
-
-        /// Path to the assets to server
-        #[serde(default = "http_listener_spa_assets_default")]
-        #[schemars(with = "String")]
-        assets: Utf8PathBuf,
     },
 }
 
@@ -346,10 +340,11 @@ impl Default for HttpConfig {
                         Resource::OAuth,
                         Resource::Compat,
                         Resource::GraphQL { playground: true },
-                        Resource::Static { web_root: None },
+                        Resource::Assets {
+                            path: http_listener_assets_path_default(),
+                        },
                         Resource::Spa {
                             manifest: http_listener_spa_manifest_default(),
-                            assets: http_listener_spa_assets_default(),
                         },
                     ],
                     tls: None,

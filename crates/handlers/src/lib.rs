@@ -362,9 +362,13 @@ where
 async fn test_state(pool: PgPool) -> Result<AppState, anyhow::Error> {
     use mas_email::MailTransport;
 
+    let workspace_root = camino::Utf8Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..");
+
     let url_builder = UrlBuilder::new("https://example.com/".parse()?);
 
-    let templates = Templates::load(None, true, url_builder.clone()).await?;
+    let templates = Templates::load(workspace_root.join("templates"), url_builder.clone()).await?;
 
     // TODO: add test keys to the store
     let key_store = Keystore::default();
@@ -377,14 +381,7 @@ async fn test_state(pool: PgPool) -> Result<AppState, anyhow::Error> {
 
     let homeserver = MatrixHomeserver::new("example.com".to_owned());
 
-    #[allow(clippy::disallowed_types)]
-    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("..")
-        .join("..")
-        .join("policies")
-        .join("policy.wasm");
-
-    let file = tokio::fs::File::open(path).await?;
+    let file = tokio::fs::File::open(workspace_root.join("policies").join("policy.wasm")).await?;
 
     let policy_factory = PolicyFactory::load(
         file,

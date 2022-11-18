@@ -85,10 +85,10 @@
                 "playground": true
               },
               {
-                "name": "static"
+                "name": "assets",
+                "path": "./frontend/dist/"
               },
               {
-                "assets": "./frontend/dist/",
                 "manifest": "./frontend/dist/manifest.json",
                 "name": "spa"
               }
@@ -171,8 +171,7 @@
     "templates": {
       "description": "Configuration related to templates",
       "default": {
-        "builtin": true,
-        "path": null
+        "path": "./templates/"
       },
       "allOf": [
         {
@@ -1402,11 +1401,12 @@
             "name": {
               "type": "string",
               "enum": [
-                "static"
+                "assets"
               ]
             },
-            "web_root": {
-              "description": "Path from which to serve static files. If not specified, it will serve the static files embedded in the server binary",
+            "path": {
+              "description": "Path to the directory to serve.",
+              "default": "./frontend/dist/",
               "type": "string"
             }
           }
@@ -1433,13 +1433,8 @@
             "name"
           ],
           "properties": {
-            "assets": {
-              "description": "Path to the assets to server",
-              "default": "./frontend/dist/",
-              "type": "string"
-            },
             "manifest": {
-              "description": "Path to the vite mamanifest.jsonnifest",
+              "description": "Path to the vite manifest.json",
               "default": "./frontend/dist/manifest.json",
               "type": "string"
             },
@@ -1511,14 +1506,9 @@
       "description": "Configuration related to templates",
       "type": "object",
       "properties": {
-        "builtin": {
-          "description": "Load the templates embedded in the binary",
-          "default": true,
-          "type": "boolean"
-        },
         "path": {
-          "description": "Path to the folder that holds the custom templates",
-          "default": null,
+          "description": "Path to the folder which holds the templates",
+          "default": "./templates/",
           "type": "string"
         }
       }

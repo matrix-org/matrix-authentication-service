@@ -25,24 +25,10 @@ pub(super) struct Options {
 
 #[derive(Parser, Debug)]
 enum Subcommand {
-    /// Save the builtin templates to a folder
-    Save {
-        /// Where the templates should be saved
-        path: Utf8PathBuf,
-
-        /// Overwrite existing template files
-        #[arg(long)]
-        overwrite: bool,
-    },
-
     /// Check for template validity at given path.
     Check {
         /// Path where the templates are
-        path: String,
-
-        /// Skip loading builtin templates
-        #[arg(long)]
-        skip_builtin: bool,
+        path: Utf8PathBuf,
     },
 }
 
@@ -50,17 +36,10 @@ impl Options {
     pub async fn run(&self, _root: &super::Options) -> anyhow::Result<()> {
         use Subcommand as SC;
         match &self.subcommand {
-            SC::Save { path, overwrite } => {
-                Templates::save(path, *overwrite).await?;
-
-                Ok(())
-            }
-
-            SC::Check { path, skip_builtin } => {
+            SC::Check { path } => {
                 let clock = Clock::default();
                 let url_builder = mas_router::UrlBuilder::new("https://example.com/".parse()?);
-                let templates =
-                    Templates::load(Some(path.into()), !skip_builtin, url_builder).await?;
+                let templates = Templates::load(path.clone(), url_builder).await?;
                 templates.check_render(clock.now()).await?;
 
                 Ok(())
