@@ -57,9 +57,7 @@ ADD --chmod=755 https://github.com/open-policy-agent/opa/releases/download/v${OP
 WORKDIR /app/policies
 COPY ./policies /app/policies
 RUN make -B
-
-# Change the timestamp of built files for better caching
-RUN touch -t 197001010000.00 {} policy.wasm
+RUN chmod a+r ./policy.wasm
 
 ##########################################################################
 ## Base image with cargo-chef and the right cross-compilation toolchain ##
