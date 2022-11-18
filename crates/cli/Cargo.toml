@@ -57,7 +57,7 @@ mas-templates = { path = "../templates" }
 indoc = "1.0.7"
 
 [features]
-default = ["otlp", "jaeger", "zipkin", "prometheus", "webpki-roots", "policy-cache"]
+default = ["jaeger", "zipkin", "prometheus", "webpki-roots", "policy-cache"]
 
 # Features used in the Docker image
 docker = ["otlp", "jaeger", "zipkin", "prometheus", "native-roots", "mas-config/docker"]
@@ -70,7 +70,7 @@ native-roots = ["mas-http/native-roots", "mas-handlers/native-roots"]
 # Use the webpki root certificates
 webpki-roots = ["mas-http/webpki-roots", "mas-handlers/webpki-roots"]
 
-# Enable OpenTelemetry OTLP exporter.
+# Enable OpenTelemetry OTLP exporter. Requires protoc.
 otlp = ["dep:opentelemetry-otlp"]
 # Enable OpenTelemetry Jaeger exporter and propagator.
 jaeger = ["dep:opentelemetry-jaeger", "dep:opentelemetry-http"]

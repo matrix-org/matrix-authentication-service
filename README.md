@@ -16,7 +16,7 @@ See the [Documentation](https://matrix-org.github.io/matrix-authentication-servi
   cd frontend
   npm ci
   npm run build
-  cd ../..
+  cd ..
   ```
 - Build the Open Policy Agent policies
   ```sh
@@ -24,7 +24,7 @@ See the [Documentation](https://matrix-org.github.io/matrix-authentication-servi
   make
   # OR, if you don't have `opa` installed and want to build through the OPA docker image
   make DOCKER=1
-  cd ../../..
+  cd ..
   ```
 - Generate the sample config via `cargo run -- config generate > config.yaml`
 - Run the database migrations via `cargo run -- database migrate`
