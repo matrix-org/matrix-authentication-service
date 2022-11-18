@@ -610,9 +610,9 @@ dependencies = [
 
 [[package]]
 name = "axum"
-version = "0.6.0-rc.4"
+version = "0.6.0-rc.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11ce1fe515f70a98649f95d9434e8ad2ce8d581b5c9763a15470da5f6ef2e481"
+checksum = "21b6b56b1bdef08d4d50e63683d79c797dbf2ae467586c7502b283241b5e2b8a"
 dependencies = [
  "async-trait",
  "axum-core 0.3.0-rc.3",
@@ -682,7 +682,7 @@ version = "0.4.0-rc.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fa4236821ba5932aa38a08a45e4068ff2318c2882672c30ff26a433bc84b14e6"
 dependencies = [
- "axum 0.6.0-rc.4",
+ "axum 0.6.0-rc.5",
  "bytes 1.2.1",
  "cookie",
  "futures-util",
@@ -2461,7 +2461,7 @@ name = "mas-axum-utils"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "axum 0.6.0-rc.4",
+ "axum 0.6.0-rc.5",
  "axum-extra",
  "bincode",
  "chrono",
@@ -2499,7 +2499,7 @@ dependencies = [
  "anyhow",
  "argon2",
  "atty",
- "axum 0.6.0-rc.4",
+ "axum 0.6.0-rc.5",
  "camino",
  "clap",
  "dotenv",
@@ -2632,7 +2632,7 @@ dependencies = [
  "anyhow",
  "argon2",
  "async-graphql",
- "axum 0.6.0-rc.4",
+ "axum 0.6.0-rc.5",
  "axum-extra",
  "axum-macros",
  "camino",
@@ -2679,7 +2679,7 @@ dependencies = [
  "anyhow",
  "aws-smithy-http",
  "aws-types",
- "axum 0.6.0-rc.4",
+ "axum 0.6.0-rc.5",
  "bytes 1.2.1",
  "futures-util",
  "headers",
@@ -2837,7 +2837,7 @@ dependencies = [
 name = "mas-router"
 version = "0.1.0"
 dependencies = [
- "axum 0.6.0-rc.4",
+ "axum 0.6.0-rc.5",
  "serde",
  "serde_urlencoded",
  "serde_with",
