@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{borrow::Cow, path::PathBuf};
+use std::borrow::Cow;
 
 use anyhow::Context;
 use async_trait::async_trait;
+use camino::Utf8PathBuf;
 use mas_jose::jwk::{JsonWebKey, JsonWebKeySet};
 use mas_keystore::{Encrypter, Keystore, PrivateKey};
 use rand::{
@@ -38,14 +39,16 @@ fn example_secret() -> &'static str {
 #[serde(rename_all = "snake_case")]
 pub enum KeyOrFile {
     Key(String),
-    KeyFile(PathBuf),
+    #[schemars(with = "String")]
+    KeyFile(Utf8PathBuf),
 }
 
 #[derive(JsonSchema, Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum PasswordOrFile {
     Password(String),
-    PasswordFile(PathBuf),
+    #[schemars(with = "String")]
+    PasswordFile(Utf8PathBuf),
 }
 
 #[derive(JsonSchema, Serialize, Deserialize, Clone, Debug)]

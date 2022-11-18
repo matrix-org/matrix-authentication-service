@@ -227,8 +227,8 @@ mod tests {
         );
 
         let form = TestForm {
-            foo: "".to_owned(),
-            bar: "".to_owned(),
+            foo: String::new(),
+            bar: String::new(),
         };
         let state = form
             .to_form_state()

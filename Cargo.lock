@@ -2500,6 +2500,7 @@ dependencies = [
  "argon2",
  "atty",
  "axum 0.6.0-rc.4",
+ "camino",
  "clap",
  "dotenv",
  "futures-util",
@@ -2549,6 +2550,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "camino",
  "chrono",
  "figment",
  "indoc",
@@ -2719,6 +2721,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "camino",
  "convert_case",
  "csv",
  "futures-util",
@@ -2862,6 +2865,7 @@ name = "mas-static-files"
 version = "0.1.0"
 dependencies = [
  "axum 0.6.0-rc.4",
+ "camino",
  "headers",
  "http",
  "http-body",
@@ -2915,6 +2919,7 @@ name = "mas-templates"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "camino",
  "chrono",
  "mas-data-model",
  "mas-router",

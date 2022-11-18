@@ -10,6 +10,7 @@ dev = []
 
 [dependencies]
 axum = { version = "0.6.0-rc.4", features = ["headers"] }
+camino = "1.1.1"
 headers = "0.3.8"
 http = "0.2.8"
 http-body = "0.4.5"

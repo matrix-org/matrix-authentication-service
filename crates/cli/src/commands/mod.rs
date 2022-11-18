@@ -12,9 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::path::PathBuf;
-
 use anyhow::Context;
+use camino::Utf8PathBuf;
 use clap::Parser;
 use mas_config::ConfigurationSection;
 
@@ -50,7 +49,7 @@ enum Subcommand {
 pub struct Options {
     /// Path to the configuration file
     #[arg(short, long, global = true, action = clap::ArgAction::Append)]
-    config: Vec<PathBuf>,
+    config: Vec<Utf8PathBuf>,
 
     #[command(subcommand)]
     subcommand: Option<Subcommand>,
@@ -78,7 +77,7 @@ impl Options {
                 .unwrap_or_else(|_| "config.yaml".to_owned())
                 // Split the file list on `:`
                 .split(':')
-                .map(PathBuf::from)
+                .map(Utf8PathBuf::from)
                 .collect()
         } else {
             self.config.clone()

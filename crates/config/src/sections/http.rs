@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{borrow::Cow, io::Cursor, ops::Deref, path::PathBuf};
+use std::{borrow::Cow, io::Cursor, ops::Deref};
 
 use anyhow::bail;
 use async_trait::async_trait;
+use camino::Utf8PathBuf;
 use mas_keystore::PrivateKey;
 use rand::Rng;
 use schemars::JsonSchema;
@@ -99,7 +100,8 @@ pub enum BindConfig {
     /// Listen on a UNIX domain socket
     Unix {
         /// Path to the socket
-        socket: PathBuf,
+        #[schemars(with = "String")]
+        socket: Utf8PathBuf,
     },
 
     /// Accept connections on file descriptors passed by the parent process.
@@ -125,14 +127,16 @@ pub enum BindConfig {
 #[serde(rename_all = "snake_case")]
 pub enum KeyOrFile {
     Key(String),
-    KeyFile(PathBuf),
+    #[schemars(with = "String")]
+    KeyFile(Utf8PathBuf),
 }
 
 #[derive(JsonSchema, Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
 pub enum CertificateOrFile {
     Certificate(String),
-    CertificateFile(PathBuf),
+    #[schemars(with = "String")]
+    CertificateFile(Utf8PathBuf),
 }
 
 /// Configuration related to TLS on a listener
@@ -252,7 +256,8 @@ pub enum Resource {
         /// Path from which to serve static files. If not specified, it will
         /// serve the static files embedded in the server binary
         #[serde(default)]
-        web_root: Option<PathBuf>,
+        #[schemars(with = "Option<String>")]
+        web_root: Option<Utf8PathBuf>,
     },
 
     /// Mount a "/connection-info" handler which helps debugging informations on
@@ -263,10 +268,12 @@ pub enum Resource {
     /// Mount the single page app
     Spa {
         /// Path to the vite manifest
-        manifest: PathBuf,
+        #[schemars(with = "String")]
+        manifest: Utf8PathBuf,
 
         /// Path to the assets to server
-        assets: PathBuf,
+        #[schemars(with = "String")]
+        assets: Utf8PathBuf,
     },
 }
 

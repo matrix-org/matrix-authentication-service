@@ -24,15 +24,10 @@
 
 //! Templates rendering
 
-use std::{
-    collections::HashSet,
-    io::Cursor,
-    path::{Path, PathBuf},
-    string::ToString,
-    sync::Arc,
-};
+use std::{collections::HashSet, io::Cursor, string::ToString, sync::Arc};
 
 use anyhow::{bail, Context as _};
+use camino::{Utf8Path, Utf8PathBuf};
 use mas_data_model::StorageBackend;
 use mas_router::UrlBuilder;
 use serde::Serialize;
@@ -64,7 +59,7 @@ pub use self::{
 pub struct Templates {
     tera: Arc<RwLock<Tera>>,
     url_builder: UrlBuilder,
-    path: Option<String>,
+    path: Option<Utf8PathBuf>,
     builtin: bool,
 }
 
@@ -91,7 +86,7 @@ pub enum TemplateLoadingError {
 
 impl Templates {
     /// List directories to watch
-    pub async fn watch_roots(&self) -> Vec<PathBuf> {
+    pub async fn watch_roots(&self) -> Vec<Utf8PathBuf> {
         Self::roots(self.path.as_deref(), self.builtin)
             .await
             .into_iter()
@@ -99,18 +94,21 @@ impl Templates {
             .collect()
     }
 
-    async fn roots(path: Option<&str>, builtin: bool) -> Vec<Result<PathBuf, std::io::Error>> {
+    async fn roots(
+        path: Option<&Utf8Path>,
+        builtin: bool,
+    ) -> Vec<Result<Utf8PathBuf, std::io::Error>> {
         let mut paths = Vec::new();
         if builtin && cfg!(feature = "dev") {
             paths.push(
-                Path::new(env!("CARGO_MANIFEST_DIR"))
+                Utf8Path::new(env!("CARGO_MANIFEST_DIR"))
                     .join("src")
                     .join("res"),
             );
         }
 
         if let Some(path) = path {
-            paths.push(PathBuf::from(path));
+            paths.push(Utf8PathBuf::from(path));
         }
 
         let mut ret = Vec::new();
@@ -137,7 +135,7 @@ impl Templates {
 
     /// Load the templates from the given config
     pub async fn load(
-        path: Option<String>,
+        path: Option<Utf8PathBuf>,
         builtin: bool,
         url_builder: UrlBuilder,
     ) -> Result<Self, TemplateLoadingError> {
@@ -151,7 +149,7 @@ impl Templates {
     }
 
     async fn load_(
-        path: Option<&str>,
+        path: Option<&Utf8Path>,
         builtin: bool,
         url_builder: UrlBuilder,
     ) -> Result<Tera, TemplateLoadingError> {
@@ -169,8 +167,7 @@ impl Templates {
 
             // This uses blocking I/Os, do that in a blocking task
             let tera = tokio::task::spawn_blocking(move || {
-                // Using `to_string_lossy` here is probably fine
-                let path = format!("{}/**/*.{{html,txt,subject}}", root.to_string_lossy());
+                let path = format!("{}/**/*.{{html,txt,subject}}", root);
                 info!(%path, "Loading templates from filesystem");
                 Tera::parse(&path)
             })
@@ -223,7 +220,7 @@ impl Templates {
     }
 
     /// Save the builtin templates to a folder
-    pub async fn save(path: &Path, overwrite: bool) -> anyhow::Result<()> {
+    pub async fn save(path: &Utf8Path, overwrite: bool) -> anyhow::Result<()> {
         if cfg!(feature = "dev") {
             bail!("Builtin templates are not included in dev binaries")
         }

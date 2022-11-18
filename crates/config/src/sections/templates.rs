@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use async_trait::async_trait;
+use camino::Utf8PathBuf;
 use rand::Rng;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -28,7 +29,8 @@ fn default_builtin() -> bool {
 pub struct TemplatesConfig {
     /// Path to the folder that holds the custom templates
     #[serde(default)]
-    pub path: Option<String>,
+    #[schemars(with = "Option<String>")]
+    pub path: Option<Utf8PathBuf>,
 
     /// Load the templates embedded in the binary
     #[serde(default = "default_builtin")]

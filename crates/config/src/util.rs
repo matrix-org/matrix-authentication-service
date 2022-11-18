@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::path::Path;
-
 use anyhow::Context;
 use async_trait::async_trait;
+use camino::Utf8Path;
 use figment::{
     error::Error as FigmentError,
     providers::{Env, Format, Serialized, Yaml},
@@ -65,20 +64,20 @@ pub trait ConfigurationSection<'a>: Sized + Deserialize<'a> + Serialize {
     /// Load configuration from a list of files and environment variables.
     fn load_from_files<P>(paths: &[P]) -> Result<Self, FigmentError>
     where
-        P: AsRef<Path>,
+        P: AsRef<Utf8Path>,
     {
         let base = Figment::new().merge(Env::prefixed("MAS_").split("_"));
 
         paths
             .iter()
-            .fold(base, |f, path| f.merge(Yaml::file(path)))
+            .fold(base, |f, path| f.merge(Yaml::file(path.as_ref())))
             .extract_inner(Self::path())
     }
 
     /// Load configuration from a file and environment variables.
     fn load_from_file<P>(path: P) -> Result<Self, FigmentError>
     where
-        P: AsRef<Path>,
+        P: AsRef<Utf8Path>,
     {
         Self::load_from_files(&[path])
     }

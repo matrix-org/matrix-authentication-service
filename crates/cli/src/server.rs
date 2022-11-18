@@ -60,7 +60,7 @@ where
                 router.merge(mas_handlers::graphql_router::<AppState, B>(*playground))
             }
             mas_config::HttpResource::Static { web_root } => {
-                let handler = mas_static_files::service(web_root);
+                let handler = mas_static_files::service(web_root.as_deref());
                 router.nest_service(mas_router::StaticAsset::route(), handler)
             }
             mas_config::HttpResource::OAuth => {
@@ -91,11 +91,8 @@ where
                     "root": app_base,
                 });
 
-                let index_service = ViteManifestService::new(
-                    manifest.clone().try_into().unwrap(),
-                    assets_base.into(),
-                    config,
-                );
+                let index_service =
+                    ViteManifestService::new(manifest.clone(), assets_base.into(), config);
 
                 let static_service = ServeDir::new(assets).append_index_html_on_directories(false);
 
