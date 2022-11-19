@@ -29,6 +29,7 @@ COPY ./frontend/package.json ./frontend/package-lock.json /app/frontend/
 RUN npm ci
 
 COPY ./frontend/ /app/frontend/
+COPY ./templates/ /app/templates/
 RUN npm run build
 
 # Move the built files
