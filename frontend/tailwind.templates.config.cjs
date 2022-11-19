@@ -17,6 +17,6 @@ const base = require("./tailwind.config.cjs");
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   ...base,
-  content: ["../crates/templates/res/**/*.html"],
+  content: ["../templates/**/*.html"],
   darkMode: "media",
 };
