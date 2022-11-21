@@ -28,6 +28,7 @@
 mod client;
 mod ext;
 mod layers;
+mod service;
 
 #[cfg(feature = "client")]
 pub use self::client::{client, make_traced_connector, make_untraced_client, ClientInitError};
@@ -44,6 +45,7 @@ pub use self::{
         otel,
         server::ServerLayer,
     },
+    service::{BoxCloneSyncService, HttpService},
 };
 
 pub(crate) type BoxError = Box<dyn std::error::Error + Send + Sync>;
