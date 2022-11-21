@@ -59,22 +59,13 @@ pub use compat::MatrixHomeserver;
 pub use self::{app_state::AppState, graphql::schema as graphql_schema};
 
 #[must_use]
-pub fn empty_router<S, B>(state: S) -> Router<S, B>
-where
-    B: HttpBody + Send + 'static,
-    S: Clone + Send + Sync + 'static,
-{
-    Router::with_state(state)
-}
-
-#[must_use]
 pub fn healthcheck_router<S, B>() -> Router<S, B>
 where
     B: HttpBody + Send + 'static,
     S: Clone + Send + Sync + 'static,
     PgPool: FromRef<S>,
 {
-    Router::inherit_state().route(mas_router::Healthcheck::route(), get(self::health::get))
+    Router::new().route(mas_router::Healthcheck::route(), get(self::health::get))
 }
 
 #[must_use]
@@ -87,7 +78,7 @@ where
     mas_graphql::Schema: FromRef<S>,
     Encrypter: FromRef<S>,
 {
-    let mut router = Router::inherit_state()
+    let mut router = Router::new()
         .route(
             "/graphql",
             get(self::graphql::get).post(self::graphql::post),
@@ -109,7 +100,7 @@ where
     Keystore: FromRef<S>,
     UrlBuilder: FromRef<S>,
 {
-    Router::inherit_state()
+    Router::new()
         .route(
             mas_router::OidcConfiguration::route(),
             get(self::oauth2::discovery::get),
@@ -148,7 +139,7 @@ where
     Encrypter: FromRef<S>,
 {
     // All those routes are API-like, with a common CORS layer
-    Router::inherit_state()
+    Router::new()
         .route(
             mas_router::OAuth2Keys::route(),
             get(self::oauth2::keys::get),
@@ -199,7 +190,7 @@ where
     PgPool: FromRef<S>,
     MatrixHomeserver: FromRef<S>,
 {
-    Router::inherit_state()
+    Router::new()
         .route(
             mas_router::CompatLogin::route(),
             get(self::compat::login::get).post(self::compat::login::post),
@@ -243,7 +234,7 @@ where
     Templates: FromRef<S>,
     Mailer: FromRef<S>,
 {
-    Router::inherit_state()
+    Router::new()
         .route(
             mas_router::ChangePasswordDiscovery::route(),
             get(|| async { mas_router::AccountPassword.go() }),
@@ -324,9 +315,10 @@ where
         ))
 }
 
+/*
 #[must_use]
 #[allow(clippy::trait_duplication_in_bounds)]
-pub fn router<S, B>(state: S) -> Router<S, B>
+pub fn router<S, B>(state: S) -> RouterService<B>
 where
     B: HttpBody + Send + 'static,
     <B as HttpBody>::Data: Into<Bytes> + Send,
@@ -349,14 +341,16 @@ where
     let compat_router = compat_router();
     let human_router = human_router(Templates::from_ref(&state));
 
-    Router::with_state(state)
+    Router::new()
         .merge(healthcheck_router)
         .merge(discovery_router)
         .merge(human_router)
         .merge(api_router)
         .merge(graphql_router)
         .merge(compat_router)
+        .with_state(state)
 }
+*/
 
 #[cfg(test)]
 async fn test_state(pool: PgPool) -> Result<AppState, anyhow::Error> {
