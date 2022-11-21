@@ -27,8 +27,8 @@ use hyper::{
 use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
 use thiserror::Error;
 use tower::{
-    util::{BoxCloneService, MapErrLayer, MapResponseLayer},
-    Layer, Service, ServiceExt,
+    util::{MapErrLayer, MapResponseLayer},
+    Layer, Service,
 };
 
 use crate::{
@@ -36,7 +36,7 @@ use crate::{
         client::{ClientLayer, ClientResponse},
         otel::{TraceDns, TraceLayer},
     },
-    BoxError,
+    BoxCloneSyncService, BoxError,
 };
 
 #[cfg(all(not(feature = "webpki-roots"), not(feature = "native-roots")))]
@@ -237,7 +237,7 @@ where
 pub async fn client<B, E>(
     operation: &'static str,
 ) -> Result<
-    BoxCloneService<Request<B>, Response<BoxBody<bytes::Bytes, ClientError>>, ClientError>,
+    BoxCloneSyncService<Request<B>, Response<BoxBody<bytes::Bytes, ClientError>>, ClientError>,
     ClientInitError,
 >
 where
@@ -254,7 +254,7 @@ where
         }),
         ClientLayer::new(operation),
     );
-    let client = layer.layer(client).boxed_clone();
+    let client = BoxCloneSyncService::new(layer.layer(client));
 
     Ok(client)
 }

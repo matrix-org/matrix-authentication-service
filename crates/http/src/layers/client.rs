@@ -16,17 +16,18 @@ use std::{marker::PhantomData, time::Duration};
 
 use http::{header::USER_AGENT, HeaderValue, Request, Response};
 use tower::{
-    limit::ConcurrencyLimitLayer, timeout::TimeoutLayer, util::BoxCloneService, Layer, Service,
-    ServiceExt,
+    limit::{ConcurrencyLimit, ConcurrencyLimitLayer},
+    timeout::{Timeout, TimeoutLayer},
+    Layer, Service,
 };
 use tower_http::{
-    decompression::{DecompressionBody, DecompressionLayer},
-    follow_redirect::FollowRedirectLayer,
-    set_header::SetRequestHeaderLayer,
+    decompression::{Decompression, DecompressionBody, DecompressionLayer},
+    follow_redirect::{FollowRedirect, FollowRedirectLayer},
+    set_header::{SetRequestHeader, SetRequestHeaderLayer},
 };
 
 use super::otel::TraceLayer;
-use crate::BoxError;
+use crate::{otel::TraceHttpClient, BoxError};
 
 static MAS_USER_AGENT: HeaderValue =
     HeaderValue::from_static("matrix-authentication-service/0.0.1");
@@ -47,17 +48,27 @@ impl<B> ClientLayer<B> {
     }
 }
 
+#[allow(dead_code)]
 pub type ClientResponse<B> = Response<DecompressionBody<B>>;
 
 impl<ReqBody, ResBody, S, E> Layer<S> for ClientLayer<ReqBody>
 where
-    S: Service<Request<ReqBody>, Response = Response<ResBody>, Error = E> + Clone + Send + 'static,
+    S: Service<Request<ReqBody>, Response = Response<ResBody>, Error = E>
+        + Clone
+        + Send
+        + Sync
+        + 'static,
     ReqBody: http_body::Body + Default + Send + 'static,
     ResBody: http_body::Body + Sync + Send + 'static,
     S::Future: Send + 'static,
     E: Into<BoxError>,
 {
-    type Service = BoxCloneService<Request<ReqBody>, ClientResponse<ResBody>, BoxError>;
+    type Service = Decompression<
+        SetRequestHeader<
+            TraceHttpClient<ConcurrencyLimit<FollowRedirect<TraceHttpClient<Timeout<S>>>>>,
+            HeaderValue,
+        >,
+    >;
 
     fn layer(&self, inner: S) -> Self::Service {
         // Note that most layers here just forward the error type. Two notables
@@ -78,6 +89,5 @@ where
             TimeoutLayer::new(Duration::from_secs(10)),
         )
             .layer(inner)
-            .boxed_clone()
     }
 }
