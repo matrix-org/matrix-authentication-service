@@ -29,7 +29,7 @@
     "@graphql-eslint/eslint-plugin": "^3.13.1",
     "@storybook/addon-actions": "^7.0.0-alpha.50",
     "@storybook/addon-backgrounds": "^7.0.0-alpha.50",
-    "@storybook/addon-controls": "^7.0.0-alpha.50",
+    "@storybook/addon-controls": "^7.0.0-alpha.51",
     "@storybook/addon-docs": "^7.0.0-alpha.50",
     "@storybook/addon-essentials": "^7.0.0-alpha.50",
     "@storybook/addon-measure": "^7.0.0-alpha.50",
