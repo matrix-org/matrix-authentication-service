@@ -29,6 +29,7 @@ use mas_storage::MIGRATOR;
 use mas_tasks::TaskQueue;
 use mas_templates::Templates;
 use tokio::signal::unix::SignalKind;
+use tower::Layer;
 use tracing::{error, info, log::warn};
 
 #[derive(Parser, Debug, Default)]
@@ -215,9 +216,8 @@ impl Options {
                 };
 
                 // and build the router
-                let router = crate::server::build_router(state.clone(), &config.resources)
-                    .layer(ServerLayer::new(config.name.clone()))
-                    .into_service();
+                let router = crate::server::build_router(state.clone(), &config.resources);
+                let router = ServerLayer::new(config.name.clone()).layer(router);
 
                 // Display some informations about where we'll be serving connections
                 let is_tls = config.tls.is_some();
