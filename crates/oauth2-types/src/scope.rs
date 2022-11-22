@@ -20,7 +20,6 @@
 
 use std::{borrow::Cow, collections::BTreeSet, iter::FromIterator, ops::Deref, str::FromStr};
 
-use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -106,9 +105,9 @@ impl Deref for ScopeToken {
     }
 }
 
-impl ToString for ScopeToken {
-    fn to_string(&self) -> String {
-        self.0.to_string()
+impl std::fmt::Display for ScopeToken {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
     }
 }
 
@@ -169,10 +168,17 @@ impl Scope {
     }
 }
 
-impl ToString for Scope {
-    fn to_string(&self) -> String {
-        let it = self.0.iter().map(ScopeToken::to_string);
-        Itertools::intersperse(it, ' '.to_string()).collect()
+impl std::fmt::Display for Scope {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for (index, token) in self.0.iter().enumerate() {
+            if index == 0 {
+                write!(f, "{token}")?;
+            } else {
+                write!(f, " {token}")?;
+            }
+        }
+
+        Ok(())
     }
 }
 

@@ -52,7 +52,6 @@ rand_chacha = "0.3.1"
 headers = "0.3.8"
 ulid = "1.0.0"
 
-oauth2-types = { path = "../oauth2-types" }
 mas-axum-utils = { path = "../axum-utils", default-features = false }
 mas-data-model = { path = "../data-model" }
 mas-email = { path = "../email" }
@@ -61,10 +60,12 @@ mas-http = { path = "../http", default-features = false }
 mas-iana = { path = "../iana" }
 mas-jose = { path = "../jose" }
 mas-keystore = { path = "../keystore" }
+mas-oidc-client = { path = "../oidc-client" }
 mas-policy = { path = "../policy" }
 mas-router = { path = "../router" }
 mas-storage = { path = "../storage" }
 mas-templates = { path = "../templates" }
+oauth2-types = { path = "../oauth2-types" }
 
 [dev-dependencies]
 indoc = "1.0.7"

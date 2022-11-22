@@ -17,13 +17,12 @@ use std::{marker::PhantomData, time::Duration};
 use http::{header::USER_AGENT, HeaderValue, Request, Response};
 use tower::{
     limit::{ConcurrencyLimit, ConcurrencyLimitLayer},
-    timeout::{Timeout, TimeoutLayer},
     Layer, Service,
 };
 use tower_http::{
-    decompression::{Decompression, DecompressionBody, DecompressionLayer},
     follow_redirect::{FollowRedirect, FollowRedirectLayer},
     set_header::{SetRequestHeader, SetRequestHeaderLayer},
+    timeout::{Timeout, TimeoutLayer},
 };
 
 use super::otel::TraceLayer;
@@ -48,9 +47,6 @@ impl<B> ClientLayer<B> {
     }
 }
 
-#[allow(dead_code)]
-pub type ClientResponse<B> = Response<DecompressionBody<B>>;
-
 impl<ReqBody, ResBody, S, E> Layer<S> for ClientLayer<ReqBody>
 where
     S: Service<Request<ReqBody>, Response = Response<ResBody>, Error = E>
@@ -63,21 +59,14 @@ where
     S::Future: Send + 'static,
     E: Into<BoxError>,
 {
-    type Service = Decompression<
-        SetRequestHeader<
-            TraceHttpClient<ConcurrencyLimit<FollowRedirect<TraceHttpClient<Timeout<S>>>>>,
-            HeaderValue,
-        >,
+    type Service = SetRequestHeader<
+        TraceHttpClient<ConcurrencyLimit<FollowRedirect<TraceHttpClient<Timeout<S>>>>>,
+        HeaderValue,
     >;
 
     fn layer(&self, inner: S) -> Self::Service {
-        // Note that most layers here just forward the error type. Two notables
-        // exceptions are:
-        //  - the TimeoutLayer
-        //  - the DecompressionLayer
-        // Those layers do type erasure of the error.
+        // Note that all layers here just forward the error type.
         (
-            DecompressionLayer::new(),
             SetRequestHeaderLayer::overriding(USER_AGENT, MAS_USER_AGENT.clone()),
             // A trace that has the whole operation, with all the redirects, timeouts and rate
             // limits in it

@@ -20,7 +20,6 @@
 
 use std::{collections::BTreeSet, fmt, iter::FromIterator, str::FromStr};
 
-use itertools::Itertools;
 use mas_iana::oauth::OAuthAuthorizationEndpointResponseType;
 use parse_display::{Display, FromStr};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
@@ -127,14 +126,23 @@ impl FromStr for ResponseType {
 
 impl fmt::Display for ResponseType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let res = Itertools::intersperse(self.iter().map(ToString::to_string), ' '.to_string())
-            .collect::<String>();
+        let mut iter = self.iter();
 
-        if res.is_empty() {
-            write!(f, "none")
+        // First item shouldn't have a leading space
+        if let Some(first) = iter.next() {
+            first.fmt(f)?;
         } else {
-            f.write_str(&res)
+            // If the whole iterator is empty, write 'none' instead
+            write!(f, "none")?;
+            return Ok(());
         }
+
+        // Write the other items with a leading space
+        for item in iter {
+            write!(f, " {item}")?;
+        }
+
+        Ok(())
     }
 }
 

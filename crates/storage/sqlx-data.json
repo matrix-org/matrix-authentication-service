@@ -214,6 +214,68 @@
     },
     "query": "\n            SELECT\n                c.oauth2_client_id,\n                c.encrypted_client_secret,\n                ARRAY(\n                    SELECT redirect_uri\n                    FROM oauth2_client_redirect_uris r\n                    WHERE r.oauth2_client_id = c.oauth2_client_id\n                ) AS \"redirect_uris!\",\n                c.grant_type_authorization_code,\n                c.grant_type_refresh_token,\n                c.client_name,\n                c.logo_uri,\n                c.client_uri,\n                c.policy_uri,\n                c.tos_uri,\n                c.jwks_uri,\n                c.jwks,\n                c.id_token_signed_response_alg,\n                c.userinfo_signed_response_alg,\n                c.token_endpoint_auth_method,\n                c.token_endpoint_auth_signing_alg,\n                c.initiate_login_uri\n            FROM oauth2_clients c\n\n            WHERE c.oauth2_client_id = $1\n        "
   },
+  "0af182315b36766eca8e232280986bade0202d1b1d64160a99cd14eadcbfc25b": {
+    "describe": {
+      "columns": [
+        {
+          "name": "upstream_oauth_provider_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "issuer",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "scope",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "client_id",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "encrypted_client_secret",
+          "ordinal": 4,
+          "type_info": "Text"
+        },
+        {
+          "name": "token_endpoint_signing_alg",
+          "ordinal": 5,
+          "type_info": "Text"
+        },
+        {
+          "name": "token_endpoint_auth_method",
+          "ordinal": 6,
+          "type_info": "Text"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 7,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n            SELECT\n                upstream_oauth_provider_id,\n                issuer,\n                scope,\n                client_id,\n                encrypted_client_secret,\n                token_endpoint_signing_alg,\n                token_endpoint_auth_method,\n                created_at\n            FROM upstream_oauth_providers\n            WHERE upstream_oauth_provider_id = $1\n        "
+  },
   "0b49cde0b7b79f79ec261502ab89bcffa81f9f5ed2f922a41b1718274b9e3073": {
     "describe": {
       "columns": [
@@ -290,6 +352,25 @@
       }
     },
     "query": "\n            INSERT INTO user_session_authentications\n                (user_session_authentication_id, user_session_id, created_at)\n            VALUES ($1, $2, $3)\n        "
+  },
+  "1ee5cecfafd4726a4ebc08da8a34c09178e6e1e072581c8fca9d3d76967792cb": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n            INSERT INTO upstream_oauth_providers (\n                upstream_oauth_provider_id,\n                issuer,\n                scope,\n                token_endpoint_auth_method,\n                token_endpoint_signing_alg,\n                client_id,\n                encrypted_client_secret,\n                created_at\n            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)\n        "
   },
   "2153118b364a33582e7f598acce3789fcb8d938948a819b15cf0b6d37edf58b2": {
     "describe": {
@@ -1010,6 +1091,23 @@
     },
     "query": "\n            SELECT scope_token\n            FROM oauth2_consents\n            WHERE user_id = $1 AND oauth2_client_id = $2\n        "
   },
+  "53a652f0892d25654fe937962913f2f964463fd09f518066fbc83808edc5b394": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid",
+          "Text",
+          "Text",
+          "Text",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n            INSERT INTO upstream_oauth_authorization_sessions (\n                upstream_oauth_authorization_session_id,\n                upstream_oauth_provider_id,\n                state,\n                code_challenge_verifier,\n                nonce,\n                created_at,\n                completed_at\n            ) VALUES ($1, $2, $3, $4, $5, $6, NULL)\n        "
+  },
   "559a486756d08d101eb7188ef6637b9d24c024d056795b8121f7f04a7f9db6a3": {
     "describe": {
       "columns": [
@@ -1156,6 +1254,104 @@
       }
     },
     "query": "\n            UPDATE oauth2_access_tokens\n            SET revoked_at = $2\n            WHERE oauth2_access_token_id = $1\n        "
+  },
+  "6c8816b2618db8d04ab9393429866d9af59ad280949947fc025c89baffe6a455": {
+    "describe": {
+      "columns": [
+        {
+          "name": "upstream_oauth_authorization_session_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "upstream_oauth_provider_id",
+          "ordinal": 1,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "state",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "code_challenge_verifier",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "nonce",
+          "ordinal": 4,
+          "type_info": "Text"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 5,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "completed_at",
+          "ordinal": 6,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "provider_issuer",
+          "ordinal": 7,
+          "type_info": "Text"
+        },
+        {
+          "name": "provider_scope",
+          "ordinal": 8,
+          "type_info": "Text"
+        },
+        {
+          "name": "provider_client_id",
+          "ordinal": 9,
+          "type_info": "Text"
+        },
+        {
+          "name": "provider_encrypted_client_secret",
+          "ordinal": 10,
+          "type_info": "Text"
+        },
+        {
+          "name": "provider_token_endpoint_auth_method",
+          "ordinal": 11,
+          "type_info": "Text"
+        },
+        {
+          "name": "provider_token_endpoint_signing_alg",
+          "ordinal": 12,
+          "type_info": "Text"
+        },
+        {
+          "name": "provider_created_at",
+          "ordinal": 13,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false,
+        true,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n            SELECT\n                ua.upstream_oauth_authorization_session_id,\n                ua.upstream_oauth_provider_id,\n                ua.state,\n                ua.code_challenge_verifier,\n                ua.nonce,\n                ua.created_at,\n                ua.completed_at,\n                up.issuer AS \"provider_issuer\",\n                up.scope AS \"provider_scope\",\n                up.client_id AS \"provider_client_id\",\n                up.encrypted_client_secret AS \"provider_encrypted_client_secret\",\n                up.token_endpoint_auth_method AS \"provider_token_endpoint_auth_method\",\n                up.token_endpoint_signing_alg AS \"provider_token_endpoint_signing_alg\",\n                up.created_at AS \"provider_created_at\"\n            FROM upstream_oauth_authorization_sessions ua\n            INNER JOIN upstream_oauth_providers up\n              USING (upstream_oauth_provider_id)\n            WHERE upstream_oauth_authorization_session_id = $1\n        "
   },
   "7262f81a335a984c4051383d2ede7455ff65ed90fbd3151d625f8a21fd26cb05": {
     "describe": {

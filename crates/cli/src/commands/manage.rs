@@ -13,8 +13,10 @@
 // limitations under the License.
 
 use argon2::Argon2;
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use mas_config::{DatabaseConfig, RootConfig};
+use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
+use mas_router::UrlBuilder;
 use mas_storage::{
     oauth2::client::{insert_client_from_config, lookup_client, truncate_clients},
     user::{
@@ -22,6 +24,7 @@ use mas_storage::{
     },
     Clock, LookupError,
 };
+use oauth2_types::scope::Scope;
 use rand::SeedableRng;
 use tracing::{info, warn};
 
@@ -29,6 +32,110 @@ use tracing::{info, warn};
 pub(super) struct Options {
     #[command(subcommand)]
     subcommand: Subcommand,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum AuthenticationMethod {
+    /// Client doesn't use any authentication
+    None,
+
+    /// Client sends its `client_secret` in the request body
+    ClientSecretPost,
+
+    /// Client sends its `client_secret` in the authorization header
+    ClientSecretBasic,
+
+    /// Client uses its `client_secret` to sign a client assertion JWT
+    ClientSecretJwt,
+
+    /// Client uses its private keys to sign a client assertion JWT
+    PrivateKeyJwt,
+}
+
+impl AuthenticationMethod {
+    fn requires_client_secret(self) -> bool {
+        matches!(
+            self,
+            Self::ClientSecretJwt | Self::ClientSecretPost | Self::ClientSecretBasic
+        )
+    }
+}
+
+impl From<AuthenticationMethod> for OAuthClientAuthenticationMethod {
+    fn from(val: AuthenticationMethod) -> Self {
+        (&val).into()
+    }
+}
+
+impl From<&AuthenticationMethod> for OAuthClientAuthenticationMethod {
+    fn from(val: &AuthenticationMethod) -> Self {
+        match val {
+            AuthenticationMethod::None => OAuthClientAuthenticationMethod::None,
+            AuthenticationMethod::ClientSecretPost => {
+                OAuthClientAuthenticationMethod::ClientSecretPost
+            }
+            AuthenticationMethod::ClientSecretBasic => {
+                OAuthClientAuthenticationMethod::ClientSecretBasic
+            }
+            AuthenticationMethod::ClientSecretJwt => {
+                OAuthClientAuthenticationMethod::ClientSecretJwt
+            }
+            AuthenticationMethod::PrivateKeyJwt => OAuthClientAuthenticationMethod::PrivateKeyJwt,
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum SigningAlgorithm {
+    #[value(name = "HS256")]
+    HS256,
+    #[value(name = "HS384")]
+    HS384,
+    #[value(name = "HS512")]
+    HS512,
+    #[value(name = "RS256")]
+    RS256,
+    #[value(name = "RS384")]
+    RS384,
+    #[value(name = "RS512")]
+    RS512,
+    #[value(name = "PS256")]
+    PS256,
+    #[value(name = "PS384")]
+    PS384,
+    #[value(name = "PS512")]
+    PS512,
+    #[value(name = "ES256")]
+    ES256,
+    #[value(name = "ES384")]
+    ES384,
+    #[value(name = "ES256K")]
+    ES256K,
+}
+
+impl From<SigningAlgorithm> for JsonWebSignatureAlg {
+    fn from(val: SigningAlgorithm) -> Self {
+        (&val).into()
+    }
+}
+
+impl From<&SigningAlgorithm> for JsonWebSignatureAlg {
+    fn from(val: &SigningAlgorithm) -> Self {
+        match val {
+            SigningAlgorithm::HS256 => Self::Hs256,
+            SigningAlgorithm::HS384 => Self::Hs384,
+            SigningAlgorithm::HS512 => Self::Hs512,
+            SigningAlgorithm::RS256 => Self::Rs256,
+            SigningAlgorithm::RS384 => Self::Rs384,
+            SigningAlgorithm::RS512 => Self::Rs512,
+            SigningAlgorithm::PS256 => Self::Ps256,
+            SigningAlgorithm::PS384 => Self::Ps384,
+            SigningAlgorithm::PS512 => Self::Ps512,
+            SigningAlgorithm::ES256 => Self::Es256,
+            SigningAlgorithm::ES384 => Self::Es384,
+            SigningAlgorithm::ES256K => Self::Es256K,
+        }
+    }
 }
 
 #[derive(Parser, Debug)]
@@ -48,9 +155,38 @@ enum Subcommand {
         #[arg(long)]
         truncate: bool,
     },
+
+    /// Add an OAuth 2.0 upstream
+    #[command(name = "add-oauth-upstream")]
+    AddOAuthUpstream {
+        /// Issuer URL
+        issuer: String,
+
+        /// Scope to ask for when authorizing with this upstream.
+        ///
+        /// This should include at least the `openid` scope.
+        scope: Scope,
+
+        /// Client authentication method used when using the token endpoint.
+        #[arg(value_enum)]
+        token_endpoint_auth_method: AuthenticationMethod,
+
+        /// Client ID
+        client_id: String,
+
+        /// JWT signing algorithm used when authenticating for the token
+        /// endpoint.
+        #[arg(long, value_enum)]
+        signing_alg: Option<SigningAlgorithm>,
+
+        /// Client Secret
+        #[arg(long)]
+        client_secret: Option<String>,
+    },
 }
 
 impl Options {
+    #[allow(clippy::too_many_lines)]
     pub async fn run(&self, root: &super::Options) -> anyhow::Result<()> {
         use Subcommand as SC;
         let clock = Clock::default();
@@ -71,11 +207,13 @@ impl Options {
 
                 Ok(())
             }
+
             SC::Users => {
                 warn!("Not implemented yet");
 
                 Ok(())
             }
+
             SC::VerifyEmail { username, email } => {
                 let config: DatabaseConfig = root.load_config()?;
                 let pool = config.connect().await?;
@@ -90,6 +228,7 @@ impl Options {
 
                 Ok(())
             }
+
             SC::ImportClients { truncate } => {
                 let config: RootConfig = root.load_config()?;
                 let pool = config.database.connect().await?;
@@ -141,6 +280,64 @@ impl Options {
                 }
 
                 txn.commit().await?;
+
+                Ok(())
+            }
+
+            SC::AddOAuthUpstream {
+                issuer,
+                scope,
+                token_endpoint_auth_method,
+                client_id,
+                client_secret,
+                signing_alg,
+            } => {
+                let config: RootConfig = root.load_config()?;
+                let encrypter = config.secrets.encrypter();
+                let pool = config.database.connect().await?;
+                let url_builder = UrlBuilder::new(config.http.public_base);
+                let mut conn = pool.acquire().await?;
+
+                let requires_client_secret = token_endpoint_auth_method.requires_client_secret();
+
+                let token_endpoint_auth_method: OAuthClientAuthenticationMethod =
+                    token_endpoint_auth_method.into();
+
+                let token_endpoint_signing_alg: Option<JsonWebSignatureAlg> =
+                    signing_alg.as_ref().map(Into::into);
+
+                tracing::info!(%issuer, %scope, %token_endpoint_auth_method, %client_id, "Adding OAuth upstream");
+
+                if client_secret.is_none() && requires_client_secret {
+                    tracing::warn!("Token endpoint auth method requires a client secret, but none were provided");
+                }
+
+                let encrypted_client_secret = client_secret
+                    .as_deref()
+                    .map(|client_secret| encrypter.encryt_to_string(client_secret.as_bytes()))
+                    .transpose()?;
+
+                let provider = mas_storage::upstream_oauth2::add_provider(
+                    &mut conn,
+                    &mut rng,
+                    &clock,
+                    issuer.clone(),
+                    scope.clone(),
+                    token_endpoint_auth_method,
+                    token_endpoint_signing_alg,
+                    client_id.clone(),
+                    encrypted_client_secret,
+                )
+                .await?;
+
+                let redirect_uri = url_builder.upstream_oauth_callback(provider.id);
+                let auth_uri = url_builder.upstream_oauth_authorize(provider.id);
+                tracing::info!(
+                    %provider.id,
+                    %provider.client_id,
+                    provider.redirect_uri = %redirect_uri,
+                    "Test authorization by going to {auth_uri}"
+                );
 
                 Ok(())
             }
