@@ -23,6 +23,7 @@ use http::Request;
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
 use mas_jose::{
     claims::{self, ClaimError},
+    constraints::Constrainable,
     jwa::SymmetricKey,
     jwt::{JsonWebSignatureHeader, Jwt},
 };
@@ -338,7 +339,12 @@ impl RequestClientCredentials {
                             .signing_key_for_algorithm(&signing_algorithm)
                             .ok_or(CredentialsError::NoPrivateKeyFound)?;
                         let signer = key.params().signing_key_for_alg(&signing_algorithm)?;
-                        let header = JsonWebSignatureHeader::new(signing_algorithm);
+                        let mut header = JsonWebSignatureHeader::new(signing_algorithm);
+
+                        if let Some(kid) = key.kid() {
+                            header = header.with_kid(kid);
+                        }
+
                         Jwt::sign(header, claims, &signer)?.to_string()
                     }
                     JwtSigningMethod::Custom(jwt_signing_fn) => {

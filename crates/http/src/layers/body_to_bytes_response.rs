@@ -38,6 +38,14 @@ impl<S, B> Error<S, B> {
     }
 }
 
+impl<E> Error<E, E> {
+    pub fn unify(self) -> E {
+        match self {
+            Self::Service { inner } | Self::Body { inner } => inner,
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct BodyToBytesResponse<S> {
     inner: S,

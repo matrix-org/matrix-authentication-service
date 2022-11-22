@@ -52,6 +52,7 @@ mod compat;
 mod graphql;
 mod health;
 mod oauth2;
+mod upstream_oauth2;
 mod views;
 
 pub use compat::MatrixHomeserver;
@@ -233,6 +234,7 @@ where
     Encrypter: FromRef<S>,
     Templates: FromRef<S>,
     Mailer: FromRef<S>,
+    Keystore: FromRef<S>,
 {
     Router::new()
         .route(
@@ -296,6 +298,14 @@ where
             mas_router::CompatLoginSsoComplete::route(),
             get(self::compat::login_sso_complete::get).post(self::compat::login_sso_complete::post),
         )
+        .route(
+            mas_router::UpstreamOAuth2Authorize::route(),
+            get(self::upstream_oauth2::authorize::get),
+        )
+        .route(
+            mas_router::UpstreamOAuth2Callback::route(),
+            get(self::upstream_oauth2::callback::get),
+        )
         .layer(AndThenLayer::new(
             move |response: axum::response::Response| async move {
                 if response.status().is_server_error() {
@@ -314,43 +324,6 @@ where
             },
         ))
 }
-
-/*
-#[must_use]
-#[allow(clippy::trait_duplication_in_bounds)]
-pub fn router<S, B>(state: S) -> RouterService<B>
-where
-    B: HttpBody + Send + 'static,
-    <B as HttpBody>::Data: Into<Bytes> + Send,
-    <B as HttpBody>::Error: std::error::Error + Send + Sync,
-    S: Clone + Send + Sync + 'static,
-    Keystore: FromRef<S>,
-    UrlBuilder: FromRef<S>,
-    Arc<PolicyFactory>: FromRef<S>,
-    PgPool: FromRef<S>,
-    Encrypter: FromRef<S>,
-    Templates: FromRef<S>,
-    Mailer: FromRef<S>,
-    MatrixHomeserver: FromRef<S>,
-    mas_graphql::Schema: FromRef<S>,
-{
-    let healthcheck_router = healthcheck_router();
-    let discovery_router = discovery_router();
-    let api_router = api_router();
-    let graphql_router = graphql_router(true);
-    let compat_router = compat_router();
-    let human_router = human_router(Templates::from_ref(&state));
-
-    Router::new()
-        .merge(healthcheck_router)
-        .merge(discovery_router)
-        .merge(human_router)
-        .merge(api_router)
-        .merge(graphql_router)
-        .merge(compat_router)
-        .with_state(state)
-}
-*/
 
 #[cfg(test)]
 async fn test_state(pool: PgPool) -> Result<AppState, anyhow::Error> {

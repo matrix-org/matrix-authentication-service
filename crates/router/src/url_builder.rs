@@ -14,6 +14,7 @@
 
 //! Utility to build URLs
 
+use ulid::Ulid;
 use url::Url;
 
 use crate::traits::Route;
@@ -96,5 +97,17 @@ impl UrlBuilder {
     #[must_use]
     pub fn static_asset(&self, path: String) -> Url {
         self.url_for(&crate::endpoints::StaticAsset::new(path))
+    }
+
+    /// Upstream redirect URI
+    #[must_use]
+    pub fn upstream_oauth_callback(&self, id: Ulid) -> Url {
+        self.url_for(&crate::endpoints::UpstreamOAuth2Callback::new(id))
+    }
+
+    /// Upstream authorize URI
+    #[must_use]
+    pub fn upstream_oauth_authorize(&self, id: Ulid) -> Url {
+        self.url_for(&crate::endpoints::UpstreamOAuth2Authorize::new(id))
     }
 }

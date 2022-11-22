@@ -16,7 +16,6 @@ use std::{convert::Infallible, net::SocketAddr};
 
 use bytes::Bytes;
 use http::{Request, Response};
-use http_body::{combinators::BoxBody, Body};
 use hyper::{
     client::{
         connect::dns::{GaiResolver, Name},
@@ -26,14 +25,11 @@ use hyper::{
 };
 use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
 use thiserror::Error;
-use tower::{
-    util::{MapErrLayer, MapResponseLayer},
-    Layer, Service,
-};
+use tower::{Layer, Service};
 
 use crate::{
     layers::{
-        client::{ClientLayer, ClientResponse},
+        client::ClientLayer,
         otel::{TraceDns, TraceLayer},
     },
     BoxCloneSyncService, BoxError,
@@ -229,32 +225,20 @@ where
 }
 
 /// Create a traced HTTP client, with a default timeout, which follows redirects
-/// and handles compression
 ///
 /// # Errors
 ///
 /// Returns an error if it failed to initialize
 pub async fn client<B, E>(
     operation: &'static str,
-) -> Result<
-    BoxCloneSyncService<Request<B>, Response<BoxBody<bytes::Bytes, ClientError>>, ClientError>,
-    ClientInitError,
->
+) -> Result<BoxCloneSyncService<Request<B>, Response<hyper::Body>, hyper::Error>, ClientInitError>
 where
     B: http_body::Body<Data = Bytes, Error = E> + Default + Send + 'static,
     E: Into<BoxError> + 'static,
 {
     let client = make_traced_client().await?;
 
-    let layer = (
-        // Convert the errors to ClientError to help dealing with them
-        MapErrLayer::new(ClientError::from),
-        MapResponseLayer::new(|r: ClientResponse<hyper::Body>| {
-            r.map(|body| body.map_err(ClientError::from).boxed())
-        }),
-        ClientLayer::new(operation),
-    );
-    let client = BoxCloneSyncService::new(layer.layer(client));
+    let client = ClientLayer::new(operation).layer(client);
 
-    Ok(client)
+    Ok(BoxCloneSyncService::new(client))
 }

@@ -18,7 +18,6 @@ chrono = "0.4.23"
 sha2 = "0.10.6"
 data-encoding = "2.3.2"
 thiserror = "1.0.37"
-itertools = "0.10.5"
 
 mas-iana = { path = "../iana" }
 mas-jose = { path = "../jose" }

@@ -45,6 +45,7 @@ mas-config = { path = "../config" }
 mas-email = { path = "../email" }
 mas-handlers = { path = "../handlers", default-features = false }
 mas-http = { path = "../http", default-features = false, features = ["axum", "client"] }
+mas-iana = { path = "../iana" }
 mas-listener = { path = "../listener" }
 mas-policy = { path = "../policy" }
 mas-router = { path = "../router" }
@@ -52,6 +53,7 @@ mas-spa = { path = "../spa" }
 mas-storage = { path = "../storage" }
 mas-tasks = { path = "../tasks" }
 mas-templates = { path = "../templates" }
+oauth2-types = { path = "../oauth2-types" }
 
 [dev-dependencies]
 indoc = "1.0.7"

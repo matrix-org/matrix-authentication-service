@@ -119,7 +119,9 @@ impl SecretsConfig {
                 }
             };
 
-            let key = JsonWebKey::new(key).with_kid(item.kid.clone());
+            let key = JsonWebKey::new(key)
+                .with_kid(item.kid.clone())
+                .with_use(mas_iana::jose::JsonWebKeyUse::Sig);
             keys.push(key);
         }
 

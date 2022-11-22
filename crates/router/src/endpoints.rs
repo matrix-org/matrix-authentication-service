@@ -524,6 +524,52 @@ impl Route for CompatLoginSsoComplete {
     }
 }
 
+/// `GET /upstream/authorize/:id`
+pub struct UpstreamOAuth2Authorize {
+    id: Ulid,
+}
+
+impl UpstreamOAuth2Authorize {
+    #[must_use]
+    pub const fn new(id: Ulid) -> Self {
+        Self { id }
+    }
+}
+
+impl Route for UpstreamOAuth2Authorize {
+    type Query = ();
+    fn route() -> &'static str {
+        "/upstream/authorize/:provider_id"
+    }
+
+    fn path(&self) -> std::borrow::Cow<'static, str> {
+        format!("/upstream/authorize/{}", self.id).into()
+    }
+}
+
+/// `GET /upstream/callback/:id`
+pub struct UpstreamOAuth2Callback {
+    id: Ulid,
+}
+
+impl UpstreamOAuth2Callback {
+    #[must_use]
+    pub const fn new(id: Ulid) -> Self {
+        Self { id }
+    }
+}
+
+impl Route for UpstreamOAuth2Callback {
+    type Query = ();
+    fn route() -> &'static str {
+        "/upstream/callback/:provider_id"
+    }
+
+    fn path(&self) -> std::borrow::Cow<'static, str> {
+        format!("/upstream/callback/{}", self.id).into()
+    }
+}
+
 /// `GET /assets`
 pub struct StaticAsset {
     path: String,
