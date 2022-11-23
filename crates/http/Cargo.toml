@@ -23,7 +23,7 @@ opentelemetry-semantic-conventions = "0.10.0"
 rustls = { version = "0.20.7", optional = true }
 rustls-native-certs = { version = "0.6.2", optional = true }
 serde = "1.0.147"
-serde_json = "1.0.88"
+serde_json = "1.0.89"
 serde_urlencoded = "0.7.1"
 thiserror = "1.0.37"
 tokio = { version = "1.22.0", features = ["sync", "parking_lot"], optional = true }
