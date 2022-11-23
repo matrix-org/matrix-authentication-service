@@ -689,45 +689,6 @@
     },
     "query": "\n            SELECT\n                ue.user_email_id,\n                ue.email        AS \"user_email\",\n                ue.created_at   AS \"user_email_created_at\",\n                ue.confirmed_at AS \"user_email_confirmed_at\"\n            FROM user_emails ue\n\n            WHERE ue.user_id = $1\n              AND ue.email = $2\n        "
   },
-  "3a6de39a88ef93a91f3cc0465785bafd58ef7dbd4aae924a8bcfcefaf2f1a0d7": {
-    "describe": {
-      "columns": [
-        {
-          "name": "upstream_oauth_link_id",
-          "ordinal": 0,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_id",
-          "ordinal": 1,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "subject",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "created_at",
-          "ordinal": 3,
-          "type_info": "Timestamptz"
-        }
-      ],
-      "nullable": [
-        false,
-        true,
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Uuid",
-          "Text"
-        ]
-      }
-    },
-    "query": "\n            SELECT\n                upstream_oauth_link_id,\n                user_id,\n                subject,\n                created_at\n            FROM upstream_oauth_links\n            WHERE upstream_oauth_provider_id = $1\n              AND subject = $2\n        "
-  },
   "3df0838b660466f69ee681337fe6753133748defb715e53c8381badcc3e8bca9": {
     "describe": {
       "columns": [
@@ -978,6 +939,50 @@
     },
     "query": "\n            UPDATE oauth2_authorization_grants AS og\n            SET\n                oauth2_session_id = os.oauth2_session_id,\n                fulfilled_at = os.created_at\n            FROM oauth2_sessions os\n            WHERE\n                og.oauth2_authorization_grant_id = $1\n                AND os.oauth2_session_id = $2\n            RETURNING fulfilled_at AS \"fulfilled_at!: DateTime<Utc>\"\n        "
   },
+  "47d4048365144c7bfc14790dfb8fa7f862d2952075a68cd5e90ac76d9e6d1388": {
+    "describe": {
+      "columns": [
+        {
+          "name": "upstream_oauth_link_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "upstream_oauth_provider_id",
+          "ordinal": 1,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "user_id",
+          "ordinal": 2,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "subject",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 4,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n            SELECT\n                upstream_oauth_link_id,\n                upstream_oauth_provider_id,\n                user_id,\n                subject,\n                created_at\n            FROM upstream_oauth_links\n            WHERE upstream_oauth_link_id = $1\n        "
+  },
   "47fff42fd9871f73baf3e3ebb9e296fa65f7bc99f94639891f29d56d204b659a": {
     "describe": {
       "columns": [],
@@ -1181,6 +1186,56 @@
     },
     "query": "\n            UPDATE compat_sessions cs\n            SET finished_at = $2\n            FROM compat_access_tokens ca\n            WHERE ca.access_token = $1\n              AND ca.compat_session_id = cs.compat_session_id\n              AND cs.finished_at IS NULL\n            RETURNING cs.compat_session_id\n        "
   },
+  "59439585536bb4e547a6cf58a8bc6ac735f29c225bcbeac7d371f09166789a73": {
+    "describe": {
+      "columns": [
+        {
+          "name": "user_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "user_username",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "user_email_id?",
+          "ordinal": 2,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "user_email?",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "user_email_created_at?",
+          "ordinal": 4,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "user_email_confirmed_at?",
+          "ordinal": 5,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n            SELECT\n                u.user_id,\n                u.username       AS user_username,\n                ue.user_email_id AS \"user_email_id?\",\n                ue.email         AS \"user_email?\",\n                ue.created_at    AS \"user_email_created_at?\",\n                ue.confirmed_at  AS \"user_email_confirmed_at?\"\n            FROM users u\n\n            LEFT JOIN user_emails ue\n              USING (user_id)\n\n            WHERE u.user_id = $1\n        "
+  },
   "5b5d5c82da37c6f2d8affacfb02119965c04d1f2a9cc53dbf5bd4c12584969a0": {
     "describe": {
       "columns": [],
@@ -1192,6 +1247,57 @@
       }
     },
     "query": "\n            DELETE FROM oauth2_access_tokens\n            WHERE expires_at < $1\n        "
+  },
+  "5cb91740580a37044dd37c90a2fadaab9abcd387c7883f47c73c18a8fa260683": {
+    "describe": {
+      "columns": [
+        {
+          "name": "upstream_oauth_authorization_session_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "state",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "code_challenge_verifier",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "nonce",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 4,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "completed_at",
+          "ordinal": 5,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n            SELECT\n                upstream_oauth_authorization_session_id,\n                state,\n                code_challenge_verifier,\n                nonce,\n                created_at,\n                completed_at\n            FROM upstream_oauth_authorization_sessions\n            WHERE upstream_oauth_authorization_session_id = $1\n              AND upstream_oauth_link_id = $2\n        "
   },
   "5ccde09ee3fe43e7b492d73fa67708b5dcb2b7496c4d05bcfcf0ea63c7576d48": {
     "describe": {
@@ -2497,5 +2603,50 @@
       }
     },
     "query": "\n            INSERT INTO user_sessions (user_session_id, user_id, created_at)\n            VALUES ($1, $2, $3)\n        "
+  },
+  "f71cb5761bfc15d8bc3ba7ee49b63fb3c3ea9691745688eb5fd91f4f6e1ec018": {
+    "describe": {
+      "columns": [
+        {
+          "name": "upstream_oauth_link_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "upstream_oauth_provider_id",
+          "ordinal": 1,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "user_id",
+          "ordinal": 2,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "subject",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 4,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n            SELECT\n                upstream_oauth_link_id,\n                upstream_oauth_provider_id,\n                user_id,\n                subject,\n                created_at\n            FROM upstream_oauth_links\n            WHERE upstream_oauth_provider_id = $1\n              AND subject = $2\n        "
   }
 }

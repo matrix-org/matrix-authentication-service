@@ -308,6 +308,10 @@ where
             mas_router::UpstreamOAuth2Callback::route(),
             get(self::upstream_oauth2::callback::get),
         )
+        .route(
+            mas_router::UpstreamOAuth2Link::route(),
+            get(self::upstream_oauth2::link::get).post(self::upstream_oauth2::link::post),
+        )
         .layer(AndThenLayer::new(
             move |response: axum::response::Response| async move {
                 if response.status().is_server_error() {
