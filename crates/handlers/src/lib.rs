@@ -55,9 +55,9 @@ mod oauth2;
 mod upstream_oauth2;
 mod views;
 
-pub use compat::MatrixHomeserver;
+pub use mas_axum_utils::http_client_factory::HttpClientFactory;
 
-pub use self::{app_state::AppState, graphql::schema as graphql_schema};
+pub use self::{app_state::AppState, compat::MatrixHomeserver, graphql::schema as graphql_schema};
 
 #[must_use]
 pub fn healthcheck_router<S, B>() -> Router<S, B>
@@ -138,6 +138,7 @@ where
     Arc<PolicyFactory>: FromRef<S>,
     PgPool: FromRef<S>,
     Encrypter: FromRef<S>,
+    HttpClientFactory: FromRef<S>,
 {
     // All those routes are API-like, with a common CORS layer
     Router::new()
@@ -235,6 +236,7 @@ where
     Templates: FromRef<S>,
     Mailer: FromRef<S>,
     Keystore: FromRef<S>,
+    HttpClientFactory: FromRef<S>,
 {
     Router::new()
         .route(
@@ -363,6 +365,8 @@ async fn test_state(pool: PgPool) -> Result<AppState, anyhow::Error> {
 
     let graphql_schema = graphql_schema(&pool);
 
+    let http_client_factory = HttpClientFactory::new(10);
+
     Ok(AppState {
         pool,
         templates,
@@ -373,6 +377,7 @@ async fn test_state(pool: PgPool) -> Result<AppState, anyhow::Error> {
         homeserver,
         policy_factory,
         graphql_schema,
+        http_client_factory,
     })
 }
 

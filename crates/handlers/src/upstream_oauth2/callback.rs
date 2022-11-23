@@ -19,6 +19,7 @@ use axum::{
 };
 use axum_extra::extract::PrivateCookieJar;
 use hyper::StatusCode;
+use mas_axum_utils::http_client_factory::HttpClientFactory;
 use mas_http::ClientInitError;
 use mas_keystore::{Encrypter, Keystore};
 use mas_oidc_client::{
@@ -33,7 +34,7 @@ use sqlx::PgPool;
 use thiserror::Error;
 use ulid::Ulid;
 
-use super::{client_credentials_for_provider, http_service, ProviderCredentialsError};
+use super::{client_credentials_for_provider, ProviderCredentialsError};
 
 #[derive(Deserialize)]
 pub struct QueryParams {
@@ -144,8 +145,9 @@ impl IntoResponse for RouteError {
     }
 }
 
-#[allow(clippy::too_many_lines)]
+#[allow(clippy::too_many_lines, clippy::too_many_arguments)]
 pub(crate) async fn get(
+    State(http_client_factory): State<HttpClientFactory>,
     State(pool): State<PgPool>,
     State(url_builder): State<UrlBuilder>,
     State(encrypter): State<Encrypter>,
@@ -195,12 +197,18 @@ pub(crate) async fn get(
         CodeOrError::Code { code } => code,
     };
 
-    let http_service = http_service("upstream-code-exchange").await?;
+    let http_service = http_client_factory
+        .http_service("upstream-discover")
+        .await?;
 
     // XXX: we shouldn't discover on-the-fly
     // Discover the provider
     let metadata =
         mas_oidc_client::requests::discovery::discover(&http_service, &provider.issuer).await?;
+
+    let http_service = http_client_factory
+        .http_service("upstream-fetch-jwks")
+        .await?;
 
     // Fetch the JWKS
     let jwks =
@@ -230,6 +238,10 @@ pub(crate) async fn get(
         signing_algorithm: &mas_iana::jose::JsonWebSignatureAlg::Rs256,
         client_id: &provider.client_id,
     };
+
+    let http_service = http_client_factory
+        .http_service("upstream-exchange-code")
+        .await?;
 
     let (response, _id_token) =
         mas_oidc_client::requests::authorization_code::access_token_with_authorization_code(

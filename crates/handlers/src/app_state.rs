@@ -15,6 +15,7 @@
 use std::sync::Arc;
 
 use axum::extract::FromRef;
+use mas_axum_utils::http_client_factory::HttpClientFactory;
 use mas_email::Mailer;
 use mas_keystore::{Encrypter, Keystore};
 use mas_policy::PolicyFactory;
@@ -35,6 +36,7 @@ pub struct AppState {
     pub homeserver: MatrixHomeserver,
     pub policy_factory: Arc<PolicyFactory>,
     pub graphql_schema: mas_graphql::Schema,
+    pub http_client_factory: HttpClientFactory,
 }
 
 impl FromRef<AppState> for PgPool {
@@ -88,5 +90,10 @@ impl FromRef<AppState> for MatrixHomeserver {
 impl FromRef<AppState> for Arc<PolicyFactory> {
     fn from_ref(input: &AppState) -> Self {
         input.policy_factory.clone()
+    }
+}
+impl FromRef<AppState> for HttpClientFactory {
+    fn from_ref(input: &AppState) -> Self {
+        input.http_client_factory.clone()
     }
 }
