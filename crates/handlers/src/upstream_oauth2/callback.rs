@@ -15,7 +15,6 @@
 use axum::{
     extract::{Path, Query, State},
     response::IntoResponse,
-    Json,
 };
 use axum_extra::extract::PrivateCookieJar;
 use hyper::StatusCode;
@@ -27,7 +26,7 @@ use mas_oidc_client::{
     error::{DiscoveryError, JwksError, TokenAuthorizationCodeError},
     requests::{authorization_code::AuthorizationValidationData, jose::JwtVerificationData},
 };
-use mas_router::UrlBuilder;
+use mas_router::{Route, UrlBuilder};
 use mas_storage::{
     upstream_oauth2::{add_link, complete_session, lookup_link_by_subject, lookup_session},
     GenericLookupError, LookupResultExt,
@@ -271,7 +270,7 @@ pub(crate) async fn get(
         .http_service("upstream-exchange-code")
         .await?;
 
-    let (response, id_token) =
+    let (_response, id_token) =
         mas_oidc_client::requests::authorization_code::access_token_with_authorization_code(
             &http_service,
             client_credentials,
@@ -309,5 +308,5 @@ pub(crate) async fn get(
 
     txn.commit().await?;
 
-    Ok(Json(response))
+    Ok(mas_router::UpstreamOAuth2Link::new(link.id).go())
 }

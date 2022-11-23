@@ -22,6 +22,7 @@ use url::Url;
 
 pub(crate) mod authorize;
 pub(crate) mod callback;
+pub(crate) mod link;
 
 #[derive(Debug, Error)]
 enum ProviderCredentialsError {

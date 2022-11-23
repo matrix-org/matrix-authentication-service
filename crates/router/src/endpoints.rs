@@ -570,6 +570,29 @@ impl Route for UpstreamOAuth2Callback {
     }
 }
 
+/// `GET /upstream/link/:id`
+pub struct UpstreamOAuth2Link {
+    id: Ulid,
+}
+
+impl UpstreamOAuth2Link {
+    #[must_use]
+    pub const fn new(id: Ulid) -> Self {
+        Self { id }
+    }
+}
+
+impl Route for UpstreamOAuth2Link {
+    type Query = ();
+    fn route() -> &'static str {
+        "/upstream/link/:link_id"
+    }
+
+    fn path(&self) -> std::borrow::Cow<'static, str> {
+        format!("/upstream/link/{}", self.id).into()
+    }
+}
+
 /// `GET /assets`
 pub struct StaticAsset {
     path: String,

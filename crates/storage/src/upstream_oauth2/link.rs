@@ -23,9 +23,48 @@ use crate::{Clock, GenericLookupError};
 
 struct LinkLookup {
     upstream_oauth_link_id: Uuid,
+    upstream_oauth_provider_id: Uuid,
     user_id: Option<Uuid>,
     subject: String,
     created_at: DateTime<Utc>,
+}
+
+#[tracing::instrument(
+    skip_all,
+    fields(upstream_oauth_link.id = %id),
+    err,
+)]
+pub async fn lookup_link(
+    executor: impl PgExecutor<'_>,
+    id: Ulid,
+) -> Result<(UpstreamOAuthLink, Ulid, Option<Ulid>), GenericLookupError> {
+    let res = sqlx::query_as!(
+        LinkLookup,
+        r#"
+            SELECT
+                upstream_oauth_link_id,
+                upstream_oauth_provider_id,
+                user_id,
+                subject,
+                created_at
+            FROM upstream_oauth_links
+            WHERE upstream_oauth_link_id = $1
+        "#,
+        Uuid::from(id),
+    )
+    .fetch_one(executor)
+    .await
+    .map_err(GenericLookupError::what("Upstream OAuth 2.0 link"))?;
+
+    Ok((
+        UpstreamOAuthLink {
+            id: Ulid::from(res.upstream_oauth_link_id),
+            subject: res.subject,
+            created_at: res.created_at,
+        },
+        Ulid::from(res.upstream_oauth_provider_id),
+        res.user_id.map(Ulid::from),
+    ))
 }
 
 #[tracing::instrument(
@@ -48,6 +87,7 @@ pub async fn lookup_link_by_subject(
         r#"
             SELECT
                 upstream_oauth_link_id,
+                upstream_oauth_provider_id,
                 user_id,
                 subject,
                 created_at

@@ -630,6 +630,63 @@ pub async fn lookup_user_by_username(
 
 #[tracing::instrument(
     skip_all,
+    fields(user.id = %id),
+    err,
+)]
+pub async fn lookup_user(
+    executor: impl PgExecutor<'_>,
+    id: Ulid,
+) -> Result<User<PostgresqlBackend>, UserLookupError> {
+    let res = sqlx::query_as!(
+        UserLookup,
+        r#"
+            SELECT
+                u.user_id,
+                u.username       AS user_username,
+                ue.user_email_id AS "user_email_id?",
+                ue.email         AS "user_email?",
+                ue.created_at    AS "user_email_created_at?",
+                ue.confirmed_at  AS "user_email_confirmed_at?"
+            FROM users u
+
+            LEFT JOIN user_emails ue
+              USING (user_id)
+
+            WHERE u.user_id = $1
+        "#,
+        Uuid::from(id),
+    )
+    .fetch_one(executor)
+    .instrument(info_span!("Fetch user"))
+    .await?;
+
+    let primary_email = match (
+        res.user_email_id,
+        res.user_email,
+        res.user_email_created_at,
+        res.user_email_confirmed_at,
+    ) {
+        (Some(id), Some(email), Some(created_at), confirmed_at) => Some(UserEmail {
+            data: id.into(),
+            email,
+            created_at,
+            confirmed_at,
+        }),
+        (None, None, None, None) => None,
+        _ => return Err(DatabaseInconsistencyError.into()),
+    };
+
+    let id = Ulid::from(res.user_id);
+    Ok(User {
+        data: id,
+        username: res.user_username,
+        sub: id.to_string(),
+        primary_email,
+    })
+}
+
+#[tracing::instrument(
+    skip_all,
     fields(user.username = username),
     err,
 )]

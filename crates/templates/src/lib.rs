@@ -49,7 +49,7 @@ pub use self::{
         EmailVerificationContext, EmailVerificationPageContext, EmptyContext, ErrorContext,
         FormPostContext, IndexContext, LoginContext, LoginFormField, PolicyViolationContext,
         PostAuthContext, ReauthContext, ReauthFormField, RegisterContext, RegisterFormField,
-        TemplateContext, WithCsrf, WithOptionalSession, WithSession,
+        TemplateContext, UpstreamExistingLinkContext, WithCsrf, WithOptionalSession, WithSession,
     },
     forms::{FieldError, FormError, FormField, FormState, ToFormState},
 };
@@ -225,6 +225,21 @@ register_templates! {
 
     /// Render the email verification subject
     pub fn render_email_verification_subject(EmailVerificationContext) { "emails/verification.subject" }
+
+    /// Render the upstream already linked message
+    pub fn render_upstream_oauth2_already_linked(WithCsrf<WithSession<EmptyContext>>) { "pages/upstream_oauth2/already_linked.html" }
+
+    /// Render the upstream link mismatch message
+    pub fn render_upstream_oauth2_link_mismatch(WithCsrf<WithSession<UpstreamExistingLinkContext>>) { "pages/upstream_oauth2/link_mismatch.html" }
+
+    /// Render the upstream suggest link message
+    pub fn render_upstream_oauth2_suggest_link(WithCsrf<WithSession<EmptyContext>>) { "pages/upstream_oauth2/suggest_link.html" }
+
+    /// Render the upstream login screen
+    pub fn render_upstream_oauth2_do_login(WithCsrf<UpstreamExistingLinkContext>) { "pages/upstream_oauth2/do_login.html" }
+
+    /// Render the upstream register screen
+    pub fn render_upstream_oauth2_do_register(WithCsrf<EmptyContext>) { "pages/upstream_oauth2/do_register.html" }
 }
 
 impl Templates {
@@ -248,6 +263,11 @@ impl Templates {
         check::render_email_verification_txt(self, now).await?;
         check::render_email_verification_html(self, now).await?;
         check::render_email_verification_subject(self, now).await?;
+        check::render_upstream_oauth2_already_linked(self, now).await?;
+        check::render_upstream_oauth2_link_mismatch(self, now).await?;
+        check::render_upstream_oauth2_suggest_link(self, now).await?;
+        check::render_upstream_oauth2_do_login(self, now).await?;
+        check::render_upstream_oauth2_do_register(self, now).await?;
         Ok(())
     }
 }

@@ -748,6 +748,37 @@ impl TemplateContext for EmailAddContext {
     }
 }
 
+/// Context used by the `pages/upstream_oauth2/{link_mismatch,do_login}.html`
+/// templates
+#[derive(Serialize)]
+pub struct UpstreamExistingLinkContext {
+    linked_user: User<()>,
+}
+
+impl UpstreamExistingLinkContext {
+    /// Constructs a new context with an existing linked user
+    pub fn new<T>(linked_user: T) -> Self
+    where
+        T: Into<User<()>>,
+    {
+        Self {
+            linked_user: linked_user.into(),
+        }
+    }
+}
+
+impl TemplateContext for UpstreamExistingLinkContext {
+    fn sample(now: chrono::DateTime<Utc>) -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        User::samples(now)
+            .into_iter()
+            .map(|linked_user| Self { linked_user })
+            .collect()
+    }
+}
+
 /// Context used by the `form_post.html` template
 #[derive(Serialize)]
 pub struct FormPostContext<T> {
