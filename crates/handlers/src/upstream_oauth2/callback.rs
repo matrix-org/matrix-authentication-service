@@ -21,13 +21,17 @@ use axum_extra::extract::PrivateCookieJar;
 use hyper::StatusCode;
 use mas_axum_utils::http_client_factory::HttpClientFactory;
 use mas_http::ClientInitError;
+use mas_jose::claims::ClaimError;
 use mas_keystore::{Encrypter, Keystore};
 use mas_oidc_client::{
     error::{DiscoveryError, JwksError, TokenAuthorizationCodeError},
     requests::{authorization_code::AuthorizationValidationData, jose::JwtVerificationData},
 };
 use mas_router::UrlBuilder;
-use mas_storage::{upstream_oauth2::lookup_session, LookupResultExt};
+use mas_storage::{
+    upstream_oauth2::{add_link, complete_session, lookup_link_by_subject, lookup_session},
+    GenericLookupError, LookupResultExt,
+};
 use oauth2_types::errors::ClientErrorCode;
 use serde::Deserialize;
 use sqlx::PgPool;
@@ -66,8 +70,20 @@ pub(crate) enum RouteError {
     #[error("Provider mismatch")]
     ProviderMismatch,
 
+    #[error("Session already completed")]
+    AlreadyCompleted,
+
     #[error("State parameter mismatch")]
     StateMismatch,
+
+    #[error("Missing ID token")]
+    MissingIDToken,
+
+    #[error("Invalid ID token")]
+    InvalidIdToken(#[from] ClaimError),
+
+    #[error("User already linked")]
+    UserAlreadyLinked,
 
     #[error("Error from the provider: {error}")]
     ClientError {
@@ -86,6 +102,12 @@ pub(crate) enum RouteError {
 
     #[error(transparent)]
     Anyhow(#[from] anyhow::Error),
+}
+
+impl From<GenericLookupError> for RouteError {
+    fn from(e: GenericLookupError) -> Self {
+        Self::InternalError(Box::new(e))
+    }
 }
 
 impl From<sqlx::Error> for RouteError {
@@ -182,6 +204,11 @@ pub(crate) async fn get(
         return Err(RouteError::StateMismatch);
     }
 
+    if session.completed() {
+        // The session was already completed
+        return Err(RouteError::AlreadyCompleted);
+    }
+
     // Let's extract the code from the params, and return if there was an error
     let code = match params.code_or_error {
         CodeOrError::Error {
@@ -224,10 +251,11 @@ pub(crate) async fn get(
 
     let redirect_uri = url_builder.upstream_oauth_callback(provider.id);
 
+    // TODO: all that should be borrowed
     let validation_data = AuthorizationValidationData {
-        state: session.state,
-        nonce: session.nonce,
-        code_challenge_verifier: session.code_challenge_verifier,
+        state: session.state.clone(),
+        nonce: session.nonce.clone(),
+        code_challenge_verifier: session.code_challenge_verifier.clone(),
         redirect_uri,
     };
 
@@ -243,7 +271,7 @@ pub(crate) async fn get(
         .http_service("upstream-exchange-code")
         .await?;
 
-    let (response, _id_token) =
+    let (response, id_token) =
         mas_oidc_client::requests::authorization_code::access_token_with_authorization_code(
             &http_service,
             client_credentials,
@@ -255,6 +283,31 @@ pub(crate) async fn get(
             &mut rng,
         )
         .await?;
+
+    let (_header, mut id_token) = id_token.ok_or(RouteError::MissingIDToken)?.into_parts();
+
+    // Extract the subject from the id_token
+    let subject = mas_jose::claims::SUB.extract_required(&mut id_token)?;
+
+    // Look for an existing link
+    let maybe_link = lookup_link_by_subject(&mut txn, &provider, &subject)
+        .await
+        .to_option()?;
+
+    let link = if let Some((link, maybe_user_id)) = maybe_link {
+        if let Some(_user_id) = maybe_user_id {
+            // TODO: Here we should login if the user is linked
+            return Err(RouteError::UserAlreadyLinked);
+        }
+
+        link
+    } else {
+        add_link(&mut txn, &mut rng, &clock, &provider, subject).await?
+    };
+
+    let _session = complete_session(&mut txn, &clock, session, &link).await?;
+
+    txn.commit().await?;
 
     Ok(Json(response))
 }
