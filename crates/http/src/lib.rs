@@ -31,9 +31,12 @@ mod layers;
 mod service;
 
 #[cfg(feature = "client")]
-pub use self::client::{
-    make_traced_client, make_traced_connector, make_untraced_client, ClientInitError, TracedClient,
-    TracedConnector, UntracedClient, UntracedConnector,
+pub use self::{
+    client::{
+        make_traced_client, make_traced_connector, make_untraced_client, ClientInitError,
+        TracedClient, TracedConnector, UntracedClient, UntracedConnector,
+    },
+    layers::client::{ClientLayer, ClientService},
 };
 pub use self::{
     ext::{set_propagator, CorsLayerExt, ServiceExt as HttpServiceExt},
@@ -41,12 +44,10 @@ pub use self::{
         body_to_bytes_response::{self, BodyToBytesResponse, BodyToBytesResponseLayer},
         bytes_to_body_request::{self, BytesToBodyRequest, BytesToBodyRequestLayer},
         catch_http_codes::{self, CatchHttpCodes, CatchHttpCodesLayer},
-        client::{ClientLayer, ClientService},
         form_urlencoded_request::{self, FormUrlencodedRequest, FormUrlencodedRequestLayer},
         json_request::{self, JsonRequest, JsonRequestLayer},
         json_response::{self, JsonResponse, JsonResponseLayer},
         otel,
-        server::ServerLayer,
     },
     service::{BoxCloneSyncService, HttpService},
 };

@@ -24,16 +24,22 @@ use hyper::StatusCode;
 use listenfd::ListenFd;
 use mas_config::{HttpBindConfig, HttpResource, HttpTlsConfig, UnixOrTcp};
 use mas_handlers::AppState;
+use mas_http::otel::TraceLayer;
 use mas_listener::{unix_or_tcp::UnixOrTcpListener, ConnectionInfo};
 use mas_router::Route;
 use mas_spa::ViteManifestService;
 use mas_templates::Templates;
+use opentelemetry::KeyValue;
 use rustls::ServerConfig;
 use tower::Layer;
-use tower_http::services::ServeDir;
+use tower_http::{compression::CompressionLayer, services::ServeDir};
 
 #[allow(clippy::trait_duplication_in_bounds)]
-pub fn build_router<B>(state: AppState, resources: &[HttpResource]) -> Router<(), B>
+pub fn build_router<B>(
+    state: AppState,
+    resources: &[HttpResource],
+    name: Option<&str>,
+) -> Router<(), B>
 where
     B: HttpBody + Send + 'static,
     <B as HttpBody>::Data: Into<axum::body::Bytes> + Send,
@@ -106,7 +112,16 @@ where
         }
     }
 
-    router.with_state(state)
+    let mut trace_layer = TraceLayer::axum();
+
+    if let Some(name) = name {
+        trace_layer = trace_layer.with_static_attribute(KeyValue::new("listener", name.to_owned()));
+    }
+
+    router
+        .layer(trace_layer)
+        .layer(CompressionLayer::new())
+        .with_state(state)
 }
 
 pub fn build_tls_server_config(config: &HttpTlsConfig) -> Result<ServerConfig, anyhow::Error> {

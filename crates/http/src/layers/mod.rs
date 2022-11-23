@@ -20,5 +20,5 @@ pub mod json_request;
 pub mod json_response;
 pub mod otel;
 
+#[cfg(feature = "client")]
 pub(crate) mod client;
-pub(crate) mod server;

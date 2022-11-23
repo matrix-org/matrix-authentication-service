@@ -21,7 +21,6 @@ use itertools::Itertools;
 use mas_config::RootConfig;
 use mas_email::Mailer;
 use mas_handlers::{AppState, HttpClientFactory, MatrixHomeserver};
-use mas_http::ServerLayer;
 use mas_listener::{server::Server, shutdown::ShutdownStream};
 use mas_policy::PolicyFactory;
 use mas_router::UrlBuilder;
@@ -29,7 +28,6 @@ use mas_storage::MIGRATOR;
 use mas_tasks::TaskQueue;
 use mas_templates::Templates;
 use tokio::signal::unix::SignalKind;
-use tower::Layer;
 use tracing::{error, info, log::warn};
 
 #[derive(Parser, Debug, Default)]
@@ -220,8 +218,11 @@ impl Options {
                 };
 
                 // and build the router
-                let router = crate::server::build_router(state.clone(), &config.resources);
-                let router = ServerLayer::new(config.name.clone()).layer(router);
+                let router = crate::server::build_router(
+                    state.clone(),
+                    &config.resources,
+                    config.name.as_deref(),
+                );
 
                 // Display some informations about where we'll be serving connections
                 let is_tls = config.tls.is_some();
