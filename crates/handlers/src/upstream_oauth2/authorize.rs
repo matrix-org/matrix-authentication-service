@@ -18,6 +18,7 @@ use axum::{
 };
 use axum_extra::extract::{cookie::Cookie, PrivateCookieJar};
 use hyper::StatusCode;
+use mas_axum_utils::http_client_factory::HttpClientFactory;
 use mas_http::ClientInitError;
 use mas_keystore::Encrypter;
 use mas_oidc_client::{
@@ -29,8 +30,6 @@ use mas_storage::{upstream_oauth2::lookup_provider, LookupResultExt};
 use sqlx::PgPool;
 use thiserror::Error;
 use ulid::Ulid;
-
-use super::http_service;
 
 #[derive(Debug, Error)]
 pub(crate) enum RouteError {
@@ -89,6 +88,7 @@ impl IntoResponse for RouteError {
 }
 
 pub(crate) async fn get(
+    State(http_client_factory): State<HttpClientFactory>,
     State(pool): State<PgPool>,
     State(url_builder): State<UrlBuilder>,
     cookie_jar: PrivateCookieJar<Encrypter>,
@@ -103,7 +103,9 @@ pub(crate) async fn get(
         .to_option()?
         .ok_or(RouteError::ProviderNotFound)?;
 
-    let http_service = http_service("upstream-discover").await?;
+    let http_service = http_client_factory
+        .http_service("upstream-discover")
+        .await?;
 
     // First, discover the provider
     let metadata =

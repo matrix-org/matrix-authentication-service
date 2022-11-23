@@ -20,7 +20,7 @@ use futures_util::stream::{StreamExt, TryStreamExt};
 use itertools::Itertools;
 use mas_config::RootConfig;
 use mas_email::Mailer;
-use mas_handlers::{AppState, MatrixHomeserver};
+use mas_handlers::{AppState, HttpClientFactory, MatrixHomeserver};
 use mas_http::ServerLayer;
 use mas_listener::{server::Server, shutdown::ShutdownStream};
 use mas_policy::PolicyFactory;
@@ -187,6 +187,9 @@ impl Options {
 
         let graphql_schema = mas_handlers::graphql_schema(&pool);
 
+        // Maximum 50 outgoing HTTP requests at a time
+        let http_client_factory = HttpClientFactory::new(50);
+
         let state = AppState {
             pool,
             templates,
@@ -197,6 +200,7 @@ impl Options {
             homeserver,
             policy_factory,
             graphql_schema,
+            http_client_factory,
         };
 
         let mut fd_manager = listenfd::ListenFd::from_env();

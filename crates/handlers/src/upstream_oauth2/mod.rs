@@ -13,17 +13,11 @@
 // limitations under the License.
 
 use anyhow::Context;
-use axum::body::Full;
 use mas_data_model::UpstreamOAuthProvider;
-use mas_http::{BodyToBytesResponseLayer, ClientInitError, ClientLayer, HttpService};
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
 use mas_keystore::{Encrypter, Keystore};
 use mas_oidc_client::types::client_credentials::{ClientCredentials, JwtSigningMethod};
 use thiserror::Error;
-use tower::{
-    util::{MapErrLayer, MapRequestLayer},
-    BoxError, Layer,
-};
 use url::Url;
 
 pub(crate) mod authorize;
@@ -100,16 +94,4 @@ fn client_credentials_for_provider(
     };
 
     Ok(client_credentials)
-}
-
-async fn http_service(operation: &'static str) -> Result<HttpService, ClientInitError> {
-    let client = (
-        MapErrLayer::new(BoxError::from),
-        MapRequestLayer::new(|req: hyper::Request<_>| req.map(Full::new)),
-        BodyToBytesResponseLayer::default(),
-        ClientLayer::new(operation),
-    )
-        .layer(mas_http::make_untraced_client().await?);
-
-    Ok(HttpService::new(client))
 }

@@ -41,6 +41,8 @@ use sqlx::PgExecutor;
 use thiserror::Error;
 use tower::{Service, ServiceExt};
 
+use crate::http_client_factory::HttpClientFactory;
+
 static JWT_BEARER_CLIENT_ASSERTION: &str = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer";
 
 #[derive(Deserialize)]
@@ -91,6 +93,7 @@ impl Credentials {
     #[tracing::instrument(skip_all, err)]
     pub async fn verify<S: StorageBackend>(
         &self,
+        http_client_factory: &HttpClientFactory,
         encrypter: &Encrypter,
         method: &OAuthClientAuthenticationMethod,
         client: &Client<S>,
@@ -132,7 +135,7 @@ impl Credentials {
                     .as_ref()
                     .ok_or(CredentialsVerificationError::InvalidClientConfig)?;
 
-                let jwks = fetch_jwks(jwks)
+                let jwks = fetch_jwks(http_client_factory, jwks)
                     .await
                     .map_err(|_| CredentialsVerificationError::JwksFetchFailed)?;
 
@@ -166,7 +169,10 @@ impl Credentials {
     }
 }
 
-async fn fetch_jwks(jwks: &JwksOrJwksUri) -> Result<PublicJsonWebKeySet, BoxError> {
+async fn fetch_jwks(
+    http_client_factory: &HttpClientFactory,
+    jwks: &JwksOrJwksUri,
+) -> Result<PublicJsonWebKeySet, BoxError> {
     let uri = match jwks {
         JwksOrJwksUri::Jwks(j) => return Ok(j.clone()),
         JwksOrJwksUri::JwksUri(u) => u,
@@ -177,7 +183,8 @@ async fn fetch_jwks(jwks: &JwksOrJwksUri) -> Result<PublicJsonWebKeySet, BoxErro
         .body(mas_http::EmptyBody::new())
         .unwrap();
 
-    let mut client = mas_http::client("fetch-jwks")
+    let mut client = http_client_factory
+        .client("fetch-jwks")
         .await?
         .response_body_to_bytes()
         .json_response::<PublicJsonWebKeySet>();

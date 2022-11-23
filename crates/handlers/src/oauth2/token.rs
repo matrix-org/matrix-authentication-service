@@ -19,7 +19,10 @@ use axum::{extract::State, response::IntoResponse, Json};
 use chrono::{DateTime, Duration, Utc};
 use headers::{CacheControl, HeaderMap, HeaderMapExt, Pragma};
 use hyper::StatusCode;
-use mas_axum_utils::client_authorization::{ClientAuthorization, CredentialsVerificationError};
+use mas_axum_utils::{
+    client_authorization::{ClientAuthorization, CredentialsVerificationError},
+    http_client_factory::HttpClientFactory,
+};
 use mas_data_model::{AuthorizationGrantStage, Client, TokenType};
 use mas_iana::jose::JsonWebSignatureAlg;
 use mas_jose::{
@@ -191,6 +194,7 @@ impl From<JwtSignatureError> for RouteError {
 
 #[tracing::instrument(skip_all, err)]
 pub(crate) async fn post(
+    State(http_client_factory): State<HttpClientFactory>,
     State(key_store): State<Keystore>,
     State(url_builder): State<UrlBuilder>,
     State(pool): State<PgPool>,
@@ -208,7 +212,7 @@ pub(crate) async fn post(
 
     client_authorization
         .credentials
-        .verify(&encrypter, method, &client)
+        .verify(&http_client_factory, &encrypter, method, &client)
         .await?;
 
     let form = client_authorization.form.ok_or(RouteError::BadRequest)?;

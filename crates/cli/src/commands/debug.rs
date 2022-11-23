@@ -16,6 +16,7 @@ use anyhow::Context;
 use clap::Parser;
 use hyper::{Response, Uri};
 use mas_config::PolicyConfig;
+use mas_handlers::HttpClientFactory;
 use mas_http::HttpServiceExt;
 use mas_policy::PolicyFactory;
 use tokio::io::AsyncWriteExt;
@@ -66,13 +67,14 @@ impl Options {
     #[tracing::instrument(skip_all)]
     pub async fn run(&self, root: &super::Options) -> anyhow::Result<()> {
         use Subcommand as SC;
+        let http_client_factory = HttpClientFactory::new(10);
         match &self.subcommand {
             SC::Http {
                 show_headers,
                 json: false,
                 url,
             } => {
-                let mut client = mas_http::client("cli-debug-http").await?;
+                let mut client = http_client_factory.client("cli-debug-http").await?;
                 let request = hyper::Request::builder()
                     .uri(url)
                     .body(hyper::Body::empty())?;
@@ -96,7 +98,8 @@ impl Options {
                 json: true,
                 url,
             } => {
-                let mut client = mas_http::client("cli-debug-http")
+                let mut client = http_client_factory
+                    .client("cli-debug-http")
                     .await?
                     .response_body_to_bytes()
                     .json_response();

@@ -22,13 +22,7 @@ use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
 use thiserror::Error;
 use tower::Layer;
 
-use crate::{
-    layers::{
-        client::{ClientLayer, ClientService},
-        otel::{TraceDns, TraceLayer},
-    },
-    BoxError,
-};
+use crate::layers::otel::{TraceDns, TraceLayer};
 
 #[cfg(all(not(feature = "webpki-roots"), not(feature = "native-roots")))]
 compile_error!("enabling the 'client' feature requires also enabling the 'webpki-roots' or the 'native-roots' features");
@@ -97,15 +91,6 @@ pub enum NativeRootsInitError {
     JoinError(#[from] tokio::task::JoinError),
 }
 
-/// A wrapper over a boxed error that implements ``std::error::Error``.
-/// This is helps converting to ``anyhow::Error`` with the `?` operator
-#[derive(Error, Debug)]
-#[error(transparent)]
-pub struct ClientError {
-    #[from]
-    inner: BoxError,
-}
-
 #[derive(Error, Debug, Clone)]
 pub enum ClientInitError {
     #[cfg(feature = "native-roots")]
@@ -121,8 +106,8 @@ impl From<NativeRootsInitError> for ClientInitError {
 }
 
 impl From<Infallible> for ClientInitError {
-    fn from(_: Infallible) -> Self {
-        unreachable!()
+    fn from(e: Infallible) -> Self {
+        match e {}
     }
 }
 
@@ -149,8 +134,8 @@ async fn make_tls_config() -> Result<rustls::ClientConfig, ClientInitError> {
     Ok(tls_config)
 }
 
-type UntracedClient<B> = hyper::Client<UntracedConnector, B>;
-type TracedClient<B> = hyper::Client<TracedConnector, B>;
+pub type UntracedClient<B> = hyper::Client<UntracedConnector, B>;
+pub type TracedClient<B> = hyper::Client<TracedConnector, B>;
 
 /// Create a basic Hyper HTTP & HTTPS client without any tracing
 ///
@@ -166,7 +151,12 @@ where
     Ok(Client::builder().build(https))
 }
 
-async fn make_traced_client<B>() -> Result<TracedClient<B>, ClientInitError>
+/// Create a basic Hyper HTTP & HTTPS client which traces DNS requests
+///
+/// # Errors
+///
+/// Returns an error if it failed to load the TLS certificates
+pub async fn make_traced_client<B>() -> Result<TracedClient<B>, ClientInitError>
 where
     B: http_body::Body + Send + 'static,
     B::Data: Send,
@@ -175,8 +165,8 @@ where
     Ok(Client::builder().build(https))
 }
 
-type UntracedConnector = HttpsConnector<HttpConnector<GaiResolver>>;
-type TracedConnector = HttpsConnector<HttpConnector<TraceDns<GaiResolver>>>;
+pub type UntracedConnector = HttpsConnector<HttpConnector<GaiResolver>>;
+pub type TracedConnector = HttpsConnector<HttpConnector<TraceDns<GaiResolver>>>;
 
 /// Create a traced HTTP and HTTPS connector
 ///
@@ -213,24 +203,4 @@ fn make_connector<R>(
         .enable_http1()
         .enable_http2()
         .wrap_connector(http)
-}
-
-/// Create a traced HTTP client, with a default timeout, which follows redirects
-///
-/// # Errors
-///
-/// Returns an error if it failed to initialize
-pub async fn client<B>(
-    operation: &'static str,
-) -> Result<ClientService<TracedClient<B>>, ClientInitError>
-where
-    B: http_body::Body + Default + Send + 'static,
-    B::Data: Send,
-    B::Error: Into<BoxError>,
-{
-    let client = make_traced_client().await?;
-
-    let client = ClientLayer::new(operation).layer(client);
-
-    Ok(client)
 }

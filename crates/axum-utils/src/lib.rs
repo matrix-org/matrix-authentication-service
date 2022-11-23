@@ -26,6 +26,7 @@ pub mod client_authorization;
 pub mod cookies;
 pub mod csrf;
 pub mod fancy_error;
+pub mod http_client_factory;
 pub mod jwt;
 pub mod session;
 pub mod user_authorization;

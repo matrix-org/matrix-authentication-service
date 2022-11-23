@@ -14,7 +14,10 @@
 
 use axum::{extract::State, response::IntoResponse, Json};
 use hyper::StatusCode;
-use mas_axum_utils::client_authorization::{ClientAuthorization, CredentialsVerificationError};
+use mas_axum_utils::{
+    client_authorization::{ClientAuthorization, CredentialsVerificationError},
+    http_client_factory::HttpClientFactory,
+};
 use mas_data_model::{TokenFormatError, TokenType};
 use mas_iana::oauth::{OAuthClientAuthenticationMethod, OAuthTokenTypeHint};
 use mas_keystore::Encrypter;
@@ -155,6 +158,7 @@ const INACTIVE: IntrospectionResponse = IntrospectionResponse {
 
 #[allow(clippy::too_many_lines)]
 pub(crate) async fn post(
+    State(http_client_factory): State<HttpClientFactory>,
     State(pool): State<PgPool>,
     State(encrypter): State<Encrypter>,
     client_authorization: ClientAuthorization<IntrospectionRequest>,
@@ -173,7 +177,7 @@ pub(crate) async fn post(
 
     client_authorization
         .credentials
-        .verify(&encrypter, method, &client)
+        .verify(&http_client_factory, &encrypter, method, &client)
         .await?;
 
     let form = if let Some(form) = client_authorization.form {
