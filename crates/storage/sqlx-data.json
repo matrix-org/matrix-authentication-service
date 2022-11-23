@@ -689,6 +689,45 @@
     },
     "query": "\n            SELECT\n                ue.user_email_id,\n                ue.email        AS \"user_email\",\n                ue.created_at   AS \"user_email_created_at\",\n                ue.confirmed_at AS \"user_email_confirmed_at\"\n            FROM user_emails ue\n\n            WHERE ue.user_id = $1\n              AND ue.email = $2\n        "
   },
+  "3a6de39a88ef93a91f3cc0465785bafd58ef7dbd4aae924a8bcfcefaf2f1a0d7": {
+    "describe": {
+      "columns": [
+        {
+          "name": "upstream_oauth_link_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "user_id",
+          "ordinal": 1,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "subject",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        true,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n            SELECT\n                upstream_oauth_link_id,\n                user_id,\n                subject,\n                created_at\n            FROM upstream_oauth_links\n            WHERE upstream_oauth_provider_id = $1\n              AND subject = $2\n        "
+  },
   "3df0838b660466f69ee681337fe6753133748defb715e53c8381badcc3e8bca9": {
     "describe": {
       "columns": [
@@ -953,6 +992,19 @@
       }
     },
     "query": "\n            INSERT INTO user_passwords (user_password_id, user_id, hashed_password, created_at)\n            VALUES ($1, $2, $3, $4)\n        "
+  },
+  "4b6a44d040a0dc849bb4e04abb11a181995b5847917605ef4c160389686a54f5": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n            UPDATE upstream_oauth_authorization_sessions\n            SET upstream_oauth_link_id = $1,\n                completed_at = $2\n        "
   },
   "4f8ec19f3f1bfe0268fe102a24e5a9fa542e77eccbebdce65e6deb1c197adf36": {
     "describe": {
@@ -2416,6 +2468,21 @@
       }
     },
     "query": "\n            DELETE FROM user_emails\n            WHERE user_emails.user_email_id = $1\n        "
+  },
+  "e1dc9dd2bf26a341050a53151bf51f7638448ccc2bd458bbdfe87cc22f086313": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid",
+          "Text",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n            INSERT INTO upstream_oauth_links (\n                upstream_oauth_link_id,\n                upstream_oauth_provider_id,\n                user_id,\n                subject,\n                created_at\n            ) VALUES ($1, $2, NULL, $3, $4)\n        "
   },
   "e446e37d48c8838ef2e0d0fd82f8f7b04893c84ad46747cdf193ebd83755ceb2": {
     "describe": {

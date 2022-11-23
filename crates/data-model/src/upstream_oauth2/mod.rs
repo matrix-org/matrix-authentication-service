@@ -46,3 +46,10 @@ pub struct UpstreamOAuthAuthorizationSession {
     pub created_at: DateTime<Utc>,
     pub completed_at: Option<DateTime<Utc>>,
 }
+
+impl UpstreamOAuthAuthorizationSession {
+    #[must_use]
+    pub const fn completed(&self) -> bool {
+        self.completed_at.is_some()
+    }
+}

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use chrono::{DateTime, Utc};
-use mas_data_model::{UpstreamOAuthAuthorizationSession, UpstreamOAuthProvider};
+use mas_data_model::{UpstreamOAuthAuthorizationSession, UpstreamOAuthLink, UpstreamOAuthProvider};
 use rand::Rng;
 use sqlx::PgExecutor;
 use thiserror::Error;
@@ -128,9 +128,9 @@ pub async fn lookup_session(
 #[tracing::instrument(
     skip_all,
     fields(
-        upstream_oauth_provider.id = %provider.id,
-        upstream_oauth_provider.issuer = %provider.issuer,
-        upstream_oauth_provider.client_id = %provider.client_id,
+        %upstream_oauth_provider.id,
+        %upstream_oauth_provider.issuer,
+        %upstream_oauth_provider.client_id,
         upstream_oauth_authorization_session.id,
     ),
     err,
@@ -139,7 +139,7 @@ pub async fn add_session(
     executor: impl PgExecutor<'_>,
     mut rng: impl Rng + Send,
     clock: &Clock,
-    provider: &UpstreamOAuthProvider,
+    upstream_oauth_provider: &UpstreamOAuthProvider,
     state: String,
     code_challenge_verifier: Option<String>,
     nonce: String,
@@ -164,7 +164,7 @@ pub async fn add_session(
             ) VALUES ($1, $2, $3, $4, $5, $6, NULL)
         "#,
         Uuid::from(id),
-        Uuid::from(provider.id),
+        Uuid::from(upstream_oauth_provider.id),
         &state,
         code_challenge_verifier.as_deref(),
         nonce,
@@ -181,4 +181,36 @@ pub async fn add_session(
         created_at,
         completed_at: None,
     })
+}
+
+#[tracing::instrument(
+    skip_all,
+    fields(
+        %upstream_oauth_authorization_session.id,
+        %upstream_oauth_link.id,
+    ),
+    err,
+)]
+pub async fn complete_session(
+    executor: impl PgExecutor<'_>,
+    clock: &Clock,
+    mut upstream_oauth_authorization_session: UpstreamOAuthAuthorizationSession,
+    upstream_oauth_link: &UpstreamOAuthLink,
+) -> Result<UpstreamOAuthAuthorizationSession, sqlx::Error> {
+    let completed_at = clock.now();
+    sqlx::query!(
+        r#"
+            UPDATE upstream_oauth_authorization_sessions
+            SET upstream_oauth_link_id = $1,
+                completed_at = $2
+        "#,
+        Uuid::from(upstream_oauth_link.id),
+        completed_at,
+    )
+    .execute(executor)
+    .await?;
+
+    upstream_oauth_authorization_session.completed_at = Some(completed_at);
+
+    Ok(upstream_oauth_authorization_session)
 }
