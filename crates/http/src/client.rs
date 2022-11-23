@@ -12,27 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{convert::Infallible, net::SocketAddr};
+use std::convert::Infallible;
 
-use bytes::Bytes;
-use http::{Request, Response};
 use hyper::{
-    client::{
-        connect::dns::{GaiResolver, Name},
-        HttpConnector,
-    },
+    client::{connect::dns::GaiResolver, HttpConnector},
     Client,
 };
 use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
 use thiserror::Error;
-use tower::{Layer, Service};
+use tower::Layer;
 
 use crate::{
     layers::{
-        client::ClientLayer,
+        client::{ClientLayer, ClientService},
         otel::{TraceDns, TraceLayer},
     },
-    BoxCloneSyncService, BoxError,
+    BoxError,
 };
 
 #[cfg(all(not(feature = "webpki-roots"), not(feature = "native-roots")))]
@@ -154,38 +149,41 @@ async fn make_tls_config() -> Result<rustls::ClientConfig, ClientInitError> {
     Ok(tls_config)
 }
 
+type UntracedClient<B> = hyper::Client<UntracedConnector, B>;
+type TracedClient<B> = hyper::Client<TracedConnector, B>;
+
 /// Create a basic Hyper HTTP & HTTPS client without any tracing
 ///
 /// # Errors
 ///
 /// Returns an error if it failed to load the TLS certificates
-pub async fn make_untraced_client<B, E>(
-) -> Result<hyper::Client<HttpsConnector<HttpConnector<GaiResolver>>, B>, ClientInitError>
+pub async fn make_untraced_client<B>() -> Result<UntracedClient<B>, ClientInitError>
 where
-    B: http_body::Body<Data = Bytes, Error = E> + Send + 'static,
-    E: Into<BoxError>,
+    B: http_body::Body + Send + 'static,
+    B::Data: Send,
 {
     let https = make_untraced_connector().await?;
     Ok(Client::builder().build(https))
 }
 
-async fn make_traced_client<B, E>(
-) -> Result<hyper::Client<HttpsConnector<HttpConnector<TraceDns<GaiResolver>>>, B>, ClientInitError>
+async fn make_traced_client<B>() -> Result<TracedClient<B>, ClientInitError>
 where
-    B: http_body::Body<Data = Bytes, Error = E> + Send + 'static,
-    E: Into<BoxError>,
+    B: http_body::Body + Send + 'static,
+    B::Data: Send,
 {
     let https = make_traced_connector().await?;
     Ok(Client::builder().build(https))
 }
+
+type UntracedConnector = HttpsConnector<HttpConnector<GaiResolver>>;
+type TracedConnector = HttpsConnector<HttpConnector<TraceDns<GaiResolver>>>;
 
 /// Create a traced HTTP and HTTPS connector
 ///
 /// # Errors
 ///
 /// Returns an error if it failed to load the TLS certificates
-pub async fn make_traced_connector(
-) -> Result<HttpsConnector<HttpConnector<TraceDns<GaiResolver>>>, ClientInitError>
+pub async fn make_traced_connector() -> Result<TracedConnector, ClientInitError>
 where
 {
     // Trace DNS requests
@@ -194,8 +192,7 @@ where
     Ok(make_connector(resolver, tls_config))
 }
 
-async fn make_untraced_connector(
-) -> Result<HttpsConnector<HttpConnector<GaiResolver>>, ClientInitError>
+async fn make_untraced_connector() -> Result<UntracedConnector, ClientInitError>
 where
 {
     let resolver = GaiResolver::new();
@@ -206,13 +203,7 @@ where
 fn make_connector<R>(
     resolver: R,
     tls_config: rustls::ClientConfig,
-) -> HttpsConnector<HttpConnector<R>>
-where
-    R: Service<Name> + Send + Sync + Clone + 'static,
-    R::Error: std::error::Error + Send + Sync,
-    R::Future: Send,
-    R::Response: Iterator<Item = SocketAddr>,
-{
+) -> HttpsConnector<HttpConnector<R>> {
     let mut http = HttpConnector::new_with_resolver(resolver);
     http.enforce_http(false);
 
@@ -229,16 +220,17 @@ where
 /// # Errors
 ///
 /// Returns an error if it failed to initialize
-pub async fn client<B, E>(
+pub async fn client<B>(
     operation: &'static str,
-) -> Result<BoxCloneSyncService<Request<B>, Response<hyper::Body>, hyper::Error>, ClientInitError>
+) -> Result<ClientService<TracedClient<B>>, ClientInitError>
 where
-    B: http_body::Body<Data = Bytes, Error = E> + Default + Send + 'static,
-    E: Into<BoxError> + 'static,
+    B: http_body::Body + Default + Send + 'static,
+    B::Data: Send,
+    B::Error: Into<BoxError>,
 {
     let client = make_traced_client().await?;
 
     let client = ClientLayer::new(operation).layer(client);
 
-    Ok(BoxCloneSyncService::new(client))
+    Ok(client)
 }

@@ -49,3 +49,5 @@ pub use self::{
 };
 
 pub(crate) type BoxError = Box<dyn std::error::Error + Send + Sync>;
+
+pub type EmptyBody = http_body::Empty<bytes::Bytes>;

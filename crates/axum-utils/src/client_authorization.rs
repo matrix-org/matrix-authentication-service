@@ -174,7 +174,7 @@ async fn fetch_jwks(jwks: &JwksOrJwksUri) -> Result<PublicJsonWebKeySet, BoxErro
 
     let request = http::Request::builder()
         .uri(uri.as_str())
-        .body(http_body::Empty::new())
+        .body(mas_http::EmptyBody::new())
         .unwrap();
 
     let mut client = mas_http::client("fetch-jwks")
