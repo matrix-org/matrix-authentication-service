@@ -41,6 +41,7 @@ struct SessionAndProviderLookup {
     state: String,
     code_challenge_verifier: Option<String>,
     nonce: String,
+    id_token: Option<String>,
     created_at: DateTime<Utc>,
     completed_at: Option<DateTime<Utc>>,
     consumed_at: Option<DateTime<Utc>>,
@@ -72,6 +73,7 @@ pub async fn lookup_session(
                 ua.state,
                 ua.code_challenge_verifier,
                 ua.nonce,
+                ua.id_token,
                 ua.created_at,
                 ua.completed_at,
                 ua.consumed_at,
@@ -121,6 +123,7 @@ pub async fn lookup_session(
         state: res.state,
         code_challenge_verifier: res.code_challenge_verifier,
         nonce: res.nonce,
+        id_token: res.id_token,
         created_at: res.created_at,
         completed_at: res.completed_at,
         consumed_at: res.consumed_at,
@@ -166,8 +169,9 @@ pub async fn add_session(
                 nonce,
                 created_at,
                 completed_at,
-                consumed_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, NULL, NULL)
+                consumed_at,
+                id_token
+            ) VALUES ($1, $2, $3, $4, $5, $6, NULL, NULL, NULL)
         "#,
         Uuid::from(id),
         Uuid::from(upstream_oauth_provider.id),
@@ -184,6 +188,7 @@ pub async fn add_session(
         state,
         code_challenge_verifier,
         nonce,
+        id_token: None,
         created_at,
         completed_at: None,
         consumed_at: None,
@@ -204,23 +209,27 @@ pub async fn complete_session(
     clock: &Clock,
     mut upstream_oauth_authorization_session: UpstreamOAuthAuthorizationSession,
     upstream_oauth_link: &UpstreamOAuthLink,
+    id_token: Option<String>,
 ) -> Result<UpstreamOAuthAuthorizationSession, sqlx::Error> {
     let completed_at = clock.now();
     sqlx::query!(
         r#"
             UPDATE upstream_oauth_authorization_sessions
             SET upstream_oauth_link_id = $1,
-                completed_at = $2
-            WHERE upstream_oauth_authorization_session_id = $3
+                completed_at = $2,
+                id_token = $3
+            WHERE upstream_oauth_authorization_session_id = $4
         "#,
         Uuid::from(upstream_oauth_link.id),
         completed_at,
+        id_token,
         Uuid::from(upstream_oauth_authorization_session.id),
     )
     .execute(executor)
     .await?;
 
     upstream_oauth_authorization_session.completed_at = Some(completed_at);
+    upstream_oauth_authorization_session.id_token = id_token;
 
     Ok(upstream_oauth_authorization_session)
 }
@@ -261,6 +270,7 @@ struct SessionLookup {
     state: String,
     code_challenge_verifier: Option<String>,
     nonce: String,
+    id_token: Option<String>,
     created_at: DateTime<Utc>,
     completed_at: Option<DateTime<Utc>>,
     consumed_at: Option<DateTime<Utc>>,
@@ -288,6 +298,7 @@ pub async fn lookup_session_on_link(
                 state,
                 code_challenge_verifier,
                 nonce,
+                id_token,
                 created_at,
                 completed_at,
                 consumed_at
@@ -309,6 +320,7 @@ pub async fn lookup_session_on_link(
         state: res.state,
         code_challenge_verifier: res.code_challenge_verifier,
         nonce: res.nonce,
+        id_token: res.id_token,
         created_at: res.created_at,
         completed_at: res.completed_at,
         consumed_at: res.consumed_at,

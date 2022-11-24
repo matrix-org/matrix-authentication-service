@@ -72,6 +72,9 @@ CREATE TABLE "upstream_oauth_authorization_sessions" (
     CONSTRAINT "upstream_oauth_authorization_sessions_upstream_oauth_link_fkey"
     REFERENCES "upstream_oauth_links" ("upstream_oauth_link_id"),
 
+  -- The ID token we got at the end of the authorization grant
+  "id_token" TEXT,
+
   "state" TEXT NOT NULL
     CONSTRAINT "upstream_oauth_authorization_sessions_state_unique"
     UNIQUE,
