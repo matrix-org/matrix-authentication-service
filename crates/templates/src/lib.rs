@@ -49,7 +49,8 @@ pub use self::{
         EmailVerificationContext, EmailVerificationPageContext, EmptyContext, ErrorContext,
         FormPostContext, IndexContext, LoginContext, LoginFormField, PolicyViolationContext,
         PostAuthContext, ReauthContext, ReauthFormField, RegisterContext, RegisterFormField,
-        TemplateContext, UpstreamExistingLinkContext, WithCsrf, WithOptionalSession, WithSession,
+        TemplateContext, UpstreamExistingLinkContext, UpstreamRegister, UpstreamSuggestLink,
+        WithCsrf, WithOptionalSession, WithSession,
     },
     forms::{FieldError, FormError, FormField, FormState, ToFormState},
 };
@@ -233,13 +234,13 @@ register_templates! {
     pub fn render_upstream_oauth2_link_mismatch(WithCsrf<WithSession<UpstreamExistingLinkContext>>) { "pages/upstream_oauth2/link_mismatch.html" }
 
     /// Render the upstream suggest link message
-    pub fn render_upstream_oauth2_suggest_link(WithCsrf<WithSession<EmptyContext>>) { "pages/upstream_oauth2/suggest_link.html" }
+    pub fn render_upstream_oauth2_suggest_link(WithCsrf<WithSession<UpstreamSuggestLink>>) { "pages/upstream_oauth2/suggest_link.html" }
 
     /// Render the upstream login screen
     pub fn render_upstream_oauth2_do_login(WithCsrf<UpstreamExistingLinkContext>) { "pages/upstream_oauth2/do_login.html" }
 
     /// Render the upstream register screen
-    pub fn render_upstream_oauth2_do_register(WithCsrf<EmptyContext>) { "pages/upstream_oauth2/do_register.html" }
+    pub fn render_upstream_oauth2_do_register(WithCsrf<UpstreamRegister>) { "pages/upstream_oauth2/do_register.html" }
 }
 
 impl Templates {

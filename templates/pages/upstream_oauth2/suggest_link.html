@@ -31,7 +31,7 @@ limitations under the License.
         {{ button::button(text="Link", class="flex-1") }}
       </form>
 
-      <div>Or {{ logout::button(text="Logout", class=button::outline_class(), csrf_token=csrf_token) }}</div>
+      <div>Or {{ logout::button(text="Logout", class=button::outline_class(), csrf_token=csrf_token, post_logout_action=post_logout_action) }}</div>
     </div>
   </section>
 {% endblock content %}

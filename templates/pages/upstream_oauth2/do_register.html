@@ -18,16 +18,24 @@ limitations under the License.
 
 {% block content %}
   <section class="flex items-center justify-center flex-1">
-    <form method="POST" class="grid grid-cols-1 gap-6 w-96">
-      <h1 class="rounded-lg bg-grey-25 dark:bg-grey-450 p-2 flex flex-col font-medium text-lg text-center">
-        Choose your username
-      </h1>
+    <div class="grid grid-cols-1 gap-6 w-96">
+      <form method="POST" class="grid grid-cols-1 gap-6">
+        <h1 class="rounded-lg bg-grey-25 dark:bg-grey-450 p-2 text-center font-medium text-lg">
+          Choose your username
+        </h1>
 
-      <input type="hidden" name="csrf" value="{{ csrf_token }}" />
-      <input type="hidden" name="action" value="register" />
-      {{ field::input(label="Username", name="username", autocomplete="username", autocorrect="off", autocapitalize="none") }}
+        <input type="hidden" name="csrf" value="{{ csrf_token }}" />
+        <input type="hidden" name="action" value="register" />
+        {{ field::input(label="Username", name="username", autocomplete="username", autocorrect="off", autocapitalize="none") }}
 
-      {{ button::button(text="Continue") }}
-    </form>
+        {{ button::button(text="Create a new account") }}
+      </form>
+      <div class="flex items-center">
+        <hr class="flex-1" />
+        <div class="mx-2">Or</div>
+        <hr class="flex-1" />
+      </div>
+      {{ button::link_outline(text="Link to an existing account", href=login_link) }}
+    </div>
   </section>
 {% endblock content %}

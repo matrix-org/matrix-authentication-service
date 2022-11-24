@@ -18,10 +18,10 @@
 
 use chrono::Utc;
 use mas_data_model::{
-    AuthorizationGrant, BrowserSession, CompatSsoLogin, CompatSsoLoginState, StorageBackend, User,
-    UserEmail, UserEmailVerification,
+    AuthorizationGrant, BrowserSession, CompatSsoLogin, CompatSsoLoginState, StorageBackend,
+    UpstreamOAuthLink, UpstreamOAuthProvider, User, UserEmail, UserEmailVerification,
 };
-use mas_router::PostAuthAction;
+use mas_router::{PostAuthAction, Route};
 use serde::{ser::SerializeStruct, Deserialize, Serialize};
 use ulid::Ulid;
 use url::Url;
@@ -263,6 +263,15 @@ pub enum PostAuthContext {
 
     /// Change the account password
     ChangePassword,
+
+    /// Link an upstream account
+    LinkUpstream {
+        /// The upstream provider
+        provider: Box<UpstreamOAuthProvider>,
+
+        /// The link
+        link: Box<UpstreamOAuthLink>,
+    },
 }
 
 /// Context used by the `login.html` template
@@ -776,6 +785,57 @@ impl TemplateContext for UpstreamExistingLinkContext {
             .into_iter()
             .map(|linked_user| Self { linked_user })
             .collect()
+    }
+}
+
+/// Context used by the `pages/upstream_oauth2/suggest_link.html`
+/// templates
+#[derive(Serialize)]
+pub struct UpstreamSuggestLink {
+    post_logout_action: PostAuthAction,
+}
+
+impl UpstreamSuggestLink {
+    /// Constructs a new context with an existing linked user
+    #[must_use]
+    pub fn new(link_id: Ulid) -> Self {
+        let post_logout_action = PostAuthAction::LinkUpstream { id: link_id };
+        Self { post_logout_action }
+    }
+}
+
+impl TemplateContext for UpstreamSuggestLink {
+    fn sample(_now: chrono::DateTime<Utc>) -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        vec![Self::new(Ulid::nil())]
+    }
+}
+
+/// Context used by the `pages/upstream_oauth2/do_register.html`
+/// templates
+#[derive(Serialize)]
+pub struct UpstreamRegister {
+    login_link: String,
+}
+
+impl UpstreamRegister {
+    /// Constructs a new context with an existing linked user
+    #[must_use]
+    pub fn new(link_id: Ulid) -> Self {
+        let action = PostAuthAction::LinkUpstream { id: link_id };
+        let login_link = mas_router::Login::and_then(action).relative_url().into();
+        Self { login_link }
+    }
+}
+
+impl TemplateContext for UpstreamRegister {
+    fn sample(_now: chrono::DateTime<Utc>) -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        vec![Self::new(Ulid::nil())]
     }
 }
 

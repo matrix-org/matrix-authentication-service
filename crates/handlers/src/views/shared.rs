@@ -47,12 +47,27 @@ impl OptionalPostAuthAction {
                 let grant = Box::new(grant.into());
                 Ok(Some(PostAuthContext::ContinueAuthorizationGrant { grant }))
             }
+
             Some(PostAuthAction::ContinueCompatSsoLogin { data }) => {
                 let login = get_compat_sso_login_by_id(conn, *data).await?;
                 let login = Box::new(login.into());
                 Ok(Some(PostAuthContext::ContinueCompatSsoLogin { login }))
             }
+
             Some(PostAuthAction::ChangePassword) => Ok(Some(PostAuthContext::ChangePassword)),
+
+            Some(PostAuthAction::LinkUpstream { id }) => {
+                let (link, provider_id, _user_id) =
+                    mas_storage::upstream_oauth2::lookup_link(&mut *conn, *id).await?;
+
+                let provider =
+                    mas_storage::upstream_oauth2::lookup_provider(&mut *conn, provider_id).await?;
+
+                let provider = Box::new(provider);
+                let link = Box::new(link);
+                Ok(Some(PostAuthContext::LinkUpstream { provider, link }))
+            }
+
             None => Ok(None),
         }
     }

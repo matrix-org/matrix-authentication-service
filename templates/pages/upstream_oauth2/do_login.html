@@ -19,9 +19,26 @@ limitations under the License.
 {% block content %}
   <section class="flex items-center justify-center flex-1">
     <form method="POST" class="grid grid-cols-1 gap-6 w-96">
-      <h1 class="rounded-lg bg-grey-25 dark:bg-grey-450 p-2 flex flex-col font-medium text-lg text-center">
+      <h1 class="rounded-lg bg-grey-25 dark:bg-grey-450 p-2 font-medium text-lg text-center">
         Continue login
       </h1>
+
+      <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-4 flex flex-col">
+        <div>
+          Username: <span class="font-medium">{{ linked_user.username }}</span>
+        </div>
+        <div class="text-sm">
+          Identifier: <span class="font-mono font-medium">{{ linked_user.sub }}</span>
+        </div>
+        <div class="text-sm">
+          Primary email:
+          {% if linked_user.primary_email %}
+            <span class="font-medium">{{ linked_user.primary_email.email }}</span>
+          {% else %}
+            <span class="italic">none</span>
+          {% endif %}
+        </div>
+      </div>
 
       <input type="hidden" name="csrf" value="{{ csrf_token }}" />
       <input type="hidden" name="action" value="login" />
