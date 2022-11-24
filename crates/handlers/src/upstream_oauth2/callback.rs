@@ -267,7 +267,7 @@ pub(crate) async fn get(
         .http_service("upstream-exchange-code")
         .await?;
 
-    let (_response, id_token) =
+    let (response, id_token) =
         mas_oidc_client::requests::authorization_code::access_token_with_authorization_code(
             &http_service,
             client_credentials,
@@ -296,7 +296,7 @@ pub(crate) async fn get(
         add_link(&mut txn, &mut rng, &clock, &provider, subject).await?
     };
 
-    let _session = complete_session(&mut txn, &clock, session, &link).await?;
+    let _session = complete_session(&mut txn, &clock, session, &link, response.id_token).await?;
 
     txn.commit().await?;
 

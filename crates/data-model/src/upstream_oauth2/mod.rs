@@ -46,6 +46,7 @@ pub struct UpstreamOAuthAuthorizationSession {
     pub created_at: DateTime<Utc>,
     pub completed_at: Option<DateTime<Utc>>,
     pub consumed_at: Option<DateTime<Utc>>,
+    pub id_token: Option<String>,
 }
 
 impl UpstreamOAuthAuthorizationSession {
