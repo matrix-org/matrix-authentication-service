@@ -20,7 +20,7 @@ use axum::{
 use axum_extra::extract::PrivateCookieJar;
 use hyper::StatusCode;
 use mas_axum_utils::{
-    csrf::{CsrfError, CsrfExt, ProtectedForm},
+    csrf::{CsrfExt, ProtectedForm},
     SessionInfoExt,
 };
 use mas_keystore::Encrypter;
@@ -31,17 +31,16 @@ use mas_storage::{
     },
     user::{
         authenticate_session_with_upstream, lookup_user, register_passwordless_user, start_session,
-        ActiveSessionLookupError, UserLookupError,
     },
-    GenericLookupError, LookupResultExt,
+    LookupResultExt,
 };
-use mas_templates::{
-    EmptyContext, TemplateContext, TemplateError, Templates, UpstreamExistingLinkContext,
-};
+use mas_templates::{EmptyContext, TemplateContext, Templates, UpstreamExistingLinkContext};
 use serde::Deserialize;
 use sqlx::PgPool;
 use thiserror::Error;
 use ulid::Ulid;
+
+use crate::impl_from_error_for_route;
 
 #[derive(Debug, Error)]
 pub(crate) enum RouteError {
@@ -73,41 +72,12 @@ pub(crate) enum RouteError {
     Anyhow(#[from] anyhow::Error),
 }
 
-impl From<sqlx::Error> for RouteError {
-    fn from(e: sqlx::Error) -> Self {
-        Self::InternalError(Box::new(e))
-    }
-}
-
-impl From<TemplateError> for RouteError {
-    fn from(e: TemplateError) -> Self {
-        Self::InternalError(Box::new(e))
-    }
-}
-
-impl From<ActiveSessionLookupError> for RouteError {
-    fn from(e: ActiveSessionLookupError) -> Self {
-        Self::InternalError(Box::new(e))
-    }
-}
-
-impl From<CsrfError> for RouteError {
-    fn from(e: CsrfError) -> Self {
-        Self::InternalError(Box::new(e))
-    }
-}
-
-impl From<UserLookupError> for RouteError {
-    fn from(e: UserLookupError) -> Self {
-        Self::InternalError(Box::new(e))
-    }
-}
-
-impl From<GenericLookupError> for RouteError {
-    fn from(e: GenericLookupError) -> Self {
-        Self::InternalError(Box::new(e))
-    }
-}
+impl_from_error_for_route!(sqlx::Error);
+impl_from_error_for_route!(mas_templates::TemplateError);
+impl_from_error_for_route!(mas_storage::GenericLookupError);
+impl_from_error_for_route!(mas_storage::user::ActiveSessionLookupError);
+impl_from_error_for_route!(mas_storage::user::UserLookupError);
+impl_from_error_for_route!(mas_axum_utils::csrf::CsrfError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {

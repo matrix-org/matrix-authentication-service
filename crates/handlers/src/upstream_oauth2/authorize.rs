@@ -19,25 +19,20 @@ use axum::{
 use axum_extra::extract::{cookie::Cookie, PrivateCookieJar};
 use hyper::StatusCode;
 use mas_axum_utils::http_client_factory::HttpClientFactory;
-use mas_http::ClientInitError;
 use mas_keystore::Encrypter;
-use mas_oidc_client::{
-    error::{AuthorizationError, DiscoveryError},
-    requests::authorization_code::AuthorizationRequestData,
-};
+use mas_oidc_client::requests::authorization_code::AuthorizationRequestData;
 use mas_router::UrlBuilder;
 use mas_storage::{upstream_oauth2::lookup_provider, LookupResultExt};
 use sqlx::PgPool;
 use thiserror::Error;
 use ulid::Ulid;
 
+use crate::impl_from_error_for_route;
+
 #[derive(Debug, Error)]
 pub(crate) enum RouteError {
     #[error("Provider not found")]
     ProviderNotFound,
-
-    #[error(transparent)]
-    Authorization(#[from] AuthorizationError),
 
     #[error(transparent)]
     InternalError(Box<dyn std::error::Error>),
@@ -46,37 +41,16 @@ pub(crate) enum RouteError {
     Anyhow(#[from] anyhow::Error),
 }
 
-impl From<sqlx::Error> for RouteError {
-    fn from(e: sqlx::Error) -> Self {
-        Self::InternalError(Box::new(e))
-    }
-}
-
-impl From<DiscoveryError> for RouteError {
-    fn from(e: DiscoveryError) -> Self {
-        Self::InternalError(Box::new(e))
-    }
-}
-
-impl From<mas_storage::upstream_oauth2::ProviderLookupError> for RouteError {
-    fn from(e: mas_storage::upstream_oauth2::ProviderLookupError) -> Self {
-        Self::InternalError(Box::new(e))
-    }
-}
-
-impl From<ClientInitError> for RouteError {
-    fn from(e: ClientInitError) -> Self {
-        Self::InternalError(Box::new(e))
-    }
-}
+impl_from_error_for_route!(sqlx::Error);
+impl_from_error_for_route!(mas_http::ClientInitError);
+impl_from_error_for_route!(mas_oidc_client::error::DiscoveryError);
+impl_from_error_for_route!(mas_oidc_client::error::AuthorizationError);
+impl_from_error_for_route!(mas_storage::upstream_oauth2::ProviderLookupError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         match self {
             Self::ProviderNotFound => (StatusCode::NOT_FOUND, "Provider not found").into_response(),
-            Self::Authorization(e) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
-            }
             Self::InternalError(e) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
             }
