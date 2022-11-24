@@ -80,5 +80,9 @@ CREATE TABLE "upstream_oauth_authorization_sessions" (
   "nonce" TEXT NOT NULL,
 
   "created_at" TIMESTAMP WITH TIME ZONE NOT NULL,
-  "completed_at" TIMESTAMP WITH TIME ZONE
+
+  -- When the session turned into a link
+  "completed_at" TIMESTAMP WITH TIME ZONE,
+  -- When the session turned into a user session authentication
+  "consumed_at" TIMESTAMP WITH TIME ZONE
 );

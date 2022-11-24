@@ -95,7 +95,9 @@ impl<K> SessionInfoExt for PrivateCookieJar<K> {
     }
 
     fn update_session_info(self, info: &SessionInfo) -> Self {
-        let cookie = Cookie::new("session", "");
+        let mut cookie = Cookie::new("session", "");
+        cookie.set_path("/");
+        cookie.set_http_only(true);
         let cookie = cookie.encode(&info);
         self.add(cookie)
     }

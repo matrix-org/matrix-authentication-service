@@ -43,6 +43,7 @@ struct SessionAndProviderLookup {
     nonce: String,
     created_at: DateTime<Utc>,
     completed_at: Option<DateTime<Utc>>,
+    consumed_at: Option<DateTime<Utc>>,
     provider_issuer: String,
     provider_scope: String,
     provider_client_id: String,
@@ -73,6 +74,7 @@ pub async fn lookup_session(
                 ua.nonce,
                 ua.created_at,
                 ua.completed_at,
+                ua.consumed_at,
                 up.issuer AS "provider_issuer",
                 up.scope AS "provider_scope",
                 up.client_id AS "provider_client_id",
@@ -121,6 +123,7 @@ pub async fn lookup_session(
         nonce: res.nonce,
         created_at: res.created_at,
         completed_at: res.completed_at,
+        consumed_at: res.consumed_at,
     };
 
     Ok((provider, session))
@@ -162,8 +165,9 @@ pub async fn add_session(
                 code_challenge_verifier,
                 nonce,
                 created_at,
-                completed_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, NULL)
+                completed_at,
+                consumed_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, NULL, NULL)
         "#,
         Uuid::from(id),
         Uuid::from(upstream_oauth_provider.id),
@@ -182,6 +186,7 @@ pub async fn add_session(
         nonce,
         created_at,
         completed_at: None,
+        consumed_at: None,
     })
 }
 
@@ -206,14 +211,47 @@ pub async fn complete_session(
             UPDATE upstream_oauth_authorization_sessions
             SET upstream_oauth_link_id = $1,
                 completed_at = $2
+            WHERE upstream_oauth_authorization_session_id = $3
         "#,
         Uuid::from(upstream_oauth_link.id),
         completed_at,
+        Uuid::from(upstream_oauth_authorization_session.id),
     )
     .execute(executor)
     .await?;
 
     upstream_oauth_authorization_session.completed_at = Some(completed_at);
+
+    Ok(upstream_oauth_authorization_session)
+}
+
+/// Mark a session as consumed
+#[tracing::instrument(
+    skip_all,
+    fields(
+        %upstream_oauth_authorization_session.id,
+    ),
+    err,
+)]
+pub async fn consume_session(
+    executor: impl PgExecutor<'_>,
+    clock: &Clock,
+    mut upstream_oauth_authorization_session: UpstreamOAuthAuthorizationSession,
+) -> Result<UpstreamOAuthAuthorizationSession, sqlx::Error> {
+    let consumed_at = clock.now();
+    sqlx::query!(
+        r#"
+            UPDATE upstream_oauth_authorization_sessions
+            SET consumed_at = $1
+            WHERE upstream_oauth_authorization_session_id = $2
+        "#,
+        consumed_at,
+        Uuid::from(upstream_oauth_authorization_session.id),
+    )
+    .execute(executor)
+    .await?;
+
+    upstream_oauth_authorization_session.consumed_at = Some(consumed_at);
 
     Ok(upstream_oauth_authorization_session)
 }
@@ -225,6 +263,7 @@ struct SessionLookup {
     nonce: String,
     created_at: DateTime<Utc>,
     completed_at: Option<DateTime<Utc>>,
+    consumed_at: Option<DateTime<Utc>>,
 }
 
 /// Lookup a session, which belongs to a link, by its ID
@@ -250,7 +289,8 @@ pub async fn lookup_session_on_link(
                 code_challenge_verifier,
                 nonce,
                 created_at,
-                completed_at
+                completed_at,
+                consumed_at
             FROM upstream_oauth_authorization_sessions
             WHERE upstream_oauth_authorization_session_id = $1
               AND upstream_oauth_link_id = $2
@@ -271,5 +311,6 @@ pub async fn lookup_session_on_link(
         nonce: res.nonce,
         created_at: res.created_at,
         completed_at: res.completed_at,
+        consumed_at: res.consumed_at,
     })
 }
