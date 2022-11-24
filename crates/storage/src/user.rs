@@ -18,7 +18,7 @@ use anyhow::{bail, Context};
 use argon2::Argon2;
 use chrono::{DateTime, Utc};
 use mas_data_model::{
-    Authentication, BrowserSession, User, UserEmail, UserEmailVerification,
+    Authentication, BrowserSession, UpstreamOAuthLink, User, UserEmail, UserEmailVerification,
     UserEmailVerificationState,
 };
 use password_hash::{PasswordHash, PasswordHasher, SaltString};
@@ -442,6 +442,52 @@ pub async fn authenticate_session(
 #[tracing::instrument(
     skip_all,
     fields(
+        user.id = %session.user.data,
+        %upstream_oauth_link.id,
+        user_session.id = %session.data,
+        user_session_authentication.id,
+    ),
+    err,
+)]
+pub async fn authenticate_session_with_upstream(
+    executor: impl PgExecutor<'_>,
+    mut rng: impl Rng + Send,
+    clock: &Clock,
+    session: &mut BrowserSession<PostgresqlBackend>,
+    upstream_oauth_link: &UpstreamOAuthLink,
+) -> Result<(), sqlx::Error> {
+    let created_at = clock.now();
+    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
+    tracing::Span::current().record(
+        "user_session_authentication.id",
+        tracing::field::display(id),
+    );
+
+    sqlx::query!(
+        r#"
+            INSERT INTO user_session_authentications
+                (user_session_authentication_id, user_session_id, created_at)
+            VALUES ($1, $2, $3)
+        "#,
+        Uuid::from(id),
+        Uuid::from(session.data),
+        created_at,
+    )
+    .execute(executor)
+    .instrument(tracing::info_span!("Save authentication"))
+    .await?;
+
+    session.last_authentication = Some(Authentication {
+        data: id,
+        created_at,
+    });
+
+    Ok(())
+}
+
+#[tracing::instrument(
+    skip_all,
+    fields(
         user.username = username,
         user.id,
     ),
@@ -483,6 +529,44 @@ pub async fn register_user(
     set_password(txn.borrow_mut(), &mut rng, clock, phf, &user, password).await?;
 
     Ok(user)
+}
+
+#[tracing::instrument(
+    skip_all,
+    fields(
+        user.username = username,
+        user.id,
+    ),
+    err,
+)]
+pub async fn register_passwordless_user(
+    executor: impl PgExecutor<'_>,
+    mut rng: impl Rng + Send,
+    clock: &Clock,
+    username: &str,
+) -> Result<User<PostgresqlBackend>, sqlx::Error> {
+    let created_at = clock.now();
+    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
+    tracing::Span::current().record("user.id", tracing::field::display(id));
+
+    sqlx::query!(
+        r#"
+            INSERT INTO users (user_id, username, created_at)
+            VALUES ($1, $2, $3)
+        "#,
+        Uuid::from(id),
+        username,
+        created_at,
+    )
+    .execute(executor)
+    .await?;
+
+    Ok(User {
+        data: id,
+        username: username.to_owned(),
+        sub: id.to_string(),
+        primary_email: None,
+    })
 }
 
 #[tracing::instrument(

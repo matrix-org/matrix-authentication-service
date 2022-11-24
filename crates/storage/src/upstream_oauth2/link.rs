@@ -13,13 +13,13 @@
 // limitations under the License.
 
 use chrono::{DateTime, Utc};
-use mas_data_model::{UpstreamOAuthLink, UpstreamOAuthProvider};
+use mas_data_model::{UpstreamOAuthLink, UpstreamOAuthProvider, User};
 use rand::Rng;
 use sqlx::PgExecutor;
 use ulid::Ulid;
 use uuid::Uuid;
 
-use crate::{Clock, GenericLookupError};
+use crate::{Clock, GenericLookupError, PostgresqlBackend};
 
 struct LinkLookup {
     upstream_oauth_link_id: Uuid,
@@ -157,4 +157,34 @@ pub async fn add_link(
         subject,
         created_at,
     })
+}
+
+#[tracing::instrument(
+    skip_all,
+    fields(
+        %upstream_oauth_link.id,
+        %upstream_oauth_link.subject,
+        user.id = %user.data,
+        %user.username,
+    ),
+    err,
+)]
+pub async fn associate_link_to_user(
+    executor: impl PgExecutor<'_>,
+    upstream_oauth_link: &UpstreamOAuthLink,
+    user: &User<PostgresqlBackend>,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+            UPDATE upstream_oauth_links
+            SET user_id = $1
+            WHERE upstream_oauth_link_id = $2
+        "#,
+        Uuid::from(user.data),
+        Uuid::from(upstream_oauth_link.id),
+    )
+    .execute(executor)
+    .await?;
+
+    Ok(())
 }

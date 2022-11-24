@@ -24,9 +24,15 @@ use mas_axum_utils::{
     SessionInfoExt,
 };
 use mas_keystore::Encrypter;
+use mas_router::Route;
 use mas_storage::{
-    upstream_oauth2::{lookup_link, lookup_session_on_link},
-    user::{lookup_user, ActiveSessionLookupError, UserLookupError},
+    upstream_oauth2::{
+        associate_link_to_user, consume_session, lookup_link, lookup_session_on_link,
+    },
+    user::{
+        authenticate_session_with_upstream, lookup_user, register_passwordless_user, start_session,
+        ActiveSessionLookupError, UserLookupError,
+    },
     GenericLookupError, LookupResultExt,
 };
 use mas_templates::{
@@ -46,6 +52,10 @@ pub(crate) enum RouteError {
     /// Couldn't find the session on the link
     #[error("Session not found")]
     SessionNotFound,
+
+    /// Session was already consumed
+    #[error("Session already consumed")]
+    SessionConsumed,
 
     #[error("Missing session cookie")]
     MissingCookie,
@@ -145,21 +155,33 @@ pub(crate) async fn get(
 
     // This checks that we're in a browser session which is allowed to consume this
     // link: the upstream auth session should have been started in this browser.
-    let _upstream_session = lookup_session_on_link(&mut txn, &link, session_id)
+    let upstream_session = lookup_session_on_link(&mut txn, &link, session_id)
         .await
         .to_option()?
         .ok_or(RouteError::SessionNotFound)?;
 
+    if upstream_session.consumed() {
+        return Err(RouteError::SessionConsumed);
+    }
+
     let (user_session_info, cookie_jar) = cookie_jar.session_info();
-    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
+    let (csrf_token, mut cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
     let maybe_user_session = user_session_info.load_session(&mut txn).await?;
 
     let render = match (maybe_user_session, maybe_user_id) {
-        (Some(user_session), Some(user_id)) if user_session.user.data == user_id => {
+        (Some(mut session), Some(user_id)) if session.user.data == user_id => {
             // Session already linked, and link matches the currently logged
-            // user. Do nothing?
+            // user. Mark the session as consumed and renew the authentication.
+            consume_session(&mut txn, &clock, upstream_session).await?;
+            authenticate_session_with_upstream(&mut txn, &mut rng, &clock, &mut session, &link)
+                .await?;
+
+            cookie_jar = cookie_jar.set_session(&session);
+
+            txn.commit().await?;
+
             let ctx = EmptyContext
-                .with_session(user_session)
+                .with_session(session)
                 .with_csrf(csrf_token.form_value());
 
             templates
@@ -217,7 +239,7 @@ pub(crate) async fn post(
     Form(form): Form<ProtectedForm<FormData>>,
 ) -> Result<impl IntoResponse, RouteError> {
     let mut txn = pool.begin().await?;
-    let (clock, _rng) = crate::rng_and_clock()?;
+    let (clock, mut rng) = crate::rng_and_clock()?;
     let form = cookie_jar.verify_form(clock.now(), form)?;
 
     let (link, _provider_id, maybe_user_id) = lookup_link(&mut txn, link_id)
@@ -234,23 +256,45 @@ pub(crate) async fn post(
 
     // This checks that we're in a browser session which is allowed to consume this
     // link: the upstream auth session should have been started in this browser.
-    let _upstream_session = lookup_session_on_link(&mut txn, &link, session_id)
+    let upstream_session = lookup_session_on_link(&mut txn, &link, session_id)
         .await
         .to_option()?
         .ok_or(RouteError::SessionNotFound)?;
 
+    if upstream_session.consumed() {
+        return Err(RouteError::SessionConsumed);
+    }
+
     let (user_session_info, cookie_jar) = cookie_jar.session_info();
     let maybe_user_session = user_session_info.load_session(&mut txn).await?;
 
-    let res = match (maybe_user_session, maybe_user_id, form) {
-        (Some(_user_session), None, FormData::Link) => "Linked!".to_owned(),
+    let mut session = match (maybe_user_session, maybe_user_id, form) {
+        (Some(session), None, FormData::Link) => {
+            associate_link_to_user(&mut txn, &link, &session.user).await?;
+            session
+        }
 
-        (None, Some(_user_id), FormData::Login) => "Logged in!".to_owned(),
+        (None, Some(user_id), FormData::Login) => {
+            let user = lookup_user(&mut txn, user_id).await?;
+            start_session(&mut txn, &mut rng, &clock, user).await?
+        }
 
-        (None, None, FormData::Register { username }) => format!("Registered {username}!"),
+        (None, None, FormData::Register { username }) => {
+            let user = register_passwordless_user(&mut txn, &mut rng, &clock, &username).await?;
+            associate_link_to_user(&mut txn, &link, &user).await?;
+
+            start_session(&mut txn, &mut rng, &clock, user).await?
+        }
 
         _ => return Err(RouteError::InvalidFormAction),
     };
 
-    Ok((cookie_jar, res))
+    consume_session(&mut txn, &clock, upstream_session).await?;
+    authenticate_session_with_upstream(&mut txn, &mut rng, &clock, &mut session, &link).await?;
+
+    let cookie_jar = cookie_jar.set_session(&session);
+
+    txn.commit().await?;
+
+    Ok((cookie_jar, mas_router::Index.go()))
 }

@@ -17,9 +17,10 @@ mod provider;
 mod session;
 
 pub use self::{
-    link::{add_link, lookup_link, lookup_link_by_subject},
+    link::{add_link, associate_link_to_user, lookup_link, lookup_link_by_subject},
     provider::{add_provider, lookup_provider, ProviderLookupError},
     session::{
-        add_session, complete_session, lookup_session, lookup_session_on_link, SessionLookupError,
+        add_session, complete_session, consume_session, lookup_session, lookup_session_on_link,
+        SessionLookupError,
     },
 };

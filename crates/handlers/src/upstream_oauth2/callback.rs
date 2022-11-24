@@ -81,9 +81,6 @@ pub(crate) enum RouteError {
     #[error("Invalid ID token")]
     InvalidIdToken(#[from] ClaimError),
 
-    #[error("User already linked")]
-    UserAlreadyLinked,
-
     #[error("Error from the provider: {error}")]
     ClientError {
         error: ClientErrorCode,
@@ -293,12 +290,7 @@ pub(crate) async fn get(
         .await
         .to_option()?;
 
-    let link = if let Some((link, maybe_user_id)) = maybe_link {
-        if let Some(_user_id) = maybe_user_id {
-            // TODO: Here we should login if the user is linked
-            return Err(RouteError::UserAlreadyLinked);
-        }
-
+    let link = if let Some((link, _maybe_user_id)) = maybe_link {
         link
     } else {
         add_link(&mut txn, &mut rng, &clock, &provider, subject).await?
