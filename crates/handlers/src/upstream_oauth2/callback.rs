@@ -19,17 +19,15 @@ use axum::{
 use axum_extra::extract::PrivateCookieJar;
 use hyper::StatusCode;
 use mas_axum_utils::http_client_factory::HttpClientFactory;
-use mas_http::ClientInitError;
 use mas_jose::claims::ClaimError;
 use mas_keystore::{Encrypter, Keystore};
-use mas_oidc_client::{
-    error::{DiscoveryError, JwksError, TokenAuthorizationCodeError},
-    requests::{authorization_code::AuthorizationValidationData, jose::JwtVerificationData},
+use mas_oidc_client::requests::{
+    authorization_code::AuthorizationValidationData, jose::JwtVerificationData,
 };
 use mas_router::{Route, UrlBuilder};
 use mas_storage::{
     upstream_oauth2::{add_link, complete_session, lookup_link_by_subject, lookup_session},
-    GenericLookupError, LookupResultExt,
+    LookupResultExt,
 };
 use oauth2_types::errors::ClientErrorCode;
 use serde::Deserialize;
@@ -37,7 +35,8 @@ use sqlx::PgPool;
 use thiserror::Error;
 use ulid::Ulid;
 
-use super::{client_credentials_for_provider, ProviderCredentialsError};
+use super::client_credentials_for_provider;
+use crate::impl_from_error_for_route;
 
 #[derive(Deserialize)]
 pub struct QueryParams {
@@ -100,53 +99,14 @@ pub(crate) enum RouteError {
     Anyhow(#[from] anyhow::Error),
 }
 
-impl From<GenericLookupError> for RouteError {
-    fn from(e: GenericLookupError) -> Self {
-        Self::InternalError(Box::new(e))
-    }
-}
-
-impl From<sqlx::Error> for RouteError {
-    fn from(e: sqlx::Error) -> Self {
-        Self::InternalError(Box::new(e))
-    }
-}
-
-impl From<DiscoveryError> for RouteError {
-    fn from(e: DiscoveryError) -> Self {
-        Self::InternalError(Box::new(e))
-    }
-}
-
-impl From<JwksError> for RouteError {
-    fn from(e: JwksError) -> Self {
-        Self::InternalError(Box::new(e))
-    }
-}
-
-impl From<TokenAuthorizationCodeError> for RouteError {
-    fn from(e: TokenAuthorizationCodeError) -> Self {
-        Self::InternalError(Box::new(e))
-    }
-}
-
-impl From<mas_storage::upstream_oauth2::SessionLookupError> for RouteError {
-    fn from(e: mas_storage::upstream_oauth2::SessionLookupError) -> Self {
-        Self::InternalError(Box::new(e))
-    }
-}
-
-impl From<ClientInitError> for RouteError {
-    fn from(e: ClientInitError) -> Self {
-        Self::InternalError(Box::new(e))
-    }
-}
-
-impl From<ProviderCredentialsError> for RouteError {
-    fn from(e: ProviderCredentialsError) -> Self {
-        Self::InternalError(Box::new(e))
-    }
-}
+impl_from_error_for_route!(mas_storage::GenericLookupError);
+impl_from_error_for_route!(mas_storage::upstream_oauth2::SessionLookupError);
+impl_from_error_for_route!(mas_http::ClientInitError);
+impl_from_error_for_route!(sqlx::Error);
+impl_from_error_for_route!(mas_oidc_client::error::DiscoveryError);
+impl_from_error_for_route!(mas_oidc_client::error::JwksError);
+impl_from_error_for_route!(mas_oidc_client::error::TokenAuthorizationCodeError);
+impl_from_error_for_route!(super::ProviderCredentialsError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {

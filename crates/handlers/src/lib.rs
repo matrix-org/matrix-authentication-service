@@ -55,6 +55,19 @@ mod oauth2;
 mod upstream_oauth2;
 mod views;
 
+/// Implement `From<E>` for `RouteError`, for "internal server error" kind of
+/// errors.
+#[macro_export]
+macro_rules! impl_from_error_for_route {
+    ($error:ty) => {
+        impl From<$error> for self::RouteError {
+            fn from(e: $error) -> Self {
+                Self::InternalError(Box::new(e))
+            }
+        }
+    };
+}
+
 pub use mas_axum_utils::http_client_factory::HttpClientFactory;
 
 pub use self::{app_state::AppState, compat::MatrixHomeserver, graphql::schema as graphql_schema};
