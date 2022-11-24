@@ -29,10 +29,10 @@ limitations under the License.
     {% set text_color = "text-black-800 dark:text-grey-300" %}
   {% endif %}
 
-  <label class="flex flex-col block {{ class }}">
-    <div class="mx-2 -mb-3 -mt-2 leading-5 px-1 z-10 self-start bg-white dark:bg-black-900 border-white border-1 dark:border-2 dark:border-black-900 rounded-full text-sm {{ text_color }}">{{ label }}</div>
+  <label class="flex flex-col {{ class }}">
+    <div class="mx-2 -mb-3 -mt-2 leading-5 px-1 z-10 self-start bg-white dark:bg-black-900 border-white border-2 dark:border-black-900 rounded-full text-sm {{ text_color }}">{{ label }}</div>
     <input name="{{ name }}"
-      class="z-0 px-3 py-2 bg-white dark:bg-black-900 rounded-lg {{ border_color }} border-1 dark:border-2 focus:border-accent focus:ring-0 focus:outline-0"
+      class="z-0 px-3 py-2 bg-white dark:bg-black-900 rounded-lg {{ border_color }} border-2 focus:border-accent focus:ring-0 focus:outline-0"
       type="{{ type }}" 
       inputmode="{{ inputmode }}"
       {% if autocomplete %} autocomplete="{{ autocomplete }}" {% endif %} 

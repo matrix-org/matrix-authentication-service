@@ -24,7 +24,7 @@ limitations under the License.
         This upstream account is already linked to another account.
       </h1>
 
-      {{ logout::button(text="Logout", class=button::plain_class(), csrf_token=csrf_token) }}
+      <div>{{ logout::button(text="Logout", class=button::outline_class(), csrf_token=csrf_token) }}</div>
     </div>
   </section>
 {% endblock content %}

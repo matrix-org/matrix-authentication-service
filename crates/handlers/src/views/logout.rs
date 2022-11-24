@@ -48,10 +48,10 @@ pub(crate) async fn post(
     txn.commit().await?;
 
     let destination = if let Some(action) = form {
-        mas_router::Login::and_then(action)
+        action.go_next()
     } else {
-        mas_router::Login::default()
+        mas_router::Login::default().go()
     };
 
-    Ok((cookie_jar, destination.go()))
+    Ok((cookie_jar, destination))
 }

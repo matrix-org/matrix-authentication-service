@@ -31,6 +31,10 @@ pub enum PostAuthAction {
         data: Ulid,
     },
     ChangePassword,
+    LinkUpstream {
+        #[serde_as(as = "DisplayFromStr")]
+        id: Ulid,
+    },
 }
 
 impl PostAuthAction {
@@ -49,6 +53,7 @@ impl PostAuthAction {
             Self::ContinueAuthorizationGrant { data } => ContinueAuthorizationGrant(*data).go(),
             Self::ContinueCompatSsoLogin { data } => CompatLoginSsoComplete::new(*data, None).go(),
             Self::ChangePassword => AccountPassword.go(),
+            Self::LinkUpstream { id } => UpstreamOAuth2Link::new(*id).go(),
         }
     }
 }

@@ -34,7 +34,10 @@ use mas_storage::{
     },
     LookupResultExt,
 };
-use mas_templates::{EmptyContext, TemplateContext, Templates, UpstreamExistingLinkContext};
+use mas_templates::{
+    EmptyContext, TemplateContext, Templates, UpstreamExistingLinkContext, UpstreamRegister,
+    UpstreamSuggestLink,
+};
 use serde::Deserialize;
 use sqlx::PgPool;
 use thiserror::Error;
@@ -174,7 +177,7 @@ pub(crate) async fn get(
 
         (Some(user_session), None) => {
             // Session not linked, but user logged in: suggest linking account
-            let ctx = EmptyContext
+            let ctx = UpstreamSuggestLink::new(link.id)
                 .with_session(user_session)
                 .with_csrf(csrf_token.form_value());
 
@@ -193,7 +196,7 @@ pub(crate) async fn get(
         (None, None) => {
             // Session not linked and used not logged in: suggest creating an
             // account or logging in an existing user
-            let ctx = EmptyContext.with_csrf(csrf_token.form_value());
+            let ctx = UpstreamRegister::new(link.id).with_csrf(csrf_token.form_value());
 
             templates.render_upstream_oauth2_do_register(&ctx).await?
         }

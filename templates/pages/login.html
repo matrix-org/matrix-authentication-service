@@ -19,10 +19,18 @@ limitations under the License.
 {% block content %}
   <section class="flex items-center justify-center flex-1">
     <form method="POST" class="grid grid-cols-1 gap-6 w-96 m-2">
-      <div class="text-center">
-        <h1 class="text-lg text-center font-medium">Sign in</h1>
-        <p>Please sign in to continue:</p>
-      </div>
+      {% if next and next.kind == "link_upstream" %}
+        <div class="text-center">
+          <h1 class="text-lg text-center font-medium">Sign in to link</h1>
+          <p class="text-sm">Linking your <span class="break-keep text-links">{{ next.provider.issuer }}</span> account</p>
+        </div>
+      {% else %}
+        <div class="text-center">
+          <h1 class="text-lg text-center font-medium">Sign in</h1>
+          <p>Please sign in to continue:</p>
+        </div>
+      {% endif %}
+
       {% if form.errors is not empty %}
         {% for error in form.errors %}
           <div class="text-alert font-medium">
@@ -50,10 +58,13 @@ limitations under the License.
           {{ button::button(text="Next") }}
         </div>
       {% endif %}
-      <div class="text-center mt-4">
-        Don't have an account yet?
-        {{ button::link_text(text="Create an account", href=register_link) }}
-      </div>
+
+      {% if not next or next.kind != "link_upstream" %}
+        <div class="text-center mt-4">
+          Don't have an account yet?
+          {{ button::link_text(text="Create an account", href=register_link) }}
+        </div>
+      {% endif %}
     </form>
   </section>
 {% endblock content %}
