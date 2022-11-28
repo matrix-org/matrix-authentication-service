@@ -130,10 +130,7 @@ pub fn verify_signed_jwt<'a>(
     claims::ISS.extract_required_with_options(&mut claims, issuer.as_str())?;
 
     // Must have the proper audience.
-    let aud = claims::AUD.extract_required(&mut claims)?;
-    if !aud.contains(client_id) {
-        return Err(JwtVerificationError::WrongAudience);
-    }
+    claims::AUD.extract_required_with_options(&mut claims, client_id)?;
 
     // Must use the proper algorithm.
     if header.alg() != signing_algorithm {

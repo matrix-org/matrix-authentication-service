@@ -602,10 +602,6 @@ pub enum JwtVerificationError {
     #[error(transparent)]
     Claim(#[from] ClaimError),
 
-    /// The audience of the JWT is not this client.
-    #[error("wrong aud claim")]
-    WrongAudience,
-
     /// The algorithm used for signing the JWT is not the one that was
     /// requested.
     #[error("wrong signature alg")]
