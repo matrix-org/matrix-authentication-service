@@ -25,7 +25,7 @@ axum = { version = "0.6.0-rc.5", features = ["ws"] }
 axum-macros = "0.3.0-rc.3"
 axum-extra = { version = "0.4.0-rc.3", features = ["cookie-private"] }
 
-async-graphql = { version = "4.0.16", features = ["tracing", "apollo_tracing"] }
+async-graphql = { version = "5.0.0", features = ["tracing", "apollo_tracing"] }
 
 # Emails
 lettre = { version = "0.10.1", default-features = false, features = ["builder"] }
