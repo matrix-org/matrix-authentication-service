@@ -18,7 +18,7 @@ use assert_matches::assert_matches;
 use chrono::{DateTime, Duration, Utc};
 use mas_iana::jose::JsonWebSignatureAlg;
 use mas_jose::{
-    claims,
+    claims::{self, ClaimError},
     constraints::Constrainable,
     jwk::PublicJsonWebKeySet,
     jwt::{JsonWebSignatureHeader, Jwt},
@@ -128,7 +128,13 @@ async fn fail_verify_id_token_wrong_issuer() {
 
     let error = verify_id_token(id_token.as_str(), verification_data, None, now).unwrap_err();
 
-    assert_matches!(error, IdTokenError::Jwt(JwtVerificationError::WrongIssuer));
+    assert_matches!(
+        error,
+        IdTokenError::Jwt(JwtVerificationError::Claim(ClaimError::ValidationError {
+            claim: "iss",
+            ..
+        }))
+    );
 }
 
 #[tokio::test]

@@ -22,7 +22,7 @@ use chrono::Duration;
 use mas_iana::oauth::{
     OAuthAccessTokenType, OAuthClientAuthenticationMethod, PkceCodeChallengeMethod,
 };
-use mas_jose::jwk::PublicJsonWebKeySet;
+use mas_jose::{claims::ClaimError, jwk::PublicJsonWebKeySet};
 use mas_oidc_client::{
     error::{
         AuthorizationError, IdTokenError, PushedAuthorizationError, TokenAuthorizationCodeError,
@@ -358,7 +358,13 @@ async fn fail_access_token_with_authorization_code_wrong_nonce() {
     .await
     .unwrap_err();
 
-    assert_matches!(error, TokenAuthorizationCodeError::WrongNonce);
+    assert_matches!(
+        error,
+        TokenAuthorizationCodeError::IdToken(IdTokenError::Claim(ClaimError::ValidationError {
+            claim: "nonce",
+            ..
+        }))
+    );
 }
 
 #[tokio::test]

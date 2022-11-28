@@ -467,10 +467,7 @@ fn verify_client_jwt(
     claims: &mut HashMap<String, Value>,
     token_endpoint: &String,
 ) -> Result<(), BoxError> {
-    let iss = claims::ISS.extract_required(claims)?;
-    if iss != CLIENT_ID {
-        return Err("Wrong iss".into());
-    }
+    claims::ISS.extract_required_with_options(claims, CLIENT_ID)?;
 
     let sub = claims::SUB.extract_required(claims)?;
     if sub != CLIENT_ID {
