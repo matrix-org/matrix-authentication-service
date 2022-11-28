@@ -293,6 +293,38 @@ impl<'a> Validator<String> for TokenHash<'a> {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct Equality<'a, T: ?Sized> {
+    value: &'a T,
+}
+
+impl<'a, T: ?Sized> Equality<'a, T> {
+    /// Creates a new `Equality` validator for the given value.
+    #[must_use]
+    pub fn new(value: &'a T) -> Self {
+        Self { value }
+    }
+}
+
+impl<'a, T1, T2: ?Sized> Validator<T1> for Equality<'a, T2>
+where
+    T2: PartialEq<T1>,
+{
+    fn validate(&self, value: &T1) -> Result<(), anyhow::Error> {
+        if *self.value == *value {
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("values don't match"))
+        }
+    }
+}
+
+impl<'a, T: ?Sized> From<&'a T> for Equality<'a, T> {
+    fn from(value: &'a T) -> Self {
+        Self::new(value)
+    }
+}
+
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
 #[serde(transparent)]
 pub struct Timestamp(#[serde(with = "chrono::serde::ts_seconds")] chrono::DateTime<chrono::Utc>);
@@ -349,9 +381,9 @@ impl<T> From<T> for OneOrMany<T> {
 /// Claims defined in RFC7519 sec. 4.1
 /// <https://www.rfc-editor.org/rfc/rfc7519.html#section-4.1>
 mod rfc7519 {
-    use super::{Claim, OneOrMany, TimeNotAfter, TimeNotBefore, Timestamp};
+    use super::{Claim, Equality, OneOrMany, TimeNotAfter, TimeNotBefore, Timestamp};
 
-    pub const ISS: Claim<String> = Claim::new("iss");
+    pub const ISS: Claim<String, Equality<str>> = Claim::new("iss");
     pub const SUB: Claim<String> = Claim::new("sub");
     pub const AUD: Claim<OneOrMany<String>> = Claim::new("aud");
     pub const NBF: Claim<Timestamp, TimeNotBefore> = Claim::new("nbf");
@@ -366,10 +398,10 @@ mod rfc7519 {
 mod oidc_core {
     use url::Url;
 
-    use super::{Claim, Timestamp, TokenHash};
+    use super::{Claim, Equality, Timestamp, TokenHash};
 
     pub const AUTH_TIME: Claim<Timestamp> = Claim::new("auth_time");
-    pub const NONCE: Claim<String> = Claim::new("nonce");
+    pub const NONCE: Claim<String, Equality<str>> = Claim::new("nonce");
     pub const AT_HASH: Claim<String, TokenHash> = Claim::new("at_hash");
     pub const C_HASH: Claim<String, TokenHash> = Claim::new("c_hash");
 
@@ -466,7 +498,9 @@ mod tests {
         });
         let mut claims = serde_json::from_value(claims).unwrap();
 
-        let iss = ISS.extract_required(&mut claims).unwrap();
+        let iss = ISS
+            .extract_required_with_options(&mut claims, "https://foo.com")
+            .unwrap();
         let sub = SUB.extract_optional(&mut claims).unwrap();
         let aud = AUD.extract_optional(&mut claims).unwrap();
         let nbf = NBF
@@ -617,7 +651,7 @@ mod tests {
         let mut claims = serde_json::from_value(claims).unwrap();
 
         assert!(matches!(
-            ISS.extract_required(&mut claims),
+            ISS.extract_required_with_options(&mut claims, "https://foo.com"),
             Err(ClaimError::InvalidClaim("iss"))
         ));
         assert!(matches!(
@@ -652,7 +686,7 @@ mod tests {
         let mut claims = HashMap::new();
 
         assert!(matches!(
-            ISS.extract_required(&mut claims),
+            ISS.extract_required_with_options(&mut claims, "https://foo.com"),
             Err(ClaimError::MissingClaim("iss"))
         ));
         assert!(matches!(
@@ -664,8 +698,28 @@ mod tests {
             Err(ClaimError::MissingClaim("aud"))
         ));
 
-        assert!(matches!(ISS.extract_optional(&mut claims), Ok(None)));
+        assert!(matches!(
+            ISS.extract_optional_with_options(&mut claims, "https://foo.com"),
+            Ok(None)
+        ));
         assert!(matches!(SUB.extract_optional(&mut claims), Ok(None)));
         assert!(matches!(AUD.extract_optional(&mut claims), Ok(None)));
+    }
+
+    #[test]
+    fn string_eq_validation() {
+        let claims = serde_json::json!({
+            "iss": "https://foo.com",
+        });
+        let mut claims: HashMap<String, serde_json::Value> =
+            serde_json::from_value(claims).unwrap();
+
+        ISS.extract_required_with_options(&mut claims.clone(), "https://foo.com")
+            .unwrap();
+
+        assert!(matches!(
+            ISS.extract_required_with_options(&mut claims, "https://bar.com"),
+            Err(ClaimError::ValidationError { claim: "iss", .. }),
+        ));
     }
 }

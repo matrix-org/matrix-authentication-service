@@ -444,12 +444,9 @@ pub async fn access_token_with_authorization_code(
             .map_err(IdTokenError::from)?;
 
         // Nonce must match.
-        let token_nonce = claims::NONCE
-            .extract_required(&mut claims)
+        claims::NONCE
+            .extract_required_with_options(&mut claims, validation_data.nonce.as_str())
             .map_err(IdTokenError::from)?;
-        if token_nonce != validation_data.nonce {
-            return Err(TokenAuthorizationCodeError::WrongNonce);
-        }
 
         Some(id_token.into_owned())
     } else {

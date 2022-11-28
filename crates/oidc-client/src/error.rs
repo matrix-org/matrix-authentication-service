@@ -335,10 +335,6 @@ where
 /// All possible errors when exchanging a code for an access token.
 #[derive(Debug, Error)]
 pub enum TokenAuthorizationCodeError {
-    /// The nonce doesn't match the one that was sent.
-    #[error("wrong nonce")]
-    WrongNonce,
-
     /// An error occurred requesting the access token.
     #[error(transparent)]
     Token(#[from] TokenRequestError),
@@ -605,10 +601,6 @@ pub enum JwtVerificationError {
     /// An error occurred extracting a claim.
     #[error(transparent)]
     Claim(#[from] ClaimError),
-
-    /// The issuer is not the one that sent the JWT.
-    #[error("wrong issuer claim")]
-    WrongIssuer,
 
     /// The audience of the JWT is not this client.
     #[error("wrong aud claim")]

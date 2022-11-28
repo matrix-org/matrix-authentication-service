@@ -127,10 +127,7 @@ pub fn verify_signed_jwt<'a>(
     let (header, mut claims) = jwt.clone().into_parts();
 
     // Must have the proper issuer.
-    let iss = claims::ISS.extract_required(&mut claims)?;
-    if iss != issuer.as_str() {
-        return Err(JwtVerificationError::WrongIssuer);
-    }
+    claims::ISS.extract_required_with_options(&mut claims, issuer.as_str())?;
 
     // Must have the proper audience.
     let aud = claims::AUD.extract_required(&mut claims)?;
