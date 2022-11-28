@@ -154,7 +154,10 @@ async fn fail_verify_id_token_wrong_audience() {
 
     assert_matches!(
         error,
-        IdTokenError::Jwt(JwtVerificationError::WrongAudience)
+        IdTokenError::Jwt(JwtVerificationError::Claim(ClaimError::ValidationError {
+            claim: "aud",
+            ..
+        }))
     );
 }
 

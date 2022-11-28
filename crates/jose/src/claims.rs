@@ -325,6 +325,38 @@ impl<'a, T: ?Sized> From<&'a T> for Equality<'a, T> {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct Contains<'a, T> {
+    value: &'a T,
+}
+
+impl<'a, T> Contains<'a, T> {
+    /// Creates a new `Contains` validator for the given value.
+    #[must_use]
+    pub fn new(value: &'a T) -> Self {
+        Self { value }
+    }
+}
+
+impl<'a, T> Validator<OneOrMany<T>> for Contains<'a, T>
+where
+    T: PartialEq,
+{
+    fn validate(&self, value: &OneOrMany<T>) -> Result<(), anyhow::Error> {
+        if value.contains(self.value) {
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("OneOrMany doesn't contain value"))
+        }
+    }
+}
+
+impl<'a, T> From<&'a T> for Contains<'a, T> {
+    fn from(value: &'a T) -> Self {
+        Self::new(value)
+    }
+}
+
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
 #[serde(transparent)]
 pub struct Timestamp(#[serde(with = "chrono::serde::ts_seconds")] chrono::DateTime<chrono::Utc>);
@@ -381,11 +413,11 @@ impl<T> From<T> for OneOrMany<T> {
 /// Claims defined in RFC7519 sec. 4.1
 /// <https://www.rfc-editor.org/rfc/rfc7519.html#section-4.1>
 mod rfc7519 {
-    use super::{Claim, Equality, OneOrMany, TimeNotAfter, TimeNotBefore, Timestamp};
+    use super::{Claim, Contains, Equality, OneOrMany, TimeNotAfter, TimeNotBefore, Timestamp};
 
     pub const ISS: Claim<String, Equality<str>> = Claim::new("iss");
     pub const SUB: Claim<String> = Claim::new("sub");
-    pub const AUD: Claim<OneOrMany<String>> = Claim::new("aud");
+    pub const AUD: Claim<OneOrMany<String>, Contains<String>> = Claim::new("aud");
     pub const NBF: Claim<Timestamp, TimeNotBefore> = Claim::new("nbf");
     pub const EXP: Claim<Timestamp, TimeNotAfter> = Claim::new("exp");
     pub const IAT: Claim<Timestamp, TimeNotBefore> = Claim::new("iat");
@@ -502,7 +534,9 @@ mod tests {
             .extract_required_with_options(&mut claims, "https://foo.com")
             .unwrap();
         let sub = SUB.extract_optional(&mut claims).unwrap();
-        let aud = AUD.extract_optional(&mut claims).unwrap();
+        let aud = AUD
+            .extract_optional_with_options(&mut claims, &"abcd-efgh".to_owned())
+            .unwrap();
         let nbf = NBF
             .extract_optional_with_options(&mut claims, &time_options)
             .unwrap();
@@ -659,7 +693,7 @@ mod tests {
             Err(ClaimError::InvalidClaim("sub"))
         ));
         assert!(matches!(
-            AUD.extract_required(&mut claims),
+            AUD.extract_required_with_options(&mut claims, &"abcd-efgh".to_owned()),
             Err(ClaimError::InvalidClaim("aud"))
         ));
         assert!(matches!(
@@ -694,7 +728,7 @@ mod tests {
             Err(ClaimError::MissingClaim("sub"))
         ));
         assert!(matches!(
-            AUD.extract_required(&mut claims),
+            AUD.extract_required_with_options(&mut claims, &"abcd-efgh".to_owned()),
             Err(ClaimError::MissingClaim("aud"))
         ));
 
@@ -703,7 +737,10 @@ mod tests {
             Ok(None)
         ));
         assert!(matches!(SUB.extract_optional(&mut claims), Ok(None)));
-        assert!(matches!(AUD.extract_optional(&mut claims), Ok(None)));
+        assert!(matches!(
+            AUD.extract_optional_with_options(&mut claims, &"abcd-efgh".to_owned()),
+            Ok(None)
+        ));
     }
 
     #[test]
@@ -720,6 +757,23 @@ mod tests {
         assert!(matches!(
             ISS.extract_required_with_options(&mut claims, "https://bar.com"),
             Err(ClaimError::ValidationError { claim: "iss", .. }),
+        ));
+    }
+
+    #[test]
+    fn contains_validation() {
+        let claims = serde_json::json!({
+            "aud": "abcd-efgh",
+        });
+        let mut claims: HashMap<String, serde_json::Value> =
+            serde_json::from_value(claims).unwrap();
+
+        AUD.extract_required_with_options(&mut claims.clone(), &"abcd-efgh".to_owned())
+            .unwrap();
+
+        assert!(matches!(
+            AUD.extract_required_with_options(&mut claims, &"wxyz".to_owned()),
+            Err(ClaimError::ValidationError { claim: "aud", .. }),
         ));
     }
 }

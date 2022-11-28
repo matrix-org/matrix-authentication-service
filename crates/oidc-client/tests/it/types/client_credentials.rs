@@ -474,10 +474,7 @@ fn verify_client_jwt(
         return Err("Wrong sub".into());
     }
 
-    let aud = claims::AUD.extract_required(claims)?;
-    if !aud.contains(token_endpoint) {
-        return Err("Wrong aud".into());
-    }
+    claims::AUD.extract_required_with_options(claims, token_endpoint)?;
 
     claims::EXP.extract_required_with_options(claims, TimeOptions::new(now()))?;
 
