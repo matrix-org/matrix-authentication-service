@@ -33,5 +33,5 @@ url = { version = "2.3.1", features = ["serde"] }
 mas-iana = { path = "../iana" }
 
 [dev-dependencies]
-insta = { version = "1.21.1" }
+insta = { version = "1.21.2" }
 rand_chacha = "0.3.1"
