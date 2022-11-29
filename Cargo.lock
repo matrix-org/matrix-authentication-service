@@ -631,9 +631,9 @@ dependencies = [
 
 [[package]]
 name = "axum"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "744864363a200a5e724a7e61bc8c11b6628cf2e3ec519c8a1a48e609a8156b40"
+checksum = "08b108ad2665fa3f6e6a517c3d80ec3e77d224c47d605167aefaa5d7ef97fa48"
 dependencies = [
  "async-trait",
  "axum-core 0.3.0",
@@ -646,7 +646,7 @@ dependencies = [
  "http-body",
  "hyper",
  "itoa 1.0.4",
- "matchit 0.6.0",
+ "matchit 0.7.0",
  "memchr",
  "mime",
  "percent-encoding",
@@ -705,7 +705,7 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d1933e5206aa0a213ae64bbd53b3006f4dc171f02314fb5efaf4d2212d2705b8"
 dependencies = [
- "axum 0.6.0",
+ "axum 0.6.1",
  "bytes 1.3.0",
  "cookie",
  "futures-util",
@@ -2636,7 +2636,7 @@ name = "mas-axum-utils"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "axum 0.6.0",
+ "axum 0.6.1",
  "axum-extra",
  "bincode",
  "chrono",
@@ -2674,7 +2674,7 @@ dependencies = [
  "anyhow",
  "argon2",
  "atty",
- "axum 0.6.0",
+ "axum 0.6.1",
  "camino",
  "clap",
  "dotenv",
@@ -2807,7 +2807,7 @@ dependencies = [
  "anyhow",
  "argon2",
  "async-graphql",
- "axum 0.6.0",
+ "axum 0.6.1",
  "axum-extra",
  "axum-macros",
  "camino",
@@ -2854,7 +2854,7 @@ dependencies = [
  "anyhow",
  "aws-smithy-http",
  "aws-types",
- "axum 0.6.0",
+ "axum 0.6.1",
  "bytes 1.3.0",
  "futures-util",
  "headers",
@@ -3053,7 +3053,7 @@ dependencies = [
 name = "mas-router"
 version = "0.1.0"
 dependencies = [
- "axum 0.6.0",
+ "axum 0.6.1",
  "serde",
  "serde_urlencoded",
  "serde_with",
@@ -3164,9 +3164,9 @@ checksum = "73cbba799671b762df5a175adf59ce145165747bb891505c43d09aefbbf38beb"
 
 [[package]]
 name = "matchit"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3dfc802da7b1cf80aefffa0c7b2f77247c8b32206cc83c270b61264f5b360a80"
+checksum = "b87248edafb776e59e6ee64a79086f65890d3510f2c656c000bf2a7e8a0aea40"
 
 [[package]]
 name = "md-5"
