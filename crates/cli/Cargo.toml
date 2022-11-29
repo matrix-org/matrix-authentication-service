@@ -9,7 +9,7 @@ license = "Apache-2.0"
 anyhow = "1.0.66"
 argon2 = { version = "0.4.1", features = ["password-hash"] }
 atty = "0.2.14"
-axum = "0.6.0"
+axum = "0.6.1"
 camino = "1.1.1"
 clap = { version = "4.0.29", features = ["derive"] }
 dotenv = "0.15.0"
