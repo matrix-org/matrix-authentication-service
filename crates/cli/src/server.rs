@@ -19,10 +19,7 @@ use std::{
 };
 
 use anyhow::Context;
-use axum::{
-    body::HttpBody, error_handling::HandleErrorLayer, extract::FromRef, Extension, Router,
-    RouterService,
-};
+use axum::{body::HttpBody, error_handling::HandleErrorLayer, extract::FromRef, Extension, Router};
 use hyper::StatusCode;
 use listenfd::ListenFd;
 use mas_config::{HttpBindConfig, HttpResource, HttpTlsConfig, UnixOrTcp};
@@ -36,7 +33,7 @@ use tower::Layer;
 use tower_http::services::ServeDir;
 
 #[allow(clippy::trait_duplication_in_bounds)]
-pub fn build_router<B>(state: AppState, resources: &[HttpResource]) -> RouterService<B>
+pub fn build_router<B>(state: AppState, resources: &[HttpResource]) -> Router<(), B>
 where
     B: HttpBody + Send + 'static,
     <B as HttpBody>::Data: Into<axum::body::Bytes> + Send,
