@@ -719,9 +719,9 @@ dependencies = [
 
 [[package]]
 name = "axum-macros"
-version = "0.3.0-rc.3"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2185fff4d6f14de84dcc01b0ff8eee2ac5331a962cf85e60e080ce7db724cc9"
+checksum = "e4df0fc33ada14a338b799002f7e8657711422b25d4e16afb032708d6b185621"
 dependencies = [
  "heck",
  "proc-macro2",
