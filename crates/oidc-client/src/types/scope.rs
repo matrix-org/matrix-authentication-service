@@ -16,7 +16,8 @@
 
 use std::{fmt, str::FromStr};
 
-use oauth2_types::scope::{InvalidScope, Scope, ScopeToken as StrScopeToken};
+use oauth2_types::scope::ScopeToken as StrScopeToken;
+pub use oauth2_types::scope::{InvalidScope, Scope};
 
 use crate::PrivString;
 

@@ -352,7 +352,8 @@ pub struct DeviceAuthorizationRequest {
     pub scope: Option<Scope>,
 }
 
-/// The default value of the `interval` between polling requests, if it is not set.
+/// The default value of the `interval` between polling requests, if it is not
+/// set.
 pub const DEFAULT_DEVICE_AUTHORIZATION_INTERVAL_SECONDS: i64 = 5;
 
 /// A successful response from the [Device Authorization Endpoint].
