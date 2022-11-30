@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Types for the [Proof Key for Code Exchange].
+//!
+//! [Proof Key for Code Exchange]: https://www.rfc-editor.org/rfc/rfc7636
+
 use std::borrow::Cow;
 
 use data_encoding::BASE64URL_NOPAD;
@@ -20,20 +24,26 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use thiserror::Error;
 
+/// Errors that can occur when verifying a code challenge.
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum CodeChallengeError {
+    /// The code verifier should be at least 43 characters long.
     #[error("code_verifier should be at least 43 characters long")]
     TooShort,
 
+    /// The code verifier should be at most 128 characters long.
     #[error("code_verifier should be at most 128 characters long")]
     TooLong,
 
+    /// The code verifier contains invalid characters.
     #[error("code_verifier contains invalid characters")]
     InvalidCharacters,
 
+    /// The challenge verification failed.
     #[error("challenge verification failed")]
     VerificationFailed,
 
+    /// The challenge method is unsupported.
     #[error("unknown challenge method")]
     UnknownChallengeMethod,
 }
@@ -57,6 +67,7 @@ fn validate_verifier(verifier: &str) -> Result<(), CodeChallengeError> {
     Ok(())
 }
 
+/// Helper trait to compute and verify code challenges.
 pub trait CodeChallengeMethodExt {
     /// Compute the challenge for a given verifier
     ///
@@ -105,14 +116,20 @@ impl CodeChallengeMethodExt for PkceCodeChallengeMethod {
     }
 }
 
+/// The code challenge data added to an authorization request.
 #[derive(Clone, Serialize, Deserialize)]
 pub struct AuthorizationRequest {
+    /// The code challenge method.
     pub code_challenge_method: PkceCodeChallengeMethod,
+
+    /// The code challenge computed from the verifier and the method.
     pub code_challenge: String,
 }
 
+/// The code challenge data added to a token request.
 #[derive(Clone, Serialize, Deserialize)]
 pub struct TokenRequest {
+    /// The code challenge verifier.
     pub code_challenge_verifier: String,
 }
 

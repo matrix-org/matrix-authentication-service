@@ -12,8 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! [OAuth 2.0] and [OpenID Connect] types.
+//!
+//! This is part of the [Matrix Authentication Service] project.
+//!
+//! [OAuth 2.0]: https://oauth.net/2/
+//! [OpenID Connect]: https://openid.net/connect/
+//! [Matrix Authentication Service]: https://github.com/matrix-org/matrix-authentication-service
+
 #![forbid(unsafe_code)]
-#![deny(clippy::all, clippy::str_to_string, rustdoc::broken_intra_doc_links)]
+#![deny(
+    clippy::all,
+    clippy::str_to_string,
+    rustdoc::broken_intra_doc_links,
+    missing_docs
+)]
 #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 
@@ -26,6 +39,7 @@ pub mod response_type;
 pub mod scope;
 pub mod webfinger;
 
+/// Traits intended for blanket imports.
 pub mod prelude {
     pub use crate::pkce::CodeChallengeMethodExt;
 }
