@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! [Response types] in the OpenID Connect specification.
+//!
+//! [Response types]: https://openid.net/specs/openid-connect-core-1_0.html#Authentication
+
 #![allow(clippy::module_name_repetitions)]
 
 use std::{collections::BTreeSet, fmt, iter::FromIterator, str::FromStr};

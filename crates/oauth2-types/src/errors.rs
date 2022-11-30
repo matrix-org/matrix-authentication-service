@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Error types returned by an authorization server.
+
 use std::borrow::Cow;
 
 use parse_display::{Display, FromStr};
@@ -56,6 +58,7 @@ impl From<ClientErrorCode> for ClientError {
     }
 }
 
+/// Client error codes defined in OAuth2.0, OpenID Connect and their extensions.
 #[derive(Debug, Clone, PartialEq, Eq, Display, FromStr, SerializeDisplay, DeserializeFromStr)]
 #[display(style = "snake_case")]
 pub enum ClientErrorCode {

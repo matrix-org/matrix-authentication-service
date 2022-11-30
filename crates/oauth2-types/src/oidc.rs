@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Types to interact with the [OpenID Connect] specification.
+//!
+//! [OpenID Connect]: https://openid.net/connect/
+
 use std::{ops::Deref, str::FromStr};
 
 use language_tags::LanguageTag;
@@ -107,43 +111,63 @@ impl From<OAuthAccessTokenType> for AuthenticationMethodOrAccessTokenType {
     }
 }
 
+/// The kind of an application.
 #[derive(
     SerializeDisplay, DeserializeFromStr, Clone, Copy, PartialEq, Eq, Hash, Debug, Display, FromStr,
 )]
 #[display(style = "lowercase")]
 pub enum ApplicationType {
+    /// A web application.
     Web,
+
+    /// A native application.
     Native,
 }
 
+/// Subject Identifier types.
+///
+/// A Subject Identifier is a locally unique and never reassigned identifier within the Issuer for the End-User, which is intended to be consumed by the Client.
 #[derive(
     SerializeDisplay, DeserializeFromStr, Clone, Copy, PartialEq, Eq, Hash, Debug, Display, FromStr,
 )]
 #[display(style = "lowercase")]
 pub enum SubjectType {
+    /// This provides the same `sub` (subject) value to all Clients.
     Public,
+
+    /// This provides a different `sub` value to each Client, so as not to enable Clients to correlate the End-User's activities without permission.
     Pairwise,
 }
 
+/// Claim types.
 #[derive(
     SerializeDisplay, DeserializeFromStr, Clone, Copy, PartialEq, Eq, Hash, Debug, Display, FromStr,
 )]
 #[display(style = "lowercase")]
 pub enum ClaimType {
+    /// Claims that are directly asserted by the OpenID Provider.
     Normal,
+
+    /// Claims that are asserted by a Claims Provider other than the OpenID Provider but are returned by OpenID Provider.
     Aggregated,
+
+    /// Claims that are asserted by a Claims Provider other than the OpenID Provider but are returned as references by the OpenID Provider.
     Distributed,
 }
 
+/// The default value of `response_modes_supported` if it is not set.
 pub static DEFAULT_RESPONSE_MODES_SUPPORTED: &[ResponseMode] =
     &[ResponseMode::Query, ResponseMode::Fragment];
 
+/// The default value of `grant_types_supported` if it is not set.
 pub static DEFAULT_GRANT_TYPES_SUPPORTED: &[GrantType] =
     &[GrantType::AuthorizationCode, GrantType::Implicit];
 
+/// The default value of `token_endpoint_auth_methods_supported` if it is not set.
 pub static DEFAULT_AUTH_METHODS_SUPPORTED: &[OAuthClientAuthenticationMethod] =
     &[OAuthClientAuthenticationMethod::ClientSecretBasic];
 
+/// The default value of `claim_types_supported` if it is not set.
 pub static DEFAULT_CLAIM_TYPES_SUPPORTED: &[ClaimType] = &[ClaimType::Normal];
 
 /// Authorization server metadata, as described by the [IANA registry].

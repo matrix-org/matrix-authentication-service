@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Types to define an [access token's scope].
+//!
+//! [access token's scope]: https://www.rfc-editor.org/rfc/rfc6749#section-3.3
+
 #![allow(clippy::module_name_repetitions)]
 
 use std::{borrow::Cow, collections::BTreeSet, iter::FromIterator, ops::Deref, str::FromStr};
@@ -20,10 +24,12 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+/// The error type returned when a scope is invalid.
 #[derive(Debug, Error, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[error("Invalid scope format")]
 pub struct InvalidScope;
 
+/// A scope token or scope value.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ScopeToken(Cow<'static, str>);
 
@@ -36,11 +42,34 @@ impl ScopeToken {
     }
 }
 
+/// `openid`.
+///
+/// Must be included in OpenID Connect requests.
 pub const OPENID: ScopeToken = ScopeToken::from_static("openid");
+
+/// `profile`.
+///
+/// Requests access to the End-User's default profile Claims.
 pub const PROFILE: ScopeToken = ScopeToken::from_static("profile");
+
+/// `email`.
+///
+/// Requests access to the `email` and `email_verified` Claims.
 pub const EMAIL: ScopeToken = ScopeToken::from_static("email");
+
+/// `address`.
+///
+/// Requests access to the `address` Claim.
 pub const ADDRESS: ScopeToken = ScopeToken::from_static("address");
+
+/// `phone`.
+///
+/// Requests access to the `phone_number` and `phone_number_verified` Claims.
 pub const PHONE: ScopeToken = ScopeToken::from_static("phone");
+
+/// `offline_access`.
+///
+/// Requests that an OAuth 2.0 Refresh Token be issued that can be used to obtain an Access Token that grants access to the End-User's Userinfo Endpoint even when the End-User is not present (not logged in).
 pub const OFFLINE_ACCESS: ScopeToken = ScopeToken::from_static("offline_access");
 
 // As per RFC6749 appendix A:
@@ -81,6 +110,7 @@ impl ToString for ScopeToken {
     }
 }
 
+/// A scope.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Scope(BTreeSet<ScopeToken>);
 
@@ -108,17 +138,20 @@ impl FromStr for Scope {
 }
 
 impl Scope {
+    /// Whether this `Scope` is empty.
     #[must_use]
     pub fn is_empty(&self) -> bool {
         // This should never be the case?
         self.0.is_empty()
     }
 
+    /// The number of tokens in the `Scope`.
     #[must_use]
     pub fn len(&self) -> usize {
         self.0.len()
     }
 
+    /// Whether this `Scope` contains the given value.
     #[must_use]
     pub fn contains(&self, token: &str) -> bool {
         ScopeToken::from_str(token)
@@ -126,6 +159,9 @@ impl Scope {
             .unwrap_or(false)
     }
 
+    /// Inserts the given token in this `Scope`.
+    ///
+    /// Returns whether the token was newly inserted.
     pub fn insert(&mut self, value: ScopeToken) -> bool {
         self.0.insert(value)
     }

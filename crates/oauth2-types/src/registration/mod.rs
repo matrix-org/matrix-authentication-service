@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Types for [Dynamic Client Registration].
+//!
+//! [Dynamic Client Registration]: https://openid.net/specs/openid-connect-registration-1_0.html
+
 use std::{collections::HashMap, ops::Deref};
 
 use chrono::{DateTime, Duration, Utc};
@@ -35,18 +39,24 @@ use crate::{
 mod client_metadata_serde;
 use client_metadata_serde::ClientMetadataSerdeHelper;
 
+/// The default value of `response_types` if it is not set.
 pub const DEFAULT_RESPONSE_TYPES: [OAuthAuthorizationEndpointResponseType; 1] =
     [OAuthAuthorizationEndpointResponseType::Code];
 
+/// The default value of `grant_types` if it is not set.
 pub const DEFAULT_GRANT_TYPES: &[GrantType] = &[GrantType::AuthorizationCode];
 
+/// The default value of `application_type` if it is not set.
 pub const DEFAULT_APPLICATION_TYPE: ApplicationType = ApplicationType::Web;
 
+/// The default value of `token_endpoint_auth_method` if it is not set.
 pub const DEFAULT_TOKEN_AUTH_METHOD: &OAuthClientAuthenticationMethod =
     &OAuthClientAuthenticationMethod::ClientSecretBasic;
 
+/// The default value of `id_token_signed_response_alg` if it is not set.
 pub const DEFAULT_SIGNING_ALGORITHM: &JsonWebSignatureAlg = &JsonWebSignatureAlg::Rs256;
 
+/// The default value of `id_token_encrypted_response_enc` if it is not set.
 pub const DEFAULT_ENCRYPTION_ENC_ALGORITHM: &JsonWebEncryptionEnc =
     &JsonWebEncryptionEnc::A128CbcHs256;
 
@@ -841,19 +851,26 @@ pub enum ClientMetadataVerificationError {
     MissingEncryptionAlg(&'static str),
 }
 
+/// The issuer response to dynamic client registration.
 #[serde_as]
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct ClientRegistrationResponse {
+    /// A unique client identifier.
     pub client_id: String,
 
+    /// A client secret, if the `token_endpoint_auth_method` requires one.
     #[serde(default)]
     pub client_secret: Option<String>,
 
+    /// Time at which the Client Identifier was issued.
     #[serde(default)]
     #[serde_as(as = "Option<TimestampSeconds<i64>>")]
     pub client_id_issued_at: Option<DateTime<Utc>>,
 
+    /// Time at which the client_secret will expire or 0 if it will not expire.
+    ///
+    /// Required if `client_secret` is issued.
     #[serde(default)]
     #[serde_as(as = "Option<TimestampSeconds<i64>>")]
     pub client_secret_expires_at: Option<DateTime<Utc>>,
