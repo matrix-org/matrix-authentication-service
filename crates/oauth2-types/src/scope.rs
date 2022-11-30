@@ -69,7 +69,9 @@ pub const PHONE: ScopeToken = ScopeToken::from_static("phone");
 
 /// `offline_access`.
 ///
-/// Requests that an OAuth 2.0 Refresh Token be issued that can be used to obtain an Access Token that grants access to the End-User's Userinfo Endpoint even when the End-User is not present (not logged in).
+/// Requests that an OAuth 2.0 Refresh Token be issued that can be used to
+/// obtain an Access Token that grants access to the End-User's Userinfo
+/// Endpoint even when the End-User is not present (not logged in).
 pub const OFFLINE_ACCESS: ScopeToken = ScopeToken::from_static("offline_access");
 
 // As per RFC6749 appendix A:
