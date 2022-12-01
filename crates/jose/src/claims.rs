@@ -367,7 +367,7 @@ impl<'a, T> Contains<'a, T> {
 }
 
 #[derive(Debug, Clone, Copy, Error)]
-#[error("OneOrMany doesn't contains value")]
+#[error("OneOrMany doesn't contain value")]
 pub struct ContainsError;
 
 impl<'a, T> Validator<OneOrMany<T>> for Contains<'a, T>
