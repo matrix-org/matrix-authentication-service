@@ -23,7 +23,7 @@ use mas_axum_utils::client_authorization::{ClientAuthorization, CredentialsVerif
 use mas_data_model::{AuthorizationGrantStage, Client, TokenType};
 use mas_iana::jose::JsonWebSignatureAlg;
 use mas_jose::{
-    claims::{self, hash_token, ClaimError},
+    claims::{self, hash_token, ClaimError, TokenHashError},
     constraints::Constrainable,
     jwt::{JsonWebSignatureHeader, Jwt, JwtSignatureError},
 };
@@ -173,6 +173,12 @@ impl From<sqlx::Error> for RouteError {
 
 impl From<ClaimError> for RouteError {
     fn from(e: ClaimError) -> Self {
+        Self::Internal(Box::new(e))
+    }
+}
+
+impl From<TokenHashError> for RouteError {
+    fn from(e: TokenHashError) -> Self {
         Self::Internal(Box::new(e))
     }
 }
