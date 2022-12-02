@@ -533,6 +533,10 @@ pub enum GrantType {
     #[display("urn:ietf:params:oauth:grant-type:device_code")]
     DeviceCode,
 
+    /// [`https://datatracker.ietf.org/doc/html/rfc7523#section-2.1`](https://www.rfc-editor.org/rfc/rfc7523#section-2.1)
+    #[display("urn:ietf:params:oauth:grant-type:jwt-bearer")]
+    JwtBearer,
+
     /// [`urn:openid:params:grant-type:ciba`](https://openid.net/specs/openid-client-initiated-backchannel-authentication-core-1_0.html)
     #[display("urn:openid:params:grant-type:ciba")]
     ClientInitiatedBackchannelAuthentication,
