@@ -21,6 +21,7 @@ use mas_storage::{
     oauth2::client::{insert_client_from_config, lookup_client, truncate_clients},
     user::{
         lookup_user_by_username, lookup_user_email, mark_user_email_as_verified, register_user,
+        set_password,
     },
     Clock, LookupError,
 };
@@ -143,9 +144,6 @@ enum Subcommand {
     /// Register a new user
     Register { username: String, password: String },
 
-    /// List active users
-    Users,
-
     /// Mark email address as verified
     VerifyEmail { username: String, email: String },
 
@@ -155,6 +153,9 @@ enum Subcommand {
         #[arg(long)]
         truncate: bool,
     },
+
+    /// Set a user password
+    SetPassword { username: String, password: String },
 
     /// Add an OAuth 2.0 upstream
     #[command(name = "add-oauth-upstream")]
@@ -203,13 +204,21 @@ impl Options {
                 let user =
                     register_user(&mut txn, &mut rng, &clock, hasher, username, password).await?;
                 txn.commit().await?;
-                info!(?user, "User registered");
+                info!(user.id = %user.data, %user.username, "User registered");
 
                 Ok(())
             }
 
-            SC::Users => {
-                warn!("Not implemented yet");
+            SC::SetPassword { username, password } => {
+                let config: DatabaseConfig = root.load_config()?;
+                let pool = config.connect().await?;
+                let mut txn = pool.begin().await?;
+                let hasher = Argon2::default();
+                let user = lookup_user_by_username(&mut txn, username).await?;
+
+                set_password(&mut txn, &mut rng, &clock, hasher, &user, password).await?;
+                info!(user.id = %user.data, %user.username, "Password changed");
+                txn.commit().await?;
 
                 Ok(())
             }
