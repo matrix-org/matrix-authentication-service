@@ -47,7 +47,7 @@ pub(crate) async fn get(
     let jwt_signing_alg_values_supported = Some(key_store.available_signing_algorithms());
 
     // Prepare all the endpoints
-    let issuer = Some(url_builder.oidc_issuer());
+    let issuer = Some(url_builder.oidc_issuer().into());
     let authorization_endpoint = Some(url_builder.oauth_authorization_endpoint());
     let token_endpoint = Some(url_builder.oauth_token_endpoint());
     let jwks_uri = Some(url_builder.jwks_uri());

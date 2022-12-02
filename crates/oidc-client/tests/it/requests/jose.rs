@@ -28,7 +28,6 @@ use mas_oidc_client::{
     requests::jose::{verify_id_token, JwtVerificationData},
     types::IdToken,
 };
-use url::Url;
 
 use crate::{keystore, now, CLIENT_ID, ID_TOKEN_SIGNING_ALG, SUBJECT_IDENTIFIER};
 
@@ -40,7 +39,7 @@ enum IdTokenFlag {
 
 /// Generate an ID token with the given settings.
 fn id_token(
-    issuer: &Url,
+    issuer: &str,
     flag: Option<IdTokenFlag>,
     auth_time: Option<DateTime<Utc>>,
 ) -> (IdToken, PublicJsonWebKeySet) {
@@ -91,13 +90,13 @@ fn id_token(
 
 #[tokio::test]
 async fn pass_verify_id_token() {
-    let issuer = Url::parse("http://localhost/").unwrap();
+    let issuer = "http://localhost/";
     let now = now();
-    let (auth_id_token, _) = id_token(&issuer, None, Some(now));
-    let (id_token, jwks) = id_token(&issuer, None, Some(now));
+    let (auth_id_token, _) = id_token(issuer, None, Some(now));
+    let (id_token, jwks) = id_token(issuer, None, Some(now));
 
     let verification_data = JwtVerificationData {
-        issuer: &issuer,
+        issuer,
         jwks: &jwks,
         client_id: &CLIENT_ID.to_owned(),
         signing_algorithm: &ID_TOKEN_SIGNING_ALG,
@@ -114,13 +113,13 @@ async fn pass_verify_id_token() {
 
 #[tokio::test]
 async fn fail_verify_id_token_wrong_issuer() {
-    let issuer = Url::parse("http://localhost/").unwrap();
-    let wrong_issuer = Url::parse("http://distanthost/").unwrap();
-    let (id_token, jwks) = id_token(&issuer, None, None);
+    let issuer = "http://localhost/";
+    let wrong_issuer = "http://distanthost/";
+    let (id_token, jwks) = id_token(issuer, None, None);
     let now = now();
 
     let verification_data = JwtVerificationData {
-        issuer: &wrong_issuer,
+        issuer: wrong_issuer,
         jwks: &jwks,
         client_id: &CLIENT_ID.to_owned(),
         signing_algorithm: &ID_TOKEN_SIGNING_ALG,
@@ -139,12 +138,12 @@ async fn fail_verify_id_token_wrong_issuer() {
 
 #[tokio::test]
 async fn fail_verify_id_token_wrong_audience() {
-    let issuer = Url::parse("http://localhost/").unwrap();
-    let (id_token, jwks) = id_token(&issuer, None, None);
+    let issuer = "http://localhost/";
+    let (id_token, jwks) = id_token(issuer, None, None);
     let now = now();
 
     let verification_data = JwtVerificationData {
-        issuer: &issuer,
+        issuer,
         jwks: &jwks,
         client_id: &"wrong_client_id".to_owned(),
         signing_algorithm: &ID_TOKEN_SIGNING_ALG,
@@ -163,12 +162,12 @@ async fn fail_verify_id_token_wrong_audience() {
 
 #[tokio::test]
 async fn fail_verify_id_token_wrong_signing_algorithm() {
-    let issuer = Url::parse("http://localhost/").unwrap();
-    let (id_token, jwks) = id_token(&issuer, None, None);
+    let issuer = "http://localhost/";
+    let (id_token, jwks) = id_token(issuer, None, None);
     let now = now();
 
     let verification_data = JwtVerificationData {
-        issuer: &issuer,
+        issuer,
         jwks: &jwks,
         client_id: &CLIENT_ID.to_owned(),
         signing_algorithm: &JsonWebSignatureAlg::Unknown("wrong_algorithm".to_owned()),
@@ -184,12 +183,12 @@ async fn fail_verify_id_token_wrong_signing_algorithm() {
 
 #[tokio::test]
 async fn fail_verify_id_token_wrong_expiration() {
-    let issuer = Url::parse("http://localhost/").unwrap();
-    let (id_token, jwks) = id_token(&issuer, Some(IdTokenFlag::WrongExpiration), None);
+    let issuer = "http://localhost/";
+    let (id_token, jwks) = id_token(issuer, Some(IdTokenFlag::WrongExpiration), None);
     let now = now();
 
     let verification_data = JwtVerificationData {
-        issuer: &issuer,
+        issuer,
         jwks: &jwks,
         client_id: &CLIENT_ID.to_owned(),
         signing_algorithm: &ID_TOKEN_SIGNING_ALG,
@@ -202,13 +201,13 @@ async fn fail_verify_id_token_wrong_expiration() {
 
 #[tokio::test]
 async fn fail_verify_id_token_wrong_subject() {
-    let issuer = Url::parse("http://localhost/").unwrap();
+    let issuer = "http://localhost/";
     let now = now();
-    let (auth_id_token, _) = id_token(&issuer, None, Some(now));
-    let (id_token, jwks) = id_token(&issuer, Some(IdTokenFlag::WrongSubject), None);
+    let (auth_id_token, _) = id_token(issuer, None, Some(now));
+    let (id_token, jwks) = id_token(issuer, Some(IdTokenFlag::WrongSubject), None);
 
     let verification_data = JwtVerificationData {
-        issuer: &issuer,
+        issuer,
         jwks: &jwks,
         client_id: &CLIENT_ID.to_owned(),
         signing_algorithm: &ID_TOKEN_SIGNING_ALG,
@@ -227,13 +226,13 @@ async fn fail_verify_id_token_wrong_subject() {
 
 #[tokio::test]
 async fn fail_verify_id_token_wrong_auth_time() {
-    let issuer = Url::parse("http://localhost/").unwrap();
+    let issuer = "http://localhost/";
     let now = now();
-    let (auth_id_token, _) = id_token(&issuer, None, Some(now));
-    let (id_token, jwks) = id_token(&issuer, None, Some(now + Duration::hours(1)));
+    let (auth_id_token, _) = id_token(issuer, None, Some(now));
+    let (id_token, jwks) = id_token(issuer, None, Some(now + Duration::hours(1)));
 
     let verification_data = JwtVerificationData {
-        issuer: &issuer,
+        issuer,
         jwks: &jwks,
         client_id: &CLIENT_ID.to_owned(),
         signing_algorithm: &ID_TOKEN_SIGNING_ALG,

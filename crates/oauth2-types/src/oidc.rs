@@ -190,7 +190,7 @@ pub struct ProviderMetadata {
     /// This field is required. The URL must use a `https` scheme, and must not
     /// contain a query or fragment. It must match the one used to build the
     /// well-known URI to query this metadata.
-    pub issuer: Option<Url>,
+    pub issuer: Option<String>,
 
     /// URL of the authorization server's [authorization endpoint].
     ///
@@ -489,7 +489,7 @@ impl ProviderMetadata {
     /// [OpenID Connect Discovery Spec 1.0]: https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata
     pub fn validate(
         self,
-        issuer: &Url,
+        issuer: &str,
     ) -> Result<VerifiedProviderMetadata, ProviderMetadataVerificationError> {
         let metadata = self.insecure_verify_metadata()?;
 
@@ -499,7 +499,10 @@ impl ProviderMetadata {
 
         validate_url(
             "issuer",
-            metadata.issuer(),
+            &metadata
+                .issuer()
+                .parse()
+                .map_err(|_| ProviderMetadataVerificationError::IssuerNotUrl)?,
             ExtraUrlRestrictions::NoQueryOrFragment,
         )?;
 
@@ -784,7 +787,7 @@ impl ProviderMetadata {
 /// use url::Url;
 /// # use oauth2_types::oidc::{ProviderMetadata, ProviderMetadataVerificationError};
 /// # let metadata = ProviderMetadata::default();
-/// # let issuer = Url::parse("http://localhost").unwrap();
+/// # let issuer = "http://localhost/";
 /// let verified_metadata = metadata.validate(&issuer)?;
 ///
 /// // The endpoint is required during validation so this is not an `Option`.
@@ -809,7 +812,7 @@ pub struct VerifiedProviderMetadata {
 impl VerifiedProviderMetadata {
     /// Authorization server's issuer identifier URL.
     #[must_use]
-    pub fn issuer(&self) -> &Url {
+    pub fn issuer(&self) -> &str {
         match &self.issuer {
             Some(u) => u,
             None => unreachable!(),
@@ -888,6 +891,10 @@ pub enum ProviderMetadataVerificationError {
     /// The issuer is missing.
     #[error("issuer is missing")]
     MissingIssuer,
+
+    /// The issuer is not a valid URL.
+    #[error("issuer is not a valid URL")]
+    IssuerNotUrl,
 
     /// The authorization endpoint is missing.
     #[error("authorization endpoint is missing")]
@@ -1074,8 +1081,8 @@ mod tests {
 
     use super::*;
 
-    fn valid_provider_metadata() -> (ProviderMetadata, Url) {
-        let issuer = Url::parse("https://localhost").unwrap();
+    fn valid_provider_metadata() -> (ProviderMetadata, String) {
+        let issuer = "https://localhost".to_owned();
         let metadata = ProviderMetadata {
             issuer: Some(issuer.clone()),
             authorization_endpoint: Some(Url::parse("https://localhost/auth").unwrap()),
@@ -1109,45 +1116,52 @@ mod tests {
             Err(ProviderMetadataVerificationError::MissingIssuer)
         );
 
+        // Err - Not an url
+        metadata.issuer = Some("not-an-url".to_owned());
+        assert_matches!(
+            metadata.clone().validate("not-an-url"),
+            Err(ProviderMetadataVerificationError::IssuerNotUrl)
+        );
+
         // Err - Wrong issuer
-        metadata.issuer = Some(Url::parse("https://example.com").unwrap());
+        metadata.issuer = Some("https://example.com/".to_owned());
         assert_matches!(
             metadata.clone().validate(&issuer),
             Err(ProviderMetadataVerificationError::IssuerUrlsDontMatch)
         );
 
         // Err - Not https
-        let issuer = Url::parse("http://localhost").unwrap();
+        let issuer = "http://localhost/".to_owned();
         metadata.issuer = Some(issuer.clone());
         let (field, url) = assert_matches!(
             metadata.clone().validate(&issuer),
             Err(ProviderMetadataVerificationError::UrlNonHttpsScheme(field, url)) => (field, url)
         );
         assert_eq!(field, "issuer");
-        assert_eq!(url, issuer);
+        assert_eq!(url.as_str(), issuer);
 
         // Err - Query
-        let issuer = Url::parse("https://localhost/?query").unwrap();
+        let issuer = "https://localhost/?query".to_owned();
         metadata.issuer = Some(issuer.clone());
         let (field, url) = assert_matches!(
             metadata.clone().validate(&issuer),
             Err(ProviderMetadataVerificationError::UrlWithQuery(field, url)) => (field, url)
         );
         assert_eq!(field, "issuer");
-        assert_eq!(url, issuer);
+        assert_eq!(url.as_str(), issuer);
 
         // Err - Fragment
-        let issuer = Url::parse("https://localhost/#fragment").unwrap();
+        let issuer = "https://localhost/#fragment".to_owned();
         metadata.issuer = Some(issuer.clone());
         let (field, url) = assert_matches!(
             metadata.clone().validate(&issuer),
             Err(ProviderMetadataVerificationError::UrlWithFragment(field, url)) => (field, url)
         );
         assert_eq!(field, "issuer");
-        assert_eq!(url, issuer);
+        assert_eq!(url.as_str(), issuer);
 
         // Ok - Path
-        let issuer = Url::parse("https://localhost/issuer1").unwrap();
+        let issuer = "https://localhost/issuer1".to_owned();
         metadata.issuer = Some(issuer.clone());
         metadata.validate(&issuer).unwrap();
     }
