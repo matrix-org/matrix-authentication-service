@@ -29,7 +29,7 @@ use crate::{id_token, init_test, ACCESS_TOKEN, SUBJECT_IDENTIFIER};
 async fn pass_fetch_userinfo() {
     let (http_service, mock_server, issuer) = init_test().await;
     let userinfo_endpoint = issuer.join("userinfo").unwrap();
-    let (auth_id_token, _) = id_token(&issuer);
+    let (auth_id_token, _) = id_token(issuer.as_str());
 
     Mock::given(method("GET"))
         .and(path("/userinfo"))
@@ -61,7 +61,7 @@ async fn pass_fetch_userinfo() {
 async fn fail_wrong_subject_identifier() {
     let (http_service, mock_server, issuer) = init_test().await;
     let userinfo_endpoint = issuer.join("userinfo").unwrap();
-    let (auth_id_token, _) = id_token(&issuer);
+    let (auth_id_token, _) = id_token(issuer.as_str());
 
     Mock::given(method("GET"))
         .and(path("/userinfo"))

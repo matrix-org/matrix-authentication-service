@@ -30,7 +30,7 @@ use crate::init_test;
 
 fn provider_metadata(issuer: &Url) -> ProviderMetadata {
     ProviderMetadata {
-        issuer: Some(issuer.clone()),
+        issuer: Some(issuer.as_str().to_owned()),
         authorization_endpoint: issuer.join("authorize").ok(),
         token_endpoint: issuer.join("token").ok(),
         jwks_uri: issuer.join("jwks").ok(),
@@ -52,16 +52,18 @@ async fn pass_discover() {
         .mount(&mock_server)
         .await;
 
-    let provider_metadata = insecure_discover(&http_service, &issuer).await.unwrap();
+    let provider_metadata = insecure_discover(&http_service, issuer.as_str())
+        .await
+        .unwrap();
 
-    assert_eq!(*provider_metadata.issuer(), issuer);
+    assert_eq!(provider_metadata.issuer(), issuer.as_str());
 }
 
 #[tokio::test]
 async fn fail_discover_404() {
     let (http_service, _mock_server, issuer) = init_test().await;
 
-    let error = discover(&http_service, &issuer).await.unwrap_err();
+    let error = discover(&http_service, issuer.as_str()).await.unwrap_err();
 
     assert_matches!(error, DiscoveryError::Http(_));
 }
@@ -76,7 +78,7 @@ async fn fail_discover_not_json() {
         .mount(&mock_server)
         .await;
 
-    let error = discover(&http_service, &issuer).await.unwrap_err();
+    let error = discover(&http_service, issuer.as_str()).await.unwrap_err();
 
     assert_matches!(error, DiscoveryError::FromJson(_));
 }
@@ -91,7 +93,7 @@ async fn fail_discover_invalid_metadata() {
         .mount(&mock_server)
         .await;
 
-    let error = discover(&http_service, &issuer).await.unwrap_err();
+    let error = discover(&http_service, issuer.as_str()).await.unwrap_err();
 
     assert_matches!(error, DiscoveryError::Validation(_));
 }

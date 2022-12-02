@@ -31,11 +31,11 @@ use crate::{
 /// Fetch the provider metadata.
 async fn discover_inner(
     http_service: &HttpService,
-    issuer: &Url,
+    issuer: Url,
 ) -> Result<ProviderMetadata, DiscoveryError> {
     tracing::debug!("Fetching provider metadata...");
 
-    let mut config_url = issuer.clone();
+    let mut config_url = issuer;
 
     // If the path doesn't end with a slash, the last segment is removed when
     // using `join`.
@@ -69,9 +69,9 @@ async fn discover_inner(
 #[tracing::instrument(skip_all, fields(issuer))]
 pub async fn discover(
     http_service: &HttpService,
-    issuer: &Url,
+    issuer: &str,
 ) -> Result<VerifiedProviderMetadata, DiscoveryError> {
-    let provider_metadata = discover_inner(http_service, issuer).await?;
+    let provider_metadata = discover_inner(http_service, issuer.parse()?).await?;
 
     Ok(provider_metadata.validate(issuer)?)
 }
@@ -101,9 +101,9 @@ pub async fn discover(
 #[tracing::instrument(skip_all, fields(issuer))]
 pub async fn insecure_discover(
     http_service: &HttpService,
-    issuer: &Url,
+    issuer: &str,
 ) -> Result<VerifiedProviderMetadata, DiscoveryError> {
-    let provider_metadata = discover_inner(http_service, issuer).await?;
+    let provider_metadata = discover_inner(http_service, issuer.parse()?).await?;
 
     Ok(provider_metadata.insecure_verify_metadata()?)
 }
