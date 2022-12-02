@@ -60,8 +60,9 @@ pub(crate) async fn get(
         let reply = query.go_next();
         Ok((cookie_jar, reply).into_response())
     } else {
+        let providers = mas_storage::upstream_oauth2::get_providers(&mut conn).await?;
         let content = render(
-            LoginContext::default(),
+            LoginContext::default().with_upstrem_providers(providers),
             query,
             csrf_token,
             &mut conn,
@@ -103,8 +104,11 @@ pub(crate) async fn post(
     };
 
     if !state.is_valid() {
+        let providers = mas_storage::upstream_oauth2::get_providers(&mut conn).await?;
         let content = render(
-            LoginContext::default().with_form_state(state),
+            LoginContext::default()
+                .with_form_state(state)
+                .with_upstrem_providers(providers),
             query,
             csrf_token,
             &mut conn,

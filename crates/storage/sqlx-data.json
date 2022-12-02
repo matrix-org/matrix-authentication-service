@@ -2559,6 +2559,66 @@
     },
     "query": "\n            INSERT INTO oauth2_clients\n                (oauth2_client_id,\n                 encrypted_client_secret,\n                 grant_type_authorization_code,\n                 grant_type_refresh_token,\n                 client_name,\n                 logo_uri,\n                 client_uri,\n                 policy_uri,\n                 tos_uri,\n                 jwks_uri,\n                 jwks,\n                 id_token_signed_response_alg,\n                 userinfo_signed_response_alg,\n                 token_endpoint_auth_method,\n                 token_endpoint_auth_signing_alg,\n                 initiate_login_uri)\n            VALUES\n                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)\n        "
   },
+  "cf00e0ad529bcb5c0640adcfe0880a3560d9739f355b90ca3ba88dd1eaf26565": {
+    "describe": {
+      "columns": [
+        {
+          "name": "upstream_oauth_provider_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "issuer",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "scope",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "client_id",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "encrypted_client_secret",
+          "ordinal": 4,
+          "type_info": "Text"
+        },
+        {
+          "name": "token_endpoint_signing_alg",
+          "ordinal": 5,
+          "type_info": "Text"
+        },
+        {
+          "name": "token_endpoint_auth_method",
+          "ordinal": 6,
+          "type_info": "Text"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 7,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "\n            SELECT\n                upstream_oauth_provider_id,\n                issuer,\n                scope,\n                client_id,\n                encrypted_client_secret,\n                token_endpoint_signing_alg,\n                token_endpoint_auth_method,\n                created_at\n            FROM upstream_oauth_providers\n        "
+  },
   "d1738c27339b81f0844da4bd9b040b9b07a91aa4d9b199b98f24c9cee5709b2b": {
     "describe": {
       "columns": [],
