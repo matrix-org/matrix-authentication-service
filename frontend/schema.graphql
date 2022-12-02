@@ -310,9 +310,93 @@ type RootQuery {
   """
   userEmail(id: ID!): UserEmail
   """
+  Fetch an upstream OAuth 2.0 link by its ID.
+  """
+  upstreamOauth2Link(id: ID!): UpstreamOAuth2Link
+  """
+  Fetch an upstream OAuth 2.0 provider by its ID.
+  """
+  upstreamOauth2Provider(id: ID!): UpstreamOAuth2Provider
+  """
+  Get a list of upstream OAuth 2.0 providers.
+  """
+  upstreamOauth2Providers(
+    after: String
+    before: String
+    first: Int
+    last: Int
+  ): UpstreamOAuth2ProviderConnection!
+  """
   Fetches an object given its ID.
   """
   node(id: ID!): Node
+}
+
+type UpstreamOAuth2Link implements Node {
+  """
+  ID of the object.
+  """
+  id: ID!
+  """
+  When the object was created.
+  """
+  createdAt: DateTime!
+  """
+  The provider for which this link is.
+  """
+  provider: UpstreamOAuth2Provider!
+  """
+  The user to which this link is associated.
+  """
+  user: User
+}
+
+type UpstreamOAuth2Provider implements Node {
+  """
+  ID of the object.
+  """
+  id: ID!
+  """
+  When the object was created.
+  """
+  createdAt: DateTime!
+  """
+  OpenID Connect issuer URL.
+  """
+  issuer: String!
+  """
+  Client ID used for this provider.
+  """
+  clientId: String!
+}
+
+type UpstreamOAuth2ProviderConnection {
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  A list of edges.
+  """
+  edges: [UpstreamOAuth2ProviderEdge!]!
+  """
+  A list of nodes.
+  """
+  nodes: [UpstreamOAuth2Provider!]!
+}
+
+"""
+An edge in a connection.
+"""
+type UpstreamOAuth2ProviderEdge {
+  """
+  A cursor for use in pagination
+  """
+  cursor: String!
+  """
+  The item at the end of the edge
+  """
+  node: UpstreamOAuth2Provider!
 }
 
 """

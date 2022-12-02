@@ -17,12 +17,16 @@ use mas_data_model::UpstreamOAuthProvider;
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
 use oauth2_types::scope::Scope;
 use rand::Rng;
-use sqlx::PgExecutor;
+use sqlx::{PgExecutor, QueryBuilder};
 use thiserror::Error;
+use tracing::{info_span, Instrument};
 use ulid::Ulid;
 use uuid::Uuid;
 
-use crate::{Clock, DatabaseInconsistencyError, LookupError};
+use crate::{
+    pagination::{process_page, QueryBuilderExt},
+    Clock, DatabaseInconsistencyError, LookupError,
+};
 
 #[derive(Debug, Error)]
 #[error("Failed to lookup upstream OAuth 2.0 provider")]
@@ -37,6 +41,7 @@ impl LookupError for ProviderLookupError {
     }
 }
 
+#[derive(sqlx::FromRow)]
 struct ProviderLookup {
     upstream_oauth_provider_id: Uuid,
     issuer: String,
@@ -46,6 +51,37 @@ struct ProviderLookup {
     token_endpoint_signing_alg: Option<String>,
     token_endpoint_auth_method: String,
     created_at: DateTime<Utc>,
+}
+
+impl TryFrom<ProviderLookup> for UpstreamOAuthProvider {
+    type Error = DatabaseInconsistencyError;
+    fn try_from(value: ProviderLookup) -> Result<Self, Self::Error> {
+        let id = value.upstream_oauth_provider_id.into();
+        let scope = value
+            .scope
+            .parse()
+            .map_err(|_| DatabaseInconsistencyError)?;
+        let token_endpoint_auth_method = value
+            .token_endpoint_auth_method
+            .parse()
+            .map_err(|_| DatabaseInconsistencyError)?;
+        let token_endpoint_signing_alg = value
+            .token_endpoint_signing_alg
+            .map(|x| x.parse())
+            .transpose()
+            .map_err(|_| DatabaseInconsistencyError)?;
+
+        Ok(UpstreamOAuthProvider {
+            id,
+            issuer: value.issuer,
+            scope,
+            client_id: value.client_id,
+            encrypted_client_secret: value.encrypted_client_secret,
+            token_endpoint_auth_method,
+            token_endpoint_signing_alg,
+            created_at: value.created_at,
+        })
+    }
 }
 
 #[tracing::instrument(
@@ -77,23 +113,7 @@ pub async fn lookup_provider(
     .fetch_one(executor)
     .await?;
 
-    Ok(UpstreamOAuthProvider {
-        id: res.upstream_oauth_provider_id.into(),
-        issuer: res.issuer,
-        scope: res.scope.parse().map_err(|_| DatabaseInconsistencyError)?,
-        client_id: res.client_id,
-        encrypted_client_secret: res.encrypted_client_secret,
-        token_endpoint_auth_method: res
-            .token_endpoint_auth_method
-            .parse()
-            .map_err(|_| DatabaseInconsistencyError)?,
-        token_endpoint_signing_alg: res
-            .token_endpoint_signing_alg
-            .map(|x| x.parse())
-            .transpose()
-            .map_err(|_| DatabaseInconsistencyError)?,
-        created_at: res.created_at,
-    })
+    Ok(res.try_into()?)
 }
 
 #[tracing::instrument(
@@ -156,4 +176,46 @@ pub async fn add_provider(
         token_endpoint_auth_method,
         created_at,
     })
+}
+
+#[tracing::instrument(skip_all, err(Display))]
+pub async fn get_paginated_providers(
+    executor: impl PgExecutor<'_>,
+    before: Option<Ulid>,
+    after: Option<Ulid>,
+    first: Option<usize>,
+    last: Option<usize>,
+) -> Result<(bool, bool, Vec<UpstreamOAuthProvider>), anyhow::Error> {
+    let mut query = QueryBuilder::new(
+        r#"
+            SELECT
+                upstream_oauth_provider_id,
+                issuer,
+                scope,
+                client_id,
+                encrypted_client_secret,
+                token_endpoint_signing_alg,
+                token_endpoint_auth_method,
+                created_at
+            FROM upstream_oauth_providers
+            WHERE 1 = 1
+        "#,
+    );
+
+    query.generate_pagination("upstream_oauth_provider_id", before, after, first, last)?;
+
+    let span = info_span!(
+        "Fetch paginated upstream OAuth 2.0 providers",
+        db.statement = query.sql()
+    );
+    let page: Vec<ProviderLookup> = query
+        .build_query_as()
+        .fetch_all(executor)
+        .instrument(span)
+        .await?;
+
+    let (has_previous_page, has_next_page, page) = process_page(page, first, last)?;
+
+    let page: Result<Vec<_>, _> = page.into_iter().map(TryInto::try_into).collect();
+    Ok((has_previous_page, has_next_page, page?))
 }

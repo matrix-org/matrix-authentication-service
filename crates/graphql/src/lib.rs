@@ -22,12 +22,18 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions, clippy::missing_errors_doc)]
 
-use async_graphql::{Context, Description, EmptyMutation, EmptySubscription, ID};
+use async_graphql::{
+    connection::{query, Connection, Edge, OpaqueCursor},
+    Context, Description, EmptyMutation, EmptySubscription, ID,
+};
 use mas_axum_utils::SessionInfo;
 use mas_storage::LookupResultExt;
 use sqlx::PgPool;
 
-use self::model::{BrowserSession, Node, NodeType, OAuth2Client, User, UserEmail};
+use self::model::{
+    BrowserSession, Cursor, Node, NodeCursor, NodeType, OAuth2Client, UpstreamOAuth2Link,
+    UpstreamOAuth2Provider, User, UserEmail,
+};
 
 mod model;
 
@@ -167,6 +173,100 @@ impl RootQuery {
         Ok(user_email.map(UserEmail))
     }
 
+    /// Fetch an upstream OAuth 2.0 link by its ID.
+    async fn upstream_oauth2_link(
+        &self,
+        ctx: &Context<'_>,
+        id: ID,
+    ) -> Result<Option<UpstreamOAuth2Link>, async_graphql::Error> {
+        let id = NodeType::UpstreamOAuth2Link.extract_ulid(&id)?;
+        let database = ctx.data::<PgPool>()?;
+        let session_info = ctx.data::<SessionInfo>()?;
+        let mut conn = database.acquire().await?;
+        let session = session_info.load_session(&mut conn).await?;
+
+        let Some(session) = session else { return Ok(None) };
+        let current_user = session.user;
+
+        let link = mas_storage::upstream_oauth2::lookup_link(&mut conn, id)
+            .await
+            .to_option()?;
+
+        // Ensure that the link belongs to the current user
+        let link = link.filter(|link| link.user_id == Some(current_user.data));
+
+        Ok(link.map(UpstreamOAuth2Link::new))
+    }
+
+    /// Fetch an upstream OAuth 2.0 provider by its ID.
+    async fn upstream_oauth2_provider(
+        &self,
+        ctx: &Context<'_>,
+        id: ID,
+    ) -> Result<Option<UpstreamOAuth2Provider>, async_graphql::Error> {
+        let id = NodeType::UpstreamOAuth2Provider.extract_ulid(&id)?;
+        let database = ctx.data::<PgPool>()?;
+        let mut conn = database.acquire().await?;
+
+        let provider = mas_storage::upstream_oauth2::lookup_provider(&mut conn, id)
+            .await
+            .to_option()?;
+
+        Ok(provider.map(UpstreamOAuth2Provider::new))
+    }
+
+    /// Get a list of upstream OAuth 2.0 providers.
+    async fn upstream_oauth2_providers(
+        &self,
+        ctx: &Context<'_>,
+
+        #[graphql(desc = "Returns the elements in the list that come after the cursor.")]
+        after: Option<String>,
+        #[graphql(desc = "Returns the elements in the list that come before the cursor.")]
+        before: Option<String>,
+        #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
+        #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
+    ) -> Result<Connection<Cursor, UpstreamOAuth2Provider>, async_graphql::Error> {
+        let database = ctx.data::<PgPool>()?;
+
+        query(
+            after,
+            before,
+            first,
+            last,
+            |after, before, first, last| async move {
+                let mut conn = database.acquire().await?;
+                let after_id = after
+                    .map(|x: OpaqueCursor<NodeCursor>| {
+                        x.extract_for_type(NodeType::UpstreamOAuth2Provider)
+                    })
+                    .transpose()?;
+                let before_id = before
+                    .map(|x: OpaqueCursor<NodeCursor>| {
+                        x.extract_for_type(NodeType::UpstreamOAuth2Provider)
+                    })
+                    .transpose()?;
+
+                let (has_previous_page, has_next_page, edges) =
+                    mas_storage::upstream_oauth2::get_paginated_providers(
+                        &mut conn, before_id, after_id, first, last,
+                    )
+                    .await?;
+
+                let mut connection = Connection::new(has_previous_page, has_next_page);
+                connection.edges.extend(edges.into_iter().map(|p| {
+                    Edge::new(
+                        OpaqueCursor(NodeCursor(NodeType::UpstreamOAuth2Provider, p.id)),
+                        UpstreamOAuth2Provider::new(p),
+                    )
+                }));
+
+                Ok::<_, async_graphql::Error>(connection)
+            },
+        )
+        .await
+    }
+
     /// Fetches an object given its ID.
     async fn node(&self, ctx: &Context<'_>, id: ID) -> Result<Option<Node>, async_graphql::Error> {
         let (node_type, _id) = NodeType::from_id(&id)?;
@@ -177,6 +277,16 @@ impl RootQuery {
             | NodeType::CompatSession
             | NodeType::CompatSsoLogin
             | NodeType::OAuth2Session => None,
+
+            NodeType::UpstreamOAuth2Provider => self
+                .upstream_oauth2_provider(ctx, id)
+                .await?
+                .map(|c| Node::UpstreamOAuth2Provider(Box::new(c))),
+
+            NodeType::UpstreamOAuth2Link => self
+                .upstream_oauth2_link(ctx, id)
+                .await?
+                .map(|c| Node::UpstreamOAuth2Link(Box::new(c))),
 
             NodeType::OAuth2Client => self
                 .oauth2_client(ctx, id)

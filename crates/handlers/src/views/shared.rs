@@ -57,11 +57,11 @@ impl OptionalPostAuthAction {
             Some(PostAuthAction::ChangePassword) => Ok(Some(PostAuthContext::ChangePassword)),
 
             Some(PostAuthAction::LinkUpstream { id }) => {
-                let (link, provider_id, _user_id) =
-                    mas_storage::upstream_oauth2::lookup_link(&mut *conn, *id).await?;
+                let link = mas_storage::upstream_oauth2::lookup_link(&mut *conn, *id).await?;
 
                 let provider =
-                    mas_storage::upstream_oauth2::lookup_provider(&mut *conn, provider_id).await?;
+                    mas_storage::upstream_oauth2::lookup_provider(&mut *conn, link.provider_id)
+                        .await?;
 
                 let provider = Box::new(provider);
                 let link = Box::new(link);

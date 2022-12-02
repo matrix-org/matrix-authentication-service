@@ -250,7 +250,7 @@ pub(crate) async fn get(
         .await
         .to_option()?;
 
-    let link = if let Some((link, _maybe_user_id)) = maybe_link {
+    let link = if let Some(link) = maybe_link {
         link
     } else {
         add_link(&mut txn, &mut rng, &clock, &provider, subject).await?

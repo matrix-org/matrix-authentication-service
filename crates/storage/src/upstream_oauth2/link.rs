@@ -37,7 +37,7 @@ struct LinkLookup {
 pub async fn lookup_link(
     executor: impl PgExecutor<'_>,
     id: Ulid,
-) -> Result<(UpstreamOAuthLink, Ulid, Option<Ulid>), GenericLookupError> {
+) -> Result<UpstreamOAuthLink, GenericLookupError> {
     let res = sqlx::query_as!(
         LinkLookup,
         r#"
@@ -56,15 +56,13 @@ pub async fn lookup_link(
     .await
     .map_err(GenericLookupError::what("Upstream OAuth 2.0 link"))?;
 
-    Ok((
-        UpstreamOAuthLink {
-            id: Ulid::from(res.upstream_oauth_link_id),
-            subject: res.subject,
-            created_at: res.created_at,
-        },
-        Ulid::from(res.upstream_oauth_provider_id),
-        res.user_id.map(Ulid::from),
-    ))
+    Ok(UpstreamOAuthLink {
+        id: Ulid::from(res.upstream_oauth_link_id),
+        provider_id: Ulid::from(res.upstream_oauth_provider_id),
+        user_id: res.user_id.map(Ulid::from),
+        subject: res.subject,
+        created_at: res.created_at,
+    })
 }
 
 #[tracing::instrument(
@@ -81,7 +79,7 @@ pub async fn lookup_link_by_subject(
     executor: impl PgExecutor<'_>,
     upstream_oauth_provider: &UpstreamOAuthProvider,
     subject: &str,
-) -> Result<(UpstreamOAuthLink, Option<Ulid>), GenericLookupError> {
+) -> Result<UpstreamOAuthLink, GenericLookupError> {
     let res = sqlx::query_as!(
         LinkLookup,
         r#"
@@ -102,14 +100,13 @@ pub async fn lookup_link_by_subject(
     .await
     .map_err(GenericLookupError::what("Upstream OAuth 2.0 link"))?;
 
-    Ok((
-        UpstreamOAuthLink {
-            id: Ulid::from(res.upstream_oauth_link_id),
-            subject: res.subject,
-            created_at: res.created_at,
-        },
-        res.user_id.map(Ulid::from),
-    ))
+    Ok(UpstreamOAuthLink {
+        id: Ulid::from(res.upstream_oauth_link_id),
+        provider_id: Ulid::from(res.upstream_oauth_provider_id),
+        user_id: res.user_id.map(Ulid::from),
+        subject: res.subject,
+        created_at: res.created_at,
+    })
 }
 
 #[tracing::instrument(
@@ -154,6 +151,8 @@ pub async fn add_link(
 
     Ok(UpstreamOAuthLink {
         id,
+        provider_id: upstream_oauth_provider.id,
+        user_id: None,
         subject,
         created_at,
     })
