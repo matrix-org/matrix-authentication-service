@@ -65,6 +65,18 @@ limitations under the License.
           {{ button::link_text(text="Create an account", href=register_link) }}
         </div>
       {% endif %}
+
+      {% if providers %}
+        <div class="flex items-center">
+          <hr class="flex-1" />
+          <div class="mx-2">Or</div>
+          <hr class="flex-1" />
+        </div>
+
+        {% for provider in providers %}
+          {{ button::link(text="Continue with " ~ provider.issuer, href="/upstream/authorize/" ~ provider.id) }}
+        {% endfor %}
+      {% endif %}
     </form>
   </section>
 {% endblock content %}

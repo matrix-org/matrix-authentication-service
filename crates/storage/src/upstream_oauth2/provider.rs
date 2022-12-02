@@ -219,3 +219,29 @@ pub async fn get_paginated_providers(
     let page: Result<Vec<_>, _> = page.into_iter().map(TryInto::try_into).collect();
     Ok((has_previous_page, has_next_page, page?))
 }
+
+#[tracing::instrument(skip_all, err)]
+pub async fn get_providers(
+    executor: impl PgExecutor<'_>,
+) -> Result<Vec<UpstreamOAuthProvider>, anyhow::Error> {
+    let res = sqlx::query_as!(
+        ProviderLookup,
+        r#"
+            SELECT
+                upstream_oauth_provider_id,
+                issuer,
+                scope,
+                client_id,
+                encrypted_client_secret,
+                token_endpoint_signing_alg,
+                token_endpoint_auth_method,
+                created_at
+            FROM upstream_oauth_providers
+        "#,
+    )
+    .fetch_all(executor)
+    .await?;
+
+    let res: Result<Vec<_>, _> = res.into_iter().map(TryInto::try_into).collect();
+    Ok(res?)
+}

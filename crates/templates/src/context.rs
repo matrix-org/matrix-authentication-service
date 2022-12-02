@@ -279,6 +279,7 @@ pub enum PostAuthContext {
 pub struct LoginContext {
     form: FormState<LoginFormField>,
     next: Option<PostAuthContext>,
+    providers: Vec<UpstreamOAuthProvider>,
     register_link: String,
 }
 
@@ -291,6 +292,7 @@ impl TemplateContext for LoginContext {
         vec![LoginContext {
             form: FormState::default(),
             next: None,
+            providers: Vec::new(),
             register_link: "/register".to_owned(),
         }]
     }
@@ -301,6 +303,12 @@ impl LoginContext {
     #[must_use]
     pub fn with_form_state(self, form: FormState<LoginFormField>) -> Self {
         Self { form, ..self }
+    }
+
+    /// Set the upstream OAuth 2.0 providers
+    #[must_use]
+    pub fn with_upstrem_providers(self, providers: Vec<UpstreamOAuthProvider>) -> Self {
+        Self { providers, ..self }
     }
 
     /// Add a post authentication action to the context
