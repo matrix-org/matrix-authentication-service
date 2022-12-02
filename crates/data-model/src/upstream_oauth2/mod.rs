@@ -33,6 +33,8 @@ pub struct UpstreamOAuthProvider {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct UpstreamOAuthLink {
     pub id: Ulid,
+    pub provider_id: Ulid,
+    pub user_id: Option<Ulid>,
     pub subject: String,
     pub created_at: DateTime<Utc>,
 }
@@ -40,6 +42,8 @@ pub struct UpstreamOAuthLink {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct UpstreamOAuthAuthorizationSession {
     pub id: Ulid,
+    pub provider_id: Ulid,
+    pub link_id: Option<Ulid>,
     pub state: String,
     pub code_challenge_verifier: Option<String>,
     pub nonce: String,

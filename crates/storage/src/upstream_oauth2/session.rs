@@ -38,6 +38,7 @@ impl LookupError for SessionLookupError {
 struct SessionAndProviderLookup {
     upstream_oauth_authorization_session_id: Uuid,
     upstream_oauth_provider_id: Uuid,
+    upstream_oauth_link_id: Option<Uuid>,
     state: String,
     code_challenge_verifier: Option<String>,
     nonce: String,
@@ -70,6 +71,7 @@ pub async fn lookup_session(
             SELECT
                 ua.upstream_oauth_authorization_session_id,
                 ua.upstream_oauth_provider_id,
+                ua.upstream_oauth_link_id,
                 ua.state,
                 ua.code_challenge_verifier,
                 ua.nonce,
@@ -120,6 +122,8 @@ pub async fn lookup_session(
 
     let session = UpstreamOAuthAuthorizationSession {
         id: res.upstream_oauth_authorization_session_id.into(),
+        provider_id: provider.id,
+        link_id: res.upstream_oauth_link_id.map(Ulid::from),
         state: res.state,
         code_challenge_verifier: res.code_challenge_verifier,
         nonce: res.nonce,
@@ -185,6 +189,8 @@ pub async fn add_session(
 
     Ok(UpstreamOAuthAuthorizationSession {
         id,
+        provider_id: upstream_oauth_provider.id,
+        link_id: None,
         state,
         code_challenge_verifier,
         nonce,
@@ -267,6 +273,8 @@ pub async fn consume_session(
 
 struct SessionLookup {
     upstream_oauth_authorization_session_id: Uuid,
+    upstream_oauth_provider_id: Uuid,
+    upstream_oauth_link_id: Option<Uuid>,
     state: String,
     code_challenge_verifier: Option<String>,
     nonce: String,
@@ -295,6 +303,8 @@ pub async fn lookup_session_on_link(
         r#"
             SELECT
                 upstream_oauth_authorization_session_id,
+                upstream_oauth_provider_id,
+                upstream_oauth_link_id,
                 state,
                 code_challenge_verifier,
                 nonce,
@@ -317,6 +327,8 @@ pub async fn lookup_session_on_link(
 
     Ok(UpstreamOAuthAuthorizationSession {
         id: res.upstream_oauth_authorization_session_id.into(),
+        provider_id: res.upstream_oauth_provider_id.into(),
+        link_id: res.upstream_oauth_link_id.map(Ulid::from),
         state: res.state,
         code_challenge_verifier: res.code_challenge_verifier,
         nonce: res.nonce,

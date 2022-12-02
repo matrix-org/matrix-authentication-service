@@ -19,7 +19,7 @@ use ulid::Ulid;
 
 use super::{
     Authentication, BrowserSession, CompatSession, CompatSsoLogin, OAuth2Client, OAuth2Session,
-    User, UserEmail,
+    UpstreamOAuth2Link, UpstreamOAuth2Provider, User, UserEmail,
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -30,6 +30,8 @@ pub enum NodeType {
     CompatSsoLogin,
     OAuth2Client,
     OAuth2Session,
+    UpstreamOAuth2Provider,
+    UpstreamOAuth2Link,
     User,
     UserEmail,
 }
@@ -52,6 +54,8 @@ impl NodeType {
             NodeType::CompatSsoLogin => "compat_sso_login",
             NodeType::OAuth2Client => "oauth2_client",
             NodeType::OAuth2Session => "oauth2_session",
+            NodeType::UpstreamOAuth2Provider => "upstream_oauth2_provider",
+            NodeType::UpstreamOAuth2Link => "upstream_oauth2_link",
             NodeType::User => "user",
             NodeType::UserEmail => "user_email",
         }
@@ -65,6 +69,8 @@ impl NodeType {
             "compat_sso_login" => Some(NodeType::CompatSsoLogin),
             "oauth2_client" => Some(NodeType::OAuth2Client),
             "oauth2_session" => Some(NodeType::OAuth2Session),
+            "upstream_oauth2_provider" => Some(NodeType::UpstreamOAuth2Provider),
+            "upstream_oauth2_link" => Some(NodeType::UpstreamOAuth2Link),
             "user" => Some(NodeType::User),
             "user_email" => Some(NodeType::UserEmail),
             _ => None,
@@ -116,6 +122,8 @@ pub enum Node {
     CompatSsoLogin(Box<CompatSsoLogin>),
     OAuth2Client(Box<OAuth2Client>),
     OAuth2Session(Box<OAuth2Session>),
+    UpstreamOAuth2Provider(Box<UpstreamOAuth2Provider>),
+    UpstreamOAuth2Link(Box<UpstreamOAuth2Link>),
     User(Box<User>),
     UserEmail(Box<UserEmail>),
 }

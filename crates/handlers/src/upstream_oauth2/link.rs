@@ -114,7 +114,7 @@ pub(crate) async fn get(
     let mut txn = pool.begin().await?;
     let (clock, mut rng) = crate::rng_and_clock()?;
 
-    let (link, _provider_id, maybe_user_id) = lookup_link(&mut txn, link_id)
+    let link = lookup_link(&mut txn, link_id)
         .await
         .to_option()?
         .ok_or(RouteError::LinkNotFound)?;
@@ -141,7 +141,7 @@ pub(crate) async fn get(
     let (csrf_token, mut cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
     let maybe_user_session = user_session_info.load_session(&mut txn).await?;
 
-    let render = match (maybe_user_session, maybe_user_id) {
+    let render = match (maybe_user_session, link.user_id) {
         (Some(mut session), Some(user_id)) if session.user.data == user_id => {
             // Session already linked, and link matches the currently logged
             // user. Mark the session as consumed and renew the authentication.
@@ -215,7 +215,7 @@ pub(crate) async fn post(
     let (clock, mut rng) = crate::rng_and_clock()?;
     let form = cookie_jar.verify_form(clock.now(), form)?;
 
-    let (link, _provider_id, maybe_user_id) = lookup_link(&mut txn, link_id)
+    let link = lookup_link(&mut txn, link_id)
         .await
         .to_option()?
         .ok_or(RouteError::LinkNotFound)?;
@@ -241,7 +241,7 @@ pub(crate) async fn post(
     let (user_session_info, cookie_jar) = cookie_jar.session_info();
     let maybe_user_session = user_session_info.load_session(&mut txn).await?;
 
-    let mut session = match (maybe_user_session, maybe_user_id, form) {
+    let mut session = match (maybe_user_session, link.user_id, form) {
         (Some(session), None, FormData::Link) => {
             associate_link_to_user(&mut txn, &link, &session.user).await?;
             session

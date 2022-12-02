@@ -20,6 +20,7 @@ mod compat_sessions;
 mod cursor;
 mod node;
 mod oauth;
+mod upstream_oauth;
 mod users;
 
 pub use self::{
@@ -28,6 +29,7 @@ pub use self::{
     cursor::{Cursor, NodeCursor},
     node::{Node, NodeType},
     oauth::{OAuth2Client, OAuth2Consent, OAuth2Session},
+    upstream_oauth::{UpstreamOAuth2Link, UpstreamOAuth2Provider},
     users::{User, UserEmail},
 };
 
@@ -42,4 +44,6 @@ pub enum CreationEvent {
     CompatSession(Box<CompatSession>),
     BrowserSession(Box<BrowserSession>),
     UserEmail(Box<UserEmail>),
+    UpstreamOAuth2Provider(Box<UpstreamOAuth2Provider>),
+    UpstreamOAuth2Link(Box<UpstreamOAuth2Link>),
 }
