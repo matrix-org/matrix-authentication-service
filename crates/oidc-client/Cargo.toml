@@ -59,7 +59,7 @@ version = "0.14.23"
 features = ["client", "http1", "http2", "stream", "runtime" ]
 optional = true
 [dependencies.tower-http]
-version = "0.3.4"
+version = "0.3.5"
 features = ["follow-redirect", "decompression-full", "set-header", "timeout"]
 optional = true
 
