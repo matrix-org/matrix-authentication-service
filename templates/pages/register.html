@@ -55,8 +55,8 @@ limitations under the License.
       {% endif %}
       <div class="text-center mt-4">
         Already have an account?
-        {# TODO: proper link #}
-        {{ button::link_text(text="Sign in instead", href=login_link) }}
+        {% set params = next | safe_get(key="params") | to_params(prefix="?") %}
+        {{ button::link_text(text="Sign in instead", href="/login" ~ params) }}
       </div>
     </form>
   </section>

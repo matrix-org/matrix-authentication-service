@@ -62,7 +62,8 @@ limitations under the License.
       {% if not next or next.kind != "link_upstream" %}
         <div class="text-center mt-4">
           Don't have an account yet?
-          {{ button::link_text(text="Create an account", href=register_link) }}
+          {% set params = next | safe_get(key="params") | to_params(prefix="?") %}
+          {{ button::link_text(text="Create an account", href="/register" ~ params) }}
         </div>
       {% endif %}
 
@@ -74,7 +75,8 @@ limitations under the License.
         </div>
 
         {% for provider in providers %}
-          {{ button::link(text="Continue with " ~ provider.issuer, href="/upstream/authorize/" ~ provider.id) }}
+          {% set params = next | safe_get(key="params") | to_params(prefix="?") %}
+          {{ button::link(text="Continue with " ~ provider.issuer, href="/upstream/authorize/" ~ provider.id ~ params) }}
         {% endfor %}
       {% endif %}
     </form>

@@ -17,6 +17,7 @@
 use axum_extra::extract::{cookie::Cookie, PrivateCookieJar};
 use chrono::{DateTime, Duration, NaiveDateTime, Utc};
 use mas_axum_utils::CookieExt;
+use mas_router::PostAuthAction;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use time::OffsetDateTime;
@@ -28,12 +29,13 @@ static COOKIE_NAME: &str = "upstream-oauth2-sessions";
 /// Sessions expire after 10 minutes
 static SESSION_MAX_TIME_SECS: i64 = 60 * 10;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Payload {
     session: Ulid,
     provider: Ulid,
     state: String,
     link: Option<Ulid>,
+    post_auth_action: Option<PostAuthAction>,
 }
 
 impl Payload {
@@ -46,7 +48,7 @@ impl Payload {
     }
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Debug)]
 pub struct UpstreamSessions(Vec<Payload>);
 
 #[derive(Debug, Error, PartialEq, Eq)]
@@ -87,12 +89,19 @@ impl UpstreamSessions {
     }
 
     /// Add a new session, for a provider and a random state
-    pub fn add(mut self, session: Ulid, provider: Ulid, state: String) -> Self {
+    pub fn add(
+        mut self,
+        session: Ulid,
+        provider: Ulid,
+        state: String,
+        post_auth_action: Option<PostAuthAction>,
+    ) -> Self {
         self.0.push(Payload {
             session,
             provider,
             state,
             link: None,
+            post_auth_action,
         });
         self
     }
@@ -102,11 +111,11 @@ impl UpstreamSessions {
         &self,
         provider: Ulid,
         state: &str,
-    ) -> Result<Ulid, UpstreamSessionNotFound> {
+    ) -> Result<(Ulid, Option<&PostAuthAction>), UpstreamSessionNotFound> {
         self.0
             .iter()
             .find(|p| p.provider == provider && p.state == state && p.link.is_none())
-            .map(|p| p.session)
+            .map(|p| (p.session, p.post_auth_action.as_ref()))
             .ok_or(UpstreamSessionNotFound)
     }
 
@@ -127,11 +136,14 @@ impl UpstreamSessions {
     }
 
     /// Find a session from its link
-    pub fn lookup_link(&self, link_id: Ulid) -> Result<Ulid, UpstreamSessionNotFound> {
+    pub fn lookup_link(
+        &self,
+        link_id: Ulid,
+    ) -> Result<(Ulid, Option<&PostAuthAction>), UpstreamSessionNotFound> {
         self.0
             .iter()
             .find(|p| p.link == Some(link_id))
-            .map(|p| p.session)
+            .map(|p| (p.session, p.post_auth_action.as_ref()))
             .ok_or(UpstreamSessionNotFound)
     }
 
@@ -171,22 +183,22 @@ mod tests {
 
         let first_session = Ulid::from_datetime_with_source(now.into(), &mut rng);
         let first_state = "first-state";
-        let sessions = sessions.add(first_session, provider_a, first_state.into());
+        let sessions = sessions.add(first_session, provider_a, first_state.into(), None);
 
         let now = now + Duration::minutes(5);
 
         let second_session = Ulid::from_datetime_with_source(now.into(), &mut rng);
         let second_state = "second-state";
-        let sessions = sessions.add(second_session, provider_b, second_state.into());
+        let sessions = sessions.add(second_session, provider_b, second_state.into(), None);
 
         let sessions = sessions.expire(now);
         assert_eq!(
-            sessions.find_session(provider_a, first_state),
-            Ok(first_session)
+            sessions.find_session(provider_a, first_state).unwrap().0,
+            first_session,
         );
         assert_eq!(
-            sessions.find_session(provider_b, second_state),
-            Ok(second_session)
+            sessions.find_session(provider_b, second_state).unwrap().0,
+            second_session
         );
         assert!(sessions.find_session(provider_b, first_state).is_err());
         assert!(sessions.find_session(provider_a, second_state).is_err());
@@ -196,8 +208,8 @@ mod tests {
         let sessions = sessions.expire(now);
         assert!(sessions.find_session(provider_a, first_state).is_err());
         assert_eq!(
-            sessions.find_session(provider_b, second_state),
-            Ok(second_session)
+            sessions.find_session(provider_b, second_state).unwrap().0,
+            second_session
         );
 
         // Associate a link with the second
@@ -210,7 +222,7 @@ mod tests {
         assert!(sessions.find_session(provider_b, second_state).is_err());
 
         // But it can be looked up by its link
-        assert_eq!(sessions.lookup_link(second_link), Ok(second_session));
+        assert_eq!(sessions.lookup_link(second_link).unwrap().0, second_session);
         // And it can be consumed
         let sessions = sessions.consume_link(second_link).unwrap();
         // But only once

@@ -243,10 +243,7 @@ async fn render(
     } else {
         ctx
     };
-    let login_link = mas_router::Login::from(action.post_auth_action).relative_url();
-    let ctx = ctx
-        .with_login_link(login_link.to_string())
-        .with_csrf(csrf_token.form_value());
+    let ctx = ctx.with_csrf(csrf_token.form_value());
 
     let content = templates.render_register(&ctx).await?;
     Ok(content)

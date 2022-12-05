@@ -22,7 +22,9 @@ use url::Url;
 
 pub fn register(tera: &mut Tera, url_builder: UrlBuilder) {
     tera.register_tester("empty", self::tester_empty);
-    tera.register_function("add_params_to_uri", function_add_params_to_uri);
+    tera.register_filter("to_params", filter_to_params);
+    tera.register_filter("safe_get", filter_safe_get);
+    tera.register_function("add_params_to_url", function_add_params_to_url);
     tera.register_function("merge", function_merge);
     tera.register_function("dict", function_dict);
     tera.register_function("static_asset", make_static_asset(url_builder));
@@ -37,12 +39,42 @@ fn tester_empty(value: Option<&Value>, params: &[Value]) -> Result<bool, tera::E
     }
 }
 
+fn filter_to_params(params: &Value, kv: &HashMap<String, Value>) -> Result<Value, tera::Error> {
+    let prefix = kv.get("prefix").and_then(Value::as_str).unwrap_or("");
+    let params = serde_urlencoded::to_string(params)
+        .map_err(|e| tera::Error::chain(e, "Could not serialize parameters"))?;
+
+    if params.is_empty() {
+        Ok(Value::String(String::new()))
+    } else {
+        Ok(Value::String(format!("{prefix}{params}")))
+    }
+}
+
+/// Alternative to `get` which does not crash on `None` and defaults to `None`
+pub fn filter_safe_get(value: &Value, args: &HashMap<String, Value>) -> Result<Value, tera::Error> {
+    let default = args.get("default").unwrap_or(&Value::Null);
+    let key = args
+        .get("key")
+        .and_then(Value::as_str)
+        .ok_or_else(|| tera::Error::msg("Invalid parameter `uri`"))?;
+
+    match value.as_object() {
+        Some(o) => match o.get(key) {
+            Some(val) => Ok(val.clone()),
+            // If the value is not present, allow for an optional default value
+            None => Ok(default.clone()),
+        },
+        None => Ok(default.clone()),
+    }
+}
+
 enum ParamsWhere {
     Fragment,
     Query,
 }
 
-fn function_add_params_to_uri(params: &HashMap<String, Value>) -> Result<Value, tera::Error> {
+fn function_add_params_to_url(params: &HashMap<String, Value>) -> Result<Value, tera::Error> {
     use ParamsWhere::{Fragment, Query};
 
     // First, get the `uri`, `mode` and `params` parameters
@@ -77,12 +109,7 @@ fn function_add_params_to_uri(params: &HashMap<String, Value>) -> Result<Value, 
         .unwrap_or_default();
 
     // Merge the exising and the additional parameters together
-    let params: HashMap<&String, &Value> = params
-        .iter()
-        // Filter out the `uri` and `mode` params
-        .filter(|(k, _v)| k != &"uri" && k != &"mode")
-        .chain(existing.iter())
-        .collect();
+    let params: HashMap<&String, &Value> = params.iter().chain(existing.iter()).collect();
 
     // Transform them back to urlencoded
     let params = serde_urlencoded::to_string(params)
