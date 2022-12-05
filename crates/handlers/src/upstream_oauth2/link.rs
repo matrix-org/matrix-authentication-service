@@ -43,6 +43,7 @@ use sqlx::PgPool;
 use thiserror::Error;
 use ulid::Ulid;
 
+use super::UpstreamSessionsCookie;
 use crate::impl_from_error_for_route;
 
 #[derive(Debug, Error)]
@@ -62,9 +63,6 @@ pub(crate) enum RouteError {
     #[error("Missing session cookie")]
     MissingCookie,
 
-    #[error("Invalid session cookie")]
-    InvalidCookie(#[source] ulid::DecodeError),
-
     #[error("Invalid form action")]
     InvalidFormAction,
 
@@ -81,6 +79,7 @@ impl_from_error_for_route!(mas_storage::GenericLookupError);
 impl_from_error_for_route!(mas_storage::user::ActiveSessionLookupError);
 impl_from_error_for_route!(mas_storage::user::UserLookupError);
 impl_from_error_for_route!(mas_axum_utils::csrf::CsrfError);
+impl_from_error_for_route!(super::cookie::UpstreamSessionNotFound);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
@@ -114,17 +113,15 @@ pub(crate) async fn get(
     let mut txn = pool.begin().await?;
     let (clock, mut rng) = crate::rng_and_clock()?;
 
+    let sessions_cookie = UpstreamSessionsCookie::load(&cookie_jar);
+    let session_id = sessions_cookie
+        .lookup_link(link_id)
+        .map_err(|_| RouteError::MissingCookie)?;
+
     let link = lookup_link(&mut txn, link_id)
         .await
         .to_option()?
         .ok_or(RouteError::LinkNotFound)?;
-
-    // XXX: that cookie should be managed elsewhere
-    let cookie = cookie_jar
-        .get("upstream-oauth2-session-id")
-        .ok_or(RouteError::MissingCookie)?;
-
-    let session_id: Ulid = cookie.value().parse().map_err(RouteError::InvalidCookie)?;
 
     // This checks that we're in a browser session which is allowed to consume this
     // link: the upstream auth session should have been started in this browser.
@@ -215,17 +212,15 @@ pub(crate) async fn post(
     let (clock, mut rng) = crate::rng_and_clock()?;
     let form = cookie_jar.verify_form(clock.now(), form)?;
 
+    let sessions_cookie = UpstreamSessionsCookie::load(&cookie_jar);
+    let session_id = sessions_cookie
+        .lookup_link(link_id)
+        .map_err(|_| RouteError::MissingCookie)?;
+
     let link = lookup_link(&mut txn, link_id)
         .await
         .to_option()?
         .ok_or(RouteError::LinkNotFound)?;
-
-    // XXX: that cookie should be managed elsewhere
-    let cookie = cookie_jar
-        .get("upstream-oauth2-session-id")
-        .ok_or(RouteError::MissingCookie)?;
-
-    let session_id: Ulid = cookie.value().parse().map_err(RouteError::InvalidCookie)?;
 
     // This checks that we're in a browser session which is allowed to consume this
     // link: the upstream auth session should have been started in this browser.
@@ -265,6 +260,9 @@ pub(crate) async fn post(
     consume_session(&mut txn, &clock, upstream_session).await?;
     authenticate_session_with_upstream(&mut txn, &mut rng, &clock, &mut session, &link).await?;
 
+    let cookie_jar = sessions_cookie
+        .consume_link(link_id)?
+        .save(cookie_jar, clock.now());
     let cookie_jar = cookie_jar.set_session(&session);
 
     txn.commit().await?;

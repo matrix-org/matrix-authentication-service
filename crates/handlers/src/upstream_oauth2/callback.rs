@@ -35,7 +35,7 @@ use sqlx::PgPool;
 use thiserror::Error;
 use ulid::Ulid;
 
-use super::client_credentials_for_provider;
+use super::{client_credentials_for_provider, UpstreamSessionsCookie};
 use crate::impl_from_error_for_route;
 
 #[derive(Deserialize)]
@@ -89,9 +89,6 @@ pub(crate) enum RouteError {
     #[error("Missing session cookie")]
     MissingCookie,
 
-    #[error("Invalid session cookie")]
-    InvalidCookie(#[source] ulid::DecodeError),
-
     #[error(transparent)]
     InternalError(Box<dyn std::error::Error>),
 
@@ -107,6 +104,7 @@ impl_from_error_for_route!(mas_oidc_client::error::DiscoveryError);
 impl_from_error_for_route!(mas_oidc_client::error::JwksError);
 impl_from_error_for_route!(mas_oidc_client::error::TokenAuthorizationCodeError);
 impl_from_error_for_route!(super::ProviderCredentialsError);
+impl_from_error_for_route!(super::cookie::UpstreamSessionNotFound);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
@@ -138,12 +136,10 @@ pub(crate) async fn get(
 
     let mut txn = pool.begin().await?;
 
-    // XXX: that cookie should be managed elsewhere
-    let cookie = cookie_jar
-        .get("upstream-oauth2-session-id")
-        .ok_or(RouteError::MissingCookie)?;
-
-    let session_id: Ulid = cookie.value().parse().map_err(RouteError::InvalidCookie)?;
+    let sessions_cookie = UpstreamSessionsCookie::load(&cookie_jar);
+    let session_id = sessions_cookie
+        .find_session(provider_id, &params.state)
+        .map_err(|_| RouteError::MissingCookie)?;
 
     let (provider, session) = lookup_session(&mut txn, session_id)
         .await
@@ -256,9 +252,15 @@ pub(crate) async fn get(
         add_link(&mut txn, &mut rng, &clock, &provider, subject).await?
     };
 
-    let _session = complete_session(&mut txn, &clock, session, &link, response.id_token).await?;
+    let session = complete_session(&mut txn, &clock, session, &link, response.id_token).await?;
+    let cookie_jar = sessions_cookie
+        .add_link_to_session(session.id, link.id)?
+        .save(cookie_jar, clock.now());
 
     txn.commit().await?;
 
-    Ok(mas_router::UpstreamOAuth2Link::new(link.id).go())
+    Ok((
+        cookie_jar,
+        mas_router::UpstreamOAuth2Link::new(link.id).go(),
+    ))
 }
