@@ -14,15 +14,13 @@
 
 //! Private (encrypted) cookie jar, based on axum-extra's cookie jar
 
-use data_encoding::BASE64URL_NOPAD;
 use serde::{de::DeserializeOwned, Serialize};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 #[error("could not decode cookie")]
 pub enum CookieDecodeError {
-    Deserialize(#[from] bincode::Error),
-    Decode(#[from] data_encoding::DecodeError),
+    Deserialize(#[from] serde_json::Error),
 }
 
 pub trait CookieExt {
@@ -41,10 +39,7 @@ impl<'a> CookieExt for axum_extra::extract::cookie::Cookie<'a> {
     where
         T: DeserializeOwned,
     {
-        let bytes = BASE64URL_NOPAD.decode(self.value().as_bytes())?;
-
-        let decoded = bincode::deserialize(&bytes)?;
-
+        let decoded = serde_json::from_str(self.value())?;
         Ok(decoded)
     }
 
@@ -52,8 +47,7 @@ impl<'a> CookieExt for axum_extra::extract::cookie::Cookie<'a> {
     where
         T: Serialize,
     {
-        let bytes = bincode::serialize(t).unwrap();
-        let encoded = BASE64URL_NOPAD.encode(&bytes);
+        let encoded = serde_json::to_string(t).unwrap();
         self.set_value(encoded);
         self
     }

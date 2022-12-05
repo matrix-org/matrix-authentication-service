@@ -48,9 +48,9 @@ pub use self::{
         AccountContext, AccountEmailsContext, CompatSsoContext, ConsentContext, EmailAddContext,
         EmailVerificationContext, EmailVerificationPageContext, EmptyContext, ErrorContext,
         FormPostContext, IndexContext, LoginContext, LoginFormField, PolicyViolationContext,
-        PostAuthContext, ReauthContext, ReauthFormField, RegisterContext, RegisterFormField,
-        TemplateContext, UpstreamExistingLinkContext, UpstreamRegister, UpstreamSuggestLink,
-        WithCsrf, WithOptionalSession, WithSession,
+        PostAuthContext, PostAuthContextInner, ReauthContext, ReauthFormField, RegisterContext,
+        RegisterFormField, TemplateContext, UpstreamExistingLinkContext, UpstreamRegister,
+        UpstreamSuggestLink, WithCsrf, WithOptionalSession, WithSession,
     },
     forms::{FieldError, FormError, FormField, FormState, ToFormState},
 };

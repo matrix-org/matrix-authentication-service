@@ -20,6 +20,7 @@ serde_urlencoded = "0.7.1"
 camino = "1.1.1"
 chrono = "0.4.23"
 url = "2.3.1"
+http = "0.2.8"
 ulid = { version = "1.0.0", features = ["serde"] }
 
 oauth2-types = { path = "../oauth2-types" }

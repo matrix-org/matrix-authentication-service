@@ -24,7 +24,6 @@ use mas_axum_utils::{
     SessionInfoExt,
 };
 use mas_keystore::Encrypter;
-use mas_router::Route;
 use mas_storage::{
     upstream_oauth2::{
         associate_link_to_user, consume_session, lookup_link, lookup_session_on_link,
@@ -44,7 +43,7 @@ use thiserror::Error;
 use ulid::Ulid;
 
 use super::UpstreamSessionsCookie;
-use crate::impl_from_error_for_route;
+use crate::{impl_from_error_for_route, views::shared::OptionalPostAuthAction};
 
 #[derive(Debug, Error)]
 pub(crate) enum RouteError {
@@ -114,7 +113,7 @@ pub(crate) async fn get(
     let (clock, mut rng) = crate::rng_and_clock()?;
 
     let sessions_cookie = UpstreamSessionsCookie::load(&cookie_jar);
-    let session_id = sessions_cookie
+    let (session_id, _post_auth_action) = sessions_cookie
         .lookup_link(link_id)
         .map_err(|_| RouteError::MissingCookie)?;
 
@@ -213,9 +212,13 @@ pub(crate) async fn post(
     let form = cookie_jar.verify_form(clock.now(), form)?;
 
     let sessions_cookie = UpstreamSessionsCookie::load(&cookie_jar);
-    let session_id = sessions_cookie
+    let (session_id, post_auth_action) = sessions_cookie
         .lookup_link(link_id)
         .map_err(|_| RouteError::MissingCookie)?;
+
+    let post_auth_action = OptionalPostAuthAction {
+        post_auth_action: post_auth_action.cloned(),
+    };
 
     let link = lookup_link(&mut txn, link_id)
         .await
@@ -267,5 +270,5 @@ pub(crate) async fn post(
 
     txn.commit().await?;
 
-    Ok((cookie_jar, mas_router::Index.go()))
+    Ok((cookie_jar, post_auth_action.go_next()))
 }

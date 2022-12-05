@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     response::{IntoResponse, Redirect},
 };
 use axum_extra::extract::PrivateCookieJar;
@@ -28,7 +28,7 @@ use thiserror::Error;
 use ulid::Ulid;
 
 use super::UpstreamSessionsCookie;
-use crate::impl_from_error_for_route;
+use crate::{impl_from_error_for_route, views::shared::OptionalPostAuthAction};
 
 #[derive(Debug, Error)]
 pub(crate) enum RouteError {
@@ -68,6 +68,7 @@ pub(crate) async fn get(
     State(url_builder): State<UrlBuilder>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(provider_id): Path<Ulid>,
+    Query(query): Query<OptionalPostAuthAction>,
 ) -> Result<impl IntoResponse, RouteError> {
     let (clock, mut rng) = crate::rng_and_clock()?;
 
@@ -115,7 +116,7 @@ pub(crate) async fn get(
     .await?;
 
     let cookie_jar = UpstreamSessionsCookie::load(&cookie_jar)
-        .add(session.id, provider.id, data.state)
+        .add(session.id, provider.id, data.state, query.post_auth_action)
         .save(cookie_jar, clock.now());
 
     txn.commit().await?;

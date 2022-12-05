@@ -244,10 +244,10 @@ impl FormField for LoginFormField {
     }
 }
 
-/// Context used in login and reauth screens, for the post-auth action to do
+/// Inner context used in login and reauth screens. See [`PostAuthContext`].
 #[derive(Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
-pub enum PostAuthContext {
+pub enum PostAuthContextInner {
     /// Continue an authorization grant
     ContinueAuthorizationGrant {
         /// The authorization grant that will be continued after authentication
@@ -274,13 +274,23 @@ pub enum PostAuthContext {
     },
 }
 
+/// Context used in login and reauth screens, for the post-auth action to do
+#[derive(Serialize)]
+pub struct PostAuthContext {
+    /// The post auth action params from the URL
+    pub params: PostAuthAction,
+
+    /// The loaded post auth context
+    #[serde(flatten)]
+    pub ctx: PostAuthContextInner,
+}
+
 /// Context used by the `login.html` template
 #[derive(Serialize, Default)]
 pub struct LoginContext {
     form: FormState<LoginFormField>,
     next: Option<PostAuthContext>,
     providers: Vec<UpstreamOAuthProvider>,
-    register_link: String,
 }
 
 impl TemplateContext for LoginContext {
@@ -293,7 +303,6 @@ impl TemplateContext for LoginContext {
             form: FormState::default(),
             next: None,
             providers: Vec::new(),
-            register_link: "/register".to_owned(),
         }]
     }
 }
@@ -313,18 +322,9 @@ impl LoginContext {
 
     /// Add a post authentication action to the context
     #[must_use]
-    pub fn with_post_action(self, next: PostAuthContext) -> Self {
+    pub fn with_post_action(self, context: PostAuthContext) -> Self {
         Self {
-            next: Some(next),
-            ..self
-        }
-    }
-
-    /// Add a registration link to the context
-    #[must_use]
-    pub fn with_register_link(self, register_link: String) -> Self {
-        Self {
-            register_link,
+            next: Some(context),
             ..self
         }
     }
@@ -361,7 +361,6 @@ impl FormField for RegisterFormField {
 pub struct RegisterContext {
     form: FormState<RegisterFormField>,
     next: Option<PostAuthContext>,
-    login_link: String,
 }
 
 impl TemplateContext for RegisterContext {
@@ -373,7 +372,6 @@ impl TemplateContext for RegisterContext {
         vec![RegisterContext {
             form: FormState::default(),
             next: None,
-            login_link: "/login".to_owned(),
         }]
     }
 }
@@ -392,12 +390,6 @@ impl RegisterContext {
             next: Some(next),
             ..self
         }
-    }
-
-    /// Add a login link to the context
-    #[must_use]
-    pub fn with_login_link(self, login_link: String) -> Self {
-        Self { login_link, ..self }
     }
 }
 

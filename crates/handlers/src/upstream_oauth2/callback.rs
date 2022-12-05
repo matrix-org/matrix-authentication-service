@@ -137,7 +137,7 @@ pub(crate) async fn get(
     let mut txn = pool.begin().await?;
 
     let sessions_cookie = UpstreamSessionsCookie::load(&cookie_jar);
-    let session_id = sessions_cookie
+    let (session_id, _post_auth_action) = sessions_cookie
         .find_session(provider_id, &params.state)
         .map_err(|_| RouteError::MissingCookie)?;
 

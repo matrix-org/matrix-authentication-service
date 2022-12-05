@@ -22,7 +22,6 @@ use mas_axum_utils::{
     FancyError, SessionInfoExt,
 };
 use mas_keystore::Encrypter;
-use mas_router::Route;
 use mas_storage::user::{login, LoginError};
 use mas_templates::{
     FieldError, FormError, LoginContext, LoginFormField, TemplateContext, Templates, ToFormState,
@@ -160,10 +159,7 @@ async fn render(
     } else {
         ctx
     };
-    let register_link = mas_router::Register::from(action.post_auth_action).relative_url();
-    let ctx = ctx
-        .with_register_link(register_link.to_string())
-        .with_csrf(csrf_token.form_value());
+    let ctx = ctx.with_csrf(csrf_token.form_value());
 
     let content = templates.render_login(&ctx).await?;
     Ok(content)

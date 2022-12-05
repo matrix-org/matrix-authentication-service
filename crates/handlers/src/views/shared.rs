@@ -16,7 +16,7 @@ use mas_router::{PostAuthAction, Route};
 use mas_storage::{
     compat::get_compat_sso_login_by_id, oauth2::authorization_grant::get_grant_by_id,
 };
-use mas_templates::PostAuthContext;
+use mas_templates::{PostAuthContext, PostAuthContextInner};
 use serde::{Deserialize, Serialize};
 use sqlx::PgConnection;
 
@@ -41,23 +41,24 @@ impl OptionalPostAuthAction {
         &self,
         conn: &mut PgConnection,
     ) -> anyhow::Result<Option<PostAuthContext>> {
-        match &self.post_auth_action {
-            Some(PostAuthAction::ContinueAuthorizationGrant { data }) => {
-                let grant = get_grant_by_id(conn, *data).await?;
+        let Some(action) = self.post_auth_action.clone() else { return Ok(None) };
+        let ctx = match action {
+            PostAuthAction::ContinueAuthorizationGrant { data } => {
+                let grant = get_grant_by_id(conn, data).await?;
                 let grant = Box::new(grant.into());
-                Ok(Some(PostAuthContext::ContinueAuthorizationGrant { grant }))
+                PostAuthContextInner::ContinueAuthorizationGrant { grant }
             }
 
-            Some(PostAuthAction::ContinueCompatSsoLogin { data }) => {
-                let login = get_compat_sso_login_by_id(conn, *data).await?;
+            PostAuthAction::ContinueCompatSsoLogin { data } => {
+                let login = get_compat_sso_login_by_id(conn, data).await?;
                 let login = Box::new(login.into());
-                Ok(Some(PostAuthContext::ContinueCompatSsoLogin { login }))
+                PostAuthContextInner::ContinueCompatSsoLogin { login }
             }
 
-            Some(PostAuthAction::ChangePassword) => Ok(Some(PostAuthContext::ChangePassword)),
+            PostAuthAction::ChangePassword => PostAuthContextInner::ChangePassword,
 
-            Some(PostAuthAction::LinkUpstream { id }) => {
-                let link = mas_storage::upstream_oauth2::lookup_link(&mut *conn, *id).await?;
+            PostAuthAction::LinkUpstream { id } => {
+                let link = mas_storage::upstream_oauth2::lookup_link(&mut *conn, id).await?;
 
                 let provider =
                     mas_storage::upstream_oauth2::lookup_provider(&mut *conn, link.provider_id)
@@ -65,10 +66,13 @@ impl OptionalPostAuthAction {
 
                 let provider = Box::new(provider);
                 let link = Box::new(link);
-                Ok(Some(PostAuthContext::LinkUpstream { provider, link }))
+                PostAuthContextInner::LinkUpstream { provider, link }
             }
+        };
 
-            None => Ok(None),
-        }
+        Ok(Some(PostAuthContext {
+            params: action.clone(),
+            ctx,
+        }))
     }
 }
