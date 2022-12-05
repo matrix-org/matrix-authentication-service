@@ -40,7 +40,7 @@ CREATE TABLE "upstream_oauth_links" (
     PRIMARY KEY,
 
   "upstream_oauth_provider_id" UUID NOT NULL
-    CONSTRAINT "upstream_oauth_links_upstream_oauth_provider_fkey"
+    CONSTRAINT "upstream_oauth_links_provider_fkey"
     REFERENCES "upstream_oauth_providers" ("upstream_oauth_provider_id"),
 
   -- The user is initially NULL when logging in the first time.
@@ -64,12 +64,12 @@ CREATE TABLE "upstream_oauth_authorization_sessions" (
     PRIMARY KEY,
 
   "upstream_oauth_provider_id" UUID NOT NULL
-    CONSTRAINT "upstream_oauth_authorization_sessions_upstream_oauth_provider_fkey"
+    CONSTRAINT "upstream_oauth_authorization_sessions_provider_fkey"
     REFERENCES "upstream_oauth_providers" ("upstream_oauth_provider_id"),
 
   -- The link it resolves to at the end of the authorization grant
   "upstream_oauth_link_id" UUID
-    CONSTRAINT "upstream_oauth_authorization_sessions_upstream_oauth_link_fkey"
+    CONSTRAINT "upstream_oauth_authorization_sessions_link_fkey"
     REFERENCES "upstream_oauth_links" ("upstream_oauth_link_id"),
 
   -- The ID token we got at the end of the authorization grant
