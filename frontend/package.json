@@ -33,7 +33,7 @@
     "@storybook/addon-docs": "^7.0.0-alpha.55",
     "@storybook/addon-essentials": "^7.0.0-alpha.55",
     "@storybook/addon-measure": "^7.0.0-alpha.55",
-    "@storybook/addon-outline": "^7.0.0-alpha.55",
+    "@storybook/addon-outline": "^7.0.0-alpha.58",
     "@storybook/addon-toolbars": "^7.0.0-alpha.55",
     "@storybook/addon-viewport": "^7.0.0-alpha.55",
     "@storybook/react": "^7.0.0-alpha.55",
