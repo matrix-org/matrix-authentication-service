@@ -45,6 +45,7 @@ argon2 = { version = "0.4.1", features = ["password-hash"] }
 # Various data types and utilities
 camino = "1.1.1"
 chrono = { version = "0.4.23", features = ["serde"] }
+time = "0.3.17"
 url = { version = "2.3.1", features = ["serde"] }
 mime = "0.3.16"
 rand = "0.8.5"

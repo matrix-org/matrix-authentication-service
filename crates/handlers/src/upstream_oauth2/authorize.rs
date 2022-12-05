@@ -16,7 +16,7 @@ use axum::{
     extract::{Path, State},
     response::{IntoResponse, Redirect},
 };
-use axum_extra::extract::{cookie::Cookie, PrivateCookieJar};
+use axum_extra::extract::PrivateCookieJar;
 use hyper::StatusCode;
 use mas_axum_utils::http_client_factory::HttpClientFactory;
 use mas_keystore::Encrypter;
@@ -27,6 +27,7 @@ use sqlx::PgPool;
 use thiserror::Error;
 use ulid::Ulid;
 
+use super::UpstreamSessionsCookie;
 use crate::impl_from_error_for_route;
 
 #[derive(Debug, Error)]
@@ -107,17 +108,15 @@ pub(crate) async fn get(
         &mut rng,
         &clock,
         &provider,
-        data.state,
+        data.state.clone(),
         data.code_challenge_verifier,
         data.nonce,
     )
     .await?;
 
-    // TODO: handle that cookie somewhere else?
-    let mut cookie = Cookie::new("upstream-oauth2-session-id", session.id.to_string());
-    cookie.set_path("/");
-    cookie.set_http_only(true);
-    let cookie_jar = cookie_jar.add(cookie);
+    let cookie_jar = UpstreamSessionsCookie::load(&cookie_jar)
+        .add(session.id, provider.id, data.state)
+        .save(cookie_jar, clock.now());
 
     txn.commit().await?;
 
