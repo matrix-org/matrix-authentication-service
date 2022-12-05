@@ -342,6 +342,10 @@ type UpstreamOAuth2Link implements Node {
   """
   createdAt: DateTime!
   """
+  Subject used for linking
+  """
+  subject: String!
+  """
   The provider for which this link is.
   """
   provider: UpstreamOAuth2Provider!
@@ -349,6 +353,35 @@ type UpstreamOAuth2Link implements Node {
   The user to which this link is associated.
   """
   user: User
+}
+
+type UpstreamOAuth2LinkConnection {
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  A list of edges.
+  """
+  edges: [UpstreamOAuth2LinkEdge!]!
+  """
+  A list of nodes.
+  """
+  nodes: [UpstreamOAuth2Link!]!
+}
+
+"""
+An edge in a connection.
+"""
+type UpstreamOAuth2LinkEdge {
+  """
+  A cursor for use in pagination
+  """
+  cursor: String!
+  """
+  The item at the end of the edge
+  """
+  node: UpstreamOAuth2Link!
 }
 
 type UpstreamOAuth2Provider implements Node {
@@ -456,6 +489,15 @@ type User implements Node {
     first: Int
     last: Int
   ): Oauth2SessionConnection!
+  """
+  Get the list of upstream OAuth 2.0 links
+  """
+  upstreamOauth2Links(
+    after: String
+    before: String
+    first: Int
+    last: Int
+  ): UpstreamOAuth2LinkConnection!
 }
 
 """

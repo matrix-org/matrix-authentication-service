@@ -15,18 +15,35 @@
 use chrono::{DateTime, Utc};
 use mas_data_model::{UpstreamOAuthLink, UpstreamOAuthProvider, User};
 use rand::Rng;
-use sqlx::PgExecutor;
+use sqlx::{PgExecutor, QueryBuilder};
+use tracing::{info_span, Instrument};
 use ulid::Ulid;
 use uuid::Uuid;
 
-use crate::{Clock, GenericLookupError, PostgresqlBackend};
+use crate::{
+    pagination::{process_page, QueryBuilderExt},
+    Clock, GenericLookupError, PostgresqlBackend,
+};
 
+#[derive(sqlx::FromRow)]
 struct LinkLookup {
     upstream_oauth_link_id: Uuid,
     upstream_oauth_provider_id: Uuid,
     user_id: Option<Uuid>,
     subject: String,
     created_at: DateTime<Utc>,
+}
+
+impl From<LinkLookup> for UpstreamOAuthLink {
+    fn from(value: LinkLookup) -> Self {
+        UpstreamOAuthLink {
+            id: Ulid::from(value.upstream_oauth_link_id),
+            provider_id: Ulid::from(value.upstream_oauth_provider_id),
+            user_id: value.user_id.map(Ulid::from),
+            subject: value.subject,
+            created_at: value.created_at,
+        }
+    }
 }
 
 #[tracing::instrument(
@@ -56,13 +73,7 @@ pub async fn lookup_link(
     .await
     .map_err(GenericLookupError::what("Upstream OAuth 2.0 link"))?;
 
-    Ok(UpstreamOAuthLink {
-        id: Ulid::from(res.upstream_oauth_link_id),
-        provider_id: Ulid::from(res.upstream_oauth_provider_id),
-        user_id: res.user_id.map(Ulid::from),
-        subject: res.subject,
-        created_at: res.created_at,
-    })
+    Ok(res.into())
 }
 
 #[tracing::instrument(
@@ -100,13 +111,7 @@ pub async fn lookup_link_by_subject(
     .await
     .map_err(GenericLookupError::what("Upstream OAuth 2.0 link"))?;
 
-    Ok(UpstreamOAuthLink {
-        id: Ulid::from(res.upstream_oauth_link_id),
-        provider_id: Ulid::from(res.upstream_oauth_provider_id),
-        user_id: res.user_id.map(Ulid::from),
-        subject: res.subject,
-        created_at: res.created_at,
-    })
+    Ok(res.into())
 }
 
 #[tracing::instrument(
@@ -186,4 +191,46 @@ pub async fn associate_link_to_user(
     .await?;
 
     Ok(())
+}
+
+#[tracing::instrument(skip_all, err(Display))]
+pub async fn get_paginated_user_links(
+    executor: impl PgExecutor<'_>,
+    user: &User<PostgresqlBackend>,
+    before: Option<Ulid>,
+    after: Option<Ulid>,
+    first: Option<usize>,
+    last: Option<usize>,
+) -> Result<(bool, bool, Vec<UpstreamOAuthLink>), anyhow::Error> {
+    let mut query = QueryBuilder::new(
+        r#"
+            SELECT
+                upstream_oauth_link_id,
+                upstream_oauth_provider_id,
+                user_id,
+                subject,
+                created_at
+            FROM upstream_oauth_links
+        "#,
+    );
+
+    query
+        .push(" WHERE user_id = ")
+        .push_bind(Uuid::from(user.data))
+        .generate_pagination("upstream_oauth_link_id", before, after, first, last)?;
+
+    let span = info_span!(
+        "Fetch paginated upstream OAuth 2.0 user links",
+        db.statement = query.sql()
+    );
+    let page: Vec<LinkLookup> = query
+        .build_query_as()
+        .fetch_all(executor)
+        .instrument(span)
+        .await?;
+
+    let (has_previous_page, has_next_page, page) = process_page(page, first, last)?;
+
+    let page: Vec<_> = page.into_iter().map(Into::into).collect();
+    Ok((has_previous_page, has_next_page, page))
 }

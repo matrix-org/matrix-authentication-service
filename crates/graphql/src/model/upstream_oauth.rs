@@ -84,6 +84,11 @@ impl UpstreamOAuth2Link {
         self.link.created_at
     }
 
+    /// Subject used for linking
+    pub async fn subject(&self) -> &str {
+        &self.link.subject
+    }
+
     /// The provider for which this link is.
     pub async fn provider(
         &self,
