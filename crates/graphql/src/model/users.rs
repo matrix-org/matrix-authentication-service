@@ -22,6 +22,7 @@ use sqlx::PgPool;
 
 use super::{
     compat_sessions::CompatSsoLogin, BrowserSession, Cursor, NodeCursor, NodeType, OAuth2Session,
+    UpstreamOAuth2Link,
 };
 
 #[derive(Description)]
@@ -244,6 +245,58 @@ impl User {
                     Edge::new(
                         OpaqueCursor(NodeCursor(NodeType::OAuth2Session, s.data)),
                         OAuth2Session(s),
+                    )
+                }));
+
+                Ok::<_, async_graphql::Error>(connection)
+            },
+        )
+        .await
+    }
+
+    /// Get the list of upstream OAuth 2.0 links
+    async fn upstream_oauth2_links(
+        &self,
+        ctx: &Context<'_>,
+
+        #[graphql(desc = "Returns the elements in the list that come after the cursor.")]
+        after: Option<String>,
+        #[graphql(desc = "Returns the elements in the list that come before the cursor.")]
+        before: Option<String>,
+        #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
+        #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
+    ) -> Result<Connection<Cursor, UpstreamOAuth2Link>, async_graphql::Error> {
+        let database = ctx.data::<PgPool>()?;
+
+        query(
+            after,
+            before,
+            first,
+            last,
+            |after, before, first, last| async move {
+                let mut conn = database.acquire().await?;
+                let after_id = after
+                    .map(|x: OpaqueCursor<NodeCursor>| {
+                        x.extract_for_type(NodeType::UpstreamOAuth2Link)
+                    })
+                    .transpose()?;
+                let before_id = before
+                    .map(|x: OpaqueCursor<NodeCursor>| {
+                        x.extract_for_type(NodeType::UpstreamOAuth2Link)
+                    })
+                    .transpose()?;
+
+                let (has_previous_page, has_next_page, edges) =
+                    mas_storage::upstream_oauth2::get_paginated_user_links(
+                        &mut conn, &self.0, before_id, after_id, first, last,
+                    )
+                    .await?;
+
+                let mut connection = Connection::new(has_previous_page, has_next_page);
+                connection.edges.extend(edges.into_iter().map(|s| {
+                    Edge::new(
+                        OpaqueCursor(NodeCursor(NodeType::UpstreamOAuth2Link, s.id)),
+                        UpstreamOAuth2Link::new(s),
                     )
                 }));
 
