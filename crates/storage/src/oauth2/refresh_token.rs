@@ -42,9 +42,9 @@ pub async fn add_refresh_token(
     mut rng: impl Rng + Send,
     clock: &Clock,
     session: &Session<PostgresqlBackend>,
-    access_token: AccessToken<PostgresqlBackend>,
+    access_token: AccessToken,
     refresh_token: String,
-) -> anyhow::Result<RefreshToken<PostgresqlBackend>> {
+) -> anyhow::Result<RefreshToken> {
     let created_at = clock.now();
     let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
     tracing::Span::current().record("refresh_token.id", tracing::field::display(id));
@@ -59,7 +59,7 @@ pub async fn add_refresh_token(
         "#,
         Uuid::from(id),
         Uuid::from(session.data),
-        Uuid::from(access_token.data),
+        Uuid::from(access_token.id),
         refresh_token,
         created_at,
     )
@@ -68,7 +68,7 @@ pub async fn add_refresh_token(
     .context("could not insert oauth2 refresh token")?;
 
     Ok(RefreshToken {
-        data: id,
+        id,
         refresh_token,
         access_token: Some(access_token),
         created_at,
@@ -117,8 +117,7 @@ impl LookupError for RefreshTokenLookupError {
 pub async fn lookup_active_refresh_token(
     conn: &mut PgConnection,
     token: &str,
-) -> Result<(RefreshToken<PostgresqlBackend>, Session<PostgresqlBackend>), RefreshTokenLookupError>
-{
+) -> Result<(RefreshToken, Session<PostgresqlBackend>), RefreshTokenLookupError> {
     let res = sqlx::query_as!(
         OAuth2RefreshTokenLookup,
         r#"
@@ -181,7 +180,7 @@ pub async fn lookup_active_refresh_token(
         (Some(id), Some(access_token), Some(created_at), Some(expires_at)) => {
             let id = Ulid::from(id);
             Some(AccessToken {
-                data: id,
+                id,
                 jti: id.to_string(),
                 access_token,
                 created_at,
@@ -192,7 +191,7 @@ pub async fn lookup_active_refresh_token(
     };
 
     let refresh_token = RefreshToken {
-        data: res.oauth2_refresh_token_id.into(),
+        id: res.oauth2_refresh_token_id.into(),
         refresh_token: res.oauth2_refresh_token,
         created_at: res.oauth2_refresh_token_created_at,
         access_token,
@@ -261,14 +260,14 @@ pub async fn lookup_active_refresh_token(
 #[tracing::instrument(
     skip_all,
     fields(
-        refresh_token.id = %refresh_token.data,
+        %refresh_token.id,
     ),
     err(Debug),
 )]
 pub async fn consume_refresh_token(
     executor: impl PgExecutor<'_>,
     clock: &Clock,
-    refresh_token: &RefreshToken<PostgresqlBackend>,
+    refresh_token: &RefreshToken,
 ) -> Result<(), anyhow::Error> {
     let consumed_at = clock.now();
     let res = sqlx::query!(
@@ -277,7 +276,7 @@ pub async fn consume_refresh_token(
             SET consumed_at = $2
             WHERE oauth2_refresh_token_id = $1
         "#,
-        Uuid::from(refresh_token.data),
+        Uuid::from(refresh_token.id),
         consumed_at,
     )
     .execute(executor)
