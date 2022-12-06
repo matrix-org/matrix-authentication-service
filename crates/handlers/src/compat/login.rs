@@ -22,7 +22,7 @@ use mas_storage::{
         get_compat_sso_login_by_token, mark_compat_sso_login_as_exchanged,
         CompatSsoLoginLookupError,
     },
-    Clock, LookupError, PostgresqlBackend,
+    Clock, LookupError,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none, DurationMilliSeconds};
@@ -267,14 +267,14 @@ async fn token_login(
     txn: &mut Transaction<'_, Postgres>,
     clock: &Clock,
     token: &str,
-) -> Result<CompatSession<PostgresqlBackend>, RouteError> {
+) -> Result<CompatSession, RouteError> {
     let login = get_compat_sso_login_by_token(&mut *txn, token).await?;
 
     let now = clock.now();
     match login.state {
         CompatSsoLoginState::Pending => {
             tracing::error!(
-                compat_sso_login.id = %login.data,
+                compat_sso_login.id = %login.id,
                 "Exchanged a token for a login that was not fullfilled yet"
             );
             return Err(RouteError::InvalidLoginToken);
@@ -291,7 +291,7 @@ async fn token_login(
             if now > exchanged_at + Duration::seconds(30) {
                 // TODO: log that session out
                 tracing::error!(
-                    compat_sso_login.id = %login.data,
+                    compat_sso_login.id = %login.id,
                     "Login token exchanged a second time more than 30s after"
                 );
             }
@@ -312,7 +312,7 @@ async fn user_password_login(
     txn: &mut Transaction<'_, Postgres>,
     username: String,
     password: String,
-) -> Result<CompatSession<PostgresqlBackend>, RouteError> {
+) -> Result<CompatSession, RouteError> {
     let (clock, mut rng) = crate::rng_and_clock()?;
 
     let device = Device::generate(&mut rng);

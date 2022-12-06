@@ -15,7 +15,6 @@
 use async_graphql::{Description, Object, ID};
 use chrono::{DateTime, Utc};
 use mas_data_model::CompatSsoLoginState;
-use mas_storage::PostgresqlBackend;
 use url::Url;
 
 use super::{NodeType, User};
@@ -23,13 +22,13 @@ use super::{NodeType, User};
 /// A compat session represents a client session which used the legacy Matrix
 /// login API.
 #[derive(Description)]
-pub struct CompatSession(pub mas_data_model::CompatSession<PostgresqlBackend>);
+pub struct CompatSession(pub mas_data_model::CompatSession);
 
 #[Object(use_type_description)]
 impl CompatSession {
     /// ID of the object.
     pub async fn id(&self) -> ID {
-        NodeType::CompatSession.id(self.0.data)
+        NodeType::CompatSession.id(self.0.id)
     }
 
     /// The user authorized for this session.
@@ -56,13 +55,13 @@ impl CompatSession {
 /// A compat SSO login represents a login done through the legacy Matrix login
 /// API, via the `m.login.sso` login method.
 #[derive(Description)]
-pub struct CompatSsoLogin(pub mas_data_model::CompatSsoLogin<PostgresqlBackend>);
+pub struct CompatSsoLogin(pub mas_data_model::CompatSsoLogin);
 
 #[Object(use_type_description)]
 impl CompatSsoLogin {
     /// ID of the object.
     pub async fn id(&self) -> ID {
-        NodeType::CompatSsoLogin.id(self.0.data)
+        NodeType::CompatSsoLogin.id(self.0.id)
     }
 
     /// When the object was created.

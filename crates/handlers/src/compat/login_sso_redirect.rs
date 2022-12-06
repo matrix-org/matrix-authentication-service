@@ -87,5 +87,5 @@ pub async fn get(
     let mut conn = pool.acquire().await?;
     let login = insert_compat_sso_login(&mut conn, &mut rng, &clock, token, redirect_url).await?;
 
-    Ok(url_builder.absolute_redirect(&CompatLoginSsoComplete::new(login.data, params.action)))
+    Ok(url_builder.absolute_redirect(&CompatLoginSsoComplete::new(login.id, params.action)))
 }

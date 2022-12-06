@@ -31,7 +31,7 @@ use uuid::Uuid;
 use crate::{
     pagination::{process_page, QueryBuilderExt},
     user::lookup_user_by_username,
-    Clock, DatabaseInconsistencyError, LookupError, PostgresqlBackend,
+    Clock, DatabaseInconsistencyError, LookupError,
 };
 
 struct CompatAccessTokenLookup {
@@ -73,13 +73,7 @@ pub async fn lookup_active_compat_access_token(
     executor: impl PgExecutor<'_>,
     clock: &Clock,
     token: &str,
-) -> Result<
-    (
-        CompatAccessToken<PostgresqlBackend>,
-        CompatSession<PostgresqlBackend>,
-    ),
-    CompatAccessTokenLookupError,
-> {
+) -> Result<(CompatAccessToken, CompatSession), CompatAccessTokenLookupError> {
     let res = sqlx::query_as!(
         CompatAccessTokenLookup,
         r#"
@@ -123,7 +117,7 @@ pub async fn lookup_active_compat_access_token(
     }
 
     let token = CompatAccessToken {
-        data: res.compat_access_token_id.into(),
+        id: res.compat_access_token_id.into(),
         token: res.compat_access_token,
         created_at: res.compat_access_token_created_at,
         expires_at: res.compat_access_token_expires_at,
@@ -156,7 +150,7 @@ pub async fn lookup_active_compat_access_token(
     let device = Device::try_from(res.compat_session_device_id).unwrap();
 
     let session = CompatSession {
-        data: res.compat_session_id.into(),
+        id: res.compat_session_id.into(),
         user,
         device,
         created_at: res.compat_session_created_at,
@@ -204,14 +198,7 @@ impl LookupError for CompatRefreshTokenLookupError {
 pub async fn lookup_active_compat_refresh_token(
     executor: impl PgExecutor<'_>,
     token: &str,
-) -> Result<
-    (
-        CompatRefreshToken<PostgresqlBackend>,
-        CompatAccessToken<PostgresqlBackend>,
-        CompatSession<PostgresqlBackend>,
-    ),
-    CompatRefreshTokenLookupError,
-> {
+) -> Result<(CompatRefreshToken, CompatAccessToken, CompatSession), CompatRefreshTokenLookupError> {
     let res = sqlx::query_as!(
         CompatRefreshTokenLookup,
         r#"
@@ -255,13 +242,13 @@ pub async fn lookup_active_compat_refresh_token(
     .await?;
 
     let refresh_token = CompatRefreshToken {
-        data: res.compat_refresh_token_id.into(),
+        id: res.compat_refresh_token_id.into(),
         token: res.compat_refresh_token,
         created_at: res.compat_refresh_token_created_at,
     };
 
     let access_token = CompatAccessToken {
-        data: res.compat_access_token_id.into(),
+        id: res.compat_access_token_id.into(),
         token: res.compat_access_token,
         created_at: res.compat_access_token_created_at,
         expires_at: res.compat_access_token_expires_at,
@@ -294,7 +281,7 @@ pub async fn lookup_active_compat_refresh_token(
     let device = Device::try_from(res.compat_session_device_id).unwrap();
 
     let session = CompatSession {
-        data: res.compat_session_id.into(),
+        id: res.compat_session_id.into(),
         user,
         device,
         created_at: res.compat_session_created_at,
@@ -321,7 +308,7 @@ pub async fn compat_login(
     username: &str,
     password: &str,
     device: Device,
-) -> Result<CompatSession<PostgresqlBackend>, anyhow::Error> {
+) -> Result<CompatSession, anyhow::Error> {
     let mut txn = conn.begin().await.context("could not start transaction")?;
 
     // First, lookup the user
@@ -375,7 +362,7 @@ pub async fn compat_login(
     .context("could not insert compat session")?;
 
     let session = CompatSession {
-        data: id,
+        id,
         user,
         device,
         created_at,
@@ -389,7 +376,7 @@ pub async fn compat_login(
 #[tracing::instrument(
     skip_all,
     fields(
-        compat_session.id = %session.data,
+        compat_session.id = %session.id,
         compat_session.device.id = session.device.as_str(),
         compat_access_token.id,
         user.id = %session.user.id,
@@ -400,10 +387,10 @@ pub async fn add_compat_access_token(
     executor: impl PgExecutor<'_>,
     mut rng: impl Rng + Send,
     clock: &Clock,
-    session: &CompatSession<PostgresqlBackend>,
+    session: &CompatSession,
     token: String,
     expires_after: Option<Duration>,
-) -> Result<CompatAccessToken<PostgresqlBackend>, anyhow::Error> {
+) -> Result<CompatAccessToken, anyhow::Error> {
     let created_at = clock.now();
     let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
     tracing::Span::current().record("compat_access_token.id", tracing::field::display(id));
@@ -417,7 +404,7 @@ pub async fn add_compat_access_token(
             VALUES ($1, $2, $3, $4, $5)
         "#,
         Uuid::from(id),
-        Uuid::from(session.data),
+        Uuid::from(session.id),
         token,
         created_at,
         expires_at,
@@ -428,7 +415,7 @@ pub async fn add_compat_access_token(
     .context("could not insert compat access token")?;
 
     Ok(CompatAccessToken {
-        data: id,
+        id,
         token,
         created_at,
         expires_at,
@@ -438,14 +425,14 @@ pub async fn add_compat_access_token(
 #[tracing::instrument(
     skip_all,
     fields(
-        compat_access_token.id = %access_token.data,
+        compat_access_token.id = %access_token.id,
     ),
     err(Display),
 )]
 pub async fn expire_compat_access_token(
     executor: impl PgExecutor<'_>,
     clock: &Clock,
-    access_token: CompatAccessToken<PostgresqlBackend>,
+    access_token: CompatAccessToken,
 ) -> Result<(), anyhow::Error> {
     let expires_at = clock.now();
     let res = sqlx::query!(
@@ -454,7 +441,7 @@ pub async fn expire_compat_access_token(
             SET expires_at = $2
             WHERE compat_access_token_id = $1
         "#,
-        Uuid::from(access_token.data),
+        Uuid::from(access_token.id),
         expires_at,
     )
     .execute(executor)
@@ -473,9 +460,9 @@ pub async fn expire_compat_access_token(
 #[tracing::instrument(
     skip_all,
     fields(
-        compat_session.id = %session.data,
+        compat_session.id = %session.id,
         compat_session.device.id = session.device.as_str(),
-        compat_access_token.id = %access_token.data,
+        compat_access_token.id = %access_token.id,
         compat_refresh_token.id,
         user.id = %session.user.id,
     ),
@@ -485,10 +472,10 @@ pub async fn add_compat_refresh_token(
     executor: impl PgExecutor<'_>,
     mut rng: impl Rng + Send,
     clock: &Clock,
-    session: &CompatSession<PostgresqlBackend>,
-    access_token: &CompatAccessToken<PostgresqlBackend>,
+    session: &CompatSession,
+    access_token: &CompatAccessToken,
     token: String,
-) -> Result<CompatRefreshToken<PostgresqlBackend>, anyhow::Error> {
+) -> Result<CompatRefreshToken, anyhow::Error> {
     let created_at = clock.now();
     let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
     tracing::Span::current().record("compat_refresh_token.id", tracing::field::display(id));
@@ -501,8 +488,8 @@ pub async fn add_compat_refresh_token(
             VALUES ($1, $2, $3, $4, $5)
         "#,
         Uuid::from(id),
-        Uuid::from(session.data),
-        Uuid::from(access_token.data),
+        Uuid::from(session.id),
+        Uuid::from(access_token.id),
         token,
         created_at,
     )
@@ -512,7 +499,7 @@ pub async fn add_compat_refresh_token(
     .context("could not insert compat refresh token")?;
 
     Ok(CompatRefreshToken {
-        data: id,
+        id,
         token,
         created_at,
     })
@@ -558,14 +545,14 @@ pub async fn compat_logout(
 #[tracing::instrument(
     skip_all,
     fields(
-        compat_refresh_token.id = %refresh_token.data,
+        compat_refresh_token.id = %refresh_token.id,
     ),
     err(Display),
 )]
 pub async fn consume_compat_refresh_token(
     executor: impl PgExecutor<'_>,
     clock: &Clock,
-    refresh_token: CompatRefreshToken<PostgresqlBackend>,
+    refresh_token: CompatRefreshToken,
 ) -> Result<(), anyhow::Error> {
     let consumed_at = clock.now();
     let res = sqlx::query!(
@@ -574,7 +561,7 @@ pub async fn consume_compat_refresh_token(
             SET consumed_at = $2
             WHERE compat_refresh_token_id = $1
         "#,
-        Uuid::from(refresh_token.data),
+        Uuid::from(refresh_token.id),
         consumed_at,
     )
     .execute(executor)
@@ -604,7 +591,7 @@ pub async fn insert_compat_sso_login(
     clock: &Clock,
     login_token: String,
     redirect_uri: Url,
-) -> Result<CompatSsoLogin<PostgresqlBackend>, anyhow::Error> {
+) -> Result<CompatSsoLogin, anyhow::Error> {
     let created_at = clock.now();
     let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
     tracing::Span::current().record("compat_sso_login.id", tracing::field::display(id));
@@ -626,7 +613,7 @@ pub async fn insert_compat_sso_login(
     .context("could not insert compat SSO login")?;
 
     Ok(CompatSsoLogin {
-        data: id,
+        id,
         login_token,
         redirect_uri,
         created_at,
@@ -654,7 +641,7 @@ struct CompatSsoLoginLookup {
     user_email_confirmed_at: Option<DateTime<Utc>>,
 }
 
-impl TryFrom<CompatSsoLoginLookup> for CompatSsoLogin<PostgresqlBackend> {
+impl TryFrom<CompatSsoLoginLookup> for CompatSsoLogin {
     type Error = DatabaseInconsistencyError;
 
     fn try_from(res: CompatSsoLoginLookup) -> Result<Self, Self::Error> {
@@ -702,7 +689,7 @@ impl TryFrom<CompatSsoLoginLookup> for CompatSsoLogin<PostgresqlBackend> {
             (Some(id), Some(device_id), Some(created_at), finished_at, Some(user)) => {
                 let device = Device::try_from(device_id).map_err(|_| DatabaseInconsistencyError)?;
                 Some(CompatSession {
-                    data: id.into(),
+                    id: id.into(),
                     user,
                     device,
                     created_at,
@@ -734,7 +721,7 @@ impl TryFrom<CompatSsoLoginLookup> for CompatSsoLogin<PostgresqlBackend> {
         };
 
         Ok(CompatSsoLogin {
-            data: res.compat_sso_login_id.into(),
+            id: res.compat_sso_login_id.into(),
             login_token: res.compat_sso_login_token,
             redirect_uri,
             created_at: res.compat_sso_login_created_at,
@@ -766,7 +753,7 @@ impl LookupError for CompatSsoLoginLookupError {
 pub async fn get_compat_sso_login_by_id(
     executor: impl PgExecutor<'_>,
     id: Ulid,
-) -> Result<CompatSsoLogin<PostgresqlBackend>, CompatSsoLoginLookupError> {
+) -> Result<CompatSsoLogin, CompatSsoLoginLookupError> {
     let res = sqlx::query_as!(
         CompatSsoLoginLookup,
         r#"
@@ -820,7 +807,7 @@ pub async fn get_paginated_user_compat_sso_logins(
     after: Option<Ulid>,
     first: Option<usize>,
     last: Option<usize>,
-) -> Result<(bool, bool, Vec<CompatSsoLogin<PostgresqlBackend>>), anyhow::Error> {
+) -> Result<(bool, bool, Vec<CompatSsoLogin>), anyhow::Error> {
     // TODO: this queries too much (like user info) which we probably don't need
     // because we already have them
     let mut query = QueryBuilder::new(
@@ -877,7 +864,7 @@ pub async fn get_paginated_user_compat_sso_logins(
 pub async fn get_compat_sso_login_by_token(
     executor: impl PgExecutor<'_>,
     token: &str,
-) -> Result<CompatSsoLogin<PostgresqlBackend>, CompatSsoLoginLookupError> {
+) -> Result<CompatSsoLogin, CompatSsoLoginLookupError> {
     let res = sqlx::query_as!(
         CompatSsoLoginLookup,
         r#"
@@ -920,7 +907,7 @@ pub async fn get_compat_sso_login_by_token(
     skip_all,
     fields(
         %user.id,
-        compat_sso_login.id = %login.data,
+        compat_sso_login.id = %login.id,
         compat_sso_login.redirect_uri = %login.redirect_uri,
         compat_session.id,
         compat_session.device.id = device.as_str(),
@@ -932,9 +919,9 @@ pub async fn fullfill_compat_sso_login(
     mut rng: impl Rng + Send,
     clock: &Clock,
     user: User,
-    mut login: CompatSsoLogin<PostgresqlBackend>,
+    mut login: CompatSsoLogin,
     device: Device,
-) -> Result<CompatSsoLogin<PostgresqlBackend>, anyhow::Error> {
+) -> Result<CompatSsoLogin, anyhow::Error> {
     if !matches!(login.state, CompatSsoLoginState::Pending) {
         bail!("sso login in wrong state");
     };
@@ -961,7 +948,7 @@ pub async fn fullfill_compat_sso_login(
     .context("could not insert compat session")?;
 
     let session = CompatSession {
-        data: id,
+        id,
         user,
         device,
         created_at,
@@ -978,8 +965,8 @@ pub async fn fullfill_compat_sso_login(
             WHERE
                 compat_sso_login_id = $1
         "#,
-        Uuid::from(login.data),
-        Uuid::from(session.data),
+        Uuid::from(login.id),
+        Uuid::from(session.id),
         fulfilled_at,
     )
     .execute(&mut txn)
@@ -1002,7 +989,7 @@ pub async fn fullfill_compat_sso_login(
 #[tracing::instrument(
     skip_all,
     fields(
-        compat_sso_login.id = %login.data,
+        compat_sso_login.id = %login.id,
         compat_sso_login.redirect_uri = %login.redirect_uri,
     ),
     err(Display),
@@ -1010,8 +997,8 @@ pub async fn fullfill_compat_sso_login(
 pub async fn mark_compat_sso_login_as_exchanged(
     executor: impl PgExecutor<'_>,
     clock: &Clock,
-    mut login: CompatSsoLogin<PostgresqlBackend>,
-) -> Result<CompatSsoLogin<PostgresqlBackend>, anyhow::Error> {
+    mut login: CompatSsoLogin,
+) -> Result<CompatSsoLogin, anyhow::Error> {
     let (fulfilled_at, session) = match login.state {
         CompatSsoLoginState::Fulfilled {
             fulfilled_at,
@@ -1029,7 +1016,7 @@ pub async fn mark_compat_sso_login_as_exchanged(
             WHERE
                 compat_sso_login_id = $1
         "#,
-        Uuid::from(login.data),
+        Uuid::from(login.id),
         exchanged_at,
     )
     .execute(executor)
