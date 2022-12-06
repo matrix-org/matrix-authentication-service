@@ -6,7 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-tokio = "1.22.0"
+tokio = "1.23.0"
 sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "offline", "json", "uuid"] }
 chrono = { version = "0.4.23", features = ["serde"] }
 serde = { version = "1.0.149", features = ["derive"] }
