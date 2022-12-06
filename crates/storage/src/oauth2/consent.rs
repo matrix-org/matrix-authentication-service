@@ -26,14 +26,14 @@ use crate::{Clock, PostgresqlBackend};
 #[tracing::instrument(
     skip_all,
     fields(
-        user.id = %user.data,
+        %user.id,
         client.id = %client.data,
     ),
     err(Debug),
 )]
 pub async fn fetch_client_consent(
     executor: impl PgExecutor<'_>,
-    user: &User<PostgresqlBackend>,
+    user: &User,
     client: &Client<PostgresqlBackend>,
 ) -> Result<Scope, anyhow::Error> {
     let scope_tokens: Vec<String> = sqlx::query_scalar!(
@@ -42,7 +42,7 @@ pub async fn fetch_client_consent(
             FROM oauth2_consents
             WHERE user_id = $1 AND oauth2_client_id = $2
         "#,
-        Uuid::from(user.data),
+        Uuid::from(user.id),
         Uuid::from(client.data),
     )
     .fetch_all(executor)
@@ -59,7 +59,7 @@ pub async fn fetch_client_consent(
 #[tracing::instrument(
     skip_all,
     fields(
-        user.id = %user.data,
+        %user.id,
         client.id = %client.data,
         scope = scope.to_string(),
     ),
@@ -69,7 +69,7 @@ pub async fn insert_client_consent(
     executor: impl PgExecutor<'_>,
     mut rng: impl Rng + Send,
     clock: &Clock,
-    user: &User<PostgresqlBackend>,
+    user: &User,
     client: &Client<PostgresqlBackend>,
     scope: &Scope,
 ) -> Result<(), anyhow::Error> {
@@ -92,7 +92,7 @@ pub async fn insert_client_consent(
             ON CONFLICT (user_id, oauth2_client_id, scope_token) DO UPDATE SET refreshed_at = $5
         "#,
         &ids,
-        Uuid::from(user.data),
+        Uuid::from(user.id),
         Uuid::from(client.data),
         &tokens,
         now,

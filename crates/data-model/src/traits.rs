@@ -30,16 +30,9 @@ impl<T: Clone + Debug + PartialEq + Serialize + DeserializeOwned + Default + Syn
 }
 
 pub trait StorageBackend {
-    type UserData: Data;
-    type UserEmailData: Data;
-    type UserEmailVerificationData: Data;
-    type AuthenticationData: Data;
-    type BrowserSessionData: Data;
     type ClientData: Data;
     type SessionData: Data;
     type AuthorizationGrantData: Data;
-    type AccessTokenData: Data;
-    type RefreshTokenData: Data;
     type CompatAccessTokenData: Data;
     type CompatRefreshTokenData: Data;
     type CompatSessionData: Data;
@@ -47,18 +40,11 @@ pub trait StorageBackend {
 }
 
 impl StorageBackend for () {
-    type AccessTokenData = ();
-    type AuthenticationData = ();
     type AuthorizationGrantData = ();
-    type BrowserSessionData = ();
     type ClientData = ();
     type CompatAccessTokenData = ();
     type CompatRefreshTokenData = ();
     type CompatSessionData = ();
     type CompatSsoLoginData = ();
-    type RefreshTokenData = ();
     type SessionData = ();
-    type UserData = ();
-    type UserEmailData = ();
-    type UserEmailVerificationData = ();
 }

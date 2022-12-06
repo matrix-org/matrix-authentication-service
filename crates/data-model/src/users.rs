@@ -13,27 +13,23 @@
 // limitations under the License.
 
 use chrono::{DateTime, Duration, Utc};
+use rand::{Rng, SeedableRng};
 use serde::Serialize;
+use ulid::Ulid;
 
-use crate::traits::{StorageBackend, StorageBackendMarker};
-
-#[derive(Debug, Clone, PartialEq, Serialize)]
-#[serde(bound = "T: StorageBackend")]
-pub struct User<T: StorageBackend> {
-    pub data: T::UserData,
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct User {
+    pub id: Ulid,
     pub username: String,
     pub sub: String,
-    pub primary_email: Option<UserEmail<T>>,
+    pub primary_email: Option<UserEmail>,
 }
 
-impl<T: StorageBackend> User<T>
-where
-    T::UserData: Default,
-{
+impl User {
     #[must_use]
-    pub fn samples(_now: chrono::DateTime<Utc>) -> Vec<Self> {
+    pub fn samples(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self> {
         vec![User {
-            data: Default::default(),
+            id: Ulid::from_datetime_with_source(now.into(), rng),
             username: "john".to_owned(),
             sub: "123-456".to_owned(),
             primary_email: None,
@@ -41,55 +37,22 @@ where
     }
 }
 
-impl<S: StorageBackendMarker> From<User<S>> for User<()> {
-    fn from(u: User<S>) -> Self {
-        User {
-            data: (),
-            username: u.username,
-            sub: u.sub,
-            primary_email: u.primary_email.map(Into::into),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize)]
-#[serde(bound = "T: StorageBackend")]
-pub struct Authentication<T: StorageBackend> {
-    #[serde(skip_serializing)]
-    pub data: T::AuthenticationData,
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct Authentication {
+    pub id: Ulid,
     pub created_at: DateTime<Utc>,
 }
 
-impl<S: StorageBackendMarker> From<Authentication<S>> for Authentication<()> {
-    fn from(a: Authentication<S>) -> Self {
-        Authentication {
-            data: (),
-            created_at: a.created_at,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize)]
-#[serde(bound = "T: StorageBackend")]
-pub struct BrowserSession<T: StorageBackend> {
-    pub data: T::BrowserSessionData,
-    pub user: User<T>,
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct BrowserSession {
+    pub id: Ulid,
+    pub user: User,
     pub created_at: DateTime<Utc>,
-    pub last_authentication: Option<Authentication<T>>,
+    pub last_authentication: Option<Authentication>,
 }
 
-impl<S: StorageBackendMarker> From<BrowserSession<S>> for BrowserSession<()> {
-    fn from(s: BrowserSession<S>) -> Self {
-        BrowserSession {
-            data: (),
-            user: s.user.into(),
-            created_at: s.created_at,
-            last_authentication: s.last_authentication.map(Into::into),
-        }
-    }
-}
-
-impl<S: StorageBackend> BrowserSession<S> {
+impl BrowserSession {
+    #[must_use]
     pub fn was_authenticated_after(&self, after: DateTime<Utc>) -> bool {
         if let Some(auth) = &self.last_authentication {
             auth.created_at > after
@@ -99,17 +62,13 @@ impl<S: StorageBackend> BrowserSession<S> {
     }
 }
 
-impl<T: StorageBackend> BrowserSession<T>
-where
-    T::BrowserSessionData: Default,
-    T::UserData: Default,
-{
+impl BrowserSession {
     #[must_use]
-    pub fn samples(now: chrono::DateTime<Utc>) -> Vec<Self> {
-        User::<T>::samples(now)
+    pub fn samples(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self> {
+        User::samples(now, rng)
             .into_iter()
             .map(|user| BrowserSession {
-                data: Default::default(),
+                id: Ulid::from_datetime_with_source(now.into(), rng),
                 user,
                 created_at: now,
                 last_authentication: None,
@@ -118,41 +77,26 @@ where
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
-#[serde(bound = "T: StorageBackend")]
-pub struct UserEmail<T: StorageBackend> {
-    pub data: T::UserEmailData,
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct UserEmail {
+    pub id: Ulid,
     pub email: String,
     pub created_at: DateTime<Utc>,
     pub confirmed_at: Option<DateTime<Utc>>,
 }
 
-impl<S: StorageBackendMarker> From<UserEmail<S>> for UserEmail<()> {
-    fn from(e: UserEmail<S>) -> Self {
-        Self {
-            data: (),
-            email: e.email,
-            created_at: e.created_at,
-            confirmed_at: e.confirmed_at,
-        }
-    }
-}
-
-impl<T: StorageBackend> UserEmail<T>
-where
-    T::UserEmailData: Default,
-{
+impl UserEmail {
     #[must_use]
-    pub fn samples(now: chrono::DateTime<Utc>) -> Vec<Self> {
+    pub fn samples(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self> {
         vec![
             Self {
-                data: T::UserEmailData::default(),
+                id: Ulid::from_datetime_with_source(now.into(), rng),
                 email: "alice@example.com".to_owned(),
                 created_at: now,
                 confirmed_at: Some(now),
             },
             Self {
-                data: T::UserEmailData::default(),
+                id: Ulid::from_datetime_with_source(now.into(), rng),
                 email: "bob@example.com".to_owned(),
                 created_at: now,
                 confirmed_at: None,
@@ -168,34 +112,18 @@ pub enum UserEmailVerificationState {
     Valid,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
-#[serde(bound = "T: StorageBackend")]
-pub struct UserEmailVerification<T: StorageBackend> {
-    pub data: T::UserEmailVerificationData,
-    pub email: UserEmail<T>,
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct UserEmailVerification {
+    pub id: Ulid,
+    pub email: UserEmail,
     pub code: String,
     pub created_at: DateTime<Utc>,
     pub state: UserEmailVerificationState,
 }
 
-impl<S: StorageBackendMarker> From<UserEmailVerification<S>> for UserEmailVerification<()> {
-    fn from(v: UserEmailVerification<S>) -> Self {
-        Self {
-            data: (),
-            email: v.email.into(),
-            code: v.code,
-            created_at: v.created_at,
-            state: v.state,
-        }
-    }
-}
-
-impl<T: StorageBackend> UserEmailVerification<T>
-where
-    T::UserEmailData: Default + Clone,
-{
+impl UserEmailVerification {
     #[must_use]
-    pub fn samples(now: chrono::DateTime<Utc>) -> Vec<Self> {
+    pub fn samples(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self> {
         let states = [
             UserEmailVerificationState::AlreadyUsed {
                 when: now - Duration::minutes(5),
@@ -208,14 +136,18 @@ where
 
         states
             .into_iter()
-            .flat_map(|state| {
-                UserEmail::samples(now).into_iter().map(move |email| Self {
-                    data: Default::default(),
-                    code: "123456".to_owned(),
-                    email,
-                    created_at: now - Duration::minutes(10),
-                    state: state.clone(),
-                })
+            .flat_map(move |state| {
+                let mut rng =
+                    rand_chacha::ChaChaRng::from_rng(&mut *rng).expect("could not seed rng");
+                UserEmail::samples(now, &mut rng)
+                    .into_iter()
+                    .map(move |email| Self {
+                        id: Ulid::from_datetime_with_source(now.into(), &mut rng),
+                        code: "123456".to_owned(),
+                        email,
+                        created_at: now - Duration::minutes(10),
+                        state: state.clone(),
+                    })
             })
             .collect()
     }

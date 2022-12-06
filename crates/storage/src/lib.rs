@@ -105,20 +105,13 @@ pub struct DatabaseInconsistencyError;
 pub struct PostgresqlBackend;
 
 impl StorageBackend for PostgresqlBackend {
-    type AccessTokenData = Ulid;
-    type AuthenticationData = Ulid;
     type AuthorizationGrantData = Ulid;
-    type BrowserSessionData = Ulid;
     type ClientData = Ulid;
     type CompatAccessTokenData = Ulid;
     type CompatRefreshTokenData = Ulid;
     type CompatSessionData = Ulid;
     type CompatSsoLoginData = Ulid;
-    type RefreshTokenData = Ulid;
     type SessionData = Ulid;
-    type UserData = Ulid;
-    type UserEmailData = Ulid;
-    type UserEmailVerificationData = Ulid;
 }
 
 impl StorageBackendMarker for PostgresqlBackend {}

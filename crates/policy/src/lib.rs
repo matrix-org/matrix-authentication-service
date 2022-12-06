@@ -213,7 +213,7 @@ impl Policy {
     pub async fn evaluate_authorization_grant<T: StorageBackend + std::fmt::Debug>(
         &mut self,
         authorization_grant: &AuthorizationGrant<T>,
-        user: &User<T>,
+        user: &User,
     ) -> Result<EvaluationResult, anyhow::Error> {
         let authorization_grant = serde_json::to_value(authorization_grant)?;
         let user = serde_json::to_value(user)?;

@@ -136,7 +136,7 @@ pub async fn lookup_active_compat_access_token(
         res.user_email_confirmed_at,
     ) {
         (Some(id), Some(email), Some(created_at), confirmed_at) => Some(UserEmail {
-            data: id.into(),
+            id: id.into(),
             email,
             created_at,
             confirmed_at,
@@ -147,7 +147,7 @@ pub async fn lookup_active_compat_access_token(
 
     let id = Ulid::from(res.user_id);
     let user = User {
-        data: id,
+        id,
         username: res.user_username,
         sub: id.to_string(),
         primary_email,
@@ -274,7 +274,7 @@ pub async fn lookup_active_compat_refresh_token(
         res.user_email_confirmed_at,
     ) {
         (Some(id), Some(email), Some(created_at), confirmed_at) => Some(UserEmail {
-            data: id.into(),
+            id: id.into(),
             email,
             created_at,
             confirmed_at,
@@ -285,7 +285,7 @@ pub async fn lookup_active_compat_refresh_token(
 
     let id = Ulid::from(res.user_id);
     let user = User {
-        data: id,
+        id,
         username: res.user_username,
         sub: id.to_string(),
         primary_email,
@@ -326,7 +326,7 @@ pub async fn compat_login(
 
     // First, lookup the user
     let user = lookup_user_by_username(&mut txn, username).await?;
-    tracing::Span::current().record("user.id", tracing::field::display(user.data));
+    tracing::Span::current().record("user.id", tracing::field::display(user.id));
 
     // Now, fetch the hashed password from the user associated with that session
     let hashed_password: String = sqlx::query_scalar!(
@@ -337,7 +337,7 @@ pub async fn compat_login(
             ORDER BY up.created_at DESC
             LIMIT 1
         "#,
-        Uuid::from(user.data),
+        Uuid::from(user.id),
     )
     .fetch_one(&mut txn)
     .instrument(tracing::info_span!("Lookup hashed password"))
@@ -365,7 +365,7 @@ pub async fn compat_login(
             VALUES ($1, $2, $3, $4)
         "#,
         Uuid::from(id),
-        Uuid::from(user.data),
+        Uuid::from(user.id),
         device.as_str(),
         created_at,
     )
@@ -392,7 +392,7 @@ pub async fn compat_login(
         compat_session.id = %session.data,
         compat_session.device.id = session.device.as_str(),
         compat_access_token.id,
-        user.id = %session.user.data,
+        user.id = %session.user.id,
     ),
     err(Display),
 )]
@@ -477,7 +477,7 @@ pub async fn expire_compat_access_token(
         compat_session.device.id = session.device.as_str(),
         compat_access_token.id = %access_token.data,
         compat_refresh_token.id,
-        user.id = %session.user.data,
+        user.id = %session.user.id,
     ),
     err(Display),
 )]
@@ -668,7 +668,7 @@ impl TryFrom<CompatSsoLoginLookup> for CompatSsoLogin<PostgresqlBackend> {
             res.user_email_confirmed_at,
         ) {
             (Some(id), Some(email), Some(created_at), confirmed_at) => Some(UserEmail {
-                data: id.into(),
+                id: id.into(),
                 email,
                 created_at,
                 confirmed_at,
@@ -681,7 +681,7 @@ impl TryFrom<CompatSsoLoginLookup> for CompatSsoLogin<PostgresqlBackend> {
             (Some(id), Some(username), primary_email) => {
                 let id = Ulid::from(id);
                 Some(User {
-                    data: id,
+                    id,
                     username,
                     sub: id.to_string(),
                     primary_email,
@@ -808,14 +808,14 @@ pub async fn get_compat_sso_login_by_id(
 #[tracing::instrument(
     skip_all,
     fields(
-        user.id = %user.data,
-        user.username = user.username,
+        %user.id,
+        %user.username,
     ),
     err(Display),
 )]
 pub async fn get_paginated_user_compat_sso_logins(
     executor: impl PgExecutor<'_>,
-    user: &User<PostgresqlBackend>,
+    user: &User,
     before: Option<Ulid>,
     after: Option<Ulid>,
     first: Option<usize>,
@@ -854,7 +854,7 @@ pub async fn get_paginated_user_compat_sso_logins(
 
     query
         .push(" WHERE cs.user_id = ")
-        .push_bind(Uuid::from(user.data))
+        .push_bind(Uuid::from(user.id))
         .generate_pagination("cl.compat_sso_login_id", before, after, first, last)?;
 
     let span = info_span!(
@@ -919,7 +919,7 @@ pub async fn get_compat_sso_login_by_token(
 #[tracing::instrument(
     skip_all,
     fields(
-        user.id = %user.data,
+        %user.id,
         compat_sso_login.id = %login.data,
         compat_sso_login.redirect_uri = %login.redirect_uri,
         compat_session.id,
@@ -931,7 +931,7 @@ pub async fn fullfill_compat_sso_login(
     conn: impl Acquire<'_, Database = Postgres> + Send,
     mut rng: impl Rng + Send,
     clock: &Clock,
-    user: User<PostgresqlBackend>,
+    user: User,
     mut login: CompatSsoLogin<PostgresqlBackend>,
     device: Device,
 ) -> Result<CompatSsoLogin<PostgresqlBackend>, anyhow::Error> {
@@ -943,7 +943,7 @@ pub async fn fullfill_compat_sso_login(
 
     let created_at = clock.now();
     let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
-    tracing::Span::current().record("user.id", tracing::field::display(user.data));
+    tracing::Span::current().record("compat_session.id", tracing::field::display(id));
 
     sqlx::query!(
         r#"
@@ -951,7 +951,7 @@ pub async fn fullfill_compat_sso_login(
             VALUES ($1, $2, $3, $4)
         "#,
         Uuid::from(id),
-        Uuid::from(user.data),
+        Uuid::from(user.id),
         device.as_str(),
         created_at,
     )

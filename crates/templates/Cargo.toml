@@ -22,6 +22,7 @@ chrono = "0.4.23"
 url = "2.3.1"
 http = "0.2.8"
 ulid = { version = "1.0.0", features = ["serde"] }
+rand = "0.8.5"
 
 oauth2-types = { path = "../oauth2-types" }
 mas-data-model = { path = "../data-model" }

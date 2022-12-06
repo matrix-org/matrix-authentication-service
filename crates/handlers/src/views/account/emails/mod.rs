@@ -32,7 +32,7 @@ use mas_storage::{
         add_user_email, add_user_email_verification_code, get_user_email, get_user_emails,
         remove_user_email, set_user_email_as_primary,
     },
-    Clock, PostgresqlBackend,
+    Clock,
 };
 use mas_templates::{AccountEmailsContext, EmailVerificationContext, TemplateContext, Templates};
 use rand::{distributions::Uniform, Rng};
@@ -47,9 +47,9 @@ pub mod verify;
 #[serde(tag = "action", rename_all = "snake_case")]
 pub enum ManagementForm {
     Add { email: String },
-    ResendConfirmation { data: String },
-    SetPrimary { data: String },
-    Remove { data: String },
+    ResendConfirmation { id: String },
+    SetPrimary { id: String },
+    Remove { id: String },
 }
 
 pub(crate) async fn get(
@@ -77,7 +77,7 @@ async fn render(
     rng: impl Rng + Send,
     clock: &Clock,
     templates: Templates,
-    session: BrowserSession<PostgresqlBackend>,
+    session: BrowserSession,
     cookie_jar: PrivateCookieJar<Encrypter>,
     executor: impl PgExecutor<'_>,
 ) -> Result<Response, FancyError> {
@@ -99,8 +99,8 @@ async fn start_email_verification(
     executor: impl PgExecutor<'_>,
     mut rng: impl Rng + Send,
     clock: &Clock,
-    user: &User<PostgresqlBackend>,
-    user_email: UserEmail<PostgresqlBackend>,
+    user: &User,
+    user_email: UserEmail,
 ) -> anyhow::Result<()> {
     // First, generate a code
     let range = Uniform::<u32>::from(0..1_000_000);
@@ -126,7 +126,7 @@ async fn start_email_verification(
     mailer.send_verification_email(mailbox, &context).await?;
 
     info!(
-        email.id = %verification.email.data,
+        email.id = %verification.email.id,
         "Verification email sent"
     );
     Ok(())
@@ -159,7 +159,7 @@ pub(crate) async fn post(
         ManagementForm::Add { email } => {
             let user_email =
                 add_user_email(&mut txn, &mut rng, &clock, &session.user, email).await?;
-            let next = mas_router::AccountVerifyEmail::new(user_email.data);
+            let next = mas_router::AccountVerifyEmail::new(user_email.id);
             start_email_verification(
                 &mailer,
                 &mut txn,
@@ -172,11 +172,11 @@ pub(crate) async fn post(
             txn.commit().await?;
             return Ok((cookie_jar, next.go()).into_response());
         }
-        ManagementForm::ResendConfirmation { data } => {
-            let id = data.parse()?;
+        ManagementForm::ResendConfirmation { id } => {
+            let id = id.parse()?;
 
             let user_email = get_user_email(&mut txn, &session.user, id).await?;
-            let next = mas_router::AccountVerifyEmail::new(user_email.data);
+            let next = mas_router::AccountVerifyEmail::new(user_email.id);
             start_email_verification(
                 &mailer,
                 &mut txn,
@@ -189,14 +189,14 @@ pub(crate) async fn post(
             txn.commit().await?;
             return Ok((cookie_jar, next.go()).into_response());
         }
-        ManagementForm::Remove { data } => {
-            let id = data.parse()?;
+        ManagementForm::Remove { id } => {
+            let id = id.parse()?;
 
             let email = get_user_email(&mut txn, &session.user, id).await?;
             remove_user_email(&mut txn, email).await?;
         }
-        ManagementForm::SetPrimary { data } => {
-            let id = data.parse()?;
+        ManagementForm::SetPrimary { id } => {
+            let id = id.parse()?;
             let email = get_user_email(&mut txn, &session.user, id).await?;
             set_user_email_as_primary(&mut txn, &email).await?;
             session.user.primary_email = Some(email);

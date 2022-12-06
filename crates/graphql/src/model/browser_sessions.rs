@@ -14,16 +14,15 @@
 
 use async_graphql::{Description, Object, ID};
 use chrono::{DateTime, Utc};
-use mas_storage::PostgresqlBackend;
 
 use super::{NodeType, User};
 
 /// A browser session represents a logged in user in a browser.
 #[derive(Description)]
-pub struct BrowserSession(pub mas_data_model::BrowserSession<PostgresqlBackend>);
+pub struct BrowserSession(pub mas_data_model::BrowserSession);
 
-impl From<mas_data_model::BrowserSession<PostgresqlBackend>> for BrowserSession {
-    fn from(v: mas_data_model::BrowserSession<PostgresqlBackend>) -> Self {
+impl From<mas_data_model::BrowserSession> for BrowserSession {
+    fn from(v: mas_data_model::BrowserSession) -> Self {
         Self(v)
     }
 }
@@ -32,7 +31,7 @@ impl From<mas_data_model::BrowserSession<PostgresqlBackend>> for BrowserSession 
 impl BrowserSession {
     /// ID of the object.
     pub async fn id(&self) -> ID {
-        NodeType::BrowserSession.id(self.0.data)
+        NodeType::BrowserSession.id(self.0.id)
     }
 
     /// The user logged in this session.
@@ -54,13 +53,13 @@ impl BrowserSession {
 /// An authentication records when a user enter their credential in a browser
 /// session.
 #[derive(Description)]
-pub struct Authentication(pub mas_data_model::Authentication<PostgresqlBackend>);
+pub struct Authentication(pub mas_data_model::Authentication);
 
 #[Object(use_type_description)]
 impl Authentication {
     /// ID of the object.
     pub async fn id(&self) -> ID {
-        NodeType::Authentication.id(self.0.data)
+        NodeType::Authentication.id(self.0.id)
     }
 
     /// When the object was created.

@@ -29,7 +29,7 @@ use crate::{Clock, DatabaseInconsistencyError, LookupError, PostgresqlBackend};
     fields(
         session.id = %session.data,
         client.id = %session.client.data,
-        user.id = %session.browser_session.user.data,
+        user.id = %session.browser_session.user.id,
         access_token.id,
     ),
     err(Debug),
@@ -178,7 +178,7 @@ pub async fn lookup_active_access_token(
         res.user_email_confirmed_at,
     ) {
         (Some(id), Some(email), Some(created_at), confirmed_at) => Some(UserEmail {
-            data: id.into(),
+            id: id.into(),
             email,
             created_at,
             confirmed_at,
@@ -189,7 +189,7 @@ pub async fn lookup_active_access_token(
 
     let id = Ulid::from(res.user_id);
     let user = User {
-        data: id,
+        id,
         username: res.user_username,
         sub: id.to_string(),
         primary_email,
@@ -201,14 +201,14 @@ pub async fn lookup_active_access_token(
     ) {
         (None, None) => None,
         (Some(id), Some(created_at)) => Some(Authentication {
-            data: id.into(),
+            id: id.into(),
             created_at,
         }),
         _ => return Err(DatabaseInconsistencyError.into()),
     };
 
     let browser_session = BrowserSession {
-        data: res.user_session_id.into(),
+        id: res.user_session_id.into(),
         created_at: res.user_session_created_at,
         user,
         last_authentication,

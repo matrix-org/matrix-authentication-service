@@ -27,7 +27,7 @@ use mas_keystore::Encrypter;
 use mas_router::Route;
 use mas_storage::{
     user::{authenticate_session, set_password},
-    Clock, PostgresqlBackend,
+    Clock,
 };
 use mas_templates::{EmptyContext, TemplateContext, Templates};
 use rand::Rng;
@@ -65,7 +65,7 @@ async fn render(
     rng: impl Rng + Send,
     clock: &Clock,
     templates: Templates,
-    session: BrowserSession<PostgresqlBackend>,
+    session: BrowserSession,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), rng);

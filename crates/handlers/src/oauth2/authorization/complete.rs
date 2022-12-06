@@ -186,7 +186,7 @@ impl From<IntoCallbackDestinationError> for GrantCompletionError {
 
 pub(crate) async fn complete(
     grant: AuthorizationGrant<PostgresqlBackend>,
-    browser_session: BrowserSession<PostgresqlBackend>,
+    browser_session: BrowserSession,
     policy_factory: &PolicyFactory,
     mut txn: Transaction<'_, Postgres>,
 ) -> Result<AuthorizationResponse<Option<AccessTokenResponse>>, GrantCompletionError> {

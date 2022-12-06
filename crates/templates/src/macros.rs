@@ -75,9 +75,9 @@ macro_rules! register_templates {
                 #[doc = concat!("Render the `", $template, "` template with sample contexts")]
                 pub async fn $name
                     $(< $( $lt $( : $clt $(+ $dlt )* + TemplateContext )? ),+ >)?
-                    (templates: &Templates, now: chrono::DateTime<chrono::Utc>)
+                    (templates: &Templates, now: chrono::DateTime<chrono::Utc>, rng: &mut impl rand::Rng)
                 -> anyhow::Result<()> {
-                    let samples: Vec< $param > = TemplateContext::sample(now);
+                    let samples: Vec< $param > = TemplateContext::sample(now, rng);
 
                     let name = $template;
                     for sample in samples {
