@@ -107,10 +107,6 @@ pub struct PostgresqlBackend;
 impl StorageBackend for PostgresqlBackend {
     type AuthorizationGrantData = Ulid;
     type ClientData = Ulid;
-    type CompatAccessTokenData = Ulid;
-    type CompatRefreshTokenData = Ulid;
-    type CompatSessionData = Ulid;
-    type CompatSsoLoginData = Ulid;
     type SessionData = Ulid;
 }
 

@@ -20,9 +20,10 @@ use rand::{
 };
 use serde::Serialize;
 use thiserror::Error;
+use ulid::Ulid;
 use url::Url;
 
-use crate::{StorageBackend, StorageBackendMarker, User};
+use crate::User;
 
 static DEVICE_ID_LENGTH: usize = 10;
 
@@ -81,123 +82,49 @@ impl TryFrom<String> for Device {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
-#[serde(bound = "T: StorageBackend")]
-pub struct CompatSession<T: StorageBackend> {
-    #[serde(skip_serializing)]
-    pub data: T::CompatSessionData,
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct CompatSession {
+    pub id: Ulid,
     pub user: User,
     pub device: Device,
     pub created_at: DateTime<Utc>,
     pub finished_at: Option<DateTime<Utc>>,
 }
 
-impl<S: StorageBackendMarker> From<CompatSession<S>> for CompatSession<()> {
-    fn from(t: CompatSession<S>) -> Self {
-        Self {
-            data: (),
-            user: t.user,
-            device: t.device,
-            created_at: t.created_at,
-            finished_at: t.finished_at,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct CompatAccessToken<T: StorageBackend> {
-    pub data: T::CompatAccessTokenData,
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CompatAccessToken {
+    pub id: Ulid,
     pub token: String,
     pub created_at: DateTime<Utc>,
     pub expires_at: Option<DateTime<Utc>>,
 }
 
-impl<S: StorageBackendMarker> From<CompatAccessToken<S>> for CompatAccessToken<()> {
-    fn from(t: CompatAccessToken<S>) -> Self {
-        Self {
-            data: (),
-            token: t.token,
-            created_at: t.created_at,
-            expires_at: t.expires_at,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct CompatRefreshToken<T: StorageBackend> {
-    pub data: T::CompatRefreshTokenData,
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CompatRefreshToken {
+    pub id: Ulid,
     pub token: String,
     pub created_at: DateTime<Utc>,
 }
 
-impl<S: StorageBackendMarker> From<CompatRefreshToken<S>> for CompatRefreshToken<()> {
-    fn from(t: CompatRefreshToken<S>) -> Self {
-        Self {
-            data: (),
-            token: t.token,
-            created_at: t.created_at,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize)]
-#[serde(bound = "T: StorageBackend")]
-pub enum CompatSsoLoginState<T: StorageBackend> {
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub enum CompatSsoLoginState {
     Pending,
     Fulfilled {
         fulfilled_at: DateTime<Utc>,
-        session: CompatSession<T>,
+        session: CompatSession,
     },
     Exchanged {
         fulfilled_at: DateTime<Utc>,
         exchanged_at: DateTime<Utc>,
-        session: CompatSession<T>,
+        session: CompatSession,
     },
 }
 
-impl<S: StorageBackendMarker> From<CompatSsoLoginState<S>> for CompatSsoLoginState<()> {
-    fn from(t: CompatSsoLoginState<S>) -> Self {
-        match t {
-            CompatSsoLoginState::Pending => Self::Pending,
-            CompatSsoLoginState::Fulfilled {
-                fulfilled_at,
-                session,
-            } => Self::Fulfilled {
-                fulfilled_at,
-                session: session.into(),
-            },
-            CompatSsoLoginState::Exchanged {
-                fulfilled_at,
-                exchanged_at,
-                session,
-            } => Self::Exchanged {
-                fulfilled_at,
-                exchanged_at,
-                session: session.into(),
-            },
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize)]
-#[serde(bound = "T: StorageBackend")]
-pub struct CompatSsoLogin<T: StorageBackend> {
-    #[serde(skip_serializing)]
-    pub data: T::CompatSsoLoginData,
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct CompatSsoLogin {
+    pub id: Ulid,
     pub redirect_uri: Url,
     pub login_token: String,
     pub created_at: DateTime<Utc>,
-    pub state: CompatSsoLoginState<T>,
-}
-
-impl<S: StorageBackendMarker> From<CompatSsoLogin<S>> for CompatSsoLogin<()> {
-    fn from(t: CompatSsoLogin<S>) -> Self {
-        Self {
-            data: (),
-            redirect_uri: t.redirect_uri,
-            login_token: t.login_token,
-            created_at: t.created_at,
-            state: t.state.into(),
-        }
-    }
+    pub state: CompatSsoLoginState,
 }

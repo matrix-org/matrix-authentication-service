@@ -94,7 +94,7 @@ impl User {
                 let mut connection = Connection::new(has_previous_page, has_next_page);
                 connection.edges.extend(edges.into_iter().map(|u| {
                     Edge::new(
-                        OpaqueCursor(NodeCursor(NodeType::CompatSsoLogin, u.data)),
+                        OpaqueCursor(NodeCursor(NodeType::CompatSsoLogin, u.id)),
                         CompatSsoLogin(u),
                     )
                 }));

@@ -256,7 +256,7 @@ pub enum PostAuthContextInner {
     /// TODO: add the login context in there
     ContinueCompatSsoLogin {
         /// The compat SSO login request
-        login: Box<CompatSsoLogin<()>>,
+        login: Box<CompatSsoLogin>,
     },
 
     /// Change the account password
@@ -512,7 +512,7 @@ impl ReauthContext {
 /// Context used by the `sso.html` template
 #[derive(Serialize)]
 pub struct CompatSsoContext {
-    login: CompatSsoLogin<()>,
+    login: CompatSsoLogin,
     action: PostAuthAction,
 }
 
@@ -521,17 +521,16 @@ impl TemplateContext for CompatSsoContext {
     where
         Self: Sized,
     {
+        let id = Ulid::from_datetime_with_source(now.into(), rng);
         vec![CompatSsoContext {
             login: CompatSsoLogin {
-                data: (),
+                id,
                 redirect_uri: Url::parse("https://app.element.io/").unwrap(),
                 login_token: "abcdefghijklmnopqrstuvwxyz012345".into(),
                 created_at: now,
                 state: CompatSsoLoginState::Pending,
             },
-            action: PostAuthAction::ContinueCompatSsoLogin {
-                data: Ulid::from_datetime_with_source(now.into(), rng),
-            },
+            action: PostAuthAction::ContinueCompatSsoLogin { data: id },
         }]
     }
 }
@@ -539,14 +538,9 @@ impl TemplateContext for CompatSsoContext {
 impl CompatSsoContext {
     /// Constructs a context for the legacy SSO login page
     #[must_use]
-    pub fn new<T>(login: T, action: PostAuthAction) -> Self
-    where
-        T: Into<CompatSsoLogin<()>>,
-    {
-        Self {
-            login: login.into(),
-            action,
-        }
+    pub fn new(login: CompatSsoLogin, action: PostAuthAction) -> Self
+where {
+        Self { login, action }
     }
 }
 

@@ -33,18 +33,10 @@ pub trait StorageBackend {
     type ClientData: Data;
     type SessionData: Data;
     type AuthorizationGrantData: Data;
-    type CompatAccessTokenData: Data;
-    type CompatRefreshTokenData: Data;
-    type CompatSessionData: Data;
-    type CompatSsoLoginData: Data;
 }
 
 impl StorageBackend for () {
     type AuthorizationGrantData = ();
     type ClientData = ();
-    type CompatAccessTokenData = ();
-    type CompatRefreshTokenData = ();
-    type CompatSessionData = ();
-    type CompatSsoLoginData = ();
     type SessionData = ();
 }
