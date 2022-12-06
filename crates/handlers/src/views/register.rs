@@ -215,7 +215,7 @@ pub(crate) async fn post(
     // And send the verification email
     let mailbox = Mailbox::new(Some(user.username.clone()), address);
 
-    let context = EmailVerificationContext::new(user.clone().into(), verification.clone().into());
+    let context = EmailVerificationContext::new(user.clone(), verification.clone());
 
     mailer.send_verification_email(mailbox, &context).await?;
 
