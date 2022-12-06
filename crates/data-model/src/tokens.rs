@@ -17,47 +17,23 @@ use crc::{Crc, CRC_32_ISO_HDLC};
 use mas_iana::oauth::OAuthTokenTypeHint;
 use rand::{distributions::Alphanumeric, Rng};
 use thiserror::Error;
-
-use crate::traits::{StorageBackend, StorageBackendMarker};
+use ulid::Ulid;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AccessToken<T: StorageBackend> {
-    pub data: T::AccessTokenData,
+pub struct AccessToken {
+    pub id: Ulid,
     pub jti: String,
     pub access_token: String,
     pub created_at: DateTime<Utc>,
     pub expires_at: DateTime<Utc>,
 }
 
-impl<S: StorageBackendMarker> From<AccessToken<S>> for AccessToken<()> {
-    fn from(t: AccessToken<S>) -> Self {
-        AccessToken {
-            data: (),
-            jti: t.jti,
-            access_token: t.access_token,
-            expires_at: t.expires_at,
-            created_at: t.created_at,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct RefreshToken<T: StorageBackend> {
-    pub data: T::RefreshTokenData,
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RefreshToken {
+    pub id: Ulid,
     pub refresh_token: String,
     pub created_at: DateTime<Utc>,
-    pub access_token: Option<AccessToken<T>>,
-}
-
-impl<S: StorageBackendMarker> From<RefreshToken<S>> for RefreshToken<()> {
-    fn from(t: RefreshToken<S>) -> Self {
-        RefreshToken {
-            data: (),
-            refresh_token: t.refresh_token,
-            created_at: t.created_at,
-            access_token: t.access_token.map(Into::into),
-        }
-    }
+    pub access_token: Option<AccessToken>,
 }
 
 /// Type of token to generate or validate

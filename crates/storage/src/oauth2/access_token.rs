@@ -41,7 +41,7 @@ pub async fn add_access_token(
     session: &Session<PostgresqlBackend>,
     access_token: String,
     expires_after: Duration,
-) -> Result<AccessToken<PostgresqlBackend>, anyhow::Error> {
+) -> Result<AccessToken, anyhow::Error> {
     let created_at = clock.now();
     let expires_at = created_at + expires_after;
     let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
@@ -66,7 +66,7 @@ pub async fn add_access_token(
     .context("could not insert oauth2 access token")?;
 
     Ok(AccessToken {
-        data: id,
+        id,
         access_token,
         jti: id.to_string(),
         created_at,
@@ -113,7 +113,7 @@ impl LookupError for AccessTokenLookupError {
 pub async fn lookup_active_access_token(
     conn: &mut PgConnection,
     token: &str,
-) -> Result<(AccessToken<PostgresqlBackend>, Session<PostgresqlBackend>), AccessTokenLookupError> {
+) -> Result<(AccessToken, Session<PostgresqlBackend>), AccessTokenLookupError> {
     let res = sqlx::query_as!(
         OAuth2AccessTokenLookup,
         r#"
@@ -162,7 +162,7 @@ pub async fn lookup_active_access_token(
 
     let id = Ulid::from(res.oauth2_access_token_id);
     let access_token = AccessToken {
-        data: id,
+        id,
         jti: id.to_string(),
         access_token: res.oauth2_access_token,
         created_at: res.oauth2_access_token_created_at,
@@ -228,13 +228,13 @@ pub async fn lookup_active_access_token(
 
 #[tracing::instrument(
     skip_all,
-    fields(access_token.id = %access_token.data),
+    fields(%access_token.id),
     err(Debug),
 )]
 pub async fn revoke_access_token(
     executor: impl PgExecutor<'_>,
     clock: &Clock,
-    access_token: AccessToken<PostgresqlBackend>,
+    access_token: AccessToken,
 ) -> anyhow::Result<()> {
     let revoked_at = clock.now();
     let res = sqlx::query!(
@@ -243,7 +243,7 @@ pub async fn revoke_access_token(
             SET revoked_at = $2
             WHERE oauth2_access_token_id = $1
         "#,
-        Uuid::from(access_token.data),
+        Uuid::from(access_token.id),
         revoked_at,
     )
     .execute(executor)

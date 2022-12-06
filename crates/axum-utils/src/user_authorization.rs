@@ -56,10 +56,7 @@ impl AccessToken {
         &self,
         conn: &mut PgConnection,
     ) -> Result<
-        (
-            mas_data_model::AccessToken<PostgresqlBackend>,
-            Session<PostgresqlBackend>,
-        ),
+        (mas_data_model::AccessToken, Session<PostgresqlBackend>),
         AuthorizationVerificationError,
     > {
         let token = match self {
