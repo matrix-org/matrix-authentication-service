@@ -86,7 +86,7 @@ impl TryFrom<String> for Device {
 pub struct CompatSession<T: StorageBackend> {
     #[serde(skip_serializing)]
     pub data: T::CompatSessionData,
-    pub user: User<T>,
+    pub user: User,
     pub device: Device,
     pub created_at: DateTime<Utc>,
     pub finished_at: Option<DateTime<Utc>>,
@@ -96,7 +96,7 @@ impl<S: StorageBackendMarker> From<CompatSession<S>> for CompatSession<()> {
     fn from(t: CompatSession<S>) -> Self {
         Self {
             data: (),
-            user: t.user.into(),
+            user: t.user,
             device: t.device,
             created_at: t.created_at,
             finished_at: t.finished_at,
@@ -125,7 +125,7 @@ impl<S: StorageBackendMarker> From<CompatAccessToken<S>> for CompatAccessToken<(
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct CompatRefreshToken<T: StorageBackend> {
-    pub data: T::RefreshTokenData,
+    pub data: T::CompatRefreshTokenData,
     pub token: String,
     pub created_at: DateTime<Utc>,
 }

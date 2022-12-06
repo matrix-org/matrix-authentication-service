@@ -28,8 +28,8 @@ use std::{collections::HashSet, string::ToString, sync::Arc};
 
 use anyhow::Context as _;
 use camino::{Utf8Path, Utf8PathBuf};
-use mas_data_model::StorageBackend;
 use mas_router::UrlBuilder;
+use rand::Rng;
 use serde::Serialize;
 use tera::{Context, Error as TeraError, Tera};
 use thiserror::Error;
@@ -201,7 +201,7 @@ register_templates! {
     pub fn render_account_password(WithCsrf<WithSession<EmptyContext>>) { "pages/account/password.html" }
 
     /// Render the emails management
-    pub fn render_account_emails<T: StorageBackend>(WithCsrf<WithSession<AccountEmailsContext<T>>>) { "pages/account/emails/index.html" }
+    pub fn render_account_emails(WithCsrf<WithSession<AccountEmailsContext>>) { "pages/account/emails/index.html" }
 
     /// Render the email verification page
     pub fn render_account_verify_email(WithCsrf<WithSession<EmailVerificationPageContext>>) { "pages/account/emails/verify.html" }
@@ -246,29 +246,33 @@ register_templates! {
 impl Templates {
     /// Render all templates with the generated samples to check if they render
     /// properly
-    pub async fn check_render(&self, now: chrono::DateTime<chrono::Utc>) -> anyhow::Result<()> {
-        check::render_login(self, now).await?;
-        check::render_register(self, now).await?;
-        check::render_consent(self, now).await?;
-        check::render_policy_violation(self, now).await?;
-        check::render_sso_login(self, now).await?;
-        check::render_index(self, now).await?;
-        check::render_account_index(self, now).await?;
-        check::render_account_password(self, now).await?;
-        check::render_account_emails::<()>(self, now).await?;
-        check::render_account_add_email(self, now).await?;
-        check::render_account_verify_email(self, now).await?;
-        check::render_reauth(self, now).await?;
-        check::render_form_post::<EmptyContext>(self, now).await?;
-        check::render_error(self, now).await?;
-        check::render_email_verification_txt(self, now).await?;
-        check::render_email_verification_html(self, now).await?;
-        check::render_email_verification_subject(self, now).await?;
-        check::render_upstream_oauth2_already_linked(self, now).await?;
-        check::render_upstream_oauth2_link_mismatch(self, now).await?;
-        check::render_upstream_oauth2_suggest_link(self, now).await?;
-        check::render_upstream_oauth2_do_login(self, now).await?;
-        check::render_upstream_oauth2_do_register(self, now).await?;
+    pub async fn check_render(
+        &self,
+        now: chrono::DateTime<chrono::Utc>,
+        rng: &mut impl Rng,
+    ) -> anyhow::Result<()> {
+        check::render_login(self, now, rng).await?;
+        check::render_register(self, now, rng).await?;
+        check::render_consent(self, now, rng).await?;
+        check::render_policy_violation(self, now, rng).await?;
+        check::render_sso_login(self, now, rng).await?;
+        check::render_index(self, now, rng).await?;
+        check::render_account_index(self, now, rng).await?;
+        check::render_account_password(self, now, rng).await?;
+        check::render_account_emails(self, now, rng).await?;
+        check::render_account_add_email(self, now, rng).await?;
+        check::render_account_verify_email(self, now, rng).await?;
+        check::render_reauth(self, now, rng).await?;
+        check::render_form_post::<EmptyContext>(self, now, rng).await?;
+        check::render_error(self, now, rng).await?;
+        check::render_email_verification_txt(self, now, rng).await?;
+        check::render_email_verification_html(self, now, rng).await?;
+        check::render_email_verification_subject(self, now, rng).await?;
+        check::render_upstream_oauth2_already_linked(self, now, rng).await?;
+        check::render_upstream_oauth2_link_mismatch(self, now, rng).await?;
+        check::render_upstream_oauth2_suggest_link(self, now, rng).await?;
+        check::render_upstream_oauth2_do_login(self, now, rng).await?;
+        check::render_upstream_oauth2_do_register(self, now, rng).await?;
         Ok(())
     }
 }
@@ -281,10 +285,12 @@ mod tests {
     async fn check_builtin_templates() {
         #[allow(clippy::disallowed_methods)]
         let now = chrono::Utc::now();
+        #[allow(clippy::disallowed_methods)]
+        let mut rng = rand::thread_rng();
 
         let path = Utf8Path::new(env!("CARGO_MANIFEST_DIR")).join("../../templates/");
         let url_builder = UrlBuilder::new("https://example.com/".parse().unwrap());
         let templates = Templates::load(path, url_builder).await.unwrap();
-        templates.check_render(now).await.unwrap();
+        templates.check_render(now, &mut rng).await.unwrap();
     }
 }

@@ -138,7 +138,7 @@ pub(crate) async fn get(
     let maybe_user_session = user_session_info.load_session(&mut txn).await?;
 
     let render = match (maybe_user_session, link.user_id) {
-        (Some(mut session), Some(user_id)) if session.user.data == user_id => {
+        (Some(mut session), Some(user_id)) if session.user.id == user_id => {
             // Session already linked, and link matches the currently logged
             // user. Mark the session as consumed and renew the authentication.
             consume_session(&mut txn, &clock, upstream_session).await?;

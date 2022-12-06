@@ -17,7 +17,6 @@ use async_graphql::{
     Context, Description, Object, ID,
 };
 use chrono::{DateTime, Utc};
-use mas_storage::PostgresqlBackend;
 use sqlx::PgPool;
 
 use super::{
@@ -27,16 +26,16 @@ use super::{
 
 #[derive(Description)]
 /// A user is an individual's account.
-pub struct User(pub mas_data_model::User<PostgresqlBackend>);
+pub struct User(pub mas_data_model::User);
 
-impl From<mas_data_model::User<PostgresqlBackend>> for User {
-    fn from(v: mas_data_model::User<PostgresqlBackend>) -> Self {
+impl From<mas_data_model::User> for User {
+    fn from(v: mas_data_model::User) -> Self {
         Self(v)
     }
 }
 
-impl From<mas_data_model::BrowserSession<PostgresqlBackend>> for User {
-    fn from(v: mas_data_model::BrowserSession<PostgresqlBackend>) -> Self {
+impl From<mas_data_model::BrowserSession> for User {
+    fn from(v: mas_data_model::BrowserSession) -> Self {
         Self(v.user)
     }
 }
@@ -45,7 +44,7 @@ impl From<mas_data_model::BrowserSession<PostgresqlBackend>> for User {
 impl User {
     /// ID of the object.
     pub async fn id(&self) -> ID {
-        NodeType::User.id(self.0.data)
+        NodeType::User.id(self.0.id)
     }
 
     /// Username chosen by the user.
@@ -143,7 +142,7 @@ impl User {
                 let mut connection = Connection::new(has_previous_page, has_next_page);
                 connection.edges.extend(edges.into_iter().map(|u| {
                     Edge::new(
-                        OpaqueCursor(NodeCursor(NodeType::BrowserSession, u.data)),
+                        OpaqueCursor(NodeCursor(NodeType::BrowserSession, u.id)),
                         BrowserSession(u),
                     )
                 }));
@@ -195,7 +194,7 @@ impl User {
                 );
                 connection.edges.extend(edges.into_iter().map(|u| {
                     Edge::new(
-                        OpaqueCursor(NodeCursor(NodeType::UserEmail, u.data)),
+                        OpaqueCursor(NodeCursor(NodeType::UserEmail, u.id)),
                         UserEmail(u),
                     )
                 }));
@@ -309,13 +308,13 @@ impl User {
 
 /// A user email address
 #[derive(Description)]
-pub struct UserEmail(pub mas_data_model::UserEmail<PostgresqlBackend>);
+pub struct UserEmail(pub mas_data_model::UserEmail);
 
 #[Object(use_type_description)]
 impl UserEmail {
     /// ID of the object.
     pub async fn id(&self) -> ID {
-        NodeType::UserEmail.id(self.0.data)
+        NodeType::UserEmail.id(self.0.id)
     }
 
     /// Email address
@@ -335,7 +334,7 @@ impl UserEmail {
     }
 }
 
-pub struct UserEmailsPagination(mas_data_model::User<PostgresqlBackend>);
+pub struct UserEmailsPagination(mas_data_model::User);
 
 #[Object]
 impl UserEmailsPagination {

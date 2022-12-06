@@ -204,7 +204,7 @@ impl Options {
                 let user =
                     register_user(&mut txn, &mut rng, &clock, hasher, username, password).await?;
                 txn.commit().await?;
-                info!(user.id = %user.data, %user.username, "User registered");
+                info!(%user.id, %user.username, "User registered");
 
                 Ok(())
             }
@@ -217,7 +217,7 @@ impl Options {
                 let user = lookup_user_by_username(&mut txn, username).await?;
 
                 set_password(&mut txn, &mut rng, &clock, hasher, &user, password).await?;
-                info!(user.id = %user.data, %user.username, "Password changed");
+                info!(%user.id, %user.username, "Password changed");
                 txn.commit().await?;
 
                 Ok(())

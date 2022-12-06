@@ -219,7 +219,7 @@ pub(crate) async fn post(
 
     mailer.send_verification_email(mailbox, &context).await?;
 
-    let next = mas_router::AccountVerifyEmail::new(verification.email.data)
+    let next = mas_router::AccountVerifyEmail::new(verification.email.id)
         .and_maybe(query.post_auth_action);
 
     let session = start_session(&mut txn, &mut rng, &clock, user).await?;

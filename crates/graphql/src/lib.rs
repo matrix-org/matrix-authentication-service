@@ -114,7 +114,7 @@ impl RootQuery {
         let Some(session) = session else { return Ok(None) };
         let current_user = session.user;
 
-        if current_user.data == id {
+        if current_user.id == id {
             Ok(Some(User(current_user)))
         } else {
             Ok(None)
@@ -141,7 +141,7 @@ impl RootQuery {
             .to_option()?;
 
         let ret = browser_session.and_then(|browser_session| {
-            if browser_session.user.data == current_user.data {
+            if browser_session.user.id == current_user.id {
                 Some(BrowserSession(browser_session))
             } else {
                 None
@@ -193,7 +193,7 @@ impl RootQuery {
             .to_option()?;
 
         // Ensure that the link belongs to the current user
-        let link = link.filter(|link| link.user_id == Some(current_user.data));
+        let link = link.filter(|link| link.user_id == Some(current_user.id));
 
         Ok(link.map(UpstreamOAuth2Link::new))
     }

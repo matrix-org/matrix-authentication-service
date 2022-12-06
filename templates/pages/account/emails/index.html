@@ -37,7 +37,7 @@ limitations under the License.
       {% for item in emails %}
         <form class="flex my-2 items-center justify-items-center" method="POST">
           <input type="hidden" name="csrf" value="{{ csrf_token }}" />
-          <input type="hidden" name="data" value="{{ item.data }}" />
+          <input type="hidden" name="id" value="{{ item.id }}" />
           <div class="font-bold flex-1">{{ item.email }}</div>
           {% if item.confirmed_at %}
             <div class="mr-4">Verified</div>

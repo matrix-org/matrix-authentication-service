@@ -14,7 +14,6 @@
 
 use async_graphql::{Context, Object, ID};
 use chrono::{DateTime, Utc};
-use mas_storage::PostgresqlBackend;
 use sqlx::PgPool;
 
 use super::{NodeType, User};
@@ -69,7 +68,7 @@ impl UpstreamOAuth2Link {
 pub struct UpstreamOAuth2Link {
     link: mas_data_model::UpstreamOAuthLink,
     provider: Option<mas_data_model::UpstreamOAuthProvider>,
-    user: Option<mas_data_model::User<PostgresqlBackend>>,
+    user: Option<mas_data_model::User>,
 }
 
 #[Object]

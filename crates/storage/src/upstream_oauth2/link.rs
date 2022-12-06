@@ -22,7 +22,7 @@ use uuid::Uuid;
 
 use crate::{
     pagination::{process_page, QueryBuilderExt},
-    Clock, GenericLookupError, PostgresqlBackend,
+    Clock, GenericLookupError,
 };
 
 #[derive(sqlx::FromRow)]
@@ -168,7 +168,7 @@ pub async fn add_link(
     fields(
         %upstream_oauth_link.id,
         %upstream_oauth_link.subject,
-        user.id = %user.data,
+        %user.id,
         %user.username,
     ),
     err,
@@ -176,7 +176,7 @@ pub async fn add_link(
 pub async fn associate_link_to_user(
     executor: impl PgExecutor<'_>,
     upstream_oauth_link: &UpstreamOAuthLink,
-    user: &User<PostgresqlBackend>,
+    user: &User,
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
@@ -184,7 +184,7 @@ pub async fn associate_link_to_user(
             SET user_id = $1
             WHERE upstream_oauth_link_id = $2
         "#,
-        Uuid::from(user.data),
+        Uuid::from(user.id),
         Uuid::from(upstream_oauth_link.id),
     )
     .execute(executor)
@@ -193,10 +193,14 @@ pub async fn associate_link_to_user(
     Ok(())
 }
 
-#[tracing::instrument(skip_all, err(Display))]
+#[tracing::instrument(
+    skip_all,
+    fields(%user.id, %user.username),
+    err(Display)
+)]
 pub async fn get_paginated_user_links(
     executor: impl PgExecutor<'_>,
-    user: &User<PostgresqlBackend>,
+    user: &User,
     before: Option<Ulid>,
     after: Option<Ulid>,
     first: Option<usize>,
@@ -216,7 +220,7 @@ pub async fn get_paginated_user_links(
 
     query
         .push(" WHERE user_id = ")
-        .push_bind(Uuid::from(user.data))
+        .push_bind(Uuid::from(user.id))
         .generate_pagination("upstream_oauth_link_id", before, after, first, last)?;
 
     let span = info_span!(

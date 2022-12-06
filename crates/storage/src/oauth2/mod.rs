@@ -38,8 +38,8 @@ pub mod refresh_token;
     skip_all,
     fields(
         session.id = %session.data,
-        user.id = %session.browser_session.user.data,
-        user_session.id = %session.browser_session.data,
+        user.id = %session.browser_session.user.id,
+        user_session.id = %session.browser_session.id,
         client.id = %session.client.data,
     ),
     err(Debug),
@@ -78,14 +78,14 @@ struct OAuthSessionLookup {
 #[tracing::instrument(
     skip_all,
     fields(
-        user.id = %user.data,
+        %user.id,
         user.username = user.username,
     ),
     err(Display),
 )]
 pub async fn get_paginated_user_oauth_sessions(
     conn: &mut PgConnection,
-    user: &User<PostgresqlBackend>,
+    user: &User,
     before: Option<Ulid>,
     after: Option<Ulid>,
     first: Option<usize>,
@@ -108,7 +108,7 @@ pub async fn get_paginated_user_oauth_sessions(
 
     query
         .push(" WHERE us.user_id = ")
-        .push_bind(Uuid::from(user.data))
+        .push_bind(Uuid::from(user.id))
         .generate_pagination("oauth2_session_id", before, after, first, last)?;
 
     let span = info_span!(
@@ -135,7 +135,7 @@ pub async fn get_paginated_user_oauth_sessions(
 
     // TODO: this can generate N queries instead of batching. This is less than
     // ideal
-    let mut browser_sessions: HashMap<Ulid, BrowserSession<PostgresqlBackend>> = HashMap::new();
+    let mut browser_sessions: HashMap<Ulid, BrowserSession> = HashMap::new();
     for id in browser_session_ids {
         let v = lookup_active_session(&mut *conn, id).await?;
         browser_sessions.insert(id, v);

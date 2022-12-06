@@ -187,7 +187,7 @@ impl GrantLookup {
             self.user_session_last_authentication_created_at,
         ) {
             (Some(id), Some(created_at)) => Some(Authentication {
-                data: id.into(),
+                id: id.into(),
                 created_at,
             }),
             (None, None) => None,
@@ -201,7 +201,7 @@ impl GrantLookup {
             self.user_email_confirmed_at,
         ) {
             (Some(id), Some(email), Some(created_at), confirmed_at) => Some(UserEmail {
-                data: id.into(),
+                id: id.into(),
                 email,
                 created_at,
                 confirmed_at,
@@ -230,14 +230,14 @@ impl GrantLookup {
             ) => {
                 let user_id = Ulid::from(user_id);
                 let user = User {
-                    data: user_id,
+                    id: user_id,
                     username: user_username,
                     sub: user_id.to_string(),
                     primary_email,
                 };
 
                 let browser_session = BrowserSession {
-                    data: user_session_id.into(),
+                    id: user_session_id.into(),
                     user,
                     created_at: user_session_created_at,
                     last_authentication,
@@ -500,8 +500,8 @@ pub async fn lookup_grant_by_code(
         grant.id = %grant.data,
         client.id = %grant.client.data,
         session.id,
-        user_session.id = %browser_session.data,
-        user.id = %browser_session.user.data,
+        user_session.id = %browser_session.id,
+        user.id = %browser_session.user.id,
     ),
     err(Debug),
 )]
@@ -510,7 +510,7 @@ pub async fn derive_session(
     mut rng: impl Rng + Send,
     clock: &Clock,
     grant: &AuthorizationGrant<PostgresqlBackend>,
-    browser_session: BrowserSession<PostgresqlBackend>,
+    browser_session: BrowserSession,
 ) -> Result<Session<PostgresqlBackend>, anyhow::Error> {
     let created_at = clock.now();
     let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
@@ -532,7 +532,7 @@ pub async fn derive_session(
                 og.oauth2_authorization_grant_id = $4
         "#,
         Uuid::from(id),
-        Uuid::from(browser_session.data),
+        Uuid::from(browser_session.id),
         created_at,
         Uuid::from(grant.data),
     )
@@ -554,8 +554,8 @@ pub async fn derive_session(
         grant.id = %grant.data,
         client.id = %grant.client.data,
         session.id = %session.data,
-        user_session.id = %session.browser_session.data,
-        user.id = %session.browser_session.user.data,
+        user_session.id = %session.browser_session.id,
+        user.id = %session.browser_session.user.id,
     ),
     err(Debug),
 )]

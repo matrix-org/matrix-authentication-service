@@ -18,10 +18,11 @@
 
 use chrono::Utc;
 use mas_data_model::{
-    AuthorizationGrant, BrowserSession, CompatSsoLogin, CompatSsoLoginState, StorageBackend,
-    UpstreamOAuthLink, UpstreamOAuthProvider, User, UserEmail, UserEmailVerification,
+    AuthorizationGrant, BrowserSession, CompatSsoLogin, CompatSsoLoginState, UpstreamOAuthLink,
+    UpstreamOAuthProvider, User, UserEmail, UserEmailVerification,
 };
 use mas_router::{PostAuthAction, Route};
+use rand::Rng;
 use serde::{ser::SerializeStruct, Deserialize, Serialize};
 use ulid::Ulid;
 use url::Url;
@@ -31,31 +32,26 @@ use crate::{FormField, FormState};
 /// Helper trait to construct context wrappers
 pub trait TemplateContext: Serialize {
     /// Attach a user session to the template context
-    fn with_session<S: StorageBackend>(
-        self,
-        current_session: BrowserSession<S>,
-    ) -> WithSession<Self>
+    fn with_session(self, current_session: BrowserSession) -> WithSession<Self>
     where
         Self: Sized,
-        BrowserSession<S>: Into<BrowserSession<()>>,
     {
         WithSession {
-            current_session: current_session.into(),
+            current_session,
             inner: self,
         }
     }
 
     /// Attach an optional user session to the template context
-    fn maybe_with_session<S: StorageBackend>(
+    fn maybe_with_session(
         self,
-        current_session: Option<BrowserSession<S>>,
+        current_session: Option<BrowserSession>,
     ) -> WithOptionalSession<Self>
     where
         Self: Sized,
-        BrowserSession<S>: Into<BrowserSession<()>>,
     {
         WithOptionalSession {
-            current_session: current_session.map(Into::into),
+            current_session,
             inner: self,
         }
     }
@@ -77,13 +73,13 @@ pub trait TemplateContext: Serialize {
     ///
     /// This is then used to check for template validity in unit tests and in
     /// the CLI (`cargo run -- templates check`)
-    fn sample(now: chrono::DateTime<Utc>) -> Vec<Self>
+    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized;
 }
 
 impl TemplateContext for () {
-    fn sample(_now: chrono::DateTime<Utc>) -> Vec<Self>
+    fn sample(_now: chrono::DateTime<Utc>, _rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {
@@ -101,11 +97,11 @@ pub struct WithCsrf<T> {
 }
 
 impl<T: TemplateContext> TemplateContext for WithCsrf<T> {
-    fn sample(now: chrono::DateTime<Utc>) -> Vec<Self>
+    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {
-        T::sample(now)
+        T::sample(now, rng)
             .into_iter()
             .map(|inner| WithCsrf {
                 csrf_token: "fake_csrf_token".into(),
@@ -118,24 +114,26 @@ impl<T: TemplateContext> TemplateContext for WithCsrf<T> {
 /// Context with a user session in it
 #[derive(Serialize)]
 pub struct WithSession<T> {
-    current_session: BrowserSession<()>,
+    current_session: BrowserSession,
 
     #[serde(flatten)]
     inner: T,
 }
 
 impl<T: TemplateContext> TemplateContext for WithSession<T> {
-    fn sample(now: chrono::DateTime<Utc>) -> Vec<Self>
+    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {
-        BrowserSession::samples(now)
+        BrowserSession::samples(now, rng)
             .into_iter()
             .flat_map(|session| {
-                T::sample(now).into_iter().map(move |inner| WithSession {
-                    current_session: session.clone(),
-                    inner,
-                })
+                T::sample(now, rng)
+                    .into_iter()
+                    .map(move |inner| WithSession {
+                        current_session: session.clone(),
+                        inner,
+                    })
             })
             .collect()
     }
@@ -144,23 +142,23 @@ impl<T: TemplateContext> TemplateContext for WithSession<T> {
 /// Context with an optional user session in it
 #[derive(Serialize)]
 pub struct WithOptionalSession<T> {
-    current_session: Option<BrowserSession<()>>,
+    current_session: Option<BrowserSession>,
 
     #[serde(flatten)]
     inner: T,
 }
 
 impl<T: TemplateContext> TemplateContext for WithOptionalSession<T> {
-    fn sample(now: chrono::DateTime<Utc>) -> Vec<Self>
+    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {
-        BrowserSession::samples(now)
+        BrowserSession::samples(now, rng)
             .into_iter()
             .map(Some) // Wrap all samples in an Option
             .chain(std::iter::once(None)) // Add the "None" option
             .flat_map(|session| {
-                T::sample(now)
+                T::sample(now, rng)
                     .into_iter()
                     .map(move |inner| WithOptionalSession {
                         current_session: session.clone(),
@@ -188,7 +186,7 @@ impl Serialize for EmptyContext {
 }
 
 impl TemplateContext for EmptyContext {
-    fn sample(_now: chrono::DateTime<Utc>) -> Vec<Self>
+    fn sample(_now: chrono::DateTime<Utc>, _rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {
@@ -212,7 +210,7 @@ impl IndexContext {
 }
 
 impl TemplateContext for IndexContext {
-    fn sample(_now: chrono::DateTime<Utc>) -> Vec<Self>
+    fn sample(_now: chrono::DateTime<Utc>, _rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {
@@ -294,7 +292,7 @@ pub struct LoginContext {
 }
 
 impl TemplateContext for LoginContext {
-    fn sample(_now: chrono::DateTime<Utc>) -> Vec<Self>
+    fn sample(_now: chrono::DateTime<Utc>, _rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {
@@ -364,7 +362,7 @@ pub struct RegisterContext {
 }
 
 impl TemplateContext for RegisterContext {
-    fn sample(_now: chrono::DateTime<Utc>) -> Vec<Self>
+    fn sample(_now: chrono::DateTime<Utc>, _rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {
@@ -401,7 +399,7 @@ pub struct ConsentContext {
 }
 
 impl TemplateContext for ConsentContext {
-    fn sample(_now: chrono::DateTime<Utc>) -> Vec<Self>
+    fn sample(_now: chrono::DateTime<Utc>, _rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {
@@ -432,7 +430,7 @@ pub struct PolicyViolationContext {
 }
 
 impl TemplateContext for PolicyViolationContext {
-    fn sample(_now: chrono::DateTime<Utc>) -> Vec<Self>
+    fn sample(_now: chrono::DateTime<Utc>, _rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {
@@ -480,7 +478,7 @@ pub struct ReauthContext {
 }
 
 impl TemplateContext for ReauthContext {
-    fn sample(_now: chrono::DateTime<Utc>) -> Vec<Self>
+    fn sample(_now: chrono::DateTime<Utc>, _rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {
@@ -519,7 +517,7 @@ pub struct CompatSsoContext {
 }
 
 impl TemplateContext for CompatSsoContext {
-    fn sample(now: chrono::DateTime<Utc>) -> Vec<Self>
+    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {
@@ -531,7 +529,9 @@ impl TemplateContext for CompatSsoContext {
                 created_at: now,
                 state: CompatSsoLoginState::Pending,
             },
-            action: PostAuthAction::ContinueCompatSsoLogin { data: Ulid::nil() },
+            action: PostAuthAction::ContinueCompatSsoLogin {
+                data: Ulid::from_datetime_with_source(now.into(), rng),
+            },
         }]
     }
 }
@@ -554,7 +554,7 @@ impl CompatSsoContext {
 #[derive(Serialize)]
 pub struct AccountContext {
     active_sessions: usize,
-    emails: Vec<UserEmail<()>>,
+    emails: Vec<UserEmail>,
 }
 
 impl AccountContext {
@@ -562,7 +562,7 @@ impl AccountContext {
     #[must_use]
     pub fn new<T>(active_sessions: usize, emails: Vec<T>) -> Self
     where
-        T: Into<UserEmail<()>>,
+        T: Into<UserEmail>,
     {
         Self {
             active_sessions,
@@ -572,36 +572,35 @@ impl AccountContext {
 }
 
 impl TemplateContext for AccountContext {
-    fn sample(now: chrono::DateTime<Utc>) -> Vec<Self>
+    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {
-        let emails: Vec<UserEmail<()>> = UserEmail::samples(now);
+        let emails: Vec<UserEmail> = UserEmail::samples(now, rng);
         vec![Self::new(5, emails)]
     }
 }
 
 /// Context used by the `account/emails.html` template
 #[derive(Serialize)]
-#[serde(bound(serialize = "T: StorageBackend"))]
-pub struct AccountEmailsContext<T: StorageBackend> {
-    emails: Vec<UserEmail<T>>,
+pub struct AccountEmailsContext {
+    emails: Vec<UserEmail>,
 }
 
-impl<T: StorageBackend> AccountEmailsContext<T> {
+impl AccountEmailsContext {
     /// Constructs a context for the email management page
     #[must_use]
-    pub fn new(emails: Vec<UserEmail<T>>) -> Self {
+    pub fn new(emails: Vec<UserEmail>) -> Self {
         Self { emails }
     }
 }
 
-impl<T: StorageBackend> TemplateContext for AccountEmailsContext<T> {
-    fn sample(now: chrono::DateTime<Utc>) -> Vec<Self>
+impl TemplateContext for AccountEmailsContext {
+    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {
-        let emails: Vec<UserEmail<T>> = UserEmail::samples(now);
+        let emails: Vec<UserEmail> = UserEmail::samples(now, rng);
         vec![Self::new(emails)]
     }
 }
@@ -609,35 +608,35 @@ impl<T: StorageBackend> TemplateContext for AccountEmailsContext<T> {
 /// Context used by the `emails/verification.{txt,html,subject}` templates
 #[derive(Serialize)]
 pub struct EmailVerificationContext {
-    user: User<()>,
-    verification: UserEmailVerification<()>,
+    user: User,
+    verification: UserEmailVerification,
 }
 
 impl EmailVerificationContext {
     /// Constructs a context for the verification email
     #[must_use]
-    pub fn new(user: User<()>, verification: UserEmailVerification<()>) -> Self {
+    pub fn new(user: User, verification: UserEmailVerification) -> Self {
         Self { user, verification }
     }
 }
 
 impl TemplateContext for EmailVerificationContext {
-    fn sample(now: chrono::DateTime<Utc>) -> Vec<Self>
+    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {
-        User::samples(now)
+        User::samples(now, rng)
             .into_iter()
             .map(|user| {
                 let email = UserEmail {
-                    data: (),
+                    id: Ulid::from_datetime_with_source(now.into(), rng),
                     email: "foobar@example.com".to_owned(),
                     created_at: now,
                     confirmed_at: None,
                 };
 
                 let verification = UserEmailVerification {
-                    data: (),
+                    id: Ulid::from_datetime_with_source(now.into(), rng),
                     code: "123456".to_owned(),
                     email,
                     created_at: now,
@@ -670,7 +669,7 @@ impl FormField for EmailVerificationFormField {
 #[derive(Serialize)]
 pub struct EmailVerificationPageContext {
     form: FormState<EmailVerificationFormField>,
-    email: UserEmail<()>,
+    email: UserEmail,
 }
 
 impl EmailVerificationPageContext {
@@ -678,7 +677,7 @@ impl EmailVerificationPageContext {
     #[must_use]
     pub fn new<T>(email: T) -> Self
     where
-        T: Into<UserEmail<()>>,
+        T: Into<UserEmail>,
     {
         Self {
             form: FormState::default(),
@@ -694,12 +693,12 @@ impl EmailVerificationPageContext {
 }
 
 impl TemplateContext for EmailVerificationPageContext {
-    fn sample(now: chrono::DateTime<Utc>) -> Vec<Self>
+    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {
         let email = UserEmail {
-            data: (),
+            id: Ulid::from_datetime_with_source(now.into(), rng),
             email: "foobar@example.com".to_owned(),
             created_at: now,
             confirmed_at: None,
@@ -749,7 +748,7 @@ impl EmailAddContext {
 }
 
 impl TemplateContext for EmailAddContext {
-    fn sample(_now: chrono::DateTime<Utc>) -> Vec<Self>
+    fn sample(_now: chrono::DateTime<Utc>, _rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {
@@ -761,14 +760,14 @@ impl TemplateContext for EmailAddContext {
 /// templates
 #[derive(Serialize)]
 pub struct UpstreamExistingLinkContext {
-    linked_user: User<()>,
+    linked_user: User,
 }
 
 impl UpstreamExistingLinkContext {
     /// Constructs a new context with an existing linked user
     pub fn new<T>(linked_user: T) -> Self
     where
-        T: Into<User<()>>,
+        T: Into<User>,
     {
         Self {
             linked_user: linked_user.into(),
@@ -777,11 +776,11 @@ impl UpstreamExistingLinkContext {
 }
 
 impl TemplateContext for UpstreamExistingLinkContext {
-    fn sample(now: chrono::DateTime<Utc>) -> Vec<Self>
+    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {
-        User::samples(now)
+        User::samples(now, rng)
             .into_iter()
             .map(|linked_user| Self { linked_user })
             .collect()
@@ -805,7 +804,7 @@ impl UpstreamSuggestLink {
 }
 
 impl TemplateContext for UpstreamSuggestLink {
-    fn sample(_now: chrono::DateTime<Utc>) -> Vec<Self>
+    fn sample(_now: chrono::DateTime<Utc>, _rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {
@@ -831,7 +830,7 @@ impl UpstreamRegister {
 }
 
 impl TemplateContext for UpstreamRegister {
-    fn sample(_now: chrono::DateTime<Utc>) -> Vec<Self>
+    fn sample(_now: chrono::DateTime<Utc>, _rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {
@@ -847,11 +846,11 @@ pub struct FormPostContext<T> {
 }
 
 impl<T: TemplateContext> TemplateContext for FormPostContext<T> {
-    fn sample(now: chrono::DateTime<Utc>) -> Vec<Self>
+    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {
-        let sample_params = T::sample(now);
+        let sample_params = T::sample(now, rng);
         sample_params
             .into_iter()
             .map(|params| FormPostContext {
@@ -881,7 +880,7 @@ pub struct ErrorContext {
 }
 
 impl TemplateContext for ErrorContext {
-    fn sample(_now: chrono::DateTime<Utc>) -> Vec<Self>
+    fn sample(_now: chrono::DateTime<Utc>, _rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {

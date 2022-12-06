@@ -26,7 +26,7 @@ use crate::{
 pub struct Session<T: StorageBackend> {
     #[serde(skip_serializing)]
     pub data: T::SessionData,
-    pub browser_session: BrowserSession<T>,
+    pub browser_session: BrowserSession,
     pub client: Client<T>,
     pub scope: Scope,
 }
@@ -35,7 +35,7 @@ impl<S: StorageBackendMarker> From<Session<S>> for Session<()> {
     fn from(s: Session<S>) -> Self {
         Session {
             data: (),
-            browser_session: s.browser_session.into(),
+            browser_session: s.browser_session,
             client: s.client.into(),
             scope: s.scope,
         }

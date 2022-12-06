@@ -14,10 +14,7 @@
 
 use axum_extra::extract::cookie::{Cookie, PrivateCookieJar};
 use mas_data_model::BrowserSession;
-use mas_storage::{
-    user::{lookup_active_session, ActiveSessionLookupError},
-    PostgresqlBackend,
-};
+use mas_storage::user::{lookup_active_session, ActiveSessionLookupError};
 use serde::{Deserialize, Serialize};
 use sqlx::{Executor, Postgres};
 use ulid::Ulid;
@@ -33,9 +30,9 @@ pub struct SessionInfo {
 impl SessionInfo {
     /// Forge the cookie from a [`BrowserSession`]
     #[must_use]
-    pub fn from_session(session: &BrowserSession<PostgresqlBackend>) -> Self {
+    pub fn from_session(session: &BrowserSession) -> Self {
         Self {
-            current: Some(session.data),
+            current: Some(session.id),
         }
     }
 
@@ -50,7 +47,7 @@ impl SessionInfo {
     pub async fn load_session(
         &self,
         executor: impl Executor<'_, Database = Postgres>,
-    ) -> Result<Option<BrowserSession<PostgresqlBackend>>, ActiveSessionLookupError> {
+    ) -> Result<Option<BrowserSession>, ActiveSessionLookupError> {
         let session_id = if let Some(id) = self.current {
             id
         } else {
@@ -70,7 +67,7 @@ pub trait SessionInfoExt {
     fn update_session_info(self, info: &SessionInfo) -> Self;
 
     #[must_use]
-    fn set_session(self, session: &BrowserSession<PostgresqlBackend>) -> Self
+    fn set_session(self, session: &BrowserSession) -> Self
     where
         Self: Sized,
     {
