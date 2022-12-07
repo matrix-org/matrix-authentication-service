@@ -27,7 +27,7 @@ pub struct Session<T: StorageBackend> {
     #[serde(skip_serializing)]
     pub data: T::SessionData,
     pub browser_session: BrowserSession,
-    pub client: Client<T>,
+    pub client: Client,
     pub scope: Scope,
 }
 
@@ -36,7 +36,7 @@ impl<S: StorageBackendMarker> From<Session<S>> for Session<()> {
         Session {
             data: (),
             browser_session: s.browser_session,
-            client: s.client.into(),
+            client: s.client,
             scope: s.scope,
         }
     }

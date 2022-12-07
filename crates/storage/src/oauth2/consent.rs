@@ -21,20 +21,20 @@ use sqlx::PgExecutor;
 use ulid::Ulid;
 use uuid::Uuid;
 
-use crate::{Clock, PostgresqlBackend};
+use crate::Clock;
 
 #[tracing::instrument(
     skip_all,
     fields(
         %user.id,
-        client.id = %client.data,
+        %client.id,
     ),
     err(Debug),
 )]
 pub async fn fetch_client_consent(
     executor: impl PgExecutor<'_>,
     user: &User,
-    client: &Client<PostgresqlBackend>,
+    client: &Client,
 ) -> Result<Scope, anyhow::Error> {
     let scope_tokens: Vec<String> = sqlx::query_scalar!(
         r#"
@@ -43,7 +43,7 @@ pub async fn fetch_client_consent(
             WHERE user_id = $1 AND oauth2_client_id = $2
         "#,
         Uuid::from(user.id),
-        Uuid::from(client.data),
+        Uuid::from(client.id),
     )
     .fetch_all(executor)
     .await?;
@@ -60,8 +60,8 @@ pub async fn fetch_client_consent(
     skip_all,
     fields(
         %user.id,
-        client.id = %client.data,
-        scope = scope.to_string(),
+        %client.id,
+        %scope,
     ),
     err(Debug),
 )]
@@ -70,7 +70,7 @@ pub async fn insert_client_consent(
     mut rng: impl Rng + Send,
     clock: &Clock,
     user: &User,
-    client: &Client<PostgresqlBackend>,
+    client: &Client,
     scope: &Scope,
 ) -> Result<(), anyhow::Error> {
     let now = clock.now();
@@ -93,7 +93,7 @@ pub async fn insert_client_consent(
         "#,
         &ids,
         Uuid::from(user.id),
-        Uuid::from(client.data),
+        Uuid::from(client.id),
         &tokens,
         now,
     )

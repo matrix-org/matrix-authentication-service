@@ -26,15 +26,12 @@ use axum::{
 };
 use headers::{authorization::Basic, Authorization};
 use http::{Request, StatusCode};
-use mas_data_model::{Client, JwksOrJwksUri, StorageBackend};
+use mas_data_model::{Client, JwksOrJwksUri};
 use mas_http::HttpServiceExt;
 use mas_iana::oauth::OAuthClientAuthenticationMethod;
 use mas_jose::{jwk::PublicJsonWebKeySet, jwt::Jwt};
 use mas_keystore::Encrypter;
-use mas_storage::{
-    oauth2::client::{lookup_client_by_client_id, ClientFetchError},
-    PostgresqlBackend,
-};
+use mas_storage::oauth2::client::{lookup_client_by_client_id, ClientFetchError};
 use serde::{de::DeserializeOwned, Deserialize};
 use serde_json::Value;
 use sqlx::PgExecutor;
@@ -76,10 +73,7 @@ pub enum Credentials {
 }
 
 impl Credentials {
-    pub async fn fetch(
-        &self,
-        executor: impl PgExecutor<'_>,
-    ) -> Result<Client<PostgresqlBackend>, ClientFetchError> {
+    pub async fn fetch(&self, executor: impl PgExecutor<'_>) -> Result<Client, ClientFetchError> {
         let client_id = match self {
             Credentials::None { client_id }
             | Credentials::ClientSecretBasic { client_id, .. }
@@ -91,12 +85,12 @@ impl Credentials {
     }
 
     #[tracing::instrument(skip_all, err)]
-    pub async fn verify<S: StorageBackend>(
+    pub async fn verify(
         &self,
         http_client_factory: &HttpClientFactory,
         encrypter: &Encrypter,
         method: &OAuthClientAuthenticationMethod,
-        client: &Client<S>,
+        client: &Client,
     ) -> Result<(), CredentialsVerificationError> {
         match (self, method) {
             (Credentials::None { .. }, OAuthClientAuthenticationMethod::None) => {}

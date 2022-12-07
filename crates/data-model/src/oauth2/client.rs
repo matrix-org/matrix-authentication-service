@@ -20,9 +20,8 @@ use mas_jose::jwk::PublicJsonWebKeySet;
 use oauth2_types::requests::GrantType;
 use serde::Serialize;
 use thiserror::Error;
+use ulid::Ulid;
 use url::Url;
-
-use crate::traits::{StorageBackend, StorageBackendMarker};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -34,11 +33,9 @@ pub enum JwksOrJwksUri {
     JwksUri(Url),
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
-#[serde(bound = "T: StorageBackend")]
-pub struct Client<T: StorageBackend> {
-    #[serde(skip_serializing)]
-    pub data: T::ClientData,
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct Client {
+    pub id: Ulid,
 
     /// Client identifier
     pub client_id: String,
@@ -98,31 +95,6 @@ pub struct Client<T: StorageBackend> {
     pub initiate_login_uri: Option<Url>,
 }
 
-impl<S: StorageBackendMarker> From<Client<S>> for Client<()> {
-    fn from(c: Client<S>) -> Self {
-        Client {
-            data: (),
-            client_id: c.client_id,
-            encrypted_client_secret: c.encrypted_client_secret,
-            redirect_uris: c.redirect_uris,
-            response_types: c.response_types,
-            grant_types: c.grant_types,
-            contacts: c.contacts,
-            client_name: c.client_name,
-            logo_uri: c.logo_uri,
-            client_uri: c.client_uri,
-            policy_uri: c.policy_uri,
-            tos_uri: c.tos_uri,
-            jwks: c.jwks,
-            id_token_signed_response_alg: c.id_token_signed_response_alg,
-            userinfo_signed_response_alg: c.userinfo_signed_response_alg,
-            token_endpoint_auth_method: c.token_endpoint_auth_method,
-            token_endpoint_auth_signing_alg: c.token_endpoint_auth_signing_alg,
-            initiate_login_uri: c.initiate_login_uri,
-        }
-    }
-}
-
 #[derive(Debug, Error)]
 pub enum InvalidRedirectUriError {
     #[error("redirect_uri is not allowed for this client")]
@@ -135,7 +107,7 @@ pub enum InvalidRedirectUriError {
     NoneRegistered,
 }
 
-impl<S: StorageBackend> Client<S> {
+impl Client {
     pub fn resolve_redirect_uri<'a>(
         &'a self,
         redirect_uri: &'a Option<Url>,

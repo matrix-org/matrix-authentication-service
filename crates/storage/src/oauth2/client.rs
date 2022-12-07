@@ -28,7 +28,7 @@ use ulid::Ulid;
 use url::Url;
 use uuid::Uuid;
 
-use crate::{Clock, LookupError, PostgresqlBackend};
+use crate::{Clock, LookupError};
 
 // XXX: response_types & contacts
 #[derive(Debug)]
@@ -90,11 +90,11 @@ impl LookupError for ClientFetchError {
     }
 }
 
-impl TryInto<Client<PostgresqlBackend>> for OAuth2ClientLookup {
+impl TryInto<Client> for OAuth2ClientLookup {
     type Error = ClientFetchError;
 
     #[allow(clippy::too_many_lines)] // TODO: refactor some of the field parsing
-    fn try_into(self) -> Result<Client<PostgresqlBackend>, Self::Error> {
+    fn try_into(self) -> Result<Client, Self::Error> {
         let redirect_uris: Result<Vec<Url>, _> =
             self.redirect_uris.iter().map(|s| s.parse()).collect();
         let redirect_uris = redirect_uris.map_err(|source| ClientFetchError::ParseUrl {
@@ -226,7 +226,7 @@ impl TryInto<Client<PostgresqlBackend>> for OAuth2ClientLookup {
 
         let id = Ulid::from(self.oauth2_client_id);
         Ok(Client {
-            data: id,
+            id,
             client_id: id.to_string(),
             encrypted_client_secret: self.encrypted_client_secret,
             redirect_uris,
@@ -253,7 +253,7 @@ impl TryInto<Client<PostgresqlBackend>> for OAuth2ClientLookup {
 pub async fn lookup_clients(
     executor: impl PgExecutor<'_>,
     ids: impl IntoIterator<Item = Ulid> + Send,
-) -> Result<HashMap<Ulid, Client<PostgresqlBackend>>, ClientFetchError> {
+) -> Result<HashMap<Ulid, Client>, ClientFetchError> {
     let ids: Vec<Uuid> = ids.into_iter().map(Uuid::from).collect();
     let res = sqlx::query_as!(
         OAuth2ClientLookup,
@@ -289,9 +289,9 @@ pub async fn lookup_clients(
     .fetch_all(executor)
     .await?;
 
-    let clients: Result<HashMap<Ulid, Client<PostgresqlBackend>>, _> = res
+    let clients: Result<HashMap<Ulid, Client>, _> = res
         .into_iter()
-        .map(|r| r.try_into().map(|c: Client<PostgresqlBackend>| (c.data, c)))
+        .map(|r| r.try_into().map(|c: Client| (c.id, c)))
         .collect();
 
     clients
@@ -305,7 +305,7 @@ pub async fn lookup_clients(
 pub async fn lookup_client(
     executor: impl PgExecutor<'_>,
     id: Ulid,
-) -> Result<Client<PostgresqlBackend>, ClientFetchError> {
+) -> Result<Client, ClientFetchError> {
     let res = sqlx::query_as!(
         OAuth2ClientLookup,
         r#"
@@ -353,7 +353,7 @@ pub async fn lookup_client(
 pub async fn lookup_client_by_client_id(
     executor: impl PgExecutor<'_>,
     client_id: &str,
-) -> Result<Client<PostgresqlBackend>, ClientFetchError> {
+) -> Result<Client, ClientFetchError> {
     let id: Ulid = client_id.parse()?;
     lookup_client(executor, id).await
 }

@@ -40,7 +40,7 @@ pub mod refresh_token;
         session.id = %session.data,
         user.id = %session.browser_session.user.id,
         user_session.id = %session.browser_session.id,
-        client.id = %session.client.data,
+        client.id = %session.client.id,
     ),
     err(Debug),
 )]

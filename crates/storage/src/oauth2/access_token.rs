@@ -28,7 +28,7 @@ use crate::{Clock, DatabaseInconsistencyError, LookupError, PostgresqlBackend};
     skip_all,
     fields(
         session.id = %session.data,
-        client.id = %session.client.data,
+        client.id = %session.client.id,
         user.id = %session.browser_session.user.id,
         access_token.id,
     ),
