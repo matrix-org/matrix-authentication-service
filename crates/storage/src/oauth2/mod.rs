@@ -137,7 +137,9 @@ pub async fn get_paginated_user_oauth_sessions(
     // ideal
     let mut browser_sessions: HashMap<Ulid, BrowserSession> = HashMap::new();
     for id in browser_session_ids {
-        let v = lookup_active_session(&mut *conn, id).await?;
+        let v = lookup_active_session(&mut *conn, id)
+            .await?
+            .context("Failed to load active session")?;
         browser_sessions.insert(id, v);
     }
 

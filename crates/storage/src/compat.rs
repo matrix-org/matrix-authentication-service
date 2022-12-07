@@ -306,7 +306,9 @@ pub async fn compat_login(
     let mut txn = conn.begin().await.context("could not start transaction")?;
 
     // First, lookup the user
-    let user = lookup_user_by_username(&mut txn, username).await?;
+    let user = lookup_user_by_username(&mut txn, username)
+        .await?
+        .context("Could not lookup username")?;
     tracing::Span::current().record("user.id", tracing::field::display(user.id));
 
     // Now, fetch the hashed password from the user associated with that session

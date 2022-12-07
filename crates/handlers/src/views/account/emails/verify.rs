@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use anyhow::Context;
 use axum::{
     extract::{Form, Path, Query, State},
     response::{Html, IntoResponse, Response},
@@ -64,7 +65,9 @@ pub(crate) async fn get(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    let user_email = lookup_user_email_by_id(&mut conn, &session.user, id).await?;
+    let user_email = lookup_user_email_by_id(&mut conn, &session.user, id)
+        .await?
+        .context("Could not find user email")?;
 
     if user_email.confirmed_at.is_some() {
         // This email was already verified, skip
@@ -103,15 +106,18 @@ pub(crate) async fn post(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    let email = lookup_user_email_by_id(&mut txn, &session.user, id).await?;
+    let email = lookup_user_email_by_id(&mut txn, &session.user, id)
+        .await?
+        .context("Could not find user email")?;
 
     if session.user.primary_email.is_none() {
         set_user_email_as_primary(&mut txn, &email).await?;
     }
 
     // TODO: make those 8 hours configurable
-    let verification =
-        lookup_user_email_verification_code(&mut txn, &clock, email, &form.code).await?;
+    let verification = lookup_user_email_verification_code(&mut txn, &clock, email, &form.code)
+        .await?
+        .context("Invalid code")?;
 
     // TODO: display nice errors if the code was already consumed or expired
     let verification = consume_email_verification(&mut txn, &clock, verification).await?;

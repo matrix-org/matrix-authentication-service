@@ -26,12 +26,9 @@ use mas_data_model::{AuthorizationGrant, BrowserSession};
 use mas_keystore::Encrypter;
 use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
-use mas_storage::{
-    oauth2::{
-        authorization_grant::{derive_session, fulfill_grant, get_grant_by_id},
-        consent::fetch_client_consent,
-    },
-    user::ActiveSessionLookupError,
+use mas_storage::oauth2::{
+    authorization_grant::{derive_session, fulfill_grant, get_grant_by_id},
+    consent::fetch_client_consent,
 };
 use mas_templates::Templates;
 use oauth2_types::requests::{AccessTokenResponse, AuthorizationResponse};
@@ -39,9 +36,8 @@ use sqlx::{PgPool, Postgres, Transaction};
 use thiserror::Error;
 use ulid::Ulid;
 
-use super::callback::{
-    CallbackDestination, CallbackDestinationError, IntoCallbackDestinationError,
-};
+use super::callback::CallbackDestination;
+use crate::impl_from_error_for_route;
 
 #[derive(Debug, Error)]
 pub enum RouteError {
@@ -49,7 +45,7 @@ pub enum RouteError {
     Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
 
     #[error(transparent)]
-    Anyhow(anyhow::Error),
+    Anyhow(#[from] anyhow::Error),
 
     #[error("authorization grant is not in a pending state")]
     NotPending,
@@ -74,35 +70,10 @@ impl IntoResponse for RouteError {
     }
 }
 
-impl From<anyhow::Error> for RouteError {
-    fn from(e: anyhow::Error) -> Self {
-        Self::Anyhow(e)
-    }
-}
-
-impl From<sqlx::Error> for RouteError {
-    fn from(e: sqlx::Error) -> Self {
-        Self::Internal(Box::new(e))
-    }
-}
-
-impl From<ActiveSessionLookupError> for RouteError {
-    fn from(e: ActiveSessionLookupError) -> Self {
-        Self::Internal(Box::new(e))
-    }
-}
-
-impl From<IntoCallbackDestinationError> for RouteError {
-    fn from(e: IntoCallbackDestinationError) -> Self {
-        Self::Internal(Box::new(e))
-    }
-}
-
-impl From<CallbackDestinationError> for RouteError {
-    fn from(e: CallbackDestinationError) -> Self {
-        Self::Internal(Box::new(e))
-    }
-}
+impl_from_error_for_route!(sqlx::Error);
+impl_from_error_for_route!(mas_storage::DatabaseError);
+impl_from_error_for_route!(super::callback::IntoCallbackDestinationError);
+impl_from_error_for_route!(super::callback::CallbackDestinationError);
 
 pub(crate) async fn get(
     State(policy_factory): State<Arc<PolicyFactory>>,
@@ -171,17 +142,8 @@ pub enum GrantCompletionError {
     PolicyViolation,
 }
 
-impl From<sqlx::Error> for GrantCompletionError {
-    fn from(e: sqlx::Error) -> Self {
-        Self::Internal(Box::new(e))
-    }
-}
-
-impl From<IntoCallbackDestinationError> for GrantCompletionError {
-    fn from(e: IntoCallbackDestinationError) -> Self {
-        Self::Internal(Box::new(e))
-    }
-}
+impl_from_error_for_route!(GrantCompletionError: sqlx::Error);
+impl_from_error_for_route!(GrantCompletionError: super::callback::IntoCallbackDestinationError);
 
 pub(crate) async fn complete(
     grant: AuthorizationGrant,
