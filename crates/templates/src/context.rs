@@ -535,20 +535,17 @@ where {
 /// Context used by the `account/index.html` template
 #[derive(Serialize)]
 pub struct AccountContext {
-    active_sessions: usize,
+    active_sessions: i64,
     emails: Vec<UserEmail>,
 }
 
 impl AccountContext {
     /// Constructs a context for the "my account" page
     #[must_use]
-    pub fn new<T>(active_sessions: usize, emails: Vec<T>) -> Self
-    where
-        T: Into<UserEmail>,
-    {
+    pub fn new(active_sessions: i64, emails: Vec<UserEmail>) -> Self {
         Self {
             active_sessions,
-            emails: emails.into_iter().map(Into::into).collect(),
+            emails,
         }
     }
 }

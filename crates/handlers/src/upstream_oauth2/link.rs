@@ -75,8 +75,6 @@ pub(crate) enum RouteError {
 impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_templates::TemplateError);
 impl_from_error_for_route!(mas_storage::GenericLookupError);
-impl_from_error_for_route!(mas_storage::user::ActiveSessionLookupError);
-impl_from_error_for_route!(mas_storage::user::UserLookupError);
 impl_from_error_for_route!(mas_axum_utils::csrf::CsrfError);
 impl_from_error_for_route!(super::cookie::UpstreamSessionNotFound);
 impl_from_error_for_route!(mas_storage::DatabaseError);

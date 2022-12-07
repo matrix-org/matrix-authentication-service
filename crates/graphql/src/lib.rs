@@ -136,9 +136,7 @@ impl RootQuery {
         let Some(session) = session else { return Ok(None) };
         let current_user = session.user;
 
-        let browser_session = mas_storage::user::lookup_active_session(&mut conn, id)
-            .await
-            .to_option()?;
+        let browser_session = mas_storage::user::lookup_active_session(&mut conn, id).await?;
 
         let ret = browser_session.and_then(|browser_session| {
             if browser_session.user.id == current_user.id {
@@ -166,9 +164,8 @@ impl RootQuery {
         let Some(session) = session else { return Ok(None) };
         let current_user = session.user;
 
-        let user_email = mas_storage::user::lookup_user_email_by_id(&mut conn, &current_user, id)
-            .await
-            .to_option()?;
+        let user_email =
+            mas_storage::user::lookup_user_email_by_id(&mut conn, &current_user, id).await?;
 
         Ok(user_email.map(UserEmail))
     }

@@ -59,12 +59,15 @@ mod views;
 /// errors.
 #[macro_export]
 macro_rules! impl_from_error_for_route {
-    ($error:ty) => {
-        impl From<$error> for self::RouteError {
+    ($route_error:ty : $error:ty) => {
+        impl From<$error> for $route_error {
             fn from(e: $error) -> Self {
                 Self::Internal(Box::new(e))
             }
         }
+    };
+    ($error:ty) => {
+        impl_from_error_for_route!(self::RouteError: $error);
     };
 }
 

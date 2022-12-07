@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use anyhow::Context;
 use argon2::Argon2;
 use clap::{Parser, ValueEnum};
 use mas_config::{DatabaseConfig, RootConfig};
@@ -214,7 +215,9 @@ impl Options {
                 let pool = config.connect().await?;
                 let mut txn = pool.begin().await?;
                 let hasher = Argon2::default();
-                let user = lookup_user_by_username(&mut txn, username).await?;
+                let user = lookup_user_by_username(&mut txn, username)
+                    .await?
+                    .context("User not found")?;
 
                 set_password(&mut txn, &mut rng, &clock, hasher, &user, password).await?;
                 info!(%user.id, %user.username, "Password changed");
@@ -228,8 +231,12 @@ impl Options {
                 let pool = config.connect().await?;
                 let mut txn = pool.begin().await?;
 
-                let user = lookup_user_by_username(&mut txn, username).await?;
-                let email = lookup_user_email(&mut txn, &user, email).await?;
+                let user = lookup_user_by_username(&mut txn, username)
+                    .await?
+                    .context("User not found")?;
+                let email = lookup_user_email(&mut txn, &user, email)
+                    .await?
+                    .context("Email not found")?;
                 let email = mark_user_email_as_verified(&mut txn, &clock, email).await?;
 
                 txn.commit().await?;
