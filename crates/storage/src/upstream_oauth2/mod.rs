@@ -24,6 +24,5 @@ pub use self::{
     provider::{add_provider, get_paginated_providers, get_providers, lookup_provider},
     session::{
         add_session, complete_session, consume_session, lookup_session, lookup_session_on_link,
-        SessionLookupError,
     },
 };

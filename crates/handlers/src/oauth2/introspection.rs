@@ -24,11 +24,9 @@ use mas_keystore::Encrypter;
 use mas_storage::{
     compat::{lookup_active_compat_access_token, lookup_active_compat_refresh_token},
     oauth2::{
-        access_token::{lookup_active_access_token, AccessTokenLookupError},
-        client::ClientFetchError,
-        refresh_token::{lookup_active_refresh_token, RefreshTokenLookupError},
+        access_token::lookup_active_access_token, refresh_token::lookup_active_refresh_token,
     },
-    Clock, LookupError,
+    Clock,
 };
 use oauth2_types::requests::{IntrospectionRequest, IntrospectionResponse};
 use sqlx::PgPool;
@@ -87,36 +85,6 @@ impl From<TokenFormatError> for RouteError {
     }
 }
 
-impl From<ClientFetchError> for RouteError {
-    fn from(e: ClientFetchError) -> Self {
-        if e.not_found() {
-            Self::ClientNotFound
-        } else {
-            Self::Internal(Box::new(e))
-        }
-    }
-}
-
-impl From<AccessTokenLookupError> for RouteError {
-    fn from(e: AccessTokenLookupError) -> Self {
-        if e.not_found() {
-            Self::UnknownToken
-        } else {
-            Self::Internal(Box::new(e))
-        }
-    }
-}
-
-impl From<RefreshTokenLookupError> for RouteError {
-    fn from(e: RefreshTokenLookupError) -> Self {
-        if e.not_found() {
-            Self::UnknownToken
-        } else {
-            Self::Internal(Box::new(e))
-        }
-    }
-}
-
 const INACTIVE: IntrospectionResponse = IntrospectionResponse {
     active: false,
     scope: None,
@@ -142,7 +110,11 @@ pub(crate) async fn post(
     let clock = Clock::default();
     let mut conn = pool.acquire().await?;
 
-    let client = client_authorization.credentials.fetch(&mut conn).await?;
+    let client = client_authorization
+        .credentials
+        .fetch(&mut conn)
+        .await?
+        .ok_or(RouteError::ClientNotFound)?;
 
     let method = match &client.token_endpoint_auth_method {
         None | Some(OAuthClientAuthenticationMethod::None) => {
@@ -172,7 +144,9 @@ pub(crate) async fn post(
 
     let reply = match token_type {
         TokenType::AccessToken => {
-            let (token, session) = lookup_active_access_token(&mut conn, token).await?;
+            let (token, session) = lookup_active_access_token(&mut conn, token)
+                .await?
+                .ok_or(RouteError::UnknownToken)?;
 
             IntrospectionResponse {
                 active: true,
@@ -190,7 +164,9 @@ pub(crate) async fn post(
             }
         }
         TokenType::RefreshToken => {
-            let (token, session) = lookup_active_refresh_token(&mut conn, token).await?;
+            let (token, session) = lookup_active_refresh_token(&mut conn, token)
+                .await?
+                .ok_or(RouteError::UnknownToken)?;
 
             IntrospectionResponse {
                 active: true,

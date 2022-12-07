@@ -23,12 +23,11 @@ use mas_jose::jwk::PublicJsonWebKeySet;
 use oauth2_types::requests::GrantType;
 use rand::Rng;
 use sqlx::{PgConnection, PgExecutor};
-use thiserror::Error;
 use ulid::Ulid;
 use url::Url;
 use uuid::Uuid;
 
-use crate::{Clock, LookupError};
+use crate::{Clock, DatabaseError, DatabaseInconsistencyError2, LookupResultExt};
 
 // XXX: response_types & contacts
 #[derive(Debug)]
@@ -54,52 +53,20 @@ pub struct OAuth2ClientLookup {
     initiate_login_uri: Option<String>,
 }
 
-#[derive(Debug, Error)]
-pub enum ClientFetchError {
-    #[error("invalid client ID")]
-    InvalidClientId(#[from] ulid::DecodeError),
-
-    #[error("malformed jwks column")]
-    MalformedJwks(#[source] serde_json::Error),
-
-    #[error("entry has both a jwks and a jwks_uri")]
-    BothJwksAndJwksUri,
-
-    #[error("could not parse URL in field {field:?}")]
-    ParseUrl {
-        field: &'static str,
-        source: url::ParseError,
-    },
-
-    #[error("could not parse field {field:?}")]
-    ParseField {
-        field: &'static str,
-        source: mas_iana::ParseError,
-    },
-
-    #[error(transparent)]
-    Database(#[from] sqlx::Error),
-}
-
-impl LookupError for ClientFetchError {
-    fn not_found(&self) -> bool {
-        matches!(
-            self,
-            Self::Database(sqlx::Error::RowNotFound) | Self::InvalidClientId(_)
-        )
-    }
-}
-
 impl TryInto<Client> for OAuth2ClientLookup {
-    type Error = ClientFetchError;
+    type Error = DatabaseInconsistencyError2;
 
     #[allow(clippy::too_many_lines)] // TODO: refactor some of the field parsing
     fn try_into(self) -> Result<Client, Self::Error> {
+        let id = Ulid::from(self.oauth2_client_id);
+
         let redirect_uris: Result<Vec<Url>, _> =
             self.redirect_uris.iter().map(|s| s.parse()).collect();
-        let redirect_uris = redirect_uris.map_err(|source| ClientFetchError::ParseUrl {
-            field: "redirect_uris",
-            source,
+        let redirect_uris = redirect_uris.map_err(|e| {
+            DatabaseInconsistencyError2::on("oauth2_clients")
+                .column("redirect_uris")
+                .row(id)
+                .source(e)
         })?;
 
         let response_types = vec![
@@ -124,107 +91,125 @@ impl TryInto<Client> for OAuth2ClientLookup {
             grant_types.push(GrantType::RefreshToken);
         }
 
-        let logo_uri = self
-            .logo_uri
-            .map(|s| s.parse())
-            .transpose()
-            .map_err(|source| ClientFetchError::ParseUrl {
-                field: "logo_uri",
-                source,
-            })?;
+        let logo_uri = self.logo_uri.map(|s| s.parse()).transpose().map_err(|e| {
+            DatabaseInconsistencyError2::on("oauth2_clients")
+                .column("logo_uri")
+                .row(id)
+                .source(e)
+        })?;
 
         let client_uri = self
             .client_uri
             .map(|s| s.parse())
             .transpose()
-            .map_err(|source| ClientFetchError::ParseUrl {
-                field: "client_uri",
-                source,
+            .map_err(|e| {
+                DatabaseInconsistencyError2::on("oauth2_clients")
+                    .column("client_uri")
+                    .row(id)
+                    .source(e)
             })?;
 
         let policy_uri = self
             .policy_uri
             .map(|s| s.parse())
             .transpose()
-            .map_err(|source| ClientFetchError::ParseUrl {
-                field: "policy_uri",
-                source,
+            .map_err(|e| {
+                DatabaseInconsistencyError2::on("oauth2_clients")
+                    .column("policy_uri")
+                    .row(id)
+                    .source(e)
             })?;
 
-        let tos_uri = self
-            .tos_uri
-            .map(|s| s.parse())
-            .transpose()
-            .map_err(|source| ClientFetchError::ParseUrl {
-                field: "tos_uri",
-                source,
-            })?;
+        let tos_uri = self.tos_uri.map(|s| s.parse()).transpose().map_err(|e| {
+            DatabaseInconsistencyError2::on("oauth2_clients")
+                .column("tos_uri")
+                .row(id)
+                .source(e)
+        })?;
 
         let id_token_signed_response_alg = self
             .id_token_signed_response_alg
             .map(|s| s.parse())
             .transpose()
-            .map_err(|source| ClientFetchError::ParseField {
-                field: "id_token_signed_response_alg",
-                source,
+            .map_err(|e| {
+                DatabaseInconsistencyError2::on("oauth2_clients")
+                    .column("id_token_signed_response_alg")
+                    .row(id)
+                    .source(e)
             })?;
 
         let userinfo_signed_response_alg = self
             .userinfo_signed_response_alg
             .map(|s| s.parse())
             .transpose()
-            .map_err(|source| ClientFetchError::ParseField {
-                field: "userinfo_signed_response_alg",
-                source,
+            .map_err(|e| {
+                DatabaseInconsistencyError2::on("oauth2_clients")
+                    .column("userinfo_signed_response_alg")
+                    .row(id)
+                    .source(e)
             })?;
 
         let token_endpoint_auth_method = self
             .token_endpoint_auth_method
             .map(|s| s.parse())
             .transpose()
-            .map_err(|source| ClientFetchError::ParseField {
-                field: "token_endpoint_auth_method",
-                source,
+            .map_err(|e| {
+                DatabaseInconsistencyError2::on("oauth2_clients")
+                    .column("token_endpoint_auth_method")
+                    .row(id)
+                    .source(e)
             })?;
 
         let token_endpoint_auth_signing_alg = self
             .token_endpoint_auth_signing_alg
             .map(|s| s.parse())
             .transpose()
-            .map_err(|source| ClientFetchError::ParseField {
-                field: "token_endpoint_auth_signing_alg",
-                source,
+            .map_err(|e| {
+                DatabaseInconsistencyError2::on("oauth2_clients")
+                    .column("token_endpoint_auth_signing_alg")
+                    .row(id)
+                    .source(e)
             })?;
 
         let initiate_login_uri = self
             .initiate_login_uri
             .map(|s| s.parse())
             .transpose()
-            .map_err(|source| ClientFetchError::ParseUrl {
-                field: "initiate_login_uri",
-                source,
+            .map_err(|e| {
+                DatabaseInconsistencyError2::on("oauth2_clients")
+                    .column("initiate_login_uri")
+                    .row(id)
+                    .source(e)
             })?;
 
         let jwks = match (self.jwks, self.jwks_uri) {
             (None, None) => None,
             (Some(jwks), None) => {
-                let jwks = serde_json::from_value(jwks).map_err(ClientFetchError::MalformedJwks)?;
+                let jwks = serde_json::from_value(jwks).map_err(|e| {
+                    DatabaseInconsistencyError2::on("oauth2_clients")
+                        .column("jwks")
+                        .row(id)
+                        .source(e)
+                })?;
                 Some(JwksOrJwksUri::Jwks(jwks))
             }
             (None, Some(jwks_uri)) => {
-                let jwks_uri = jwks_uri
-                    .parse()
-                    .map_err(|source| ClientFetchError::ParseUrl {
-                        field: "jwks_uri",
-                        source,
-                    })?;
+                let jwks_uri = jwks_uri.parse().map_err(|e| {
+                    DatabaseInconsistencyError2::on("oauth2_clients")
+                        .column("jwks_uri")
+                        .row(id)
+                        .source(e)
+                })?;
 
                 Some(JwksOrJwksUri::JwksUri(jwks_uri))
             }
-            _ => return Err(ClientFetchError::BothJwksAndJwksUri),
+            _ => {
+                return Err(DatabaseInconsistencyError2::on("oauth2_clients")
+                    .column("jwks(_uri)")
+                    .row(id))
+            }
         };
 
-        let id = Ulid::from(self.oauth2_client_id);
         Ok(Client {
             id,
             client_id: id.to_string(),
@@ -253,7 +238,7 @@ impl TryInto<Client> for OAuth2ClientLookup {
 pub async fn lookup_clients(
     executor: impl PgExecutor<'_>,
     ids: impl IntoIterator<Item = Ulid> + Send,
-) -> Result<HashMap<Ulid, Client>, ClientFetchError> {
+) -> Result<HashMap<Ulid, Client>, DatabaseError> {
     let ids: Vec<Uuid> = ids.into_iter().map(Uuid::from).collect();
     let res = sqlx::query_as!(
         OAuth2ClientLookup,
@@ -289,12 +274,13 @@ pub async fn lookup_clients(
     .fetch_all(executor)
     .await?;
 
-    let clients: Result<HashMap<Ulid, Client>, _> = res
-        .into_iter()
-        .map(|r| r.try_into().map(|c: Client| (c.id, c)))
-        .collect();
-
-    clients
+    res.into_iter()
+        .map(|r| {
+            r.try_into()
+                .map(|c: Client| (c.id, c))
+                .map_err(DatabaseError::from)
+        })
+        .collect()
 }
 
 #[tracing::instrument(
@@ -305,7 +291,7 @@ pub async fn lookup_clients(
 pub async fn lookup_client(
     executor: impl PgExecutor<'_>,
     id: Ulid,
-) -> Result<Client, ClientFetchError> {
+) -> Result<Option<Client>, DatabaseError> {
     let res = sqlx::query_as!(
         OAuth2ClientLookup,
         r#"
@@ -338,11 +324,12 @@ pub async fn lookup_client(
         Uuid::from(id),
     )
     .fetch_one(executor)
-    .await?;
+    .await
+    .to_option()?;
 
-    let client = res.try_into()?;
+    let Some(res) = res else { return Ok(None) };
 
-    Ok(client)
+    Ok(Some(res.try_into()?))
 }
 
 #[tracing::instrument(
@@ -353,8 +340,8 @@ pub async fn lookup_client(
 pub async fn lookup_client_by_client_id(
     executor: impl PgExecutor<'_>,
     client_id: &str,
-) -> Result<Client, ClientFetchError> {
-    let id: Ulid = client_id.parse()?;
+) -> Result<Option<Client>, DatabaseError> {
+    let Ok(id) = client_id.parse() else { return Ok(None) };
     lookup_client(executor, id).await
 }
 

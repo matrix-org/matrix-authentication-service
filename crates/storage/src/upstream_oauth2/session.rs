@@ -16,24 +16,12 @@ use chrono::{DateTime, Utc};
 use mas_data_model::{UpstreamOAuthAuthorizationSession, UpstreamOAuthLink, UpstreamOAuthProvider};
 use rand::Rng;
 use sqlx::PgExecutor;
-use thiserror::Error;
 use ulid::Ulid;
 use uuid::Uuid;
 
-use crate::{Clock, DatabaseInconsistencyError, GenericLookupError, LookupError};
-
-#[derive(Debug, Error)]
-#[error("Failed to lookup upstream OAuth 2.0 authorization session")]
-pub enum SessionLookupError {
-    Driver(#[from] sqlx::Error),
-    Inconcistency(#[from] DatabaseInconsistencyError),
-}
-
-impl LookupError for SessionLookupError {
-    fn not_found(&self) -> bool {
-        matches!(self, Self::Driver(sqlx::Error::RowNotFound))
-    }
-}
+use crate::{
+    Clock, DatabaseError, DatabaseInconsistencyError2, GenericLookupError, LookupResultExt,
+};
 
 struct SessionAndProviderLookup {
     upstream_oauth_authorization_session_id: Uuid,
@@ -64,7 +52,7 @@ struct SessionAndProviderLookup {
 pub async fn lookup_session(
     executor: impl PgExecutor<'_>,
     id: Ulid,
-) -> Result<(UpstreamOAuthProvider, UpstreamOAuthAuthorizationSession), SessionLookupError> {
+) -> Result<Option<(UpstreamOAuthProvider, UpstreamOAuthAuthorizationSession)>, DatabaseError> {
     let res = sqlx::query_as!(
         SessionAndProviderLookup,
         r#"
@@ -94,29 +82,41 @@ pub async fn lookup_session(
         Uuid::from(id),
     )
     .fetch_one(executor)
-    .await?;
+    .await
+    .to_option()?;
 
+    let Some(res) = res else { return Ok(None) };
+
+    let id = res.upstream_oauth_provider_id.into();
     let provider = UpstreamOAuthProvider {
-        id: res.upstream_oauth_provider_id.into(),
-        issuer: res
-            .provider_issuer
-            .parse()
-            .map_err(|_| DatabaseInconsistencyError)?,
-        scope: res
-            .provider_scope
-            .parse()
-            .map_err(|_| DatabaseInconsistencyError)?,
+        id,
+        issuer: res.provider_issuer,
+        scope: res.provider_scope.parse().map_err(|e| {
+            DatabaseInconsistencyError2::on("upstream_oauth_providers")
+                .column("scope")
+                .row(id)
+                .source(e)
+        })?,
         client_id: res.provider_client_id,
         encrypted_client_secret: res.provider_encrypted_client_secret,
-        token_endpoint_auth_method: res
-            .provider_token_endpoint_auth_method
-            .parse()
-            .map_err(|_| DatabaseInconsistencyError)?,
+        token_endpoint_auth_method: res.provider_token_endpoint_auth_method.parse().map_err(
+            |e| {
+                DatabaseInconsistencyError2::on("upstream_oauth_providers")
+                    .column("token_endpoint_auth_method")
+                    .row(id)
+                    .source(e)
+            },
+        )?,
         token_endpoint_signing_alg: res
             .provider_token_endpoint_signing_alg
             .map(|x| x.parse())
             .transpose()
-            .map_err(|_| DatabaseInconsistencyError)?,
+            .map_err(|e| {
+                DatabaseInconsistencyError2::on("upstream_oauth_providers")
+                    .column("token_endpoint_signing_alg")
+                    .row(id)
+                    .source(e)
+            })?,
         created_at: res.provider_created_at,
     };
 
@@ -133,7 +133,7 @@ pub async fn lookup_session(
         consumed_at: res.consumed_at,
     };
 
-    Ok((provider, session))
+    Ok(Some((provider, session)))
 }
 
 /// Add a session to the database

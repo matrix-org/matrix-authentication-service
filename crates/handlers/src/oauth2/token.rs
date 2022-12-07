@@ -26,9 +26,9 @@ use mas_axum_utils::{
 use mas_data_model::{AuthorizationGrantStage, Client, TokenType};
 use mas_iana::jose::JsonWebSignatureAlg;
 use mas_jose::{
-    claims::{self, hash_token, ClaimError, TokenHashError},
+    claims::{self, hash_token},
     constraints::Constrainable,
-    jwt::{JsonWebSignatureHeader, Jwt, JwtSignatureError},
+    jwt::{JsonWebSignatureHeader, Jwt},
 };
 use mas_keystore::{Encrypter, Keystore};
 use mas_router::UrlBuilder;
@@ -36,14 +36,10 @@ use mas_storage::{
     oauth2::{
         access_token::{add_access_token, revoke_access_token},
         authorization_grant::{exchange_grant, lookup_grant_by_code},
-        client::ClientFetchError,
         end_oauth_session,
-        refresh_token::{
-            add_refresh_token, consume_refresh_token, lookup_active_refresh_token,
-            RefreshTokenLookupError,
-        },
+        refresh_token::{add_refresh_token, consume_refresh_token, lookup_active_refresh_token},
     },
-    DatabaseInconsistencyError, LookupError,
+    DatabaseInconsistencyError,
 };
 use oauth2_types::{
     errors::{ClientError, ClientErrorCode},
@@ -59,6 +55,8 @@ use sqlx::{PgPool, Postgres, Transaction};
 use thiserror::Error;
 use tracing::debug;
 use url::Url;
+
+use crate::impl_from_error_for_route;
 
 #[serde_as]
 #[skip_serializing_none]
@@ -107,26 +105,6 @@ pub(crate) enum RouteError {
     UnauthorizedClient,
 }
 
-impl From<ClientFetchError> for RouteError {
-    fn from(e: ClientFetchError) -> Self {
-        if e.not_found() {
-            Self::ClientNotFound
-        } else {
-            Self::Internal(Box::new(e))
-        }
-    }
-}
-
-impl From<RefreshTokenLookupError> for RouteError {
-    fn from(e: RefreshTokenLookupError) -> Self {
-        if e.not_found() {
-            Self::InvalidGrant
-        } else {
-            Self::Internal(Box::new(e))
-        }
-    }
-}
-
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         match self {
@@ -162,35 +140,12 @@ impl IntoResponse for RouteError {
     }
 }
 
-impl From<mas_keystore::WrongAlgorithmError> for RouteError {
-    fn from(e: mas_keystore::WrongAlgorithmError) -> Self {
-        Self::Internal(Box::new(e))
-    }
-}
-
-impl From<sqlx::Error> for RouteError {
-    fn from(e: sqlx::Error) -> Self {
-        Self::Internal(Box::new(e))
-    }
-}
-
-impl From<ClaimError> for RouteError {
-    fn from(e: ClaimError) -> Self {
-        Self::Internal(Box::new(e))
-    }
-}
-
-impl From<TokenHashError> for RouteError {
-    fn from(e: TokenHashError) -> Self {
-        Self::Internal(Box::new(e))
-    }
-}
-
-impl From<JwtSignatureError> for RouteError {
-    fn from(e: JwtSignatureError) -> Self {
-        Self::Internal(Box::new(e))
-    }
-}
+impl_from_error_for_route!(sqlx::Error);
+impl_from_error_for_route!(mas_storage::DatabaseError);
+impl_from_error_for_route!(mas_keystore::WrongAlgorithmError);
+impl_from_error_for_route!(mas_jose::claims::ClaimError);
+impl_from_error_for_route!(mas_jose::claims::TokenHashError);
+impl_from_error_for_route!(mas_jose::jwt::JwtSignatureError);
 
 #[tracing::instrument(skip_all, err)]
 pub(crate) async fn post(
@@ -203,7 +158,11 @@ pub(crate) async fn post(
 ) -> Result<impl IntoResponse, RouteError> {
     let mut txn = pool.begin().await?;
 
-    let client = client_authorization.credentials.fetch(&mut txn).await?;
+    let client = client_authorization
+        .credentials
+        .fetch(&mut txn)
+        .await?
+        .ok_or(RouteError::ClientNotFound)?;
 
     let method = client
         .token_endpoint_auth_method
@@ -396,8 +355,9 @@ async fn refresh_token_grant(
 ) -> Result<AccessTokenResponse, RouteError> {
     let (clock, mut rng) = crate::rng_and_clock()?;
 
-    let (refresh_token, session) =
-        lookup_active_refresh_token(&mut txn, &grant.refresh_token).await?;
+    let (refresh_token, session) = lookup_active_refresh_token(&mut txn, &grant.refresh_token)
+        .await?
+        .ok_or(RouteError::InvalidGrant)?;
 
     if client.client_id != session.client.client_id {
         // As per https://datatracker.ietf.org/doc/html/rfc6749#section-5.2

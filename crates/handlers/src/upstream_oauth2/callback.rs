@@ -25,9 +25,8 @@ use mas_oidc_client::requests::{
     authorization_code::AuthorizationValidationData, jose::JwtVerificationData,
 };
 use mas_router::{Route, UrlBuilder};
-use mas_storage::{
-    upstream_oauth2::{add_link, complete_session, lookup_link_by_subject, lookup_session},
-    LookupResultExt,
+use mas_storage::upstream_oauth2::{
+    add_link, complete_session, lookup_link_by_subject, lookup_session,
 };
 use oauth2_types::errors::ClientErrorCode;
 use serde::Deserialize;
@@ -97,8 +96,6 @@ pub(crate) enum RouteError {
 }
 
 impl_from_error_for_route!(mas_storage::DatabaseError);
-impl_from_error_for_route!(mas_storage::GenericLookupError);
-impl_from_error_for_route!(mas_storage::upstream_oauth2::SessionLookupError);
 impl_from_error_for_route!(mas_http::ClientInitError);
 impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_oidc_client::error::DiscoveryError);
@@ -141,8 +138,7 @@ pub(crate) async fn get(
         .map_err(|_| RouteError::MissingCookie)?;
 
     let (provider, session) = lookup_session(&mut txn, session_id)
-        .await
-        .to_option()?
+        .await?
         .ok_or(RouteError::SessionNotFound)?;
 
     if provider.id != provider_id {

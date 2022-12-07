@@ -180,6 +180,7 @@ impl GrantLookup {
         // TODO: don't unwrap
         let client = lookup_client(executor, self.oauth2_client_id.into())
             .await
+            .unwrap()
             .unwrap();
 
         let last_authentication = match (

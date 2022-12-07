@@ -26,12 +26,8 @@ use mas_data_model::{AuthorizationCode, Pkce};
 use mas_keystore::Encrypter;
 use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
-use mas_storage::{
-    oauth2::{
-        authorization_grant::new_authorization_grant,
-        client::{lookup_client_by_client_id, ClientFetchError},
-    },
-    LookupError,
+use mas_storage::oauth2::{
+    authorization_grant::new_authorization_grant, client::lookup_client_by_client_id,
 };
 use mas_templates::Templates;
 use oauth2_types::{
@@ -46,6 +42,7 @@ use sqlx::PgPool;
 use thiserror::Error;
 
 use self::{callback::CallbackDestination, complete::GrantCompletionError};
+use crate::impl_from_error_for_route;
 
 mod callback;
 pub mod complete;
@@ -56,7 +53,7 @@ pub enum RouteError {
     Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
 
     #[error(transparent)]
-    Anyhow(anyhow::Error),
+    Anyhow(#[from] anyhow::Error),
 
     #[error("could not find client")]
     ClientNotFound,
@@ -93,33 +90,9 @@ impl IntoResponse for RouteError {
     }
 }
 
-impl From<sqlx::Error> for RouteError {
-    fn from(e: sqlx::Error) -> Self {
-        Self::Internal(Box::new(e))
-    }
-}
-
-impl From<self::callback::CallbackDestinationError> for RouteError {
-    fn from(e: self::callback::CallbackDestinationError) -> Self {
-        Self::Internal(Box::new(e))
-    }
-}
-
-impl From<ClientFetchError> for RouteError {
-    fn from(e: ClientFetchError) -> Self {
-        if e.not_found() {
-            Self::ClientNotFound
-        } else {
-            Self::Internal(Box::new(e))
-        }
-    }
-}
-
-impl From<anyhow::Error> for RouteError {
-    fn from(e: anyhow::Error) -> Self {
-        Self::Anyhow(e)
-    }
-}
+impl_from_error_for_route!(sqlx::Error);
+impl_from_error_for_route!(mas_storage::DatabaseError);
+impl_from_error_for_route!(self::callback::CallbackDestinationError);
 
 #[derive(Deserialize)]
 pub(crate) struct Params {
@@ -166,7 +139,9 @@ pub(crate) async fn get(
     let mut txn = pool.begin().await?;
 
     // First, figure out what client it is
-    let client = lookup_client_by_client_id(&mut txn, &params.auth.client_id).await?;
+    let client = lookup_client_by_client_id(&mut txn, &params.auth.client_id)
+        .await?
+        .ok_or(RouteError::ClientNotFound)?;
 
     // And resolve the redirect_uri and response_mode
     let redirect_uri = client
