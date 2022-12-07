@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use anyhow::Context;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{
     compat::get_compat_sso_login_by_id, oauth2::authorization_grant::get_grant_by_id,
@@ -58,11 +59,14 @@ impl OptionalPostAuthAction {
             PostAuthAction::ChangePassword => PostAuthContextInner::ChangePassword,
 
             PostAuthAction::LinkUpstream { id } => {
-                let link = mas_storage::upstream_oauth2::lookup_link(&mut *conn, id).await?;
+                let link = mas_storage::upstream_oauth2::lookup_link(&mut *conn, id)
+                    .await?
+                    .context("Failed to load upstream OAuth 2.0 link")?;
 
                 let provider =
                     mas_storage::upstream_oauth2::lookup_provider(&mut *conn, link.provider_id)
-                        .await?;
+                        .await?
+                        .context("Failed to load upstream OAuth 2.0 provider")?;
 
                 let provider = Box::new(provider);
                 let link = Box::new(link);

@@ -119,7 +119,7 @@ pub trait QueryBuilderExt {
         after: Option<Ulid>,
         first: Option<usize>,
         last: Option<usize>,
-    ) -> Result<&mut Self, anyhow::Error>;
+    ) -> Result<&mut Self, InvalidPagination>;
 }
 
 impl<'a, DB> QueryBuilderExt for QueryBuilder<'a, DB>
@@ -135,7 +135,7 @@ where
         after: Option<Ulid>,
         first: Option<usize>,
         last: Option<usize>,
-    ) -> Result<&mut Self, anyhow::Error> {
+    ) -> Result<&mut Self, InvalidPagination> {
         generate_pagination(self, id_field, before, after, first, last)?;
         Ok(self)
     }

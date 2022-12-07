@@ -96,6 +96,7 @@ pub(crate) enum RouteError {
     Anyhow(#[from] anyhow::Error),
 }
 
+impl_from_error_for_route!(mas_storage::DatabaseError);
 impl_from_error_for_route!(mas_storage::GenericLookupError);
 impl_from_error_for_route!(mas_storage::upstream_oauth2::SessionLookupError);
 impl_from_error_for_route!(mas_http::ClientInitError);
@@ -242,9 +243,7 @@ pub(crate) async fn get(
     let subject = mas_jose::claims::SUB.extract_required(&mut id_token)?;
 
     // Look for an existing link
-    let maybe_link = lookup_link_by_subject(&mut txn, &provider, &subject)
-        .await
-        .to_option()?;
+    let maybe_link = lookup_link_by_subject(&mut txn, &provider, &subject).await?;
 
     let link = if let Some(link) = maybe_link {
         link

@@ -22,7 +22,7 @@ use mas_axum_utils::http_client_factory::HttpClientFactory;
 use mas_keystore::Encrypter;
 use mas_oidc_client::requests::authorization_code::AuthorizationRequestData;
 use mas_router::UrlBuilder;
-use mas_storage::{upstream_oauth2::lookup_provider, LookupResultExt};
+use mas_storage::upstream_oauth2::lookup_provider;
 use sqlx::PgPool;
 use thiserror::Error;
 use ulid::Ulid;
@@ -46,7 +46,7 @@ impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_http::ClientInitError);
 impl_from_error_for_route!(mas_oidc_client::error::DiscoveryError);
 impl_from_error_for_route!(mas_oidc_client::error::AuthorizationError);
-impl_from_error_for_route!(mas_storage::upstream_oauth2::ProviderLookupError);
+impl_from_error_for_route!(mas_storage::DatabaseError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
@@ -75,8 +75,7 @@ pub(crate) async fn get(
     let mut txn = pool.begin().await?;
 
     let provider = lookup_provider(&mut txn, provider_id)
-        .await
-        .to_option()?
+        .await?
         .ok_or(RouteError::ProviderNotFound)?;
 
     let http_service = http_client_factory

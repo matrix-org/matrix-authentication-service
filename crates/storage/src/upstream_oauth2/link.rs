@@ -22,7 +22,7 @@ use uuid::Uuid;
 
 use crate::{
     pagination::{process_page, QueryBuilderExt},
-    Clock, GenericLookupError,
+    Clock, DatabaseError, LookupResultExt,
 };
 
 #[derive(sqlx::FromRow)]
@@ -54,7 +54,7 @@ impl From<LinkLookup> for UpstreamOAuthLink {
 pub async fn lookup_link(
     executor: impl PgExecutor<'_>,
     id: Ulid,
-) -> Result<UpstreamOAuthLink, GenericLookupError> {
+) -> Result<Option<UpstreamOAuthLink>, DatabaseError> {
     let res = sqlx::query_as!(
         LinkLookup,
         r#"
@@ -71,9 +71,10 @@ pub async fn lookup_link(
     )
     .fetch_one(executor)
     .await
-    .map_err(GenericLookupError::what("Upstream OAuth 2.0 link"))?;
+    .to_option()?
+    .map(Into::into);
 
-    Ok(res.into())
+    Ok(res)
 }
 
 #[tracing::instrument(
@@ -90,7 +91,7 @@ pub async fn lookup_link_by_subject(
     executor: impl PgExecutor<'_>,
     upstream_oauth_provider: &UpstreamOAuthProvider,
     subject: &str,
-) -> Result<UpstreamOAuthLink, GenericLookupError> {
+) -> Result<Option<UpstreamOAuthLink>, DatabaseError> {
     let res = sqlx::query_as!(
         LinkLookup,
         r#"
@@ -109,9 +110,10 @@ pub async fn lookup_link_by_subject(
     )
     .fetch_one(executor)
     .await
-    .map_err(GenericLookupError::what("Upstream OAuth 2.0 link"))?;
+    .to_option()?
+    .map(Into::into);
 
-    Ok(res.into())
+    Ok(res)
 }
 
 #[tracing::instrument(
@@ -131,7 +133,7 @@ pub async fn add_link(
     clock: &Clock,
     upstream_oauth_provider: &UpstreamOAuthProvider,
     subject: String,
-) -> Result<UpstreamOAuthLink, sqlx::Error> {
+) -> Result<UpstreamOAuthLink, DatabaseError> {
     let created_at = clock.now();
     let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
     tracing::Span::current().record("upstream_oauth_link.id", tracing::field::display(id));
@@ -205,7 +207,7 @@ pub async fn get_paginated_user_links(
     after: Option<Ulid>,
     first: Option<usize>,
     last: Option<usize>,
-) -> Result<(bool, bool, Vec<UpstreamOAuthLink>), anyhow::Error> {
+) -> Result<(bool, bool, Vec<UpstreamOAuthLink>), DatabaseError> {
     let mut query = QueryBuilder::new(
         r#"
             SELECT

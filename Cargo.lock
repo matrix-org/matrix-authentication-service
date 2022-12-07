@@ -2788,6 +2788,7 @@ dependencies = [
 name = "mas-graphql"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "async-graphql",
  "chrono",
  "mas-axum-utils",

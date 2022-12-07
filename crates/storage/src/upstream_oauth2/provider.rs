@@ -18,28 +18,14 @@ use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod
 use oauth2_types::scope::Scope;
 use rand::Rng;
 use sqlx::{PgExecutor, QueryBuilder};
-use thiserror::Error;
 use tracing::{info_span, Instrument};
 use ulid::Ulid;
 use uuid::Uuid;
 
 use crate::{
     pagination::{process_page, QueryBuilderExt},
-    Clock, DatabaseInconsistencyError, LookupError,
+    Clock, DatabaseError, DatabaseInconsistencyError2, LookupResultExt,
 };
-
-#[derive(Debug, Error)]
-#[error("Failed to lookup upstream OAuth 2.0 provider")]
-pub enum ProviderLookupError {
-    Driver(#[from] sqlx::Error),
-    Inconcistency(#[from] DatabaseInconsistencyError),
-}
-
-impl LookupError for ProviderLookupError {
-    fn not_found(&self) -> bool {
-        matches!(self, Self::Driver(sqlx::Error::RowNotFound))
-    }
-}
 
 #[derive(sqlx::FromRow)]
 struct ProviderLookup {
@@ -54,22 +40,31 @@ struct ProviderLookup {
 }
 
 impl TryFrom<ProviderLookup> for UpstreamOAuthProvider {
-    type Error = DatabaseInconsistencyError;
+    type Error = DatabaseInconsistencyError2;
     fn try_from(value: ProviderLookup) -> Result<Self, Self::Error> {
         let id = value.upstream_oauth_provider_id.into();
-        let scope = value
-            .scope
-            .parse()
-            .map_err(|_| DatabaseInconsistencyError)?;
-        let token_endpoint_auth_method = value
-            .token_endpoint_auth_method
-            .parse()
-            .map_err(|_| DatabaseInconsistencyError)?;
+        let scope = value.scope.parse().map_err(|e| {
+            DatabaseInconsistencyError2::on("upstream_oauth_providers")
+                .column("scope")
+                .row(id)
+                .source(e)
+        })?;
+        let token_endpoint_auth_method = value.token_endpoint_auth_method.parse().map_err(|e| {
+            DatabaseInconsistencyError2::on("upstream_oauth_providers")
+                .column("token_endpoint_auth_method")
+                .row(id)
+                .source(e)
+        })?;
         let token_endpoint_signing_alg = value
             .token_endpoint_signing_alg
             .map(|x| x.parse())
             .transpose()
-            .map_err(|_| DatabaseInconsistencyError)?;
+            .map_err(|e| {
+                DatabaseInconsistencyError2::on("upstream_oauth_providers")
+                    .column("token_endpoint_signing_alg")
+                    .row(id)
+                    .source(e)
+            })?;
 
         Ok(UpstreamOAuthProvider {
             id,
@@ -92,7 +87,7 @@ impl TryFrom<ProviderLookup> for UpstreamOAuthProvider {
 pub async fn lookup_provider(
     executor: impl PgExecutor<'_>,
     id: Ulid,
-) -> Result<UpstreamOAuthProvider, ProviderLookupError> {
+) -> Result<Option<UpstreamOAuthProvider>, DatabaseError> {
     let res = sqlx::query_as!(
         ProviderLookup,
         r#"
@@ -111,9 +106,15 @@ pub async fn lookup_provider(
         Uuid::from(id),
     )
     .fetch_one(executor)
-    .await?;
+    .await
+    .to_option()?;
 
-    Ok(res.try_into()?)
+    let res = res
+        .map(UpstreamOAuthProvider::try_from)
+        .transpose()
+        .map_err(DatabaseError::from)?;
+
+    Ok(res)
 }
 
 #[tracing::instrument(
