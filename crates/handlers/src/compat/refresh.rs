@@ -16,13 +16,9 @@ use axum::{extract::State, response::IntoResponse, Json};
 use chrono::Duration;
 use hyper::StatusCode;
 use mas_data_model::{TokenFormatError, TokenType};
-use mas_storage::{
-    compat::{
-        add_compat_access_token, add_compat_refresh_token, consume_compat_refresh_token,
-        expire_compat_access_token, lookup_active_compat_refresh_token,
-        CompatRefreshTokenLookupError,
-    },
-    LookupError,
+use mas_storage::compat::{
+    add_compat_access_token, add_compat_refresh_token, consume_compat_refresh_token,
+    expire_compat_access_token, lookup_active_compat_refresh_token,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DurationMilliSeconds};
@@ -30,6 +26,7 @@ use sqlx::PgPool;
 use thiserror::Error;
 
 use super::MatrixError;
+use crate::impl_from_error_for_route;
 
 #[derive(Debug, Deserialize)]
 pub struct RequestBody {
@@ -66,25 +63,12 @@ impl IntoResponse for RouteError {
     }
 }
 
-impl From<sqlx::Error> for RouteError {
-    fn from(e: sqlx::Error) -> Self {
-        Self::Internal(Box::new(e))
-    }
-}
+impl_from_error_for_route!(sqlx::Error);
+impl_from_error_for_route!(mas_storage::DatabaseError);
 
 impl From<TokenFormatError> for RouteError {
     fn from(_e: TokenFormatError) -> Self {
         Self::InvalidToken
-    }
-}
-
-impl From<CompatRefreshTokenLookupError> for RouteError {
-    fn from(e: CompatRefreshTokenLookupError) -> Self {
-        if e.not_found() {
-            Self::InvalidToken
-        } else {
-            Self::Internal(Box::new(e))
-        }
     }
 }
 
@@ -111,7 +95,9 @@ pub(crate) async fn post(
     }
 
     let (refresh_token, access_token, session) =
-        lookup_active_compat_refresh_token(&mut txn, &input.refresh_token).await?;
+        lookup_active_compat_refresh_token(&mut txn, &input.refresh_token)
+            .await?
+            .ok_or(RouteError::InvalidToken)?;
 
     let new_refresh_token_str = TokenType::CompatRefreshToken.generate(&mut rng);
     let new_access_token_str = TokenType::CompatAccessToken.generate(&mut rng);

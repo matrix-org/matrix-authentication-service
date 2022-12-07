@@ -62,7 +62,7 @@ macro_rules! impl_from_error_for_route {
     ($error:ty) => {
         impl From<$error> for self::RouteError {
             fn from(e: $error) -> Self {
-                Self::InternalError(Box::new(e))
+                Self::Internal(Box::new(e))
             }
         }
     };

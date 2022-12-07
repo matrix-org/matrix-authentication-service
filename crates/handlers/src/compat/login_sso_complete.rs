@@ -15,6 +15,7 @@
 
 use std::collections::HashMap;
 
+use anyhow::Context;
 use axum::{
     extract::{Form, Path, Query, State},
     response::{Html, IntoResponse, Redirect, Response},
@@ -92,7 +93,9 @@ pub async fn get(
         return Ok((cookie_jar, destination.go()).into_response());
     }
 
-    let login = get_compat_sso_login_by_id(&mut conn, id).await?;
+    let login = get_compat_sso_login_by_id(&mut conn, id)
+        .await?
+        .context("Could not find compat SSO login")?;
 
     // Bail out if that login session is more than 30min old
     if clock.now() > login.created_at + Duration::minutes(30) {
@@ -158,7 +161,9 @@ pub async fn post(
         return Ok((cookie_jar, destination.go()).into_response());
     }
 
-    let login = get_compat_sso_login_by_id(&mut txn, id).await?;
+    let login = get_compat_sso_login_by_id(&mut txn, id)
+        .await?
+        .context("Could not find compat SSO login")?;
 
     // Bail out if that login session is more than 30min old
     if clock.now() > login.created_at + Duration::minutes(30) {

@@ -36,7 +36,7 @@ pub(crate) enum RouteError {
     ProviderNotFound,
 
     #[error(transparent)]
-    InternalError(Box<dyn std::error::Error>),
+    Internal(Box<dyn std::error::Error>),
 
     #[error(transparent)]
     Anyhow(#[from] anyhow::Error),
@@ -52,9 +52,7 @@ impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         match self {
             Self::ProviderNotFound => (StatusCode::NOT_FOUND, "Provider not found").into_response(),
-            Self::InternalError(e) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
-            }
+            Self::Internal(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
             Self::Anyhow(e) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, format!("{e:?}")).into_response()
             }

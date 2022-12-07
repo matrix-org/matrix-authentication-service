@@ -22,10 +22,7 @@ use mas_data_model::{TokenFormatError, TokenType};
 use mas_iana::oauth::{OAuthClientAuthenticationMethod, OAuthTokenTypeHint};
 use mas_keystore::Encrypter;
 use mas_storage::{
-    compat::{
-        lookup_active_compat_access_token, lookup_active_compat_refresh_token,
-        CompatAccessTokenLookupError, CompatRefreshTokenLookupError,
-    },
+    compat::{lookup_active_compat_access_token, lookup_active_compat_refresh_token},
     oauth2::{
         access_token::{lookup_active_access_token, AccessTokenLookupError},
         client::ClientFetchError,
@@ -36,6 +33,8 @@ use mas_storage::{
 use oauth2_types::requests::{IntrospectionRequest, IntrospectionResponse};
 use sqlx::PgPool;
 use thiserror::Error;
+
+use crate::impl_from_error_for_route;
 
 #[derive(Debug, Error)]
 pub enum RouteError {
@@ -79,11 +78,8 @@ impl IntoResponse for RouteError {
     }
 }
 
-impl From<sqlx::Error> for RouteError {
-    fn from(e: sqlx::Error) -> Self {
-        Self::Internal(Box::new(e))
-    }
-}
+impl_from_error_for_route!(sqlx::Error);
+impl_from_error_for_route!(mas_storage::DatabaseError);
 
 impl From<TokenFormatError> for RouteError {
     fn from(_e: TokenFormatError) -> Self {
@@ -111,28 +107,8 @@ impl From<AccessTokenLookupError> for RouteError {
     }
 }
 
-impl From<CompatAccessTokenLookupError> for RouteError {
-    fn from(e: CompatAccessTokenLookupError) -> Self {
-        if e.not_found() {
-            Self::UnknownToken
-        } else {
-            Self::Internal(Box::new(e))
-        }
-    }
-}
-
 impl From<RefreshTokenLookupError> for RouteError {
     fn from(e: RefreshTokenLookupError) -> Self {
-        if e.not_found() {
-            Self::UnknownToken
-        } else {
-            Self::Internal(Box::new(e))
-        }
-    }
-}
-
-impl From<CompatRefreshTokenLookupError> for RouteError {
-    fn from(e: CompatRefreshTokenLookupError) -> Self {
         if e.not_found() {
             Self::UnknownToken
         } else {
@@ -232,8 +208,9 @@ pub(crate) async fn post(
             }
         }
         TokenType::CompatAccessToken => {
-            let (token, session) =
-                lookup_active_compat_access_token(&mut conn, &clock, token).await?;
+            let (token, session) = lookup_active_compat_access_token(&mut conn, &clock, token)
+                .await?
+                .ok_or(RouteError::UnknownToken)?;
 
             let device_scope = session.device.to_scope_token();
             let scope = [device_scope].into_iter().collect();
@@ -255,7 +232,9 @@ pub(crate) async fn post(
         }
         TokenType::CompatRefreshToken => {
             let (refresh_token, _access_token, session) =
-                lookup_active_compat_refresh_token(&mut conn, token).await?;
+                lookup_active_compat_refresh_token(&mut conn, token)
+                    .await?
+                    .ok_or(RouteError::UnknownToken)?;
 
             let device_scope = session.device.to_scope_token();
             let scope = [device_scope].into_iter().collect();

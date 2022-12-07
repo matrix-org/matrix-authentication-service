@@ -224,7 +224,7 @@ pub enum ClientAuthorizationError {
     MissingCredentials,
     InvalidRequest,
     InvalidAssertion,
-    InternalError(Box<dyn std::error::Error>),
+    Internal(Box<dyn std::error::Error>),
 }
 
 impl IntoResponse for ClientAuthorizationError {
@@ -289,7 +289,7 @@ where
                 return Err(ClientAuthorizationError::BadForm(err))
             }
             // Other errors (body read twice, byte stream broke) return an internal error
-            Err(e) => return Err(ClientAuthorizationError::InternalError(Box::new(e))),
+            Err(e) => return Err(ClientAuthorizationError::Internal(Box::new(e))),
         };
 
         // And now, figure out the actual auth method

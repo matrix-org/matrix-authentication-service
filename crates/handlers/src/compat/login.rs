@@ -20,9 +20,8 @@ use mas_storage::{
     compat::{
         add_compat_access_token, add_compat_refresh_token, compat_login,
         get_compat_sso_login_by_token, mark_compat_sso_login_as_exchanged,
-        CompatSsoLoginLookupError,
     },
-    Clock, LookupError,
+    Clock,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none, DurationMilliSeconds};
@@ -30,6 +29,7 @@ use sqlx::{PgPool, Postgres, Transaction};
 use thiserror::Error;
 
 use super::{MatrixError, MatrixHomeserver};
+use crate::impl_from_error_for_route;
 
 #[derive(Debug, Serialize)]
 #[serde(tag = "type")]
@@ -145,21 +145,8 @@ pub enum RouteError {
     InvalidLoginToken,
 }
 
-impl From<sqlx::Error> for RouteError {
-    fn from(e: sqlx::Error) -> Self {
-        Self::Internal(Box::new(e))
-    }
-}
-
-impl From<CompatSsoLoginLookupError> for RouteError {
-    fn from(e: CompatSsoLoginLookupError) -> Self {
-        if e.not_found() {
-            Self::InvalidLoginToken
-        } else {
-            Self::Internal(Box::new(e))
-        }
-    }
-}
+impl_from_error_for_route!(sqlx::Error);
+impl_from_error_for_route!(mas_storage::DatabaseError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
@@ -268,7 +255,9 @@ async fn token_login(
     clock: &Clock,
     token: &str,
 ) -> Result<CompatSession, RouteError> {
-    let login = get_compat_sso_login_by_token(&mut *txn, token).await?;
+    let login = get_compat_sso_login_by_token(&mut *txn, token)
+        .await?
+        .ok_or(RouteError::InvalidLoginToken)?;
 
     let now = clock.now();
     match login.state {
