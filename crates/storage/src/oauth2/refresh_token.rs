@@ -32,7 +32,7 @@ use crate::{Clock, DatabaseInconsistencyError, LookupError, PostgresqlBackend};
         session.id = %session.data,
         user.id = %session.browser_session.user.id,
         user_session.id = %session.browser_session.id,
-        client.id = %session.client.data,
+        client.id = %session.client.id,
         refresh_token.id,
     ),
     err(Debug),

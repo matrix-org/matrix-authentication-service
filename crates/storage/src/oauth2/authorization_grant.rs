@@ -36,7 +36,7 @@ use crate::{Clock, DatabaseInconsistencyError, PostgresqlBackend};
 #[tracing::instrument(
     skip_all,
     fields(
-        client.id = %client.data,
+        %client.id,
         grant.id,
     ),
     err(Debug),
@@ -46,7 +46,7 @@ pub async fn new_authorization_grant(
     executor: impl PgExecutor<'_>,
     mut rng: impl Rng + Send,
     clock: &Clock,
-    client: Client<PostgresqlBackend>,
+    client: Client,
     redirect_uri: Url,
     scope: Scope,
     code: Option<AuthorizationCode>,
@@ -97,7 +97,7 @@ pub async fn new_authorization_grant(
                 ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
         "#,
         Uuid::from(id),
-        Uuid::from(client.data),
+        Uuid::from(client.id),
         redirect_uri.to_string(),
         scope.to_string(),
         state,
@@ -498,7 +498,7 @@ pub async fn lookup_grant_by_code(
     skip_all,
     fields(
         grant.id = %grant.data,
-        client.id = %grant.client.data,
+        client.id = %grant.client.id,
         session.id,
         user_session.id = %browser_session.id,
         user.id = %browser_session.user.id,
@@ -552,7 +552,7 @@ pub async fn derive_session(
     skip_all,
     fields(
         grant.id = %grant.data,
-        client.id = %grant.client.data,
+        client.id = %grant.client.id,
         session.id = %session.data,
         user_session.id = %session.browser_session.id,
         user.id = %session.browser_session.user.id,
@@ -592,7 +592,7 @@ pub async fn fulfill_grant(
     skip_all,
     fields(
         grant.id = %grant.data,
-        client.id = %grant.client.data,
+        client.id = %grant.client.id,
     ),
     err(Debug),
 )]
@@ -622,7 +622,7 @@ pub async fn give_consent_to_grant(
     skip_all,
     fields(
         grant.id = %grant.data,
-        client.id = %grant.client.data,
+        client.id = %grant.client.id,
     ),
     err(Debug),
 )]

@@ -165,7 +165,7 @@ pub struct AuthorizationGrant<T: StorageBackend> {
     #[serde(flatten)]
     pub stage: AuthorizationGrantStage<T>,
     pub code: Option<AuthorizationCode>,
-    pub client: Client<T>,
+    pub client: Client,
     pub redirect_uri: Url,
     pub scope: oauth2_types::scope::Scope,
     pub state: Option<String>,
@@ -183,7 +183,7 @@ impl<S: StorageBackendMarker> From<AuthorizationGrant<S>> for AuthorizationGrant
             data: (),
             stage: g.stage.into(),
             code: g.code,
-            client: g.client.into(),
+            client: g.client,
             redirect_uri: g.redirect_uri,
             scope: g.scope,
             state: g.state,

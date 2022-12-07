@@ -43,7 +43,7 @@ use mas_storage::{
             RefreshTokenLookupError,
         },
     },
-    DatabaseInconsistencyError, LookupError, PostgresqlBackend,
+    DatabaseInconsistencyError, LookupError,
 };
 use oauth2_types::{
     errors::{ClientError, ClientErrorCode},
@@ -239,7 +239,7 @@ pub(crate) async fn post(
 #[allow(clippy::too_many_lines)]
 async fn authorization_code_grant(
     grant: &AuthorizationCodeGrant,
-    client: &Client<PostgresqlBackend>,
+    client: &Client,
     key_store: &Keystore,
     url_builder: &UrlBuilder,
     mut txn: Transaction<'_, Postgres>,
@@ -391,7 +391,7 @@ async fn authorization_code_grant(
 
 async fn refresh_token_grant(
     grant: &RefreshTokenGrant,
-    client: &Client<PostgresqlBackend>,
+    client: &Client,
     mut txn: Transaction<'_, Postgres>,
 ) -> Result<AccessTokenResponse, RouteError> {
     let (clock, mut rng) = crate::rng_and_clock()?;

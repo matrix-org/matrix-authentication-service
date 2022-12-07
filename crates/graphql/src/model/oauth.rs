@@ -56,13 +56,13 @@ impl OAuth2Session {
 
 /// An OAuth 2.0 client
 #[derive(Description)]
-pub struct OAuth2Client(pub mas_data_model::Client<PostgresqlBackend>);
+pub struct OAuth2Client(pub mas_data_model::Client);
 
 #[Object(use_type_description)]
 impl OAuth2Client {
     /// ID of the object.
     pub async fn id(&self) -> ID {
-        NodeType::OAuth2Client.id(self.0.data)
+        NodeType::OAuth2Client.id(self.0.id)
     }
 
     /// OAuth 2.0 client ID
