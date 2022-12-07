@@ -29,8 +29,10 @@
 )]
 
 use chrono::{DateTime, Utc};
+use pagination::InvalidPagination;
 use sqlx::migrate::Migrator;
 use thiserror::Error;
+use ulid::Ulid;
 
 #[derive(Debug, Error)]
 #[error("failed to lookup {what}")]
@@ -49,6 +51,12 @@ impl GenericLookupError {
 impl LookupError for GenericLookupError {
     fn not_found(&self) -> bool {
         matches!(self.source, sqlx::Error::RowNotFound)
+    }
+}
+
+impl LookupError for sqlx::Error {
+    fn not_found(&self) -> bool {
+        matches!(self, sqlx::Error::RowNotFound)
     }
 }
 
@@ -77,6 +85,76 @@ where
             Err(e) if e.not_found() => Ok(None),
             Err(e) => Err(e),
         }
+    }
+}
+
+/// Generic error when interacting with the database
+#[derive(Debug, Error)]
+#[error(transparent)]
+pub enum DatabaseError {
+    /// An error which came from the database itself
+    Driver(#[from] sqlx::Error),
+
+    /// An error which occured while converting the data from the database
+    Inconsistency(#[from] DatabaseInconsistencyError2),
+
+    /// An error which occured while generating the paginated query
+    Pagination(#[from] InvalidPagination),
+}
+
+#[derive(Debug, Error)]
+pub struct DatabaseInconsistencyError2 {
+    table: &'static str,
+    column: Option<&'static str>,
+    row: Option<Ulid>,
+
+    #[source]
+    source: Option<Box<dyn std::error::Error + Send + Sync + 'static>>,
+}
+
+impl std::fmt::Display for DatabaseInconsistencyError2 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Database inconsistency on table {}", self.table)?;
+        if let Some(column) = self.column {
+            write!(f, " column {column}")?;
+        }
+        if let Some(row) = self.row {
+            write!(f, " row {row}")?;
+        }
+
+        Ok(())
+    }
+}
+
+impl DatabaseInconsistencyError2 {
+    #[must_use]
+    pub(crate) const fn on(table: &'static str) -> Self {
+        Self {
+            table,
+            column: None,
+            row: None,
+            source: None,
+        }
+    }
+
+    #[must_use]
+    pub(crate) const fn column(mut self, column: &'static str) -> Self {
+        self.column = Some(column);
+        self
+    }
+
+    #[must_use]
+    pub(crate) const fn row(mut self, row: Ulid) -> Self {
+        self.row = Some(row);
+        self
+    }
+
+    pub(crate) fn source<E: std::error::Error + Send + Sync + 'static>(
+        mut self,
+        source: E,
+    ) -> Self {
+        self.source = Some(Box::new(source));
+        self
     }
 }
 

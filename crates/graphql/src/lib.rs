@@ -188,9 +188,7 @@ impl RootQuery {
         let Some(session) = session else { return Ok(None) };
         let current_user = session.user;
 
-        let link = mas_storage::upstream_oauth2::lookup_link(&mut conn, id)
-            .await
-            .to_option()?;
+        let link = mas_storage::upstream_oauth2::lookup_link(&mut conn, id).await?;
 
         // Ensure that the link belongs to the current user
         let link = link.filter(|link| link.user_id == Some(current_user.id));
@@ -208,9 +206,7 @@ impl RootQuery {
         let database = ctx.data::<PgPool>()?;
         let mut conn = database.acquire().await?;
 
-        let provider = mas_storage::upstream_oauth2::lookup_provider(&mut conn, id)
-            .await
-            .to_option()?;
+        let provider = mas_storage::upstream_oauth2::lookup_provider(&mut conn, id).await?;
 
         Ok(provider.map(UpstreamOAuth2Provider::new))
     }

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use anyhow::Context as _;
 use async_graphql::{Context, Object, ID};
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
@@ -100,7 +101,9 @@ impl UpstreamOAuth2Link {
             // Fetch on-the-fly
             let database = ctx.data::<PgPool>()?;
             let mut conn = database.acquire().await?;
-            mas_storage::upstream_oauth2::lookup_provider(&mut conn, self.link.provider_id).await?
+            mas_storage::upstream_oauth2::lookup_provider(&mut conn, self.link.provider_id)
+                .await?
+                .context("Upstream OAuth 2.0 provider not found")?
         };
 
         Ok(UpstreamOAuth2Provider::new(provider))

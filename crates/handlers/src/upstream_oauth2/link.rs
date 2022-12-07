@@ -79,6 +79,7 @@ impl_from_error_for_route!(mas_storage::user::ActiveSessionLookupError);
 impl_from_error_for_route!(mas_storage::user::UserLookupError);
 impl_from_error_for_route!(mas_axum_utils::csrf::CsrfError);
 impl_from_error_for_route!(super::cookie::UpstreamSessionNotFound);
+impl_from_error_for_route!(mas_storage::DatabaseError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
@@ -118,8 +119,7 @@ pub(crate) async fn get(
         .map_err(|_| RouteError::MissingCookie)?;
 
     let link = lookup_link(&mut txn, link_id)
-        .await
-        .to_option()?
+        .await?
         .ok_or(RouteError::LinkNotFound)?;
 
     // This checks that we're in a browser session which is allowed to consume this
@@ -221,8 +221,7 @@ pub(crate) async fn post(
     };
 
     let link = lookup_link(&mut txn, link_id)
-        .await
-        .to_option()?
+        .await?
         .ok_or(RouteError::LinkNotFound)?;
 
     // This checks that we're in a browser session which is allowed to consume this
