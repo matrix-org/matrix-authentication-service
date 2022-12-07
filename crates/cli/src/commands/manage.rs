@@ -24,7 +24,7 @@ use mas_storage::{
         lookup_user_by_username, lookup_user_email, mark_user_email_as_verified, register_user,
         set_password,
     },
-    Clock, LookupError,
+    Clock,
 };
 use oauth2_types::scope::Scope;
 use rand::SeedableRng;
@@ -259,14 +259,10 @@ impl Options {
 
                 for client in config.clients.iter() {
                     let client_id = client.client_id;
-                    let res = lookup_client(&mut txn, client_id).await;
-                    match res {
-                        Ok(_) => {
-                            warn!(%client_id, "Skipping already imported client");
-                            continue;
-                        }
-                        Err(e) if e.not_found() => {}
-                        Err(e) => anyhow::bail!(e),
+                    let res = lookup_client(&mut txn, client_id).await?;
+                    if res.is_some() {
+                        warn!(%client_id, "Skipping already imported client");
+                        continue;
                     }
 
                     info!(%client_id, "Importing client");

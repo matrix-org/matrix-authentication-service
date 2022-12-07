@@ -27,10 +27,7 @@ use axum::{
 use headers::{authorization::Bearer, Authorization, Header, HeaderMapExt, HeaderName};
 use http::{header::WWW_AUTHENTICATE, HeaderMap, HeaderValue, Request, StatusCode};
 use mas_data_model::Session;
-use mas_storage::{
-    oauth2::access_token::{lookup_active_access_token, AccessTokenLookupError},
-    LookupError,
-};
+use mas_storage::{oauth2::access_token::lookup_active_access_token, DatabaseError};
 use serde::{de::DeserializeOwned, Deserialize};
 use sqlx::PgConnection;
 use thiserror::Error;
@@ -61,7 +58,9 @@ impl AccessToken {
             AccessToken::None => return Err(AuthorizationVerificationError::MissingToken),
         };
 
-        let (token, session) = lookup_active_access_token(conn, token.as_str()).await?;
+        let (token, session) = lookup_active_access_token(conn, token.as_str())
+            .await?
+            .ok_or(AuthorizationVerificationError::InvalidToken)?;
 
         Ok((token, session))
     }
@@ -119,17 +118,7 @@ pub enum AuthorizationVerificationError {
     MissingForm,
 
     #[error(transparent)]
-    Internal(Box<dyn Error>),
-}
-
-impl From<AccessTokenLookupError> for AuthorizationVerificationError {
-    fn from(e: AccessTokenLookupError) -> Self {
-        if e.not_found() {
-            Self::InvalidToken
-        } else {
-            Self::Internal(Box::new(e))
-        }
-    }
+    Internal(#[from] DatabaseError),
 }
 
 enum BearerError {

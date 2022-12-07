@@ -27,7 +27,6 @@ use async_graphql::{
     Context, Description, EmptyMutation, EmptySubscription, ID,
 };
 use mas_axum_utils::SessionInfo;
-use mas_storage::LookupResultExt;
 use sqlx::PgPool;
 
 use self::model::{
@@ -96,9 +95,7 @@ impl RootQuery {
         let database = ctx.data::<PgPool>()?;
         let mut conn = database.acquire().await?;
 
-        let client = mas_storage::oauth2::client::lookup_client(&mut conn, id)
-            .await
-            .to_option()?;
+        let client = mas_storage::oauth2::client::lookup_client(&mut conn, id).await?;
 
         Ok(client.map(OAuth2Client))
     }

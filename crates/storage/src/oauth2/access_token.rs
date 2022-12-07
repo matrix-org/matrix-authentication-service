@@ -17,12 +17,11 @@ use chrono::{DateTime, Duration, Utc};
 use mas_data_model::{AccessToken, Authentication, BrowserSession, Session, User, UserEmail};
 use rand::Rng;
 use sqlx::{PgConnection, PgExecutor};
-use thiserror::Error;
 use ulid::Ulid;
 use uuid::Uuid;
 
-use super::client::{lookup_client, ClientFetchError};
-use crate::{Clock, DatabaseInconsistencyError, LookupError};
+use super::client::lookup_client;
+use crate::{Clock, DatabaseError, DatabaseInconsistencyError2};
 
 #[tracing::instrument(
     skip_all,
@@ -95,25 +94,11 @@ pub struct OAuth2AccessTokenLookup {
     user_email_confirmed_at: Option<DateTime<Utc>>,
 }
 
-#[derive(Debug, Error)]
-#[error("failed to lookup access token")]
-pub enum AccessTokenLookupError {
-    Database(#[from] sqlx::Error),
-    ClientFetch(#[from] ClientFetchError),
-    Inconsistency(#[from] DatabaseInconsistencyError),
-}
-
-impl LookupError for AccessTokenLookupError {
-    fn not_found(&self) -> bool {
-        matches!(self, Self::Database(sqlx::Error::RowNotFound))
-    }
-}
-
 #[allow(clippy::too_many_lines)]
 pub async fn lookup_active_access_token(
     conn: &mut PgConnection,
     token: &str,
-) -> Result<(AccessToken, Session), AccessTokenLookupError> {
+) -> Result<Option<(AccessToken, Session)>, DatabaseError> {
     let res = sqlx::query_as!(
         OAuth2AccessTokenLookup,
         r#"
@@ -160,17 +145,25 @@ pub async fn lookup_active_access_token(
     .fetch_one(&mut *conn)
     .await?;
 
-    let id = Ulid::from(res.oauth2_access_token_id);
+    let access_token_id = Ulid::from(res.oauth2_access_token_id);
     let access_token = AccessToken {
-        id,
-        jti: id.to_string(),
+        id: access_token_id,
+        jti: access_token_id.to_string(),
         access_token: res.oauth2_access_token,
         created_at: res.oauth2_access_token_created_at,
         expires_at: res.oauth2_access_token_expires_at,
     };
 
-    let client = lookup_client(&mut *conn, res.oauth2_client_id.into()).await?;
+    let session_id = res.oauth2_session_id.into();
+    let client = lookup_client(&mut *conn, res.oauth2_client_id.into())
+        .await?
+        .ok_or_else(|| {
+            DatabaseInconsistencyError2::on("oauth2_sessions")
+                .column("client_id")
+                .row(session_id)
+        })?;
 
+    let user_id = Ulid::from(res.user_id);
     let primary_email = match (
         res.user_email_id,
         res.user_email,
@@ -184,14 +177,18 @@ pub async fn lookup_active_access_token(
             confirmed_at,
         }),
         (None, None, None, None) => None,
-        _ => return Err(DatabaseInconsistencyError.into()),
+        _ => {
+            return Err(DatabaseInconsistencyError2::on("users")
+                .column("primary_user_email_id")
+                .row(user_id)
+                .into())
+        }
     };
 
-    let id = Ulid::from(res.user_id);
     let user = User {
-        id,
+        id: user_id,
         username: res.user_username,
-        sub: id.to_string(),
+        sub: user_id.to_string(),
         primary_email,
     };
 
@@ -204,7 +201,7 @@ pub async fn lookup_active_access_token(
             id: id.into(),
             created_at,
         }),
-        _ => return Err(DatabaseInconsistencyError.into()),
+        _ => return Err(DatabaseInconsistencyError2::on("user_session_authentications").into()),
     };
 
     let browser_session = BrowserSession {
@@ -214,28 +211,33 @@ pub async fn lookup_active_access_token(
         last_authentication,
     };
 
-    let scope = res.scope.parse().map_err(|_e| DatabaseInconsistencyError)?;
+    let scope = res.scope.parse().map_err(|e| {
+        DatabaseInconsistencyError2::on("oauth2_sessions")
+            .column("scope")
+            .row(session_id)
+            .source(e)
+    })?;
 
     let session = Session {
-        id: res.oauth2_session_id.into(),
+        id: session_id,
         client,
         browser_session,
         scope,
     };
 
-    Ok((access_token, session))
+    Ok(Some((access_token, session)))
 }
 
 #[tracing::instrument(
     skip_all,
     fields(%access_token.id),
-    err(Debug),
+    err,
 )]
 pub async fn revoke_access_token(
     executor: impl PgExecutor<'_>,
     clock: &Clock,
     access_token: AccessToken,
-) -> anyhow::Result<()> {
+) -> Result<(), DatabaseError> {
     let revoked_at = clock.now();
     let res = sqlx::query!(
         r#"
@@ -247,17 +249,15 @@ pub async fn revoke_access_token(
         revoked_at,
     )
     .execute(executor)
-    .await
-    .context("could not revoke access tokens")?;
+    .await?;
 
-    if res.rows_affected() == 1 {
-        Ok(())
-    } else {
-        Err(anyhow::anyhow!("no row were affected when revoking token"))
-    }
+    DatabaseError::ensure_affected_rows(&res, 1)
 }
 
-pub async fn cleanup_expired(executor: impl PgExecutor<'_>, clock: &Clock) -> anyhow::Result<u64> {
+pub async fn cleanup_expired(
+    executor: impl PgExecutor<'_>,
+    clock: &Clock,
+) -> Result<u64, sqlx::Error> {
     // Cleanup token which expired more than 15 minutes ago
     let threshold = clock.now() - Duration::minutes(15);
     let res = sqlx::query!(
@@ -268,8 +268,7 @@ pub async fn cleanup_expired(executor: impl PgExecutor<'_>, clock: &Clock) -> an
         threshold,
     )
     .execute(executor)
-    .await
-    .context("could not cleanup expired access tokens")?;
+    .await?;
 
     Ok(res.rows_affected())
 }

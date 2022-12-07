@@ -19,12 +19,11 @@ use mas_data_model::{
 };
 use rand::Rng;
 use sqlx::{PgConnection, PgExecutor};
-use thiserror::Error;
 use ulid::Ulid;
 use uuid::Uuid;
 
-use super::client::{lookup_client, ClientFetchError};
-use crate::{Clock, DatabaseInconsistencyError, LookupError};
+use super::client::lookup_client;
+use crate::{Clock, DatabaseError, DatabaseInconsistencyError2};
 
 #[tracing::instrument(
     skip_all,
@@ -98,26 +97,12 @@ struct OAuth2RefreshTokenLookup {
     user_email_confirmed_at: Option<DateTime<Utc>>,
 }
 
-#[derive(Error, Debug)]
-#[error("could not lookup refresh token")]
-pub enum RefreshTokenLookupError {
-    Fetch(#[from] sqlx::Error),
-    ClientFetch(#[from] ClientFetchError),
-    Conversion(#[from] DatabaseInconsistencyError),
-}
-
-impl LookupError for RefreshTokenLookupError {
-    fn not_found(&self) -> bool {
-        matches!(self, Self::Fetch(sqlx::Error::RowNotFound))
-    }
-}
-
 #[tracing::instrument(skip_all, err)]
 #[allow(clippy::too_many_lines)]
 pub async fn lookup_active_refresh_token(
     conn: &mut PgConnection,
     token: &str,
-) -> Result<(RefreshToken, Session), RefreshTokenLookupError> {
+) -> Result<Option<(RefreshToken, Session)>, DatabaseError> {
     let res = sqlx::query_as!(
         OAuth2RefreshTokenLookup,
         r#"
@@ -187,7 +172,7 @@ pub async fn lookup_active_refresh_token(
                 expires_at,
             })
         }
-        _ => return Err(DatabaseInconsistencyError.into()),
+        _ => return Err(DatabaseInconsistencyError2::on("oauth2_access_tokens").into()),
     };
 
     let refresh_token = RefreshToken {
@@ -197,8 +182,16 @@ pub async fn lookup_active_refresh_token(
         access_token,
     };
 
-    let client = lookup_client(&mut *conn, res.oauth2_client_id.into()).await?;
+    let session_id = res.oauth2_session_id.into();
+    let client = lookup_client(&mut *conn, res.oauth2_client_id.into())
+        .await?
+        .ok_or_else(|| {
+            DatabaseInconsistencyError2::on("oauth2_sessions")
+                .column("client_id")
+                .row(session_id)
+        })?;
 
+    let user_id = Ulid::from(res.user_id);
     let primary_email = match (
         res.user_email_id,
         res.user_email,
@@ -212,14 +205,18 @@ pub async fn lookup_active_refresh_token(
             confirmed_at,
         }),
         (None, None, None, None) => None,
-        _ => return Err(DatabaseInconsistencyError.into()),
+        _ => {
+            return Err(DatabaseInconsistencyError2::on("users")
+                .column("primary_user_email_id")
+                .row(user_id)
+                .into())
+        }
     };
 
-    let id = Ulid::from(res.user_id);
     let user = User {
-        id,
+        id: user_id,
         username: res.user_username,
-        sub: id.to_string(),
+        sub: user_id.to_string(),
         primary_email,
     };
 
@@ -232,7 +229,7 @@ pub async fn lookup_active_refresh_token(
             id: id.into(),
             created_at,
         }),
-        _ => return Err(DatabaseInconsistencyError.into()),
+        _ => return Err(DatabaseInconsistencyError2::on("user_session_authentications").into()),
     };
 
     let browser_session = BrowserSession {
@@ -242,19 +239,21 @@ pub async fn lookup_active_refresh_token(
         last_authentication,
     };
 
-    let scope = res
-        .oauth2_session_scope
-        .parse()
-        .map_err(|_e| DatabaseInconsistencyError)?;
+    let scope = res.oauth2_session_scope.parse().map_err(|e| {
+        DatabaseInconsistencyError2::on("oauth2_sessions")
+            .column("scope")
+            .row(session_id)
+            .source(e)
+    })?;
 
     let session = Session {
-        id: res.oauth2_session_id.into(),
+        id: session_id,
         client,
         browser_session,
         scope,
     };
 
-    Ok((refresh_token, session))
+    Ok(Some((refresh_token, session)))
 }
 
 #[tracing::instrument(
@@ -268,7 +267,7 @@ pub async fn consume_refresh_token(
     executor: impl PgExecutor<'_>,
     clock: &Clock,
     refresh_token: &RefreshToken,
-) -> Result<(), anyhow::Error> {
+) -> Result<(), DatabaseError> {
     let consumed_at = clock.now();
     let res = sqlx::query!(
         r#"
@@ -280,14 +279,7 @@ pub async fn consume_refresh_token(
         consumed_at,
     )
     .execute(executor)
-    .await
-    .context("failed to update oauth2 refresh token")?;
+    .await?;
 
-    if res.rows_affected() == 1 {
-        Ok(())
-    } else {
-        Err(anyhow::anyhow!(
-            "no row were affected when updating refresh token"
-        ))
-    }
+    DatabaseError::ensure_affected_rows(&res, 1)
 }

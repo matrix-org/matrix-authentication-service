@@ -31,7 +31,7 @@ use mas_http::HttpServiceExt;
 use mas_iana::oauth::OAuthClientAuthenticationMethod;
 use mas_jose::{jwk::PublicJsonWebKeySet, jwt::Jwt};
 use mas_keystore::Encrypter;
-use mas_storage::oauth2::client::{lookup_client_by_client_id, ClientFetchError};
+use mas_storage::{oauth2::client::lookup_client_by_client_id, DatabaseError};
 use serde::{de::DeserializeOwned, Deserialize};
 use serde_json::Value;
 use sqlx::PgExecutor;
@@ -73,7 +73,10 @@ pub enum Credentials {
 }
 
 impl Credentials {
-    pub async fn fetch(&self, executor: impl PgExecutor<'_>) -> Result<Client, ClientFetchError> {
+    pub async fn fetch(
+        &self,
+        executor: impl PgExecutor<'_>,
+    ) -> Result<Option<Client>, DatabaseError> {
         let client_id = match self {
             Credentials::None { client_id }
             | Credentials::ClientSecretBasic { client_id, .. }
