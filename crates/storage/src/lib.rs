@@ -30,7 +30,7 @@
 
 use chrono::{DateTime, Utc};
 use pagination::InvalidPagination;
-use sqlx::migrate::Migrator;
+use sqlx::{migrate::Migrator, postgres::PgQueryResult};
 use thiserror::Error;
 use ulid::Ulid;
 
@@ -100,6 +100,30 @@ pub enum DatabaseError {
 
     /// An error which occured while generating the paginated query
     Pagination(#[from] InvalidPagination),
+
+    /// An error which happened because the requested database operation is
+    /// invalid
+    #[error("Invalid database operation")]
+    InvalidOperation,
+
+    /// An error which happens when an operation affects not enough or too many
+    /// rows
+    #[error("Expected {expected} rows to be affected, but {actual} rows were affected")]
+    RowsAffected { expected: u64, actual: u64 },
+}
+
+impl DatabaseError {
+    pub(crate) fn ensure_affected_rows(
+        result: &PgQueryResult,
+        expected: u64,
+    ) -> Result<(), DatabaseError> {
+        let actual = result.rows_affected();
+        if actual == expected {
+            Ok(())
+        } else {
+            Err(DatabaseError::RowsAffected { expected, actual })
+        }
+    }
 }
 
 #[derive(Debug, Error)]

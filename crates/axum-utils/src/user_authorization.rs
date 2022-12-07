@@ -104,7 +104,7 @@ pub enum UserAuthorizationError {
     InvalidHeader,
     TokenInFormAndHeader,
     BadForm(FailedToDeserializeForm),
-    InternalError(Box<dyn Error>),
+    Internal(Box<dyn Error>),
 }
 
 #[derive(Debug, Error)]
@@ -119,7 +119,7 @@ pub enum AuthorizationVerificationError {
     MissingForm,
 
     #[error(transparent)]
-    InternalError(Box<dyn Error>),
+    Internal(Box<dyn Error>),
 }
 
 impl From<AccessTokenLookupError> for AuthorizationVerificationError {
@@ -127,7 +127,7 @@ impl From<AccessTokenLookupError> for AuthorizationVerificationError {
         if e.not_found() {
             Self::InvalidToken
         } else {
-            Self::InternalError(Box::new(e))
+            Self::Internal(Box::new(e))
         }
     }
 }
@@ -232,9 +232,7 @@ impl IntoResponse for UserAuthorizationError {
                 });
                 (StatusCode::BAD_REQUEST, headers).into_response()
             }
-            Self::InternalError(e) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
-            }
+            Self::Internal(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
         }
     }
 }
@@ -262,9 +260,7 @@ impl IntoResponse for AuthorizationVerificationError {
                 });
                 (StatusCode::BAD_REQUEST, headers).into_response()
             }
-            Self::InternalError(e) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
-            }
+            Self::Internal(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
         }
     }
 }
@@ -309,7 +305,7 @@ where
                     return Err(UserAuthorizationError::BadForm(err))
                 }
                 // Other errors (body read twice, byte stream broke) return an internal error
-                Err(e) => return Err(UserAuthorizationError::InternalError(Box::new(e))),
+                Err(e) => return Err(UserAuthorizationError::Internal(Box::new(e))),
             };
 
         let access_token = match (token_from_header, token_from_form) {

@@ -51,7 +51,9 @@ impl OptionalPostAuthAction {
             }
 
             PostAuthAction::ContinueCompatSsoLogin { data } => {
-                let login = get_compat_sso_login_by_id(conn, data).await?;
+                let login = get_compat_sso_login_by_id(conn, data)
+                    .await?
+                    .context("Failed to load compat SSO login")?;
                 let login = Box::new(login);
                 PostAuthContextInner::ContinueCompatSsoLogin { login }
             }
