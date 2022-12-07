@@ -31,7 +31,7 @@ use url::Url;
 use uuid::Uuid;
 
 use super::client::lookup_client;
-use crate::{Clock, DatabaseInconsistencyError, PostgresqlBackend};
+use crate::{Clock, DatabaseInconsistencyError};
 
 #[tracing::instrument(
     skip_all,
@@ -57,7 +57,7 @@ pub async fn new_authorization_grant(
     response_mode: ResponseMode,
     response_type_id_token: bool,
     requires_consent: bool,
-) -> Result<AuthorizationGrant<PostgresqlBackend>, anyhow::Error> {
+) -> Result<AuthorizationGrant, anyhow::Error> {
     let code_challenge = code
         .as_ref()
         .and_then(|c| c.pkce.as_ref())
@@ -117,7 +117,7 @@ pub async fn new_authorization_grant(
     .context("could not insert oauth2 authorization grant")?;
 
     Ok(AuthorizationGrant {
-        data: id,
+        id,
         stage: AuthorizationGrantStage::Pending,
         code,
         redirect_uri,
@@ -171,7 +171,7 @@ impl GrantLookup {
     async fn into_authorization_grant(
         self,
         executor: impl PgExecutor<'_>,
-    ) -> Result<AuthorizationGrant<PostgresqlBackend>, DatabaseInconsistencyError> {
+    ) -> Result<AuthorizationGrant, DatabaseInconsistencyError> {
         let scope: Scope = self
             .oauth2_authorization_grant_scope
             .parse()
@@ -247,7 +247,7 @@ impl GrantLookup {
                 let scope = scope.clone();
 
                 let session = Session {
-                    data: session_id.into(),
+                    id: session_id.into(),
                     client,
                     browser_session,
                     scope,
@@ -337,7 +337,7 @@ impl GrantLookup {
             .map_err(|_e| DatabaseInconsistencyError)?;
 
         Ok(AuthorizationGrant {
-            data: self.oauth2_authorization_grant_id.into(),
+            id: self.oauth2_authorization_grant_id.into(),
             stage,
             client,
             code,
@@ -362,7 +362,7 @@ impl GrantLookup {
 pub async fn get_grant_by_id(
     conn: &mut PgConnection,
     id: Ulid,
-) -> Result<AuthorizationGrant<PostgresqlBackend>, anyhow::Error> {
+) -> Result<AuthorizationGrant, anyhow::Error> {
     // TODO: handle "not found" cases
     let res = sqlx::query_as!(
         GrantLookup,
@@ -430,7 +430,7 @@ pub async fn get_grant_by_id(
 pub async fn lookup_grant_by_code(
     conn: &mut PgConnection,
     code: &str,
-) -> Result<AuthorizationGrant<PostgresqlBackend>, anyhow::Error> {
+) -> Result<AuthorizationGrant, anyhow::Error> {
     // TODO: handle "not found" cases
     let res = sqlx::query_as!(
         GrantLookup,
@@ -497,7 +497,7 @@ pub async fn lookup_grant_by_code(
 #[tracing::instrument(
     skip_all,
     fields(
-        grant.id = %grant.data,
+        %grant.id,
         client.id = %grant.client.id,
         session.id,
         user_session.id = %browser_session.id,
@@ -509,9 +509,9 @@ pub async fn derive_session(
     executor: impl PgExecutor<'_>,
     mut rng: impl Rng + Send,
     clock: &Clock,
-    grant: &AuthorizationGrant<PostgresqlBackend>,
+    grant: &AuthorizationGrant,
     browser_session: BrowserSession,
-) -> Result<Session<PostgresqlBackend>, anyhow::Error> {
+) -> Result<Session, anyhow::Error> {
     let created_at = clock.now();
     let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
     tracing::Span::current().record("session.id", tracing::field::display(id));
@@ -534,14 +534,14 @@ pub async fn derive_session(
         Uuid::from(id),
         Uuid::from(browser_session.id),
         created_at,
-        Uuid::from(grant.data),
+        Uuid::from(grant.id),
     )
     .execute(executor)
     .await
     .context("could not insert oauth2 session")?;
 
     Ok(Session {
-        data: id,
+        id,
         browser_session,
         client: grant.client.clone(),
         scope: grant.scope.clone(),
@@ -551,9 +551,9 @@ pub async fn derive_session(
 #[tracing::instrument(
     skip_all,
     fields(
-        grant.id = %grant.data,
+        %grant.id,
         client.id = %grant.client.id,
-        session.id = %session.data,
+        %session.id,
         user_session.id = %session.browser_session.id,
         user.id = %session.browser_session.user.id,
     ),
@@ -561,9 +561,9 @@ pub async fn derive_session(
 )]
 pub async fn fulfill_grant(
     executor: impl PgExecutor<'_>,
-    mut grant: AuthorizationGrant<PostgresqlBackend>,
-    session: Session<PostgresqlBackend>,
-) -> Result<AuthorizationGrant<PostgresqlBackend>, anyhow::Error> {
+    mut grant: AuthorizationGrant,
+    session: Session,
+) -> Result<AuthorizationGrant, anyhow::Error> {
     let fulfilled_at = sqlx::query_scalar!(
         r#"
             UPDATE oauth2_authorization_grants AS og
@@ -576,8 +576,8 @@ pub async fn fulfill_grant(
                 AND os.oauth2_session_id = $2
             RETURNING fulfilled_at AS "fulfilled_at!: DateTime<Utc>"
         "#,
-        Uuid::from(grant.data),
-        Uuid::from(session.data),
+        Uuid::from(grant.id),
+        Uuid::from(session.id),
     )
     .fetch_one(executor)
     .await
@@ -591,15 +591,15 @@ pub async fn fulfill_grant(
 #[tracing::instrument(
     skip_all,
     fields(
-        grant.id = %grant.data,
+        %grant.id,
         client.id = %grant.client.id,
     ),
     err(Debug),
 )]
 pub async fn give_consent_to_grant(
     executor: impl PgExecutor<'_>,
-    mut grant: AuthorizationGrant<PostgresqlBackend>,
-) -> Result<AuthorizationGrant<PostgresqlBackend>, sqlx::Error> {
+    mut grant: AuthorizationGrant,
+) -> Result<AuthorizationGrant, sqlx::Error> {
     sqlx::query!(
         r#"
             UPDATE oauth2_authorization_grants AS og
@@ -608,7 +608,7 @@ pub async fn give_consent_to_grant(
             WHERE
                 og.oauth2_authorization_grant_id = $1
         "#,
-        Uuid::from(grant.data),
+        Uuid::from(grant.id),
     )
     .execute(executor)
     .await?;
@@ -621,7 +621,7 @@ pub async fn give_consent_to_grant(
 #[tracing::instrument(
     skip_all,
     fields(
-        grant.id = %grant.data,
+        %grant.id,
         client.id = %grant.client.id,
     ),
     err(Debug),
@@ -629,8 +629,8 @@ pub async fn give_consent_to_grant(
 pub async fn exchange_grant(
     executor: impl PgExecutor<'_>,
     clock: &Clock,
-    mut grant: AuthorizationGrant<PostgresqlBackend>,
-) -> Result<AuthorizationGrant<PostgresqlBackend>, anyhow::Error> {
+    mut grant: AuthorizationGrant,
+) -> Result<AuthorizationGrant, anyhow::Error> {
     let exchanged_at = clock.now();
     sqlx::query!(
         r#"
@@ -638,7 +638,7 @@ pub async fn exchange_grant(
             SET exchanged_at = $2
             WHERE oauth2_authorization_grant_id = $1
         "#,
-        Uuid::from(grant.data),
+        Uuid::from(grant.id),
         exchanged_at,
     )
     .execute(executor)

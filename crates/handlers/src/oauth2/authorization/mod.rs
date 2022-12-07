@@ -315,7 +315,7 @@ pub(crate) async fn get(
                 requires_consent,
             )
             .await?;
-            let continue_grant = PostAuthAction::continue_grant(grant.data);
+            let continue_grant = PostAuthAction::continue_grant(grant.id);
 
             let res = match maybe_session {
                 // Cases where there is no active session, redirect to the relevant page
@@ -391,7 +391,7 @@ pub(crate) async fn get(
                     }
                 }
                 Some(user_session) => {
-                    let grant_id = grant.data;
+                    let grant_id = grant.id;
                     // Else, we show the relevant reauth/consent page if necessary
                     match self::complete::complete(grant, user_session, &policy_factory, txn).await
                     {

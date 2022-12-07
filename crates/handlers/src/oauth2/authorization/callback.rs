@@ -17,7 +17,7 @@
 use std::collections::HashMap;
 
 use axum::response::{Html, IntoResponse, Redirect, Response};
-use mas_data_model::{AuthorizationGrant, StorageBackend};
+use mas_data_model::AuthorizationGrant;
 use mas_templates::{FormPostContext, Templates};
 use oauth2_types::requests::ResponseMode;
 use serde::Serialize;
@@ -61,10 +61,10 @@ pub enum CallbackDestinationError {
     ParamsSerialization(#[from] serde_urlencoded::ser::Error),
 }
 
-impl<S: StorageBackend> TryFrom<&AuthorizationGrant<S>> for CallbackDestination {
+impl TryFrom<&AuthorizationGrant> for CallbackDestination {
     type Error = IntoCallbackDestinationError;
 
-    fn try_from(value: &AuthorizationGrant<S>) -> Result<Self, Self::Error> {
+    fn try_from(value: &AuthorizationGrant) -> Result<Self, Self::Error> {
         Self::try_new(
             &value.response_mode,
             value.redirect_uri.clone(),

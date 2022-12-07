@@ -32,7 +32,6 @@ use mas_storage::{
         consent::fetch_client_consent,
     },
     user::ActiveSessionLookupError,
-    PostgresqlBackend,
 };
 use mas_templates::Templates;
 use oauth2_types::requests::{AccessTokenResponse, AuthorizationResponse};
@@ -185,7 +184,7 @@ impl From<IntoCallbackDestinationError> for GrantCompletionError {
 }
 
 pub(crate) async fn complete(
-    grant: AuthorizationGrant<PostgresqlBackend>,
+    grant: AuthorizationGrant,
     browser_session: BrowserSession,
     policy_factory: &PolicyFactory,
     mut txn: Transaction<'_, Postgres>,

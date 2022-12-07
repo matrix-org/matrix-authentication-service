@@ -18,7 +18,7 @@
 #![allow(clippy::missing_errors_doc)]
 
 use anyhow::bail;
-use mas_data_model::{AuthorizationGrant, StorageBackend, User};
+use mas_data_model::{AuthorizationGrant, User};
 use oauth2_types::registration::VerifiedClientMetadata;
 use opa_wasm::Runtime;
 use serde::Deserialize;
@@ -210,9 +210,9 @@ impl Policy {
     }
 
     #[tracing::instrument(skip(self))]
-    pub async fn evaluate_authorization_grant<T: StorageBackend + std::fmt::Debug>(
+    pub async fn evaluate_authorization_grant(
         &mut self,
-        authorization_grant: &AuthorizationGrant<T>,
+        authorization_grant: &AuthorizationGrant,
         user: &User,
     ) -> Result<EvaluationResult, anyhow::Error> {
         let authorization_grant = serde_json::to_value(authorization_grant)?;

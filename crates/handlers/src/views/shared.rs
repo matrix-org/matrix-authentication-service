@@ -45,7 +45,7 @@ impl OptionalPostAuthAction {
         let ctx = match action {
             PostAuthAction::ContinueAuthorizationGrant { data } => {
                 let grant = get_grant_by_id(conn, data).await?;
-                let grant = Box::new(grant.into());
+                let grant = Box::new(grant);
                 PostAuthContextInner::ContinueAuthorizationGrant { grant }
             }
 

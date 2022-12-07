@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use async_graphql::{Context, Description, Object, ID};
-use mas_storage::{oauth2::client::lookup_client, PostgresqlBackend};
+use mas_storage::oauth2::client::lookup_client;
 use oauth2_types::scope::Scope;
 use sqlx::PgPool;
 use ulid::Ulid;
@@ -24,13 +24,13 @@ use super::{BrowserSession, NodeType, User};
 /// An OAuth 2.0 session represents a client session which used the OAuth APIs
 /// to login.
 #[derive(Description)]
-pub struct OAuth2Session(pub mas_data_model::Session<PostgresqlBackend>);
+pub struct OAuth2Session(pub mas_data_model::Session);
 
 #[Object(use_type_description)]
 impl OAuth2Session {
     /// ID of the object.
     pub async fn id(&self) -> ID {
-        NodeType::OAuth2Session.id(self.0.data)
+        NodeType::OAuth2Session.id(self.0.id)
     }
 
     /// OAuth 2.0 client used by this session.

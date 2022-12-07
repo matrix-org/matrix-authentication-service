@@ -242,7 +242,7 @@ impl User {
                 let mut connection = Connection::new(has_previous_page, has_next_page);
                 connection.edges.extend(edges.into_iter().map(|s| {
                     Edge::new(
-                        OpaqueCursor(NodeCursor(NodeType::OAuth2Session, s.data)),
+                        OpaqueCursor(NodeCursor(NodeType::OAuth2Session, s.id)),
                         OAuth2Session(s),
                     )
                 }));

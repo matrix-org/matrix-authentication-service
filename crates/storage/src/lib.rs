@@ -29,11 +29,8 @@
 )]
 
 use chrono::{DateTime, Utc};
-use mas_data_model::{StorageBackend, StorageBackendMarker};
-use serde::Serialize;
 use sqlx::migrate::Migrator;
 use thiserror::Error;
-use ulid::Ulid;
 
 #[derive(Debug, Error)]
 #[error("failed to lookup {what}")]
@@ -100,17 +97,6 @@ impl Clock {
 #[derive(Debug, Error)]
 #[error("database query returned an inconsistent state")]
 pub struct DatabaseInconsistencyError;
-
-#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
-pub struct PostgresqlBackend;
-
-impl StorageBackend for PostgresqlBackend {
-    type AuthorizationGrantData = Ulid;
-    type ClientData = Ulid;
-    type SessionData = Ulid;
-}
-
-impl StorageBackendMarker for PostgresqlBackend {}
 
 pub mod compat;
 pub mod oauth2;
