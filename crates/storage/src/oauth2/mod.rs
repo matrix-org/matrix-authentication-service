@@ -25,7 +25,7 @@ use self::client::lookup_clients;
 use crate::{
     pagination::{process_page, QueryBuilderExt},
     user::lookup_active_session,
-    Clock, PostgresqlBackend,
+    Clock,
 };
 
 pub mod access_token;
@@ -37,7 +37,7 @@ pub mod refresh_token;
 #[tracing::instrument(
     skip_all,
     fields(
-        session.id = %session.data,
+        %session.id,
         user.id = %session.browser_session.user.id,
         user_session.id = %session.browser_session.id,
         client.id = %session.client.id,
@@ -47,7 +47,7 @@ pub mod refresh_token;
 pub async fn end_oauth_session(
     executor: impl PgExecutor<'_>,
     clock: &Clock,
-    session: Session<PostgresqlBackend>,
+    session: Session,
 ) -> Result<(), anyhow::Error> {
     let finished_at = clock.now();
     let res = sqlx::query!(
@@ -56,7 +56,7 @@ pub async fn end_oauth_session(
             SET finished_at = $2
             WHERE oauth2_session_id = $1
         "#,
-        Uuid::from(session.data),
+        Uuid::from(session.id),
         finished_at,
     )
     .execute(executor)
@@ -79,7 +79,7 @@ struct OAuthSessionLookup {
     skip_all,
     fields(
         %user.id,
-        user.username = user.username,
+        %user.username,
     ),
     err(Display),
 )]
@@ -90,7 +90,7 @@ pub async fn get_paginated_user_oauth_sessions(
     after: Option<Ulid>,
     first: Option<usize>,
     last: Option<usize>,
-) -> Result<(bool, bool, Vec<Session<PostgresqlBackend>>), anyhow::Error> {
+) -> Result<(bool, bool, Vec<Session>), anyhow::Error> {
     let mut query = QueryBuilder::new(
         r#"
             SELECT
@@ -157,7 +157,7 @@ pub async fn get_paginated_user_oauth_sessions(
             let scope = item.scope.parse()?;
 
             anyhow::Ok(Session {
-                data: Ulid::from(item.oauth2_session_id),
+                id: Ulid::from(item.oauth2_session_id),
                 client,
                 browser_session,
                 scope,

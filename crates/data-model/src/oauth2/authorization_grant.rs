@@ -22,10 +22,10 @@ use oauth2_types::{
 };
 use serde::Serialize;
 use thiserror::Error;
+use ulid::Ulid;
 use url::Url;
 
 use super::{client::Client, session::Session};
-use crate::{traits::StorageBackend, StorageBackendMarker};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Pkce {
@@ -57,16 +57,17 @@ pub struct AuthorizationCode {
 #[error("invalid state transition")]
 pub struct InvalidTransitionError;
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
-#[serde(bound = "T: StorageBackend", tag = "stage", rename_all = "lowercase")]
-pub enum AuthorizationGrantStage<T: StorageBackend> {
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Default)]
+#[serde(tag = "stage", rename_all = "lowercase")]
+pub enum AuthorizationGrantStage {
+    #[default]
     Pending,
     Fulfilled {
-        session: Session<T>,
+        session: Session,
         fulfilled_at: DateTime<Utc>,
     },
     Exchanged {
-        session: Session<T>,
+        session: Session,
         fulfilled_at: DateTime<Utc>,
         exchanged_at: DateTime<Utc>,
     },
@@ -75,13 +76,7 @@ pub enum AuthorizationGrantStage<T: StorageBackend> {
     },
 }
 
-impl<T: StorageBackend> Default for AuthorizationGrantStage<T> {
-    fn default() -> Self {
-        Self::Pending
-    }
-}
-
-impl<T: StorageBackend> AuthorizationGrantStage<T> {
+impl AuthorizationGrantStage {
     #[must_use]
     pub fn new() -> Self {
         Self::Pending
@@ -90,7 +85,7 @@ impl<T: StorageBackend> AuthorizationGrantStage<T> {
     pub fn fulfill(
         self,
         fulfilled_at: DateTime<Utc>,
-        session: Session<T>,
+        session: Session,
     ) -> Result<Self, InvalidTransitionError> {
         match self {
             Self::Pending => Ok(Self::Fulfilled {
@@ -131,39 +126,11 @@ impl<T: StorageBackend> AuthorizationGrantStage<T> {
     }
 }
 
-impl<S: StorageBackendMarker> From<AuthorizationGrantStage<S>> for AuthorizationGrantStage<()> {
-    fn from(s: AuthorizationGrantStage<S>) -> Self {
-        use AuthorizationGrantStage::{Cancelled, Exchanged, Fulfilled, Pending};
-        match s {
-            Pending => Pending,
-            Fulfilled {
-                session,
-                fulfilled_at,
-            } => Fulfilled {
-                session: session.into(),
-                fulfilled_at,
-            },
-            Exchanged {
-                session,
-                fulfilled_at,
-                exchanged_at,
-            } => Exchanged {
-                session: session.into(),
-                fulfilled_at,
-                exchanged_at,
-            },
-            Cancelled { cancelled_at } => Cancelled { cancelled_at },
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize)]
-#[serde(bound = "T: StorageBackend")]
-pub struct AuthorizationGrant<T: StorageBackend> {
-    #[serde(skip_serializing)]
-    pub data: T::AuthorizationGrantData,
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct AuthorizationGrant {
+    pub id: Ulid,
     #[serde(flatten)]
-    pub stage: AuthorizationGrantStage<T>,
+    pub stage: AuthorizationGrantStage,
     pub code: Option<AuthorizationCode>,
     pub client: Client,
     pub redirect_uri: Url,
@@ -177,27 +144,8 @@ pub struct AuthorizationGrant<T: StorageBackend> {
     pub requires_consent: bool,
 }
 
-impl<S: StorageBackendMarker> From<AuthorizationGrant<S>> for AuthorizationGrant<()> {
-    fn from(g: AuthorizationGrant<S>) -> Self {
-        AuthorizationGrant {
-            data: (),
-            stage: g.stage.into(),
-            code: g.code,
-            client: g.client,
-            redirect_uri: g.redirect_uri,
-            scope: g.scope,
-            state: g.state,
-            nonce: g.nonce,
-            max_age: g.max_age,
-            response_mode: g.response_mode,
-            response_type_id_token: g.response_type_id_token,
-            created_at: g.created_at,
-            requires_consent: g.requires_consent,
-        }
-    }
-}
-
-impl<T: StorageBackend> AuthorizationGrant<T> {
+impl AuthorizationGrant {
+    #[must_use]
     pub fn max_auth_time(&self) -> DateTime<Utc> {
         let max_age: Option<i64> = self.max_age.map(|x| x.get().into());
         self.created_at - Duration::seconds(max_age.unwrap_or(3600 * 24 * 365))

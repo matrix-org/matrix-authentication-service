@@ -29,7 +29,7 @@ use http::{header::WWW_AUTHENTICATE, HeaderMap, HeaderValue, Request, StatusCode
 use mas_data_model::Session;
 use mas_storage::{
     oauth2::access_token::{lookup_active_access_token, AccessTokenLookupError},
-    LookupError, PostgresqlBackend,
+    LookupError,
 };
 use serde::{de::DeserializeOwned, Deserialize};
 use sqlx::PgConnection;
@@ -55,10 +55,7 @@ impl AccessToken {
     pub async fn fetch(
         &self,
         conn: &mut PgConnection,
-    ) -> Result<
-        (mas_data_model::AccessToken, Session<PostgresqlBackend>),
-        AuthorizationVerificationError,
-    > {
+    ) -> Result<(mas_data_model::AccessToken, Session), AuthorizationVerificationError> {
         let token = match self {
             AccessToken::Form(t) | AccessToken::Header(t) => t,
             AccessToken::None => return Err(AuthorizationVerificationError::MissingToken),
@@ -81,7 +78,7 @@ impl<F: Send> UserAuthorization<F> {
     pub async fn protected_form(
         self,
         conn: &mut PgConnection,
-    ) -> Result<(Session<PostgresqlBackend>, F), AuthorizationVerificationError> {
+    ) -> Result<(Session, F), AuthorizationVerificationError> {
         let form = match self.form {
             Some(f) => f,
             None => return Err(AuthorizationVerificationError::MissingForm),
@@ -96,7 +93,7 @@ impl<F: Send> UserAuthorization<F> {
     pub async fn protected(
         self,
         conn: &mut PgConnection,
-    ) -> Result<Session<PostgresqlBackend>, AuthorizationVerificationError> {
+    ) -> Result<Session, AuthorizationVerificationError> {
         let (_token, session) = self.access_token.fetch(conn).await?;
 
         Ok(session)

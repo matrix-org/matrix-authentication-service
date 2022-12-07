@@ -249,7 +249,7 @@ pub enum PostAuthContextInner {
     /// Continue an authorization grant
     ContinueAuthorizationGrant {
         /// The authorization grant that will be continued after authentication
-        grant: Box<AuthorizationGrant<()>>,
+        grant: Box<AuthorizationGrant>,
     },
 
     /// Continue legacy login
@@ -394,7 +394,7 @@ impl RegisterContext {
 /// Context used by the `consent.html` template
 #[derive(Serialize)]
 pub struct ConsentContext {
-    grant: AuthorizationGrant<()>,
+    grant: AuthorizationGrant,
     action: PostAuthAction,
 }
 
@@ -411,21 +411,15 @@ impl TemplateContext for ConsentContext {
 impl ConsentContext {
     /// Constructs a context for the client consent page
     #[must_use]
-    pub fn new<T>(grant: T, action: PostAuthAction) -> Self
-    where
-        T: Into<AuthorizationGrant<()>>,
-    {
-        Self {
-            grant: grant.into(),
-            action,
-        }
+    pub fn new(grant: AuthorizationGrant, action: PostAuthAction) -> Self {
+        Self { grant, action }
     }
 }
 
 /// Context used by the `policy_violation.html` template
 #[derive(Serialize)]
 pub struct PolicyViolationContext {
-    grant: AuthorizationGrant<()>,
+    grant: AuthorizationGrant,
     action: PostAuthAction,
 }
 
@@ -442,14 +436,8 @@ impl TemplateContext for PolicyViolationContext {
 impl PolicyViolationContext {
     /// Constructs a context for the policy violation page
     #[must_use]
-    pub fn new<T>(grant: T, action: PostAuthAction) -> Self
-    where
-        T: Into<AuthorizationGrant<()>>,
-    {
-        Self {
-            grant: grant.into(),
-            action,
-        }
+    pub fn new(grant: AuthorizationGrant, action: PostAuthAction) -> Self {
+        Self { grant, action }
     }
 }
 

@@ -14,30 +14,15 @@
 
 use oauth2_types::scope::Scope;
 use serde::Serialize;
+use ulid::Ulid;
 
 use super::client::Client;
-use crate::{
-    traits::{StorageBackend, StorageBackendMarker},
-    users::BrowserSession,
-};
+use crate::users::BrowserSession;
 
-#[derive(Debug, Clone, PartialEq, Serialize)]
-#[serde(bound = "T: StorageBackend")]
-pub struct Session<T: StorageBackend> {
-    #[serde(skip_serializing)]
-    pub data: T::SessionData,
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct Session {
+    pub id: Ulid,
     pub browser_session: BrowserSession,
     pub client: Client,
     pub scope: Scope,
-}
-
-impl<S: StorageBackendMarker> From<Session<S>> for Session<()> {
-    fn from(s: Session<S>) -> Self {
-        Session {
-            data: (),
-            browser_session: s.browser_session,
-            client: s.client,
-            scope: s.scope,
-        }
-    }
 }

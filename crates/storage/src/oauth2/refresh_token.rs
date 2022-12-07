@@ -24,12 +24,12 @@ use ulid::Ulid;
 use uuid::Uuid;
 
 use super::client::{lookup_client, ClientFetchError};
-use crate::{Clock, DatabaseInconsistencyError, LookupError, PostgresqlBackend};
+use crate::{Clock, DatabaseInconsistencyError, LookupError};
 
 #[tracing::instrument(
     skip_all,
     fields(
-        session.id = %session.data,
+        %session.id,
         user.id = %session.browser_session.user.id,
         user_session.id = %session.browser_session.id,
         client.id = %session.client.id,
@@ -41,7 +41,7 @@ pub async fn add_refresh_token(
     executor: impl PgExecutor<'_>,
     mut rng: impl Rng + Send,
     clock: &Clock,
-    session: &Session<PostgresqlBackend>,
+    session: &Session,
     access_token: AccessToken,
     refresh_token: String,
 ) -> anyhow::Result<RefreshToken> {
@@ -58,7 +58,7 @@ pub async fn add_refresh_token(
                 ($1, $2, $3, $4, $5)
         "#,
         Uuid::from(id),
-        Uuid::from(session.data),
+        Uuid::from(session.id),
         Uuid::from(access_token.id),
         refresh_token,
         created_at,
@@ -117,7 +117,7 @@ impl LookupError for RefreshTokenLookupError {
 pub async fn lookup_active_refresh_token(
     conn: &mut PgConnection,
     token: &str,
-) -> Result<(RefreshToken, Session<PostgresqlBackend>), RefreshTokenLookupError> {
+) -> Result<(RefreshToken, Session), RefreshTokenLookupError> {
     let res = sqlx::query_as!(
         OAuth2RefreshTokenLookup,
         r#"
@@ -248,7 +248,7 @@ pub async fn lookup_active_refresh_token(
         .map_err(|_e| DatabaseInconsistencyError)?;
 
     let session = Session {
-        data: res.oauth2_session_id.into(),
+        id: res.oauth2_session_id.into(),
         client,
         browser_session,
         scope,

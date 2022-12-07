@@ -26,7 +26,6 @@
 pub(crate) mod compat;
 pub(crate) mod oauth2;
 pub(crate) mod tokens;
-pub(crate) mod traits;
 pub(crate) mod upstream_oauth2;
 pub(crate) mod users;
 
@@ -40,7 +39,6 @@ pub use self::{
         InvalidRedirectUriError, JwksOrJwksUri, Pkce, Session,
     },
     tokens::{AccessToken, RefreshToken, TokenFormatError, TokenType},
-    traits::{StorageBackend, StorageBackendMarker},
     upstream_oauth2::{
         UpstreamOAuthAuthorizationSession, UpstreamOAuthLink, UpstreamOAuthProvider,
     },
