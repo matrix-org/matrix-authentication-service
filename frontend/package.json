@@ -30,7 +30,7 @@
     "@storybook/addon-actions": "^7.0.0-beta.0",
     "@storybook/addon-backgrounds": "^7.0.0-beta.0",
     "@storybook/addon-controls": "^7.0.0-beta.0",
-    "@storybook/addon-docs": "^7.0.0-beta.0",
+    "@storybook/addon-docs": "^7.0.0-beta.1",
     "@storybook/addon-essentials": "^7.0.0-beta.0",
     "@storybook/addon-measure": "^7.0.0-beta.0",
     "@storybook/addon-outline": "^7.0.0-beta.0",
