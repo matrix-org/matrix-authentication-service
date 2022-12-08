@@ -1,8 +1,9 @@
+import { ArgTypes, Decorator, Parameters } from "@storybook/react";
 import { useLayoutEffect } from "react";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import "../src/index.css";
 
-export const parameters = {
+export const parameters: Parameters = {
   actions: { argTypesRegex: "^on[A-Z].*" },
   controls: {
     matchers: {
@@ -12,7 +13,7 @@ export const parameters = {
   },
 };
 
-export const globalTypes = {
+export const globalTypes: ArgTypes = {
   theme: {
     name: "Theme",
     description: "Global theme for components",
@@ -35,7 +36,7 @@ export const globalTypes = {
   },
 };
 
-const ThemeSwitcher = ({ theme }) => {
+const ThemeSwitcher: React.FC<{ theme?: "light" | "dark" }> = ({ theme }) => {
   useLayoutEffect(() => {
     if (theme === "dark") {
       document.documentElement.classList.add("dark");
@@ -49,7 +50,7 @@ const ThemeSwitcher = ({ theme }) => {
   return null;
 };
 
-const withThemeProvider = (Story, context) => {
+const withThemeProvider: Decorator = (Story, context) => {
   return (
     <>
       <ThemeSwitcher theme={context.globals.theme} />
@@ -58,7 +59,7 @@ const withThemeProvider = (Story, context) => {
   );
 };
 
-const withRouter = (Story, context) => {
+const withRouter: Decorator = (Story, _context) => {
   const router = createMemoryRouter([
     {
       path: "/*",
@@ -69,4 +70,4 @@ const withRouter = (Story, context) => {
   return <RouterProvider router={router} />;
 };
 
-export const decorators = [withThemeProvider, withRouter];
+export const decorators: Decorator[] = [withThemeProvider, withRouter];

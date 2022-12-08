@@ -16,14 +16,14 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import Typography from "./Typography";
 
-const meta: Meta<typeof Typography> = {
+const meta = {
   title: "UI/Typography",
   component: Typography,
   tags: ["docsPage"],
   args: {
     children: "Typography",
   },
-};
+} satisfies Meta<typeof Typography>;
 
 export default meta;
 type Story = StoryObj<typeof Typography>;
