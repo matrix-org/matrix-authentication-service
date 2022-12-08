@@ -16,7 +16,7 @@ use axum::{extract::State, response::IntoResponse, Json, TypedHeader};
 use headers::{authorization::Bearer, Authorization};
 use hyper::StatusCode;
 use mas_data_model::TokenType;
-use mas_storage::{compat::compat_logout, Clock, LookupError};
+use mas_storage::{compat::compat_logout, Clock};
 use sqlx::PgPool;
 use thiserror::Error;
 
@@ -82,13 +82,9 @@ pub(crate) async fn post(
         return Err(RouteError::InvalidAuthorization);
     }
 
-    compat_logout(&mut conn, &clock, token).await.map_err(|e| {
-        if e.not_found() {
-            RouteError::LogoutFailed
-        } else {
-            RouteError::Internal(Box::new(e))
-        }
-    })?;
+    if !compat_logout(&mut conn, &clock, token).await? {
+        return Err(RouteError::LogoutFailed);
+    }
 
     Ok(Json(serde_json::json!({})))
 }

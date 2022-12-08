@@ -27,7 +27,7 @@ use ulid::Ulid;
 use url::Url;
 use uuid::Uuid;
 
-use crate::{Clock, DatabaseError, DatabaseInconsistencyError2, LookupResultExt};
+use crate::{Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt};
 
 // XXX: response_types & contacts
 #[derive(Debug)]
@@ -54,7 +54,7 @@ pub struct OAuth2ClientLookup {
 }
 
 impl TryInto<Client> for OAuth2ClientLookup {
-    type Error = DatabaseInconsistencyError2;
+    type Error = DatabaseInconsistencyError;
 
     #[allow(clippy::too_many_lines)] // TODO: refactor some of the field parsing
     fn try_into(self) -> Result<Client, Self::Error> {
@@ -63,7 +63,7 @@ impl TryInto<Client> for OAuth2ClientLookup {
         let redirect_uris: Result<Vec<Url>, _> =
             self.redirect_uris.iter().map(|s| s.parse()).collect();
         let redirect_uris = redirect_uris.map_err(|e| {
-            DatabaseInconsistencyError2::on("oauth2_clients")
+            DatabaseInconsistencyError::on("oauth2_clients")
                 .column("redirect_uris")
                 .row(id)
                 .source(e)
@@ -92,7 +92,7 @@ impl TryInto<Client> for OAuth2ClientLookup {
         }
 
         let logo_uri = self.logo_uri.map(|s| s.parse()).transpose().map_err(|e| {
-            DatabaseInconsistencyError2::on("oauth2_clients")
+            DatabaseInconsistencyError::on("oauth2_clients")
                 .column("logo_uri")
                 .row(id)
                 .source(e)
@@ -103,7 +103,7 @@ impl TryInto<Client> for OAuth2ClientLookup {
             .map(|s| s.parse())
             .transpose()
             .map_err(|e| {
-                DatabaseInconsistencyError2::on("oauth2_clients")
+                DatabaseInconsistencyError::on("oauth2_clients")
                     .column("client_uri")
                     .row(id)
                     .source(e)
@@ -114,14 +114,14 @@ impl TryInto<Client> for OAuth2ClientLookup {
             .map(|s| s.parse())
             .transpose()
             .map_err(|e| {
-                DatabaseInconsistencyError2::on("oauth2_clients")
+                DatabaseInconsistencyError::on("oauth2_clients")
                     .column("policy_uri")
                     .row(id)
                     .source(e)
             })?;
 
         let tos_uri = self.tos_uri.map(|s| s.parse()).transpose().map_err(|e| {
-            DatabaseInconsistencyError2::on("oauth2_clients")
+            DatabaseInconsistencyError::on("oauth2_clients")
                 .column("tos_uri")
                 .row(id)
                 .source(e)
@@ -132,7 +132,7 @@ impl TryInto<Client> for OAuth2ClientLookup {
             .map(|s| s.parse())
             .transpose()
             .map_err(|e| {
-                DatabaseInconsistencyError2::on("oauth2_clients")
+                DatabaseInconsistencyError::on("oauth2_clients")
                     .column("id_token_signed_response_alg")
                     .row(id)
                     .source(e)
@@ -143,7 +143,7 @@ impl TryInto<Client> for OAuth2ClientLookup {
             .map(|s| s.parse())
             .transpose()
             .map_err(|e| {
-                DatabaseInconsistencyError2::on("oauth2_clients")
+                DatabaseInconsistencyError::on("oauth2_clients")
                     .column("userinfo_signed_response_alg")
                     .row(id)
                     .source(e)
@@ -154,7 +154,7 @@ impl TryInto<Client> for OAuth2ClientLookup {
             .map(|s| s.parse())
             .transpose()
             .map_err(|e| {
-                DatabaseInconsistencyError2::on("oauth2_clients")
+                DatabaseInconsistencyError::on("oauth2_clients")
                     .column("token_endpoint_auth_method")
                     .row(id)
                     .source(e)
@@ -165,7 +165,7 @@ impl TryInto<Client> for OAuth2ClientLookup {
             .map(|s| s.parse())
             .transpose()
             .map_err(|e| {
-                DatabaseInconsistencyError2::on("oauth2_clients")
+                DatabaseInconsistencyError::on("oauth2_clients")
                     .column("token_endpoint_auth_signing_alg")
                     .row(id)
                     .source(e)
@@ -176,7 +176,7 @@ impl TryInto<Client> for OAuth2ClientLookup {
             .map(|s| s.parse())
             .transpose()
             .map_err(|e| {
-                DatabaseInconsistencyError2::on("oauth2_clients")
+                DatabaseInconsistencyError::on("oauth2_clients")
                     .column("initiate_login_uri")
                     .row(id)
                     .source(e)
@@ -186,7 +186,7 @@ impl TryInto<Client> for OAuth2ClientLookup {
             (None, None) => None,
             (Some(jwks), None) => {
                 let jwks = serde_json::from_value(jwks).map_err(|e| {
-                    DatabaseInconsistencyError2::on("oauth2_clients")
+                    DatabaseInconsistencyError::on("oauth2_clients")
                         .column("jwks")
                         .row(id)
                         .source(e)
@@ -195,7 +195,7 @@ impl TryInto<Client> for OAuth2ClientLookup {
             }
             (None, Some(jwks_uri)) => {
                 let jwks_uri = jwks_uri.parse().map_err(|e| {
-                    DatabaseInconsistencyError2::on("oauth2_clients")
+                    DatabaseInconsistencyError::on("oauth2_clients")
                         .column("jwks_uri")
                         .row(id)
                         .source(e)
@@ -204,7 +204,7 @@ impl TryInto<Client> for OAuth2ClientLookup {
                 Some(JwksOrJwksUri::JwksUri(jwks_uri))
             }
             _ => {
-                return Err(DatabaseInconsistencyError2::on("oauth2_clients")
+                return Err(DatabaseInconsistencyError::on("oauth2_clients")
                     .column("jwks(_uri)")
                     .row(id))
             }

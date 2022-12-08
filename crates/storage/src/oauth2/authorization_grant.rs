@@ -28,7 +28,7 @@ use url::Url;
 use uuid::Uuid;
 
 use super::client::lookup_client;
-use crate::{Clock, DatabaseError, DatabaseInconsistencyError2, LookupResultExt};
+use crate::{Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt};
 
 #[tracing::instrument(
     skip_all,
@@ -170,7 +170,7 @@ impl GrantLookup {
     ) -> Result<AuthorizationGrant, DatabaseError> {
         let id = self.oauth2_authorization_grant_id.into();
         let scope: Scope = self.oauth2_authorization_grant_scope.parse().map_err(|e| {
-            DatabaseInconsistencyError2::on("oauth2_authorization_grants")
+            DatabaseInconsistencyError::on("oauth2_authorization_grants")
                 .column("scope")
                 .row(id)
                 .source(e)
@@ -180,7 +180,7 @@ impl GrantLookup {
         let client = lookup_client(executor, self.oauth2_client_id.into())
             .await?
             .ok_or_else(|| {
-                DatabaseInconsistencyError2::on("oauth2_authorization_grants")
+                DatabaseInconsistencyError::on("oauth2_authorization_grants")
                     .column("client_id")
                     .row(id)
             })?;
@@ -194,9 +194,7 @@ impl GrantLookup {
                 created_at,
             }),
             (None, None) => None,
-            _ => {
-                return Err(DatabaseInconsistencyError2::on("user_session_authentications").into())
-            }
+            _ => return Err(DatabaseInconsistencyError::on("user_session_authentications").into()),
         };
 
         let primary_email = match (
@@ -213,7 +211,7 @@ impl GrantLookup {
             }),
             (None, None, None, None) => None,
             _ => {
-                return Err(DatabaseInconsistencyError2::on("users")
+                return Err(DatabaseInconsistencyError::on("users")
                     .column("primary_user_email_id")
                     .into())
             }
@@ -267,7 +265,7 @@ impl GrantLookup {
             (None, None, None, None, None, None, None) => None,
             _ => {
                 return Err(
-                    DatabaseInconsistencyError2::on("oauth2_authorization_grants")
+                    DatabaseInconsistencyError::on("oauth2_authorization_grants")
                         .column("oauth2_session_id")
                         .row(id)
                         .into(),
@@ -298,7 +296,7 @@ impl GrantLookup {
             }
             _ => {
                 return Err(
-                    DatabaseInconsistencyError2::on("oauth2_authorization_grants")
+                    DatabaseInconsistencyError::on("oauth2_authorization_grants")
                         .column("stage")
                         .row(id)
                         .into(),
@@ -323,7 +321,7 @@ impl GrantLookup {
             (None, None) => None,
             _ => {
                 return Err(
-                    DatabaseInconsistencyError2::on("oauth2_authorization_grants")
+                    DatabaseInconsistencyError::on("oauth2_authorization_grants")
                         .column("code_challenge_method")
                         .row(id)
                         .into(),
@@ -340,7 +338,7 @@ impl GrantLookup {
             (true, Some(code), pkce) => Some(AuthorizationCode { code, pkce }),
             _ => {
                 return Err(
-                    DatabaseInconsistencyError2::on("oauth2_authorization_grants")
+                    DatabaseInconsistencyError::on("oauth2_authorization_grants")
                         .column("authorization_code")
                         .row(id)
                         .into(),
@@ -352,7 +350,7 @@ impl GrantLookup {
             .oauth2_authorization_grant_redirect_uri
             .parse()
             .map_err(|e| {
-                DatabaseInconsistencyError2::on("oauth2_authorization_grants")
+                DatabaseInconsistencyError::on("oauth2_authorization_grants")
                     .column("redirect_uri")
                     .row(id)
                     .source(e)
@@ -362,7 +360,7 @@ impl GrantLookup {
             .oauth2_authorization_grant_response_mode
             .parse()
             .map_err(|e| {
-                DatabaseInconsistencyError2::on("oauth2_authorization_grants")
+                DatabaseInconsistencyError::on("oauth2_authorization_grants")
                     .column("response_mode")
                     .row(id)
                     .source(e)
@@ -373,7 +371,7 @@ impl GrantLookup {
             .map(u32::try_from)
             .transpose()
             .map_err(|e| {
-                DatabaseInconsistencyError2::on("oauth2_authorization_grants")
+                DatabaseInconsistencyError::on("oauth2_authorization_grants")
                     .column("max_age")
                     .row(id)
                     .source(e)
@@ -381,7 +379,7 @@ impl GrantLookup {
             .map(NonZeroU32::try_from)
             .transpose()
             .map_err(|e| {
-                DatabaseInconsistencyError2::on("oauth2_authorization_grants")
+                DatabaseInconsistencyError::on("oauth2_authorization_grants")
                     .column("max_age")
                     .row(id)
                     .source(e)

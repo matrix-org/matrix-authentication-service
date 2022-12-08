@@ -31,7 +31,6 @@ use mas_storage::{
     user::{
         authenticate_session_with_upstream, lookup_user, register_passwordless_user, start_session,
     },
-    LookupResultExt,
 };
 use mas_templates::{
     EmptyContext, TemplateContext, Templates, UpstreamExistingLinkContext, UpstreamRegister,
@@ -71,7 +70,6 @@ pub(crate) enum RouteError {
 
 impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_templates::TemplateError);
-impl_from_error_for_route!(mas_storage::GenericLookupError);
 impl_from_error_for_route!(mas_axum_utils::csrf::CsrfError);
 impl_from_error_for_route!(super::cookie::UpstreamSessionNotFound);
 impl_from_error_for_route!(mas_storage::DatabaseError);
@@ -115,8 +113,7 @@ pub(crate) async fn get(
     // This checks that we're in a browser session which is allowed to consume this
     // link: the upstream auth session should have been started in this browser.
     let upstream_session = lookup_session_on_link(&mut txn, &link, session_id)
-        .await
-        .to_option()?
+        .await?
         .ok_or(RouteError::SessionNotFound)?;
 
     if upstream_session.consumed() {
@@ -217,8 +214,7 @@ pub(crate) async fn post(
     // This checks that we're in a browser session which is allowed to consume this
     // link: the upstream auth session should have been started in this browser.
     let upstream_session = lookup_session_on_link(&mut txn, &link, session_id)
-        .await
-        .to_option()?
+        .await?
         .ok_or(RouteError::SessionNotFound)?;
 
     if upstream_session.consumed() {

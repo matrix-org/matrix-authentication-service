@@ -30,7 +30,7 @@ use uuid::Uuid;
 use crate::{
     pagination::{process_page, QueryBuilderExt},
     user::lookup_user_by_username,
-    Clock, DatabaseError, DatabaseInconsistencyError2, LookupResultExt,
+    Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt,
 };
 
 struct CompatAccessTokenLookup {
@@ -119,7 +119,7 @@ pub async fn lookup_active_compat_access_token(
         }),
         (None, None, None, None) => None,
         _ => {
-            return Err(DatabaseInconsistencyError2::on("compat_sessions")
+            return Err(DatabaseInconsistencyError::on("compat_sessions")
                 .column("user_id")
                 .row(user_id)
                 .into())
@@ -135,7 +135,7 @@ pub async fn lookup_active_compat_access_token(
 
     let id = res.compat_session_id.into();
     let device = Device::try_from(res.compat_session_device_id).map_err(|e| {
-        DatabaseInconsistencyError2::on("compat_sessions")
+        DatabaseInconsistencyError::on("compat_sessions")
             .column("device_id")
             .row(id)
             .source(e)
@@ -251,7 +251,7 @@ pub async fn lookup_active_compat_refresh_token(
         }),
         (None, None, None, None) => None,
         _ => {
-            return Err(DatabaseInconsistencyError2::on("users")
+            return Err(DatabaseInconsistencyError::on("users")
                 .column("primary_user_email_id")
                 .row(user_id)
                 .into())
@@ -267,7 +267,7 @@ pub async fn lookup_active_compat_refresh_token(
 
     let session_id = res.compat_session_id.into();
     let device = Device::try_from(res.compat_session_device_id).map_err(|e| {
-        DatabaseInconsistencyError2::on("compat_sessions")
+        DatabaseInconsistencyError::on("compat_sessions")
             .column("device_id")
             .row(session_id)
             .source(e)
@@ -501,10 +501,10 @@ pub async fn compat_logout(
     executor: impl PgExecutor<'_>,
     clock: &Clock,
     token: &str,
-) -> Result<(), sqlx::Error> {
+) -> Result<bool, sqlx::Error> {
     let finished_at = clock.now();
     // TODO: this does not check for token expiration
-    let compat_session_id = sqlx::query_scalar!(
+    let res = sqlx::query_scalar!(
         r#"
             UPDATE compat_sessions cs
             SET finished_at = $2
@@ -518,14 +518,18 @@ pub async fn compat_logout(
         finished_at,
     )
     .fetch_one(executor)
-    .await?;
+    .await
+    .to_option()?;
 
-    tracing::Span::current().record(
-        "compat_session.id",
-        tracing::field::display(compat_session_id),
-    );
-
-    Ok(())
+    if let Some(compat_session_id) = res {
+        tracing::Span::current().record(
+            "compat_session.id",
+            tracing::field::display(compat_session_id),
+        );
+        Ok(true)
+    } else {
+        Ok(false)
+    }
 }
 
 #[tracing::instrument(
@@ -620,12 +624,12 @@ struct CompatSsoLoginLookup {
 }
 
 impl TryFrom<CompatSsoLoginLookup> for CompatSsoLogin {
-    type Error = DatabaseInconsistencyError2;
+    type Error = DatabaseInconsistencyError;
 
     fn try_from(res: CompatSsoLoginLookup) -> Result<Self, Self::Error> {
         let id = res.compat_sso_login_id.into();
         let redirect_uri = Url::parse(&res.compat_sso_login_redirect_uri).map_err(|e| {
-            DatabaseInconsistencyError2::on("compat_sso_logins")
+            DatabaseInconsistencyError::on("compat_sso_logins")
                 .column("redirect_uri")
                 .row(id)
                 .source(e)
@@ -645,7 +649,7 @@ impl TryFrom<CompatSsoLoginLookup> for CompatSsoLogin {
             }),
             (None, None, None, None) => None,
             _ => {
-                return Err(DatabaseInconsistencyError2::on("users").column("primary_user_email_id"))
+                return Err(DatabaseInconsistencyError::on("users").column("primary_user_email_id"))
             }
         };
 
@@ -661,7 +665,7 @@ impl TryFrom<CompatSsoLoginLookup> for CompatSsoLogin {
             }
 
             (None, None, None) => None,
-            _ => return Err(DatabaseInconsistencyError2::on("compat_sessions").column("user_id")),
+            _ => return Err(DatabaseInconsistencyError::on("compat_sessions").column("user_id")),
         };
 
         let session = match (
@@ -674,7 +678,7 @@ impl TryFrom<CompatSsoLoginLookup> for CompatSsoLogin {
             (Some(id), Some(device_id), Some(created_at), finished_at, Some(user)) => {
                 let id = id.into();
                 let device = Device::try_from(device_id).map_err(|e| {
-                    DatabaseInconsistencyError2::on("compat_sessions")
+                    DatabaseInconsistencyError::on("compat_sessions")
                         .column("device")
                         .row(id)
                         .source(e)
@@ -689,7 +693,7 @@ impl TryFrom<CompatSsoLoginLookup> for CompatSsoLogin {
             }
             (None, None, None, None, None) => None,
             _ => {
-                return Err(DatabaseInconsistencyError2::on("compat_sso_logins")
+                return Err(DatabaseInconsistencyError::on("compat_sso_logins")
                     .column("compat_session_id")
                     .row(id))
             }
@@ -712,7 +716,7 @@ impl TryFrom<CompatSsoLoginLookup> for CompatSsoLogin {
                     session,
                 }
             }
-            _ => return Err(DatabaseInconsistencyError2::on("compat_sso_logins").row(id)),
+            _ => return Err(DatabaseInconsistencyError::on("compat_sso_logins").row(id)),
         };
 
         Ok(CompatSsoLogin {
