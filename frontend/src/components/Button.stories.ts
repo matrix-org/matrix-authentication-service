@@ -16,7 +16,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import Button from "./Button";
 
-const meta: Meta<typeof Button> = {
+const meta = {
   title: "UI/Button",
   component: Button,
   tags: ["docsPage"],
@@ -32,7 +32,7 @@ const meta: Meta<typeof Button> = {
       defaultValue: false,
     },
   },
-};
+} satisfies Meta<typeof Button>;
 
 export default meta;
 type Story = StoryObj<typeof Button>;

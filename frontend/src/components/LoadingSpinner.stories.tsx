@@ -16,11 +16,11 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import LoadingSpinner from "./LoadingSpinner";
 
-const meta: Meta<typeof LoadingSpinner> = {
+const meta = {
   title: "UI/Loading Spinner",
   component: LoadingSpinner,
   tags: ["docsPage"],
-};
+} satisfies Meta<typeof LoadingSpinner>;
 
 export default meta;
 type Story = StoryObj<typeof LoadingSpinner>;

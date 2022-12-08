@@ -17,7 +17,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import Block from "./Block";
 import { Title, Subtitle, Body } from "./Typography";
 
-const meta: Meta<typeof Block> = {
+const meta = {
   title: "UI/Block",
   component: Block,
   subcomponents: {
@@ -26,7 +26,7 @@ const meta: Meta<typeof Block> = {
     Body,
   } as Record<string, React.ComponentType<any>>,
   tags: ["docsPage"],
-};
+} satisfies Meta<typeof Block>;
 
 export default meta;
 type Story = StoryObj<typeof Block>;

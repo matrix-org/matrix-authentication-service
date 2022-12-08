@@ -19,7 +19,7 @@ import DateTime from "./DateTime";
 
 const now = new Date(2022, 11, 16, 15, 32, 10);
 
-const meta: Meta<typeof DateTime> = {
+const meta = {
   title: "UI/DateTime",
   component: DateTime,
   tags: ["docsPage"],
@@ -35,7 +35,7 @@ const meta: Meta<typeof DateTime> = {
       control: "date",
     },
   },
-};
+} satisfies Meta<typeof DateTime>;
 
 export default meta;
 type Story = StoryObj<typeof DateTime>;

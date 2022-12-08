@@ -16,11 +16,11 @@ import type { Meta, StoryObj } from "@storybook/react";
 
 import LoadingScreen from "./LoadingScreen";
 
-const meta: Meta<typeof LoadingScreen> = {
+const meta = {
   title: "UI/Loading Screen",
   component: LoadingScreen,
   tags: ["docsPage"],
-};
+} satisfies Meta<typeof LoadingScreen>;
 
 export default meta;
 type Story = StoryObj<typeof LoadingScreen>;

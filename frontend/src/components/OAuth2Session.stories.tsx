@@ -77,7 +77,7 @@ const Template: React.FC<TemplateProps> = ({
   );
 };
 
-const meta: Meta<typeof Template> = {
+const meta = {
   title: "Components/OAuth 2.0 Session",
   component: Template,
   tags: ["docsPage"],
@@ -87,7 +87,7 @@ const meta: Meta<typeof Template> = {
     clientName: "My client",
     clientUri: "https://example.com/",
   },
-};
+} satisfies Meta<typeof Template>;
 
 export default meta;
 type Story = StoryObj<typeof Template>;
