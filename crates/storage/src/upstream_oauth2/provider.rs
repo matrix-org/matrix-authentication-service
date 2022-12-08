@@ -24,7 +24,7 @@ use uuid::Uuid;
 
 use crate::{
     pagination::{process_page, QueryBuilderExt},
-    Clock, DatabaseError, DatabaseInconsistencyError2, LookupResultExt,
+    Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt,
 };
 
 #[derive(sqlx::FromRow)]
@@ -40,17 +40,17 @@ struct ProviderLookup {
 }
 
 impl TryFrom<ProviderLookup> for UpstreamOAuthProvider {
-    type Error = DatabaseInconsistencyError2;
+    type Error = DatabaseInconsistencyError;
     fn try_from(value: ProviderLookup) -> Result<Self, Self::Error> {
         let id = value.upstream_oauth_provider_id.into();
         let scope = value.scope.parse().map_err(|e| {
-            DatabaseInconsistencyError2::on("upstream_oauth_providers")
+            DatabaseInconsistencyError::on("upstream_oauth_providers")
                 .column("scope")
                 .row(id)
                 .source(e)
         })?;
         let token_endpoint_auth_method = value.token_endpoint_auth_method.parse().map_err(|e| {
-            DatabaseInconsistencyError2::on("upstream_oauth_providers")
+            DatabaseInconsistencyError::on("upstream_oauth_providers")
                 .column("token_endpoint_auth_method")
                 .row(id)
                 .source(e)
@@ -60,7 +60,7 @@ impl TryFrom<ProviderLookup> for UpstreamOAuthProvider {
             .map(|x| x.parse())
             .transpose()
             .map_err(|e| {
-                DatabaseInconsistencyError2::on("upstream_oauth_providers")
+                DatabaseInconsistencyError::on("upstream_oauth_providers")
                     .column("token_endpoint_signing_alg")
                     .row(id)
                     .source(e)

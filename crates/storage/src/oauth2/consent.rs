@@ -21,7 +21,7 @@ use sqlx::PgExecutor;
 use ulid::Ulid;
 use uuid::Uuid;
 
-use crate::{Clock, DatabaseError, DatabaseInconsistencyError2};
+use crate::{Clock, DatabaseError, DatabaseInconsistencyError};
 
 #[tracing::instrument(
     skip_all,
@@ -54,7 +54,7 @@ pub async fn fetch_client_consent(
         .collect();
 
     let scope = scope.map_err(|e| {
-        DatabaseInconsistencyError2::on("oauth2_consents")
+        DatabaseInconsistencyError::on("oauth2_consents")
             .column("scope_token")
             .source(e)
     })?;

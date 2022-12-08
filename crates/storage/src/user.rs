@@ -32,7 +32,7 @@ use uuid::Uuid;
 
 use crate::{
     pagination::{process_page, QueryBuilderExt},
-    Clock, DatabaseError, DatabaseInconsistencyError2, LookupResultExt,
+    Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt,
 };
 
 #[derive(Debug, Clone)]
@@ -118,7 +118,7 @@ struct SessionLookup {
 }
 
 impl TryInto<BrowserSession> for SessionLookup {
-    type Error = DatabaseInconsistencyError2;
+    type Error = DatabaseInconsistencyError;
 
     fn try_into(self) -> Result<BrowserSession, Self::Error> {
         let id = Ulid::from(self.user_id);
@@ -136,7 +136,7 @@ impl TryInto<BrowserSession> for SessionLookup {
             }),
             (None, None, None, None) => None,
             _ => {
-                return Err(DatabaseInconsistencyError2::on("users")
+                return Err(DatabaseInconsistencyError::on("users")
                     .column("primary_user_email_id")
                     .row(id))
             }
@@ -156,7 +156,7 @@ impl TryInto<BrowserSession> for SessionLookup {
             }),
             (None, None) => None,
             _ => {
-                return Err(DatabaseInconsistencyError2::on(
+                return Err(DatabaseInconsistencyError::on(
                     "user_session_authentications",
                 ))
             }
@@ -669,7 +669,7 @@ pub async fn lookup_user_by_username(
         }),
         (None, None, None, None) => None,
         _ => {
-            return Err(DatabaseInconsistencyError2::on("users")
+            return Err(DatabaseInconsistencyError::on("users")
                 .column("primary_user_email_id")
                 .row(id)
                 .into())
@@ -728,7 +728,7 @@ pub async fn lookup_user(executor: impl PgExecutor<'_>, id: Ulid) -> Result<User
         }),
         (None, None, None, None) => None,
         _ => {
-            return Err(DatabaseInconsistencyError2::on("users")
+            return Err(DatabaseInconsistencyError::on("users")
                 .column("primary_user_email_id")
                 .row(id)
                 .into())

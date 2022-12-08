@@ -22,7 +22,7 @@ use ulid::Ulid;
 use uuid::Uuid;
 
 use super::client::lookup_client;
-use crate::{Clock, DatabaseError, DatabaseInconsistencyError2};
+use crate::{Clock, DatabaseError, DatabaseInconsistencyError};
 
 #[tracing::instrument(
     skip_all,
@@ -170,7 +170,7 @@ pub async fn lookup_active_refresh_token(
                 expires_at,
             })
         }
-        _ => return Err(DatabaseInconsistencyError2::on("oauth2_access_tokens").into()),
+        _ => return Err(DatabaseInconsistencyError::on("oauth2_access_tokens").into()),
     };
 
     let refresh_token = RefreshToken {
@@ -184,7 +184,7 @@ pub async fn lookup_active_refresh_token(
     let client = lookup_client(&mut *conn, res.oauth2_client_id.into())
         .await?
         .ok_or_else(|| {
-            DatabaseInconsistencyError2::on("oauth2_sessions")
+            DatabaseInconsistencyError::on("oauth2_sessions")
                 .column("client_id")
                 .row(session_id)
         })?;
@@ -204,7 +204,7 @@ pub async fn lookup_active_refresh_token(
         }),
         (None, None, None, None) => None,
         _ => {
-            return Err(DatabaseInconsistencyError2::on("users")
+            return Err(DatabaseInconsistencyError::on("users")
                 .column("primary_user_email_id")
                 .row(user_id)
                 .into())
@@ -227,7 +227,7 @@ pub async fn lookup_active_refresh_token(
             id: id.into(),
             created_at,
         }),
-        _ => return Err(DatabaseInconsistencyError2::on("user_session_authentications").into()),
+        _ => return Err(DatabaseInconsistencyError::on("user_session_authentications").into()),
     };
 
     let browser_session = BrowserSession {
@@ -238,7 +238,7 @@ pub async fn lookup_active_refresh_token(
     };
 
     let scope = res.oauth2_session_scope.parse().map_err(|e| {
-        DatabaseInconsistencyError2::on("oauth2_sessions")
+        DatabaseInconsistencyError::on("oauth2_sessions")
             .column("scope")
             .row(session_id)
             .source(e)

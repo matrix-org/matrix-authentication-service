@@ -19,9 +19,7 @@ use sqlx::PgExecutor;
 use ulid::Ulid;
 use uuid::Uuid;
 
-use crate::{
-    Clock, DatabaseError, DatabaseInconsistencyError2, GenericLookupError, LookupResultExt,
-};
+use crate::{Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt};
 
 struct SessionAndProviderLookup {
     upstream_oauth_authorization_session_id: Uuid,
@@ -92,7 +90,7 @@ pub async fn lookup_session(
         id,
         issuer: res.provider_issuer,
         scope: res.provider_scope.parse().map_err(|e| {
-            DatabaseInconsistencyError2::on("upstream_oauth_providers")
+            DatabaseInconsistencyError::on("upstream_oauth_providers")
                 .column("scope")
                 .row(id)
                 .source(e)
@@ -101,7 +99,7 @@ pub async fn lookup_session(
         encrypted_client_secret: res.provider_encrypted_client_secret,
         token_endpoint_auth_method: res.provider_token_endpoint_auth_method.parse().map_err(
             |e| {
-                DatabaseInconsistencyError2::on("upstream_oauth_providers")
+                DatabaseInconsistencyError::on("upstream_oauth_providers")
                     .column("token_endpoint_auth_method")
                     .row(id)
                     .source(e)
@@ -112,7 +110,7 @@ pub async fn lookup_session(
             .map(|x| x.parse())
             .transpose()
             .map_err(|e| {
-                DatabaseInconsistencyError2::on("upstream_oauth_providers")
+                DatabaseInconsistencyError::on("upstream_oauth_providers")
                     .column("token_endpoint_signing_alg")
                     .row(id)
                     .source(e)
@@ -297,7 +295,7 @@ pub async fn lookup_session_on_link(
     executor: impl PgExecutor<'_>,
     upstream_oauth_link: &UpstreamOAuthLink,
     id: Ulid,
-) -> Result<UpstreamOAuthAuthorizationSession, GenericLookupError> {
+) -> Result<Option<UpstreamOAuthAuthorizationSession>, sqlx::Error> {
     let res = sqlx::query_as!(
         SessionLookup,
         r#"
@@ -321,11 +319,11 @@ pub async fn lookup_session_on_link(
     )
     .fetch_one(executor)
     .await
-    .map_err(GenericLookupError::what(
-        "Upstream OAuth 2.0 session on link",
-    ))?;
+    .to_option()?;
 
-    Ok(UpstreamOAuthAuthorizationSession {
+    let Some(res) = res else { return Ok(None) };
+
+    Ok(Some(UpstreamOAuthAuthorizationSession {
         id: res.upstream_oauth_authorization_session_id.into(),
         provider_id: res.upstream_oauth_provider_id.into(),
         link_id: res.upstream_oauth_link_id.map(Ulid::from),
@@ -336,5 +334,5 @@ pub async fn lookup_session_on_link(
         created_at: res.created_at,
         completed_at: res.completed_at,
         consumed_at: res.consumed_at,
-    })
+    }))
 }

@@ -34,55 +34,21 @@ use sqlx::{migrate::Migrator, postgres::PgQueryResult};
 use thiserror::Error;
 use ulid::Ulid;
 
-#[derive(Debug, Error)]
-#[error("failed to lookup {what}")]
-pub struct GenericLookupError {
-    what: &'static str,
-    source: sqlx::Error,
-}
-
-impl GenericLookupError {
-    #[must_use]
-    pub fn what(what: &'static str) -> Box<dyn Fn(sqlx::Error) -> Self> {
-        Box::new(move |source: sqlx::Error| Self { what, source })
-    }
-}
-
-impl LookupError for GenericLookupError {
-    fn not_found(&self) -> bool {
-        matches!(self.source, sqlx::Error::RowNotFound)
-    }
-}
-
-impl LookupError for sqlx::Error {
-    fn not_found(&self) -> bool {
-        matches!(self, sqlx::Error::RowNotFound)
-    }
-}
-
-pub trait LookupError {
-    fn not_found(&self) -> bool;
-}
-
-pub trait LookupResultExt {
-    type Error;
+trait LookupResultExt {
     type Output;
 
-    /// Transform a [`Result`] with a [`LookupError`] to transform "not
-    /// found" errors into [`None`]
-    fn to_option(self) -> Result<Option<Self::Output>, Self::Error>;
+    /// Transform a [`Result`] from a sqlx query to transform "not found" errors
+    /// into [`None`]
+    fn to_option(self) -> Result<Option<Self::Output>, sqlx::Error>;
 }
 
-impl<T, E> LookupResultExt for Result<T, E>
-where
-    E: LookupError,
-{
+impl<T> LookupResultExt for Result<T, sqlx::Error> {
     type Output = T;
-    type Error = E;
-    fn to_option(self) -> Result<Option<Self::Output>, Self::Error> {
+
+    fn to_option(self) -> Result<Option<Self::Output>, sqlx::Error> {
         match self {
             Ok(v) => Ok(Some(v)),
-            Err(e) if e.not_found() => Ok(None),
+            Err(sqlx::Error::RowNotFound) => Ok(None),
             Err(e) => Err(e),
         }
     }
@@ -96,7 +62,7 @@ pub enum DatabaseError {
     Driver(#[from] sqlx::Error),
 
     /// An error which occured while converting the data from the database
-    Inconsistency(#[from] DatabaseInconsistencyError2),
+    Inconsistency(#[from] DatabaseInconsistencyError),
 
     /// An error which occured while generating the paginated query
     Pagination(#[from] InvalidPagination),
@@ -140,7 +106,7 @@ impl DatabaseError {
 }
 
 #[derive(Debug, Error)]
-pub struct DatabaseInconsistencyError2 {
+pub struct DatabaseInconsistencyError {
     table: &'static str,
     column: Option<&'static str>,
     row: Option<Ulid>,
@@ -149,7 +115,7 @@ pub struct DatabaseInconsistencyError2 {
     source: Option<Box<dyn std::error::Error + Send + Sync + 'static>>,
 }
 
-impl std::fmt::Display for DatabaseInconsistencyError2 {
+impl std::fmt::Display for DatabaseInconsistencyError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Database inconsistency on table {}", self.table)?;
         if let Some(column) = self.column {
@@ -163,7 +129,7 @@ impl std::fmt::Display for DatabaseInconsistencyError2 {
     }
 }
 
-impl DatabaseInconsistencyError2 {
+impl DatabaseInconsistencyError {
     #[must_use]
     pub(crate) const fn on(table: &'static str) -> Self {
         Self {
@@ -208,10 +174,6 @@ impl Clock {
         Utc::now()
     }
 }
-
-#[derive(Debug, Error)]
-#[error("database query returned an inconsistent state")]
-pub struct DatabaseInconsistencyError;
 
 pub mod compat;
 pub mod oauth2;

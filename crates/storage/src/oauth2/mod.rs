@@ -24,7 +24,7 @@ use self::client::lookup_clients;
 use crate::{
     pagination::{process_page, QueryBuilderExt},
     user::lookup_active_session,
-    Clock, DatabaseError, DatabaseInconsistencyError2,
+    Clock, DatabaseError, DatabaseInconsistencyError,
 };
 
 pub mod access_token;
@@ -137,19 +137,19 @@ pub async fn get_paginated_user_oauth_sessions(
         let v = lookup_active_session(&mut *conn, id)
             .await?
             .ok_or_else(|| {
-                DatabaseInconsistencyError2::on("oauth2_sessions").column("user_session_id")
+                DatabaseInconsistencyError::on("oauth2_sessions").column("user_session_id")
             })?;
         browser_sessions.insert(id, v);
     }
 
-    let page: Result<Vec<_>, DatabaseInconsistencyError2> = page
+    let page: Result<Vec<_>, DatabaseInconsistencyError> = page
         .into_iter()
         .map(|item| {
             let id = Ulid::from(item.oauth2_session_id);
             let client = clients
                 .get(&Ulid::from(item.oauth2_client_id))
                 .ok_or_else(|| {
-                    DatabaseInconsistencyError2::on("oauth2_sessions")
+                    DatabaseInconsistencyError::on("oauth2_sessions")
                         .column("oauth2_client_id")
                         .row(id)
                 })?
@@ -158,14 +158,14 @@ pub async fn get_paginated_user_oauth_sessions(
             let browser_session = browser_sessions
                 .get(&Ulid::from(item.user_session_id))
                 .ok_or_else(|| {
-                    DatabaseInconsistencyError2::on("oauth2_sessions")
+                    DatabaseInconsistencyError::on("oauth2_sessions")
                         .column("user_session_id")
                         .row(id)
                 })?
                 .clone();
 
             let scope = item.scope.parse().map_err(|e| {
-                DatabaseInconsistencyError2::on("oauth2_sessions")
+                DatabaseInconsistencyError::on("oauth2_sessions")
                     .column("scope")
                     .row(id)
                     .source(e)
