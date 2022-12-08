@@ -14,7 +14,6 @@
 
 use std::sync::Arc;
 
-use anyhow::anyhow;
 use axum::{
     extract::{Path, State},
     response::{IntoResponse, Response},
@@ -44,10 +43,6 @@ pub enum RouteError {
     #[error(transparent)]
     Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
 
-    // TODO: remove this one: needed because mas_policy returns errors from anyhow
-    #[error(transparent)]
-    Anyhow(#[from] anyhow::Error),
-
     #[error("authorization grant was not found")]
     NotFound,
 
@@ -67,9 +62,6 @@ impl IntoResponse for RouteError {
                 "authorization grant not in a pending state",
             )
                 .into_response(),
-            RouteError::Anyhow(e) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
-            }
             RouteError::Internal(e) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
             }
@@ -79,6 +71,9 @@ impl IntoResponse for RouteError {
 
 impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_storage::DatabaseError);
+impl_from_error_for_route!(mas_policy::LoadError);
+impl_from_error_for_route!(mas_policy::InstanciateError);
+impl_from_error_for_route!(mas_policy::EvaluationError);
 impl_from_error_for_route!(super::callback::IntoCallbackDestinationError);
 impl_from_error_for_route!(super::callback::CallbackDestinationError);
 
@@ -126,7 +121,6 @@ pub(crate) async fn get(
         }
         Err(GrantCompletionError::NotPending) => Err(RouteError::NotPending),
         Err(GrantCompletionError::Internal(e)) => Err(RouteError::Internal(e)),
-        Err(GrantCompletionError::Anyhow(e)) => Err(RouteError::Anyhow(e)),
     }
 }
 
@@ -134,9 +128,6 @@ pub(crate) async fn get(
 pub enum GrantCompletionError {
     #[error(transparent)]
     Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
-
-    #[error(transparent)]
-    Anyhow(#[from] anyhow::Error),
 
     #[error("authorization grant is not in a pending state")]
     NotPending,
@@ -154,6 +145,9 @@ pub enum GrantCompletionError {
 impl_from_error_for_route!(GrantCompletionError: sqlx::Error);
 impl_from_error_for_route!(GrantCompletionError: mas_storage::DatabaseError);
 impl_from_error_for_route!(GrantCompletionError: super::callback::IntoCallbackDestinationError);
+impl_from_error_for_route!(GrantCompletionError: mas_policy::LoadError);
+impl_from_error_for_route!(GrantCompletionError: mas_policy::InstanciateError);
+impl_from_error_for_route!(GrantCompletionError: mas_policy::EvaluationError);
 
 pub(crate) async fn complete(
     grant: AuthorizationGrant,
@@ -214,7 +208,9 @@ pub(crate) async fn complete(
     // Did they request an ID token?
     if grant.response_type_id_token {
         // TODO
-        return Err(anyhow!("id tokens are not implemented yet").into());
+        return Err(GrantCompletionError::Internal(
+            "ID tokens are not implemented yet".into(),
+        ));
     }
 
     txn.commit().await?;

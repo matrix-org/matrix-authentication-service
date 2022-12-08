@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use anyhow::Context;
+use std::string::FromUtf8Error;
+
 use mas_data_model::UpstreamOAuthProvider;
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
-use mas_keystore::{Encrypter, Keystore};
+use mas_keystore::{DecryptError, Encrypter, Keystore};
 use mas_oidc_client::types::client_credentials::{ClientCredentials, JwtSigningMethod};
 use thiserror::Error;
 use url::Url;
@@ -28,14 +29,21 @@ pub(crate) mod link;
 use self::cookie::UpstreamSessions as UpstreamSessionsCookie;
 
 #[derive(Debug, Error)]
+#[allow(clippy::enum_variant_names)]
 enum ProviderCredentialsError {
     #[error("Provider doesn't have a client secret")]
     MissingClientSecret,
 
     #[error("Could not decrypt client secret")]
+    DecryptClientSecret {
+        #[from]
+        inner: DecryptError,
+    },
+
+    #[error("Client secret is invalid")]
     InvalidClientSecret {
-        #[source]
-        inner: anyhow::Error,
+        #[from]
+        inner: FromUtf8Error,
     },
 }
 
@@ -52,13 +60,9 @@ fn client_credentials_for_provider(
         .encrypted_client_secret
         .as_deref()
         .map(|encrypted_client_secret| {
-            encrypter
-                .decrypt_string(encrypted_client_secret)
-                .and_then(|client_secret| {
-                    String::from_utf8(client_secret)
-                        .context("Client secret contains non-UTF8 bytes")
-                })
-                .map_err(|inner| ProviderCredentialsError::InvalidClientSecret { inner })
+            let decrypted = encrypter.decrypt_string(encrypted_client_secret)?;
+            let decrypted = String::from_utf8(decrypted)?;
+            Ok::<_, ProviderCredentialsError>(decrypted)
         })
         .transpose()?;
 
