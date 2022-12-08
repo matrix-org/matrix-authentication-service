@@ -14,7 +14,6 @@
 
 use std::sync::Arc;
 
-use anyhow::{anyhow, Context};
 use axum::{
     extract::{Form, State},
     response::{IntoResponse, Response},
@@ -52,12 +51,11 @@ pub enum RouteError {
     #[error(transparent)]
     Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
 
-    // TODO: remove this one
-    #[error(transparent)]
-    Anyhow(#[from] anyhow::Error),
-
     #[error("could not find client")]
     ClientNotFound,
+
+    #[error("invalid response mode")]
+    InvalidResponseMode,
 
     #[error("invalid parameters")]
     IntoCallbackDestination(#[from] self::callback::IntoCallbackDestinationError),
@@ -73,11 +71,11 @@ impl IntoResponse for RouteError {
             RouteError::Internal(e) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
             }
-            RouteError::Anyhow(e) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
-            }
             RouteError::ClientNotFound => {
                 (StatusCode::BAD_REQUEST, "could not find client").into_response()
+            }
+            RouteError::InvalidResponseMode => {
+                (StatusCode::BAD_REQUEST, "invalid response mode").into_response()
             }
             RouteError::IntoCallbackDestination(e) => {
                 (StatusCode::BAD_REQUEST, e.to_string()).into_response()
@@ -94,6 +92,9 @@ impl IntoResponse for RouteError {
 impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_storage::DatabaseError);
 impl_from_error_for_route!(self::callback::CallbackDestinationError);
+impl_from_error_for_route!(mas_policy::LoadError);
+impl_from_error_for_route!(mas_policy::InstanciateError);
+impl_from_error_for_route!(mas_policy::EvaluationError);
 
 #[derive(Deserialize)]
 pub(crate) struct Params {
@@ -110,7 +111,7 @@ pub(crate) struct Params {
 fn resolve_response_mode(
     response_type: &ResponseType,
     suggested_response_mode: Option<ResponseMode>,
-) -> anyhow::Result<ResponseMode> {
+) -> Result<ResponseMode, RouteError> {
     use ResponseMode as M;
 
     // If the response type includes either "token" or "id_token", the default
@@ -119,7 +120,7 @@ fn resolve_response_mode(
     if response_type.has_token() || response_type.has_id_token() {
         match suggested_response_mode {
             None => Ok(M::Fragment),
-            Some(M::Query) => Err(anyhow!("invalid response mode")),
+            Some(M::Query) => Err(RouteError::InvalidResponseMode),
             Some(mode) => Ok(mode),
         }
     } else {
@@ -166,10 +167,7 @@ pub(crate) async fn get(
         let templates = templates.clone();
         let callback_destination = callback_destination.clone();
         async move {
-            let maybe_session = session_info
-                .load_session(&mut txn)
-                .await
-                .context("failed to load browser session")?;
+            let maybe_session = session_info.load_session(&mut txn).await?;
             let prompt = params.auth.prompt.as_deref().unwrap_or_default();
 
             // Check if the request/request_uri/registration params are used. If so, reply
@@ -356,13 +354,12 @@ pub(crate) async fn get(
                                 .go(&templates, ClientError::from(ClientErrorCode::AccessDenied))
                                 .await?
                         }
-                        Err(GrantCompletionError::Anyhow(a)) => return Err(RouteError::Anyhow(a)),
                         Err(GrantCompletionError::Internal(e)) => {
                             return Err(RouteError::Internal(e))
                         }
-                        Err(GrantCompletionError::NotPending) => {
+                        Err(e @ GrantCompletionError::NotPending) => {
                             // This should never happen
-                            return Err(anyhow!("authorization grant is not pending").into());
+                            return Err(RouteError::Internal(Box::new(e)));
                         }
                     }
                 }
@@ -387,13 +384,12 @@ pub(crate) async fn get(
                                 .go()
                                 .into_response()
                         }
-                        Err(GrantCompletionError::Anyhow(a)) => return Err(RouteError::Anyhow(a)),
                         Err(GrantCompletionError::Internal(e)) => {
                             return Err(RouteError::Internal(e))
                         }
-                        Err(GrantCompletionError::NotPending) => {
+                        Err(e @ GrantCompletionError::NotPending) => {
                             // This should never happen
-                            return Err(anyhow!("authorization grant is not pending").into());
+                            return Err(RouteError::Internal(Box::new(e)));
                         }
                     }
                 }

@@ -44,10 +44,6 @@ pub enum RouteError {
     #[error(transparent)]
     Internal(Box<dyn std::error::Error + Send + Sync>),
 
-    // TODO: remove this one, needed because of mas_policy
-    #[error(transparent)]
-    Anyhow(#[from] anyhow::Error),
-
     #[error(transparent)]
     Csrf(#[from] mas_axum_utils::csrf::CsrfError),
 
@@ -64,6 +60,9 @@ pub enum RouteError {
 impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_templates::TemplateError);
 impl_from_error_for_route!(mas_storage::DatabaseError);
+impl_from_error_for_route!(mas_policy::LoadError);
+impl_from_error_for_route!(mas_policy::InstanciateError);
+impl_from_error_for_route!(mas_policy::EvaluationError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {

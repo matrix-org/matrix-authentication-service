@@ -39,10 +39,6 @@ pub(crate) enum RouteError {
     #[error(transparent)]
     Internal(Box<dyn std::error::Error + Send + Sync>),
 
-    // TODO: remove this, needed because of mas_policy
-    #[error(transparent)]
-    Anyhow(#[from] anyhow::Error),
-
     #[error("invalid redirect uri")]
     InvalidRedirectUri,
 
@@ -54,6 +50,10 @@ pub(crate) enum RouteError {
 }
 
 impl_from_error_for_route!(sqlx::Error);
+impl_from_error_for_route!(mas_policy::LoadError);
+impl_from_error_for_route!(mas_policy::InstanciateError);
+impl_from_error_for_route!(mas_policy::EvaluationError);
+impl_from_error_for_route!(mas_keystore::aead::Error);
 
 impl From<ClientMetadataVerificationError> for RouteError {
     fn from(e: ClientMetadataVerificationError) -> Self {
@@ -70,7 +70,7 @@ impl From<ClientMetadataVerificationError> for RouteError {
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         match self {
-            Self::Internal(_) | Self::Anyhow(_) => (
+            Self::Internal(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ClientError::from(ClientErrorCode::ServerError)),
             )

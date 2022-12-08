@@ -43,7 +43,9 @@ use thiserror::Error;
 
 mod encrypter;
 
-pub use self::encrypter::Encrypter;
+pub use aead;
+
+pub use self::encrypter::{DecryptError, Encrypter};
 
 /// Error type used when a key could not be loaded
 #[derive(Debug, Error)]

@@ -17,7 +17,6 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::missing_errors_doc)]
 
-use anyhow::bail;
 use mas_data_model::{AuthorizationGrant, User};
 use oauth2_types::registration::VerifiedClientMetadata;
 use opa_wasm::Runtime;
@@ -41,11 +40,23 @@ pub enum LoadError {
     Compilation(#[source] anyhow::Error),
 
     #[error("failed to instantiate a test instance")]
-    Instantiate(#[source] anyhow::Error),
+    Instantiate(#[source] InstanciateError),
 
     #[cfg(feature = "cache")]
     #[error("could not load wasmtime cache configuration")]
     CacheSetup(#[source] anyhow::Error),
+}
+
+#[derive(Debug, Error)]
+pub enum InstanciateError {
+    #[error("failed to create WASM runtime")]
+    Runtime(#[source] anyhow::Error),
+
+    #[error("missing entrypoint {entrypoint}")]
+    MissingEntrypoint { entrypoint: String },
+
+    #[error("failed to load policy data")]
+    LoadData(#[source] anyhow::Error),
 }
 
 pub struct PolicyFactory {
@@ -58,7 +69,7 @@ pub struct PolicyFactory {
 }
 
 impl PolicyFactory {
-    #[tracing::instrument(skip(source), err(Display))]
+    #[tracing::instrument(skip(source), err)]
     pub async fn load(
         mut source: impl AsyncRead + std::marker::Unpin,
         data: serde_json::Value,
@@ -107,9 +118,11 @@ impl PolicyFactory {
     }
 
     #[tracing::instrument(skip(self), err)]
-    pub async fn instantiate(&self) -> Result<Policy, anyhow::Error> {
+    pub async fn instantiate(&self) -> Result<Policy, InstanciateError> {
         let mut store = Store::new(&self.engine, ());
-        let runtime = Runtime::new(&mut store, &self.module).await?;
+        let runtime = Runtime::new(&mut store, &self.module)
+            .await
+            .map_err(InstanciateError::Runtime)?;
 
         // Check that we have the required entrypoints
         let entrypoints = runtime.entrypoints();
@@ -120,11 +133,16 @@ impl PolicyFactory {
             self.authorization_grant_endpoint.as_str(),
         ] {
             if !entrypoints.contains(e) {
-                bail!("missing entrypoint {e}")
+                return Err(InstanciateError::MissingEntrypoint {
+                    entrypoint: e.to_owned(),
+                });
             }
         }
 
-        let instance = runtime.with_data(&mut store, &self.data).await?;
+        let instance = runtime
+            .with_data(&mut store, &self.data)
+            .await
+            .map_err(InstanciateError::LoadData)?;
 
         Ok(Policy {
             store,
@@ -163,6 +181,13 @@ pub struct Policy {
     authorization_grant_endpoint: String,
 }
 
+#[derive(Debug, Error)]
+#[error("failed to evaluate policy")]
+pub enum EvaluationError {
+    Serialization(#[from] serde_json::Error),
+    Evaluation(#[from] anyhow::Error),
+}
+
 impl Policy {
     #[tracing::instrument(skip(self, password))]
     pub async fn evaluate_register(
@@ -170,7 +195,7 @@ impl Policy {
         username: &str,
         password: &str,
         email: &str,
-    ) -> Result<EvaluationResult, anyhow::Error> {
+    ) -> Result<EvaluationResult, EvaluationError> {
         let input = serde_json::json!({
             "user": {
                 "username": username,
@@ -191,7 +216,7 @@ impl Policy {
     pub async fn evaluate_client_registration(
         &mut self,
         client_metadata: &VerifiedClientMetadata,
-    ) -> Result<EvaluationResult, anyhow::Error> {
+    ) -> Result<EvaluationResult, EvaluationError> {
         let client_metadata = serde_json::to_value(client_metadata)?;
         let input = serde_json::json!({
             "client_metadata": client_metadata,
@@ -214,7 +239,7 @@ impl Policy {
         &mut self,
         authorization_grant: &AuthorizationGrant,
         user: &User,
-    ) -> Result<EvaluationResult, anyhow::Error> {
+    ) -> Result<EvaluationResult, EvaluationError> {
         let authorization_grant = serde_json::to_value(authorization_grant)?;
         let user = serde_json::to_value(user)?;
         let input = serde_json::json!({
