@@ -911,7 +911,7 @@ pub async fn fullfill_compat_sso_login(
     device: Device,
 ) -> Result<CompatSsoLogin, DatabaseError> {
     if !matches!(compat_sso_login.state, CompatSsoLoginState::Pending) {
-        return Err(DatabaseError::InvalidOperation);
+        return Err(DatabaseError::invalid_operation());
     };
 
     let mut txn = conn.begin().await?;
@@ -986,7 +986,7 @@ pub async fn mark_compat_sso_login_as_exchanged(
     mut compat_sso_login: CompatSsoLogin,
 ) -> Result<CompatSsoLogin, DatabaseError> {
     let CompatSsoLoginState::Fulfilled { fulfilled_at, session } = compat_sso_login.state else {
-        return Err(DatabaseError::InvalidOperation);
+        return Err(DatabaseError::invalid_operation());
     };
 
     let exchanged_at = clock.now();

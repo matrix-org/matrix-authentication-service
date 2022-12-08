@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use anyhow::Context;
 use chrono::{DateTime, Duration, Utc};
 use mas_data_model::{AccessToken, Authentication, BrowserSession, Session, User, UserEmail};
 use rand::Rng;
@@ -40,7 +39,7 @@ pub async fn add_access_token(
     session: &Session,
     access_token: String,
     expires_after: Duration,
-) -> Result<AccessToken, anyhow::Error> {
+) -> Result<AccessToken, sqlx::Error> {
     let created_at = clock.now();
     let expires_at = created_at + expires_after;
     let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
@@ -61,8 +60,7 @@ pub async fn add_access_token(
         expires_at,
     )
     .execute(executor)
-    .await
-    .context("could not insert oauth2 access token")?;
+    .await?;
 
     Ok(AccessToken {
         id,

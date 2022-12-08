@@ -468,8 +468,12 @@ pub async fn insert_client_from_config(
     jwks: Option<&PublicJsonWebKeySet>,
     jwks_uri: Option<&Url>,
     redirect_uris: &[Url],
-) -> Result<(), anyhow::Error> {
-    let jwks = jwks.map(serde_json::to_value).transpose()?;
+) -> Result<(), DatabaseError> {
+    let jwks = jwks
+        .map(serde_json::to_value)
+        .transpose()
+        .map_err(DatabaseError::to_invalid_operation)?;
+
     let jwks_uri = jwks_uri.map(Url::as_str);
 
     let client_auth_method = client_auth_method.to_string();
@@ -526,7 +530,7 @@ pub async fn insert_client_from_config(
     Ok(())
 }
 
-pub async fn truncate_clients(executor: impl PgExecutor<'_>) -> Result<(), anyhow::Error> {
+pub async fn truncate_clients(executor: impl PgExecutor<'_>) -> Result<(), sqlx::Error> {
     sqlx::query!("TRUNCATE oauth2_client_redirect_uris, oauth2_clients CASCADE")
         .execute(executor)
         .await?;

@@ -104,7 +104,10 @@ pub enum DatabaseError {
     /// An error which happened because the requested database operation is
     /// invalid
     #[error("Invalid database operation")]
-    InvalidOperation,
+    InvalidOperation {
+        #[source]
+        source: Option<Box<dyn std::error::Error + Send + Sync + 'static>>,
+    },
 
     /// An error which happens when an operation affects not enough or too many
     /// rows
@@ -123,6 +126,16 @@ impl DatabaseError {
         } else {
             Err(DatabaseError::RowsAffected { expected, actual })
         }
+    }
+
+    pub(crate) fn to_invalid_operation<E: std::error::Error + Send + Sync + 'static>(e: E) -> Self {
+        Self::InvalidOperation {
+            source: Some(Box::new(e)),
+        }
+    }
+
+    pub(crate) const fn invalid_operation() -> Self {
+        Self::InvalidOperation { source: None }
     }
 }
 

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use anyhow::Context;
 use chrono::{DateTime, Utc};
 use mas_data_model::{
     AccessToken, Authentication, BrowserSession, RefreshToken, Session, User, UserEmail,
@@ -43,7 +42,7 @@ pub async fn add_refresh_token(
     session: &Session,
     access_token: AccessToken,
     refresh_token: String,
-) -> anyhow::Result<RefreshToken> {
+) -> Result<RefreshToken, sqlx::Error> {
     let created_at = clock.now();
     let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
     tracing::Span::current().record("refresh_token.id", tracing::field::display(id));
@@ -63,8 +62,7 @@ pub async fn add_refresh_token(
         created_at,
     )
     .execute(executor)
-    .await
-    .context("could not insert oauth2 refresh token")?;
+    .await?;
 
     Ok(RefreshToken {
         id,

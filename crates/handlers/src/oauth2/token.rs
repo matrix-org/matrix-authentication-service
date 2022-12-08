@@ -98,6 +98,9 @@ pub(crate) enum RouteError {
     #[error("could not verify client credentials")]
     ClientCredentialsVerification(#[from] CredentialsVerificationError),
 
+    #[error("grant not found")]
+    GrantNotFound,
+
     #[error("invalid grant")]
     InvalidGrant,
 
@@ -131,7 +134,7 @@ impl IntoResponse for RouteError {
                 StatusCode::UNAUTHORIZED,
                 Json(ClientError::from(ClientErrorCode::UnauthorizedClient)),
             ),
-            Self::InvalidGrant => (
+            Self::InvalidGrant | Self::GrantNotFound => (
                 StatusCode::BAD_REQUEST,
                 Json(ClientError::from(ClientErrorCode::InvalidGrant)),
             ),
@@ -207,7 +210,9 @@ async fn authorization_code_grant(
 
     // TODO: there is a bunch of unnecessary cloning here
     // TODO: handle "not found" cases
-    let authz_grant = lookup_grant_by_code(&mut txn, &grant.code).await?;
+    let authz_grant = lookup_grant_by_code(&mut txn, &grant.code)
+        .await?
+        .ok_or(RouteError::GrantNotFound)?;
 
     let now = clock.now();
 

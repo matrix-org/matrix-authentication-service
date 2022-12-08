@@ -21,7 +21,7 @@ use sqlx::PgExecutor;
 use ulid::Ulid;
 use uuid::Uuid;
 
-use crate::Clock;
+use crate::{Clock, DatabaseError, DatabaseInconsistencyError2};
 
 #[tracing::instrument(
     skip_all,
@@ -29,13 +29,13 @@ use crate::Clock;
         %user.id,
         %client.id,
     ),
-    err(Debug),
+    err,
 )]
 pub async fn fetch_client_consent(
     executor: impl PgExecutor<'_>,
     user: &User,
     client: &Client,
-) -> Result<Scope, anyhow::Error> {
+) -> Result<Scope, DatabaseError> {
     let scope_tokens: Vec<String> = sqlx::query_scalar!(
         r#"
             SELECT scope_token
@@ -53,7 +53,13 @@ pub async fn fetch_client_consent(
         .map(|s| ScopeToken::from_str(&s))
         .collect();
 
-    Ok(scope?)
+    let scope = scope.map_err(|e| {
+        DatabaseInconsistencyError2::on("oauth2_consents")
+            .column("scope_token")
+            .source(e)
+    })?;
+
+    Ok(scope)
 }
 
 #[tracing::instrument(
@@ -63,7 +69,7 @@ pub async fn fetch_client_consent(
         %client.id,
         %scope,
     ),
-    err(Debug),
+    err,
 )]
 pub async fn insert_client_consent(
     executor: impl PgExecutor<'_>,
@@ -72,7 +78,7 @@ pub async fn insert_client_consent(
     user: &User,
     client: &Client,
     scope: &Scope,
-) -> Result<(), anyhow::Error> {
+) -> Result<(), sqlx::Error> {
     let now = clock.now();
     let (tokens, ids): (Vec<String>, Vec<Uuid>) = scope
         .iter()

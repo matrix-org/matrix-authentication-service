@@ -45,7 +45,9 @@ impl OptionalPostAuthAction {
         let Some(action) = self.post_auth_action.clone() else { return Ok(None) };
         let ctx = match action {
             PostAuthAction::ContinueAuthorizationGrant { data } => {
-                let grant = get_grant_by_id(conn, data).await?;
+                let grant = get_grant_by_id(conn, data)
+                    .await?
+                    .context("Failed to load authorization grant")?;
                 let grant = Box::new(grant);
                 PostAuthContextInner::ContinueAuthorizationGrant { grant }
             }
