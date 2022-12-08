@@ -7,6 +7,7 @@
     "allowJs": true
   },
   "include": [
+    ".storybook/main.ts",
     "vite.config.ts",
     ".eslintrc.cjs",
     "tailwind.config.cjs"
