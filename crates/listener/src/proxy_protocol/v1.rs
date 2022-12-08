@@ -61,7 +61,7 @@ impl ParseError {
 
 impl ProxyProtocolV1Info {
     #[allow(clippy::too_many_lines)]
-    pub(super) fn parse<B>(mut buf: B) -> Result<Self, ParseError>
+    pub(super) fn parse<B>(buf: &mut B) -> Result<Self, ParseError>
     where
         B: Buf + AsRef<[u8]>,
     {

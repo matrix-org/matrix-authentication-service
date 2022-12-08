@@ -21,7 +21,7 @@ pub(crate) fn assert_serde_json<T: Serialize + DeserializeOwned + PartialEq + De
     got: &T,
     expected_value: serde_json::Value,
 ) {
-    let got_value = serde_json::to_value(&got).expect("could not serialize object as JSON value");
+    let got_value = serde_json::to_value(got).expect("could not serialize object as JSON value");
     assert_eq!(got_value, expected_value);
 
     let expected: T = serde_json::from_value(expected_value)
