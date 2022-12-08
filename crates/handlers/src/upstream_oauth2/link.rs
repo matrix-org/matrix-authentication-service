@@ -163,7 +163,7 @@ pub(crate) async fn get(
 
         (Some(user_session), None) => {
             // Session not linked, but user logged in: suggest linking account
-            let ctx = UpstreamSuggestLink::new(link.id)
+            let ctx = UpstreamSuggestLink::new(&link)
                 .with_session(user_session)
                 .with_csrf(csrf_token.form_value());
 
@@ -182,7 +182,7 @@ pub(crate) async fn get(
         (None, None) => {
             // Session not linked and used not logged in: suggest creating an
             // account or logging in an existing user
-            let ctx = UpstreamRegister::new(link.id).with_csrf(csrf_token.form_value());
+            let ctx = UpstreamRegister::new(&link).with_csrf(csrf_token.form_value());
 
             templates.render_upstream_oauth2_do_register(&ctx).await?
         }

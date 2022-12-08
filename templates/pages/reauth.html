@@ -46,22 +46,10 @@ limitations under the License.
       </form>
       <div class="text-center mt-4">
         Not {{ current_session.user.username }}?
-        {{ logout::button(text="Sign out", class=button::text_class(), csrf_token=csrf_token, post_logout_action=action) }}
+        {% set post_logout_action = next | safe_get(key="params") %}
+        {{ logout::button(text="Sign out", class=button::text_class(), csrf_token=csrf_token, post_logout_action=post_logout_action) }}
       </div>
     </div>
   </section>
-
-  <!-- <div class="flex justify-center">
-    <div class="w-96 m-2">
-      <h3 class="title is-3">Current session data:</h3>
-      <pre class="text-sm whitespace-pre-wrap"><code>{{ current_session | json_encode(pretty=True) | safe }}</code></pre>
-    </div>
-    {% if next %}
-      <div class="w-96 m-2">
-        <h3 class="title is-3">Next action:</h3>
-        <pre class="text-sm whitespace-pre-wrap"><code>{{ next | json_encode(pretty=True) | safe }}</code></pre>
-      </div>
-    {% endif %}
-  </div> -->
 {% endblock content %}
 

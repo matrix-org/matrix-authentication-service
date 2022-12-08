@@ -3061,7 +3061,6 @@ dependencies = [
  "axum 0.6.1",
  "serde",
  "serde_urlencoded",
- "serde_with",
  "ulid",
  "url",
 ]

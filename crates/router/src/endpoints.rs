@@ -13,45 +13,39 @@
 // limitations under the License.
 
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, DisplayFromStr};
 use ulid::Ulid;
 
 pub use crate::traits::*;
 
-#[serde_as]
 #[derive(Deserialize, Serialize, Clone, Debug)]
 #[serde(rename_all = "snake_case", tag = "next")]
 pub enum PostAuthAction {
-    ContinueAuthorizationGrant {
-        #[serde_as(as = "DisplayFromStr")]
-        data: Ulid,
-    },
-    ContinueCompatSsoLogin {
-        #[serde_as(as = "DisplayFromStr")]
-        data: Ulid,
-    },
+    ContinueAuthorizationGrant { id: Ulid },
+    ContinueCompatSsoLogin { id: Ulid },
     ChangePassword,
-    LinkUpstream {
-        #[serde_as(as = "DisplayFromStr")]
-        id: Ulid,
-    },
+    LinkUpstream { id: Ulid },
 }
 
 impl PostAuthAction {
     #[must_use]
-    pub fn continue_grant(data: Ulid) -> Self {
-        PostAuthAction::ContinueAuthorizationGrant { data }
+    pub const fn continue_grant(id: Ulid) -> Self {
+        PostAuthAction::ContinueAuthorizationGrant { id }
     }
 
     #[must_use]
-    pub fn continue_compat_sso_login(data: Ulid) -> Self {
-        PostAuthAction::ContinueCompatSsoLogin { data }
+    pub const fn continue_compat_sso_login(id: Ulid) -> Self {
+        PostAuthAction::ContinueCompatSsoLogin { id }
+    }
+
+    #[must_use]
+    pub const fn link_upstream(id: Ulid) -> Self {
+        PostAuthAction::LinkUpstream { id }
     }
 
     pub fn go_next(&self) -> axum::response::Redirect {
         match self {
-            Self::ContinueAuthorizationGrant { data } => ContinueAuthorizationGrant(*data).go(),
-            Self::ContinueCompatSsoLogin { data } => CompatLoginSsoComplete::new(*data, None).go(),
+            Self::ContinueAuthorizationGrant { id } => ContinueAuthorizationGrant(*id).go(),
+            Self::ContinueCompatSsoLogin { id } => CompatLoginSsoComplete::new(*id, None).go(),
             Self::ChangePassword => AccountPassword.go(),
             Self::LinkUpstream { id } => UpstreamOAuth2Link::new(*id).go(),
         }
@@ -165,23 +159,30 @@ impl Route for Login {
 
 impl Login {
     #[must_use]
-    pub fn and_then(action: PostAuthAction) -> Self {
+    pub const fn and_then(action: PostAuthAction) -> Self {
         Self {
             post_auth_action: Some(action),
         }
     }
 
     #[must_use]
-    pub fn and_continue_grant(data: Ulid) -> Self {
+    pub const fn and_continue_grant(id: Ulid) -> Self {
         Self {
-            post_auth_action: Some(PostAuthAction::continue_grant(data)),
+            post_auth_action: Some(PostAuthAction::continue_grant(id)),
         }
     }
 
     #[must_use]
-    pub fn and_continue_compat_sso_login(data: Ulid) -> Self {
+    pub const fn and_continue_compat_sso_login(id: Ulid) -> Self {
         Self {
-            post_auth_action: Some(PostAuthAction::continue_compat_sso_login(data)),
+            post_auth_action: Some(PostAuthAction::continue_compat_sso_login(id)),
+        }
+    }
+
+    #[must_use]
+    pub const fn and_link_upstream(id: Ulid) -> Self {
+        Self {
+            post_auth_action: Some(PostAuthAction::link_upstream(id)),
         }
     }
 

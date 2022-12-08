@@ -411,7 +411,8 @@ impl TemplateContext for ConsentContext {
 impl ConsentContext {
     /// Constructs a context for the client consent page
     #[must_use]
-    pub fn new(grant: AuthorizationGrant, action: PostAuthAction) -> Self {
+    pub fn new(grant: AuthorizationGrant) -> Self {
+        let action = PostAuthAction::continue_grant(grant.id);
         Self { grant, action }
     }
 }
@@ -436,7 +437,8 @@ impl TemplateContext for PolicyViolationContext {
 impl PolicyViolationContext {
     /// Constructs a context for the policy violation page
     #[must_use]
-    pub fn new(grant: AuthorizationGrant, action: PostAuthAction) -> Self {
+    pub const fn new(grant: AuthorizationGrant) -> Self {
+        let action = PostAuthAction::continue_grant(grant.id);
         Self { grant, action }
     }
 }
@@ -462,7 +464,6 @@ impl FormField for ReauthFormField {
 pub struct ReauthContext {
     form: FormState<ReauthFormField>,
     next: Option<PostAuthContext>,
-    action: Option<PostAuthAction>,
 }
 
 impl TemplateContext for ReauthContext {
@@ -474,7 +475,6 @@ impl TemplateContext for ReauthContext {
         vec![ReauthContext {
             form: FormState::default(),
             next: None,
-            action: None,
         }]
     }
 }
@@ -488,10 +488,9 @@ impl ReauthContext {
 
     /// Add a post authentication action to the context
     #[must_use]
-    pub fn with_post_action(self, next: PostAuthContext, action: PostAuthAction) -> Self {
+    pub fn with_post_action(self, next: PostAuthContext) -> Self {
         Self {
             next: Some(next),
-            action: Some(action),
             ..self
         }
     }
@@ -510,24 +509,22 @@ impl TemplateContext for CompatSsoContext {
         Self: Sized,
     {
         let id = Ulid::from_datetime_with_source(now.into(), rng);
-        vec![CompatSsoContext {
-            login: CompatSsoLogin {
-                id,
-                redirect_uri: Url::parse("https://app.element.io/").unwrap(),
-                login_token: "abcdefghijklmnopqrstuvwxyz012345".into(),
-                created_at: now,
-                state: CompatSsoLoginState::Pending,
-            },
-            action: PostAuthAction::ContinueCompatSsoLogin { data: id },
-        }]
+        vec![CompatSsoContext::new(CompatSsoLogin {
+            id,
+            redirect_uri: Url::parse("https://app.element.io/").unwrap(),
+            login_token: "abcdefghijklmnopqrstuvwxyz012345".into(),
+            created_at: now,
+            state: CompatSsoLoginState::Pending,
+        })]
     }
 }
 
 impl CompatSsoContext {
     /// Constructs a context for the legacy SSO login page
     #[must_use]
-    pub fn new(login: CompatSsoLogin, action: PostAuthAction) -> Self
+    pub fn new(login: CompatSsoLogin) -> Self
 where {
+        let action = PostAuthAction::continue_compat_sso_login(login.id);
         Self { login, action }
     }
 }
@@ -654,13 +651,10 @@ pub struct EmailVerificationPageContext {
 impl EmailVerificationPageContext {
     /// Constructs a context for the email verification page
     #[must_use]
-    pub fn new<T>(email: T) -> Self
-    where
-        T: Into<UserEmail>,
-    {
+    pub fn new(email: UserEmail) -> Self {
         Self {
             form: FormState::default(),
-            email: email.into(),
+            email,
         }
     }
 
@@ -744,13 +738,9 @@ pub struct UpstreamExistingLinkContext {
 
 impl UpstreamExistingLinkContext {
     /// Constructs a new context with an existing linked user
-    pub fn new<T>(linked_user: T) -> Self
-    where
-        T: Into<User>,
-    {
-        Self {
-            linked_user: linked_user.into(),
-        }
+    #[must_use]
+    pub fn new(linked_user: User) -> Self {
+        Self { linked_user }
     }
 }
 
@@ -776,18 +766,23 @@ pub struct UpstreamSuggestLink {
 impl UpstreamSuggestLink {
     /// Constructs a new context with an existing linked user
     #[must_use]
-    pub fn new(link_id: Ulid) -> Self {
-        let post_logout_action = PostAuthAction::LinkUpstream { id: link_id };
+    pub fn new(link: &UpstreamOAuthLink) -> Self {
+        Self::for_link_id(link.id)
+    }
+
+    fn for_link_id(id: Ulid) -> Self {
+        let post_logout_action = PostAuthAction::link_upstream(id);
         Self { post_logout_action }
     }
 }
 
 impl TemplateContext for UpstreamSuggestLink {
-    fn sample(_now: chrono::DateTime<Utc>, _rng: &mut impl Rng) -> Vec<Self>
+    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {
-        vec![Self::new(Ulid::nil())]
+        let id = Ulid::from_datetime_with_source(now.into(), rng);
+        vec![Self::for_link_id(id)]
     }
 }
 
@@ -801,19 +796,26 @@ pub struct UpstreamRegister {
 impl UpstreamRegister {
     /// Constructs a new context with an existing linked user
     #[must_use]
-    pub fn new(link_id: Ulid) -> Self {
-        let action = PostAuthAction::LinkUpstream { id: link_id };
-        let login_link = mas_router::Login::and_then(action).relative_url().into();
+    pub fn new(link: &UpstreamOAuthLink) -> Self {
+        Self::for_link_id(link.id)
+    }
+
+    fn for_link_id(id: Ulid) -> Self {
+        let login_link = mas_router::Login::and_link_upstream(id)
+            .relative_url()
+            .into();
+
         Self { login_link }
     }
 }
 
 impl TemplateContext for UpstreamRegister {
-    fn sample(_now: chrono::DateTime<Utc>, _rng: &mut impl Rng) -> Vec<Self>
+    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {
-        vec![Self::new(Ulid::nil())]
+        let id = Ulid::from_datetime_with_source(now.into(), rng);
+        vec![Self::for_link_id(id)]
     }
 }
 

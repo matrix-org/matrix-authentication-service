@@ -38,22 +38,22 @@ impl OptionalPostAuthAction {
         self.go_next_or_default(&mas_router::Index)
     }
 
-    pub async fn load_context<'e>(
+    pub async fn load_context(
         &self,
         conn: &mut PgConnection,
     ) -> anyhow::Result<Option<PostAuthContext>> {
         let Some(action) = self.post_auth_action.clone() else { return Ok(None) };
         let ctx = match action {
-            PostAuthAction::ContinueAuthorizationGrant { data } => {
-                let grant = get_grant_by_id(conn, data)
+            PostAuthAction::ContinueAuthorizationGrant { id } => {
+                let grant = get_grant_by_id(conn, id)
                     .await?
                     .context("Failed to load authorization grant")?;
                 let grant = Box::new(grant);
                 PostAuthContextInner::ContinueAuthorizationGrant { grant }
             }
 
-            PostAuthAction::ContinueCompatSsoLogin { data } => {
-                let login = get_compat_sso_login_by_id(conn, data)
+            PostAuthAction::ContinueCompatSsoLogin { id } => {
+                let login = get_compat_sso_login_by_id(conn, id)
                     .await?
                     .context("Failed to load compat SSO login")?;
                 let login = Box::new(login);

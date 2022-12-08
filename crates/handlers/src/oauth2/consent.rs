@@ -101,7 +101,7 @@ pub(crate) async fn get(
             .await?;
 
         if res.valid() {
-            let ctx = ConsentContext::new(grant, PostAuthAction::continue_grant(grant_id))
+            let ctx = ConsentContext::new(grant)
                 .with_session(session)
                 .with_csrf(csrf_token.form_value());
 
@@ -109,7 +109,7 @@ pub(crate) async fn get(
 
             Ok((cookie_jar, Html(content)).into_response())
         } else {
-            let ctx = PolicyViolationContext::new(grant, PostAuthAction::continue_grant(grant_id))
+            let ctx = PolicyViolationContext::new(grant)
                 .with_session(session)
                 .with_csrf(csrf_token.form_value());
 
