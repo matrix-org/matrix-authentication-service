@@ -12,8 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-module.exports = {
+import type { StorybookConfig } from "@storybook/builder-vite";
+
+const config: StorybookConfig = {
   stories: ["../src/**/*.stories.mdx", "../src/**/*.stories.@(js|jsx|ts|tsx)"],
+
   addons: [
     // Automatic docs pages
     "@storybook/addon-docs",
@@ -36,17 +39,20 @@ module.exports = {
     // Theme switch toolbar
     "@storybook/addon-toolbars",
   ],
-  framework: {
-    name: "@storybook/react-vite",
-    options: {},
-  },
+
+  framework: "@storybook/react-vite",
+
   typescript: {
     reactDocgen: "react-docgen-typescript",
-  },
+  } as any, // XXX
+
   core: {
     disableTelemetry: true,
   },
+
   docs: {
     docsPage: true,
   },
 };
+
+export default config;
