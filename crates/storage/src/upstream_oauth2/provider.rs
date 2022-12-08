@@ -179,14 +179,14 @@ pub async fn add_provider(
     })
 }
 
-#[tracing::instrument(skip_all, err(Display))]
+#[tracing::instrument(skip_all, err)]
 pub async fn get_paginated_providers(
     executor: impl PgExecutor<'_>,
     before: Option<Ulid>,
     after: Option<Ulid>,
     first: Option<usize>,
     last: Option<usize>,
-) -> Result<(bool, bool, Vec<UpstreamOAuthProvider>), anyhow::Error> {
+) -> Result<(bool, bool, Vec<UpstreamOAuthProvider>), DatabaseError> {
     let mut query = QueryBuilder::new(
         r#"
             SELECT
@@ -224,7 +224,7 @@ pub async fn get_paginated_providers(
 #[tracing::instrument(skip_all, err)]
 pub async fn get_providers(
     executor: impl PgExecutor<'_>,
-) -> Result<Vec<UpstreamOAuthProvider>, anyhow::Error> {
+) -> Result<Vec<UpstreamOAuthProvider>, DatabaseError> {
     let res = sqlx::query_as!(
         ProviderLookup,
         r#"

@@ -1205,7 +1205,7 @@ pub async fn consume_email_verification(
         user_email_verification.state,
         UserEmailVerificationState::Valid
     ) {
-        return Err(DatabaseError::InvalidOperation);
+        return Err(DatabaseError::invalid_operation());
     }
 
     let consumed_at = clock.now();

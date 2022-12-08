@@ -47,6 +47,9 @@ pub enum RouteError {
     #[error(transparent)]
     Anyhow(#[from] anyhow::Error),
 
+    #[error("authorization grant was not found")]
+    NotFound,
+
     #[error("authorization grant is not in a pending state")]
     NotPending,
 }
@@ -55,6 +58,9 @@ impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         // TODO: better error pages
         match self {
+            RouteError::NotFound => {
+                (StatusCode::NOT_FOUND, "authorization grant was not found").into_response()
+            }
             RouteError::NotPending => (
                 StatusCode::BAD_REQUEST,
                 "authorization grant not in a pending state",
@@ -88,10 +94,12 @@ pub(crate) async fn get(
 
     let maybe_session = session_info.load_session(&mut txn).await?;
 
-    let grant = get_grant_by_id(&mut txn, grant_id).await?;
+    let grant = get_grant_by_id(&mut txn, grant_id)
+        .await?
+        .ok_or(RouteError::NotFound)?;
 
     let callback_destination = CallbackDestination::try_from(&grant)?;
-    let continue_grant = PostAuthAction::continue_grant(grant_id);
+    let continue_grant = PostAuthAction::continue_grant(grant.id);
 
     let session = if let Some(session) = maybe_session {
         session
@@ -143,6 +151,7 @@ pub enum GrantCompletionError {
 }
 
 impl_from_error_for_route!(GrantCompletionError: sqlx::Error);
+impl_from_error_for_route!(GrantCompletionError: mas_storage::DatabaseError);
 impl_from_error_for_route!(GrantCompletionError: super::callback::IntoCallbackDestinationError);
 
 pub(crate) async fn complete(

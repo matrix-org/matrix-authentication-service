@@ -12,11 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![allow(clippy::unused_async)]
-
 use std::num::NonZeroU32;
 
-use anyhow::Context;
 use chrono::{DateTime, Utc};
 use mas_data_model::{
     Authentication, AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, BrowserSession,
@@ -31,7 +28,7 @@ use url::Url;
 use uuid::Uuid;
 
 use super::client::lookup_client;
-use crate::{Clock, DatabaseInconsistencyError};
+use crate::{Clock, DatabaseError, DatabaseInconsistencyError2, LookupResultExt};
 
 #[tracing::instrument(
     skip_all,
@@ -39,7 +36,7 @@ use crate::{Clock, DatabaseInconsistencyError};
         %client.id,
         grant.id,
     ),
-    err(Debug),
+    err,
 )]
 #[allow(clippy::too_many_arguments)]
 pub async fn new_authorization_grant(
@@ -57,7 +54,7 @@ pub async fn new_authorization_grant(
     response_mode: ResponseMode,
     response_type_id_token: bool,
     requires_consent: bool,
-) -> Result<AuthorizationGrant, anyhow::Error> {
+) -> Result<AuthorizationGrant, sqlx::Error> {
     let code_challenge = code
         .as_ref()
         .and_then(|c| c.pkce.as_ref())
@@ -113,8 +110,7 @@ pub async fn new_authorization_grant(
         created_at,
     )
     .execute(executor)
-    .await
-    .context("could not insert oauth2 authorization grant")?;
+    .await?;
 
     Ok(AuthorizationGrant {
         id,
@@ -171,17 +167,23 @@ impl GrantLookup {
     async fn into_authorization_grant(
         self,
         executor: impl PgExecutor<'_>,
-    ) -> Result<AuthorizationGrant, DatabaseInconsistencyError> {
-        let scope: Scope = self
-            .oauth2_authorization_grant_scope
-            .parse()
-            .map_err(|_e| DatabaseInconsistencyError)?;
+    ) -> Result<AuthorizationGrant, DatabaseError> {
+        let id = self.oauth2_authorization_grant_id.into();
+        let scope: Scope = self.oauth2_authorization_grant_scope.parse().map_err(|e| {
+            DatabaseInconsistencyError2::on("oauth2_authorization_grants")
+                .column("scope")
+                .row(id)
+                .source(e)
+        })?;
 
         // TODO: don't unwrap
         let client = lookup_client(executor, self.oauth2_client_id.into())
-            .await
-            .unwrap()
-            .unwrap();
+            .await?
+            .ok_or_else(|| {
+                DatabaseInconsistencyError2::on("oauth2_authorization_grants")
+                    .column("client_id")
+                    .row(id)
+            })?;
 
         let last_authentication = match (
             self.user_session_last_authentication_id,
@@ -192,7 +194,9 @@ impl GrantLookup {
                 created_at,
             }),
             (None, None) => None,
-            _ => return Err(DatabaseInconsistencyError),
+            _ => {
+                return Err(DatabaseInconsistencyError2::on("user_session_authentications").into())
+            }
         };
 
         let primary_email = match (
@@ -208,7 +212,11 @@ impl GrantLookup {
                 confirmed_at,
             }),
             (None, None, None, None) => None,
-            _ => return Err(DatabaseInconsistencyError),
+            _ => {
+                return Err(DatabaseInconsistencyError2::on("users")
+                    .column("primary_user_email_id")
+                    .into())
+            }
         };
 
         let session = match (
@@ -257,7 +265,14 @@ impl GrantLookup {
                 Some(session)
             }
             (None, None, None, None, None, None, None) => None,
-            _ => return Err(DatabaseInconsistencyError),
+            _ => {
+                return Err(
+                    DatabaseInconsistencyError2::on("oauth2_authorization_grants")
+                        .column("oauth2_session_id")
+                        .row(id)
+                        .into(),
+                )
+            }
         };
 
         let stage = match (
@@ -282,7 +297,12 @@ impl GrantLookup {
                 AuthorizationGrantStage::Cancelled { cancelled_at }
             }
             _ => {
-                return Err(DatabaseInconsistencyError);
+                return Err(
+                    DatabaseInconsistencyError2::on("oauth2_authorization_grants")
+                        .column("stage")
+                        .row(id)
+                        .into(),
+                );
             }
         };
 
@@ -302,7 +322,12 @@ impl GrantLookup {
             }),
             (None, None) => None,
             _ => {
-                return Err(DatabaseInconsistencyError);
+                return Err(
+                    DatabaseInconsistencyError2::on("oauth2_authorization_grants")
+                        .column("code_challenge_method")
+                        .row(id)
+                        .into(),
+                );
             }
         };
 
@@ -314,38 +339,63 @@ impl GrantLookup {
             (false, None, None) => None,
             (true, Some(code), pkce) => Some(AuthorizationCode { code, pkce }),
             _ => {
-                return Err(DatabaseInconsistencyError);
+                return Err(
+                    DatabaseInconsistencyError2::on("oauth2_authorization_grants")
+                        .column("authorization_code")
+                        .row(id)
+                        .into(),
+                );
             }
         };
 
         let redirect_uri = self
             .oauth2_authorization_grant_redirect_uri
             .parse()
-            .map_err(|_e| DatabaseInconsistencyError)?;
+            .map_err(|e| {
+                DatabaseInconsistencyError2::on("oauth2_authorization_grants")
+                    .column("redirect_uri")
+                    .row(id)
+                    .source(e)
+            })?;
 
         let response_mode = self
             .oauth2_authorization_grant_response_mode
             .parse()
-            .map_err(|_e| DatabaseInconsistencyError)?;
+            .map_err(|e| {
+                DatabaseInconsistencyError2::on("oauth2_authorization_grants")
+                    .column("response_mode")
+                    .row(id)
+                    .source(e)
+            })?;
 
         let max_age = self
             .oauth2_authorization_grant_max_age
             .map(u32::try_from)
             .transpose()
-            .map_err(|_e| DatabaseInconsistencyError)?
+            .map_err(|e| {
+                DatabaseInconsistencyError2::on("oauth2_authorization_grants")
+                    .column("max_age")
+                    .row(id)
+                    .source(e)
+            })?
             .map(NonZeroU32::try_from)
             .transpose()
-            .map_err(|_e| DatabaseInconsistencyError)?;
+            .map_err(|e| {
+                DatabaseInconsistencyError2::on("oauth2_authorization_grants")
+                    .column("max_age")
+                    .row(id)
+                    .source(e)
+            })?;
 
         Ok(AuthorizationGrant {
-            id: self.oauth2_authorization_grant_id.into(),
+            id,
             stage,
             client,
             code,
             scope,
             state: self.oauth2_authorization_grant_state,
             nonce: self.oauth2_authorization_grant_nonce,
-            max_age, // TODO
+            max_age,
             response_mode,
             redirect_uri,
             created_at: self.oauth2_authorization_grant_created_at,
@@ -358,13 +408,12 @@ impl GrantLookup {
 #[tracing::instrument(
     skip_all,
     fields(grant.id = %id),
-    err(Debug),
+    err,
 )]
 pub async fn get_grant_by_id(
     conn: &mut PgConnection,
     id: Ulid,
-) -> Result<AuthorizationGrant, anyhow::Error> {
-    // TODO: handle "not found" cases
+) -> Result<Option<AuthorizationGrant>, DatabaseError> {
     let res = sqlx::query_as!(
         GrantLookup,
         r#"
@@ -420,19 +469,20 @@ pub async fn get_grant_by_id(
     )
     .fetch_one(&mut *conn)
     .await
-    .context("failed to get grant by id")?;
+    .to_option()?;
+
+    let Some(res) = res else { return Ok(None) };
 
     let grant = res.into_authorization_grant(&mut *conn).await?;
 
-    Ok(grant)
+    Ok(Some(grant))
 }
 
-#[tracing::instrument(skip_all, err(Debug))]
+#[tracing::instrument(skip_all, err)]
 pub async fn lookup_grant_by_code(
     conn: &mut PgConnection,
     code: &str,
-) -> Result<AuthorizationGrant, anyhow::Error> {
-    // TODO: handle "not found" cases
+) -> Result<Option<AuthorizationGrant>, DatabaseError> {
     let res = sqlx::query_as!(
         GrantLookup,
         r#"
@@ -488,11 +538,13 @@ pub async fn lookup_grant_by_code(
     )
     .fetch_one(&mut *conn)
     .await
-    .context("failed to lookup grant by code")?;
+    .to_option()?;
+
+    let Some(res) = res else { return Ok(None) };
 
     let grant = res.into_authorization_grant(&mut *conn).await?;
 
-    Ok(grant)
+    Ok(Some(grant))
 }
 
 #[tracing::instrument(
@@ -504,7 +556,7 @@ pub async fn lookup_grant_by_code(
         user_session.id = %browser_session.id,
         user.id = %browser_session.user.id,
     ),
-    err(Debug),
+    err,
 )]
 pub async fn derive_session(
     executor: impl PgExecutor<'_>,
@@ -512,7 +564,7 @@ pub async fn derive_session(
     clock: &Clock,
     grant: &AuthorizationGrant,
     browser_session: BrowserSession,
-) -> Result<Session, anyhow::Error> {
+) -> Result<Session, sqlx::Error> {
     let created_at = clock.now();
     let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
     tracing::Span::current().record("session.id", tracing::field::display(id));
@@ -538,8 +590,7 @@ pub async fn derive_session(
         Uuid::from(grant.id),
     )
     .execute(executor)
-    .await
-    .context("could not insert oauth2 session")?;
+    .await?;
 
     Ok(Session {
         id,
@@ -558,13 +609,13 @@ pub async fn derive_session(
         user_session.id = %session.browser_session.id,
         user.id = %session.browser_session.user.id,
     ),
-    err(Debug),
+    err,
 )]
 pub async fn fulfill_grant(
     executor: impl PgExecutor<'_>,
     mut grant: AuthorizationGrant,
     session: Session,
-) -> Result<AuthorizationGrant, anyhow::Error> {
+) -> Result<AuthorizationGrant, DatabaseError> {
     let fulfilled_at = sqlx::query_scalar!(
         r#"
             UPDATE oauth2_authorization_grants AS og
@@ -581,10 +632,12 @@ pub async fn fulfill_grant(
         Uuid::from(session.id),
     )
     .fetch_one(executor)
-    .await
-    .context("could not mark grant as fulfilled")?;
+    .await?;
 
-    grant.stage = grant.stage.fulfill(fulfilled_at, session)?;
+    grant.stage = grant
+        .stage
+        .fulfill(fulfilled_at, session)
+        .map_err(DatabaseError::to_invalid_operation)?;
 
     Ok(grant)
 }
@@ -595,7 +648,7 @@ pub async fn fulfill_grant(
         %grant.id,
         client.id = %grant.client.id,
     ),
-    err(Debug),
+    err,
 )]
 pub async fn give_consent_to_grant(
     executor: impl PgExecutor<'_>,
@@ -625,13 +678,13 @@ pub async fn give_consent_to_grant(
         %grant.id,
         client.id = %grant.client.id,
     ),
-    err(Debug),
+    err,
 )]
 pub async fn exchange_grant(
     executor: impl PgExecutor<'_>,
     clock: &Clock,
     mut grant: AuthorizationGrant,
-) -> Result<AuthorizationGrant, anyhow::Error> {
+) -> Result<AuthorizationGrant, DatabaseError> {
     let exchanged_at = clock.now();
     sqlx::query!(
         r#"
@@ -643,10 +696,12 @@ pub async fn exchange_grant(
         exchanged_at,
     )
     .execute(executor)
-    .await
-    .context("could not mark grant as exchanged")?;
+    .await?;
 
-    grant.stage = grant.stage.exchange(exchanged_at)?;
+    grant.stage = grant
+        .stage
+        .exchange(exchanged_at)
+        .map_err(DatabaseError::to_invalid_operation)?;
 
     Ok(grant)
 }

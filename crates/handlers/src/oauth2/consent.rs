@@ -14,7 +14,6 @@
 
 use std::sync::Arc;
 
-use anyhow::Context;
 use axum::{
     extract::{Form, Path, State},
     response::{Html, IntoResponse, Response},
@@ -38,11 +37,32 @@ use sqlx::PgPool;
 use thiserror::Error;
 use ulid::Ulid;
 
+use crate::impl_from_error_for_route;
+
 #[derive(Debug, Error)]
 pub enum RouteError {
     #[error(transparent)]
+    Internal(Box<dyn std::error::Error + Send + Sync>),
+
+    #[error(transparent)]
     Anyhow(#[from] anyhow::Error),
+
+    #[error(transparent)]
+    Csrf(#[from] mas_axum_utils::csrf::CsrfError),
+
+    #[error("Authorization grant not found")]
+    GrantNotFound,
+
+    #[error("Authorization grant already used")]
+    GrantNotPending,
+
+    #[error("Policy violation")]
+    PolicyViolation,
 }
+
+impl_from_error_for_route!(sqlx::Error);
+impl_from_error_for_route!(mas_templates::TemplateError);
+impl_from_error_for_route!(mas_storage::DatabaseError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
@@ -58,22 +78,18 @@ pub(crate) async fn get(
     Path(grant_id): Path<Ulid>,
 ) -> Result<Response, RouteError> {
     let (clock, mut rng) = crate::rng_and_clock()?;
-    let mut conn = pool
-        .acquire()
-        .await
-        .context("failed to acquire db connection")?;
+    let mut conn = pool.acquire().await?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info
-        .load_session(&mut conn)
-        .await
-        .context("could not load session")?;
+    let maybe_session = session_info.load_session(&mut conn).await?;
 
-    let grant = get_grant_by_id(&mut conn, grant_id).await?;
+    let grant = get_grant_by_id(&mut conn, grant_id)
+        .await?
+        .ok_or(RouteError::GrantNotFound)?;
 
     if !matches!(grant.stage, AuthorizationGrantStage::Pending) {
-        return Err(anyhow::anyhow!("authorization grant not pending").into());
+        return Err(RouteError::GrantNotPending);
     }
 
     if let Some(session) = maybe_session {
@@ -89,10 +105,7 @@ pub(crate) async fn get(
                 .with_session(session)
                 .with_csrf(csrf_token.form_value());
 
-            let content = templates
-                .render_consent(&ctx)
-                .await
-                .context("failed to render template")?;
+            let content = templates.render_consent(&ctx).await?;
 
             Ok((cookie_jar, Html(content)).into_response())
         } else {
@@ -100,10 +113,7 @@ pub(crate) async fn get(
                 .with_session(session)
                 .with_csrf(csrf_token.form_value());
 
-            let content = templates
-                .render_policy_violation(&ctx)
-                .await
-                .context("failed to render template")?;
+            let content = templates.render_policy_violation(&ctx).await?;
 
             Ok((cookie_jar, Html(content)).into_response())
         }
@@ -121,23 +131,17 @@ pub(crate) async fn post(
     Form(form): Form<ProtectedForm<()>>,
 ) -> Result<Response, RouteError> {
     let (clock, mut rng) = crate::rng_and_clock()?;
-    let mut txn = pool
-        .begin()
-        .await
-        .context("failed to begin db transaction")?;
+    let mut txn = pool.begin().await?;
 
-    cookie_jar
-        .verify_form(clock.now(), form)
-        .context("csrf verification failed")?;
+    cookie_jar.verify_form(clock.now(), form)?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info
-        .load_session(&mut txn)
-        .await
-        .context("could not load session")?;
+    let maybe_session = session_info.load_session(&mut txn).await?;
 
-    let grant = get_grant_by_id(&mut txn, grant_id).await?;
+    let grant = get_grant_by_id(&mut txn, grant_id)
+        .await?
+        .ok_or(RouteError::GrantNotFound)?;
     let next = PostAuthAction::continue_grant(grant_id);
 
     let session = if let Some(session) = maybe_session {
@@ -153,7 +157,7 @@ pub(crate) async fn post(
         .await?;
 
     if !res.valid() {
-        return Err(anyhow::anyhow!("policy violation").into());
+        return Err(RouteError::PolicyViolation);
     }
 
     // Do not consent for the "urn:matrix:org.matrix.msc2967.client:device:*" scope
@@ -173,11 +177,9 @@ pub(crate) async fn post(
     )
     .await?;
 
-    let _grant = give_consent_to_grant(&mut txn, grant)
-        .await
-        .context("failed to give consent to grant")?;
+    let _grant = give_consent_to_grant(&mut txn, grant).await?;
 
-    txn.commit().await.context("could not commit txn")?;
+    txn.commit().await?;
 
     Ok((cookie_jar, next.go_next()).into_response())
 }

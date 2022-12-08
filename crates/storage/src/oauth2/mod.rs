@@ -14,7 +14,6 @@
 
 use std::collections::{BTreeSet, HashMap};
 
-use anyhow::Context;
 use mas_data_model::{BrowserSession, Session, User};
 use sqlx::{PgConnection, PgExecutor, QueryBuilder};
 use tracing::{info_span, Instrument};
@@ -25,7 +24,7 @@ use self::client::lookup_clients;
 use crate::{
     pagination::{process_page, QueryBuilderExt},
     user::lookup_active_session,
-    Clock,
+    Clock, DatabaseError, DatabaseInconsistencyError2,
 };
 
 pub mod access_token;
@@ -42,13 +41,13 @@ pub mod refresh_token;
         user_session.id = %session.browser_session.id,
         client.id = %session.client.id,
     ),
-    err(Debug),
+    err,
 )]
 pub async fn end_oauth_session(
     executor: impl PgExecutor<'_>,
     clock: &Clock,
     session: Session,
-) -> Result<(), anyhow::Error> {
+) -> Result<(), DatabaseError> {
     let finished_at = clock.now();
     let res = sqlx::query!(
         r#"
@@ -62,9 +61,7 @@ pub async fn end_oauth_session(
     .execute(executor)
     .await?;
 
-    anyhow::ensure!(res.rows_affected() == 1);
-
-    Ok(())
+    DatabaseError::ensure_affected_rows(&res, 1)
 }
 
 #[derive(sqlx::FromRow)]
@@ -81,7 +78,7 @@ struct OAuthSessionLookup {
         %user.id,
         %user.username,
     ),
-    err(Display),
+    err,
 )]
 pub async fn get_paginated_user_oauth_sessions(
     conn: &mut PgConnection,
@@ -90,7 +87,7 @@ pub async fn get_paginated_user_oauth_sessions(
     after: Option<Ulid>,
     first: Option<usize>,
     last: Option<usize>,
-) -> Result<(bool, bool, Vec<Session>), anyhow::Error> {
+) -> Result<(bool, bool, Vec<Session>), DatabaseError> {
     let mut query = QueryBuilder::new(
         r#"
             SELECT
@@ -139,26 +136,42 @@ pub async fn get_paginated_user_oauth_sessions(
     for id in browser_session_ids {
         let v = lookup_active_session(&mut *conn, id)
             .await?
-            .context("Failed to load active session")?;
+            .ok_or_else(|| {
+                DatabaseInconsistencyError2::on("oauth2_sessions").column("user_session_id")
+            })?;
         browser_sessions.insert(id, v);
     }
 
-    let page: Result<Vec<_>, _> = page
+    let page: Result<Vec<_>, DatabaseInconsistencyError2> = page
         .into_iter()
         .map(|item| {
+            let id = Ulid::from(item.oauth2_session_id);
             let client = clients
                 .get(&Ulid::from(item.oauth2_client_id))
-                .context("client was not fetched")?
+                .ok_or_else(|| {
+                    DatabaseInconsistencyError2::on("oauth2_sessions")
+                        .column("oauth2_client_id")
+                        .row(id)
+                })?
                 .clone();
 
             let browser_session = browser_sessions
                 .get(&Ulid::from(item.user_session_id))
-                .context("browser session was not fetched")?
+                .ok_or_else(|| {
+                    DatabaseInconsistencyError2::on("oauth2_sessions")
+                        .column("user_session_id")
+                        .row(id)
+                })?
                 .clone();
 
-            let scope = item.scope.parse()?;
+            let scope = item.scope.parse().map_err(|e| {
+                DatabaseInconsistencyError2::on("oauth2_sessions")
+                    .column("scope")
+                    .row(id)
+                    .source(e)
+            })?;
 
-            anyhow::Ok(Session {
+            Ok(Session {
                 id: Ulid::from(item.oauth2_session_id),
                 client,
                 browser_session,
