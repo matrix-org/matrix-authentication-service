@@ -129,9 +129,6 @@ pub enum RouteError {
     #[error(transparent)]
     Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
 
-    #[error(transparent)]
-    Anyhow(#[from] anyhow::Error),
-
     #[error("unsupported login method")]
     Unsupported,
 
@@ -151,7 +148,7 @@ impl_from_error_for_route!(mas_storage::DatabaseError);
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         match self {
-            Self::Internal(_) | Self::Anyhow(_) => MatrixError {
+            Self::Internal(_) => MatrixError {
                 errcode: "M_UNKNOWN",
                 error: "Internal server error",
                 status: StatusCode::INTERNAL_SERVER_ERROR,
@@ -187,7 +184,7 @@ pub(crate) async fn post(
     State(homeserver): State<MatrixHomeserver>,
     Json(input): Json<RequestBody>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let (clock, mut rng) = crate::rng_and_clock()?;
+    let (clock, mut rng) = crate::clock_and_rng();
     let mut txn = pool.begin().await?;
     let session = match input.credentials {
         Credentials::Password {
@@ -302,7 +299,7 @@ async fn user_password_login(
     username: String,
     password: String,
 ) -> Result<CompatSession, RouteError> {
-    let (clock, mut rng) = crate::rng_and_clock()?;
+    let (clock, mut rng) = crate::clock_and_rng();
 
     let device = Device::generate(&mut rng);
     let session = compat_login(txn, &mut rng, &clock, &username, &password, device)

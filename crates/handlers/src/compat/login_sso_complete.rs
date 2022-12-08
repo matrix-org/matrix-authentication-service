@@ -56,7 +56,7 @@ pub async fn get(
     Path(id): Path<Ulid>,
     Query(params): Query<Params>,
 ) -> Result<Response, FancyError> {
-    let (clock, mut rng) = crate::rng_and_clock()?;
+    let (clock, mut rng) = crate::clock_and_rng();
     let mut conn = pool.acquire().await?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
@@ -124,7 +124,7 @@ pub async fn post(
     Query(params): Query<Params>,
     Form(form): Form<ProtectedForm<()>>,
 ) -> Result<Response, FancyError> {
-    let (clock, mut rng) = crate::rng_and_clock()?;
+    let (clock, mut rng) = crate::clock_and_rng();
     let mut txn = pool.begin().await?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();

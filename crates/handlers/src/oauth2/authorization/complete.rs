@@ -44,6 +44,7 @@ pub enum RouteError {
     #[error(transparent)]
     Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
 
+    // TODO: remove this one: needed because mas_policy returns errors from anyhow
     #[error(transparent)]
     Anyhow(#[from] anyhow::Error),
 
@@ -160,7 +161,7 @@ pub(crate) async fn complete(
     policy_factory: &PolicyFactory,
     mut txn: Transaction<'_, Postgres>,
 ) -> Result<AuthorizationResponse<Option<AccessTokenResponse>>, GrantCompletionError> {
-    let (clock, mut rng) = crate::rng_and_clock()?;
+    let (clock, mut rng) = crate::clock_and_rng();
 
     // Verify that the grant is in a pending stage
     if !grant.stage.is_pending() {

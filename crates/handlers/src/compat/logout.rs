@@ -15,18 +15,33 @@
 use axum::{extract::State, response::IntoResponse, Json, TypedHeader};
 use headers::{authorization::Bearer, Authorization};
 use hyper::StatusCode;
-use mas_data_model::{TokenFormatError, TokenType};
-use mas_storage::{compat::compat_logout, Clock};
+use mas_data_model::TokenType;
+use mas_storage::{compat::compat_logout, Clock, LookupError};
 use sqlx::PgPool;
+use thiserror::Error;
 
 use super::MatrixError;
+use crate::impl_from_error_for_route;
 
+#[derive(Error, Debug)]
 pub enum RouteError {
+    #[error(transparent)]
     Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
+
+    #[error("Missing access token")]
     MissingAuthorization,
+
+    #[error("Invalid token format")]
+    TokenFormat(#[from] mas_data_model::TokenFormatError),
+
+    #[error("Invalid access token")]
     InvalidAuthorization,
+
+    #[error("Logout failed")]
     LogoutFailed,
 }
+
+impl_from_error_for_route!(sqlx::Error);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
@@ -41,25 +56,13 @@ impl IntoResponse for RouteError {
                 error: "Missing access token",
                 status: StatusCode::UNAUTHORIZED,
             },
-            Self::InvalidAuthorization | Self::LogoutFailed => MatrixError {
+            Self::InvalidAuthorization | Self::LogoutFailed | Self::TokenFormat(_) => MatrixError {
                 errcode: "M_UNKNOWN_TOKEN",
                 error: "Invalid access token",
                 status: StatusCode::UNAUTHORIZED,
             },
         }
         .into_response()
-    }
-}
-
-impl From<sqlx::Error> for RouteError {
-    fn from(e: sqlx::Error) -> Self {
-        Self::Internal(Box::new(e))
-    }
-}
-
-impl From<TokenFormatError> for RouteError {
-    fn from(_e: TokenFormatError) -> Self {
-        Self::InvalidAuthorization
     }
 }
 
@@ -79,9 +82,13 @@ pub(crate) async fn post(
         return Err(RouteError::InvalidAuthorization);
     }
 
-    compat_logout(&mut conn, &clock, token)
-        .await
-        .map_err(|_| RouteError::LogoutFailed)?;
+    compat_logout(&mut conn, &clock, token).await.map_err(|e| {
+        if e.not_found() {
+            RouteError::LogoutFailed
+        } else {
+            RouteError::Internal(Box::new(e))
+        }
+    })?;
 
     Ok(Json(serde_json::json!({})))
 }

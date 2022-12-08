@@ -47,7 +47,7 @@ pub(crate) async fn get(
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
-    let (clock, mut rng) = crate::rng_and_clock()?;
+    let (clock, mut rng) = crate::clock_and_rng();
     let mut conn = pool.acquire().await?;
 
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
@@ -80,7 +80,7 @@ pub(crate) async fn post(
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<LoginForm>>,
 ) -> Result<Response, FancyError> {
-    let (clock, mut rng) = crate::rng_and_clock()?;
+    let (clock, mut rng) = crate::clock_and_rng();
     let mut conn = pool.acquire().await?;
 
     let form = cookie_jar.verify_form(clock.now(), form)?;

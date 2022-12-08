@@ -52,6 +52,7 @@ pub enum RouteError {
     #[error(transparent)]
     Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
 
+    // TODO: remove this one
     #[error(transparent)]
     Anyhow(#[from] anyhow::Error),
 
@@ -135,7 +136,7 @@ pub(crate) async fn get(
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(params): Form<Params>,
 ) -> Result<Response, RouteError> {
-    let (clock, mut rng) = crate::rng_and_clock()?;
+    let (clock, mut rng) = crate::clock_and_rng();
     let mut txn = pool.begin().await?;
 
     // First, figure out what client it is

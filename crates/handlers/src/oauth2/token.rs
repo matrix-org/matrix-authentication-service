@@ -14,7 +14,6 @@
 
 use std::collections::HashMap;
 
-use anyhow::Context;
 use axum::{extract::State, response::IntoResponse, Json};
 use chrono::{DateTime, Duration, Utc};
 use headers::{CacheControl, HeaderMap, HeaderMapExt, Pragma};
@@ -32,14 +31,11 @@ use mas_jose::{
 };
 use mas_keystore::{Encrypter, Keystore};
 use mas_router::UrlBuilder;
-use mas_storage::{
-    oauth2::{
-        access_token::{add_access_token, revoke_access_token},
-        authorization_grant::{exchange_grant, lookup_grant_by_code},
-        end_oauth_session,
-        refresh_token::{add_refresh_token, consume_refresh_token, lookup_active_refresh_token},
-    },
-    DatabaseInconsistencyError,
+use mas_storage::oauth2::{
+    access_token::{add_access_token, revoke_access_token},
+    authorization_grant::{exchange_grant, lookup_grant_by_code},
+    end_oauth_session,
+    refresh_token::{add_refresh_token, consume_refresh_token, lookup_active_refresh_token},
 };
 use oauth2_types::{
     errors::{ClientError, ClientErrorCode},
@@ -80,9 +76,6 @@ pub(crate) enum RouteError {
     #[error(transparent)]
     Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
 
-    #[error(transparent)]
-    Anyhow(#[from] anyhow::Error),
-
     #[error("bad request")]
     BadRequest,
 
@@ -106,12 +99,15 @@ pub(crate) enum RouteError {
 
     #[error("unauthorized client")]
     UnauthorizedClient,
+
+    #[error("no suitable key found for signing")]
+    InvalidSigningKey,
 }
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         match self {
-            Self::Internal(_) | Self::Anyhow(_) => (
+            Self::Internal(_) | Self::InvalidSigningKey => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ClientError::from(ClientErrorCode::ServerError)),
             ),
@@ -206,7 +202,7 @@ async fn authorization_code_grant(
     url_builder: &UrlBuilder,
     mut txn: Transaction<'_, Postgres>,
 ) -> Result<AccessTokenResponse, RouteError> {
-    let (clock, mut rng) = crate::rng_and_clock()?;
+    let (clock, mut rng) = crate::clock_and_rng();
 
     // TODO: there is a bunch of unnecessary cloning here
     // TODO: handle "not found" cases
@@ -255,10 +251,7 @@ async fn authorization_code_grant(
     };
 
     // This should never happen, since we looked up in the database using the code
-    let code = authz_grant
-        .code
-        .as_ref()
-        .ok_or_else(|| anyhow::anyhow!(DatabaseInconsistencyError))?;
+    let code = authz_grant.code.as_ref().ok_or(RouteError::InvalidGrant)?;
 
     if client.client_id != session.client.client_id {
         return Err(RouteError::UnauthorizedClient);
@@ -322,14 +315,14 @@ async fn authorization_code_grant(
             .unwrap_or(JsonWebSignatureAlg::Rs256);
         let key = key_store
             .signing_key_for_algorithm(&alg)
-            .context("no suitable key found")?;
+            .ok_or(RouteError::InvalidSigningKey)?;
 
         claims::AT_HASH.insert(&mut claims, hash_token(&alg, &access_token_str)?)?;
         claims::C_HASH.insert(&mut claims, hash_token(&alg, &grant.code)?)?;
 
         let signer = key.params().signing_key_for_alg(&alg)?;
         let header = JsonWebSignatureHeader::new(alg)
-            .with_kid(key.kid().context("key has no `kid` for some reason")?);
+            .with_kid(key.kid().ok_or(RouteError::InvalidSigningKey)?);
         let id_token = Jwt::sign_with_rng(&mut rng, header, claims, &signer)?;
 
         Some(id_token.as_str().to_owned())
@@ -358,7 +351,7 @@ async fn refresh_token_grant(
     client: &Client,
     mut txn: Transaction<'_, Postgres>,
 ) -> Result<AccessTokenResponse, RouteError> {
-    let (clock, mut rng) = crate::rng_and_clock()?;
+    let (clock, mut rng) = crate::clock_and_rng();
 
     let (refresh_token, session) = lookup_active_refresh_token(&mut txn, &grant.refresh_token)
         .await?

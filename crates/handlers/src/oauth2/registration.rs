@@ -32,11 +32,14 @@ use thiserror::Error;
 use tracing::info;
 use ulid::Ulid;
 
+use crate::impl_from_error_for_route;
+
 #[derive(Debug, Error)]
 pub(crate) enum RouteError {
     #[error(transparent)]
     Internal(Box<dyn std::error::Error + Send + Sync>),
 
+    // TODO: remove this, needed because of mas_policy
     #[error(transparent)]
     Anyhow(#[from] anyhow::Error),
 
@@ -50,11 +53,7 @@ pub(crate) enum RouteError {
     PolicyDenied(Vec<Violation>),
 }
 
-impl From<sqlx::Error> for RouteError {
-    fn from(e: sqlx::Error) -> Self {
-        Self::Internal(Box::new(e))
-    }
-}
+impl_from_error_for_route!(sqlx::Error);
 
 impl From<ClientMetadataVerificationError> for RouteError {
     fn from(e: ClientMetadataVerificationError) -> Self {
@@ -113,7 +112,7 @@ pub(crate) async fn post(
     State(encrypter): State<Encrypter>,
     Json(body): Json<ClientMetadata>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let (clock, mut rng) = crate::rng_and_clock()?;
+    let (clock, mut rng) = crate::clock_and_rng();
     info!(?body, "Client registration");
 
     // Validate the body
