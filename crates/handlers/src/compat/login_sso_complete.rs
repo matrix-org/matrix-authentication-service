@@ -107,7 +107,7 @@ pub async fn get(
         return Ok((cookie_jar, Html(content)).into_response());
     }
 
-    let ctx = CompatSsoContext::new(login, PostAuthAction::continue_compat_sso_login(id))
+    let ctx = CompatSsoContext::new(login)
         .with_session(session)
         .with_csrf(csrf_token.form_value());
 
