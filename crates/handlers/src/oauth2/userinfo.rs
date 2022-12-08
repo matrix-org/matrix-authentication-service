@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use anyhow::Context;
 use axum::{
     extract::State,
     response::{IntoResponse, Response},
@@ -34,6 +33,8 @@ use serde::Serialize;
 use serde_with::skip_serializing_none;
 use sqlx::PgPool;
 use thiserror::Error;
+
+use crate::impl_from_error_for_route;
 
 #[skip_serializing_none]
 #[derive(Serialize)]
@@ -57,38 +58,25 @@ pub enum RouteError {
     #[error(transparent)]
     Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
 
-    #[error(transparent)]
-    Anyhow(#[from] anyhow::Error),
-
     #[error("failed to authenticate")]
     AuthorizationVerificationError(#[from] AuthorizationVerificationError),
+
+    #[error("no suitable key found for signing")]
+    InvalidSigningKey,
 }
+
+impl_from_error_for_route!(sqlx::Error);
+impl_from_error_for_route!(mas_keystore::WrongAlgorithmError);
+impl_from_error_for_route!(mas_jose::jwt::JwtSignatureError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         match self {
-            Self::Internal(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
-            Self::Anyhow(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+            Self::Internal(_) | Self::InvalidSigningKey => {
+                (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()).into_response()
+            }
             Self::AuthorizationVerificationError(_e) => StatusCode::UNAUTHORIZED.into_response(),
         }
-    }
-}
-
-impl From<sqlx::Error> for RouteError {
-    fn from(e: sqlx::Error) -> Self {
-        Self::Internal(Box::new(e))
-    }
-}
-
-impl From<mas_keystore::WrongAlgorithmError> for RouteError {
-    fn from(e: mas_keystore::WrongAlgorithmError) -> Self {
-        Self::Internal(Box::new(e))
-    }
-}
-
-impl From<mas_jose::jwt::JwtSignatureError> for RouteError {
-    fn from(e: mas_jose::jwt::JwtSignatureError) -> Self {
-        Self::Internal(Box::new(e))
     }
 }
 
@@ -98,7 +86,7 @@ pub async fn get(
     State(key_store): State<Keystore>,
     user_authorization: UserAuthorization,
 ) -> Result<Response, RouteError> {
-    let (_clock, mut rng) = crate::rng_and_clock()?;
+    let (_clock, mut rng) = crate::clock_and_rng();
     let mut conn = pool.acquire().await?;
 
     let session = user_authorization.protected(&mut conn).await?;
@@ -121,11 +109,11 @@ pub async fn get(
     if let Some(alg) = session.client.userinfo_signed_response_alg {
         let key = key_store
             .signing_key_for_algorithm(&alg)
-            .context("no suitable key found")?;
+            .ok_or(RouteError::InvalidSigningKey)?;
 
         let signer = key.params().signing_key_for_alg(&alg)?;
         let header = JsonWebSignatureHeader::new(alg)
-            .with_kid(key.kid().context("key has no `kid` for some reason")?);
+            .with_kid(key.kid().ok_or(RouteError::InvalidSigningKey)?);
 
         let user_info = SignedUserInfo {
             iss: url_builder.oidc_issuer().to_string(),

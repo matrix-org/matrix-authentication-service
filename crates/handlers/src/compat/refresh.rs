@@ -38,9 +38,6 @@ pub enum RouteError {
     #[error(transparent)]
     Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
 
-    #[error(transparent)]
-    Anyhow(#[from] anyhow::Error),
-
     #[error("invalid token")]
     InvalidToken,
 }
@@ -48,7 +45,7 @@ pub enum RouteError {
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         match self {
-            Self::Internal(_) | Self::Anyhow(_) => MatrixError {
+            Self::Internal(_) => MatrixError {
                 errcode: "M_UNKNOWN",
                 error: "Internal error",
                 status: StatusCode::INTERNAL_SERVER_ERROR,
@@ -85,7 +82,7 @@ pub(crate) async fn post(
     State(pool): State<PgPool>,
     Json(input): Json<RequestBody>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let (clock, mut rng) = crate::rng_and_clock()?;
+    let (clock, mut rng) = crate::clock_and_rng();
     let mut txn = pool.begin().await?;
 
     let token_type = TokenType::check(&input.refresh_token)?;

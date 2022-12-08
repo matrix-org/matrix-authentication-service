@@ -44,6 +44,7 @@ pub enum RouteError {
     #[error(transparent)]
     Internal(Box<dyn std::error::Error + Send + Sync>),
 
+    // TODO: remove this one, needed because of mas_policy
     #[error(transparent)]
     Anyhow(#[from] anyhow::Error),
 
@@ -77,7 +78,7 @@ pub(crate) async fn get(
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(grant_id): Path<Ulid>,
 ) -> Result<Response, RouteError> {
-    let (clock, mut rng) = crate::rng_and_clock()?;
+    let (clock, mut rng) = crate::clock_and_rng();
     let mut conn = pool.acquire().await?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
@@ -130,7 +131,7 @@ pub(crate) async fn post(
     Path(grant_id): Path<Ulid>,
     Form(form): Form<ProtectedForm<()>>,
 ) -> Result<Response, RouteError> {
-    let (clock, mut rng) = crate::rng_and_clock()?;
+    let (clock, mut rng) = crate::clock_and_rng();
     let mut txn = pool.begin().await?;
 
     cookie_jar.verify_form(clock.now(), form)?;

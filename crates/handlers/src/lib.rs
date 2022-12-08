@@ -26,7 +26,6 @@
 
 use std::{convert::Infallible, sync::Arc, time::Duration};
 
-use anyhow::Context;
 use axum::{
     body::{Bytes, HttpBody},
     extract::FromRef,
@@ -402,13 +401,14 @@ async fn test_state(pool: PgPool) -> Result<AppState, anyhow::Error> {
 }
 
 // XXX: that should be moved somewhere else
-fn rng_and_clock() -> Result<(mas_storage::Clock, rand_chacha::ChaChaRng), anyhow::Error> {
+fn clock_and_rng() -> (mas_storage::Clock, rand_chacha::ChaChaRng) {
     let clock = mas_storage::Clock::default();
 
     // This rng is used to source the local rng
     #[allow(clippy::disallowed_methods)]
     let rng = rand::thread_rng();
 
-    let rng = rand_chacha::ChaChaRng::from_rng(rng).context("Failed to seed RNG")?;
-    Ok((clock, rng))
+    let rng = rand_chacha::ChaChaRng::from_rng(rng).expect("Failed to seed RNG");
+
+    (clock, rng)
 }

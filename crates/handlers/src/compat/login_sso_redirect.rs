@@ -27,6 +27,8 @@ use sqlx::PgPool;
 use thiserror::Error;
 use url::Url;
 
+use crate::impl_from_error_for_route;
+
 #[derive(Debug, Deserialize)]
 pub struct Params {
     #[serde(rename = "redirectUrl")]
@@ -39,9 +41,6 @@ pub enum RouteError {
     #[error(transparent)]
     Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
 
-    #[error(transparent)]
-    Anyhow(#[from] anyhow::Error),
-
     #[error("missing redirect_url")]
     MissingRedirectUrl,
 
@@ -49,11 +48,7 @@ pub enum RouteError {
     InvalidRedirectUrl,
 }
 
-impl From<sqlx::Error> for RouteError {
-    fn from(e: sqlx::Error) -> Self {
-        Self::Internal(Box::new(e))
-    }
-}
+impl_from_error_for_route!(sqlx::Error);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
@@ -67,7 +62,7 @@ pub async fn get(
     State(url_builder): State<UrlBuilder>,
     Query(params): Query<Params>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let (clock, mut rng) = crate::rng_and_clock()?;
+    let (clock, mut rng) = crate::clock_and_rng();
 
     // Check the redirectUrl parameter
     let redirect_url = params.redirect_url.ok_or(RouteError::MissingRedirectUrl)?;

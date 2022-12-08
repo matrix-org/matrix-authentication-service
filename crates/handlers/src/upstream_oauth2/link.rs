@@ -67,9 +67,6 @@ pub(crate) enum RouteError {
 
     #[error(transparent)]
     Internal(Box<dyn std::error::Error>),
-
-    #[error(transparent)]
-    Anyhow(#[from] anyhow::Error),
 }
 
 impl_from_error_for_route!(sqlx::Error);
@@ -84,9 +81,6 @@ impl IntoResponse for RouteError {
         match self {
             Self::LinkNotFound => (StatusCode::NOT_FOUND, "Link not found").into_response(),
             Self::Internal(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
-            Self::Anyhow(e) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, format!("{e:?}")).into_response()
-            }
             e => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
         }
     }
@@ -107,7 +101,7 @@ pub(crate) async fn get(
     Path(link_id): Path<Ulid>,
 ) -> Result<impl IntoResponse, RouteError> {
     let mut txn = pool.begin().await?;
-    let (clock, mut rng) = crate::rng_and_clock()?;
+    let (clock, mut rng) = crate::clock_and_rng();
 
     let sessions_cookie = UpstreamSessionsCookie::load(&cookie_jar);
     let (session_id, _post_auth_action) = sessions_cookie
@@ -204,7 +198,7 @@ pub(crate) async fn post(
     Form(form): Form<ProtectedForm<FormData>>,
 ) -> Result<impl IntoResponse, RouteError> {
     let mut txn = pool.begin().await?;
-    let (clock, mut rng) = crate::rng_and_clock()?;
+    let (clock, mut rng) = crate::clock_and_rng();
     let form = cookie_jar.verify_form(clock.now(), form)?;
 
     let sessions_cookie = UpstreamSessionsCookie::load(&cookie_jar);

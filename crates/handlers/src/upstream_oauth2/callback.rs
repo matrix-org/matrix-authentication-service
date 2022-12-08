@@ -90,9 +90,6 @@ pub(crate) enum RouteError {
 
     #[error(transparent)]
     Internal(Box<dyn std::error::Error>),
-
-    #[error(transparent)]
-    Anyhow(#[from] anyhow::Error),
 }
 
 impl_from_error_for_route!(mas_storage::DatabaseError);
@@ -109,9 +106,6 @@ impl IntoResponse for RouteError {
         match self {
             Self::SessionNotFound => (StatusCode::NOT_FOUND, "Session not found").into_response(),
             Self::Internal(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
-            Self::Anyhow(e) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, format!("{e:?}")).into_response()
-            }
             e => (StatusCode::BAD_REQUEST, e.to_string()).into_response(),
         }
     }
@@ -128,7 +122,7 @@ pub(crate) async fn get(
     Path(provider_id): Path<Ulid>,
     Query(params): Query<QueryParams>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let (clock, mut rng) = crate::rng_and_clock()?;
+    let (clock, mut rng) = crate::clock_and_rng();
 
     let mut txn = pool.begin().await?;
 

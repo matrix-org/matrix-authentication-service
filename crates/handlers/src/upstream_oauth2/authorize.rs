@@ -37,9 +37,6 @@ pub(crate) enum RouteError {
 
     #[error(transparent)]
     Internal(Box<dyn std::error::Error>),
-
-    #[error(transparent)]
-    Anyhow(#[from] anyhow::Error),
 }
 
 impl_from_error_for_route!(sqlx::Error);
@@ -53,9 +50,6 @@ impl IntoResponse for RouteError {
         match self {
             Self::ProviderNotFound => (StatusCode::NOT_FOUND, "Provider not found").into_response(),
             Self::Internal(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
-            Self::Anyhow(e) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, format!("{e:?}")).into_response()
-            }
         }
     }
 }
@@ -68,7 +62,7 @@ pub(crate) async fn get(
     Path(provider_id): Path<Ulid>,
     Query(query): Query<OptionalPostAuthAction>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let (clock, mut rng) = crate::rng_and_clock()?;
+    let (clock, mut rng) = crate::clock_and_rng();
 
     let mut txn = pool.begin().await?;
 
