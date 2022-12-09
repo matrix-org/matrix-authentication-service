@@ -28,7 +28,10 @@ use mas_storage::{
     },
     Clock,
 };
-use oauth2_types::requests::{IntrospectionRequest, IntrospectionResponse};
+use oauth2_types::{
+    errors::{ClientError, ClientErrorCode},
+    requests::{IntrospectionRequest, IntrospectionResponse},
+};
 use sqlx::PgPool;
 use thiserror::Error;
 
@@ -58,18 +61,35 @@ pub enum RouteError {
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         match self {
-            Self::Internal(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
-            Self::ClientNotFound => (StatusCode::UNAUTHORIZED, "client not found").into_response(),
+            Self::Internal(e) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(
+                    ClientError::from(ClientErrorCode::ServerError).with_description(e.to_string()),
+                ),
+            )
+                .into_response(),
+            Self::ClientNotFound => (
+                StatusCode::UNAUTHORIZED,
+                Json(ClientError::from(ClientErrorCode::InvalidClient)),
+            )
+                .into_response(),
+            Self::ClientCredentialsVerification(e) => (
+                StatusCode::UNAUTHORIZED,
+                Json(
+                    ClientError::from(ClientErrorCode::InvalidClient)
+                        .with_description(e.to_string()),
+                ),
+            )
+                .into_response(),
             Self::UnknownToken => Json(INACTIVE).into_response(),
             Self::NotAllowed => (
                 StatusCode::UNAUTHORIZED,
-                "client can't use the introspection endpoint",
+                Json(ClientError::from(ClientErrorCode::AccessDenied)),
             )
                 .into_response(),
-            Self::BadRequest => StatusCode::BAD_REQUEST.into_response(),
-            Self::ClientCredentialsVerification(_c) => (
-                StatusCode::UNAUTHORIZED,
-                "could not verify client credentials",
+            Self::BadRequest => (
+                StatusCode::BAD_REQUEST,
+                Json(ClientError::from(ClientErrorCode::InvalidRequest)),
             )
                 .into_response(),
         }
