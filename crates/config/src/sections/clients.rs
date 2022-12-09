@@ -78,7 +78,11 @@ pub enum ClientAuthMethodConfig {
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct ClientConfig {
     /// The client ID
-    #[schemars(with = "String")]
+    #[schemars(
+        with = "String",
+        regex(pattern = r"^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{26}$"),
+        description = "A ULID as per https://github.com/ulid/spec"
+    )]
     pub client_id: Ulid,
 
     /// Authentication method used for this client
