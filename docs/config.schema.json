@@ -386,8 +386,9 @@
       ],
       "properties": {
         "client_id": {
-          "description": "The client ID",
-          "$ref": "#/definitions/ULID"
+          "description": "A ULID as per https://github.com/ulid/spec",
+          "type": "string",
+          "pattern": "^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{26}$"
         },
         "redirect_uris": {
           "description": "List of allowed redirect URIs",
@@ -1732,13 +1733,6 @@
           ]
         }
       ]
-    },
-    "ULID": {
-      "description": "A ULID as per https://github.com/ulid/spec",
-      "type": "string",
-      "pattern": "^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]{26}$",
-      "minLength": 26,
-      "maxLength": 26
     }
   }
 }
