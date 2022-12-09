@@ -155,14 +155,14 @@ List of OAuth 2.0/OIDC clients and their keys/secrets. Each `client_id` must be 
 ```yaml
 clients:
   # Confidential client
-  - client_id: FIRST000000000000000000000
+  - client_id: 000000000000000000000FIRST
     client_auth_method: clent_secret_post
     client_secret: secret
     # List of authorized redirect URIs
     redirect_uris:
       - http://localhost:1234/callback
   # Public client
-  - client_id: SEC0ND00000000000000000000
+  - client_id: 00000000000000000000SEC0ND
     client_auth_method: none
 ```
 
