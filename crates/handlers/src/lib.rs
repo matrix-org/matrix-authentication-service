@@ -51,6 +51,7 @@ mod compat;
 mod graphql;
 mod health;
 mod oauth2;
+pub mod passwords;
 mod upstream_oauth2;
 mod views;
 
@@ -350,6 +351,8 @@ where
 async fn test_state(pool: PgPool) -> Result<AppState, anyhow::Error> {
     use mas_email::MailTransport;
 
+    use crate::passwords::{Hasher, PasswordManager};
+
     let workspace_root = camino::Utf8Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("..")
         .join("..");
@@ -362,6 +365,8 @@ async fn test_state(pool: PgPool) -> Result<AppState, anyhow::Error> {
     let key_store = Keystore::default();
 
     let encrypter = Encrypter::new(&[0x42; 32]);
+
+    let password_manager = PasswordManager::new([(1, Hasher::argon2id(None))])?;
 
     let transport = MailTransport::blackhole();
     let mailbox = "server@example.com".parse()?;
@@ -397,6 +402,7 @@ async fn test_state(pool: PgPool) -> Result<AppState, anyhow::Error> {
         policy_factory,
         graphql_schema,
         http_client_factory,
+        password_manager,
     })
 }
 
