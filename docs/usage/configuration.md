@@ -150,19 +150,19 @@ templates:
 
 ### `clients`
 
-List of OAuth 2.0/OIDC clients and their keys/secrets.
+List of OAuth 2.0/OIDC clients and their keys/secrets. Each `client_id` must be a [ULID](https://github.com/ulid/spec).
 
 ```yaml
 clients:
   # Confidential client
-  - client_id: first
+  - client_id: FIRST000000000000000000000
     client_auth_method: clent_secret_post
     client_secret: secret
     # List of authorized redirect URIs
     redirect_uris:
       - http://localhost:1234/callback
   # Public client
-  - client_id: second
+  - client_id: SEC0ND00000000000000000000
     client_auth_method: none
 ```
 
