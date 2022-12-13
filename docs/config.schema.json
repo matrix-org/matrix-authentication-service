@@ -128,6 +128,22 @@
         }
       ]
     },
+    "passwords": {
+      "description": "Configuration related to user passwords",
+      "default": {
+        "schemes": [
+          {
+            "algorithm": "argon2id",
+            "version": 1
+          }
+        ]
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/PasswordsConfig"
+        }
+      ]
+    },
     "policy": {
       "description": "Configuration related to the OPA policies",
       "default": {
@@ -646,6 +662,74 @@
           ]
         }
       ]
+    },
+    "HashingScheme": {
+      "description": "A hashing algorithm",
+      "type": "object",
+      "oneOf": [
+        {
+          "description": "bcrypt",
+          "type": "object",
+          "required": [
+            "algorithm"
+          ],
+          "properties": {
+            "algorithm": {
+              "type": "string",
+              "enum": [
+                "bcrypt"
+              ]
+            },
+            "cost": {
+              "description": "Hashing cost",
+              "default": 12,
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0.0
+            }
+          }
+        },
+        {
+          "description": "argon2id",
+          "type": "object",
+          "required": [
+            "algorithm"
+          ],
+          "properties": {
+            "algorithm": {
+              "type": "string",
+              "enum": [
+                "argon2id"
+              ]
+            }
+          }
+        },
+        {
+          "description": "PBKDF2",
+          "type": "object",
+          "required": [
+            "algorithm"
+          ],
+          "properties": {
+            "algorithm": {
+              "type": "string",
+              "enum": [
+                "pbkdf2"
+              ]
+            }
+          }
+        }
+      ],
+      "required": [
+        "version"
+      ],
+      "properties": {
+        "version": {
+          "type": "integer",
+          "format": "uint16",
+          "minimum": 0.0
+        }
+      }
     },
     "HttpConfig": {
       "description": "Configuration related to the web server",
@@ -1208,6 +1292,24 @@
           }
         }
       ]
+    },
+    "PasswordsConfig": {
+      "description": "User password hashing config",
+      "type": "object",
+      "properties": {
+        "schemes": {
+          "default": [
+            {
+              "algorithm": "argon2id",
+              "version": 1
+            }
+          ],
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/HashingScheme"
+          }
+        }
+      }
     },
     "PolicyConfig": {
       "description": "Application secrets",
