@@ -21,7 +21,7 @@ use pbkdf2::Pbkdf2;
 use rand::{CryptoRng, Rng, RngCore, SeedableRng};
 use zeroize::Zeroizing;
 
-pub type SchemeVersion = u32;
+pub type SchemeVersion = u16;
 
 #[derive(Clone)]
 pub struct PasswordManager {

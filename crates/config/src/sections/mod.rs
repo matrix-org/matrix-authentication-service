@@ -23,6 +23,7 @@ mod database;
 mod email;
 mod http;
 mod matrix;
+mod passwords;
 mod policy;
 mod secrets;
 mod telemetry;
@@ -38,6 +39,7 @@ pub use self::{
         Resource as HttpResource, TlsConfig as HttpTlsConfig, UnixOrTcp,
     },
     matrix::MatrixConfig,
+    passwords::{Algorithm as PasswordAlgorithm, PasswordsConfig},
     policy::PolicyConfig,
     secrets::SecretsConfig,
     telemetry::{
@@ -82,6 +84,10 @@ pub struct RootConfig {
     /// Application secrets
     pub secrets: SecretsConfig,
 
+    /// Configuration related to user passwords
+    #[serde(default)]
+    pub passwords: PasswordsConfig,
+
     /// Configuration related to the homeserver
     #[serde(default)]
     pub matrix: MatrixConfig,
@@ -109,6 +115,7 @@ impl ConfigurationSection<'_> for RootConfig {
             templates: TemplatesConfig::generate(&mut rng).await?,
             csrf: CsrfConfig::generate(&mut rng).await?,
             email: EmailConfig::generate(&mut rng).await?,
+            passwords: PasswordsConfig::generate(&mut rng).await?,
             secrets: SecretsConfig::generate(&mut rng).await?,
             matrix: MatrixConfig::generate(&mut rng).await?,
             policy: PolicyConfig::generate(&mut rng).await?,
@@ -122,6 +129,7 @@ impl ConfigurationSection<'_> for RootConfig {
             database: DatabaseConfig::test(),
             telemetry: TelemetryConfig::test(),
             templates: TemplatesConfig::test(),
+            passwords: PasswordsConfig::test(),
             csrf: CsrfConfig::test(),
             email: EmailConfig::test(),
             secrets: SecretsConfig::test(),

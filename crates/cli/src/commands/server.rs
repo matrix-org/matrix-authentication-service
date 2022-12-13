@@ -20,7 +20,7 @@ use futures_util::stream::{StreamExt, TryStreamExt};
 use itertools::Itertools;
 use mas_config::RootConfig;
 use mas_email::Mailer;
-use mas_handlers::{AppState, HttpClientFactory, MatrixHomeserver};
+use mas_handlers::{passwords::PasswordManager, AppState, HttpClientFactory, MatrixHomeserver};
 use mas_listener::{server::Server, shutdown::ShutdownStream};
 use mas_policy::PolicyFactory;
 use mas_router::UrlBuilder;
@@ -168,6 +168,24 @@ impl Options {
 
         let listeners_config = config.http.listeners.clone();
 
+        let password_manager = config
+            .passwords
+            .load()
+            .await
+            .context("failed to load the password schemes")?
+            .into_iter()
+            .map(|(version, algorithm, secret)| {
+                use mas_handlers::passwords::Hasher;
+                let hasher = match algorithm {
+                    mas_config::PasswordAlgorithm::Pbkdf2 => Hasher::pbkdf2(secret),
+                    mas_config::PasswordAlgorithm::Bcrypt { cost } => Hasher::bcrypt(cost, secret),
+                    mas_config::PasswordAlgorithm::Argon2id => Hasher::argon2id(secret),
+                };
+
+                (version, hasher)
+            });
+        let password_manager = PasswordManager::new(password_manager)?;
+
         // Explicitely the config to properly zeroize secret keys
         drop(config);
 
@@ -199,6 +217,7 @@ impl Options {
             policy_factory,
             graphql_schema,
             http_client_factory,
+            password_manager,
         };
 
         let mut fd_manager = listenfd::ListenFd::from_env();

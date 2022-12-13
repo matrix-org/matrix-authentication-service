@@ -23,7 +23,7 @@ use mas_router::UrlBuilder;
 use mas_templates::Templates;
 use sqlx::PgPool;
 
-use crate::MatrixHomeserver;
+use crate::{passwords::PasswordManager, MatrixHomeserver};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -37,6 +37,7 @@ pub struct AppState {
     pub policy_factory: Arc<PolicyFactory>,
     pub graphql_schema: mas_graphql::Schema,
     pub http_client_factory: HttpClientFactory,
+    pub password_manager: PasswordManager,
 }
 
 impl FromRef<AppState> for PgPool {
@@ -92,8 +93,15 @@ impl FromRef<AppState> for Arc<PolicyFactory> {
         input.policy_factory.clone()
     }
 }
+
 impl FromRef<AppState> for HttpClientFactory {
     fn from_ref(input: &AppState) -> Self {
         input.http_client_factory.clone()
+    }
+}
+
+impl FromRef<AppState> for PasswordManager {
+    fn from_ref(input: &AppState) -> Self {
+        input.password_manager.clone()
     }
 }
