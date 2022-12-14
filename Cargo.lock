@@ -2684,7 +2684,6 @@ name = "mas-cli"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "argon2",
  "atty",
  "axum",
  "camino",
@@ -3101,21 +3100,16 @@ dependencies = [
 name = "mas-storage"
 version = "0.1.0"
 dependencies = [
- "anyhow",
- "argon2",
  "chrono",
  "mas-data-model",
  "mas-iana",
  "mas-jose",
  "oauth2-types",
- "password-hash",
  "rand 0.8.5",
- "rand_chacha 0.3.1",
  "serde",
  "serde_json",
  "sqlx",
  "thiserror",
- "tokio",
  "tracing",
  "ulid",
  "url",

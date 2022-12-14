@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use anyhow::Context;
-use argon2::{Argon2, PasswordHash};
 use chrono::{DateTime, Duration, Utc};
 use mas_data_model::{
     CompatAccessToken, CompatRefreshToken, CompatSession, CompatSsoLogin, CompatSsoLoginState,
@@ -21,7 +19,6 @@ use mas_data_model::{
 };
 use rand::Rng;
 use sqlx::{Acquire, PgExecutor, Postgres, QueryBuilder};
-use tokio::task;
 use tracing::{info_span, Instrument};
 use ulid::Ulid;
 use url::Url;
@@ -29,7 +26,6 @@ use uuid::Uuid;
 
 use crate::{
     pagination::{process_page, QueryBuilderExt},
-    user::lookup_user_by_username,
     Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt,
 };
 
@@ -282,91 +278,6 @@ pub async fn lookup_active_compat_refresh_token(
     };
 
     Ok(Some((refresh_token, access_token, session)))
-}
-
-#[tracing::instrument(
-    skip_all,
-    fields(
-        user.username = username,
-        user.id,
-        compat_session.id,
-        compat_session.device.id = device.as_str(),
-    ),
-    err(Debug),
-)]
-pub async fn compat_login(
-    conn: impl Acquire<'_, Database = Postgres> + Send,
-    mut rng: impl Rng + Send,
-    clock: &Clock,
-    username: &str,
-    password: &str,
-    device: Device,
-) -> Result<CompatSession, anyhow::Error> {
-    // TODO: that should be split and not verify the password hash here
-    let mut txn = conn.begin().await.context("could not start transaction")?;
-
-    // First, lookup the user
-    let user = lookup_user_by_username(&mut txn, username)
-        .await?
-        .context("Could not lookup username")?;
-    tracing::Span::current().record("user.id", tracing::field::display(user.id));
-
-    // Now, fetch the hashed password from the user associated with that session
-    let hashed_password: String = sqlx::query_scalar!(
-        r#"
-            SELECT up.hashed_password
-            FROM user_passwords up
-            WHERE up.user_id = $1
-            ORDER BY up.created_at DESC
-            LIMIT 1
-        "#,
-        Uuid::from(user.id),
-    )
-    .fetch_one(&mut txn)
-    .instrument(tracing::info_span!("Lookup hashed password"))
-    .await?;
-
-    // TODO: pass verifiers list as parameter
-    // Verify the password in a blocking thread to avoid blocking the async executor
-    let password = password.to_owned();
-    task::spawn_blocking(move || {
-        let context = Argon2::default();
-        let hasher = PasswordHash::new(&hashed_password)?;
-        hasher.verify_password(&[&context], &password)
-    })
-    .instrument(tracing::info_span!("Verify hashed password"))
-    .await??;
-
-    let created_at = clock.now();
-    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
-    tracing::Span::current().record("compat_session.id", tracing::field::display(id));
-
-    sqlx::query!(
-        r#"
-            INSERT INTO compat_sessions
-              (compat_session_id, user_id, device_id, created_at)
-            VALUES ($1, $2, $3, $4)
-        "#,
-        Uuid::from(id),
-        Uuid::from(user.id),
-        device.as_str(),
-        created_at,
-    )
-    .execute(&mut txn)
-    .instrument(tracing::info_span!("Insert compat session"))
-    .await
-    .context("could not insert compat session")?;
-
-    let session = CompatSession {
-        id,
-        user,
-        device,
-        created_at,
-        finished_at: None,
-    };
-
-    txn.commit().await.context("could not commit transaction")?;
-    Ok(session)
 }
 
 #[tracing::instrument(
@@ -899,6 +810,48 @@ pub async fn get_compat_sso_login_by_token(
     skip_all,
     fields(
         %user.id,
+        compat_session.id,
+        compat_session.device.id = device.as_str(),
+    ),
+    err,
+)]
+pub async fn start_compat_session(
+    executor: impl PgExecutor<'_>,
+    mut rng: impl Rng + Send,
+    clock: &Clock,
+    user: User,
+    device: Device,
+) -> Result<CompatSession, DatabaseError> {
+    let created_at = clock.now();
+    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
+    tracing::Span::current().record("compat_session.id", tracing::field::display(id));
+
+    sqlx::query!(
+        r#"
+            INSERT INTO compat_sessions (compat_session_id, user_id, device_id, created_at)
+            VALUES ($1, $2, $3, $4)
+        "#,
+        Uuid::from(id),
+        Uuid::from(user.id),
+        device.as_str(),
+        created_at,
+    )
+    .execute(executor)
+    .await?;
+
+    Ok(CompatSession {
+        id,
+        user,
+        device,
+        created_at,
+        finished_at: None,
+    })
+}
+
+#[tracing::instrument(
+    skip_all,
+    fields(
+        %user.id,
         %compat_sso_login.id,
         %compat_sso_login.redirect_uri,
         compat_session.id,
@@ -920,31 +873,7 @@ pub async fn fullfill_compat_sso_login(
 
     let mut txn = conn.begin().await?;
 
-    let created_at = clock.now();
-    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
-    tracing::Span::current().record("compat_session.id", tracing::field::display(id));
-
-    sqlx::query!(
-        r#"
-            INSERT INTO compat_sessions (compat_session_id, user_id, device_id, created_at)
-            VALUES ($1, $2, $3, $4)
-        "#,
-        Uuid::from(id),
-        Uuid::from(user.id),
-        device.as_str(),
-        created_at,
-    )
-    .execute(&mut txn)
-    .instrument(tracing::info_span!("Insert compat session"))
-    .await?;
-
-    let session = CompatSession {
-        id,
-        user,
-        device,
-        created_at,
-        finished_at: None,
-    };
+    let session = start_compat_session(&mut txn, &mut rng, clock, user, device).await?;
 
     let fulfilled_at = clock.now();
     sqlx::query!(

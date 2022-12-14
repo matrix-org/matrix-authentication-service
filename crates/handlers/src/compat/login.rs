@@ -18,18 +18,20 @@ use hyper::StatusCode;
 use mas_data_model::{CompatSession, CompatSsoLoginState, Device, TokenType};
 use mas_storage::{
     compat::{
-        add_compat_access_token, add_compat_refresh_token, compat_login,
-        get_compat_sso_login_by_token, mark_compat_sso_login_as_exchanged,
+        add_compat_access_token, add_compat_refresh_token, get_compat_sso_login_by_token,
+        mark_compat_sso_login_as_exchanged, start_compat_session,
     },
+    user::{add_user_password, lookup_user_by_username, lookup_user_password},
     Clock,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none, DurationMilliSeconds};
 use sqlx::{PgPool, Postgres, Transaction};
 use thiserror::Error;
+use zeroize::Zeroizing;
 
 use super::{MatrixError, MatrixHomeserver};
-use crate::impl_from_error_for_route;
+use crate::{impl_from_error_for_route, passwords::PasswordManager};
 
 #[derive(Debug, Serialize)]
 #[serde(tag = "type")]
@@ -132,8 +134,14 @@ pub enum RouteError {
     #[error("unsupported login method")]
     Unsupported,
 
-    #[error("login failed")]
-    LoginFailed,
+    #[error("user not found")]
+    UserNotFound,
+
+    #[error("user has no password")]
+    NoPassword,
+
+    #[error("password verification failed")]
+    PasswordVerificationFailed(#[source] anyhow::Error),
 
     #[error("login took too long")]
     LoginTookTooLong,
@@ -158,11 +166,13 @@ impl IntoResponse for RouteError {
                 error: "Invalid login type",
                 status: StatusCode::BAD_REQUEST,
             },
-            Self::LoginFailed => MatrixError {
-                errcode: "M_UNAUTHORIZED",
-                error: "Invalid username/password",
-                status: StatusCode::FORBIDDEN,
-            },
+            Self::UserNotFound | Self::NoPassword | Self::PasswordVerificationFailed(_) => {
+                MatrixError {
+                    errcode: "M_UNAUTHORIZED",
+                    error: "Invalid username/password",
+                    status: StatusCode::FORBIDDEN,
+                }
+            }
             Self::LoginTookTooLong => MatrixError {
                 errcode: "M_UNAUTHORIZED",
                 error: "Login token expired",
@@ -180,6 +190,7 @@ impl IntoResponse for RouteError {
 
 #[tracing::instrument(skip_all, err)]
 pub(crate) async fn post(
+    State(password_manager): State<PasswordManager>,
     State(pool): State<PgPool>,
     State(homeserver): State<MatrixHomeserver>,
     Json(input): Json<RequestBody>,
@@ -190,7 +201,7 @@ pub(crate) async fn post(
         Credentials::Password {
             identifier: Identifier::User { user },
             password,
-        } => user_password_login(&mut txn, user, password).await?,
+        } => user_password_login(&password_manager, &mut txn, user, password).await?,
 
         Credentials::Token { token } => token_login(&mut txn, &clock, &token).await?,
 
@@ -295,16 +306,53 @@ async fn token_login(
 }
 
 async fn user_password_login(
+    password_manager: &PasswordManager,
     txn: &mut Transaction<'_, Postgres>,
     username: String,
     password: String,
 ) -> Result<CompatSession, RouteError> {
     let (clock, mut rng) = crate::clock_and_rng();
 
-    let device = Device::generate(&mut rng);
-    let session = compat_login(txn, &mut rng, &clock, &username, &password, device)
+    // Find the user
+    let user = lookup_user_by_username(&mut *txn, &username)
+        .await?
+        .ok_or(RouteError::UserNotFound)?;
+
+    // Lookup its password
+    let user_password = lookup_user_password(&mut *txn, &user)
+        .await?
+        .ok_or(RouteError::NoPassword)?;
+
+    // Verify the password
+    let password = Zeroizing::new(password.into_bytes());
+
+    let new_password_hash = password_manager
+        .verify_and_upgrade(
+            &mut rng,
+            user_password.version,
+            password,
+            user_password.hashed_password.clone(),
+        )
         .await
-        .map_err(|_| RouteError::LoginFailed)?;
+        .map_err(RouteError::PasswordVerificationFailed)?;
+
+    if let Some((version, hashed_password)) = new_password_hash {
+        // Save the upgraded password if needed
+        add_user_password(
+            &mut *txn,
+            &mut rng,
+            &clock,
+            &user,
+            version,
+            hashed_password,
+            Some(user_password),
+        )
+        .await?;
+    }
+
+    // Now that the user credentials have been verified, start a new compat session
+    let device = Device::generate(&mut rng);
+    let session = start_compat_session(&mut *txn, &mut rng, &clock, user, device).await?;
 
     Ok(session)
 }

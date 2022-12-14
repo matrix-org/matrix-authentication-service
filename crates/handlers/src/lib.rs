@@ -208,6 +208,7 @@ where
     UrlBuilder: FromRef<S>,
     PgPool: FromRef<S>,
     MatrixHomeserver: FromRef<S>,
+    PasswordManager: FromRef<S>,
 {
     Router::new()
         .route(
