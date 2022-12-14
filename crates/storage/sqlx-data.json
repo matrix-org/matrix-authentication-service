@@ -988,21 +988,6 @@
     },
     "query": "\n            SELECT\n                upstream_oauth_link_id,\n                upstream_oauth_provider_id,\n                user_id,\n                subject,\n                created_at\n            FROM upstream_oauth_links\n            WHERE upstream_oauth_link_id = $1\n        "
   },
-  "47fff42fd9871f73baf3e3ebb9e296fa65f7bc99f94639891f29d56d204b659a": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Uuid",
-          "Uuid",
-          "Text",
-          "Timestamptz"
-        ]
-      }
-    },
-    "query": "\n            INSERT INTO user_passwords (user_password_id, user_id, hashed_password, created_at)\n            VALUES ($1, $2, $3, $4)\n        "
-  },
   "4f8ec19f3f1bfe0268fe102a24e5a9fa542e77eccbebdce65e6deb1c197adf36": {
     "describe": {
       "columns": [
@@ -2170,6 +2155,50 @@
     },
     "query": "\n            SELECT\n                ct.compat_access_token_id,\n                ct.access_token    AS \"compat_access_token\",\n                ct.created_at      AS \"compat_access_token_created_at\",\n                ct.expires_at      AS \"compat_access_token_expires_at\",\n                cs.compat_session_id,\n                cs.created_at      AS \"compat_session_created_at\",\n                cs.finished_at     AS \"compat_session_finished_at\",\n                cs.device_id       AS \"compat_session_device_id\",\n                 u.user_id         AS \"user_id!\",\n                 u.username        AS \"user_username!\",\n                ue.user_email_id   AS \"user_email_id?\",\n                ue.email           AS \"user_email?\",\n                ue.created_at      AS \"user_email_created_at?\",\n                ue.confirmed_at    AS \"user_email_confirmed_at?\"\n\n            FROM compat_access_tokens ct\n            INNER JOIN compat_sessions cs\n              USING (compat_session_id)\n            INNER JOIN users u\n              USING (user_id)\n            LEFT JOIN user_emails ue\n              ON ue.user_email_id = u.primary_user_email_id\n\n            WHERE ct.access_token = $1\n              AND ct.expires_at < $2\n              AND cs.finished_at IS NULL \n        "
   },
+  "a1c19d9d7f1522d126787c7f9946ed51cbbd8f27a4947bc371acab3e7bf23267": {
+    "describe": {
+      "columns": [
+        {
+          "name": "user_password_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "hashed_password",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "version",
+          "ordinal": 2,
+          "type_info": "Int4"
+        },
+        {
+          "name": "upgraded_from_id",
+          "ordinal": 3,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 4,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n            SELECT up.user_password_id\n                 , up.hashed_password\n                 , up.version\n                 , up.upgraded_from_id\n                 , up.created_at\n            FROM user_passwords up\n            WHERE up.user_id = $1\n            ORDER BY up.created_at DESC\n            LIMIT 1\n        "
+  },
   "a5a7dad633396e087239d5629092e4a305908ffce9c2610db07372f719070546": {
     "describe": {
       "columns": [],
@@ -2365,6 +2394,23 @@
       }
     },
     "query": "\n            INSERT INTO oauth2_sessions\n                (oauth2_session_id, user_session_id, oauth2_client_id, scope, created_at)\n            SELECT\n                $1,\n                $2,\n                og.oauth2_client_id,\n                og.scope,\n                $3\n            FROM\n                oauth2_authorization_grants og\n            WHERE\n                og.oauth2_authorization_grant_id = $4\n        "
+  },
+  "bd7a4a008851f3f6d7591e3463e4369cee08820af57dcd3faf95f8e9be82857d": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid",
+          "Text",
+          "Int4",
+          "Uuid",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n            INSERT INTO user_passwords\n                (user_password_id, user_id, hashed_password, version, upgraded_from_id, created_at)\n            VALUES ($1, $2, $3, $4, $5, $6)\n        "
   },
   "c52c911bf39ada298bfdc4526028f1b29fdcb6f557b288bb7ea2472b160c8698": {
     "describe": {

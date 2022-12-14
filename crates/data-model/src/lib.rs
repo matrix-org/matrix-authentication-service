@@ -43,7 +43,7 @@ pub use self::{
         UpstreamOAuthAuthorizationSession, UpstreamOAuthLink, UpstreamOAuthProvider,
     },
     users::{
-        Authentication, BrowserSession, User, UserEmail, UserEmailVerification,
+        Authentication, BrowserSession, Password, User, UserEmail, UserEmailVerification,
         UserEmailVerificationState,
     },
 };

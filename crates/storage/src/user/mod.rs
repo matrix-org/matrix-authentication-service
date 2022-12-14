@@ -12,20 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::borrow::BorrowMut;
-
-use anyhow::Context;
-use argon2::Argon2;
 use chrono::{DateTime, Utc};
 use mas_data_model::{
-    Authentication, BrowserSession, UpstreamOAuthLink, User, UserEmail, UserEmailVerification,
+    Authentication, BrowserSession, User, UserEmail, UserEmailVerification,
     UserEmailVerificationState,
 };
-use password_hash::{PasswordHash, PasswordHasher, SaltString};
-use rand::{CryptoRng, Rng};
-use sqlx::{Acquire, PgExecutor, Postgres, QueryBuilder, Transaction};
-use thiserror::Error;
-use tokio::task;
+use rand::Rng;
+use sqlx::{PgExecutor, QueryBuilder};
 use tracing::{info_span, Instrument};
 use ulid::Ulid;
 use uuid::Uuid;
@@ -33,6 +26,14 @@ use uuid::Uuid;
 use crate::{
     pagination::{process_page, QueryBuilderExt},
     Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt,
+};
+
+mod authentication;
+mod password;
+
+pub use self::{
+    authentication::{authenticate_session_with_password, authenticate_session_with_upstream},
+    password::{add_user_password, lookup_user_password},
 };
 
 #[derive(Debug, Clone)]
@@ -43,64 +44,6 @@ struct UserLookup {
     user_email: Option<String>,
     user_email_created_at: Option<DateTime<Utc>>,
     user_email_confirmed_at: Option<DateTime<Utc>>,
-}
-
-#[derive(Debug, Error)]
-pub enum LoginError {
-    #[error("could not find user {username:?}")]
-    NotFound { username: String },
-
-    #[error("authentication failed for {username:?}")]
-    Authentication {
-        username: String,
-        #[source]
-        source: AuthenticationError,
-    },
-
-    #[error("failed to login")]
-    Other(#[from] anyhow::Error),
-}
-
-#[tracing::instrument(
-    skip_all,
-    fields(user.username = username),
-    err,
-)]
-pub async fn login(
-    conn: impl Acquire<'_, Database = Postgres> + Send,
-    mut rng: impl Rng + Send,
-    clock: &Clock,
-    username: &str,
-    password: &str,
-) -> Result<BrowserSession, LoginError> {
-    let mut txn = conn.begin().await.context("could not start transaction")?;
-    let user = lookup_user_by_username(&mut txn, username)
-        .await
-        .context("Could not find user by username")?;
-
-    let Some(user) = user else {
-        return Err(LoginError::NotFound { username: username.to_owned() });
-    };
-
-    let mut session = start_session(&mut txn, &mut rng, clock, user)
-        .await
-        .context("Could not start session")?;
-
-    authenticate_session(&mut txn, &mut rng, clock, &mut session, password)
-        .await
-        .map_err(|source| {
-            if matches!(source, AuthenticationError::Password { .. }) {
-                LoginError::Authentication {
-                    username: username.to_owned(),
-                    source,
-                }
-            } else {
-                LoginError::Other(source.into())
-            }
-        })?;
-
-    txn.commit().await.context("could not commit transaction")?;
-    Ok(session)
 }
 
 #[derive(sqlx::FromRow)]
@@ -336,183 +279,6 @@ pub async fn count_active_sessions(
     Ok(res)
 }
 
-#[derive(Debug, Error)]
-pub enum AuthenticationError {
-    #[error("could not verify password")]
-    Password(#[from] password_hash::Error),
-
-    #[error("could not fetch user password hash")]
-    Fetch(sqlx::Error),
-
-    #[error("could not save session auth")]
-    Save(sqlx::Error),
-
-    #[error("runtime error")]
-    Internal(#[from] tokio::task::JoinError),
-}
-
-#[tracing::instrument(
-    skip_all,
-    fields(
-        user.id = %user_session.user.id,
-        %user_session.id,
-        user_session_authentication.id,
-    ),
-    err,
-)]
-pub async fn authenticate_session(
-    txn: &mut Transaction<'_, Postgres>,
-    mut rng: impl Rng + Send,
-    clock: &Clock,
-    user_session: &mut BrowserSession,
-    password: &str,
-) -> Result<(), AuthenticationError> {
-    // First, fetch the hashed password from the user associated with that session
-    let hashed_password: String = sqlx::query_scalar!(
-        r#"
-            SELECT up.hashed_password
-            FROM user_passwords up
-            WHERE up.user_id = $1
-            ORDER BY up.created_at DESC
-            LIMIT 1
-        "#,
-        Uuid::from(user_session.user.id),
-    )
-    .fetch_one(txn.borrow_mut())
-    .instrument(tracing::info_span!("Lookup hashed password"))
-    .await
-    .map_err(AuthenticationError::Fetch)?;
-
-    // TODO: pass verifiers list as parameter
-    // Verify the password in a blocking thread to avoid blocking the async executor
-    let password = password.to_owned();
-    task::spawn_blocking(move || {
-        let context = Argon2::default();
-        let hasher = PasswordHash::new(&hashed_password).map_err(AuthenticationError::Password)?;
-        hasher
-            .verify_password(&[&context], &password)
-            .map_err(AuthenticationError::Password)
-    })
-    .instrument(tracing::info_span!("Verify hashed password"))
-    .await??;
-
-    // That went well, let's insert the auth info
-    let created_at = clock.now();
-    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
-    tracing::Span::current().record(
-        "user_session_authentication.id",
-        tracing::field::display(id),
-    );
-
-    sqlx::query!(
-        r#"
-            INSERT INTO user_session_authentications
-                (user_session_authentication_id, user_session_id, created_at)
-            VALUES ($1, $2, $3)
-        "#,
-        Uuid::from(id),
-        Uuid::from(user_session.id),
-        created_at,
-    )
-    .execute(txn.borrow_mut())
-    .instrument(tracing::info_span!("Save authentication"))
-    .await
-    .map_err(AuthenticationError::Save)?;
-
-    user_session.last_authentication = Some(Authentication { id, created_at });
-
-    Ok(())
-}
-
-#[tracing::instrument(
-    skip_all,
-    fields(
-        user.id = %user_session.user.id,
-        %upstream_oauth_link.id,
-        %user_session.id,
-        user_session_authentication.id,
-    ),
-    err,
-)]
-pub async fn authenticate_session_with_upstream(
-    executor: impl PgExecutor<'_>,
-    mut rng: impl Rng + Send,
-    clock: &Clock,
-    user_session: &mut BrowserSession,
-    upstream_oauth_link: &UpstreamOAuthLink,
-) -> Result<(), sqlx::Error> {
-    let created_at = clock.now();
-    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
-    tracing::Span::current().record(
-        "user_session_authentication.id",
-        tracing::field::display(id),
-    );
-
-    sqlx::query!(
-        r#"
-            INSERT INTO user_session_authentications
-                (user_session_authentication_id, user_session_id, created_at)
-            VALUES ($1, $2, $3)
-        "#,
-        Uuid::from(id),
-        Uuid::from(user_session.id),
-        created_at,
-    )
-    .execute(executor)
-    .instrument(tracing::info_span!("Save authentication"))
-    .await?;
-
-    user_session.last_authentication = Some(Authentication { id, created_at });
-
-    Ok(())
-}
-
-#[tracing::instrument(
-    skip_all,
-    fields(
-        user.username = username,
-        user.id,
-    ),
-    err(Debug),
-)]
-pub async fn register_user(
-    txn: &mut Transaction<'_, Postgres>,
-    mut rng: impl CryptoRng + Rng + Send,
-    clock: &Clock,
-    phf: impl PasswordHasher + Send,
-    username: &str,
-    password: &str,
-) -> Result<User, anyhow::Error> {
-    let created_at = clock.now();
-    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
-    tracing::Span::current().record("user.id", tracing::field::display(id));
-
-    sqlx::query!(
-        r#"
-            INSERT INTO users (user_id, username, created_at)
-            VALUES ($1, $2, $3)
-        "#,
-        Uuid::from(id),
-        username,
-        created_at,
-    )
-    .execute(txn.borrow_mut())
-    .instrument(info_span!("Register user"))
-    .await
-    .context("could not insert user")?;
-
-    let user = User {
-        id,
-        username: username.to_owned(),
-        sub: id.to_string(),
-        primary_email: None,
-    };
-
-    set_password(txn.borrow_mut(), &mut rng, clock, phf, &user, password).await?;
-
-    Ok(user)
-}
-
 #[tracing::instrument(
     skip_all,
     fields(
@@ -521,7 +287,7 @@ pub async fn register_user(
     ),
     err,
 )]
-pub async fn register_passwordless_user(
+pub async fn add_user(
     executor: impl PgExecutor<'_>,
     mut rng: impl Rng + Send,
     clock: &Clock,
@@ -549,47 +315,6 @@ pub async fn register_passwordless_user(
         sub: id.to_string(),
         primary_email: None,
     })
-}
-
-#[tracing::instrument(
-    skip_all,
-    fields(
-        %user.id,
-        user_password.id,
-    ),
-    err(Debug),
-)]
-pub async fn set_password(
-    executor: impl PgExecutor<'_>,
-    mut rng: impl CryptoRng + Rng + Send,
-    clock: &Clock,
-    phf: impl PasswordHasher + Send,
-    user: &User,
-    password: &str,
-) -> Result<(), anyhow::Error> {
-    let created_at = clock.now();
-    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
-    tracing::Span::current().record("user_password.id", tracing::field::display(id));
-
-    let salt = SaltString::generate(&mut rng);
-    let hashed_password = PasswordHash::generate(phf, password, salt.as_str())?;
-
-    sqlx::query_scalar!(
-        r#"
-            INSERT INTO user_passwords (user_password_id, user_id, hashed_password, created_at)
-            VALUES ($1, $2, $3, $4)
-        "#,
-        Uuid::from(id),
-        Uuid::from(user.id),
-        hashed_password.to_string(),
-        created_at,
-    )
-    .execute(executor)
-    .instrument(info_span!("Save user credentials"))
-    .await
-    .context("could not insert user password")?;
-
-    Ok(())
 }
 
 #[tracing::instrument(
@@ -1276,40 +1001,4 @@ pub async fn add_user_email_verification_code(
     };
 
     Ok(verification)
-}
-
-#[cfg(test)]
-mod tests {
-    use rand::SeedableRng;
-
-    use super::*;
-
-    #[sqlx::test(migrator = "crate::MIGRATOR")]
-    async fn test_user_registration_and_login(pool: sqlx::PgPool) -> anyhow::Result<()> {
-        let clock = Clock::default();
-        let mut rng = rand_chacha::ChaChaRng::seed_from_u64(42);
-        let mut txn = pool.begin().await?;
-
-        let exists = username_exists(&mut txn, "john").await?;
-        assert!(!exists);
-
-        let hasher = Argon2::default();
-        let user = register_user(&mut txn, &mut rng, &clock, hasher, "john", "hunter2").await?;
-        assert_eq!(user.username, "john");
-
-        let exists = username_exists(&mut txn, "john").await?;
-        assert!(exists);
-
-        let session = login(&mut txn, &mut rng, &clock, "john", "hunter2").await?;
-        assert_eq!(session.user.id, user.id);
-
-        let user2 = lookup_user_by_username(&mut txn, "john")
-            .await?
-            .context("Could not find user")?;
-        assert_eq!(user.id, user2.id);
-
-        txn.commit().await?;
-
-        Ok(())
-    }
 }

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use anyhow::Context;
 use axum::{
     extract::{Form, Query, State},
     response::{Html, IntoResponse, Response},
@@ -23,12 +24,16 @@ use mas_axum_utils::{
 };
 use mas_keystore::Encrypter;
 use mas_router::Route;
-use mas_storage::user::authenticate_session;
+use mas_storage::user::{
+    add_user_password, authenticate_session_with_password, lookup_user_password,
+};
 use mas_templates::{ReauthContext, TemplateContext, Templates};
 use serde::Deserialize;
 use sqlx::PgPool;
+use zeroize::Zeroizing;
 
 use super::shared::OptionalPostAuthAction;
+use crate::passwords::PasswordManager;
 
 #[derive(Deserialize, Debug)]
 pub(crate) struct ReauthForm {
@@ -73,6 +78,7 @@ pub(crate) async fn get(
 }
 
 pub(crate) async fn post(
+    State(password_manager): State<PasswordManager>,
     State(pool): State<PgPool>,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: PrivateCookieJar<Encrypter>,
@@ -96,8 +102,43 @@ pub(crate) async fn post(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    // TODO: recover from errors here
-    authenticate_session(&mut txn, &mut rng, &clock, &mut session, &form.password).await?;
+    // Load the user password
+    let user_password = lookup_user_password(&mut txn, &session.user)
+        .await?
+        .context("User has no password")?;
+
+    let password = Zeroizing::new(form.password.as_bytes().to_vec());
+
+    // TODO: recover from errors
+    // Verify the password, and upgrade it on-the-fly if needed
+    let new_password_hash = password_manager
+        .verify_and_upgrade(
+            &mut rng,
+            user_password.version,
+            password,
+            user_password.hashed_password.clone(),
+        )
+        .await?;
+
+    let user_password = if let Some((version, new_password_hash)) = new_password_hash {
+        // Save the upgraded password
+        add_user_password(
+            &mut *txn,
+            &mut rng,
+            &clock,
+            &session.user,
+            version,
+            new_password_hash,
+            Some(user_password),
+        )
+        .await?
+    } else {
+        user_password
+    };
+
+    // Mark the session as authenticated by the password
+    authenticate_session_with_password(&mut txn, rng, &clock, &mut session, &user_password).await?;
+
     let cookie_jar = cookie_jar.set_session(&session);
     txn.commit().await?;
 

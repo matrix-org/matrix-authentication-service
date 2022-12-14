@@ -38,6 +38,15 @@ impl User {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct Password {
+    pub id: Ulid,
+    pub hashed_password: String,
+    pub version: u16,
+    pub upgraded_from_id: Option<Ulid>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Authentication {
     pub id: Ulid,
     pub created_at: DateTime<Utc>,

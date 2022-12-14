@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use argon2::Argon2;
+use anyhow::Context;
 use axum::{
     extract::{Form, State},
     response::{Html, IntoResponse, Response},
@@ -26,13 +26,16 @@ use mas_data_model::BrowserSession;
 use mas_keystore::Encrypter;
 use mas_router::Route;
 use mas_storage::{
-    user::{authenticate_session, set_password},
+    user::{add_user_password, authenticate_session_with_password, lookup_user_password},
     Clock,
 };
 use mas_templates::{EmptyContext, TemplateContext, Templates};
 use rand::Rng;
 use serde::Deserialize;
 use sqlx::PgPool;
+use zeroize::Zeroizing;
+
+use crate::passwords::PasswordManager;
 
 #[derive(Deserialize)]
 pub struct ChangeForm {
@@ -80,6 +83,7 @@ async fn render(
 }
 
 pub(crate) async fn post(
+    State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
     State(pool): State<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
@@ -101,30 +105,41 @@ pub(crate) async fn post(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    authenticate_session(
-        &mut txn,
-        &mut rng,
-        &clock,
-        &mut session,
-        &form.current_password,
-    )
-    .await?;
+    let user_password = lookup_user_password(&mut txn, &session.user)
+        .await?
+        .context("user has no password")?;
+
+    let password = Zeroizing::new(form.current_password.into_bytes());
+    let new_password = Zeroizing::new(form.new_password.into_bytes());
+    let new_password_confirm = Zeroizing::new(form.new_password_confirm.into_bytes());
+
+    password_manager
+        .verify(
+            user_password.version,
+            password,
+            user_password.hashed_password,
+        )
+        .await?;
 
     // TODO: display nice form errors
-    if form.new_password != form.new_password_confirm {
+    if new_password != new_password_confirm {
         return Err(anyhow::anyhow!("password mismatch").into());
     }
 
-    let phf = Argon2::default();
-    set_password(
+    let (version, hashed_password) = password_manager.hash(&mut rng, new_password).await?;
+    let user_password = add_user_password(
         &mut txn,
         &mut rng,
         &clock,
-        phf,
         &session.user,
-        &form.new_password,
+        version,
+        hashed_password,
+        None,
     )
     .await?;
+
+    authenticate_session_with_password(&mut txn, &mut rng, &clock, &mut session, &user_password)
+        .await?;
 
     let reply = render(&mut rng, &clock, templates.clone(), session, cookie_jar).await?;
 

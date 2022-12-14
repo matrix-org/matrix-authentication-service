@@ -41,6 +41,7 @@ use mas_keystore::{Encrypter, Keystore};
 use mas_policy::PolicyFactory;
 use mas_router::{Route, UrlBuilder};
 use mas_templates::{ErrorContext, Templates};
+use passwords::PasswordManager;
 use rand::SeedableRng;
 use sqlx::PgPool;
 use tower::util::AndThenLayer;
@@ -253,6 +254,7 @@ where
     Mailer: FromRef<S>,
     Keystore: FromRef<S>,
     HttpClientFactory: FromRef<S>,
+    PasswordManager: FromRef<S>,
 {
     Router::new()
         .route(
@@ -351,7 +353,7 @@ where
 async fn test_state(pool: PgPool) -> Result<AppState, anyhow::Error> {
     use mas_email::MailTransport;
 
-    use crate::passwords::{Hasher, PasswordManager};
+    use crate::passwords::Hasher;
 
     let workspace_root = camino::Utf8Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("..")

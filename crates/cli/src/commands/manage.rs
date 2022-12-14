@@ -13,22 +13,22 @@
 // limitations under the License.
 
 use anyhow::Context;
-use argon2::Argon2;
 use clap::{Parser, ValueEnum};
-use mas_config::{DatabaseConfig, RootConfig};
+use mas_config::{DatabaseConfig, PasswordsConfig, RootConfig};
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
 use mas_router::UrlBuilder;
 use mas_storage::{
     oauth2::client::{insert_client_from_config, lookup_client, truncate_clients},
     user::{
-        lookup_user_by_username, lookup_user_email, mark_user_email_as_verified, register_user,
-        set_password,
+        add_user_password, lookup_user_by_username, lookup_user_email, mark_user_email_as_verified,
     },
     Clock,
 };
 use oauth2_types::scope::Scope;
 use rand::SeedableRng;
 use tracing::{info, warn};
+
+use crate::util::password_manager_from_config;
 
 #[derive(Parser, Debug)]
 pub(super) struct Options {
@@ -142,9 +142,6 @@ impl From<&SigningAlgorithm> for JsonWebSignatureAlg {
 
 #[derive(Parser, Debug)]
 enum Subcommand {
-    /// Register a new user
-    Register { username: String, password: String },
-
     /// Mark email address as verified
     VerifyEmail { username: String, email: String },
 
@@ -196,30 +193,33 @@ impl Options {
         let mut rng = rand_chacha::ChaChaRng::from_entropy();
 
         match &self.subcommand {
-            SC::Register { username, password } => {
-                let config: DatabaseConfig = root.load_config()?;
-                let pool = config.connect().await?;
-                let mut txn = pool.begin().await?;
-                let hasher = Argon2::default();
-
-                let user =
-                    register_user(&mut txn, &mut rng, &clock, hasher, username, password).await?;
-                txn.commit().await?;
-                info!(%user.id, %user.username, "User registered");
-
-                Ok(())
-            }
-
             SC::SetPassword { username, password } => {
-                let config: DatabaseConfig = root.load_config()?;
-                let pool = config.connect().await?;
+                let database_config: DatabaseConfig = root.load_config()?;
+                let passwords_config: PasswordsConfig = root.load_config()?;
+
+                let pool = database_config.connect().await?;
+                let password_manager = password_manager_from_config(&passwords_config).await?;
+
                 let mut txn = pool.begin().await?;
-                let hasher = Argon2::default();
                 let user = lookup_user_by_username(&mut txn, username)
                     .await?
                     .context("User not found")?;
 
-                set_password(&mut txn, &mut rng, &clock, hasher, &user, password).await?;
+                let password = password.as_bytes().to_vec().into();
+
+                let (version, hashed_password) = password_manager.hash(&mut rng, password).await?;
+
+                add_user_password(
+                    &mut txn,
+                    &mut rng,
+                    &clock,
+                    &user,
+                    version,
+                    hashed_password,
+                    None,
+                )
+                .await?;
+
                 info!(%user.id, %user.username, "Password changed");
                 txn.commit().await?;
 
