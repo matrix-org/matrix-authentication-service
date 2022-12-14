@@ -198,7 +198,7 @@ pub async fn associate_link_to_user(
 #[tracing::instrument(
     skip_all,
     fields(%user.id, %user.username),
-    err(Display)
+    err
 )]
 pub async fn get_paginated_user_links(
     executor: impl PgExecutor<'_>,

@@ -695,7 +695,7 @@ pub async fn add_user_email(
         %user_email.id,
         %user_email.email,
     ),
-    err(Display),
+    err,
 )]
 pub async fn set_user_email_as_primary(
     executor: impl PgExecutor<'_>,
