@@ -30,7 +30,7 @@ use crate::{Clock, DatabaseError, DatabaseInconsistencyError};
         user.id = %session.browser_session.user.id,
         access_token.id,
     ),
-    err(Debug),
+    err,
 )]
 pub async fn add_access_token(
     executor: impl PgExecutor<'_>,

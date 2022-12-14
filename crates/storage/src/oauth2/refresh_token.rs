@@ -33,7 +33,7 @@ use crate::{Clock, DatabaseError, DatabaseInconsistencyError};
         client.id = %session.client.id,
         refresh_token.id,
     ),
-    err(Debug),
+    err,
 )]
 pub async fn add_refresh_token(
     executor: impl PgExecutor<'_>,
@@ -259,7 +259,7 @@ pub async fn lookup_active_refresh_token(
     fields(
         %refresh_token.id,
     ),
-    err(Debug),
+    err,
 )]
 pub async fn consume_refresh_token(
     executor: impl PgExecutor<'_>,
