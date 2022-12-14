@@ -7,7 +7,6 @@ license = "Apache-2.0"
 
 [dependencies]
 anyhow = "1.0.66"
-argon2 = { version = "0.4.1", features = ["password-hash"] }
 atty = "0.2.14"
 axum = "0.6.1"
 camino = "1.1.1"
