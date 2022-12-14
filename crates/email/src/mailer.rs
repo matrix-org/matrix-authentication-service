@@ -90,6 +90,17 @@ impl Mailer {
     /// # Errors
     ///
     /// Will return `Err` if the email failed rendering or failed sending
+    #[tracing::instrument(
+        skip_all,
+        fields(
+            email.to = %to,
+            email.from = %self.from,
+            user.id = %context.user().id,
+            user_email_verification.id = %context.verification().id,
+            user_email_verification.code = context.verification().code,
+        ),
+        err,
+    )]
     pub async fn send_verification_email(
         &self,
         to: Mailbox,
