@@ -35,7 +35,7 @@
     "@storybook/addon-measure": "^7.0.0-beta.7",
     "@storybook/addon-outline": "^7.0.0-beta.7",
     "@storybook/addon-toolbars": "^7.0.0-beta.7",
-    "@storybook/addon-viewport": "^7.0.0-beta.7",
+    "@storybook/addon-viewport": "^7.0.0-beta.8",
     "@storybook/react": "^7.0.0-beta.7",
     "@storybook/react-vite": "^7.0.0-beta.7",
     "@types/jest": "^29.2.4",
