@@ -147,7 +147,6 @@ impl AsyncTransport for Transport {
         match self.inner.as_ref() {
             TransportInner::Blackhole => {
                 tracing::warn!(
-                    ?envelope,
                     "An email was supposed to be sent but no email backend is configured"
                 );
             }

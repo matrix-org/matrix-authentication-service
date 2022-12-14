@@ -594,6 +594,18 @@ impl EmailVerificationContext {
     pub fn new(user: User, verification: UserEmailVerification) -> Self {
         Self { user, verification }
     }
+
+    /// Get the user to which this email is being sent
+    #[must_use]
+    pub fn user(&self) -> &User {
+        &self.user
+    }
+
+    /// Get the verification code being sent
+    #[must_use]
+    pub fn verification(&self) -> &UserEmailVerification {
+        &self.verification
+    }
 }
 
 impl TemplateContext for EmailVerificationContext {
