@@ -28,9 +28,7 @@ use mas_storage::{
     upstream_oauth2::{
         associate_link_to_user, consume_session, lookup_link, lookup_session_on_link,
     },
-    user::{
-        authenticate_session_with_upstream, lookup_user, register_passwordless_user, start_session,
-    },
+    user::{add_user, authenticate_session_with_upstream, lookup_user, start_session},
 };
 use mas_templates::{
     EmptyContext, TemplateContext, Templates, UpstreamExistingLinkContext, UpstreamRegister,
@@ -236,7 +234,7 @@ pub(crate) async fn post(
         }
 
         (None, None, FormData::Register { username }) => {
-            let user = register_passwordless_user(&mut txn, &mut rng, &clock, &username).await?;
+            let user = add_user(&mut txn, &mut rng, &clock, &username).await?;
             associate_link_to_user(&mut txn, &link, &user).await?;
 
             start_session(&mut txn, &mut rng, &clock, user).await?

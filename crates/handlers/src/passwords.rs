@@ -71,6 +71,7 @@ impl PasswordManager {
     /// # Errors
     ///
     /// Returns an error if the hashing failed
+    #[tracing::instrument(skip_all)]
     pub async fn hash<R: CryptoRng + RngCore + Send>(
         &self,
         rng: R,
@@ -78,7 +79,7 @@ impl PasswordManager {
     ) -> Result<(SchemeVersion, String), anyhow::Error> {
         // Seed a future-local RNG so the RNG passed in parameters doesn't have to be
         // 'static
-        let mut rng = rand_chacha::ChaChaRng::from_rng(rng)?;
+        let rng = rand_chacha::ChaChaRng::from_rng(rng)?;
         let hashers = self.hashers.clone();
         let default_hasher_version = self.default_hasher;
 
@@ -87,7 +88,7 @@ impl PasswordManager {
                 .get(&default_hasher_version)
                 .context("Default hasher not found")?;
 
-            default_hasher.hash_blocking(&mut rng, &password)
+            default_hasher.hash_blocking(rng, &password)
         })
         .await??;
 
@@ -95,7 +96,12 @@ impl PasswordManager {
     }
 
     /// Verify a password hash for the given hashing scheme.
-    async fn verify(
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the password hash verification failed
+    #[tracing::instrument(skip_all, fields(%scheme))]
+    pub async fn verify(
         &self,
         scheme: SchemeVersion,
         password: Zeroizing<Vec<u8>>,
@@ -118,6 +124,7 @@ impl PasswordManager {
     /// # Errors
     ///
     /// Returns an error if the password hash verification failed
+    #[tracing::instrument(skip_all, fields(%scheme))]
     pub async fn verify_and_upgrade<R: CryptoRng + RngCore + Send>(
         &self,
         rng: R,
@@ -172,7 +179,7 @@ impl Hasher {
 
     fn hash_blocking<R: CryptoRng + RngCore>(
         &self,
-        rng: &mut R,
+        rng: R,
         password: &[u8],
     ) -> Result<String, anyhow::Error> {
         self.algorithm
@@ -195,7 +202,7 @@ enum Algorithm {
 impl Algorithm {
     fn hash_blocking<R: CryptoRng + RngCore>(
         self,
-        rng: &mut R,
+        mut rng: R,
         password: &[u8],
         pepper: Option<&[u8]>,
     ) -> Result<String, anyhow::Error> {

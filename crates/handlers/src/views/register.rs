@@ -16,7 +16,6 @@
 
 use std::{str::FromStr, sync::Arc};
 
-use argon2::Argon2;
 use axum::{
     extract::{Form, Query, State},
     response::{Html, IntoResponse, Response},
@@ -33,7 +32,8 @@ use mas_keystore::Encrypter;
 use mas_policy::PolicyFactory;
 use mas_router::Route;
 use mas_storage::user::{
-    add_user_email, add_user_email_verification_code, register_user, start_session, username_exists,
+    add_user, add_user_email, add_user_email_verification_code, add_user_password,
+    authenticate_session_with_password, start_session, username_exists,
 };
 use mas_templates::{
     EmailVerificationContext, FieldError, FormError, RegisterContext, RegisterFormField,
@@ -42,8 +42,10 @@ use mas_templates::{
 use rand::{distributions::Uniform, Rng};
 use serde::{Deserialize, Serialize};
 use sqlx::{PgConnection, PgPool};
+use zeroize::Zeroizing;
 
 use super::shared::OptionalPostAuthAction;
+use crate::passwords::PasswordManager;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub(crate) struct RegisterForm {
@@ -88,8 +90,9 @@ pub(crate) async fn get(
     }
 }
 
-#[allow(clippy::too_many_lines)]
+#[allow(clippy::too_many_lines, clippy::too_many_arguments)]
 pub(crate) async fn post(
+    State(password_manager): State<PasswordManager>,
     State(mailer): State<Mailer>,
     State(policy_factory): State<Arc<PolicyFactory>>,
     State(templates): State<Templates>,
@@ -182,14 +185,17 @@ pub(crate) async fn post(
         return Ok((cookie_jar, Html(content)).into_response());
     }
 
-    let pfh = Argon2::default();
-    let user = register_user(
+    let user = add_user(&mut txn, &mut rng, &clock, &form.username).await?;
+    let password = Zeroizing::new(form.password.into_bytes());
+    let (version, hashed_password) = password_manager.hash(&mut rng, password).await?;
+    let user_password = add_user_password(
         &mut txn,
         &mut rng,
         &clock,
-        pfh,
-        &form.username,
-        &form.password,
+        &user,
+        version,
+        hashed_password,
+        None,
     )
     .await?;
 
@@ -222,7 +228,9 @@ pub(crate) async fn post(
     let next = mas_router::AccountVerifyEmail::new(verification.email.id)
         .and_maybe(query.post_auth_action);
 
-    let session = start_session(&mut txn, &mut rng, &clock, user).await?;
+    let mut session = start_session(&mut txn, &mut rng, &clock, user).await?;
+    authenticate_session_with_password(&mut txn, &mut rng, &clock, &mut session, &user_password)
+        .await?;
 
     txn.commit().await?;
 

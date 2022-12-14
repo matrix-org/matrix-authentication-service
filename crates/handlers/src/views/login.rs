@@ -21,15 +21,25 @@ use mas_axum_utils::{
     csrf::{CsrfExt, CsrfToken, ProtectedForm},
     FancyError, SessionInfoExt,
 };
+use mas_data_model::BrowserSession;
 use mas_keystore::Encrypter;
-use mas_storage::user::{login, LoginError};
+use mas_storage::{
+    user::{
+        add_user_password, authenticate_session_with_password, lookup_user_by_username,
+        lookup_user_password, start_session,
+    },
+    Clock,
+};
 use mas_templates::{
     FieldError, FormError, LoginContext, LoginFormField, TemplateContext, Templates, ToFormState,
 };
+use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
 use sqlx::{PgConnection, PgPool};
+use zeroize::Zeroizing;
 
 use super::shared::OptionalPostAuthAction;
+use crate::passwords::PasswordManager;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub(crate) struct LoginForm {
@@ -74,6 +84,7 @@ pub(crate) async fn get(
 }
 
 pub(crate) async fn post(
+    State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
     State(pool): State<PgPool>,
     Query(query): Query<OptionalPostAuthAction>,
@@ -118,19 +129,25 @@ pub(crate) async fn post(
         return Ok((cookie_jar, Html(content)).into_response());
     }
 
-    match login(&mut conn, &mut rng, &clock, &form.username, &form.password).await {
+    lookup_user_by_username(&mut conn, &form.username).await?;
+
+    match login(
+        password_manager,
+        &mut conn,
+        rng,
+        &clock,
+        &form.username,
+        &form.password,
+    )
+    .await
+    {
         Ok(session_info) => {
             let cookie_jar = cookie_jar.set_session(&session_info);
             let reply = query.go_next();
             Ok((cookie_jar, reply).into_response())
         }
         Err(e) => {
-            let state = match e {
-                LoginError::NotFound { .. } | LoginError::Authentication { .. } => {
-                    state.with_error_on_form(FormError::InvalidCredentials)
-                }
-                LoginError::Other(_) => state.with_error_on_form(FormError::Internal),
-            };
+            let state = state.with_error_on_form(e);
 
             let content = render(
                 LoginContext::default().with_form_state(state),
@@ -144,6 +161,71 @@ pub(crate) async fn post(
             Ok((cookie_jar, Html(content)).into_response())
         }
     }
+}
+
+// TODO: move that logic elsewhere?
+async fn login(
+    password_manager: PasswordManager,
+    conn: &mut PgConnection,
+    mut rng: impl Rng + CryptoRng + Send,
+    clock: &Clock,
+    username: &str,
+    password: &str,
+) -> Result<BrowserSession, FormError> {
+    // XXX: we're loosing the error context here
+    // First, lookup the user
+    let user = lookup_user_by_username(&mut *conn, username)
+        .await
+        .map_err(|_e| FormError::Internal)?
+        .ok_or(FormError::InvalidCredentials)?;
+
+    // And its password
+    let user_password = lookup_user_password(&mut *conn, &user)
+        .await
+        .map_err(|_e| FormError::Internal)?
+        .ok_or(FormError::InvalidCredentials)?;
+
+    let password = Zeroizing::new(password.as_bytes().to_vec());
+
+    // Verify the password, and upgrade it on-the-fly if needed
+    let new_password_hash = password_manager
+        .verify_and_upgrade(
+            &mut rng,
+            user_password.version,
+            password,
+            user_password.hashed_password.clone(),
+        )
+        .await
+        .map_err(|_| FormError::InvalidCredentials)?;
+
+    let user_password = if let Some((version, new_password_hash)) = new_password_hash {
+        // Save the upgraded password
+        add_user_password(
+            &mut *conn,
+            &mut rng,
+            clock,
+            &user,
+            version,
+            new_password_hash,
+            Some(user_password),
+        )
+        .await
+        .map_err(|_| FormError::Internal)?
+    } else {
+        user_password
+    };
+
+    // Start a new session
+    let mut user_session = start_session(&mut *conn, &mut rng, clock, user)
+        .await
+        .map_err(|_| FormError::Internal)?;
+
+    // And mark it as authenticated by the password
+    authenticate_session_with_password(&mut *conn, rng, clock, &mut user_session, &user_password)
+        .await
+        .map_err(|_| FormError::Internal)?;
+
+    Ok(user_session)
 }
 
 async fn render(
