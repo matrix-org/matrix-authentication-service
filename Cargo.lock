@@ -2701,7 +2701,6 @@ dependencies = [
  "camino",
  "clap",
  "dotenv",
- "futures-util",
  "hyper",
  "indoc",
  "itertools",
