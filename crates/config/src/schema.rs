@@ -40,3 +40,12 @@ pub fn hostname(_gen: &mut SchemaGenerator) -> Schema {
         ..SchemaObject::default()
     })
 }
+
+/// An email address
+pub fn mailbox(_gen: &mut SchemaGenerator) -> Schema {
+    Schema::Object(SchemaObject {
+        instance_type: Some(InstanceType::String.into()),
+        format: Some("email".to_owned()),
+        ..SchemaObject::default()
+    })
+}

@@ -6,8 +6,8 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-tokio = { version = "1.23.0", features = [] }
-tracing = { version = "0.1.37", features = ["log"] }
+tokio = { version = "1.23.0", features = ["fs", "rt"] }
+tracing = { version = "0.1.37" }
 async-trait = "0.1.59"
 
 thiserror = "1.0.37"
@@ -23,7 +23,6 @@ url = { version = "2.3.1", features = ["serde"] }
 serde = { version = "1.0.150", features = ["derive"] }
 serde_with = { version = "2.1.0", features = ["hex", "chrono"] }
 serde_json = "1.0.89"
-sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres"] }
 
 pem-rfc7468 = "0.6.0"
 rustls-pemfile = "1.0.1"

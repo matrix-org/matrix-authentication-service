@@ -214,7 +214,7 @@ impl ConfigurationSection<'_> for SecretsConfig {
         };
 
         Ok(Self {
-            encryption: rand::random(),
+            encryption: rng.gen(),
             keys: vec![rsa_key, ec_p256_key, ec_p384_key, ec_k256_key],
         })
     }

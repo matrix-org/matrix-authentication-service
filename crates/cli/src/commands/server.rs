@@ -28,7 +28,10 @@ use mas_templates::Templates;
 use tokio::signal::unix::SignalKind;
 use tracing::{error, info, log::warn};
 
-use crate::util::{mailer_from_config, password_manager_from_config, policy_factory_from_config};
+use crate::util::{
+    database_from_config, mailer_from_config, password_manager_from_config,
+    policy_factory_from_config, templates_from_config,
+};
 
 #[derive(Parser, Debug, Default)]
 pub(super) struct Options {
@@ -105,7 +108,7 @@ impl Options {
         let config: RootConfig = root.load_config()?;
 
         // Connect to the database
-        let pool = config.database.connect().await?;
+        let pool = database_from_config(&config.database).await?;
 
         if self.migrate {
             info!("Running pending migrations");
@@ -120,7 +123,6 @@ impl Options {
         queue.recuring(Duration::from_secs(15), mas_tasks::cleanup_expired(&pool));
         queue.start();
 
-        // TODO: task queue, key store, encrypter, url builder, http client
         // Initialize the key store
         let key_store = config
             .secrets
@@ -138,9 +140,7 @@ impl Options {
         let url_builder = UrlBuilder::new(config.http.public_base.clone());
 
         // Load and compile the templates
-        let templates = Templates::load(config.templates.path.clone(), url_builder.clone())
-            .await
-            .context("could not load templates")?;
+        let templates = templates_from_config(&config.templates, &url_builder).await?;
 
         let mailer = mailer_from_config(&config.email, &templates).await?;
         mailer.test_connection().await?;

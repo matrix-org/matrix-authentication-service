@@ -17,6 +17,8 @@ use clap::Parser;
 use mas_config::DatabaseConfig;
 use mas_storage::MIGRATOR;
 
+use crate::util::database_from_config;
+
 #[derive(Parser, Debug)]
 pub(super) struct Options {
     #[command(subcommand)]
@@ -32,7 +34,7 @@ enum Subcommand {
 impl Options {
     pub async fn run(&self, root: &super::Options) -> anyhow::Result<()> {
         let config: DatabaseConfig = root.load_config()?;
-        let pool = config.connect().await?;
+        let pool = database_from_config(&config).await?;
 
         // Run pending migrations
         MIGRATOR

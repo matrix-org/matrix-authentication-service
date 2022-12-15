@@ -32,7 +32,7 @@ mod templates;
 pub use self::{
     clients::{ClientAuthMethodConfig, ClientConfig, ClientsConfig},
     csrf::CsrfConfig,
-    database::DatabaseConfig,
+    database::{ConnectConfig as DatabaseConnectConfig, DatabaseConfig},
     email::{EmailConfig, EmailSmtpMode, EmailTransportConfig},
     http::{
         BindConfig as HttpBindConfig, HttpConfig, ListenerConfig as HttpListenerConfig,
