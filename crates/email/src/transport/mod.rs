@@ -26,6 +26,7 @@ use lettre::{
     AsyncTransport, Tokio1Executor,
 };
 use mas_http::ClientInitError;
+use thiserror::Error;
 
 pub mod aws_ses;
 
@@ -119,7 +120,7 @@ impl Transport {
     /// # Errors
     ///
     /// Will return `Err` if the connection test failed
-    pub async fn test_connection(&self) -> anyhow::Result<()> {
+    pub async fn test_connection(&self) -> Result<(), Error> {
         match self.inner.as_ref() {
             TransportInner::Smtp(t) => {
                 t.test_connection().await?;
@@ -138,10 +139,18 @@ impl Default for TransportInner {
     }
 }
 
+#[derive(Debug, Error)]
+#[error(transparent)]
+pub enum Error {
+    Smtp(#[from] lettre::transport::smtp::Error),
+    Sendmail(#[from] lettre::transport::sendmail::Error),
+    AwsSes(#[from] self::aws_ses::Error),
+}
+
 #[async_trait]
 impl AsyncTransport for Transport {
     type Ok = ();
-    type Error = anyhow::Error;
+    type Error = Error;
 
     async fn send_raw(&self, envelope: &Envelope, email: &[u8]) -> Result<Self::Ok, Self::Error> {
         match self.inner.as_ref() {
