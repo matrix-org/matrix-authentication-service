@@ -372,8 +372,8 @@ async fn test_state(pool: PgPool) -> Result<AppState, anyhow::Error> {
     let password_manager = PasswordManager::new([(1, Hasher::argon2id(None))])?;
 
     let transport = MailTransport::blackhole();
-    let mailbox = "server@example.com".parse()?;
-    let mailer = Mailer::new(&templates, &transport, &mailbox, &mailbox);
+    let mailbox: lettre::message::Mailbox = "server@example.com".parse()?;
+    let mailer = Mailer::new(templates.clone(), transport, mailbox.clone(), mailbox);
 
     let homeserver = MatrixHomeserver::new("example.com".to_owned());
 

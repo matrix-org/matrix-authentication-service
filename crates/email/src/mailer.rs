@@ -35,16 +35,16 @@ impl Mailer {
     /// Constructs a new [`Mailer`]
     #[must_use]
     pub fn new(
-        templates: &Templates,
-        transport: &MailTransport,
-        from: &Mailbox,
-        reply_to: &Mailbox,
+        templates: Templates,
+        transport: MailTransport,
+        from: Mailbox,
+        reply_to: Mailbox,
     ) -> Self {
         Self {
-            templates: templates.clone(),
-            transport: transport.clone(),
-            from: from.clone(),
-            reply_to: reply_to.clone(),
+            templates,
+            transport,
+            from,
+            reply_to,
         }
     }
 
@@ -109,5 +109,14 @@ impl Mailer {
         let message = self.prepare_verification_email(to, context).await?;
         self.transport.send(message).await?;
         Ok(())
+    }
+
+    /// Test the connetion to the mail server
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the connection failed
+    pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
+        self.transport.test_connection().await
     }
 }

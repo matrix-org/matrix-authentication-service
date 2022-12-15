@@ -14,10 +14,7 @@
 
 use std::num::NonZeroU16;
 
-use anyhow::Context;
 use async_trait::async_trait;
-use lettre::{message::Mailbox, Address};
-use mas_email::MailTransport;
 use rand::Rng;
 use schemars::{
     gen::SchemaGenerator,
@@ -59,20 +56,12 @@ pub struct Credentials {
 pub enum EmailSmtpMode {
     /// Plain text
     Plain,
+
     /// StartTLS (starts as plain text then upgrade to TLS)
     StartTls,
+
     /// TLS
     Tls,
-}
-
-impl From<&EmailSmtpMode> for mas_email::SmtpMode {
-    fn from(value: &EmailSmtpMode) -> Self {
-        match value {
-            EmailSmtpMode::Plain => Self::Plain,
-            EmailSmtpMode::StartTls => Self::StartTls,
-            EmailSmtpMode::Tls => Self::Tls,
-        }
-    }
 }
 
 /// What backend should be used when sending emails
@@ -118,9 +107,8 @@ impl Default for EmailTransportConfig {
     }
 }
 
-fn default_email() -> Mailbox {
-    let address = Address::new("root", "localhost").unwrap();
-    Mailbox::new(Some("Authentication Service".to_owned()), address)
+fn default_email() -> String {
+    r#""Authentication Service" <root@localhost>"#.to_owned()
 }
 
 fn default_sendmail_command() -> String {
@@ -133,12 +121,12 @@ pub struct EmailConfig {
     /// Email address to use as From when sending emails
     #[serde(default = "default_email")]
     #[schemars(schema_with = "mailbox_schema")]
-    pub from: Mailbox,
+    pub from: String,
 
     /// Email address to use as Reply-To when sending emails
     #[serde(default = "default_email")]
     #[schemars(schema_with = "mailbox_schema")]
-    pub reply_to: Mailbox,
+    pub reply_to: String,
 
     /// What backend should be used when sending emails
     #[serde(flatten, default)]
@@ -170,32 +158,5 @@ impl ConfigurationSection<'_> for EmailConfig {
 
     fn test() -> Self {
         Self::default()
-    }
-}
-
-impl EmailTransportConfig {
-    /// Create a [`lettre::Transport`] out of this config
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the transport could not be created
-    pub async fn to_transport(&self) -> Result<MailTransport, anyhow::Error> {
-        match self {
-            Self::Blackhole => Ok(MailTransport::blackhole()),
-            Self::Smtp {
-                mode,
-                hostname,
-                credentials,
-                port,
-            } => {
-                let credentials = credentials
-                    .clone()
-                    .map(|c| mas_email::SmtpCredentials::new(c.username, c.password));
-                MailTransport::smtp(mode.into(), hostname, port.as_ref().copied(), credentials)
-                    .context("failed to build SMTP transport")
-            }
-            EmailTransportConfig::Sendmail { command } => Ok(MailTransport::sendmail(command)),
-            EmailTransportConfig::AwsSes => Ok(MailTransport::aws_ses().await?),
-        }
     }
 }
