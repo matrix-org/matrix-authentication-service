@@ -19,6 +19,7 @@ use aws_config::provider_config::ProviderConfig;
 use aws_sdk_sesv2::{
     middleware::DefaultMiddleware,
     model::{EmailContent, RawMessage},
+    output::SendEmailOutput,
     types::Blob,
     Client,
 };
@@ -26,6 +27,8 @@ use aws_smithy_async::rt::sleep::TokioSleep;
 use aws_smithy_client::erase::{DynConnector, DynMiddleware};
 use lettre::{address::Envelope, AsyncTransport};
 use mas_http::{otel::TraceLayer, ClientInitError};
+
+pub type Error = aws_smithy_client::SdkError<aws_sdk_sesv2::error::SendEmailError>;
 
 /// An asynchronous email transport that sends email via the AWS Simple Email
 /// Service v2 API
@@ -76,17 +79,17 @@ impl Transport {
 
 #[async_trait]
 impl AsyncTransport for Transport {
-    type Ok = ();
-    type Error = anyhow::Error;
+    type Ok = SendEmailOutput;
+    type Error = Error;
 
     async fn send_raw(&self, _envelope: &Envelope, email: &[u8]) -> Result<Self::Ok, Self::Error> {
         let email = Blob::new(email);
         let email = RawMessage::builder().data(email).build();
         let email = EmailContent::builder().raw(email).build();
 
-        let req = self.client.send_email().content(email);
-        req.send().await?;
+        let request = self.client.send_email().content(email);
+        let response = request.send().await?;
 
-        Ok(())
+        Ok(response)
     }
 }

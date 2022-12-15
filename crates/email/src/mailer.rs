@@ -19,6 +19,7 @@ use lettre::{
     AsyncTransport, Message,
 };
 use mas_templates::{EmailVerificationContext, Templates};
+use thiserror::Error;
 
 use crate::MailTransport;
 
@@ -29,6 +30,14 @@ pub struct Mailer {
     transport: MailTransport,
     from: Mailbox,
     reply_to: Mailbox,
+}
+
+#[derive(Debug, Error)]
+#[error(transparent)]
+pub enum Error {
+    Transport(#[from] crate::transport::Error),
+    Templates(#[from] mas_templates::TemplateError),
+    Content(#[from] lettre::error::Error),
 }
 
 impl Mailer {
@@ -58,7 +67,7 @@ impl Mailer {
         &self,
         to: Mailbox,
         context: &EmailVerificationContext,
-    ) -> anyhow::Result<Message> {
+    ) -> Result<Message, Error> {
         let plain = self
             .templates
             .render_email_verification_txt(context)
@@ -105,7 +114,7 @@ impl Mailer {
         &self,
         to: Mailbox,
         context: &EmailVerificationContext,
-    ) -> anyhow::Result<()> {
+    ) -> Result<(), Error> {
         let message = self.prepare_verification_email(to, context).await?;
         self.transport.send(message).await?;
         Ok(())
@@ -116,7 +125,7 @@ impl Mailer {
     /// # Errors
     ///
     /// Returns an error if the connection failed
-    pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
+    pub async fn test_connection(&self) -> Result<(), crate::transport::Error> {
         self.transport.test_connection().await
     }
 }
