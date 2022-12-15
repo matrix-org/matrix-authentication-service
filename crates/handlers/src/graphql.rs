@@ -12,28 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{borrow::Cow, str::FromStr};
-
 use async_graphql::{
     extensions::{ApolloTracing, Tracing},
-    http::{
-        playground_source, GraphQLPlaygroundConfig, MultipartOptions, WebSocketProtocols,
-        WsMessage, ALL_WEBSOCKET_PROTOCOLS,
-    },
-    Data,
+    http::{playground_source, GraphQLPlaygroundConfig, MultipartOptions},
 };
 use axum::{
-    extract::{
-        ws::{CloseFrame, Message},
-        BodyStream, RawQuery, State, WebSocketUpgrade,
-    },
-    response::{Html, IntoResponse, Response},
+    extract::{BodyStream, RawQuery, State},
+    response::{Html, IntoResponse},
     Json, TypedHeader,
 };
 use axum_extra::extract::PrivateCookieJar;
-use futures_util::{SinkExt, StreamExt, TryStreamExt};
-use headers::{ContentType, Header, HeaderValue};
-use hyper::header::{CACHE_CONTROL, SEC_WEBSOCKET_PROTOCOL};
+use futures_util::{StreamExt, TryStreamExt};
+use headers::{ContentType, HeaderValue};
+use hyper::header::CACHE_CONTROL;
 use mas_axum_utils::{FancyError, SessionInfoExt};
 use mas_graphql::Schema;
 use mas_keystore::Encrypter;
@@ -67,6 +58,7 @@ fn span_for_graphql_request(request: &async_graphql::Request) -> tracing::Span {
 }
 
 pub async fn post(
+    State(pool): State<PgPool>,
     State(schema): State<Schema>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     content_type: Option<TypedHeader<ContentType>>,
@@ -75,15 +67,19 @@ pub async fn post(
     let content_type = content_type.map(|TypedHeader(h)| h.to_string());
 
     let (session_info, _cookie_jar) = cookie_jar.session_info();
+    let maybe_session = session_info.load_session(&pool).await?;
 
-    let request = async_graphql::http::receive_batch_body(
+    let mut request = async_graphql::http::receive_batch_body(
         content_type,
         body.map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
             .into_async_read(),
         MultipartOptions::default(),
     )
-    .await? // XXX: this should probably return another error response?
-    .data(session_info);
+    .await?; // XXX: this should probably return another error response?
+
+    if let Some(session) = maybe_session {
+        request = request.data(session);
+    }
 
     let response = match request {
         async_graphql::BatchRequest::Single(request) => {
@@ -114,13 +110,19 @@ pub async fn post(
 }
 
 pub async fn get(
+    State(pool): State<PgPool>,
     State(schema): State<Schema>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     RawQuery(query): RawQuery,
 ) -> Result<impl IntoResponse, FancyError> {
     let (session_info, _cookie_jar) = cookie_jar.session_info();
-    let request =
-        async_graphql::http::parse_query_string(&query.unwrap_or_default())?.data(session_info);
+    let maybe_session = session_info.load_session(&pool).await?;
+
+    let mut request = async_graphql::http::parse_query_string(&query.unwrap_or_default())?;
+
+    if let Some(session) = maybe_session {
+        request = request.data(session);
+    }
 
     let span = span_for_graphql_request(&request);
     let response = schema.execute(request).instrument(span).await;
@@ -136,78 +138,8 @@ pub async fn get(
     Ok((headers, cache_control, Json(response)))
 }
 
-pub struct SecWebsocketProtocol(WebSocketProtocols);
-
-impl Header for SecWebsocketProtocol {
-    fn name() -> &'static headers::HeaderName {
-        &SEC_WEBSOCKET_PROTOCOL
-    }
-
-    fn decode<'i, I>(values: &mut I) -> Result<Self, headers::Error>
-    where
-        Self: Sized,
-        I: Iterator<Item = &'i HeaderValue>,
-    {
-        values
-            .filter_map(|value| value.to_str().ok())
-            .flat_map(|value| value.split(','))
-            .find_map(|p| WebSocketProtocols::from_str(p.trim()).ok())
-            .map(Self)
-            .ok_or_else(headers::Error::invalid)
-    }
-
-    fn encode<E: Extend<HeaderValue>>(&self, values: &mut E) {
-        if let Ok(v) = HeaderValue::from_str(self.0.sec_websocket_protocol()) {
-            values.extend(std::iter::once(v));
-        }
-    }
-}
-
-pub async fn ws(
-    State(schema): State<Schema>,
-    cookie_jar: PrivateCookieJar<Encrypter>,
-    TypedHeader(SecWebsocketProtocol(protocol)): TypedHeader<SecWebsocketProtocol>,
-    websocket: WebSocketUpgrade,
-) -> Response {
-    let (session_info, _cookie_jar) = cookie_jar.session_info();
-    websocket
-        .protocols(ALL_WEBSOCKET_PROTOCOLS)
-        .on_upgrade(move |ws| async move {
-            let (mut sink, stream) = ws.split();
-            let stream = stream
-                .take_while(|res| std::future::ready(res.is_ok()))
-                .map(Result::unwrap)
-                .filter_map(|msg| {
-                    if let Message::Text(_) | Message::Binary(_) = msg {
-                        std::future::ready(Some(msg.into_data()))
-                    } else {
-                        std::future::ready(None)
-                    }
-                });
-
-            let mut data = Data::default();
-            data.insert(session_info);
-
-            let mut stream = async_graphql::http::WebSocket::new(schema.clone(), stream, protocol)
-                .connection_data(data)
-                .map(|msg| match msg {
-                    WsMessage::Text(text) => Message::Text(text),
-                    WsMessage::Close(code, status) => Message::Close(Some(CloseFrame {
-                        code,
-                        reason: Cow::from(status),
-                    })),
-                });
-
-            while let Some(item) = stream.next().await {
-                let _res = sink.send(item).await;
-            }
-        })
-}
-
 pub async fn playground() -> impl IntoResponse {
     Html(playground_source(
-        GraphQLPlaygroundConfig::new("/graphql")
-            .subscription_endpoint("/graphql/ws")
-            .with_setting("request.credentials", "include"),
+        GraphQLPlaygroundConfig::new("/graphql").with_setting("request.credentials", "include"),
     ))
 }

@@ -20,13 +20,17 @@
     clippy::future_not_send
 )]
 #![warn(clippy::pedantic)]
-#![allow(clippy::module_name_repetitions, clippy::missing_errors_doc)]
+#![allow(
+    clippy::module_name_repetitions,
+    clippy::missing_errors_doc,
+    clippy::unused_async
+)]
 
 use async_graphql::{
     connection::{query, Connection, Edge, OpaqueCursor},
     Context, Description, EmptyMutation, EmptySubscription, ID,
 };
-use mas_axum_utils::SessionInfo;
+use model::CreationEvent;
 use sqlx::PgPool;
 
 use self::model::{
@@ -43,8 +47,7 @@ pub type SchemaBuilder = async_graphql::SchemaBuilder<RootQuery, EmptyMutation, 
 pub fn schema_builder() -> SchemaBuilder {
     async_graphql::Schema::build(RootQuery::new(), EmptyMutation, EmptySubscription)
         .register_output_type::<Node>()
-    // TODO: ordering of interface implementations is not stable
-    //.register_output_type::<CreationEvent>()
+        .register_output_type::<CreationEvent>()
 }
 
 /// The query root of the GraphQL interface.
@@ -67,21 +70,13 @@ impl RootQuery {
         &self,
         ctx: &Context<'_>,
     ) -> Result<Option<BrowserSession>, async_graphql::Error> {
-        let database = ctx.data::<PgPool>()?;
-        let session_info = ctx.data::<SessionInfo>()?;
-        let mut conn = database.acquire().await?;
-        let session = session_info.load_session(&mut conn).await?;
-
+        let session = ctx.data_opt::<mas_data_model::BrowserSession>().cloned();
         Ok(session.map(BrowserSession::from))
     }
 
     /// Get the current logged in user
     async fn current_user(&self, ctx: &Context<'_>) -> Result<Option<User>, async_graphql::Error> {
-        let database = ctx.data::<PgPool>()?;
-        let session_info = ctx.data::<SessionInfo>()?;
-        let mut conn = database.acquire().await?;
-        let session = session_info.load_session(&mut conn).await?;
-
+        let session = ctx.data_opt::<mas_data_model::BrowserSession>().cloned();
         Ok(session.map(User::from))
     }
 
@@ -103,10 +98,7 @@ impl RootQuery {
     /// Fetch a user by its ID.
     async fn user(&self, ctx: &Context<'_>, id: ID) -> Result<Option<User>, async_graphql::Error> {
         let id = NodeType::User.extract_ulid(&id)?;
-        let database = ctx.data::<PgPool>()?;
-        let session_info = ctx.data::<SessionInfo>()?;
-        let mut conn = database.acquire().await?;
-        let session = session_info.load_session(&mut conn).await?;
+        let session = ctx.data_opt::<mas_data_model::BrowserSession>().cloned();
 
         let Some(session) = session else { return Ok(None) };
         let current_user = session.user;
@@ -125,10 +117,9 @@ impl RootQuery {
         id: ID,
     ) -> Result<Option<BrowserSession>, async_graphql::Error> {
         let id = NodeType::BrowserSession.extract_ulid(&id)?;
+        let session = ctx.data_opt::<mas_data_model::BrowserSession>().cloned();
         let database = ctx.data::<PgPool>()?;
-        let session_info = ctx.data::<SessionInfo>()?;
         let mut conn = database.acquire().await?;
-        let session = session_info.load_session(&mut conn).await?;
 
         let Some(session) = session else { return Ok(None) };
         let current_user = session.user;
@@ -153,10 +144,9 @@ impl RootQuery {
         id: ID,
     ) -> Result<Option<UserEmail>, async_graphql::Error> {
         let id = NodeType::UserEmail.extract_ulid(&id)?;
+        let session = ctx.data_opt::<mas_data_model::BrowserSession>().cloned();
         let database = ctx.data::<PgPool>()?;
-        let session_info = ctx.data::<SessionInfo>()?;
         let mut conn = database.acquire().await?;
-        let session = session_info.load_session(&mut conn).await?;
 
         let Some(session) = session else { return Ok(None) };
         let current_user = session.user;
@@ -174,10 +164,9 @@ impl RootQuery {
         id: ID,
     ) -> Result<Option<UpstreamOAuth2Link>, async_graphql::Error> {
         let id = NodeType::UpstreamOAuth2Link.extract_ulid(&id)?;
+        let session = ctx.data_opt::<mas_data_model::BrowserSession>().cloned();
         let database = ctx.data::<PgPool>()?;
-        let session_info = ctx.data::<SessionInfo>()?;
         let mut conn = database.acquire().await?;
-        let session = session_info.load_session(&mut conn).await?;
 
         let Some(session) = session else { return Ok(None) };
         let current_user = session.user;

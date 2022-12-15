@@ -33,6 +33,7 @@ pub use self::{
     users::{User, UserEmail},
 };
 
+/// An object with a creation date.
 #[derive(Interface)]
 #[graphql(field(
     name = "created_at",
