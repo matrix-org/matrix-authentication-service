@@ -16,7 +16,6 @@ use std::{sync::Arc, time::Duration};
 
 use anyhow::Context;
 use clap::Parser;
-use futures_util::stream::{StreamExt, TryStreamExt};
 use itertools::Itertools;
 use mas_config::RootConfig;
 use mas_handlers::{AppState, HttpClientFactory, MatrixHomeserver};
@@ -24,13 +23,12 @@ use mas_listener::{server::Server, shutdown::ShutdownStream};
 use mas_router::UrlBuilder;
 use mas_storage::MIGRATOR;
 use mas_tasks::TaskQueue;
-use mas_templates::Templates;
 use tokio::signal::unix::SignalKind;
-use tracing::{error, info, log::warn};
+use tracing::{info, warn};
 
 use crate::util::{
     database_from_config, mailer_from_config, password_manager_from_config,
-    policy_factory_from_config, templates_from_config,
+    policy_factory_from_config, templates_from_config, watch_templates,
 };
 
 #[derive(Parser, Debug, Default)]
@@ -44,70 +42,13 @@ pub(super) struct Options {
     watch: bool,
 }
 
-/// Watch for changes in the templates folders
-async fn watch_templates(
-    client: &watchman_client::Client,
-    templates: &Templates,
-) -> anyhow::Result<()> {
-    use watchman_client::{
-        fields::NameOnly,
-        pdu::{QueryResult, SubscribeRequest},
-        CanonicalPath, SubscriptionData,
-    };
-
-    let templates = templates.clone();
-
-    // Find which root we're supposed to watch
-    let root = templates.watch_root();
-
-    // For each root, create a subscription
-    let resolved = client
-        .resolve_root(CanonicalPath::canonicalize(root)?)
-        .await?;
-
-    // TODO: we could subscribe to less, properly filter here
-    let (subscription, _) = client
-        .subscribe::<NameOnly>(&resolved, SubscribeRequest::default())
-        .await?;
-
-    // Create a stream out of that subscription
-    let fut = futures_util::stream::try_unfold(subscription, |mut sub| async move {
-        let next = sub.next().await?;
-        anyhow::Ok(Some((next, sub)))
-    })
-    .try_filter_map(|event| async move {
-        match event {
-            SubscriptionData::FilesChanged(QueryResult {
-                files: Some(files), ..
-            }) => {
-                let files: Vec<_> = files.into_iter().map(|f| f.name.into_inner()).collect();
-                Ok(Some(files))
-            }
-            _ => Ok(None),
-        }
-    })
-    .for_each(move |files| {
-        let templates = templates.clone();
-        async move {
-            info!(?files, "Files changed, reloading templates");
-
-            templates.clone().reload().await.unwrap_or_else(|err| {
-                error!(?err, "Error while reloading templates");
-            });
-        }
-    });
-
-    tokio::spawn(fut);
-
-    Ok(())
-}
-
 impl Options {
     #[allow(clippy::too_many_lines)]
     pub async fn run(&self, root: &super::Options) -> anyhow::Result<()> {
         let config: RootConfig = root.load_config()?;
 
         // Connect to the database
+        info!("Conntecting to the database");
         let pool = database_from_config(&config.database).await?;
 
         if self.migrate {
@@ -156,14 +97,7 @@ impl Options {
 
         // Watch for changes in templates if the --watch flag is present
         if self.watch {
-            let client = watchman_client::Connector::new()
-                .connect()
-                .await
-                .context("could not connect to watchman")?;
-
-            watch_templates(&client, &templates)
-                .await
-                .context("could not watch for templates changes")?;
+            watch_templates(&templates).await?;
         }
 
         let graphql_schema = mas_handlers::graphql_schema(&pool);
@@ -209,22 +143,18 @@ impl Options {
                 );
 
                 // Display some informations about where we'll be serving connections
-                let is_tls = config.tls.is_some();
-                let addresses: Vec<String> = listeners
+                let proto = if config.tls.is_some() { "https" } else { "http" };
+                let addresses= listeners
                     .iter()
                     .map(|listener| {
-                        let addr = listener.local_addr();
-                        let proto = if is_tls { "https" } else { "http" };
-                        if let Ok(addr) = addr {
+                        if let Ok(addr) = listener.local_addr() {
                             format!("{proto}://{addr:?}")
                         } else {
-                            warn!(
-                            "Could not get local address for listener, something might be wrong!"
-                        );
+                            warn!("Could not get local address for listener, something might be wrong!");
                             format!("{proto}://???")
                         }
                     })
-                    .collect();
+                    .join(", ");
 
                 let additional = if config.proxy_protocol {
                     "(with Proxy Protocol)"
@@ -233,7 +163,7 @@ impl Options {
                 };
 
                 info!(
-                    "Listening on {addresses:?} with resources {resources:?} {additional}",
+                    "Listening on {addresses} with resources {resources:?} {additional}",
                     resources = &config.resources
                 );
 
