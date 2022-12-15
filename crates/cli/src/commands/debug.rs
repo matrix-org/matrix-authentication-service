@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use anyhow::Context;
 use clap::Parser;
 use hyper::{Response, Uri};
 use mas_config::PolicyConfig;
 use mas_handlers::HttpClientFactory;
 use mas_http::HttpServiceExt;
-use mas_policy::PolicyFactory;
 use tokio::io::AsyncWriteExt;
 use tower::{Service, ServiceExt};
 use tracing::info;
+
+use crate::util::policy_factory_from_config;
 
 #[derive(Parser, Debug)]
 pub(super) struct Options {
@@ -124,19 +124,7 @@ impl Options {
             SC::Policy => {
                 let config: PolicyConfig = root.load_config()?;
                 info!("Loading and compiling the policy module");
-                let policy_file = tokio::fs::File::open(&config.wasm_module)
-                    .await
-                    .context("failed to open OPA WASM policy file")?;
-
-                let policy_factory = PolicyFactory::load(
-                    policy_file,
-                    config.data.clone().unwrap_or_default(),
-                    config.register_entrypoint.clone(),
-                    config.client_registration_entrypoint.clone(),
-                    config.authorization_grant_entrypoint.clone(),
-                )
-                .await
-                .context("failed to load the policy")?;
+                let policy_factory = policy_factory_from_config(&config).await?;
 
                 let _instance = policy_factory.instantiate().await?;
                 Ok(())

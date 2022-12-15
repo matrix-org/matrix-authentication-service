@@ -19,10 +19,8 @@ use clap::Parser;
 use futures_util::stream::{StreamExt, TryStreamExt};
 use itertools::Itertools;
 use mas_config::RootConfig;
-use mas_email::Mailer;
 use mas_handlers::{AppState, HttpClientFactory, MatrixHomeserver};
 use mas_listener::{server::Server, shutdown::ShutdownStream};
-use mas_policy::PolicyFactory;
 use mas_router::UrlBuilder;
 use mas_storage::MIGRATOR;
 use mas_tasks::TaskQueue;
@@ -30,7 +28,7 @@ use mas_templates::Templates;
 use tokio::signal::unix::SignalKind;
 use tracing::{error, info, log::warn};
 
-use crate::util::password_manager_from_config;
+use crate::util::{mailer_from_config, password_manager_from_config, policy_factory_from_config};
 
 #[derive(Parser, Debug, Default)]
 pub(super) struct Options {
@@ -106,10 +104,6 @@ impl Options {
     pub async fn run(&self, root: &super::Options) -> anyhow::Result<()> {
         let config: RootConfig = root.load_config()?;
 
-        // Connect to the mail server
-        let mail_transport = config.email.transport.to_transport().await?;
-        mail_transport.test_connection().await?;
-
         // Connect to the database
         let pool = config.database.connect().await?;
 
@@ -126,6 +120,7 @@ impl Options {
         queue.recuring(Duration::from_secs(15), mas_tasks::cleanup_expired(&pool));
         queue.start();
 
+        // TODO: task queue, key store, encrypter, url builder, http client
         // Initialize the key store
         let key_store = config
             .secrets
@@ -137,19 +132,7 @@ impl Options {
 
         // Load and compile the WASM policies (and fallback to the default embedded one)
         info!("Loading and compiling the policy module");
-        let policy_file = tokio::fs::File::open(&config.policy.wasm_module)
-            .await
-            .context("failed to open OPA WASM policy file")?;
-
-        let policy_factory = PolicyFactory::load(
-            policy_file,
-            config.policy.data.clone().unwrap_or_default(),
-            config.policy.register_entrypoint.clone(),
-            config.policy.client_registration_entrypoint.clone(),
-            config.policy.authorization_grant_entrypoint.clone(),
-        )
-        .await
-        .context("failed to load the policy")?;
+        let policy_factory = policy_factory_from_config(&config.policy).await?;
         let policy_factory = Arc::new(policy_factory);
 
         let url_builder = UrlBuilder::new(config.http.public_base.clone());
@@ -159,12 +142,8 @@ impl Options {
             .await
             .context("could not load templates")?;
 
-        let mailer = Mailer::new(
-            &templates,
-            &mail_transport,
-            &config.email.from,
-            &config.email.reply_to,
-        );
+        let mailer = mailer_from_config(&config.email, &templates).await?;
+        mailer.test_connection().await?;
 
         let homeserver = MatrixHomeserver::new(config.matrix.homeserver.clone());
 
