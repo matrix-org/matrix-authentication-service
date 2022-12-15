@@ -9,7 +9,7 @@ GRAPHQL_SCHEMA="${BASE_DIR}/frontend/schema.graphql"
 
 set -x
 # XXX: we shouldn't have to specify this feature
-cargo run -p mas-config --features webpki-roots > "${CONFIG_SCHEMA}"
+cargo run -p mas-config > "${CONFIG_SCHEMA}"
 cargo run -p mas-graphql --features webpki-roots > "${GRAPHQL_SCHEMA}"
 
 cd "${BASE_DIR}/frontend"

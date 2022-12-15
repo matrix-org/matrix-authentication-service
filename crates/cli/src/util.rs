@@ -12,12 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::time::Duration;
+
 use anyhow::Context;
-use mas_config::{EmailConfig, EmailSmtpMode, EmailTransportConfig, PasswordsConfig, PolicyConfig};
+use mas_config::{
+    DatabaseConfig, DatabaseConnectConfig, EmailConfig, EmailSmtpMode, EmailTransportConfig,
+    PasswordsConfig, PolicyConfig, TemplatesConfig,
+};
 use mas_email::{MailTransport, Mailer};
 use mas_handlers::passwords::PasswordManager;
 use mas_policy::PolicyFactory;
-use mas_templates::Templates;
+use mas_router::UrlBuilder;
+use mas_templates::{TemplateLoadingError, Templates};
+use sqlx::{
+    postgres::{PgConnectOptions, PgPoolOptions},
+    ConnectOptions, PgPool,
+};
+use tracing::log::LevelFilter;
 
 pub async fn password_manager_from_config(
     config: &PasswordsConfig,
@@ -90,4 +101,70 @@ pub async fn policy_factory_from_config(
     )
     .await
     .context("failed to load the policy")
+}
+
+pub async fn templates_from_config(
+    config: &TemplatesConfig,
+    url_builder: &UrlBuilder,
+) -> Result<Templates, TemplateLoadingError> {
+    Templates::load(config.path.clone(), url_builder.clone()).await
+}
+
+pub async fn database_from_config(config: &DatabaseConfig) -> Result<PgPool, anyhow::Error> {
+    let mut options = match &config.options {
+        DatabaseConnectConfig::Uri { uri } => uri
+            .parse()
+            .context("could not parse database connection string")?,
+        DatabaseConnectConfig::Options {
+            host,
+            port,
+            socket,
+            username,
+            password,
+            database,
+        } => {
+            let mut opts =
+                PgConnectOptions::new().application_name("matrix-authentication-service");
+
+            if let Some(host) = host {
+                opts = opts.host(host);
+            }
+
+            if let Some(port) = port {
+                opts = opts.port(*port);
+            }
+
+            if let Some(socket) = socket {
+                opts = opts.socket(socket);
+            }
+
+            if let Some(username) = username {
+                opts = opts.username(username);
+            }
+
+            if let Some(password) = password {
+                opts = opts.password(password);
+            }
+
+            if let Some(database) = database {
+                opts = opts.database(database);
+            }
+
+            opts
+        }
+    };
+
+    options
+        .log_statements(LevelFilter::Debug)
+        .log_slow_statements(LevelFilter::Warn, Duration::from_millis(100));
+
+    PgPoolOptions::new()
+        .max_connections(config.max_connections.into())
+        .min_connections(config.min_connections)
+        .acquire_timeout(config.connect_timeout)
+        .idle_timeout(config.idle_timeout)
+        .max_lifetime(config.max_lifetime)
+        .connect_with(options)
+        .await
+        .context("could not connect to the database")
 }

@@ -14,18 +14,12 @@
 
 use std::{num::NonZeroU32, time::Duration};
 
-use anyhow::Context;
 use async_trait::async_trait;
 use camino::Utf8PathBuf;
 use rand::Rng;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none};
-use sqlx::{
-    postgres::{PgConnectOptions, PgPool, PgPoolOptions},
-    ConnectOptions,
-};
-use tracing::log::LevelFilter;
 
 use super::ConfigurationSection;
 use crate::schema;
@@ -65,14 +59,17 @@ impl Default for DatabaseConfig {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, JsonSchema, PartialEq)]
+/// Database connection configuration
+#[derive(Debug, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 #[serde(untagged)]
-enum ConnectConfig {
+pub enum ConnectConfig {
+    /// Connect via a full URI
     Uri {
         /// Connection URI
         #[schemars(url, default = "default_connection_string")]
         uri: String,
     },
+    /// Connect via a map of options
     Options {
         /// Name of host to connect to
         #[schemars(schema_with = "schema::hostname")]
@@ -100,57 +97,7 @@ enum ConnectConfig {
         /// The database name
         #[serde(default)]
         database: Option<String>,
-        /* TODO
-         * ssl_mode: PgSslMode,
-         * ssl_root_cert: Option<CertificateInput>, */
     },
-}
-
-impl TryInto<PgConnectOptions> for &ConnectConfig {
-    type Error = sqlx::Error;
-
-    fn try_into(self) -> Result<PgConnectOptions, Self::Error> {
-        match self {
-            ConnectConfig::Uri { uri } => uri.parse(),
-            ConnectConfig::Options {
-                host,
-                port,
-                socket,
-                username,
-                password,
-                database,
-            } => {
-                let mut opts =
-                    PgConnectOptions::new().application_name("matrix-authentication-service");
-
-                if let Some(host) = host {
-                    opts = opts.host(host);
-                }
-
-                if let Some(port) = port {
-                    opts = opts.port(*port);
-                }
-
-                if let Some(socket) = socket {
-                    opts = opts.socket(socket);
-                }
-
-                if let Some(username) = username {
-                    opts = opts.username(username);
-                }
-
-                if let Some(password) = password {
-                    opts = opts.password(password);
-                }
-
-                if let Some(database) = database {
-                    opts = opts.database(database);
-                }
-
-                Ok(opts)
-            }
-        }
-    }
 }
 
 impl Default for ConnectConfig {
@@ -168,57 +115,33 @@ impl Default for ConnectConfig {
 pub struct DatabaseConfig {
     /// Options related to how to connect to the database
     #[serde(default, flatten)]
-    options: ConnectConfig,
+    pub options: ConnectConfig,
 
     /// Set the maximum number of connections the pool should maintain
     #[serde(default = "default_max_connections")]
-    max_connections: NonZeroU32,
+    pub max_connections: NonZeroU32,
 
     /// Set the minimum number of connections the pool should maintain
     #[serde(default)]
-    min_connections: u32,
+    pub min_connections: u32,
 
     /// Set the amount of time to attempt connecting to the database
     #[schemars(with = "u64")]
     #[serde(default = "default_connect_timeout")]
     #[serde_as(as = "serde_with::DurationSeconds<u64>")]
-    connect_timeout: Duration,
+    pub connect_timeout: Duration,
 
     /// Set a maximum idle duration for individual connections
     #[schemars(with = "Option<u64>")]
     #[serde(default = "default_idle_timeout")]
     #[serde_as(as = "Option<serde_with::DurationSeconds<u64>>")]
-    idle_timeout: Option<Duration>,
+    pub idle_timeout: Option<Duration>,
 
     /// Set the maximum lifetime of individual connections
     #[schemars(with = "u64")]
     #[serde(default = "default_max_lifetime")]
     #[serde_as(as = "Option<serde_with::DurationSeconds<u64>>")]
-    max_lifetime: Option<Duration>,
-}
-
-impl DatabaseConfig {
-    /// Connect to the database
-    #[tracing::instrument(err, skip_all)]
-    pub async fn connect(&self) -> anyhow::Result<PgPool> {
-        let mut options: PgConnectOptions = (&self.options)
-            .try_into()
-            .context("invalid database config")?;
-
-        options
-            .log_statements(LevelFilter::Debug)
-            .log_slow_statements(LevelFilter::Warn, Duration::from_millis(100));
-
-        PgPoolOptions::new()
-            .max_connections(self.max_connections.into())
-            .min_connections(self.min_connections)
-            .acquire_timeout(self.connect_timeout)
-            .idle_timeout(self.idle_timeout)
-            .max_lifetime(self.max_lifetime)
-            .connect_with(options)
-            .await
-            .context("could not connect to the database")
-    }
+    pub max_lifetime: Option<Duration>,
 }
 
 #[async_trait]

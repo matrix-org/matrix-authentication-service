@@ -28,7 +28,7 @@ use oauth2_types::scope::Scope;
 use rand::SeedableRng;
 use tracing::{info, warn};
 
-use crate::util::password_manager_from_config;
+use crate::util::{database_from_config, password_manager_from_config};
 
 #[derive(Parser, Debug)]
 pub(super) struct Options {
@@ -197,7 +197,7 @@ impl Options {
                 let database_config: DatabaseConfig = root.load_config()?;
                 let passwords_config: PasswordsConfig = root.load_config()?;
 
-                let pool = database_config.connect().await?;
+                let pool = database_from_config(&database_config).await?;
                 let password_manager = password_manager_from_config(&passwords_config).await?;
 
                 let mut txn = pool.begin().await?;
@@ -228,7 +228,7 @@ impl Options {
 
             SC::VerifyEmail { username, email } => {
                 let config: DatabaseConfig = root.load_config()?;
-                let pool = config.connect().await?;
+                let pool = database_from_config(&config).await?;
                 let mut txn = pool.begin().await?;
 
                 let user = lookup_user_by_username(&mut txn, username)
@@ -247,7 +247,7 @@ impl Options {
 
             SC::ImportClients { truncate } => {
                 let config: RootConfig = root.load_config()?;
-                let pool = config.database.connect().await?;
+                let pool = database_from_config(&config.database).await?;
                 let encrypter = config.secrets.encrypter();
 
                 let mut txn = pool.begin().await?;
@@ -306,7 +306,7 @@ impl Options {
             } => {
                 let config: RootConfig = root.load_config()?;
                 let encrypter = config.secrets.encrypter();
-                let pool = config.database.connect().await?;
+                let pool = database_from_config(&config.database).await?;
                 let url_builder = UrlBuilder::new(config.http.public_base);
                 let mut conn = pool.acquire().await?;
 

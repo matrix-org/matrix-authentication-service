@@ -16,30 +16,10 @@ use std::num::NonZeroU16;
 
 use async_trait::async_trait;
 use rand::Rng;
-use schemars::{
-    gen::SchemaGenerator,
-    schema::{InstanceType, Schema, SchemaObject},
-    JsonSchema,
-};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use super::ConfigurationSection;
-
-fn mailbox_schema(_gen: &mut SchemaGenerator) -> Schema {
-    Schema::Object(SchemaObject {
-        instance_type: Some(InstanceType::String.into()),
-        format: Some("email".to_owned()),
-        ..SchemaObject::default()
-    })
-}
-
-fn hostname_schema(_gen: &mut SchemaGenerator) -> Schema {
-    Schema::Object(SchemaObject {
-        instance_type: Some(InstanceType::String.into()),
-        format: Some("hostname".to_owned()),
-        ..SchemaObject::default()
-    })
-}
 
 #[derive(Clone, Debug, Serialize, Deserialize, JsonSchema)]
 pub struct Credentials {
@@ -77,7 +57,7 @@ pub enum EmailTransportConfig {
         mode: EmailSmtpMode,
 
         /// Hostname to connect to
-        #[schemars(schema_with = "hostname_schema")]
+        #[schemars(schema_with = "crate::schema::hostname")]
         hostname: String,
 
         /// Port to connect to. Default is 25 for plain, 465 for TLS and 587 for
@@ -120,12 +100,12 @@ fn default_sendmail_command() -> String {
 pub struct EmailConfig {
     /// Email address to use as From when sending emails
     #[serde(default = "default_email")]
-    #[schemars(schema_with = "mailbox_schema")]
+    #[schemars(schema_with = "crate::schema::mailbox")]
     pub from: String,
 
     /// Email address to use as Reply-To when sending emails
     #[serde(default = "default_email")]
-    #[schemars(schema_with = "mailbox_schema")]
+    #[schemars(schema_with = "crate::schema::mailbox")]
     pub reply_to: String,
 
     /// What backend should be used when sending emails

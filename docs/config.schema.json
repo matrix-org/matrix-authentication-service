@@ -45,8 +45,8 @@
     "email": {
       "description": "Configuration related to sending emails",
       "default": {
-        "from": "Authentication Service <root@localhost>",
-        "reply_to": "Authentication Service <root@localhost>",
+        "from": "\"Authentication Service\" <root@localhost>",
+        "reply_to": "\"Authentication Service\" <root@localhost>",
         "transport": "blackhole"
       },
       "allOf": [
@@ -436,6 +436,7 @@
       "type": "object",
       "anyOf": [
         {
+          "description": "Connect via a full URI",
           "type": "object",
           "properties": {
             "uri": {
@@ -447,6 +448,7 @@
           }
         },
         {
+          "description": "Connect via a map of options",
           "type": "object",
           "properties": {
             "database": {
@@ -625,13 +627,13 @@
       "properties": {
         "from": {
           "description": "Email address to use as From when sending emails",
-          "default": "Authentication Service <root@localhost>",
+          "default": "\"Authentication Service\" <root@localhost>",
           "type": "string",
           "format": "email"
         },
         "reply_to": {
           "description": "Email address to use as Reply-To when sending emails",
-          "default": "Authentication Service <root@localhost>",
+          "default": "\"Authentication Service\" <root@localhost>",
           "type": "string",
           "format": "email"
         }
