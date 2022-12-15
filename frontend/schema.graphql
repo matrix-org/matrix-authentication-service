@@ -2,7 +2,7 @@
 An authentication records when a user enter their credential in a browser
 session.
 """
-type Authentication implements Node {
+type Authentication implements Node & CreationEvent {
   """
   ID of the object.
   """
@@ -16,7 +16,7 @@ type Authentication implements Node {
 """
 A browser session represents a logged in user in a browser.
 """
-type BrowserSession implements Node {
+type BrowserSession implements Node & CreationEvent {
   """
   ID of the object.
   """
@@ -68,7 +68,7 @@ type BrowserSessionEdge {
 A compat session represents a client session which used the legacy Matrix
 login API.
 """
-type CompatSession implements Node {
+type CompatSession implements Node & CreationEvent {
   """
   ID of the object.
   """
@@ -150,6 +150,16 @@ type CompatSsoLoginEdge {
   The item at the end of the edge
   """
   node: CompatSsoLogin!
+}
+
+"""
+An object with a creation date.
+"""
+interface CreationEvent {
+  """
+  When the object was created.
+  """
+  createdAt: DateTime!
 }
 
 """
@@ -332,7 +342,7 @@ type RootQuery {
   node(id: ID!): Node
 }
 
-type UpstreamOAuth2Link implements Node {
+type UpstreamOAuth2Link implements Node & CreationEvent {
   """
   ID of the object.
   """
@@ -384,7 +394,7 @@ type UpstreamOAuth2LinkEdge {
   node: UpstreamOAuth2Link!
 }
 
-type UpstreamOAuth2Provider implements Node {
+type UpstreamOAuth2Provider implements Node & CreationEvent {
   """
   ID of the object.
   """
@@ -503,7 +513,7 @@ type User implements Node {
 """
 A user email address
 """
-type UserEmail implements Node {
+type UserEmail implements Node & CreationEvent {
   """
   ID of the object.
   """

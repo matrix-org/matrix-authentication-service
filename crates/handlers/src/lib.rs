@@ -94,14 +94,13 @@ where
     <B as HttpBody>::Error: std::error::Error + Send + Sync,
     S: Clone + Send + Sync + 'static,
     mas_graphql::Schema: FromRef<S>,
+    PgPool: FromRef<S>,
     Encrypter: FromRef<S>,
 {
-    let mut router = Router::new()
-        .route(
-            "/graphql",
-            get(self::graphql::get).post(self::graphql::post),
-        )
-        .route("/graphql/ws", get(self::graphql::ws));
+    let mut router = Router::new().route(
+        "/graphql",
+        get(self::graphql::get).post(self::graphql::post),
+    );
 
     if playground {
         router = router.route("/graphql/playground", get(self::graphql::playground));
