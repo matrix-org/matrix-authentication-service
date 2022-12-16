@@ -82,7 +82,7 @@ impl IntoResponse for RouteError {
             }
             RouteError::UnknownRedirectUri(e) => (
                 StatusCode::BAD_REQUEST,
-                format!("Invalid redirect URI ({})", e),
+                format!("Invalid redirect URI ({e})"),
             )
                 .into_response(),
         }

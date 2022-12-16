@@ -75,7 +75,7 @@ impl File {
             .await?;
 
         tracing::info!("Writing file");
-        file.write_all(format!("{}", self).as_bytes()).await?;
+        file.write_all(format!("{self}").as_bytes()).await?;
 
         Ok(())
     }
@@ -154,7 +154,7 @@ pub enum {} {{"#,
             for member in list {
                 writeln!(f)?;
                 if let Some(description) = &member.description {
-                    writeln!(f, "    /// {}", description)?;
+                    writeln!(f, "    /// {description}")?;
                 } else {
                     writeln!(f, "    /// `{}`", member.value)?;
                 }

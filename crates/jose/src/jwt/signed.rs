@@ -331,7 +331,7 @@ impl<T> Jwt<'static, T> {
         let payload_ = serde_json::to_vec(&payload).map_err(JwtSignatureError::encode_payload)?;
         let payload_ = Base64UrlUnpadded::encode_string(&payload_);
 
-        let mut inner = format!("{}.{}", header_, payload_);
+        let mut inner = format!("{header_}.{payload_}");
 
         let first_dot = header_.len();
         let second_dot = inner.len();

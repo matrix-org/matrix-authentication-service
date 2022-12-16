@@ -52,7 +52,7 @@ impl_from_error_for_route!(sqlx::Error);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
-        (StatusCode::INTERNAL_SERVER_ERROR, format!("{}", self)).into_response()
+        (StatusCode::INTERNAL_SERVER_ERROR, format!("{self}")).into_response()
     }
 }
 

@@ -208,7 +208,7 @@ mod tests {
         };
 
         let state = form.to_form_state();
-        let state = serde_json::to_value(&state).unwrap();
+        let state = serde_json::to_value(state).unwrap();
         assert_eq!(
             state,
             serde_json::json!({
@@ -236,7 +236,7 @@ mod tests {
             .with_error_on_field(TestFormField::Bar, FieldError::Required)
             .with_error_on_form(FormError::InvalidCredentials);
 
-        let state = serde_json::to_value(&state).unwrap();
+        let state = serde_json::to_value(state).unwrap();
         assert_eq!(
             state,
             serde_json::json!({

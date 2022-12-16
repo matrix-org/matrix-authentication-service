@@ -114,7 +114,7 @@ impl Templates {
         // This uses blocking I/Os, do that in a blocking task
         let mut tera = tokio::task::spawn_blocking(move || {
             let path = path.canonicalize_utf8()?;
-            let path = format!("{}/**/*.{{html,txt,subject}}", path);
+            let path = format!("{path}/**/*.{{html,txt,subject}}");
 
             info!(%path, "Loading templates from filesystem");
             Tera::new(&path)
