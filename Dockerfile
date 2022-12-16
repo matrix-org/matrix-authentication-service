@@ -12,10 +12,10 @@
 # The Debian version and version name must be in sync
 ARG DEBIAN_VERSION=11
 ARG DEBIAN_VERSION_NAME=bullseye
-ARG RUSTC_VERSION=1.65.0
+ARG RUSTC_VERSION=1.66.0
 ARG ZIG_VERSION=0.9.1
 ARG NODEJS_VERSION=18
-ARG OPA_VERSION=0.45.0
+ARG OPA_VERSION=0.47.3
 
 ##########################################
 ## Build stage that builds the frontend ##
@@ -150,7 +150,7 @@ COPY ./templates/ /share/templates
 ##################################
 ## Runtime stage, debug variant ##
 ##################################
-FROM --platform=${TARGETPLATFORM} gcr.io/distroless/cc-debian${DEBIAN_VERSION}:debug-nonroot AS debug
+FROM --platform=${TARGETPLATFORM} gcr.io/distroless/base-debian${DEBIAN_VERSION}:debug-nonroot AS debug
 
 COPY --from=builder /usr/local/bin/mas-cli /usr/local/bin/mas-cli
 COPY --from=share /share /usr/local/share/mas-cli
@@ -161,7 +161,7 @@ ENTRYPOINT ["/usr/local/bin/mas-cli"]
 ###################
 ## Runtime stage ##
 ###################
-FROM --platform=${TARGETPLATFORM} gcr.io/distroless/cc-debian${DEBIAN_VERSION}:nonroot
+FROM --platform=${TARGETPLATFORM} gcr.io/distroless/base-debian${DEBIAN_VERSION}:nonroot
 
 COPY --from=builder /usr/local/bin/mas-cli /usr/local/bin/mas-cli
 COPY --from=share /share /usr/local/share/mas-cli

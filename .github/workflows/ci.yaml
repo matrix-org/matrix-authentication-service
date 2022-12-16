@@ -29,7 +29,7 @@ jobs:
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.0.1
         with:
-          version: 0.45.0
+          version: 0.47.3
 
       - name: Lint policies
         working-directory: ./policies
@@ -63,7 +63,7 @@ jobs:
       - name: Install Node
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
@@ -90,7 +90,7 @@ jobs:
       - name: Install Node
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
@@ -152,7 +152,7 @@ jobs:
       - name: Install Node
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
@@ -189,7 +189,7 @@ jobs:
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.0.1
         with:
-          version: 0.45.0
+          version: 0.47.3
 
       - name: Compile OPA policies
         working-directory: ./policies
@@ -221,7 +221,7 @@ jobs:
 
     services:
       postgres:
-        image: docker.io/library/postgres:14.4
+        image: docker.io/library/postgres:15.1
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -246,7 +246,7 @@ jobs:
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.0.1
         with:
-          version: 0.45.0
+          version: 0.47.3
 
       - name: Compile OPA policies
         working-directory: ./policies
@@ -282,7 +282,7 @@ jobs:
 
     services:
       postgres:
-        image: docker.io/library/postgres:14.4
+        image: docker.io/library/postgres:15.1
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -308,7 +308,7 @@ jobs:
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.0.1
         with:
-          version: 0.45.0
+          version: 0.47.3
 
       - name: Compile OPA policies
         working-directory: ./policies
