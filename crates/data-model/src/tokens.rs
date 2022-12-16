@@ -90,10 +90,10 @@ impl TokenType {
             .map(char::from)
             .collect();
 
-        let base = format!("{}_{}", self.prefix(), random_part);
+        let base = format!("{prefix}_{random_part}", prefix = self.prefix());
         let crc = CRC.checksum(base.as_bytes());
         let crc = base62_encode(crc);
-        format!("{}_{}", base, crc)
+        format!("{base}_{crc}")
     }
 
     /// Check the format of a token and determine its type
@@ -126,7 +126,7 @@ impl TokenType {
                 prefix: prefix.to_owned(),
             })?;
 
-        let base = format!("{}_{}", token_type.prefix(), random_part);
+        let base = format!("{prefix}_{random_part}", prefix = token_type.prefix());
         let expected_crc = CRC.checksum(base.as_bytes());
         let expected_crc = base62_encode(expected_crc);
         if crc != expected_crc {
@@ -164,7 +164,7 @@ fn base62_encode(mut num: u32) -> String {
         num /= 62;
     }
 
-    format!("{:0>6}", res)
+    format!("{res:0>6}")
 }
 
 const CRC: Crc<u32> = Crc::<u32>::new(&CRC_32_ISO_HDLC);

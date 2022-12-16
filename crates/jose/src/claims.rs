@@ -333,9 +333,9 @@ impl<'a, T: ?Sized> Equality<'a, T> {
     }
 }
 
-impl<'a, T1, T2: ?Sized> Validator<T1> for Equality<'a, T2>
+impl<'a, T1, T2> Validator<T1> for Equality<'a, T2>
 where
-    T2: PartialEq<T1>,
+    T2: PartialEq<T1> + ?Sized,
 {
     type Error = EqualityError;
     fn validate(&self, value: &T1) -> Result<(), Self::Error> {

@@ -58,7 +58,7 @@ fn print_headers(parts: &hyper::http::response::Parts) {
     );
 
     for (header, value) in &parts.headers {
-        println!("{}: {:?}", header, value);
+        println!("{header}: {value:?}");
     }
     println!();
 }
@@ -116,7 +116,7 @@ impl Options {
                 }
 
                 let body = serde_json::to_string_pretty(&body)?;
-                println!("{}", body);
+                println!("{body}");
 
                 Ok(())
             }

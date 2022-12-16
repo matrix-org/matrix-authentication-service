@@ -32,7 +32,7 @@ pub trait Route {
         let path = self.path();
         if let Some(query) = self.query() {
             let query = serde_urlencoded::to_string(query).unwrap();
-            format!("{}?{}", path, query).into()
+            format!("{path}?{query}").into()
         } else {
             path
         }

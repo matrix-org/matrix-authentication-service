@@ -201,7 +201,7 @@ impl Header for WwwAuthenticate {
             }
         };
 
-        let params = params.into_iter().map(|(k, v)| format!(" {}={:?}", k, v));
+        let params = params.into_iter().map(|(k, v)| format!(" {k}={v:?}"));
         let value: String = std::iter::once(scheme.to_owned()).chain(params).collect();
         let value = HeaderValue::from_str(&value).unwrap();
         values.extend(std::iter::once(value));

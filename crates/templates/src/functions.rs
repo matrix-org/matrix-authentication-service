@@ -132,7 +132,7 @@ fn function_merge(params: &HashMap<String, Value>) -> Result<Value, tera::Error>
     for (k, v) in params {
         let v = v
             .as_object()
-            .ok_or_else(|| tera::Error::msg(format!("Parameter {:?} should be an object", k)))?;
+            .ok_or_else(|| tera::Error::msg(format!("Parameter {k:?} should be an object")))?;
         ret.extend(v.clone());
     }
 

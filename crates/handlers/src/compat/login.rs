@@ -210,7 +210,7 @@ pub(crate) async fn post(
         }
     };
 
-    let user_id = format!("@{}:{}", session.user.username, homeserver);
+    let user_id = format!("@{username}:{homeserver}", username = session.user.username);
 
     // If the client asked for a refreshable token, make it expire
     let expires_in = if input.refresh_token {

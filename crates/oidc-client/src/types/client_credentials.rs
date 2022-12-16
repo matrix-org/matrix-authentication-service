@@ -406,7 +406,7 @@ fn prepare_claims(
 /// A request with client credentials added to it.
 #[derive(Clone, Serialize)]
 #[skip_serializing_none]
-pub struct RequestWithClientCredentials<T: Serialize> {
+pub struct RequestWithClientCredentials<T> {
     #[serde(flatten)]
     pub(crate) body: T,
     #[serde(flatten)]
