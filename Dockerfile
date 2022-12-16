@@ -7,7 +7,7 @@
 #
 # Docker platform definitions look like this: linux/arm64 and linux/amd64, so
 # there is a small script that translates those platforms to LLVM triples,
-# respectively x86-64-unknown-linux-gnu and aarch64-unknown-linux-gnu
+# respectively x86-64-unknown-linux-musl and aarch64-unknown-linux-musl
 
 # The Debian version and version name must be in sync
 ARG DEBIAN_VERSION=11
@@ -89,8 +89,8 @@ RUN cargo install --locked cargo-chef cargo-zigbuild cargo-auditable
 
 # Install all cross-compilation targets
 RUN rustup target add --toolchain "${RUSTC_VERSION}" \
-  x86_64-unknown-linux-gnu \
-  aarch64-unknown-linux-gnu
+  x86_64-unknown-linux-musl \
+  aarch64-unknown-linux-musl
 
 # Helper script that transforms docker platforms to LLVM triples
 COPY ./misc/docker-arch-to-rust-target.sh /
@@ -151,7 +151,7 @@ COPY ./templates/ /share/templates
 ##################################
 ## Runtime stage, debug variant ##
 ##################################
-FROM --platform=${TARGETPLATFORM} gcr.io/distroless/base-debian${DEBIAN_VERSION}:debug-nonroot AS debug
+FROM --platform=${TARGETPLATFORM} gcr.io/distroless/static-debian${DEBIAN_VERSION}:debug-nonroot AS debug
 
 COPY --from=builder /usr/local/bin/mas-cli /usr/local/bin/mas-cli
 COPY --from=share /share /usr/local/share/mas-cli
@@ -162,7 +162,7 @@ ENTRYPOINT ["/usr/local/bin/mas-cli"]
 ###################
 ## Runtime stage ##
 ###################
-FROM --platform=${TARGETPLATFORM} gcr.io/distroless/base-debian${DEBIAN_VERSION}:nonroot
+FROM --platform=${TARGETPLATFORM} gcr.io/distroless/static-debian${DEBIAN_VERSION}:nonroot
 
 COPY --from=builder /usr/local/bin/mas-cli /usr/local/bin/mas-cli
 COPY --from=share /share /usr/local/share/mas-cli
