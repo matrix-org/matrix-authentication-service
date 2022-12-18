@@ -362,7 +362,7 @@ pub struct ProviderMetadata {
     /// JSON array containing a list of the JWS signing algorithms (`alg`
     /// values) supported by the OP for the ID Token.
     ///
-    /// This field is required and must contain [`JsonWebSignatureAlg::Rs256`].
+    /// This field is required.
     pub id_token_signing_alg_values_supported: Option<Vec<JsonWebSignatureAlg>>,
 
     /// JSON array containing a list of the JWE encryption algorithms (`alg`
@@ -583,15 +583,6 @@ impl ProviderMetadata {
 
         if let Some(url) = &metadata.userinfo_endpoint {
             validate_url("userinfo_endpoint", url, ExtraUrlRestrictions::None)?;
-        }
-
-        if !metadata
-            .id_token_signing_alg_values_supported()
-            .contains(&JsonWebSignatureAlg::Rs256)
-        {
-            return Err(
-                ProviderMetadataVerificationError::SigningAlgValuesMissingRs256("id_token"),
-            );
         }
 
         if let Some(url) = &metadata.pushed_authorization_request_endpoint {
@@ -970,10 +961,6 @@ pub enum ProviderMetadataVerificationError {
     /// allowed.
     #[error("{0} signing algorithm values contain `none`")]
     SigningAlgValuesWithNone(&'static str),
-
-    /// `RS256` is missing from the given endpoint's signing algorithm values.
-    #[error("missing RS256 in {0} signing algorithm values")]
-    SigningAlgValuesMissingRs256(&'static str),
 }
 
 /// Possible extra restrictions on a URL.
@@ -1540,15 +1527,7 @@ mod tests {
             Err(ProviderMetadataVerificationError::MissingIdTokenSigningAlgValuesSupported)
         );
 
-        // Err - No RS256
-        metadata.id_token_signing_alg_values_supported = Some(vec![JsonWebSignatureAlg::EdDsa]);
-        let endpoint = assert_matches!(
-            metadata.clone().validate(&issuer),
-            Err(ProviderMetadataVerificationError::SigningAlgValuesMissingRs256(endpoint)) => endpoint
-        );
-        assert_eq!(endpoint, "id_token");
-
-        // Ok - With RS256
+        // Ok - Present
         metadata.id_token_signing_alg_values_supported =
             Some(vec![JsonWebSignatureAlg::Rs256, JsonWebSignatureAlg::EdDsa]);
         metadata.validate(&issuer).unwrap();
