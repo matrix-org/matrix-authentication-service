@@ -72,7 +72,7 @@ mas-templates = { path = "../templates" }
 oauth2-types = { path = "../oauth2-types" }
 
 [dev-dependencies]
-indoc = "1.0.7"
+indoc = "1.0.8"
 insta = "1.23.0"
 
 [features]

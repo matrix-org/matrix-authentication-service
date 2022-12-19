@@ -29,7 +29,7 @@ rustls-pemfile = "1.0.1"
 rand = "0.8.5"
 rand_chacha = "0.3.1"
 
-indoc = "1.0.7"
+indoc = "1.0.8"
 
 mas-jose = { path = "../jose" }
 mas-keystore = { path = "../keystore" }

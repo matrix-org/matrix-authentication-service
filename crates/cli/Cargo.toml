@@ -55,7 +55,7 @@ mas-templates = { path = "../templates" }
 oauth2-types = { path = "../oauth2-types" }
 
 [dev-dependencies]
-indoc = "1.0.7"
+indoc = "1.0.8"
 
 [features]
 default = ["jaeger", "zipkin", "webpki-roots", "policy-cache"]
