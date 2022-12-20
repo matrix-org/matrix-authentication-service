@@ -18,7 +18,7 @@ listenfd = "1.0.0"
 rand = "0.8.5"
 rand_chacha = "0.3.1"
 rustls = "0.20.7"
-serde_json = "1.0.89"
+serde_json = "1.0.91"
 serde_yaml = "0.9.16"
 sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres"] }
 tokio = { version = "1.23.0", features = ["full"] }
