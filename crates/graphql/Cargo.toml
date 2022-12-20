@@ -6,7 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-anyhow = "1.0.66"
+anyhow = "1.0.68"
 async-graphql = { version = "5.0.4", features = ["chrono", "url"] }
 chrono = "0.4.23"
 serde = { version = "1.0.151", features = ["derive"] }
