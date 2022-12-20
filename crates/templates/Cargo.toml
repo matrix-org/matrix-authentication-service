@@ -9,7 +9,7 @@ license = "Apache-2.0"
 tracing = "0.1.37"
 tokio = { version = "1.23.0", features = ["macros", "rt"] }
 
-anyhow = "1.0.66"
+anyhow = "1.0.68"
 thiserror = "1.0.37"
 
 tera = "1.17.1"
