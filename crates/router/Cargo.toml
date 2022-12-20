@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [dependencies]
 axum = { version = "0.6.1", default-features = false }
-serde = { version = "1.0.150", features = ["derive"] }
+serde = { version = "1.0.151", features = ["derive"] }
 serde_urlencoded = "0.7.1"
 url = "2.3.1"
 ulid = "1.0.0"
