@@ -3700,9 +3700,9 @@ dependencies = [
 
 [[package]]
 name = "parse-display"
-version = "0.7.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac6b32f6c8212838b74c0f5ba412194e88897923020810d9bec72d3594c2588d"
+checksum = "6f96cc033d72896bb9a2c239a14e1141c3e2eae6d649e7c10ef4e598d66bc86c"
 dependencies = [
  "once_cell",
  "parse-display-derive",
@@ -3711,9 +3711,9 @@ dependencies = [
 
 [[package]]
 name = "parse-display-derive"
-version = "0.7.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed6ec9ab2477935d04fcdf7c51c9ee94a1be988938886de3239aed40980b7180"
+checksum = "e5587062be441f3d868f7c4c9d13c67f286b03aa679d7f8176ef80bf2ee79e5d"
 dependencies = [
  "once_cell",
  "proc-macro2",
