@@ -17,7 +17,7 @@ serde_with = { version = "2.1.0", features = ["chrono"] }
 chrono = "0.4.23"
 sha2 = "0.10.6"
 data-encoding = "2.3.3"
-thiserror = "1.0.37"
+thiserror = "1.0.38"
 
 mas-iana = { path = "../iana" }
 mas-jose = { path = "../jose" }
