@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [dependencies]
 chrono = "0.4.23"
-thiserror = "1.0.37"
+thiserror = "1.0.38"
 serde = "1.0.151"
 url = { version = "2.3.1", features = ["serde"] }
 crc = "3.0.0"
