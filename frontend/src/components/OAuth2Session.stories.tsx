@@ -80,7 +80,7 @@ const Template: React.FC<TemplateProps> = ({
 const meta = {
   title: "Components/OAuth 2.0 Session",
   component: Template,
-  tags: ["docsPage"],
+  tags: ["autodocs"],
   args: {
     scope: "openid",
     clientId: "aaabbbcccdddeee",

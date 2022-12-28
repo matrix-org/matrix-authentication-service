@@ -19,7 +19,7 @@ import Typography from "./Typography";
 const meta = {
   title: "UI/Typography",
   component: Typography,
-  tags: ["docsPage"],
+  tags: ["autodocs"],
   args: {
     children: "Typography",
   },

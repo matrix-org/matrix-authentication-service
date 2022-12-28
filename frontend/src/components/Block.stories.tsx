@@ -25,7 +25,7 @@ const meta = {
     Subtitle,
     Body,
   } as Record<string, React.ComponentType<any>>,
-  tags: ["docsPage"],
+  tags: ["autodocs"],
 } satisfies Meta<typeof Block>;
 
 export default meta;

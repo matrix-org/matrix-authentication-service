@@ -30,7 +30,6 @@ module.exports = {
         "prettier",
         "plugin:prettier/recommended",
         "plugin:jsx-a11y/recommended",
-        "plugin:storybook/recommended",
       ],
       plugins: ["jsx-a11y"],
       files: ["*.ts", "*.tsx", "*.cjs", "*.js"],
