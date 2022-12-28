@@ -80,7 +80,7 @@ pub async fn lookup_active_compat_access_token(
               ON ue.user_email_id = u.primary_user_email_id
 
             WHERE ct.access_token = $1
-              AND ct.expires_at < $2
+              AND (ct.expires_at < $2 OR ct.expires_at IS NULL)
               AND cs.finished_at IS NULL 
         "#,
         token,

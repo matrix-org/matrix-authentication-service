@@ -31,6 +31,7 @@ use mas_storage::{
 use oauth2_types::{
     errors::{ClientError, ClientErrorCode},
     requests::{IntrospectionRequest, IntrospectionResponse},
+    scope::ScopeToken,
 };
 use sqlx::PgPool;
 use thiserror::Error;
@@ -119,6 +120,8 @@ const INACTIVE: IntrospectionResponse = IntrospectionResponse {
     iss: None,
     jti: None,
 };
+
+const API_SCOPE: ScopeToken = ScopeToken::from_static("urn:matrix:org.matrix.msc2967.client:api:*");
 
 #[allow(clippy::too_many_lines)]
 pub(crate) async fn post(
@@ -209,7 +212,7 @@ pub(crate) async fn post(
                 .ok_or(RouteError::UnknownToken)?;
 
             let device_scope = session.device.to_scope_token();
-            let scope = [device_scope].into_iter().collect();
+            let scope = [API_SCOPE, device_scope].into_iter().collect();
 
             IntrospectionResponse {
                 active: true,
@@ -233,7 +236,7 @@ pub(crate) async fn post(
                     .ok_or(RouteError::UnknownToken)?;
 
             let device_scope = session.device.to_scope_token();
-            let scope = [device_scope].into_iter().collect();
+            let scope = [API_SCOPE, device_scope].into_iter().collect();
 
             IntrospectionResponse {
                 active: true,
