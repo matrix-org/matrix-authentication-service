@@ -19,7 +19,7 @@ import Button from "./Button";
 const meta = {
   title: "UI/Button",
   component: Button,
-  tags: ["docsPage"],
+  tags: ["autodocs"],
   argTypes: {
     onClick: { action: true },
     compact: {

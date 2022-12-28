@@ -19,7 +19,7 @@ import LoadingScreen from "./LoadingScreen";
 const meta = {
   title: "UI/Loading Screen",
   component: LoadingScreen,
-  tags: ["docsPage"],
+  tags: ["autodocs"],
 } satisfies Meta<typeof LoadingScreen>;
 
 export default meta;

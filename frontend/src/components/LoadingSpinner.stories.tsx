@@ -19,7 +19,7 @@ import LoadingSpinner from "./LoadingSpinner";
 const meta = {
   title: "UI/Loading Spinner",
   component: LoadingSpinner,
-  tags: ["docsPage"],
+  tags: ["autodocs"],
 } satisfies Meta<typeof LoadingSpinner>;
 
 export default meta;

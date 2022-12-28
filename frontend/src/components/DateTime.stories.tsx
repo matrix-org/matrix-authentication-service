@@ -22,7 +22,7 @@ const now = new Date(2022, 11, 16, 15, 32, 10);
 const meta = {
   title: "UI/DateTime",
   component: DateTime,
-  tags: ["docsPage"],
+  tags: ["autodocs"],
   args: {
     now,
     datetime: sub(now, { minutes: 30 }),
