@@ -611,6 +611,105 @@
     },
     "query": "\n            SELECT\n                upstream_oauth_authorization_session_id,\n                upstream_oauth_provider_id,\n                upstream_oauth_link_id,\n                state,\n                code_challenge_verifier,\n                nonce,\n                id_token,\n                created_at,\n                completed_at,\n                consumed_at\n            FROM upstream_oauth_authorization_sessions\n            WHERE upstream_oauth_authorization_session_id = $1\n              AND upstream_oauth_link_id = $2\n        "
   },
+  "2e581d57db471b96091860cd0252361d16332deeffabab0dace405ead55324be": {
+    "describe": {
+      "columns": [
+        {
+          "name": "compat_access_token_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "compat_access_token",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "compat_access_token_created_at",
+          "ordinal": 2,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "compat_access_token_expires_at",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "compat_session_id",
+          "ordinal": 4,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "compat_session_created_at",
+          "ordinal": 5,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "compat_session_finished_at",
+          "ordinal": 6,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "compat_session_device_id",
+          "ordinal": 7,
+          "type_info": "Text"
+        },
+        {
+          "name": "user_id!",
+          "ordinal": 8,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "user_username!",
+          "ordinal": 9,
+          "type_info": "Text"
+        },
+        {
+          "name": "user_email_id?",
+          "ordinal": 10,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "user_email?",
+          "ordinal": 11,
+          "type_info": "Text"
+        },
+        {
+          "name": "user_email_created_at?",
+          "ordinal": 12,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "user_email_confirmed_at?",
+          "ordinal": 13,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n            SELECT\n                ct.compat_access_token_id,\n                ct.access_token    AS \"compat_access_token\",\n                ct.created_at      AS \"compat_access_token_created_at\",\n                ct.expires_at      AS \"compat_access_token_expires_at\",\n                cs.compat_session_id,\n                cs.created_at      AS \"compat_session_created_at\",\n                cs.finished_at     AS \"compat_session_finished_at\",\n                cs.device_id       AS \"compat_session_device_id\",\n                 u.user_id         AS \"user_id!\",\n                 u.username        AS \"user_username!\",\n                ue.user_email_id   AS \"user_email_id?\",\n                ue.email           AS \"user_email?\",\n                ue.created_at      AS \"user_email_created_at?\",\n                ue.confirmed_at    AS \"user_email_confirmed_at?\"\n\n            FROM compat_access_tokens ct\n            INNER JOIN compat_sessions cs\n              USING (compat_session_id)\n            INNER JOIN users u\n              USING (user_id)\n            LEFT JOIN user_emails ue\n              ON ue.user_email_id = u.primary_user_email_id\n\n            WHERE ct.access_token = $1\n              AND (ct.expires_at < $2 OR ct.expires_at IS NULL)\n              AND cs.finished_at IS NULL \n        "
+  },
   "2e756fe7be50128c0acc5f79df3a084230e9ca13cd45bd0858f97e59da20006e": {
     "describe": {
       "columns": [],
@@ -1275,26 +1374,6 @@
       }
     },
     "query": "\n            INSERT INTO oauth2_consents\n                (oauth2_consent_id, user_id, oauth2_client_id, scope_token, created_at)\n            SELECT id, $2, $3, scope_token, $5 FROM UNNEST($1::uuid[], $4::text[]) u(id, scope_token)\n            ON CONFLICT (user_id, oauth2_client_id, scope_token) DO UPDATE SET refreshed_at = $5\n        "
-  },
-  "647a2a5bbde39d0ed3931d0287b468bc7dedf6171e1dc6171a5d9f079b9ed0fa": {
-    "describe": {
-      "columns": [
-        {
-          "name": "hashed_password",
-          "ordinal": 0,
-          "type_info": "Text"
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Uuid"
-        ]
-      }
-    },
-    "query": "\n            SELECT up.hashed_password\n            FROM user_passwords up\n            WHERE up.user_id = $1\n            ORDER BY up.created_at DESC\n            LIMIT 1\n        "
   },
   "64a56818dd16ac6368efe3e34196a77b7feda1eb87b696e0063a51bf50e499e5": {
     "describe": {
@@ -2021,21 +2100,6 @@
     },
     "query": "\n            UPDATE oauth2_sessions\n            SET finished_at = $2\n            WHERE oauth2_session_id = $1\n        "
   },
-  "9e14584cd114b1cf82e52d835facf6c8e6f19f6026f53de17c3834e9ae15affe": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Uuid",
-          "Uuid",
-          "Text",
-          "Timestamptz"
-        ]
-      }
-    },
-    "query": "\n            INSERT INTO compat_sessions\n              (compat_session_id, user_id, device_id, created_at)\n            VALUES ($1, $2, $3, $4)\n        "
-  },
   "9edf5e8a3e00a7cdd8e55b97105df7831ee580096299df4bd6c1ed7c96b95e83": {
     "describe": {
       "columns": [
@@ -2055,105 +2119,6 @@
       }
     },
     "query": "\n            SELECT COUNT(*) as \"count!\"\n            FROM user_sessions s\n            WHERE s.user_id = $1 AND s.finished_at IS NULL\n        "
-  },
-  "a0ef64e3de97dc2d24efe235c289557018448957a4776197445eafec8b5fb7a9": {
-    "describe": {
-      "columns": [
-        {
-          "name": "compat_access_token_id",
-          "ordinal": 0,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "compat_access_token",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "compat_access_token_created_at",
-          "ordinal": 2,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "compat_access_token_expires_at",
-          "ordinal": 3,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "compat_session_id",
-          "ordinal": 4,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "compat_session_created_at",
-          "ordinal": 5,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "compat_session_finished_at",
-          "ordinal": 6,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "compat_session_device_id",
-          "ordinal": 7,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_id!",
-          "ordinal": 8,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_username!",
-          "ordinal": 9,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_email_id?",
-          "ordinal": 10,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_email?",
-          "ordinal": 11,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_email_created_at?",
-          "ordinal": 12,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "user_email_confirmed_at?",
-          "ordinal": 13,
-          "type_info": "Timestamptz"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        true,
-        false,
-        false,
-        true,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        true
-      ],
-      "parameters": {
-        "Left": [
-          "Text",
-          "Timestamptz"
-        ]
-      }
-    },
-    "query": "\n            SELECT\n                ct.compat_access_token_id,\n                ct.access_token    AS \"compat_access_token\",\n                ct.created_at      AS \"compat_access_token_created_at\",\n                ct.expires_at      AS \"compat_access_token_expires_at\",\n                cs.compat_session_id,\n                cs.created_at      AS \"compat_session_created_at\",\n                cs.finished_at     AS \"compat_session_finished_at\",\n                cs.device_id       AS \"compat_session_device_id\",\n                 u.user_id         AS \"user_id!\",\n                 u.username        AS \"user_username!\",\n                ue.user_email_id   AS \"user_email_id?\",\n                ue.email           AS \"user_email?\",\n                ue.created_at      AS \"user_email_created_at?\",\n                ue.confirmed_at    AS \"user_email_confirmed_at?\"\n\n            FROM compat_access_tokens ct\n            INNER JOIN compat_sessions cs\n              USING (compat_session_id)\n            INNER JOIN users u\n              USING (user_id)\n            LEFT JOIN user_emails ue\n              ON ue.user_email_id = u.primary_user_email_id\n\n            WHERE ct.access_token = $1\n              AND ct.expires_at < $2\n              AND cs.finished_at IS NULL \n        "
   },
   "a1c19d9d7f1522d126787c7f9946ed51cbbd8f27a4947bc371acab3e7bf23267": {
     "describe": {
