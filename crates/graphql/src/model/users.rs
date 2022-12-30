@@ -17,6 +17,7 @@ use async_graphql::{
     Context, Description, Object, ID,
 };
 use chrono::{DateTime, Utc};
+use mas_storage::{Repository, UpstreamOAuthLinkRepository};
 use sqlx::PgPool;
 
 use super::{
@@ -285,14 +286,13 @@ impl User {
                     })
                     .transpose()?;
 
-                let (has_previous_page, has_next_page, edges) =
-                    mas_storage::upstream_oauth2::get_paginated_user_links(
-                        &mut conn, &self.0, before_id, after_id, first, last,
-                    )
+                let page = conn
+                    .upstream_oauth_link()
+                    .list_paginated(&self.0, before_id, after_id, first, last)
                     .await?;
 
-                let mut connection = Connection::new(has_previous_page, has_next_page);
-                connection.edges.extend(edges.into_iter().map(|s| {
+                let mut connection = Connection::new(page.has_previous_page, page.has_next_page);
+                connection.edges.extend(page.edges.into_iter().map(|s| {
                     Edge::new(
                         OpaqueCursor(NodeCursor(NodeType::UpstreamOAuth2Link, s.id)),
                         UpstreamOAuth2Link::new(s),

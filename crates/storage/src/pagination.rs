@@ -111,6 +111,14 @@ pub fn process_page<T>(
     Ok((has_previous_page, has_next_page, page))
 }
 
+pub struct Page<T> {
+    pub has_next_page: bool,
+    pub has_previous_page: bool,
+    pub edges: Vec<T>,
+}
+
+impl<T> Page<T> {}
+
 pub trait QueryBuilderExt {
     fn generate_pagination(
         &mut self,

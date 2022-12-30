@@ -25,8 +25,9 @@ use mas_oidc_client::requests::{
     authorization_code::AuthorizationValidationData, jose::JwtVerificationData,
 };
 use mas_router::{Route, UrlBuilder};
-use mas_storage::upstream_oauth2::{
-    add_link, complete_session, lookup_link_by_subject, lookup_session,
+use mas_storage::{
+    upstream_oauth2::{complete_session, lookup_session},
+    Repository, UpstreamOAuthLinkRepository,
 };
 use oauth2_types::errors::ClientErrorCode;
 use serde::Deserialize;
@@ -231,12 +232,17 @@ pub(crate) async fn get(
     let subject = mas_jose::claims::SUB.extract_required(&mut id_token)?;
 
     // Look for an existing link
-    let maybe_link = lookup_link_by_subject(&mut txn, &provider, &subject).await?;
+    let maybe_link = txn
+        .upstream_oauth_link()
+        .find_by_subject(&provider, &subject)
+        .await?;
 
     let link = if let Some(link) = maybe_link {
         link
     } else {
-        add_link(&mut txn, &mut rng, &clock, &provider, subject).await?
+        txn.upstream_oauth_link()
+            .add(&mut rng, &clock, &provider, subject)
+            .await?
     };
 
     let session = complete_session(&mut txn, &clock, session, &link, response.id_token).await?;

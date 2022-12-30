@@ -30,6 +30,7 @@ use async_graphql::{
     connection::{query, Connection, Edge, OpaqueCursor},
     Context, Description, EmptyMutation, EmptySubscription, ID,
 };
+use mas_storage::{Repository, UpstreamOAuthLinkRepository};
 use model::CreationEvent;
 use sqlx::PgPool;
 
@@ -171,7 +172,7 @@ impl RootQuery {
         let Some(session) = session else { return Ok(None) };
         let current_user = session.user;
 
-        let link = mas_storage::upstream_oauth2::lookup_link(&mut conn, id).await?;
+        let link = conn.upstream_oauth_link().lookup(id).await?;
 
         // Ensure that the link belongs to the current user
         let link = link.filter(|link| link.user_id == Some(current_user.id));

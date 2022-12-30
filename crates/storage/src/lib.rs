@@ -178,8 +178,11 @@ impl Clock {
 pub mod compat;
 pub mod oauth2;
 pub(crate) mod pagination;
+pub(crate) mod repository;
 pub mod upstream_oauth2;
 pub mod user;
+
+pub use self::{repository::Repository, upstream_oauth2::UpstreamOAuthLinkRepository};
 
 /// Embedded migrations, allowing them to run on startup
 pub static MIGRATOR: Migrator = sqlx::migrate!();

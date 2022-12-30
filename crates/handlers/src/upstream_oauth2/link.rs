@@ -25,10 +25,9 @@ use mas_axum_utils::{
 };
 use mas_keystore::Encrypter;
 use mas_storage::{
-    upstream_oauth2::{
-        associate_link_to_user, consume_session, lookup_link, lookup_session_on_link,
-    },
+    upstream_oauth2::{consume_session, lookup_session_on_link},
     user::{add_user, authenticate_session_with_upstream, lookup_user, start_session},
+    Repository, UpstreamOAuthLinkRepository,
 };
 use mas_templates::{
     EmptyContext, TemplateContext, Templates, UpstreamExistingLinkContext, UpstreamRegister,
@@ -104,7 +103,9 @@ pub(crate) async fn get(
         .lookup_link(link_id)
         .map_err(|_| RouteError::MissingCookie)?;
 
-    let link = lookup_link(&mut txn, link_id)
+    let link = txn
+        .upstream_oauth_link()
+        .lookup(link_id)
         .await?
         .ok_or(RouteError::LinkNotFound)?;
 
@@ -205,7 +206,9 @@ pub(crate) async fn post(
         post_auth_action: post_auth_action.cloned(),
     };
 
-    let link = lookup_link(&mut txn, link_id)
+    let link = txn
+        .upstream_oauth_link()
+        .lookup(link_id)
         .await?
         .ok_or(RouteError::LinkNotFound)?;
 
@@ -224,7 +227,10 @@ pub(crate) async fn post(
 
     let mut session = match (maybe_user_session, link.user_id, form) {
         (Some(session), None, FormData::Link) => {
-            associate_link_to_user(&mut txn, &link, &session.user).await?;
+            txn.upstream_oauth_link()
+                .associate_to_user(&link, &session.user)
+                .await?;
+
             session
         }
 
@@ -235,7 +241,9 @@ pub(crate) async fn post(
 
         (None, None, FormData::Register { username }) => {
             let user = add_user(&mut txn, &mut rng, &clock, &username).await?;
-            associate_link_to_user(&mut txn, &link, &user).await?;
+            txn.upstream_oauth_link()
+                .associate_to_user(&link, &user)
+                .await?;
 
             start_session(&mut txn, &mut rng, &clock, user).await?
         }

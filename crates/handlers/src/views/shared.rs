@@ -15,7 +15,8 @@
 use anyhow::Context;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{
-    compat::get_compat_sso_login_by_id, oauth2::authorization_grant::get_grant_by_id,
+    compat::get_compat_sso_login_by_id, oauth2::authorization_grant::get_grant_by_id, Repository,
+    UpstreamOAuthLinkRepository,
 };
 use mas_templates::{PostAuthContext, PostAuthContextInner};
 use serde::{Deserialize, Serialize};
@@ -63,7 +64,9 @@ impl OptionalPostAuthAction {
             PostAuthAction::ChangePassword => PostAuthContextInner::ChangePassword,
 
             PostAuthAction::LinkUpstream { id } => {
-                let link = mas_storage::upstream_oauth2::lookup_link(&mut *conn, id)
+                let link = conn
+                    .upstream_oauth_link()
+                    .lookup(id)
                     .await?
                     .context("Failed to load upstream OAuth 2.0 link")?;
 

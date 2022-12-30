@@ -7,3 +7,9 @@ opt-level = 3
 
 [profile.dev.package.sqlx-macros]
 opt-level = 3
+
+# Until https://github.com/dylanhart/ulid-rs/pull/56 gets merged and released
+[patch.crates-io.ulid]
+git = "https://github.com/sandhose/ulid-rs.git"
+#branch = "relax-sized-on-rng"
+rev = "f1ef6fd736c4d3cbc7cf314fad707f0803de46ed"

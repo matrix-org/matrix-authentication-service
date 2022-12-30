@@ -17,10 +17,7 @@ mod provider;
 mod session;
 
 pub use self::{
-    link::{
-        add_link, associate_link_to_user, get_paginated_user_links, lookup_link,
-        lookup_link_by_subject,
-    },
+    link::{PgUpstreamOAuthLinkRepository, UpstreamOAuthLinkRepository},
     provider::{add_provider, get_paginated_providers, get_providers, lookup_provider},
     session::{
         add_session, complete_session, consume_session, lookup_session, lookup_session_on_link,
