@@ -25,7 +25,7 @@ use mas_axum_utils::{
 };
 use mas_keystore::Encrypter;
 use mas_storage::{
-    upstream_oauth2::{consume_session, lookup_session_on_link},
+    upstream_oauth2::UpstreamOAuthSessionRepository,
     user::{add_user, authenticate_session_with_upstream, lookup_user, start_session},
     Repository, UpstreamOAuthLinkRepository,
 };
@@ -109,11 +109,17 @@ pub(crate) async fn get(
         .await?
         .ok_or(RouteError::LinkNotFound)?;
 
-    // This checks that we're in a browser session which is allowed to consume this
-    // link: the upstream auth session should have been started in this browser.
-    let upstream_session = lookup_session_on_link(&mut txn, &link, session_id)
+    let upstream_session = txn
+        .upstream_oauth_session()
+        .lookup(session_id)
         .await?
         .ok_or(RouteError::SessionNotFound)?;
+
+    // This checks that we're in a browser session which is allowed to consume this
+    // link: the upstream auth session should have been started in this browser.
+    if upstream_session.link_id != Some(link.id) {
+        return Err(RouteError::SessionNotFound);
+    }
 
     if upstream_session.consumed() {
         return Err(RouteError::SessionConsumed);
@@ -127,7 +133,10 @@ pub(crate) async fn get(
         (Some(mut session), Some(user_id)) if session.user.id == user_id => {
             // Session already linked, and link matches the currently logged
             // user. Mark the session as consumed and renew the authentication.
-            consume_session(&mut txn, &clock, upstream_session).await?;
+            txn.upstream_oauth_session()
+                .consume(&clock, upstream_session)
+                .await?;
+
             authenticate_session_with_upstream(&mut txn, &mut rng, &clock, &mut session, &link)
                 .await?;
 
@@ -212,11 +221,17 @@ pub(crate) async fn post(
         .await?
         .ok_or(RouteError::LinkNotFound)?;
 
-    // This checks that we're in a browser session which is allowed to consume this
-    // link: the upstream auth session should have been started in this browser.
-    let upstream_session = lookup_session_on_link(&mut txn, &link, session_id)
+    let upstream_session = txn
+        .upstream_oauth_session()
+        .lookup(session_id)
         .await?
         .ok_or(RouteError::SessionNotFound)?;
+
+    // This checks that we're in a browser session which is allowed to consume this
+    // link: the upstream auth session should have been started in this browser.
+    if upstream_session.link_id != Some(link.id) {
+        return Err(RouteError::SessionNotFound);
+    }
 
     if upstream_session.consumed() {
         return Err(RouteError::SessionConsumed);
@@ -251,7 +266,10 @@ pub(crate) async fn post(
         _ => return Err(RouteError::InvalidFormAction),
     };
 
-    consume_session(&mut txn, &clock, upstream_session).await?;
+    txn.upstream_oauth_session()
+        .consume(&clock, upstream_session)
+        .await?;
+
     authenticate_session_with_upstream(&mut txn, &mut rng, &clock, &mut session, &link).await?;
 
     let cookie_jar = sessions_cookie

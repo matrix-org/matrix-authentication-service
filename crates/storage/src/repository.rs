@@ -14,7 +14,10 @@
 
 use sqlx::{PgConnection, Postgres, Transaction};
 
-use crate::upstream_oauth2::{PgUpstreamOAuthLinkRepository, PgUpstreamOAuthProviderRepository};
+use crate::upstream_oauth2::{
+    PgUpstreamOAuthLinkRepository, PgUpstreamOAuthProviderRepository,
+    PgUpstreamOAuthSessionRepository,
+};
 
 pub trait Repository {
     type UpstreamOAuthLinkRepository<'c>
@@ -25,13 +28,19 @@ pub trait Repository {
     where
         Self: 'c;
 
+    type UpstreamOAuthSessionRepository<'c>
+    where
+        Self: 'c;
+
     fn upstream_oauth_link(&mut self) -> Self::UpstreamOAuthLinkRepository<'_>;
     fn upstream_oauth_provider(&mut self) -> Self::UpstreamOAuthProviderRepository<'_>;
+    fn upstream_oauth_session(&mut self) -> Self::UpstreamOAuthSessionRepository<'_>;
 }
 
 impl Repository for PgConnection {
     type UpstreamOAuthLinkRepository<'c> = PgUpstreamOAuthLinkRepository<'c> where Self: 'c;
     type UpstreamOAuthProviderRepository<'c> = PgUpstreamOAuthProviderRepository<'c> where Self: 'c;
+    type UpstreamOAuthSessionRepository<'c> = PgUpstreamOAuthSessionRepository<'c> where Self: 'c;
 
     fn upstream_oauth_link(&mut self) -> Self::UpstreamOAuthLinkRepository<'_> {
         PgUpstreamOAuthLinkRepository::new(self)
@@ -39,12 +48,17 @@ impl Repository for PgConnection {
 
     fn upstream_oauth_provider(&mut self) -> Self::UpstreamOAuthProviderRepository<'_> {
         PgUpstreamOAuthProviderRepository::new(self)
+    }
+
+    fn upstream_oauth_session(&mut self) -> Self::UpstreamOAuthSessionRepository<'_> {
+        PgUpstreamOAuthSessionRepository::new(self)
     }
 }
 
 impl<'t> Repository for Transaction<'t, Postgres> {
     type UpstreamOAuthLinkRepository<'c> = PgUpstreamOAuthLinkRepository<'c> where Self: 'c;
     type UpstreamOAuthProviderRepository<'c> = PgUpstreamOAuthProviderRepository<'c> where Self: 'c;
+    type UpstreamOAuthSessionRepository<'c> = PgUpstreamOAuthSessionRepository<'c> where Self: 'c;
 
     fn upstream_oauth_link(&mut self) -> Self::UpstreamOAuthLinkRepository<'_> {
         PgUpstreamOAuthLinkRepository::new(self)
@@ -52,5 +66,9 @@ impl<'t> Repository for Transaction<'t, Postgres> {
 
     fn upstream_oauth_provider(&mut self) -> Self::UpstreamOAuthProviderRepository<'_> {
         PgUpstreamOAuthProviderRepository::new(self)
+    }
+
+    fn upstream_oauth_session(&mut self) -> Self::UpstreamOAuthSessionRepository<'_> {
+        PgUpstreamOAuthSessionRepository::new(self)
     }
 }

@@ -26,7 +26,7 @@ use mas_oidc_client::requests::{
 };
 use mas_router::{Route, UrlBuilder};
 use mas_storage::{
-    upstream_oauth2::{complete_session, lookup_session},
+    upstream_oauth2::{UpstreamOAuthProviderRepository, UpstreamOAuthSessionRepository},
     Repository, UpstreamOAuthLinkRepository,
 };
 use oauth2_types::errors::ClientErrorCode;
@@ -64,6 +64,9 @@ enum CodeOrError {
 pub(crate) enum RouteError {
     #[error("Session not found")]
     SessionNotFound,
+
+    #[error("Provider not found")]
+    ProviderNotFound,
 
     #[error("Provider mismatch")]
     ProviderMismatch,
@@ -105,6 +108,7 @@ impl_from_error_for_route!(super::cookie::UpstreamSessionNotFound);
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         match self {
+            Self::ProviderNotFound => (StatusCode::NOT_FOUND, "Provider not found").into_response(),
             Self::SessionNotFound => (StatusCode::NOT_FOUND, "Session not found").into_response(),
             Self::Internal(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
             e => (StatusCode::BAD_REQUEST, e.to_string()).into_response(),
@@ -127,16 +131,24 @@ pub(crate) async fn get(
 
     let mut txn = pool.begin().await?;
 
+    let provider = txn
+        .upstream_oauth_provider()
+        .lookup(provider_id)
+        .await?
+        .ok_or(RouteError::ProviderNotFound)?;
+
     let sessions_cookie = UpstreamSessionsCookie::load(&cookie_jar);
     let (session_id, _post_auth_action) = sessions_cookie
         .find_session(provider_id, &params.state)
         .map_err(|_| RouteError::MissingCookie)?;
 
-    let (provider, session) = lookup_session(&mut txn, session_id)
+    let session = txn
+        .upstream_oauth_session()
+        .lookup(session_id)
         .await?
         .ok_or(RouteError::SessionNotFound)?;
 
-    if provider.id != provider_id {
+    if provider.id != session.provider_id {
         // The provider in the session cookie should match the one from the URL
         return Err(RouteError::ProviderMismatch);
     }
@@ -245,7 +257,11 @@ pub(crate) async fn get(
             .await?
     };
 
-    let session = complete_session(&mut txn, &clock, session, &link, response.id_token).await?;
+    let session = txn
+        .upstream_oauth_session()
+        .complete_with_link(&clock, session, &link, response.id_token)
+        .await?;
+
     let cookie_jar = sessions_cookie
         .add_link_to_session(session.id, link.id)?
         .save(cookie_jar, clock.now());

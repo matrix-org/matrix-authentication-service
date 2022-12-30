@@ -19,7 +19,111 @@ mod session;
 pub use self::{
     link::{PgUpstreamOAuthLinkRepository, UpstreamOAuthLinkRepository},
     provider::{PgUpstreamOAuthProviderRepository, UpstreamOAuthProviderRepository},
-    session::{
-        add_session, complete_session, consume_session, lookup_session, lookup_session_on_link,
-    },
+    session::{PgUpstreamOAuthSessionRepository, UpstreamOAuthSessionRepository},
 };
+
+#[cfg(test)]
+mod tests {
+    use oauth2_types::scope::{Scope, OPENID};
+    use rand::SeedableRng;
+    use sqlx::PgPool;
+
+    use super::*;
+    use crate::{Clock, Repository};
+
+    #[sqlx::test(migrator = "crate::MIGRATOR")]
+    async fn test_repository(pool: PgPool) -> Result<(), Box<dyn std::error::Error>> {
+        let mut rng = rand_chacha::ChaChaRng::seed_from_u64(42);
+        let clock = Clock::default();
+        let mut conn = pool.acquire().await?;
+
+        // The provider list should be empty at the start
+        let all_providers = conn.upstream_oauth_provider().all().await?;
+        assert!(all_providers.is_empty());
+
+        // Let's add a provider
+        let provider = conn
+            .upstream_oauth_provider()
+            .add(
+                &mut rng,
+                &clock,
+                "https://example.com/".to_owned(),
+                Scope::from_iter([OPENID]),
+                mas_iana::oauth::OAuthClientAuthenticationMethod::None,
+                None,
+                "client-id".to_owned(),
+                None,
+            )
+            .await?;
+
+        // Look it up in the database
+        let provider = conn
+            .upstream_oauth_provider()
+            .lookup(provider.id)
+            .await?
+            .expect("provider to be found in the database");
+        assert_eq!(provider.issuer, "https://example.com/");
+        assert_eq!(provider.client_id, "client-id");
+
+        // Start a session
+        let session = conn
+            .upstream_oauth_session()
+            .add(
+                &mut rng,
+                &clock,
+                &provider,
+                "some-state".to_owned(),
+                None,
+                "some-nonce".to_owned(),
+            )
+            .await?;
+
+        // Look it up in the database
+        let session = conn
+            .upstream_oauth_session()
+            .lookup(session.id)
+            .await?
+            .expect("session to be found in the database");
+        assert_eq!(session.provider_id, provider.id);
+        assert_eq!(session.link_id, None);
+        assert!(!session.completed());
+        assert!(!session.consumed());
+
+        // Create a link
+        let link = conn
+            .upstream_oauth_link()
+            .add(&mut rng, &clock, &provider, "a-subject".to_owned())
+            .await?;
+
+        // We can look it up by its ID
+        conn.upstream_oauth_link()
+            .lookup(link.id)
+            .await?
+            .expect("link to be found in database");
+
+        // or by its subject
+        let link = conn
+            .upstream_oauth_link()
+            .find_by_subject(&provider, "a-subject")
+            .await?
+            .expect("link to be found in database");
+        assert_eq!(link.subject, "a-subject");
+        assert_eq!(link.provider_id, provider.id);
+
+        let session = conn
+            .upstream_oauth_session()
+            .complete_with_link(&clock, session, &link, None)
+            .await?;
+        assert!(session.completed());
+        assert!(!session.consumed());
+        assert_eq!(session.link_id, Some(link.id));
+
+        let session = conn
+            .upstream_oauth_session()
+            .consume(&clock, session)
+            .await?;
+        assert!(session.consumed());
+
+        Ok(())
+    }
+}

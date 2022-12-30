@@ -22,7 +22,10 @@ use mas_axum_utils::http_client_factory::HttpClientFactory;
 use mas_keystore::Encrypter;
 use mas_oidc_client::requests::authorization_code::AuthorizationRequestData;
 use mas_router::UrlBuilder;
-use mas_storage::{upstream_oauth2::UpstreamOAuthProviderRepository, Repository};
+use mas_storage::{
+    upstream_oauth2::{UpstreamOAuthProviderRepository, UpstreamOAuthSessionRepository},
+    Repository,
+};
 use sqlx::PgPool;
 use thiserror::Error;
 use ulid::Ulid;
@@ -97,16 +100,17 @@ pub(crate) async fn get(
         &mut rng,
     )?;
 
-    let session = mas_storage::upstream_oauth2::add_session(
-        &mut txn,
-        &mut rng,
-        &clock,
-        &provider,
-        data.state.clone(),
-        data.code_challenge_verifier,
-        data.nonce,
-    )
-    .await?;
+    let session = txn
+        .upstream_oauth_session()
+        .add(
+            &mut rng,
+            &clock,
+            &provider,
+            data.state.clone(),
+            data.code_challenge_verifier,
+            data.nonce,
+        )
+        .await?;
 
     let cookie_jar = UpstreamSessionsCookie::load(&cookie_jar)
         .add(session.id, provider.id, data.state, query.post_auth_action)

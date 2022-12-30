@@ -14,8 +14,8 @@ serde_json = "1.0.91"
 thiserror = "1.0.38"
 tracing = "0.1.37"
 
-# Password hashing
 rand = "0.8.5"
+rand_chacha = "0.3.1"
 url = { version = "2.3.1", features = ["serde"] }
 uuid = "1.2.2"
 ulid = { version = "1.0.0", features = ["uuid", "serde"] }
