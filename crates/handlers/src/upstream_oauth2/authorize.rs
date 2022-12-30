@@ -22,7 +22,7 @@ use mas_axum_utils::http_client_factory::HttpClientFactory;
 use mas_keystore::Encrypter;
 use mas_oidc_client::requests::authorization_code::AuthorizationRequestData;
 use mas_router::UrlBuilder;
-use mas_storage::upstream_oauth2::lookup_provider;
+use mas_storage::{upstream_oauth2::UpstreamOAuthProviderRepository, Repository};
 use sqlx::PgPool;
 use thiserror::Error;
 use ulid::Ulid;
@@ -66,7 +66,9 @@ pub(crate) async fn get(
 
     let mut txn = pool.begin().await?;
 
-    let provider = lookup_provider(&mut txn, provider_id)
+    let provider = txn
+        .upstream_oauth_provider()
+        .lookup(provider_id)
         .await?
         .ok_or(RouteError::ProviderNotFound)?;
 

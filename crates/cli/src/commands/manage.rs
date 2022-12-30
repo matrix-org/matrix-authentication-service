@@ -19,10 +19,11 @@ use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod
 use mas_router::UrlBuilder;
 use mas_storage::{
     oauth2::client::{insert_client_from_config, lookup_client, truncate_clients},
+    upstream_oauth2::UpstreamOAuthProviderRepository,
     user::{
         add_user_password, lookup_user_by_username, lookup_user_email, mark_user_email_as_verified,
     },
-    Clock,
+    Clock, Repository,
 };
 use oauth2_types::scope::Scope;
 use rand::SeedableRng;
@@ -329,18 +330,19 @@ impl Options {
                     .map(|client_secret| encrypter.encryt_to_string(client_secret.as_bytes()))
                     .transpose()?;
 
-                let provider = mas_storage::upstream_oauth2::add_provider(
-                    &mut conn,
-                    &mut rng,
-                    &clock,
-                    issuer.clone(),
-                    scope.clone(),
-                    token_endpoint_auth_method,
-                    token_endpoint_signing_alg,
-                    client_id.clone(),
-                    encrypted_client_secret,
-                )
-                .await?;
+                let provider = conn
+                    .upstream_oauth_provider()
+                    .add(
+                        &mut rng,
+                        &clock,
+                        issuer.clone(),
+                        scope.clone(),
+                        token_endpoint_auth_method,
+                        token_endpoint_signing_alg,
+                        client_id.clone(),
+                        encrypted_client_secret,
+                    )
+                    .await?;
 
                 let redirect_uri = url_builder.upstream_oauth_callback(provider.id);
                 let auth_uri = url_builder.upstream_oauth_authorize(provider.id);

@@ -24,11 +24,12 @@ use mas_axum_utils::{
 use mas_data_model::BrowserSession;
 use mas_keystore::Encrypter;
 use mas_storage::{
+    upstream_oauth2::UpstreamOAuthProviderRepository,
     user::{
         add_user_password, authenticate_session_with_password, lookup_user_by_username,
         lookup_user_password, start_session,
     },
-    Clock,
+    Clock, Repository,
 };
 use mas_templates::{
     FieldError, FormError, LoginContext, LoginFormField, TemplateContext, Templates, ToFormState,
@@ -69,7 +70,7 @@ pub(crate) async fn get(
         let reply = query.go_next();
         Ok((cookie_jar, reply).into_response())
     } else {
-        let providers = mas_storage::upstream_oauth2::get_providers(&mut conn).await?;
+        let providers = conn.upstream_oauth_provider().all().await?;
         let content = render(
             LoginContext::default().with_upstrem_providers(providers),
             query,
@@ -114,7 +115,7 @@ pub(crate) async fn post(
     };
 
     if !state.is_valid() {
-        let providers = mas_storage::upstream_oauth2::get_providers(&mut conn).await?;
+        let providers = conn.upstream_oauth_provider().all().await?;
         let content = render(
             LoginContext::default()
                 .with_form_state(state)

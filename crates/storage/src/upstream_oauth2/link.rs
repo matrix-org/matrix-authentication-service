@@ -56,7 +56,7 @@ pub trait UpstreamOAuthLinkRepository: Send + Sync {
         user: &User,
     ) -> Result<(), Self::Error>;
 
-    /// Get a paginated list of upstream OAuth links
+    /// Get a paginated list of upstream OAuth links on a user
     async fn list_paginated(
         &mut self,
         user: &User,

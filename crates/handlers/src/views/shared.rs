@@ -15,8 +15,8 @@
 use anyhow::Context;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{
-    compat::get_compat_sso_login_by_id, oauth2::authorization_grant::get_grant_by_id, Repository,
-    UpstreamOAuthLinkRepository,
+    compat::get_compat_sso_login_by_id, oauth2::authorization_grant::get_grant_by_id,
+    upstream_oauth2::UpstreamOAuthProviderRepository, Repository, UpstreamOAuthLinkRepository,
 };
 use mas_templates::{PostAuthContext, PostAuthContextInner};
 use serde::{Deserialize, Serialize};
@@ -70,10 +70,11 @@ impl OptionalPostAuthAction {
                     .await?
                     .context("Failed to load upstream OAuth 2.0 link")?;
 
-                let provider =
-                    mas_storage::upstream_oauth2::lookup_provider(&mut *conn, link.provider_id)
-                        .await?
-                        .context("Failed to load upstream OAuth 2.0 provider")?;
+                let provider = conn
+                    .upstream_oauth_provider()
+                    .lookup(link.provider_id)
+                    .await?
+                    .context("Failed to load upstream OAuth 2.0 provider")?;
 
                 let provider = Box::new(provider);
                 let link = Box::new(link);

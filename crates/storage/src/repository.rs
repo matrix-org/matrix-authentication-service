@@ -14,28 +14,43 @@
 
 use sqlx::{PgConnection, Postgres, Transaction};
 
-use crate::upstream_oauth2::PgUpstreamOAuthLinkRepository;
+use crate::upstream_oauth2::{PgUpstreamOAuthLinkRepository, PgUpstreamOAuthProviderRepository};
 
 pub trait Repository {
     type UpstreamOAuthLinkRepository<'c>
     where
         Self: 'c;
 
+    type UpstreamOAuthProviderRepository<'c>
+    where
+        Self: 'c;
+
     fn upstream_oauth_link(&mut self) -> Self::UpstreamOAuthLinkRepository<'_>;
+    fn upstream_oauth_provider(&mut self) -> Self::UpstreamOAuthProviderRepository<'_>;
 }
 
 impl Repository for PgConnection {
     type UpstreamOAuthLinkRepository<'c> = PgUpstreamOAuthLinkRepository<'c> where Self: 'c;
+    type UpstreamOAuthProviderRepository<'c> = PgUpstreamOAuthProviderRepository<'c> where Self: 'c;
 
     fn upstream_oauth_link(&mut self) -> Self::UpstreamOAuthLinkRepository<'_> {
         PgUpstreamOAuthLinkRepository::new(self)
+    }
+
+    fn upstream_oauth_provider(&mut self) -> Self::UpstreamOAuthProviderRepository<'_> {
+        PgUpstreamOAuthProviderRepository::new(self)
     }
 }
 
 impl<'t> Repository for Transaction<'t, Postgres> {
     type UpstreamOAuthLinkRepository<'c> = PgUpstreamOAuthLinkRepository<'c> where Self: 'c;
+    type UpstreamOAuthProviderRepository<'c> = PgUpstreamOAuthProviderRepository<'c> where Self: 'c;
 
     fn upstream_oauth_link(&mut self) -> Self::UpstreamOAuthLinkRepository<'_> {
         PgUpstreamOAuthLinkRepository::new(self)
+    }
+
+    fn upstream_oauth_provider(&mut self) -> Self::UpstreamOAuthProviderRepository<'_> {
+        PgUpstreamOAuthProviderRepository::new(self)
     }
 }

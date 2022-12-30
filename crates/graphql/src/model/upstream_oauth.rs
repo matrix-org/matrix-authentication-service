@@ -15,6 +15,7 @@
 use anyhow::Context as _;
 use async_graphql::{Context, Object, ID};
 use chrono::{DateTime, Utc};
+use mas_storage::{upstream_oauth2::UpstreamOAuthProviderRepository, Repository};
 use sqlx::PgPool;
 
 use super::{NodeType, User};
@@ -101,7 +102,8 @@ impl UpstreamOAuth2Link {
             // Fetch on-the-fly
             let database = ctx.data::<PgPool>()?;
             let mut conn = database.acquire().await?;
-            mas_storage::upstream_oauth2::lookup_provider(&mut conn, self.link.provider_id)
+            conn.upstream_oauth_provider()
+                .lookup(self.link.provider_id)
                 .await?
                 .context("Upstream OAuth 2.0 provider not found")?
         };

@@ -30,7 +30,9 @@ use async_graphql::{
     connection::{query, Connection, Edge, OpaqueCursor},
     Context, Description, EmptyMutation, EmptySubscription, ID,
 };
-use mas_storage::{Repository, UpstreamOAuthLinkRepository};
+use mas_storage::{
+    upstream_oauth2::UpstreamOAuthProviderRepository, Repository, UpstreamOAuthLinkRepository,
+};
 use model::CreationEvent;
 use sqlx::PgPool;
 
@@ -190,7 +192,7 @@ impl RootQuery {
         let database = ctx.data::<PgPool>()?;
         let mut conn = database.acquire().await?;
 
-        let provider = mas_storage::upstream_oauth2::lookup_provider(&mut conn, id).await?;
+        let provider = conn.upstream_oauth_provider().lookup(id).await?;
 
         Ok(provider.map(UpstreamOAuth2Provider::new))
     }
@@ -227,14 +229,13 @@ impl RootQuery {
                     })
                     .transpose()?;
 
-                let (has_previous_page, has_next_page, edges) =
-                    mas_storage::upstream_oauth2::get_paginated_providers(
-                        &mut conn, before_id, after_id, first, last,
-                    )
+                let page = conn
+                    .upstream_oauth_provider()
+                    .list_paginated(before_id, after_id, first, last)
                     .await?;
 
-                let mut connection = Connection::new(has_previous_page, has_next_page);
-                connection.edges.extend(edges.into_iter().map(|p| {
+                let mut connection = Connection::new(page.has_previous_page, page.has_next_page);
+                connection.edges.extend(page.edges.into_iter().map(|p| {
                     Edge::new(
                         OpaqueCursor(NodeCursor(NodeType::UpstreamOAuth2Provider, p.id)),
                         UpstreamOAuth2Provider::new(p),

@@ -116,68 +116,6 @@
     },
     "query": "\n            SELECT\n                c.oauth2_client_id,\n                c.encrypted_client_secret,\n                ARRAY(\n                    SELECT redirect_uri\n                    FROM oauth2_client_redirect_uris r\n                    WHERE r.oauth2_client_id = c.oauth2_client_id\n                ) AS \"redirect_uris!\",\n                c.grant_type_authorization_code,\n                c.grant_type_refresh_token,\n                c.client_name,\n                c.logo_uri,\n                c.client_uri,\n                c.policy_uri,\n                c.tos_uri,\n                c.jwks_uri,\n                c.jwks,\n                c.id_token_signed_response_alg,\n                c.userinfo_signed_response_alg,\n                c.token_endpoint_auth_method,\n                c.token_endpoint_auth_signing_alg,\n                c.initiate_login_uri\n            FROM oauth2_clients c\n\n            WHERE c.oauth2_client_id = $1\n        "
   },
-  "0af182315b36766eca8e232280986bade0202d1b1d64160a99cd14eadcbfc25b": {
-    "describe": {
-      "columns": [
-        {
-          "name": "upstream_oauth_provider_id",
-          "ordinal": 0,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "issuer",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "scope",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "client_id",
-          "ordinal": 3,
-          "type_info": "Text"
-        },
-        {
-          "name": "encrypted_client_secret",
-          "ordinal": 4,
-          "type_info": "Text"
-        },
-        {
-          "name": "token_endpoint_signing_alg",
-          "ordinal": 5,
-          "type_info": "Text"
-        },
-        {
-          "name": "token_endpoint_auth_method",
-          "ordinal": 6,
-          "type_info": "Text"
-        },
-        {
-          "name": "created_at",
-          "ordinal": 7,
-          "type_info": "Timestamptz"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        true,
-        true,
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Uuid"
-        ]
-      }
-    },
-    "query": "\n            SELECT\n                upstream_oauth_provider_id,\n                issuer,\n                scope,\n                client_id,\n                encrypted_client_secret,\n                token_endpoint_signing_alg,\n                token_endpoint_auth_method,\n                created_at\n            FROM upstream_oauth_providers\n            WHERE upstream_oauth_provider_id = $1\n        "
-  },
   "0b49cde0b7b79f79ec261502ab89bcffa81f9f5ed2f922a41b1718274b9e3073": {
     "describe": {
       "columns": [
@@ -240,6 +178,66 @@
       }
     },
     "query": "\n            UPDATE user_emails\n            SET confirmed_at = $2\n            WHERE user_email_id = $1\n        "
+  },
+  "154e2e4488ff87e09163698750b56a43127cee4e1392785416a586d40a4d9b21": {
+    "describe": {
+      "columns": [
+        {
+          "name": "upstream_oauth_provider_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "issuer",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "scope",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "client_id",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "encrypted_client_secret",
+          "ordinal": 4,
+          "type_info": "Text"
+        },
+        {
+          "name": "token_endpoint_signing_alg",
+          "ordinal": 5,
+          "type_info": "Text"
+        },
+        {
+          "name": "token_endpoint_auth_method",
+          "ordinal": 6,
+          "type_info": "Text"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 7,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "\n                SELECT\n                    upstream_oauth_provider_id,\n                    issuer,\n                    scope,\n                    client_id,\n                    encrypted_client_secret,\n                    token_endpoint_signing_alg,\n                    token_endpoint_auth_method,\n                    created_at\n                FROM upstream_oauth_providers\n            "
   },
   "1eb6d13e75d8f526c2785749a020731c18012f03e07995213acd38ab560ce497": {
     "describe": {
@@ -2089,6 +2087,68 @@
     },
     "query": "\n            SELECT COUNT(*)\n            FROM user_emails ue\n            WHERE ue.user_id = $1\n        "
   },
+  "8f7a9fb1f24c24f8dbc3c193df2a742c9ac730ab958587b67297de2d4b843863": {
+    "describe": {
+      "columns": [
+        {
+          "name": "upstream_oauth_provider_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "issuer",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "scope",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "client_id",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "encrypted_client_secret",
+          "ordinal": 4,
+          "type_info": "Text"
+        },
+        {
+          "name": "token_endpoint_signing_alg",
+          "ordinal": 5,
+          "type_info": "Text"
+        },
+        {
+          "name": "token_endpoint_auth_method",
+          "ordinal": 6,
+          "type_info": "Text"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 7,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n                SELECT\n                    upstream_oauth_provider_id,\n                    issuer,\n                    scope,\n                    client_id,\n                    encrypted_client_secret,\n                    token_endpoint_signing_alg,\n                    token_endpoint_auth_method,\n                    created_at\n                FROM upstream_oauth_providers\n                WHERE upstream_oauth_provider_id = $1\n            "
+  },
   "99f5f9eb0adc5ec120ed8194cbf6a8545155bef09e6d94d92fb67fd1b14d4f28": {
     "describe": {
       "columns": [],
@@ -2585,66 +2645,6 @@
       }
     },
     "query": "\n            INSERT INTO oauth2_clients\n                (oauth2_client_id,\n                 encrypted_client_secret,\n                 grant_type_authorization_code,\n                 grant_type_refresh_token,\n                 client_name,\n                 logo_uri,\n                 client_uri,\n                 policy_uri,\n                 tos_uri,\n                 jwks_uri,\n                 jwks,\n                 id_token_signed_response_alg,\n                 userinfo_signed_response_alg,\n                 token_endpoint_auth_method,\n                 token_endpoint_auth_signing_alg,\n                 initiate_login_uri)\n            VALUES\n                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)\n        "
-  },
-  "cf00e0ad529bcb5c0640adcfe0880a3560d9739f355b90ca3ba88dd1eaf26565": {
-    "describe": {
-      "columns": [
-        {
-          "name": "upstream_oauth_provider_id",
-          "ordinal": 0,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "issuer",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "scope",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "client_id",
-          "ordinal": 3,
-          "type_info": "Text"
-        },
-        {
-          "name": "encrypted_client_secret",
-          "ordinal": 4,
-          "type_info": "Text"
-        },
-        {
-          "name": "token_endpoint_signing_alg",
-          "ordinal": 5,
-          "type_info": "Text"
-        },
-        {
-          "name": "token_endpoint_auth_method",
-          "ordinal": 6,
-          "type_info": "Text"
-        },
-        {
-          "name": "created_at",
-          "ordinal": 7,
-          "type_info": "Timestamptz"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        true,
-        true,
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": []
-      }
-    },
-    "query": "\n            SELECT\n                upstream_oauth_provider_id,\n                issuer,\n                scope,\n                client_id,\n                encrypted_client_secret,\n                token_endpoint_signing_alg,\n                token_endpoint_auth_method,\n                created_at\n            FROM upstream_oauth_providers\n        "
   },
   "d1738c27339b81f0844da4bd9b040b9b07a91aa4d9b199b98f24c9cee5709b2b": {
     "describe": {
