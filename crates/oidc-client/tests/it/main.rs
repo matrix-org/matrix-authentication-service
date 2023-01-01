@@ -130,7 +130,7 @@ fn id_token(issuer: &str) -> (IdToken, PublicJsonWebKeySet) {
 fn client_credentials(
     auth_method: OAuthClientAuthenticationMethod,
     issuer: &Url,
-    custom_signing: Option<Box<JwtSigningFn>>,
+    custom_signing: Option<JwtSigningFn>,
 ) -> ClientCredentials {
     match auth_method {
         OAuthClientAuthenticationMethod::None => ClientCredentials::None {

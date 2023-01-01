@@ -372,7 +372,7 @@ async fn pass_private_key_jwt_with_custom_signing() {
     let client_credentials = client_credentials(
         OAuthClientAuthenticationMethod::PrivateKeyJwt,
         &issuer,
-        Some(Box::new(|_claims, _alg| Ok("fake.signed.jwt".to_owned()))),
+        Some(|_claims, _alg| Ok("fake.signed.jwt".to_owned())),
     );
     let token_endpoint = issuer.join("token").unwrap();
     let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(42);
@@ -441,7 +441,7 @@ async fn fail_private_key_jwt_with_custom_signing() {
     let client_credentials = client_credentials(
         OAuthClientAuthenticationMethod::PrivateKeyJwt,
         &issuer,
-        Some(Box::new(|_claims, _alg| Err("Something went wrong".into()))),
+        Some(|_claims, _alg| Err("Something went wrong".into())),
     );
     let token_endpoint = issuer.join("token").unwrap();
     let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(42);
