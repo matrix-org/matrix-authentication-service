@@ -179,6 +179,7 @@ pub mod compat;
 pub mod oauth2;
 pub(crate) mod pagination;
 pub(crate) mod repository;
+pub(crate) mod tracing;
 pub mod upstream_oauth2;
 pub mod user;
 

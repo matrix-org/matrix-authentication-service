@@ -20,7 +20,7 @@ use sqlx::PgConnection;
 use ulid::Ulid;
 use uuid::Uuid;
 
-use crate::{Clock, DatabaseError, LookupResultExt};
+use crate::{tracing::ExecuteExt, Clock, DatabaseError, LookupResultExt};
 
 #[async_trait]
 pub trait UpstreamOAuthSessionRepository: Send + Sync {
@@ -88,8 +88,12 @@ impl<'c> UpstreamOAuthSessionRepository for PgUpstreamOAuthSessionRepository<'c>
     type Error = DatabaseError;
 
     #[tracing::instrument(
+        name = "db.upstream_oauth_authorization_session.lookup",
         skip_all,
-        fields(upstream_oauth_provider.id = %id),
+        fields(
+            db.statement,
+            upstream_oauth_provider.id = %id,
+        ),
         err,
     )]
     async fn lookup(
@@ -115,6 +119,7 @@ impl<'c> UpstreamOAuthSessionRepository for PgUpstreamOAuthSessionRepository<'c>
             "#,
             Uuid::from(id),
         )
+        .traced()
         .fetch_one(&mut *self.conn)
         .await
         .to_option()?;
@@ -138,8 +143,10 @@ impl<'c> UpstreamOAuthSessionRepository for PgUpstreamOAuthSessionRepository<'c>
     }
 
     #[tracing::instrument(
+        name = "db.upstream_oauth_authorization_session.add",
         skip_all,
         fields(
+            db.statement,
             %upstream_oauth_provider.id,
             %upstream_oauth_provider.issuer,
             %upstream_oauth_provider.client_id,
@@ -184,6 +191,7 @@ impl<'c> UpstreamOAuthSessionRepository for PgUpstreamOAuthSessionRepository<'c>
             nonce,
             created_at,
         )
+        .traced()
         .execute(&mut *self.conn)
         .await?;
 
@@ -202,8 +210,10 @@ impl<'c> UpstreamOAuthSessionRepository for PgUpstreamOAuthSessionRepository<'c>
     }
 
     #[tracing::instrument(
+        name = "db.upstream_oauth_authorization_session.complete_with_link",
         skip_all,
         fields(
+            db.statement,
             %upstream_oauth_authorization_session.id,
             %upstream_oauth_link.id,
         ),
@@ -230,6 +240,7 @@ impl<'c> UpstreamOAuthSessionRepository for PgUpstreamOAuthSessionRepository<'c>
             id_token,
             Uuid::from(upstream_oauth_authorization_session.id),
         )
+        .traced()
         .execute(&mut *self.conn)
         .await?;
 
@@ -242,8 +253,10 @@ impl<'c> UpstreamOAuthSessionRepository for PgUpstreamOAuthSessionRepository<'c>
 
     /// Mark a session as consumed
     #[tracing::instrument(
+        name = "db.upstream_oauth_authorization_session.consume",
         skip_all,
         fields(
+            db.statement,
             %upstream_oauth_authorization_session.id,
         ),
         err,
@@ -263,6 +276,7 @@ impl<'c> UpstreamOAuthSessionRepository for PgUpstreamOAuthSessionRepository<'c>
             consumed_at,
             Uuid::from(upstream_oauth_authorization_session.id),
         )
+        .traced()
         .execute(&mut *self.conn)
         .await?;
 

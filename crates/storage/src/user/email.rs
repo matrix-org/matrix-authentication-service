@@ -22,6 +22,7 @@ use uuid::Uuid;
 
 use crate::{
     pagination::{process_page, Page, QueryBuilderExt},
+    tracing::ExecuteExt,
     Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt,
 };
 
@@ -152,8 +153,12 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
     type Error = DatabaseError;
 
     #[tracing::instrument(
+        name = "db.user_email.lookup",
         skip_all,
-        fields(user_email.id = %id),
+        fields(
+            db.statement,
+            user_email.id = %id,
+        ),
         err,
     )]
     async fn lookup(&mut self, id: Ulid) -> Result<Option<UserEmail>, Self::Error> {
@@ -171,6 +176,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
             "#,
             Uuid::from(id),
         )
+        .traced()
         .fetch_one(&mut *self.conn)
         .await
         .to_option()?;
@@ -181,8 +187,13 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
     }
 
     #[tracing::instrument(
+        name = "db.user_email.find",
         skip_all,
-        fields(%user.id, user_email.email = email),
+        fields(
+            db.statement,
+            %user.id,
+            user_email.email = email,
+        ),
         err,
     )]
     async fn find(&mut self, user: &User, email: &str) -> Result<Option<UserEmail>, Self::Error> {
@@ -201,6 +212,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
             Uuid::from(user.id),
             email,
         )
+        .traced()
         .fetch_one(&mut *self.conn)
         .await
         .to_option()?;
@@ -211,8 +223,12 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
     }
 
     #[tracing::instrument(
+        name = "db.user_email.get_primary",
         skip_all,
-        fields(%user.id),
+        fields(
+            db.statement,
+            %user.id,
+        ),
         err,
     )]
     async fn get_primary(&mut self, user: &User) -> Result<Option<UserEmail>, Self::Error> {
@@ -228,8 +244,12 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
     }
 
     #[tracing::instrument(
+        name = "db.user_email.all",
         skip_all,
-        fields(%user.id),
+        fields(
+            db.statement,
+            %user.id,
+        ),
         err,
     )]
     async fn all(&mut self, user: &User) -> Result<Vec<UserEmail>, Self::Error> {
@@ -249,6 +269,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
             "#,
             Uuid::from(user.id),
         )
+        .traced()
         .fetch_all(&mut *self.conn)
         .await?;
 
@@ -256,8 +277,12 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
     }
 
     #[tracing::instrument(
+        name = "db.user_email.list_paginated",
         skip_all,
-        fields(%user.id),
+        fields(
+            db.statement,
+            %user.id,
+        ),
         err,
     )]
     async fn list_paginated(
@@ -284,7 +309,11 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
             .push_bind(Uuid::from(user.id))
             .generate_pagination("ue.user_email_id", before, after, first, last)?;
 
-        let edges: Vec<UserEmailLookup> = query.build_query_as().fetch_all(&mut *self.conn).await?;
+        let edges: Vec<UserEmailLookup> = query
+            .build_query_as()
+            .traced()
+            .fetch_all(&mut *self.conn)
+            .await?;
 
         let (has_previous_page, has_next_page, edges) = process_page(edges, first, last)?;
 
@@ -298,8 +327,12 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
     }
 
     #[tracing::instrument(
+        name = "db.user_email.count",
         skip_all,
-        fields(%user.id),
+        fields(
+            db.statement,
+            %user.id,
+        ),
         err,
     )]
     async fn count(&mut self, user: &User) -> Result<usize, Self::Error> {
@@ -311,6 +344,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
             "#,
             Uuid::from(user.id),
         )
+        .traced()
         .fetch_one(&mut *self.conn)
         .await?;
 
@@ -322,8 +356,10 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
     }
 
     #[tracing::instrument(
+        name = "db.user_email.add",
         skip_all,
         fields(
+            db.statement,
             %user.id,
             user_email.id,
             user_email.email = email,
@@ -351,6 +387,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
             &email,
             created_at,
         )
+        .traced()
         .execute(&mut *self.conn)
         .await?;
 
@@ -364,8 +401,10 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
     }
 
     #[tracing::instrument(
+        name = "db.user_email.remove",
         skip_all,
         fields(
+            db.statement,
             user.id = %user_email.user_id,
             %user_email.id,
             %user_email.email,
@@ -380,6 +419,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
             "#,
             Uuid::from(user_email.id),
         )
+        .traced()
         .execute(&mut *self.conn)
         .await?;
 
@@ -426,8 +466,10 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
     }
 
     #[tracing::instrument(
+        name = "db.user_email.add_verification_code",
         skip_all,
         fields(
+            db.statement,
             %user_email.id,
             %user_email.email,
             user_email_verification.id,
@@ -460,6 +502,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
             created_at,
             expires_at,
         )
+        .traced()
         .execute(&mut *self.conn)
         .await?;
 
@@ -475,8 +518,10 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
     }
 
     #[tracing::instrument(
+        name = "db.user_email.find_verification_code",
         skip_all,
         fields(
+            db.statement,
             %user_email.id,
             user.id = %user_email.user_id,
         ),
@@ -504,6 +549,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
             code,
             Uuid::from(user_email.id),
         )
+        .traced()
         .fetch_one(&mut *self.conn)
         .await
         .to_option()?;
@@ -514,8 +560,10 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
     }
 
     #[tracing::instrument(
+        name = "db.user_email.consume_verification_code",
         skip_all,
         fields(
+            db.statement,
             %user_email_verification.id,
             user_email.id = %user_email_verification.user_email_id,
         ),
@@ -544,6 +592,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
             Uuid::from(user_email_verification.id),
             consumed_at
         )
+        .traced()
         .execute(&mut *self.conn)
         .await?;
 

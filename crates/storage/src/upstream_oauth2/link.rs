@@ -17,12 +17,12 @@ use chrono::{DateTime, Utc};
 use mas_data_model::{UpstreamOAuthLink, UpstreamOAuthProvider, User};
 use rand::RngCore;
 use sqlx::{PgConnection, QueryBuilder};
-use tracing::{info_span, Instrument};
 use ulid::Ulid;
 use uuid::Uuid;
 
 use crate::{
     pagination::{process_page, Page, QueryBuilderExt},
+    tracing::ExecuteExt,
     Clock, DatabaseError, LookupResultExt,
 };
 
@@ -103,8 +103,12 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
     type Error = DatabaseError;
 
     #[tracing::instrument(
+        name = "db.upstream_oauth_link.lookup",
         skip_all,
-        fields(upstream_oauth_link.id = %id),
+        fields(
+            db.statement,
+            upstream_oauth_link.id = %id,
+        ),
         err,
     )]
     async fn lookup(&mut self, id: Ulid) -> Result<Option<UpstreamOAuthLink>, Self::Error> {
@@ -122,6 +126,7 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
             "#,
             Uuid::from(id),
         )
+        .traced()
         .fetch_one(&mut *self.conn)
         .await
         .to_option()?
@@ -131,8 +136,10 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
     }
 
     #[tracing::instrument(
+        name = "db.upstream_oauth_link.find_by_subject",
         skip_all,
         fields(
+            db.statement,
             upstream_oauth_link.subject = subject,
             %upstream_oauth_provider.id,
             %upstream_oauth_provider.issuer,
@@ -161,6 +168,7 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
             Uuid::from(upstream_oauth_provider.id),
             subject,
         )
+        .traced()
         .fetch_one(&mut *self.conn)
         .await
         .to_option()?
@@ -170,8 +178,10 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
     }
 
     #[tracing::instrument(
+        name = "db.upstream_oauth_link.add",
         skip_all,
         fields(
+            db.statement,
             upstream_oauth_link.id,
             upstream_oauth_link.subject = subject,
             %upstream_oauth_provider.id,
@@ -206,6 +216,7 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
             &subject,
             created_at,
         )
+        .traced()
         .execute(&mut *self.conn)
         .await?;
 
@@ -219,8 +230,10 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
     }
 
     #[tracing::instrument(
+        name = "db.upstream_oauth_link.associate_to_user",
         skip_all,
         fields(
+            db.statement,
             %upstream_oauth_link.id,
             %upstream_oauth_link.subject,
             %user.id,
@@ -242,6 +255,7 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
             Uuid::from(user.id),
             Uuid::from(upstream_oauth_link.id),
         )
+        .traced()
         .execute(&mut *self.conn)
         .await?;
 
@@ -249,8 +263,13 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
     }
 
     #[tracing::instrument(
+        name = "db.upstream_oauth_link.list_paginated",
         skip_all,
-        fields(%user.id, %user.username),
+        fields(
+            db.statement,
+            %user.id,
+            %user.username,
+        ),
         err
     )]
     async fn list_paginated(
@@ -278,14 +297,10 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
             .push_bind(Uuid::from(user.id))
             .generate_pagination("upstream_oauth_link_id", before, after, first, last)?;
 
-        let span = info_span!(
-            "Fetch paginated upstream OAuth 2.0 user links",
-            db.statement = query.sql()
-        );
         let page: Vec<LinkLookup> = query
             .build_query_as()
+            .traced()
             .fetch_all(&mut *self.conn)
-            .instrument(span)
             .await?;
 
         let (has_previous_page, has_next_page, edges) = process_page(page, first, last)?;

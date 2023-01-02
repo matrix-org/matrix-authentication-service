@@ -19,12 +19,12 @@ use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod
 use oauth2_types::scope::Scope;
 use rand::RngCore;
 use sqlx::{PgConnection, QueryBuilder};
-use tracing::{info_span, Instrument};
 use ulid::Ulid;
 use uuid::Uuid;
 
 use crate::{
     pagination::{process_page, Page, QueryBuilderExt},
+    tracing::ExecuteExt,
     Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt,
 };
 
@@ -129,8 +129,12 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
     type Error = DatabaseError;
 
     #[tracing::instrument(
+        name = "db.upstream_oauth_provider.lookup",
         skip_all,
-        fields(upstream_oauth_provider.id = %id),
+        fields(
+            db.statement,
+            upstream_oauth_provider.id = %id,
+        ),
         err,
     )]
     async fn lookup(&mut self, id: Ulid) -> Result<Option<UpstreamOAuthProvider>, Self::Error> {
@@ -151,6 +155,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
             "#,
             Uuid::from(id),
         )
+        .traced()
         .fetch_one(&mut *self.conn)
         .await
         .to_option()?;
@@ -164,8 +169,10 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
     }
 
     #[tracing::instrument(
+        name = "db.upstream_oauth_provider.add",
         skip_all,
         fields(
+            db.statement,
             upstream_oauth_provider.id,
             upstream_oauth_provider.issuer = %issuer,
             upstream_oauth_provider.client_id = %client_id,
@@ -210,6 +217,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
             encrypted_client_secret.as_deref(),
             created_at,
         )
+        .traced()
         .execute(&mut *self.conn)
         .await?;
 
@@ -225,6 +233,14 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
         })
     }
 
+    #[tracing::instrument(
+        name = "db.upstream_oauth_provider.list_paginated",
+        skip_all,
+        fields(
+            db.statement,
+        ),
+        err,
+    )]
     async fn list_paginated(
         &mut self,
         before: Option<Ulid>,
@@ -250,14 +266,10 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
 
         query.generate_pagination("upstream_oauth_provider_id", before, after, first, last)?;
 
-        let span = info_span!(
-            "Fetch paginated upstream OAuth 2.0 providers",
-            db.statement = query.sql()
-        );
         let page: Vec<ProviderLookup> = query
             .build_query_as()
+            .traced()
             .fetch_all(&mut *self.conn)
-            .instrument(span)
             .await?;
 
         let (has_previous_page, has_next_page, edges) = process_page(page, first, last)?;
@@ -269,7 +281,15 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
             edges: edges?,
         })
     }
-    #[tracing::instrument(skip_all, err)]
+
+    #[tracing::instrument(
+        name = "db.upstream_oauth_provider.all",
+        skip_all,
+        fields(
+            db.statement,
+        ),
+        err,
+    )]
     async fn all(&mut self) -> Result<Vec<UpstreamOAuthProvider>, Self::Error> {
         let res = sqlx::query_as!(
             ProviderLookup,
@@ -286,6 +306,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
                 FROM upstream_oauth_providers
             "#,
         )
+        .traced()
         .fetch_all(&mut *self.conn)
         .await?;
 

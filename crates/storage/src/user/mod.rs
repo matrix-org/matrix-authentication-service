@@ -23,6 +23,7 @@ use uuid::Uuid;
 
 use crate::{
     pagination::{process_page, QueryBuilderExt},
+    tracing::ExecuteExt,
     Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt,
 };
 
@@ -88,8 +89,12 @@ impl<'c> UserRepository for PgUserRepository<'c> {
     type Error = DatabaseError;
 
     #[tracing::instrument(
+        name = "db.user.lookup",
         skip_all,
-        fields(user.id = %id),
+        fields(
+            db.statement,
+            user.id = %id,
+        ),
         err,
     )]
     async fn lookup(&mut self, id: Ulid) -> Result<Option<User>, Self::Error> {
@@ -105,6 +110,7 @@ impl<'c> UserRepository for PgUserRepository<'c> {
             "#,
             Uuid::from(id),
         )
+        .traced()
         .fetch_one(&mut *self.conn)
         .await
         .to_option()?;
@@ -115,8 +121,12 @@ impl<'c> UserRepository for PgUserRepository<'c> {
     }
 
     #[tracing::instrument(
+        name = "db.user.find_by_username",
         skip_all,
-        fields(user.username = username),
+        fields(
+            db.statement,
+            user.username = username,
+        ),
         err,
     )]
     async fn find_by_username(&mut self, username: &str) -> Result<Option<User>, Self::Error> {
@@ -132,6 +142,7 @@ impl<'c> UserRepository for PgUserRepository<'c> {
             "#,
             username,
         )
+        .traced()
         .fetch_one(&mut *self.conn)
         .await
         .to_option()?;
@@ -142,8 +153,10 @@ impl<'c> UserRepository for PgUserRepository<'c> {
     }
 
     #[tracing::instrument(
+        name = "db.user.add",
         skip_all,
         fields(
+            db.statement,
             user.username = username,
             user.id,
         ),
@@ -168,6 +181,7 @@ impl<'c> UserRepository for PgUserRepository<'c> {
             username,
             created_at,
         )
+        .traced()
         .execute(&mut *self.conn)
         .await?;
 
@@ -180,8 +194,12 @@ impl<'c> UserRepository for PgUserRepository<'c> {
     }
 
     #[tracing::instrument(
+        name = "db.user.exists",
         skip_all,
-        fields(user.username = username),
+        fields(
+            db.statement,
+            user.username = username,
+        ),
         err,
     )]
     async fn exists(&mut self, username: &str) -> Result<bool, Self::Error> {
@@ -193,6 +211,7 @@ impl<'c> UserRepository for PgUserRepository<'c> {
             "#,
             username
         )
+        .traced()
         .fetch_one(&mut *self.conn)
         .await?;
 
