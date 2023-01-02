@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use chrono::{DateTime, Duration, Utc};
-use mas_data_model::{AccessToken, Authentication, BrowserSession, Session, User, UserEmail};
+use mas_data_model::{AccessToken, Authentication, BrowserSession, Session, User};
 use rand::Rng;
 use sqlx::{PgConnection, PgExecutor};
 use ulid::Ulid;
@@ -84,12 +84,9 @@ pub struct OAuth2AccessTokenLookup {
     user_session_created_at: DateTime<Utc>,
     user_id: Uuid,
     user_username: String,
+    user_primary_user_email_id: Option<Uuid>,
     user_session_last_authentication_id: Option<Uuid>,
     user_session_last_authentication_created_at: Option<DateTime<Utc>>,
-    user_email_id: Option<Uuid>,
-    user_email: Option<String>,
-    user_email_created_at: Option<DateTime<Utc>>,
-    user_email_confirmed_at: Option<DateTime<Utc>>,
 }
 
 #[allow(clippy::too_many_lines)]
@@ -100,24 +97,20 @@ pub async fn lookup_active_access_token(
     let res = sqlx::query_as!(
         OAuth2AccessTokenLookup,
         r#"
-            SELECT
-                at.oauth2_access_token_id,
-                at.access_token    AS "oauth2_access_token",
-                at.created_at      AS "oauth2_access_token_created_at",
-                at.expires_at      AS "oauth2_access_token_expires_at",
-                os.oauth2_session_id AS "oauth2_session_id!",
-                os.oauth2_client_id AS "oauth2_client_id!",
-                os.scope           AS "scope!",
-                us.user_session_id AS "user_session_id!",
-                us.created_at      AS "user_session_created_at!",
-                 u.user_id AS "user_id!",
-                 u.username        AS "user_username!",
-                usa.user_session_authentication_id AS "user_session_last_authentication_id?",
-                usa.created_at     AS "user_session_last_authentication_created_at?",
-                ue.user_email_id AS "user_email_id?",
-                ue.email           AS "user_email?",
-                ue.created_at      AS "user_email_created_at?",
-                ue.confirmed_at    AS "user_email_confirmed_at?"
+            SELECT at.oauth2_access_token_id
+                 , at.access_token      AS "oauth2_access_token"
+                 , at.created_at        AS "oauth2_access_token_created_at"
+                 , at.expires_at        AS "oauth2_access_token_expires_at"
+                 , os.oauth2_session_id AS "oauth2_session_id!"
+                 , os.oauth2_client_id  AS "oauth2_client_id!"
+                 , os.scope             AS "scope!"
+                 , us.user_session_id   AS "user_session_id!"
+                 , us.created_at        AS "user_session_created_at!"
+                 ,  u.user_id           AS "user_id!"
+                 ,  u.username          AS "user_username!"
+                 ,  u.primary_user_email_id AS "user_primary_user_email_id"
+                 , usa.user_session_authentication_id AS "user_session_last_authentication_id?"
+                 , usa.created_at       AS "user_session_last_authentication_created_at?"
 
             FROM oauth2_access_tokens at
             INNER JOIN oauth2_sessions os
@@ -128,8 +121,6 @@ pub async fn lookup_active_access_token(
               USING (user_id)
             LEFT JOIN user_session_authentications usa
               USING (user_session_id)
-            LEFT JOIN user_emails ue
-              ON ue.user_email_id = u.primary_user_email_id
 
             WHERE at.access_token = $1
               AND at.revoked_at IS NULL
@@ -162,32 +153,11 @@ pub async fn lookup_active_access_token(
         })?;
 
     let user_id = Ulid::from(res.user_id);
-    let primary_email = match (
-        res.user_email_id,
-        res.user_email,
-        res.user_email_created_at,
-        res.user_email_confirmed_at,
-    ) {
-        (Some(id), Some(email), Some(created_at), confirmed_at) => Some(UserEmail {
-            id: id.into(),
-            email,
-            created_at,
-            confirmed_at,
-        }),
-        (None, None, None, None) => None,
-        _ => {
-            return Err(DatabaseInconsistencyError::on("users")
-                .column("primary_user_email_id")
-                .row(user_id)
-                .into())
-        }
-    };
-
     let user = User {
         id: user_id,
         username: res.user_username,
         sub: user_id.to_string(),
-        primary_email,
+        primary_user_email_id: res.user_primary_user_email_id.map(Into::into),
     };
 
     let last_authentication = match (

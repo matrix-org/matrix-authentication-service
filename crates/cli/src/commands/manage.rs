@@ -20,9 +20,7 @@ use mas_router::UrlBuilder;
 use mas_storage::{
     oauth2::client::{insert_client_from_config, lookup_client, truncate_clients},
     upstream_oauth2::UpstreamOAuthProviderRepository,
-    user::{
-        add_user_password, lookup_user_by_username, lookup_user_email, mark_user_email_as_verified,
-    },
+    user::{add_user_password, UserEmailRepository, UserRepository},
     Clock, Repository,
 };
 use oauth2_types::scope::Scope;
@@ -202,7 +200,9 @@ impl Options {
                 let password_manager = password_manager_from_config(&passwords_config).await?;
 
                 let mut txn = pool.begin().await?;
-                let user = lookup_user_by_username(&mut txn, username)
+                let user = txn
+                    .user()
+                    .find_by_username(username)
                     .await?
                     .context("User not found")?;
 
@@ -232,13 +232,18 @@ impl Options {
                 let pool = database_from_config(&config).await?;
                 let mut txn = pool.begin().await?;
 
-                let user = lookup_user_by_username(&mut txn, username)
+                let user = txn
+                    .user()
+                    .find_by_username(username)
                     .await?
                     .context("User not found")?;
-                let email = lookup_user_email(&mut txn, &user, email)
+
+                let email = txn
+                    .user_email()
+                    .find(&user, email)
                     .await?
                     .context("Email not found")?;
-                let email = mark_user_email_as_verified(&mut txn, &clock, email).await?;
+                let email = txn.user_email().mark_as_verified(&clock, email).await?;
 
                 txn.commit().await?;
                 info!(?email, "Email marked as verified");

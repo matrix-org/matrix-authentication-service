@@ -618,6 +618,7 @@ impl TemplateContext for EmailVerificationContext {
             .map(|user| {
                 let email = UserEmail {
                     id: Ulid::from_datetime_with_source(now.into(), rng),
+                    user_id: user.id,
                     email: "foobar@example.com".to_owned(),
                     created_at: now,
                     confirmed_at: None,
@@ -625,8 +626,8 @@ impl TemplateContext for EmailVerificationContext {
 
                 let verification = UserEmailVerification {
                     id: Ulid::from_datetime_with_source(now.into(), rng),
+                    user_email_id: email.id,
                     code: "123456".to_owned(),
-                    email,
                     created_at: now,
                     state: mas_data_model::UserEmailVerificationState::Valid,
                 };
@@ -684,6 +685,7 @@ impl TemplateContext for EmailVerificationPageContext {
     {
         let email = UserEmail {
             id: Ulid::from_datetime_with_source(now.into(), rng),
+            user_id: Ulid::from_datetime_with_source(now.into(), rng),
             email: "foobar@example.com".to_owned(),
             created_at: now,
             confirmed_at: None,

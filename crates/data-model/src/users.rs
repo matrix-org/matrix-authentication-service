@@ -22,7 +22,7 @@ pub struct User {
     pub id: Ulid,
     pub username: String,
     pub sub: String,
-    pub primary_email: Option<UserEmail>,
+    pub primary_user_email_id: Option<Ulid>,
 }
 
 impl User {
@@ -32,7 +32,7 @@ impl User {
             id: Ulid::from_datetime_with_source(now.into(), rng),
             username: "john".to_owned(),
             sub: "123-456".to_owned(),
-            primary_email: None,
+            primary_user_email_id: None,
         }]
     }
 }
@@ -89,6 +89,7 @@ impl BrowserSession {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct UserEmail {
     pub id: Ulid,
+    pub user_id: Ulid,
     pub email: String,
     pub created_at: DateTime<Utc>,
     pub confirmed_at: Option<DateTime<Utc>>,
@@ -100,12 +101,14 @@ impl UserEmail {
         vec![
             Self {
                 id: Ulid::from_datetime_with_source(now.into(), rng),
+                user_id: Ulid::from_datetime_with_source(now.into(), rng),
                 email: "alice@example.com".to_owned(),
                 created_at: now,
                 confirmed_at: Some(now),
             },
             Self {
                 id: Ulid::from_datetime_with_source(now.into(), rng),
+                user_id: Ulid::from_datetime_with_source(now.into(), rng),
                 email: "bob@example.com".to_owned(),
                 created_at: now,
                 confirmed_at: None,
@@ -124,7 +127,7 @@ pub enum UserEmailVerificationState {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct UserEmailVerification {
     pub id: Ulid,
-    pub email: UserEmail,
+    pub user_email_id: Ulid,
     pub code: String,
     pub created_at: DateTime<Utc>,
     pub state: UserEmailVerificationState,
@@ -152,8 +155,8 @@ impl UserEmailVerification {
                     .into_iter()
                     .map(move |email| Self {
                         id: Ulid::from_datetime_with_source(now.into(), &mut rng),
+                        user_email_id: email.id,
                         code: "123456".to_owned(),
-                        email,
                         created_at: now - Duration::minutes(10),
                         state: state.clone(),
                     })

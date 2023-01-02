@@ -24,7 +24,7 @@ use mas_axum_utils::{
 use mas_email::Mailer;
 use mas_keystore::Encrypter;
 use mas_router::Route;
-use mas_storage::user::add_user_email;
+use mas_storage::{user::UserEmailRepository, Repository};
 use mas_templates::{EmailAddContext, TemplateContext, Templates};
 use serde::Deserialize;
 use sqlx::PgPool;
@@ -88,7 +88,11 @@ pub(crate) async fn post(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    let user_email = add_user_email(&mut txn, &mut rng, &clock, &session.user, form.email).await?;
+    let user_email = txn
+        .user_email()
+        .add(&mut rng, &clock, &session.user, form.email)
+        .await?;
+
     let next = mas_router::AccountVerifyEmail::new(user_email.id);
     let next = if let Some(action) = query.post_auth_action {
         next.and_then(action)

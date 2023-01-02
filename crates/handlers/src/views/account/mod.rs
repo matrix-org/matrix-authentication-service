@@ -23,7 +23,10 @@ use axum_extra::extract::PrivateCookieJar;
 use mas_axum_utils::{csrf::CsrfExt, FancyError, SessionInfoExt};
 use mas_keystore::Encrypter;
 use mas_router::Route;
-use mas_storage::user::{count_active_sessions, get_user_emails};
+use mas_storage::{
+    user::{count_active_sessions, UserEmailRepository},
+    Repository,
+};
 use mas_templates::{AccountContext, TemplateContext, Templates};
 use sqlx::PgPool;
 
@@ -49,7 +52,7 @@ pub(crate) async fn get(
 
     let active_sessions = count_active_sessions(&mut conn, &session.user).await?;
 
-    let emails = get_user_emails(&mut conn, &session.user).await?;
+    let emails = conn.user_email().all(&session.user).await?;
 
     let ctx = AccountContext::new(active_sessions, emails)
         .with_session(session)

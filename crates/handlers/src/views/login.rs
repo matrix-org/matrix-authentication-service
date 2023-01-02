@@ -26,8 +26,8 @@ use mas_keystore::Encrypter;
 use mas_storage::{
     upstream_oauth2::UpstreamOAuthProviderRepository,
     user::{
-        add_user_password, authenticate_session_with_password, lookup_user_by_username,
-        lookup_user_password, start_session,
+        add_user_password, authenticate_session_with_password, lookup_user_password, start_session,
+        UserRepository,
     },
     Clock, Repository,
 };
@@ -130,8 +130,6 @@ pub(crate) async fn post(
         return Ok((cookie_jar, Html(content)).into_response());
     }
 
-    lookup_user_by_username(&mut conn, &form.username).await?;
-
     match login(
         password_manager,
         &mut conn,
@@ -175,7 +173,9 @@ async fn login(
 ) -> Result<BrowserSession, FormError> {
     // XXX: we're loosing the error context here
     // First, lookup the user
-    let user = lookup_user_by_username(&mut *conn, username)
+    let user = conn
+        .user()
+        .find_by_username(username)
         .await
         .map_err(|_e| FormError::Internal)?
         .ok_or(FormError::InvalidCredentials)?;

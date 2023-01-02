@@ -17,7 +17,7 @@ use async_graphql::{
     Context, Description, Object, ID,
 };
 use chrono::{DateTime, Utc};
-use mas_storage::{Repository, UpstreamOAuthLinkRepository};
+use mas_storage::{user::UserEmailRepository, Repository, UpstreamOAuthLinkRepository};
 use sqlx::PgPool;
 
 use super::{
@@ -54,8 +54,14 @@ impl User {
     }
 
     /// Primary email address of the user.
-    async fn primary_email(&self) -> Option<UserEmail> {
-        self.0.primary_email.clone().map(UserEmail)
+    async fn primary_email(
+        &self,
+        ctx: &Context<'_>,
+    ) -> Result<Option<UserEmail>, async_graphql::Error> {
+        let database = ctx.data::<PgPool>()?;
+        let mut conn = database.acquire().await?;
+
+        Ok(conn.user_email().get_primary(&self.0).await?.map(UserEmail))
     }
 
     /// Get the list of compatibility SSO logins, chronologically sorted
@@ -182,18 +188,17 @@ impl User {
                     .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::UserEmail))
                     .transpose()?;
 
-                let (has_previous_page, has_next_page, edges) =
-                    mas_storage::user::get_paginated_user_emails(
-                        &mut conn, &self.0, before_id, after_id, first, last,
-                    )
+                let page = conn
+                    .user_email()
+                    .list_paginated(&self.0, before_id, after_id, first, last)
                     .await?;
 
                 let mut connection = Connection::with_additional_fields(
-                    has_previous_page,
-                    has_next_page,
+                    page.has_previous_page,
+                    page.has_next_page,
                     UserEmailsPagination(self.0.clone()),
                 );
-                connection.edges.extend(edges.into_iter().map(|u| {
+                connection.edges.extend(page.edges.into_iter().map(|u| {
                     Edge::new(
                         OpaqueCursor(NodeCursor(NodeType::UserEmail, u.id)),
                         UserEmail(u),
@@ -339,9 +344,9 @@ pub struct UserEmailsPagination(mas_data_model::User);
 #[Object]
 impl UserEmailsPagination {
     /// Identifies the total count of items in the connection.
-    async fn total_count(&self, ctx: &Context<'_>) -> Result<i64, async_graphql::Error> {
+    async fn total_count(&self, ctx: &Context<'_>) -> Result<usize, async_graphql::Error> {
         let mut conn = ctx.data::<PgPool>()?.acquire().await?;
-        let count = mas_storage::user::count_user_emails(&mut conn, &self.0).await?;
+        let count = conn.user_email().count(&self.0).await?;
         Ok(count)
     }
 }

@@ -161,7 +161,7 @@ impl DatabaseInconsistencyError {
     }
 }
 
-#[derive(Default, Debug, Clone, Copy)]
+#[derive(Default, Debug, Clone)]
 pub struct Clock {
     _private: (),
 }

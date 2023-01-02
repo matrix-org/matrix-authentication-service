@@ -26,7 +26,7 @@ use mas_axum_utils::{
 use mas_keystore::Encrypter;
 use mas_storage::{
     upstream_oauth2::UpstreamOAuthSessionRepository,
-    user::{add_user, authenticate_session_with_upstream, lookup_user, start_session},
+    user::{authenticate_session_with_upstream, start_session, UserRepository},
     Repository, UpstreamOAuthLinkRepository,
 };
 use mas_templates::{
@@ -50,6 +50,10 @@ pub(crate) enum RouteError {
     /// Couldn't find the session on the link
     #[error("Session not found")]
     SessionNotFound,
+
+    /// Couldn't find the user
+    #[error("User not found")]
+    UserNotFound,
 
     /// Session was already consumed
     #[error("Session already consumed")]
@@ -157,7 +161,11 @@ pub(crate) async fn get(
             // Session already linked, but link doesn't match the currently
             // logged user. Suggest logging out of the current user
             // and logging in with the new one
-            let user = lookup_user(&mut txn, user_id).await?;
+            let user = txn
+                .user()
+                .lookup(user_id)
+                .await?
+                .ok_or(RouteError::UserNotFound)?;
 
             let ctx = UpstreamExistingLinkContext::new(user)
                 .with_session(user_session)
@@ -177,7 +185,11 @@ pub(crate) async fn get(
 
         (None, Some(user_id)) => {
             // Session linked, but user not logged in: do the login
-            let user = lookup_user(&mut txn, user_id).await?;
+            let user = txn
+                .user()
+                .lookup(user_id)
+                .await?
+                .ok_or(RouteError::UserNotFound)?;
 
             let ctx = UpstreamExistingLinkContext::new(user).with_csrf(csrf_token.form_value());
 
@@ -250,12 +262,17 @@ pub(crate) async fn post(
         }
 
         (None, Some(user_id), FormData::Login) => {
-            let user = lookup_user(&mut txn, user_id).await?;
+            let user = txn
+                .user()
+                .lookup(user_id)
+                .await?
+                .ok_or(RouteError::UserNotFound)?;
+
             start_session(&mut txn, &mut rng, &clock, user).await?
         }
 
         (None, None, FormData::Register { username }) => {
-            let user = add_user(&mut txn, &mut rng, &clock, &username).await?;
+            let user = txn.user().add(&mut rng, &clock, username).await?;
             txn.upstream_oauth_link()
                 .associate_to_user(&link, &user)
                 .await?;

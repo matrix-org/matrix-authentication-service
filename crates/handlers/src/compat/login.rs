@@ -21,8 +21,8 @@ use mas_storage::{
         add_compat_access_token, add_compat_refresh_token, get_compat_sso_login_by_token,
         mark_compat_sso_login_as_exchanged, start_compat_session,
     },
-    user::{add_user_password, lookup_user_by_username, lookup_user_password},
-    Clock,
+    user::{add_user_password, lookup_user_password, UserRepository},
+    Clock, Repository,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none, DurationMilliSeconds};
@@ -314,7 +314,9 @@ async fn user_password_login(
     let (clock, mut rng) = crate::clock_and_rng();
 
     // Find the user
-    let user = lookup_user_by_username(&mut *txn, &username)
+    let user = txn
+        .user()
+        .find_by_username(&username)
         .await?
         .ok_or(RouteError::UserNotFound)?;
 

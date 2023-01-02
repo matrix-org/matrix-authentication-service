@@ -24,13 +24,7 @@ use mas_axum_utils::{
 };
 use mas_keystore::Encrypter;
 use mas_router::Route;
-use mas_storage::{
-    user::{
-        consume_email_verification, lookup_user_email_by_id, lookup_user_email_verification_code,
-        mark_user_email_as_verified, set_user_email_as_primary,
-    },
-    Clock,
-};
+use mas_storage::{user::UserEmailRepository, Clock, Repository};
 use mas_templates::{EmailVerificationPageContext, TemplateContext, Templates};
 use serde::Deserialize;
 use sqlx::PgPool;
@@ -65,8 +59,11 @@ pub(crate) async fn get(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    let user_email = lookup_user_email_by_id(&mut conn, &session.user, id)
+    let user_email = conn
+        .user_email()
+        .lookup(id)
         .await?
+        .filter(|u| u.user_id == session.user.id)
         .context("Could not find user email")?;
 
     if user_email.confirmed_at.is_some() {
@@ -106,23 +103,31 @@ pub(crate) async fn post(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    let email = lookup_user_email_by_id(&mut txn, &session.user, id)
+    let user_email = txn
+        .user_email()
+        .lookup(id)
         .await?
+        .filter(|u| u.user_id == session.user.id)
         .context("Could not find user email")?;
 
-    if session.user.primary_email.is_none() {
-        set_user_email_as_primary(&mut txn, &email).await?;
-    }
-
-    // TODO: make those 8 hours configurable
-    let verification = lookup_user_email_verification_code(&mut txn, &clock, email, &form.code)
+    let verification = txn
+        .user_email()
+        .find_verification_code(&clock, &user_email, &form.code)
         .await?
         .context("Invalid code")?;
 
     // TODO: display nice errors if the code was already consumed or expired
-    let verification = consume_email_verification(&mut txn, &clock, verification).await?;
+    txn.user_email()
+        .consume_verification_code(&clock, verification)
+        .await?;
 
-    let _email = mark_user_email_as_verified(&mut txn, &clock, verification.email).await?;
+    if session.user.primary_user_email_id.is_none() {
+        txn.user_email().set_as_primary(&user_email).await?;
+    }
+
+    txn.user_email()
+        .mark_as_verified(&clock, user_email)
+        .await?;
 
     txn.commit().await?;
 

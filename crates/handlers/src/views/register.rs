@@ -31,9 +31,12 @@ use mas_email::Mailer;
 use mas_keystore::Encrypter;
 use mas_policy::PolicyFactory;
 use mas_router::Route;
-use mas_storage::user::{
-    add_user, add_user_email, add_user_email_verification_code, add_user_password,
-    authenticate_session_with_password, start_session, username_exists,
+use mas_storage::{
+    user::{
+        add_user_password, authenticate_session_with_password, start_session, UserEmailRepository,
+        UserRepository,
+    },
+    Repository,
 };
 use mas_templates::{
     EmailVerificationContext, FieldError, FormError, RegisterContext, RegisterFormField,
@@ -114,7 +117,7 @@ pub(crate) async fn post(
 
         if form.username.is_empty() {
             state.add_error_on_field(RegisterFormField::Username, FieldError::Required);
-        } else if username_exists(&mut txn, &form.username).await? {
+        } else if txn.user().exists(&form.username).await? {
             state.add_error_on_field(RegisterFormField::Username, FieldError::Exists);
         }
 
@@ -185,7 +188,7 @@ pub(crate) async fn post(
         return Ok((cookie_jar, Html(content)).into_response());
     }
 
-    let user = add_user(&mut txn, &mut rng, &clock, &form.username).await?;
+    let user = txn.user().add(&mut rng, &clock, form.username).await?;
     let password = Zeroizing::new(form.password.into_bytes());
     let (version, hashed_password) = password_manager.hash(&mut rng, password).await?;
     let user_password = add_user_password(
@@ -199,7 +202,10 @@ pub(crate) async fn post(
     )
     .await?;
 
-    let user_email = add_user_email(&mut txn, &mut rng, &clock, &user, form.email).await?;
+    let user_email = txn
+        .user_email()
+        .add(&mut rng, &clock, &user, form.email)
+        .await?;
 
     // First, generate a code
     let range = Uniform::<u32>::from(0..1_000_000);
@@ -208,15 +214,10 @@ pub(crate) async fn post(
 
     let address: Address = user_email.email.parse()?;
 
-    let verification = add_user_email_verification_code(
-        &mut txn,
-        &mut rng,
-        &clock,
-        user_email,
-        Duration::hours(8),
-        code,
-    )
-    .await?;
+    let verification = txn
+        .user_email()
+        .add_verification_code(&mut rng, &clock, &user_email, Duration::hours(8), code)
+        .await?;
 
     // And send the verification email
     let mailbox = Mailbox::new(Some(user.username.clone()), address);
@@ -225,8 +226,7 @@ pub(crate) async fn post(
 
     mailer.send_verification_email(mailbox, &context).await?;
 
-    let next = mas_router::AccountVerifyEmail::new(verification.email.id)
-        .and_maybe(query.post_auth_action);
+    let next = mas_router::AccountVerifyEmail::new(user_email.id).and_maybe(query.post_auth_action);
 
     let mut session = start_session(&mut txn, &mut rng, &clock, user).await?;
     authenticate_session_with_password(&mut txn, &mut rng, &clock, &mut session, &user_password)

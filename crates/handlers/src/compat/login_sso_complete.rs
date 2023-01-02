@@ -80,14 +80,8 @@ pub async fn get(
         return Ok((cookie_jar, url).into_response());
     };
 
-    // TODO: make that more generic
-    if session
-        .user
-        .primary_email
-        .as_ref()
-        .and_then(|e| e.confirmed_at)
-        .is_none()
-    {
+    // TODO: make that more generic, check that the email has been confirmed
+    if session.user.primary_user_email_id.is_none() {
         let destination = mas_router::AccountAddEmail::default()
             .and_then(PostAuthAction::continue_compat_sso_login(id));
         return Ok((cookie_jar, destination.go()).into_response());
@@ -149,13 +143,7 @@ pub async fn post(
     };
 
     // TODO: make that more generic
-    if session
-        .user
-        .primary_email
-        .as_ref()
-        .and_then(|e| e.confirmed_at)
-        .is_none()
-    {
+    if session.user.primary_user_email_id.is_none() {
         let destination = mas_router::AccountAddEmail::default()
             .and_then(PostAuthAction::continue_compat_sso_login(id));
         return Ok((cookie_jar, destination.go()).into_response());

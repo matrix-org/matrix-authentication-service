@@ -28,6 +28,7 @@ use mas_jose::{
 };
 use mas_keystore::Keystore;
 use mas_router::UrlBuilder;
+use mas_storage::{user::UserEmailRepository, Repository};
 use oauth2_types::scope;
 use serde::Serialize;
 use serde_with::skip_serializing_none;
@@ -66,6 +67,7 @@ pub enum RouteError {
 }
 
 impl_from_error_for_route!(sqlx::Error);
+impl_from_error_for_route!(mas_storage::DatabaseError);
 impl_from_error_for_route!(mas_keystore::WrongAlgorithmError);
 impl_from_error_for_route!(mas_jose::jwt::JwtSignatureError);
 
@@ -92,19 +94,19 @@ pub async fn get(
     let session = user_authorization.protected(&mut conn).await?;
 
     let user = session.browser_session.user;
-    let mut user_info = UserInfo {
-        sub: user.sub,
-        username: user.username,
-        email: None,
-        email_verified: None,
+
+    let user_email = if session.scope.contains(&scope::EMAIL) {
+        conn.user_email().get_primary(&user).await?
+    } else {
+        None
     };
 
-    if session.scope.contains(&scope::EMAIL) {
-        if let Some(email) = user.primary_email {
-            user_info.email_verified = Some(email.confirmed_at.is_some());
-            user_info.email = Some(email.email);
-        }
-    }
+    let user_info = UserInfo {
+        sub: user.sub.clone(),
+        username: user.username.clone(),
+        email_verified: user_email.as_ref().map(|u| u.confirmed_at.is_some()),
+        email: user_email.map(|u| u.email),
+    };
 
     if let Some(alg) = session.client.userinfo_signed_response_alg {
         let key = key_store

@@ -15,7 +15,9 @@
 use anyhow::Context as _;
 use async_graphql::{Context, Object, ID};
 use chrono::{DateTime, Utc};
-use mas_storage::{upstream_oauth2::UpstreamOAuthProviderRepository, Repository};
+use mas_storage::{
+    upstream_oauth2::UpstreamOAuthProviderRepository, user::UserRepository, Repository,
+};
 use sqlx::PgPool;
 
 use super::{NodeType, User};
@@ -120,7 +122,10 @@ impl UpstreamOAuth2Link {
             // Fetch on-the-fly
             let database = ctx.data::<PgPool>()?;
             let mut conn = database.acquire().await?;
-            mas_storage::user::lookup_user(&mut conn, *user_id).await?
+            conn.user()
+                .lookup(*user_id)
+                .await?
+                .context("User not found")?
         } else {
             return Ok(None);
         };

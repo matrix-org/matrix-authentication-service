@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use anyhow::{anyhow, Context};
 use axum::{
     extract::{Form, State},
     response::{Html, IntoResponse, Response},
@@ -27,17 +28,11 @@ use mas_data_model::{BrowserSession, User, UserEmail};
 use mas_email::Mailer;
 use mas_keystore::Encrypter;
 use mas_router::Route;
-use mas_storage::{
-    user::{
-        add_user_email, add_user_email_verification_code, get_user_email, get_user_emails,
-        remove_user_email, set_user_email_as_primary,
-    },
-    Clock,
-};
+use mas_storage::{user::UserEmailRepository, Clock, Repository};
 use mas_templates::{AccountEmailsContext, EmailVerificationContext, TemplateContext, Templates};
 use rand::{distributions::Uniform, Rng};
 use serde::Deserialize;
-use sqlx::{PgExecutor, PgPool};
+use sqlx::{PgConnection, PgPool};
 use tracing::info;
 
 pub mod add;
@@ -79,11 +74,11 @@ async fn render(
     templates: Templates,
     session: BrowserSession,
     cookie_jar: PrivateCookieJar<Encrypter>,
-    executor: impl PgExecutor<'_>,
+    conn: &mut PgConnection,
 ) -> Result<Response, FancyError> {
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), rng);
 
-    let emails = get_user_emails(executor, &session.user).await?;
+    let emails = conn.user_email().all(&session.user).await?;
 
     let ctx = AccountEmailsContext::new(emails)
         .with_session(session)
@@ -96,7 +91,7 @@ async fn render(
 
 async fn start_email_verification(
     mailer: &Mailer,
-    executor: impl PgExecutor<'_>,
+    conn: &mut PgConnection,
     mut rng: impl Rng + Send,
     clock: &Clock,
     user: &User,
@@ -108,15 +103,10 @@ async fn start_email_verification(
 
     let address: Address = user_email.email.parse()?;
 
-    let verification = add_user_email_verification_code(
-        executor,
-        &mut rng,
-        clock,
-        user_email,
-        Duration::hours(8),
-        code,
-    )
-    .await?;
+    let verification = conn
+        .user_email()
+        .add_verification_code(&mut rng, clock, &user_email, Duration::hours(8), code)
+        .await?;
 
     // And send the verification email
     let mailbox = Mailbox::new(Some(user.username.clone()), address);
@@ -126,7 +116,7 @@ async fn start_email_verification(
     mailer.send_verification_email(mailbox, &context).await?;
 
     info!(
-        email.id = %verification.email.id,
+        email.id = %user_email.id,
         "Verification email sent"
     );
     Ok(())
@@ -157,49 +147,65 @@ pub(crate) async fn post(
 
     match form {
         ManagementForm::Add { email } => {
-            let user_email =
-                add_user_email(&mut txn, &mut rng, &clock, &session.user, email).await?;
-            let next = mas_router::AccountVerifyEmail::new(user_email.id);
-            start_email_verification(
-                &mailer,
-                &mut txn,
-                &mut rng,
-                &clock,
-                &session.user,
-                user_email,
-            )
-            .await?;
+            let email = txn
+                .user_email()
+                .add(&mut rng, &clock, &session.user, email)
+                .await?;
+
+            let next = mas_router::AccountVerifyEmail::new(email.id);
+            start_email_verification(&mailer, &mut txn, &mut rng, &clock, &session.user, email)
+                .await?;
             txn.commit().await?;
             return Ok((cookie_jar, next.go()).into_response());
         }
         ManagementForm::ResendConfirmation { id } => {
             let id = id.parse()?;
 
-            let user_email = get_user_email(&mut txn, &session.user, id).await?;
-            let next = mas_router::AccountVerifyEmail::new(user_email.id);
-            start_email_verification(
-                &mailer,
-                &mut txn,
-                &mut rng,
-                &clock,
-                &session.user,
-                user_email,
-            )
-            .await?;
+            let email = txn
+                .user_email()
+                .lookup(id)
+                .await?
+                .context("Email not found")?;
+
+            if email.user_id != session.user.id {
+                return Err(anyhow!("Email not found").into());
+            }
+
+            let next = mas_router::AccountVerifyEmail::new(email.id);
+            start_email_verification(&mailer, &mut txn, &mut rng, &clock, &session.user, email)
+                .await?;
             txn.commit().await?;
             return Ok((cookie_jar, next.go()).into_response());
         }
         ManagementForm::Remove { id } => {
             let id = id.parse()?;
 
-            let email = get_user_email(&mut txn, &session.user, id).await?;
-            remove_user_email(&mut txn, email).await?;
+            let email = txn
+                .user_email()
+                .lookup(id)
+                .await?
+                .context("Email not found")?;
+
+            if email.user_id != session.user.id {
+                return Err(anyhow!("Email not found").into());
+            }
+
+            txn.user_email().remove(email).await?;
         }
         ManagementForm::SetPrimary { id } => {
             let id = id.parse()?;
-            let email = get_user_email(&mut txn, &session.user, id).await?;
-            set_user_email_as_primary(&mut txn, &email).await?;
-            session.user.primary_email = Some(email);
+            let email = txn
+                .user_email()
+                .lookup(id)
+                .await?
+                .context("Email not found")?;
+
+            if email.user_id != session.user.id {
+                return Err(anyhow!("Email not found").into());
+            }
+
+            txn.user_email().set_as_primary(&email).await?;
+            session.user.primary_user_email_id = Some(email.id);
         }
     };
 

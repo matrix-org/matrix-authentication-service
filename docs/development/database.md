@@ -35,6 +35,8 @@ Note that migrations are embedded in the final binary and can be run from the se
 
 ## Writing database interactions
 
+**TODO**: *This section is outdated.*
+
 A typical interaction with the database look like this:
 
 ```rust

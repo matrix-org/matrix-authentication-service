@@ -15,7 +15,7 @@
 use chrono::{DateTime, Duration, Utc};
 use mas_data_model::{
     CompatAccessToken, CompatRefreshToken, CompatSession, CompatSsoLogin, CompatSsoLoginState,
-    Device, User, UserEmail,
+    Device, User,
 };
 use rand::Rng;
 use sqlx::{Acquire, PgExecutor, Postgres, QueryBuilder};
@@ -40,10 +40,7 @@ struct CompatAccessTokenLookup {
     compat_session_device_id: String,
     user_id: Uuid,
     user_username: String,
-    user_email_id: Option<Uuid>,
-    user_email: Option<String>,
-    user_email_created_at: Option<DateTime<Utc>>,
-    user_email_confirmed_at: Option<DateTime<Utc>>,
+    user_primary_user_email_id: Option<Uuid>,
 }
 
 #[tracing::instrument(skip_all, err)]
@@ -66,18 +63,13 @@ pub async fn lookup_active_compat_access_token(
                 cs.device_id       AS "compat_session_device_id",
                  u.user_id         AS "user_id!",
                  u.username        AS "user_username!",
-                ue.user_email_id   AS "user_email_id?",
-                ue.email           AS "user_email?",
-                ue.created_at      AS "user_email_created_at?",
-                ue.confirmed_at    AS "user_email_confirmed_at?"
+                 u.primary_user_email_id AS "user_primary_user_email_id"
 
             FROM compat_access_tokens ct
             INNER JOIN compat_sessions cs
               USING (compat_session_id)
             INNER JOIN users u
               USING (user_id)
-            LEFT JOIN user_emails ue
-              ON ue.user_email_id = u.primary_user_email_id
 
             WHERE ct.access_token = $1
               AND (ct.expires_at < $2 OR ct.expires_at IS NULL)
@@ -101,32 +93,11 @@ pub async fn lookup_active_compat_access_token(
     };
 
     let user_id = Ulid::from(res.user_id);
-    let primary_email = match (
-        res.user_email_id,
-        res.user_email,
-        res.user_email_created_at,
-        res.user_email_confirmed_at,
-    ) {
-        (Some(id), Some(email), Some(created_at), confirmed_at) => Some(UserEmail {
-            id: id.into(),
-            email,
-            created_at,
-            confirmed_at,
-        }),
-        (None, None, None, None) => None,
-        _ => {
-            return Err(DatabaseInconsistencyError::on("compat_sessions")
-                .column("user_id")
-                .row(user_id)
-                .into())
-        }
-    };
-
     let user = User {
         id: user_id,
         username: res.user_username,
         sub: user_id.to_string(),
-        primary_email,
+        primary_user_email_id: res.user_primary_user_email_id.map(Into::into),
     };
 
     let id = res.compat_session_id.into();
@@ -162,10 +133,7 @@ pub struct CompatRefreshTokenLookup {
     compat_session_device_id: String,
     user_id: Uuid,
     user_username: String,
-    user_email_id: Option<Uuid>,
-    user_email: Option<String>,
-    user_email_created_at: Option<DateTime<Utc>>,
-    user_email_confirmed_at: Option<DateTime<Utc>>,
+    user_primary_user_email_id: Option<Uuid>,
 }
 
 #[tracing::instrument(skip_all, err)]
@@ -191,10 +159,7 @@ pub async fn lookup_active_compat_refresh_token(
                 cs.device_id       AS "compat_session_device_id",
                 u.user_id,
                 u.username         AS "user_username!",
-                ue.user_email_id   AS "user_email_id?",
-                ue.email           AS "user_email?",
-                ue.created_at      AS "user_email_created_at?",
-                ue.confirmed_at    AS "user_email_confirmed_at?"
+                 u.primary_user_email_id AS "user_primary_user_email_id"
 
             FROM compat_refresh_tokens cr
             INNER JOIN compat_sessions cs
@@ -203,8 +168,6 @@ pub async fn lookup_active_compat_refresh_token(
               USING (compat_access_token_id)
             INNER JOIN users u
               USING (user_id)
-            LEFT JOIN user_emails ue
-              ON ue.user_email_id = u.primary_user_email_id
 
             WHERE cr.refresh_token = $1
               AND cr.consumed_at IS NULL
@@ -233,32 +196,11 @@ pub async fn lookup_active_compat_refresh_token(
     };
 
     let user_id = Ulid::from(res.user_id);
-    let primary_email = match (
-        res.user_email_id,
-        res.user_email,
-        res.user_email_created_at,
-        res.user_email_confirmed_at,
-    ) {
-        (Some(id), Some(email), Some(created_at), confirmed_at) => Some(UserEmail {
-            id: id.into(),
-            email,
-            created_at,
-            confirmed_at,
-        }),
-        (None, None, None, None) => None,
-        _ => {
-            return Err(DatabaseInconsistencyError::on("users")
-                .column("primary_user_email_id")
-                .row(user_id)
-                .into())
-        }
-    };
-
     let user = User {
         id: user_id,
         username: res.user_username,
         sub: user_id.to_string(),
-        primary_email,
+        primary_user_email_id: res.user_primary_user_email_id.map(Into::into),
     };
 
     let session_id = res.compat_session_id.into();
@@ -528,10 +470,7 @@ struct CompatSsoLoginLookup {
     compat_session_device_id: Option<String>,
     user_id: Option<Uuid>,
     user_username: Option<String>,
-    user_email_id: Option<Uuid>,
-    user_email: Option<String>,
-    user_email_created_at: Option<DateTime<Utc>>,
-    user_email_confirmed_at: Option<DateTime<Utc>>,
+    user_primary_user_email_id: Option<Uuid>,
 }
 
 impl TryFrom<CompatSsoLoginLookup> for CompatSsoLogin {
@@ -546,32 +485,18 @@ impl TryFrom<CompatSsoLoginLookup> for CompatSsoLogin {
                 .source(e)
         })?;
 
-        let primary_email = match (
-            res.user_email_id,
-            res.user_email,
-            res.user_email_created_at,
-            res.user_email_confirmed_at,
+        let user = match (
+            res.user_id,
+            res.user_username,
+            res.user_primary_user_email_id,
         ) {
-            (Some(id), Some(email), Some(created_at), confirmed_at) => Some(UserEmail {
-                id: id.into(),
-                email,
-                created_at,
-                confirmed_at,
-            }),
-            (None, None, None, None) => None,
-            _ => {
-                return Err(DatabaseInconsistencyError::on("users").column("primary_user_email_id"))
-            }
-        };
-
-        let user = match (res.user_id, res.user_username, primary_email) {
-            (Some(id), Some(username), primary_email) => {
+            (Some(id), Some(username), primary_email_id) => {
                 let id = Ulid::from(id);
                 Some(User {
                     id,
                     username,
                     sub: id.to_string(),
-                    primary_email,
+                    primary_user_email_id: primary_email_id.map(Into::into),
                 })
             }
 
@@ -667,17 +592,12 @@ pub async fn get_compat_sso_login_by_id(
                 cs.device_id       AS "compat_session_device_id?",
                 u.user_id          AS "user_id?",
                 u.username         AS "user_username?",
-                ue.user_email_id   AS "user_email_id?",
-                ue.email           AS "user_email?",
-                ue.created_at      AS "user_email_created_at?",
-                ue.confirmed_at    AS "user_email_confirmed_at?"
+                u.primary_user_email_id AS "user_primary_user_email_id?"
             FROM compat_sso_logins cl
             LEFT JOIN compat_sessions cs
               USING (compat_session_id)
             LEFT JOIN users u
               USING (user_id)
-            LEFT JOIN user_emails ue
-              ON ue.user_email_id = u.primary_user_email_id
             WHERE cl.compat_sso_login_id = $1
         "#,
         Uuid::from(id),
@@ -725,17 +645,12 @@ pub async fn get_paginated_user_compat_sso_logins(
                 cs.device_id       AS "compat_session_device_id",
                 u.user_id          AS "user_id",
                 u.username         AS "user_username",
-                ue.user_email_id   AS "user_email_id",
-                ue.email           AS "user_email",
-                ue.created_at      AS "user_email_created_at",
-                ue.confirmed_at    AS "user_email_confirmed_at"
+                u.primary_user_email_id AS "user_primary_user_email_id?"
             FROM compat_sso_logins cl
             LEFT JOIN compat_sessions cs
               USING (compat_session_id)
             LEFT JOIN users u
               USING (user_id)
-            LEFT JOIN user_emails ue
-              ON ue.user_email_id = u.primary_user_email_id
         "#,
     );
 
@@ -781,17 +696,12 @@ pub async fn get_compat_sso_login_by_token(
                 cs.device_id       AS "compat_session_device_id?",
                 u.user_id          AS "user_id?",
                 u.username         AS "user_username?",
-                ue.user_email_id   AS "user_email_id?",
-                ue.email           AS "user_email?",
-                ue.created_at      AS "user_email_created_at?",
-                ue.confirmed_at    AS "user_email_confirmed_at?"
+                u.primary_user_email_id AS "user_primary_user_email_id?"
             FROM compat_sso_logins cl
             LEFT JOIN compat_sessions cs
               USING (compat_session_id)
             LEFT JOIN users u
               USING (user_id)
-            LEFT JOIN user_emails ue
-              ON ue.user_email_id = u.primary_user_email_id
             WHERE cl.login_token = $1
         "#,
         token,
