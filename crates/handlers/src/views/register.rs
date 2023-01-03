@@ -32,10 +32,7 @@ use mas_keystore::Encrypter;
 use mas_policy::PolicyFactory;
 use mas_router::Route;
 use mas_storage::{
-    user::{
-        add_user_password, authenticate_session_with_password, start_session, UserEmailRepository,
-        UserRepository,
-    },
+    user::{BrowserSessionRepository, UserEmailRepository, UserPasswordRepository, UserRepository},
     Repository,
 };
 use mas_templates::{
@@ -191,16 +188,10 @@ pub(crate) async fn post(
     let user = txn.user().add(&mut rng, &clock, form.username).await?;
     let password = Zeroizing::new(form.password.into_bytes());
     let (version, hashed_password) = password_manager.hash(&mut rng, password).await?;
-    let user_password = add_user_password(
-        &mut txn,
-        &mut rng,
-        &clock,
-        &user,
-        version,
-        hashed_password,
-        None,
-    )
-    .await?;
+    let user_password = txn
+        .user_password()
+        .add(&mut rng, &clock, &user, version, hashed_password, None)
+        .await?;
 
     let user_email = txn
         .user_email()
@@ -228,8 +219,11 @@ pub(crate) async fn post(
 
     let next = mas_router::AccountVerifyEmail::new(user_email.id).and_maybe(query.post_auth_action);
 
-    let mut session = start_session(&mut txn, &mut rng, &clock, user).await?;
-    authenticate_session_with_password(&mut txn, &mut rng, &clock, &mut session, &user_password)
+    let session = txn.browser_session().add(&mut rng, &clock, &user).await?;
+
+    let session = txn
+        .browser_session()
+        .authenticate_with_password(&mut rng, &clock, session, &user_password)
         .await?;
 
     txn.commit().await?;

@@ -25,10 +25,7 @@ use mas_data_model::BrowserSession;
 use mas_keystore::Encrypter;
 use mas_storage::{
     upstream_oauth2::UpstreamOAuthProviderRepository,
-    user::{
-        add_user_password, authenticate_session_with_password, lookup_user_password, start_session,
-        UserRepository,
-    },
+    user::{BrowserSessionRepository, UserPasswordRepository, UserRepository},
     Clock, Repository,
 };
 use mas_templates::{
@@ -181,7 +178,9 @@ async fn login(
         .ok_or(FormError::InvalidCredentials)?;
 
     // And its password
-    let user_password = lookup_user_password(&mut *conn, &user)
+    let user_password = conn
+        .user_password()
+        .active(&user)
         .await
         .map_err(|_e| FormError::Internal)?
         .ok_or(FormError::InvalidCredentials)?;
@@ -201,28 +200,32 @@ async fn login(
 
     let user_password = if let Some((version, new_password_hash)) = new_password_hash {
         // Save the upgraded password
-        add_user_password(
-            &mut *conn,
-            &mut rng,
-            clock,
-            &user,
-            version,
-            new_password_hash,
-            Some(user_password),
-        )
-        .await
-        .map_err(|_| FormError::Internal)?
+        conn.user_password()
+            .add(
+                &mut rng,
+                clock,
+                &user,
+                version,
+                new_password_hash,
+                Some(&user_password),
+            )
+            .await
+            .map_err(|_| FormError::Internal)?
     } else {
         user_password
     };
 
     // Start a new session
-    let mut user_session = start_session(&mut *conn, &mut rng, clock, user)
+    let user_session = conn
+        .browser_session()
+        .add(&mut rng, clock, &user)
         .await
         .map_err(|_| FormError::Internal)?;
 
     // And mark it as authenticated by the password
-    authenticate_session_with_password(&mut *conn, rng, clock, &mut user_session, &user_password)
+    let user_session = conn
+        .browser_session()
+        .authenticate_with_password(&mut rng, clock, user_session, &user_password)
         .await
         .map_err(|_| FormError::Internal)?;
 

@@ -23,8 +23,8 @@ use uuid::Uuid;
 use self::client::lookup_clients;
 use crate::{
     pagination::{process_page, QueryBuilderExt},
-    user::lookup_active_session,
-    Clock, DatabaseError, DatabaseInconsistencyError,
+    user::BrowserSessionRepository,
+    Clock, DatabaseError, DatabaseInconsistencyError, Repository,
 };
 
 pub mod access_token;
@@ -134,11 +134,10 @@ pub async fn get_paginated_user_oauth_sessions(
     // ideal
     let mut browser_sessions: HashMap<Ulid, BrowserSession> = HashMap::new();
     for id in browser_session_ids {
-        let v = lookup_active_session(&mut *conn, id)
-            .await?
-            .ok_or_else(|| {
-                DatabaseInconsistencyError::on("oauth2_sessions").column("user_session_id")
-            })?;
+        let v = conn.browser_session().lookup(id).await?.ok_or_else(|| {
+            DatabaseInconsistencyError::on("oauth2_sessions").column("user_session_id")
+        })?;
+
         browser_sessions.insert(id, v);
     }
 

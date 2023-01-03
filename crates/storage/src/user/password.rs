@@ -12,63 +12,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mas_data_model::{Password, User};
-use rand::Rng;
-use sqlx::PgExecutor;
+use rand::RngCore;
+use sqlx::PgConnection;
 use ulid::Ulid;
 use uuid::Uuid;
 
-use crate::{Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt};
+use crate::{
+    tracing::ExecuteExt, Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt,
+};
 
-#[tracing::instrument(
-    skip_all,
-    fields(
-        %user.id,
-        %user.username,
-        user_password.id,
-        user_password.version = version,
-    ),
-    err,
-)]
-pub async fn add_user_password(
-    executor: impl PgExecutor<'_>,
-    mut rng: impl Rng + Send,
-    clock: &Clock,
-    user: &User,
-    version: u16,
-    hashed_password: String,
-    upgraded_from: Option<Password>,
-) -> Result<Password, DatabaseError> {
-    let created_at = clock.now();
-    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
-    tracing::Span::current().record("user_password.id", tracing::field::display(id));
+#[async_trait]
+pub trait UserPasswordRepository: Send + Sync {
+    type Error;
 
-    let upgraded_from_id = upgraded_from.map(|p| p.id);
+    async fn active(&mut self, user: &User) -> Result<Option<Password>, Self::Error>;
+    async fn add(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &Clock,
+        user: &User,
+        version: u16,
+        hashed_password: String,
+        upgraded_from: Option<&Password>,
+    ) -> Result<Password, Self::Error>;
+}
 
-    sqlx::query!(
-        r#"
-            INSERT INTO user_passwords
-                (user_password_id, user_id, hashed_password, version, upgraded_from_id, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6)
-        "#,
-        Uuid::from(id),
-        Uuid::from(user.id),
-        hashed_password,
-        i32::from(version),
-        upgraded_from_id.map(Uuid::from),
-        created_at,
-    )
-    .execute(executor)
-    .await?;
+pub struct PgUserPasswordRepository<'c> {
+    conn: &'c mut PgConnection,
+}
 
-    Ok(Password {
-        id,
-        hashed_password,
-        version,
-        upgraded_from_id,
-        created_at,
-    })
+impl<'c> PgUserPasswordRepository<'c> {
+    pub fn new(conn: &'c mut PgConnection) -> Self {
+        Self { conn }
+    }
 }
 
 struct UserPasswordLookup {
@@ -79,57 +58,115 @@ struct UserPasswordLookup {
     created_at: DateTime<Utc>,
 }
 
-#[tracing::instrument(
-    skip_all,
-    fields(
-        %user.id,
-        %user.username,
-    ),
-    err,
-)]
-pub async fn lookup_user_password(
-    executor: impl PgExecutor<'_>,
-    user: &User,
-) -> Result<Option<Password>, DatabaseError> {
-    let res = sqlx::query_as!(
-        UserPasswordLookup,
-        r#"
-            SELECT up.user_password_id
-                 , up.hashed_password
-                 , up.version
-                 , up.upgraded_from_id
-                 , up.created_at
-            FROM user_passwords up
-            WHERE up.user_id = $1
-            ORDER BY up.created_at DESC
-            LIMIT 1
-        "#,
-        Uuid::from(user.id),
-    )
-    .fetch_one(executor)
-    .await
-    .to_option()?;
+#[async_trait]
+impl<'c> UserPasswordRepository for PgUserPasswordRepository<'c> {
+    type Error = DatabaseError;
 
-    let Some(res) = res else { return Ok(None) };
+    #[tracing::instrument(
+        name = "db.user_password.active",
+        skip_all,
+        fields(
+            db.statement,
+            %user.id,
+            %user.username,
+        ),
+        err,
+    )]
+    async fn active(&mut self, user: &User) -> Result<Option<Password>, Self::Error> {
+        let res = sqlx::query_as!(
+            UserPasswordLookup,
+            r#"
+                SELECT up.user_password_id
+                     , up.hashed_password
+                     , up.version
+                     , up.upgraded_from_id
+                     , up.created_at
+                FROM user_passwords up
+                WHERE up.user_id = $1
+                ORDER BY up.created_at DESC
+                LIMIT 1
+            "#,
+            Uuid::from(user.id),
+        )
+        .traced()
+        .fetch_one(&mut *self.conn)
+        .await
+        .to_option()?;
 
-    let id = Ulid::from(res.user_password_id);
+        let Some(res) = res else { return Ok(None) };
 
-    let version = res.version.try_into().map_err(|e| {
-        DatabaseInconsistencyError::on("user_passwords")
-            .column("version")
-            .row(id)
-            .source(e)
-    })?;
+        let id = Ulid::from(res.user_password_id);
 
-    let upgraded_from_id = res.upgraded_from_id.map(Ulid::from);
-    let created_at = res.created_at;
-    let hashed_password = res.hashed_password;
+        let version = res.version.try_into().map_err(|e| {
+            DatabaseInconsistencyError::on("user_passwords")
+                .column("version")
+                .row(id)
+                .source(e)
+        })?;
 
-    Ok(Some(Password {
-        id,
-        hashed_password,
-        version,
-        upgraded_from_id,
-        created_at,
-    }))
+        let upgraded_from_id = res.upgraded_from_id.map(Ulid::from);
+        let created_at = res.created_at;
+        let hashed_password = res.hashed_password;
+
+        Ok(Some(Password {
+            id,
+            hashed_password,
+            version,
+            upgraded_from_id,
+            created_at,
+        }))
+    }
+
+    #[tracing::instrument(
+        name = "db.user_password.add",
+        skip_all,
+        fields(
+            db.statement,
+            %user.id,
+            %user.username,
+            user_password.id,
+            user_password.version = version,
+        ),
+        err,
+    )]
+    async fn add(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &Clock,
+        user: &User,
+        version: u16,
+        hashed_password: String,
+        upgraded_from: Option<&Password>,
+    ) -> Result<Password, Self::Error> {
+        let created_at = clock.now();
+        let id = Ulid::from_datetime_with_source(created_at.into(), rng);
+        tracing::Span::current().record("user_password.id", tracing::field::display(id));
+
+        let upgraded_from_id = upgraded_from.map(|p| p.id);
+
+        sqlx::query!(
+            r#"
+                INSERT INTO user_passwords
+                    (user_password_id, user_id, hashed_password, version, upgraded_from_id, created_at)
+                VALUES ($1, $2, $3, $4, $5, $6)
+            "#,
+            Uuid::from(id),
+            Uuid::from(user.id),
+            hashed_password,
+            i32::from(version),
+            upgraded_from_id.map(Uuid::from),
+            created_at,
+        )
+        .traced()
+        .execute(&mut *self.conn)
+        .await?;
+
+        Ok(Password {
+            id,
+            hashed_password,
+            version,
+            upgraded_from_id,
+            created_at,
+        })
+    }
 }

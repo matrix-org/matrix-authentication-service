@@ -21,7 +21,7 @@ use mas_storage::{
         add_compat_access_token, add_compat_refresh_token, get_compat_sso_login_by_token,
         mark_compat_sso_login_as_exchanged, start_compat_session,
     },
-    user::{add_user_password, lookup_user_password, UserRepository},
+    user::{UserPasswordRepository, UserRepository},
     Clock, Repository,
 };
 use serde::{Deserialize, Serialize};
@@ -321,7 +321,9 @@ async fn user_password_login(
         .ok_or(RouteError::UserNotFound)?;
 
     // Lookup its password
-    let user_password = lookup_user_password(&mut *txn, &user)
+    let user_password = txn
+        .user_password()
+        .active(&user)
         .await?
         .ok_or(RouteError::NoPassword)?;
 
@@ -340,16 +342,16 @@ async fn user_password_login(
 
     if let Some((version, hashed_password)) = new_password_hash {
         // Save the upgraded password if needed
-        add_user_password(
-            &mut *txn,
-            &mut rng,
-            &clock,
-            &user,
-            version,
-            hashed_password,
-            Some(user_password),
-        )
-        .await?;
+        txn.user_password()
+            .add(
+                &mut rng,
+                &clock,
+                &user,
+                version,
+                hashed_password,
+                Some(&user_password),
+            )
+            .await?;
     }
 
     // Now that the user credentials have been verified, start a new compat session

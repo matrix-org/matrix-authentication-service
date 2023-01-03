@@ -24,7 +24,7 @@ use mas_axum_utils::{csrf::CsrfExt, FancyError, SessionInfoExt};
 use mas_keystore::Encrypter;
 use mas_router::Route;
 use mas_storage::{
-    user::{count_active_sessions, UserEmailRepository},
+    user::{BrowserSessionRepository, UserEmailRepository},
     Repository,
 };
 use mas_templates::{AccountContext, TemplateContext, Templates};
@@ -50,7 +50,7 @@ pub(crate) async fn get(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    let active_sessions = count_active_sessions(&mut conn, &session.user).await?;
+    let active_sessions = conn.browser_session().count_active(&session.user).await?;
 
     let emails = conn.user_email().all(&session.user).await?;
 

@@ -175,6 +175,7 @@ pub async fn lookup_active_access_token(
     let browser_session = BrowserSession {
         id: res.user_session_id.into(),
         created_at: res.user_session_created_at,
+        finished_at: None,
         user,
         last_authentication,
     };

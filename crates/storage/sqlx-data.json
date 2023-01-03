@@ -252,62 +252,6 @@
     },
     "query": "\n                SELECT user_id\n                     , username\n                     , primary_user_email_id\n                     , created_at\n                FROM users\n                WHERE user_id = $1\n            "
   },
-  "09d995295b2e4f180181ec96023b1e524ddae9098694eedc4dcce857e3095c0e": {
-    "describe": {
-      "columns": [
-        {
-          "name": "user_session_id",
-          "ordinal": 0,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_session_created_at",
-          "ordinal": 1,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "user_id",
-          "ordinal": 2,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_username",
-          "ordinal": 3,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_primary_user_email_id",
-          "ordinal": 4,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "last_authentication_id?",
-          "ordinal": 5,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "last_authd_at?",
-          "ordinal": 6,
-          "type_info": "Timestamptz"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        true,
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Uuid"
-        ]
-      }
-    },
-    "query": "\n            SELECT s.user_session_id\n                 , s.created_at                     AS \"user_session_created_at\"\n                 , u.user_id\n                 , u.username                       AS \"user_username\"\n                 , u.primary_user_email_id          AS \"user_primary_user_email_id\"\n                 , a.user_session_authentication_id AS \"last_authentication_id?\"\n                 , a.created_at                     AS \"last_authd_at?\"\n            FROM user_sessions s\n            INNER JOIN users u\n                USING (user_id)\n            LEFT JOIN user_session_authentications a\n                USING (user_session_id)\n            WHERE s.user_session_id = $1 AND s.finished_at IS NULL\n            ORDER BY a.created_at DESC\n            LIMIT 1\n        "
-  },
   "154e2e4488ff87e09163698750b56a43127cee4e1392785416a586d40a4d9b21": {
     "describe": {
       "columns": [
@@ -851,20 +795,6 @@
     },
     "query": "\n                SELECT user_email_confirmation_code_id\n                     , user_email_id\n                     , code\n                     , created_at\n                     , expires_at\n                     , consumed_at\n                FROM user_email_confirmation_codes\n                WHERE code = $1\n                  AND user_email_id = $2\n            "
   },
-  "1eb6d13e75d8f526c2785749a020731c18012f03e07995213acd38ab560ce497": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Uuid",
-          "Uuid",
-          "Timestamptz"
-        ]
-      }
-    },
-    "query": "\n            INSERT INTO user_session_authentications\n                (user_session_authentication_id, user_session_id, created_at)\n            VALUES ($1, $2, $3)\n        "
-  },
   "1ee5cecfafd4726a4ebc08da8a34c09178e6e1e072581c8fca9d3d76967792cb": {
     "describe": {
       "columns": [],
@@ -1060,6 +990,20 @@
     },
     "query": "\n                SELECT user_email_id\n                     , user_id\n                     , email\n                     , created_at\n                     , confirmed_at\n                FROM user_emails\n\n                WHERE user_email_id = $1\n            "
   },
+  "41c1aafbd338c24476f27d342cf80eef7de2836e85b078232d143d6712fc2be4": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n                INSERT INTO user_session_authentications\n                    (user_session_authentication_id, user_session_id, created_at)\n                VALUES ($1, $2, $3)\n            "
+  },
   "43a5cafbdc8037e9fb779812a0793cf0859902aa0dc8d25d4c33d231d3d1118b": {
     "describe": {
       "columns": [],
@@ -1075,6 +1019,50 @@
       }
     },
     "query": "\n            INSERT INTO oauth2_access_tokens\n                (oauth2_access_token_id, oauth2_session_id, access_token, created_at, expires_at)\n            VALUES\n                ($1, $2, $3, $4, $5)\n        "
+  },
+  "446a8d7bd8532a751810401adfab924dc20785c91770ed43d62df2e590e8da71": {
+    "describe": {
+      "columns": [
+        {
+          "name": "user_password_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "hashed_password",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "version",
+          "ordinal": 2,
+          "type_info": "Int4"
+        },
+        {
+          "name": "upgraded_from_id",
+          "ordinal": 3,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 4,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n                SELECT up.user_password_id\n                     , up.hashed_password\n                     , up.version\n                     , up.upgraded_from_id\n                     , up.created_at\n                FROM user_passwords up\n                WHERE up.user_id = $1\n                ORDER BY up.created_at DESC\n                LIMIT 1\n            "
   },
   "4693f2b9b3d51ff4a05e233b6667161ebc97f331d96bf5f1c61069e1c8492105": {
     "describe": {
@@ -1308,19 +1296,6 @@
     },
     "query": "\n            INSERT INTO oauth2_consents\n                (oauth2_consent_id, user_id, oauth2_client_id, scope_token, created_at)\n            SELECT id, $2, $3, scope_token, $5 FROM UNNEST($1::uuid[], $4::text[]) u(id, scope_token)\n            ON CONFLICT (user_id, oauth2_client_id, scope_token) DO UPDATE SET refreshed_at = $5\n        "
   },
-  "64a56818dd16ac6368efe3e34196a77b7feda1eb87b696e0063a51bf50e499e5": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Timestamptz",
-          "Uuid"
-        ]
-      }
-    },
-    "query": "\n            UPDATE user_sessions\n            SET finished_at = $1\n            WHERE user_session_id = $2\n        "
-  },
   "64e6ea47c2e877c1ebe4338d64d9ad8a6c1c777d1daea024b8ca2e7f0dd75b0f": {
     "describe": {
       "columns": [],
@@ -1438,6 +1413,43 @@
     },
     "query": "\n            UPDATE oauth2_access_tokens\n            SET revoked_at = $2\n            WHERE oauth2_access_token_id = $1\n        "
   },
+  "6f97b5f9ad0d4d15387150bea3839fb7f81015f7ceef61ecaadba64521895cff": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid",
+          "Text",
+          "Int4",
+          "Uuid",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n                INSERT INTO user_passwords\n                    (user_password_id, user_id, hashed_password, version, upgraded_from_id, created_at)\n                VALUES ($1, $2, $3, $4, $5, $6)\n            "
+  },
+  "751d549073d77ded84aea1aaba36d3b130ec71bc592d722eb75b959b80f0b4ff": {
+    "describe": {
+      "columns": [
+        {
+          "name": "count!",
+          "ordinal": 0,
+          "type_info": "Int8"
+        }
+      ],
+      "nullable": [
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n                SELECT COUNT(*) as \"count!\"\n                FROM user_sessions s\n                WHERE s.user_id = $1 AND s.finished_at IS NULL\n            "
+  },
   "7756a60c36a64a259f7450d6eb77ee92303638ca374a63f23ac4944ccf9f4436": {
     "describe": {
       "columns": [
@@ -1553,6 +1565,68 @@
       }
     },
     "query": "\n            SELECT\n                c.oauth2_client_id,\n                c.encrypted_client_secret,\n                ARRAY(\n                    SELECT redirect_uri\n                    FROM oauth2_client_redirect_uris r\n                    WHERE r.oauth2_client_id = c.oauth2_client_id\n                ) AS \"redirect_uris!\",\n                c.grant_type_authorization_code,\n                c.grant_type_refresh_token,\n                c.client_name,\n                c.logo_uri,\n                c.client_uri,\n                c.policy_uri,\n                c.tos_uri,\n                c.jwks_uri,\n                c.jwks,\n                c.id_token_signed_response_alg,\n                c.userinfo_signed_response_alg,\n                c.token_endpoint_auth_method,\n                c.token_endpoint_auth_signing_alg,\n                c.initiate_login_uri\n            FROM oauth2_clients c\n\n            WHERE c.oauth2_client_id = ANY($1::uuid[])\n        "
+  },
+  "79295f3d3a75f831e9469aabfa720d381a254d00dbe39fef1e9652029d51b89b": {
+    "describe": {
+      "columns": [
+        {
+          "name": "user_session_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "user_session_created_at",
+          "ordinal": 1,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "user_session_finished_at",
+          "ordinal": 2,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "user_id",
+          "ordinal": 3,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "user_username",
+          "ordinal": 4,
+          "type_info": "Text"
+        },
+        {
+          "name": "user_primary_user_email_id",
+          "ordinal": 5,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "last_authentication_id?",
+          "ordinal": 6,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "last_authd_at?",
+          "ordinal": 7,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n                SELECT s.user_session_id\n                     , s.created_at                     AS \"user_session_created_at\"\n                     , s.finished_at                     AS \"user_session_finished_at\"\n                     , u.user_id\n                     , u.username                       AS \"user_username\"\n                     , u.primary_user_email_id          AS \"user_primary_user_email_id\"\n                     , a.user_session_authentication_id AS \"last_authentication_id?\"\n                     , a.created_at                     AS \"last_authd_at?\"\n                FROM user_sessions s\n                INNER JOIN users u\n                    USING (user_id)\n                LEFT JOIN user_session_authentications a\n                    USING (user_session_id)\n                WHERE s.user_session_id = $1\n                ORDER BY a.created_at DESC\n                LIMIT 1\n            "
   },
   "7ce387b1b0aaf10e72adde667b19521b66eaafa51f73bf2f95e38b8f3b64a229": {
     "describe": {
@@ -1872,70 +1946,6 @@
     },
     "query": "\n            UPDATE oauth2_sessions\n            SET finished_at = $2\n            WHERE oauth2_session_id = $1\n        "
   },
-  "9edf5e8a3e00a7cdd8e55b97105df7831ee580096299df4bd6c1ed7c96b95e83": {
-    "describe": {
-      "columns": [
-        {
-          "name": "count!",
-          "ordinal": 0,
-          "type_info": "Int8"
-        }
-      ],
-      "nullable": [
-        null
-      ],
-      "parameters": {
-        "Left": [
-          "Uuid"
-        ]
-      }
-    },
-    "query": "\n            SELECT COUNT(*) as \"count!\"\n            FROM user_sessions s\n            WHERE s.user_id = $1 AND s.finished_at IS NULL\n        "
-  },
-  "a1c19d9d7f1522d126787c7f9946ed51cbbd8f27a4947bc371acab3e7bf23267": {
-    "describe": {
-      "columns": [
-        {
-          "name": "user_password_id",
-          "ordinal": 0,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "hashed_password",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "version",
-          "ordinal": 2,
-          "type_info": "Int4"
-        },
-        {
-          "name": "upgraded_from_id",
-          "ordinal": 3,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "created_at",
-          "ordinal": 4,
-          "type_info": "Timestamptz"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        true,
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Uuid"
-        ]
-      }
-    },
-    "query": "\n            SELECT up.user_password_id\n                 , up.hashed_password\n                 , up.version\n                 , up.upgraded_from_id\n                 , up.created_at\n            FROM user_passwords up\n            WHERE up.user_id = $1\n            ORDER BY up.created_at DESC\n            LIMIT 1\n        "
-  },
   "a300fe99c95679c5664646a6a525c0491829e97db45f3234483872ed38436322": {
     "describe": {
       "columns": [
@@ -2109,7 +2119,7 @@
     },
     "query": "\n                UPDATE users\n                SET primary_user_email_id = user_emails.user_email_id\n                FROM user_emails\n                WHERE user_emails.user_email_id = $1\n                  AND users.user_id = user_emails.user_id\n            "
   },
-  "bd7a4a008851f3f6d7591e3463e4369cee08820af57dcd3faf95f8e9be82857d": {
+  "c1d90a7f2287ec779c81a521fab19e5ede3fa95484033e0312c30d9b6ecc03f0": {
     "describe": {
       "columns": [],
       "nullable": [],
@@ -2117,14 +2127,11 @@
         "Left": [
           "Uuid",
           "Uuid",
-          "Text",
-          "Int4",
-          "Uuid",
           "Timestamptz"
         ]
       }
     },
-    "query": "\n            INSERT INTO user_passwords\n                (user_password_id, user_id, hashed_password, version, upgraded_from_id, created_at)\n            VALUES ($1, $2, $3, $4, $5, $6)\n        "
+    "query": "\n                INSERT INTO user_sessions (user_session_id, user_id, created_at)\n                VALUES ($1, $2, $3)\n            "
   },
   "c88376abdba124ff0487a9a69d2345c7d69d7394f355111ec369cfa6d45fb40f": {
     "describe": {
@@ -2371,19 +2378,18 @@
     },
     "query": "\n            INSERT INTO oauth2_refresh_tokens\n                (oauth2_refresh_token_id, oauth2_session_id, oauth2_access_token_id,\n                 refresh_token, created_at)\n            VALUES\n                ($1, $2, $3, $4, $5)\n        "
   },
-  "e446e37d48c8838ef2e0d0fd82f8f7b04893c84ad46747cdf193ebd83755ceb2": {
+  "dbf4be84eeff9ea51b00185faae2d453ab449017ed492bf6711dc7fceb630880": {
     "describe": {
       "columns": [],
       "nullable": [],
       "parameters": {
         "Left": [
-          "Uuid",
-          "Uuid",
-          "Timestamptz"
+          "Timestamptz",
+          "Uuid"
         ]
       }
     },
-    "query": "\n            INSERT INTO user_sessions (user_session_id, user_id, created_at)\n            VALUES ($1, $2, $3)\n        "
+    "query": "\n                UPDATE user_sessions\n                SET finished_at = $1\n                WHERE user_session_id = $2\n            "
   },
   "e6dc63984aced9e19c20e90e9cd75d6f6d7ade64f782697715ac4da077b2e1fc": {
     "describe": {

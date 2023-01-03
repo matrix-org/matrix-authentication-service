@@ -26,8 +26,8 @@ use mas_data_model::BrowserSession;
 use mas_keystore::Encrypter;
 use mas_router::Route;
 use mas_storage::{
-    user::{add_user_password, authenticate_session_with_password, lookup_user_password},
-    Clock,
+    user::{BrowserSessionRepository, UserPasswordRepository},
+    Clock, Repository,
 };
 use mas_templates::{EmptyContext, TemplateContext, Templates};
 use rand::Rng;
@@ -98,14 +98,16 @@ pub(crate) async fn post(
 
     let maybe_session = session_info.load_session(&mut txn).await?;
 
-    let mut session = if let Some(session) = maybe_session {
+    let session = if let Some(session) = maybe_session {
         session
     } else {
         let login = mas_router::Login::and_then(mas_router::PostAuthAction::ChangePassword);
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    let user_password = lookup_user_password(&mut txn, &session.user)
+    let user_password = txn
+        .user_password()
+        .active(&session.user)
         .await?
         .context("user has no password")?;
 
@@ -127,18 +129,21 @@ pub(crate) async fn post(
     }
 
     let (version, hashed_password) = password_manager.hash(&mut rng, new_password).await?;
-    let user_password = add_user_password(
-        &mut txn,
-        &mut rng,
-        &clock,
-        &session.user,
-        version,
-        hashed_password,
-        None,
-    )
-    .await?;
+    let user_password = txn
+        .user_password()
+        .add(
+            &mut rng,
+            &clock,
+            &session.user,
+            version,
+            hashed_password,
+            None,
+        )
+        .await?;
 
-    authenticate_session_with_password(&mut txn, &mut rng, &clock, &mut session, &user_password)
+    let session = txn
+        .browser_session()
+        .authenticate_with_password(&mut rng, &clock, session, &user_password)
         .await?;
 
     let reply = render(&mut rng, &clock, templates.clone(), session, cookie_jar).await?;

@@ -31,8 +31,9 @@ use async_graphql::{
     Context, Description, EmptyMutation, EmptySubscription, ID,
 };
 use mas_storage::{
-    upstream_oauth2::UpstreamOAuthProviderRepository, user::UserEmailRepository, Repository,
-    UpstreamOAuthLinkRepository,
+    upstream_oauth2::UpstreamOAuthProviderRepository,
+    user::{BrowserSessionRepository, UserEmailRepository},
+    Repository, UpstreamOAuthLinkRepository,
 };
 use model::CreationEvent;
 use sqlx::PgPool;
@@ -128,7 +129,7 @@ impl RootQuery {
         let Some(session) = session else { return Ok(None) };
         let current_user = session.user;
 
-        let browser_session = mas_storage::user::lookup_active_session(&mut conn, id).await?;
+        let browser_session = conn.browser_session().lookup(id).await?;
 
         let ret = browser_session.and_then(|browser_session| {
             if browser_session.user.id == current_user.id {

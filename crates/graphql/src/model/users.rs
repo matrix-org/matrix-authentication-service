@@ -17,7 +17,10 @@ use async_graphql::{
     Context, Description, Object, ID,
 };
 use chrono::{DateTime, Utc};
-use mas_storage::{user::UserEmailRepository, Repository, UpstreamOAuthLinkRepository};
+use mas_storage::{
+    user::{BrowserSessionRepository, UserEmailRepository},
+    Repository, UpstreamOAuthLinkRepository,
+};
 use sqlx::PgPool;
 
 use super::{
@@ -140,14 +143,13 @@ impl User {
                     .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::BrowserSession))
                     .transpose()?;
 
-                let (has_previous_page, has_next_page, edges) =
-                    mas_storage::user::get_paginated_user_sessions(
-                        &mut conn, &self.0, before_id, after_id, first, last,
-                    )
+                let page = conn
+                    .browser_session()
+                    .list_active_paginated(&self.0, before_id, after_id, first, last)
                     .await?;
 
-                let mut connection = Connection::new(has_previous_page, has_next_page);
-                connection.edges.extend(edges.into_iter().map(|u| {
+                let mut connection = Connection::new(page.has_previous_page, page.has_next_page);
+                connection.edges.extend(page.edges.into_iter().map(|u| {
                     Edge::new(
                         OpaqueCursor(NodeCursor(NodeType::BrowserSession, u.id)),
                         BrowserSession(u),

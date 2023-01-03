@@ -20,7 +20,7 @@ use mas_router::UrlBuilder;
 use mas_storage::{
     oauth2::client::{insert_client_from_config, lookup_client, truncate_clients},
     upstream_oauth2::UpstreamOAuthProviderRepository,
-    user::{add_user_password, UserEmailRepository, UserRepository},
+    user::{UserEmailRepository, UserPasswordRepository, UserRepository},
     Clock, Repository,
 };
 use oauth2_types::scope::Scope;
@@ -210,16 +210,9 @@ impl Options {
 
                 let (version, hashed_password) = password_manager.hash(&mut rng, password).await?;
 
-                add_user_password(
-                    &mut txn,
-                    &mut rng,
-                    &clock,
-                    &user,
-                    version,
-                    hashed_password,
-                    None,
-                )
-                .await?;
+                txn.user_password()
+                    .add(&mut rng, &clock, &user, version, hashed_password, None)
+                    .await?;
 
                 info!(%user.id, %user.username, "Password changed");
                 txn.commit().await?;

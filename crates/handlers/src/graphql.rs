@@ -67,7 +67,8 @@ pub async fn post(
     let content_type = content_type.map(|TypedHeader(h)| h.to_string());
 
     let (session_info, _cookie_jar) = cookie_jar.session_info();
-    let maybe_session = session_info.load_session(&pool).await?;
+    let mut conn = pool.acquire().await?;
+    let maybe_session = session_info.load_session(&mut conn).await?;
 
     let mut request = async_graphql::http::receive_batch_body(
         content_type,
@@ -116,7 +117,8 @@ pub async fn get(
     RawQuery(query): RawQuery,
 ) -> Result<impl IntoResponse, FancyError> {
     let (session_info, _cookie_jar) = cookie_jar.session_info();
-    let maybe_session = session_info.load_session(&pool).await?;
+    let mut conn = pool.acquire().await?;
+    let maybe_session = session_info.load_session(&mut conn).await?;
 
     let mut request = async_graphql::http::parse_query_string(&query.unwrap_or_default())?;
 

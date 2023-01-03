@@ -224,6 +224,7 @@ impl GrantLookup {
                     id: user_session_id.into(),
                     user,
                     created_at: user_session_created_at,
+                    finished_at: None,
                     last_authentication,
                 };
 

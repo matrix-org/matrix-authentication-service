@@ -24,8 +24,9 @@ use mas_axum_utils::{
 };
 use mas_keystore::Encrypter;
 use mas_router::Route;
-use mas_storage::user::{
-    add_user_password, authenticate_session_with_password, lookup_user_password,
+use mas_storage::{
+    user::{BrowserSessionRepository, UserPasswordRepository},
+    Repository,
 };
 use mas_templates::{ReauthContext, TemplateContext, Templates};
 use serde::Deserialize;
@@ -93,7 +94,7 @@ pub(crate) async fn post(
 
     let maybe_session = session_info.load_session(&mut txn).await?;
 
-    let mut session = if let Some(session) = maybe_session {
+    let session = if let Some(session) = maybe_session {
         session
     } else {
         // If there is no session, redirect to the login screen, keeping the
@@ -103,7 +104,9 @@ pub(crate) async fn post(
     };
 
     // Load the user password
-    let user_password = lookup_user_password(&mut txn, &session.user)
+    let user_password = txn
+        .user_password()
+        .active(&session.user)
         .await?
         .context("User has no password")?;
 
@@ -122,22 +125,25 @@ pub(crate) async fn post(
 
     let user_password = if let Some((version, new_password_hash)) = new_password_hash {
         // Save the upgraded password
-        add_user_password(
-            &mut *txn,
-            &mut rng,
-            &clock,
-            &session.user,
-            version,
-            new_password_hash,
-            Some(user_password),
-        )
-        .await?
+        txn.user_password()
+            .add(
+                &mut rng,
+                &clock,
+                &session.user,
+                version,
+                new_password_hash,
+                Some(&user_password),
+            )
+            .await?
     } else {
         user_password
     };
 
     // Mark the session as authenticated by the password
-    authenticate_session_with_password(&mut txn, rng, &clock, &mut session, &user_password).await?;
+    let session = txn
+        .browser_session()
+        .authenticate_with_password(&mut rng, &clock, session, &user_password)
+        .await?;
 
     let cookie_jar = cookie_jar.set_session(&session);
     txn.commit().await?;

@@ -23,7 +23,7 @@ use mas_axum_utils::{
 };
 use mas_keystore::Encrypter;
 use mas_router::{PostAuthAction, Route};
-use mas_storage::{user::end_session, Clock};
+use mas_storage::{user::BrowserSessionRepository, Clock, Repository};
 use sqlx::PgPool;
 
 pub(crate) async fn post(
@@ -41,7 +41,7 @@ pub(crate) async fn post(
     let maybe_session = session_info.load_session(&mut txn).await?;
 
     if let Some(session) = maybe_session {
-        end_session(&mut txn, &clock, &session).await?;
+        txn.browser_session().finish(&clock, session).await?;
         cookie_jar = cookie_jar.update_session_info(&session_info.mark_session_ended());
     }
 

@@ -26,7 +26,7 @@ use mas_axum_utils::{
 use mas_keystore::Encrypter;
 use mas_storage::{
     upstream_oauth2::UpstreamOAuthSessionRepository,
-    user::{authenticate_session_with_upstream, start_session, UserRepository},
+    user::{BrowserSessionRepository, UserRepository},
     Repository, UpstreamOAuthLinkRepository,
 };
 use mas_templates::{
@@ -134,14 +134,16 @@ pub(crate) async fn get(
     let maybe_user_session = user_session_info.load_session(&mut txn).await?;
 
     let render = match (maybe_user_session, link.user_id) {
-        (Some(mut session), Some(user_id)) if session.user.id == user_id => {
+        (Some(session), Some(user_id)) if session.user.id == user_id => {
             // Session already linked, and link matches the currently logged
             // user. Mark the session as consumed and renew the authentication.
             txn.upstream_oauth_session()
                 .consume(&clock, upstream_session)
                 .await?;
 
-            authenticate_session_with_upstream(&mut txn, &mut rng, &clock, &mut session, &link)
+            let session = txn
+                .browser_session()
+                .authenticate_with_upstream(&mut rng, &clock, session, &link)
                 .await?;
 
             cookie_jar = cookie_jar.set_session(&session);
@@ -252,7 +254,7 @@ pub(crate) async fn post(
     let (user_session_info, cookie_jar) = cookie_jar.session_info();
     let maybe_user_session = user_session_info.load_session(&mut txn).await?;
 
-    let mut session = match (maybe_user_session, link.user_id, form) {
+    let session = match (maybe_user_session, link.user_id, form) {
         (Some(session), None, FormData::Link) => {
             txn.upstream_oauth_link()
                 .associate_to_user(&link, &session.user)
@@ -268,7 +270,7 @@ pub(crate) async fn post(
                 .await?
                 .ok_or(RouteError::UserNotFound)?;
 
-            start_session(&mut txn, &mut rng, &clock, user).await?
+            txn.browser_session().add(&mut rng, &clock, &user).await?
         }
 
         (None, None, FormData::Register { username }) => {
@@ -277,7 +279,7 @@ pub(crate) async fn post(
                 .associate_to_user(&link, &user)
                 .await?;
 
-            start_session(&mut txn, &mut rng, &clock, user).await?
+            txn.browser_session().add(&mut rng, &clock, &user).await?
         }
 
         _ => return Err(RouteError::InvalidFormAction),
@@ -287,7 +289,10 @@ pub(crate) async fn post(
         .consume(&clock, upstream_session)
         .await?;
 
-    authenticate_session_with_upstream(&mut txn, &mut rng, &clock, &mut session, &link).await?;
+    let session = txn
+        .browser_session()
+        .authenticate_with_upstream(&mut rng, &clock, session, &link)
+        .await?;
 
     let cookie_jar = sessions_cookie
         .consume_link(link_id)?

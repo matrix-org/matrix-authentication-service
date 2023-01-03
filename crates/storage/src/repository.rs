@@ -19,7 +19,10 @@ use crate::{
         PgUpstreamOAuthLinkRepository, PgUpstreamOAuthProviderRepository,
         PgUpstreamOAuthSessionRepository,
     },
-    user::{PgUserEmailRepository, PgUserRepository},
+    user::{
+        PgBrowserSessionRepository, PgUserEmailRepository, PgUserPasswordRepository,
+        PgUserRepository,
+    },
 };
 
 pub trait Repository {
@@ -43,11 +46,21 @@ pub trait Repository {
     where
         Self: 'c;
 
+    type UserPasswordRepository<'c>
+    where
+        Self: 'c;
+
+    type BrowserSessionRepository<'c>
+    where
+        Self: 'c;
+
     fn upstream_oauth_link(&mut self) -> Self::UpstreamOAuthLinkRepository<'_>;
     fn upstream_oauth_provider(&mut self) -> Self::UpstreamOAuthProviderRepository<'_>;
     fn upstream_oauth_session(&mut self) -> Self::UpstreamOAuthSessionRepository<'_>;
     fn user(&mut self) -> Self::UserRepository<'_>;
     fn user_email(&mut self) -> Self::UserEmailRepository<'_>;
+    fn user_password(&mut self) -> Self::UserPasswordRepository<'_>;
+    fn browser_session(&mut self) -> Self::BrowserSessionRepository<'_>;
 }
 
 impl Repository for PgConnection {
@@ -56,6 +69,8 @@ impl Repository for PgConnection {
     type UpstreamOAuthSessionRepository<'c> = PgUpstreamOAuthSessionRepository<'c> where Self: 'c;
     type UserRepository<'c> = PgUserRepository<'c> where Self: 'c;
     type UserEmailRepository<'c> = PgUserEmailRepository<'c> where Self: 'c;
+    type UserPasswordRepository<'c> = PgUserPasswordRepository<'c> where Self: 'c;
+    type BrowserSessionRepository<'c> = PgBrowserSessionRepository<'c> where Self: 'c;
 
     fn upstream_oauth_link(&mut self) -> Self::UpstreamOAuthLinkRepository<'_> {
         PgUpstreamOAuthLinkRepository::new(self)
@@ -75,6 +90,14 @@ impl Repository for PgConnection {
 
     fn user_email(&mut self) -> Self::UserEmailRepository<'_> {
         PgUserEmailRepository::new(self)
+    }
+
+    fn user_password(&mut self) -> Self::UserPasswordRepository<'_> {
+        PgUserPasswordRepository::new(self)
+    }
+
+    fn browser_session(&mut self) -> Self::BrowserSessionRepository<'_> {
+        PgBrowserSessionRepository::new(self)
     }
 }
 
@@ -84,6 +107,8 @@ impl<'t> Repository for Transaction<'t, Postgres> {
     type UpstreamOAuthSessionRepository<'c> = PgUpstreamOAuthSessionRepository<'c> where Self: 'c;
     type UserRepository<'c> = PgUserRepository<'c> where Self: 'c;
     type UserEmailRepository<'c> = PgUserEmailRepository<'c> where Self: 'c;
+    type UserPasswordRepository<'c> = PgUserPasswordRepository<'c> where Self: 'c;
+    type BrowserSessionRepository<'c> = PgBrowserSessionRepository<'c> where Self: 'c;
 
     fn upstream_oauth_link(&mut self) -> Self::UpstreamOAuthLinkRepository<'_> {
         PgUpstreamOAuthLinkRepository::new(self)
@@ -103,5 +128,13 @@ impl<'t> Repository for Transaction<'t, Postgres> {
 
     fn user_email(&mut self) -> Self::UserEmailRepository<'_> {
         PgUserEmailRepository::new(self)
+    }
+
+    fn user_password(&mut self) -> Self::UserPasswordRepository<'_> {
+        PgUserPasswordRepository::new(self)
+    }
+
+    fn browser_session(&mut self) -> Self::BrowserSessionRepository<'_> {
+        PgBrowserSessionRepository::new(self)
     }
 }

@@ -14,9 +14,9 @@
 
 use axum_extra::extract::cookie::{Cookie, PrivateCookieJar};
 use mas_data_model::BrowserSession;
-use mas_storage::{user::lookup_active_session, DatabaseError};
+use mas_storage::{user::BrowserSessionRepository, DatabaseError, Repository};
 use serde::{Deserialize, Serialize};
-use sqlx::{Executor, Postgres};
+use sqlx::PgConnection;
 use ulid::Ulid;
 
 use crate::CookieExt;
@@ -46,7 +46,7 @@ impl SessionInfo {
     /// Load the [`BrowserSession`] from database
     pub async fn load_session(
         &self,
-        executor: impl Executor<'_, Database = Postgres>,
+        conn: &mut PgConnection,
     ) -> Result<Option<BrowserSession>, DatabaseError> {
         let session_id = if let Some(id) = self.current {
             id
@@ -54,8 +54,14 @@ impl SessionInfo {
             return Ok(None);
         };
 
-        let res = lookup_active_session(executor, session_id).await?;
-        Ok(res)
+        let maybe_session = conn
+            .browser_session()
+            .lookup(session_id)
+            .await?
+            // Ensure that the session is still active
+            .filter(BrowserSession::active);
+
+        Ok(maybe_session)
     }
 }
 
