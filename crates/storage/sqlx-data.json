@@ -843,24 +843,6 @@
     },
     "query": "\n            UPDATE oauth2_authorization_grants\n            SET exchanged_at = $2\n            WHERE oauth2_authorization_grant_id = $1\n        "
   },
-  "26a9391df9f1128673cdaf431fe8c5e4a83b576ddf7b02d92abfab6deadd4fa2": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Uuid",
-          "Text",
-          "Bool",
-          "Bool",
-          "Text",
-          "Jsonb",
-          "Text"
-        ]
-      }
-    },
-    "query": "\n            INSERT INTO oauth2_clients\n                (oauth2_client_id,\n                 encrypted_client_secret,\n                 grant_type_authorization_code,\n                 grant_type_refresh_token,\n                 token_endpoint_auth_method,\n                 jwks,\n                 jwks_uri)\n            VALUES\n                ($1, $2, $3, $4, $5, $6, $7)\n        "
-  },
   "2e756fe7be50128c0acc5f79df3a084230e9ca13cd45bd0858f97e59da20006e": {
     "describe": {
       "columns": [],
@@ -2119,6 +2101,24 @@
     },
     "query": "\n                UPDATE users\n                SET primary_user_email_id = user_emails.user_email_id\n                FROM user_emails\n                WHERE user_emails.user_email_id = $1\n                  AND users.user_id = user_emails.user_id\n            "
   },
+  "c0b4996085f6f2127e1e8cfdf18b9029c22096fadfe6de59dce01c789791edb5": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Text",
+          "Bool",
+          "Bool",
+          "Text",
+          "Jsonb",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n            INSERT INTO oauth2_clients\n                ( oauth2_client_id\n                , encrypted_client_secret\n                , grant_type_authorization_code\n                , grant_type_refresh_token\n                , token_endpoint_auth_method\n                , jwks\n                , jwks_uri\n                )\n            VALUES\n                ($1, $2, $3, $4, $5, $6, $7)\n            ON CONFLICT (oauth2_client_id)\n            DO\n                UPDATE SET encrypted_client_secret = EXCLUDED.encrypted_client_secret\n                         , grant_type_authorization_code = EXCLUDED.grant_type_authorization_code\n                         , grant_type_refresh_token = EXCLUDED.grant_type_refresh_token\n                         , token_endpoint_auth_method = EXCLUDED.token_endpoint_auth_method\n                         , jwks = EXCLUDED.jwks\n                         , jwks_uri = EXCLUDED.jwks_uri\n        "
+  },
   "c1d90a7f2287ec779c81a521fab19e5ede3fa95484033e0312c30d9b6ecc03f0": {
     "describe": {
       "columns": [],
@@ -2173,16 +2173,6 @@
       }
     },
     "query": "\n            INSERT INTO compat_sessions (compat_session_id, user_id, device_id, created_at)\n            VALUES ($1, $2, $3, $4)\n        "
-  },
-  "cb8ba981330e58a6c8580f6e394a721df110e1f2206e080434aa821c44c0164b": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": []
-      }
-    },
-    "query": "TRUNCATE oauth2_client_redirect_uris, oauth2_clients CASCADE"
   },
   "cc9e30678d673546efca336ee8e550083eed71459611fa2db52264e51e175901": {
     "describe": {

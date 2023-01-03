@@ -18,7 +18,7 @@ use mas_config::{DatabaseConfig, PasswordsConfig, RootConfig};
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
 use mas_router::UrlBuilder;
 use mas_storage::{
-    oauth2::client::{insert_client_from_config, lookup_client, truncate_clients},
+    oauth2::client::{insert_client_from_config, lookup_client},
     upstream_oauth2::UpstreamOAuthProviderRepository,
     user::{UserEmailRepository, UserPasswordRepository, UserRepository},
     Clock, Repository,
@@ -146,9 +146,9 @@ enum Subcommand {
 
     /// Import clients from config
     ImportClients {
-        /// Remove all clients before importing
+        /// Update existing clients
         #[arg(long)]
-        truncate: bool,
+        update: bool,
     },
 
     /// Set a user password
@@ -244,27 +244,28 @@ impl Options {
                 Ok(())
             }
 
-            SC::ImportClients { truncate } => {
+            SC::ImportClients { update } => {
                 let config: RootConfig = root.load_config()?;
                 let pool = database_from_config(&config.database).await?;
                 let encrypter = config.secrets.encrypter();
 
                 let mut txn = pool.begin().await?;
 
-                if *truncate {
-                    warn!("Removing all clients first");
-                    truncate_clients(&mut txn).await?;
-                }
-
                 for client in config.clients.iter() {
                     let client_id = client.client_id;
-                    let res = lookup_client(&mut txn, client_id).await?;
-                    if res.is_some() {
-                        warn!(%client_id, "Skipping already imported client");
+
+                    let existing = lookup_client(&mut txn, client_id).await?.is_some();
+                    if !update && existing {
+                        warn!(%client_id, "Skipping already imported client. Run with --update to update existing clients.");
                         continue;
                     }
 
-                    info!(%client_id, "Importing client");
+                    if existing {
+                        info!(%client_id, "Updating client");
+                    } else {
+                        info!(%client_id, "Importing client");
+                    }
+
                     let client_secret = client.client_secret();
                     let client_auth_method = client.client_auth_method();
                     let jwks = client.jwks();

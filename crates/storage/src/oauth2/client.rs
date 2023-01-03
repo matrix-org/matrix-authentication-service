@@ -481,15 +481,24 @@ pub async fn insert_client_from_config(
     sqlx::query!(
         r#"
             INSERT INTO oauth2_clients
-                (oauth2_client_id,
-                 encrypted_client_secret,
-                 grant_type_authorization_code,
-                 grant_type_refresh_token,
-                 token_endpoint_auth_method,
-                 jwks,
-                 jwks_uri)
+                ( oauth2_client_id
+                , encrypted_client_secret
+                , grant_type_authorization_code
+                , grant_type_refresh_token
+                , token_endpoint_auth_method
+                , jwks
+                , jwks_uri
+                )
             VALUES
                 ($1, $2, $3, $4, $5, $6, $7)
+            ON CONFLICT (oauth2_client_id)
+            DO
+                UPDATE SET encrypted_client_secret = EXCLUDED.encrypted_client_secret
+                         , grant_type_authorization_code = EXCLUDED.grant_type_authorization_code
+                         , grant_type_refresh_token = EXCLUDED.grant_type_refresh_token
+                         , token_endpoint_auth_method = EXCLUDED.token_endpoint_auth_method
+                         , jwks = EXCLUDED.jwks
+                         , jwks_uri = EXCLUDED.jwks_uri
         "#,
         Uuid::from(client_id),
         encrypted_client_secret,
@@ -527,12 +536,5 @@ pub async fn insert_client_from_config(
     .execute(&mut *conn)
     .await?;
 
-    Ok(())
-}
-
-pub async fn truncate_clients(executor: impl PgExecutor<'_>) -> Result<(), sqlx::Error> {
-    sqlx::query!("TRUNCATE oauth2_client_redirect_uris, oauth2_clients CASCADE")
-        .execute(executor)
-        .await?;
     Ok(())
 }
