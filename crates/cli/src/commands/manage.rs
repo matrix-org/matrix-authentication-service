@@ -18,7 +18,7 @@ use mas_config::{DatabaseConfig, PasswordsConfig, RootConfig};
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
 use mas_router::UrlBuilder;
 use mas_storage::{
-    oauth2::client::{insert_client_from_config, lookup_client},
+    oauth2::client::OAuth2ClientRepository,
     upstream_oauth2::UpstreamOAuthProviderRepository,
     user::{UserEmailRepository, UserPasswordRepository, UserRepository},
     Clock, Repository,
@@ -254,7 +254,7 @@ impl Options {
                 for client in config.clients.iter() {
                     let client_id = client.client_id;
 
-                    let existing = lookup_client(&mut txn, client_id).await?.is_some();
+                    let existing = txn.oauth2_client().lookup(client_id).await?.is_some();
                     if !update && existing {
                         warn!(%client_id, "Skipping already imported client. Run with --update to update existing clients.");
                         continue;
@@ -270,25 +270,24 @@ impl Options {
                     let client_auth_method = client.client_auth_method();
                     let jwks = client.jwks();
                     let jwks_uri = client.jwks_uri();
-                    let redirect_uris = &client.redirect_uris;
 
                     // TODO: should be moved somewhere else
                     let encrypted_client_secret = client_secret
                         .map(|client_secret| encrypter.encryt_to_string(client_secret.as_bytes()))
                         .transpose()?;
 
-                    insert_client_from_config(
-                        &mut txn,
-                        &mut rng,
-                        &clock,
-                        client_id,
-                        client_auth_method,
-                        encrypted_client_secret.as_deref(),
-                        jwks,
-                        jwks_uri,
-                        redirect_uris,
-                    )
-                    .await?;
+                    txn.oauth2_client()
+                        .add_from_config(
+                            &mut rng,
+                            &clock,
+                            client_id,
+                            client_auth_method,
+                            encrypted_client_secret,
+                            jwks.cloned(),
+                            jwks_uri.cloned(),
+                            client.redirect_uris.clone(),
+                        )
+                        .await?;
                 }
 
                 txn.commit().await?;

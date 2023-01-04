@@ -12,9 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub trait ExecuteExt<'q, DB> {
+use tracing::Span;
+
+pub trait ExecuteExt<'q, DB>: Sized {
     /// Records the statement as `db.statement` in the current span
-    fn traced(self) -> Self;
+    fn traced(self) -> Self {
+        self.record(&Span::current())
+    }
+
+    /// Records the statement as `db.statement` in the given span
+    fn record(self, span: &Span) -> Self;
 }
 
 impl<'q, DB, T> ExecuteExt<'q, DB> for T
@@ -22,8 +29,8 @@ where
     T: sqlx::Execute<'q, DB>,
     DB: sqlx::Database,
 {
-    fn traced(self) -> Self {
-        tracing::Span::current().record("db.statement", self.sql());
+    fn record(self, span: &Span) -> Self {
+        span.record("db.statement", self.sql());
         self
     }
 }

@@ -31,10 +31,10 @@ use mas_http::HttpServiceExt;
 use mas_iana::oauth::OAuthClientAuthenticationMethod;
 use mas_jose::{jwk::PublicJsonWebKeySet, jwt::Jwt};
 use mas_keystore::Encrypter;
-use mas_storage::{oauth2::client::lookup_client_by_client_id, DatabaseError};
+use mas_storage::{oauth2::client::OAuth2ClientRepository, DatabaseError, Repository};
 use serde::{de::DeserializeOwned, Deserialize};
 use serde_json::Value;
-use sqlx::PgExecutor;
+use sqlx::PgConnection;
 use thiserror::Error;
 use tower::{Service, ServiceExt};
 
@@ -73,10 +73,7 @@ pub enum Credentials {
 }
 
 impl Credentials {
-    pub async fn fetch(
-        &self,
-        executor: impl PgExecutor<'_>,
-    ) -> Result<Option<Client>, DatabaseError> {
+    pub async fn fetch(&self, conn: &mut PgConnection) -> Result<Option<Client>, DatabaseError> {
         let client_id = match self {
             Credentials::None { client_id }
             | Credentials::ClientSecretBasic { client_id, .. }
@@ -84,7 +81,7 @@ impl Credentials {
             | Credentials::ClientAssertionJwtBearer { client_id, .. } => client_id,
         };
 
-        lookup_client_by_client_id(executor, client_id).await
+        conn.oauth2_client().find_by_client_id(client_id).await
     }
 
     #[tracing::instrument(skip_all, err)]

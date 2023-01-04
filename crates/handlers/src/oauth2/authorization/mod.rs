@@ -25,8 +25,9 @@ use mas_data_model::{AuthorizationCode, Pkce};
 use mas_keystore::Encrypter;
 use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
-use mas_storage::oauth2::{
-    authorization_grant::new_authorization_grant, client::lookup_client_by_client_id,
+use mas_storage::{
+    oauth2::{authorization_grant::new_authorization_grant, client::OAuth2ClientRepository},
+    Repository,
 };
 use mas_templates::Templates;
 use oauth2_types::{
@@ -141,7 +142,9 @@ pub(crate) async fn get(
     let mut txn = pool.begin().await?;
 
     // First, figure out what client it is
-    let client = lookup_client_by_client_id(&mut txn, &params.auth.client_id)
+    let client = txn
+        .oauth2_client()
+        .find_by_client_id(&params.auth.client_id)
         .await?
         .ok_or(RouteError::ClientNotFound)?;
 

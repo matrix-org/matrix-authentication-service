@@ -19,7 +19,7 @@ use hyper::StatusCode;
 use mas_iana::oauth::OAuthClientAuthenticationMethod;
 use mas_keystore::Encrypter;
 use mas_policy::{PolicyFactory, Violation};
-use mas_storage::oauth2::client::insert_client;
+use mas_storage::{oauth2::client::OAuth2ClientRepository, Repository};
 use oauth2_types::{
     errors::{ClientError, ClientErrorCode},
     registration::{
@@ -30,7 +30,6 @@ use rand::distributions::{Alphanumeric, DistString};
 use sqlx::PgPool;
 use thiserror::Error;
 use tracing::info;
-use ulid::Ulid;
 
 use crate::impl_from_error_for_route;
 
@@ -50,6 +49,7 @@ pub(crate) enum RouteError {
 }
 
 impl_from_error_for_route!(sqlx::Error);
+impl_from_error_for_route!(mas_storage::DatabaseError);
 impl_from_error_for_route!(mas_policy::LoadError);
 impl_from_error_for_route!(mas_policy::InstanciateError);
 impl_from_error_for_route!(mas_policy::EvaluationError);
@@ -124,15 +124,8 @@ pub(crate) async fn post(
         return Err(RouteError::PolicyDenied(res.violations));
     }
 
-    // Contacts was checked by the policy
-    let contacts = metadata.contacts.as_deref().unwrap_or_default();
-
     // Grab a txn
     let mut txn = pool.begin().await?;
-
-    let now = clock.now();
-    // Let's generate a random client ID
-    let client_id = Ulid::from_datetime_with_source(now.into(), &mut rng);
 
     let (client_secret, encrypted_client_secret) = match metadata.token_endpoint_auth_method {
         Some(
@@ -148,41 +141,42 @@ pub(crate) async fn post(
         _ => (None, None),
     };
 
-    insert_client(
-        &mut txn,
-        &mut rng,
-        &clock,
-        client_id,
-        metadata.redirect_uris(),
-        encrypted_client_secret.as_deref(),
-        //&metadata.response_types(),
-        metadata.grant_types(),
-        contacts,
-        metadata
-            .client_name
-            .as_ref()
-            .map(|l| l.non_localized().as_ref()),
-        metadata.logo_uri.as_ref().map(Localized::non_localized),
-        metadata.client_uri.as_ref().map(Localized::non_localized),
-        metadata.policy_uri.as_ref().map(Localized::non_localized),
-        metadata.tos_uri.as_ref().map(Localized::non_localized),
-        metadata.jwks_uri.as_ref(),
-        metadata.jwks.as_ref(),
-        // XXX: those might not be right, should be function calls
-        metadata.id_token_signed_response_alg.as_ref(),
-        metadata.userinfo_signed_response_alg.as_ref(),
-        metadata.token_endpoint_auth_method.as_ref(),
-        metadata.token_endpoint_auth_signing_alg.as_ref(),
-        metadata.initiate_login_uri.as_ref(),
-    )
-    .await?;
+    let client = txn
+        .oauth2_client()
+        .add(
+            &mut rng,
+            &clock,
+            metadata.redirect_uris().to_vec(),
+            encrypted_client_secret,
+            //&metadata.response_types(),
+            metadata.grant_types().to_vec(),
+            metadata.contacts.clone().unwrap_or_default(),
+            metadata
+                .client_name
+                .clone()
+                .map(Localized::to_non_localized),
+            metadata.logo_uri.clone().map(Localized::to_non_localized),
+            metadata.client_uri.clone().map(Localized::to_non_localized),
+            metadata.policy_uri.clone().map(Localized::to_non_localized),
+            metadata.tos_uri.clone().map(Localized::to_non_localized),
+            metadata.jwks_uri.clone(),
+            metadata.jwks.clone(),
+            // XXX: those might not be right, should be function calls
+            metadata.id_token_signed_response_alg.clone(),
+            metadata.userinfo_signed_response_alg.clone(),
+            metadata.token_endpoint_auth_method.clone(),
+            metadata.token_endpoint_auth_signing_alg.clone(),
+            metadata.initiate_login_uri.clone(),
+        )
+        .await?;
 
     txn.commit().await?;
 
     let response = ClientRegistrationResponse {
-        client_id: client_id.to_string(),
+        client_id: client.client_id,
         client_secret,
-        client_id_issued_at: Some(now),
+        // XXX: we should have a `created_at` field on the clients
+        client_id_issued_at: Some(client.id.datetime().into()),
         client_secret_expires_at: None,
     };
 

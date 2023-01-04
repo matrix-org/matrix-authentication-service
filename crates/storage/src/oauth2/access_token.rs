@@ -19,8 +19,8 @@ use sqlx::{PgConnection, PgExecutor};
 use ulid::Ulid;
 use uuid::Uuid;
 
-use super::client::lookup_client;
-use crate::{Clock, DatabaseError, DatabaseInconsistencyError};
+use super::client::OAuth2ClientRepository;
+use crate::{Clock, DatabaseError, DatabaseInconsistencyError, Repository};
 
 #[tracing::instrument(
     skip_all,
@@ -144,7 +144,9 @@ pub async fn lookup_active_access_token(
     };
 
     let session_id = res.oauth2_session_id.into();
-    let client = lookup_client(&mut *conn, res.oauth2_client_id.into())
+    let client = conn
+        .oauth2_client()
+        .lookup(res.oauth2_client_id.into())
         .await?
         .ok_or_else(|| {
             DatabaseInconsistencyError::on("oauth2_sessions")

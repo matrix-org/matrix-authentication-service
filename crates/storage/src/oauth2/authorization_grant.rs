@@ -27,8 +27,8 @@ use ulid::Ulid;
 use url::Url;
 use uuid::Uuid;
 
-use super::client::lookup_client;
-use crate::{Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt};
+use super::client::OAuth2ClientRepository;
+use crate::{Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt, Repository};
 
 #[tracing::instrument(
     skip_all,
@@ -163,7 +163,7 @@ impl GrantLookup {
     #[allow(clippy::too_many_lines)]
     async fn into_authorization_grant(
         self,
-        executor: impl PgExecutor<'_>,
+        conn: &mut PgConnection,
     ) -> Result<AuthorizationGrant, DatabaseError> {
         let id = self.oauth2_authorization_grant_id.into();
         let scope: Scope = self.oauth2_authorization_grant_scope.parse().map_err(|e| {
@@ -173,8 +173,9 @@ impl GrantLookup {
                 .source(e)
         })?;
 
-        // TODO: don't unwrap
-        let client = lookup_client(executor, self.oauth2_client_id.into())
+        let client = conn
+            .oauth2_client()
+            .lookup(self.oauth2_client_id.into())
             .await?
             .ok_or_else(|| {
                 DatabaseInconsistencyError::on("oauth2_authorization_grants")

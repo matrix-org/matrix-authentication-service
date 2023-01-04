@@ -31,6 +31,7 @@ use async_graphql::{
     Context, Description, EmptyMutation, EmptySubscription, ID,
 };
 use mas_storage::{
+    oauth2::client::OAuth2ClientRepository,
     upstream_oauth2::UpstreamOAuthProviderRepository,
     user::{BrowserSessionRepository, UserEmailRepository},
     Repository, UpstreamOAuthLinkRepository,
@@ -95,7 +96,7 @@ impl RootQuery {
         let database = ctx.data::<PgPool>()?;
         let mut conn = database.acquire().await?;
 
-        let client = mas_storage::oauth2::client::lookup_client(&mut conn, id).await?;
+        let client = conn.oauth2_client().lookup(id).await?;
 
         Ok(client.map(OAuth2Client))
     }

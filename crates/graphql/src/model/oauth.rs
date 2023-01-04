@@ -14,7 +14,7 @@
 
 use anyhow::Context as _;
 use async_graphql::{Context, Description, Object, ID};
-use mas_storage::oauth2::client::lookup_client;
+use mas_storage::{oauth2::client::OAuth2ClientRepository, Repository};
 use oauth2_types::scope::Scope;
 use sqlx::PgPool;
 use ulid::Ulid;
@@ -115,7 +115,9 @@ impl OAuth2Consent {
     /// OAuth 2.0 client for which the user granted access.
     pub async fn client(&self, ctx: &Context<'_>) -> Result<OAuth2Client, async_graphql::Error> {
         let mut conn = ctx.data::<PgPool>()?.acquire().await?;
-        let client = lookup_client(&mut conn, self.client_id)
+        let client = conn
+            .oauth2_client()
+            .lookup(self.client_id)
             .await?
             .context("Could not load client")?;
         Ok(OAuth2Client(client))

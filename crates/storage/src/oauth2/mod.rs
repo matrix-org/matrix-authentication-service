@@ -20,7 +20,7 @@ use tracing::{info_span, Instrument};
 use ulid::Ulid;
 use uuid::Uuid;
 
-use self::client::lookup_clients;
+use self::client::OAuth2ClientRepository;
 use crate::{
     pagination::{process_page, QueryBuilderExt},
     user::BrowserSessionRepository,
@@ -128,7 +128,7 @@ pub async fn get_paginated_user_oauth_sessions(
     let browser_session_ids: BTreeSet<Ulid> =
         page.iter().map(|i| Ulid::from(i.user_session_id)).collect();
 
-    let clients = lookup_clients(&mut *conn, client_ids).await?;
+    let clients = conn.oauth2_client().load_batch(client_ids).await?;
 
     // TODO: this can generate N queries instead of batching. This is less than
     // ideal

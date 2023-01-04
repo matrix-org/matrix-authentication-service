@@ -15,6 +15,7 @@
 use sqlx::{PgConnection, Postgres, Transaction};
 
 use crate::{
+    oauth2::client::PgOAuth2ClientRepository,
     upstream_oauth2::{
         PgUpstreamOAuthLinkRepository, PgUpstreamOAuthProviderRepository,
         PgUpstreamOAuthSessionRepository,
@@ -54,6 +55,10 @@ pub trait Repository {
     where
         Self: 'c;
 
+    type OAuth2ClientRepository<'c>
+    where
+        Self: 'c;
+
     fn upstream_oauth_link(&mut self) -> Self::UpstreamOAuthLinkRepository<'_>;
     fn upstream_oauth_provider(&mut self) -> Self::UpstreamOAuthProviderRepository<'_>;
     fn upstream_oauth_session(&mut self) -> Self::UpstreamOAuthSessionRepository<'_>;
@@ -61,6 +66,7 @@ pub trait Repository {
     fn user_email(&mut self) -> Self::UserEmailRepository<'_>;
     fn user_password(&mut self) -> Self::UserPasswordRepository<'_>;
     fn browser_session(&mut self) -> Self::BrowserSessionRepository<'_>;
+    fn oauth2_client(&mut self) -> Self::OAuth2ClientRepository<'_>;
 }
 
 impl Repository for PgConnection {
@@ -71,6 +77,7 @@ impl Repository for PgConnection {
     type UserEmailRepository<'c> = PgUserEmailRepository<'c> where Self: 'c;
     type UserPasswordRepository<'c> = PgUserPasswordRepository<'c> where Self: 'c;
     type BrowserSessionRepository<'c> = PgBrowserSessionRepository<'c> where Self: 'c;
+    type OAuth2ClientRepository<'c> = PgOAuth2ClientRepository<'c> where Self: 'c;
 
     fn upstream_oauth_link(&mut self) -> Self::UpstreamOAuthLinkRepository<'_> {
         PgUpstreamOAuthLinkRepository::new(self)
@@ -98,6 +105,10 @@ impl Repository for PgConnection {
 
     fn browser_session(&mut self) -> Self::BrowserSessionRepository<'_> {
         PgBrowserSessionRepository::new(self)
+    }
+
+    fn oauth2_client(&mut self) -> Self::OAuth2ClientRepository<'_> {
+        PgOAuth2ClientRepository::new(self)
     }
 }
 
@@ -109,6 +120,7 @@ impl<'t> Repository for Transaction<'t, Postgres> {
     type UserEmailRepository<'c> = PgUserEmailRepository<'c> where Self: 'c;
     type UserPasswordRepository<'c> = PgUserPasswordRepository<'c> where Self: 'c;
     type BrowserSessionRepository<'c> = PgBrowserSessionRepository<'c> where Self: 'c;
+    type OAuth2ClientRepository<'c> = PgOAuth2ClientRepository<'c> where Self: 'c;
 
     fn upstream_oauth_link(&mut self) -> Self::UpstreamOAuthLinkRepository<'_> {
         PgUpstreamOAuthLinkRepository::new(self)
@@ -136,5 +148,9 @@ impl<'t> Repository for Transaction<'t, Postgres> {
 
     fn browser_session(&mut self) -> Self::BrowserSessionRepository<'_> {
         PgBrowserSessionRepository::new(self)
+    }
+
+    fn oauth2_client(&mut self) -> Self::OAuth2ClientRepository<'_> {
+        PgOAuth2ClientRepository::new(self)
     }
 }
