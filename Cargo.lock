@@ -5577,7 +5577,7 @@ checksum = "9e79c4d996edb816c91e4308506774452e55e95c3c9de07b6729e17e15a5ef81"
 [[package]]
 name = "ulid"
 version = "1.0.0"
-source = "git+https://github.com/sandhose/ulid-rs.git?rev=f1ef6fd736c4d3cbc7cf314fad707f0803de46ed#f1ef6fd736c4d3cbc7cf314fad707f0803de46ed"
+source = "git+https://github.com/dylanhart/ulid-rs.git?rev=0b9295c2db2114cd87aa19abcc1fc00c16b272db#0b9295c2db2114cd87aa19abcc1fc00c16b272db"
 dependencies = [
  "rand 0.8.5",
  "serde",
