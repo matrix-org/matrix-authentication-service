@@ -12,9 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use async_graphql::{Description, Object, ID};
+use anyhow::Context as _;
+use async_graphql::{Context, Description, Object, ID};
 use chrono::{DateTime, Utc};
 use mas_data_model::CompatSsoLoginState;
+use mas_storage::{user::UserRepository, Repository};
+use sqlx::PgPool;
 use url::Url;
 
 use super::{NodeType, User};
@@ -32,8 +35,14 @@ impl CompatSession {
     }
 
     /// The user authorized for this session.
-    async fn user(&self) -> User {
-        User(self.0.user.clone())
+    async fn user(&self, ctx: &Context<'_>) -> Result<User, async_graphql::Error> {
+        let mut conn = ctx.data::<PgPool>()?.acquire().await?;
+        let user = conn
+            .user()
+            .lookup(self.0.user_id)
+            .await?
+            .context("Could not load user")?;
+        Ok(User(user))
     }
 
     /// The Matrix Device ID of this session.

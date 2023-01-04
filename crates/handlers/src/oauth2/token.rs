@@ -31,11 +31,15 @@ use mas_jose::{
 };
 use mas_keystore::{Encrypter, Keystore};
 use mas_router::UrlBuilder;
-use mas_storage::oauth2::{
-    access_token::{add_access_token, revoke_access_token},
-    authorization_grant::{exchange_grant, lookup_grant_by_code},
-    end_oauth_session,
-    refresh_token::{add_refresh_token, consume_refresh_token, lookup_active_refresh_token},
+use mas_storage::{
+    oauth2::{
+        access_token::{add_access_token, revoke_access_token},
+        authorization_grant::{exchange_grant, lookup_grant_by_code},
+        end_oauth_session,
+        refresh_token::{add_refresh_token, consume_refresh_token, lookup_active_refresh_token},
+    },
+    user::BrowserSessionRepository,
+    Repository,
 };
 use oauth2_types::{
     errors::{ClientError, ClientErrorCode},
@@ -102,12 +106,15 @@ pub(crate) enum RouteError {
 
     #[error("no suitable key found for signing")]
     InvalidSigningKey,
+
+    #[error("failed to load browser session")]
+    NoSuchBrowserSession,
 }
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         match self {
-            Self::Internal(_) | Self::InvalidSigningKey => (
+            Self::Internal(_) | Self::InvalidSigningKey | Self::NoSuchBrowserSession => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ClientError::from(ClientErrorCode::ServerError)),
             ),
@@ -253,7 +260,7 @@ async fn authorization_code_grant(
     // This should never happen, since we looked up in the database using the code
     let code = authz_grant.code.as_ref().ok_or(RouteError::InvalidGrant)?;
 
-    if client.client_id != session.client.client_id {
+    if client.id != session.client_id {
         return Err(RouteError::UnauthorizedClient);
     }
 
@@ -267,7 +274,11 @@ async fn authorization_code_grant(
         }
     };
 
-    let browser_session = &session.browser_session;
+    let browser_session = txn
+        .browser_session()
+        .lookup(session.user_session_id)
+        .await?
+        .ok_or(RouteError::NoSuchBrowserSession)?;
 
     let ttl = Duration::minutes(5);
     let access_token_str = TokenType::AccessToken.generate(&mut rng);
@@ -357,7 +368,7 @@ async fn refresh_token_grant(
         .await?
         .ok_or(RouteError::InvalidGrant)?;
 
-    if client.client_id != session.client.client_id {
+    if client.id != session.client_id {
         // As per https://datatracker.ietf.org/doc/html/rfc6749#section-5.2
         return Err(RouteError::InvalidGrant);
     }

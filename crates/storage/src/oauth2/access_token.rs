@@ -13,21 +13,20 @@
 // limitations under the License.
 
 use chrono::{DateTime, Duration, Utc};
-use mas_data_model::{AccessToken, Authentication, BrowserSession, Session, User};
+use mas_data_model::{AccessToken, Session};
 use rand::Rng;
 use sqlx::{PgConnection, PgExecutor};
 use ulid::Ulid;
 use uuid::Uuid;
 
-use super::client::OAuth2ClientRepository;
-use crate::{Clock, DatabaseError, DatabaseInconsistencyError, Repository};
+use crate::{Clock, DatabaseError, DatabaseInconsistencyError};
 
 #[tracing::instrument(
     skip_all,
     fields(
         %session.id,
-        client.id = %session.client.id,
-        user.id = %session.browser_session.user.id,
+        user_session.id = %session.user_session_id,
+        client.id = %session.client_id,
         access_token.id,
     ),
     err,
@@ -81,12 +80,6 @@ pub struct OAuth2AccessTokenLookup {
     oauth2_client_id: Uuid,
     scope: String,
     user_session_id: Uuid,
-    user_session_created_at: DateTime<Utc>,
-    user_id: Uuid,
-    user_username: String,
-    user_primary_user_email_id: Option<Uuid>,
-    user_session_last_authentication_id: Option<Uuid>,
-    user_session_last_authentication_created_at: Option<DateTime<Utc>>,
 }
 
 #[allow(clippy::too_many_lines)]
@@ -104,30 +97,15 @@ pub async fn lookup_active_access_token(
                  , os.oauth2_session_id AS "oauth2_session_id!"
                  , os.oauth2_client_id  AS "oauth2_client_id!"
                  , os.scope             AS "scope!"
-                 , us.user_session_id   AS "user_session_id!"
-                 , us.created_at        AS "user_session_created_at!"
-                 ,  u.user_id           AS "user_id!"
-                 ,  u.username          AS "user_username!"
-                 ,  u.primary_user_email_id AS "user_primary_user_email_id"
-                 , usa.user_session_authentication_id AS "user_session_last_authentication_id?"
-                 , usa.created_at       AS "user_session_last_authentication_created_at?"
+                 , os.user_session_id   AS "user_session_id!"
 
             FROM oauth2_access_tokens at
             INNER JOIN oauth2_sessions os
               USING (oauth2_session_id)
-            INNER JOIN user_sessions us
-              USING (user_session_id)
-            INNER JOIN users u
-              USING (user_id)
-            LEFT JOIN user_session_authentications usa
-              USING (user_session_id)
 
             WHERE at.access_token = $1
               AND at.revoked_at IS NULL
               AND os.finished_at IS NULL
-
-            ORDER BY usa.created_at DESC
-            LIMIT 1
         "#,
         token,
     )
@@ -144,44 +122,6 @@ pub async fn lookup_active_access_token(
     };
 
     let session_id = res.oauth2_session_id.into();
-    let client = conn
-        .oauth2_client()
-        .lookup(res.oauth2_client_id.into())
-        .await?
-        .ok_or_else(|| {
-            DatabaseInconsistencyError::on("oauth2_sessions")
-                .column("client_id")
-                .row(session_id)
-        })?;
-
-    let user_id = Ulid::from(res.user_id);
-    let user = User {
-        id: user_id,
-        username: res.user_username,
-        sub: user_id.to_string(),
-        primary_user_email_id: res.user_primary_user_email_id.map(Into::into),
-    };
-
-    let last_authentication = match (
-        res.user_session_last_authentication_id,
-        res.user_session_last_authentication_created_at,
-    ) {
-        (None, None) => None,
-        (Some(id), Some(created_at)) => Some(Authentication {
-            id: id.into(),
-            created_at,
-        }),
-        _ => return Err(DatabaseInconsistencyError::on("user_session_authentications").into()),
-    };
-
-    let browser_session = BrowserSession {
-        id: res.user_session_id.into(),
-        created_at: res.user_session_created_at,
-        finished_at: None,
-        user,
-        last_authentication,
-    };
-
     let scope = res.scope.parse().map_err(|e| {
         DatabaseInconsistencyError::on("oauth2_sessions")
             .column("scope")
@@ -191,8 +131,8 @@ pub async fn lookup_active_access_token(
 
     let session = Session {
         id: session_id,
-        client,
-        browser_session,
+        client_id: res.oauth2_client_id.into(),
+        user_session_id: res.user_session_id.into(),
         scope,
     };
 

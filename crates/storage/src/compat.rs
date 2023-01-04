@@ -39,8 +39,6 @@ struct CompatAccessTokenLookup {
     compat_session_finished_at: Option<DateTime<Utc>>,
     compat_session_device_id: String,
     user_id: Uuid,
-    user_username: String,
-    user_primary_user_email_id: Option<Uuid>,
 }
 
 #[tracing::instrument(skip_all, err)]
@@ -52,24 +50,19 @@ pub async fn lookup_active_compat_access_token(
     let res = sqlx::query_as!(
         CompatAccessTokenLookup,
         r#"
-            SELECT
-                ct.compat_access_token_id,
-                ct.access_token    AS "compat_access_token",
-                ct.created_at      AS "compat_access_token_created_at",
-                ct.expires_at      AS "compat_access_token_expires_at",
-                cs.compat_session_id,
-                cs.created_at      AS "compat_session_created_at",
-                cs.finished_at     AS "compat_session_finished_at",
-                cs.device_id       AS "compat_session_device_id",
-                 u.user_id         AS "user_id!",
-                 u.username        AS "user_username!",
-                 u.primary_user_email_id AS "user_primary_user_email_id"
+            SELECT ct.compat_access_token_id
+                 , ct.access_token    AS "compat_access_token"
+                 , ct.created_at      AS "compat_access_token_created_at"
+                 , ct.expires_at      AS "compat_access_token_expires_at"
+                 , cs.compat_session_id
+                 , cs.created_at      AS "compat_session_created_at"
+                 , cs.finished_at     AS "compat_session_finished_at"
+                 , cs.device_id       AS "compat_session_device_id"
+                 , cs.user_id         AS "user_id!"
 
             FROM compat_access_tokens ct
             INNER JOIN compat_sessions cs
               USING (compat_session_id)
-            INNER JOIN users u
-              USING (user_id)
 
             WHERE ct.access_token = $1
               AND (ct.expires_at < $2 OR ct.expires_at IS NULL)
@@ -92,14 +85,6 @@ pub async fn lookup_active_compat_access_token(
         expires_at: res.compat_access_token_expires_at,
     };
 
-    let user_id = Ulid::from(res.user_id);
-    let user = User {
-        id: user_id,
-        username: res.user_username,
-        sub: user_id.to_string(),
-        primary_user_email_id: res.user_primary_user_email_id.map(Into::into),
-    };
-
     let id = res.compat_session_id.into();
     let device = Device::try_from(res.compat_session_device_id).map_err(|e| {
         DatabaseInconsistencyError::on("compat_sessions")
@@ -110,7 +95,7 @@ pub async fn lookup_active_compat_access_token(
 
     let session = CompatSession {
         id,
-        user,
+        user_id: res.user_id.into(),
         device,
         created_at: res.compat_session_created_at,
         finished_at: res.compat_session_finished_at,
@@ -132,8 +117,6 @@ pub struct CompatRefreshTokenLookup {
     compat_session_finished_at: Option<DateTime<Utc>>,
     compat_session_device_id: String,
     user_id: Uuid,
-    user_username: String,
-    user_primary_user_email_id: Option<Uuid>,
 }
 
 #[tracing::instrument(skip_all, err)]
@@ -145,29 +128,24 @@ pub async fn lookup_active_compat_refresh_token(
     let res = sqlx::query_as!(
         CompatRefreshTokenLookup,
         r#"
-            SELECT
-                cr.compat_refresh_token_id,
-                cr.refresh_token   AS "compat_refresh_token",
-                cr.created_at      AS "compat_refresh_token_created_at",
-                ct.compat_access_token_id,
-                ct.access_token    AS "compat_access_token",
-                ct.created_at      AS "compat_access_token_created_at",
-                ct.expires_at      AS "compat_access_token_expires_at",
-                cs.compat_session_id,
-                cs.created_at      AS "compat_session_created_at",
-                cs.finished_at     AS "compat_session_finished_at",
-                cs.device_id       AS "compat_session_device_id",
-                u.user_id,
-                u.username         AS "user_username!",
-                 u.primary_user_email_id AS "user_primary_user_email_id"
+            SELECT cr.compat_refresh_token_id
+                 , cr.refresh_token   AS "compat_refresh_token"
+                 , cr.created_at      AS "compat_refresh_token_created_at"
+                 , ct.compat_access_token_id
+                 , ct.access_token    AS "compat_access_token"
+                 , ct.created_at      AS "compat_access_token_created_at"
+                 , ct.expires_at      AS "compat_access_token_expires_at"
+                 , cs.compat_session_id
+                 , cs.created_at      AS "compat_session_created_at"
+                 , cs.finished_at     AS "compat_session_finished_at"
+                 , cs.device_id       AS "compat_session_device_id"
+                 , cs.user_id
 
             FROM compat_refresh_tokens cr
             INNER JOIN compat_sessions cs
               USING (compat_session_id)
             INNER JOIN compat_access_tokens ct
               USING (compat_access_token_id)
-            INNER JOIN users u
-              USING (user_id)
 
             WHERE cr.refresh_token = $1
               AND cr.consumed_at IS NULL
@@ -195,25 +173,17 @@ pub async fn lookup_active_compat_refresh_token(
         expires_at: res.compat_access_token_expires_at,
     };
 
-    let user_id = Ulid::from(res.user_id);
-    let user = User {
-        id: user_id,
-        username: res.user_username,
-        sub: user_id.to_string(),
-        primary_user_email_id: res.user_primary_user_email_id.map(Into::into),
-    };
-
-    let session_id = res.compat_session_id.into();
+    let id = res.compat_session_id.into();
     let device = Device::try_from(res.compat_session_device_id).map_err(|e| {
         DatabaseInconsistencyError::on("compat_sessions")
             .column("device_id")
-            .row(session_id)
+            .row(id)
             .source(e)
     })?;
 
     let session = CompatSession {
-        id: session_id,
-        user,
+        id,
+        user_id: res.user_id.into(),
         device,
         created_at: res.compat_session_created_at,
         finished_at: res.compat_session_finished_at,
@@ -228,7 +198,7 @@ pub async fn lookup_active_compat_refresh_token(
         compat_session.id = %session.id,
         compat_session.device.id = session.device.as_str(),
         compat_access_token.id,
-        user.id = %session.user.id,
+        user.id = %session.user_id,
     ),
     err,
 )]
@@ -305,7 +275,7 @@ pub async fn expire_compat_access_token(
         compat_session.device.id = session.device.as_str(),
         compat_access_token.id = %access_token.id,
         compat_refresh_token.id,
-        user.id = %session.user.id,
+        user.id = %session.user_id,
     ),
     err,
 )]
@@ -469,8 +439,6 @@ struct CompatSsoLoginLookup {
     compat_session_finished_at: Option<DateTime<Utc>>,
     compat_session_device_id: Option<String>,
     user_id: Option<Uuid>,
-    user_username: Option<String>,
-    user_primary_user_email_id: Option<Uuid>,
 }
 
 impl TryFrom<CompatSsoLoginLookup> for CompatSsoLogin {
@@ -485,33 +453,14 @@ impl TryFrom<CompatSsoLoginLookup> for CompatSsoLogin {
                 .source(e)
         })?;
 
-        let user = match (
-            res.user_id,
-            res.user_username,
-            res.user_primary_user_email_id,
-        ) {
-            (Some(id), Some(username), primary_email_id) => {
-                let id = Ulid::from(id);
-                Some(User {
-                    id,
-                    username,
-                    sub: id.to_string(),
-                    primary_user_email_id: primary_email_id.map(Into::into),
-                })
-            }
-
-            (None, None, None) => None,
-            _ => return Err(DatabaseInconsistencyError::on("compat_sessions").column("user_id")),
-        };
-
         let session = match (
             res.compat_session_id,
             res.compat_session_device_id,
             res.compat_session_created_at,
             res.compat_session_finished_at,
-            user,
+            res.user_id,
         ) {
-            (Some(id), Some(device_id), Some(created_at), finished_at, Some(user)) => {
+            (Some(id), Some(device_id), Some(created_at), finished_at, Some(user_id)) => {
                 let id = id.into();
                 let device = Device::try_from(device_id).map_err(|e| {
                     DatabaseInconsistencyError::on("compat_sessions")
@@ -521,7 +470,7 @@ impl TryFrom<CompatSsoLoginLookup> for CompatSsoLogin {
                 })?;
                 Some(CompatSession {
                     id,
-                    user,
+                    user_id: user_id.into(),
                     device,
                     created_at,
                     finished_at,
@@ -579,25 +528,21 @@ pub async fn get_compat_sso_login_by_id(
     let res = sqlx::query_as!(
         CompatSsoLoginLookup,
         r#"
-            SELECT
-                cl.compat_sso_login_id,
-                cl.login_token     AS "compat_sso_login_token",
-                cl.redirect_uri    AS "compat_sso_login_redirect_uri",
-                cl.created_at      AS "compat_sso_login_created_at",
-                cl.fulfilled_at    AS "compat_sso_login_fulfilled_at",
-                cl.exchanged_at    AS "compat_sso_login_exchanged_at",
-                cs.compat_session_id AS "compat_session_id?",
-                cs.created_at      AS "compat_session_created_at?",
-                cs.finished_at     AS "compat_session_finished_at?",
-                cs.device_id       AS "compat_session_device_id?",
-                u.user_id          AS "user_id?",
-                u.username         AS "user_username?",
-                u.primary_user_email_id AS "user_primary_user_email_id?"
+            SELECT cl.compat_sso_login_id
+                 , cl.login_token     AS "compat_sso_login_token"
+                 , cl.redirect_uri    AS "compat_sso_login_redirect_uri"
+                 , cl.created_at      AS "compat_sso_login_created_at"
+                 , cl.fulfilled_at    AS "compat_sso_login_fulfilled_at"
+                 , cl.exchanged_at    AS "compat_sso_login_exchanged_at"
+                 , cs.compat_session_id AS "compat_session_id?"
+                 , cs.created_at      AS "compat_session_created_at?"
+                 , cs.finished_at     AS "compat_session_finished_at?"
+                 , cs.device_id       AS "compat_session_device_id?"
+                 , cs.user_id         AS "user_id?"
+
             FROM compat_sso_logins cl
             LEFT JOIN compat_sessions cs
               USING (compat_session_id)
-            LEFT JOIN users u
-              USING (user_id)
             WHERE cl.compat_sso_login_id = $1
         "#,
         Uuid::from(id),
@@ -632,25 +577,20 @@ pub async fn get_paginated_user_compat_sso_logins(
     // because we already have them
     let mut query = QueryBuilder::new(
         r#"
-            SELECT
-                cl.compat_sso_login_id,
-                cl.login_token     AS "compat_sso_login_token",
-                cl.redirect_uri    AS "compat_sso_login_redirect_uri",
-                cl.created_at      AS "compat_sso_login_created_at",
-                cl.fulfilled_at    AS "compat_sso_login_fulfilled_at",
-                cl.exchanged_at    AS "compat_sso_login_exchanged_at",
-                cs.compat_session_id AS "compat_session_id",
-                cs.created_at      AS "compat_session_created_at",
-                cs.finished_at     AS "compat_session_finished_at",
-                cs.device_id       AS "compat_session_device_id",
-                u.user_id          AS "user_id",
-                u.username         AS "user_username",
-                u.primary_user_email_id AS "user_primary_user_email_id?"
+            SELECT cl.compat_sso_login_id
+                 , cl.login_token     AS "compat_sso_login_token"
+                 , cl.redirect_uri    AS "compat_sso_login_redirect_uri"
+                 , cl.created_at      AS "compat_sso_login_created_at"
+                 , cl.fulfilled_at    AS "compat_sso_login_fulfilled_at"
+                 , cl.exchanged_at    AS "compat_sso_login_exchanged_at"
+                 , cs.compat_session_id AS "compat_session_id"
+                 , cs.created_at      AS "compat_session_created_at"
+                 , cs.finished_at     AS "compat_session_finished_at"
+                 , cs.device_id       AS "compat_session_device_id"
+                 , cs.user_id
             FROM compat_sso_logins cl
             LEFT JOIN compat_sessions cs
               USING (compat_session_id)
-            LEFT JOIN users u
-              USING (user_id)
         "#,
     );
 
@@ -683,25 +623,20 @@ pub async fn get_compat_sso_login_by_token(
     let res = sqlx::query_as!(
         CompatSsoLoginLookup,
         r#"
-            SELECT
-                cl.compat_sso_login_id,
-                cl.login_token     AS "compat_sso_login_token",
-                cl.redirect_uri    AS "compat_sso_login_redirect_uri",
-                cl.created_at      AS "compat_sso_login_created_at",
-                cl.fulfilled_at    AS "compat_sso_login_fulfilled_at",
-                cl.exchanged_at    AS "compat_sso_login_exchanged_at",
-                cs.compat_session_id AS "compat_session_id?",
-                cs.created_at      AS "compat_session_created_at?",
-                cs.finished_at     AS "compat_session_finished_at?",
-                cs.device_id       AS "compat_session_device_id?",
-                u.user_id          AS "user_id?",
-                u.username         AS "user_username?",
-                u.primary_user_email_id AS "user_primary_user_email_id?"
+            SELECT cl.compat_sso_login_id
+                 , cl.login_token     AS "compat_sso_login_token"
+                 , cl.redirect_uri    AS "compat_sso_login_redirect_uri"
+                 , cl.created_at      AS "compat_sso_login_created_at"
+                 , cl.fulfilled_at    AS "compat_sso_login_fulfilled_at"
+                 , cl.exchanged_at    AS "compat_sso_login_exchanged_at"
+                 , cs.compat_session_id AS "compat_session_id?"
+                 , cs.created_at      AS "compat_session_created_at?"
+                 , cs.finished_at     AS "compat_session_finished_at?"
+                 , cs.device_id       AS "compat_session_device_id?"
+                 , cs.user_id         AS "user_id?"
             FROM compat_sso_logins cl
             LEFT JOIN compat_sessions cs
               USING (compat_session_id)
-            LEFT JOIN users u
-              USING (user_id)
             WHERE cl.login_token = $1
         "#,
         token,
@@ -729,7 +664,7 @@ pub async fn start_compat_session(
     executor: impl PgExecutor<'_>,
     mut rng: impl Rng + Send,
     clock: &Clock,
-    user: User,
+    user: &User,
     device: Device,
 ) -> Result<CompatSession, DatabaseError> {
     let created_at = clock.now();
@@ -751,7 +686,7 @@ pub async fn start_compat_session(
 
     Ok(CompatSession {
         id,
-        user,
+        user_id: user.id,
         device,
         created_at,
         finished_at: None,
@@ -773,7 +708,7 @@ pub async fn fullfill_compat_sso_login(
     conn: impl Acquire<'_, Database = Postgres> + Send,
     mut rng: impl Rng + Send,
     clock: &Clock,
-    user: User,
+    user: &User,
     mut compat_sso_login: CompatSsoLogin,
     device: Device,
 ) -> Result<CompatSsoLogin, DatabaseError> {

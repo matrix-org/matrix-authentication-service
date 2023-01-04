@@ -15,7 +15,7 @@
 use axum::{extract::State, response::IntoResponse, Json};
 use chrono::Duration;
 use hyper::StatusCode;
-use mas_data_model::{CompatSession, CompatSsoLoginState, Device, TokenType};
+use mas_data_model::{CompatSession, CompatSsoLoginState, Device, TokenType, User};
 use mas_storage::{
     compat::{
         add_compat_access_token, add_compat_refresh_token, get_compat_sso_login_by_token,
@@ -197,7 +197,7 @@ pub(crate) async fn post(
 ) -> Result<impl IntoResponse, RouteError> {
     let (clock, mut rng) = crate::clock_and_rng();
     let mut txn = pool.begin().await?;
-    let session = match input.credentials {
+    let (session, user) = match input.credentials {
         Credentials::Password {
             identifier: Identifier::User { user },
             password,
@@ -210,7 +210,7 @@ pub(crate) async fn post(
         }
     };
 
-    let user_id = format!("@{username}:{homeserver}", username = session.user.username);
+    let user_id = format!("@{username}:{homeserver}", username = user.username);
 
     // If the client asked for a refreshable token, make it expire
     let expires_in = if input.refresh_token {
@@ -262,13 +262,13 @@ async fn token_login(
     txn: &mut Transaction<'_, Postgres>,
     clock: &Clock,
     token: &str,
-) -> Result<CompatSession, RouteError> {
+) -> Result<(CompatSession, User), RouteError> {
     let login = get_compat_sso_login_by_token(&mut *txn, token)
         .await?
         .ok_or(RouteError::InvalidLoginToken)?;
 
     let now = clock.now();
-    match login.state {
+    let user_id = match login.state {
         CompatSsoLoginState::Pending => {
             tracing::error!(
                 compat_sso_login.id = %login.id,
@@ -278,11 +278,14 @@ async fn token_login(
         }
         CompatSsoLoginState::Fulfilled {
             fulfilled_at: fullfilled_at,
+            ref session,
             ..
         } => {
             if now > fullfilled_at + Duration::seconds(30) {
                 return Err(RouteError::LoginTookTooLong);
             }
+
+            session.user_id
         }
         CompatSsoLoginState::Exchanged { exchanged_at, .. } => {
             if now > exchanged_at + Duration::seconds(30) {
@@ -295,12 +298,18 @@ async fn token_login(
 
             return Err(RouteError::InvalidLoginToken);
         }
-    }
+    };
+
+    let user = txn
+        .user()
+        .lookup(user_id)
+        .await?
+        .ok_or(RouteError::UserNotFound)?;
 
     let login = mark_compat_sso_login_as_exchanged(&mut *txn, clock, login).await?;
 
     match login.state {
-        CompatSsoLoginState::Exchanged { session, .. } => Ok(session),
+        CompatSsoLoginState::Exchanged { session, .. } => Ok((session, user)),
         _ => unreachable!(),
     }
 }
@@ -310,7 +319,7 @@ async fn user_password_login(
     txn: &mut Transaction<'_, Postgres>,
     username: String,
     password: String,
-) -> Result<CompatSession, RouteError> {
+) -> Result<(CompatSession, User), RouteError> {
     let (clock, mut rng) = crate::clock_and_rng();
 
     // Find the user
@@ -356,7 +365,7 @@ async fn user_password_login(
 
     // Now that the user credentials have been verified, start a new compat session
     let device = Device::generate(&mut rng);
-    let session = start_compat_session(&mut *txn, &mut rng, &clock, user, device).await?;
+    let session = start_compat_session(&mut *txn, &mut rng, &clock, &user, device).await?;
 
-    Ok(session)
+    Ok((session, user))
 }

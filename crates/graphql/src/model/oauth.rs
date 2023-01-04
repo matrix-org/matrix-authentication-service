@@ -14,7 +14,9 @@
 
 use anyhow::Context as _;
 use async_graphql::{Context, Description, Object, ID};
-use mas_storage::{oauth2::client::OAuth2ClientRepository, Repository};
+use mas_storage::{
+    oauth2::client::OAuth2ClientRepository, user::BrowserSessionRepository, Repository,
+};
 use oauth2_types::scope::Scope;
 use sqlx::PgPool;
 use ulid::Ulid;
@@ -35,8 +37,15 @@ impl OAuth2Session {
     }
 
     /// OAuth 2.0 client used by this session.
-    pub async fn client(&self) -> OAuth2Client {
-        OAuth2Client(self.0.client.clone())
+    pub async fn client(&self, ctx: &Context<'_>) -> Result<OAuth2Client, async_graphql::Error> {
+        let mut conn = ctx.data::<PgPool>()?.acquire().await?;
+        let client = conn
+            .oauth2_client()
+            .lookup(self.0.client_id)
+            .await?
+            .context("Could not load client")?;
+
+        Ok(OAuth2Client(client))
     }
 
     /// Scope granted for this session.
@@ -45,13 +54,30 @@ impl OAuth2Session {
     }
 
     /// The browser session which started this OAuth 2.0 session.
-    pub async fn browser_session(&self) -> BrowserSession {
-        BrowserSession(self.0.browser_session.clone())
+    pub async fn browser_session(
+        &self,
+        ctx: &Context<'_>,
+    ) -> Result<BrowserSession, async_graphql::Error> {
+        let mut conn = ctx.data::<PgPool>()?.acquire().await?;
+        let browser_session = conn
+            .browser_session()
+            .lookup(self.0.user_session_id)
+            .await?
+            .context("Could not load browser session")?;
+
+        Ok(BrowserSession(browser_session))
     }
 
     /// User authorized for this session.
-    pub async fn user(&self) -> User {
-        User(self.0.browser_session.user.clone())
+    pub async fn user(&self, ctx: &Context<'_>) -> Result<User, async_graphql::Error> {
+        let mut conn = ctx.data::<PgPool>()?.acquire().await?;
+        let browser_session = conn
+            .browser_session()
+            .lookup(self.0.user_session_id)
+            .await?
+            .context("Could not load browser session")?;
+
+        Ok(User(browser_session.user))
     }
 }
 

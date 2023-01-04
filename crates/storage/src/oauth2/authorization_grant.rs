@@ -16,8 +16,8 @@ use std::num::NonZeroU32;
 
 use chrono::{DateTime, Utc};
 use mas_data_model::{
-    Authentication, AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, BrowserSession,
-    Client, Pkce, Session, User,
+    AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, BrowserSession, Client, Pkce,
+    Session,
 };
 use mas_iana::oauth::PkceCodeChallengeMethod;
 use oauth2_types::{requests::ResponseMode, scope::Scope};
@@ -151,12 +151,6 @@ struct GrantLookup {
     oauth2_client_id: Uuid,
     oauth2_session_id: Option<Uuid>,
     user_session_id: Option<Uuid>,
-    user_session_created_at: Option<DateTime<Utc>>,
-    user_id: Option<Uuid>,
-    user_username: Option<String>,
-    user_primary_user_email_id: Option<Uuid>,
-    user_session_last_authentication_id: Option<Uuid>,
-    user_session_last_authentication_created_at: Option<DateTime<Utc>>,
 }
 
 impl GrantLookup {
@@ -183,65 +177,20 @@ impl GrantLookup {
                     .row(id)
             })?;
 
-        let last_authentication = match (
-            self.user_session_last_authentication_id,
-            self.user_session_last_authentication_created_at,
-        ) {
-            (Some(id), Some(created_at)) => Some(Authentication {
-                id: id.into(),
-                created_at,
-            }),
-            (None, None) => None,
-            _ => return Err(DatabaseInconsistencyError::on("user_session_authentications").into()),
-        };
-
-        let session = match (
-            self.oauth2_session_id,
-            self.user_session_id,
-            self.user_session_created_at,
-            self.user_id,
-            self.user_username,
-            self.user_primary_user_email_id,
-            last_authentication,
-        ) {
-            (
-                Some(session_id),
-                Some(user_session_id),
-                Some(user_session_created_at),
-                Some(user_id),
-                Some(user_username),
-                user_primary_user_email_id,
-                last_authentication,
-            ) => {
-                let user_id = Ulid::from(user_id);
-                let user = User {
-                    id: user_id,
-                    username: user_username,
-                    sub: user_id.to_string(),
-                    primary_user_email_id: user_primary_user_email_id.map(Into::into),
-                };
-
-                let browser_session = BrowserSession {
-                    id: user_session_id.into(),
-                    user,
-                    created_at: user_session_created_at,
-                    finished_at: None,
-                    last_authentication,
-                };
-
-                let client = client.clone();
+        let session = match (self.oauth2_session_id, self.user_session_id) {
+            (Some(session_id), Some(user_session_id)) => {
                 let scope = scope.clone();
 
                 let session = Session {
                     id: session_id.into(),
-                    client,
-                    browser_session,
+                    client_id: client.id,
+                    user_session_id: user_session_id.into(),
                     scope,
                 };
 
                 Some(session)
             }
-            (None, None, None, None, None, None, None) => None,
+            (None, None) => None,
             _ => {
                 return Err(
                     DatabaseInconsistencyError::on("oauth2_authorization_grants")
@@ -394,48 +343,32 @@ pub async fn get_grant_by_id(
     let res = sqlx::query_as!(
         GrantLookup,
         r#"
-            SELECT
-                og.oauth2_authorization_grant_id,
-                og.created_at              AS oauth2_authorization_grant_created_at,
-                og.cancelled_at            AS oauth2_authorization_grant_cancelled_at,
-                og.fulfilled_at            AS oauth2_authorization_grant_fulfilled_at,
-                og.exchanged_at            AS oauth2_authorization_grant_exchanged_at,
-                og.scope                   AS oauth2_authorization_grant_scope,
-                og.state                   AS oauth2_authorization_grant_state,
-                og.redirect_uri            AS oauth2_authorization_grant_redirect_uri,
-                og.response_mode           AS oauth2_authorization_grant_response_mode,
-                og.nonce                   AS oauth2_authorization_grant_nonce,
-                og.max_age                 AS oauth2_authorization_grant_max_age,
-                og.oauth2_client_id        AS oauth2_client_id,
-                og.authorization_code      AS oauth2_authorization_grant_code,
-                og.response_type_code      AS oauth2_authorization_grant_response_type_code,
-                og.response_type_id_token  AS oauth2_authorization_grant_response_type_id_token,
-                og.code_challenge          AS oauth2_authorization_grant_code_challenge,
-                og.code_challenge_method   AS oauth2_authorization_grant_code_challenge_method,
-                og.requires_consent        AS oauth2_authorization_grant_requires_consent,
-                os.oauth2_session_id       AS "oauth2_session_id?",
-                us.user_session_id         AS "user_session_id?",
-                us.created_at              AS "user_session_created_at?",
-                 u.user_id                 AS "user_id?",
-                 u.username                AS "user_username?",
-                 u.primary_user_email_id   AS "user_primary_user_email_id?",
-                usa.user_session_authentication_id AS "user_session_last_authentication_id?",
-                usa.created_at             AS "user_session_last_authentication_created_at?"
+            SELECT og.oauth2_authorization_grant_id
+                 , og.created_at              AS oauth2_authorization_grant_created_at
+                 , og.cancelled_at            AS oauth2_authorization_grant_cancelled_at
+                 , og.fulfilled_at            AS oauth2_authorization_grant_fulfilled_at
+                 , og.exchanged_at            AS oauth2_authorization_grant_exchanged_at
+                 , og.scope                   AS oauth2_authorization_grant_scope
+                 , og.state                   AS oauth2_authorization_grant_state
+                 , og.redirect_uri            AS oauth2_authorization_grant_redirect_uri
+                 , og.response_mode           AS oauth2_authorization_grant_response_mode
+                 , og.nonce                   AS oauth2_authorization_grant_nonce
+                 , og.max_age                 AS oauth2_authorization_grant_max_age
+                 , og.oauth2_client_id        AS oauth2_client_id
+                 , og.authorization_code      AS oauth2_authorization_grant_code
+                 , og.response_type_code      AS oauth2_authorization_grant_response_type_code
+                 , og.response_type_id_token  AS oauth2_authorization_grant_response_type_id_token
+                 , og.code_challenge          AS oauth2_authorization_grant_code_challenge
+                 , og.code_challenge_method   AS oauth2_authorization_grant_code_challenge_method
+                 , og.requires_consent        AS oauth2_authorization_grant_requires_consent
+                 , os.oauth2_session_id       AS "oauth2_session_id?"
+                 , os.user_session_id         AS "user_session_id?"
             FROM
                 oauth2_authorization_grants og
             LEFT JOIN oauth2_sessions os
               USING (oauth2_session_id)
-            LEFT JOIN user_sessions us
-              USING (user_session_id)
-            LEFT JOIN users u
-              USING (user_id)
-            LEFT JOIN user_session_authentications usa
-              USING (user_session_id)
 
             WHERE og.oauth2_authorization_grant_id = $1
-
-            ORDER BY usa.created_at DESC
-            LIMIT 1
         "#,
         Uuid::from(id),
     )
@@ -458,48 +391,32 @@ pub async fn lookup_grant_by_code(
     let res = sqlx::query_as!(
         GrantLookup,
         r#"
-            SELECT
-                og.oauth2_authorization_grant_id,
-                og.created_at              AS oauth2_authorization_grant_created_at,
-                og.cancelled_at            AS oauth2_authorization_grant_cancelled_at,
-                og.fulfilled_at            AS oauth2_authorization_grant_fulfilled_at,
-                og.exchanged_at            AS oauth2_authorization_grant_exchanged_at,
-                og.scope                   AS oauth2_authorization_grant_scope,
-                og.state                   AS oauth2_authorization_grant_state,
-                og.redirect_uri            AS oauth2_authorization_grant_redirect_uri,
-                og.response_mode           AS oauth2_authorization_grant_response_mode,
-                og.nonce                   AS oauth2_authorization_grant_nonce,
-                og.max_age                 AS oauth2_authorization_grant_max_age,
-                og.oauth2_client_id        AS oauth2_client_id,
-                og.authorization_code      AS oauth2_authorization_grant_code,
-                og.response_type_code      AS oauth2_authorization_grant_response_type_code,
-                og.response_type_id_token  AS oauth2_authorization_grant_response_type_id_token,
-                og.code_challenge          AS oauth2_authorization_grant_code_challenge,
-                og.code_challenge_method   AS oauth2_authorization_grant_code_challenge_method,
-                og.requires_consent        AS oauth2_authorization_grant_requires_consent,
-                os.oauth2_session_id       AS "oauth2_session_id?",
-                us.user_session_id         AS "user_session_id?",
-                us.created_at              AS "user_session_created_at?",
-                 u.user_id                 AS "user_id?",
-                 u.username                AS "user_username?",
-                 u.primary_user_email_id   AS "user_primary_user_email_id?",
-                usa.user_session_authentication_id AS "user_session_last_authentication_id?",
-                usa.created_at             AS "user_session_last_authentication_created_at?"
+            SELECT og.oauth2_authorization_grant_id
+                 , og.created_at              AS oauth2_authorization_grant_created_at
+                 , og.cancelled_at            AS oauth2_authorization_grant_cancelled_at
+                 , og.fulfilled_at            AS oauth2_authorization_grant_fulfilled_at
+                 , og.exchanged_at            AS oauth2_authorization_grant_exchanged_at
+                 , og.scope                   AS oauth2_authorization_grant_scope
+                 , og.state                   AS oauth2_authorization_grant_state
+                 , og.redirect_uri            AS oauth2_authorization_grant_redirect_uri
+                 , og.response_mode           AS oauth2_authorization_grant_response_mode
+                 , og.nonce                   AS oauth2_authorization_grant_nonce
+                 , og.max_age                 AS oauth2_authorization_grant_max_age
+                 , og.oauth2_client_id        AS oauth2_client_id
+                 , og.authorization_code      AS oauth2_authorization_grant_code
+                 , og.response_type_code      AS oauth2_authorization_grant_response_type_code
+                 , og.response_type_id_token  AS oauth2_authorization_grant_response_type_id_token
+                 , og.code_challenge          AS oauth2_authorization_grant_code_challenge
+                 , og.code_challenge_method   AS oauth2_authorization_grant_code_challenge_method
+                 , og.requires_consent        AS oauth2_authorization_grant_requires_consent
+                 , os.oauth2_session_id       AS "oauth2_session_id?"
+                 , os.user_session_id         AS "user_session_id?"
             FROM
                 oauth2_authorization_grants og
             LEFT JOIN oauth2_sessions os
               USING (oauth2_session_id)
-            LEFT JOIN user_sessions us
-              USING (user_session_id)
-            LEFT JOIN users u
-              USING (user_id)
-            LEFT JOIN user_session_authentications usa
-              USING (user_session_id)
 
             WHERE og.authorization_code = $1
-
-            ORDER BY usa.created_at DESC
-            LIMIT 1
         "#,
         code,
     )
@@ -561,8 +478,8 @@ pub async fn derive_session(
 
     Ok(Session {
         id,
-        browser_session,
-        client: grant.client.clone(),
+        user_session_id: browser_session.id,
+        client_id: grant.client.id,
         scope: grant.scope.clone(),
     })
 }
@@ -573,8 +490,7 @@ pub async fn derive_session(
         %grant.id,
         client.id = %grant.client.id,
         %session.id,
-        user_session.id = %session.browser_session.id,
-        user.id = %session.browser_session.user.id,
+        user_session.id = %session.user_session_id,
     ),
     err,
 )]

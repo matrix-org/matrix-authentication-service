@@ -28,7 +28,11 @@ use mas_jose::{
 };
 use mas_keystore::Keystore;
 use mas_router::UrlBuilder;
-use mas_storage::{user::UserEmailRepository, Repository};
+use mas_storage::{
+    oauth2::client::OAuth2ClientRepository,
+    user::{BrowserSessionRepository, UserEmailRepository},
+    Repository,
+};
 use oauth2_types::scope;
 use serde::Serialize;
 use serde_with::skip_serializing_none;
@@ -64,6 +68,12 @@ pub enum RouteError {
 
     #[error("no suitable key found for signing")]
     InvalidSigningKey,
+
+    #[error("failed to load client")]
+    NoSuchClient,
+
+    #[error("failed to load browser session")]
+    NoSuchBrowserSession,
 }
 
 impl_from_error_for_route!(sqlx::Error);
@@ -74,7 +84,10 @@ impl_from_error_for_route!(mas_jose::jwt::JwtSignatureError);
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         match self {
-            Self::Internal(_) | Self::InvalidSigningKey => {
+            Self::Internal(_)
+            | Self::InvalidSigningKey
+            | Self::NoSuchClient
+            | Self::NoSuchBrowserSession => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()).into_response()
             }
             Self::AuthorizationVerificationError(_e) => StatusCode::UNAUTHORIZED.into_response(),
@@ -93,7 +106,13 @@ pub async fn get(
 
     let session = user_authorization.protected(&mut conn).await?;
 
-    let user = session.browser_session.user;
+    let browser_session = conn
+        .browser_session()
+        .lookup(session.user_session_id)
+        .await?
+        .ok_or(RouteError::NoSuchBrowserSession)?;
+
+    let user = browser_session.user;
 
     let user_email = if session.scope.contains(&scope::EMAIL) {
         conn.user_email().get_primary(&user).await?
@@ -108,7 +127,13 @@ pub async fn get(
         email: user_email.map(|u| u.email),
     };
 
-    if let Some(alg) = session.client.userinfo_signed_response_alg {
+    let client = conn
+        .oauth2_client()
+        .lookup(session.client_id)
+        .await?
+        .ok_or(RouteError::NoSuchClient)?;
+
+    if let Some(alg) = client.userinfo_signed_response_alg {
         let key = key_store
             .signing_key_for_algorithm(&alg)
             .ok_or(RouteError::InvalidSigningKey)?;
@@ -119,7 +144,7 @@ pub async fn get(
 
         let user_info = SignedUserInfo {
             iss: url_builder.oidc_issuer().to_string(),
-            aud: session.client.client_id,
+            aud: client.client_id,
             user_info,
         };
 

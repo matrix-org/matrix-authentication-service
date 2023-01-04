@@ -182,7 +182,7 @@ pub async fn post(
 
     let device = Device::generate(&mut rng);
     let _login =
-        fullfill_compat_sso_login(&mut txn, &mut rng, &clock, session.user, login, device).await?;
+        fullfill_compat_sso_login(&mut txn, &mut rng, &clock, &session.user, login, device).await?;
 
     txn.commit().await?;
 

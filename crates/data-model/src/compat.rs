@@ -23,8 +23,6 @@ use thiserror::Error;
 use ulid::Ulid;
 use url::Url;
 
-use crate::User;
-
 static DEVICE_ID_LENGTH: usize = 10;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -85,7 +83,7 @@ impl TryFrom<String> for Device {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct CompatSession {
     pub id: Ulid,
-    pub user: User,
+    pub user_id: Ulid,
     pub device: Device,
     pub created_at: DateTime<Utc>,
     pub finished_at: Option<DateTime<Utc>>,

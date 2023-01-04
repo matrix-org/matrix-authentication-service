@@ -1,77 +1,67 @@
 {
   "db": "PostgreSQL",
-  "03bc4a14e97e011fec04e5788a967e04838cf978984254ecfd2c8b8a979da1c8": {
+  "021f845e564500457e2e0c8614beb1d9fd10b4b5f13515478f7ca25b5474d016": {
     "describe": {
       "columns": [
         {
-          "name": "oauth2_access_token_id",
+          "name": "compat_refresh_token_id",
           "ordinal": 0,
           "type_info": "Uuid"
         },
         {
-          "name": "oauth2_access_token",
+          "name": "compat_refresh_token",
           "ordinal": 1,
           "type_info": "Text"
         },
         {
-          "name": "oauth2_access_token_created_at",
+          "name": "compat_refresh_token_created_at",
           "ordinal": 2,
           "type_info": "Timestamptz"
         },
         {
-          "name": "oauth2_access_token_expires_at",
+          "name": "compat_access_token_id",
           "ordinal": 3,
-          "type_info": "Timestamptz"
+          "type_info": "Uuid"
         },
         {
-          "name": "oauth2_session_id!",
+          "name": "compat_access_token",
           "ordinal": 4,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "oauth2_client_id!",
-          "ordinal": 5,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "scope!",
-          "ordinal": 6,
           "type_info": "Text"
         },
         {
-          "name": "user_session_id!",
+          "name": "compat_access_token_created_at",
+          "ordinal": 5,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "compat_access_token_expires_at",
+          "ordinal": 6,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "compat_session_id",
           "ordinal": 7,
           "type_info": "Uuid"
         },
         {
-          "name": "user_session_created_at!",
+          "name": "compat_session_created_at",
           "ordinal": 8,
           "type_info": "Timestamptz"
         },
         {
-          "name": "user_id!",
+          "name": "compat_session_finished_at",
           "ordinal": 9,
-          "type_info": "Uuid"
+          "type_info": "Timestamptz"
         },
         {
-          "name": "user_username!",
+          "name": "compat_session_device_id",
           "ordinal": 10,
           "type_info": "Text"
         },
         {
-          "name": "user_primary_user_email_id",
+          "name": "user_id",
           "ordinal": 11,
           "type_info": "Uuid"
-        },
-        {
-          "name": "user_session_last_authentication_id?",
-          "ordinal": 12,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_session_last_authentication_created_at?",
-          "ordinal": 13,
-          "type_info": "Timestamptz"
         }
       ],
       "nullable": [
@@ -81,9 +71,7 @@
         false,
         false,
         false,
-        false,
-        false,
-        false,
+        true,
         false,
         false,
         true,
@@ -96,7 +84,7 @@
         ]
       }
     },
-    "query": "\n            SELECT at.oauth2_access_token_id\n                 , at.access_token      AS \"oauth2_access_token\"\n                 , at.created_at        AS \"oauth2_access_token_created_at\"\n                 , at.expires_at        AS \"oauth2_access_token_expires_at\"\n                 , os.oauth2_session_id AS \"oauth2_session_id!\"\n                 , os.oauth2_client_id  AS \"oauth2_client_id!\"\n                 , os.scope             AS \"scope!\"\n                 , us.user_session_id   AS \"user_session_id!\"\n                 , us.created_at        AS \"user_session_created_at!\"\n                 ,  u.user_id           AS \"user_id!\"\n                 ,  u.username          AS \"user_username!\"\n                 ,  u.primary_user_email_id AS \"user_primary_user_email_id\"\n                 , usa.user_session_authentication_id AS \"user_session_last_authentication_id?\"\n                 , usa.created_at       AS \"user_session_last_authentication_created_at?\"\n\n            FROM oauth2_access_tokens at\n            INNER JOIN oauth2_sessions os\n              USING (oauth2_session_id)\n            INNER JOIN user_sessions us\n              USING (user_session_id)\n            INNER JOIN users u\n              USING (user_id)\n            LEFT JOIN user_session_authentications usa\n              USING (user_session_id)\n\n            WHERE at.access_token = $1\n              AND at.revoked_at IS NULL\n              AND os.finished_at IS NULL\n\n            ORDER BY usa.created_at DESC\n            LIMIT 1\n        "
+    "query": "\n            SELECT cr.compat_refresh_token_id\n                 , cr.refresh_token   AS \"compat_refresh_token\"\n                 , cr.created_at      AS \"compat_refresh_token_created_at\"\n                 , ct.compat_access_token_id\n                 , ct.access_token    AS \"compat_access_token\"\n                 , ct.created_at      AS \"compat_access_token_created_at\"\n                 , ct.expires_at      AS \"compat_access_token_expires_at\"\n                 , cs.compat_session_id\n                 , cs.created_at      AS \"compat_session_created_at\"\n                 , cs.finished_at     AS \"compat_session_finished_at\"\n                 , cs.device_id       AS \"compat_session_device_id\"\n                 , cs.user_id\n\n            FROM compat_refresh_tokens cr\n            INNER JOIN compat_sessions cs\n              USING (compat_session_id)\n            INNER JOIN compat_access_tokens ct\n              USING (compat_access_token_id)\n\n            WHERE cr.refresh_token = $1\n              AND cr.consumed_at IS NULL\n              AND cs.finished_at IS NULL\n        "
   },
   "08d7df347c806ef14b6d0fb031cab041d79ba48528420160e23286369db7af35": {
     "describe": {
@@ -195,438 +183,6 @@
       }
     },
     "query": "\n                SELECT\n                    upstream_oauth_provider_id,\n                    issuer,\n                    scope,\n                    client_id,\n                    encrypted_client_secret,\n                    token_endpoint_signing_alg,\n                    token_endpoint_auth_method,\n                    created_at\n                FROM upstream_oauth_providers\n            "
-  },
-  "16a1c5fe5a4c5481212560d79d589b550dfefe7480c5ee4febcbfaaa01ee93a4": {
-    "describe": {
-      "columns": [
-        {
-          "name": "compat_sso_login_id",
-          "ordinal": 0,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "compat_sso_login_token",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "compat_sso_login_redirect_uri",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "compat_sso_login_created_at",
-          "ordinal": 3,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "compat_sso_login_fulfilled_at",
-          "ordinal": 4,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "compat_sso_login_exchanged_at",
-          "ordinal": 5,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "compat_session_id?",
-          "ordinal": 6,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "compat_session_created_at?",
-          "ordinal": 7,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "compat_session_finished_at?",
-          "ordinal": 8,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "compat_session_device_id?",
-          "ordinal": 9,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_id?",
-          "ordinal": 10,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_username?",
-          "ordinal": 11,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_primary_user_email_id?",
-          "ordinal": 12,
-          "type_info": "Uuid"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        true,
-        true,
-        false,
-        false,
-        true,
-        false,
-        false,
-        false,
-        true
-      ],
-      "parameters": {
-        "Left": [
-          "Text"
-        ]
-      }
-    },
-    "query": "\n            SELECT\n                cl.compat_sso_login_id,\n                cl.login_token     AS \"compat_sso_login_token\",\n                cl.redirect_uri    AS \"compat_sso_login_redirect_uri\",\n                cl.created_at      AS \"compat_sso_login_created_at\",\n                cl.fulfilled_at    AS \"compat_sso_login_fulfilled_at\",\n                cl.exchanged_at    AS \"compat_sso_login_exchanged_at\",\n                cs.compat_session_id AS \"compat_session_id?\",\n                cs.created_at      AS \"compat_session_created_at?\",\n                cs.finished_at     AS \"compat_session_finished_at?\",\n                cs.device_id       AS \"compat_session_device_id?\",\n                u.user_id          AS \"user_id?\",\n                u.username         AS \"user_username?\",\n                u.primary_user_email_id AS \"user_primary_user_email_id?\"\n            FROM compat_sso_logins cl\n            LEFT JOIN compat_sessions cs\n              USING (compat_session_id)\n            LEFT JOIN users u\n              USING (user_id)\n            WHERE cl.login_token = $1\n        "
-  },
-  "1a5e0d1d88065bb4e7f790942856d1d94ecdb30a7007f3277ca3f7cbdabd4dff": {
-    "describe": {
-      "columns": [
-        {
-          "name": "oauth2_authorization_grant_id",
-          "ordinal": 0,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "oauth2_authorization_grant_created_at",
-          "ordinal": 1,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "oauth2_authorization_grant_cancelled_at",
-          "ordinal": 2,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "oauth2_authorization_grant_fulfilled_at",
-          "ordinal": 3,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "oauth2_authorization_grant_exchanged_at",
-          "ordinal": 4,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "oauth2_authorization_grant_scope",
-          "ordinal": 5,
-          "type_info": "Text"
-        },
-        {
-          "name": "oauth2_authorization_grant_state",
-          "ordinal": 6,
-          "type_info": "Text"
-        },
-        {
-          "name": "oauth2_authorization_grant_redirect_uri",
-          "ordinal": 7,
-          "type_info": "Text"
-        },
-        {
-          "name": "oauth2_authorization_grant_response_mode",
-          "ordinal": 8,
-          "type_info": "Text"
-        },
-        {
-          "name": "oauth2_authorization_grant_nonce",
-          "ordinal": 9,
-          "type_info": "Text"
-        },
-        {
-          "name": "oauth2_authorization_grant_max_age",
-          "ordinal": 10,
-          "type_info": "Int4"
-        },
-        {
-          "name": "oauth2_client_id",
-          "ordinal": 11,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "oauth2_authorization_grant_code",
-          "ordinal": 12,
-          "type_info": "Text"
-        },
-        {
-          "name": "oauth2_authorization_grant_response_type_code",
-          "ordinal": 13,
-          "type_info": "Bool"
-        },
-        {
-          "name": "oauth2_authorization_grant_response_type_id_token",
-          "ordinal": 14,
-          "type_info": "Bool"
-        },
-        {
-          "name": "oauth2_authorization_grant_code_challenge",
-          "ordinal": 15,
-          "type_info": "Text"
-        },
-        {
-          "name": "oauth2_authorization_grant_code_challenge_method",
-          "ordinal": 16,
-          "type_info": "Text"
-        },
-        {
-          "name": "oauth2_authorization_grant_requires_consent",
-          "ordinal": 17,
-          "type_info": "Bool"
-        },
-        {
-          "name": "oauth2_session_id?",
-          "ordinal": 18,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_session_id?",
-          "ordinal": 19,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_session_created_at?",
-          "ordinal": 20,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "user_id?",
-          "ordinal": 21,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_username?",
-          "ordinal": 22,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_primary_user_email_id?",
-          "ordinal": 23,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_session_last_authentication_id?",
-          "ordinal": 24,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_session_last_authentication_created_at?",
-          "ordinal": 25,
-          "type_info": "Timestamptz"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        true,
-        true,
-        true,
-        false,
-        true,
-        false,
-        false,
-        true,
-        true,
-        false,
-        true,
-        false,
-        false,
-        true,
-        true,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        true,
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Text"
-        ]
-      }
-    },
-    "query": "\n            SELECT\n                og.oauth2_authorization_grant_id,\n                og.created_at              AS oauth2_authorization_grant_created_at,\n                og.cancelled_at            AS oauth2_authorization_grant_cancelled_at,\n                og.fulfilled_at            AS oauth2_authorization_grant_fulfilled_at,\n                og.exchanged_at            AS oauth2_authorization_grant_exchanged_at,\n                og.scope                   AS oauth2_authorization_grant_scope,\n                og.state                   AS oauth2_authorization_grant_state,\n                og.redirect_uri            AS oauth2_authorization_grant_redirect_uri,\n                og.response_mode           AS oauth2_authorization_grant_response_mode,\n                og.nonce                   AS oauth2_authorization_grant_nonce,\n                og.max_age                 AS oauth2_authorization_grant_max_age,\n                og.oauth2_client_id        AS oauth2_client_id,\n                og.authorization_code      AS oauth2_authorization_grant_code,\n                og.response_type_code      AS oauth2_authorization_grant_response_type_code,\n                og.response_type_id_token  AS oauth2_authorization_grant_response_type_id_token,\n                og.code_challenge          AS oauth2_authorization_grant_code_challenge,\n                og.code_challenge_method   AS oauth2_authorization_grant_code_challenge_method,\n                og.requires_consent        AS oauth2_authorization_grant_requires_consent,\n                os.oauth2_session_id       AS \"oauth2_session_id?\",\n                us.user_session_id         AS \"user_session_id?\",\n                us.created_at              AS \"user_session_created_at?\",\n                 u.user_id                 AS \"user_id?\",\n                 u.username                AS \"user_username?\",\n                 u.primary_user_email_id   AS \"user_primary_user_email_id?\",\n                usa.user_session_authentication_id AS \"user_session_last_authentication_id?\",\n                usa.created_at             AS \"user_session_last_authentication_created_at?\"\n            FROM\n                oauth2_authorization_grants og\n            LEFT JOIN oauth2_sessions os\n              USING (oauth2_session_id)\n            LEFT JOIN user_sessions us\n              USING (user_session_id)\n            LEFT JOIN users u\n              USING (user_id)\n            LEFT JOIN user_session_authentications usa\n              USING (user_session_id)\n\n            WHERE og.authorization_code = $1\n\n            ORDER BY usa.created_at DESC\n            LIMIT 1\n        "
-  },
-  "1b448fe73e12bef622b75857e4c9b257c9529ca18da7f63d127e63184f4bc94b": {
-    "describe": {
-      "columns": [
-        {
-          "name": "oauth2_authorization_grant_id",
-          "ordinal": 0,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "oauth2_authorization_grant_created_at",
-          "ordinal": 1,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "oauth2_authorization_grant_cancelled_at",
-          "ordinal": 2,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "oauth2_authorization_grant_fulfilled_at",
-          "ordinal": 3,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "oauth2_authorization_grant_exchanged_at",
-          "ordinal": 4,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "oauth2_authorization_grant_scope",
-          "ordinal": 5,
-          "type_info": "Text"
-        },
-        {
-          "name": "oauth2_authorization_grant_state",
-          "ordinal": 6,
-          "type_info": "Text"
-        },
-        {
-          "name": "oauth2_authorization_grant_redirect_uri",
-          "ordinal": 7,
-          "type_info": "Text"
-        },
-        {
-          "name": "oauth2_authorization_grant_response_mode",
-          "ordinal": 8,
-          "type_info": "Text"
-        },
-        {
-          "name": "oauth2_authorization_grant_nonce",
-          "ordinal": 9,
-          "type_info": "Text"
-        },
-        {
-          "name": "oauth2_authorization_grant_max_age",
-          "ordinal": 10,
-          "type_info": "Int4"
-        },
-        {
-          "name": "oauth2_client_id",
-          "ordinal": 11,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "oauth2_authorization_grant_code",
-          "ordinal": 12,
-          "type_info": "Text"
-        },
-        {
-          "name": "oauth2_authorization_grant_response_type_code",
-          "ordinal": 13,
-          "type_info": "Bool"
-        },
-        {
-          "name": "oauth2_authorization_grant_response_type_id_token",
-          "ordinal": 14,
-          "type_info": "Bool"
-        },
-        {
-          "name": "oauth2_authorization_grant_code_challenge",
-          "ordinal": 15,
-          "type_info": "Text"
-        },
-        {
-          "name": "oauth2_authorization_grant_code_challenge_method",
-          "ordinal": 16,
-          "type_info": "Text"
-        },
-        {
-          "name": "oauth2_authorization_grant_requires_consent",
-          "ordinal": 17,
-          "type_info": "Bool"
-        },
-        {
-          "name": "oauth2_session_id?",
-          "ordinal": 18,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_session_id?",
-          "ordinal": 19,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_session_created_at?",
-          "ordinal": 20,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "user_id?",
-          "ordinal": 21,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_username?",
-          "ordinal": 22,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_primary_user_email_id?",
-          "ordinal": 23,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_session_last_authentication_id?",
-          "ordinal": 24,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_session_last_authentication_created_at?",
-          "ordinal": 25,
-          "type_info": "Timestamptz"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        true,
-        true,
-        true,
-        false,
-        true,
-        false,
-        false,
-        true,
-        true,
-        false,
-        true,
-        false,
-        false,
-        true,
-        true,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        true,
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Uuid"
-        ]
-      }
-    },
-    "query": "\n            SELECT\n                og.oauth2_authorization_grant_id,\n                og.created_at              AS oauth2_authorization_grant_created_at,\n                og.cancelled_at            AS oauth2_authorization_grant_cancelled_at,\n                og.fulfilled_at            AS oauth2_authorization_grant_fulfilled_at,\n                og.exchanged_at            AS oauth2_authorization_grant_exchanged_at,\n                og.scope                   AS oauth2_authorization_grant_scope,\n                og.state                   AS oauth2_authorization_grant_state,\n                og.redirect_uri            AS oauth2_authorization_grant_redirect_uri,\n                og.response_mode           AS oauth2_authorization_grant_response_mode,\n                og.nonce                   AS oauth2_authorization_grant_nonce,\n                og.max_age                 AS oauth2_authorization_grant_max_age,\n                og.oauth2_client_id        AS oauth2_client_id,\n                og.authorization_code      AS oauth2_authorization_grant_code,\n                og.response_type_code      AS oauth2_authorization_grant_response_type_code,\n                og.response_type_id_token  AS oauth2_authorization_grant_response_type_id_token,\n                og.code_challenge          AS oauth2_authorization_grant_code_challenge,\n                og.code_challenge_method   AS oauth2_authorization_grant_code_challenge_method,\n                og.requires_consent        AS oauth2_authorization_grant_requires_consent,\n                os.oauth2_session_id       AS \"oauth2_session_id?\",\n                us.user_session_id         AS \"user_session_id?\",\n                us.created_at              AS \"user_session_created_at?\",\n                 u.user_id                 AS \"user_id?\",\n                 u.username                AS \"user_username?\",\n                 u.primary_user_email_id   AS \"user_primary_user_email_id?\",\n                usa.user_session_authentication_id AS \"user_session_last_authentication_id?\",\n                usa.created_at             AS \"user_session_last_authentication_created_at?\"\n            FROM\n                oauth2_authorization_grants og\n            LEFT JOIN oauth2_sessions os\n              USING (oauth2_session_id)\n            LEFT JOIN user_sessions us\n              USING (user_session_id)\n            LEFT JOIN users u\n              USING (user_id)\n            LEFT JOIN user_session_authentications usa\n              USING (user_session_id)\n\n            WHERE og.oauth2_authorization_grant_id = $1\n\n            ORDER BY usa.created_at DESC\n            LIMIT 1\n        "
   },
   "1d372f36c382ab16264cea54537af3544ea6d6d75d10b432b07dbd0dadd2fa4e": {
     "describe": {
@@ -951,6 +507,86 @@
     },
     "query": "\n            UPDATE oauth2_authorization_grants AS og\n            SET\n                oauth2_session_id = os.oauth2_session_id,\n                fulfilled_at = os.created_at\n            FROM oauth2_sessions os\n            WHERE\n                og.oauth2_authorization_grant_id = $1\n                AND os.oauth2_session_id = $2\n            RETURNING fulfilled_at AS \"fulfilled_at!: DateTime<Utc>\"\n        "
   },
+  "4f8b0cd13d9488c2dd0f183d090d3856da15dcdb57a8c113febbee665a2a3ac5": {
+    "describe": {
+      "columns": [
+        {
+          "name": "compat_sso_login_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "compat_sso_login_token",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "compat_sso_login_redirect_uri",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "compat_sso_login_created_at",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "compat_sso_login_fulfilled_at",
+          "ordinal": 4,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "compat_sso_login_exchanged_at",
+          "ordinal": 5,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "compat_session_id?",
+          "ordinal": 6,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "compat_session_created_at?",
+          "ordinal": 7,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "compat_session_finished_at?",
+          "ordinal": 8,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "compat_session_device_id?",
+          "ordinal": 9,
+          "type_info": "Text"
+        },
+        {
+          "name": "user_id?",
+          "ordinal": 10,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "\n            SELECT cl.compat_sso_login_id\n                 , cl.login_token     AS \"compat_sso_login_token\"\n                 , cl.redirect_uri    AS \"compat_sso_login_redirect_uri\"\n                 , cl.created_at      AS \"compat_sso_login_created_at\"\n                 , cl.fulfilled_at    AS \"compat_sso_login_fulfilled_at\"\n                 , cl.exchanged_at    AS \"compat_sso_login_exchanged_at\"\n                 , cs.compat_session_id AS \"compat_session_id?\"\n                 , cs.created_at      AS \"compat_session_created_at?\"\n                 , cs.finished_at     AS \"compat_session_finished_at?\"\n                 , cs.device_id       AS \"compat_session_device_id?\"\n                 , cs.user_id         AS \"user_id?\"\n            FROM compat_sso_logins cl\n            LEFT JOIN compat_sessions cs\n              USING (compat_session_id)\n            WHERE cl.login_token = $1\n        "
+  },
   "51158bfcaa1a8d8e051bffe7c5ba0369bf53fb162f7622626054e89e68fc07bd": {
     "describe": {
       "columns": [
@@ -971,104 +607,6 @@
       }
     },
     "query": "\n            SELECT scope_token\n            FROM oauth2_consents\n            WHERE user_id = $1 AND oauth2_client_id = $2\n        "
-  },
-  "51bf417d259989d1228ba86fa11432e9428dece97b79e93f13921d0a510a9428": {
-    "describe": {
-      "columns": [
-        {
-          "name": "compat_refresh_token_id",
-          "ordinal": 0,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "compat_refresh_token",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "compat_refresh_token_created_at",
-          "ordinal": 2,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "compat_access_token_id",
-          "ordinal": 3,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "compat_access_token",
-          "ordinal": 4,
-          "type_info": "Text"
-        },
-        {
-          "name": "compat_access_token_created_at",
-          "ordinal": 5,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "compat_access_token_expires_at",
-          "ordinal": 6,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "compat_session_id",
-          "ordinal": 7,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "compat_session_created_at",
-          "ordinal": 8,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "compat_session_finished_at",
-          "ordinal": 9,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "compat_session_device_id",
-          "ordinal": 10,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_id",
-          "ordinal": 11,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_username!",
-          "ordinal": 12,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_primary_user_email_id",
-          "ordinal": 13,
-          "type_info": "Uuid"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        true,
-        false,
-        false,
-        true,
-        false,
-        false,
-        false,
-        true
-      ],
-      "parameters": {
-        "Left": [
-          "Text"
-        ]
-      }
-    },
-    "query": "\n            SELECT\n                cr.compat_refresh_token_id,\n                cr.refresh_token   AS \"compat_refresh_token\",\n                cr.created_at      AS \"compat_refresh_token_created_at\",\n                ct.compat_access_token_id,\n                ct.access_token    AS \"compat_access_token\",\n                ct.created_at      AS \"compat_access_token_created_at\",\n                ct.expires_at      AS \"compat_access_token_expires_at\",\n                cs.compat_session_id,\n                cs.created_at      AS \"compat_session_created_at\",\n                cs.finished_at     AS \"compat_session_finished_at\",\n                cs.device_id       AS \"compat_session_device_id\",\n                u.user_id,\n                u.username         AS \"user_username!\",\n                 u.primary_user_email_id AS \"user_primary_user_email_id\"\n\n            FROM compat_refresh_tokens cr\n            INNER JOIN compat_sessions cs\n              USING (compat_session_id)\n            INNER JOIN compat_access_tokens ct\n              USING (compat_access_token_id)\n            INNER JOIN users u\n              USING (user_id)\n\n            WHERE cr.refresh_token = $1\n              AND cr.consumed_at IS NULL\n              AND cs.finished_at IS NULL\n        "
   },
   "559a486756d08d101eb7188ef6637b9d24c024d056795b8121f7f04a7f9db6a3": {
     "describe": {
@@ -1674,27 +1212,7 @@
     },
     "query": "\n                UPDATE user_email_confirmation_codes\n                SET consumed_at = $2\n                WHERE user_email_confirmation_code_id = $1\n            "
   },
-  "94fd96446b237c87bd6bf741f3c42b37ee751b87b7fcc459602bdf8c46962443": {
-    "describe": {
-      "columns": [
-        {
-          "name": "exists!",
-          "ordinal": 0,
-          "type_info": "Bool"
-        }
-      ],
-      "nullable": [
-        null
-      ],
-      "parameters": {
-        "Left": [
-          "Text"
-        ]
-      }
-    },
-    "query": "\n                SELECT EXISTS(\n                    SELECT 1 FROM users WHERE username = $1\n                ) AS \"exists!\"\n            "
-  },
-  "976ac2435784128eab195c8e6b9bd6e8d7b3a9142c2a34538de03817a3c94e99": {
+  "92ef320b75ca479ed1a38f6d654fdb953431188a8654c806fd5f98444b00c012": {
     "describe": {
       "columns": [
         {
@@ -1751,16 +1269,6 @@
           "name": "user_id?",
           "ordinal": 10,
           "type_info": "Uuid"
-        },
-        {
-          "name": "user_username?",
-          "ordinal": 11,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_primary_user_email_id?",
-          "ordinal": 12,
-          "type_info": "Uuid"
         }
       ],
       "nullable": [
@@ -1774,9 +1282,7 @@
         false,
         true,
         false,
-        false,
-        false,
-        true
+        false
       ],
       "parameters": {
         "Left": [
@@ -1784,7 +1290,27 @@
         ]
       }
     },
-    "query": "\n            SELECT\n                cl.compat_sso_login_id,\n                cl.login_token     AS \"compat_sso_login_token\",\n                cl.redirect_uri    AS \"compat_sso_login_redirect_uri\",\n                cl.created_at      AS \"compat_sso_login_created_at\",\n                cl.fulfilled_at    AS \"compat_sso_login_fulfilled_at\",\n                cl.exchanged_at    AS \"compat_sso_login_exchanged_at\",\n                cs.compat_session_id AS \"compat_session_id?\",\n                cs.created_at      AS \"compat_session_created_at?\",\n                cs.finished_at     AS \"compat_session_finished_at?\",\n                cs.device_id       AS \"compat_session_device_id?\",\n                u.user_id          AS \"user_id?\",\n                u.username         AS \"user_username?\",\n                u.primary_user_email_id AS \"user_primary_user_email_id?\"\n            FROM compat_sso_logins cl\n            LEFT JOIN compat_sessions cs\n              USING (compat_session_id)\n            LEFT JOIN users u\n              USING (user_id)\n            WHERE cl.compat_sso_login_id = $1\n        "
+    "query": "\n            SELECT cl.compat_sso_login_id\n                 , cl.login_token     AS \"compat_sso_login_token\"\n                 , cl.redirect_uri    AS \"compat_sso_login_redirect_uri\"\n                 , cl.created_at      AS \"compat_sso_login_created_at\"\n                 , cl.fulfilled_at    AS \"compat_sso_login_fulfilled_at\"\n                 , cl.exchanged_at    AS \"compat_sso_login_exchanged_at\"\n                 , cs.compat_session_id AS \"compat_session_id?\"\n                 , cs.created_at      AS \"compat_session_created_at?\"\n                 , cs.finished_at     AS \"compat_session_finished_at?\"\n                 , cs.device_id       AS \"compat_session_device_id?\"\n                 , cs.user_id         AS \"user_id?\"\n\n            FROM compat_sso_logins cl\n            LEFT JOIN compat_sessions cs\n              USING (compat_session_id)\n            WHERE cl.compat_sso_login_id = $1\n        "
+  },
+  "94fd96446b237c87bd6bf741f3c42b37ee751b87b7fcc459602bdf8c46962443": {
+    "describe": {
+      "columns": [
+        {
+          "name": "exists!",
+          "ordinal": 0,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "\n                SELECT EXISTS(\n                    SELECT 1 FROM users WHERE username = $1\n                ) AS \"exists!\"\n            "
   },
   "99f5f9eb0adc5ec120ed8194cbf6a8545155bef09e6d94d92fb67fd1b14d4f28": {
     "describe": {
@@ -2017,6 +1543,140 @@
     },
     "query": "\n                INSERT INTO user_sessions (user_session_id, user_id, created_at)\n                VALUES ($1, $2, $3)\n            "
   },
+  "c467144ae98322e3ed6d34df6626d63c15bdfc7137e12097cfb6f9398f7029ca": {
+    "describe": {
+      "columns": [
+        {
+          "name": "oauth2_authorization_grant_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "oauth2_authorization_grant_created_at",
+          "ordinal": 1,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "oauth2_authorization_grant_cancelled_at",
+          "ordinal": 2,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "oauth2_authorization_grant_fulfilled_at",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "oauth2_authorization_grant_exchanged_at",
+          "ordinal": 4,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "oauth2_authorization_grant_scope",
+          "ordinal": 5,
+          "type_info": "Text"
+        },
+        {
+          "name": "oauth2_authorization_grant_state",
+          "ordinal": 6,
+          "type_info": "Text"
+        },
+        {
+          "name": "oauth2_authorization_grant_redirect_uri",
+          "ordinal": 7,
+          "type_info": "Text"
+        },
+        {
+          "name": "oauth2_authorization_grant_response_mode",
+          "ordinal": 8,
+          "type_info": "Text"
+        },
+        {
+          "name": "oauth2_authorization_grant_nonce",
+          "ordinal": 9,
+          "type_info": "Text"
+        },
+        {
+          "name": "oauth2_authorization_grant_max_age",
+          "ordinal": 10,
+          "type_info": "Int4"
+        },
+        {
+          "name": "oauth2_client_id",
+          "ordinal": 11,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "oauth2_authorization_grant_code",
+          "ordinal": 12,
+          "type_info": "Text"
+        },
+        {
+          "name": "oauth2_authorization_grant_response_type_code",
+          "ordinal": 13,
+          "type_info": "Bool"
+        },
+        {
+          "name": "oauth2_authorization_grant_response_type_id_token",
+          "ordinal": 14,
+          "type_info": "Bool"
+        },
+        {
+          "name": "oauth2_authorization_grant_code_challenge",
+          "ordinal": 15,
+          "type_info": "Text"
+        },
+        {
+          "name": "oauth2_authorization_grant_code_challenge_method",
+          "ordinal": 16,
+          "type_info": "Text"
+        },
+        {
+          "name": "oauth2_authorization_grant_requires_consent",
+          "ordinal": 17,
+          "type_info": "Bool"
+        },
+        {
+          "name": "oauth2_session_id?",
+          "ordinal": 18,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "user_session_id?",
+          "ordinal": 19,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        true,
+        true,
+        false,
+        true,
+        false,
+        false,
+        true,
+        true,
+        false,
+        true,
+        false,
+        false,
+        true,
+        true,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "\n            SELECT og.oauth2_authorization_grant_id\n                 , og.created_at              AS oauth2_authorization_grant_created_at\n                 , og.cancelled_at            AS oauth2_authorization_grant_cancelled_at\n                 , og.fulfilled_at            AS oauth2_authorization_grant_fulfilled_at\n                 , og.exchanged_at            AS oauth2_authorization_grant_exchanged_at\n                 , og.scope                   AS oauth2_authorization_grant_scope\n                 , og.state                   AS oauth2_authorization_grant_state\n                 , og.redirect_uri            AS oauth2_authorization_grant_redirect_uri\n                 , og.response_mode           AS oauth2_authorization_grant_response_mode\n                 , og.nonce                   AS oauth2_authorization_grant_nonce\n                 , og.max_age                 AS oauth2_authorization_grant_max_age\n                 , og.oauth2_client_id        AS oauth2_client_id\n                 , og.authorization_code      AS oauth2_authorization_grant_code\n                 , og.response_type_code      AS oauth2_authorization_grant_response_type_code\n                 , og.response_type_id_token  AS oauth2_authorization_grant_response_type_id_token\n                 , og.code_challenge          AS oauth2_authorization_grant_code_challenge\n                 , og.code_challenge_method   AS oauth2_authorization_grant_code_challenge_method\n                 , og.requires_consent        AS oauth2_authorization_grant_requires_consent\n                 , os.oauth2_session_id       AS \"oauth2_session_id?\"\n                 , os.user_session_id         AS \"user_session_id?\"\n            FROM\n                oauth2_authorization_grants og\n            LEFT JOIN oauth2_sessions os\n              USING (oauth2_session_id)\n\n            WHERE og.authorization_code = $1\n        "
+  },
   "c88376abdba124ff0487a9a69d2345c7d69d7394f355111ec369cfa6d45fb40f": {
     "describe": {
       "columns": [],
@@ -2043,22 +1703,7 @@
     },
     "query": "\n            INSERT INTO oauth2_authorization_grants (\n                 oauth2_authorization_grant_id,\n                 oauth2_client_id,\n                 redirect_uri,\n                 scope,\n                 state,\n                 nonce,\n                 max_age,\n                 response_mode,\n                 code_challenge,\n                 code_challenge_method,\n                 response_type_code,\n                 response_type_id_token,\n                 authorization_code,\n                 requires_consent,\n                 created_at\n            )\n            VALUES\n                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)\n        "
   },
-  "caf54e4659306a746747aa61906bdb2cb8da51176e90435aa8b9754ebf3e4d60": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Uuid",
-          "Uuid",
-          "Text",
-          "Timestamptz"
-        ]
-      }
-    },
-    "query": "\n            INSERT INTO compat_sessions (compat_session_id, user_id, device_id, created_at)\n            VALUES ($1, $2, $3, $4)\n        "
-  },
-  "d023d7346ec1f32da9459db3c39dffd8a4e3d4e91cdf096928de4517d3f8c622": {
+  "cad4d47709278a9ddbebfc91642967b465bafa596827d9b86a336841b2cfbf0c": {
     "describe": {
       "columns": [
         {
@@ -2115,36 +1760,6 @@
           "name": "user_session_id!",
           "ordinal": 10,
           "type_info": "Uuid"
-        },
-        {
-          "name": "user_session_created_at!",
-          "ordinal": 11,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "user_id!",
-          "ordinal": 12,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_username!",
-          "ordinal": 13,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_primary_user_email_id",
-          "ordinal": 14,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_session_last_authentication_id?",
-          "ordinal": 15,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "user_session_last_authentication_created_at?",
-          "ordinal": 16,
-          "type_info": "Timestamptz"
         }
       ],
       "nullable": [
@@ -2158,12 +1773,6 @@
         false,
         false,
         false,
-        false,
-        false,
-        false,
-        false,
-        true,
-        false,
         false
       ],
       "parameters": {
@@ -2172,7 +1781,156 @@
         ]
       }
     },
-    "query": "\n            SELECT\n                rt.oauth2_refresh_token_id,\n                rt.refresh_token     AS oauth2_refresh_token,\n                rt.created_at        AS oauth2_refresh_token_created_at,\n                at.oauth2_access_token_id AS \"oauth2_access_token_id?\",\n                at.access_token      AS \"oauth2_access_token?\",\n                at.created_at        AS \"oauth2_access_token_created_at?\",\n                at.expires_at        AS \"oauth2_access_token_expires_at?\",\n                os.oauth2_session_id AS \"oauth2_session_id!\",\n                os.oauth2_client_id  AS \"oauth2_client_id!\",\n                os.scope             AS \"oauth2_session_scope!\",\n                us.user_session_id   AS \"user_session_id!\",\n                us.created_at        AS \"user_session_created_at!\",\n                 u.user_id           AS \"user_id!\",\n                 u.username          AS \"user_username!\",\n                 u.primary_user_email_id AS \"user_primary_user_email_id\",\n                usa.user_session_authentication_id AS \"user_session_last_authentication_id?\",\n                usa.created_at       AS \"user_session_last_authentication_created_at?\"\n            FROM oauth2_refresh_tokens rt\n            INNER JOIN oauth2_sessions os\n              USING (oauth2_session_id)\n            LEFT JOIN oauth2_access_tokens at\n              USING (oauth2_access_token_id)\n            INNER JOIN user_sessions us\n              USING (user_session_id)\n            INNER JOIN users u\n              USING (user_id)\n            LEFT JOIN user_session_authentications usa\n              USING (user_session_id)\n            LEFT JOIN user_emails ue\n              ON ue.user_email_id = u.primary_user_email_id\n\n            WHERE rt.refresh_token = $1\n              AND rt.consumed_at IS NULL\n              AND rt.revoked_at  IS NULL\n              AND us.finished_at IS NULL\n              AND os.finished_at IS NULL\n\n            ORDER BY usa.created_at DESC\n            LIMIT 1\n        "
+    "query": "\n            SELECT rt.oauth2_refresh_token_id\n                 , rt.refresh_token     AS oauth2_refresh_token\n                 , rt.created_at        AS oauth2_refresh_token_created_at\n                 , at.oauth2_access_token_id AS \"oauth2_access_token_id?\"\n                 , at.access_token      AS \"oauth2_access_token?\"\n                 , at.created_at        AS \"oauth2_access_token_created_at?\"\n                 , at.expires_at        AS \"oauth2_access_token_expires_at?\"\n                 , os.oauth2_session_id AS \"oauth2_session_id!\"\n                 , os.oauth2_client_id  AS \"oauth2_client_id!\"\n                 , os.scope             AS \"oauth2_session_scope!\"\n                 , os.user_session_id   AS \"user_session_id!\"\n            FROM oauth2_refresh_tokens rt\n            INNER JOIN oauth2_sessions os\n              USING (oauth2_session_id)\n            LEFT JOIN oauth2_access_tokens at\n              USING (oauth2_access_token_id)\n\n            WHERE rt.refresh_token = $1\n              AND rt.consumed_at IS NULL\n              AND rt.revoked_at  IS NULL\n              AND os.finished_at IS NULL\n        "
+  },
+  "caf54e4659306a746747aa61906bdb2cb8da51176e90435aa8b9754ebf3e4d60": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid",
+          "Text",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n            INSERT INTO compat_sessions (compat_session_id, user_id, device_id, created_at)\n            VALUES ($1, $2, $3, $4)\n        "
+  },
+  "d08b787fc422b6699ffc0a491ecf92fb993db0aca51534b315bcfa4891baca84": {
+    "describe": {
+      "columns": [
+        {
+          "name": "oauth2_authorization_grant_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "oauth2_authorization_grant_created_at",
+          "ordinal": 1,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "oauth2_authorization_grant_cancelled_at",
+          "ordinal": 2,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "oauth2_authorization_grant_fulfilled_at",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "oauth2_authorization_grant_exchanged_at",
+          "ordinal": 4,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "oauth2_authorization_grant_scope",
+          "ordinal": 5,
+          "type_info": "Text"
+        },
+        {
+          "name": "oauth2_authorization_grant_state",
+          "ordinal": 6,
+          "type_info": "Text"
+        },
+        {
+          "name": "oauth2_authorization_grant_redirect_uri",
+          "ordinal": 7,
+          "type_info": "Text"
+        },
+        {
+          "name": "oauth2_authorization_grant_response_mode",
+          "ordinal": 8,
+          "type_info": "Text"
+        },
+        {
+          "name": "oauth2_authorization_grant_nonce",
+          "ordinal": 9,
+          "type_info": "Text"
+        },
+        {
+          "name": "oauth2_authorization_grant_max_age",
+          "ordinal": 10,
+          "type_info": "Int4"
+        },
+        {
+          "name": "oauth2_client_id",
+          "ordinal": 11,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "oauth2_authorization_grant_code",
+          "ordinal": 12,
+          "type_info": "Text"
+        },
+        {
+          "name": "oauth2_authorization_grant_response_type_code",
+          "ordinal": 13,
+          "type_info": "Bool"
+        },
+        {
+          "name": "oauth2_authorization_grant_response_type_id_token",
+          "ordinal": 14,
+          "type_info": "Bool"
+        },
+        {
+          "name": "oauth2_authorization_grant_code_challenge",
+          "ordinal": 15,
+          "type_info": "Text"
+        },
+        {
+          "name": "oauth2_authorization_grant_code_challenge_method",
+          "ordinal": 16,
+          "type_info": "Text"
+        },
+        {
+          "name": "oauth2_authorization_grant_requires_consent",
+          "ordinal": 17,
+          "type_info": "Bool"
+        },
+        {
+          "name": "oauth2_session_id?",
+          "ordinal": 18,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "user_session_id?",
+          "ordinal": 19,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        true,
+        true,
+        false,
+        true,
+        false,
+        false,
+        true,
+        true,
+        false,
+        true,
+        false,
+        false,
+        true,
+        true,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n            SELECT og.oauth2_authorization_grant_id\n                 , og.created_at              AS oauth2_authorization_grant_created_at\n                 , og.cancelled_at            AS oauth2_authorization_grant_cancelled_at\n                 , og.fulfilled_at            AS oauth2_authorization_grant_fulfilled_at\n                 , og.exchanged_at            AS oauth2_authorization_grant_exchanged_at\n                 , og.scope                   AS oauth2_authorization_grant_scope\n                 , og.state                   AS oauth2_authorization_grant_state\n                 , og.redirect_uri            AS oauth2_authorization_grant_redirect_uri\n                 , og.response_mode           AS oauth2_authorization_grant_response_mode\n                 , og.nonce                   AS oauth2_authorization_grant_nonce\n                 , og.max_age                 AS oauth2_authorization_grant_max_age\n                 , og.oauth2_client_id        AS oauth2_client_id\n                 , og.authorization_code      AS oauth2_authorization_grant_code\n                 , og.response_type_code      AS oauth2_authorization_grant_response_type_code\n                 , og.response_type_id_token  AS oauth2_authorization_grant_response_type_id_token\n                 , og.code_challenge          AS oauth2_authorization_grant_code_challenge\n                 , og.code_challenge_method   AS oauth2_authorization_grant_code_challenge_method\n                 , og.requires_consent        AS oauth2_authorization_grant_requires_consent\n                 , os.oauth2_session_id       AS \"oauth2_session_id?\"\n                 , os.user_session_id         AS \"user_session_id?\"\n            FROM\n                oauth2_authorization_grants og\n            LEFT JOIN oauth2_sessions os\n              USING (oauth2_session_id)\n\n            WHERE og.oauth2_authorization_grant_id = $1\n        "
   },
   "d12a513b81b3ef658eae1f0a719933323f28c6ee260b52cafe337dd3d19e865c": {
     "describe": {
@@ -2208,6 +1966,75 @@
       }
     },
     "query": "\n            INSERT INTO compat_sso_logins\n                (compat_sso_login_id, login_token, redirect_uri, created_at)\n            VALUES ($1, $2, $3, $4)\n        "
+  },
+  "d4c6c070a0cd889cef9e0cfd65c64522a03f0bae12ee7c6b74343ec8f38d24c1": {
+    "describe": {
+      "columns": [
+        {
+          "name": "compat_access_token_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "compat_access_token",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "compat_access_token_created_at",
+          "ordinal": 2,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "compat_access_token_expires_at",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "compat_session_id",
+          "ordinal": 4,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "compat_session_created_at",
+          "ordinal": 5,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "compat_session_finished_at",
+          "ordinal": 6,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "compat_session_device_id",
+          "ordinal": 7,
+          "type_info": "Text"
+        },
+        {
+          "name": "user_id!",
+          "ordinal": 8,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n            SELECT ct.compat_access_token_id\n                 , ct.access_token    AS \"compat_access_token\"\n                 , ct.created_at      AS \"compat_access_token_created_at\"\n                 , ct.expires_at      AS \"compat_access_token_expires_at\"\n                 , cs.compat_session_id\n                 , cs.created_at      AS \"compat_session_created_at\"\n                 , cs.finished_at     AS \"compat_session_finished_at\"\n                 , cs.device_id       AS \"compat_session_device_id\"\n                 , cs.user_id         AS \"user_id!\"\n\n            FROM compat_access_tokens ct\n            INNER JOIN compat_sessions cs\n              USING (compat_session_id)\n\n            WHERE ct.access_token = $1\n              AND (ct.expires_at < $2 OR ct.expires_at IS NULL)\n              AND cs.finished_at IS NULL \n        "
   },
   "d8677b3b6ee594c230fad98c1aa1c6e3d983375bf5b701c7b52468e7f906abf9": {
     "describe": {
@@ -2426,62 +2253,47 @@
     },
     "query": "\n                INSERT INTO oauth2_clients\n                    ( oauth2_client_id\n                    , encrypted_client_secret\n                    , grant_type_authorization_code\n                    , grant_type_refresh_token\n                    , client_name\n                    , logo_uri\n                    , client_uri\n                    , policy_uri\n                    , tos_uri\n                    , jwks_uri\n                    , jwks\n                    , id_token_signed_response_alg\n                    , userinfo_signed_response_alg\n                    , token_endpoint_auth_method\n                    , token_endpoint_auth_signing_alg\n                    , initiate_login_uri\n                    )\n                VALUES\n                    ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)\n            "
   },
-  "f624e1bdbff4e97b300362d1bbd86035e4a0fdd8ffe16c3bfb9bc451ba60851b": {
+  "fba88894ee24cd181f50412571a19ee658f77012d330e7dab43a3c18d549355a": {
     "describe": {
       "columns": [
         {
-          "name": "compat_access_token_id",
+          "name": "oauth2_access_token_id",
           "ordinal": 0,
           "type_info": "Uuid"
         },
         {
-          "name": "compat_access_token",
+          "name": "oauth2_access_token",
           "ordinal": 1,
           "type_info": "Text"
         },
         {
-          "name": "compat_access_token_created_at",
+          "name": "oauth2_access_token_created_at",
           "ordinal": 2,
           "type_info": "Timestamptz"
         },
         {
-          "name": "compat_access_token_expires_at",
+          "name": "oauth2_access_token_expires_at",
           "ordinal": 3,
           "type_info": "Timestamptz"
         },
         {
-          "name": "compat_session_id",
+          "name": "oauth2_session_id!",
           "ordinal": 4,
           "type_info": "Uuid"
         },
         {
-          "name": "compat_session_created_at",
+          "name": "oauth2_client_id!",
           "ordinal": 5,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "compat_session_finished_at",
-          "ordinal": 6,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "compat_session_device_id",
-          "ordinal": 7,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_id!",
-          "ordinal": 8,
           "type_info": "Uuid"
         },
         {
-          "name": "user_username!",
-          "ordinal": 9,
+          "name": "scope!",
+          "ordinal": 6,
           "type_info": "Text"
         },
         {
-          "name": "user_primary_user_email_id",
-          "ordinal": 10,
+          "name": "user_session_id!",
+          "ordinal": 7,
           "type_info": "Uuid"
         }
       ],
@@ -2489,22 +2301,18 @@
         false,
         false,
         false,
-        true,
-        false,
-        false,
-        true,
         false,
         false,
         false,
-        true
+        false,
+        false
       ],
       "parameters": {
         "Left": [
-          "Text",
-          "Timestamptz"
+          "Text"
         ]
       }
     },
-    "query": "\n            SELECT\n                ct.compat_access_token_id,\n                ct.access_token    AS \"compat_access_token\",\n                ct.created_at      AS \"compat_access_token_created_at\",\n                ct.expires_at      AS \"compat_access_token_expires_at\",\n                cs.compat_session_id,\n                cs.created_at      AS \"compat_session_created_at\",\n                cs.finished_at     AS \"compat_session_finished_at\",\n                cs.device_id       AS \"compat_session_device_id\",\n                 u.user_id         AS \"user_id!\",\n                 u.username        AS \"user_username!\",\n                 u.primary_user_email_id AS \"user_primary_user_email_id\"\n\n            FROM compat_access_tokens ct\n            INNER JOIN compat_sessions cs\n              USING (compat_session_id)\n            INNER JOIN users u\n              USING (user_id)\n\n            WHERE ct.access_token = $1\n              AND (ct.expires_at < $2 OR ct.expires_at IS NULL)\n              AND cs.finished_at IS NULL \n        "
+    "query": "\n            SELECT at.oauth2_access_token_id\n                 , at.access_token      AS \"oauth2_access_token\"\n                 , at.created_at        AS \"oauth2_access_token_created_at\"\n                 , at.expires_at        AS \"oauth2_access_token_expires_at\"\n                 , os.oauth2_session_id AS \"oauth2_session_id!\"\n                 , os.oauth2_client_id  AS \"oauth2_client_id!\"\n                 , os.scope             AS \"scope!\"\n                 , os.user_session_id   AS \"user_session_id!\"\n\n            FROM oauth2_access_tokens at\n            INNER JOIN oauth2_sessions os\n              USING (oauth2_session_id)\n\n            WHERE at.access_token = $1\n              AND at.revoked_at IS NULL\n              AND os.finished_at IS NULL\n        "
   }
 }
