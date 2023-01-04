@@ -17,6 +17,7 @@ use clap::Parser;
 use mas_storage::Clock;
 use mas_templates::Templates;
 use rand::SeedableRng;
+use tracing::info_span;
 
 #[derive(Parser, Debug)]
 pub(super) struct Options {
@@ -38,6 +39,8 @@ impl Options {
         use Subcommand as SC;
         match &self.subcommand {
             SC::Check { path } => {
+                let _span = info_span!("cli.templates.check").entered();
+
                 let clock = Clock::default();
                 // XXX: we should disallow SeedableRng::from_entropy
                 let mut rng = rand_chacha::ChaChaRng::from_entropy();

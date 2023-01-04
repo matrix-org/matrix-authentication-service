@@ -25,7 +25,7 @@ use mas_storage::{
 };
 use oauth2_types::scope::Scope;
 use rand::SeedableRng;
-use tracing::{info, warn};
+use tracing::{info, info_span, warn};
 
 use crate::util::{database_from_config, password_manager_from_config};
 
@@ -193,6 +193,9 @@ impl Options {
 
         match &self.subcommand {
             SC::SetPassword { username, password } => {
+                let _span =
+                    info_span!("cli.manage.set_password", user.username = %username).entered();
+
                 let database_config: DatabaseConfig = root.load_config()?;
                 let passwords_config: PasswordsConfig = root.load_config()?;
 
@@ -221,6 +224,13 @@ impl Options {
             }
 
             SC::VerifyEmail { username, email } => {
+                let _span = info_span!(
+                    "cli.manage.verify_email",
+                    user.username = username,
+                    user_email.email = email
+                )
+                .entered();
+
                 let config: DatabaseConfig = root.load_config()?;
                 let pool = database_from_config(&config).await?;
                 let mut txn = pool.begin().await?;
@@ -245,6 +255,8 @@ impl Options {
             }
 
             SC::ImportClients { update } => {
+                let _span = info_span!("cli.manage.import_clients").entered();
+
                 let config: RootConfig = root.load_config()?;
                 let pool = database_from_config(&config.database).await?;
                 let encrypter = config.secrets.encrypter();
@@ -303,6 +315,13 @@ impl Options {
                 client_secret,
                 signing_alg,
             } => {
+                let _span = info_span!(
+                    "cli.manage.add_oauth_upstream",
+                    upstream_oauth_provider.issuer = issuer,
+                    upstream_oauth_provider.client_id = client_id,
+                )
+                .entered();
+
                 let config: RootConfig = root.load_config()?;
                 let encrypter = config.secrets.encrypter();
                 let pool = database_from_config(&config.database).await?;

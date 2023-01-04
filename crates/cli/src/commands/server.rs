@@ -24,7 +24,7 @@ use mas_router::UrlBuilder;
 use mas_storage::MIGRATOR;
 use mas_tasks::TaskQueue;
 use tokio::signal::unix::SignalKind;
-use tracing::{info, warn};
+use tracing::{info, info_span, warn, Instrument};
 
 use crate::util::{
     database_from_config, mailer_from_config, password_manager_from_config,
@@ -45,6 +45,7 @@ pub(super) struct Options {
 impl Options {
     #[allow(clippy::too_many_lines)]
     pub async fn run(&self, root: &super::Options) -> anyhow::Result<()> {
+        let span = info_span!("cli.run.init").entered();
         let config: RootConfig = root.load_config()?;
 
         // Connect to the database
@@ -55,6 +56,7 @@ impl Options {
             info!("Running pending migrations");
             MIGRATOR
                 .run(&pool)
+                .instrument(info_span!("db.migrate"))
                 .await
                 .context("could not run migrations")?;
         }
@@ -185,6 +187,8 @@ impl Options {
             .with_timeout(Duration::from_secs(60))
             .with_signal(SignalKind::terminate())?
             .with_signal(SignalKind::interrupt())?;
+
+        span.exit();
 
         mas_listener::server::run_servers(servers, shutdown).await;
 

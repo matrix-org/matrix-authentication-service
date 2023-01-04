@@ -16,6 +16,7 @@ use anyhow::Context;
 use clap::Parser;
 use mas_config::DatabaseConfig;
 use mas_storage::MIGRATOR;
+use tracing::{info_span, Instrument};
 
 use crate::util::database_from_config;
 
@@ -33,12 +34,14 @@ enum Subcommand {
 
 impl Options {
     pub async fn run(&self, root: &super::Options) -> anyhow::Result<()> {
+        let _span = info_span!("cli.database.migrate").entered();
         let config: DatabaseConfig = root.load_config()?;
         let pool = database_from_config(&config).await?;
 
         // Run pending migrations
         MIGRATOR
             .run(&pool)
+            .instrument(info_span!("db.migrate"))
             .await
             .context("could not run migrations")?;
 

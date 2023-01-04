@@ -69,7 +69,7 @@ pub struct PolicyFactory {
 }
 
 impl PolicyFactory {
-    #[tracing::instrument(skip(source), err)]
+    #[tracing::instrument(name = "policy.load", skip(source), err)]
     pub async fn load(
         mut source: impl AsyncRead + std::marker::Unpin,
         data: serde_json::Value,
@@ -108,7 +108,7 @@ impl PolicyFactory {
             authorization_grant_endpoint,
         };
 
-        // Try to instanciate
+        // Try to instantiate
         factory
             .instantiate()
             .await
@@ -117,7 +117,7 @@ impl PolicyFactory {
         Ok(factory)
     }
 
-    #[tracing::instrument(skip(self), err)]
+    #[tracing::instrument(name = "policy.instantiate", skip_all, err)]
     pub async fn instantiate(&self) -> Result<Policy, InstanciateError> {
         let mut store = Store::new(&self.engine, ());
         let runtime = Runtime::new(&mut store, &self.module)
@@ -189,7 +189,14 @@ pub enum EvaluationError {
 }
 
 impl Policy {
-    #[tracing::instrument(skip(self, password))]
+    #[tracing::instrument(
+        name = "policy.evaluate.register",
+        skip_all,
+        fields(
+            data.username = username,
+        ),
+        err,
+    )]
     pub async fn evaluate_register(
         &mut self,
         username: &str,
@@ -234,7 +241,15 @@ impl Policy {
         Ok(res)
     }
 
-    #[tracing::instrument(skip(self))]
+    #[tracing::instrument(
+        name = "policy.evaluate.authorization_grant",
+        skip_all,
+        fields(
+            data.authorization_grant.id = %authorization_grant.id,
+            data.user.id = %user.id,
+        ),
+        err,
+    )]
     pub async fn evaluate_authorization_grant(
         &mut self,
         authorization_grant: &AuthorizationGrant,

@@ -15,7 +15,7 @@
 use clap::Parser;
 use mas_config::{ConfigurationSection, RootConfig};
 use rand::SeedableRng;
-use tracing::info;
+use tracing::{info, info_span};
 
 #[derive(Parser, Debug)]
 pub(super) struct Options {
@@ -40,6 +40,8 @@ impl Options {
         use Subcommand as SC;
         match &self.subcommand {
             SC::Dump => {
+                let _span = info_span!("cli.config.dump").entered();
+
                 let config: RootConfig = root.load_config()?;
 
                 serde_yaml::to_writer(std::io::stdout(), &config)?;
@@ -47,11 +49,15 @@ impl Options {
                 Ok(())
             }
             SC::Check => {
+                let _span = info_span!("cli.config.check").entered();
+
                 let _config: RootConfig = root.load_config()?;
                 info!(path = ?root.config, "Configuration file looks good");
                 Ok(())
             }
             SC::Generate => {
+                let _span = info_span!("cli.config.generate").entered();
+
                 // XXX: we should disallow SeedableRng::from_entropy
                 let rng = rand_chacha::ChaChaRng::from_entropy();
                 let config = RootConfig::load_and_generate(rng).await?;

@@ -96,6 +96,12 @@ impl Templates {
     }
 
     /// Load the templates from the given config
+    #[tracing::instrument(
+        name = "templates.load",
+        skip_all,
+        fields(%path),
+        err,
+    )]
     pub async fn load(
         path: Utf8PathBuf,
         url_builder: UrlBuilder,
@@ -110,14 +116,17 @@ impl Templates {
 
     async fn load_(path: &Utf8Path, url_builder: UrlBuilder) -> Result<Tera, TemplateLoadingError> {
         let path = path.to_owned();
+        let span = tracing::Span::current();
 
         // This uses blocking I/Os, do that in a blocking task
         let mut tera = tokio::task::spawn_blocking(move || {
-            let path = path.canonicalize_utf8()?;
-            let path = format!("{path}/**/*.{{html,txt,subject}}");
+            span.in_scope(move || {
+                let path = path.canonicalize_utf8()?;
+                let path = format!("{path}/**/*.{{html,txt,subject}}");
 
-            info!(%path, "Loading templates from filesystem");
-            Tera::new(&path)
+                info!(%path, "Loading templates from filesystem");
+                Tera::new(&path)
+            })
         })
         .await??;
 
@@ -138,7 +147,13 @@ impl Templates {
     }
 
     /// Reload the templates on disk
-    pub async fn reload(&self) -> anyhow::Result<()> {
+    #[tracing::instrument(
+        name = "templates.reload",
+        skip_all,
+        fields(path = %self.path),
+        err,
+    )]
+    pub async fn reload(&self) -> Result<(), TemplateLoadingError> {
         // Prepare the new Tera instance
         let new_tera = Self::load_(&self.path, self.url_builder.clone()).await?;
 
