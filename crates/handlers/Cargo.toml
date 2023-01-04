@@ -73,7 +73,7 @@ oauth2-types = { path = "../oauth2-types" }
 
 [dev-dependencies]
 indoc = "1.0.8"
-insta = "1.24.0"
+insta = "1.24.1"
 
 [features]
 # Use the native root certificates
