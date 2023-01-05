@@ -26,7 +26,7 @@ serde = "1.0.152"
 serde_json = "1.0.91"
 serde_urlencoded = "0.7.1"
 thiserror = "1.0.38"
-tokio = { version = "1.23.0", features = ["sync", "parking_lot"], optional = true }
+tokio = { version = "1.23.1", features = ["sync", "parking_lot"], optional = true }
 tower = { version = "0.4.13", features = [] }
 tower-http = { version = "0.3.5", features = ["cors"] }
 tracing = "0.1.37"
@@ -37,7 +37,7 @@ webpki-roots = { version = "0.22.6", optional = true }
 [dev-dependencies]
 anyhow = "1.0.68"
 serde = { version = "1.0.152", features = ["derive"] }
-tokio = { version = "1.23.0", features = ["macros", "rt"] }
+tokio = { version = "1.23.1", features = ["macros", "rt"] }
 tower = { version = "0.4.13", features = ["util"] }
 
 [features]

@@ -6,7 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-tokio = "1.23.0"
+tokio = "1.23.1"
 async-trait = "0.1.60"
 tokio-stream = "0.1.11"
 futures-util = "0.3.25"
