@@ -142,13 +142,13 @@ pub async fn lookup_active_access_token(
 
 #[tracing::instrument(
     skip_all,
-    fields(%access_token.id),
+    fields(access_token.id = %access_token_id),
     err,
 )]
 pub async fn revoke_access_token(
     executor: impl PgExecutor<'_>,
     clock: &Clock,
-    access_token: AccessToken,
+    access_token_id: Ulid,
 ) -> Result<(), DatabaseError> {
     let revoked_at = clock.now();
     let res = sqlx::query!(
@@ -157,7 +157,7 @@ pub async fn revoke_access_token(
             SET revoked_at = $2
             WHERE oauth2_access_token_id = $1
         "#,
-        Uuid::from(access_token.id),
+        Uuid::from(access_token_id),
         revoked_at,
     )
     .execute(executor)

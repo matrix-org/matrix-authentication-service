@@ -23,12 +23,14 @@ use uuid::Uuid;
 use crate::{
     pagination::{process_page, Page, QueryBuilderExt},
     tracing::ExecuteExt,
-    Clock, DatabaseError, DatabaseInconsistencyError,
+    Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt,
 };
 
 #[async_trait]
 pub trait OAuth2SessionRepository {
     type Error;
+
+    async fn lookup(&mut self, id: Ulid) -> Result<Option<Session>, Self::Error>;
 
     async fn create_from_grant(
         &mut self,
@@ -66,6 +68,8 @@ struct OAuthSessionLookup {
     user_session_id: Uuid,
     oauth2_client_id: Uuid,
     scope: String,
+    #[allow(dead_code)]
+    created_at: DateTime<Utc>,
     finished_at: Option<DateTime<Utc>>,
 }
 
@@ -94,6 +98,41 @@ impl TryFrom<OAuthSessionLookup> for Session {
 #[async_trait]
 impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
     type Error = DatabaseError;
+
+    #[tracing::instrument(
+        name = "db.oauth2_session.lookup",
+        skip_all,
+        fields(
+            db.statement,
+            session.id = %id,
+        ),
+        err,
+    )]
+    async fn lookup(&mut self, id: Ulid) -> Result<Option<Session>, Self::Error> {
+        let res = sqlx::query_as!(
+            OAuthSessionLookup,
+            r#"
+                SELECT oauth2_session_id
+                     , user_session_id
+                     , oauth2_client_id
+                     , scope
+                     , created_at
+                     , finished_at
+                FROM oauth2_sessions
+
+                WHERE oauth2_session_id = $1
+            "#,
+            Uuid::from(id),
+        )
+        .traced()
+        .fetch_one(&mut *self.conn)
+        .await
+        .to_option()?;
+
+        let Some(session) = res else { return Ok(None) };
+
+        Ok(Some(session.try_into()?))
+    }
 
     #[tracing::instrument(
         name = "db.oauth2_session.create_from_grant",

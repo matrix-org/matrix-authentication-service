@@ -33,7 +33,7 @@ pub struct RefreshToken {
     pub id: Ulid,
     pub refresh_token: String,
     pub created_at: DateTime<Utc>,
-    pub access_token: Option<AccessToken>,
+    pub access_token_id: Option<Ulid>,
 }
 
 /// Type of token to generate or validate

@@ -109,12 +109,18 @@ pub(crate) enum RouteError {
 
     #[error("failed to load browser session")]
     NoSuchBrowserSession,
+
+    #[error("failed to load oauth session")]
+    NoSuchOAuthSession,
 }
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         match self {
-            Self::Internal(_) | Self::InvalidSigningKey | Self::NoSuchBrowserSession => (
+            Self::Internal(_)
+            | Self::InvalidSigningKey
+            | Self::NoSuchBrowserSession
+            | Self::NoSuchOAuthSession => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ClientError::from(ClientErrorCode::ServerError)),
             ),
@@ -219,7 +225,7 @@ async fn authorization_code_grant(
 
     let now = clock.now();
 
-    let session = match authz_grant.stage {
+    let session_id = match authz_grant.stage {
         AuthorizationGrantStage::Cancelled { cancelled_at } => {
             debug!(%cancelled_at, "Authorization grant was cancelled");
             return Err(RouteError::InvalidGrant);
@@ -227,13 +233,18 @@ async fn authorization_code_grant(
         AuthorizationGrantStage::Exchanged {
             exchanged_at,
             fulfilled_at,
-            session,
+            session_id,
         } => {
             debug!(%exchanged_at, %fulfilled_at, "Authorization code was already exchanged");
 
             // Ending the session if the token was already exchanged more than 20s ago
             if now - exchanged_at > Duration::seconds(20) {
                 debug!("Ending potentially compromised session");
+                let session = txn
+                    .oauth2_session()
+                    .lookup(session_id)
+                    .await?
+                    .ok_or(RouteError::NoSuchOAuthSession)?;
                 txn.oauth2_session().finish(&clock, session).await?;
                 txn.commit().await?;
             }
@@ -245,7 +256,7 @@ async fn authorization_code_grant(
             return Err(RouteError::InvalidGrant);
         }
         AuthorizationGrantStage::Fulfilled {
-            ref session,
+            session_id,
             fulfilled_at,
         } => {
             if now - fulfilled_at > Duration::minutes(10) {
@@ -253,9 +264,15 @@ async fn authorization_code_grant(
                 return Err(RouteError::InvalidGrant);
             }
 
-            session
+            session_id
         }
     };
+
+    let session = txn
+        .oauth2_session()
+        .lookup(session_id)
+        .await?
+        .ok_or(RouteError::NoSuchOAuthSession)?;
 
     // This should never happen, since we looked up in the database using the code
     let code = authz_grant.code.as_ref().ok_or(RouteError::InvalidGrant)?;
@@ -284,23 +301,16 @@ async fn authorization_code_grant(
     let access_token_str = TokenType::AccessToken.generate(&mut rng);
     let refresh_token_str = TokenType::RefreshToken.generate(&mut rng);
 
-    let access_token = add_access_token(
-        &mut txn,
-        &mut rng,
-        &clock,
-        session,
-        access_token_str.clone(),
-        ttl,
-    )
-    .await?;
+    let access_token =
+        add_access_token(&mut txn, &mut rng, &clock, &session, access_token_str, ttl).await?;
 
-    let _refresh_token = add_refresh_token(
+    let refresh_token = add_refresh_token(
         &mut txn,
         &mut rng,
         &clock,
-        session,
-        access_token,
-        refresh_token_str.clone(),
+        &session,
+        &access_token,
+        refresh_token_str,
     )
     .await?;
 
@@ -328,7 +338,7 @@ async fn authorization_code_grant(
             .signing_key_for_algorithm(&alg)
             .ok_or(RouteError::InvalidSigningKey)?;
 
-        claims::AT_HASH.insert(&mut claims, hash_token(&alg, &access_token_str)?)?;
+        claims::AT_HASH.insert(&mut claims, hash_token(&alg, &access_token.access_token)?)?;
         claims::C_HASH.insert(&mut claims, hash_token(&alg, &grant.code)?)?;
 
         let signer = key.params().signing_key_for_alg(&alg)?;
@@ -341,9 +351,9 @@ async fn authorization_code_grant(
         None
     };
 
-    let mut params = AccessTokenResponse::new(access_token_str)
+    let mut params = AccessTokenResponse::new(access_token.access_token)
         .with_expires_in(ttl)
-        .with_refresh_token(refresh_token_str)
+        .with_refresh_token(refresh_token.refresh_token)
         .with_scope(session.scope.clone());
 
     if let Some(id_token) = id_token {
@@ -392,15 +402,15 @@ async fn refresh_token_grant(
         &mut rng,
         &clock,
         &session,
-        new_access_token,
+        &new_access_token,
         refresh_token_str,
     )
     .await?;
 
     consume_refresh_token(&mut txn, &clock, &refresh_token).await?;
 
-    if let Some(access_token) = refresh_token.access_token {
-        revoke_access_token(&mut txn, &clock, access_token).await?;
+    if let Some(access_token_id) = refresh_token.access_token_id {
+        revoke_access_token(&mut txn, &clock, access_token_id).await?;
     }
 
     let params = AccessTokenResponse::new(access_token_str)

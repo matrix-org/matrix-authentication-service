@@ -36,7 +36,7 @@ pub async fn add_refresh_token(
     mut rng: impl Rng + Send,
     clock: &Clock,
     session: &Session,
-    access_token: AccessToken,
+    access_token: &AccessToken,
     refresh_token: String,
 ) -> Result<RefreshToken, sqlx::Error> {
     let created_at = clock.now();
@@ -63,7 +63,7 @@ pub async fn add_refresh_token(
     Ok(RefreshToken {
         id,
         refresh_token,
-        access_token: Some(access_token),
+        access_token_id: Some(access_token.id),
         created_at,
     })
 }
@@ -73,9 +73,6 @@ struct OAuth2RefreshTokenLookup {
     oauth2_refresh_token: String,
     oauth2_refresh_token_created_at: DateTime<Utc>,
     oauth2_access_token_id: Option<Uuid>,
-    oauth2_access_token: Option<String>,
-    oauth2_access_token_created_at: Option<DateTime<Utc>>,
-    oauth2_access_token_expires_at: Option<DateTime<Utc>>,
     oauth2_session_id: Uuid,
     oauth2_client_id: Uuid,
     oauth2_session_scope: String,
@@ -94,10 +91,7 @@ pub async fn lookup_active_refresh_token(
             SELECT rt.oauth2_refresh_token_id
                  , rt.refresh_token     AS oauth2_refresh_token
                  , rt.created_at        AS oauth2_refresh_token_created_at
-                 , at.oauth2_access_token_id AS "oauth2_access_token_id?"
-                 , at.access_token      AS "oauth2_access_token?"
-                 , at.created_at        AS "oauth2_access_token_created_at?"
-                 , at.expires_at        AS "oauth2_access_token_expires_at?"
+                 , rt.oauth2_access_token_id AS "oauth2_access_token_id?"
                  , os.oauth2_session_id AS "oauth2_session_id!"
                  , os.oauth2_client_id  AS "oauth2_client_id!"
                  , os.scope             AS "oauth2_session_scope!"
@@ -105,8 +99,6 @@ pub async fn lookup_active_refresh_token(
             FROM oauth2_refresh_tokens rt
             INNER JOIN oauth2_sessions os
               USING (oauth2_session_id)
-            LEFT JOIN oauth2_access_tokens at
-              USING (oauth2_access_token_id)
 
             WHERE rt.refresh_token = $1
               AND rt.consumed_at IS NULL
@@ -118,31 +110,11 @@ pub async fn lookup_active_refresh_token(
     .fetch_one(&mut *conn)
     .await?;
 
-    let access_token = match (
-        res.oauth2_access_token_id,
-        res.oauth2_access_token,
-        res.oauth2_access_token_created_at,
-        res.oauth2_access_token_expires_at,
-    ) {
-        (None, None, None, None) => None,
-        (Some(id), Some(access_token), Some(created_at), Some(expires_at)) => {
-            let id = Ulid::from(id);
-            Some(AccessToken {
-                id,
-                jti: id.to_string(),
-                access_token,
-                created_at,
-                expires_at,
-            })
-        }
-        _ => return Err(DatabaseInconsistencyError::on("oauth2_access_tokens").into()),
-    };
-
     let refresh_token = RefreshToken {
         id: res.oauth2_refresh_token_id.into(),
         refresh_token: res.oauth2_refresh_token,
         created_at: res.oauth2_refresh_token_created_at,
-        access_token,
+        access_token_id: res.oauth2_access_token_id.map(Ulid::from),
     };
 
     let session_id = res.oauth2_session_id.into();

@@ -63,11 +63,11 @@ pub enum AuthorizationGrantStage {
     #[default]
     Pending,
     Fulfilled {
-        session: Session,
+        session_id: Ulid,
         fulfilled_at: DateTime<Utc>,
     },
     Exchanged {
-        session: Session,
+        session_id: Ulid,
         fulfilled_at: DateTime<Utc>,
         exchanged_at: DateTime<Utc>,
     },
@@ -85,12 +85,12 @@ impl AuthorizationGrantStage {
     pub fn fulfill(
         self,
         fulfilled_at: DateTime<Utc>,
-        session: Session,
+        session: &Session,
     ) -> Result<Self, InvalidTransitionError> {
         match self {
             Self::Pending => Ok(Self::Fulfilled {
                 fulfilled_at,
-                session,
+                session_id: session.id,
             }),
             _ => Err(InvalidTransitionError),
         }
@@ -100,11 +100,11 @@ impl AuthorizationGrantStage {
         match self {
             Self::Fulfilled {
                 fulfilled_at,
-                session,
+                session_id,
             } => Ok(Self::Exchanged {
                 fulfilled_at,
                 exchanged_at,
-                session,
+                session_id,
             }),
             _ => Err(InvalidTransitionError),
         }
