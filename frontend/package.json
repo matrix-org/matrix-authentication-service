@@ -46,7 +46,7 @@
     "@types/react-test-renderer": "^18.0.0",
     "@types/relay-runtime": "^14.1.6",
     "@types/relay-test-utils": "^14.1.0",
-    "@vitejs/plugin-react": "^3.0.0",
+    "@vitejs/plugin-react": "^3.0.1",
     "autoprefixer": "^10.4.13",
     "babel-plugin-relay": "^14.1.0",
     "eslint": "^8.31.0",
