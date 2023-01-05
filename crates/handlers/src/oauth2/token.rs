@@ -35,8 +35,8 @@ use mas_storage::{
     oauth2::{
         access_token::{add_access_token, revoke_access_token},
         authorization_grant::{exchange_grant, lookup_grant_by_code},
-        end_oauth_session,
         refresh_token::{add_refresh_token, consume_refresh_token, lookup_active_refresh_token},
+        OAuth2SessionRepository,
     },
     user::BrowserSessionRepository,
     Repository,
@@ -234,7 +234,7 @@ async fn authorization_code_grant(
             // Ending the session if the token was already exchanged more than 20s ago
             if now - exchanged_at > Duration::seconds(20) {
                 debug!("Ending potentially compromised session");
-                end_oauth_session(&mut txn, &clock, session).await?;
+                txn.oauth2_session().finish(&clock, session).await?;
                 txn.commit().await?;
             }
 

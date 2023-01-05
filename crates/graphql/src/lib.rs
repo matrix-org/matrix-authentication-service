@@ -31,7 +31,7 @@ use async_graphql::{
     Context, Description, EmptyMutation, EmptySubscription, ID,
 };
 use mas_storage::{
-    oauth2::client::OAuth2ClientRepository,
+    oauth2::OAuth2ClientRepository,
     upstream_oauth2::UpstreamOAuthProviderRepository,
     user::{BrowserSessionRepository, UserEmailRepository},
     Repository, UpstreamOAuthLinkRepository,

@@ -19,7 +19,7 @@ use hyper::StatusCode;
 use mas_iana::oauth::OAuthClientAuthenticationMethod;
 use mas_keystore::Encrypter;
 use mas_policy::{PolicyFactory, Violation};
-use mas_storage::{oauth2::client::OAuth2ClientRepository, Repository};
+use mas_storage::{oauth2::OAuth2ClientRepository, Repository};
 use oauth2_types::{
     errors::{ClientError, ClientErrorCode},
     registration::{

@@ -18,7 +18,7 @@ use mas_config::{DatabaseConfig, PasswordsConfig, RootConfig};
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
 use mas_router::UrlBuilder;
 use mas_storage::{
-    oauth2::client::OAuth2ClientRepository,
+    oauth2::OAuth2ClientRepository,
     upstream_oauth2::UpstreamOAuthProviderRepository,
     user::{UserEmailRepository, UserPasswordRepository, UserRepository},
     Clock, Repository,

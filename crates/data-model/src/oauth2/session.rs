@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use chrono::{DateTime, Utc};
 use oauth2_types::scope::Scope;
 use serde::Serialize;
 use ulid::Ulid;
@@ -22,4 +23,5 @@ pub struct Session {
     pub user_session_id: Ulid,
     pub client_id: Ulid,
     pub scope: Scope,
+    pub finished_at: Option<DateTime<Utc>>,
 }

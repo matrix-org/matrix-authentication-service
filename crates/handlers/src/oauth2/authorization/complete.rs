@@ -25,9 +25,13 @@ use mas_data_model::{AuthorizationGrant, BrowserSession};
 use mas_keystore::Encrypter;
 use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
-use mas_storage::oauth2::{
-    authorization_grant::{derive_session, fulfill_grant, get_grant_by_id},
-    consent::fetch_client_consent,
+use mas_storage::{
+    oauth2::{
+        authorization_grant::{fulfill_grant, get_grant_by_id},
+        consent::fetch_client_consent,
+        OAuth2SessionRepository,
+    },
+    Repository,
 };
 use mas_templates::Templates;
 use oauth2_types::requests::{AccessTokenResponse, AuthorizationResponse};
@@ -193,7 +197,10 @@ pub(crate) async fn complete(
     }
 
     // All good, let's start the session
-    let session = derive_session(&mut txn, &mut rng, &clock, &grant, browser_session).await?;
+    let session = txn
+        .oauth2_session()
+        .create_from_grant(&mut rng, &clock, &grant, &browser_session)
+        .await?;
 
     let grant = fulfill_grant(&mut txn, grant, session.clone()).await?;
 

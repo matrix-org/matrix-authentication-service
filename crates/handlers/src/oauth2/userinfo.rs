@@ -29,7 +29,7 @@ use mas_jose::{
 use mas_keystore::Keystore;
 use mas_router::UrlBuilder;
 use mas_storage::{
-    oauth2::client::OAuth2ClientRepository,
+    oauth2::OAuth2ClientRepository,
     user::{BrowserSessionRepository, UserEmailRepository},
     Repository,
 };

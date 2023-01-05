@@ -16,8 +16,7 @@ use std::num::NonZeroU32;
 
 use chrono::{DateTime, Utc};
 use mas_data_model::{
-    AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, BrowserSession, Client, Pkce,
-    Session,
+    AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, Client, Pkce, Session,
 };
 use mas_iana::oauth::PkceCodeChallengeMethod;
 use oauth2_types::{requests::ResponseMode, scope::Scope};
@@ -27,7 +26,7 @@ use ulid::Ulid;
 use url::Url;
 use uuid::Uuid;
 
-use super::client::OAuth2ClientRepository;
+use super::OAuth2ClientRepository;
 use crate::{Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt, Repository};
 
 #[tracing::instrument(
@@ -186,6 +185,7 @@ impl GrantLookup {
                     client_id: client.id,
                     user_session_id: user_session_id.into(),
                     scope,
+                    finished_at: None,
                 };
 
                 Some(session)
@@ -429,59 +429,6 @@ pub async fn lookup_grant_by_code(
     let grant = res.into_authorization_grant(&mut *conn).await?;
 
     Ok(Some(grant))
-}
-
-#[tracing::instrument(
-    skip_all,
-    fields(
-        %grant.id,
-        client.id = %grant.client.id,
-        session.id,
-        user_session.id = %browser_session.id,
-        user.id = %browser_session.user.id,
-    ),
-    err,
-)]
-pub async fn derive_session(
-    executor: impl PgExecutor<'_>,
-    mut rng: impl Rng + Send,
-    clock: &Clock,
-    grant: &AuthorizationGrant,
-    browser_session: BrowserSession,
-) -> Result<Session, sqlx::Error> {
-    let created_at = clock.now();
-    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
-    tracing::Span::current().record("session.id", tracing::field::display(id));
-
-    sqlx::query!(
-        r#"
-            INSERT INTO oauth2_sessions
-                (oauth2_session_id, user_session_id, oauth2_client_id, scope, created_at)
-            SELECT
-                $1,
-                $2,
-                og.oauth2_client_id,
-                og.scope,
-                $3
-            FROM
-                oauth2_authorization_grants og
-            WHERE
-                og.oauth2_authorization_grant_id = $4
-        "#,
-        Uuid::from(id),
-        Uuid::from(browser_session.id),
-        created_at,
-        Uuid::from(grant.id),
-    )
-    .execute(executor)
-    .await?;
-
-    Ok(Session {
-        id,
-        user_session_id: browser_session.id,
-        client_id: grant.client.id,
-        scope: grant.scope.clone(),
-    })
 }
 
 #[tracing::instrument(

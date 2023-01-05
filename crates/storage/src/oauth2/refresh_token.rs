@@ -158,6 +158,7 @@ pub async fn lookup_active_refresh_token(
         client_id: res.oauth2_client_id.into(),
         user_session_id: res.user_session_id.into(),
         scope,
+        finished_at: None,
     };
 
     Ok(Some((refresh_token, session)))

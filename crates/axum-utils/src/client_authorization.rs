@@ -31,7 +31,7 @@ use mas_http::HttpServiceExt;
 use mas_iana::oauth::OAuthClientAuthenticationMethod;
 use mas_jose::{jwk::PublicJsonWebKeySet, jwt::Jwt};
 use mas_keystore::Encrypter;
-use mas_storage::{oauth2::client::OAuth2ClientRepository, DatabaseError, Repository};
+use mas_storage::{oauth2::OAuth2ClientRepository, DatabaseError, Repository};
 use serde::{de::DeserializeOwned, Deserialize};
 use serde_json::Value;
 use sqlx::PgConnection;

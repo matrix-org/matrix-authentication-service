@@ -26,7 +26,7 @@ use mas_keystore::Encrypter;
 use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{
-    oauth2::{authorization_grant::new_authorization_grant, client::OAuth2ClientRepository},
+    oauth2::{authorization_grant::new_authorization_grant, OAuth2ClientRepository},
     Repository,
 };
 use mas_templates::Templates;

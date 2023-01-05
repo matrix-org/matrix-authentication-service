@@ -629,6 +629,22 @@
     },
     "query": "\n            UPDATE compat_sessions cs\n            SET finished_at = $2\n            FROM compat_access_tokens ca\n            WHERE ca.access_token = $1\n              AND ca.compat_session_id = cs.compat_session_id\n              AND cs.finished_at IS NULL\n            RETURNING cs.compat_session_id\n        "
   },
+  "583ae9a0db9cd55fa57a179339550f3dab1bfc76f35ad488e1560ea37f7ed029": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid",
+          "Uuid",
+          "Text",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n                INSERT INTO oauth2_sessions\n                    ( oauth2_session_id\n                    , user_session_id\n                    , oauth2_client_id\n                    , scope\n                    , created_at\n                    )\n                VALUES ($1, $2, $3, $4, $5)\n            "
+  },
   "5b5d5c82da37c6f2d8affacfb02119965c04d1f2a9cc53dbf5bd4c12584969a0": {
     "describe": {
       "columns": [],
@@ -1325,19 +1341,6 @@
     },
     "query": "\n            UPDATE compat_refresh_tokens\n            SET consumed_at = $2\n            WHERE compat_refresh_token_id = $1\n        "
   },
-  "9c1ef3114bfe22884d893bb11dc6054421c28cce4bd828cfe6a4ad46c062481a": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Uuid",
-          "Timestamptz"
-        ]
-      }
-    },
-    "query": "\n            UPDATE oauth2_sessions\n            SET finished_at = $2\n            WHERE oauth2_session_id = $1\n        "
-  },
   "a300fe99c95679c5664646a6a525c0491829e97db45f3234483872ed38436322": {
     "describe": {
       "columns": [
@@ -1469,6 +1472,19 @@
     },
     "query": "\n                INSERT INTO user_email_confirmation_codes\n                  (user_email_confirmation_code_id, user_email_id, code, created_at, expires_at)\n                VALUES ($1, $2, $3, $4, $5)\n            "
   },
+  "b700dc3f7d0f86f4904725d8357e34b7e457f857ed37c467c314142877fd5367": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Timestamptz"
+        ]
+      }
+    },
+    "query": "\n                UPDATE oauth2_sessions\n                SET finished_at = $2\n                WHERE oauth2_session_id = $1\n            "
+  },
   "b9875a270f7e753e48075ccae233df6e24a91775ceb877735508c1d5b2300d64": {
     "describe": {
       "columns": [],
@@ -1483,21 +1499,6 @@
       }
     },
     "query": "\n                UPDATE upstream_oauth_authorization_sessions\n                SET upstream_oauth_link_id = $1,\n                    completed_at = $2,\n                    id_token = $3\n                WHERE upstream_oauth_authorization_session_id = $4\n            "
-  },
-  "bc768c63a7737818967bc28560de714bbbd262bdf3ab73d297263bb73dcd9f5e": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Uuid",
-          "Uuid",
-          "Timestamptz",
-          "Uuid"
-        ]
-      }
-    },
-    "query": "\n            INSERT INTO oauth2_sessions\n                (oauth2_session_id, user_session_id, oauth2_client_id, scope, created_at)\n            SELECT\n                $1,\n                $2,\n                og.oauth2_client_id,\n                og.scope,\n                $3\n            FROM\n                oauth2_authorization_grants og\n            WHERE\n                og.oauth2_authorization_grant_id = $4\n        "
   },
   "bd1f6daa5fa1b10250c01f8b3fbe451646a9ceeefa6f72b9c4e29b6d05f17641": {
     "describe": {
