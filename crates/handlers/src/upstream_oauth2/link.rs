@@ -121,11 +121,11 @@ pub(crate) async fn get(
 
     // This checks that we're in a browser session which is allowed to consume this
     // link: the upstream auth session should have been started in this browser.
-    if upstream_session.link_id != Some(link.id) {
+    if upstream_session.link_id() != Some(link.id) {
         return Err(RouteError::SessionNotFound);
     }
 
-    if upstream_session.consumed() {
+    if upstream_session.is_consumed() {
         return Err(RouteError::SessionConsumed);
     }
 
@@ -243,11 +243,11 @@ pub(crate) async fn post(
 
     // This checks that we're in a browser session which is allowed to consume this
     // link: the upstream auth session should have been started in this browser.
-    if upstream_session.link_id != Some(link.id) {
+    if upstream_session.link_id() != Some(link.id) {
         return Err(RouteError::SessionNotFound);
     }
 
-    if upstream_session.consumed() {
+    if upstream_session.is_consumed() {
         return Err(RouteError::SessionConsumed);
     }
 

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use chrono::{DateTime, Duration, Utc};
-use mas_data_model::{AccessToken, Session};
+use mas_data_model::{AccessToken, Session, SessionState};
 use rand::Rng;
 use sqlx::{PgConnection, PgExecutor};
 use ulid::Ulid;
@@ -76,6 +76,7 @@ pub struct OAuth2AccessTokenLookup {
     oauth2_access_token: String,
     oauth2_access_token_created_at: DateTime<Utc>,
     oauth2_access_token_expires_at: DateTime<Utc>,
+    oauth2_session_created_at: DateTime<Utc>,
     oauth2_session_id: Uuid,
     oauth2_client_id: Uuid,
     scope: String,
@@ -94,6 +95,7 @@ pub async fn lookup_active_access_token(
                  , at.access_token      AS "oauth2_access_token"
                  , at.created_at        AS "oauth2_access_token_created_at"
                  , at.expires_at        AS "oauth2_access_token_expires_at"
+                 , os.created_at        AS "oauth2_session_created_at"
                  , os.oauth2_session_id AS "oauth2_session_id!"
                  , os.oauth2_client_id  AS "oauth2_client_id!"
                  , os.scope             AS "scope!"
@@ -131,10 +133,11 @@ pub async fn lookup_active_access_token(
 
     let session = Session {
         id: session_id,
+        state: SessionState::Valid,
+        created_at: res.oauth2_session_created_at,
         client_id: res.oauth2_client_id.into(),
         user_session_id: res.user_session_id.into(),
         scope,
-        finished_at: None,
     };
 
     Ok(Some((access_token, session)))

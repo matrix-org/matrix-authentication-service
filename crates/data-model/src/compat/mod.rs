@@ -12,12 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod link;
-mod provider;
+use chrono::{DateTime, Utc};
+use ulid::Ulid;
+
+mod device;
 mod session;
+mod sso_login;
 
 pub use self::{
-    link::UpstreamOAuthLink,
-    provider::UpstreamOAuthProvider,
-    session::{UpstreamOAuthAuthorizationSession, UpstreamOAuthAuthorizationSessionState},
+    device::Device,
+    session::{CompatSession, CompatSessionState},
+    sso_login::{CompatSsoLogin, CompatSsoLoginState},
 };
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CompatAccessToken {
+    pub id: Ulid,
+    pub token: String,
+    pub created_at: DateTime<Utc>,
+    pub expires_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CompatRefreshToken {
+    pub id: Ulid,
+    pub token: String,
+    pub created_at: DateTime<Utc>,
+}

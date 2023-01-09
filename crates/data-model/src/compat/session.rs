@@ -1,4 +1,4 @@
-// Copyright 2021-2023 The Matrix.org Foundation C.I.C.
+// Copyright 2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,22 +13,14 @@
 // limitations under the License.
 
 use chrono::{DateTime, Utc};
-use oauth2_types::scope::Scope;
 use serde::Serialize;
 use ulid::Ulid;
 
+use super::Device;
 use crate::InvalidTransitionError;
 
-trait T {
-    type State;
-}
-
-impl T for Session {
-    type State = SessionState;
-}
-
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
-pub enum SessionState {
+pub enum CompatSessionState {
     #[default]
     Valid,
     Finished {
@@ -36,18 +28,18 @@ pub enum SessionState {
     },
 }
 
-impl SessionState {
-    /// Returns `true` if the session state is [`Valid`].
+impl CompatSessionState {
+    /// Returns `true` if the compta session state is [`Valid`].
     ///
-    /// [`Valid`]: SessionState::Valid
+    /// [`Valid`]: ComptaSessionState::Valid
     #[must_use]
     pub fn is_valid(&self) -> bool {
         matches!(self, Self::Valid)
     }
 
-    /// Returns `true` if the session state is [`Finished`].
+    /// Returns `true` if the compta session state is [`Finished`].
     ///
-    /// [`Finished`]: SessionState::Finished
+    /// [`Finished`]: ComptaSessionState::Finished
     #[must_use]
     pub fn is_finished(&self) -> bool {
         matches!(self, Self::Finished { .. })
@@ -59,29 +51,29 @@ impl SessionState {
             Self::Finished { .. } => Err(InvalidTransitionError),
         }
     }
-}
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct Session {
-    pub id: Ulid,
-    pub state: SessionState,
-    pub created_at: DateTime<Utc>,
-    pub user_session_id: Ulid,
-    pub client_id: Ulid,
-    pub scope: Scope,
-}
-
-impl std::ops::Deref for Session {
-    type Target = SessionState;
-
-    fn deref(&self) -> &Self::Target {
-        &self.state
+    #[must_use]
+    pub fn finished_at(&self) -> Option<DateTime<Utc>> {
+        match self {
+            CompatSessionState::Valid => None,
+            CompatSessionState::Finished { finished_at } => Some(*finished_at),
+        }
     }
 }
 
-impl Session {
-    pub fn finish(mut self, finished_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
-        self.state = self.state.finish(finished_at)?;
-        Ok(self)
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct CompatSession {
+    pub id: Ulid,
+    pub state: CompatSessionState,
+    pub user_id: Ulid,
+    pub device: Device,
+    pub created_at: DateTime<Utc>,
+}
+
+impl std::ops::Deref for CompatSession {
+    type Target = CompatSessionState;
+
+    fn deref(&self) -> &Self::Target {
+        &self.state
     }
 }

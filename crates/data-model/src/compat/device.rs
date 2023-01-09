@@ -1,4 +1,4 @@
-// Copyright 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use chrono::{DateTime, Utc};
 use oauth2_types::scope::ScopeToken;
 use rand::{
     distributions::{Alphanumeric, DistString},
@@ -20,8 +19,6 @@ use rand::{
 };
 use serde::Serialize;
 use thiserror::Error;
-use ulid::Ulid;
-use url::Url;
 
 static DEVICE_ID_LENGTH: usize = 10;
 
@@ -78,51 +75,4 @@ impl TryFrom<String> for Device {
 
         Ok(Self { id })
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct CompatSession {
-    pub id: Ulid,
-    pub user_id: Ulid,
-    pub device: Device,
-    pub created_at: DateTime<Utc>,
-    pub finished_at: Option<DateTime<Utc>>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CompatAccessToken {
-    pub id: Ulid,
-    pub token: String,
-    pub created_at: DateTime<Utc>,
-    pub expires_at: Option<DateTime<Utc>>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CompatRefreshToken {
-    pub id: Ulid,
-    pub token: String,
-    pub created_at: DateTime<Utc>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub enum CompatSsoLoginState {
-    Pending,
-    Fulfilled {
-        fulfilled_at: DateTime<Utc>,
-        session: CompatSession,
-    },
-    Exchanged {
-        fulfilled_at: DateTime<Utc>,
-        exchanged_at: DateTime<Utc>,
-        session: CompatSession,
-    },
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct CompatSsoLogin {
-    pub id: Ulid,
-    pub redirect_uri: Url,
-    pub login_token: String,
-    pub created_at: DateTime<Utc>,
-    pub state: CompatSsoLoginState,
 }

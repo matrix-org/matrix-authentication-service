@@ -85,9 +85,10 @@ mod tests {
             .await?
             .expect("session to be found in the database");
         assert_eq!(session.provider_id, provider.id);
-        assert_eq!(session.link_id, None);
-        assert!(!session.completed());
-        assert!(!session.consumed());
+        assert_eq!(session.link_id(), None);
+        assert!(session.is_pending());
+        assert!(!session.is_completed());
+        assert!(!session.is_consumed());
 
         // Create a link
         let link = conn
@@ -114,15 +115,15 @@ mod tests {
             .upstream_oauth_session()
             .complete_with_link(&clock, session, &link, None)
             .await?;
-        assert!(session.completed());
-        assert!(!session.consumed());
-        assert_eq!(session.link_id, Some(link.id));
+        assert!(session.is_completed());
+        assert!(!session.is_consumed());
+        assert_eq!(session.link_id(), Some(link.id));
 
         let session = conn
             .upstream_oauth_session()
             .consume(&clock, session)
             .await?;
-        assert!(session.consumed());
+        assert!(session.is_consumed());
 
         Ok(())
     }

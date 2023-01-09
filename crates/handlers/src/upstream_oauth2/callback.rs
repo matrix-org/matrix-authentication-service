@@ -153,12 +153,12 @@ pub(crate) async fn get(
         return Err(RouteError::ProviderMismatch);
     }
 
-    if params.state != session.state {
+    if params.state != session.state_str {
         // The state in the session cookie should match the one from the params
         return Err(RouteError::StateMismatch);
     }
 
-    if session.completed() {
+    if !session.is_pending() {
         // The session was already completed
         return Err(RouteError::AlreadyCompleted);
     }
@@ -207,7 +207,7 @@ pub(crate) async fn get(
 
     // TODO: all that should be borrowed
     let validation_data = AuthorizationValidationData {
-        state: session.state.clone(),
+        state: session.state_str.clone(),
         nonce: session.nonce.clone(),
         code_challenge_verifier: session.code_challenge_verifier.clone(),
         redirect_uri,

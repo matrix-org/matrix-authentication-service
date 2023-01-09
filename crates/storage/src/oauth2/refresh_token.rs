@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use chrono::{DateTime, Utc};
-use mas_data_model::{AccessToken, RefreshToken, Session};
+use mas_data_model::{AccessToken, RefreshToken, Session, SessionState};
 use rand::Rng;
 use sqlx::{PgConnection, PgExecutor};
 use ulid::Ulid;
@@ -73,6 +73,7 @@ struct OAuth2RefreshTokenLookup {
     oauth2_refresh_token: String,
     oauth2_refresh_token_created_at: DateTime<Utc>,
     oauth2_access_token_id: Option<Uuid>,
+    oauth2_session_created_at: DateTime<Utc>,
     oauth2_session_id: Uuid,
     oauth2_client_id: Uuid,
     oauth2_session_scope: String,
@@ -92,6 +93,7 @@ pub async fn lookup_active_refresh_token(
                  , rt.refresh_token     AS oauth2_refresh_token
                  , rt.created_at        AS oauth2_refresh_token_created_at
                  , rt.oauth2_access_token_id AS "oauth2_access_token_id?"
+                 , os.created_at        AS "oauth2_session_created_at"
                  , os.oauth2_session_id AS "oauth2_session_id!"
                  , os.oauth2_client_id  AS "oauth2_client_id!"
                  , os.scope             AS "oauth2_session_scope!"
@@ -127,10 +129,11 @@ pub async fn lookup_active_refresh_token(
 
     let session = Session {
         id: session_id,
+        state: SessionState::Valid,
+        created_at: res.oauth2_session_created_at,
         client_id: res.oauth2_client_id.into(),
         user_session_id: res.user_session_id.into(),
         scope,
-        finished_at: None,
     };
 
     Ok(Some((refresh_token, session)))

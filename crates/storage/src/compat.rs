@@ -14,8 +14,8 @@
 
 use chrono::{DateTime, Duration, Utc};
 use mas_data_model::{
-    CompatAccessToken, CompatRefreshToken, CompatSession, CompatSsoLogin, CompatSsoLoginState,
-    Device, User,
+    CompatAccessToken, CompatRefreshToken, CompatSession, CompatSessionState, CompatSsoLogin,
+    CompatSsoLoginState, Device, User,
 };
 use rand::Rng;
 use sqlx::{Acquire, PgExecutor, Postgres, QueryBuilder};
@@ -93,12 +93,17 @@ pub async fn lookup_active_compat_access_token(
             .source(e)
     })?;
 
+    let state = match res.compat_session_finished_at {
+        None => CompatSessionState::Valid,
+        Some(finished_at) => CompatSessionState::Finished { finished_at },
+    };
+
     let session = CompatSession {
         id,
+        state,
         user_id: res.user_id.into(),
         device,
         created_at: res.compat_session_created_at,
-        finished_at: res.compat_session_finished_at,
     };
 
     Ok(Some((token, session)))
@@ -181,12 +186,17 @@ pub async fn lookup_active_compat_refresh_token(
             .source(e)
     })?;
 
+    let state = match res.compat_session_finished_at {
+        None => CompatSessionState::Valid,
+        Some(finished_at) => CompatSessionState::Finished { finished_at },
+    };
+
     let session = CompatSession {
         id,
+        state,
         user_id: res.user_id.into(),
         device,
         created_at: res.compat_session_created_at,
-        finished_at: res.compat_session_finished_at,
     };
 
     Ok(Some((refresh_token, access_token, session)))
@@ -468,12 +478,18 @@ impl TryFrom<CompatSsoLoginLookup> for CompatSsoLogin {
                         .row(id)
                         .source(e)
                 })?;
+
+                let state = match finished_at {
+                    None => CompatSessionState::Valid,
+                    Some(finished_at) => CompatSessionState::Finished { finished_at },
+                };
+
                 Some(CompatSession {
                     id,
+                    state,
                     user_id: user_id.into(),
                     device,
                     created_at,
-                    finished_at,
                 })
             }
             (None, None, None, None, None) => None,
@@ -686,10 +702,10 @@ pub async fn start_compat_session(
 
     Ok(CompatSession {
         id,
+        state: CompatSessionState::default(),
         user_id: user.id,
         device,
         created_at,
-        finished_at: None,
     })
 }
 
@@ -709,7 +725,7 @@ pub async fn fullfill_compat_sso_login(
     mut rng: impl Rng + Send,
     clock: &Clock,
     user: &User,
-    mut compat_sso_login: CompatSsoLogin,
+    compat_sso_login: CompatSsoLogin,
     device: Device,
 ) -> Result<CompatSsoLogin, DatabaseError> {
     if !matches!(compat_sso_login.state, CompatSsoLoginState::Pending) {
@@ -719,8 +735,12 @@ pub async fn fullfill_compat_sso_login(
     let mut txn = conn.begin().await?;
 
     let session = start_compat_session(&mut txn, &mut rng, clock, user, device).await?;
+    let session_id = session.id;
 
     let fulfilled_at = clock.now();
+    let compat_sso_login = compat_sso_login
+        .fulfill(fulfilled_at, session)
+        .map_err(DatabaseError::to_invalid_operation)?;
     sqlx::query!(
         r#"
             UPDATE compat_sso_logins
@@ -731,19 +751,12 @@ pub async fn fullfill_compat_sso_login(
                 compat_sso_login_id = $1
         "#,
         Uuid::from(compat_sso_login.id),
-        Uuid::from(session.id),
+        Uuid::from(session_id),
         fulfilled_at,
     )
     .execute(&mut txn)
     .instrument(tracing::info_span!("Update compat SSO login"))
     .await?;
-
-    let state = CompatSsoLoginState::Fulfilled {
-        fulfilled_at,
-        session,
-    };
-
-    compat_sso_login.state = state;
 
     txn.commit().await?;
 
@@ -761,13 +774,13 @@ pub async fn fullfill_compat_sso_login(
 pub async fn mark_compat_sso_login_as_exchanged(
     executor: impl PgExecutor<'_>,
     clock: &Clock,
-    mut compat_sso_login: CompatSsoLogin,
+    compat_sso_login: CompatSsoLogin,
 ) -> Result<CompatSsoLogin, DatabaseError> {
-    let CompatSsoLoginState::Fulfilled { fulfilled_at, session } = compat_sso_login.state else {
-        return Err(DatabaseError::invalid_operation());
-    };
-
     let exchanged_at = clock.now();
+    let compat_sso_login = compat_sso_login
+        .exchange(exchanged_at)
+        .map_err(DatabaseError::to_invalid_operation)?;
+
     sqlx::query!(
         r#"
             UPDATE compat_sso_logins
@@ -783,11 +796,5 @@ pub async fn mark_compat_sso_login_as_exchanged(
     .instrument(tracing::info_span!("Update compat SSO login"))
     .await?;
 
-    let state = CompatSsoLoginState::Exchanged {
-        fulfilled_at,
-        exchanged_at,
-        session,
-    };
-    compat_sso_login.state = state;
     Ok(compat_sso_login)
 }

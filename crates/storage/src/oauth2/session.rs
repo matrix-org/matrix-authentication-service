@@ -14,7 +14,7 @@
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use mas_data_model::{AuthorizationGrant, BrowserSession, Session, User};
+use mas_data_model::{AuthorizationGrant, BrowserSession, Session, SessionState, User};
 use rand::RngCore;
 use sqlx::{PgConnection, QueryBuilder};
 use ulid::Ulid;
@@ -85,12 +85,18 @@ impl TryFrom<OAuthSessionLookup> for Session {
                 .source(e)
         })?;
 
+        let state = match value.finished_at {
+            None => SessionState::Valid,
+            Some(finished_at) => SessionState::Finished { finished_at },
+        };
+
         Ok(Session {
             id,
+            state,
+            created_at: value.created_at,
             client_id: value.oauth2_client_id.into(),
             user_session_id: value.user_session_id.into(),
             scope,
-            finished_at: value.finished_at,
         })
     }
 }
@@ -182,10 +188,11 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
 
         Ok(Session {
             id,
+            state: SessionState::Valid,
+            created_at,
             user_session_id: user_session.id,
             client_id: grant.client_id,
             scope: grant.scope.clone(),
-            finished_at: None,
         })
     }
 
