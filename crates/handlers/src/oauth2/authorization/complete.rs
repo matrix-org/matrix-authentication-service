@@ -29,7 +29,7 @@ use mas_storage::{
     oauth2::{
         authorization_grant::{fulfill_grant, get_grant_by_id},
         consent::fetch_client_consent,
-        OAuth2SessionRepository,
+        OAuth2ClientRepository, OAuth2SessionRepository,
     },
     Repository,
 };
@@ -125,6 +125,7 @@ pub(crate) async fn get(
         }
         Err(GrantCompletionError::NotPending) => Err(RouteError::NotPending),
         Err(GrantCompletionError::Internal(e)) => Err(RouteError::Internal(e)),
+        Err(e) => Err(RouteError::Internal(e.into())),
     }
 }
 
@@ -144,6 +145,9 @@ pub enum GrantCompletionError {
 
     #[error("denied by the policy")]
     PolicyViolation,
+
+    #[error("failed to load client")]
+    NoSuchClient,
 }
 
 impl_from_error_for_route!(GrantCompletionError: sqlx::Error);
@@ -182,8 +186,13 @@ pub(crate) async fn complete(
         return Err(GrantCompletionError::PolicyViolation);
     }
 
-    let current_consent =
-        fetch_client_consent(&mut txn, &browser_session.user, &grant.client).await?;
+    let client = txn
+        .oauth2_client()
+        .lookup(grant.client_id)
+        .await?
+        .ok_or(GrantCompletionError::NoSuchClient)?;
+
+    let current_consent = fetch_client_consent(&mut txn, &browser_session.user, &client).await?;
 
     let lacks_consent = grant
         .scope

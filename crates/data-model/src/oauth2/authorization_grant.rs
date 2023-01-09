@@ -21,11 +21,11 @@ use oauth2_types::{
     requests::ResponseMode,
 };
 use serde::Serialize;
-use thiserror::Error;
 use ulid::Ulid;
 use url::Url;
 
-use super::{client::Client, session::Session};
+use super::session::Session;
+use crate::InvalidTransitionError;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Pkce {
@@ -52,10 +52,6 @@ pub struct AuthorizationCode {
     pub code: String,
     pub pkce: Option<Pkce>,
 }
-
-#[derive(Debug, Error)]
-#[error("invalid state transition")]
-pub struct InvalidTransitionError;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Default)]
 #[serde(tag = "stage", rename_all = "lowercase")]
@@ -132,7 +128,7 @@ pub struct AuthorizationGrant {
     #[serde(flatten)]
     pub stage: AuthorizationGrantStage,
     pub code: Option<AuthorizationCode>,
-    pub client: Client,
+    pub client_id: Ulid,
     pub redirect_uri: Url,
     pub scope: oauth2_types::scope::Scope,
     pub state: Option<String>,

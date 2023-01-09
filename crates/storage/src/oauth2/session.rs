@@ -142,7 +142,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
             %user_session.id,
             user.id = %user_session.user.id,
             %grant.id,
-            client.id = %grant.client.id,
+            client.id = %grant.client_id,
             session.id,
             session.scope = %grant.scope,
         ),
@@ -172,7 +172,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
             "#,
             Uuid::from(id),
             Uuid::from(user_session.id),
-            Uuid::from(grant.client.id),
+            Uuid::from(grant.client_id),
             grant.scope.to_string(),
             created_at,
         )
@@ -183,7 +183,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
         Ok(Session {
             id,
             user_session_id: user_session.id,
-            client_id: grant.client.id,
+            client_id: grant.client_id,
             scope: grant.scope.clone(),
             finished_at: None,
         })
@@ -201,11 +201,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
         ),
         err,
     )]
-    async fn finish(
-        &mut self,
-        clock: &Clock,
-        mut session: Session,
-    ) -> Result<Session, Self::Error> {
+    async fn finish(&mut self, clock: &Clock, session: Session) -> Result<Session, Self::Error> {
         let finished_at = clock.now();
         let res = sqlx::query!(
             r#"
@@ -222,9 +218,9 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
 
         DatabaseError::ensure_affected_rows(&res, 1)?;
 
-        session.finished_at = Some(finished_at);
-
-        Ok(session)
+        session
+            .finish(finished_at)
+            .map_err(DatabaseError::to_invalid_operation)
     }
 
     #[tracing::instrument(

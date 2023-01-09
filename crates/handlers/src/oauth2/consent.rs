@@ -28,9 +28,13 @@ use mas_data_model::AuthorizationGrantStage;
 use mas_keystore::Encrypter;
 use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
-use mas_storage::oauth2::{
-    authorization_grant::{get_grant_by_id, give_consent_to_grant},
-    consent::insert_client_consent,
+use mas_storage::{
+    oauth2::{
+        authorization_grant::{get_grant_by_id, give_consent_to_grant},
+        consent::insert_client_consent,
+        OAuth2ClientRepository,
+    },
+    Repository,
 };
 use mas_templates::{ConsentContext, PolicyViolationContext, TemplateContext, Templates};
 use sqlx::PgPool;
@@ -55,6 +59,9 @@ pub enum RouteError {
 
     #[error("Policy violation")]
     PolicyViolation,
+
+    #[error("Failed to load client")]
+    NoSuchClient,
 }
 
 impl_from_error_for_route!(sqlx::Error);
@@ -160,6 +167,12 @@ pub(crate) async fn post(
         return Err(RouteError::PolicyViolation);
     }
 
+    let client = txn
+        .oauth2_client()
+        .lookup(grant.client_id)
+        .await?
+        .ok_or(RouteError::NoSuchClient)?;
+
     // Do not consent for the "urn:matrix:org.matrix.msc2967.client:device:*" scope
     let scope_without_device = grant
         .scope
@@ -172,7 +185,7 @@ pub(crate) async fn post(
         &mut rng,
         &clock,
         &session.user,
-        &grant.client,
+        &client,
         &scope_without_device,
     )
     .await?;

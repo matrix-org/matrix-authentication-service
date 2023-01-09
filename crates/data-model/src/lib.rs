@@ -23,11 +23,17 @@
     clippy::type_repetition_in_bounds
 )]
 
+use thiserror::Error;
+
 pub(crate) mod compat;
 pub(crate) mod oauth2;
 pub(crate) mod tokens;
 pub(crate) mod upstream_oauth2;
 pub(crate) mod users;
+
+#[derive(Debug, Error)]
+#[error("invalid state transition")]
+pub struct InvalidTransitionError;
 
 pub use self::{
     compat::{

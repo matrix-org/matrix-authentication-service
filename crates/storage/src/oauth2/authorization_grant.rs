@@ -26,8 +26,7 @@ use ulid::Ulid;
 use url::Url;
 use uuid::Uuid;
 
-use super::OAuth2ClientRepository;
-use crate::{Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt, Repository};
+use crate::{Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt};
 
 #[tracing::instrument(
     skip_all,
@@ -116,7 +115,7 @@ pub async fn new_authorization_grant(
         stage: AuthorizationGrantStage::Pending,
         code,
         redirect_uri,
-        client,
+        client_id: client.id,
         scope,
         state,
         nonce,
@@ -151,35 +150,27 @@ struct GrantLookup {
     oauth2_session_id: Option<Uuid>,
 }
 
-impl GrantLookup {
-    #[allow(clippy::too_many_lines)]
-    async fn into_authorization_grant(
-        self,
-        conn: &mut PgConnection,
-    ) -> Result<AuthorizationGrant, DatabaseError> {
-        let id = self.oauth2_authorization_grant_id.into();
-        let scope: Scope = self.oauth2_authorization_grant_scope.parse().map_err(|e| {
-            DatabaseInconsistencyError::on("oauth2_authorization_grants")
-                .column("scope")
-                .row(id)
-                .source(e)
-        })?;
+impl TryFrom<GrantLookup> for AuthorizationGrant {
+    type Error = DatabaseInconsistencyError;
 
-        let client = conn
-            .oauth2_client()
-            .lookup(self.oauth2_client_id.into())
-            .await?
-            .ok_or_else(|| {
+    #[allow(clippy::too_many_lines)]
+    fn try_from(value: GrantLookup) -> Result<Self, Self::Error> {
+        let id = value.oauth2_authorization_grant_id.into();
+        let scope: Scope = value
+            .oauth2_authorization_grant_scope
+            .parse()
+            .map_err(|e| {
                 DatabaseInconsistencyError::on("oauth2_authorization_grants")
-                    .column("client_id")
+                    .column("scope")
                     .row(id)
+                    .source(e)
             })?;
 
         let stage = match (
-            self.oauth2_authorization_grant_fulfilled_at,
-            self.oauth2_authorization_grant_exchanged_at,
-            self.oauth2_authorization_grant_cancelled_at,
-            self.oauth2_session_id,
+            value.oauth2_authorization_grant_fulfilled_at,
+            value.oauth2_authorization_grant_exchanged_at,
+            value.oauth2_authorization_grant_cancelled_at,
+            value.oauth2_session_id,
         ) {
             (None, None, None, None) => AuthorizationGrantStage::Pending,
             (Some(fulfilled_at), None, None, Some(session_id)) => {
@@ -202,15 +193,14 @@ impl GrantLookup {
                 return Err(
                     DatabaseInconsistencyError::on("oauth2_authorization_grants")
                         .column("stage")
-                        .row(id)
-                        .into(),
+                        .row(id),
                 );
             }
         };
 
         let pkce = match (
-            self.oauth2_authorization_grant_code_challenge,
-            self.oauth2_authorization_grant_code_challenge_method,
+            value.oauth2_authorization_grant_code_challenge,
+            value.oauth2_authorization_grant_code_challenge_method,
         ) {
             (Some(challenge), Some(challenge_method)) if challenge_method == "plain" => {
                 Some(Pkce {
@@ -227,15 +217,14 @@ impl GrantLookup {
                 return Err(
                     DatabaseInconsistencyError::on("oauth2_authorization_grants")
                         .column("code_challenge_method")
-                        .row(id)
-                        .into(),
+                        .row(id),
                 );
             }
         };
 
         let code: Option<AuthorizationCode> = match (
-            self.oauth2_authorization_grant_response_type_code,
-            self.oauth2_authorization_grant_code,
+            value.oauth2_authorization_grant_response_type_code,
+            value.oauth2_authorization_grant_code,
             pkce,
         ) {
             (false, None, None) => None,
@@ -244,13 +233,12 @@ impl GrantLookup {
                 return Err(
                     DatabaseInconsistencyError::on("oauth2_authorization_grants")
                         .column("authorization_code")
-                        .row(id)
-                        .into(),
+                        .row(id),
                 );
             }
         };
 
-        let redirect_uri = self
+        let redirect_uri = value
             .oauth2_authorization_grant_redirect_uri
             .parse()
             .map_err(|e| {
@@ -260,7 +248,7 @@ impl GrantLookup {
                     .source(e)
             })?;
 
-        let response_mode = self
+        let response_mode = value
             .oauth2_authorization_grant_response_mode
             .parse()
             .map_err(|e| {
@@ -270,7 +258,7 @@ impl GrantLookup {
                     .source(e)
             })?;
 
-        let max_age = self
+        let max_age = value
             .oauth2_authorization_grant_max_age
             .map(u32::try_from)
             .transpose()
@@ -292,17 +280,17 @@ impl GrantLookup {
         Ok(AuthorizationGrant {
             id,
             stage,
-            client,
+            client_id: value.oauth2_client_id.into(),
             code,
             scope,
-            state: self.oauth2_authorization_grant_state,
-            nonce: self.oauth2_authorization_grant_nonce,
+            state: value.oauth2_authorization_grant_state,
+            nonce: value.oauth2_authorization_grant_nonce,
             max_age,
             response_mode,
             redirect_uri,
-            created_at: self.oauth2_authorization_grant_created_at,
-            response_type_id_token: self.oauth2_authorization_grant_response_type_id_token,
-            requires_consent: self.oauth2_authorization_grant_requires_consent,
+            created_at: value.oauth2_authorization_grant_created_at,
+            response_type_id_token: value.oauth2_authorization_grant_response_type_id_token,
+            requires_consent: value.oauth2_authorization_grant_requires_consent,
         })
     }
 }
@@ -351,9 +339,7 @@ pub async fn get_grant_by_id(
 
     let Some(res) = res else { return Ok(None) };
 
-    let grant = res.into_authorization_grant(&mut *conn).await?;
-
-    Ok(Some(grant))
+    Ok(Some(res.try_into()?))
 }
 
 #[tracing::instrument(skip_all, err)]
@@ -396,16 +382,14 @@ pub async fn lookup_grant_by_code(
 
     let Some(res) = res else { return Ok(None) };
 
-    let grant = res.into_authorization_grant(&mut *conn).await?;
-
-    Ok(Some(grant))
+    Ok(Some(res.try_into()?))
 }
 
 #[tracing::instrument(
     skip_all,
     fields(
         %grant.id,
-        client.id = %grant.client.id,
+        client.id = %grant.client_id,
         %session.id,
         user_session.id = %session.user_session_id,
     ),
@@ -446,7 +430,7 @@ pub async fn fulfill_grant(
     skip_all,
     fields(
         %grant.id,
-        client.id = %grant.client.id,
+        client.id = %grant.client_id,
     ),
     err,
 )]
@@ -476,7 +460,7 @@ pub async fn give_consent_to_grant(
     skip_all,
     fields(
         %grant.id,
-        client.id = %grant.client.id,
+        client.id = %grant.client_id,
     ),
     err,
 )]

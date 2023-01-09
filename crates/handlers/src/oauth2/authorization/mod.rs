@@ -360,7 +360,10 @@ pub(crate) async fn get(
                         Err(GrantCompletionError::Internal(e)) => {
                             return Err(RouteError::Internal(e))
                         }
-                        Err(e @ GrantCompletionError::NotPending) => {
+                        Err(
+                            e @ (GrantCompletionError::NotPending
+                            | GrantCompletionError::NoSuchClient),
+                        ) => {
                             // This should never happen
                             return Err(RouteError::Internal(Box::new(e)));
                         }
@@ -390,7 +393,10 @@ pub(crate) async fn get(
                         Err(GrantCompletionError::Internal(e)) => {
                             return Err(RouteError::Internal(e))
                         }
-                        Err(e @ GrantCompletionError::NotPending) => {
+                        Err(
+                            e @ (GrantCompletionError::NotPending
+                            | GrantCompletionError::NoSuchClient),
+                        ) => {
                             // This should never happen
                             return Err(RouteError::Internal(Box::new(e)));
                         }

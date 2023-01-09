@@ -17,6 +17,8 @@ use oauth2_types::scope::Scope;
 use serde::Serialize;
 use ulid::Ulid;
 
+use crate::InvalidTransitionError;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Session {
     pub id: Ulid,
@@ -24,4 +26,15 @@ pub struct Session {
     pub client_id: Ulid,
     pub scope: Scope,
     pub finished_at: Option<DateTime<Utc>>,
+}
+
+impl Session {
+    pub fn finish(mut self, finished_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
+        if self.finished_at.is_some() {
+            return Err(InvalidTransitionError);
+        }
+
+        self.finished_at = Some(finished_at);
+        Ok(self)
+    }
 }
