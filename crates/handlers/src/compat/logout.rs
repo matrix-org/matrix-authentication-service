@@ -16,7 +16,10 @@ use axum::{extract::State, response::IntoResponse, Json, TypedHeader};
 use headers::{authorization::Bearer, Authorization};
 use hyper::StatusCode;
 use mas_data_model::TokenType;
-use mas_storage::{compat::compat_logout, Clock};
+use mas_storage::{
+    compat::{end_compat_session, find_compat_access_token, lookup_compat_session},
+    Clock,
+};
 use sqlx::PgPool;
 use thiserror::Error;
 
@@ -36,12 +39,10 @@ pub enum RouteError {
 
     #[error("Invalid access token")]
     InvalidAuthorization,
-
-    #[error("Logout failed")]
-    LogoutFailed,
 }
 
 impl_from_error_for_route!(sqlx::Error);
+impl_from_error_for_route!(mas_storage::DatabaseError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
@@ -56,7 +57,7 @@ impl IntoResponse for RouteError {
                 error: "Missing access token",
                 status: StatusCode::UNAUTHORIZED,
             },
-            Self::InvalidAuthorization | Self::LogoutFailed | Self::TokenFormat(_) => MatrixError {
+            Self::InvalidAuthorization | Self::TokenFormat(_) => MatrixError {
                 errcode: "M_UNKNOWN_TOKEN",
                 error: "Invalid access token",
                 status: StatusCode::UNAUTHORIZED,
@@ -71,7 +72,7 @@ pub(crate) async fn post(
     maybe_authorization: Option<TypedHeader<Authorization<Bearer>>>,
 ) -> Result<impl IntoResponse, RouteError> {
     let clock = Clock::default();
-    let mut conn = pool.acquire().await?;
+    let mut txn = pool.begin().await?;
 
     let TypedHeader(authorization) = maybe_authorization.ok_or(RouteError::MissingAuthorization)?;
 
@@ -82,9 +83,19 @@ pub(crate) async fn post(
         return Err(RouteError::InvalidAuthorization);
     }
 
-    if !compat_logout(&mut conn, &clock, token).await? {
-        return Err(RouteError::LogoutFailed);
-    }
+    let token = find_compat_access_token(&mut txn, token)
+        .await?
+        .filter(|t| t.is_valid(clock.now()))
+        .ok_or(RouteError::InvalidAuthorization)?;
+
+    let session = lookup_compat_session(&mut txn, token.session_id)
+        .await?
+        .filter(|s| s.is_valid())
+        .ok_or(RouteError::InvalidAuthorization)?;
+
+    end_compat_session(&mut txn, &clock, session).await?;
+
+    txn.commit().await?;
 
     Ok(Json(serde_json::json!({})))
 }

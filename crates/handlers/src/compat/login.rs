@@ -19,7 +19,7 @@ use mas_data_model::{CompatSession, CompatSsoLoginState, Device, TokenType, User
 use mas_storage::{
     compat::{
         add_compat_access_token, add_compat_refresh_token, get_compat_sso_login_by_token,
-        mark_compat_sso_login_as_exchanged, start_compat_session,
+        lookup_compat_session, mark_compat_sso_login_as_exchanged, start_compat_session,
     },
     user::{UserPasswordRepository, UserRepository},
     Clock, Repository,
@@ -137,6 +137,9 @@ pub enum RouteError {
     #[error("user not found")]
     UserNotFound,
 
+    #[error("session not found")]
+    SessionNotFound,
+
     #[error("user has no password")]
     NoPassword,
 
@@ -156,7 +159,7 @@ impl_from_error_for_route!(mas_storage::DatabaseError);
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         match self {
-            Self::Internal(_) => MatrixError {
+            Self::Internal(_) | Self::SessionNotFound => MatrixError {
                 errcode: "M_UNKNOWN",
                 error: "Internal server error",
                 status: StatusCode::INTERNAL_SERVER_ERROR,
@@ -268,7 +271,7 @@ async fn token_login(
         .ok_or(RouteError::InvalidLoginToken)?;
 
     let now = clock.now();
-    let user_id = match login.state {
+    let session_id = match login.state {
         CompatSsoLoginState::Pending => {
             tracing::error!(
                 compat_sso_login.id = %login.id,
@@ -277,21 +280,26 @@ async fn token_login(
             return Err(RouteError::InvalidLoginToken);
         }
         CompatSsoLoginState::Fulfilled {
-            fulfilled_at: fullfilled_at,
-            ref session,
+            fulfilled_at,
+            session_id,
             ..
         } => {
-            if now > fullfilled_at + Duration::seconds(30) {
+            if now > fulfilled_at + Duration::seconds(30) {
                 return Err(RouteError::LoginTookTooLong);
             }
 
-            session.user_id
+            session_id
         }
-        CompatSsoLoginState::Exchanged { exchanged_at, .. } => {
+        CompatSsoLoginState::Exchanged {
+            exchanged_at,
+            session_id,
+            ..
+        } => {
             if now > exchanged_at + Duration::seconds(30) {
                 // TODO: log that session out
                 tracing::error!(
                     compat_sso_login.id = %login.id,
+                    compat_session.id = %session_id,
                     "Login token exchanged a second time more than 30s after"
                 );
             }
@@ -300,18 +308,19 @@ async fn token_login(
         }
     };
 
+    let session = lookup_compat_session(&mut *txn, session_id)
+        .await?
+        .ok_or(RouteError::SessionNotFound)?;
+
     let user = txn
         .user()
-        .lookup(user_id)
+        .lookup(session.user_id)
         .await?
         .ok_or(RouteError::UserNotFound)?;
 
-    let login = mark_compat_sso_login_as_exchanged(&mut *txn, clock, login).await?;
+    mark_compat_sso_login_as_exchanged(&mut *txn, clock, login).await?;
 
-    match login.state {
-        CompatSsoLoginState::Exchanged { session, .. } => Ok((session, user)),
-        _ => unreachable!(),
-    }
+    Ok((session, user))
 }
 
 async fn user_password_login(

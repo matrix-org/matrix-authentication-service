@@ -22,7 +22,7 @@ use mas_data_model::{TokenFormatError, TokenType};
 use mas_iana::oauth::{OAuthClientAuthenticationMethod, OAuthTokenTypeHint};
 use mas_keystore::Encrypter;
 use mas_storage::{
-    compat::{lookup_active_compat_access_token, lookup_active_compat_refresh_token},
+    compat::{find_compat_access_token, find_compat_refresh_token, lookup_compat_session},
     oauth2::{
         access_token::lookup_active_access_token, refresh_token::lookup_active_refresh_token,
     },
@@ -194,6 +194,7 @@ pub(crate) async fn post(
                 jti: None,
             }
         }
+
         TokenType::RefreshToken => {
             let (token, session) = lookup_active_refresh_token(&mut conn, token)
                 .await?
@@ -221,9 +222,16 @@ pub(crate) async fn post(
                 jti: None,
             }
         }
+
         TokenType::CompatAccessToken => {
-            let (token, session) = lookup_active_compat_access_token(&mut conn, &clock, token)
+            let token = find_compat_access_token(&mut conn, token)
                 .await?
+                .filter(|t| t.is_valid(clock.now()))
+                .ok_or(RouteError::UnknownToken)?;
+
+            let session = lookup_compat_session(&mut conn, token.session_id)
+                .await?
+                .filter(|s| s.is_valid())
                 .ok_or(RouteError::UnknownToken)?;
 
             let user = conn
@@ -251,11 +259,17 @@ pub(crate) async fn post(
                 jti: None,
             }
         }
+
         TokenType::CompatRefreshToken => {
-            let (refresh_token, _access_token, session) =
-                lookup_active_compat_refresh_token(&mut conn, token)
-                    .await?
-                    .ok_or(RouteError::UnknownToken)?;
+            let refresh_token = find_compat_refresh_token(&mut conn, token)
+                .await?
+                .filter(|t| t.is_valid())
+                .ok_or(RouteError::UnknownToken)?;
+
+            let session = lookup_compat_session(&mut conn, refresh_token.session_id)
+                .await?
+                .filter(|s| s.is_valid())
+                .ok_or(RouteError::UnknownToken)?;
 
             let user = conn
                 .user()

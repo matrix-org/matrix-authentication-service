@@ -77,3 +77,10 @@ impl std::ops::Deref for CompatSession {
         &self.state
     }
 }
+
+impl CompatSession {
+    pub fn finish(mut self, finished_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
+        self.state = self.state.finish(finished_at)?;
+        Ok(self)
+    }
+}

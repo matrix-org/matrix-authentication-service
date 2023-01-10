@@ -15,7 +15,7 @@
 use anyhow::Context as _;
 use async_graphql::{Context, Description, Object, ID};
 use chrono::{DateTime, Utc};
-use mas_storage::{user::UserRepository, Repository};
+use mas_storage::{compat::lookup_compat_session, user::UserRepository, Repository};
 use sqlx::PgPool;
 use url::Url;
 
@@ -94,7 +94,17 @@ impl CompatSsoLogin {
     }
 
     /// The compat session which was started by this login.
-    async fn session(&self) -> Option<CompatSession> {
-        self.0.session().cloned().map(CompatSession)
+    async fn session(
+        &self,
+        ctx: &Context<'_>,
+    ) -> Result<Option<CompatSession>, async_graphql::Error> {
+        let Some(session_id) = self.0.session_id() else { return Ok(None) };
+
+        let mut conn = ctx.data::<PgPool>()?.acquire().await?;
+        let session = lookup_compat_session(&mut conn, session_id)
+            .await?
+            .context("Could not load compat session")?;
+
+        Ok(Some(CompatSession(session)))
     }
 }

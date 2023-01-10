@@ -37,8 +37,8 @@ pub struct InvalidTransitionError;
 
 pub use self::{
     compat::{
-        CompatAccessToken, CompatRefreshToken, CompatSession, CompatSessionState, CompatSsoLogin,
-        CompatSsoLoginState, Device,
+        CompatAccessToken, CompatRefreshToken, CompatRefreshTokenState, CompatSession,
+        CompatSessionState, CompatSsoLogin, CompatSsoLoginState, Device,
     },
     oauth2::{
         AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, Client,

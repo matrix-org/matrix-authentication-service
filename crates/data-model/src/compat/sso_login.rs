@@ -25,12 +25,12 @@ pub enum CompatSsoLoginState {
     Pending,
     Fulfilled {
         fulfilled_at: DateTime<Utc>,
-        session: CompatSession,
+        session_id: Ulid,
     },
     Exchanged {
         fulfilled_at: DateTime<Utc>,
         exchanged_at: DateTime<Utc>,
-        session: CompatSession,
+        session_id: Ulid,
     },
 }
 
@@ -78,22 +78,24 @@ impl CompatSsoLoginState {
     }
 
     #[must_use]
-    pub fn session(&self) -> Option<&CompatSession> {
+    pub fn session_id(&self) -> Option<Ulid> {
         match self {
             Self::Pending => None,
-            Self::Fulfilled { session, .. } | Self::Exchanged { session, .. } => Some(session),
+            Self::Fulfilled { session_id, .. } | Self::Exchanged { session_id, .. } => {
+                Some(*session_id)
+            }
         }
     }
 
     pub fn fulfill(
         self,
         fulfilled_at: DateTime<Utc>,
-        session: CompatSession,
+        session: &CompatSession,
     ) -> Result<Self, InvalidTransitionError> {
         match self {
             Self::Pending => Ok(Self::Fulfilled {
                 fulfilled_at,
-                session,
+                session_id: session.id,
             }),
             Self::Fulfilled { .. } | Self::Exchanged { .. } => Err(InvalidTransitionError),
         }
@@ -103,11 +105,11 @@ impl CompatSsoLoginState {
         match self {
             Self::Fulfilled {
                 fulfilled_at,
-                session,
+                session_id,
             } => Ok(Self::Exchanged {
                 fulfilled_at,
                 exchanged_at,
-                session,
+                session_id,
             }),
             Self::Pending { .. } | Self::Exchanged { .. } => Err(InvalidTransitionError),
         }
@@ -135,7 +137,7 @@ impl CompatSsoLogin {
     pub fn fulfill(
         mut self,
         fulfilled_at: DateTime<Utc>,
-        session: CompatSession,
+        session: &CompatSession,
     ) -> Result<Self, InvalidTransitionError> {
         self.state = self.state.fulfill(fulfilled_at, session)?;
         Ok(self)

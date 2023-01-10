@@ -18,7 +18,8 @@ use hyper::StatusCode;
 use mas_data_model::{TokenFormatError, TokenType};
 use mas_storage::compat::{
     add_compat_access_token, add_compat_refresh_token, consume_compat_refresh_token,
-    expire_compat_access_token, lookup_active_compat_refresh_token,
+    expire_compat_access_token, find_compat_refresh_token, lookup_compat_access_token,
+    lookup_compat_session,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DurationMilliSeconds};
@@ -40,17 +41,26 @@ pub enum RouteError {
 
     #[error("invalid token")]
     InvalidToken,
+
+    #[error("refresh token already consumed")]
+    RefreshTokenConsumed,
+
+    #[error("invalid session")]
+    InvalidSession,
+
+    #[error("unknown session")]
+    UnknownSession,
 }
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         match self {
-            Self::Internal(_) => MatrixError {
+            Self::Internal(_) | Self::UnknownSession => MatrixError {
                 errcode: "M_UNKNOWN",
                 error: "Internal error",
                 status: StatusCode::INTERNAL_SERVER_ERROR,
             },
-            Self::InvalidToken => MatrixError {
+            Self::InvalidToken | Self::InvalidSession | Self::RefreshTokenConsumed => MatrixError {
                 errcode: "M_UNKNOWN_TOKEN",
                 error: "Invalid refresh token",
                 status: StatusCode::UNAUTHORIZED,
@@ -91,10 +101,25 @@ pub(crate) async fn post(
         return Err(RouteError::InvalidToken);
     }
 
-    let (refresh_token, access_token, session) =
-        lookup_active_compat_refresh_token(&mut txn, &input.refresh_token)
-            .await?
-            .ok_or(RouteError::InvalidToken)?;
+    let refresh_token = find_compat_refresh_token(&mut txn, &input.refresh_token)
+        .await?
+        .ok_or(RouteError::InvalidToken)?;
+
+    if !refresh_token.is_valid() {
+        return Err(RouteError::RefreshTokenConsumed);
+    }
+
+    let session = lookup_compat_session(&mut txn, refresh_token.session_id)
+        .await?
+        .ok_or(RouteError::UnknownSession)?;
+
+    if !session.is_valid() {
+        return Err(RouteError::InvalidSession);
+    }
+
+    let access_token = lookup_compat_access_token(&mut txn, refresh_token.access_token_id)
+        .await?
+        .filter(|t| t.is_valid(clock.now()));
 
     let new_refresh_token_str = TokenType::CompatRefreshToken.generate(&mut rng);
     let new_access_token_str = TokenType::CompatAccessToken.generate(&mut rng);
@@ -120,7 +145,10 @@ pub(crate) async fn post(
     .await?;
 
     consume_compat_refresh_token(&mut txn, &clock, refresh_token).await?;
-    expire_compat_access_token(&mut txn, &clock, access_token).await?;
+
+    if let Some(access_token) = access_token {
+        expire_compat_access_token(&mut txn, &clock, access_token).await?;
+    }
 
     txn.commit().await?;
 
