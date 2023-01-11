@@ -24,7 +24,8 @@ use mas_keystore::Encrypter;
 use mas_storage::{
     compat::{find_compat_access_token, find_compat_refresh_token, lookup_compat_session},
     oauth2::{
-        access_token::lookup_active_access_token, refresh_token::lookup_active_refresh_token,
+        access_token::find_access_token, refresh_token::lookup_refresh_token,
+        OAuth2SessionRepository,
     },
     user::{BrowserSessionRepository, UserRepository},
     Clock, Repository,
@@ -168,8 +169,17 @@ pub(crate) async fn post(
 
     let reply = match token_type {
         TokenType::AccessToken => {
-            let (token, session) = lookup_active_access_token(&mut conn, token)
+            let token = find_access_token(&mut conn, token)
                 .await?
+                .filter(|t| t.is_valid(clock.now()))
+                .ok_or(RouteError::UnknownToken)?;
+
+            let session = conn
+                .oauth2_session()
+                .lookup(token.session_id)
+                .await?
+                .filter(|s| s.is_valid())
+                // XXX: is that the right error to bubble up?
                 .ok_or(RouteError::UnknownToken)?;
 
             let browser_session = conn
@@ -191,13 +201,22 @@ pub(crate) async fn post(
                 sub: Some(browser_session.user.sub),
                 aud: None,
                 iss: None,
-                jti: None,
+                jti: Some(token.jti()),
             }
         }
 
         TokenType::RefreshToken => {
-            let (token, session) = lookup_active_refresh_token(&mut conn, token)
+            let token = lookup_refresh_token(&mut conn, token)
                 .await?
+                .filter(|t| t.is_valid())
+                .ok_or(RouteError::UnknownToken)?;
+
+            let session = conn
+                .oauth2_session()
+                .lookup(token.session_id)
+                .await?
+                .filter(|s| s.is_valid())
+                // XXX: is that the right error to bubble up?
                 .ok_or(RouteError::UnknownToken)?;
 
             let browser_session = conn
@@ -219,7 +238,7 @@ pub(crate) async fn post(
                 sub: Some(browser_session.user.sub),
                 aud: None,
                 iss: None,
-                jti: None,
+                jti: Some(token.jti()),
             }
         }
 

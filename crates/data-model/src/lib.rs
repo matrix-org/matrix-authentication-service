@@ -44,7 +44,9 @@ pub use self::{
         AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, Client,
         InvalidRedirectUriError, JwksOrJwksUri, Pkce, Session, SessionState,
     },
-    tokens::{AccessToken, RefreshToken, TokenFormatError, TokenType},
+    tokens::{
+        AccessToken, AccessTokenState, RefreshToken, RefreshTokenState, TokenFormatError, TokenType,
+    },
     upstream_oauth2::{
         UpstreamOAuthAuthorizationSession, UpstreamOAuthAuthorizationSessionState,
         UpstreamOAuthLink, UpstreamOAuthProvider,

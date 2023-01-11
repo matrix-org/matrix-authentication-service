@@ -101,10 +101,10 @@ pub async fn get(
     State(key_store): State<Keystore>,
     user_authorization: UserAuthorization,
 ) -> Result<Response, RouteError> {
-    let (_clock, mut rng) = crate::clock_and_rng();
+    let (clock, mut rng) = crate::clock_and_rng();
     let mut conn = pool.acquire().await?;
 
-    let session = user_authorization.protected(&mut conn).await?;
+    let session = user_authorization.protected(&mut conn, clock.now()).await?;
 
     let browser_session = conn
         .browser_session()

@@ -583,74 +583,6 @@
     },
     "query": "\n            DELETE FROM oauth2_access_tokens\n            WHERE expires_at < $1\n        "
   },
-  "5f0e2aec0d7766d3674af3e68417921fec7068e83845e218a4a00d86487557f9": {
-    "describe": {
-      "columns": [
-        {
-          "name": "oauth2_access_token_id",
-          "ordinal": 0,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "oauth2_access_token",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "oauth2_access_token_created_at",
-          "ordinal": 2,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "oauth2_access_token_expires_at",
-          "ordinal": 3,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "oauth2_session_created_at",
-          "ordinal": 4,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "oauth2_session_id!",
-          "ordinal": 5,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "oauth2_client_id!",
-          "ordinal": 6,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "scope!",
-          "ordinal": 7,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_session_id!",
-          "ordinal": 8,
-          "type_info": "Uuid"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Text"
-        ]
-      }
-    },
-    "query": "\n            SELECT at.oauth2_access_token_id\n                 , at.access_token      AS \"oauth2_access_token\"\n                 , at.created_at        AS \"oauth2_access_token_created_at\"\n                 , at.expires_at        AS \"oauth2_access_token_expires_at\"\n                 , os.created_at        AS \"oauth2_session_created_at\"\n                 , os.oauth2_session_id AS \"oauth2_session_id!\"\n                 , os.oauth2_client_id  AS \"oauth2_client_id!\"\n                 , os.scope             AS \"scope!\"\n                 , os.user_session_id   AS \"user_session_id!\"\n\n            FROM oauth2_access_tokens at\n            INNER JOIN oauth2_sessions os\n              USING (oauth2_session_id)\n\n            WHERE at.access_token = $1\n              AND at.revoked_at IS NULL\n              AND os.finished_at IS NULL\n        "
-  },
   "5f6b7e38ef9bc3b39deabba277d0255fb8cfb2adaa65f47b78a8fac11d8c91c3": {
     "describe": {
       "columns": [],
@@ -1612,6 +1544,56 @@
     },
     "query": "\n            SELECT oauth2_authorization_grant_id\n                 , created_at              AS oauth2_authorization_grant_created_at\n                 , cancelled_at            AS oauth2_authorization_grant_cancelled_at\n                 , fulfilled_at            AS oauth2_authorization_grant_fulfilled_at\n                 , exchanged_at            AS oauth2_authorization_grant_exchanged_at\n                 , scope                   AS oauth2_authorization_grant_scope\n                 , state                   AS oauth2_authorization_grant_state\n                 , redirect_uri            AS oauth2_authorization_grant_redirect_uri\n                 , response_mode           AS oauth2_authorization_grant_response_mode\n                 , nonce                   AS oauth2_authorization_grant_nonce\n                 , max_age                 AS oauth2_authorization_grant_max_age\n                 , oauth2_client_id        AS oauth2_client_id\n                 , authorization_code      AS oauth2_authorization_grant_code\n                 , response_type_code      AS oauth2_authorization_grant_response_type_code\n                 , response_type_id_token  AS oauth2_authorization_grant_response_type_id_token\n                 , code_challenge          AS oauth2_authorization_grant_code_challenge\n                 , code_challenge_method   AS oauth2_authorization_grant_code_challenge_method\n                 , requires_consent        AS oauth2_authorization_grant_requires_consent\n                 , oauth2_session_id       AS \"oauth2_session_id?\"\n            FROM\n                oauth2_authorization_grants\n\n            WHERE oauth2_authorization_grant_id = $1\n        "
   },
+  "b20e846843cf88810fbc0f4b0fa3159117f035841758d682d90c614c374f6059": {
+    "describe": {
+      "columns": [
+        {
+          "name": "oauth2_access_token_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "access_token",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 2,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "expires_at",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "revoked_at",
+          "ordinal": 4,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "oauth2_session_id",
+          "ordinal": 5,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n            SELECT oauth2_access_token_id\n                 , access_token\n                 , created_at\n                 , expires_at\n                 , revoked_at\n                 , oauth2_session_id\n\n            FROM oauth2_access_tokens\n\n            WHERE oauth2_access_token_id = $1\n        "
+  },
   "b26ae7dd28f8a756b55a76e80cdedd7be9ba26435ea4a914421483f8ed832537": {
     "describe": {
       "columns": [],
@@ -1984,6 +1966,106 @@
     },
     "query": "\n            INSERT INTO compat_sso_logins\n                (compat_sso_login_id, login_token, redirect_uri, created_at)\n            VALUES ($1, $2, $3, $4)\n        "
   },
+  "d1f1aac41bb2f0d194f9b3d846663c267865d0d22dd5fa8a668daf29dca88d36": {
+    "describe": {
+      "columns": [
+        {
+          "name": "oauth2_refresh_token_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "refresh_token",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 2,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "consumed_at",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "oauth2_access_token_id",
+          "ordinal": 4,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "oauth2_session_id",
+          "ordinal": 5,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true,
+        true,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "\n            SELECT oauth2_refresh_token_id\n                 , refresh_token\n                 , created_at\n                 , consumed_at\n                 , oauth2_access_token_id\n                 , oauth2_session_id\n            FROM oauth2_refresh_tokens\n\n            WHERE refresh_token = $1\n        "
+  },
+  "d2b1af24f88b2f05eb219f7cbdcfa9680bafe9f77fa1772097875b3718bd1aff": {
+    "describe": {
+      "columns": [
+        {
+          "name": "oauth2_access_token_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "access_token",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 2,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "expires_at",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "revoked_at",
+          "ordinal": 4,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "oauth2_session_id",
+          "ordinal": 5,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "\n            SELECT oauth2_access_token_id\n                 , access_token\n                 , created_at\n                 , expires_at\n                 , revoked_at\n                 , oauth2_session_id\n\n            FROM oauth2_access_tokens\n\n            WHERE access_token = $1\n        "
+  },
   "d8677b3b6ee594c230fad98c1aa1c6e3d983375bf5b701c7b52468e7f906abf9": {
     "describe": {
       "columns": [],
@@ -2128,74 +2210,6 @@
       }
     },
     "query": "\n                UPDATE user_sessions\n                SET finished_at = $1\n                WHERE user_session_id = $2\n            "
-  },
-  "e25b8071b59075c4be9fac283410ec4acf771fdf06076ef7bbb11bf086c4bc03": {
-    "describe": {
-      "columns": [
-        {
-          "name": "oauth2_refresh_token_id",
-          "ordinal": 0,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "oauth2_refresh_token",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "oauth2_refresh_token_created_at",
-          "ordinal": 2,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "oauth2_access_token_id?",
-          "ordinal": 3,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "oauth2_session_created_at",
-          "ordinal": 4,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "oauth2_session_id!",
-          "ordinal": 5,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "oauth2_client_id!",
-          "ordinal": 6,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "oauth2_session_scope!",
-          "ordinal": 7,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_session_id!",
-          "ordinal": 8,
-          "type_info": "Uuid"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        true,
-        false,
-        false,
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Text"
-        ]
-      }
-    },
-    "query": "\n            SELECT rt.oauth2_refresh_token_id\n                 , rt.refresh_token     AS oauth2_refresh_token\n                 , rt.created_at        AS oauth2_refresh_token_created_at\n                 , rt.oauth2_access_token_id AS \"oauth2_access_token_id?\"\n                 , os.created_at        AS \"oauth2_session_created_at\"\n                 , os.oauth2_session_id AS \"oauth2_session_id!\"\n                 , os.oauth2_client_id  AS \"oauth2_client_id!\"\n                 , os.scope             AS \"oauth2_session_scope!\"\n                 , os.user_session_id   AS \"user_session_id!\"\n            FROM oauth2_refresh_tokens rt\n            INNER JOIN oauth2_sessions os\n              USING (oauth2_session_id)\n\n            WHERE rt.refresh_token = $1\n              AND rt.consumed_at IS NULL\n              AND rt.revoked_at  IS NULL\n              AND os.finished_at IS NULL\n        "
   },
   "e6dc63984aced9e19c20e90e9cd75d6f6d7ade64f782697715ac4da077b2e1fc": {
     "describe": {

@@ -24,10 +24,14 @@ use axum::{
     response::{IntoResponse, Response},
     BoxError,
 };
+use chrono::{DateTime, Utc};
 use headers::{authorization::Bearer, Authorization, Header, HeaderMapExt, HeaderName};
 use http::{header::WWW_AUTHENTICATE, HeaderMap, HeaderValue, Request, StatusCode};
 use mas_data_model::Session;
-use mas_storage::{oauth2::access_token::lookup_active_access_token, DatabaseError};
+use mas_storage::{
+    oauth2::{access_token::find_access_token, OAuth2SessionRepository},
+    DatabaseError, Repository,
+};
 use serde::{de::DeserializeOwned, Deserialize};
 use sqlx::PgConnection;
 use thiserror::Error;
@@ -49,7 +53,7 @@ enum AccessToken {
 }
 
 impl AccessToken {
-    pub async fn fetch(
+    async fn fetch(
         &self,
         conn: &mut PgConnection,
     ) -> Result<(mas_data_model::AccessToken, Session), AuthorizationVerificationError> {
@@ -58,7 +62,13 @@ impl AccessToken {
             AccessToken::None => return Err(AuthorizationVerificationError::MissingToken),
         };
 
-        let (token, session) = lookup_active_access_token(conn, token.as_str())
+        let token = find_access_token(conn, token.as_str())
+            .await?
+            .ok_or(AuthorizationVerificationError::InvalidToken)?;
+
+        let session = conn
+            .oauth2_session()
+            .lookup(token.session_id)
             .await?
             .ok_or(AuthorizationVerificationError::InvalidToken)?;
 
@@ -77,13 +87,18 @@ impl<F: Send> UserAuthorization<F> {
     pub async fn protected_form(
         self,
         conn: &mut PgConnection,
+        now: DateTime<Utc>,
     ) -> Result<(Session, F), AuthorizationVerificationError> {
         let form = match self.form {
             Some(f) => f,
             None => return Err(AuthorizationVerificationError::MissingForm),
         };
 
-        let (_token, session) = self.access_token.fetch(conn).await?;
+        let (token, session) = self.access_token.fetch(conn).await?;
+
+        if !token.is_valid(now) || !session.is_valid() {
+            return Err(AuthorizationVerificationError::InvalidToken);
+        }
 
         Ok((session, form))
     }
@@ -92,8 +107,13 @@ impl<F: Send> UserAuthorization<F> {
     pub async fn protected(
         self,
         conn: &mut PgConnection,
+        now: DateTime<Utc>,
     ) -> Result<Session, AuthorizationVerificationError> {
-        let (_token, session) = self.access_token.fetch(conn).await?;
+        let (token, session) = self.access_token.fetch(conn).await?;
+
+        if !token.is_valid(now) || !session.is_valid() {
+            return Err(AuthorizationVerificationError::InvalidToken);
+        }
 
         Ok(session)
     }

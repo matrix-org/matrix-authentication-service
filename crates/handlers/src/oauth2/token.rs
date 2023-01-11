@@ -33,9 +33,9 @@ use mas_keystore::{Encrypter, Keystore};
 use mas_router::UrlBuilder;
 use mas_storage::{
     oauth2::{
-        access_token::{add_access_token, revoke_access_token},
+        access_token::{add_access_token, lookup_access_token, revoke_access_token},
         authorization_grant::{exchange_grant, lookup_grant_by_code},
-        refresh_token::{add_refresh_token, consume_refresh_token, lookup_active_refresh_token},
+        refresh_token::{add_refresh_token, consume_refresh_token, lookup_refresh_token},
         OAuth2SessionRepository,
     },
     user::BrowserSessionRepository,
@@ -374,9 +374,19 @@ async fn refresh_token_grant(
 ) -> Result<AccessTokenResponse, RouteError> {
     let (clock, mut rng) = crate::clock_and_rng();
 
-    let (refresh_token, session) = lookup_active_refresh_token(&mut txn, &grant.refresh_token)
+    let refresh_token = lookup_refresh_token(&mut txn, &grant.refresh_token)
         .await?
         .ok_or(RouteError::InvalidGrant)?;
+
+    let session = txn
+        .oauth2_session()
+        .lookup(refresh_token.session_id)
+        .await?
+        .ok_or(RouteError::NoSuchOAuthSession)?;
+
+    if !refresh_token.is_valid() || !session.is_valid() {
+        return Err(RouteError::InvalidGrant);
+    }
 
     if client.id != session.client_id {
         // As per https://datatracker.ietf.org/doc/html/rfc6749#section-5.2
@@ -407,10 +417,12 @@ async fn refresh_token_grant(
     )
     .await?;
 
-    consume_refresh_token(&mut txn, &clock, &refresh_token).await?;
+    let refresh_token = consume_refresh_token(&mut txn, &clock, refresh_token).await?;
 
     if let Some(access_token_id) = refresh_token.access_token_id {
-        revoke_access_token(&mut txn, &clock, access_token_id).await?;
+        if let Some(access_token) = lookup_access_token(&mut txn, access_token_id).await? {
+            revoke_access_token(&mut txn, &clock, access_token).await?;
+        }
     }
 
     let params = AccessTokenResponse::new(access_token_str)
