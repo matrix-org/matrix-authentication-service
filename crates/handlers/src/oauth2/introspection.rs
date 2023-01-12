@@ -22,7 +22,7 @@ use mas_data_model::{TokenFormatError, TokenType};
 use mas_iana::oauth::{OAuthClientAuthenticationMethod, OAuthTokenTypeHint};
 use mas_keystore::Encrypter;
 use mas_storage::{
-    compat::{find_compat_access_token, find_compat_refresh_token, lookup_compat_session},
+    compat::{CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository},
     oauth2::{
         access_token::find_access_token, refresh_token::lookup_refresh_token,
         OAuth2SessionRepository,
@@ -243,12 +243,16 @@ pub(crate) async fn post(
         }
 
         TokenType::CompatAccessToken => {
-            let token = find_compat_access_token(&mut conn, token)
+            let access_token = conn
+                .compat_access_token()
+                .find_by_token(token)
                 .await?
                 .filter(|t| t.is_valid(clock.now()))
                 .ok_or(RouteError::UnknownToken)?;
 
-            let session = lookup_compat_session(&mut conn, token.session_id)
+            let session = conn
+                .compat_session()
+                .lookup(access_token.session_id)
                 .await?
                 .filter(|s| s.is_valid())
                 .ok_or(RouteError::UnknownToken)?;
@@ -269,9 +273,9 @@ pub(crate) async fn post(
                 client_id: Some("legacy".into()),
                 username: Some(user.username),
                 token_type: Some(OAuthTokenTypeHint::AccessToken),
-                exp: token.expires_at,
-                iat: Some(token.created_at),
-                nbf: Some(token.created_at),
+                exp: access_token.expires_at,
+                iat: Some(access_token.created_at),
+                nbf: Some(access_token.created_at),
                 sub: Some(user.sub),
                 aud: None,
                 iss: None,
@@ -280,12 +284,16 @@ pub(crate) async fn post(
         }
 
         TokenType::CompatRefreshToken => {
-            let refresh_token = find_compat_refresh_token(&mut conn, token)
+            let refresh_token = conn
+                .compat_refresh_token()
+                .find_by_token(token)
                 .await?
                 .filter(|t| t.is_valid())
                 .ok_or(RouteError::UnknownToken)?;
 
-            let session = lookup_compat_session(&mut conn, refresh_token.session_id)
+            let session = conn
+                .compat_session()
+                .lookup(refresh_token.session_id)
                 .await?
                 .filter(|s| s.is_valid())
                 .ok_or(RouteError::UnknownToken)?;

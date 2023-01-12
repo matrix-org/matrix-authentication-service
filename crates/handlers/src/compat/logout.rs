@@ -17,8 +17,8 @@ use headers::{authorization::Bearer, Authorization};
 use hyper::StatusCode;
 use mas_data_model::TokenType;
 use mas_storage::{
-    compat::{end_compat_session, find_compat_access_token, lookup_compat_session},
-    Clock,
+    compat::{CompatAccessTokenRepository, CompatSessionRepository},
+    Clock, Repository,
 };
 use sqlx::PgPool;
 use thiserror::Error;
@@ -83,17 +83,21 @@ pub(crate) async fn post(
         return Err(RouteError::InvalidAuthorization);
     }
 
-    let token = find_compat_access_token(&mut txn, token)
+    let token = txn
+        .compat_access_token()
+        .find_by_token(token)
         .await?
         .filter(|t| t.is_valid(clock.now()))
         .ok_or(RouteError::InvalidAuthorization)?;
 
-    let session = lookup_compat_session(&mut txn, token.session_id)
+    let session = txn
+        .compat_session()
+        .lookup(token.session_id)
         .await?
         .filter(|s| s.is_valid())
         .ok_or(RouteError::InvalidAuthorization)?;
 
-    end_compat_session(&mut txn, &clock, session).await?;
+    txn.compat_session().finish(&clock, session).await?;
 
     txn.commit().await?;
 

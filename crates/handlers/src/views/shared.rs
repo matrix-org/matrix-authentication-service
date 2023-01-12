@@ -15,7 +15,7 @@
 use anyhow::Context;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{
-    compat::get_compat_sso_login_by_id, oauth2::authorization_grant::get_grant_by_id,
+    compat::CompatSsoLoginRepository, oauth2::authorization_grant::get_grant_by_id,
     upstream_oauth2::UpstreamOAuthProviderRepository, Repository, UpstreamOAuthLinkRepository,
 };
 use mas_templates::{PostAuthContext, PostAuthContextInner};
@@ -54,7 +54,9 @@ impl OptionalPostAuthAction {
             }
 
             PostAuthAction::ContinueCompatSsoLogin { id } => {
-                let login = get_compat_sso_login_by_id(conn, id)
+                let login = conn
+                    .compat_sso_login()
+                    .lookup(id)
                     .await?
                     .context("Failed to load compat SSO login")?;
                 let login = Box::new(login);

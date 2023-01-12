@@ -18,8 +18,8 @@ use hyper::StatusCode;
 use mas_data_model::{CompatSession, CompatSsoLoginState, Device, TokenType, User};
 use mas_storage::{
     compat::{
-        add_compat_access_token, add_compat_refresh_token, get_compat_sso_login_by_token,
-        lookup_compat_session, mark_compat_sso_login_as_exchanged, start_compat_session,
+        CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository,
+        CompatSsoLoginRepository,
     },
     user::{UserPasswordRepository, UserRepository},
     Clock, Repository,
@@ -224,27 +224,17 @@ pub(crate) async fn post(
     };
 
     let access_token = TokenType::CompatAccessToken.generate(&mut rng);
-    let access_token = add_compat_access_token(
-        &mut txn,
-        &mut rng,
-        &clock,
-        &session,
-        access_token,
-        expires_in,
-    )
-    .await?;
+    let access_token = txn
+        .compat_access_token()
+        .add(&mut rng, &clock, &session, access_token, expires_in)
+        .await?;
 
     let refresh_token = if input.refresh_token {
         let refresh_token = TokenType::CompatRefreshToken.generate(&mut rng);
-        let refresh_token = add_compat_refresh_token(
-            &mut txn,
-            &mut rng,
-            &clock,
-            &session,
-            &access_token,
-            refresh_token,
-        )
-        .await?;
+        let refresh_token = txn
+            .compat_refresh_token()
+            .add(&mut rng, &clock, &session, &access_token, refresh_token)
+            .await?;
         Some(refresh_token.token)
     } else {
         None
@@ -266,7 +256,9 @@ async fn token_login(
     clock: &Clock,
     token: &str,
 ) -> Result<(CompatSession, User), RouteError> {
-    let login = get_compat_sso_login_by_token(&mut *txn, token)
+    let login = txn
+        .compat_sso_login()
+        .find_by_token(token)
         .await?
         .ok_or(RouteError::InvalidLoginToken)?;
 
@@ -308,7 +300,9 @@ async fn token_login(
         }
     };
 
-    let session = lookup_compat_session(&mut *txn, session_id)
+    let session = txn
+        .compat_session()
+        .lookup(session_id)
         .await?
         .ok_or(RouteError::SessionNotFound)?;
 
@@ -318,7 +312,7 @@ async fn token_login(
         .await?
         .ok_or(RouteError::UserNotFound)?;
 
-    mark_compat_sso_login_as_exchanged(&mut *txn, clock, login).await?;
+    txn.compat_sso_login().exchange(clock, login).await?;
 
     Ok((session, user))
 }
@@ -374,7 +368,10 @@ async fn user_password_login(
 
     // Now that the user credentials have been verified, start a new compat session
     let device = Device::generate(&mut rng);
-    let session = start_compat_session(&mut *txn, &mut rng, &clock, &user, device).await?;
+    let session = txn
+        .compat_session()
+        .add(&mut rng, &clock, &user, device)
+        .await?;
 
     Ok((session, user))
 }

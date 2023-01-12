@@ -20,8 +20,9 @@ use url::Url;
 use super::CompatSession;
 use crate::InvalidTransitionError;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 pub enum CompatSsoLoginState {
+    #[default]
     Pending,
     Fulfilled {
         fulfilled_at: DateTime<Utc>,

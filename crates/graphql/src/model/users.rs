@@ -18,6 +18,7 @@ use async_graphql::{
 };
 use chrono::{DateTime, Utc};
 use mas_storage::{
+    compat::CompatSsoLoginRepository,
     oauth2::OAuth2SessionRepository,
     user::{BrowserSessionRepository, UserEmailRepository},
     Repository, UpstreamOAuthLinkRepository,
@@ -96,14 +97,13 @@ impl User {
                     .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::CompatSsoLogin))
                     .transpose()?;
 
-                let (has_previous_page, has_next_page, edges) =
-                    mas_storage::compat::get_paginated_user_compat_sso_logins(
-                        &mut conn, &self.0, before_id, after_id, first, last,
-                    )
+                let page = conn
+                    .compat_sso_login()
+                    .list_paginated(&self.0, before_id, after_id, first, last)
                     .await?;
 
-                let mut connection = Connection::new(has_previous_page, has_next_page);
-                connection.edges.extend(edges.into_iter().map(|u| {
+                let mut connection = Connection::new(page.has_previous_page, page.has_next_page);
+                connection.edges.extend(page.edges.into_iter().map(|u| {
                     Edge::new(
                         OpaqueCursor(NodeCursor(NodeType::CompatSsoLogin, u.id)),
                         CompatSsoLogin(u),

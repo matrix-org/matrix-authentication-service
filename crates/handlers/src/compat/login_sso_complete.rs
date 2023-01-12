@@ -29,7 +29,10 @@ use mas_axum_utils::{
 use mas_data_model::Device;
 use mas_keystore::Encrypter;
 use mas_router::{CompatLoginSsoAction, PostAuthAction, Route};
-use mas_storage::compat::{fullfill_compat_sso_login, get_compat_sso_login_by_id};
+use mas_storage::{
+    compat::{CompatSessionRepository, CompatSsoLoginRepository},
+    Repository,
+};
 use mas_templates::{CompatSsoContext, ErrorContext, TemplateContext, Templates};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -87,7 +90,9 @@ pub async fn get(
         return Ok((cookie_jar, destination.go()).into_response());
     }
 
-    let login = get_compat_sso_login_by_id(&mut conn, id)
+    let login = conn
+        .compat_sso_login()
+        .lookup(id)
         .await?
         .context("Could not find compat SSO login")?;
 
@@ -149,7 +154,9 @@ pub async fn post(
         return Ok((cookie_jar, destination.go()).into_response());
     }
 
-    let login = get_compat_sso_login_by_id(&mut txn, id)
+    let login = txn
+        .compat_sso_login()
+        .lookup(id)
         .await?
         .context("Could not find compat SSO login")?;
 
@@ -181,8 +188,14 @@ pub async fn post(
     };
 
     let device = Device::generate(&mut rng);
-    let _login =
-        fullfill_compat_sso_login(&mut txn, &mut rng, &clock, &session.user, login, device).await?;
+    let compat_session = txn
+        .compat_session()
+        .add(&mut rng, &clock, &session.user, device)
+        .await?;
+
+    txn.compat_sso_login()
+        .fulfill(&clock, login, &compat_session)
+        .await?;
 
     txn.commit().await?;
 

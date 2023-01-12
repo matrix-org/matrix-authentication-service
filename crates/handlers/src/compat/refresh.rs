@@ -16,10 +16,9 @@ use axum::{extract::State, response::IntoResponse, Json};
 use chrono::Duration;
 use hyper::StatusCode;
 use mas_data_model::{TokenFormatError, TokenType};
-use mas_storage::compat::{
-    add_compat_access_token, add_compat_refresh_token, consume_compat_refresh_token,
-    expire_compat_access_token, find_compat_refresh_token, lookup_compat_access_token,
-    lookup_compat_session,
+use mas_storage::{
+    compat::{CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository},
+    Repository,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DurationMilliSeconds};
@@ -101,7 +100,9 @@ pub(crate) async fn post(
         return Err(RouteError::InvalidToken);
     }
 
-    let refresh_token = find_compat_refresh_token(&mut txn, &input.refresh_token)
+    let refresh_token = txn
+        .compat_refresh_token()
+        .find_by_token(&input.refresh_token)
         .await?
         .ok_or(RouteError::InvalidToken)?;
 
@@ -109,7 +110,9 @@ pub(crate) async fn post(
         return Err(RouteError::RefreshTokenConsumed);
     }
 
-    let session = lookup_compat_session(&mut txn, refresh_token.session_id)
+    let session = txn
+        .compat_session()
+        .lookup(refresh_token.session_id)
         .await?
         .ok_or(RouteError::UnknownSession)?;
 
@@ -117,7 +120,9 @@ pub(crate) async fn post(
         return Err(RouteError::InvalidSession);
     }
 
-    let access_token = lookup_compat_access_token(&mut txn, refresh_token.access_token_id)
+    let access_token = txn
+        .compat_access_token()
+        .lookup(refresh_token.access_token_id)
         .await?
         .filter(|t| t.is_valid(clock.now()));
 
@@ -125,29 +130,35 @@ pub(crate) async fn post(
     let new_access_token_str = TokenType::CompatAccessToken.generate(&mut rng);
 
     let expires_in = Duration::minutes(5);
-    let new_access_token = add_compat_access_token(
-        &mut txn,
-        &mut rng,
-        &clock,
-        &session,
-        new_access_token_str,
-        Some(expires_in),
-    )
-    .await?;
-    let new_refresh_token = add_compat_refresh_token(
-        &mut txn,
-        &mut rng,
-        &clock,
-        &session,
-        &new_access_token,
-        new_refresh_token_str,
-    )
-    .await?;
+    let new_access_token = txn
+        .compat_access_token()
+        .add(
+            &mut rng,
+            &clock,
+            &session,
+            new_access_token_str,
+            Some(expires_in),
+        )
+        .await?;
+    let new_refresh_token = txn
+        .compat_refresh_token()
+        .add(
+            &mut rng,
+            &clock,
+            &session,
+            &new_access_token,
+            new_refresh_token_str,
+        )
+        .await?;
 
-    consume_compat_refresh_token(&mut txn, &clock, refresh_token).await?;
+    txn.compat_refresh_token()
+        .consume(&clock, refresh_token)
+        .await?;
 
     if let Some(access_token) = access_token {
-        expire_compat_access_token(&mut txn, &clock, access_token).await?;
+        txn.compat_access_token()
+            .expire(&clock, access_token)
+            .await?;
     }
 
     txn.commit().await?;

@@ -19,7 +19,7 @@ use axum::{
 };
 use hyper::StatusCode;
 use mas_router::{CompatLoginSsoAction, CompatLoginSsoComplete, UrlBuilder};
-use mas_storage::compat::insert_compat_sso_login;
+use mas_storage::{compat::CompatSsoLoginRepository, Repository};
 use rand::distributions::{Alphanumeric, DistString};
 use serde::Deserialize;
 use serde_with::serde;
@@ -49,6 +49,7 @@ pub enum RouteError {
 }
 
 impl_from_error_for_route!(sqlx::Error);
+impl_from_error_for_route!(mas_storage::DatabaseError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
@@ -80,7 +81,10 @@ pub async fn get(
 
     let token = Alphanumeric.sample_string(&mut rng, 32);
     let mut conn = pool.acquire().await?;
-    let login = insert_compat_sso_login(&mut conn, &mut rng, &clock, token, redirect_url).await?;
+    let login = conn
+        .compat_sso_login()
+        .add(&mut rng, &clock, token, redirect_url)
+        .await?;
 
     Ok(url_builder.absolute_redirect(&CompatLoginSsoComplete::new(login.id, params.action)))
 }
