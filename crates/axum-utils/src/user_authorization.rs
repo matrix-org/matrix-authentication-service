@@ -29,7 +29,7 @@ use headers::{authorization::Bearer, Authorization, Header, HeaderMapExt, Header
 use http::{header::WWW_AUTHENTICATE, HeaderMap, HeaderValue, Request, StatusCode};
 use mas_data_model::Session;
 use mas_storage::{
-    oauth2::{access_token::find_access_token, OAuth2SessionRepository},
+    oauth2::{OAuth2AccessTokenRepository, OAuth2SessionRepository},
     DatabaseError, Repository,
 };
 use serde::{de::DeserializeOwned, Deserialize};
@@ -62,7 +62,9 @@ impl AccessToken {
             AccessToken::None => return Err(AuthorizationVerificationError::MissingToken),
         };
 
-        let token = find_access_token(conn, token.as_str())
+        let token = conn
+            .oauth2_access_token()
+            .find_by_token(token.as_str())
             .await?
             .ok_or(AuthorizationVerificationError::InvalidToken)?;
 

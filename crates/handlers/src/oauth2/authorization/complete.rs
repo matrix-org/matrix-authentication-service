@@ -26,11 +26,7 @@ use mas_keystore::Encrypter;
 use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{
-    oauth2::{
-        authorization_grant::{fulfill_grant, get_grant_by_id},
-        consent::fetch_client_consent,
-        OAuth2ClientRepository, OAuth2SessionRepository,
-    },
+    oauth2::{OAuth2AuthorizationGrantRepository, OAuth2ClientRepository, OAuth2SessionRepository},
     Repository,
 };
 use mas_templates::Templates;
@@ -94,7 +90,9 @@ pub(crate) async fn get(
 
     let maybe_session = session_info.load_session(&mut txn).await?;
 
-    let grant = get_grant_by_id(&mut txn, grant_id)
+    let grant = txn
+        .oauth2_authorization_grant()
+        .lookup(grant_id)
         .await?
         .ok_or(RouteError::NotFound)?;
 
@@ -192,7 +190,10 @@ pub(crate) async fn complete(
         .await?
         .ok_or(GrantCompletionError::NoSuchClient)?;
 
-    let current_consent = fetch_client_consent(&mut txn, &browser_session.user, &client).await?;
+    let current_consent = txn
+        .oauth2_client()
+        .get_consent_for_user(&client, &browser_session.user)
+        .await?;
 
     let lacks_consent = grant
         .scope
@@ -211,7 +212,10 @@ pub(crate) async fn complete(
         .create_from_grant(&mut rng, &clock, &grant, &browser_session)
         .await?;
 
-    let grant = fulfill_grant(&mut txn, grant, session.clone()).await?;
+    let grant = txn
+        .oauth2_authorization_grant()
+        .fulfill(&clock, &session, grant)
+        .await?;
 
     // Yep! Let's complete the auth now
     let mut params = AuthorizationResponse::default();

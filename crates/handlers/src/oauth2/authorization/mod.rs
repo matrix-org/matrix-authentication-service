@@ -26,7 +26,7 @@ use mas_keystore::Encrypter;
 use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{
-    oauth2::{authorization_grant::new_authorization_grant, OAuth2ClientRepository},
+    oauth2::{OAuth2AuthorizationGrantRepository, OAuth2ClientRepository},
     Repository,
 };
 use mas_templates::Templates;
@@ -275,23 +275,23 @@ pub(crate) async fn get(
 
             let requires_consent = prompt.contains(&Prompt::Consent);
 
-            let grant = new_authorization_grant(
-                &mut txn,
-                &mut rng,
-                &clock,
-                client,
-                redirect_uri.clone(),
-                params.auth.scope,
-                code,
-                params.auth.state.clone(),
-                params.auth.nonce,
-                params.auth.max_age,
-                None,
-                response_mode,
-                response_type.has_id_token(),
-                requires_consent,
-            )
-            .await?;
+            let grant = txn
+                .oauth2_authorization_grant()
+                .add(
+                    &mut rng,
+                    &clock,
+                    &client,
+                    redirect_uri.clone(),
+                    params.auth.scope,
+                    code,
+                    params.auth.state.clone(),
+                    params.auth.nonce,
+                    params.auth.max_age,
+                    response_mode,
+                    response_type.has_id_token(),
+                    requires_consent,
+                )
+                .await?;
             let continue_grant = PostAuthAction::continue_grant(grant.id);
 
             let res = match maybe_session {

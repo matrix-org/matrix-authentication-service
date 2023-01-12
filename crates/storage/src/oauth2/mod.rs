@@ -12,14 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub mod access_token;
+mod access_token;
 pub mod authorization_grant;
 mod client;
-pub mod consent;
-pub mod refresh_token;
+mod refresh_token;
 mod session;
 
 pub use self::{
+    access_token::{OAuth2AccessTokenRepository, PgOAuth2AccessTokenRepository},
+    authorization_grant::{
+        OAuth2AuthorizationGrantRepository, PgOAuth2AuthorizationGrantRepository,
+    },
     client::{OAuth2ClientRepository, PgOAuth2ClientRepository},
+    refresh_token::{OAuth2RefreshTokenRepository, PgOAuth2RefreshTokenRepository},
     session::{OAuth2SessionRepository, PgOAuth2SessionRepository},
 };

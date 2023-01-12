@@ -14,7 +14,7 @@
 
 //! Database-related tasks
 
-use mas_storage::Clock;
+use mas_storage::{oauth2::OAuth2AccessTokenRepository, Clock, Repository};
 use sqlx::{Pool, Postgres};
 use tracing::{debug, error, info};
 
@@ -32,7 +32,12 @@ impl std::fmt::Debug for CleanupExpired {
 #[async_trait::async_trait]
 impl Task for CleanupExpired {
     async fn run(&self) {
-        let res = mas_storage::oauth2::access_token::cleanup_expired(&self.0, &self.1).await;
+        let res = async move {
+            let mut conn = self.0.acquire().await?;
+            conn.oauth2_access_token().cleanup_expired(&self.1).await
+        }
+        .await;
+
         match res {
             Ok(0) => {
                 debug!("no token to clean up");

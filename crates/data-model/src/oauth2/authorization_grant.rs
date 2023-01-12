@@ -78,7 +78,7 @@ impl AuthorizationGrantStage {
         Self::Pending
     }
 
-    pub fn fulfill(
+    fn fulfill(
         self,
         fulfilled_at: DateTime<Utc>,
         session: &Session,
@@ -92,7 +92,7 @@ impl AuthorizationGrantStage {
         }
     }
 
-    pub fn exchange(self, exchanged_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
+    fn exchange(self, exchanged_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
         match self {
             Self::Fulfilled {
                 fulfilled_at,
@@ -106,7 +106,7 @@ impl AuthorizationGrantStage {
         }
     }
 
-    pub fn cancel(self, cancelled_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
+    fn cancel(self, cancelled_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
         match self {
             Self::Pending => Ok(Self::Cancelled { cancelled_at }),
             _ => Err(InvalidTransitionError),
@@ -145,5 +145,25 @@ impl AuthorizationGrant {
     pub fn max_auth_time(&self) -> DateTime<Utc> {
         let max_age: Option<i64> = self.max_age.map(|x| x.get().into());
         self.created_at - Duration::seconds(max_age.unwrap_or(3600 * 24 * 365))
+    }
+
+    pub fn exchange(mut self, exchanged_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
+        self.stage = self.stage.exchange(exchanged_at)?;
+        Ok(self)
+    }
+
+    pub fn fulfill(
+        mut self,
+        fulfilled_at: DateTime<Utc>,
+        session: &Session,
+    ) -> Result<Self, InvalidTransitionError> {
+        self.stage = self.stage.fulfill(fulfilled_at, session)?;
+        Ok(self)
+    }
+
+    // TODO: this is not used?
+    pub fn cancel(mut self, canceld_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
+        self.stage = self.stage.cancel(canceld_at)?;
+        Ok(self)
     }
 }

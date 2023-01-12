@@ -1,4 +1,4 @@
-// Copyright 2021 The Matrix.org Foundation C.I.C.
+// Copyright 2021-2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,67 +12,61 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use async_trait::async_trait;
 use chrono::{DateTime, Duration, Utc};
 use mas_data_model::{AccessToken, AccessTokenState, Session};
-use rand::Rng;
-use sqlx::{PgConnection, PgExecutor};
+use rand::RngCore;
+use sqlx::PgConnection;
 use ulid::Ulid;
 use uuid::Uuid;
 
-use crate::{Clock, DatabaseError, LookupResultExt};
+use crate::{tracing::ExecuteExt, Clock, DatabaseError, LookupResultExt};
 
-#[tracing::instrument(
-    skip_all,
-    fields(
-        %session.id,
-        user_session.id = %session.user_session_id,
-        client.id = %session.client_id,
-        access_token.id,
-    ),
-    err,
-)]
-pub async fn add_access_token(
-    executor: impl PgExecutor<'_>,
-    mut rng: impl Rng + Send,
-    clock: &Clock,
-    session: &Session,
-    access_token: String,
-    expires_after: Duration,
-) -> Result<AccessToken, sqlx::Error> {
-    let created_at = clock.now();
-    let expires_at = created_at + expires_after;
-    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
+#[async_trait]
+pub trait OAuth2AccessTokenRepository: Send + Sync {
+    type Error;
 
-    tracing::Span::current().record("access_token.id", tracing::field::display(id));
+    /// Lookup an access token by its ID
+    async fn lookup(&mut self, id: Ulid) -> Result<Option<AccessToken>, Self::Error>;
 
-    sqlx::query!(
-        r#"
-            INSERT INTO oauth2_access_tokens
-                (oauth2_access_token_id, oauth2_session_id, access_token, created_at, expires_at)
-            VALUES
-                ($1, $2, $3, $4, $5)
-        "#,
-        Uuid::from(id),
-        Uuid::from(session.id),
-        &access_token,
-        created_at,
-        expires_at,
-    )
-    .execute(executor)
-    .await?;
+    /// Find an access token by its token
+    async fn find_by_token(
+        &mut self,
+        access_token: &str,
+    ) -> Result<Option<AccessToken>, Self::Error>;
 
-    Ok(AccessToken {
-        id,
-        state: AccessTokenState::default(),
-        access_token,
-        session_id: session.id,
-        created_at,
-        expires_at,
-    })
+    /// Add a new access token to the database
+    async fn add(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &Clock,
+        session: &Session,
+        access_token: String,
+        expires_after: Duration,
+    ) -> Result<AccessToken, Self::Error>;
+
+    /// Revoke an access token
+    async fn revoke(
+        &mut self,
+        clock: &Clock,
+        access_token: AccessToken,
+    ) -> Result<AccessToken, Self::Error>;
+
+    /// Cleanup expired access tokens
+    async fn cleanup_expired(&mut self, clock: &Clock) -> Result<usize, Self::Error>;
 }
 
-#[derive(Debug)]
-pub struct OAuth2AccessTokenLookup {
+pub struct PgOAuth2AccessTokenRepository<'c> {
+    conn: &'c mut PgConnection,
+}
+
+impl<'c> PgOAuth2AccessTokenRepository<'c> {
+    pub fn new(conn: &'c mut PgConnection) -> Self {
+        Self { conn }
+    }
+}
+
+struct OAuth2AccessTokenLookup {
     oauth2_access_token_id: Uuid,
     oauth2_session_id: Uuid,
     access_token: String,
@@ -99,118 +93,164 @@ impl From<OAuth2AccessTokenLookup> for AccessToken {
     }
 }
 
-#[tracing::instrument(skip_all, err)]
-pub async fn find_access_token(
-    conn: &mut PgConnection,
-    token: &str,
-) -> Result<Option<AccessToken>, DatabaseError> {
-    let res = sqlx::query_as!(
-        OAuth2AccessTokenLookup,
-        r#"
-            SELECT oauth2_access_token_id
-                 , access_token
-                 , created_at
-                 , expires_at
-                 , revoked_at
-                 , oauth2_session_id
+#[async_trait]
+impl<'c> OAuth2AccessTokenRepository for PgOAuth2AccessTokenRepository<'c> {
+    type Error = DatabaseError;
 
-            FROM oauth2_access_tokens
+    async fn lookup(&mut self, id: Ulid) -> Result<Option<AccessToken>, Self::Error> {
+        let res = sqlx::query_as!(
+            OAuth2AccessTokenLookup,
+            r#"
+                SELECT oauth2_access_token_id
+                     , access_token
+                     , created_at
+                     , expires_at
+                     , revoked_at
+                     , oauth2_session_id
 
-            WHERE access_token = $1
-        "#,
-        token,
-    )
-    .fetch_one(&mut *conn)
-    .await
-    .to_option()?;
+                FROM oauth2_access_tokens
 
-    let Some(res) = res else { return Ok(None) };
+                WHERE oauth2_access_token_id = $1
+            "#,
+            Uuid::from(id),
+        )
+        .fetch_one(&mut *self.conn)
+        .await
+        .to_option()?;
 
-    Ok(Some(res.into()))
-}
+        let Some(res) = res else { return Ok(None) };
 
-#[tracing::instrument(
-    skip_all,
-    fields(access_token.id = %access_token_id),
-    err,
-)]
-pub async fn lookup_access_token(
-    conn: &mut PgConnection,
-    access_token_id: Ulid,
-) -> Result<Option<AccessToken>, DatabaseError> {
-    let res = sqlx::query_as!(
-        OAuth2AccessTokenLookup,
-        r#"
-            SELECT oauth2_access_token_id
-                 , access_token
-                 , created_at
-                 , expires_at
-                 , revoked_at
-                 , oauth2_session_id
+        Ok(Some(res.into()))
+    }
 
-            FROM oauth2_access_tokens
+    #[tracing::instrument(
+        name = "db.oauth2_access_token.find_by_token",
+        skip_all,
+        fields(
+            db.statement,
+        ),
+        err,
+    )]
+    async fn find_by_token(
+        &mut self,
+        access_token: &str,
+    ) -> Result<Option<AccessToken>, Self::Error> {
+        let res = sqlx::query_as!(
+            OAuth2AccessTokenLookup,
+            r#"
+                SELECT oauth2_access_token_id
+                     , access_token
+                     , created_at
+                     , expires_at
+                     , revoked_at
+                     , oauth2_session_id
 
-            WHERE oauth2_access_token_id = $1
-        "#,
-        Uuid::from(access_token_id),
-    )
-    .fetch_one(&mut *conn)
-    .await
-    .to_option()?;
+                FROM oauth2_access_tokens
 
-    let Some(res) = res else { return Ok(None) };
+                WHERE access_token = $1
+            "#,
+            access_token,
+        )
+        .fetch_one(&mut *self.conn)
+        .await
+        .to_option()?;
 
-    Ok(Some(res.into()))
-}
+        let Some(res) = res else { return Ok(None) };
 
-#[tracing::instrument(
-    skip_all,
-    fields(
-        %access_token.id,
-        session.id = %access_token.session_id,
-    ),
-    err,
-)]
-pub async fn revoke_access_token(
-    executor: impl PgExecutor<'_>,
-    clock: &Clock,
-    access_token: AccessToken,
-) -> Result<AccessToken, DatabaseError> {
-    let revoked_at = clock.now();
-    let res = sqlx::query!(
-        r#"
-            UPDATE oauth2_access_tokens
-            SET revoked_at = $2
-            WHERE oauth2_access_token_id = $1
-        "#,
-        Uuid::from(access_token.id),
-        revoked_at,
-    )
-    .execute(executor)
-    .await?;
+        Ok(Some(res.into()))
+    }
 
-    DatabaseError::ensure_affected_rows(&res, 1)?;
+    #[tracing::instrument(
+        name = "db.oauth2_access_token.add",
+        skip_all,
+        fields(
+            db.statement,
+            %session.id,
+            user_session.id = %session.user_session_id,
+            client.id = %session.client_id,
+            access_token.id,
+        ),
+        err,
+    )]
+    async fn add(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &Clock,
+        session: &Session,
+        access_token: String,
+        expires_after: Duration,
+    ) -> Result<AccessToken, Self::Error> {
+        let created_at = clock.now();
+        let expires_at = created_at + expires_after;
+        let id = Ulid::from_datetime_with_source(created_at.into(), rng);
 
-    access_token
-        .revoke(revoked_at)
-        .map_err(DatabaseError::to_invalid_operation)
-}
+        tracing::Span::current().record("access_token.id", tracing::field::display(id));
 
-pub async fn cleanup_expired(
-    executor: impl PgExecutor<'_>,
-    clock: &Clock,
-) -> Result<u64, sqlx::Error> {
-    // Cleanup token which expired more than 15 minutes ago
-    let threshold = clock.now() - Duration::minutes(15);
-    let res = sqlx::query!(
-        r#"
-            DELETE FROM oauth2_access_tokens
-            WHERE expires_at < $1
-        "#,
-        threshold,
-    )
-    .execute(executor)
-    .await?;
+        sqlx::query!(
+            r#"
+                INSERT INTO oauth2_access_tokens
+                    (oauth2_access_token_id, oauth2_session_id, access_token, created_at, expires_at)
+                VALUES
+                    ($1, $2, $3, $4, $5)
+            "#,
+            Uuid::from(id),
+            Uuid::from(session.id),
+            &access_token,
+            created_at,
+            expires_at,
+        )
+            .traced()
+        .execute(&mut *self.conn)
+        .await?;
 
-    Ok(res.rows_affected())
+        Ok(AccessToken {
+            id,
+            state: AccessTokenState::default(),
+            access_token,
+            session_id: session.id,
+            created_at,
+            expires_at,
+        })
+    }
+
+    async fn revoke(
+        &mut self,
+        clock: &Clock,
+        access_token: AccessToken,
+    ) -> Result<AccessToken, Self::Error> {
+        let revoked_at = clock.now();
+        let res = sqlx::query!(
+            r#"
+                UPDATE oauth2_access_tokens
+                SET revoked_at = $2
+                WHERE oauth2_access_token_id = $1
+            "#,
+            Uuid::from(access_token.id),
+            revoked_at,
+        )
+        .execute(&mut *self.conn)
+        .await?;
+
+        DatabaseError::ensure_affected_rows(&res, 1)?;
+
+        access_token
+            .revoke(revoked_at)
+            .map_err(DatabaseError::to_invalid_operation)
+    }
+
+    async fn cleanup_expired(&mut self, clock: &Clock) -> Result<usize, Self::Error> {
+        // Cleanup token which expired more than 15 minutes ago
+        let threshold = clock.now() - Duration::minutes(15);
+        let res = sqlx::query!(
+            r#"
+                DELETE FROM oauth2_access_tokens
+                WHERE expires_at < $1
+            "#,
+            threshold,
+        )
+        .execute(&mut *self.conn)
+        .await?;
+
+        Ok(res.rows_affected().try_into().unwrap_or(usize::MAX))
+    }
 }

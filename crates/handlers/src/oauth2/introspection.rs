@@ -23,10 +23,7 @@ use mas_iana::oauth::{OAuthClientAuthenticationMethod, OAuthTokenTypeHint};
 use mas_keystore::Encrypter;
 use mas_storage::{
     compat::{CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository},
-    oauth2::{
-        access_token::find_access_token, refresh_token::lookup_refresh_token,
-        OAuth2SessionRepository,
-    },
+    oauth2::{OAuth2AccessTokenRepository, OAuth2RefreshTokenRepository, OAuth2SessionRepository},
     user::{BrowserSessionRepository, UserRepository},
     Clock, Repository,
 };
@@ -169,7 +166,9 @@ pub(crate) async fn post(
 
     let reply = match token_type {
         TokenType::AccessToken => {
-            let token = find_access_token(&mut conn, token)
+            let token = conn
+                .oauth2_access_token()
+                .find_by_token(token)
                 .await?
                 .filter(|t| t.is_valid(clock.now()))
                 .ok_or(RouteError::UnknownToken)?;
@@ -206,7 +205,9 @@ pub(crate) async fn post(
         }
 
         TokenType::RefreshToken => {
-            let token = lookup_refresh_token(&mut conn, token)
+            let token = conn
+                .oauth2_refresh_token()
+                .find_by_token(token)
                 .await?
                 .filter(|t| t.is_valid())
                 .ok_or(RouteError::UnknownToken)?;

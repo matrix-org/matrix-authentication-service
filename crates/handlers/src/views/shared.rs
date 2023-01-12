@@ -15,7 +15,7 @@
 use anyhow::Context;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{
-    compat::CompatSsoLoginRepository, oauth2::authorization_grant::get_grant_by_id,
+    compat::CompatSsoLoginRepository, oauth2::OAuth2AuthorizationGrantRepository,
     upstream_oauth2::UpstreamOAuthProviderRepository, Repository, UpstreamOAuthLinkRepository,
 };
 use mas_templates::{PostAuthContext, PostAuthContextInner};
@@ -46,7 +46,9 @@ impl OptionalPostAuthAction {
         let Some(action) = self.post_auth_action.clone() else { return Ok(None) };
         let ctx = match action {
             PostAuthAction::ContinueAuthorizationGrant { id } => {
-                let grant = get_grant_by_id(conn, id)
+                let grant = conn
+                    .oauth2_authorization_grant()
+                    .lookup(id)
                     .await?
                     .context("Failed to load authorization grant")?;
                 let grant = Box::new(grant);

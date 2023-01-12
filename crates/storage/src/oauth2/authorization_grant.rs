@@ -14,138 +14,97 @@
 
 use std::num::NonZeroU32;
 
+use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mas_data_model::{
     AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, Client, Pkce, Session,
 };
 use mas_iana::oauth::PkceCodeChallengeMethod;
 use oauth2_types::{requests::ResponseMode, scope::Scope};
-use rand::Rng;
-use sqlx::{PgConnection, PgExecutor};
+use rand::RngCore;
+use sqlx::PgConnection;
 use ulid::Ulid;
 use url::Url;
 use uuid::Uuid;
 
-use crate::{Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt};
+use crate::{
+    tracing::ExecuteExt, Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt,
+};
 
-#[tracing::instrument(
-    skip_all,
-    fields(
-        %client.id,
-        grant.id,
-    ),
-    err,
-)]
-#[allow(clippy::too_many_arguments)]
-pub async fn new_authorization_grant(
-    executor: impl PgExecutor<'_>,
-    mut rng: impl Rng + Send,
-    clock: &Clock,
-    client: Client,
-    redirect_uri: Url,
-    scope: Scope,
-    code: Option<AuthorizationCode>,
-    state: Option<String>,
-    nonce: Option<String>,
-    max_age: Option<NonZeroU32>,
-    _acr_values: Option<String>,
-    response_mode: ResponseMode,
-    response_type_id_token: bool,
-    requires_consent: bool,
-) -> Result<AuthorizationGrant, sqlx::Error> {
-    let code_challenge = code
-        .as_ref()
-        .and_then(|c| c.pkce.as_ref())
-        .map(|p| &p.challenge);
-    let code_challenge_method = code
-        .as_ref()
-        .and_then(|c| c.pkce.as_ref())
-        .map(|p| p.challenge_method.to_string());
-    // TODO: this conversion is a bit ugly
-    let max_age_i32 = max_age.map(|x| i32::try_from(u32::from(x)).unwrap_or(i32::MAX));
-    let code_str = code.as_ref().map(|c| &c.code);
+#[async_trait]
+pub trait OAuth2AuthorizationGrantRepository {
+    type Error;
 
-    let created_at = clock.now();
-    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
-    tracing::Span::current().record("grant.id", tracing::field::display(id));
+    #[allow(clippy::too_many_arguments)]
+    async fn add(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &Clock,
+        client: &Client,
+        redirect_uri: Url,
+        scope: Scope,
+        code: Option<AuthorizationCode>,
+        state: Option<String>,
+        nonce: Option<String>,
+        max_age: Option<NonZeroU32>,
+        response_mode: ResponseMode,
+        response_type_id_token: bool,
+        requires_consent: bool,
+    ) -> Result<AuthorizationGrant, Self::Error>;
 
-    sqlx::query!(
-        r#"
-            INSERT INTO oauth2_authorization_grants (
-                 oauth2_authorization_grant_id,
-                 oauth2_client_id,
-                 redirect_uri,
-                 scope,
-                 state,
-                 nonce,
-                 max_age,
-                 response_mode,
-                 code_challenge,
-                 code_challenge_method,
-                 response_type_code,
-                 response_type_id_token,
-                 authorization_code,
-                 requires_consent,
-                 created_at
-            )
-            VALUES
-                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-        "#,
-        Uuid::from(id),
-        Uuid::from(client.id),
-        redirect_uri.to_string(),
-        scope.to_string(),
-        state,
-        nonce,
-        max_age_i32,
-        response_mode.to_string(),
-        code_challenge,
-        code_challenge_method,
-        code.is_some(),
-        response_type_id_token,
-        code_str,
-        requires_consent,
-        created_at,
-    )
-    .execute(executor)
-    .await?;
+    async fn lookup(&mut self, id: Ulid) -> Result<Option<AuthorizationGrant>, Self::Error>;
 
-    Ok(AuthorizationGrant {
-        id,
-        stage: AuthorizationGrantStage::Pending,
-        code,
-        redirect_uri,
-        client_id: client.id,
-        scope,
-        state,
-        nonce,
-        max_age,
-        response_mode,
-        created_at,
-        response_type_id_token,
-        requires_consent,
-    })
+    async fn find_by_code(&mut self, code: &str)
+        -> Result<Option<AuthorizationGrant>, Self::Error>;
+
+    async fn fulfill(
+        &mut self,
+        clock: &Clock,
+        session: &Session,
+        authorization_grant: AuthorizationGrant,
+    ) -> Result<AuthorizationGrant, Self::Error>;
+
+    async fn exchange(
+        &mut self,
+        clock: &Clock,
+        authorization_grant: AuthorizationGrant,
+    ) -> Result<AuthorizationGrant, Self::Error>;
+
+    async fn give_consent(
+        &mut self,
+        authorization_grant: AuthorizationGrant,
+    ) -> Result<AuthorizationGrant, Self::Error>;
+}
+
+pub struct PgOAuth2AuthorizationGrantRepository<'c> {
+    conn: &'c mut PgConnection,
+}
+
+impl<'c> PgOAuth2AuthorizationGrantRepository<'c> {
+    pub fn new(conn: &'c mut PgConnection) -> Self {
+        Self { conn }
+    }
 }
 
 #[allow(clippy::struct_excessive_bools)]
 struct GrantLookup {
     oauth2_authorization_grant_id: Uuid,
-    oauth2_authorization_grant_created_at: DateTime<Utc>,
-    oauth2_authorization_grant_cancelled_at: Option<DateTime<Utc>>,
-    oauth2_authorization_grant_fulfilled_at: Option<DateTime<Utc>>,
-    oauth2_authorization_grant_exchanged_at: Option<DateTime<Utc>>,
-    oauth2_authorization_grant_scope: String,
-    oauth2_authorization_grant_state: Option<String>,
-    oauth2_authorization_grant_nonce: Option<String>,
-    oauth2_authorization_grant_redirect_uri: String,
-    oauth2_authorization_grant_response_mode: String,
-    oauth2_authorization_grant_max_age: Option<i32>,
-    oauth2_authorization_grant_response_type_code: bool,
-    oauth2_authorization_grant_response_type_id_token: bool,
-    oauth2_authorization_grant_code: Option<String>,
-    oauth2_authorization_grant_code_challenge: Option<String>,
-    oauth2_authorization_grant_code_challenge_method: Option<String>,
-    oauth2_authorization_grant_requires_consent: bool,
+    created_at: DateTime<Utc>,
+    cancelled_at: Option<DateTime<Utc>>,
+    fulfilled_at: Option<DateTime<Utc>>,
+    exchanged_at: Option<DateTime<Utc>>,
+    scope: String,
+    state: Option<String>,
+    nonce: Option<String>,
+    redirect_uri: String,
+    response_mode: String,
+    max_age: Option<i32>,
+    response_type_code: bool,
+    response_type_id_token: bool,
+    authorization_code: Option<String>,
+    code_challenge: Option<String>,
+    code_challenge_method: Option<String>,
+    requires_consent: bool,
     oauth2_client_id: Uuid,
     oauth2_session_id: Option<Uuid>,
 }
@@ -156,20 +115,17 @@ impl TryFrom<GrantLookup> for AuthorizationGrant {
     #[allow(clippy::too_many_lines)]
     fn try_from(value: GrantLookup) -> Result<Self, Self::Error> {
         let id = value.oauth2_authorization_grant_id.into();
-        let scope: Scope = value
-            .oauth2_authorization_grant_scope
-            .parse()
-            .map_err(|e| {
-                DatabaseInconsistencyError::on("oauth2_authorization_grants")
-                    .column("scope")
-                    .row(id)
-                    .source(e)
-            })?;
+        let scope: Scope = value.scope.parse().map_err(|e| {
+            DatabaseInconsistencyError::on("oauth2_authorization_grants")
+                .column("scope")
+                .row(id)
+                .source(e)
+        })?;
 
         let stage = match (
-            value.oauth2_authorization_grant_fulfilled_at,
-            value.oauth2_authorization_grant_exchanged_at,
-            value.oauth2_authorization_grant_cancelled_at,
+            value.fulfilled_at,
+            value.exchanged_at,
+            value.cancelled_at,
             value.oauth2_session_id,
         ) {
             (None, None, None, None) => AuthorizationGrantStage::Pending,
@@ -198,10 +154,7 @@ impl TryFrom<GrantLookup> for AuthorizationGrant {
             }
         };
 
-        let pkce = match (
-            value.oauth2_authorization_grant_code_challenge,
-            value.oauth2_authorization_grant_code_challenge_method,
-        ) {
+        let pkce = match (value.code_challenge, value.code_challenge_method) {
             (Some(challenge), Some(challenge_method)) if challenge_method == "plain" => {
                 Some(Pkce {
                     challenge_method: PkceCodeChallengeMethod::Plain,
@@ -222,44 +175,35 @@ impl TryFrom<GrantLookup> for AuthorizationGrant {
             }
         };
 
-        let code: Option<AuthorizationCode> = match (
-            value.oauth2_authorization_grant_response_type_code,
-            value.oauth2_authorization_grant_code,
-            pkce,
-        ) {
-            (false, None, None) => None,
-            (true, Some(code), pkce) => Some(AuthorizationCode { code, pkce }),
-            _ => {
-                return Err(
-                    DatabaseInconsistencyError::on("oauth2_authorization_grants")
-                        .column("authorization_code")
-                        .row(id),
-                );
-            }
-        };
+        let code: Option<AuthorizationCode> =
+            match (value.response_type_code, value.authorization_code, pkce) {
+                (false, None, None) => None,
+                (true, Some(code), pkce) => Some(AuthorizationCode { code, pkce }),
+                _ => {
+                    return Err(
+                        DatabaseInconsistencyError::on("oauth2_authorization_grants")
+                            .column("authorization_code")
+                            .row(id),
+                    );
+                }
+            };
 
-        let redirect_uri = value
-            .oauth2_authorization_grant_redirect_uri
-            .parse()
-            .map_err(|e| {
-                DatabaseInconsistencyError::on("oauth2_authorization_grants")
-                    .column("redirect_uri")
-                    .row(id)
-                    .source(e)
-            })?;
+        let redirect_uri = value.redirect_uri.parse().map_err(|e| {
+            DatabaseInconsistencyError::on("oauth2_authorization_grants")
+                .column("redirect_uri")
+                .row(id)
+                .source(e)
+        })?;
 
-        let response_mode = value
-            .oauth2_authorization_grant_response_mode
-            .parse()
-            .map_err(|e| {
-                DatabaseInconsistencyError::on("oauth2_authorization_grants")
-                    .column("response_mode")
-                    .row(id)
-                    .source(e)
-            })?;
+        let response_mode = value.response_mode.parse().map_err(|e| {
+            DatabaseInconsistencyError::on("oauth2_authorization_grants")
+                .column("response_mode")
+                .row(id)
+                .source(e)
+        })?;
 
         let max_age = value
-            .oauth2_authorization_grant_max_age
+            .max_age
             .map(u32::try_from)
             .transpose()
             .map_err(|e| {
@@ -283,209 +227,330 @@ impl TryFrom<GrantLookup> for AuthorizationGrant {
             client_id: value.oauth2_client_id.into(),
             code,
             scope,
-            state: value.oauth2_authorization_grant_state,
-            nonce: value.oauth2_authorization_grant_nonce,
+            state: value.state,
+            nonce: value.nonce,
             max_age,
             response_mode,
             redirect_uri,
-            created_at: value.oauth2_authorization_grant_created_at,
-            response_type_id_token: value.oauth2_authorization_grant_response_type_id_token,
-            requires_consent: value.oauth2_authorization_grant_requires_consent,
+            created_at: value.created_at,
+            response_type_id_token: value.response_type_id_token,
+            requires_consent: value.requires_consent,
         })
     }
 }
 
-#[tracing::instrument(
-    skip_all,
-    fields(grant.id = %id),
-    err,
-)]
-pub async fn get_grant_by_id(
-    conn: &mut PgConnection,
-    id: Ulid,
-) -> Result<Option<AuthorizationGrant>, DatabaseError> {
-    let res = sqlx::query_as!(
-        GrantLookup,
-        r#"
-            SELECT oauth2_authorization_grant_id
-                 , created_at              AS oauth2_authorization_grant_created_at
-                 , cancelled_at            AS oauth2_authorization_grant_cancelled_at
-                 , fulfilled_at            AS oauth2_authorization_grant_fulfilled_at
-                 , exchanged_at            AS oauth2_authorization_grant_exchanged_at
-                 , scope                   AS oauth2_authorization_grant_scope
-                 , state                   AS oauth2_authorization_grant_state
-                 , redirect_uri            AS oauth2_authorization_grant_redirect_uri
-                 , response_mode           AS oauth2_authorization_grant_response_mode
-                 , nonce                   AS oauth2_authorization_grant_nonce
-                 , max_age                 AS oauth2_authorization_grant_max_age
-                 , oauth2_client_id        AS oauth2_client_id
-                 , authorization_code      AS oauth2_authorization_grant_code
-                 , response_type_code      AS oauth2_authorization_grant_response_type_code
-                 , response_type_id_token  AS oauth2_authorization_grant_response_type_id_token
-                 , code_challenge          AS oauth2_authorization_grant_code_challenge
-                 , code_challenge_method   AS oauth2_authorization_grant_code_challenge_method
-                 , requires_consent        AS oauth2_authorization_grant_requires_consent
-                 , oauth2_session_id       AS "oauth2_session_id?"
-            FROM
-                oauth2_authorization_grants
+#[async_trait]
+impl<'c> OAuth2AuthorizationGrantRepository for PgOAuth2AuthorizationGrantRepository<'c> {
+    type Error = DatabaseError;
 
-            WHERE oauth2_authorization_grant_id = $1
-        "#,
-        Uuid::from(id),
-    )
-    .fetch_one(&mut *conn)
-    .await
-    .to_option()?;
+    #[tracing::instrument(
+        name = "db.oauth2_authorization_grant.add",
+        skip_all,
+        fields(
+            db.statement,
+            grant.id,
+            grant.scope = %scope,
+            %client.id,
+        ),
+        err,
+    )]
+    async fn add(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &Clock,
+        client: &Client,
+        redirect_uri: Url,
+        scope: Scope,
+        code: Option<AuthorizationCode>,
+        state: Option<String>,
+        nonce: Option<String>,
+        max_age: Option<NonZeroU32>,
+        response_mode: ResponseMode,
+        response_type_id_token: bool,
+        requires_consent: bool,
+    ) -> Result<AuthorizationGrant, Self::Error> {
+        let code_challenge = code
+            .as_ref()
+            .and_then(|c| c.pkce.as_ref())
+            .map(|p| &p.challenge);
+        let code_challenge_method = code
+            .as_ref()
+            .and_then(|c| c.pkce.as_ref())
+            .map(|p| p.challenge_method.to_string());
+        // TODO: this conversion is a bit ugly
+        let max_age_i32 = max_age.map(|x| i32::try_from(u32::from(x)).unwrap_or(i32::MAX));
+        let code_str = code.as_ref().map(|c| &c.code);
 
-    let Some(res) = res else { return Ok(None) };
+        let created_at = clock.now();
+        let id = Ulid::from_datetime_with_source(created_at.into(), rng);
+        tracing::Span::current().record("grant.id", tracing::field::display(id));
 
-    Ok(Some(res.try_into()?))
-}
+        sqlx::query!(
+            r#"
+                INSERT INTO oauth2_authorization_grants (
+                     oauth2_authorization_grant_id,
+                     oauth2_client_id,
+                     redirect_uri,
+                     scope,
+                     state,
+                     nonce,
+                     max_age,
+                     response_mode,
+                     code_challenge,
+                     code_challenge_method,
+                     response_type_code,
+                     response_type_id_token,
+                     authorization_code,
+                     requires_consent,
+                     created_at
+                )
+                VALUES
+                    ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+            "#,
+            Uuid::from(id),
+            Uuid::from(client.id),
+            redirect_uri.to_string(),
+            scope.to_string(),
+            state,
+            nonce,
+            max_age_i32,
+            response_mode.to_string(),
+            code_challenge,
+            code_challenge_method,
+            code.is_some(),
+            response_type_id_token,
+            code_str,
+            requires_consent,
+            created_at,
+        )
+        .execute(&mut *self.conn)
+        .await?;
 
-#[tracing::instrument(skip_all, err)]
-pub async fn lookup_grant_by_code(
-    conn: &mut PgConnection,
-    code: &str,
-) -> Result<Option<AuthorizationGrant>, DatabaseError> {
-    let res = sqlx::query_as!(
-        GrantLookup,
-        r#"
-            SELECT oauth2_authorization_grant_id
-                 , created_at              AS oauth2_authorization_grant_created_at
-                 , cancelled_at            AS oauth2_authorization_grant_cancelled_at
-                 , fulfilled_at            AS oauth2_authorization_grant_fulfilled_at
-                 , exchanged_at            AS oauth2_authorization_grant_exchanged_at
-                 , scope                   AS oauth2_authorization_grant_scope
-                 , state                   AS oauth2_authorization_grant_state
-                 , redirect_uri            AS oauth2_authorization_grant_redirect_uri
-                 , response_mode           AS oauth2_authorization_grant_response_mode
-                 , nonce                   AS oauth2_authorization_grant_nonce
-                 , max_age                 AS oauth2_authorization_grant_max_age
-                 , oauth2_client_id        AS oauth2_client_id
-                 , authorization_code      AS oauth2_authorization_grant_code
-                 , response_type_code      AS oauth2_authorization_grant_response_type_code
-                 , response_type_id_token  AS oauth2_authorization_grant_response_type_id_token
-                 , code_challenge          AS oauth2_authorization_grant_code_challenge
-                 , code_challenge_method   AS oauth2_authorization_grant_code_challenge_method
-                 , requires_consent        AS oauth2_authorization_grant_requires_consent
-                 , oauth2_session_id       AS "oauth2_session_id?"
-            FROM
-                oauth2_authorization_grants
+        Ok(AuthorizationGrant {
+            id,
+            stage: AuthorizationGrantStage::Pending,
+            code,
+            redirect_uri,
+            client_id: client.id,
+            scope,
+            state,
+            nonce,
+            max_age,
+            response_mode,
+            created_at,
+            response_type_id_token,
+            requires_consent,
+        })
+    }
 
-            WHERE authorization_code = $1
-        "#,
-        code,
-    )
-    .fetch_one(&mut *conn)
-    .await
-    .to_option()?;
+    #[tracing::instrument(
+        name = "db.oauth2_authorization_grant.lookup",
+        skip_all,
+        fields(
+            db.statement,
+            grant.id = %id,
+        ),
+        err,
+    )]
+    async fn lookup(&mut self, id: Ulid) -> Result<Option<AuthorizationGrant>, Self::Error> {
+        let res = sqlx::query_as!(
+            GrantLookup,
+            r#"
+                SELECT oauth2_authorization_grant_id
+                     , created_at
+                     , cancelled_at
+                     , fulfilled_at
+                     , exchanged_at
+                     , scope
+                     , state
+                     , redirect_uri
+                     , response_mode
+                     , nonce
+                     , max_age
+                     , oauth2_client_id
+                     , authorization_code
+                     , response_type_code
+                     , response_type_id_token
+                     , code_challenge
+                     , code_challenge_method
+                     , requires_consent
+                     , oauth2_session_id
+                FROM
+                    oauth2_authorization_grants
 
-    let Some(res) = res else { return Ok(None) };
+                WHERE oauth2_authorization_grant_id = $1
+            "#,
+            Uuid::from(id),
+        )
+        .fetch_one(&mut *self.conn)
+        .await
+        .to_option()?;
 
-    Ok(Some(res.try_into()?))
-}
+        let Some(res) = res else { return Ok(None) };
 
-#[tracing::instrument(
-    skip_all,
-    fields(
-        %grant.id,
-        client.id = %grant.client_id,
-        %session.id,
-        user_session.id = %session.user_session_id,
-    ),
-    err,
-)]
-pub async fn fulfill_grant(
-    executor: impl PgExecutor<'_>,
-    mut grant: AuthorizationGrant,
-    session: Session,
-) -> Result<AuthorizationGrant, DatabaseError> {
-    let fulfilled_at = sqlx::query_scalar!(
-        r#"
-            UPDATE oauth2_authorization_grants AS og
-            SET
-                oauth2_session_id = os.oauth2_session_id,
-                fulfilled_at = os.created_at
-            FROM oauth2_sessions os
-            WHERE
-                og.oauth2_authorization_grant_id = $1
-                AND os.oauth2_session_id = $2
-            RETURNING fulfilled_at AS "fulfilled_at!: DateTime<Utc>"
-        "#,
-        Uuid::from(grant.id),
-        Uuid::from(session.id),
-    )
-    .fetch_one(executor)
-    .await?;
+        Ok(Some(res.try_into()?))
+    }
 
-    grant.stage = grant
-        .stage
-        .fulfill(fulfilled_at, &session)
-        .map_err(DatabaseError::to_invalid_operation)?;
+    #[tracing::instrument(
+        name = "db.oauth2_authorization_grant.find_by_code",
+        skip_all,
+        fields(
+            db.statement,
+        ),
+        err,
+    )]
+    async fn find_by_code(
+        &mut self,
+        code: &str,
+    ) -> Result<Option<AuthorizationGrant>, Self::Error> {
+        let res = sqlx::query_as!(
+            GrantLookup,
+            r#"
+                SELECT oauth2_authorization_grant_id
+                     , created_at
+                     , cancelled_at
+                     , fulfilled_at
+                     , exchanged_at
+                     , scope
+                     , state
+                     , redirect_uri
+                     , response_mode
+                     , nonce
+                     , max_age
+                     , oauth2_client_id
+                     , authorization_code
+                     , response_type_code
+                     , response_type_id_token
+                     , code_challenge
+                     , code_challenge_method
+                     , requires_consent
+                     , oauth2_session_id
+                FROM
+                    oauth2_authorization_grants
 
-    Ok(grant)
-}
+                WHERE authorization_code = $1
+            "#,
+            code,
+        )
+        .traced()
+        .fetch_one(&mut *self.conn)
+        .await
+        .to_option()?;
 
-#[tracing::instrument(
-    skip_all,
-    fields(
-        %grant.id,
-        client.id = %grant.client_id,
-    ),
-    err,
-)]
-pub async fn give_consent_to_grant(
-    executor: impl PgExecutor<'_>,
-    mut grant: AuthorizationGrant,
-) -> Result<AuthorizationGrant, sqlx::Error> {
-    sqlx::query!(
-        r#"
-            UPDATE oauth2_authorization_grants AS og
-            SET
-                requires_consent = 'f'
-            WHERE
-                og.oauth2_authorization_grant_id = $1
-        "#,
-        Uuid::from(grant.id),
-    )
-    .execute(executor)
-    .await?;
+        let Some(res) = res else { return Ok(None) };
 
-    grant.requires_consent = false;
+        Ok(Some(res.try_into()?))
+    }
 
-    Ok(grant)
-}
+    #[tracing::instrument(
+        name = "db.oauth2_authorization_grant.fulfill",
+        skip_all,
+        fields(
+            db.statement,
+            %grant.id,
+            client.id = %grant.client_id,
+            %session.id,
+            user_session.id = %session.user_session_id,
+        ),
+        err,
+    )]
+    async fn fulfill(
+        &mut self,
+        clock: &Clock,
+        session: &Session,
+        grant: AuthorizationGrant,
+    ) -> Result<AuthorizationGrant, Self::Error> {
+        let fulfilled_at = clock.now();
+        let res = sqlx::query!(
+            r#"
+                UPDATE oauth2_authorization_grants
+                SET fulfilled_at = $2
+                  , oauth2_session_id = $3
+                WHERE oauth2_authorization_grant_id = $1
+            "#,
+            Uuid::from(grant.id),
+            fulfilled_at,
+            Uuid::from(session.id),
+        )
+        .execute(&mut *self.conn)
+        .await?;
 
-#[tracing::instrument(
-    skip_all,
-    fields(
-        %grant.id,
-        client.id = %grant.client_id,
-    ),
-    err,
-)]
-pub async fn exchange_grant(
-    executor: impl PgExecutor<'_>,
-    clock: &Clock,
-    mut grant: AuthorizationGrant,
-) -> Result<AuthorizationGrant, DatabaseError> {
-    let exchanged_at = clock.now();
-    sqlx::query!(
-        r#"
-            UPDATE oauth2_authorization_grants
-            SET exchanged_at = $2
-            WHERE oauth2_authorization_grant_id = $1
-        "#,
-        Uuid::from(grant.id),
-        exchanged_at,
-    )
-    .execute(executor)
-    .await?;
+        DatabaseError::ensure_affected_rows(&res, 1)?;
 
-    grant.stage = grant
-        .stage
-        .exchange(exchanged_at)
-        .map_err(DatabaseError::to_invalid_operation)?;
+        // XXX: check affected rows & new methods
+        let grant = grant
+            .fulfill(fulfilled_at, session)
+            .map_err(DatabaseError::to_invalid_operation)?;
 
-    Ok(grant)
+        Ok(grant)
+    }
+
+    #[tracing::instrument(
+        name = "db.oauth2_authorization_grant.exchange",
+        skip_all,
+        fields(
+            db.statement,
+            %grant.id,
+            client.id = %grant.client_id,
+        ),
+        err,
+    )]
+    async fn exchange(
+        &mut self,
+        clock: &Clock,
+        grant: AuthorizationGrant,
+    ) -> Result<AuthorizationGrant, Self::Error> {
+        let exchanged_at = clock.now();
+        let res = sqlx::query!(
+            r#"
+                UPDATE oauth2_authorization_grants
+                SET exchanged_at = $2
+                WHERE oauth2_authorization_grant_id = $1
+            "#,
+            Uuid::from(grant.id),
+            exchanged_at,
+        )
+        .execute(&mut *self.conn)
+        .await?;
+
+        DatabaseError::ensure_affected_rows(&res, 1)?;
+
+        let grant = grant
+            .exchange(exchanged_at)
+            .map_err(DatabaseError::to_invalid_operation)?;
+
+        Ok(grant)
+    }
+
+    #[tracing::instrument(
+        name = "db.oauth2_authorization_grant.give_consent",
+        skip_all,
+        fields(
+            db.statement,
+            %grant.id,
+            client.id = %grant.client_id,
+        ),
+        err,
+    )]
+    async fn give_consent(
+        &mut self,
+        mut grant: AuthorizationGrant,
+    ) -> Result<AuthorizationGrant, Self::Error> {
+        sqlx::query!(
+            r#"
+                UPDATE oauth2_authorization_grants AS og
+                SET
+                    requires_consent = 'f'
+                WHERE
+                    og.oauth2_authorization_grant_id = $1
+            "#,
+            Uuid::from(grant.id),
+        )
+        .execute(&mut *self.conn)
+        .await?;
+
+        grant.requires_consent = false;
+
+        Ok(grant)
+    }
 }

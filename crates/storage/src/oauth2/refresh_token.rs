@@ -12,62 +12,55 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mas_data_model::{AccessToken, RefreshToken, RefreshTokenState, Session};
-use rand::Rng;
-use sqlx::{PgConnection, PgExecutor};
+use rand::RngCore;
+use sqlx::PgConnection;
 use ulid::Ulid;
 use uuid::Uuid;
 
-use crate::{Clock, DatabaseError};
+use crate::{tracing::ExecuteExt, Clock, DatabaseError, LookupResultExt};
 
-#[tracing::instrument(
-    skip_all,
-    fields(
-        %session.id,
-        user_session.id = %session.user_session_id,
-        client.id = %session.client_id,
-        refresh_token.id,
-    ),
-    err,
-)]
-pub async fn add_refresh_token(
-    executor: impl PgExecutor<'_>,
-    mut rng: impl Rng + Send,
-    clock: &Clock,
-    session: &Session,
-    access_token: &AccessToken,
-    refresh_token: String,
-) -> Result<RefreshToken, sqlx::Error> {
-    let created_at = clock.now();
-    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
-    tracing::Span::current().record("refresh_token.id", tracing::field::display(id));
+#[async_trait]
+pub trait OAuth2RefreshTokenRepository: Send + Sync {
+    type Error;
 
-    sqlx::query!(
-        r#"
-            INSERT INTO oauth2_refresh_tokens
-                (oauth2_refresh_token_id, oauth2_session_id, oauth2_access_token_id,
-                 refresh_token, created_at)
-            VALUES
-                ($1, $2, $3, $4, $5)
-        "#,
-        Uuid::from(id),
-        Uuid::from(session.id),
-        Uuid::from(access_token.id),
-        refresh_token,
-        created_at,
-    )
-    .execute(executor)
-    .await?;
+    /// Lookup a refresh token by its ID
+    async fn lookup(&mut self, id: Ulid) -> Result<Option<RefreshToken>, Self::Error>;
 
-    Ok(RefreshToken {
-        id,
-        state: RefreshTokenState::default(),
-        session_id: session.id,
-        refresh_token,
-        access_token_id: Some(access_token.id),
-        created_at,
-    })
+    /// Find a refresh token by its token
+    async fn find_by_token(
+        &mut self,
+        refresh_token: &str,
+    ) -> Result<Option<RefreshToken>, Self::Error>;
+
+    /// Add a new refresh token to the database
+    async fn add(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &Clock,
+        session: &Session,
+        access_token: &AccessToken,
+        refresh_token: String,
+    ) -> Result<RefreshToken, Self::Error>;
+
+    /// Consume a refresh token
+    async fn consume(
+        &mut self,
+        clock: &Clock,
+        refresh_token: RefreshToken,
+    ) -> Result<RefreshToken, Self::Error>;
+}
+
+pub struct PgOAuth2RefreshTokenRepository<'c> {
+    conn: &'c mut PgConnection,
+}
+
+impl<'c> PgOAuth2RefreshTokenRepository<'c> {
+    pub fn new(conn: &'c mut PgConnection) -> Self {
+        Self { conn }
+    }
 }
 
 struct OAuth2RefreshTokenLookup {
@@ -79,75 +72,183 @@ struct OAuth2RefreshTokenLookup {
     oauth2_session_id: Uuid,
 }
 
-#[tracing::instrument(skip_all, err)]
-#[allow(clippy::too_many_lines)]
-pub async fn lookup_refresh_token(
-    conn: &mut PgConnection,
-    token: &str,
-) -> Result<Option<RefreshToken>, DatabaseError> {
-    let res = sqlx::query_as!(
-        OAuth2RefreshTokenLookup,
-        r#"
-            SELECT oauth2_refresh_token_id
-                 , refresh_token
-                 , created_at
-                 , consumed_at
-                 , oauth2_access_token_id
-                 , oauth2_session_id
-            FROM oauth2_refresh_tokens
+impl From<OAuth2RefreshTokenLookup> for RefreshToken {
+    fn from(value: OAuth2RefreshTokenLookup) -> Self {
+        let state = match value.consumed_at {
+            None => RefreshTokenState::Valid,
+            Some(consumed_at) => RefreshTokenState::Consumed { consumed_at },
+        };
 
-            WHERE refresh_token = $1
-        "#,
-        token,
-    )
-    .fetch_one(&mut *conn)
-    .await?;
-
-    let state = match res.consumed_at {
-        None => RefreshTokenState::Valid,
-        Some(consumed_at) => RefreshTokenState::Consumed { consumed_at },
-    };
-
-    let refresh_token = RefreshToken {
-        id: res.oauth2_refresh_token_id.into(),
-        state,
-        session_id: res.oauth2_session_id.into(),
-        refresh_token: res.refresh_token,
-        created_at: res.created_at,
-        access_token_id: res.oauth2_access_token_id.map(Ulid::from),
-    };
-
-    Ok(Some(refresh_token))
+        RefreshToken {
+            id: value.oauth2_refresh_token_id.into(),
+            state,
+            session_id: value.oauth2_session_id.into(),
+            refresh_token: value.refresh_token,
+            created_at: value.created_at,
+            access_token_id: value.oauth2_access_token_id.map(Ulid::from),
+        }
+    }
 }
 
-#[tracing::instrument(
-    skip_all,
-    fields(
-        %refresh_token.id,
-    ),
-    err,
-)]
-pub async fn consume_refresh_token(
-    executor: impl PgExecutor<'_>,
-    clock: &Clock,
-    refresh_token: RefreshToken,
-) -> Result<RefreshToken, DatabaseError> {
-    let consumed_at = clock.now();
-    let res = sqlx::query!(
-        r#"
-            UPDATE oauth2_refresh_tokens
-            SET consumed_at = $2
-            WHERE oauth2_refresh_token_id = $1
-        "#,
-        Uuid::from(refresh_token.id),
-        consumed_at,
-    )
-    .execute(executor)
-    .await?;
+#[async_trait]
+impl<'c> OAuth2RefreshTokenRepository for PgOAuth2RefreshTokenRepository<'c> {
+    type Error = DatabaseError;
 
-    DatabaseError::ensure_affected_rows(&res, 1)?;
+    #[tracing::instrument(
+        name = "db.oauth2_refresh_token.lookup",
+        skip_all,
+        fields(
+            db.statement,
+            refresh_token.id = %id,
+        ),
+        err,
+    )]
+    async fn lookup(&mut self, id: Ulid) -> Result<Option<RefreshToken>, Self::Error> {
+        let res = sqlx::query_as!(
+            OAuth2RefreshTokenLookup,
+            r#"
+                SELECT oauth2_refresh_token_id
+                     , refresh_token
+                     , created_at
+                     , consumed_at
+                     , oauth2_access_token_id
+                     , oauth2_session_id
+                FROM oauth2_refresh_tokens
 
-    refresh_token
-        .consume(consumed_at)
-        .map_err(DatabaseError::to_invalid_operation)
+                WHERE oauth2_refresh_token_id = $1
+            "#,
+            Uuid::from(id),
+        )
+        .fetch_one(&mut *self.conn)
+        .await
+        .to_option()?;
+
+        let Some(res) = res else { return Ok(None) };
+
+        Ok(Some(res.into()))
+    }
+
+    #[tracing::instrument(
+        name = "db.oauth2_refresh_token.find_by_token",
+        skip_all,
+        fields(
+            db.statement,
+        ),
+        err,
+    )]
+    async fn find_by_token(
+        &mut self,
+        refresh_token: &str,
+    ) -> Result<Option<RefreshToken>, Self::Error> {
+        let res = sqlx::query_as!(
+            OAuth2RefreshTokenLookup,
+            r#"
+                SELECT oauth2_refresh_token_id
+                     , refresh_token
+                     , created_at
+                     , consumed_at
+                     , oauth2_access_token_id
+                     , oauth2_session_id
+                FROM oauth2_refresh_tokens
+
+                WHERE refresh_token = $1
+            "#,
+            refresh_token,
+        )
+        .traced()
+        .fetch_one(&mut *self.conn)
+        .await
+        .to_option()?;
+
+        let Some(res) = res else { return Ok(None) };
+
+        Ok(Some(res.into()))
+    }
+
+    #[tracing::instrument(
+        name = "db.oauth2_refresh_token.add",
+        skip_all,
+        fields(
+            db.statement,
+            %session.id,
+            user_session.id = %session.user_session_id,
+            client.id = %session.client_id,
+            refresh_token.id,
+        ),
+        err,
+    )]
+    async fn add(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &Clock,
+        session: &Session,
+        access_token: &AccessToken,
+        refresh_token: String,
+    ) -> Result<RefreshToken, Self::Error> {
+        let created_at = clock.now();
+        let id = Ulid::from_datetime_with_source(created_at.into(), rng);
+        tracing::Span::current().record("refresh_token.id", tracing::field::display(id));
+
+        sqlx::query!(
+            r#"
+                INSERT INTO oauth2_refresh_tokens
+                    (oauth2_refresh_token_id, oauth2_session_id, oauth2_access_token_id,
+                     refresh_token, created_at)
+                VALUES
+                    ($1, $2, $3, $4, $5)
+            "#,
+            Uuid::from(id),
+            Uuid::from(session.id),
+            Uuid::from(access_token.id),
+            refresh_token,
+            created_at,
+        )
+        .traced()
+        .execute(&mut *self.conn)
+        .await?;
+
+        Ok(RefreshToken {
+            id,
+            state: RefreshTokenState::default(),
+            session_id: session.id,
+            refresh_token,
+            access_token_id: Some(access_token.id),
+            created_at,
+        })
+    }
+
+    #[tracing::instrument(
+        name = "db.oauth2_refresh_token.consume",
+        skip_all,
+        fields(
+            db.statement,
+            %refresh_token.id,
+            session.id = %refresh_token.session_id,
+        ),
+        err,
+    )]
+    async fn consume(
+        &mut self,
+        clock: &Clock,
+        refresh_token: RefreshToken,
+    ) -> Result<RefreshToken, Self::Error> {
+        let consumed_at = clock.now();
+        let res = sqlx::query!(
+            r#"
+                UPDATE oauth2_refresh_tokens
+                SET consumed_at = $2
+                WHERE oauth2_refresh_token_id = $1
+            "#,
+            Uuid::from(refresh_token.id),
+            consumed_at,
+        )
+        .execute(&mut *self.conn)
+        .await?;
+
+        DatabaseError::ensure_affected_rows(&res, 1)?;
+
+        refresh_token
+            .consume(consumed_at)
+            .map_err(DatabaseError::to_invalid_operation)
+    }
 }

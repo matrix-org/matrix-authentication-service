@@ -29,11 +29,7 @@ use mas_keystore::Encrypter;
 use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{
-    oauth2::{
-        authorization_grant::{get_grant_by_id, give_consent_to_grant},
-        consent::insert_client_consent,
-        OAuth2ClientRepository,
-    },
+    oauth2::{OAuth2AuthorizationGrantRepository, OAuth2ClientRepository},
     Repository,
 };
 use mas_templates::{ConsentContext, PolicyViolationContext, TemplateContext, Templates};
@@ -91,7 +87,9 @@ pub(crate) async fn get(
 
     let maybe_session = session_info.load_session(&mut conn).await?;
 
-    let grant = get_grant_by_id(&mut conn, grant_id)
+    let grant = conn
+        .oauth2_authorization_grant()
+        .lookup(grant_id)
         .await?
         .ok_or(RouteError::GrantNotFound)?;
 
@@ -146,7 +144,9 @@ pub(crate) async fn post(
 
     let maybe_session = session_info.load_session(&mut txn).await?;
 
-    let grant = get_grant_by_id(&mut txn, grant_id)
+    let grant = txn
+        .oauth2_authorization_grant()
+        .lookup(grant_id)
         .await?
         .ok_or(RouteError::GrantNotFound)?;
     let next = PostAuthAction::continue_grant(grant_id);
@@ -180,17 +180,17 @@ pub(crate) async fn post(
         .filter(|s| !s.starts_with("urn:matrix:org.matrix.msc2967.client:device:"))
         .cloned()
         .collect();
-    insert_client_consent(
-        &mut txn,
-        &mut rng,
-        &clock,
-        &session.user,
-        &client,
-        &scope_without_device,
-    )
-    .await?;
+    txn.oauth2_client()
+        .give_consent_for_user(
+            &mut rng,
+            &clock,
+            &client,
+            &session.user,
+            &scope_without_device,
+        )
+        .await?;
 
-    let _grant = give_consent_to_grant(&mut txn, grant).await?;
+    txn.oauth2_authorization_grant().give_consent(grant).await?;
 
     txn.commit().await?;
 

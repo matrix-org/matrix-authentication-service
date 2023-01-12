@@ -1,4 +1,4 @@
-// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2021-2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,10 +33,8 @@ use mas_keystore::{Encrypter, Keystore};
 use mas_router::UrlBuilder;
 use mas_storage::{
     oauth2::{
-        access_token::{add_access_token, lookup_access_token, revoke_access_token},
-        authorization_grant::{exchange_grant, lookup_grant_by_code},
-        refresh_token::{add_refresh_token, consume_refresh_token, lookup_refresh_token},
-        OAuth2SessionRepository,
+        OAuth2AccessTokenRepository, OAuth2AuthorizationGrantRepository,
+        OAuth2RefreshTokenRepository, OAuth2SessionRepository,
     },
     user::BrowserSessionRepository,
     Repository,
@@ -217,9 +215,9 @@ async fn authorization_code_grant(
 ) -> Result<AccessTokenResponse, RouteError> {
     let (clock, mut rng) = crate::clock_and_rng();
 
-    // TODO: there is a bunch of unnecessary cloning here
-    // TODO: handle "not found" cases
-    let authz_grant = lookup_grant_by_code(&mut txn, &grant.code)
+    let authz_grant = txn
+        .oauth2_authorization_grant()
+        .find_by_code(&grant.code)
         .await?
         .ok_or(RouteError::GrantNotFound)?;
 
@@ -301,18 +299,15 @@ async fn authorization_code_grant(
     let access_token_str = TokenType::AccessToken.generate(&mut rng);
     let refresh_token_str = TokenType::RefreshToken.generate(&mut rng);
 
-    let access_token =
-        add_access_token(&mut txn, &mut rng, &clock, &session, access_token_str, ttl).await?;
+    let access_token = txn
+        .oauth2_access_token()
+        .add(&mut rng, &clock, &session, access_token_str, ttl)
+        .await?;
 
-    let refresh_token = add_refresh_token(
-        &mut txn,
-        &mut rng,
-        &clock,
-        &session,
-        &access_token,
-        refresh_token_str,
-    )
-    .await?;
+    let refresh_token = txn
+        .oauth2_refresh_token()
+        .add(&mut rng, &clock, &session, &access_token, refresh_token_str)
+        .await?;
 
     let id_token = if session.scope.contains(&scope::OPENID) {
         let mut claims = HashMap::new();
@@ -360,7 +355,9 @@ async fn authorization_code_grant(
         params = params.with_id_token(id_token);
     }
 
-    exchange_grant(&mut txn, &clock, authz_grant).await?;
+    txn.oauth2_authorization_grant()
+        .exchange(&clock, authz_grant)
+        .await?;
 
     txn.commit().await?;
 
@@ -374,7 +371,9 @@ async fn refresh_token_grant(
 ) -> Result<AccessTokenResponse, RouteError> {
     let (clock, mut rng) = crate::clock_and_rng();
 
-    let refresh_token = lookup_refresh_token(&mut txn, &grant.refresh_token)
+    let refresh_token = txn
+        .oauth2_refresh_token()
+        .find_by_token(&grant.refresh_token)
         .await?
         .ok_or(RouteError::InvalidGrant)?;
 
@@ -397,31 +396,32 @@ async fn refresh_token_grant(
     let access_token_str = TokenType::AccessToken.generate(&mut rng);
     let refresh_token_str = TokenType::RefreshToken.generate(&mut rng);
 
-    let new_access_token = add_access_token(
-        &mut txn,
-        &mut rng,
-        &clock,
-        &session,
-        access_token_str.clone(),
-        ttl,
-    )
-    .await?;
+    let new_access_token = txn
+        .oauth2_access_token()
+        .add(&mut rng, &clock, &session, access_token_str.clone(), ttl)
+        .await?;
 
-    let new_refresh_token = add_refresh_token(
-        &mut txn,
-        &mut rng,
-        &clock,
-        &session,
-        &new_access_token,
-        refresh_token_str,
-    )
-    .await?;
+    let new_refresh_token = txn
+        .oauth2_refresh_token()
+        .add(
+            &mut rng,
+            &clock,
+            &session,
+            &new_access_token,
+            refresh_token_str,
+        )
+        .await?;
 
-    let refresh_token = consume_refresh_token(&mut txn, &clock, refresh_token).await?;
+    let refresh_token = txn
+        .oauth2_refresh_token()
+        .consume(&clock, refresh_token)
+        .await?;
 
     if let Some(access_token_id) = refresh_token.access_token_id {
-        if let Some(access_token) = lookup_access_token(&mut txn, access_token_id).await? {
-            revoke_access_token(&mut txn, &clock, access_token).await?;
+        if let Some(access_token) = txn.oauth2_access_token().lookup(access_token_id).await? {
+            txn.oauth2_access_token()
+                .revoke(&clock, access_token)
+                .await?;
         }
     }
 
