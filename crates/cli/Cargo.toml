@@ -8,7 +8,7 @@ license = "Apache-2.0"
 [dependencies]
 anyhow = "1.0.68"
 atty = "0.2.14"
-axum = "0.6.1"
+axum = "0.6.2"
 camino = "1.1.2"
 clap = { version = "4.0.32", features = ["derive"] }
 dotenv = "0.15.0"
