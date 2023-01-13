@@ -21,7 +21,7 @@ use ulid::Ulid;
 use uuid::Uuid;
 
 use crate::{
-    pagination::{process_page, Page, QueryBuilderExt},
+    pagination::{Page, QueryBuilderExt},
     tracing::ExecuteExt,
     Clock, DatabaseError, LookupResultExt,
 };
@@ -297,19 +297,13 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
             .push_bind(Uuid::from(user.id))
             .generate_pagination("upstream_oauth_link_id", before, after, first, last)?;
 
-        let page: Vec<LinkLookup> = query
+        let edges: Vec<LinkLookup> = query
             .build_query_as()
             .traced()
             .fetch_all(&mut *self.conn)
             .await?;
 
-        let (has_previous_page, has_next_page, edges) = process_page(page, first, last)?;
-
-        let edges: Vec<_> = edges.into_iter().map(Into::into).collect();
-        Ok(Page {
-            has_next_page,
-            has_previous_page,
-            edges,
-        })
+        let page = Page::process(edges, first, last)?.map(UpstreamOAuthLink::from);
+        Ok(page)
     }
 }

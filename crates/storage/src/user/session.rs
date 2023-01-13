@@ -21,7 +21,7 @@ use ulid::Ulid;
 use uuid::Uuid;
 
 use crate::{
-    pagination::{process_page, Page, QueryBuilderExt},
+    pagination::{Page, QueryBuilderExt},
     tracing::ExecuteExt,
     Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt,
 };
@@ -91,19 +91,19 @@ struct SessionLookup {
     last_authd_at: Option<DateTime<Utc>>,
 }
 
-impl TryInto<BrowserSession> for SessionLookup {
+impl TryFrom<SessionLookup> for BrowserSession {
     type Error = DatabaseInconsistencyError;
 
-    fn try_into(self) -> Result<BrowserSession, Self::Error> {
-        let id = Ulid::from(self.user_id);
+    fn try_from(value: SessionLookup) -> Result<Self, Self::Error> {
+        let id = Ulid::from(value.user_id);
         let user = User {
             id,
-            username: self.user_username,
+            username: value.user_username,
             sub: id.to_string(),
-            primary_user_email_id: self.user_primary_user_email_id.map(Into::into),
+            primary_user_email_id: value.user_primary_user_email_id.map(Into::into),
         };
 
-        let last_authentication = match (self.last_authentication_id, self.last_authd_at) {
+        let last_authentication = match (value.last_authentication_id, value.last_authd_at) {
             (Some(id), Some(created_at)) => Some(Authentication {
                 id: id.into(),
                 created_at,
@@ -117,10 +117,10 @@ impl TryInto<BrowserSession> for SessionLookup {
         };
 
         Ok(BrowserSession {
-            id: self.user_session_id.into(),
+            id: value.user_session_id.into(),
             user,
-            created_at: self.user_session_created_at,
-            finished_at: self.user_session_finished_at,
+            created_at: value.user_session_created_at,
+            finished_at: value.user_session_finished_at,
             last_authentication,
         })
     }
@@ -292,20 +292,14 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
             .push_bind(Uuid::from(user.id))
             .generate_pagination("s.user_session_id", before, after, first, last)?;
 
-        let page: Vec<SessionLookup> = query
+        let edges: Vec<SessionLookup> = query
             .build_query_as()
             .traced()
             .fetch_all(&mut *self.conn)
             .await?;
 
-        let (has_previous_page, has_next_page, edges) = process_page(page, first, last)?;
-
-        let edges: Result<Vec<_>, _> = edges.into_iter().map(TryInto::try_into).collect();
-        Ok(Page {
-            has_previous_page,
-            has_next_page,
-            edges: edges?,
-        })
+        let page = Page::process(edges, first, last)?.try_map(BrowserSession::try_from)?;
+        Ok(page)
     }
 
     #[tracing::instrument(

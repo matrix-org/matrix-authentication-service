@@ -23,7 +23,7 @@ use ulid::Ulid;
 use uuid::Uuid;
 
 use crate::{
-    pagination::{process_page, Page, QueryBuilderExt},
+    pagination::{Page, QueryBuilderExt},
     tracing::ExecuteExt,
     Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt,
 };
@@ -266,20 +266,14 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
 
         query.generate_pagination("upstream_oauth_provider_id", before, after, first, last)?;
 
-        let page: Vec<ProviderLookup> = query
+        let edges: Vec<ProviderLookup> = query
             .build_query_as()
             .traced()
             .fetch_all(&mut *self.conn)
             .await?;
 
-        let (has_previous_page, has_next_page, edges) = process_page(page, first, last)?;
-
-        let edges: Result<Vec<_>, _> = edges.into_iter().map(TryInto::try_into).collect();
-        Ok(Page {
-            has_next_page,
-            has_previous_page,
-            edges: edges?,
-        })
+        let page = Page::process(edges, first, last)?.try_map(TryInto::try_into)?;
+        Ok(page)
     }
 
     #[tracing::instrument(

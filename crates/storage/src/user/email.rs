@@ -21,7 +21,7 @@ use ulid::Ulid;
 use uuid::Uuid;
 
 use crate::{
-    pagination::{process_page, Page, QueryBuilderExt},
+    pagination::{Page, QueryBuilderExt},
     tracing::ExecuteExt,
     Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt,
 };
@@ -315,15 +315,8 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
             .fetch_all(&mut *self.conn)
             .await?;
 
-        let (has_previous_page, has_next_page, edges) = process_page(edges, first, last)?;
-
-        let edges = edges.into_iter().map(Into::into).collect();
-
-        Ok(Page {
-            has_next_page,
-            has_previous_page,
-            edges,
-        })
+        let page = Page::process(edges, first, last)?.map(UserEmail::from);
+        Ok(page)
     }
 
     #[tracing::instrument(

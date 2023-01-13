@@ -21,7 +21,7 @@ use ulid::Ulid;
 use uuid::Uuid;
 
 use crate::{
-    pagination::{process_page, Page, QueryBuilderExt},
+    pagination::{Page, QueryBuilderExt},
     tracing::ExecuteExt,
     Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt,
 };
@@ -271,15 +271,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
             .fetch_all(&mut *self.conn)
             .await?;
 
-        let (has_previous_page, has_next_page, edges) = process_page(edges, first, last)?;
-
-        let edges: Result<Vec<_>, DatabaseInconsistencyError> =
-            edges.into_iter().map(Session::try_from).collect();
-
-        Ok(Page {
-            has_next_page,
-            has_previous_page,
-            edges: edges?,
-        })
+        let page = Page::process(edges, first, last)?.try_map(Session::try_from)?;
+        Ok(page)
     }
 }

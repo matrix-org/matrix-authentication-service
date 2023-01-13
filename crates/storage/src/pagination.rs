@@ -82,39 +82,69 @@ where
     Ok(())
 }
 
-/// Process a page returned by a paginated query
-pub fn process_page<T>(
-    mut page: Vec<T>,
-    first: Option<usize>,
-    last: Option<usize>,
-) -> Result<(bool, bool, Vec<T>), InvalidPagination> {
-    let limit = match (first, last) {
-        (Some(count), _) | (_, Some(count)) => count,
-        _ => return Err(InvalidPagination),
-    };
-
-    let is_full = page.len() == (limit + 1);
-    if is_full {
-        page.pop();
-    }
-
-    let (has_previous_page, has_next_page) = if first.is_some() {
-        (false, is_full)
-    } else if last.is_some() {
-        // 6. If the last argument is provided, I reverse the order of the results
-        page.reverse();
-        (is_full, false)
-    } else {
-        unreachable!()
-    };
-
-    Ok((has_previous_page, has_next_page, page))
-}
-
 pub struct Page<T> {
     pub has_next_page: bool,
     pub has_previous_page: bool,
     pub edges: Vec<T>,
+}
+
+impl<T> Page<T> {
+    /// Process a page returned by a paginated query
+    pub fn process(
+        mut edges: Vec<T>,
+        first: Option<usize>,
+        last: Option<usize>,
+    ) -> Result<Self, InvalidPagination> {
+        let limit = match (first, last) {
+            (Some(count), _) | (_, Some(count)) => count,
+            _ => return Err(InvalidPagination),
+        };
+
+        let is_full = edges.len() == (limit + 1);
+        if is_full {
+            edges.pop();
+        }
+
+        let (has_previous_page, has_next_page) = if first.is_some() {
+            (false, is_full)
+        } else if last.is_some() {
+            // 6. If the last argument is provided, I reverse the order of the results
+            edges.reverse();
+            (is_full, false)
+        } else {
+            unreachable!()
+        };
+
+        Ok(Page {
+            has_next_page,
+            has_previous_page,
+            edges,
+        })
+    }
+
+    pub fn map<F, T2>(self, f: F) -> Page<T2>
+    where
+        F: FnMut(T) -> T2,
+    {
+        let edges = self.edges.into_iter().map(f).collect();
+        Page {
+            has_next_page: self.has_next_page,
+            has_previous_page: self.has_previous_page,
+            edges,
+        }
+    }
+
+    pub fn try_map<F, E, T2>(self, f: F) -> Result<Page<T2>, E>
+    where
+        F: FnMut(T) -> Result<T2, E>,
+    {
+        let edges: Result<Vec<T2>, E> = self.edges.into_iter().map(f).collect();
+        Ok(Page {
+            has_next_page: self.has_next_page,
+            has_previous_page: self.has_previous_page,
+            edges: edges?,
+        })
+    }
 }
 
 impl<T> Page<T> {}

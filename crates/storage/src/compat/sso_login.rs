@@ -22,7 +22,7 @@ use url::Url;
 use uuid::Uuid;
 
 use crate::{
-    pagination::{process_page, Page, QueryBuilderExt},
+    pagination::{Page, QueryBuilderExt},
     tracing::ExecuteExt,
     Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt,
 };
@@ -379,19 +379,13 @@ impl<'c> CompatSsoLoginRepository for PgCompatSsoLoginRepository<'c> {
             .push_bind(Uuid::from(user.id))
             .generate_pagination("cl.compat_sso_login_id", before, after, first, last)?;
 
-        let page: Vec<CompatSsoLoginLookup> = query
+        let edges: Vec<CompatSsoLoginLookup> = query
             .build_query_as()
             .traced()
             .fetch_all(&mut *self.conn)
             .await?;
 
-        let (has_previous_page, has_next_page, edges) = process_page(page, first, last)?;
-
-        let edges: Result<Vec<_>, _> = edges.into_iter().map(TryInto::try_into).collect();
-        Ok(Page {
-            has_next_page,
-            has_previous_page,
-            edges: edges?,
-        })
+        let page = Page::process(edges, first, last)?.try_map(CompatSsoLogin::try_from)?;
+        Ok(page)
     }
 }
