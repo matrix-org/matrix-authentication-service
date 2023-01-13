@@ -183,7 +183,7 @@ pub(crate) mod tracing;
 pub mod upstream_oauth2;
 pub mod user;
 
-pub use self::{repository::Repository, upstream_oauth2::UpstreamOAuthLinkRepository};
+pub use self::repository::{PgRepository, Repository};
 
 /// Embedded migrations, allowing them to run on startup
 pub static MIGRATOR: Migrator = sqlx::migrate!();

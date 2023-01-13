@@ -26,8 +26,11 @@ use mas_oidc_client::requests::{
 };
 use mas_router::{Route, UrlBuilder};
 use mas_storage::{
-    upstream_oauth2::{UpstreamOAuthProviderRepository, UpstreamOAuthSessionRepository},
-    Repository, UpstreamOAuthLinkRepository,
+    upstream_oauth2::{
+        UpstreamOAuthLinkRepository, UpstreamOAuthProviderRepository,
+        UpstreamOAuthSessionRepository,
+    },
+    PgRepository, Repository,
 };
 use oauth2_types::errors::ClientErrorCode;
 use serde::Deserialize;
@@ -129,9 +132,9 @@ pub(crate) async fn get(
 ) -> Result<impl IntoResponse, RouteError> {
     let (clock, mut rng) = crate::clock_and_rng();
 
-    let mut txn = pool.begin().await?;
+    let mut repo = PgRepository::from_pool(&pool).await?;
 
-    let provider = txn
+    let provider = repo
         .upstream_oauth_provider()
         .lookup(provider_id)
         .await?
@@ -142,7 +145,7 @@ pub(crate) async fn get(
         .find_session(provider_id, &params.state)
         .map_err(|_| RouteError::MissingCookie)?;
 
-    let session = txn
+    let session = repo
         .upstream_oauth_session()
         .lookup(session_id)
         .await?
@@ -244,7 +247,7 @@ pub(crate) async fn get(
     let subject = mas_jose::claims::SUB.extract_required(&mut id_token)?;
 
     // Look for an existing link
-    let maybe_link = txn
+    let maybe_link = repo
         .upstream_oauth_link()
         .find_by_subject(&provider, &subject)
         .await?;
@@ -252,12 +255,12 @@ pub(crate) async fn get(
     let link = if let Some(link) = maybe_link {
         link
     } else {
-        txn.upstream_oauth_link()
+        repo.upstream_oauth_link()
             .add(&mut rng, &clock, &provider, subject)
             .await?
     };
 
-    let session = txn
+    let session = repo
         .upstream_oauth_session()
         .complete_with_link(&clock, session, &link, response.id_token)
         .await?;
@@ -266,7 +269,7 @@ pub(crate) async fn get(
         .add_link_to_session(session.id, link.id)?
         .save(cookie_jar, clock.now());
 
-    txn.commit().await?;
+    repo.save().await?;
 
     Ok((
         cookie_jar,

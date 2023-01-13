@@ -14,7 +14,9 @@
 
 use anyhow::Context as _;
 use async_graphql::{Context, Description, Object, ID};
-use mas_storage::{oauth2::OAuth2ClientRepository, user::BrowserSessionRepository, Repository};
+use mas_storage::{
+    oauth2::OAuth2ClientRepository, user::BrowserSessionRepository, PgRepository, Repository,
+};
 use oauth2_types::scope::Scope;
 use sqlx::PgPool;
 use ulid::Ulid;
@@ -36,8 +38,8 @@ impl OAuth2Session {
 
     /// OAuth 2.0 client used by this session.
     pub async fn client(&self, ctx: &Context<'_>) -> Result<OAuth2Client, async_graphql::Error> {
-        let mut conn = ctx.data::<PgPool>()?.acquire().await?;
-        let client = conn
+        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
+        let client = repo
             .oauth2_client()
             .lookup(self.0.client_id)
             .await?
@@ -56,8 +58,8 @@ impl OAuth2Session {
         &self,
         ctx: &Context<'_>,
     ) -> Result<BrowserSession, async_graphql::Error> {
-        let mut conn = ctx.data::<PgPool>()?.acquire().await?;
-        let browser_session = conn
+        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
+        let browser_session = repo
             .browser_session()
             .lookup(self.0.user_session_id)
             .await?
@@ -68,8 +70,8 @@ impl OAuth2Session {
 
     /// User authorized for this session.
     pub async fn user(&self, ctx: &Context<'_>) -> Result<User, async_graphql::Error> {
-        let mut conn = ctx.data::<PgPool>()?.acquire().await?;
-        let browser_session = conn
+        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
+        let browser_session = repo
             .browser_session()
             .lookup(self.0.user_session_id)
             .await?
@@ -138,8 +140,8 @@ impl OAuth2Consent {
 
     /// OAuth 2.0 client for which the user granted access.
     pub async fn client(&self, ctx: &Context<'_>) -> Result<OAuth2Client, async_graphql::Error> {
-        let mut conn = ctx.data::<PgPool>()?.acquire().await?;
-        let client = conn
+        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
+        let client = repo
             .oauth2_client()
             .lookup(self.client_id)
             .await?

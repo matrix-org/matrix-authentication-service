@@ -31,7 +31,7 @@ use mas_keystore::Encrypter;
 use mas_router::{CompatLoginSsoAction, PostAuthAction, Route};
 use mas_storage::{
     compat::{CompatSessionRepository, CompatSsoLoginRepository},
-    Repository,
+    PgRepository, Repository,
 };
 use mas_templates::{CompatSsoContext, ErrorContext, TemplateContext, Templates};
 use serde::{Deserialize, Serialize};
@@ -60,12 +60,12 @@ pub async fn get(
     Query(params): Query<Params>,
 ) -> Result<Response, FancyError> {
     let (clock, mut rng) = crate::clock_and_rng();
-    let mut conn = pool.acquire().await?;
+    let mut repo = PgRepository::from_pool(&pool).await?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
 
-    let maybe_session = session_info.load_session(&mut conn).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     let session = if let Some(session) = maybe_session {
         session
@@ -90,7 +90,7 @@ pub async fn get(
         return Ok((cookie_jar, destination.go()).into_response());
     }
 
-    let login = conn
+    let login = repo
         .compat_sso_login()
         .lookup(id)
         .await?
@@ -124,12 +124,12 @@ pub async fn post(
     Form(form): Form<ProtectedForm<()>>,
 ) -> Result<Response, FancyError> {
     let (clock, mut rng) = crate::clock_and_rng();
-    let mut txn = pool.begin().await?;
+    let mut repo = PgRepository::from_pool(&pool).await?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
     cookie_jar.verify_form(clock.now(), form)?;
 
-    let maybe_session = session_info.load_session(&mut txn).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     let session = if let Some(session) = maybe_session {
         session
@@ -154,7 +154,7 @@ pub async fn post(
         return Ok((cookie_jar, destination.go()).into_response());
     }
 
-    let login = txn
+    let login = repo
         .compat_sso_login()
         .lookup(id)
         .await?
@@ -188,16 +188,16 @@ pub async fn post(
     };
 
     let device = Device::generate(&mut rng);
-    let compat_session = txn
+    let compat_session = repo
         .compat_session()
         .add(&mut rng, &clock, &session.user, device)
         .await?;
 
-    txn.compat_sso_login()
+    repo.compat_sso_login()
         .fulfill(&clock, login, &compat_session)
         .await?;
 
-    txn.commit().await?;
+    repo.save().await?;
 
     Ok((cookie_jar, Redirect::to(redirect_uri.as_str())).into_response())
 }

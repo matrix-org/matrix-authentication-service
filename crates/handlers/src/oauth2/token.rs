@@ -37,7 +37,7 @@ use mas_storage::{
         OAuth2RefreshTokenRepository, OAuth2SessionRepository,
     },
     user::BrowserSessionRepository,
-    Repository,
+    PgRepository, Repository,
 };
 use oauth2_types::{
     errors::{ClientError, ClientErrorCode},
@@ -49,7 +49,7 @@ use oauth2_types::{
 };
 use serde::Serialize;
 use serde_with::{serde_as, skip_serializing_none};
-use sqlx::{PgPool, Postgres, Transaction};
+use sqlx::PgPool;
 use thiserror::Error;
 use tracing::debug;
 use url::Url;
@@ -166,11 +166,11 @@ pub(crate) async fn post(
     State(encrypter): State<Encrypter>,
     client_authorization: ClientAuthorization<AccessTokenRequest>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let mut txn = pool.begin().await?;
+    let mut repo = PgRepository::from_pool(&pool).await?;
 
     let client = client_authorization
         .credentials
-        .fetch(&mut txn)
+        .fetch(&mut repo)
         .await?
         .ok_or(RouteError::ClientNotFound)?;
 
@@ -188,10 +188,10 @@ pub(crate) async fn post(
 
     let reply = match form {
         AccessTokenRequest::AuthorizationCode(grant) => {
-            authorization_code_grant(&grant, &client, &key_store, &url_builder, txn).await?
+            authorization_code_grant(&grant, &client, &key_store, &url_builder, repo).await?
         }
         AccessTokenRequest::RefreshToken(grant) => {
-            refresh_token_grant(&grant, &client, txn).await?
+            refresh_token_grant(&grant, &client, repo).await?
         }
         _ => {
             return Err(RouteError::InvalidGrant);
@@ -211,11 +211,11 @@ async fn authorization_code_grant(
     client: &Client,
     key_store: &Keystore,
     url_builder: &UrlBuilder,
-    mut txn: Transaction<'_, Postgres>,
+    mut repo: PgRepository,
 ) -> Result<AccessTokenResponse, RouteError> {
     let (clock, mut rng) = crate::clock_and_rng();
 
-    let authz_grant = txn
+    let authz_grant = repo
         .oauth2_authorization_grant()
         .find_by_code(&grant.code)
         .await?
@@ -238,13 +238,13 @@ async fn authorization_code_grant(
             // Ending the session if the token was already exchanged more than 20s ago
             if now - exchanged_at > Duration::seconds(20) {
                 debug!("Ending potentially compromised session");
-                let session = txn
+                let session = repo
                     .oauth2_session()
                     .lookup(session_id)
                     .await?
                     .ok_or(RouteError::NoSuchOAuthSession)?;
-                txn.oauth2_session().finish(&clock, session).await?;
-                txn.commit().await?;
+                repo.oauth2_session().finish(&clock, session).await?;
+                repo.save().await?;
             }
 
             return Err(RouteError::InvalidGrant);
@@ -266,7 +266,7 @@ async fn authorization_code_grant(
         }
     };
 
-    let session = txn
+    let session = repo
         .oauth2_session()
         .lookup(session_id)
         .await?
@@ -289,7 +289,7 @@ async fn authorization_code_grant(
         }
     };
 
-    let browser_session = txn
+    let browser_session = repo
         .browser_session()
         .lookup(session.user_session_id)
         .await?
@@ -299,12 +299,12 @@ async fn authorization_code_grant(
     let access_token_str = TokenType::AccessToken.generate(&mut rng);
     let refresh_token_str = TokenType::RefreshToken.generate(&mut rng);
 
-    let access_token = txn
+    let access_token = repo
         .oauth2_access_token()
         .add(&mut rng, &clock, &session, access_token_str, ttl)
         .await?;
 
-    let refresh_token = txn
+    let refresh_token = repo
         .oauth2_refresh_token()
         .add(&mut rng, &clock, &session, &access_token, refresh_token_str)
         .await?;
@@ -355,11 +355,11 @@ async fn authorization_code_grant(
         params = params.with_id_token(id_token);
     }
 
-    txn.oauth2_authorization_grant()
+    repo.oauth2_authorization_grant()
         .exchange(&clock, authz_grant)
         .await?;
 
-    txn.commit().await?;
+    repo.save().await?;
 
     Ok(params)
 }
@@ -367,17 +367,17 @@ async fn authorization_code_grant(
 async fn refresh_token_grant(
     grant: &RefreshTokenGrant,
     client: &Client,
-    mut txn: Transaction<'_, Postgres>,
+    mut repo: PgRepository,
 ) -> Result<AccessTokenResponse, RouteError> {
     let (clock, mut rng) = crate::clock_and_rng();
 
-    let refresh_token = txn
+    let refresh_token = repo
         .oauth2_refresh_token()
         .find_by_token(&grant.refresh_token)
         .await?
         .ok_or(RouteError::InvalidGrant)?;
 
-    let session = txn
+    let session = repo
         .oauth2_session()
         .lookup(refresh_token.session_id)
         .await?
@@ -396,12 +396,12 @@ async fn refresh_token_grant(
     let access_token_str = TokenType::AccessToken.generate(&mut rng);
     let refresh_token_str = TokenType::RefreshToken.generate(&mut rng);
 
-    let new_access_token = txn
+    let new_access_token = repo
         .oauth2_access_token()
         .add(&mut rng, &clock, &session, access_token_str.clone(), ttl)
         .await?;
 
-    let new_refresh_token = txn
+    let new_refresh_token = repo
         .oauth2_refresh_token()
         .add(
             &mut rng,
@@ -412,14 +412,14 @@ async fn refresh_token_grant(
         )
         .await?;
 
-    let refresh_token = txn
+    let refresh_token = repo
         .oauth2_refresh_token()
         .consume(&clock, refresh_token)
         .await?;
 
     if let Some(access_token_id) = refresh_token.access_token_id {
-        if let Some(access_token) = txn.oauth2_access_token().lookup(access_token_id).await? {
-            txn.oauth2_access_token()
+        if let Some(access_token) = repo.oauth2_access_token().lookup(access_token_id).await? {
+            repo.oauth2_access_token()
                 .revoke(&clock, access_token)
                 .await?;
         }
@@ -430,7 +430,7 @@ async fn refresh_token_grant(
         .with_refresh_token(new_refresh_token.refresh_token)
         .with_scope(session.scope);
 
-    txn.commit().await?;
+    repo.save().await?;
 
     Ok(params)
 }

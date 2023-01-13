@@ -26,14 +26,14 @@ use mas_keystore::Encrypter;
 use mas_storage::{
     upstream_oauth2::UpstreamOAuthProviderRepository,
     user::{BrowserSessionRepository, UserPasswordRepository, UserRepository},
-    Clock, Repository,
+    Clock, PgRepository, Repository,
 };
 use mas_templates::{
     FieldError, FormError, LoginContext, LoginFormField, TemplateContext, Templates, ToFormState,
 };
 use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
-use sqlx::{PgConnection, PgPool};
+use sqlx::PgPool;
 use zeroize::Zeroizing;
 
 use super::shared::OptionalPostAuthAction;
@@ -56,23 +56,23 @@ pub(crate) async fn get(
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
     let (clock, mut rng) = crate::clock_and_rng();
-    let mut conn = pool.acquire().await?;
+    let mut repo = PgRepository::from_pool(&pool).await?;
 
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut conn).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     if maybe_session.is_some() {
         let reply = query.go_next();
         Ok((cookie_jar, reply).into_response())
     } else {
-        let providers = conn.upstream_oauth_provider().all().await?;
+        let providers = repo.upstream_oauth_provider().all().await?;
         let content = render(
             LoginContext::default().with_upstrem_providers(providers),
             query,
             csrf_token,
-            &mut conn,
+            &mut repo,
             &templates,
         )
         .await?;
@@ -90,7 +90,7 @@ pub(crate) async fn post(
     Form(form): Form<ProtectedForm<LoginForm>>,
 ) -> Result<Response, FancyError> {
     let (clock, mut rng) = crate::clock_and_rng();
-    let mut conn = pool.acquire().await?;
+    let mut repo = PgRepository::from_pool(&pool).await?;
 
     let form = cookie_jar.verify_form(clock.now(), form)?;
 
@@ -112,14 +112,14 @@ pub(crate) async fn post(
     };
 
     if !state.is_valid() {
-        let providers = conn.upstream_oauth_provider().all().await?;
+        let providers = repo.upstream_oauth_provider().all().await?;
         let content = render(
             LoginContext::default()
                 .with_form_state(state)
                 .with_upstrem_providers(providers),
             query,
             csrf_token,
-            &mut conn,
+            &mut repo,
             &templates,
         )
         .await?;
@@ -129,7 +129,7 @@ pub(crate) async fn post(
 
     match login(
         password_manager,
-        &mut conn,
+        &mut repo,
         rng,
         &clock,
         &form.username,
@@ -138,6 +138,8 @@ pub(crate) async fn post(
     .await
     {
         Ok(session_info) => {
+            repo.save().await?;
+
             let cookie_jar = cookie_jar.set_session(&session_info);
             let reply = query.go_next();
             Ok((cookie_jar, reply).into_response())
@@ -149,7 +151,7 @@ pub(crate) async fn post(
                 LoginContext::default().with_form_state(state),
                 query,
                 csrf_token,
-                &mut conn,
+                &mut repo,
                 &templates,
             )
             .await?;
@@ -162,7 +164,7 @@ pub(crate) async fn post(
 // TODO: move that logic elsewhere?
 async fn login(
     password_manager: PasswordManager,
-    conn: &mut PgConnection,
+    repo: &mut impl Repository,
     mut rng: impl Rng + CryptoRng + Send,
     clock: &Clock,
     username: &str,
@@ -170,7 +172,7 @@ async fn login(
 ) -> Result<BrowserSession, FormError> {
     // XXX: we're loosing the error context here
     // First, lookup the user
-    let user = conn
+    let user = repo
         .user()
         .find_by_username(username)
         .await
@@ -178,7 +180,7 @@ async fn login(
         .ok_or(FormError::InvalidCredentials)?;
 
     // And its password
-    let user_password = conn
+    let user_password = repo
         .user_password()
         .active(&user)
         .await
@@ -200,7 +202,7 @@ async fn login(
 
     let user_password = if let Some((version, new_password_hash)) = new_password_hash {
         // Save the upgraded password
-        conn.user_password()
+        repo.user_password()
             .add(
                 &mut rng,
                 clock,
@@ -216,14 +218,14 @@ async fn login(
     };
 
     // Start a new session
-    let user_session = conn
+    let user_session = repo
         .browser_session()
         .add(&mut rng, clock, &user)
         .await
         .map_err(|_| FormError::Internal)?;
 
     // And mark it as authenticated by the password
-    let user_session = conn
+    let user_session = repo
         .browser_session()
         .authenticate_with_password(&mut rng, clock, user_session, &user_password)
         .await
@@ -236,10 +238,10 @@ async fn render(
     ctx: LoginContext,
     action: OptionalPostAuthAction,
     csrf_token: CsrfToken,
-    conn: &mut PgConnection,
+    repo: &mut impl Repository,
     templates: &Templates,
 ) -> Result<String, FancyError> {
-    let next = action.load_context(conn).await?;
+    let next = action.load_context(repo).await?;
     let ctx = if let Some(next) = next {
         ctx.with_post_action(next)
     } else {

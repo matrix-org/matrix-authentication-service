@@ -25,9 +25,9 @@ use mas_axum_utils::{
 };
 use mas_keystore::Encrypter;
 use mas_storage::{
-    upstream_oauth2::UpstreamOAuthSessionRepository,
+    upstream_oauth2::{UpstreamOAuthLinkRepository, UpstreamOAuthSessionRepository},
     user::{BrowserSessionRepository, UserRepository},
-    Repository, UpstreamOAuthLinkRepository,
+    PgRepository, Repository,
 };
 use mas_templates::{
     EmptyContext, TemplateContext, Templates, UpstreamExistingLinkContext, UpstreamRegister,
@@ -99,7 +99,7 @@ pub(crate) async fn get(
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(link_id): Path<Ulid>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let mut txn = pool.begin().await?;
+    let mut repo = PgRepository::from_pool(&pool).await?;
     let (clock, mut rng) = crate::clock_and_rng();
 
     let sessions_cookie = UpstreamSessionsCookie::load(&cookie_jar);
@@ -107,13 +107,13 @@ pub(crate) async fn get(
         .lookup_link(link_id)
         .map_err(|_| RouteError::MissingCookie)?;
 
-    let link = txn
+    let link = repo
         .upstream_oauth_link()
         .lookup(link_id)
         .await?
         .ok_or(RouteError::LinkNotFound)?;
 
-    let upstream_session = txn
+    let upstream_session = repo
         .upstream_oauth_session()
         .lookup(session_id)
         .await?
@@ -131,24 +131,24 @@ pub(crate) async fn get(
 
     let (user_session_info, cookie_jar) = cookie_jar.session_info();
     let (csrf_token, mut cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
-    let maybe_user_session = user_session_info.load_session(&mut txn).await?;
+    let maybe_user_session = user_session_info.load_session(&mut repo).await?;
 
     let render = match (maybe_user_session, link.user_id) {
         (Some(session), Some(user_id)) if session.user.id == user_id => {
             // Session already linked, and link matches the currently logged
             // user. Mark the session as consumed and renew the authentication.
-            txn.upstream_oauth_session()
+            repo.upstream_oauth_session()
                 .consume(&clock, upstream_session)
                 .await?;
 
-            let session = txn
+            let session = repo
                 .browser_session()
                 .authenticate_with_upstream(&mut rng, &clock, session, &link)
                 .await?;
 
             cookie_jar = cookie_jar.set_session(&session);
 
-            txn.commit().await?;
+            repo.save().await?;
 
             let ctx = EmptyContext
                 .with_session(session)
@@ -163,7 +163,7 @@ pub(crate) async fn get(
             // Session already linked, but link doesn't match the currently
             // logged user. Suggest logging out of the current user
             // and logging in with the new one
-            let user = txn
+            let user = repo
                 .user()
                 .lookup(user_id)
                 .await?
@@ -187,7 +187,7 @@ pub(crate) async fn get(
 
         (None, Some(user_id)) => {
             // Session linked, but user not logged in: do the login
-            let user = txn
+            let user = repo
                 .user()
                 .lookup(user_id)
                 .await?
@@ -216,8 +216,8 @@ pub(crate) async fn post(
     Path(link_id): Path<Ulid>,
     Form(form): Form<ProtectedForm<FormData>>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let mut txn = pool.begin().await?;
     let (clock, mut rng) = crate::clock_and_rng();
+    let mut repo = PgRepository::from_pool(&pool).await?;
     let form = cookie_jar.verify_form(clock.now(), form)?;
 
     let sessions_cookie = UpstreamSessionsCookie::load(&cookie_jar);
@@ -229,13 +229,13 @@ pub(crate) async fn post(
         post_auth_action: post_auth_action.cloned(),
     };
 
-    let link = txn
+    let link = repo
         .upstream_oauth_link()
         .lookup(link_id)
         .await?
         .ok_or(RouteError::LinkNotFound)?;
 
-    let upstream_session = txn
+    let upstream_session = repo
         .upstream_oauth_session()
         .lookup(session_id)
         .await?
@@ -252,11 +252,11 @@ pub(crate) async fn post(
     }
 
     let (user_session_info, cookie_jar) = cookie_jar.session_info();
-    let maybe_user_session = user_session_info.load_session(&mut txn).await?;
+    let maybe_user_session = user_session_info.load_session(&mut repo).await?;
 
     let session = match (maybe_user_session, link.user_id, form) {
         (Some(session), None, FormData::Link) => {
-            txn.upstream_oauth_link()
+            repo.upstream_oauth_link()
                 .associate_to_user(&link, &session.user)
                 .await?;
 
@@ -264,32 +264,32 @@ pub(crate) async fn post(
         }
 
         (None, Some(user_id), FormData::Login) => {
-            let user = txn
+            let user = repo
                 .user()
                 .lookup(user_id)
                 .await?
                 .ok_or(RouteError::UserNotFound)?;
 
-            txn.browser_session().add(&mut rng, &clock, &user).await?
+            repo.browser_session().add(&mut rng, &clock, &user).await?
         }
 
         (None, None, FormData::Register { username }) => {
-            let user = txn.user().add(&mut rng, &clock, username).await?;
-            txn.upstream_oauth_link()
+            let user = repo.user().add(&mut rng, &clock, username).await?;
+            repo.upstream_oauth_link()
                 .associate_to_user(&link, &user)
                 .await?;
 
-            txn.browser_session().add(&mut rng, &clock, &user).await?
+            repo.browser_session().add(&mut rng, &clock, &user).await?
         }
 
         _ => return Err(RouteError::InvalidFormAction),
     };
 
-    txn.upstream_oauth_session()
+    repo.upstream_oauth_session()
         .consume(&clock, upstream_session)
         .await?;
 
-    let session = txn
+    let session = repo
         .browser_session()
         .authenticate_with_upstream(&mut rng, &clock, session, &link)
         .await?;
@@ -299,7 +299,7 @@ pub(crate) async fn post(
         .save(cookie_jar, clock.now());
     let cookie_jar = cookie_jar.set_session(&session);
 
-    txn.commit().await?;
+    repo.save().await?;
 
     Ok((cookie_jar, post_auth_action.go_next()))
 }

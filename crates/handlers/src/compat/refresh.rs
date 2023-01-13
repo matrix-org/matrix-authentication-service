@@ -18,7 +18,7 @@ use hyper::StatusCode;
 use mas_data_model::{TokenFormatError, TokenType};
 use mas_storage::{
     compat::{CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository},
-    Repository,
+    PgRepository, Repository,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DurationMilliSeconds};
@@ -92,7 +92,7 @@ pub(crate) async fn post(
     Json(input): Json<RequestBody>,
 ) -> Result<impl IntoResponse, RouteError> {
     let (clock, mut rng) = crate::clock_and_rng();
-    let mut txn = pool.begin().await?;
+    let mut repo = PgRepository::from_pool(&pool).await?;
 
     let token_type = TokenType::check(&input.refresh_token)?;
 
@@ -100,7 +100,7 @@ pub(crate) async fn post(
         return Err(RouteError::InvalidToken);
     }
 
-    let refresh_token = txn
+    let refresh_token = repo
         .compat_refresh_token()
         .find_by_token(&input.refresh_token)
         .await?
@@ -110,7 +110,7 @@ pub(crate) async fn post(
         return Err(RouteError::RefreshTokenConsumed);
     }
 
-    let session = txn
+    let session = repo
         .compat_session()
         .lookup(refresh_token.session_id)
         .await?
@@ -120,7 +120,7 @@ pub(crate) async fn post(
         return Err(RouteError::InvalidSession);
     }
 
-    let access_token = txn
+    let access_token = repo
         .compat_access_token()
         .lookup(refresh_token.access_token_id)
         .await?
@@ -130,7 +130,7 @@ pub(crate) async fn post(
     let new_access_token_str = TokenType::CompatAccessToken.generate(&mut rng);
 
     let expires_in = Duration::minutes(5);
-    let new_access_token = txn
+    let new_access_token = repo
         .compat_access_token()
         .add(
             &mut rng,
@@ -140,7 +140,7 @@ pub(crate) async fn post(
             Some(expires_in),
         )
         .await?;
-    let new_refresh_token = txn
+    let new_refresh_token = repo
         .compat_refresh_token()
         .add(
             &mut rng,
@@ -151,17 +151,17 @@ pub(crate) async fn post(
         )
         .await?;
 
-    txn.compat_refresh_token()
+    repo.compat_refresh_token()
         .consume(&clock, refresh_token)
         .await?;
 
     if let Some(access_token) = access_token {
-        txn.compat_access_token()
+        repo.compat_access_token()
             .expire(&clock, access_token)
             .await?;
     }
 
-    txn.commit().await?;
+    repo.save().await?;
 
     Ok(Json(ResponseBody {
         access_token: new_access_token.token,

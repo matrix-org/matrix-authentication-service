@@ -31,7 +31,7 @@ use mas_router::UrlBuilder;
 use mas_storage::{
     oauth2::OAuth2ClientRepository,
     user::{BrowserSessionRepository, UserEmailRepository},
-    Repository,
+    DatabaseError, PgRepository, Repository,
 };
 use oauth2_types::scope;
 use serde::Serialize;
@@ -64,7 +64,7 @@ pub enum RouteError {
     Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
 
     #[error("failed to authenticate")]
-    AuthorizationVerificationError(#[from] AuthorizationVerificationError),
+    AuthorizationVerificationError(#[from] AuthorizationVerificationError<DatabaseError>),
 
     #[error("no suitable key found for signing")]
     InvalidSigningKey,
@@ -102,11 +102,11 @@ pub async fn get(
     user_authorization: UserAuthorization,
 ) -> Result<Response, RouteError> {
     let (clock, mut rng) = crate::clock_and_rng();
-    let mut conn = pool.acquire().await?;
+    let mut repo = PgRepository::from_pool(&pool).await?;
 
-    let session = user_authorization.protected(&mut conn, clock.now()).await?;
+    let session = user_authorization.protected(&mut repo, clock.now()).await?;
 
-    let browser_session = conn
+    let browser_session = repo
         .browser_session()
         .lookup(session.user_session_id)
         .await?
@@ -115,7 +115,7 @@ pub async fn get(
     let user = browser_session.user;
 
     let user_email = if session.scope.contains(&scope::EMAIL) {
-        conn.user_email().get_primary(&user).await?
+        repo.user_email().get_primary(&user).await?
     } else {
         None
     };
@@ -127,7 +127,7 @@ pub async fn get(
         email: user_email.map(|u| u.email),
     };
 
-    let client = conn
+    let client = repo
         .oauth2_client()
         .lookup(session.client_id)
         .await?

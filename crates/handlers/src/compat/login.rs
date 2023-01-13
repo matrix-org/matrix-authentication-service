@@ -22,11 +22,11 @@ use mas_storage::{
         CompatSsoLoginRepository,
     },
     user::{UserPasswordRepository, UserRepository},
-    Clock, Repository,
+    Clock, PgRepository, Repository,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none, DurationMilliSeconds};
-use sqlx::{PgPool, Postgres, Transaction};
+use sqlx::PgPool;
 use thiserror::Error;
 use zeroize::Zeroizing;
 
@@ -199,14 +199,14 @@ pub(crate) async fn post(
     Json(input): Json<RequestBody>,
 ) -> Result<impl IntoResponse, RouteError> {
     let (clock, mut rng) = crate::clock_and_rng();
-    let mut txn = pool.begin().await?;
+    let mut repo = PgRepository::from_pool(&pool).await?;
     let (session, user) = match input.credentials {
         Credentials::Password {
             identifier: Identifier::User { user },
             password,
-        } => user_password_login(&password_manager, &mut txn, user, password).await?,
+        } => user_password_login(&password_manager, &mut repo, user, password).await?,
 
-        Credentials::Token { token } => token_login(&mut txn, &clock, &token).await?,
+        Credentials::Token { token } => token_login(&mut repo, &clock, &token).await?,
 
         _ => {
             return Err(RouteError::Unsupported);
@@ -224,14 +224,14 @@ pub(crate) async fn post(
     };
 
     let access_token = TokenType::CompatAccessToken.generate(&mut rng);
-    let access_token = txn
+    let access_token = repo
         .compat_access_token()
         .add(&mut rng, &clock, &session, access_token, expires_in)
         .await?;
 
     let refresh_token = if input.refresh_token {
         let refresh_token = TokenType::CompatRefreshToken.generate(&mut rng);
-        let refresh_token = txn
+        let refresh_token = repo
             .compat_refresh_token()
             .add(&mut rng, &clock, &session, &access_token, refresh_token)
             .await?;
@@ -240,7 +240,7 @@ pub(crate) async fn post(
         None
     };
 
-    txn.commit().await?;
+    repo.save().await?;
 
     Ok(Json(ResponseBody {
         access_token: access_token.token,
@@ -252,11 +252,11 @@ pub(crate) async fn post(
 }
 
 async fn token_login(
-    txn: &mut Transaction<'_, Postgres>,
+    repo: &mut PgRepository,
     clock: &Clock,
     token: &str,
 ) -> Result<(CompatSession, User), RouteError> {
-    let login = txn
+    let login = repo
         .compat_sso_login()
         .find_by_token(token)
         .await?
@@ -300,40 +300,40 @@ async fn token_login(
         }
     };
 
-    let session = txn
+    let session = repo
         .compat_session()
         .lookup(session_id)
         .await?
         .ok_or(RouteError::SessionNotFound)?;
 
-    let user = txn
+    let user = repo
         .user()
         .lookup(session.user_id)
         .await?
         .ok_or(RouteError::UserNotFound)?;
 
-    txn.compat_sso_login().exchange(clock, login).await?;
+    repo.compat_sso_login().exchange(clock, login).await?;
 
     Ok((session, user))
 }
 
 async fn user_password_login(
     password_manager: &PasswordManager,
-    txn: &mut Transaction<'_, Postgres>,
+    repo: &mut PgRepository,
     username: String,
     password: String,
 ) -> Result<(CompatSession, User), RouteError> {
     let (clock, mut rng) = crate::clock_and_rng();
 
     // Find the user
-    let user = txn
+    let user = repo
         .user()
         .find_by_username(&username)
         .await?
         .ok_or(RouteError::UserNotFound)?;
 
     // Lookup its password
-    let user_password = txn
+    let user_password = repo
         .user_password()
         .active(&user)
         .await?
@@ -354,7 +354,7 @@ async fn user_password_login(
 
     if let Some((version, hashed_password)) = new_password_hash {
         // Save the upgraded password if needed
-        txn.user_password()
+        repo.user_password()
             .add(
                 &mut rng,
                 &clock,
@@ -368,7 +368,7 @@ async fn user_password_login(
 
     // Now that the user credentials have been verified, start a new compat session
     let device = Device::generate(&mut rng);
-    let session = txn
+    let session = repo
         .compat_session()
         .add(&mut rng, &clock, &user, device)
         .await?;

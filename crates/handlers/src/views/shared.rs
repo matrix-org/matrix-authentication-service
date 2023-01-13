@@ -15,12 +15,13 @@
 use anyhow::Context;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{
-    compat::CompatSsoLoginRepository, oauth2::OAuth2AuthorizationGrantRepository,
-    upstream_oauth2::UpstreamOAuthProviderRepository, Repository, UpstreamOAuthLinkRepository,
+    compat::CompatSsoLoginRepository,
+    oauth2::OAuth2AuthorizationGrantRepository,
+    upstream_oauth2::{UpstreamOAuthLinkRepository, UpstreamOAuthProviderRepository},
+    Repository,
 };
 use mas_templates::{PostAuthContext, PostAuthContextInner};
 use serde::{Deserialize, Serialize};
-use sqlx::PgConnection;
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone)]
 pub(crate) struct OptionalPostAuthAction {
@@ -39,14 +40,14 @@ impl OptionalPostAuthAction {
         self.go_next_or_default(&mas_router::Index)
     }
 
-    pub async fn load_context(
+    pub async fn load_context<R: Repository>(
         &self,
-        conn: &mut PgConnection,
+        repo: &mut R,
     ) -> anyhow::Result<Option<PostAuthContext>> {
         let Some(action) = self.post_auth_action.clone() else { return Ok(None) };
         let ctx = match action {
             PostAuthAction::ContinueAuthorizationGrant { id } => {
-                let grant = conn
+                let grant = repo
                     .oauth2_authorization_grant()
                     .lookup(id)
                     .await?
@@ -56,7 +57,7 @@ impl OptionalPostAuthAction {
             }
 
             PostAuthAction::ContinueCompatSsoLogin { id } => {
-                let login = conn
+                let login = repo
                     .compat_sso_login()
                     .lookup(id)
                     .await?
@@ -68,13 +69,13 @@ impl OptionalPostAuthAction {
             PostAuthAction::ChangePassword => PostAuthContextInner::ChangePassword,
 
             PostAuthAction::LinkUpstream { id } => {
-                let link = conn
+                let link = repo
                     .upstream_oauth_link()
                     .lookup(id)
                     .await?
                     .context("Failed to load upstream OAuth 2.0 link")?;
 
-                let provider = conn
+                let provider = repo
                     .upstream_oauth_provider()
                     .lookup(link.provider_id)
                     .await?

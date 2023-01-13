@@ -20,8 +20,9 @@ use chrono::{DateTime, Utc};
 use mas_storage::{
     compat::CompatSsoLoginRepository,
     oauth2::OAuth2SessionRepository,
+    upstream_oauth2::UpstreamOAuthLinkRepository,
     user::{BrowserSessionRepository, UserEmailRepository},
-    Repository, UpstreamOAuthLinkRepository,
+    PgRepository, Repository,
 };
 use sqlx::PgPool;
 
@@ -63,10 +64,9 @@ impl User {
         &self,
         ctx: &Context<'_>,
     ) -> Result<Option<UserEmail>, async_graphql::Error> {
-        let database = ctx.data::<PgPool>()?;
-        let mut conn = database.acquire().await?;
+        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
 
-        Ok(conn.user_email().get_primary(&self.0).await?.map(UserEmail))
+        Ok(repo.user_email().get_primary(&self.0).await?.map(UserEmail))
     }
 
     /// Get the list of compatibility SSO logins, chronologically sorted
@@ -81,7 +81,7 @@ impl User {
         #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
         #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
     ) -> Result<Connection<Cursor, CompatSsoLogin>, async_graphql::Error> {
-        let database = ctx.data::<PgPool>()?;
+        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
 
         query(
             after,
@@ -89,7 +89,6 @@ impl User {
             first,
             last,
             |after, before, first, last| async move {
-                let mut conn = database.acquire().await?;
                 let after_id = after
                     .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::CompatSsoLogin))
                     .transpose()?;
@@ -97,7 +96,7 @@ impl User {
                     .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::CompatSsoLogin))
                     .transpose()?;
 
-                let page = conn
+                let page = repo
                     .compat_sso_login()
                     .list_paginated(&self.0, before_id, after_id, first, last)
                     .await?;
@@ -128,7 +127,7 @@ impl User {
         #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
         #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
     ) -> Result<Connection<Cursor, BrowserSession>, async_graphql::Error> {
-        let database = ctx.data::<PgPool>()?;
+        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
 
         query(
             after,
@@ -136,7 +135,6 @@ impl User {
             first,
             last,
             |after, before, first, last| async move {
-                let mut conn = database.acquire().await?;
                 let after_id = after
                     .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::BrowserSession))
                     .transpose()?;
@@ -144,7 +142,7 @@ impl User {
                     .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::BrowserSession))
                     .transpose()?;
 
-                let page = conn
+                let page = repo
                     .browser_session()
                     .list_active_paginated(&self.0, before_id, after_id, first, last)
                     .await?;
@@ -175,7 +173,7 @@ impl User {
         #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
         #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
     ) -> Result<Connection<Cursor, UserEmail, UserEmailsPagination>, async_graphql::Error> {
-        let database = ctx.data::<PgPool>()?;
+        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
 
         query(
             after,
@@ -183,7 +181,6 @@ impl User {
             first,
             last,
             |after, before, first, last| async move {
-                let mut conn = database.acquire().await?;
                 let after_id = after
                     .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::UserEmail))
                     .transpose()?;
@@ -191,7 +188,7 @@ impl User {
                     .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::UserEmail))
                     .transpose()?;
 
-                let page = conn
+                let page = repo
                     .user_email()
                     .list_paginated(&self.0, before_id, after_id, first, last)
                     .await?;
@@ -226,7 +223,7 @@ impl User {
         #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
         #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
     ) -> Result<Connection<Cursor, OAuth2Session>, async_graphql::Error> {
-        let database = ctx.data::<PgPool>()?;
+        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
 
         query(
             after,
@@ -234,7 +231,6 @@ impl User {
             first,
             last,
             |after, before, first, last| async move {
-                let mut conn = database.acquire().await?;
                 let after_id = after
                     .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::OAuth2Session))
                     .transpose()?;
@@ -242,7 +238,7 @@ impl User {
                     .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::OAuth2Session))
                     .transpose()?;
 
-                let page = conn
+                let page = repo
                     .oauth2_session()
                     .list_paginated(&self.0, before_id, after_id, first, last)
                     .await?;
@@ -273,7 +269,7 @@ impl User {
         #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
         #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
     ) -> Result<Connection<Cursor, UpstreamOAuth2Link>, async_graphql::Error> {
-        let database = ctx.data::<PgPool>()?;
+        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
 
         query(
             after,
@@ -281,7 +277,6 @@ impl User {
             first,
             last,
             |after, before, first, last| async move {
-                let mut conn = database.acquire().await?;
                 let after_id = after
                     .map(|x: OpaqueCursor<NodeCursor>| {
                         x.extract_for_type(NodeType::UpstreamOAuth2Link)
@@ -293,7 +288,7 @@ impl User {
                     })
                     .transpose()?;
 
-                let page = conn
+                let page = repo
                     .upstream_oauth_link()
                     .list_paginated(&self.0, before_id, after_id, first, last)
                     .await?;
@@ -347,8 +342,8 @@ pub struct UserEmailsPagination(mas_data_model::User);
 impl UserEmailsPagination {
     /// Identifies the total count of items in the connection.
     async fn total_count(&self, ctx: &Context<'_>) -> Result<usize, async_graphql::Error> {
-        let mut conn = ctx.data::<PgPool>()?.acquire().await?;
-        let count = conn.user_email().count(&self.0).await?;
+        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
+        let count = repo.user_email().count(&self.0).await?;
         Ok(count)
     }
 }

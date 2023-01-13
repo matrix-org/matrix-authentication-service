@@ -2673,7 +2673,6 @@ dependencies = [
  "serde_json",
  "serde_urlencoded",
  "serde_with",
- "sqlx",
  "thiserror",
  "tokio",
  "tower",

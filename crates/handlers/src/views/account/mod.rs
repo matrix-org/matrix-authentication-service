@@ -25,7 +25,7 @@ use mas_keystore::Encrypter;
 use mas_router::Route;
 use mas_storage::{
     user::{BrowserSessionRepository, UserEmailRepository},
-    Repository,
+    PgRepository, Repository,
 };
 use mas_templates::{AccountContext, TemplateContext, Templates};
 use sqlx::PgPool;
@@ -36,12 +36,12 @@ pub(crate) async fn get(
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
     let (clock, mut rng) = crate::clock_and_rng();
-    let mut conn = pool.acquire().await?;
+    let mut repo = PgRepository::from_pool(&pool).await?;
 
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut conn).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     let session = if let Some(session) = maybe_session {
         session
@@ -50,9 +50,9 @@ pub(crate) async fn get(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    let active_sessions = conn.browser_session().count_active(&session.user).await?;
+    let active_sessions = repo.browser_session().count_active(&session.user).await?;
 
-    let emails = conn.user_email().all(&session.user).await?;
+    let emails = repo.user_email().all(&session.user).await?;
 
     let ctx = AccountContext::new(active_sessions, emails)
         .with_session(session)

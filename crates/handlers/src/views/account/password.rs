@@ -27,7 +27,7 @@ use mas_keystore::Encrypter;
 use mas_router::Route;
 use mas_storage::{
     user::{BrowserSessionRepository, UserPasswordRepository},
-    Clock, Repository,
+    Clock, PgRepository, Repository,
 };
 use mas_templates::{EmptyContext, TemplateContext, Templates};
 use rand::Rng;
@@ -50,11 +50,11 @@ pub(crate) async fn get(
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
     let (clock, mut rng) = crate::clock_and_rng();
-    let mut conn = pool.acquire().await?;
+    let mut repo = PgRepository::from_pool(&pool).await?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut conn).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     if let Some(session) = maybe_session {
         render(&mut rng, &clock, templates, session, cookie_jar).await
@@ -90,13 +90,13 @@ pub(crate) async fn post(
     Form(form): Form<ProtectedForm<ChangeForm>>,
 ) -> Result<Response, FancyError> {
     let (clock, mut rng) = crate::clock_and_rng();
-    let mut txn = pool.begin().await?;
+    let mut repo = PgRepository::from_pool(&pool).await?;
 
     let form = cookie_jar.verify_form(clock.now(), form)?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut txn).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     let session = if let Some(session) = maybe_session {
         session
@@ -105,7 +105,7 @@ pub(crate) async fn post(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    let user_password = txn
+    let user_password = repo
         .user_password()
         .active(&session.user)
         .await?
@@ -129,7 +129,7 @@ pub(crate) async fn post(
     }
 
     let (version, hashed_password) = password_manager.hash(&mut rng, new_password).await?;
-    let user_password = txn
+    let user_password = repo
         .user_password()
         .add(
             &mut rng,
@@ -141,14 +141,14 @@ pub(crate) async fn post(
         )
         .await?;
 
-    let session = txn
+    let session = repo
         .browser_session()
         .authenticate_with_password(&mut rng, &clock, session, &user_password)
         .await?;
 
     let reply = render(&mut rng, &clock, templates.clone(), session, cookie_jar).await?;
 
-    txn.commit().await?;
+    repo.save().await?;
 
     Ok(reply)
 }

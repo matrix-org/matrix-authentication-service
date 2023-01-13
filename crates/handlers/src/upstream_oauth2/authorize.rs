@@ -24,7 +24,7 @@ use mas_oidc_client::requests::authorization_code::AuthorizationRequestData;
 use mas_router::UrlBuilder;
 use mas_storage::{
     upstream_oauth2::{UpstreamOAuthProviderRepository, UpstreamOAuthSessionRepository},
-    Repository,
+    PgRepository, Repository,
 };
 use sqlx::PgPool;
 use thiserror::Error;
@@ -67,9 +67,9 @@ pub(crate) async fn get(
 ) -> Result<impl IntoResponse, RouteError> {
     let (clock, mut rng) = crate::clock_and_rng();
 
-    let mut txn = pool.begin().await?;
+    let mut repo = PgRepository::from_pool(&pool).await?;
 
-    let provider = txn
+    let provider = repo
         .upstream_oauth_provider()
         .lookup(provider_id)
         .await?
@@ -100,7 +100,7 @@ pub(crate) async fn get(
         &mut rng,
     )?;
 
-    let session = txn
+    let session = repo
         .upstream_oauth_session()
         .add(
             &mut rng,
@@ -116,7 +116,7 @@ pub(crate) async fn get(
         .add(session.id, provider.id, data.state, query.post_auth_action)
         .save(cookie_jar, clock.now());
 
-    txn.commit().await?;
+    repo.save().await?;
 
     Ok((cookie_jar, Redirect::temporary(url.as_str())))
 }

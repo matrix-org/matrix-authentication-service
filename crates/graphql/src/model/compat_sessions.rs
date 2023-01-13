@@ -15,7 +15,9 @@
 use anyhow::Context as _;
 use async_graphql::{Context, Description, Object, ID};
 use chrono::{DateTime, Utc};
-use mas_storage::{compat::CompatSessionRepository, user::UserRepository, Repository};
+use mas_storage::{
+    compat::CompatSessionRepository, user::UserRepository, PgRepository, Repository,
+};
 use sqlx::PgPool;
 use url::Url;
 
@@ -35,8 +37,8 @@ impl CompatSession {
 
     /// The user authorized for this session.
     async fn user(&self, ctx: &Context<'_>) -> Result<User, async_graphql::Error> {
-        let mut conn = ctx.data::<PgPool>()?.acquire().await?;
-        let user = conn
+        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
+        let user = repo
             .user()
             .lookup(self.0.user_id)
             .await?
@@ -100,8 +102,8 @@ impl CompatSsoLogin {
     ) -> Result<Option<CompatSession>, async_graphql::Error> {
         let Some(session_id) = self.0.session_id() else { return Ok(None) };
 
-        let mut conn = ctx.data::<PgPool>()?.acquire().await?;
-        let session = conn
+        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
+        let session = repo
             .compat_session()
             .lookup(session_id)
             .await?

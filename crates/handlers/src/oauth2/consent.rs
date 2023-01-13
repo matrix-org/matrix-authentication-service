@@ -30,7 +30,7 @@ use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{
     oauth2::{OAuth2AuthorizationGrantRepository, OAuth2ClientRepository},
-    Repository,
+    PgRepository, Repository,
 };
 use mas_templates::{ConsentContext, PolicyViolationContext, TemplateContext, Templates};
 use sqlx::PgPool;
@@ -81,13 +81,13 @@ pub(crate) async fn get(
     Path(grant_id): Path<Ulid>,
 ) -> Result<Response, RouteError> {
     let (clock, mut rng) = crate::clock_and_rng();
-    let mut conn = pool.acquire().await?;
+    let mut repo = PgRepository::from_pool(&pool).await?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut conn).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
-    let grant = conn
+    let grant = repo
         .oauth2_authorization_grant()
         .lookup(grant_id)
         .await?
@@ -136,15 +136,15 @@ pub(crate) async fn post(
     Form(form): Form<ProtectedForm<()>>,
 ) -> Result<Response, RouteError> {
     let (clock, mut rng) = crate::clock_and_rng();
-    let mut txn = pool.begin().await?;
+    let mut repo = PgRepository::from_pool(&pool).await?;
 
     cookie_jar.verify_form(clock.now(), form)?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut txn).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
-    let grant = txn
+    let grant = repo
         .oauth2_authorization_grant()
         .lookup(grant_id)
         .await?
@@ -167,7 +167,7 @@ pub(crate) async fn post(
         return Err(RouteError::PolicyViolation);
     }
 
-    let client = txn
+    let client = repo
         .oauth2_client()
         .lookup(grant.client_id)
         .await?
@@ -180,7 +180,7 @@ pub(crate) async fn post(
         .filter(|s| !s.starts_with("urn:matrix:org.matrix.msc2967.client:device:"))
         .cloned()
         .collect();
-    txn.oauth2_client()
+    repo.oauth2_client()
         .give_consent_for_user(
             &mut rng,
             &clock,
@@ -190,9 +190,11 @@ pub(crate) async fn post(
         )
         .await?;
 
-    txn.oauth2_authorization_grant().give_consent(grant).await?;
+    repo.oauth2_authorization_grant()
+        .give_consent(grant)
+        .await?;
 
-    txn.commit().await?;
+    repo.save().await?;
 
     Ok((cookie_jar, next.go_next()).into_response())
 }

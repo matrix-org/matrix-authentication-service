@@ -24,7 +24,7 @@ use mas_axum_utils::{
 };
 use mas_keystore::Encrypter;
 use mas_router::Route;
-use mas_storage::{user::UserEmailRepository, Clock, Repository};
+use mas_storage::{user::UserEmailRepository, Clock, PgRepository, Repository};
 use mas_templates::{EmailVerificationPageContext, TemplateContext, Templates};
 use serde::Deserialize;
 use sqlx::PgPool;
@@ -45,12 +45,12 @@ pub(crate) async fn get(
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
     let (clock, mut rng) = crate::clock_and_rng();
-    let mut conn = pool.acquire().await?;
+    let mut repo = PgRepository::from_pool(&pool).await?;
 
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut conn).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     let session = if let Some(session) = maybe_session {
         session
@@ -59,7 +59,7 @@ pub(crate) async fn get(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    let user_email = conn
+    let user_email = repo
         .user_email()
         .lookup(id)
         .await?
@@ -89,12 +89,12 @@ pub(crate) async fn post(
     Form(form): Form<ProtectedForm<CodeForm>>,
 ) -> Result<Response, FancyError> {
     let clock = Clock::default();
-    let mut txn = pool.begin().await?;
+    let mut repo = PgRepository::from_pool(&pool).await?;
 
     let form = cookie_jar.verify_form(clock.now(), form)?;
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut txn).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     let session = if let Some(session) = maybe_session {
         session
@@ -103,33 +103,33 @@ pub(crate) async fn post(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    let user_email = txn
+    let user_email = repo
         .user_email()
         .lookup(id)
         .await?
         .filter(|u| u.user_id == session.user.id)
         .context("Could not find user email")?;
 
-    let verification = txn
+    let verification = repo
         .user_email()
         .find_verification_code(&clock, &user_email, &form.code)
         .await?
         .context("Invalid code")?;
 
     // TODO: display nice errors if the code was already consumed or expired
-    txn.user_email()
+    repo.user_email()
         .consume_verification_code(&clock, verification)
         .await?;
 
     if session.user.primary_user_email_id.is_none() {
-        txn.user_email().set_as_primary(&user_email).await?;
+        repo.user_email().set_as_primary(&user_email).await?;
     }
 
-    txn.user_email()
+    repo.user_email()
         .mark_as_verified(&clock, user_email)
         .await?;
 
-    txn.commit().await?;
+    repo.save().await?;
 
     let destination = query.go_next_or_default(&mas_router::AccountEmails);
     Ok((cookie_jar, destination).into_response())

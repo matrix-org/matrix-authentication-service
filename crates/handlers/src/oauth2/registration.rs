@@ -19,7 +19,7 @@ use hyper::StatusCode;
 use mas_iana::oauth::OAuthClientAuthenticationMethod;
 use mas_keystore::Encrypter;
 use mas_policy::{PolicyFactory, Violation};
-use mas_storage::{oauth2::OAuth2ClientRepository, Repository};
+use mas_storage::{oauth2::OAuth2ClientRepository, PgRepository, Repository};
 use oauth2_types::{
     errors::{ClientError, ClientErrorCode},
     registration::{
@@ -124,8 +124,7 @@ pub(crate) async fn post(
         return Err(RouteError::PolicyDenied(res.violations));
     }
 
-    // Grab a txn
-    let mut txn = pool.begin().await?;
+    let mut repo = PgRepository::from_pool(&pool).await?;
 
     let (client_secret, encrypted_client_secret) = match metadata.token_endpoint_auth_method {
         Some(
@@ -141,7 +140,7 @@ pub(crate) async fn post(
         _ => (None, None),
     };
 
-    let client = txn
+    let client = repo
         .oauth2_client()
         .add(
             &mut rng,
@@ -170,7 +169,7 @@ pub(crate) async fn post(
         )
         .await?;
 
-    txn.commit().await?;
+    repo.save().await?;
 
     let response = ClientRegistrationResponse {
         client_id: client.client_id,

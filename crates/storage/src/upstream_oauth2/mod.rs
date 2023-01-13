@@ -29,20 +29,20 @@ mod tests {
     use sqlx::PgPool;
 
     use super::*;
-    use crate::{Clock, Repository};
+    use crate::{Clock, PgRepository, Repository};
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]
     async fn test_repository(pool: PgPool) -> Result<(), Box<dyn std::error::Error>> {
         let mut rng = rand_chacha::ChaChaRng::seed_from_u64(42);
         let clock = Clock::default();
-        let mut conn = pool.acquire().await?;
+        let mut repo = PgRepository::from_pool(&pool).await?;
 
         // The provider list should be empty at the start
-        let all_providers = conn.upstream_oauth_provider().all().await?;
+        let all_providers = repo.upstream_oauth_provider().all().await?;
         assert!(all_providers.is_empty());
 
         // Let's add a provider
-        let provider = conn
+        let provider = repo
             .upstream_oauth_provider()
             .add(
                 &mut rng,
@@ -57,7 +57,7 @@ mod tests {
             .await?;
 
         // Look it up in the database
-        let provider = conn
+        let provider = repo
             .upstream_oauth_provider()
             .lookup(provider.id)
             .await?
@@ -66,7 +66,7 @@ mod tests {
         assert_eq!(provider.client_id, "client-id");
 
         // Start a session
-        let session = conn
+        let session = repo
             .upstream_oauth_session()
             .add(
                 &mut rng,
@@ -79,7 +79,7 @@ mod tests {
             .await?;
 
         // Look it up in the database
-        let session = conn
+        let session = repo
             .upstream_oauth_session()
             .lookup(session.id)
             .await?
@@ -91,19 +91,19 @@ mod tests {
         assert!(!session.is_consumed());
 
         // Create a link
-        let link = conn
+        let link = repo
             .upstream_oauth_link()
             .add(&mut rng, &clock, &provider, "a-subject".to_owned())
             .await?;
 
         // We can look it up by its ID
-        conn.upstream_oauth_link()
+        repo.upstream_oauth_link()
             .lookup(link.id)
             .await?
             .expect("link to be found in database");
 
         // or by its subject
-        let link = conn
+        let link = repo
             .upstream_oauth_link()
             .find_by_subject(&provider, "a-subject")
             .await?
@@ -111,7 +111,7 @@ mod tests {
         assert_eq!(link.subject, "a-subject");
         assert_eq!(link.provider_id, provider.id);
 
-        let session = conn
+        let session = repo
             .upstream_oauth_session()
             .complete_with_link(&clock, session, &link, None)
             .await?;
@@ -119,7 +119,7 @@ mod tests {
         assert!(!session.is_consumed());
         assert_eq!(session.link_id(), Some(link.id));
 
-        let session = conn
+        let session = repo
             .upstream_oauth_session()
             .consume(&clock, session)
             .await?;

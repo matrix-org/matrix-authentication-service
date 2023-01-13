@@ -24,7 +24,7 @@ use mas_axum_utils::{
 use mas_email::Mailer;
 use mas_keystore::Encrypter;
 use mas_router::Route;
-use mas_storage::{user::UserEmailRepository, Repository};
+use mas_storage::{user::UserEmailRepository, PgRepository, Repository};
 use mas_templates::{EmailAddContext, TemplateContext, Templates};
 use serde::Deserialize;
 use sqlx::PgPool;
@@ -43,12 +43,12 @@ pub(crate) async fn get(
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
     let (clock, mut rng) = crate::clock_and_rng();
-    let mut conn = pool.begin().await?;
+    let mut repo = PgRepository::from_pool(&pool).await?;
 
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut conn).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     let session = if let Some(session) = maybe_session {
         session
@@ -74,12 +74,12 @@ pub(crate) async fn post(
     Form(form): Form<ProtectedForm<EmailForm>>,
 ) -> Result<Response, FancyError> {
     let (clock, mut rng) = crate::clock_and_rng();
-    let mut txn = pool.begin().await?;
+    let mut repo = PgRepository::from_pool(&pool).await?;
 
     let form = cookie_jar.verify_form(clock.now(), form)?;
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut txn).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     let session = if let Some(session) = maybe_session {
         session
@@ -88,7 +88,7 @@ pub(crate) async fn post(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    let user_email = txn
+    let user_email = repo
         .user_email()
         .add(&mut rng, &clock, &session.user, form.email)
         .await?;
@@ -101,7 +101,7 @@ pub(crate) async fn post(
     };
     start_email_verification(
         &mailer,
-        &mut txn,
+        &mut repo,
         &mut rng,
         &clock,
         &session.user,
@@ -109,7 +109,7 @@ pub(crate) async fn post(
     )
     .await?;
 
-    txn.commit().await?;
+    repo.save().await?;
 
     Ok((cookie_jar, next.go()).into_response())
 }

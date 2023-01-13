@@ -32,7 +32,7 @@ use crate::{
 };
 
 #[async_trait]
-pub trait OAuth2AuthorizationGrantRepository {
+pub trait OAuth2AuthorizationGrantRepository: Send + Sync {
     type Error;
 
     #[allow(clippy::too_many_arguments)]

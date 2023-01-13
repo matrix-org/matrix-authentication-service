@@ -12,89 +12,100 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use sqlx::{PgConnection, Postgres, Transaction};
+use sqlx::{PgPool, Postgres, Transaction};
 
 use crate::{
     compat::{
-        PgCompatAccessTokenRepository, PgCompatRefreshTokenRepository, PgCompatSessionRepository,
-        PgCompatSsoLoginRepository,
+        CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository,
+        CompatSsoLoginRepository, PgCompatAccessTokenRepository, PgCompatRefreshTokenRepository,
+        PgCompatSessionRepository, PgCompatSsoLoginRepository,
     },
     oauth2::{
-        PgOAuth2AccessTokenRepository, PgOAuth2AuthorizationGrantRepository,
-        PgOAuth2ClientRepository, PgOAuth2RefreshTokenRepository, PgOAuth2SessionRepository,
+        OAuth2AccessTokenRepository, OAuth2AuthorizationGrantRepository, OAuth2ClientRepository,
+        OAuth2RefreshTokenRepository, OAuth2SessionRepository, PgOAuth2AccessTokenRepository,
+        PgOAuth2AuthorizationGrantRepository, PgOAuth2ClientRepository,
+        PgOAuth2RefreshTokenRepository, PgOAuth2SessionRepository,
     },
     upstream_oauth2::{
         PgUpstreamOAuthLinkRepository, PgUpstreamOAuthProviderRepository,
-        PgUpstreamOAuthSessionRepository,
+        PgUpstreamOAuthSessionRepository, UpstreamOAuthLinkRepository,
+        UpstreamOAuthProviderRepository, UpstreamOAuthSessionRepository,
     },
     user::{
-        PgBrowserSessionRepository, PgUserEmailRepository, PgUserPasswordRepository,
-        PgUserRepository,
+        BrowserSessionRepository, PgBrowserSessionRepository, PgUserEmailRepository,
+        PgUserPasswordRepository, PgUserRepository, UserEmailRepository, UserPasswordRepository,
+        UserRepository,
     },
+    DatabaseError,
 };
 
-pub trait Repository {
-    type UpstreamOAuthLinkRepository<'c>
+pub trait Repository: Send {
+    type Error: std::error::Error + Send + Sync + 'static;
+
+    type UpstreamOAuthLinkRepository<'c>: UpstreamOAuthLinkRepository<Error = Self::Error> + 'c
     where
         Self: 'c;
 
-    type UpstreamOAuthProviderRepository<'c>
+    type UpstreamOAuthProviderRepository<'c>: UpstreamOAuthProviderRepository<Error = Self::Error>
+        + 'c
     where
         Self: 'c;
 
-    type UpstreamOAuthSessionRepository<'c>
+    type UpstreamOAuthSessionRepository<'c>: UpstreamOAuthSessionRepository<Error = Self::Error>
+        + 'c
     where
         Self: 'c;
 
-    type UserRepository<'c>
+    type UserRepository<'c>: UserRepository<Error = Self::Error> + 'c
     where
         Self: 'c;
 
-    type UserEmailRepository<'c>
+    type UserEmailRepository<'c>: UserEmailRepository<Error = Self::Error> + 'c
     where
         Self: 'c;
 
-    type UserPasswordRepository<'c>
+    type UserPasswordRepository<'c>: UserPasswordRepository<Error = Self::Error> + 'c
     where
         Self: 'c;
 
-    type BrowserSessionRepository<'c>
+    type BrowserSessionRepository<'c>: BrowserSessionRepository<Error = Self::Error> + 'c
     where
         Self: 'c;
 
-    type OAuth2ClientRepository<'c>
+    type OAuth2ClientRepository<'c>: OAuth2ClientRepository<Error = Self::Error> + 'c
     where
         Self: 'c;
 
-    type OAuth2AuthorizationGrantRepository<'c>
+    type OAuth2AuthorizationGrantRepository<'c>: OAuth2AuthorizationGrantRepository<Error = Self::Error>
+        + 'c
     where
         Self: 'c;
 
-    type OAuth2SessionRepository<'c>
+    type OAuth2SessionRepository<'c>: OAuth2SessionRepository<Error = Self::Error> + 'c
     where
         Self: 'c;
 
-    type OAuth2AccessTokenRepository<'c>
+    type OAuth2AccessTokenRepository<'c>: OAuth2AccessTokenRepository<Error = Self::Error> + 'c
     where
         Self: 'c;
 
-    type OAuth2RefreshTokenRepository<'c>
+    type OAuth2RefreshTokenRepository<'c>: OAuth2RefreshTokenRepository<Error = Self::Error> + 'c
     where
         Self: 'c;
 
-    type CompatSessionRepository<'c>
+    type CompatSessionRepository<'c>: CompatSessionRepository<Error = Self::Error> + 'c
     where
         Self: 'c;
 
-    type CompatSsoLoginRepository<'c>
+    type CompatSsoLoginRepository<'c>: CompatSsoLoginRepository<Error = Self::Error> + 'c
     where
         Self: 'c;
 
-    type CompatAccessTokenRepository<'c>
+    type CompatAccessTokenRepository<'c>: CompatAccessTokenRepository<Error = Self::Error> + 'c
     where
         Self: 'c;
 
-    type CompatRefreshTokenRepository<'c>
+    type CompatRefreshTokenRepository<'c>: CompatRefreshTokenRepository<Error = Self::Error> + 'c
     where
         Self: 'c;
 
@@ -116,90 +127,30 @@ pub trait Repository {
     fn compat_refresh_token(&mut self) -> Self::CompatRefreshTokenRepository<'_>;
 }
 
-impl Repository for PgConnection {
-    type UpstreamOAuthLinkRepository<'c> = PgUpstreamOAuthLinkRepository<'c> where Self: 'c;
-    type UpstreamOAuthProviderRepository<'c> = PgUpstreamOAuthProviderRepository<'c> where Self: 'c;
-    type UpstreamOAuthSessionRepository<'c> = PgUpstreamOAuthSessionRepository<'c> where Self: 'c;
-    type UserRepository<'c> = PgUserRepository<'c> where Self: 'c;
-    type UserEmailRepository<'c> = PgUserEmailRepository<'c> where Self: 'c;
-    type UserPasswordRepository<'c> = PgUserPasswordRepository<'c> where Self: 'c;
-    type BrowserSessionRepository<'c> = PgBrowserSessionRepository<'c> where Self: 'c;
-    type OAuth2ClientRepository<'c> = PgOAuth2ClientRepository<'c> where Self: 'c;
-    type OAuth2AuthorizationGrantRepository<'c> = PgOAuth2AuthorizationGrantRepository<'c> where Self: 'c;
-    type OAuth2SessionRepository<'c> = PgOAuth2SessionRepository<'c> where Self: 'c;
-    type OAuth2AccessTokenRepository<'c> = PgOAuth2AccessTokenRepository<'c> where Self: 'c;
-    type OAuth2RefreshTokenRepository<'c> = PgOAuth2RefreshTokenRepository<'c> where Self: 'c;
-    type CompatSessionRepository<'c> = PgCompatSessionRepository<'c> where Self: 'c;
-    type CompatSsoLoginRepository<'c> = PgCompatSsoLoginRepository<'c> where Self: 'c;
-    type CompatAccessTokenRepository<'c> = PgCompatAccessTokenRepository<'c> where Self: 'c;
-    type CompatRefreshTokenRepository<'c> = PgCompatRefreshTokenRepository<'c> where Self: 'c;
+pub struct PgRepository {
+    txn: Transaction<'static, Postgres>,
+}
 
-    fn upstream_oauth_link(&mut self) -> Self::UpstreamOAuthLinkRepository<'_> {
-        PgUpstreamOAuthLinkRepository::new(self)
+impl PgRepository {
+    pub async fn from_pool(pool: &PgPool) -> Result<Self, DatabaseError> {
+        let txn = pool.begin().await?;
+        Ok(PgRepository { txn })
     }
 
-    fn upstream_oauth_provider(&mut self) -> Self::UpstreamOAuthProviderRepository<'_> {
-        PgUpstreamOAuthProviderRepository::new(self)
+    pub async fn save(self) -> Result<(), DatabaseError> {
+        self.txn.commit().await?;
+        Ok(())
     }
 
-    fn upstream_oauth_session(&mut self) -> Self::UpstreamOAuthSessionRepository<'_> {
-        PgUpstreamOAuthSessionRepository::new(self)
-    }
-
-    fn user(&mut self) -> Self::UserRepository<'_> {
-        PgUserRepository::new(self)
-    }
-
-    fn user_email(&mut self) -> Self::UserEmailRepository<'_> {
-        PgUserEmailRepository::new(self)
-    }
-
-    fn user_password(&mut self) -> Self::UserPasswordRepository<'_> {
-        PgUserPasswordRepository::new(self)
-    }
-
-    fn browser_session(&mut self) -> Self::BrowserSessionRepository<'_> {
-        PgBrowserSessionRepository::new(self)
-    }
-
-    fn oauth2_client(&mut self) -> Self::OAuth2ClientRepository<'_> {
-        PgOAuth2ClientRepository::new(self)
-    }
-
-    fn oauth2_authorization_grant(&mut self) -> Self::OAuth2AuthorizationGrantRepository<'_> {
-        PgOAuth2AuthorizationGrantRepository::new(self)
-    }
-
-    fn oauth2_session(&mut self) -> Self::OAuth2SessionRepository<'_> {
-        PgOAuth2SessionRepository::new(self)
-    }
-
-    fn oauth2_access_token(&mut self) -> Self::OAuth2AccessTokenRepository<'_> {
-        PgOAuth2AccessTokenRepository::new(self)
-    }
-
-    fn oauth2_refresh_token(&mut self) -> Self::OAuth2RefreshTokenRepository<'_> {
-        PgOAuth2RefreshTokenRepository::new(self)
-    }
-
-    fn compat_session(&mut self) -> Self::CompatSessionRepository<'_> {
-        PgCompatSessionRepository::new(self)
-    }
-
-    fn compat_sso_login(&mut self) -> Self::CompatSsoLoginRepository<'_> {
-        PgCompatSsoLoginRepository::new(self)
-    }
-
-    fn compat_access_token(&mut self) -> Self::CompatAccessTokenRepository<'_> {
-        PgCompatAccessTokenRepository::new(self)
-    }
-
-    fn compat_refresh_token(&mut self) -> Self::CompatRefreshTokenRepository<'_> {
-        PgCompatRefreshTokenRepository::new(self)
+    pub async fn cancel(self) -> Result<(), DatabaseError> {
+        self.txn.rollback().await?;
+        Ok(())
     }
 }
 
-impl<'t> Repository for Transaction<'t, Postgres> {
+impl Repository for PgRepository {
+    type Error = DatabaseError;
+
     type UpstreamOAuthLinkRepository<'c> = PgUpstreamOAuthLinkRepository<'c> where Self: 'c;
     type UpstreamOAuthProviderRepository<'c> = PgUpstreamOAuthProviderRepository<'c> where Self: 'c;
     type UpstreamOAuthSessionRepository<'c> = PgUpstreamOAuthSessionRepository<'c> where Self: 'c;
@@ -218,66 +169,66 @@ impl<'t> Repository for Transaction<'t, Postgres> {
     type CompatRefreshTokenRepository<'c> = PgCompatRefreshTokenRepository<'c> where Self: 'c;
 
     fn upstream_oauth_link(&mut self) -> Self::UpstreamOAuthLinkRepository<'_> {
-        PgUpstreamOAuthLinkRepository::new(self)
+        PgUpstreamOAuthLinkRepository::new(&mut self.txn)
     }
 
     fn upstream_oauth_provider(&mut self) -> Self::UpstreamOAuthProviderRepository<'_> {
-        PgUpstreamOAuthProviderRepository::new(self)
+        PgUpstreamOAuthProviderRepository::new(&mut self.txn)
     }
 
     fn upstream_oauth_session(&mut self) -> Self::UpstreamOAuthSessionRepository<'_> {
-        PgUpstreamOAuthSessionRepository::new(self)
+        PgUpstreamOAuthSessionRepository::new(&mut self.txn)
     }
 
     fn user(&mut self) -> Self::UserRepository<'_> {
-        PgUserRepository::new(self)
+        PgUserRepository::new(&mut self.txn)
     }
 
     fn user_email(&mut self) -> Self::UserEmailRepository<'_> {
-        PgUserEmailRepository::new(self)
+        PgUserEmailRepository::new(&mut self.txn)
     }
 
     fn user_password(&mut self) -> Self::UserPasswordRepository<'_> {
-        PgUserPasswordRepository::new(self)
+        PgUserPasswordRepository::new(&mut self.txn)
     }
 
     fn browser_session(&mut self) -> Self::BrowserSessionRepository<'_> {
-        PgBrowserSessionRepository::new(self)
+        PgBrowserSessionRepository::new(&mut self.txn)
     }
 
     fn oauth2_client(&mut self) -> Self::OAuth2ClientRepository<'_> {
-        PgOAuth2ClientRepository::new(self)
+        PgOAuth2ClientRepository::new(&mut self.txn)
     }
 
     fn oauth2_authorization_grant(&mut self) -> Self::OAuth2AuthorizationGrantRepository<'_> {
-        PgOAuth2AuthorizationGrantRepository::new(self)
+        PgOAuth2AuthorizationGrantRepository::new(&mut self.txn)
     }
 
     fn oauth2_session(&mut self) -> Self::OAuth2SessionRepository<'_> {
-        PgOAuth2SessionRepository::new(self)
+        PgOAuth2SessionRepository::new(&mut self.txn)
     }
 
     fn oauth2_access_token(&mut self) -> Self::OAuth2AccessTokenRepository<'_> {
-        PgOAuth2AccessTokenRepository::new(self)
+        PgOAuth2AccessTokenRepository::new(&mut self.txn)
     }
 
     fn oauth2_refresh_token(&mut self) -> Self::OAuth2RefreshTokenRepository<'_> {
-        PgOAuth2RefreshTokenRepository::new(self)
+        PgOAuth2RefreshTokenRepository::new(&mut self.txn)
     }
 
     fn compat_session(&mut self) -> Self::CompatSessionRepository<'_> {
-        PgCompatSessionRepository::new(self)
+        PgCompatSessionRepository::new(&mut self.txn)
     }
 
     fn compat_sso_login(&mut self) -> Self::CompatSsoLoginRepository<'_> {
-        PgCompatSsoLoginRepository::new(self)
+        PgCompatSsoLoginRepository::new(&mut self.txn)
     }
 
     fn compat_access_token(&mut self) -> Self::CompatAccessTokenRepository<'_> {
-        PgCompatAccessTokenRepository::new(self)
+        PgCompatAccessTokenRepository::new(&mut self.txn)
     }
 
     fn compat_refresh_token(&mut self) -> Self::CompatRefreshTokenRepository<'_> {
-        PgCompatRefreshTokenRepository::new(self)
+        PgCompatRefreshTokenRepository::new(&mut self.txn)
     }
 }

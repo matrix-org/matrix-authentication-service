@@ -19,7 +19,7 @@ use axum::{
 };
 use hyper::StatusCode;
 use mas_router::{CompatLoginSsoAction, CompatLoginSsoComplete, UrlBuilder};
-use mas_storage::{compat::CompatSsoLoginRepository, Repository};
+use mas_storage::{compat::CompatSsoLoginRepository, PgRepository, Repository};
 use rand::distributions::{Alphanumeric, DistString};
 use serde::Deserialize;
 use serde_with::serde;
@@ -80,8 +80,8 @@ pub async fn get(
     }
 
     let token = Alphanumeric.sample_string(&mut rng, 32);
-    let mut conn = pool.acquire().await?;
-    let login = conn
+    let mut repo = PgRepository::from_pool(&pool).await?;
+    let login = repo
         .compat_sso_login()
         .add(&mut rng, &clock, token, redirect_url)
         .await?;

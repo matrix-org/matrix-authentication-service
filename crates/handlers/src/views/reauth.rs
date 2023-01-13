@@ -26,7 +26,7 @@ use mas_keystore::Encrypter;
 use mas_router::Route;
 use mas_storage::{
     user::{BrowserSessionRepository, UserPasswordRepository},
-    Repository,
+    PgRepository, Repository,
 };
 use mas_templates::{ReauthContext, TemplateContext, Templates};
 use serde::Deserialize;
@@ -48,12 +48,12 @@ pub(crate) async fn get(
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
     let (clock, mut rng) = crate::clock_and_rng();
-    let mut conn = pool.acquire().await?;
+    let mut repo = PgRepository::from_pool(&pool).await?;
 
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut conn).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     let session = if let Some(session) = maybe_session {
         session
@@ -65,7 +65,7 @@ pub(crate) async fn get(
     };
 
     let ctx = ReauthContext::default();
-    let next = query.load_context(&mut conn).await?;
+    let next = query.load_context(&mut repo).await?;
     let ctx = if let Some(next) = next {
         ctx.with_post_action(next)
     } else {
@@ -86,13 +86,13 @@ pub(crate) async fn post(
     Form(form): Form<ProtectedForm<ReauthForm>>,
 ) -> Result<Response, FancyError> {
     let (clock, mut rng) = crate::clock_and_rng();
-    let mut txn = pool.begin().await?;
+    let mut repo = PgRepository::from_pool(&pool).await?;
 
     let form = cookie_jar.verify_form(clock.now(), form)?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut txn).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     let session = if let Some(session) = maybe_session {
         session
@@ -104,7 +104,7 @@ pub(crate) async fn post(
     };
 
     // Load the user password
-    let user_password = txn
+    let user_password = repo
         .user_password()
         .active(&session.user)
         .await?
@@ -125,7 +125,7 @@ pub(crate) async fn post(
 
     let user_password = if let Some((version, new_password_hash)) = new_password_hash {
         // Save the upgraded password
-        txn.user_password()
+        repo.user_password()
             .add(
                 &mut rng,
                 &clock,
@@ -140,13 +140,13 @@ pub(crate) async fn post(
     };
 
     // Mark the session as authenticated by the password
-    let session = txn
+    let session = repo
         .browser_session()
         .authenticate_with_password(&mut rng, &clock, session, &user_password)
         .await?;
 
     let cookie_jar = cookie_jar.set_session(&session);
-    txn.commit().await?;
+    repo.save().await?;
 
     let reply = query.go_next();
     Ok((cookie_jar, reply).into_response())

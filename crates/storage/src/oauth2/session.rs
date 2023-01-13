@@ -27,7 +27,7 @@ use crate::{
 };
 
 #[async_trait]
-pub trait OAuth2SessionRepository {
+pub trait OAuth2SessionRepository: Send + Sync {
     type Error;
 
     async fn lookup(&mut self, id: Ulid) -> Result<Option<Session>, Self::Error>;

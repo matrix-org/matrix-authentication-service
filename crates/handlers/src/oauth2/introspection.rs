@@ -25,7 +25,7 @@ use mas_storage::{
     compat::{CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository},
     oauth2::{OAuth2AccessTokenRepository, OAuth2RefreshTokenRepository, OAuth2SessionRepository},
     user::{BrowserSessionRepository, UserRepository},
-    Clock, Repository,
+    Clock, PgRepository, Repository,
 };
 use oauth2_types::{
     errors::{ClientError, ClientErrorCode},
@@ -130,12 +130,13 @@ pub(crate) async fn post(
     client_authorization: ClientAuthorization<IntrospectionRequest>,
 ) -> Result<impl IntoResponse, RouteError> {
     let clock = Clock::default();
-    let mut conn = pool.acquire().await?;
+    let mut repo = PgRepository::from_pool(&pool).await?;
 
     let client = client_authorization
         .credentials
-        .fetch(&mut conn)
-        .await?
+        .fetch(&mut repo)
+        .await
+        .unwrap()
         .ok_or(RouteError::ClientNotFound)?;
 
     let method = match &client.token_endpoint_auth_method {
@@ -166,14 +167,14 @@ pub(crate) async fn post(
 
     let reply = match token_type {
         TokenType::AccessToken => {
-            let token = conn
+            let token = repo
                 .oauth2_access_token()
                 .find_by_token(token)
                 .await?
                 .filter(|t| t.is_valid(clock.now()))
                 .ok_or(RouteError::UnknownToken)?;
 
-            let session = conn
+            let session = repo
                 .oauth2_session()
                 .lookup(token.session_id)
                 .await?
@@ -181,7 +182,7 @@ pub(crate) async fn post(
                 // XXX: is that the right error to bubble up?
                 .ok_or(RouteError::UnknownToken)?;
 
-            let browser_session = conn
+            let browser_session = repo
                 .browser_session()
                 .lookup(session.user_session_id)
                 .await?
@@ -205,14 +206,14 @@ pub(crate) async fn post(
         }
 
         TokenType::RefreshToken => {
-            let token = conn
+            let token = repo
                 .oauth2_refresh_token()
                 .find_by_token(token)
                 .await?
                 .filter(|t| t.is_valid())
                 .ok_or(RouteError::UnknownToken)?;
 
-            let session = conn
+            let session = repo
                 .oauth2_session()
                 .lookup(token.session_id)
                 .await?
@@ -220,7 +221,7 @@ pub(crate) async fn post(
                 // XXX: is that the right error to bubble up?
                 .ok_or(RouteError::UnknownToken)?;
 
-            let browser_session = conn
+            let browser_session = repo
                 .browser_session()
                 .lookup(session.user_session_id)
                 .await?
@@ -244,21 +245,21 @@ pub(crate) async fn post(
         }
 
         TokenType::CompatAccessToken => {
-            let access_token = conn
+            let access_token = repo
                 .compat_access_token()
                 .find_by_token(token)
                 .await?
                 .filter(|t| t.is_valid(clock.now()))
                 .ok_or(RouteError::UnknownToken)?;
 
-            let session = conn
+            let session = repo
                 .compat_session()
                 .lookup(access_token.session_id)
                 .await?
                 .filter(|s| s.is_valid())
                 .ok_or(RouteError::UnknownToken)?;
 
-            let user = conn
+            let user = repo
                 .user()
                 .lookup(session.user_id)
                 .await?
@@ -285,21 +286,21 @@ pub(crate) async fn post(
         }
 
         TokenType::CompatRefreshToken => {
-            let refresh_token = conn
+            let refresh_token = repo
                 .compat_refresh_token()
                 .find_by_token(token)
                 .await?
                 .filter(|t| t.is_valid())
                 .ok_or(RouteError::UnknownToken)?;
 
-            let session = conn
+            let session = repo
                 .compat_session()
                 .lookup(refresh_token.session_id)
                 .await?
                 .filter(|s| s.is_valid())
                 .ok_or(RouteError::UnknownToken)?;
 
-            let user = conn
+            let user = repo
                 .user()
                 .lookup(session.user_id)
                 .await?

@@ -21,7 +21,7 @@ use mas_storage::{
     oauth2::OAuth2ClientRepository,
     upstream_oauth2::UpstreamOAuthProviderRepository,
     user::{UserEmailRepository, UserPasswordRepository, UserRepository},
-    Clock, Repository,
+    Clock, PgRepository, Repository,
 };
 use oauth2_types::scope::Scope;
 use rand::SeedableRng;
@@ -202,8 +202,8 @@ impl Options {
                 let pool = database_from_config(&database_config).await?;
                 let password_manager = password_manager_from_config(&passwords_config).await?;
 
-                let mut txn = pool.begin().await?;
-                let user = txn
+                let mut repo = PgRepository::from_pool(&pool).await?;
+                let user = repo
                     .user()
                     .find_by_username(username)
                     .await?
@@ -213,12 +213,12 @@ impl Options {
 
                 let (version, hashed_password) = password_manager.hash(&mut rng, password).await?;
 
-                txn.user_password()
+                repo.user_password()
                     .add(&mut rng, &clock, &user, version, hashed_password, None)
                     .await?;
 
                 info!(%user.id, %user.username, "Password changed");
-                txn.commit().await?;
+                repo.save().await?;
 
                 Ok(())
             }
@@ -233,22 +233,22 @@ impl Options {
 
                 let config: DatabaseConfig = root.load_config()?;
                 let pool = database_from_config(&config).await?;
-                let mut txn = pool.begin().await?;
+                let mut repo = PgRepository::from_pool(&pool).await?;
 
-                let user = txn
+                let user = repo
                     .user()
                     .find_by_username(username)
                     .await?
                     .context("User not found")?;
 
-                let email = txn
+                let email = repo
                     .user_email()
                     .find(&user, email)
                     .await?
                     .context("Email not found")?;
-                let email = txn.user_email().mark_as_verified(&clock, email).await?;
+                let email = repo.user_email().mark_as_verified(&clock, email).await?;
 
-                txn.commit().await?;
+                repo.save().await?;
                 info!(?email, "Email marked as verified");
 
                 Ok(())
@@ -261,12 +261,12 @@ impl Options {
                 let pool = database_from_config(&config.database).await?;
                 let encrypter = config.secrets.encrypter();
 
-                let mut txn = pool.begin().await?;
+                let mut repo = PgRepository::from_pool(&pool).await?;
 
                 for client in config.clients.iter() {
                     let client_id = client.client_id;
 
-                    let existing = txn.oauth2_client().lookup(client_id).await?.is_some();
+                    let existing = repo.oauth2_client().lookup(client_id).await?.is_some();
                     if !update && existing {
                         warn!(%client_id, "Skipping already imported client. Run with --update to update existing clients.");
                         continue;
@@ -288,7 +288,7 @@ impl Options {
                         .map(|client_secret| encrypter.encryt_to_string(client_secret.as_bytes()))
                         .transpose()?;
 
-                    txn.oauth2_client()
+                    repo.oauth2_client()
                         .add_from_config(
                             &mut rng,
                             &clock,
@@ -302,7 +302,7 @@ impl Options {
                         .await?;
                 }
 
-                txn.commit().await?;
+                repo.save().await?;
 
                 Ok(())
             }
@@ -326,7 +326,7 @@ impl Options {
                 let encrypter = config.secrets.encrypter();
                 let pool = database_from_config(&config.database).await?;
                 let url_builder = UrlBuilder::new(config.http.public_base);
-                let mut conn = pool.acquire().await?;
+                let mut repo = PgRepository::from_pool(&pool).await?;
 
                 let requires_client_secret = token_endpoint_auth_method.requires_client_secret();
 
@@ -347,7 +347,7 @@ impl Options {
                     .map(|client_secret| encrypter.encryt_to_string(client_secret.as_bytes()))
                     .transpose()?;
 
-                let provider = conn
+                let provider = repo
                     .upstream_oauth_provider()
                     .add(
                         &mut rng,

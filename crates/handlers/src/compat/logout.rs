@@ -18,7 +18,7 @@ use hyper::StatusCode;
 use mas_data_model::TokenType;
 use mas_storage::{
     compat::{CompatAccessTokenRepository, CompatSessionRepository},
-    Clock, Repository,
+    Clock, PgRepository, Repository,
 };
 use sqlx::PgPool;
 use thiserror::Error;
@@ -72,7 +72,7 @@ pub(crate) async fn post(
     maybe_authorization: Option<TypedHeader<Authorization<Bearer>>>,
 ) -> Result<impl IntoResponse, RouteError> {
     let clock = Clock::default();
-    let mut txn = pool.begin().await?;
+    let mut repo = PgRepository::from_pool(&pool).await?;
 
     let TypedHeader(authorization) = maybe_authorization.ok_or(RouteError::MissingAuthorization)?;
 
@@ -83,23 +83,23 @@ pub(crate) async fn post(
         return Err(RouteError::InvalidAuthorization);
     }
 
-    let token = txn
+    let token = repo
         .compat_access_token()
         .find_by_token(token)
         .await?
         .filter(|t| t.is_valid(clock.now()))
         .ok_or(RouteError::InvalidAuthorization)?;
 
-    let session = txn
+    let session = repo
         .compat_session()
         .lookup(token.session_id)
         .await?
         .filter(|s| s.is_valid())
         .ok_or(RouteError::InvalidAuthorization)?;
 
-    txn.compat_session().finish(&clock, session).await?;
+    repo.compat_session().finish(&clock, session).await?;
 
-    txn.commit().await?;
+    repo.save().await?;
 
     Ok(Json(serde_json::json!({})))
 }
