@@ -29,12 +29,12 @@ mod tests {
     use sqlx::PgPool;
 
     use super::*;
-    use crate::{Clock, PgRepository, Repository};
+    use crate::{user::UserRepository, Clock, PgRepository, Repository};
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]
     async fn test_repository(pool: PgPool) -> Result<(), Box<dyn std::error::Error>> {
         let mut rng = rand_chacha::ChaChaRng::seed_from_u64(42);
-        let clock = Clock::default();
+        let clock = Clock::mock();
         let mut repo = PgRepository::from_pool(&pool).await?;
 
         // The provider list should be empty at the start
@@ -115,6 +115,12 @@ mod tests {
             .upstream_oauth_session()
             .complete_with_link(&clock, session, &link, None)
             .await?;
+        // Reload the session
+        let session = repo
+            .upstream_oauth_session()
+            .lookup(session.id)
+            .await?
+            .expect("session to be found in the database");
         assert!(session.is_completed());
         assert!(!session.is_consumed());
         assert_eq!(session.link_id(), Some(link.id));
@@ -123,7 +129,28 @@ mod tests {
             .upstream_oauth_session()
             .consume(&clock, session)
             .await?;
+        // Reload the session
+        let session = repo
+            .upstream_oauth_session()
+            .lookup(session.id)
+            .await?
+            .expect("session to be found in the database");
         assert!(session.is_consumed());
+
+        let user = repo.user().add(&mut rng, &clock, "john".to_owned()).await?;
+        repo.upstream_oauth_link()
+            .associate_to_user(&link, &user)
+            .await?;
+
+        let links = repo
+            .upstream_oauth_link()
+            .list_paginated(&user, None, None, Some(10), None)
+            .await?;
+        assert!(!links.has_previous_page);
+        assert!(!links.has_next_page);
+        assert_eq!(links.edges.len(), 1);
+        assert_eq!(links.edges[0].id, link.id);
+        assert_eq!(links.edges[0].user_id, Some(user.id));
 
         Ok(())
     }
