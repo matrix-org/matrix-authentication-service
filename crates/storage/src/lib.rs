@@ -161,17 +161,87 @@ impl DatabaseInconsistencyError {
     }
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Clock {
     _private: (),
+
+    #[cfg(test)]
+    mock: Option<std::sync::Arc<std::sync::atomic::AtomicI64>>,
 }
 
 impl Clock {
     #[must_use]
     pub fn now(&self) -> DateTime<Utc> {
+        #[cfg(test)]
+        if let Some(timestamp) = &self.mock {
+            let timestamp = timestamp.load(std::sync::atomic::Ordering::Relaxed);
+            return chrono::TimeZone::timestamp_opt(&Utc, timestamp, 0).unwrap();
+        }
+
         // This is the clock used elsewhere, it's fine to call Utc::now here
         #[allow(clippy::disallowed_methods)]
         Utc::now()
+    }
+
+    #[cfg(test)]
+    pub fn mock() -> Self {
+        use std::sync::{atomic::AtomicI64, Arc};
+
+        use chrono::TimeZone;
+
+        let datetime = Utc.with_ymd_and_hms(2022, 01, 16, 14, 40, 0).unwrap();
+        let timestamp = datetime.timestamp();
+
+        Self {
+            mock: Some(Arc::new(AtomicI64::new(timestamp))),
+            _private: (),
+        }
+    }
+
+    #[cfg(test)]
+    pub fn advance(&self, duration: chrono::Duration) {
+        let timestamp = self
+            .mock
+            .as_ref()
+            .expect("Clock::advance should only be called on mocked clocks in tests");
+        timestamp.fetch_add(duration.num_seconds(), std::sync::atomic::Ordering::Relaxed);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use chrono::Duration;
+
+    use super::*;
+
+    #[test]
+    fn test_mocked_clock() {
+        let clock = Clock::mock();
+
+        // Time should be frozen, and give out the same timestamp on each call
+        let first = clock.now();
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        let second = clock.now();
+
+        assert_eq!(first, second);
+
+        // Clock can be advanced by a fixed duration
+        clock.advance(Duration::seconds(10));
+        let third = clock.now();
+        assert_eq!(first + Duration::seconds(10), third);
+    }
+
+    #[test]
+    fn test_real_clock() {
+        let clock = Clock::default();
+
+        // Time should not be frozen
+        let first = clock.now();
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        let second = clock.now();
+
+        assert_ne!(first, second);
+        assert!(first < second);
     }
 }
 

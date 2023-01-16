@@ -209,6 +209,18 @@
     },
     "query": "\n            INSERT INTO upstream_oauth_providers (\n                upstream_oauth_provider_id,\n                issuer,\n                scope,\n                token_endpoint_auth_method,\n                token_endpoint_signing_alg,\n                client_id,\n                encrypted_client_secret,\n                created_at\n            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)\n        "
   },
+  "1f6297fb323e9f2fbfa1c9e3225c0b3037c8c4714533a6240c62275332aa58dc": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n                DELETE FROM user_email_confirmation_codes\n                WHERE user_email_id = $1\n            "
+  },
   "2564bf6366eb59268c41fb25bb40d0e4e9e1fd1f9ea53b7a359c9025d7304223": {
     "describe": {
       "columns": [],

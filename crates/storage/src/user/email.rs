@@ -17,6 +17,7 @@ use chrono::{DateTime, Utc};
 use mas_data_model::{User, UserEmail, UserEmailVerification, UserEmailVerificationState};
 use rand::RngCore;
 use sqlx::{PgConnection, QueryBuilder};
+use tracing::{info_span, Instrument};
 use ulid::Ulid;
 use uuid::Uuid;
 
@@ -405,7 +406,23 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
         err,
     )]
     async fn remove(&mut self, user_email: UserEmail) -> Result<(), Self::Error> {
+        let span = info_span!(
+            "db.user_email.remove.codes",
+            db.statement = tracing::field::Empty
+        );
         sqlx::query!(
+            r#"
+                DELETE FROM user_email_confirmation_codes
+                WHERE user_email_id = $1
+            "#,
+            Uuid::from(user_email.id),
+        )
+        .record(&span)
+        .execute(&mut *self.conn)
+        .instrument(span)
+        .await?;
+
+        let res = sqlx::query!(
             r#"
                 DELETE FROM user_emails
                 WHERE user_email_id = $1
@@ -415,6 +432,8 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
         .traced()
         .execute(&mut *self.conn)
         .await?;
+
+        DatabaseError::ensure_affected_rows(&res, 1)?;
 
         Ok(())
     }
