@@ -232,7 +232,7 @@ impl RootQuery {
 
                 let page = repo
                     .upstream_oauth_provider()
-                    .list_paginated(&pagination)
+                    .list_paginated(pagination)
                     .await?;
 
                 let mut connection = Connection::new(page.has_previous_page, page.has_next_page);

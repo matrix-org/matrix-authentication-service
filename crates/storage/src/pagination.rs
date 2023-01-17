@@ -66,6 +66,7 @@ impl Pagination {
     }
 
     /// Creates a [`Pagination`] which gets the first N items
+    #[must_use]
     pub const fn first(first: usize) -> Self {
         Self {
             before: None,
@@ -76,6 +77,7 @@ impl Pagination {
     }
 
     /// Creates a [`Pagination`] which gets the last N items
+    #[must_use]
     pub const fn last(last: usize) -> Self {
         Self {
             before: None,
@@ -86,12 +88,14 @@ impl Pagination {
     }
 
     /// Get items before the given cursor
+    #[must_use]
     pub const fn before(mut self, id: Ulid) -> Self {
         self.before = Some(id);
         self
     }
 
     /// Get items after the given cursor
+    #[must_use]
     pub const fn after(mut self, id: Ulid) -> Self {
         self.after = Some(id);
         self
@@ -181,6 +185,7 @@ pub struct Page<T> {
 }
 
 impl<T> Page<T> {
+    #[must_use]
     pub fn map<F, T2>(self, f: F) -> Page<T2>
     where
         F: FnMut(T) -> T2,
@@ -193,6 +198,7 @@ impl<T> Page<T> {
         }
     }
 
+    #[must_use]
     pub fn try_map<F, E, T2>(self, f: F) -> Result<Page<T2>, E>
     where
         F: FnMut(T) -> Result<T2, E>,
@@ -211,8 +217,7 @@ impl<T> Page<T> {
 pub trait QueryBuilderExt {
     /// Add cursor-based pagination to a query, as used in paginated GraphQL
     /// connections
-    fn generate_pagination(&mut self, id_field: &'static str, pagination: &Pagination)
-        -> &mut Self;
+    fn generate_pagination(&mut self, id_field: &'static str, pagination: Pagination) -> &mut Self;
 }
 
 impl<'a, DB> QueryBuilderExt for QueryBuilder<'a, DB>
@@ -221,11 +226,7 @@ where
     Uuid: sqlx::Type<DB> + sqlx::Encode<'a, DB>,
     i64: sqlx::Type<DB> + sqlx::Encode<'a, DB>,
 {
-    fn generate_pagination(
-        &mut self,
-        id_field: &'static str,
-        pagination: &Pagination,
-    ) -> &mut Self {
+    fn generate_pagination(&mut self, id_field: &'static str, pagination: Pagination) -> &mut Self {
         pagination.generate_pagination(self, id_field);
         self
     }

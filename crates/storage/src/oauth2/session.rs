@@ -45,7 +45,7 @@ pub trait OAuth2SessionRepository: Send + Sync {
     async fn list_paginated(
         &mut self,
         user: &User,
-        pagination: &Pagination,
+        pagination: Pagination,
     ) -> Result<Page<Session>, Self::Error>;
 }
 
@@ -240,7 +240,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
     async fn list_paginated(
         &mut self,
         user: &User,
-        pagination: &Pagination,
+        pagination: Pagination,
     ) -> Result<Page<Session>, Self::Error> {
         let mut query = QueryBuilder::new(
             r#"

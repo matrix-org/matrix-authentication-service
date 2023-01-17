@@ -60,7 +60,7 @@ pub trait UpstreamOAuthLinkRepository: Send + Sync {
     async fn list_paginated(
         &mut self,
         user: &User,
-        pagination: &Pagination,
+        pagination: Pagination,
     ) -> Result<Page<UpstreamOAuthLink>, Self::Error>;
 }
 
@@ -272,7 +272,7 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
     async fn list_paginated(
         &mut self,
         user: &User,
-        pagination: &Pagination,
+        pagination: Pagination,
     ) -> Result<Page<UpstreamOAuthLink>, Self::Error> {
         let mut query = QueryBuilder::new(
             r#"

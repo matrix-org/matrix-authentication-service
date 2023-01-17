@@ -68,7 +68,7 @@ pub trait CompatSsoLoginRepository: Send + Sync {
     async fn list_paginated(
         &mut self,
         user: &User,
-        pagination: &Pagination,
+        pagination: Pagination,
     ) -> Result<Page<CompatSsoLogin>, Self::Error>;
 }
 
@@ -351,7 +351,7 @@ impl<'c> CompatSsoLoginRepository for PgCompatSsoLoginRepository<'c> {
     async fn list_paginated(
         &mut self,
         user: &User,
-        pagination: &Pagination,
+        pagination: Pagination,
     ) -> Result<Page<CompatSsoLogin>, Self::Error> {
         let mut query = QueryBuilder::new(
             r#"
@@ -371,7 +371,7 @@ impl<'c> CompatSsoLoginRepository for PgCompatSsoLoginRepository<'c> {
         query
             .push(" WHERE user_id = ")
             .push_bind(Uuid::from(user.id))
-            .generate_pagination("cl.compat_sso_login_id", &pagination);
+            .generate_pagination("cl.compat_sso_login_id", pagination);
 
         let edges: Vec<CompatSsoLoginLookup> = query
             .build_query_as()

@@ -52,7 +52,7 @@ pub trait UpstreamOAuthProviderRepository: Send + Sync {
     /// Get a paginated list of upstream OAuth providers
     async fn list_paginated(
         &mut self,
-        pagination: &Pagination,
+        pagination: Pagination,
     ) -> Result<Page<UpstreamOAuthProvider>, Self::Error>;
 
     /// Get all upstream OAuth providers
@@ -240,7 +240,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
     )]
     async fn list_paginated(
         &mut self,
-        pagination: &Pagination,
+        pagination: Pagination,
     ) -> Result<Page<UpstreamOAuthProvider>, Self::Error> {
         let mut query = QueryBuilder::new(
             r#"

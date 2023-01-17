@@ -161,7 +161,7 @@ mod tests {
 
         let links = repo
             .upstream_oauth_link()
-            .list_paginated(&user, &Pagination::first(10))
+            .list_paginated(&user, Pagination::first(10))
             .await
             .unwrap();
         assert!(!links.has_previous_page);
@@ -205,7 +205,7 @@ mod tests {
         // Lookup the first 10 items
         let page = repo
             .upstream_oauth_provider()
-            .list_paginated(&Pagination::first(10))
+            .list_paginated(Pagination::first(10))
             .await
             .unwrap();
 
@@ -217,7 +217,7 @@ mod tests {
         // Lookup the next 10 items
         let page = repo
             .upstream_oauth_provider()
-            .list_paginated(&Pagination::first(10).after(ids[9]))
+            .list_paginated(Pagination::first(10).after(ids[9]))
             .await
             .unwrap();
 
@@ -229,7 +229,7 @@ mod tests {
         // Lookup the last 10 items
         let page = repo
             .upstream_oauth_provider()
-            .list_paginated(&Pagination::last(10))
+            .list_paginated(Pagination::last(10))
             .await
             .unwrap();
 
@@ -241,7 +241,7 @@ mod tests {
         // Lookup the previous 10 items
         let page = repo
             .upstream_oauth_provider()
-            .list_paginated(&Pagination::last(10).before(ids[10]))
+            .list_paginated(Pagination::last(10).before(ids[10]))
             .await
             .unwrap();
 
@@ -253,7 +253,7 @@ mod tests {
         // Lookup 10 items between two IDs
         let page = repo
             .upstream_oauth_provider()
-            .list_paginated(&Pagination::first(10).after(ids[5]).before(ids[8]))
+            .list_paginated(Pagination::first(10).after(ids[5]).before(ids[8]))
             .await
             .unwrap();
 

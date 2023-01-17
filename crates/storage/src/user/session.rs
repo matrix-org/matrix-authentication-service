@@ -45,7 +45,7 @@ pub trait BrowserSessionRepository: Send + Sync {
     async fn list_active_paginated(
         &mut self,
         user: &User,
-        pagination: &Pagination,
+        pagination: Pagination,
     ) -> Result<Page<BrowserSession>, Self::Error>;
     async fn count_active(&mut self, user: &User) -> Result<usize, Self::Error>;
 
@@ -261,7 +261,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
     async fn list_active_paginated(
         &mut self,
         user: &User,
-        pagination: &Pagination,
+        pagination: Pagination,
     ) -> Result<Page<BrowserSession>, Self::Error> {
         // TODO: ordering of last authentication is wrong
         let mut query = QueryBuilder::new(
