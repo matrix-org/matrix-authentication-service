@@ -27,7 +27,7 @@
     "@babel/preset-react": "^7.18.6",
     "@babel/preset-typescript": "^7.18.6",
     "@graphql-eslint/eslint-plugin": "^3.14.3",
-    "@storybook/addon-actions": "^7.0.0-beta.19",
+    "@storybook/addon-actions": "^7.0.0-beta.29",
     "@storybook/addon-backgrounds": "^7.0.0-beta.19",
     "@storybook/addon-controls": "^7.0.0-beta.19",
     "@storybook/addon-docs": "^7.0.0-beta.19",
