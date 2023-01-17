@@ -34,7 +34,7 @@ use mas_storage::{
     oauth2::OAuth2ClientRepository,
     upstream_oauth2::{UpstreamOAuthLinkRepository, UpstreamOAuthProviderRepository},
     user::{BrowserSessionRepository, UserEmailRepository},
-    PgRepository, Repository,
+    Pagination, PgRepository, Repository,
 };
 use model::CreationEvent;
 use sqlx::PgPool;
@@ -228,10 +228,11 @@ impl RootQuery {
                         x.extract_for_type(NodeType::UpstreamOAuth2Provider)
                     })
                     .transpose()?;
+                let pagination = Pagination::try_new(before_id, after_id, first, last)?;
 
                 let page = repo
                     .upstream_oauth_provider()
-                    .list_paginated(before_id, after_id, first, last)
+                    .list_paginated(&pagination)
                     .await?;
 
                 let mut connection = Connection::new(page.has_previous_page, page.has_next_page);

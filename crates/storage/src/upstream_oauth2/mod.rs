@@ -29,7 +29,7 @@ mod tests {
     use sqlx::PgPool;
 
     use super::*;
-    use crate::{user::UserRepository, Clock, PgRepository, Repository};
+    use crate::{user::UserRepository, Clock, Pagination, PgRepository, Repository};
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]
     async fn test_repository(pool: PgPool) -> Result<(), Box<dyn std::error::Error>> {
@@ -144,7 +144,7 @@ mod tests {
 
         let links = repo
             .upstream_oauth_link()
-            .list_paginated(&user, None, None, Some(10), None)
+            .list_paginated(&user, &Pagination::first(10))
             .await?;
         assert!(!links.has_previous_page);
         assert!(!links.has_next_page);

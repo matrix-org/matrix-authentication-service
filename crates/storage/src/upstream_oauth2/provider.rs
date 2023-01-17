@@ -25,7 +25,7 @@ use uuid::Uuid;
 use crate::{
     pagination::{Page, QueryBuilderExt},
     tracing::ExecuteExt,
-    Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt,
+    Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt, Pagination,
 };
 
 #[async_trait]
@@ -52,10 +52,7 @@ pub trait UpstreamOAuthProviderRepository: Send + Sync {
     /// Get a paginated list of upstream OAuth providers
     async fn list_paginated(
         &mut self,
-        before: Option<Ulid>,
-        after: Option<Ulid>,
-        first: Option<usize>,
-        last: Option<usize>,
+        pagination: &Pagination,
     ) -> Result<Page<UpstreamOAuthProvider>, Self::Error>;
 
     /// Get all upstream OAuth providers
@@ -243,10 +240,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
     )]
     async fn list_paginated(
         &mut self,
-        before: Option<Ulid>,
-        after: Option<Ulid>,
-        first: Option<usize>,
-        last: Option<usize>,
+        pagination: &Pagination,
     ) -> Result<Page<UpstreamOAuthProvider>, Self::Error> {
         let mut query = QueryBuilder::new(
             r#"
@@ -264,7 +258,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
             "#,
         );
 
-        query.generate_pagination("upstream_oauth_provider_id", before, after, first, last)?;
+        query.generate_pagination("upstream_oauth_provider_id", pagination);
 
         let edges: Vec<ProviderLookup> = query
             .build_query_as()
@@ -272,7 +266,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
             .fetch_all(&mut *self.conn)
             .await?;
 
-        let page = Page::process(edges, first, last)?.try_map(TryInto::try_into)?;
+        let page = pagination.process(edges).try_map(TryInto::try_into)?;
         Ok(page)
     }
 

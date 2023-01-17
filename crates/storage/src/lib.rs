@@ -253,7 +253,10 @@ pub(crate) mod tracing;
 pub mod upstream_oauth2;
 pub mod user;
 
-pub use self::repository::{PgRepository, Repository};
+pub use self::{
+    pagination::Pagination,
+    repository::{PgRepository, Repository},
+};
 
 /// Embedded migrations, allowing them to run on startup
 pub static MIGRATOR: Migrator = sqlx::migrate!();

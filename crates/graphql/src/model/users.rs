@@ -22,7 +22,7 @@ use mas_storage::{
     oauth2::OAuth2SessionRepository,
     upstream_oauth2::UpstreamOAuthLinkRepository,
     user::{BrowserSessionRepository, UserEmailRepository},
-    PgRepository, Repository,
+    Pagination, PgRepository, Repository,
 };
 use sqlx::PgPool;
 
@@ -95,10 +95,11 @@ impl User {
                 let before_id = before
                     .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::CompatSsoLogin))
                     .transpose()?;
+                let pagination = Pagination::try_new(before_id, after_id, first, last)?;
 
                 let page = repo
                     .compat_sso_login()
-                    .list_paginated(&self.0, before_id, after_id, first, last)
+                    .list_paginated(&self.0, &pagination)
                     .await?;
 
                 let mut connection = Connection::new(page.has_previous_page, page.has_next_page);
@@ -141,10 +142,11 @@ impl User {
                 let before_id = before
                     .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::BrowserSession))
                     .transpose()?;
+                let pagination = Pagination::try_new(before_id, after_id, first, last)?;
 
                 let page = repo
                     .browser_session()
-                    .list_active_paginated(&self.0, before_id, after_id, first, last)
+                    .list_active_paginated(&self.0, &pagination)
                     .await?;
 
                 let mut connection = Connection::new(page.has_previous_page, page.has_next_page);
@@ -187,10 +189,11 @@ impl User {
                 let before_id = before
                     .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::UserEmail))
                     .transpose()?;
+                let pagination = Pagination::try_new(before_id, after_id, first, last)?;
 
                 let page = repo
                     .user_email()
-                    .list_paginated(&self.0, before_id, after_id, first, last)
+                    .list_paginated(&self.0, &pagination)
                     .await?;
 
                 let mut connection = Connection::with_additional_fields(
@@ -237,10 +240,11 @@ impl User {
                 let before_id = before
                     .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::OAuth2Session))
                     .transpose()?;
+                let pagination = Pagination::try_new(before_id, after_id, first, last)?;
 
                 let page = repo
                     .oauth2_session()
-                    .list_paginated(&self.0, before_id, after_id, first, last)
+                    .list_paginated(&self.0, &pagination)
                     .await?;
 
                 let mut connection = Connection::new(page.has_previous_page, page.has_next_page);
@@ -287,10 +291,11 @@ impl User {
                         x.extract_for_type(NodeType::UpstreamOAuth2Link)
                     })
                     .transpose()?;
+                let pagination = Pagination::try_new(before_id, after_id, first, last)?;
 
                 let page = repo
                     .upstream_oauth_link()
-                    .list_paginated(&self.0, before_id, after_id, first, last)
+                    .list_paginated(&self.0, &pagination)
                     .await?;
 
                 let mut connection = Connection::new(page.has_previous_page, page.has_next_page);

@@ -23,7 +23,7 @@ use uuid::Uuid;
 use crate::{
     pagination::{Page, QueryBuilderExt},
     tracing::ExecuteExt,
-    Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt,
+    Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt, Pagination,
 };
 
 #[async_trait]
@@ -45,10 +45,7 @@ pub trait BrowserSessionRepository: Send + Sync {
     async fn list_active_paginated(
         &mut self,
         user: &User,
-        before: Option<Ulid>,
-        after: Option<Ulid>,
-        first: Option<usize>,
-        last: Option<usize>,
+        pagination: &Pagination,
     ) -> Result<Page<BrowserSession>, Self::Error>;
     async fn count_active(&mut self, user: &User) -> Result<usize, Self::Error>;
 
@@ -264,10 +261,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
     async fn list_active_paginated(
         &mut self,
         user: &User,
-        before: Option<Ulid>,
-        after: Option<Ulid>,
-        first: Option<usize>,
-        last: Option<usize>,
+        pagination: &Pagination,
     ) -> Result<Page<BrowserSession>, Self::Error> {
         // TODO: ordering of last authentication is wrong
         let mut query = QueryBuilder::new(
@@ -290,7 +284,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
         query
             .push(" WHERE s.finished_at IS NULL AND s.user_id = ")
             .push_bind(Uuid::from(user.id))
-            .generate_pagination("s.user_session_id", before, after, first, last)?;
+            .generate_pagination("s.user_session_id", pagination);
 
         let edges: Vec<SessionLookup> = query
             .build_query_as()
@@ -298,7 +292,9 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
             .fetch_all(&mut *self.conn)
             .await?;
 
-        let page = Page::process(edges, first, last)?.try_map(BrowserSession::try_from)?;
+        let page = pagination
+            .process(edges)
+            .try_map(BrowserSession::try_from)?;
         Ok(page)
     }
 

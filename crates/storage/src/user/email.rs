@@ -24,7 +24,7 @@ use uuid::Uuid;
 use crate::{
     pagination::{Page, QueryBuilderExt},
     tracing::ExecuteExt,
-    Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt,
+    Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt, Pagination,
 };
 
 #[async_trait]
@@ -39,10 +39,7 @@ pub trait UserEmailRepository: Send + Sync {
     async fn list_paginated(
         &mut self,
         user: &User,
-        before: Option<Ulid>,
-        after: Option<Ulid>,
-        first: Option<usize>,
-        last: Option<usize>,
+        pagination: &Pagination,
     ) -> Result<Page<UserEmail>, Self::Error>;
     async fn count(&mut self, user: &User) -> Result<usize, Self::Error>;
 
@@ -289,10 +286,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
     async fn list_paginated(
         &mut self,
         user: &User,
-        before: Option<Ulid>,
-        after: Option<Ulid>,
-        first: Option<usize>,
-        last: Option<usize>,
+        pagination: &Pagination,
     ) -> Result<Page<UserEmail>, DatabaseError> {
         let mut query = QueryBuilder::new(
             r#"
@@ -308,7 +302,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
         query
             .push(" WHERE user_id = ")
             .push_bind(Uuid::from(user.id))
-            .generate_pagination("ue.user_email_id", before, after, first, last)?;
+            .generate_pagination("ue.user_email_id", &pagination);
 
         let edges: Vec<UserEmailLookup> = query
             .build_query_as()
@@ -316,7 +310,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
             .fetch_all(&mut *self.conn)
             .await?;
 
-        let page = Page::process(edges, first, last)?.map(UserEmail::from);
+        let page = pagination.process(edges).map(UserEmail::from);
         Ok(page)
     }
 

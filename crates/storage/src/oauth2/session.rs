@@ -23,7 +23,7 @@ use uuid::Uuid;
 use crate::{
     pagination::{Page, QueryBuilderExt},
     tracing::ExecuteExt,
-    Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt,
+    Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt, Pagination,
 };
 
 #[async_trait]
@@ -45,10 +45,7 @@ pub trait OAuth2SessionRepository: Send + Sync {
     async fn list_paginated(
         &mut self,
         user: &User,
-        before: Option<Ulid>,
-        after: Option<Ulid>,
-        first: Option<usize>,
-        last: Option<usize>,
+        pagination: &Pagination,
     ) -> Result<Page<Session>, Self::Error>;
 }
 
@@ -243,10 +240,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
     async fn list_paginated(
         &mut self,
         user: &User,
-        before: Option<Ulid>,
-        after: Option<Ulid>,
-        first: Option<usize>,
-        last: Option<usize>,
+        pagination: &Pagination,
     ) -> Result<Page<Session>, Self::Error> {
         let mut query = QueryBuilder::new(
             r#"
@@ -263,7 +257,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
         query
             .push(" WHERE us.user_id = ")
             .push_bind(Uuid::from(user.id))
-            .generate_pagination("oauth2_session_id", before, after, first, last)?;
+            .generate_pagination("oauth2_session_id", pagination);
 
         let edges: Vec<OAuthSessionLookup> = query
             .build_query_as()
@@ -271,7 +265,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
             .fetch_all(&mut *self.conn)
             .await?;
 
-        let page = Page::process(edges, first, last)?.try_map(Session::try_from)?;
+        let page = pagination.process(edges).try_map(Session::try_from)?;
         Ok(page)
     }
 }
