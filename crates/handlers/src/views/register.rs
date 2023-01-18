@@ -33,7 +33,7 @@ use mas_policy::PolicyFactory;
 use mas_router::Route;
 use mas_storage::{
     user::{BrowserSessionRepository, UserEmailRepository, UserPasswordRepository, UserRepository},
-    Repository,
+    Clock, Repository,
 };
 use mas_storage_pg::PgRepository;
 use mas_templates::{

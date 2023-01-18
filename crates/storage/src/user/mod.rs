@@ -36,7 +36,7 @@ pub trait UserRepository: Send + Sync {
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         username: String,
     ) -> Result<User, Self::Error>;
     async fn exists(&mut self, username: &str) -> Result<bool, Self::Error>;

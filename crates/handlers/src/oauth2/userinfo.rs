@@ -31,7 +31,7 @@ use mas_router::UrlBuilder;
 use mas_storage::{
     oauth2::OAuth2ClientRepository,
     user::{BrowserSessionRepository, UserEmailRepository},
-    Repository,
+    Clock, Repository,
 };
 use mas_storage_pg::PgRepository;
 use oauth2_types::scope;

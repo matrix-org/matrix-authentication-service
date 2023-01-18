@@ -148,7 +148,7 @@ impl<'c> UserRepository for PgUserRepository<'c> {
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         username: String,
     ) -> Result<User, Self::Error> {
         let created_at = clock.now();

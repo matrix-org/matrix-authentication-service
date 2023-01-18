@@ -37,7 +37,7 @@ pub trait OAuth2AccessTokenRepository: Send + Sync {
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         session: &Session,
         access_token: String,
         expires_after: Duration,
@@ -46,10 +46,10 @@ pub trait OAuth2AccessTokenRepository: Send + Sync {
     /// Revoke an access token
     async fn revoke(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         access_token: AccessToken,
     ) -> Result<AccessToken, Self::Error>;
 
     /// Cleanup expired access tokens
-    async fn cleanup_expired(&mut self, clock: &Clock) -> Result<usize, Self::Error>;
+    async fn cleanup_expired(&mut self, clock: &dyn Clock) -> Result<usize, Self::Error>;
 }

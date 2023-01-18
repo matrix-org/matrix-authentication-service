@@ -18,7 +18,7 @@ use hyper::StatusCode;
 use mas_data_model::{TokenFormatError, TokenType};
 use mas_storage::{
     compat::{CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository},
-    Repository,
+    Clock, Repository,
 };
 use mas_storage_pg::PgRepository;
 use serde::{Deserialize, Serialize};

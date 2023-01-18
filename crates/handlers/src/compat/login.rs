@@ -22,7 +22,7 @@ use mas_storage::{
         CompatSsoLoginRepository,
     },
     user::{UserPasswordRepository, UserRepository},
-    Clock, Repository,
+    Clock, Repository, SystemClock,
 };
 use mas_storage_pg::PgRepository;
 use serde::{Deserialize, Serialize};
@@ -254,7 +254,7 @@ pub(crate) async fn post(
 
 async fn token_login(
     repo: &mut PgRepository,
-    clock: &Clock,
+    clock: &SystemClock,
     token: &str,
 ) -> Result<(CompatSession, User), RouteError> {
     let login = repo

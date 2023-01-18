@@ -38,7 +38,7 @@ pub trait UserEmailRepository: Send + Sync {
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         user: &User,
         email: String,
     ) -> Result<UserEmail, Self::Error>;
@@ -46,7 +46,7 @@ pub trait UserEmailRepository: Send + Sync {
 
     async fn mark_as_verified(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         user_email: UserEmail,
     ) -> Result<UserEmail, Self::Error>;
 
@@ -55,7 +55,7 @@ pub trait UserEmailRepository: Send + Sync {
     async fn add_verification_code(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         user_email: &UserEmail,
         max_age: chrono::Duration,
         code: String,
@@ -63,14 +63,14 @@ pub trait UserEmailRepository: Send + Sync {
 
     async fn find_verification_code(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         user_email: &UserEmail,
         code: &str,
     ) -> Result<Option<UserEmailVerification>, Self::Error>;
 
     async fn consume_verification_code(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         verification: UserEmailVerification,
     ) -> Result<UserEmailVerification, Self::Error>;
 }

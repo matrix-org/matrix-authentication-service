@@ -211,7 +211,7 @@ impl<'c> OAuth2AuthorizationGrantRepository for PgOAuth2AuthorizationGrantReposi
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         client: &Client,
         redirect_uri: Url,
         scope: Scope,
@@ -410,7 +410,7 @@ impl<'c> OAuth2AuthorizationGrantRepository for PgOAuth2AuthorizationGrantReposi
     )]
     async fn fulfill(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         session: &Session,
         grant: AuthorizationGrant,
     ) -> Result<AuthorizationGrant, Self::Error> {
@@ -451,7 +451,7 @@ impl<'c> OAuth2AuthorizationGrantRepository for PgOAuth2AuthorizationGrantReposi
     )]
     async fn exchange(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         grant: AuthorizationGrant,
     ) -> Result<AuthorizationGrant, Self::Error> {
         let exchanged_at = clock.now();

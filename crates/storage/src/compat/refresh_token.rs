@@ -36,7 +36,7 @@ pub trait CompatRefreshTokenRepository: Send + Sync {
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         compat_session: &CompatSession,
         compat_access_token: &CompatAccessToken,
         token: String,
@@ -45,7 +45,7 @@ pub trait CompatRefreshTokenRepository: Send + Sync {
     /// Consume a compat refresh token
     async fn consume(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         compat_refresh_token: CompatRefreshToken,
     ) -> Result<CompatRefreshToken, Self::Error>;
 }

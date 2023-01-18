@@ -142,7 +142,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         user: &User,
     ) -> Result<BrowserSession, Self::Error> {
         let created_at = clock.now();
@@ -185,7 +185,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
     )]
     async fn finish(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         mut user_session: BrowserSession,
     ) -> Result<BrowserSession, Self::Error> {
         let finished_at = clock.now();
@@ -297,7 +297,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
     async fn authenticate_with_password(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         mut user_session: BrowserSession,
         user_password: &Password,
     ) -> Result<BrowserSession, Self::Error> {
@@ -342,7 +342,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
     async fn authenticate_with_upstream(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         mut user_session: BrowserSession,
         upstream_oauth_link: &UpstreamOAuthLink,
     ) -> Result<BrowserSession, Self::Error> {

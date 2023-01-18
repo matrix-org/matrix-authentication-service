@@ -154,7 +154,7 @@ impl<'c> CompatRefreshTokenRepository for PgCompatRefreshTokenRepository<'c> {
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         compat_session: &CompatSession,
         compat_access_token: &CompatAccessToken,
         token: String,
@@ -202,7 +202,7 @@ impl<'c> CompatRefreshTokenRepository for PgCompatRefreshTokenRepository<'c> {
     )]
     async fn consume(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         compat_refresh_token: CompatRefreshToken,
     ) -> Result<CompatRefreshToken, Self::Error> {
         let consumed_at = clock.now();

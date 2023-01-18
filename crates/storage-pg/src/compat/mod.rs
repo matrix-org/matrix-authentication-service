@@ -27,6 +27,7 @@ mod tests {
     use chrono::Duration;
     use mas_data_model::Device;
     use mas_storage::{
+        clock::MockClock,
         compat::{
             CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository,
         },
@@ -44,7 +45,7 @@ mod tests {
         const FIRST_TOKEN: &str = "first_access_token";
         const SECOND_TOKEN: &str = "second_access_token";
         let mut rng = ChaChaRng::seed_from_u64(42);
-        let clock = Clock::mock();
+        let clock = MockClock::default();
         let mut repo = PgRepository::from_pool(&pool).await.unwrap();
 
         // Create a user
@@ -101,7 +102,7 @@ mod tests {
         const FIRST_TOKEN: &str = "first_access_token";
         const SECOND_TOKEN: &str = "second_access_token";
         let mut rng = ChaChaRng::seed_from_u64(42);
-        let clock = Clock::mock();
+        let clock = MockClock::default();
         let mut repo = PgRepository::from_pool(&pool).await.unwrap();
 
         // Create a user
@@ -221,7 +222,7 @@ mod tests {
         const ACCESS_TOKEN: &str = "access_token";
         const REFRESH_TOKEN: &str = "refresh_token";
         let mut rng = ChaChaRng::seed_from_u64(42);
-        let clock = Clock::mock();
+        let clock = MockClock::default();
         let mut repo = PgRepository::from_pool(&pool).await.unwrap();
 
         // Create a user

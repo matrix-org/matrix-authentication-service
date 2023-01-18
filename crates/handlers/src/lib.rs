@@ -409,8 +409,8 @@ async fn test_state(pool: PgPool) -> Result<AppState, anyhow::Error> {
 }
 
 // XXX: that should be moved somewhere else
-fn clock_and_rng() -> (mas_storage::Clock, rand_chacha::ChaChaRng) {
-    let clock = mas_storage::Clock::default();
+fn clock_and_rng() -> (mas_storage::SystemClock, rand_chacha::ChaChaRng) {
+    let clock = mas_storage::SystemClock::default();
 
     // This rng is used to source the local rng
     #[allow(clippy::disallowed_methods)]

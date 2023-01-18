@@ -149,7 +149,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         issuer: String,
         scope: Scope,
         token_endpoint_auth_method: OAuthClientAuthenticationMethod,

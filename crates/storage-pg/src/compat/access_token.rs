@@ -143,7 +143,7 @@ impl<'c> CompatAccessTokenRepository for PgCompatAccessTokenRepository<'c> {
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         compat_session: &CompatSession,
         token: String,
         expires_after: Option<Duration>,
@@ -191,7 +191,7 @@ impl<'c> CompatAccessTokenRepository for PgCompatAccessTokenRepository<'c> {
     )]
     async fn expire(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         mut compat_access_token: CompatAccessToken,
     ) -> Result<CompatAccessToken, Self::Error> {
         let expires_at = clock.now();

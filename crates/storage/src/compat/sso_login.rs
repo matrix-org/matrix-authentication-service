@@ -37,7 +37,7 @@ pub trait CompatSsoLoginRepository: Send + Sync {
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         login_token: String,
         redirect_uri: Url,
     ) -> Result<CompatSsoLogin, Self::Error>;
@@ -45,7 +45,7 @@ pub trait CompatSsoLoginRepository: Send + Sync {
     /// Fulfill a compat SSO login by providing a compat session
     async fn fulfill(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         compat_sso_login: CompatSsoLogin,
         compat_session: &CompatSession,
     ) -> Result<CompatSsoLogin, Self::Error>;
@@ -53,7 +53,7 @@ pub trait CompatSsoLoginRepository: Send + Sync {
     /// Mark a compat SSO login as exchanged
     async fn exchange(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         compat_sso_login: CompatSsoLogin,
     ) -> Result<CompatSsoLogin, Self::Error>;
 

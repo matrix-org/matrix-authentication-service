@@ -24,7 +24,7 @@ use mas_axum_utils::{
 };
 use mas_keystore::Encrypter;
 use mas_router::Route;
-use mas_storage::{user::UserEmailRepository, Clock, Repository};
+use mas_storage::{user::UserEmailRepository, Clock, Repository, SystemClock};
 use mas_storage_pg::PgRepository;
 use mas_templates::{EmailVerificationPageContext, TemplateContext, Templates};
 use serde::Deserialize;
@@ -89,7 +89,7 @@ pub(crate) async fn post(
     Path(id): Path<Ulid>,
     Form(form): Form<ProtectedForm<CodeForm>>,
 ) -> Result<Response, FancyError> {
-    let clock = Clock::default();
+    let clock = SystemClock::default();
     let mut repo = PgRepository::from_pool(&pool).await?;
 
     let form = cookie_jar.verify_form(clock.now(), form)?;

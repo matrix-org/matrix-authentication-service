@@ -378,7 +378,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
     async fn add(
         &mut self,
         mut rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         redirect_uris: Vec<Url>,
         encrypted_client_secret: Option<String>,
         grant_types: Vec<GrantType>,
@@ -535,7 +535,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
     async fn add_from_config(
         &mut self,
         mut rng: impl Rng + Send,
-        clock: &Clock,
+        clock: &dyn Clock,
         client_id: Ulid,
         client_auth_method: OAuthClientAuthenticationMethod,
         encrypted_client_secret: Option<String>,
@@ -707,7 +707,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
     async fn give_consent_for_user(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         client: &Client,
         user: &User,
         scope: &Scope,

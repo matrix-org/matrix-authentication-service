@@ -71,7 +71,7 @@ pub(crate) async fn get(
 
 async fn render(
     rng: impl Rng + Send,
-    clock: &Clock,
+    clock: &impl Clock,
     templates: Templates,
     session: BrowserSession,
     cookie_jar: PrivateCookieJar<Encrypter>,
@@ -94,7 +94,7 @@ async fn start_email_verification(
     mailer: &Mailer,
     repo: &mut impl Repository,
     mut rng: impl Rng + Send,
-    clock: &Clock,
+    clock: &impl Clock,
     user: &User,
     user_email: UserEmail,
 ) -> anyhow::Result<()> {

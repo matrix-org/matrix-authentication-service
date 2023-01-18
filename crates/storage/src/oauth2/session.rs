@@ -28,12 +28,12 @@ pub trait OAuth2SessionRepository: Send + Sync {
     async fn create_from_grant(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         grant: &AuthorizationGrant,
         user_session: &BrowserSession,
     ) -> Result<Session, Self::Error>;
 
-    async fn finish(&mut self, clock: &Clock, session: Session) -> Result<Session, Self::Error>;
+    async fn finish(&mut self, clock: &dyn Clock, session: Session) -> Result<Session, Self::Error>;
 
     async fn list_paginated(
         &mut self,

@@ -30,7 +30,7 @@ pub trait CompatSessionRepository: Send + Sync {
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         user: &User,
         device: Device,
     ) -> Result<CompatSession, Self::Error>;
@@ -38,7 +38,7 @@ pub trait CompatSessionRepository: Send + Sync {
     /// End a compat session
     async fn finish(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         compat_session: CompatSession,
     ) -> Result<CompatSession, Self::Error>;
 }

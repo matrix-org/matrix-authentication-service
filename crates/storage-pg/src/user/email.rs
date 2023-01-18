@@ -68,7 +68,7 @@ struct UserEmailConfirmationCodeLookup {
 }
 
 impl UserEmailConfirmationCodeLookup {
-    fn into_verification(self, clock: &Clock) -> UserEmailVerification {
+    fn into_verification(self, clock: &dyn Clock) -> UserEmailVerification {
         let now = clock.now();
         let state = if let Some(when) = self.consumed_at {
             UserEmailVerificationState::AlreadyUsed { when }
@@ -301,7 +301,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         user: &User,
         email: String,
     ) -> Result<UserEmail, Self::Error> {
@@ -378,7 +378,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
 
     async fn mark_as_verified(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         mut user_email: UserEmail,
     ) -> Result<UserEmail, Self::Error> {
         let confirmed_at = clock.now();
@@ -430,7 +430,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
     async fn add_verification_code(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         user_email: &UserEmail,
         max_age: chrono::Duration,
         code: String,
@@ -479,7 +479,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
     )]
     async fn find_verification_code(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         user_email: &UserEmail,
         code: &str,
     ) -> Result<Option<UserEmailVerification>, Self::Error> {
@@ -521,7 +521,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
     )]
     async fn consume_verification_code(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         mut user_email_verification: UserEmailVerification,
     ) -> Result<UserEmailVerification, Self::Error> {
         if !matches!(

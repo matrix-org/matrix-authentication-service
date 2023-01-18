@@ -33,7 +33,7 @@ pub trait UpstreamOAuthSessionRepository: Send + Sync {
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         upstream_oauth_provider: &UpstreamOAuthProvider,
         state: String,
         code_challenge_verifier: Option<String>,
@@ -43,7 +43,7 @@ pub trait UpstreamOAuthSessionRepository: Send + Sync {
     /// Mark a session as completed and associate the given link
     async fn complete_with_link(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         upstream_oauth_authorization_session: UpstreamOAuthAuthorizationSession,
         upstream_oauth_link: &UpstreamOAuthLink,
         id_token: Option<String>,
@@ -52,7 +52,7 @@ pub trait UpstreamOAuthSessionRepository: Send + Sync {
     /// Mark a session as consumed
     async fn consume(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         upstream_oauth_authorization_session: UpstreamOAuthAuthorizationSession,
     ) -> Result<UpstreamOAuthAuthorizationSession, Self::Error>;
 }

@@ -167,7 +167,7 @@ async fn login(
     password_manager: PasswordManager,
     repo: &mut impl Repository,
     mut rng: impl Rng + CryptoRng + Send,
-    clock: &Clock,
+    clock: &impl Clock,
     username: &str,
     password: &str,
 ) -> Result<BrowserSession, FormError> {

@@ -30,7 +30,7 @@ use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{
     oauth2::{OAuth2AuthorizationGrantRepository, OAuth2ClientRepository},
-    Repository,
+    Clock, Repository,
 };
 use mas_storage_pg::PgRepository;
 use mas_templates::{ConsentContext, PolicyViolationContext, TemplateContext, Templates};

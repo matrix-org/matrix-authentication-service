@@ -122,7 +122,7 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         user: &User,
         device: Device,
     ) -> Result<CompatSession, Self::Error> {
@@ -166,7 +166,7 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
     )]
     async fn finish(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         compat_session: CompatSession,
     ) -> Result<CompatSession, Self::Error> {
         let finished_at = clock.now();

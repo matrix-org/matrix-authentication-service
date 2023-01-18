@@ -150,7 +150,7 @@ impl<'c> OAuth2RefreshTokenRepository for PgOAuth2RefreshTokenRepository<'c> {
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         session: &Session,
         access_token: &AccessToken,
         refresh_token: String,
@@ -199,7 +199,7 @@ impl<'c> OAuth2RefreshTokenRepository for PgOAuth2RefreshTokenRepository<'c> {
     )]
     async fn consume(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         refresh_token: RefreshToken,
     ) -> Result<RefreshToken, Self::Error> {
         let consumed_at = clock.now();

@@ -14,7 +14,7 @@
 
 //! Database-related tasks
 
-use mas_storage::{oauth2::OAuth2AccessTokenRepository, Clock, Repository};
+use mas_storage::{oauth2::OAuth2AccessTokenRepository, Repository, SystemClock};
 use mas_storage_pg::PgRepository;
 use sqlx::{Pool, Postgres};
 use tracing::{debug, error, info};
@@ -22,7 +22,7 @@ use tracing::{debug, error, info};
 use super::Task;
 
 #[derive(Clone)]
-struct CleanupExpired(Pool<Postgres>, Clock);
+struct CleanupExpired(Pool<Postgres>, SystemClock);
 
 impl std::fmt::Debug for CleanupExpired {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -57,5 +57,5 @@ impl Task for CleanupExpired {
 #[must_use]
 pub fn cleanup_expired(pool: &Pool<Postgres>) -> impl Task + Clone {
     // XXX: the clock should come from somewhere else
-    CleanupExpired(pool.clone(), Clock::default())
+    CleanupExpired(pool.clone(), SystemClock::default())
 }

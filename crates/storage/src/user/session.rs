@@ -27,12 +27,12 @@ pub trait BrowserSessionRepository: Send + Sync {
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         user: &User,
     ) -> Result<BrowserSession, Self::Error>;
     async fn finish(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         user_session: BrowserSession,
     ) -> Result<BrowserSession, Self::Error>;
     async fn list_active_paginated(
@@ -45,7 +45,7 @@ pub trait BrowserSessionRepository: Send + Sync {
     async fn authenticate_with_password(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         user_session: BrowserSession,
         user_password: &Password,
     ) -> Result<BrowserSession, Self::Error>;
@@ -53,7 +53,7 @@ pub trait BrowserSessionRepository: Send + Sync {
     async fn authenticate_with_upstream(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         user_session: BrowserSession,
         upstream_oauth_link: &UpstreamOAuthLink,
     ) -> Result<BrowserSession, Self::Error>;

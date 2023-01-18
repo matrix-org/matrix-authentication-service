@@ -14,8 +14,9 @@
 
 use chrono::Duration;
 use mas_storage::{
+    clock::MockClock,
     user::{BrowserSessionRepository, UserEmailRepository, UserPasswordRepository, UserRepository},
-    Clock, Repository,
+    Repository,
 };
 use rand::SeedableRng;
 use rand_chacha::ChaChaRng;
@@ -30,7 +31,7 @@ async fn test_user_repo(pool: PgPool) {
 
     let mut repo = PgRepository::from_pool(&pool).await.unwrap();
     let mut rng = ChaChaRng::seed_from_u64(42);
-    let clock = Clock::mock();
+    let clock = MockClock::default();
 
     // Initially, the user shouldn't exist
     assert!(!repo.user().exists(USERNAME).await.unwrap());
@@ -78,7 +79,7 @@ async fn test_user_email_repo(pool: PgPool) {
 
     let mut repo = PgRepository::from_pool(&pool).await.unwrap();
     let mut rng = ChaChaRng::seed_from_u64(42);
-    let clock = Clock::mock();
+    let clock = MockClock::default();
 
     let user = repo
         .user()
@@ -89,7 +90,7 @@ async fn test_user_email_repo(pool: PgPool) {
     // The user email should not exist yet
     assert!(repo
         .user_email()
-        .find(&user, EMAIL)
+        .find(&user, &EMAIL)
         .await
         .unwrap()
         .is_none());
@@ -110,7 +111,7 @@ async fn test_user_email_repo(pool: PgPool) {
 
     assert!(repo
         .user_email()
-        .find(&user, EMAIL)
+        .find(&user, &EMAIL)
         .await
         .unwrap()
         .is_some());
@@ -180,7 +181,7 @@ async fn test_user_email_repo(pool: PgPool) {
     // Reload the user_email
     let user_email = repo
         .user_email()
-        .find(&user, EMAIL)
+        .find(&user, &EMAIL)
         .await
         .unwrap()
         .expect("user email was not found");
@@ -260,7 +261,7 @@ async fn test_user_password_repo(pool: PgPool) {
 
     let mut repo = PgRepository::from_pool(&pool).await.unwrap();
     let mut rng = ChaChaRng::seed_from_u64(42);
-    let clock = Clock::mock();
+    let clock = MockClock::default();
 
     let user = repo
         .user()
@@ -340,7 +341,7 @@ async fn test_user_session(pool: PgPool) {
 
     let mut repo = PgRepository::from_pool(&pool).await.unwrap();
     let mut rng = ChaChaRng::seed_from_u64(42);
-    let clock = Clock::mock();
+    let clock = MockClock::default();
 
     let user = repo
         .user()

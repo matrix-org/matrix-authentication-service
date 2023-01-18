@@ -26,7 +26,7 @@ pub trait UserPasswordRepository: Send + Sync {
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         user: &User,
         version: u16,
         hashed_password: String,

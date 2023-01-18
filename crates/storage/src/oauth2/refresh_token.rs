@@ -36,7 +36,7 @@ pub trait OAuth2RefreshTokenRepository: Send + Sync {
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         session: &Session,
         access_token: &AccessToken,
         refresh_token: String,
@@ -45,7 +45,7 @@ pub trait OAuth2RefreshTokenRepository: Send + Sync {
     /// Consume a refresh token
     async fn consume(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         refresh_token: RefreshToken,
     ) -> Result<RefreshToken, Self::Error>;
 }

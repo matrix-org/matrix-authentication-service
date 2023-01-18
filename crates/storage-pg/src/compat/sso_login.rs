@@ -177,7 +177,7 @@ impl<'c> CompatSsoLoginRepository for PgCompatSsoLoginRepository<'c> {
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         login_token: String,
         redirect_uri: Url,
     ) -> Result<CompatSsoLogin, Self::Error> {
@@ -223,7 +223,7 @@ impl<'c> CompatSsoLoginRepository for PgCompatSsoLoginRepository<'c> {
     )]
     async fn fulfill(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         compat_sso_login: CompatSsoLogin,
         compat_session: &CompatSession,
     ) -> Result<CompatSsoLogin, Self::Error> {
@@ -265,7 +265,7 @@ impl<'c> CompatSsoLoginRepository for PgCompatSsoLoginRepository<'c> {
     )]
     async fn exchange(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         compat_sso_login: CompatSsoLogin,
     ) -> Result<CompatSsoLogin, Self::Error> {
         let exchanged_at = clock.now();

@@ -67,7 +67,7 @@ pub(crate) async fn get(
 
 async fn render(
     rng: impl Rng + Send,
-    clock: &Clock,
+    clock: &impl Clock,
     templates: Templates,
     session: BrowserSession,
     cookie_jar: PrivateCookieJar<Encrypter>,

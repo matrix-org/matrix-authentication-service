@@ -25,12 +25,13 @@ pub use self::{
 mod tests {
     use chrono::Duration;
     use mas_storage::{
+        clock::MockClock,
         upstream_oauth2::{
             UpstreamOAuthLinkRepository, UpstreamOAuthProviderRepository,
             UpstreamOAuthSessionRepository,
         },
         user::UserRepository,
-        Clock, Pagination, Repository,
+        Pagination, Repository,
     };
     use oauth2_types::scope::{Scope, OPENID};
     use rand::SeedableRng;
@@ -41,7 +42,7 @@ mod tests {
     #[sqlx::test(migrator = "crate::MIGRATOR")]
     async fn test_repository(pool: PgPool) {
         let mut rng = rand_chacha::ChaChaRng::seed_from_u64(42);
-        let clock = Clock::mock();
+        let clock = MockClock::default();
         let mut repo = PgRepository::from_pool(&pool).await.unwrap();
 
         // The provider list should be empty at the start
@@ -183,7 +184,7 @@ mod tests {
         let scope = Scope::from_iter([OPENID]);
 
         let mut rng = rand_chacha::ChaChaRng::seed_from_u64(42);
-        let clock = Clock::mock();
+        let clock = MockClock::default();
         let mut repo = PgRepository::from_pool(&pool).await.unwrap();
 
         let mut ids = Vec::with_capacity(20);

@@ -26,7 +26,7 @@ use mas_keystore::Encrypter;
 use mas_router::Route;
 use mas_storage::{
     user::{BrowserSessionRepository, UserPasswordRepository},
-    Repository,
+    Clock, Repository,
 };
 use mas_storage_pg::PgRepository;
 use mas_templates::{ReauthContext, TemplateContext, Templates};

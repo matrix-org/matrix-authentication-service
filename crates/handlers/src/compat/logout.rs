@@ -18,7 +18,7 @@ use hyper::StatusCode;
 use mas_data_model::TokenType;
 use mas_storage::{
     compat::{CompatAccessTokenRepository, CompatSessionRepository},
-    Clock, Repository,
+    Clock, Repository, SystemClock,
 };
 use mas_storage_pg::PgRepository;
 use sqlx::PgPool;
@@ -72,7 +72,7 @@ pub(crate) async fn post(
     State(pool): State<PgPool>,
     maybe_authorization: Option<TypedHeader<Authorization<Bearer>>>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let clock = Clock::default();
+    let clock = SystemClock::default();
     let mut repo = PgRepository::from_pool(&pool).await?;
 
     let TypedHeader(authorization) = maybe_authorization.ok_or(RouteError::MissingAuthorization)?;

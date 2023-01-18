@@ -142,7 +142,7 @@ impl<'c> OAuth2AccessTokenRepository for PgOAuth2AccessTokenRepository<'c> {
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         session: &Session,
         access_token: String,
         expires_after: Duration,
@@ -182,7 +182,7 @@ impl<'c> OAuth2AccessTokenRepository for PgOAuth2AccessTokenRepository<'c> {
 
     async fn revoke(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         access_token: AccessToken,
     ) -> Result<AccessToken, Self::Error> {
         let revoked_at = clock.now();
@@ -205,7 +205,7 @@ impl<'c> OAuth2AccessTokenRepository for PgOAuth2AccessTokenRepository<'c> {
             .map_err(DatabaseError::to_invalid_operation)
     }
 
-    async fn cleanup_expired(&mut self, clock: &Clock) -> Result<usize, Self::Error> {
+    async fn cleanup_expired(&mut self, clock: &dyn Clock) -> Result<usize, Self::Error> {
         // Cleanup token which expired more than 15 minutes ago
         let threshold = clock.now() - Duration::minutes(15);
         let res = sqlx::query!(

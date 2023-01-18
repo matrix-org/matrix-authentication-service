@@ -156,7 +156,7 @@ impl<'c> UpstreamOAuthSessionRepository for PgUpstreamOAuthSessionRepository<'c>
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         upstream_oauth_provider: &UpstreamOAuthProvider,
         state_str: String,
         code_challenge_verifier: Option<String>,
@@ -217,7 +217,7 @@ impl<'c> UpstreamOAuthSessionRepository for PgUpstreamOAuthSessionRepository<'c>
     )]
     async fn complete_with_link(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         upstream_oauth_authorization_session: UpstreamOAuthAuthorizationSession,
         upstream_oauth_link: &UpstreamOAuthLink,
         id_token: Option<String>,
@@ -260,7 +260,7 @@ impl<'c> UpstreamOAuthSessionRepository for PgUpstreamOAuthSessionRepository<'c>
     )]
     async fn consume(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         upstream_oauth_authorization_session: UpstreamOAuthAuthorizationSession,
     ) -> Result<UpstreamOAuthAuthorizationSession, Self::Error> {
         let consumed_at = clock.now();

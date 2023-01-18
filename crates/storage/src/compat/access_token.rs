@@ -37,7 +37,7 @@ pub trait CompatAccessTokenRepository: Send + Sync {
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         compat_session: &CompatSession,
         token: String,
         expires_after: Option<Duration>,
@@ -46,7 +46,7 @@ pub trait CompatAccessTokenRepository: Send + Sync {
     /// Set the expiration time of the compat access token to now
     async fn expire(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         compat_access_token: CompatAccessToken,
     ) -> Result<CompatAccessToken, Self::Error>;
 }

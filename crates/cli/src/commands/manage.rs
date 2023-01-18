@@ -21,7 +21,7 @@ use mas_storage::{
     oauth2::OAuth2ClientRepository,
     upstream_oauth2::UpstreamOAuthProviderRepository,
     user::{UserEmailRepository, UserPasswordRepository, UserRepository},
-    Clock, Repository,
+    Repository, SystemClock,
 };
 use mas_storage_pg::PgRepository;
 use oauth2_types::scope::Scope;
@@ -188,7 +188,7 @@ impl Options {
     #[allow(clippy::too_many_lines)]
     pub async fn run(&self, root: &super::Options) -> anyhow::Result<()> {
         use Subcommand as SC;
-        let clock = Clock::default();
+        let clock = SystemClock::default();
         // XXX: we should disallow SeedableRng::from_entropy
         let mut rng = rand_chacha::ChaChaRng::from_entropy();
 

@@ -31,7 +31,7 @@ pub trait OAuth2AuthorizationGrantRepository: Send + Sync {
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         client: &Client,
         redirect_uri: Url,
         scope: Scope,
@@ -51,14 +51,14 @@ pub trait OAuth2AuthorizationGrantRepository: Send + Sync {
 
     async fn fulfill(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         session: &Session,
         authorization_grant: AuthorizationGrant,
     ) -> Result<AuthorizationGrant, Self::Error>;
 
     async fn exchange(
         &mut self,
-        clock: &Clock,
+        clock: &dyn Clock,
         authorization_grant: AuthorizationGrant,
     ) -> Result<AuthorizationGrant, Self::Error>;
 

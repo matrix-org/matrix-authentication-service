@@ -14,7 +14,7 @@
 
 use camino::Utf8PathBuf;
 use clap::Parser;
-use mas_storage::Clock;
+use mas_storage::{Clock, SystemClock};
 use mas_templates::Templates;
 use rand::SeedableRng;
 use tracing::info_span;
@@ -41,7 +41,7 @@ impl Options {
             SC::Check { path } => {
                 let _span = info_span!("cli.templates.check").entered();
 
-                let clock = Clock::default();
+                let clock = SystemClock::default();
                 // XXX: we should disallow SeedableRng::from_entropy
                 let mut rng = rand_chacha::ChaChaRng::from_entropy();
                 let url_builder = mas_router::UrlBuilder::new("https://example.com/".parse()?);

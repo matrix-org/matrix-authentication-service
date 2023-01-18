@@ -149,7 +149,7 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         upstream_oauth_provider: &UpstreamOAuthProvider,
         subject: String,
     ) -> Result<UpstreamOAuthLink, Self::Error> {

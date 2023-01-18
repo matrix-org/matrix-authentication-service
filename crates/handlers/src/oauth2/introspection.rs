@@ -25,7 +25,7 @@ use mas_storage::{
     compat::{CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository},
     oauth2::{OAuth2AccessTokenRepository, OAuth2RefreshTokenRepository, OAuth2SessionRepository},
     user::{BrowserSessionRepository, UserRepository},
-    Clock, Repository,
+    Clock, Repository, SystemClock,
 };
 use mas_storage_pg::PgRepository;
 use oauth2_types::{
@@ -130,7 +130,7 @@ pub(crate) async fn post(
     State(encrypter): State<Encrypter>,
     client_authorization: ClientAuthorization<IntrospectionRequest>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let clock = Clock::default();
+    let clock = SystemClock::default();
     let mut repo = PgRepository::from_pool(&pool).await?;
 
     let client = client_authorization

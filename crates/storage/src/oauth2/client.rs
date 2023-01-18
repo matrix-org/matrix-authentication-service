@@ -45,7 +45,7 @@ pub trait OAuth2ClientRepository: Send + Sync {
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         redirect_uris: Vec<Url>,
         encrypted_client_secret: Option<String>,
         grant_types: Vec<GrantType>,
@@ -68,7 +68,7 @@ pub trait OAuth2ClientRepository: Send + Sync {
     async fn add_from_config(
         &mut self,
         mut rng: impl Rng + Send,
-        clock: &Clock,
+        clock: &dyn Clock,
         client_id: Ulid,
         client_auth_method: OAuthClientAuthenticationMethod,
         encrypted_client_secret: Option<String>,
@@ -86,7 +86,7 @@ pub trait OAuth2ClientRepository: Send + Sync {
     async fn give_consent_for_user(
         &mut self,
         rng: &mut (dyn RngCore + Send),
-        clock: &Clock,
+        clock: &dyn Clock,
         client: &Client,
         user: &User,
         scope: &Scope,
