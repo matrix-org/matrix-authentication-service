@@ -15,12 +15,7 @@
 //! A crate to store keys which can then be used to sign and verify JWTs.
 
 #![forbid(unsafe_code)]
-#![deny(
-    clippy::all,
-    clippy::str_to_string,
-    rustdoc::broken_intra_doc_links,
-    rustdoc::all
-)]
+#![deny(clippy::all, clippy::str_to_string, rustdoc::broken_intra_doc_links)]
 #![warn(clippy::pedantic)]
 
 use std::{ops::Deref, sync::Arc};

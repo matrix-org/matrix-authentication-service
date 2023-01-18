@@ -56,7 +56,7 @@ impl HttpClientFactory {
         Ok(layer.layer(client))
     }
 
-    /// Constructs a new [`HttpService`], suitable for [`mas_oidc_client`]
+    /// Constructs a new [`HttpService`], suitable for `mas-oidc-client`
     ///
     /// # Errors
     ///

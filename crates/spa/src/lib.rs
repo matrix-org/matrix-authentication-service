@@ -21,6 +21,8 @@
 )]
 #![warn(clippy::pedantic)]
 
+//! A crate to help serve single-page apps built by Vite.
+
 mod vite;
 
 use std::{future::Future, pin::Pin};

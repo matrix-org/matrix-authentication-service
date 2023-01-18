@@ -31,7 +31,7 @@ pub enum CompatSessionState {
 impl CompatSessionState {
     /// Returns `true` if the compta session state is [`Valid`].
     ///
-    /// [`Valid`]: ComptaSessionState::Valid
+    /// [`Valid`]: CompatSessionState::Valid
     #[must_use]
     pub fn is_valid(&self) -> bool {
         matches!(self, Self::Valid)
@@ -39,7 +39,7 @@ impl CompatSessionState {
 
     /// Returns `true` if the compta session state is [`Finished`].
     ///
-    /// [`Finished`]: ComptaSessionState::Finished
+    /// [`Finished`]: CompatSessionState::Finished
     #[must_use]
     pub fn is_finished(&self) -> bool {
         matches!(self, Self::Finished { .. })

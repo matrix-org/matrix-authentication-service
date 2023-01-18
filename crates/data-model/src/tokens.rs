@@ -40,7 +40,7 @@ impl AccessTokenState {
 
     /// Returns `true` if the refresh token state is [`Valid`].
     ///
-    /// [`Valid`]: RefreshTokenState::Valid
+    /// [`Valid`]: AccessTokenState::Valid
     #[must_use]
     pub fn is_valid(&self) -> bool {
         matches!(self, Self::Valid)
@@ -48,7 +48,7 @@ impl AccessTokenState {
 
     /// Returns `true` if the refresh token state is [`Revoked`].
     ///
-    /// [`Revoked`]: RefreshTokenState::Revoked
+    /// [`Revoked`]: AccessTokenState::Revoked
     #[must_use]
     pub fn is_revoked(&self) -> bool {
         matches!(self, Self::Revoked { .. })
