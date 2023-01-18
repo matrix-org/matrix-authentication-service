@@ -33,7 +33,8 @@ pub trait OAuth2SessionRepository: Send + Sync {
         user_session: &BrowserSession,
     ) -> Result<Session, Self::Error>;
 
-    async fn finish(&mut self, clock: &dyn Clock, session: Session) -> Result<Session, Self::Error>;
+    async fn finish(&mut self, clock: &dyn Clock, session: Session)
+        -> Result<Session, Self::Error>;
 
     async fn list_paginated(
         &mut self,

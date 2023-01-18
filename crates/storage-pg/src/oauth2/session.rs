@@ -182,7 +182,11 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
         ),
         err,
     )]
-    async fn finish(&mut self, clock: &dyn Clock, session: Session) -> Result<Session, Self::Error> {
+    async fn finish(
+        &mut self,
+        clock: &dyn Clock,
+        session: Session,
+    ) -> Result<Session, Self::Error> {
         let finished_at = clock.now();
         let res = sqlx::query!(
             r#"
