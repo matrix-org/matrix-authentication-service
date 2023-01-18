@@ -27,7 +27,6 @@ use mas_storage::{
     BoxClock, BoxRng, Repository,
 };
 use mas_storage_pg::PgRepository;
-use sqlx::PgPool;
 use thiserror::Error;
 use ulid::Ulid;
 
@@ -61,14 +60,12 @@ pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
     State(http_client_factory): State<HttpClientFactory>,
-    State(pool): State<PgPool>,
+    mut repo: PgRepository,
     State(url_builder): State<UrlBuilder>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(provider_id): Path<Ulid>,
     Query(query): Query<OptionalPostAuthAction>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let mut repo = PgRepository::from_pool(&pool).await?;
-
     let provider = repo
         .upstream_oauth_provider()
         .lookup(provider_id)

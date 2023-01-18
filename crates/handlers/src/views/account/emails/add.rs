@@ -28,7 +28,6 @@ use mas_storage::{user::UserEmailRepository, BoxClock, BoxRng, Repository};
 use mas_storage_pg::PgRepository;
 use mas_templates::{EmailAddContext, TemplateContext, Templates};
 use serde::Deserialize;
-use sqlx::PgPool;
 
 use super::start_email_verification;
 use crate::views::shared::OptionalPostAuthAction;
@@ -42,11 +41,9 @@ pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
     State(templates): State<Templates>,
-    State(pool): State<PgPool>,
+    mut repo: PgRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
-    let mut repo = PgRepository::from_pool(&pool).await?;
-
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
@@ -71,14 +68,12 @@ pub(crate) async fn get(
 pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
-    State(pool): State<PgPool>,
+    mut repo: PgRepository,
     State(mailer): State<Mailer>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Query(query): Query<OptionalPostAuthAction>,
     Form(form): Form<ProtectedForm<EmailForm>>,
 ) -> Result<Response, FancyError> {
-    let mut repo = PgRepository::from_pool(&pool).await?;
-
     let form = cookie_jar.verify_form(&clock, form)?;
     let (session_info, cookie_jar) = cookie_jar.session_info();
 

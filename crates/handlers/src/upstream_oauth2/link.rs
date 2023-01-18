@@ -35,7 +35,6 @@ use mas_templates::{
     UpstreamSuggestLink,
 };
 use serde::Deserialize;
-use sqlx::PgPool;
 use thiserror::Error;
 use ulid::Ulid;
 
@@ -96,12 +95,11 @@ pub(crate) enum FormData {
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
-    State(pool): State<PgPool>,
+    mut repo: PgRepository,
     State(templates): State<Templates>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(link_id): Path<Ulid>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let mut repo = PgRepository::from_pool(&pool).await?;
     let sessions_cookie = UpstreamSessionsCookie::load(&cookie_jar);
     let (session_id, _post_auth_action) = sessions_cookie
         .lookup_link(link_id)
@@ -213,12 +211,11 @@ pub(crate) async fn get(
 pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
-    State(pool): State<PgPool>,
+    mut repo: PgRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(link_id): Path<Ulid>,
     Form(form): Form<ProtectedForm<FormData>>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let mut repo = PgRepository::from_pool(&pool).await?;
     let form = cookie_jar.verify_form(&clock, form)?;
 
     let sessions_cookie = UpstreamSessionsCookie::load(&cookie_jar);

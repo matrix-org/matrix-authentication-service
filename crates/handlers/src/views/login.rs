@@ -34,7 +34,6 @@ use mas_templates::{
 };
 use rand::{CryptoRng, Rng};
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
 use zeroize::Zeroizing;
 
 use super::shared::OptionalPostAuthAction;
@@ -54,12 +53,10 @@ pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
     State(templates): State<Templates>,
-    State(pool): State<PgPool>,
+    mut repo: PgRepository,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
-    let mut repo = PgRepository::from_pool(&pool).await?;
-
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
@@ -88,13 +85,11 @@ pub(crate) async fn post(
     clock: BoxClock,
     State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
-    State(pool): State<PgPool>,
+    mut repo: PgRepository,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<LoginForm>>,
 ) -> Result<Response, FancyError> {
-    let mut repo = PgRepository::from_pool(&pool).await?;
-
     let form = cookie_jar.verify_form(&clock, form)?;
 
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);

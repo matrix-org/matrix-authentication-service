@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum::{extract::State, response::IntoResponse, Json};
+use axum::{response::IntoResponse, Json};
 use chrono::Duration;
 use hyper::StatusCode;
 use mas_data_model::{TokenFormatError, TokenType};
@@ -23,7 +23,6 @@ use mas_storage::{
 use mas_storage_pg::PgRepository;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DurationMilliSeconds};
-use sqlx::PgPool;
 use thiserror::Error;
 
 use super::MatrixError;
@@ -90,11 +89,9 @@ pub struct ResponseBody {
 pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
-    State(pool): State<PgPool>,
+    mut repo: PgRepository,
     Json(input): Json<RequestBody>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let mut repo = PgRepository::from_pool(&pool).await?;
-
     let token_type = TokenType::check(&input.refresh_token)?;
 
     if token_type != TokenType::CompatRefreshToken {

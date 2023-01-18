@@ -34,7 +34,6 @@ use mas_storage::{
 };
 use mas_storage_pg::PgRepository;
 use mas_templates::{ConsentContext, PolicyViolationContext, TemplateContext, Templates};
-use sqlx::PgPool;
 use thiserror::Error;
 use ulid::Ulid;
 
@@ -78,12 +77,10 @@ pub(crate) async fn get(
     clock: BoxClock,
     State(policy_factory): State<Arc<PolicyFactory>>,
     State(templates): State<Templates>,
-    State(pool): State<PgPool>,
+    mut repo: PgRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(grant_id): Path<Ulid>,
 ) -> Result<Response, RouteError> {
-    let mut repo = PgRepository::from_pool(&pool).await?;
-
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
     let maybe_session = session_info.load_session(&mut repo).await?;
@@ -133,13 +130,11 @@ pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
     State(policy_factory): State<Arc<PolicyFactory>>,
-    State(pool): State<PgPool>,
+    mut repo: PgRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(grant_id): Path<Ulid>,
     Form(form): Form<ProtectedForm<()>>,
 ) -> Result<Response, RouteError> {
-    let mut repo = PgRepository::from_pool(&pool).await?;
-
     cookie_jar.verify_form(&clock, form)?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();

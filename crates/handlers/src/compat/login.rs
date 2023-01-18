@@ -28,7 +28,6 @@ use mas_storage_pg::PgRepository;
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none, DurationMilliSeconds};
-use sqlx::PgPool;
 use thiserror::Error;
 use zeroize::Zeroizing;
 
@@ -197,11 +196,10 @@ pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
     State(password_manager): State<PasswordManager>,
-    State(pool): State<PgPool>,
+    mut repo: PgRepository,
     State(homeserver): State<MatrixHomeserver>,
     Json(input): Json<RequestBody>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let mut repo = PgRepository::from_pool(&pool).await?;
     let (session, user) = match input.credentials {
         Credentials::Password {
             identifier: Identifier::User { user },

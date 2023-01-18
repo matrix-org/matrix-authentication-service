@@ -190,8 +190,8 @@ impl TokenType {
     /// use rand::thread_rng;
     /// use mas_data_model::TokenType::{AccessToken, RefreshToken};
     ///
-    /// AccessToken.generate(thread_rng());
-    /// RefreshToken.generate(thread_rng());
+    /// AccessToken.generate(&mut thread_rng());
+    /// RefreshToken.generate(&mut thread_rng());
     /// ```
     pub fn generate(self, rng: &mut (impl RngCore + ?Sized)) -> String {
         let random_part: String = rng

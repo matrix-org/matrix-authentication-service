@@ -31,7 +31,6 @@ use mas_storage::{
 use mas_storage_pg::PgRepository;
 use mas_templates::{ReauthContext, TemplateContext, Templates};
 use serde::Deserialize;
-use sqlx::PgPool;
 use zeroize::Zeroizing;
 
 use super::shared::OptionalPostAuthAction;
@@ -46,12 +45,10 @@ pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
     State(templates): State<Templates>,
-    State(pool): State<PgPool>,
+    mut repo: PgRepository,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
-    let mut repo = PgRepository::from_pool(&pool).await?;
-
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
@@ -84,13 +81,11 @@ pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
     State(password_manager): State<PasswordManager>,
-    State(pool): State<PgPool>,
+    mut repo: PgRepository,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<ReauthForm>>,
 ) -> Result<Response, FancyError> {
-    let mut repo = PgRepository::from_pool(&pool).await?;
-
     let form = cookie_jar.verify_form(&clock, form)?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();

@@ -37,7 +37,6 @@ use mas_storage_pg::PgRepository;
 use oauth2_types::scope;
 use serde::Serialize;
 use serde_with::skip_serializing_none;
-use sqlx::PgPool;
 use thiserror::Error;
 
 use crate::impl_from_error_for_route;
@@ -101,12 +100,10 @@ pub async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
     State(url_builder): State<UrlBuilder>,
-    State(pool): State<PgPool>,
+    mut repo: PgRepository,
     State(key_store): State<Keystore>,
     user_authorization: UserAuthorization,
 ) -> Result<Response, RouteError> {
-    let mut repo = PgRepository::from_pool(&pool).await?;
-
     let session = user_authorization.protected(&mut repo, &clock).await?;
 
     let browser_session = repo

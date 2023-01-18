@@ -33,7 +33,6 @@ use oauth2_types::{
     requests::{IntrospectionRequest, IntrospectionResponse},
     scope::ScopeToken,
 };
-use sqlx::PgPool;
 use thiserror::Error;
 
 use crate::impl_from_error_for_route;
@@ -126,12 +125,10 @@ const API_SCOPE: ScopeToken = ScopeToken::from_static("urn:matrix:org.matrix.msc
 pub(crate) async fn post(
     clock: BoxClock,
     State(http_client_factory): State<HttpClientFactory>,
-    State(pool): State<PgPool>,
+    mut repo: PgRepository,
     State(encrypter): State<Encrypter>,
     client_authorization: ClientAuthorization<IntrospectionRequest>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let mut repo = PgRepository::from_pool(&pool).await?;
-
     let client = client_authorization
         .credentials
         .fetch(&mut repo)

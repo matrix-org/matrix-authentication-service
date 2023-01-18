@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum::{extract::State, response::IntoResponse, Json, TypedHeader};
+use axum::{response::IntoResponse, Json, TypedHeader};
 use headers::{authorization::Bearer, Authorization};
 use hyper::StatusCode;
 use mas_data_model::TokenType;
@@ -21,7 +21,6 @@ use mas_storage::{
     BoxClock, Clock, Repository,
 };
 use mas_storage_pg::PgRepository;
-use sqlx::PgPool;
 use thiserror::Error;
 
 use super::MatrixError;
@@ -69,11 +68,9 @@ impl IntoResponse for RouteError {
 
 pub(crate) async fn post(
     clock: BoxClock,
-    State(pool): State<PgPool>,
+    mut repo: PgRepository,
     maybe_authorization: Option<TypedHeader<Authorization<Bearer>>>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let mut repo = PgRepository::from_pool(&pool).await?;
-
     let TypedHeader(authorization) = maybe_authorization.ok_or(RouteError::MissingAuthorization)?;
 
     let token = authorization.token();

@@ -12,10 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum::{
-    extract::{Form, State},
-    response::IntoResponse,
-};
+use axum::{extract::Form, response::IntoResponse};
 use axum_extra::extract::PrivateCookieJar;
 use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
@@ -25,16 +22,13 @@ use mas_keystore::Encrypter;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{user::BrowserSessionRepository, BoxClock, Repository};
 use mas_storage_pg::PgRepository;
-use sqlx::PgPool;
 
 pub(crate) async fn post(
     clock: BoxClock,
-    State(pool): State<PgPool>,
+    mut repo: PgRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<Option<PostAuthAction>>>,
 ) -> Result<impl IntoResponse, FancyError> {
-    let mut repo = PgRepository::from_pool(&pool).await?;
-
     let form = cookie_jar.verify_form(&clock, form)?;
 
     let (session_info, mut cookie_jar) = cookie_jar.session_info();

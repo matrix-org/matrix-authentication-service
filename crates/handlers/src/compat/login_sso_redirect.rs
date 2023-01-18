@@ -24,7 +24,6 @@ use mas_storage_pg::PgRepository;
 use rand::distributions::{Alphanumeric, DistString};
 use serde::Deserialize;
 use serde_with::serde;
-use sqlx::PgPool;
 use thiserror::Error;
 use url::Url;
 
@@ -60,7 +59,7 @@ impl IntoResponse for RouteError {
 pub async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
-    State(pool): State<PgPool>,
+    mut repo: PgRepository,
     State(url_builder): State<UrlBuilder>,
     Query(params): Query<Params>,
 ) -> Result<impl IntoResponse, RouteError> {
@@ -79,7 +78,6 @@ pub async fn get(
     }
 
     let token = Alphanumeric.sample_string(&mut rng, 32);
-    let mut repo = PgRepository::from_pool(&pool).await?;
     let login = repo
         .compat_sso_login()
         .add(&mut rng, &clock, token, redirect_url)

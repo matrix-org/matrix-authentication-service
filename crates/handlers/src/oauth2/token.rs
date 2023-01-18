@@ -50,7 +50,6 @@ use oauth2_types::{
 };
 use serde::Serialize;
 use serde_with::{serde_as, skip_serializing_none};
-use sqlx::PgPool;
 use thiserror::Error;
 use tracing::debug;
 use url::Url;
@@ -164,12 +163,10 @@ pub(crate) async fn post(
     State(http_client_factory): State<HttpClientFactory>,
     State(key_store): State<Keystore>,
     State(url_builder): State<UrlBuilder>,
-    State(pool): State<PgPool>,
+    mut repo: PgRepository,
     State(encrypter): State<Encrypter>,
     client_authorization: ClientAuthorization<AccessTokenRequest>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let mut repo = PgRepository::from_pool(&pool).await?;
-
     let client = client_authorization
         .credentials
         .fetch(&mut repo)

@@ -17,16 +17,20 @@ use std::{convert::Infallible, sync::Arc};
 use axum::{
     async_trait,
     extract::{FromRef, FromRequestParts},
+    response::IntoResponse,
 };
+use hyper::StatusCode;
 use mas_axum_utils::http_client_factory::HttpClientFactory;
 use mas_email::Mailer;
 use mas_keystore::{Encrypter, Keystore};
 use mas_policy::PolicyFactory;
 use mas_router::UrlBuilder;
 use mas_storage::{BoxClock, BoxRng, SystemClock};
+use mas_storage_pg::PgRepository;
 use mas_templates::Templates;
 use rand::SeedableRng;
 use sqlx::PgPool;
+use thiserror::Error;
 
 use crate::{passwords::PasswordManager, MatrixHomeserver};
 
@@ -138,5 +142,28 @@ impl FromRequestParts<AppState> for BoxRng {
 
         let rng = rand_chacha::ChaChaRng::from_rng(rng).expect("Failed to seed RNG");
         Ok(Box::new(rng))
+    }
+}
+
+#[derive(Debug, Error)]
+#[error(transparent)]
+pub struct RepositoryError(#[from] mas_storage_pg::DatabaseError);
+
+impl IntoResponse for RepositoryError {
+    fn into_response(self) -> axum::response::Response {
+        (StatusCode::INTERNAL_SERVER_ERROR, self.0.to_string()).into_response()
+    }
+}
+
+#[async_trait]
+impl FromRequestParts<AppState> for PgRepository {
+    type Rejection = RepositoryError;
+
+    async fn from_request_parts(
+        _parts: &mut axum::http::request::Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        let repo = PgRepository::from_pool(&state.pool).await?;
+        Ok(repo)
     }
 }

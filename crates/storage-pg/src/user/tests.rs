@@ -90,7 +90,7 @@ async fn test_user_email_repo(pool: PgPool) {
     // The user email should not exist yet
     assert!(repo
         .user_email()
-        .find(&user, &EMAIL)
+        .find(&user, EMAIL)
         .await
         .unwrap()
         .is_none());
@@ -111,7 +111,7 @@ async fn test_user_email_repo(pool: PgPool) {
 
     assert!(repo
         .user_email()
-        .find(&user, &EMAIL)
+        .find(&user, EMAIL)
         .await
         .unwrap()
         .is_some());
@@ -181,7 +181,7 @@ async fn test_user_email_repo(pool: PgPool) {
     // Reload the user_email
     let user_email = repo
         .user_email()
-        .find(&user, &EMAIL)
+        .find(&user, EMAIL)
         .await
         .unwrap()
         .expect("user email was not found");

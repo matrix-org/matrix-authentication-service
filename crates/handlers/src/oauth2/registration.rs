@@ -28,7 +28,6 @@ use oauth2_types::{
     },
 };
 use rand::distributions::{Alphanumeric, DistString};
-use sqlx::PgPool;
 use thiserror::Error;
 use tracing::info;
 
@@ -109,7 +108,7 @@ impl IntoResponse for RouteError {
 pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
-    State(pool): State<PgPool>,
+    mut repo: PgRepository,
     State(policy_factory): State<Arc<PolicyFactory>>,
     State(encrypter): State<Encrypter>,
     Json(body): Json<ClientMetadata>,
@@ -124,8 +123,6 @@ pub(crate) async fn post(
     if !res.valid() {
         return Err(RouteError::PolicyDenied(res.violations));
     }
-
-    let mut repo = PgRepository::from_pool(&pool).await?;
 
     let (client_secret, encrypted_client_secret) = match metadata.token_endpoint_auth_method {
         Some(

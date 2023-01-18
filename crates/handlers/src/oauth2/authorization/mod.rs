@@ -39,7 +39,6 @@ use oauth2_types::{
 };
 use rand::{distributions::Alphanumeric, Rng};
 use serde::Deserialize;
-use sqlx::PgPool;
 use thiserror::Error;
 
 use self::{callback::CallbackDestination, complete::GrantCompletionError};
@@ -136,12 +135,10 @@ pub(crate) async fn get(
     clock: BoxClock,
     State(policy_factory): State<Arc<PolicyFactory>>,
     State(templates): State<Templates>,
-    State(pool): State<PgPool>,
+    mut repo: PgRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(params): Form<Params>,
 ) -> Result<Response, RouteError> {
-    let mut repo = PgRepository::from_pool(&pool).await?;
-
     // First, figure out what client it is
     let client = repo
         .oauth2_client()

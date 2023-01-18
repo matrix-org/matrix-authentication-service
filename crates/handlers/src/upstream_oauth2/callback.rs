@@ -35,7 +35,6 @@ use mas_storage::{
 use mas_storage_pg::PgRepository;
 use oauth2_types::errors::ClientErrorCode;
 use serde::Deserialize;
-use sqlx::PgPool;
 use thiserror::Error;
 use ulid::Ulid;
 
@@ -124,7 +123,7 @@ pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
     State(http_client_factory): State<HttpClientFactory>,
-    State(pool): State<PgPool>,
+    mut repo: PgRepository,
     State(url_builder): State<UrlBuilder>,
     State(encrypter): State<Encrypter>,
     State(keystore): State<Keystore>,
@@ -132,8 +131,6 @@ pub(crate) async fn get(
     Path(provider_id): Path<Ulid>,
     Query(params): Query<QueryParams>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let mut repo = PgRepository::from_pool(&pool).await?;
-
     let provider = repo
         .upstream_oauth_provider()
         .lookup(provider_id)

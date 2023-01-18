@@ -36,7 +36,6 @@ use mas_storage::{
 use mas_storage_pg::PgRepository;
 use mas_templates::{CompatSsoContext, ErrorContext, TemplateContext, Templates};
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
 use ulid::Ulid;
 
 #[derive(Serialize)]
@@ -56,14 +55,12 @@ pub struct Params {
 pub async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
-    State(pool): State<PgPool>,
+    mut repo: PgRepository,
     State(templates): State<Templates>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(id): Path<Ulid>,
     Query(params): Query<Params>,
 ) -> Result<Response, FancyError> {
-    let mut repo = PgRepository::from_pool(&pool).await?;
-
     let (session_info, cookie_jar) = cookie_jar.session_info();
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
 
@@ -120,15 +117,13 @@ pub async fn get(
 pub async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
-    State(pool): State<PgPool>,
+    mut repo: PgRepository,
     State(templates): State<Templates>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(id): Path<Ulid>,
     Query(params): Query<Params>,
     Form(form): Form<ProtectedForm<()>>,
 ) -> Result<Response, FancyError> {
-    let mut repo = PgRepository::from_pool(&pool).await?;
-
     let (session_info, cookie_jar) = cookie_jar.session_info();
     cookie_jar.verify_form(&clock, form)?;
 
