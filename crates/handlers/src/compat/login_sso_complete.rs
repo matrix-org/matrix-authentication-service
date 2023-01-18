@@ -31,7 +31,7 @@ use mas_keystore::Encrypter;
 use mas_router::{CompatLoginSsoAction, PostAuthAction, Route};
 use mas_storage::{
     compat::{CompatSessionRepository, CompatSsoLoginRepository},
-    Clock, Repository,
+    BoxClock, BoxRng, Clock, Repository,
 };
 use mas_storage_pg::PgRepository;
 use mas_templates::{CompatSsoContext, ErrorContext, TemplateContext, Templates};
@@ -54,17 +54,18 @@ pub struct Params {
 }
 
 pub async fn get(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(pool): State<PgPool>,
     State(templates): State<Templates>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(id): Path<Ulid>,
     Query(params): Query<Params>,
 ) -> Result<Response, FancyError> {
-    let (clock, mut rng) = crate::clock_and_rng();
     let mut repo = PgRepository::from_pool(&pool).await?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
-    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
+    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
 
     let maybe_session = session_info.load_session(&mut repo).await?;
 
@@ -117,6 +118,8 @@ pub async fn get(
 }
 
 pub async fn post(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(pool): State<PgPool>,
     State(templates): State<Templates>,
     cookie_jar: PrivateCookieJar<Encrypter>,
@@ -124,11 +127,10 @@ pub async fn post(
     Query(params): Query<Params>,
     Form(form): Form<ProtectedForm<()>>,
 ) -> Result<Response, FancyError> {
-    let (clock, mut rng) = crate::clock_and_rng();
     let mut repo = PgRepository::from_pool(&pool).await?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
-    cookie_jar.verify_form(clock.now(), form)?;
+    cookie_jar.verify_form(&clock, form)?;
 
     let maybe_session = session_info.load_session(&mut repo).await?;
 

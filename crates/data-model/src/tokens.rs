@@ -15,7 +15,7 @@
 use chrono::{DateTime, Utc};
 use crc::{Crc, CRC_32_ISO_HDLC};
 use mas_iana::oauth::OAuthTokenTypeHint;
-use rand::{distributions::Alphanumeric, Rng};
+use rand::{distributions::Alphanumeric, Rng, RngCore};
 use thiserror::Error;
 use ulid::Ulid;
 
@@ -193,7 +193,7 @@ impl TokenType {
     /// AccessToken.generate(thread_rng());
     /// RefreshToken.generate(thread_rng());
     /// ```
-    pub fn generate(self, rng: impl Rng) -> String {
+    pub fn generate(self, rng: &mut (impl RngCore + ?Sized)) -> String {
         let random_part: String = rng
             .sample_iter(&Alphanumeric)
             .take(30)

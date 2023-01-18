@@ -30,7 +30,7 @@ use mas_storage::{
         UpstreamOAuthLinkRepository, UpstreamOAuthProviderRepository,
         UpstreamOAuthSessionRepository,
     },
-    Clock, Repository,
+    BoxClock, BoxRng, Clock, Repository,
 };
 use mas_storage_pg::PgRepository;
 use oauth2_types::errors::ClientErrorCode;
@@ -102,7 +102,6 @@ pub(crate) enum RouteError {
 
 impl_from_error_for_route!(mas_storage_pg::DatabaseError);
 impl_from_error_for_route!(mas_http::ClientInitError);
-impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_oidc_client::error::DiscoveryError);
 impl_from_error_for_route!(mas_oidc_client::error::JwksError);
 impl_from_error_for_route!(mas_oidc_client::error::TokenAuthorizationCodeError);
@@ -122,6 +121,8 @@ impl IntoResponse for RouteError {
 
 #[allow(clippy::too_many_lines, clippy::too_many_arguments)]
 pub(crate) async fn get(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(http_client_factory): State<HttpClientFactory>,
     State(pool): State<PgPool>,
     State(url_builder): State<UrlBuilder>,
@@ -131,8 +132,6 @@ pub(crate) async fn get(
     Path(provider_id): Path<Ulid>,
     Query(params): Query<QueryParams>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let (clock, mut rng) = crate::clock_and_rng();
-
     let mut repo = PgRepository::from_pool(&pool).await?;
 
     let provider = repo
@@ -268,7 +267,7 @@ pub(crate) async fn get(
 
     let cookie_jar = sessions_cookie
         .add_link_to_session(session.id, link.id)?
-        .save(cookie_jar, clock.now());
+        .save(cookie_jar, &clock);
 
     repo.save().await?;
 

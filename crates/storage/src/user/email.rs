@@ -14,7 +14,7 @@
 
 use async_trait::async_trait;
 use mas_data_model::{User, UserEmail, UserEmailVerification};
-use rand::RngCore;
+use rand_core::RngCore;
 use ulid::Ulid;
 
 use crate::{pagination::Page, Clock, Pagination};

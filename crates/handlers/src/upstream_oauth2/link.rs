@@ -27,7 +27,7 @@ use mas_keystore::Encrypter;
 use mas_storage::{
     upstream_oauth2::{UpstreamOAuthLinkRepository, UpstreamOAuthSessionRepository},
     user::{BrowserSessionRepository, UserRepository},
-    Clock, Repository,
+    BoxClock, BoxRng, Repository,
 };
 use mas_storage_pg::PgRepository;
 use mas_templates::{
@@ -70,7 +70,6 @@ pub(crate) enum RouteError {
     Internal(Box<dyn std::error::Error>),
 }
 
-impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_templates::TemplateError);
 impl_from_error_for_route!(mas_axum_utils::csrf::CsrfError);
 impl_from_error_for_route!(super::cookie::UpstreamSessionNotFound);
@@ -95,14 +94,14 @@ pub(crate) enum FormData {
 }
 
 pub(crate) async fn get(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(pool): State<PgPool>,
     State(templates): State<Templates>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(link_id): Path<Ulid>,
 ) -> Result<impl IntoResponse, RouteError> {
     let mut repo = PgRepository::from_pool(&pool).await?;
-    let (clock, mut rng) = crate::clock_and_rng();
-
     let sessions_cookie = UpstreamSessionsCookie::load(&cookie_jar);
     let (session_id, _post_auth_action) = sessions_cookie
         .lookup_link(link_id)
@@ -131,7 +130,7 @@ pub(crate) async fn get(
     }
 
     let (user_session_info, cookie_jar) = cookie_jar.session_info();
-    let (csrf_token, mut cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
+    let (csrf_token, mut cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
     let maybe_user_session = user_session_info.load_session(&mut repo).await?;
 
     let render = match (maybe_user_session, link.user_id) {
@@ -212,14 +211,15 @@ pub(crate) async fn get(
 }
 
 pub(crate) async fn post(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(pool): State<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(link_id): Path<Ulid>,
     Form(form): Form<ProtectedForm<FormData>>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let (clock, mut rng) = crate::clock_and_rng();
     let mut repo = PgRepository::from_pool(&pool).await?;
-    let form = cookie_jar.verify_form(clock.now(), form)?;
+    let form = cookie_jar.verify_form(&clock, form)?;
 
     let sessions_cookie = UpstreamSessionsCookie::load(&cookie_jar);
     let (session_id, post_auth_action) = sessions_cookie
@@ -297,7 +297,7 @@ pub(crate) async fn post(
 
     let cookie_jar = sessions_cookie
         .consume_link(link_id)?
-        .save(cookie_jar, clock.now());
+        .save(cookie_jar, &clock);
     let cookie_jar = cookie_jar.set_session(&session);
 
     repo.save().await?;

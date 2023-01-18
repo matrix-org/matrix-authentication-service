@@ -27,7 +27,7 @@ use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{
     oauth2::{OAuth2AuthorizationGrantRepository, OAuth2ClientRepository},
-    Repository,
+    BoxClock, BoxRng, Repository,
 };
 use mas_storage_pg::PgRepository;
 use mas_templates::Templates;
@@ -91,7 +91,6 @@ impl IntoResponse for RouteError {
     }
 }
 
-impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_storage_pg::DatabaseError);
 impl_from_error_for_route!(self::callback::CallbackDestinationError);
 impl_from_error_for_route!(mas_policy::LoadError);
@@ -133,13 +132,14 @@ fn resolve_response_mode(
 
 #[allow(clippy::too_many_lines)]
 pub(crate) async fn get(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(policy_factory): State<Arc<PolicyFactory>>,
     State(templates): State<Templates>,
     State(pool): State<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(params): Form<Params>,
 ) -> Result<Response, RouteError> {
-    let (clock, mut rng) = crate::clock_and_rng();
     let mut repo = PgRepository::from_pool(&pool).await?;
 
     // First, figure out what client it is
@@ -334,7 +334,15 @@ pub(crate) async fn get(
                 // Else, we immediately try to complete the authorization grant
                 Some(user_session) if prompt.contains(&Prompt::None) => {
                     // With prompt=none, we should get back to the client immediately
-                    match self::complete::complete(grant, user_session, &policy_factory, repo).await
+                    match self::complete::complete(
+                        rng,
+                        clock,
+                        grant,
+                        user_session,
+                        &policy_factory,
+                        repo,
+                    )
+                    .await
                     {
                         Ok(params) => callback_destination.go(&templates, params).await?,
                         Err(GrantCompletionError::RequiresConsent) => {
@@ -373,7 +381,15 @@ pub(crate) async fn get(
                 Some(user_session) => {
                     let grant_id = grant.id;
                     // Else, we show the relevant reauth/consent page if necessary
-                    match self::complete::complete(grant, user_session, &policy_factory, repo).await
+                    match self::complete::complete(
+                        rng,
+                        clock,
+                        grant,
+                        user_session,
+                        &policy_factory,
+                        repo,
+                    )
+                    .await
                     {
                         Ok(params) => callback_destination.go(&templates, params).await?,
                         Err(

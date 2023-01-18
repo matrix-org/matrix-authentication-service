@@ -31,7 +31,7 @@ use mas_router::UrlBuilder;
 use mas_storage::{
     oauth2::OAuth2ClientRepository,
     user::{BrowserSessionRepository, UserEmailRepository},
-    Clock, Repository,
+    BoxClock, BoxRng, Repository,
 };
 use mas_storage_pg::PgRepository;
 use oauth2_types::scope;
@@ -79,7 +79,6 @@ pub enum RouteError {
     NoSuchBrowserSession,
 }
 
-impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_storage_pg::DatabaseError);
 impl_from_error_for_route!(mas_keystore::WrongAlgorithmError);
 impl_from_error_for_route!(mas_jose::jwt::JwtSignatureError);
@@ -99,15 +98,16 @@ impl IntoResponse for RouteError {
 }
 
 pub async fn get(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(url_builder): State<UrlBuilder>,
     State(pool): State<PgPool>,
     State(key_store): State<Keystore>,
     user_authorization: UserAuthorization,
 ) -> Result<Response, RouteError> {
-    let (clock, mut rng) = crate::clock_and_rng();
     let mut repo = PgRepository::from_pool(&pool).await?;
 
-    let session = user_authorization.protected(&mut repo, clock.now()).await?;
+    let session = user_authorization.protected(&mut repo, &clock).await?;
 
     let browser_session = repo
         .browser_session()

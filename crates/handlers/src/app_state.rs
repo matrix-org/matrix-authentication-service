@@ -12,15 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::sync::Arc;
+use std::{convert::Infallible, sync::Arc};
 
-use axum::extract::FromRef;
+use axum::{
+    async_trait,
+    extract::{FromRef, FromRequestParts},
+};
 use mas_axum_utils::http_client_factory::HttpClientFactory;
 use mas_email::Mailer;
 use mas_keystore::{Encrypter, Keystore};
 use mas_policy::PolicyFactory;
 use mas_router::UrlBuilder;
+use mas_storage::{BoxClock, BoxRng, SystemClock};
 use mas_templates::Templates;
+use rand::SeedableRng;
 use sqlx::PgPool;
 
 use crate::{passwords::PasswordManager, MatrixHomeserver};
@@ -103,5 +108,35 @@ impl FromRef<AppState> for HttpClientFactory {
 impl FromRef<AppState> for PasswordManager {
     fn from_ref(input: &AppState) -> Self {
         input.password_manager.clone()
+    }
+}
+
+#[async_trait]
+impl FromRequestParts<AppState> for BoxClock {
+    type Rejection = Infallible;
+
+    async fn from_request_parts(
+        _parts: &mut axum::http::request::Parts,
+        _state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        let clock = SystemClock::default();
+        Ok(Box::new(clock))
+    }
+}
+
+#[async_trait]
+impl FromRequestParts<AppState> for BoxRng {
+    type Rejection = Infallible;
+
+    async fn from_request_parts(
+        _parts: &mut axum::http::request::Parts,
+        _state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        // This rng is used to source the local rng
+        #[allow(clippy::disallowed_methods)]
+        let rng = rand::thread_rng();
+
+        let rng = rand_chacha::ChaChaRng::from_rng(rng).expect("Failed to seed RNG");
+        Ok(Box::new(rng))
     }
 }

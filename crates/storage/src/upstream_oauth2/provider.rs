@@ -16,7 +16,7 @@ use async_trait::async_trait;
 use mas_data_model::UpstreamOAuthProvider;
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
 use oauth2_types::scope::Scope;
-use rand::RngCore;
+use rand_core::RngCore;
 use ulid::Ulid;
 
 use crate::{pagination::Page, Clock, Pagination};

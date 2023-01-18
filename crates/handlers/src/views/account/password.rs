@@ -27,7 +27,7 @@ use mas_keystore::Encrypter;
 use mas_router::Route;
 use mas_storage::{
     user::{BrowserSessionRepository, UserPasswordRepository},
-    Clock, Repository,
+    BoxClock, BoxRng, Clock, Repository,
 };
 use mas_storage_pg::PgRepository;
 use mas_templates::{EmptyContext, TemplateContext, Templates};
@@ -46,11 +46,12 @@ pub struct ChangeForm {
 }
 
 pub(crate) async fn get(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(templates): State<Templates>,
     State(pool): State<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
-    let (clock, mut rng) = crate::clock_and_rng();
     let mut repo = PgRepository::from_pool(&pool).await?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
@@ -72,7 +73,7 @@ async fn render(
     session: BrowserSession,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
-    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), rng);
+    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock, rng);
 
     let ctx = EmptyContext
         .with_session(session)
@@ -84,16 +85,17 @@ async fn render(
 }
 
 pub(crate) async fn post(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
     State(pool): State<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<ChangeForm>>,
 ) -> Result<Response, FancyError> {
-    let (clock, mut rng) = crate::clock_and_rng();
     let mut repo = PgRepository::from_pool(&pool).await?;
 
-    let form = cookie_jar.verify_form(clock.now(), form)?;
+    let form = cookie_jar.verify_form(&clock, form)?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
 

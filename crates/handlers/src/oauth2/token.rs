@@ -37,7 +37,7 @@ use mas_storage::{
         OAuth2RefreshTokenRepository, OAuth2SessionRepository,
     },
     user::BrowserSessionRepository,
-    Clock, Repository,
+    BoxClock, BoxRng, Clock, Repository,
 };
 use mas_storage_pg::PgRepository;
 use oauth2_types::{
@@ -151,7 +151,6 @@ impl IntoResponse for RouteError {
     }
 }
 
-impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_storage_pg::DatabaseError);
 impl_from_error_for_route!(mas_keystore::WrongAlgorithmError);
 impl_from_error_for_route!(mas_jose::claims::ClaimError);
@@ -160,6 +159,8 @@ impl_from_error_for_route!(mas_jose::jwt::JwtSignatureError);
 
 #[tracing::instrument(skip_all, err)]
 pub(crate) async fn post(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(http_client_factory): State<HttpClientFactory>,
     State(key_store): State<Keystore>,
     State(url_builder): State<UrlBuilder>,
@@ -189,10 +190,19 @@ pub(crate) async fn post(
 
     let reply = match form {
         AccessTokenRequest::AuthorizationCode(grant) => {
-            authorization_code_grant(&grant, &client, &key_store, &url_builder, repo).await?
+            authorization_code_grant(
+                &mut rng,
+                &clock,
+                &grant,
+                &client,
+                &key_store,
+                &url_builder,
+                repo,
+            )
+            .await?
         }
         AccessTokenRequest::RefreshToken(grant) => {
-            refresh_token_grant(&grant, &client, repo).await?
+            refresh_token_grant(&mut rng, &clock, &grant, &client, repo).await?
         }
         _ => {
             return Err(RouteError::InvalidGrant);
@@ -208,14 +218,14 @@ pub(crate) async fn post(
 
 #[allow(clippy::too_many_lines)]
 async fn authorization_code_grant(
+    mut rng: &mut BoxRng,
+    clock: &impl Clock,
     grant: &AuthorizationCodeGrant,
     client: &Client,
     key_store: &Keystore,
     url_builder: &UrlBuilder,
     mut repo: PgRepository,
 ) -> Result<AccessTokenResponse, RouteError> {
-    let (clock, mut rng) = crate::clock_and_rng();
-
     let authz_grant = repo
         .oauth2_authorization_grant()
         .find_by_code(&grant.code)
@@ -244,7 +254,7 @@ async fn authorization_code_grant(
                     .lookup(session_id)
                     .await?
                     .ok_or(RouteError::NoSuchOAuthSession)?;
-                repo.oauth2_session().finish(&clock, session).await?;
+                repo.oauth2_session().finish(clock, session).await?;
                 repo.save().await?;
             }
 
@@ -302,12 +312,12 @@ async fn authorization_code_grant(
 
     let access_token = repo
         .oauth2_access_token()
-        .add(&mut rng, &clock, &session, access_token_str, ttl)
+        .add(&mut rng, clock, &session, access_token_str, ttl)
         .await?;
 
     let refresh_token = repo
         .oauth2_refresh_token()
-        .add(&mut rng, &clock, &session, &access_token, refresh_token_str)
+        .add(&mut rng, clock, &session, &access_token, refresh_token_str)
         .await?;
 
     let id_token = if session.scope.contains(&scope::OPENID) {
@@ -357,7 +367,7 @@ async fn authorization_code_grant(
     }
 
     repo.oauth2_authorization_grant()
-        .exchange(&clock, authz_grant)
+        .exchange(clock, authz_grant)
         .await?;
 
     repo.save().await?;
@@ -366,12 +376,12 @@ async fn authorization_code_grant(
 }
 
 async fn refresh_token_grant(
+    mut rng: &mut BoxRng,
+    clock: &impl Clock,
     grant: &RefreshTokenGrant,
     client: &Client,
     mut repo: PgRepository,
 ) -> Result<AccessTokenResponse, RouteError> {
-    let (clock, mut rng) = crate::clock_and_rng();
-
     let refresh_token = repo
         .oauth2_refresh_token()
         .find_by_token(&grant.refresh_token)
@@ -399,14 +409,14 @@ async fn refresh_token_grant(
 
     let new_access_token = repo
         .oauth2_access_token()
-        .add(&mut rng, &clock, &session, access_token_str.clone(), ttl)
+        .add(&mut rng, clock, &session, access_token_str.clone(), ttl)
         .await?;
 
     let new_refresh_token = repo
         .oauth2_refresh_token()
         .add(
             &mut rng,
-            &clock,
+            clock,
             &session,
             &new_access_token,
             refresh_token_str,
@@ -415,13 +425,13 @@ async fn refresh_token_grant(
 
     let refresh_token = repo
         .oauth2_refresh_token()
-        .consume(&clock, refresh_token)
+        .consume(clock, refresh_token)
         .await?;
 
     if let Some(access_token_id) = refresh_token.access_token_id {
         if let Some(access_token) = repo.oauth2_access_token().lookup(access_token_id).await? {
             repo.oauth2_access_token()
-                .revoke(&clock, access_token)
+                .revoke(clock, access_token)
                 .await?;
         }
     }

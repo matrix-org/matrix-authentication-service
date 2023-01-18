@@ -20,21 +20,22 @@ use axum_extra::extract::PrivateCookieJar;
 use mas_axum_utils::{csrf::CsrfExt, FancyError, SessionInfoExt};
 use mas_keystore::Encrypter;
 use mas_router::UrlBuilder;
-use mas_storage::Clock;
+use mas_storage::{BoxClock, BoxRng};
 use mas_storage_pg::PgRepository;
 use mas_templates::{IndexContext, TemplateContext, Templates};
 use sqlx::PgPool;
 
 pub async fn get(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(templates): State<Templates>,
     State(url_builder): State<UrlBuilder>,
     State(pool): State<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<impl IntoResponse, FancyError> {
-    let (clock, mut rng) = crate::clock_and_rng();
     let mut repo = PgRepository::from_pool(&pool).await?;
 
-    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
+    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
     let session = session_info.load_session(&mut repo).await?;
 

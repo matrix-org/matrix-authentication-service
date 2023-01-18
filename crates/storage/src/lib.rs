@@ -37,8 +37,13 @@ pub(crate) mod repository;
 pub mod upstream_oauth2;
 pub mod user;
 
+use rand_core::CryptoRngCore;
+
 pub use self::{
     clock::{Clock, SystemClock},
     pagination::{Page, Pagination},
     repository::Repository,
 };
+
+pub type BoxClock = Box<dyn Clock + Send>;
+pub type BoxRng = Box<dyn CryptoRngCore + Send>;

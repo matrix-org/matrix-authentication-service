@@ -18,7 +18,7 @@ use hyper::StatusCode;
 use mas_data_model::TokenType;
 use mas_storage::{
     compat::{CompatAccessTokenRepository, CompatSessionRepository},
-    Clock, Repository, SystemClock,
+    BoxClock, Clock, Repository,
 };
 use mas_storage_pg::PgRepository;
 use sqlx::PgPool;
@@ -42,7 +42,6 @@ pub enum RouteError {
     InvalidAuthorization,
 }
 
-impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_storage_pg::DatabaseError);
 
 impl IntoResponse for RouteError {
@@ -69,10 +68,10 @@ impl IntoResponse for RouteError {
 }
 
 pub(crate) async fn post(
+    clock: BoxClock,
     State(pool): State<PgPool>,
     maybe_authorization: Option<TypedHeader<Authorization<Bearer>>>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let clock = SystemClock::default();
     let mut repo = PgRepository::from_pool(&pool).await?;
 
     let TypedHeader(authorization) = maybe_authorization.ok_or(RouteError::MissingAuthorization)?;

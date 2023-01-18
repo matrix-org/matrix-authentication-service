@@ -24,7 +24,7 @@ use mas_oidc_client::requests::authorization_code::AuthorizationRequestData;
 use mas_router::UrlBuilder;
 use mas_storage::{
     upstream_oauth2::{UpstreamOAuthProviderRepository, UpstreamOAuthSessionRepository},
-    Clock, Repository,
+    BoxClock, BoxRng, Repository,
 };
 use mas_storage_pg::PgRepository;
 use sqlx::PgPool;
@@ -43,7 +43,6 @@ pub(crate) enum RouteError {
     Internal(Box<dyn std::error::Error>),
 }
 
-impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_http::ClientInitError);
 impl_from_error_for_route!(mas_oidc_client::error::DiscoveryError);
 impl_from_error_for_route!(mas_oidc_client::error::AuthorizationError);
@@ -59,6 +58,8 @@ impl IntoResponse for RouteError {
 }
 
 pub(crate) async fn get(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(http_client_factory): State<HttpClientFactory>,
     State(pool): State<PgPool>,
     State(url_builder): State<UrlBuilder>,
@@ -66,8 +67,6 @@ pub(crate) async fn get(
     Path(provider_id): Path<Ulid>,
     Query(query): Query<OptionalPostAuthAction>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let (clock, mut rng) = crate::clock_and_rng();
-
     let mut repo = PgRepository::from_pool(&pool).await?;
 
     let provider = repo
@@ -115,7 +114,7 @@ pub(crate) async fn get(
 
     let cookie_jar = UpstreamSessionsCookie::load(&cookie_jar)
         .add(session.id, provider.id, data.state, query.post_auth_action)
-        .save(cookie_jar, clock.now());
+        .save(cookie_jar, &clock);
 
     repo.save().await?;
 

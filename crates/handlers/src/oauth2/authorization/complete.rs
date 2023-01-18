@@ -27,7 +27,7 @@ use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{
     oauth2::{OAuth2AuthorizationGrantRepository, OAuth2ClientRepository, OAuth2SessionRepository},
-    Repository,
+    BoxClock, BoxRng, Repository,
 };
 use mas_storage_pg::PgRepository;
 use mas_templates::Templates;
@@ -70,7 +70,6 @@ impl IntoResponse for RouteError {
     }
 }
 
-impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_storage_pg::DatabaseError);
 impl_from_error_for_route!(mas_policy::LoadError);
 impl_from_error_for_route!(mas_policy::InstanciateError);
@@ -79,6 +78,8 @@ impl_from_error_for_route!(super::callback::IntoCallbackDestinationError);
 impl_from_error_for_route!(super::callback::CallbackDestinationError);
 
 pub(crate) async fn get(
+    rng: BoxRng,
+    clock: BoxClock,
     State(policy_factory): State<Arc<PolicyFactory>>,
     State(templates): State<Templates>,
     State(pool): State<PgPool>,
@@ -108,7 +109,7 @@ pub(crate) async fn get(
         return Ok((cookie_jar, mas_router::Login::and_then(continue_grant).go()).into_response());
     };
 
-    match complete(grant, session, &policy_factory, repo).await {
+    match complete(rng, clock, grant, session, &policy_factory, repo).await {
         Ok(params) => {
             let res = callback_destination.go(&templates, params).await?;
             Ok((cookie_jar, res).into_response())
@@ -149,7 +150,6 @@ pub enum GrantCompletionError {
     NoSuchClient,
 }
 
-impl_from_error_for_route!(GrantCompletionError: sqlx::Error);
 impl_from_error_for_route!(GrantCompletionError: mas_storage_pg::DatabaseError);
 impl_from_error_for_route!(GrantCompletionError: super::callback::IntoCallbackDestinationError);
 impl_from_error_for_route!(GrantCompletionError: mas_policy::LoadError);
@@ -157,13 +157,13 @@ impl_from_error_for_route!(GrantCompletionError: mas_policy::InstanciateError);
 impl_from_error_for_route!(GrantCompletionError: mas_policy::EvaluationError);
 
 pub(crate) async fn complete(
+    mut rng: BoxRng,
+    clock: BoxClock,
     grant: AuthorizationGrant,
     browser_session: BrowserSession,
     policy_factory: &PolicyFactory,
     mut repo: PgRepository,
 ) -> Result<AuthorizationResponse<Option<AccessTokenResponse>>, GrantCompletionError> {
-    let (clock, mut rng) = crate::clock_and_rng();
-
     // Verify that the grant is in a pending stage
     if !grant.stage.is_pending() {
         return Err(GrantCompletionError::NotPending);

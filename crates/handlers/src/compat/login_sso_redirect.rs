@@ -19,7 +19,7 @@ use axum::{
 };
 use hyper::StatusCode;
 use mas_router::{CompatLoginSsoAction, CompatLoginSsoComplete, UrlBuilder};
-use mas_storage::{compat::CompatSsoLoginRepository, Repository};
+use mas_storage::{compat::CompatSsoLoginRepository, BoxClock, BoxRng, Repository};
 use mas_storage_pg::PgRepository;
 use rand::distributions::{Alphanumeric, DistString};
 use serde::Deserialize;
@@ -49,7 +49,6 @@ pub enum RouteError {
     InvalidRedirectUrl,
 }
 
-impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_storage_pg::DatabaseError);
 
 impl IntoResponse for RouteError {
@@ -58,14 +57,13 @@ impl IntoResponse for RouteError {
     }
 }
 
-#[tracing::instrument(skip(pool, url_builder), err)]
 pub async fn get(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(pool): State<PgPool>,
     State(url_builder): State<UrlBuilder>,
     Query(params): Query<Params>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let (clock, mut rng) = crate::clock_and_rng();
-
     // Check the redirectUrl parameter
     let redirect_url = params.redirect_url.ok_or(RouteError::MissingRedirectUrl)?;
     let redirect_url = Url::parse(&redirect_url).map_err(|_| RouteError::InvalidRedirectUrl)?;

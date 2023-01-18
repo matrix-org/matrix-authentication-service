@@ -28,6 +28,12 @@ pub trait Clock: Sync {
     fn now(&self) -> DateTime<Utc>;
 }
 
+impl<C: Clock + ?Sized> Clock for Box<C> {
+    fn now(&self) -> DateTime<Utc> {
+        (**self).now()
+    }
+}
+
 /// A clock which uses the system time
 #[derive(Clone, Default)]
 pub struct SystemClock {

@@ -30,7 +30,7 @@ use oauth2_types::{
     requests::GrantType,
     scope::{Scope, ScopeToken},
 };
-use rand::{Rng, RngCore};
+use rand::RngCore;
 use sqlx::PgConnection;
 use tracing::{info_span, Instrument};
 use ulid::Ulid;
@@ -534,7 +534,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
     )]
     async fn add_from_config(
         &mut self,
-        mut rng: impl Rng + Send,
+        rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
         client_id: Ulid,
         client_auth_method: OAuthClientAuthenticationMethod,
@@ -597,7 +597,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
                 .iter()
                 .map(|uri| {
                     (
-                        Uuid::from(Ulid::from_datetime_with_source(now.into(), &mut rng)),
+                        Uuid::from(Ulid::from_datetime_with_source(now.into(), &mut *rng)),
                         uri.as_str().to_owned(),
                     )
                 })

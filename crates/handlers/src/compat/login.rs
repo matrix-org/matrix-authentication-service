@@ -22,9 +22,10 @@ use mas_storage::{
         CompatSsoLoginRepository,
     },
     user::{UserPasswordRepository, UserRepository},
-    Clock, Repository, SystemClock,
+    BoxClock, BoxRng, Clock, Repository,
 };
 use mas_storage_pg::PgRepository;
+use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none, DurationMilliSeconds};
 use sqlx::PgPool;
@@ -154,7 +155,6 @@ pub enum RouteError {
     InvalidLoginToken,
 }
 
-impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_storage_pg::DatabaseError);
 
 impl IntoResponse for RouteError {
@@ -194,18 +194,29 @@ impl IntoResponse for RouteError {
 
 #[tracing::instrument(skip_all, err)]
 pub(crate) async fn post(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(password_manager): State<PasswordManager>,
     State(pool): State<PgPool>,
     State(homeserver): State<MatrixHomeserver>,
     Json(input): Json<RequestBody>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let (clock, mut rng) = crate::clock_and_rng();
     let mut repo = PgRepository::from_pool(&pool).await?;
     let (session, user) = match input.credentials {
         Credentials::Password {
             identifier: Identifier::User { user },
             password,
-        } => user_password_login(&password_manager, &mut repo, user, password).await?,
+        } => {
+            user_password_login(
+                &mut rng,
+                &clock,
+                &password_manager,
+                &mut repo,
+                user,
+                password,
+            )
+            .await?
+        }
 
         Credentials::Token { token } => token_login(&mut repo, &clock, &token).await?,
 
@@ -254,7 +265,7 @@ pub(crate) async fn post(
 
 async fn token_login(
     repo: &mut PgRepository,
-    clock: &SystemClock,
+    clock: &dyn Clock,
     token: &str,
 ) -> Result<(CompatSession, User), RouteError> {
     let login = repo
@@ -319,13 +330,13 @@ async fn token_login(
 }
 
 async fn user_password_login(
+    mut rng: &mut (impl RngCore + CryptoRng + Send),
+    clock: &impl Clock,
     password_manager: &PasswordManager,
     repo: &mut PgRepository,
     username: String,
     password: String,
 ) -> Result<(CompatSession, User), RouteError> {
-    let (clock, mut rng) = crate::clock_and_rng();
-
     // Find the user
     let user = repo
         .user()
@@ -358,7 +369,7 @@ async fn user_password_login(
         repo.user_password()
             .add(
                 &mut rng,
-                &clock,
+                clock,
                 &user,
                 version,
                 hashed_password,
@@ -371,7 +382,7 @@ async fn user_password_login(
     let device = Device::generate(&mut rng);
     let session = repo
         .compat_session()
-        .add(&mut rng, &clock, &user, device)
+        .add(&mut rng, clock, &user, device)
         .await?;
 
     Ok((session, user))

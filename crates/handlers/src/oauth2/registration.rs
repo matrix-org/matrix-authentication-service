@@ -19,7 +19,7 @@ use hyper::StatusCode;
 use mas_iana::oauth::OAuthClientAuthenticationMethod;
 use mas_keystore::Encrypter;
 use mas_policy::{PolicyFactory, Violation};
-use mas_storage::{oauth2::OAuth2ClientRepository, Repository};
+use mas_storage::{oauth2::OAuth2ClientRepository, BoxClock, BoxRng, Repository};
 use mas_storage_pg::PgRepository;
 use oauth2_types::{
     errors::{ClientError, ClientErrorCode},
@@ -49,7 +49,6 @@ pub(crate) enum RouteError {
     PolicyDenied(Vec<Violation>),
 }
 
-impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_storage_pg::DatabaseError);
 impl_from_error_for_route!(mas_policy::LoadError);
 impl_from_error_for_route!(mas_policy::InstanciateError);
@@ -108,12 +107,13 @@ impl IntoResponse for RouteError {
 
 #[tracing::instrument(skip_all, err)]
 pub(crate) async fn post(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(pool): State<PgPool>,
     State(policy_factory): State<Arc<PolicyFactory>>,
     State(encrypter): State<Encrypter>,
     Json(body): Json<ClientMetadata>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let (clock, mut rng) = crate::clock_and_rng();
     info!(?body, "Client registration");
 
     // Validate the body

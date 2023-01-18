@@ -15,7 +15,7 @@
 use async_trait::async_trait;
 use chrono::Duration;
 use mas_data_model::{CompatAccessToken, CompatSession};
-use rand::RngCore;
+use rand_core::RngCore;
 use ulid::Ulid;
 
 use crate::Clock;

@@ -3105,7 +3105,7 @@ dependencies = [
  "mas-iana",
  "mas-jose",
  "oauth2-types",
- "rand 0.8.5",
+ "rand_core 0.6.4",
  "thiserror",
  "ulid",
  "url",

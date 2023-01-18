@@ -28,7 +28,7 @@ use std::{convert::Infallible, sync::Arc, time::Duration};
 
 use axum::{
     body::{Bytes, HttpBody},
-    extract::FromRef,
+    extract::{FromRef, FromRequestParts},
     response::{Html, IntoResponse},
     routing::{get, on, post, MethodFilter},
     Router,
@@ -40,9 +40,9 @@ use mas_http::CorsLayerExt;
 use mas_keystore::{Encrypter, Keystore};
 use mas_policy::PolicyFactory;
 use mas_router::{Route, UrlBuilder};
+use mas_storage::{BoxClock, BoxRng};
 use mas_templates::{ErrorContext, Templates};
 use passwords::PasswordManager;
-use rand::SeedableRng;
 use sqlx::PgPool;
 use tower::util::AndThenLayer;
 use tower_http::cors::{Any, CorsLayer};
@@ -116,6 +116,8 @@ where
     S: Clone + Send + Sync + 'static,
     Keystore: FromRef<S>,
     UrlBuilder: FromRef<S>,
+    BoxClock: FromRequestParts<S>,
+    BoxRng: FromRequestParts<S>,
 {
     Router::new()
         .route(
@@ -155,6 +157,8 @@ where
     PgPool: FromRef<S>,
     Encrypter: FromRef<S>,
     HttpClientFactory: FromRef<S>,
+    BoxClock: FromRequestParts<S>,
+    BoxRng: FromRequestParts<S>,
 {
     // All those routes are API-like, with a common CORS layer
     Router::new()
@@ -208,6 +212,8 @@ where
     PgPool: FromRef<S>,
     MatrixHomeserver: FromRef<S>,
     PasswordManager: FromRef<S>,
+    BoxClock: FromRequestParts<S>,
+    BoxRng: FromRequestParts<S>,
 {
     Router::new()
         .route(
@@ -255,6 +261,8 @@ where
     Keystore: FromRef<S>,
     HttpClientFactory: FromRef<S>,
     PasswordManager: FromRef<S>,
+    BoxClock: FromRequestParts<S>,
+    BoxRng: FromRequestParts<S>,
 {
     Router::new()
         .route(
@@ -406,17 +414,4 @@ async fn test_state(pool: PgPool) -> Result<AppState, anyhow::Error> {
         http_client_factory,
         password_manager,
     })
-}
-
-// XXX: that should be moved somewhere else
-fn clock_and_rng() -> (mas_storage::SystemClock, rand_chacha::ChaChaRng) {
-    let clock = mas_storage::SystemClock::default();
-
-    // This rng is used to source the local rng
-    #[allow(clippy::disallowed_methods)]
-    let rng = rand::thread_rng();
-
-    let rng = rand_chacha::ChaChaRng::from_rng(rng).expect("Failed to seed RNG");
-
-    (clock, rng)
 }

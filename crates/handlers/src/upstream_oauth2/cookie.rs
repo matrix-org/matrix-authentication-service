@@ -18,6 +18,7 @@ use axum_extra::extract::{cookie::Cookie, PrivateCookieJar};
 use chrono::{DateTime, Duration, NaiveDateTime, Utc};
 use mas_axum_utils::CookieExt;
 use mas_router::PostAuthAction;
+use mas_storage::Clock;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use time::OffsetDateTime;
@@ -65,11 +66,11 @@ impl UpstreamSessions {
     }
 
     /// Save the upstreams sessions to the cookie jar
-    pub fn save<K>(
-        self,
-        cookie_jar: PrivateCookieJar<K>,
-        now: DateTime<Utc>,
-    ) -> PrivateCookieJar<K> {
+    pub fn save<K, C>(self, cookie_jar: PrivateCookieJar<K>, clock: &C) -> PrivateCookieJar<K>
+    where
+        C: Clock,
+    {
+        let now = clock.now();
         let this = self.expire(now);
         let mut cookie = Cookie::named(COOKIE_NAME).encode(&this);
         cookie.set_path("/");

@@ -30,7 +30,7 @@ use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{
     oauth2::{OAuth2AuthorizationGrantRepository, OAuth2ClientRepository},
-    Clock, Repository,
+    BoxClock, BoxRng, Repository,
 };
 use mas_storage_pg::PgRepository;
 use mas_templates::{ConsentContext, PolicyViolationContext, TemplateContext, Templates};
@@ -61,7 +61,6 @@ pub enum RouteError {
     NoSuchClient,
 }
 
-impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_templates::TemplateError);
 impl_from_error_for_route!(mas_storage_pg::DatabaseError);
 impl_from_error_for_route!(mas_policy::LoadError);
@@ -75,13 +74,14 @@ impl IntoResponse for RouteError {
 }
 
 pub(crate) async fn get(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(policy_factory): State<Arc<PolicyFactory>>,
     State(templates): State<Templates>,
     State(pool): State<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(grant_id): Path<Ulid>,
 ) -> Result<Response, RouteError> {
-    let (clock, mut rng) = crate::clock_and_rng();
     let mut repo = PgRepository::from_pool(&pool).await?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
@@ -99,7 +99,7 @@ pub(crate) async fn get(
     }
 
     if let Some(session) = maybe_session {
-        let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
+        let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
 
         let mut policy = policy_factory.instantiate().await?;
         let res = policy
@@ -130,16 +130,17 @@ pub(crate) async fn get(
 }
 
 pub(crate) async fn post(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(policy_factory): State<Arc<PolicyFactory>>,
     State(pool): State<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(grant_id): Path<Ulid>,
     Form(form): Form<ProtectedForm<()>>,
 ) -> Result<Response, RouteError> {
-    let (clock, mut rng) = crate::clock_and_rng();
     let mut repo = PgRepository::from_pool(&pool).await?;
 
-    cookie_jar.verify_form(clock.now(), form)?;
+    cookie_jar.verify_form(&clock, form)?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
 

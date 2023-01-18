@@ -24,13 +24,12 @@ use axum::{
     response::{IntoResponse, Response},
     BoxError,
 };
-use chrono::{DateTime, Utc};
 use headers::{authorization::Bearer, Authorization, Header, HeaderMapExt, HeaderName};
 use http::{header::WWW_AUTHENTICATE, HeaderMap, HeaderValue, Request, StatusCode};
 use mas_data_model::Session;
 use mas_storage::{
     oauth2::{OAuth2AccessTokenRepository, OAuth2SessionRepository},
-    Repository,
+    Clock, Repository,
 };
 use serde::{de::DeserializeOwned, Deserialize};
 use thiserror::Error;
@@ -86,10 +85,10 @@ pub struct UserAuthorization<F = ()> {
 
 impl<F: Send> UserAuthorization<F> {
     // TODO: take scopes to validate as parameter
-    pub async fn protected_form<R: Repository>(
+    pub async fn protected_form<R: Repository, C: Clock>(
         self,
         repo: &mut R,
-        now: DateTime<Utc>,
+        clock: &C,
     ) -> Result<(Session, F), AuthorizationVerificationError<R::Error>> {
         let form = match self.form {
             Some(f) => f,
@@ -98,7 +97,7 @@ impl<F: Send> UserAuthorization<F> {
 
         let (token, session) = self.access_token.fetch(repo).await?;
 
-        if !token.is_valid(now) || !session.is_valid() {
+        if !token.is_valid(clock.now()) || !session.is_valid() {
             return Err(AuthorizationVerificationError::InvalidToken);
         }
 
@@ -106,14 +105,14 @@ impl<F: Send> UserAuthorization<F> {
     }
 
     // TODO: take scopes to validate as parameter
-    pub async fn protected<R: Repository>(
+    pub async fn protected<R: Repository, C: Clock>(
         self,
         repo: &mut R,
-        now: DateTime<Utc>,
+        clock: &C,
     ) -> Result<Session, AuthorizationVerificationError<R::Error>> {
         let (token, session) = self.access_token.fetch(repo).await?;
 
-        if !token.is_valid(now) || !session.is_valid() {
+        if !token.is_valid(clock.now()) || !session.is_valid() {
             return Err(AuthorizationVerificationError::InvalidToken);
         }
 

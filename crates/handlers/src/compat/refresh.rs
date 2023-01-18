@@ -18,7 +18,7 @@ use hyper::StatusCode;
 use mas_data_model::{TokenFormatError, TokenType};
 use mas_storage::{
     compat::{CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository},
-    Clock, Repository,
+    BoxClock, BoxRng, Clock, Repository,
 };
 use mas_storage_pg::PgRepository;
 use serde::{Deserialize, Serialize};
@@ -70,7 +70,6 @@ impl IntoResponse for RouteError {
     }
 }
 
-impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_storage_pg::DatabaseError);
 
 impl From<TokenFormatError> for RouteError {
@@ -89,10 +88,11 @@ pub struct ResponseBody {
 }
 
 pub(crate) async fn post(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(pool): State<PgPool>,
     Json(input): Json<RequestBody>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let (clock, mut rng) = crate::clock_and_rng();
     let mut repo = PgRepository::from_pool(&pool).await?;
 
     let token_type = TokenType::check(&input.refresh_token)?;

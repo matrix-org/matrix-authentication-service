@@ -17,7 +17,7 @@ use std::num::NonZeroU32;
 use async_trait::async_trait;
 use mas_data_model::{AuthorizationCode, AuthorizationGrant, Client, Session};
 use oauth2_types::{requests::ResponseMode, scope::Scope};
-use rand::RngCore;
+use rand_core::RngCore;
 use ulid::Ulid;
 use url::Url;
 

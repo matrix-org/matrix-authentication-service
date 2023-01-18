@@ -25,7 +25,7 @@ use mas_storage::{
     compat::{CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository},
     oauth2::{OAuth2AccessTokenRepository, OAuth2RefreshTokenRepository, OAuth2SessionRepository},
     user::{BrowserSessionRepository, UserRepository},
-    Clock, Repository, SystemClock,
+    BoxClock, Clock, Repository,
 };
 use mas_storage_pg::PgRepository;
 use oauth2_types::{
@@ -97,7 +97,6 @@ impl IntoResponse for RouteError {
     }
 }
 
-impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_storage_pg::DatabaseError);
 
 impl From<TokenFormatError> for RouteError {
@@ -125,12 +124,12 @@ const API_SCOPE: ScopeToken = ScopeToken::from_static("urn:matrix:org.matrix.msc
 
 #[allow(clippy::too_many_lines)]
 pub(crate) async fn post(
+    clock: BoxClock,
     State(http_client_factory): State<HttpClientFactory>,
     State(pool): State<PgPool>,
     State(encrypter): State<Encrypter>,
     client_authorization: ClientAuthorization<IntrospectionRequest>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let clock = SystemClock::default();
     let mut repo = PgRepository::from_pool(&pool).await?;
 
     let client = client_authorization

@@ -33,7 +33,7 @@ use mas_policy::PolicyFactory;
 use mas_router::Route;
 use mas_storage::{
     user::{BrowserSessionRepository, UserEmailRepository, UserPasswordRepository, UserRepository},
-    Clock, Repository,
+    BoxClock, BoxRng, Repository,
 };
 use mas_storage_pg::PgRepository;
 use mas_templates::{
@@ -61,15 +61,16 @@ impl ToFormState for RegisterForm {
 }
 
 pub(crate) async fn get(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(templates): State<Templates>,
     State(pool): State<PgPool>,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
-    let (clock, mut rng) = crate::clock_and_rng();
     let mut repo = PgRepository::from_pool(&pool).await?;
 
-    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
+    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
     let maybe_session = session_info.load_session(&mut repo).await?;
@@ -93,6 +94,8 @@ pub(crate) async fn get(
 
 #[allow(clippy::too_many_lines, clippy::too_many_arguments)]
 pub(crate) async fn post(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(password_manager): State<PasswordManager>,
     State(mailer): State<Mailer>,
     State(policy_factory): State<Arc<PolicyFactory>>,
@@ -102,12 +105,11 @@ pub(crate) async fn post(
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<RegisterForm>>,
 ) -> Result<Response, FancyError> {
-    let (clock, mut rng) = crate::clock_and_rng();
     let mut repo = PgRepository::from_pool(&pool).await?;
 
-    let form = cookie_jar.verify_form(clock.now(), form)?;
+    let form = cookie_jar.verify_form(&clock, form)?;
 
-    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
+    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
 
     // Validate the form
     let state = {

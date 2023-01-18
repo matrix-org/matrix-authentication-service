@@ -24,7 +24,7 @@ use mas_axum_utils::{
 };
 use mas_keystore::Encrypter;
 use mas_router::Route;
-use mas_storage::{user::UserEmailRepository, Clock, Repository, SystemClock};
+use mas_storage::{user::UserEmailRepository, BoxClock, BoxRng, Repository};
 use mas_storage_pg::PgRepository;
 use mas_templates::{EmailVerificationPageContext, TemplateContext, Templates};
 use serde::Deserialize;
@@ -39,16 +39,17 @@ pub struct CodeForm {
 }
 
 pub(crate) async fn get(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(templates): State<Templates>,
     State(pool): State<PgPool>,
     Query(query): Query<OptionalPostAuthAction>,
     Path(id): Path<Ulid>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
-    let (clock, mut rng) = crate::clock_and_rng();
     let mut repo = PgRepository::from_pool(&pool).await?;
 
-    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
+    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
     let maybe_session = session_info.load_session(&mut repo).await?;
@@ -83,16 +84,16 @@ pub(crate) async fn get(
 }
 
 pub(crate) async fn post(
+    clock: BoxClock,
     State(pool): State<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Query(query): Query<OptionalPostAuthAction>,
     Path(id): Path<Ulid>,
     Form(form): Form<ProtectedForm<CodeForm>>,
 ) -> Result<Response, FancyError> {
-    let clock = SystemClock::default();
     let mut repo = PgRepository::from_pool(&pool).await?;
 
-    let form = cookie_jar.verify_form(clock.now(), form)?;
+    let form = cookie_jar.verify_form(&clock, form)?;
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
     let maybe_session = session_info.load_session(&mut repo).await?;

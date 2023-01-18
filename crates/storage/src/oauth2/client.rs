@@ -19,7 +19,7 @@ use mas_data_model::{Client, User};
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
 use mas_jose::jwk::PublicJsonWebKeySet;
 use oauth2_types::{requests::GrantType, scope::Scope};
-use rand::{Rng, RngCore};
+use rand_core::RngCore;
 use ulid::Ulid;
 use url::Url;
 
@@ -67,7 +67,7 @@ pub trait OAuth2ClientRepository: Send + Sync {
     #[allow(clippy::too_many_arguments)]
     async fn add_from_config(
         &mut self,
-        mut rng: impl Rng + Send,
+        rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
         client_id: Ulid,
         client_auth_method: OAuthClientAuthenticationMethod,

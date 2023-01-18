@@ -28,7 +28,7 @@ use mas_data_model::{BrowserSession, User, UserEmail};
 use mas_email::Mailer;
 use mas_keystore::Encrypter;
 use mas_router::Route;
-use mas_storage::{user::UserEmailRepository, Clock, Repository};
+use mas_storage::{user::UserEmailRepository, BoxClock, BoxRng, Clock, Repository};
 use mas_storage_pg::PgRepository;
 use mas_templates::{AccountEmailsContext, EmailVerificationContext, TemplateContext, Templates};
 use rand::{distributions::Uniform, Rng};
@@ -49,12 +49,12 @@ pub enum ManagementForm {
 }
 
 pub(crate) async fn get(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(templates): State<Templates>,
     State(pool): State<PgPool>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
-    let (clock, mut rng) = crate::clock_and_rng();
-
     let mut repo = PgRepository::from_pool(&pool).await?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
@@ -77,7 +77,7 @@ async fn render(
     cookie_jar: PrivateCookieJar<Encrypter>,
     repo: &mut impl Repository,
 ) -> Result<Response, FancyError> {
-    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), rng);
+    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock, rng);
 
     let emails = repo.user_email().all(&session.user).await?;
 
@@ -124,13 +124,14 @@ async fn start_email_verification(
 }
 
 pub(crate) async fn post(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(templates): State<Templates>,
     State(pool): State<PgPool>,
     State(mailer): State<Mailer>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<ManagementForm>>,
 ) -> Result<Response, FancyError> {
-    let (clock, mut rng) = crate::clock_and_rng();
     let mut repo = PgRepository::from_pool(&pool).await?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
@@ -144,7 +145,7 @@ pub(crate) async fn post(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    let form = cookie_jar.verify_form(clock.now(), form)?;
+    let form = cookie_jar.verify_form(&clock, form)?;
 
     match form {
         ManagementForm::Add { email } => {
