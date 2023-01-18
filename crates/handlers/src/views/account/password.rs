@@ -27,8 +27,9 @@ use mas_keystore::Encrypter;
 use mas_router::Route;
 use mas_storage::{
     user::{BrowserSessionRepository, UserPasswordRepository},
-    Clock, PgRepository, Repository,
+    Clock, Repository,
 };
+use mas_storage_pg::PgRepository;
 use mas_templates::{EmptyContext, TemplateContext, Templates};
 use rand::Rng;
 use serde::Deserialize;

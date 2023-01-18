@@ -33,8 +33,9 @@ use mas_policy::PolicyFactory;
 use mas_router::Route;
 use mas_storage::{
     user::{BrowserSessionRepository, UserEmailRepository, UserPasswordRepository, UserRepository},
-    PgRepository, Repository,
+    Repository,
 };
+use mas_storage_pg::PgRepository;
 use mas_templates::{
     EmailVerificationContext, FieldError, FormError, RegisterContext, RegisterFormField,
     TemplateContext, Templates, ToFormState,

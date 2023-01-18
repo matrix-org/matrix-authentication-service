@@ -20,7 +20,7 @@ use axum_extra::extract::PrivateCookieJar;
 use mas_axum_utils::{csrf::CsrfExt, FancyError, SessionInfoExt};
 use mas_keystore::Encrypter;
 use mas_router::UrlBuilder;
-use mas_storage::PgRepository;
+use mas_storage_pg::PgRepository;
 use mas_templates::{IndexContext, TemplateContext, Templates};
 use sqlx::PgPool;
 

@@ -24,8 +24,9 @@ use mas_oidc_client::requests::authorization_code::AuthorizationRequestData;
 use mas_router::UrlBuilder;
 use mas_storage::{
     upstream_oauth2::{UpstreamOAuthProviderRepository, UpstreamOAuthSessionRepository},
-    PgRepository, Repository,
+    Repository,
 };
+use mas_storage_pg::PgRepository;
 use sqlx::PgPool;
 use thiserror::Error;
 use ulid::Ulid;
@@ -46,7 +47,7 @@ impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_http::ClientInitError);
 impl_from_error_for_route!(mas_oidc_client::error::DiscoveryError);
 impl_from_error_for_route!(mas_oidc_client::error::AuthorizationError);
-impl_from_error_for_route!(mas_storage::DatabaseError);
+impl_from_error_for_route!(mas_storage_pg::DatabaseError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {

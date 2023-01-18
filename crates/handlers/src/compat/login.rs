@@ -22,8 +22,9 @@ use mas_storage::{
         CompatSsoLoginRepository,
     },
     user::{UserPasswordRepository, UserRepository},
-    Clock, PgRepository, Repository,
+    Clock, Repository,
 };
+use mas_storage_pg::PgRepository;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none, DurationMilliSeconds};
 use sqlx::PgPool;
@@ -154,7 +155,7 @@ pub enum RouteError {
 }
 
 impl_from_error_for_route!(sqlx::Error);
-impl_from_error_for_route!(mas_storage::DatabaseError);
+impl_from_error_for_route!(mas_storage_pg::DatabaseError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {

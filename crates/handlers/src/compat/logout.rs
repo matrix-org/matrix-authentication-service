@@ -18,8 +18,9 @@ use hyper::StatusCode;
 use mas_data_model::TokenType;
 use mas_storage::{
     compat::{CompatAccessTokenRepository, CompatSessionRepository},
-    Clock, PgRepository, Repository,
+    Clock, Repository,
 };
+use mas_storage_pg::PgRepository;
 use sqlx::PgPool;
 use thiserror::Error;
 
@@ -42,7 +43,7 @@ pub enum RouteError {
 }
 
 impl_from_error_for_route!(sqlx::Error);
-impl_from_error_for_route!(mas_storage::DatabaseError);
+impl_from_error_for_route!(mas_storage_pg::DatabaseError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {

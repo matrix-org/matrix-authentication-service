@@ -28,7 +28,7 @@ use hyper::header::CACHE_CONTROL;
 use mas_axum_utils::{FancyError, SessionInfoExt};
 use mas_graphql::Schema;
 use mas_keystore::Encrypter;
-use mas_storage::PgRepository;
+use mas_storage_pg::PgRepository;
 use sqlx::PgPool;
 use tracing::{info_span, Instrument};
 

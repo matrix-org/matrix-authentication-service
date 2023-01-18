@@ -21,8 +21,9 @@ use mas_storage::{
     oauth2::OAuth2ClientRepository,
     upstream_oauth2::UpstreamOAuthProviderRepository,
     user::{UserEmailRepository, UserPasswordRepository, UserRepository},
-    Clock, PgRepository, Repository,
+    Clock, Repository,
 };
+use mas_storage_pg::PgRepository;
 use oauth2_types::scope::Scope;
 use rand::SeedableRng;
 use tracing::{info, info_span, warn};

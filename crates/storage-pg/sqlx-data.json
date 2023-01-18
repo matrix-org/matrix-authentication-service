@@ -1336,6 +1336,24 @@
     },
     "query": "\n                SELECT oauth2_client_id\n                     , encrypted_client_secret\n                     , ARRAY(\n                           SELECT redirect_uri\n                           FROM oauth2_client_redirect_uris r\n                           WHERE r.oauth2_client_id = c.oauth2_client_id\n                       ) AS \"redirect_uris!\"\n                     , grant_type_authorization_code\n                     , grant_type_refresh_token\n                     , client_name\n                     , logo_uri\n                     , client_uri\n                     , policy_uri\n                     , tos_uri\n                     , jwks_uri\n                     , jwks\n                     , id_token_signed_response_alg\n                     , userinfo_signed_response_alg\n                     , token_endpoint_auth_method\n                     , token_endpoint_auth_signing_alg\n                     , initiate_login_uri\n                FROM oauth2_clients c\n\n                WHERE oauth2_client_id = ANY($1::uuid[])\n            "
   },
+  "8a79c7c392dd930628caadec80c9b2645501475ab4feacbac59ca1bc52b16c3f": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Text",
+          "Bool",
+          "Bool",
+          "Text",
+          "Jsonb",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n                INSERT INTO oauth2_clients\n                    ( oauth2_client_id\n                    , encrypted_client_secret\n                    , grant_type_authorization_code\n                    , grant_type_refresh_token\n                    , token_endpoint_auth_method\n                    , jwks\n                    , jwks_uri\n                    )\n                VALUES\n                    ($1, $2, $3, $4, $5, $6, $7)\n                ON CONFLICT (oauth2_client_id)\n                DO\n                    UPDATE SET encrypted_client_secret = EXCLUDED.encrypted_client_secret\n                             , grant_type_authorization_code = EXCLUDED.grant_type_authorization_code\n                             , grant_type_refresh_token = EXCLUDED.grant_type_refresh_token\n                             , token_endpoint_auth_method = EXCLUDED.token_endpoint_auth_method\n                             , jwks = EXCLUDED.jwks\n                             , jwks_uri = EXCLUDED.jwks_uri\n            "
+  },
   "8b7297c263336d70c2b647212b16f7ae39bc5cb1572e3a2dcfcd67f196a1fa39": {
     "describe": {
       "columns": [
@@ -1820,24 +1838,6 @@
       }
     },
     "query": "\n                UPDATE users\n                SET primary_user_email_id = user_emails.user_email_id\n                FROM user_emails\n                WHERE user_emails.user_email_id = $1\n                  AND users.user_id = user_emails.user_id\n            "
-  },
-  "c0b4996085f6f2127e1e8cfdf18b9029c22096fadfe6de59dce01c789791edb5": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Uuid",
-          "Text",
-          "Bool",
-          "Bool",
-          "Text",
-          "Jsonb",
-          "Text"
-        ]
-      }
-    },
-    "query": "\n            INSERT INTO oauth2_clients\n                ( oauth2_client_id\n                , encrypted_client_secret\n                , grant_type_authorization_code\n                , grant_type_refresh_token\n                , token_endpoint_auth_method\n                , jwks\n                , jwks_uri\n                )\n            VALUES\n                ($1, $2, $3, $4, $5, $6, $7)\n            ON CONFLICT (oauth2_client_id)\n            DO\n                UPDATE SET encrypted_client_secret = EXCLUDED.encrypted_client_secret\n                         , grant_type_authorization_code = EXCLUDED.grant_type_authorization_code\n                         , grant_type_refresh_token = EXCLUDED.grant_type_refresh_token\n                         , token_endpoint_auth_method = EXCLUDED.token_endpoint_auth_method\n                         , jwks = EXCLUDED.jwks\n                         , jwks_uri = EXCLUDED.jwks_uri\n        "
   },
   "c0ed9d70e496433d8686a499055d8a8376459109b6154a2c0c13b28462afa523": {
     "describe": {

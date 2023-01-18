@@ -15,7 +15,7 @@
 use anyhow::Context;
 use clap::Parser;
 use mas_config::DatabaseConfig;
-use mas_storage::MIGRATOR;
+use mas_storage_pg::MIGRATOR;
 use tracing::{info_span, Instrument};
 
 use crate::util::database_from_config;

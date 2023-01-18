@@ -31,8 +31,9 @@ use mas_router::UrlBuilder;
 use mas_storage::{
     oauth2::OAuth2ClientRepository,
     user::{BrowserSessionRepository, UserEmailRepository},
-    DatabaseError, PgRepository, Repository,
+    Repository,
 };
+use mas_storage_pg::PgRepository;
 use oauth2_types::scope;
 use serde::Serialize;
 use serde_with::skip_serializing_none;
@@ -64,7 +65,9 @@ pub enum RouteError {
     Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
 
     #[error("failed to authenticate")]
-    AuthorizationVerificationError(#[from] AuthorizationVerificationError<DatabaseError>),
+    AuthorizationVerificationError(
+        #[from] AuthorizationVerificationError<mas_storage_pg::DatabaseError>,
+    ),
 
     #[error("no suitable key found for signing")]
     InvalidSigningKey,
@@ -77,7 +80,7 @@ pub enum RouteError {
 }
 
 impl_from_error_for_route!(sqlx::Error);
-impl_from_error_for_route!(mas_storage::DatabaseError);
+impl_from_error_for_route!(mas_storage_pg::DatabaseError);
 impl_from_error_for_route!(mas_keystore::WrongAlgorithmError);
 impl_from_error_for_route!(mas_jose::jwt::JwtSignatureError);
 

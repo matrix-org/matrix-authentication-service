@@ -16,9 +16,9 @@ use anyhow::Context as _;
 use async_graphql::{Context, Object, ID};
 use chrono::{DateTime, Utc};
 use mas_storage::{
-    upstream_oauth2::UpstreamOAuthProviderRepository, user::UserRepository, PgRepository,
-    Repository,
+    upstream_oauth2::UpstreamOAuthProviderRepository, user::UserRepository, Repository,
 };
+use mas_storage_pg::PgRepository;
 use sqlx::PgPool;
 
 use super::{NodeType, User};

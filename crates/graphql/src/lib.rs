@@ -34,8 +34,9 @@ use mas_storage::{
     oauth2::OAuth2ClientRepository,
     upstream_oauth2::{UpstreamOAuthLinkRepository, UpstreamOAuthProviderRepository},
     user::{BrowserSessionRepository, UserEmailRepository},
-    Pagination, PgRepository, Repository,
+    Pagination, Repository,
 };
+use mas_storage_pg::PgRepository;
 use model::CreationEvent;
 use sqlx::PgPool;
 

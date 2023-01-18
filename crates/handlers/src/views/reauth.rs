@@ -26,8 +26,9 @@ use mas_keystore::Encrypter;
 use mas_router::Route;
 use mas_storage::{
     user::{BrowserSessionRepository, UserPasswordRepository},
-    PgRepository, Repository,
+    Repository,
 };
+use mas_storage_pg::PgRepository;
 use mas_templates::{ReauthContext, TemplateContext, Templates};
 use serde::Deserialize;
 use sqlx::PgPool;

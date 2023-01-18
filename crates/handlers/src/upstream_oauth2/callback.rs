@@ -30,8 +30,9 @@ use mas_storage::{
         UpstreamOAuthLinkRepository, UpstreamOAuthProviderRepository,
         UpstreamOAuthSessionRepository,
     },
-    PgRepository, Repository,
+    Repository,
 };
+use mas_storage_pg::PgRepository;
 use oauth2_types::errors::ClientErrorCode;
 use serde::Deserialize;
 use sqlx::PgPool;
@@ -99,7 +100,7 @@ pub(crate) enum RouteError {
     Internal(Box<dyn std::error::Error>),
 }
 
-impl_from_error_for_route!(mas_storage::DatabaseError);
+impl_from_error_for_route!(mas_storage_pg::DatabaseError);
 impl_from_error_for_route!(mas_http::ClientInitError);
 impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_oidc_client::error::DiscoveryError);

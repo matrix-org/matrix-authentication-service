@@ -15,9 +15,8 @@
 use anyhow::Context as _;
 use async_graphql::{Context, Description, Object, ID};
 use chrono::{DateTime, Utc};
-use mas_storage::{
-    compat::CompatSessionRepository, user::UserRepository, PgRepository, Repository,
-};
+use mas_storage::{compat::CompatSessionRepository, user::UserRepository, Repository};
+use mas_storage_pg::PgRepository;
 use sqlx::PgPool;
 use url::Url;
 

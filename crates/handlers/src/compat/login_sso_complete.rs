@@ -31,8 +31,9 @@ use mas_keystore::Encrypter;
 use mas_router::{CompatLoginSsoAction, PostAuthAction, Route};
 use mas_storage::{
     compat::{CompatSessionRepository, CompatSsoLoginRepository},
-    PgRepository, Repository,
+    Repository,
 };
+use mas_storage_pg::PgRepository;
 use mas_templates::{CompatSsoContext, ErrorContext, TemplateContext, Templates};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;

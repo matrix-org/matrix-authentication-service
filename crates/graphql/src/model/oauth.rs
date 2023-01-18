@@ -14,9 +14,8 @@
 
 use anyhow::Context as _;
 use async_graphql::{Context, Description, Object, ID};
-use mas_storage::{
-    oauth2::OAuth2ClientRepository, user::BrowserSessionRepository, PgRepository, Repository,
-};
+use mas_storage::{oauth2::OAuth2ClientRepository, user::BrowserSessionRepository, Repository};
+use mas_storage_pg::PgRepository;
 use oauth2_types::scope::Scope;
 use sqlx::PgPool;
 use ulid::Ulid;

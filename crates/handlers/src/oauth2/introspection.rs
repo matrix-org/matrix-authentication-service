@@ -25,8 +25,9 @@ use mas_storage::{
     compat::{CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository},
     oauth2::{OAuth2AccessTokenRepository, OAuth2RefreshTokenRepository, OAuth2SessionRepository},
     user::{BrowserSessionRepository, UserRepository},
-    Clock, PgRepository, Repository,
+    Clock, Repository,
 };
+use mas_storage_pg::PgRepository;
 use oauth2_types::{
     errors::{ClientError, ClientErrorCode},
     requests::{IntrospectionRequest, IntrospectionResponse},
@@ -97,7 +98,7 @@ impl IntoResponse for RouteError {
 }
 
 impl_from_error_for_route!(sqlx::Error);
-impl_from_error_for_route!(mas_storage::DatabaseError);
+impl_from_error_for_route!(mas_storage_pg::DatabaseError);
 
 impl From<TokenFormatError> for RouteError {
     fn from(_e: TokenFormatError) -> Self {

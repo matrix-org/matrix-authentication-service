@@ -26,8 +26,9 @@ use mas_keystore::Encrypter;
 use mas_storage::{
     upstream_oauth2::UpstreamOAuthProviderRepository,
     user::{BrowserSessionRepository, UserPasswordRepository, UserRepository},
-    Clock, PgRepository, Repository,
+    Clock, Repository,
 };
+use mas_storage_pg::PgRepository;
 use mas_templates::{
     FieldError, FormError, LoginContext, LoginFormField, TemplateContext, Templates, ToFormState,
 };

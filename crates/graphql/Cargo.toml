@@ -19,6 +19,7 @@ url = "2.3.1"
 oauth2-types = { path = "../oauth2-types" }
 mas-data-model = { path = "../data-model" }
 mas-storage = { path = "../storage" }
+mas-storage-pg = { path = "../storage-pg" }
 
 [[bin]]
 name = "schema"

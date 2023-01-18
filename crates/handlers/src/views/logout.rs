@@ -23,7 +23,8 @@ use mas_axum_utils::{
 };
 use mas_keystore::Encrypter;
 use mas_router::{PostAuthAction, Route};
-use mas_storage::{user::BrowserSessionRepository, Clock, PgRepository, Repository};
+use mas_storage::{user::BrowserSessionRepository, Clock, Repository};
+use mas_storage_pg::PgRepository;
 use sqlx::PgPool;
 
 pub(crate) async fn post(

@@ -19,7 +19,8 @@ use axum::{
 };
 use hyper::StatusCode;
 use mas_router::{CompatLoginSsoAction, CompatLoginSsoComplete, UrlBuilder};
-use mas_storage::{compat::CompatSsoLoginRepository, PgRepository, Repository};
+use mas_storage::{compat::CompatSsoLoginRepository, Repository};
+use mas_storage_pg::PgRepository;
 use rand::distributions::{Alphanumeric, DistString};
 use serde::Deserialize;
 use serde_with::serde;
@@ -49,7 +50,7 @@ pub enum RouteError {
 }
 
 impl_from_error_for_route!(sqlx::Error);
-impl_from_error_for_route!(mas_storage::DatabaseError);
+impl_from_error_for_route!(mas_storage_pg::DatabaseError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {

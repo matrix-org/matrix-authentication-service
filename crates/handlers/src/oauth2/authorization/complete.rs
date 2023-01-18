@@ -27,8 +27,9 @@ use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{
     oauth2::{OAuth2AuthorizationGrantRepository, OAuth2ClientRepository, OAuth2SessionRepository},
-    PgRepository, Repository,
+    Repository,
 };
+use mas_storage_pg::PgRepository;
 use mas_templates::Templates;
 use oauth2_types::requests::{AccessTokenResponse, AuthorizationResponse};
 use sqlx::PgPool;
@@ -70,7 +71,7 @@ impl IntoResponse for RouteError {
 }
 
 impl_from_error_for_route!(sqlx::Error);
-impl_from_error_for_route!(mas_storage::DatabaseError);
+impl_from_error_for_route!(mas_storage_pg::DatabaseError);
 impl_from_error_for_route!(mas_policy::LoadError);
 impl_from_error_for_route!(mas_policy::InstanciateError);
 impl_from_error_for_route!(mas_policy::EvaluationError);
@@ -149,7 +150,7 @@ pub enum GrantCompletionError {
 }
 
 impl_from_error_for_route!(GrantCompletionError: sqlx::Error);
-impl_from_error_for_route!(GrantCompletionError: mas_storage::DatabaseError);
+impl_from_error_for_route!(GrantCompletionError: mas_storage_pg::DatabaseError);
 impl_from_error_for_route!(GrantCompletionError: super::callback::IntoCallbackDestinationError);
 impl_from_error_for_route!(GrantCompletionError: mas_policy::LoadError);
 impl_from_error_for_route!(GrantCompletionError: mas_policy::InstanciateError);

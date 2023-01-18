@@ -24,7 +24,8 @@ use mas_axum_utils::{
 };
 use mas_keystore::Encrypter;
 use mas_router::Route;
-use mas_storage::{user::UserEmailRepository, Clock, PgRepository, Repository};
+use mas_storage::{user::UserEmailRepository, Clock, Repository};
+use mas_storage_pg::PgRepository;
 use mas_templates::{EmailVerificationPageContext, TemplateContext, Templates};
 use serde::Deserialize;
 use sqlx::PgPool;

@@ -37,8 +37,9 @@ use mas_storage::{
         OAuth2RefreshTokenRepository, OAuth2SessionRepository,
     },
     user::BrowserSessionRepository,
-    PgRepository, Repository,
+    Repository,
 };
+use mas_storage_pg::PgRepository;
 use oauth2_types::{
     errors::{ClientError, ClientErrorCode},
     pkce::CodeChallengeError,
@@ -151,7 +152,7 @@ impl IntoResponse for RouteError {
 }
 
 impl_from_error_for_route!(sqlx::Error);
-impl_from_error_for_route!(mas_storage::DatabaseError);
+impl_from_error_for_route!(mas_storage_pg::DatabaseError);
 impl_from_error_for_route!(mas_keystore::WrongAlgorithmError);
 impl_from_error_for_route!(mas_jose::claims::ClaimError);
 impl_from_error_for_route!(mas_jose::claims::TokenHashError);

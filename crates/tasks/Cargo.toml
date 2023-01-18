@@ -14,3 +14,4 @@ tracing = "0.1.37"
 sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres"] }
 
 mas-storage = { path = "../storage" }
+mas-storage-pg = { path = "../storage-pg" }

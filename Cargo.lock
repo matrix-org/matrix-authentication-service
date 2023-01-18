@@ -2705,6 +2705,7 @@ dependencies = [
  "mas-router",
  "mas-spa",
  "mas-storage",
+ "mas-storage-pg",
  "mas-tasks",
  "mas-templates",
  "oauth2-types",
@@ -2803,6 +2804,7 @@ dependencies = [
  "chrono",
  "mas-data-model",
  "mas-storage",
+ "mas-storage-pg",
  "oauth2-types",
  "serde",
  "sqlx",
@@ -2843,6 +2845,7 @@ dependencies = [
  "mas-policy",
  "mas-router",
  "mas-storage",
+ "mas-storage-pg",
  "mas-templates",
  "mime",
  "oauth2-types",
@@ -3103,6 +3106,23 @@ dependencies = [
  "mas-jose",
  "oauth2-types",
  "rand 0.8.5",
+ "thiserror",
+ "ulid",
+ "url",
+]
+
+[[package]]
+name = "mas-storage-pg"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "mas-data-model",
+ "mas-iana",
+ "mas-jose",
+ "mas-storage",
+ "oauth2-types",
+ "rand 0.8.5",
  "rand_chacha 0.3.1",
  "serde",
  "serde_json",
@@ -3121,6 +3141,7 @@ dependencies = [
  "async-trait",
  "futures-util",
  "mas-storage",
+ "mas-storage-pg",
  "sqlx",
  "tokio",
  "tokio-stream",

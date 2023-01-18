@@ -30,8 +30,9 @@ use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{
     oauth2::{OAuth2AuthorizationGrantRepository, OAuth2ClientRepository},
-    PgRepository, Repository,
+    Repository,
 };
+use mas_storage_pg::PgRepository;
 use mas_templates::{ConsentContext, PolicyViolationContext, TemplateContext, Templates};
 use sqlx::PgPool;
 use thiserror::Error;
@@ -62,7 +63,7 @@ pub enum RouteError {
 
 impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_templates::TemplateError);
-impl_from_error_for_route!(mas_storage::DatabaseError);
+impl_from_error_for_route!(mas_storage_pg::DatabaseError);
 impl_from_error_for_route!(mas_policy::LoadError);
 impl_from_error_for_route!(mas_policy::InstanciateError);
 impl_from_error_for_route!(mas_policy::EvaluationError);

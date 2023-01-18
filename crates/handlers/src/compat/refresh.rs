@@ -18,8 +18,9 @@ use hyper::StatusCode;
 use mas_data_model::{TokenFormatError, TokenType};
 use mas_storage::{
     compat::{CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository},
-    PgRepository, Repository,
+    Repository,
 };
+use mas_storage_pg::PgRepository;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DurationMilliSeconds};
 use sqlx::PgPool;
@@ -70,7 +71,7 @@ impl IntoResponse for RouteError {
 }
 
 impl_from_error_for_route!(sqlx::Error);
-impl_from_error_for_route!(mas_storage::DatabaseError);
+impl_from_error_for_route!(mas_storage_pg::DatabaseError);
 
 impl From<TokenFormatError> for RouteError {
     fn from(_e: TokenFormatError) -> Self {

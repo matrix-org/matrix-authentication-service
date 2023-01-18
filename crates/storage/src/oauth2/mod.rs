@@ -1,4 +1,4 @@
-// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2021-2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,11 +19,7 @@ mod refresh_token;
 mod session;
 
 pub use self::{
-    access_token::{OAuth2AccessTokenRepository, PgOAuth2AccessTokenRepository},
-    authorization_grant::{
-        OAuth2AuthorizationGrantRepository, PgOAuth2AuthorizationGrantRepository,
-    },
-    client::{OAuth2ClientRepository, PgOAuth2ClientRepository},
-    refresh_token::{OAuth2RefreshTokenRepository, PgOAuth2RefreshTokenRepository},
-    session::{OAuth2SessionRepository, PgOAuth2SessionRepository},
+    access_token::OAuth2AccessTokenRepository,
+    authorization_grant::OAuth2AuthorizationGrantRepository, client::OAuth2ClientRepository,
+    refresh_token::OAuth2RefreshTokenRepository, session::OAuth2SessionRepository,
 };

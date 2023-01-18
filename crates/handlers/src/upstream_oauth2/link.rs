@@ -27,8 +27,9 @@ use mas_keystore::Encrypter;
 use mas_storage::{
     upstream_oauth2::{UpstreamOAuthLinkRepository, UpstreamOAuthSessionRepository},
     user::{BrowserSessionRepository, UserRepository},
-    PgRepository, Repository,
+    Repository,
 };
+use mas_storage_pg::PgRepository;
 use mas_templates::{
     EmptyContext, TemplateContext, Templates, UpstreamExistingLinkContext, UpstreamRegister,
     UpstreamSuggestLink,
@@ -73,7 +74,7 @@ impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_templates::TemplateError);
 impl_from_error_for_route!(mas_axum_utils::csrf::CsrfError);
 impl_from_error_for_route!(super::cookie::UpstreamSessionNotFound);
-impl_from_error_for_route!(mas_storage::DatabaseError);
+impl_from_error_for_route!(mas_storage_pg::DatabaseError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {

@@ -22,8 +22,9 @@ use mas_storage::{
     oauth2::OAuth2SessionRepository,
     upstream_oauth2::UpstreamOAuthLinkRepository,
     user::{BrowserSessionRepository, UserEmailRepository},
-    Pagination, PgRepository, Repository,
+    Pagination, Repository,
 };
+use mas_storage_pg::PgRepository;
 use sqlx::PgPool;
 
 use super::{

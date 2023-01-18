@@ -13,14 +13,15 @@
 // limitations under the License.
 
 use chrono::Duration;
+use mas_storage::{
+    user::{BrowserSessionRepository, UserEmailRepository, UserPasswordRepository, UserRepository},
+    Clock, Repository,
+};
 use rand::SeedableRng;
 use rand_chacha::ChaChaRng;
 use sqlx::PgPool;
 
-use crate::{
-    user::{BrowserSessionRepository, UserEmailRepository, UserPasswordRepository, UserRepository},
-    Clock, PgRepository, Repository,
-};
+use crate::PgRepository;
 
 /// Test the user repository, by adding and looking up a user
 #[sqlx::test(migrator = "crate::MIGRATOR")]
@@ -88,7 +89,7 @@ async fn test_user_email_repo(pool: PgPool) {
     // The user email should not exist yet
     assert!(repo
         .user_email()
-        .find(&user, &EMAIL)
+        .find(&user, EMAIL)
         .await
         .unwrap()
         .is_none());
@@ -109,7 +110,7 @@ async fn test_user_email_repo(pool: PgPool) {
 
     assert!(repo
         .user_email()
-        .find(&user, &EMAIL)
+        .find(&user, EMAIL)
         .await
         .unwrap()
         .is_some());
@@ -179,7 +180,7 @@ async fn test_user_email_repo(pool: PgPool) {
     // Reload the user_email
     let user_email = repo
         .user_email()
-        .find(&user, &EMAIL)
+        .find(&user, EMAIL)
         .await
         .unwrap()
         .expect("user email was not found");

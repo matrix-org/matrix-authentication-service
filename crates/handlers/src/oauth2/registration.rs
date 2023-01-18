@@ -19,7 +19,8 @@ use hyper::StatusCode;
 use mas_iana::oauth::OAuthClientAuthenticationMethod;
 use mas_keystore::Encrypter;
 use mas_policy::{PolicyFactory, Violation};
-use mas_storage::{oauth2::OAuth2ClientRepository, PgRepository, Repository};
+use mas_storage::{oauth2::OAuth2ClientRepository, Repository};
+use mas_storage_pg::PgRepository;
 use oauth2_types::{
     errors::{ClientError, ClientErrorCode},
     registration::{
@@ -49,7 +50,7 @@ pub(crate) enum RouteError {
 }
 
 impl_from_error_for_route!(sqlx::Error);
-impl_from_error_for_route!(mas_storage::DatabaseError);
+impl_from_error_for_route!(mas_storage_pg::DatabaseError);
 impl_from_error_for_route!(mas_policy::LoadError);
 impl_from_error_for_route!(mas_policy::InstanciateError);
 impl_from_error_for_route!(mas_policy::EvaluationError);
