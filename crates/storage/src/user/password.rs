@@ -16,7 +16,7 @@ use async_trait::async_trait;
 use mas_data_model::{Password, User};
 use rand_core::RngCore;
 
-use crate::Clock;
+use crate::{repository_impl, Clock};
 
 #[async_trait]
 pub trait UserPasswordRepository: Send + Sync {
@@ -33,3 +33,16 @@ pub trait UserPasswordRepository: Send + Sync {
         upgraded_from: Option<&Password>,
     ) -> Result<Password, Self::Error>;
 }
+
+repository_impl!(UserPasswordRepository:
+    async fn active(&mut self, user: &User) -> Result<Option<Password>, Self::Error>;
+    async fn add(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        user: &User,
+        version: u16,
+        hashed_password: String,
+        upgraded_from: Option<&Password>,
+    ) -> Result<Password, Self::Error>;
+);

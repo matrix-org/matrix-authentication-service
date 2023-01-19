@@ -17,7 +17,7 @@ use mas_data_model::{UpstreamOAuthAuthorizationSession, UpstreamOAuthLink, Upstr
 use rand_core::RngCore;
 use ulid::Ulid;
 
-use crate::Clock;
+use crate::{repository_impl, Clock};
 
 #[async_trait]
 pub trait UpstreamOAuthSessionRepository: Send + Sync {
@@ -56,3 +56,34 @@ pub trait UpstreamOAuthSessionRepository: Send + Sync {
         upstream_oauth_authorization_session: UpstreamOAuthAuthorizationSession,
     ) -> Result<UpstreamOAuthAuthorizationSession, Self::Error>;
 }
+
+repository_impl!(UpstreamOAuthSessionRepository:
+    async fn lookup(
+        &mut self,
+        id: Ulid,
+    ) -> Result<Option<UpstreamOAuthAuthorizationSession>, Self::Error>;
+
+    async fn add(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        upstream_oauth_provider: &UpstreamOAuthProvider,
+        state: String,
+        code_challenge_verifier: Option<String>,
+        nonce: String,
+    ) -> Result<UpstreamOAuthAuthorizationSession, Self::Error>;
+
+    async fn complete_with_link(
+        &mut self,
+        clock: &dyn Clock,
+        upstream_oauth_authorization_session: UpstreamOAuthAuthorizationSession,
+        upstream_oauth_link: &UpstreamOAuthLink,
+        id_token: Option<String>,
+    ) -> Result<UpstreamOAuthAuthorizationSession, Self::Error>;
+
+    async fn consume(
+        &mut self,
+        clock: &dyn Clock,
+        upstream_oauth_authorization_session: UpstreamOAuthAuthorizationSession,
+    ) -> Result<UpstreamOAuthAuthorizationSession, Self::Error>;
+);

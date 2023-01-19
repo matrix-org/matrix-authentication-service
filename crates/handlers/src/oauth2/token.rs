@@ -426,7 +426,8 @@ async fn refresh_token_grant(
         .await?;
 
     if let Some(access_token_id) = refresh_token.access_token_id {
-        if let Some(access_token) = repo.oauth2_access_token().lookup(access_token_id).await? {
+        let access_token = repo.oauth2_access_token().lookup(access_token_id).await?;
+        if let Some(access_token) = access_token {
             repo.oauth2_access_token()
                 .revoke(clock, access_token)
                 .await?;

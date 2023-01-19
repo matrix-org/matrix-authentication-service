@@ -23,7 +23,7 @@ use rand_core::RngCore;
 use ulid::Ulid;
 use url::Url;
 
-use crate::Clock;
+use crate::{repository_impl, Clock};
 
 #[async_trait]
 pub trait OAuth2ClientRepository: Send + Sync {
@@ -92,3 +92,61 @@ pub trait OAuth2ClientRepository: Send + Sync {
         scope: &Scope,
     ) -> Result<(), Self::Error>;
 }
+
+repository_impl!(OAuth2ClientRepository:
+    async fn lookup(&mut self, id: Ulid) -> Result<Option<Client>, Self::Error>;
+
+    async fn load_batch(
+        &mut self,
+        ids: BTreeSet<Ulid>,
+    ) -> Result<BTreeMap<Ulid, Client>, Self::Error>;
+
+    async fn add(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        redirect_uris: Vec<Url>,
+        encrypted_client_secret: Option<String>,
+        grant_types: Vec<GrantType>,
+        contacts: Vec<String>,
+        client_name: Option<String>,
+        logo_uri: Option<Url>,
+        client_uri: Option<Url>,
+        policy_uri: Option<Url>,
+        tos_uri: Option<Url>,
+        jwks_uri: Option<Url>,
+        jwks: Option<PublicJsonWebKeySet>,
+        id_token_signed_response_alg: Option<JsonWebSignatureAlg>,
+        userinfo_signed_response_alg: Option<JsonWebSignatureAlg>,
+        token_endpoint_auth_method: Option<OAuthClientAuthenticationMethod>,
+        token_endpoint_auth_signing_alg: Option<JsonWebSignatureAlg>,
+        initiate_login_uri: Option<Url>,
+    ) -> Result<Client, Self::Error>;
+
+    async fn add_from_config(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        client_id: Ulid,
+        client_auth_method: OAuthClientAuthenticationMethod,
+        encrypted_client_secret: Option<String>,
+        jwks: Option<PublicJsonWebKeySet>,
+        jwks_uri: Option<Url>,
+        redirect_uris: Vec<Url>,
+    ) -> Result<Client, Self::Error>;
+
+    async fn get_consent_for_user(
+        &mut self,
+        client: &Client,
+        user: &User,
+    ) -> Result<Scope, Self::Error>;
+
+    async fn give_consent_for_user(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        client: &Client,
+        user: &User,
+        scope: &Scope,
+    ) -> Result<(), Self::Error>;
+);

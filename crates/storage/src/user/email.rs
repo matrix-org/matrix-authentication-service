@@ -17,7 +17,7 @@ use mas_data_model::{User, UserEmail, UserEmailVerification};
 use rand_core::RngCore;
 use ulid::Ulid;
 
-use crate::{pagination::Page, Clock, Pagination};
+use crate::{pagination::Page, repository_impl, Clock, Pagination};
 
 #[async_trait]
 pub trait UserEmailRepository: Send + Sync {
@@ -74,3 +74,56 @@ pub trait UserEmailRepository: Send + Sync {
         verification: UserEmailVerification,
     ) -> Result<UserEmailVerification, Self::Error>;
 }
+
+repository_impl!(UserEmailRepository:
+    async fn lookup(&mut self, id: Ulid) -> Result<Option<UserEmail>, Self::Error>;
+    async fn find(&mut self, user: &User, email: &str) -> Result<Option<UserEmail>, Self::Error>;
+    async fn get_primary(&mut self, user: &User) -> Result<Option<UserEmail>, Self::Error>;
+
+    async fn all(&mut self, user: &User) -> Result<Vec<UserEmail>, Self::Error>;
+    async fn list_paginated(
+        &mut self,
+        user: &User,
+        pagination: Pagination,
+    ) -> Result<Page<UserEmail>, Self::Error>;
+    async fn count(&mut self, user: &User) -> Result<usize, Self::Error>;
+
+    async fn add(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        user: &User,
+        email: String,
+    ) -> Result<UserEmail, Self::Error>;
+    async fn remove(&mut self, user_email: UserEmail) -> Result<(), Self::Error>;
+
+    async fn mark_as_verified(
+        &mut self,
+        clock: &dyn Clock,
+        user_email: UserEmail,
+    ) -> Result<UserEmail, Self::Error>;
+
+    async fn set_as_primary(&mut self, user_email: &UserEmail) -> Result<(), Self::Error>;
+
+    async fn add_verification_code(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        user_email: &UserEmail,
+        max_age: chrono::Duration,
+        code: String,
+    ) -> Result<UserEmailVerification, Self::Error>;
+
+    async fn find_verification_code(
+        &mut self,
+        clock: &dyn Clock,
+        user_email: &UserEmail,
+        code: &str,
+    ) -> Result<Option<UserEmailVerification>, Self::Error>;
+
+    async fn consume_verification_code(
+        &mut self,
+        clock: &dyn Clock,
+        verification: UserEmailVerification,
+    ) -> Result<UserEmailVerification, Self::Error>;
+);

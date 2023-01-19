@@ -67,7 +67,9 @@ impl User {
     ) -> Result<Option<UserEmail>, async_graphql::Error> {
         let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
 
-        Ok(repo.user_email().get_primary(&self.0).await?.map(UserEmail))
+        let mut user_email_repo = repo.user_email();
+
+        Ok(user_email_repo.get_primary(&self.0).await?.map(UserEmail))
     }
 
     /// Get the list of compatibility SSO logins, chronologically sorted

@@ -45,5 +45,59 @@ pub use self::{
     repository::Repository,
 };
 
+pub struct MapErr<Repository, Mapper> {
+    inner: Repository,
+    mapper: Mapper,
+}
+
+impl<Repository, Mapper> MapErr<Repository, Mapper> {
+    fn new(inner: Repository, mapper: Mapper) -> Self {
+        Self { inner, mapper }
+    }
+}
+
+#[macro_export]
+macro_rules! repository_impl {
+    ($repo_trait:ident:
+        $(
+            async fn $method:ident (
+                &mut self
+                $(, $arg:ident: $arg_ty:ty )*
+                $(,)?
+            ) -> Result<$ret_ty:ty, Self::Error>;
+        )*
+    ) => {
+        #[::async_trait::async_trait]
+        impl<R: ?Sized> $repo_trait for ::std::boxed::Box<R>
+        where
+            R: $repo_trait,
+        {
+            type Error = <R as $repo_trait>::Error;
+
+            $(
+                async fn $method (&mut self $(, $arg: $arg_ty)*) -> Result<$ret_ty, Self::Error> {
+                    (**self).$method ( $($arg),* ).await
+                }
+            )*
+        }
+
+        #[::async_trait::async_trait]
+        impl<R, F, E> $repo_trait for $crate::MapErr<R, F>
+        where
+            R: $repo_trait,
+            F: FnMut(<R as $repo_trait>::Error) -> E + ::std::marker::Send + ::std::marker::Sync,
+            E: ::std::error::Error + ::std::marker::Send + ::std::marker::Sync,
+        {
+            type Error = E;
+
+            $(
+                async fn $method (&mut self $(, $arg: $arg_ty)*) -> Result<$ret_ty, Self::Error> {
+                    self.inner.$method ( $($arg),* ).await.map_err(&mut self.mapper)
+                }
+            )*
+        }
+    };
+}
+
 pub type BoxClock = Box<dyn Clock + Send>;
 pub type BoxRng = Box<dyn CryptoRngCore + Send>;

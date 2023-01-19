@@ -104,10 +104,12 @@ impl UpstreamOAuth2Link {
         } else {
             // Fetch on-the-fly
             let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
-            repo.upstream_oauth_provider()
+            let provider = repo
+                .upstream_oauth_provider()
                 .lookup(self.link.provider_id)
                 .await?
-                .context("Upstream OAuth 2.0 provider not found")?
+                .context("Upstream OAuth 2.0 provider not found")?;
+            provider
         };
 
         Ok(UpstreamOAuth2Provider::new(provider))
@@ -121,10 +123,12 @@ impl UpstreamOAuth2Link {
         } else if let Some(user_id) = &self.link.user_id {
             // Fetch on-the-fly
             let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
-            repo.user()
+            let user = repo
+                .user()
                 .lookup(*user_id)
                 .await?
-                .context("User not found")?
+                .context("User not found")?;
+            user
         } else {
             return Ok(None);
         };

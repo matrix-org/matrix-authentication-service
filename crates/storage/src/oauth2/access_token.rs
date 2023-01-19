@@ -18,7 +18,7 @@ use mas_data_model::{AccessToken, Session};
 use rand_core::RngCore;
 use ulid::Ulid;
 
-use crate::Clock;
+use crate::{repository_impl, Clock};
 
 #[async_trait]
 pub trait OAuth2AccessTokenRepository: Send + Sync {
@@ -53,3 +53,29 @@ pub trait OAuth2AccessTokenRepository: Send + Sync {
     /// Cleanup expired access tokens
     async fn cleanup_expired(&mut self, clock: &dyn Clock) -> Result<usize, Self::Error>;
 }
+
+repository_impl!(OAuth2AccessTokenRepository:
+    async fn lookup(&mut self, id: Ulid) -> Result<Option<AccessToken>, Self::Error>;
+
+    async fn find_by_token(
+        &mut self,
+        access_token: &str,
+    ) -> Result<Option<AccessToken>, Self::Error>;
+
+    async fn add(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        session: &Session,
+        access_token: String,
+        expires_after: Duration,
+    ) -> Result<AccessToken, Self::Error>;
+
+    async fn revoke(
+        &mut self,
+        clock: &dyn Clock,
+        access_token: AccessToken,
+    ) -> Result<AccessToken, Self::Error>;
+
+    async fn cleanup_expired(&mut self, clock: &dyn Clock) -> Result<usize, Self::Error>;
+);

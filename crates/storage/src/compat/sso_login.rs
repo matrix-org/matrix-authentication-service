@@ -18,7 +18,7 @@ use rand_core::RngCore;
 use ulid::Ulid;
 use url::Url;
 
-use crate::{pagination::Page, Clock, Pagination};
+use crate::{pagination::Page, repository_impl, Clock, Pagination};
 
 #[async_trait]
 pub trait CompatSsoLoginRepository: Send + Sync {
@@ -64,3 +64,39 @@ pub trait CompatSsoLoginRepository: Send + Sync {
         pagination: Pagination,
     ) -> Result<Page<CompatSsoLogin>, Self::Error>;
 }
+
+repository_impl!(CompatSsoLoginRepository:
+    async fn lookup(&mut self, id: Ulid) -> Result<Option<CompatSsoLogin>, Self::Error>;
+
+    async fn find_by_token(
+        &mut self,
+        login_token: &str,
+    ) -> Result<Option<CompatSsoLogin>, Self::Error>;
+
+    async fn add(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        login_token: String,
+        redirect_uri: Url,
+    ) -> Result<CompatSsoLogin, Self::Error>;
+
+    async fn fulfill(
+        &mut self,
+        clock: &dyn Clock,
+        compat_sso_login: CompatSsoLogin,
+        compat_session: &CompatSession,
+    ) -> Result<CompatSsoLogin, Self::Error>;
+
+    async fn exchange(
+        &mut self,
+        clock: &dyn Clock,
+        compat_sso_login: CompatSsoLogin,
+    ) -> Result<CompatSsoLogin, Self::Error>;
+
+    async fn list_paginated(
+        &mut self,
+        user: &User,
+        pagination: Pagination,
+    ) -> Result<Page<CompatSsoLogin>, Self::Error>;
+);

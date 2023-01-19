@@ -19,7 +19,7 @@ use oauth2_types::scope::Scope;
 use rand_core::RngCore;
 use ulid::Ulid;
 
-use crate::{pagination::Page, Clock, Pagination};
+use crate::{pagination::Page, repository_impl, Clock, Pagination};
 
 #[async_trait]
 pub trait UpstreamOAuthProviderRepository: Send + Sync {
@@ -51,3 +51,26 @@ pub trait UpstreamOAuthProviderRepository: Send + Sync {
     /// Get all upstream OAuth providers
     async fn all(&mut self) -> Result<Vec<UpstreamOAuthProvider>, Self::Error>;
 }
+
+repository_impl!(UpstreamOAuthProviderRepository:
+    async fn lookup(&mut self, id: Ulid) -> Result<Option<UpstreamOAuthProvider>, Self::Error>;
+
+    async fn add(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        issuer: String,
+        scope: Scope,
+        token_endpoint_auth_method: OAuthClientAuthenticationMethod,
+        token_endpoint_signing_alg: Option<JsonWebSignatureAlg>,
+        client_id: String,
+        encrypted_client_secret: Option<String>
+    ) -> Result<UpstreamOAuthProvider, Self::Error>;
+
+    async fn list_paginated(
+        &mut self,
+        pagination: Pagination
+    ) -> Result<Page<UpstreamOAuthProvider>, Self::Error>;
+
+    async fn all(&mut self) -> Result<Vec<UpstreamOAuthProvider>, Self::Error>;
+);

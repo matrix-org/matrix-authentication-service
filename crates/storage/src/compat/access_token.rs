@@ -18,7 +18,7 @@ use mas_data_model::{CompatAccessToken, CompatSession};
 use rand_core::RngCore;
 use ulid::Ulid;
 
-use crate::Clock;
+use crate::{repository_impl, Clock};
 
 #[async_trait]
 pub trait CompatAccessTokenRepository: Send + Sync {
@@ -50,3 +50,27 @@ pub trait CompatAccessTokenRepository: Send + Sync {
         compat_access_token: CompatAccessToken,
     ) -> Result<CompatAccessToken, Self::Error>;
 }
+
+repository_impl!(CompatAccessTokenRepository:
+    async fn lookup(&mut self, id: Ulid) -> Result<Option<CompatAccessToken>, Self::Error>;
+
+    async fn find_by_token(
+        &mut self,
+        access_token: &str,
+    ) -> Result<Option<CompatAccessToken>, Self::Error>;
+
+    async fn add(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        compat_session: &CompatSession,
+        token: String,
+        expires_after: Option<Duration>,
+    ) -> Result<CompatAccessToken, Self::Error>;
+
+    async fn expire(
+        &mut self,
+        clock: &dyn Clock,
+        compat_access_token: CompatAccessToken,
+    ) -> Result<CompatAccessToken, Self::Error>;
+);

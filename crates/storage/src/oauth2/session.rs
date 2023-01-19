@@ -17,7 +17,7 @@ use mas_data_model::{AuthorizationGrant, BrowserSession, Session, User};
 use rand_core::RngCore;
 use ulid::Ulid;
 
-use crate::{pagination::Page, Clock, Pagination};
+use crate::{pagination::Page, repository_impl, Clock, Pagination};
 
 #[async_trait]
 pub trait OAuth2SessionRepository: Send + Sync {
@@ -42,3 +42,24 @@ pub trait OAuth2SessionRepository: Send + Sync {
         pagination: Pagination,
     ) -> Result<Page<Session>, Self::Error>;
 }
+
+repository_impl!(OAuth2SessionRepository:
+    async fn lookup(&mut self, id: Ulid) -> Result<Option<Session>, Self::Error>;
+
+    async fn create_from_grant(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        grant: &AuthorizationGrant,
+        user_session: &BrowserSession,
+    ) -> Result<Session, Self::Error>;
+
+    async fn finish(&mut self, clock: &dyn Clock, session: Session)
+        -> Result<Session, Self::Error>;
+
+    async fn list_paginated(
+        &mut self,
+        user: &User,
+        pagination: Pagination,
+    ) -> Result<Page<Session>, Self::Error>;
+);

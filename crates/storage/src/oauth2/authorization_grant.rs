@@ -21,7 +21,7 @@ use rand_core::RngCore;
 use ulid::Ulid;
 use url::Url;
 
-use crate::Clock;
+use crate::{repository_impl, Clock};
 
 #[async_trait]
 pub trait OAuth2AuthorizationGrantRepository: Send + Sync {
@@ -67,3 +67,44 @@ pub trait OAuth2AuthorizationGrantRepository: Send + Sync {
         authorization_grant: AuthorizationGrant,
     ) -> Result<AuthorizationGrant, Self::Error>;
 }
+
+repository_impl!(OAuth2AuthorizationGrantRepository:
+    async fn add(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        client: &Client,
+        redirect_uri: Url,
+        scope: Scope,
+        code: Option<AuthorizationCode>,
+        state: Option<String>,
+        nonce: Option<String>,
+        max_age: Option<NonZeroU32>,
+        response_mode: ResponseMode,
+        response_type_id_token: bool,
+        requires_consent: bool,
+    ) -> Result<AuthorizationGrant, Self::Error>;
+
+    async fn lookup(&mut self, id: Ulid) -> Result<Option<AuthorizationGrant>, Self::Error>;
+
+    async fn find_by_code(&mut self, code: &str)
+        -> Result<Option<AuthorizationGrant>, Self::Error>;
+
+    async fn fulfill(
+        &mut self,
+        clock: &dyn Clock,
+        session: &Session,
+        authorization_grant: AuthorizationGrant,
+    ) -> Result<AuthorizationGrant, Self::Error>;
+
+    async fn exchange(
+        &mut self,
+        clock: &dyn Clock,
+        authorization_grant: AuthorizationGrant,
+    ) -> Result<AuthorizationGrant, Self::Error>;
+
+    async fn give_consent(
+        &mut self,
+        authorization_grant: AuthorizationGrant,
+    ) -> Result<AuthorizationGrant, Self::Error>;
+);

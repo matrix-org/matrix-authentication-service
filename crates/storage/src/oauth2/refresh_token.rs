@@ -17,7 +17,7 @@ use mas_data_model::{AccessToken, RefreshToken, Session};
 use rand_core::RngCore;
 use ulid::Ulid;
 
-use crate::Clock;
+use crate::{repository_impl, Clock};
 
 #[async_trait]
 pub trait OAuth2RefreshTokenRepository: Send + Sync {
@@ -49,3 +49,27 @@ pub trait OAuth2RefreshTokenRepository: Send + Sync {
         refresh_token: RefreshToken,
     ) -> Result<RefreshToken, Self::Error>;
 }
+
+repository_impl!(OAuth2RefreshTokenRepository:
+    async fn lookup(&mut self, id: Ulid) -> Result<Option<RefreshToken>, Self::Error>;
+
+    async fn find_by_token(
+        &mut self,
+        refresh_token: &str,
+    ) -> Result<Option<RefreshToken>, Self::Error>;
+
+    async fn add(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        session: &Session,
+        access_token: &AccessToken,
+        refresh_token: String,
+    ) -> Result<RefreshToken, Self::Error>;
+
+    async fn consume(
+        &mut self,
+        clock: &dyn Clock,
+        refresh_token: RefreshToken,
+    ) -> Result<RefreshToken, Self::Error>;
+);

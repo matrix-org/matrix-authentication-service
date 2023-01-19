@@ -35,7 +35,8 @@ impl Task for CleanupExpired {
     async fn run(&self) {
         let res = async move {
             let mut repo = PgRepository::from_pool(&self.0).await?;
-            repo.oauth2_access_token().cleanup_expired(&self.1).await
+            let res = repo.oauth2_access_token().cleanup_expired(&self.1).await;
+            res
         }
         .await;
 

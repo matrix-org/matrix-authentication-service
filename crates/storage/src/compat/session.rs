@@ -17,7 +17,7 @@ use mas_data_model::{CompatSession, Device, User};
 use rand_core::RngCore;
 use ulid::Ulid;
 
-use crate::Clock;
+use crate::{repository_impl, Clock};
 
 #[async_trait]
 pub trait CompatSessionRepository: Send + Sync {
@@ -42,3 +42,21 @@ pub trait CompatSessionRepository: Send + Sync {
         compat_session: CompatSession,
     ) -> Result<CompatSession, Self::Error>;
 }
+
+repository_impl!(CompatSessionRepository:
+    async fn lookup(&mut self, id: Ulid) -> Result<Option<CompatSession>, Self::Error>;
+
+    async fn add(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        user: &User,
+        device: Device,
+    ) -> Result<CompatSession, Self::Error>;
+
+    async fn finish(
+        &mut self,
+        clock: &dyn Clock,
+        compat_session: CompatSession,
+    ) -> Result<CompatSession, Self::Error>;
+);

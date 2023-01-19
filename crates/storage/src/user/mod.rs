@@ -17,7 +17,7 @@ use mas_data_model::User;
 use rand_core::RngCore;
 use ulid::Ulid;
 
-use crate::Clock;
+use crate::{repository_impl, Clock};
 
 mod email;
 mod password;
@@ -41,3 +41,15 @@ pub trait UserRepository: Send + Sync {
     ) -> Result<User, Self::Error>;
     async fn exists(&mut self, username: &str) -> Result<bool, Self::Error>;
 }
+
+repository_impl!(UserRepository:
+    async fn lookup(&mut self, id: Ulid) -> Result<Option<User>, Self::Error>;
+    async fn find_by_username(&mut self, username: &str) -> Result<Option<User>, Self::Error>;
+    async fn add(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        username: String,
+    ) -> Result<User, Self::Error>;
+    async fn exists(&mut self, username: &str) -> Result<bool, Self::Error>;
+);

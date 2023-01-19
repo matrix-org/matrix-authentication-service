@@ -17,11 +17,11 @@ use mas_data_model::{UpstreamOAuthLink, UpstreamOAuthProvider, User};
 use rand_core::RngCore;
 use ulid::Ulid;
 
-use crate::{pagination::Page, Clock, Pagination};
+use crate::{pagination::Page, repository_impl, Clock, Pagination};
 
 #[async_trait]
 pub trait UpstreamOAuthLinkRepository: Send + Sync {
-    type Error;
+    type Error: std::error::Error + Send + Sync;
 
     /// Lookup an upstream OAuth link by its ID
     async fn lookup(&mut self, id: Ulid) -> Result<Option<UpstreamOAuthLink>, Self::Error>;
@@ -56,3 +56,33 @@ pub trait UpstreamOAuthLinkRepository: Send + Sync {
         pagination: Pagination,
     ) -> Result<Page<UpstreamOAuthLink>, Self::Error>;
 }
+
+repository_impl!(UpstreamOAuthLinkRepository:
+    async fn lookup(&mut self, id: Ulid) -> Result<Option<UpstreamOAuthLink>, Self::Error>;
+
+    async fn find_by_subject(
+        &mut self,
+        upstream_oauth_provider: &UpstreamOAuthProvider,
+        subject: &str,
+    ) -> Result<Option<UpstreamOAuthLink>, Self::Error>;
+
+    async fn add(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        upstream_oauth_provider: &UpstreamOAuthProvider,
+        subject: String,
+    ) -> Result<UpstreamOAuthLink, Self::Error>;
+
+    async fn associate_to_user(
+        &mut self,
+        upstream_oauth_link: &UpstreamOAuthLink,
+        user: &User,
+    ) -> Result<(), Self::Error>;
+
+    async fn list_paginated(
+        &mut self,
+        user: &User,
+        pagination: Pagination,
+    ) -> Result<Page<UpstreamOAuthLink>, Self::Error>;
+);

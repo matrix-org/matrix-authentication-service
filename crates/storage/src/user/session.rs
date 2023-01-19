@@ -17,7 +17,7 @@ use mas_data_model::{BrowserSession, Password, UpstreamOAuthLink, User};
 use rand_core::RngCore;
 use ulid::Ulid;
 
-use crate::{pagination::Page, Clock, Pagination};
+use crate::{pagination::Page, repository_impl, Clock, Pagination};
 
 #[async_trait]
 pub trait BrowserSessionRepository: Send + Sync {
@@ -58,3 +58,40 @@ pub trait BrowserSessionRepository: Send + Sync {
         upstream_oauth_link: &UpstreamOAuthLink,
     ) -> Result<BrowserSession, Self::Error>;
 }
+
+repository_impl!(BrowserSessionRepository:
+    async fn lookup(&mut self, id: Ulid) -> Result<Option<BrowserSession>, Self::Error>;
+    async fn add(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        user: &User,
+    ) -> Result<BrowserSession, Self::Error>;
+    async fn finish(
+        &mut self,
+        clock: &dyn Clock,
+        user_session: BrowserSession,
+    ) -> Result<BrowserSession, Self::Error>;
+    async fn list_active_paginated(
+        &mut self,
+        user: &User,
+        pagination: Pagination,
+    ) -> Result<Page<BrowserSession>, Self::Error>;
+    async fn count_active(&mut self, user: &User) -> Result<usize, Self::Error>;
+
+    async fn authenticate_with_password(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        user_session: BrowserSession,
+        user_password: &Password,
+    ) -> Result<BrowserSession, Self::Error>;
+
+    async fn authenticate_with_upstream(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        user_session: BrowserSession,
+        upstream_oauth_link: &UpstreamOAuthLink,
+    ) -> Result<BrowserSession, Self::Error>;
+);
