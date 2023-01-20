@@ -43,10 +43,10 @@ impl SessionInfo {
     }
 
     /// Load the [`BrowserSession`] from database
-    pub async fn load_session<R: Repository>(
+    pub async fn load_session<E>(
         &self,
-        repo: &mut R,
-    ) -> Result<Option<BrowserSession>, R::Error> {
+        repo: &mut (impl Repository<Error = E> + ?Sized),
+    ) -> Result<Option<BrowserSession>, E> {
         let session_id = if let Some(id) = self.current {
             id
         } else {

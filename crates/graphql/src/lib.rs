@@ -34,11 +34,10 @@ use mas_storage::{
     oauth2::OAuth2ClientRepository,
     upstream_oauth2::{UpstreamOAuthLinkRepository, UpstreamOAuthProviderRepository},
     user::{BrowserSessionRepository, UserEmailRepository},
-    Pagination, Repository,
+    BoxRepository, Pagination,
 };
-use mas_storage_pg::PgRepository;
 use model::CreationEvent;
-use sqlx::PgPool;
+use tokio::sync::Mutex;
 
 use self::model::{
     BrowserSession, Cursor, Node, NodeCursor, NodeType, OAuth2Client, UpstreamOAuth2Link,
@@ -94,7 +93,7 @@ impl RootQuery {
         id: ID,
     ) -> Result<Option<OAuth2Client>, async_graphql::Error> {
         let id = NodeType::OAuth2Client.extract_ulid(&id)?;
-        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
 
         let client = repo.oauth2_client().lookup(id).await?;
 
@@ -124,7 +123,7 @@ impl RootQuery {
     ) -> Result<Option<BrowserSession>, async_graphql::Error> {
         let id = NodeType::BrowserSession.extract_ulid(&id)?;
         let session = ctx.data_opt::<mas_data_model::BrowserSession>().cloned();
-        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
 
         let Some(session) = session else { return Ok(None) };
         let current_user = session.user;
@@ -150,7 +149,7 @@ impl RootQuery {
     ) -> Result<Option<UserEmail>, async_graphql::Error> {
         let id = NodeType::UserEmail.extract_ulid(&id)?;
         let session = ctx.data_opt::<mas_data_model::BrowserSession>().cloned();
-        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
 
         let Some(session) = session else { return Ok(None) };
         let current_user = session.user;
@@ -172,7 +171,7 @@ impl RootQuery {
     ) -> Result<Option<UpstreamOAuth2Link>, async_graphql::Error> {
         let id = NodeType::UpstreamOAuth2Link.extract_ulid(&id)?;
         let session = ctx.data_opt::<mas_data_model::BrowserSession>().cloned();
-        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
 
         let Some(session) = session else { return Ok(None) };
         let current_user = session.user;
@@ -192,7 +191,7 @@ impl RootQuery {
         id: ID,
     ) -> Result<Option<UpstreamOAuth2Provider>, async_graphql::Error> {
         let id = NodeType::UpstreamOAuth2Provider.extract_ulid(&id)?;
-        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
 
         let provider = repo.upstream_oauth_provider().lookup(id).await?;
 
@@ -211,7 +210,7 @@ impl RootQuery {
         #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
         #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
     ) -> Result<Connection<Cursor, UpstreamOAuth2Provider>, async_graphql::Error> {
-        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
 
         query(
             after,

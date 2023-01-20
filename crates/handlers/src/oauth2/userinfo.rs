@@ -31,9 +31,8 @@ use mas_router::UrlBuilder;
 use mas_storage::{
     oauth2::OAuth2ClientRepository,
     user::{BrowserSessionRepository, UserEmailRepository},
-    BoxClock, BoxRng, Repository,
+    BoxClock, BoxRepository, BoxRng,
 };
-use mas_storage_pg::PgRepository;
 use oauth2_types::scope;
 use serde::Serialize;
 use serde_with::skip_serializing_none;
@@ -65,7 +64,7 @@ pub enum RouteError {
 
     #[error("failed to authenticate")]
     AuthorizationVerificationError(
-        #[from] AuthorizationVerificationError<mas_storage_pg::DatabaseError>,
+        #[from] AuthorizationVerificationError<mas_storage::RepositoryError>,
     ),
 
     #[error("no suitable key found for signing")]
@@ -78,7 +77,7 @@ pub enum RouteError {
     NoSuchBrowserSession,
 }
 
-impl_from_error_for_route!(mas_storage_pg::DatabaseError);
+impl_from_error_for_route!(mas_storage::RepositoryError);
 impl_from_error_for_route!(mas_keystore::WrongAlgorithmError);
 impl_from_error_for_route!(mas_jose::jwt::JwtSignatureError);
 
@@ -100,11 +99,11 @@ pub async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
     State(url_builder): State<UrlBuilder>,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
     State(key_store): State<Keystore>,
     user_authorization: UserAuthorization,
 ) -> Result<Response, RouteError> {
-    let session = user_authorization.protected(&mut repo, &clock).await?;
+    let session = user_authorization.protected(&mut *repo, &clock).await?;
 
     let browser_session = repo
         .browser_session()

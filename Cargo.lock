@@ -2804,11 +2804,10 @@ dependencies = [
  "chrono",
  "mas-data-model",
  "mas-storage",
- "mas-storage-pg",
  "oauth2-types",
  "serde",
- "sqlx",
  "thiserror",
+ "tokio",
  "tracing",
  "ulid",
  "url",
@@ -3101,6 +3100,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "chrono",
+ "futures-util",
  "mas-data-model",
  "mas-iana",
  "mas-jose",
@@ -3117,6 +3117,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "chrono",
+ "futures-util",
  "mas-data-model",
  "mas-iana",
  "mas-jose",

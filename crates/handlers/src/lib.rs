@@ -43,8 +43,7 @@ use mas_http::CorsLayerExt;
 use mas_keystore::{Encrypter, Keystore};
 use mas_policy::PolicyFactory;
 use mas_router::{Route, UrlBuilder};
-use mas_storage::{BoxClock, BoxRng};
-use mas_storage_pg::PgRepository;
+use mas_storage::{BoxClock, BoxRepository, BoxRng};
 use mas_templates::{ErrorContext, Templates};
 use passwords::PasswordManager;
 use sqlx::PgPool;
@@ -98,7 +97,7 @@ where
     <B as HttpBody>::Error: std::error::Error + Send + Sync,
     S: Clone + Send + Sync + 'static,
     mas_graphql::Schema: FromRef<S>,
-    PgPool: FromRef<S>,
+    BoxRepository: FromRequestParts<S>,
     Encrypter: FromRef<S>,
 {
     let mut router = Router::new().route(
@@ -158,7 +157,7 @@ where
     Keystore: FromRef<S>,
     UrlBuilder: FromRef<S>,
     Arc<PolicyFactory>: FromRef<S>,
-    PgRepository: FromRequestParts<S>,
+    BoxRepository: FromRequestParts<S>,
     Encrypter: FromRef<S>,
     HttpClientFactory: FromRef<S>,
     BoxClock: FromRequestParts<S>,
@@ -213,7 +212,7 @@ where
     <B as HttpBody>::Error: std::error::Error + Send + Sync,
     S: Clone + Send + Sync + 'static,
     UrlBuilder: FromRef<S>,
-    PgRepository: FromRequestParts<S>,
+    BoxRepository: FromRequestParts<S>,
     MatrixHomeserver: FromRef<S>,
     PasswordManager: FromRef<S>,
     BoxClock: FromRequestParts<S>,
@@ -258,7 +257,7 @@ where
     S: Clone + Send + Sync + 'static,
     UrlBuilder: FromRef<S>,
     Arc<PolicyFactory>: FromRef<S>,
-    PgRepository: FromRequestParts<S>,
+    BoxRepository: FromRequestParts<S>,
     Encrypter: FromRef<S>,
     Templates: FromRef<S>,
     Mailer: FromRef<S>,
@@ -401,7 +400,7 @@ async fn test_state(pool: sqlx::PgPool) -> Result<AppState, anyhow::Error> {
 
     let policy_factory = Arc::new(policy_factory);
 
-    let graphql_schema = graphql_schema(&pool);
+    let graphql_schema = graphql_schema();
 
     let http_client_factory = HttpClientFactory::new(10);
 

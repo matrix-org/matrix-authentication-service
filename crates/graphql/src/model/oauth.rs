@@ -14,10 +14,9 @@
 
 use anyhow::Context as _;
 use async_graphql::{Context, Description, Object, ID};
-use mas_storage::{oauth2::OAuth2ClientRepository, user::BrowserSessionRepository, Repository};
-use mas_storage_pg::PgRepository;
+use mas_storage::{oauth2::OAuth2ClientRepository, user::BrowserSessionRepository, BoxRepository};
 use oauth2_types::scope::Scope;
-use sqlx::PgPool;
+use tokio::sync::Mutex;
 use ulid::Ulid;
 use url::Url;
 
@@ -37,7 +36,7 @@ impl OAuth2Session {
 
     /// OAuth 2.0 client used by this session.
     pub async fn client(&self, ctx: &Context<'_>) -> Result<OAuth2Client, async_graphql::Error> {
-        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
         let client = repo
             .oauth2_client()
             .lookup(self.0.client_id)
@@ -57,7 +56,7 @@ impl OAuth2Session {
         &self,
         ctx: &Context<'_>,
     ) -> Result<BrowserSession, async_graphql::Error> {
-        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
         let browser_session = repo
             .browser_session()
             .lookup(self.0.user_session_id)
@@ -69,7 +68,7 @@ impl OAuth2Session {
 
     /// User authorized for this session.
     pub async fn user(&self, ctx: &Context<'_>) -> Result<User, async_graphql::Error> {
-        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
         let browser_session = repo
             .browser_session()
             .lookup(self.0.user_session_id)
@@ -139,7 +138,7 @@ impl OAuth2Consent {
 
     /// OAuth 2.0 client for which the user granted access.
     pub async fn client(&self, ctx: &Context<'_>) -> Result<OAuth2Client, async_graphql::Error> {
-        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
         let client = repo
             .oauth2_client()
             .lookup(self.client_id)

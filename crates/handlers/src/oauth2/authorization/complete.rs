@@ -27,9 +27,8 @@ use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{
     oauth2::{OAuth2AuthorizationGrantRepository, OAuth2ClientRepository, OAuth2SessionRepository},
-    BoxClock, BoxRng, Repository,
+    BoxClock, BoxRepository, BoxRng,
 };
-use mas_storage_pg::PgRepository;
 use mas_templates::Templates;
 use oauth2_types::requests::{AccessTokenResponse, AuthorizationResponse};
 use thiserror::Error;
@@ -69,7 +68,7 @@ impl IntoResponse for RouteError {
     }
 }
 
-impl_from_error_for_route!(mas_storage_pg::DatabaseError);
+impl_from_error_for_route!(mas_storage::RepositoryError);
 impl_from_error_for_route!(mas_policy::LoadError);
 impl_from_error_for_route!(mas_policy::InstanciateError);
 impl_from_error_for_route!(mas_policy::EvaluationError);
@@ -81,13 +80,13 @@ pub(crate) async fn get(
     clock: BoxClock,
     State(policy_factory): State<Arc<PolicyFactory>>,
     State(templates): State<Templates>,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(grant_id): Path<Ulid>,
 ) -> Result<Response, RouteError> {
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut repo).await?;
+    let maybe_session = session_info.load_session(&mut *repo).await?;
 
     let grant = repo
         .oauth2_authorization_grant()
@@ -147,7 +146,7 @@ pub enum GrantCompletionError {
     NoSuchClient,
 }
 
-impl_from_error_for_route!(GrantCompletionError: mas_storage_pg::DatabaseError);
+impl_from_error_for_route!(GrantCompletionError: mas_storage::RepositoryError);
 impl_from_error_for_route!(GrantCompletionError: super::callback::IntoCallbackDestinationError);
 impl_from_error_for_route!(GrantCompletionError: mas_policy::LoadError);
 impl_from_error_for_route!(GrantCompletionError: mas_policy::InstanciateError);
@@ -159,7 +158,7 @@ pub(crate) async fn complete(
     grant: AuthorizationGrant,
     browser_session: BrowserSession,
     policy_factory: &PolicyFactory,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
 ) -> Result<AuthorizationResponse<Option<AccessTokenResponse>>, GrantCompletionError> {
     // Verify that the grant is in a pending stage
     if !grant.stage.is_pending() {

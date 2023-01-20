@@ -72,10 +72,10 @@ pub enum Credentials {
 }
 
 impl Credentials {
-    pub async fn fetch<'r, R>(&self, repo: &'r mut R) -> Result<Option<Client>, R::Error>
-    where
-        R: Repository,
-    {
+    pub async fn fetch<E>(
+        &self,
+        repo: &mut (impl Repository<Error = E> + ?Sized),
+    ) -> Result<Option<Client>, E> {
         let client_id = match self {
             Credentials::None { client_id }
             | Credentials::ClientSecretBasic { client_id, .. }

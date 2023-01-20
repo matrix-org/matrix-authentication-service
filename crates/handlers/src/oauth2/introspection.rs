@@ -25,9 +25,8 @@ use mas_storage::{
     compat::{CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository},
     oauth2::{OAuth2AccessTokenRepository, OAuth2RefreshTokenRepository, OAuth2SessionRepository},
     user::{BrowserSessionRepository, UserRepository},
-    BoxClock, Clock, Repository,
+    BoxClock, BoxRepository, Clock,
 };
-use mas_storage_pg::PgRepository;
 use oauth2_types::{
     errors::{ClientError, ClientErrorCode},
     requests::{IntrospectionRequest, IntrospectionResponse},
@@ -96,7 +95,7 @@ impl IntoResponse for RouteError {
     }
 }
 
-impl_from_error_for_route!(mas_storage_pg::DatabaseError);
+impl_from_error_for_route!(mas_storage::RepositoryError);
 
 impl From<TokenFormatError> for RouteError {
     fn from(_e: TokenFormatError) -> Self {
@@ -125,13 +124,13 @@ const API_SCOPE: ScopeToken = ScopeToken::from_static("urn:matrix:org.matrix.msc
 pub(crate) async fn post(
     clock: BoxClock,
     State(http_client_factory): State<HttpClientFactory>,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
     State(encrypter): State<Encrypter>,
     client_authorization: ClientAuthorization<IntrospectionRequest>,
 ) -> Result<impl IntoResponse, RouteError> {
     let client = client_authorization
         .credentials
-        .fetch(&mut repo)
+        .fetch(&mut *repo)
         .await
         .unwrap()
         .ok_or(RouteError::ClientNotFound)?;

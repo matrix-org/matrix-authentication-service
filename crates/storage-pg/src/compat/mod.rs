@@ -103,7 +103,7 @@ mod tests {
         const SECOND_TOKEN: &str = "second_access_token";
         let mut rng = ChaChaRng::seed_from_u64(42);
         let clock = MockClock::default();
-        let mut repo = PgRepository::from_pool(&pool).await.unwrap();
+        let mut repo = PgRepository::from_pool(&pool).await.unwrap().boxed();
 
         // Create a user
         let user = repo
@@ -139,7 +139,7 @@ mod tests {
         repo.save().await.unwrap();
 
         {
-            let mut repo = PgRepository::from_pool(&pool).await.unwrap();
+            let mut repo = PgRepository::from_pool(&pool).await.unwrap().boxed();
             // Adding the same token a second time should conflict
             assert!(repo
                 .compat_access_token()
@@ -156,7 +156,7 @@ mod tests {
         }
 
         // Grab a new repo
-        let mut repo = PgRepository::from_pool(&pool).await.unwrap();
+        let mut repo = PgRepository::from_pool(&pool).await.unwrap().boxed();
 
         // Looking up via ID works
         let token_lookup = repo
@@ -223,7 +223,7 @@ mod tests {
         const REFRESH_TOKEN: &str = "refresh_token";
         let mut rng = ChaChaRng::seed_from_u64(42);
         let clock = MockClock::default();
-        let mut repo = PgRepository::from_pool(&pool).await.unwrap();
+        let mut repo = PgRepository::from_pool(&pool).await.unwrap().boxed();
 
         // Create a user
         let user = repo

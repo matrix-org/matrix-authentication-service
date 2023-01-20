@@ -33,9 +33,8 @@ use mas_policy::PolicyFactory;
 use mas_router::Route;
 use mas_storage::{
     user::{BrowserSessionRepository, UserEmailRepository, UserPasswordRepository, UserRepository},
-    BoxClock, BoxRng, Repository,
+    BoxClock, BoxRepository, BoxRng, Repository,
 };
-use mas_storage_pg::PgRepository;
 use mas_templates::{
     EmailVerificationContext, FieldError, FormError, RegisterContext, RegisterFormField,
     TemplateContext, Templates, ToFormState,
@@ -63,14 +62,14 @@ pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
     State(templates): State<Templates>,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut repo).await?;
+    let maybe_session = session_info.load_session(&mut *repo).await?;
 
     if maybe_session.is_some() {
         let reply = query.go_next();
@@ -80,7 +79,7 @@ pub(crate) async fn get(
             RegisterContext::default(),
             query,
             csrf_token,
-            &mut repo,
+            &mut *repo,
             &templates,
         )
         .await?;
@@ -97,7 +96,7 @@ pub(crate) async fn post(
     State(mailer): State<Mailer>,
     State(policy_factory): State<Arc<PolicyFactory>>,
     State(templates): State<Templates>,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<RegisterForm>>,
@@ -175,7 +174,7 @@ pub(crate) async fn post(
             RegisterContext::default().with_form_state(state),
             query,
             csrf_token,
-            &mut repo,
+            &mut *repo,
             &templates,
         )
         .await?;
@@ -234,7 +233,7 @@ async fn render(
     ctx: RegisterContext,
     action: OptionalPostAuthAction,
     csrf_token: CsrfToken,
-    repo: &mut impl Repository,
+    repo: &mut (impl Repository + ?Sized),
     templates: &Templates,
 ) -> Result<String, FancyError> {
     let next = action.load_context(repo).await?;

@@ -22,9 +22,8 @@ use mas_storage::{
         CompatSsoLoginRepository,
     },
     user::{UserPasswordRepository, UserRepository},
-    BoxClock, BoxRng, Clock, Repository,
+    BoxClock, BoxRepository, BoxRng, Clock,
 };
-use mas_storage_pg::PgRepository;
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none, DurationMilliSeconds};
@@ -154,7 +153,7 @@ pub enum RouteError {
     InvalidLoginToken,
 }
 
-impl_from_error_for_route!(mas_storage_pg::DatabaseError);
+impl_from_error_for_route!(mas_storage::RepositoryError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
@@ -196,7 +195,7 @@ pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
     State(password_manager): State<PasswordManager>,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
     State(homeserver): State<MatrixHomeserver>,
     Json(input): Json<RequestBody>,
 ) -> Result<impl IntoResponse, RouteError> {
@@ -262,7 +261,7 @@ pub(crate) async fn post(
 }
 
 async fn token_login(
-    repo: &mut PgRepository,
+    repo: &mut BoxRepository,
     clock: &dyn Clock,
     token: &str,
 ) -> Result<(CompatSession, User), RouteError> {
@@ -331,7 +330,7 @@ async fn user_password_login(
     mut rng: &mut (impl RngCore + CryptoRng + Send),
     clock: &impl Clock,
     password_manager: &PasswordManager,
-    repo: &mut PgRepository,
+    repo: &mut BoxRepository,
     username: String,
     password: String,
 ) -> Result<(CompatSession, User), RouteError> {

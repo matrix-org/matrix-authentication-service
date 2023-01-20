@@ -30,9 +30,8 @@ use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{
     oauth2::{OAuth2AuthorizationGrantRepository, OAuth2ClientRepository},
-    BoxClock, BoxRng, Repository,
+    BoxClock, BoxRepository, BoxRng,
 };
-use mas_storage_pg::PgRepository;
 use mas_templates::{ConsentContext, PolicyViolationContext, TemplateContext, Templates};
 use thiserror::Error;
 use ulid::Ulid;
@@ -61,7 +60,7 @@ pub enum RouteError {
 }
 
 impl_from_error_for_route!(mas_templates::TemplateError);
-impl_from_error_for_route!(mas_storage_pg::DatabaseError);
+impl_from_error_for_route!(mas_storage::RepositoryError);
 impl_from_error_for_route!(mas_policy::LoadError);
 impl_from_error_for_route!(mas_policy::InstanciateError);
 impl_from_error_for_route!(mas_policy::EvaluationError);
@@ -77,13 +76,13 @@ pub(crate) async fn get(
     clock: BoxClock,
     State(policy_factory): State<Arc<PolicyFactory>>,
     State(templates): State<Templates>,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(grant_id): Path<Ulid>,
 ) -> Result<Response, RouteError> {
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut repo).await?;
+    let maybe_session = session_info.load_session(&mut *repo).await?;
 
     let grant = repo
         .oauth2_authorization_grant()
@@ -130,7 +129,7 @@ pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
     State(policy_factory): State<Arc<PolicyFactory>>,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(grant_id): Path<Ulid>,
     Form(form): Form<ProtectedForm<()>>,
@@ -139,7 +138,7 @@ pub(crate) async fn post(
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut repo).await?;
+    let maybe_session = session_info.load_session(&mut *repo).await?;
 
     let grant = repo
         .oauth2_authorization_grant()

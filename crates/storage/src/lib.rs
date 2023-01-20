@@ -28,21 +28,21 @@
     clippy::module_name_repetitions
 )]
 
+use rand_core::CryptoRngCore;
+
 pub mod clock;
+pub mod pagination;
+pub(crate) mod repository;
 
 pub mod compat;
 pub mod oauth2;
-pub mod pagination;
-pub(crate) mod repository;
 pub mod upstream_oauth2;
 pub mod user;
-
-use rand_core::CryptoRngCore;
 
 pub use self::{
     clock::{Clock, SystemClock},
     pagination::{Page, Pagination},
-    repository::Repository,
+    repository::{BoxRepository, Repository, RepositoryError},
 };
 
 pub struct MapErr<Repository, Mapper> {
@@ -86,7 +86,6 @@ macro_rules! repository_impl {
         where
             R: $repo_trait,
             F: FnMut(<R as $repo_trait>::Error) -> E + ::std::marker::Send + ::std::marker::Sync,
-            E: ::std::error::Error + ::std::marker::Send + ::std::marker::Sync,
         {
             type Error = E;
 

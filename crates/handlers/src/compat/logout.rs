@@ -18,9 +18,8 @@ use hyper::StatusCode;
 use mas_data_model::TokenType;
 use mas_storage::{
     compat::{CompatAccessTokenRepository, CompatSessionRepository},
-    BoxClock, Clock, Repository,
+    BoxClock, BoxRepository, Clock,
 };
-use mas_storage_pg::PgRepository;
 use thiserror::Error;
 
 use super::MatrixError;
@@ -41,7 +40,7 @@ pub enum RouteError {
     InvalidAuthorization,
 }
 
-impl_from_error_for_route!(mas_storage_pg::DatabaseError);
+impl_from_error_for_route!(mas_storage::RepositoryError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
@@ -68,7 +67,7 @@ impl IntoResponse for RouteError {
 
 pub(crate) async fn post(
     clock: BoxClock,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
     maybe_authorization: Option<TypedHeader<Authorization<Bearer>>>,
 ) -> Result<impl IntoResponse, RouteError> {
     let TypedHeader(authorization) = maybe_authorization.ok_or(RouteError::MissingAuthorization)?;

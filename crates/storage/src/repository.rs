@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use futures_util::{future::BoxFuture, FutureExt, TryFutureExt};
+use thiserror::Error;
+
 use crate::{
     compat::{
         CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository,
@@ -31,6 +34,23 @@ use crate::{
 
 pub trait Repository: Send {
     type Error: std::error::Error + Send + Sync + 'static;
+
+    fn map_err<Mapper>(self, mapper: Mapper) -> MapErr<Self, Mapper>
+    where
+        Self: Sized,
+    {
+        MapErr::new(self, mapper)
+    }
+
+    fn boxed(self) -> BoxRepository<Self::Error>
+    where
+        Self: Sized + Sync + 'static,
+    {
+        Box::new(self)
+    }
+
+    fn save(self: Box<Self>) -> BoxFuture<'static, Result<(), Self::Error>>;
+    fn cancel(self: Box<Self>) -> BoxFuture<'static, Result<(), Self::Error>>;
 
     fn upstream_oauth_link<'c>(
         &'c mut self,
@@ -91,13 +111,43 @@ pub trait Repository: Send {
     ) -> Box<dyn CompatRefreshTokenRepository<Error = Self::Error> + 'c>;
 }
 
+/// An opaque, type-erased error
+#[derive(Debug, Error)]
+#[error(transparent)]
+pub struct RepositoryError {
+    source: Box<dyn std::error::Error + Send + Sync + 'static>,
+}
+
+impl RepositoryError {
+    pub fn from_error<E>(value: E) -> Self
+    where
+        E: std::error::Error + Send + Sync + 'static,
+    {
+        Self {
+            source: Box::new(value),
+        }
+    }
+}
+
+pub type BoxRepository<E = RepositoryError> =
+    Box<dyn Repository<Error = E> + Send + Sync + 'static>;
+
 impl<R, F, E> Repository for crate::MapErr<R, F>
 where
     R: Repository,
-    F: FnMut(R::Error) -> E + Send + Sync,
+    R::Error: 'static,
+    F: FnMut(R::Error) -> E + Send + Sync + 'static,
     E: std::error::Error + Send + Sync + 'static,
 {
     type Error = E;
+
+    fn save(self: Box<Self>) -> BoxFuture<'static, Result<(), Self::Error>> {
+        Box::new(self.inner).save().map_err(self.mapper).boxed()
+    }
+
+    fn cancel(self: Box<Self>) -> BoxFuture<'static, Result<(), Self::Error>> {
+        Box::new(self.inner).cancel().map_err(self.mapper).boxed()
+    }
 
     fn upstream_oauth_link<'c>(
         &'c mut self,

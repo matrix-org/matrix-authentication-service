@@ -19,8 +19,7 @@ use axum::{
 };
 use hyper::StatusCode;
 use mas_router::{CompatLoginSsoAction, CompatLoginSsoComplete, UrlBuilder};
-use mas_storage::{compat::CompatSsoLoginRepository, BoxClock, BoxRng, Repository};
-use mas_storage_pg::PgRepository;
+use mas_storage::{compat::CompatSsoLoginRepository, BoxClock, BoxRepository, BoxRng};
 use rand::distributions::{Alphanumeric, DistString};
 use serde::Deserialize;
 use serde_with::serde;
@@ -48,7 +47,7 @@ pub enum RouteError {
     InvalidRedirectUrl,
 }
 
-impl_from_error_for_route!(mas_storage_pg::DatabaseError);
+impl_from_error_for_route!(mas_storage::RepositoryError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
@@ -59,7 +58,7 @@ impl IntoResponse for RouteError {
 pub async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
     State(url_builder): State<UrlBuilder>,
     Query(params): Query<Params>,
 ) -> Result<impl IntoResponse, RouteError> {

@@ -29,7 +29,7 @@ use crate::PgRepository;
 async fn test_user_repo(pool: PgPool) {
     const USERNAME: &str = "john";
 
-    let mut repo = PgRepository::from_pool(&pool).await.unwrap();
+    let mut repo = PgRepository::from_pool(&pool).await.unwrap().boxed();
     let mut rng = ChaChaRng::seed_from_u64(42);
     let clock = MockClock::default();
 
@@ -77,7 +77,7 @@ async fn test_user_email_repo(pool: PgPool) {
     const CODE2: &str = "543210";
     const EMAIL: &str = "john@example.com";
 
-    let mut repo = PgRepository::from_pool(&pool).await.unwrap();
+    let mut repo = PgRepository::from_pool(&pool).await.unwrap().boxed();
     let mut rng = ChaChaRng::seed_from_u64(42);
     let clock = MockClock::default();
 
@@ -259,7 +259,7 @@ async fn test_user_password_repo(pool: PgPool) {
     const FIRST_PASSWORD_HASH: &str = "doesntmatter";
     const SECOND_PASSWORD_HASH: &str = "alsodoesntmatter";
 
-    let mut repo = PgRepository::from_pool(&pool).await.unwrap();
+    let mut repo = PgRepository::from_pool(&pool).await.unwrap().boxed();
     let mut rng = ChaChaRng::seed_from_u64(42);
     let clock = MockClock::default();
 

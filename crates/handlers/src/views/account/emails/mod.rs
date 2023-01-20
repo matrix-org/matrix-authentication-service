@@ -28,8 +28,7 @@ use mas_data_model::{BrowserSession, User, UserEmail};
 use mas_email::Mailer;
 use mas_keystore::Encrypter;
 use mas_router::Route;
-use mas_storage::{user::UserEmailRepository, BoxClock, BoxRng, Clock, Repository};
-use mas_storage_pg::PgRepository;
+use mas_storage::{user::UserEmailRepository, BoxClock, BoxRepository, BoxRng, Clock, Repository};
 use mas_templates::{AccountEmailsContext, EmailVerificationContext, TemplateContext, Templates};
 use rand::{distributions::Uniform, Rng};
 use serde::Deserialize;
@@ -51,28 +50,28 @@ pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
     State(templates): State<Templates>,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut repo).await?;
+    let maybe_session = session_info.load_session(&mut *repo).await?;
 
     if let Some(session) = maybe_session {
-        render(&mut rng, &clock, templates, session, cookie_jar, &mut repo).await
+        render(&mut rng, &clock, templates, session, cookie_jar, &mut *repo).await
     } else {
         let login = mas_router::Login::default();
         Ok((cookie_jar, login.go()).into_response())
     }
 }
 
-async fn render(
+async fn render<E: std::error::Error>(
     rng: impl Rng + Send,
     clock: &impl Clock,
     templates: Templates,
     session: BrowserSession,
     cookie_jar: PrivateCookieJar<Encrypter>,
-    repo: &mut impl Repository,
+    repo: &mut (impl Repository<Error = E> + ?Sized),
 ) -> Result<Response, FancyError> {
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock, rng);
 
@@ -87,9 +86,9 @@ async fn render(
     Ok((cookie_jar, Html(content)).into_response())
 }
 
-async fn start_email_verification(
+async fn start_email_verification<E: std::error::Error + Send + Sync + 'static>(
     mailer: &Mailer,
-    repo: &mut impl Repository,
+    repo: &mut (impl Repository<Error = E> + ?Sized),
     mut rng: impl Rng + Send,
     clock: &impl Clock,
     user: &User,
@@ -124,14 +123,14 @@ pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
     State(templates): State<Templates>,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
     State(mailer): State<Mailer>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<ManagementForm>>,
 ) -> Result<Response, FancyError> {
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut repo).await?;
+    let maybe_session = session_info.load_session(&mut *repo).await?;
 
     let mut session = if let Some(session) = maybe_session {
         session
@@ -150,7 +149,7 @@ pub(crate) async fn post(
                 .await?;
 
             let next = mas_router::AccountVerifyEmail::new(email.id);
-            start_email_verification(&mailer, &mut repo, &mut rng, &clock, &session.user, email)
+            start_email_verification(&mailer, &mut *repo, &mut rng, &clock, &session.user, email)
                 .await?;
             repo.save().await?;
             return Ok((cookie_jar, next.go()).into_response());
@@ -169,7 +168,7 @@ pub(crate) async fn post(
             }
 
             let next = mas_router::AccountVerifyEmail::new(email.id);
-            start_email_verification(&mailer, &mut repo, &mut rng, &clock, &session.user, email)
+            start_email_verification(&mailer, &mut *repo, &mut rng, &clock, &session.user, email)
                 .await?;
             repo.save().await?;
             return Ok((cookie_jar, next.go()).into_response());
@@ -212,7 +211,7 @@ pub(crate) async fn post(
         templates.clone(),
         session,
         cookie_jar,
-        &mut repo,
+        &mut *repo,
     )
     .await?;
 

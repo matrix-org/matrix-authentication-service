@@ -20,8 +20,7 @@ use axum_extra::extract::PrivateCookieJar;
 use mas_axum_utils::{csrf::CsrfExt, FancyError, SessionInfoExt};
 use mas_keystore::Encrypter;
 use mas_router::UrlBuilder;
-use mas_storage::{BoxClock, BoxRng};
-use mas_storage_pg::PgRepository;
+use mas_storage::{BoxClock, BoxRepository, BoxRng};
 use mas_templates::{IndexContext, TemplateContext, Templates};
 
 pub async fn get(
@@ -29,12 +28,12 @@ pub async fn get(
     clock: BoxClock,
     State(templates): State<Templates>,
     State(url_builder): State<UrlBuilder>,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<impl IntoResponse, FancyError> {
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
-    let session = session_info.load_session(&mut repo).await?;
+    let session = session_info.load_session(&mut *repo).await?;
 
     let ctx = IndexContext::new(url_builder.oidc_discovery())
         .maybe_with_session(session)

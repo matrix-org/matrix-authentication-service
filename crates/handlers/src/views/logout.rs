@@ -20,12 +20,11 @@ use mas_axum_utils::{
 };
 use mas_keystore::Encrypter;
 use mas_router::{PostAuthAction, Route};
-use mas_storage::{user::BrowserSessionRepository, BoxClock, Repository};
-use mas_storage_pg::PgRepository;
+use mas_storage::{user::BrowserSessionRepository, BoxClock, BoxRepository};
 
 pub(crate) async fn post(
     clock: BoxClock,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<Option<PostAuthAction>>>,
 ) -> Result<impl IntoResponse, FancyError> {
@@ -33,7 +32,7 @@ pub(crate) async fn post(
 
     let (session_info, mut cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut repo).await?;
+    let maybe_session = session_info.load_session(&mut *repo).await?;
 
     if let Some(session) = maybe_session {
         repo.browser_session().finish(&clock, session).await?;

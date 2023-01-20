@@ -22,10 +22,9 @@ use mas_storage::{
     oauth2::OAuth2SessionRepository,
     upstream_oauth2::UpstreamOAuthLinkRepository,
     user::{BrowserSessionRepository, UserEmailRepository},
-    Pagination, Repository,
+    BoxRepository, Pagination,
 };
-use mas_storage_pg::PgRepository;
-use sqlx::PgPool;
+use tokio::sync::Mutex;
 
 use super::{
     compat_sessions::CompatSsoLogin, BrowserSession, Cursor, NodeCursor, NodeType, OAuth2Session,
@@ -65,10 +64,9 @@ impl User {
         &self,
         ctx: &Context<'_>,
     ) -> Result<Option<UserEmail>, async_graphql::Error> {
-        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
 
         let mut user_email_repo = repo.user_email();
-
         Ok(user_email_repo.get_primary(&self.0).await?.map(UserEmail))
     }
 
@@ -84,7 +82,7 @@ impl User {
         #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
         #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
     ) -> Result<Connection<Cursor, CompatSsoLogin>, async_graphql::Error> {
-        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
 
         query(
             after,
@@ -131,7 +129,7 @@ impl User {
         #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
         #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
     ) -> Result<Connection<Cursor, BrowserSession>, async_graphql::Error> {
-        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
 
         query(
             after,
@@ -178,7 +176,7 @@ impl User {
         #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
         #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
     ) -> Result<Connection<Cursor, UserEmail, UserEmailsPagination>, async_graphql::Error> {
-        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
 
         query(
             after,
@@ -229,7 +227,7 @@ impl User {
         #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
         #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
     ) -> Result<Connection<Cursor, OAuth2Session>, async_graphql::Error> {
-        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
 
         query(
             after,
@@ -276,7 +274,7 @@ impl User {
         #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
         #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
     ) -> Result<Connection<Cursor, UpstreamOAuth2Link>, async_graphql::Error> {
-        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
 
         query(
             after,
@@ -350,7 +348,7 @@ pub struct UserEmailsPagination(mas_data_model::User);
 impl UserEmailsPagination {
     /// Identifies the total count of items in the connection.
     async fn total_count(&self, ctx: &Context<'_>) -> Result<usize, async_graphql::Error> {
-        let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
         let count = repo.user_email().count(&self.0).await?;
         Ok(count)
     }

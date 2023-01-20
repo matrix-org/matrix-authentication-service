@@ -31,9 +31,8 @@ use mas_keystore::Encrypter;
 use mas_router::{CompatLoginSsoAction, PostAuthAction, Route};
 use mas_storage::{
     compat::{CompatSessionRepository, CompatSsoLoginRepository},
-    BoxClock, BoxRng, Clock, Repository,
+    BoxClock, BoxRepository, BoxRng, Clock,
 };
-use mas_storage_pg::PgRepository;
 use mas_templates::{CompatSsoContext, ErrorContext, TemplateContext, Templates};
 use serde::{Deserialize, Serialize};
 use ulid::Ulid;
@@ -55,7 +54,7 @@ pub struct Params {
 pub async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
     State(templates): State<Templates>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(id): Path<Ulid>,
@@ -64,7 +63,7 @@ pub async fn get(
     let (session_info, cookie_jar) = cookie_jar.session_info();
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
 
-    let maybe_session = session_info.load_session(&mut repo).await?;
+    let maybe_session = session_info.load_session(&mut *repo).await?;
 
     let session = if let Some(session) = maybe_session {
         session
@@ -117,7 +116,7 @@ pub async fn get(
 pub async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
     State(templates): State<Templates>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(id): Path<Ulid>,
@@ -127,7 +126,7 @@ pub async fn post(
     let (session_info, cookie_jar) = cookie_jar.session_info();
     cookie_jar.verify_form(&clock, form)?;
 
-    let maybe_session = session_info.load_session(&mut repo).await?;
+    let maybe_session = session_info.load_session(&mut *repo).await?;
 
     let session = if let Some(session) = maybe_session {
         session

@@ -16,10 +16,9 @@ use anyhow::Context as _;
 use async_graphql::{Context, Object, ID};
 use chrono::{DateTime, Utc};
 use mas_storage::{
-    upstream_oauth2::UpstreamOAuthProviderRepository, user::UserRepository, Repository,
+    upstream_oauth2::UpstreamOAuthProviderRepository, user::UserRepository, BoxRepository,
 };
-use mas_storage_pg::PgRepository;
-use sqlx::PgPool;
+use tokio::sync::Mutex;
 
 use super::{NodeType, User};
 
@@ -103,7 +102,7 @@ impl UpstreamOAuth2Link {
             provider.clone()
         } else {
             // Fetch on-the-fly
-            let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
+            let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
             let provider = repo
                 .upstream_oauth_provider()
                 .lookup(self.link.provider_id)
@@ -122,7 +121,7 @@ impl UpstreamOAuth2Link {
             user.clone()
         } else if let Some(user_id) = &self.link.user_id {
             // Fetch on-the-fly
-            let mut repo = PgRepository::from_pool(ctx.data::<PgPool>()?).await?;
+            let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
             let user = repo
                 .user()
                 .lookup(*user_id)

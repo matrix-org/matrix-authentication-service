@@ -30,9 +30,8 @@ use mas_storage::{
         UpstreamOAuthLinkRepository, UpstreamOAuthProviderRepository,
         UpstreamOAuthSessionRepository,
     },
-    BoxClock, BoxRng, Clock, Repository,
+    BoxClock, BoxRepository, BoxRng, Clock,
 };
-use mas_storage_pg::PgRepository;
 use oauth2_types::errors::ClientErrorCode;
 use serde::Deserialize;
 use thiserror::Error;
@@ -99,7 +98,7 @@ pub(crate) enum RouteError {
     Internal(Box<dyn std::error::Error>),
 }
 
-impl_from_error_for_route!(mas_storage_pg::DatabaseError);
+impl_from_error_for_route!(mas_storage::RepositoryError);
 impl_from_error_for_route!(mas_http::ClientInitError);
 impl_from_error_for_route!(mas_oidc_client::error::DiscoveryError);
 impl_from_error_for_route!(mas_oidc_client::error::JwksError);
@@ -123,7 +122,7 @@ pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
     State(http_client_factory): State<HttpClientFactory>,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
     State(url_builder): State<UrlBuilder>,
     State(encrypter): State<Encrypter>,
     State(keystore): State<Keystore>,

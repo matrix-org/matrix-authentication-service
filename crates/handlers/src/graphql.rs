@@ -22,20 +22,19 @@ use axum::{
     Json, TypedHeader,
 };
 use axum_extra::extract::PrivateCookieJar;
-use futures_util::{StreamExt, TryStreamExt};
+use futures_util::TryStreamExt;
 use headers::{ContentType, HeaderValue};
 use hyper::header::CACHE_CONTROL;
 use mas_axum_utils::{FancyError, SessionInfoExt};
 use mas_graphql::Schema;
 use mas_keystore::Encrypter;
-use mas_storage_pg::PgRepository;
-use sqlx::PgPool;
+use mas_storage::BoxRepository;
+use tokio::sync::Mutex;
 use tracing::{info_span, Instrument};
 
 #[must_use]
-pub fn schema(pool: &PgPool) -> Schema {
+pub fn schema() -> Schema {
     mas_graphql::schema_builder()
-        .data(pool.clone())
         .extension(Tracing)
         .extension(ApolloTracing)
         .finish()
@@ -59,8 +58,8 @@ fn span_for_graphql_request(request: &async_graphql::Request) -> tracing::Span {
 }
 
 pub async fn post(
-    State(pool): State<PgPool>,
     State(schema): State<Schema>,
+    mut repo: BoxRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
     content_type: Option<TypedHeader<ContentType>>,
     body: BodyStream,
@@ -68,62 +67,46 @@ pub async fn post(
     let content_type = content_type.map(|TypedHeader(h)| h.to_string());
 
     let (session_info, _cookie_jar) = cookie_jar.session_info();
-    let mut repo = PgRepository::from_pool(&pool).await?;
-    let maybe_session = session_info.load_session(&mut repo).await?;
-    repo.cancel().await?;
+    let maybe_session = session_info.load_session(&mut *repo).await?;
 
-    let mut request = async_graphql::http::receive_batch_body(
+    let mut request = async_graphql::http::receive_body(
         content_type,
         body.map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
             .into_async_read(),
         MultipartOptions::default(),
     )
-    .await?; // XXX: this should probably return another error response?
+    .await? // XXX: this should probably return another error response?
+    .data(Mutex::new(repo));
 
     if let Some(session) = maybe_session {
         request = request.data(session);
     }
 
-    let response = match request {
-        async_graphql::BatchRequest::Single(request) => {
-            let span = span_for_graphql_request(&request);
-            let response = schema.execute(request).instrument(span).await;
-            async_graphql::BatchResponse::Single(response)
-        }
-        async_graphql::BatchRequest::Batch(requests) => async_graphql::BatchResponse::Batch(
-            futures_util::stream::iter(requests.into_iter())
-                .then(|request| {
-                    let span = span_for_graphql_request(&request);
-                    schema.execute(request).instrument(span)
-                })
-                .collect()
-                .await,
-        ),
-    };
+    let span = span_for_graphql_request(&request);
+    let response = schema.execute(request).instrument(span).await;
 
     let cache_control = response
-        .cache_control()
+        .cache_control
         .value()
         .and_then(|v| HeaderValue::from_str(&v).ok())
         .map(|h| [(CACHE_CONTROL, h)]);
 
-    let headers = response.http_headers();
+    let headers = response.http_headers.clone();
 
     Ok((headers, cache_control, Json(response)))
 }
 
 pub async fn get(
-    State(pool): State<PgPool>,
     State(schema): State<Schema>,
+    mut repo: BoxRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
     RawQuery(query): RawQuery,
 ) -> Result<impl IntoResponse, FancyError> {
     let (session_info, _cookie_jar) = cookie_jar.session_info();
-    let mut repo = PgRepository::from_pool(&pool).await?;
-    let maybe_session = session_info.load_session(&mut repo).await?;
-    repo.cancel().await?;
+    let maybe_session = session_info.load_session(&mut *repo).await?;
 
-    let mut request = async_graphql::http::parse_query_string(&query.unwrap_or_default())?;
+    let mut request =
+        async_graphql::http::parse_query_string(&query.unwrap_or_default())?.data(Mutex::new(repo));
 
     if let Some(session) = maybe_session {
         request = request.data(session);

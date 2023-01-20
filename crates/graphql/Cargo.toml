@@ -10,7 +10,7 @@ anyhow = "1.0.68"
 async-graphql = { version = "5.0.4", features = ["chrono", "url"] }
 chrono = "0.4.23"
 serde = { version = "1.0.152", features = ["derive"] }
-sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres"] }
+tokio = { version = "1.23.0", features = ["sync"] }
 thiserror = "1.0.38"
 tracing = "0.1.37"
 ulid = "1.0.0"
@@ -19,7 +19,6 @@ url = "2.3.1"
 oauth2-types = { path = "../oauth2-types" }
 mas-data-model = { path = "../data-model" }
 mas-storage = { path = "../storage" }
-mas-storage-pg = { path = "../storage-pg" }
 
 [[bin]]
 name = "schema"

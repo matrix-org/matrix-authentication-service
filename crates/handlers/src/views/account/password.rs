@@ -27,9 +27,8 @@ use mas_keystore::Encrypter;
 use mas_router::Route;
 use mas_storage::{
     user::{BrowserSessionRepository, UserPasswordRepository},
-    BoxClock, BoxRng, Clock, Repository,
+    BoxClock, BoxRepository, BoxRng, Clock,
 };
-use mas_storage_pg::PgRepository;
 use mas_templates::{EmptyContext, TemplateContext, Templates};
 use rand::Rng;
 use serde::Deserialize;
@@ -48,12 +47,12 @@ pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
     State(templates): State<Templates>,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut repo).await?;
+    let maybe_session = session_info.load_session(&mut *repo).await?;
 
     if let Some(session) = maybe_session {
         render(&mut rng, &clock, templates, session, cookie_jar).await
@@ -86,7 +85,7 @@ pub(crate) async fn post(
     clock: BoxClock,
     State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<ChangeForm>>,
 ) -> Result<Response, FancyError> {
@@ -94,7 +93,7 @@ pub(crate) async fn post(
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut repo).await?;
+    let maybe_session = session_info.load_session(&mut *repo).await?;
 
     let session = if let Some(session) = maybe_session {
         session

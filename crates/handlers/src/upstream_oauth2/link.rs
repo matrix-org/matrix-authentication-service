@@ -27,9 +27,8 @@ use mas_keystore::Encrypter;
 use mas_storage::{
     upstream_oauth2::{UpstreamOAuthLinkRepository, UpstreamOAuthSessionRepository},
     user::{BrowserSessionRepository, UserRepository},
-    BoxClock, BoxRng, Repository,
+    BoxClock, BoxRepository, BoxRng,
 };
-use mas_storage_pg::PgRepository;
 use mas_templates::{
     EmptyContext, TemplateContext, Templates, UpstreamExistingLinkContext, UpstreamRegister,
     UpstreamSuggestLink,
@@ -72,7 +71,7 @@ pub(crate) enum RouteError {
 impl_from_error_for_route!(mas_templates::TemplateError);
 impl_from_error_for_route!(mas_axum_utils::csrf::CsrfError);
 impl_from_error_for_route!(super::cookie::UpstreamSessionNotFound);
-impl_from_error_for_route!(mas_storage_pg::DatabaseError);
+impl_from_error_for_route!(mas_storage::RepositoryError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
@@ -95,7 +94,7 @@ pub(crate) enum FormData {
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
     State(templates): State<Templates>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(link_id): Path<Ulid>,
@@ -129,7 +128,7 @@ pub(crate) async fn get(
 
     let (user_session_info, cookie_jar) = cookie_jar.session_info();
     let (csrf_token, mut cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
-    let maybe_user_session = user_session_info.load_session(&mut repo).await?;
+    let maybe_user_session = user_session_info.load_session(&mut *repo).await?;
 
     let render = match (maybe_user_session, link.user_id) {
         (Some(session), Some(user_id)) if session.user.id == user_id => {
@@ -211,7 +210,7 @@ pub(crate) async fn get(
 pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(link_id): Path<Ulid>,
     Form(form): Form<ProtectedForm<FormData>>,
@@ -250,7 +249,7 @@ pub(crate) async fn post(
     }
 
     let (user_session_info, cookie_jar) = cookie_jar.session_info();
-    let maybe_user_session = user_session_info.load_session(&mut repo).await?;
+    let maybe_user_session = user_session_info.load_session(&mut *repo).await?;
 
     let session = match (maybe_user_session, link.user_id, form) {
         (Some(session), None, FormData::Link) => {

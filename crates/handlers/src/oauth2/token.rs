@@ -37,9 +37,8 @@ use mas_storage::{
         OAuth2RefreshTokenRepository, OAuth2SessionRepository,
     },
     user::BrowserSessionRepository,
-    BoxClock, BoxRng, Clock, Repository,
+    BoxClock, BoxRepository, BoxRng, Clock,
 };
-use mas_storage_pg::PgRepository;
 use oauth2_types::{
     errors::{ClientError, ClientErrorCode},
     pkce::CodeChallengeError,
@@ -150,7 +149,7 @@ impl IntoResponse for RouteError {
     }
 }
 
-impl_from_error_for_route!(mas_storage_pg::DatabaseError);
+impl_from_error_for_route!(mas_storage::RepositoryError);
 impl_from_error_for_route!(mas_keystore::WrongAlgorithmError);
 impl_from_error_for_route!(mas_jose::claims::ClaimError);
 impl_from_error_for_route!(mas_jose::claims::TokenHashError);
@@ -163,13 +162,13 @@ pub(crate) async fn post(
     State(http_client_factory): State<HttpClientFactory>,
     State(key_store): State<Keystore>,
     State(url_builder): State<UrlBuilder>,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
     State(encrypter): State<Encrypter>,
     client_authorization: ClientAuthorization<AccessTokenRequest>,
 ) -> Result<impl IntoResponse, RouteError> {
     let client = client_authorization
         .credentials
-        .fetch(&mut repo)
+        .fetch(&mut *repo)
         .await?
         .ok_or(RouteError::ClientNotFound)?;
 
@@ -185,7 +184,7 @@ pub(crate) async fn post(
 
     let form = client_authorization.form.ok_or(RouteError::BadRequest)?;
 
-    let reply = match form {
+    let (reply, repo) = match form {
         AccessTokenRequest::AuthorizationCode(grant) => {
             authorization_code_grant(
                 &mut rng,
@@ -206,6 +205,8 @@ pub(crate) async fn post(
         }
     };
 
+    repo.save().await?;
+
     let mut headers = HeaderMap::new();
     headers.typed_insert(CacheControl::new().with_no_store());
     headers.typed_insert(Pragma::no_cache());
@@ -221,8 +222,8 @@ async fn authorization_code_grant(
     client: &Client,
     key_store: &Keystore,
     url_builder: &UrlBuilder,
-    mut repo: PgRepository,
-) -> Result<AccessTokenResponse, RouteError> {
+    mut repo: BoxRepository,
+) -> Result<(AccessTokenResponse, BoxRepository), RouteError> {
     let authz_grant = repo
         .oauth2_authorization_grant()
         .find_by_code(&grant.code)
@@ -367,9 +368,7 @@ async fn authorization_code_grant(
         .exchange(clock, authz_grant)
         .await?;
 
-    repo.save().await?;
-
-    Ok(params)
+    Ok((params, repo))
 }
 
 async fn refresh_token_grant(
@@ -377,8 +376,8 @@ async fn refresh_token_grant(
     clock: &impl Clock,
     grant: &RefreshTokenGrant,
     client: &Client,
-    mut repo: PgRepository,
-) -> Result<AccessTokenResponse, RouteError> {
+    mut repo: BoxRepository,
+) -> Result<(AccessTokenResponse, BoxRepository), RouteError> {
     let refresh_token = repo
         .oauth2_refresh_token()
         .find_by_token(&grant.refresh_token)
@@ -439,7 +438,5 @@ async fn refresh_token_grant(
         .with_refresh_token(new_refresh_token.refresh_token)
         .with_scope(session.scope);
 
-    repo.save().await?;
-
-    Ok(params)
+    Ok((params, repo))
 }

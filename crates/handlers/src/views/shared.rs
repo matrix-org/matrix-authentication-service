@@ -40,9 +40,9 @@ impl OptionalPostAuthAction {
         self.go_next_or_default(&mas_router::Index)
     }
 
-    pub async fn load_context<R: Repository>(
-        &self,
-        repo: &mut R,
+    pub async fn load_context<'a>(
+        &'a self,
+        repo: &'a mut (impl Repository + ?Sized),
     ) -> anyhow::Result<Option<PostAuthContext>> {
         let Some(action) = self.post_auth_action.clone() else { return Ok(None) };
         let ctx = match action {

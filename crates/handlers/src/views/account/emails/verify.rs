@@ -24,8 +24,7 @@ use mas_axum_utils::{
 };
 use mas_keystore::Encrypter;
 use mas_router::Route;
-use mas_storage::{user::UserEmailRepository, BoxClock, BoxRng, Repository};
-use mas_storage_pg::PgRepository;
+use mas_storage::{user::UserEmailRepository, BoxClock, BoxRepository, BoxRng};
 use mas_templates::{EmailVerificationPageContext, TemplateContext, Templates};
 use serde::Deserialize;
 use ulid::Ulid;
@@ -41,7 +40,7 @@ pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
     State(templates): State<Templates>,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
     Query(query): Query<OptionalPostAuthAction>,
     Path(id): Path<Ulid>,
     cookie_jar: PrivateCookieJar<Encrypter>,
@@ -49,7 +48,7 @@ pub(crate) async fn get(
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut repo).await?;
+    let maybe_session = session_info.load_session(&mut *repo).await?;
 
     let session = if let Some(session) = maybe_session {
         session
@@ -82,7 +81,7 @@ pub(crate) async fn get(
 
 pub(crate) async fn post(
     clock: BoxClock,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Query(query): Query<OptionalPostAuthAction>,
     Path(id): Path<Ulid>,
@@ -91,7 +90,7 @@ pub(crate) async fn post(
     let form = cookie_jar.verify_form(&clock, form)?;
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut repo).await?;
+    let maybe_session = session_info.load_session(&mut *repo).await?;
 
     let session = if let Some(session) = maybe_session {
         session

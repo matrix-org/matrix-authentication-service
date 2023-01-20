@@ -21,7 +21,7 @@ use crate::{pagination::Page, repository_impl, Clock, Pagination};
 
 #[async_trait]
 pub trait UpstreamOAuthLinkRepository: Send + Sync {
-    type Error: std::error::Error + Send + Sync;
+    type Error;
 
     /// Lookup an upstream OAuth link by its ID
     async fn lookup(&mut self, id: Ulid) -> Result<Option<UpstreamOAuthLink>, Self::Error>;

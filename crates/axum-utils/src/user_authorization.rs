@@ -51,11 +51,10 @@ enum AccessToken {
 }
 
 impl AccessToken {
-    async fn fetch<R: Repository>(
+    async fn fetch<E>(
         &self,
-        repo: &mut R,
-    ) -> Result<(mas_data_model::AccessToken, Session), AuthorizationVerificationError<R::Error>>
-    {
+        repo: &mut (impl Repository<Error = E> + ?Sized),
+    ) -> Result<(mas_data_model::AccessToken, Session), AuthorizationVerificationError<E>> {
         let token = match self {
             AccessToken::Form(t) | AccessToken::Header(t) => t,
             AccessToken::None => return Err(AuthorizationVerificationError::MissingToken),
@@ -85,11 +84,11 @@ pub struct UserAuthorization<F = ()> {
 
 impl<F: Send> UserAuthorization<F> {
     // TODO: take scopes to validate as parameter
-    pub async fn protected_form<R: Repository, C: Clock>(
+    pub async fn protected_form<E>(
         self,
-        repo: &mut R,
-        clock: &C,
-    ) -> Result<(Session, F), AuthorizationVerificationError<R::Error>> {
+        repo: &mut (impl Repository<Error = E> + ?Sized),
+        clock: &impl Clock,
+    ) -> Result<(Session, F), AuthorizationVerificationError<E>> {
         let form = match self.form {
             Some(f) => f,
             None => return Err(AuthorizationVerificationError::MissingForm),
@@ -105,11 +104,11 @@ impl<F: Send> UserAuthorization<F> {
     }
 
     // TODO: take scopes to validate as parameter
-    pub async fn protected<R: Repository, C: Clock>(
+    pub async fn protected<E>(
         self,
-        repo: &mut R,
-        clock: &C,
-    ) -> Result<Session, AuthorizationVerificationError<R::Error>> {
+        repo: &mut (impl Repository<Error = E> + ?Sized),
+        clock: &impl Clock,
+    ) -> Result<Session, AuthorizationVerificationError<E>> {
         let (token, session) = self.access_token.fetch(repo).await?;
 
         if !token.is_valid(clock.now()) || !session.is_valid() {

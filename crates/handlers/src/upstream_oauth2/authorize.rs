@@ -24,9 +24,8 @@ use mas_oidc_client::requests::authorization_code::AuthorizationRequestData;
 use mas_router::UrlBuilder;
 use mas_storage::{
     upstream_oauth2::{UpstreamOAuthProviderRepository, UpstreamOAuthSessionRepository},
-    BoxClock, BoxRng, Repository,
+    BoxClock, BoxRepository, BoxRng,
 };
-use mas_storage_pg::PgRepository;
 use thiserror::Error;
 use ulid::Ulid;
 
@@ -45,7 +44,7 @@ pub(crate) enum RouteError {
 impl_from_error_for_route!(mas_http::ClientInitError);
 impl_from_error_for_route!(mas_oidc_client::error::DiscoveryError);
 impl_from_error_for_route!(mas_oidc_client::error::AuthorizationError);
-impl_from_error_for_route!(mas_storage_pg::DatabaseError);
+impl_from_error_for_route!(mas_storage::RepositoryError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
@@ -60,7 +59,7 @@ pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
     State(http_client_factory): State<HttpClientFactory>,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
     State(url_builder): State<UrlBuilder>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(provider_id): Path<Ulid>,

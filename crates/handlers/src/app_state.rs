@@ -25,7 +25,7 @@ use mas_email::Mailer;
 use mas_keystore::{Encrypter, Keystore};
 use mas_policy::PolicyFactory;
 use mas_router::UrlBuilder;
-use mas_storage::{BoxClock, BoxRng, SystemClock};
+use mas_storage::{BoxClock, BoxRepository, BoxRng, Repository, SystemClock};
 use mas_storage_pg::PgRepository;
 use mas_templates::Templates;
 use rand::SeedableRng;
@@ -156,7 +156,7 @@ impl IntoResponse for RepositoryError {
 }
 
 #[async_trait]
-impl FromRequestParts<AppState> for PgRepository {
+impl FromRequestParts<AppState> for BoxRepository {
     type Rejection = RepositoryError;
 
     async fn from_request_parts(
@@ -164,6 +164,8 @@ impl FromRequestParts<AppState> for PgRepository {
         state: &AppState,
     ) -> Result<Self, Self::Rejection> {
         let repo = PgRepository::from_pool(&state.pool).await?;
-        Ok(repo)
+        Ok(repo
+            .map_err(mas_storage::RepositoryError::from_error)
+            .boxed())
     }
 }

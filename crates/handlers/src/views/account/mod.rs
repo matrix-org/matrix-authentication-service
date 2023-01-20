@@ -25,22 +25,21 @@ use mas_keystore::Encrypter;
 use mas_router::Route;
 use mas_storage::{
     user::{BrowserSessionRepository, UserEmailRepository},
-    BoxClock, BoxRng, Repository,
+    BoxClock, BoxRepository, BoxRng,
 };
-use mas_storage_pg::PgRepository;
 use mas_templates::{AccountContext, TemplateContext, Templates};
 
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
     State(templates): State<Templates>,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut repo).await?;
+    let maybe_session = session_info.load_session(&mut *repo).await?;
 
     let session = if let Some(session) = maybe_session {
         session

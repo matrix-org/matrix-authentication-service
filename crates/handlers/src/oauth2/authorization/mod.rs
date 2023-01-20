@@ -27,9 +27,8 @@ use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{
     oauth2::{OAuth2AuthorizationGrantRepository, OAuth2ClientRepository},
-    BoxClock, BoxRng, Repository,
+    BoxClock, BoxRepository, BoxRng,
 };
-use mas_storage_pg::PgRepository;
 use mas_templates::Templates;
 use oauth2_types::{
     errors::{ClientError, ClientErrorCode},
@@ -90,7 +89,7 @@ impl IntoResponse for RouteError {
     }
 }
 
-impl_from_error_for_route!(mas_storage_pg::DatabaseError);
+impl_from_error_for_route!(mas_storage::RepositoryError);
 impl_from_error_for_route!(self::callback::CallbackDestinationError);
 impl_from_error_for_route!(mas_policy::LoadError);
 impl_from_error_for_route!(mas_policy::InstanciateError);
@@ -135,7 +134,7 @@ pub(crate) async fn get(
     clock: BoxClock,
     State(policy_factory): State<Arc<PolicyFactory>>,
     State(templates): State<Templates>,
-    mut repo: PgRepository,
+    mut repo: BoxRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(params): Form<Params>,
 ) -> Result<Response, RouteError> {
@@ -168,7 +167,7 @@ pub(crate) async fn get(
         let templates = templates.clone();
         let callback_destination = callback_destination.clone();
         async move {
-            let maybe_session = session_info.load_session(&mut repo).await?;
+            let maybe_session = session_info.load_session(&mut *repo).await?;
             let prompt = params.auth.prompt.as_deref().unwrap_or_default();
 
             // Check if the request/request_uri/registration params are used. If so, reply

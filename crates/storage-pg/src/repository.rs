@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use futures_util::{future::BoxFuture, FutureExt, TryFutureExt};
 use mas_storage::{
     compat::{
         CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository,
@@ -59,20 +60,18 @@ impl PgRepository {
         let txn = pool.begin().await?;
         Ok(PgRepository { txn })
     }
-
-    pub async fn save(self) -> Result<(), DatabaseError> {
-        self.txn.commit().await?;
-        Ok(())
-    }
-
-    pub async fn cancel(self) -> Result<(), DatabaseError> {
-        self.txn.rollback().await?;
-        Ok(())
-    }
 }
 
 impl Repository for PgRepository {
     type Error = DatabaseError;
+
+    fn save(self: Box<Self>) -> BoxFuture<'static, Result<(), Self::Error>> {
+        self.txn.commit().map_err(DatabaseError::from).boxed()
+    }
+
+    fn cancel(self: Box<Self>) -> BoxFuture<'static, Result<(), Self::Error>> {
+        self.txn.rollback().map_err(DatabaseError::from).boxed()
+    }
 
     fn upstream_oauth_link<'c>(
         &'c mut self,

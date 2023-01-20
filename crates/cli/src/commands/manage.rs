@@ -203,7 +203,7 @@ impl Options {
                 let pool = database_from_config(&database_config).await?;
                 let password_manager = password_manager_from_config(&passwords_config).await?;
 
-                let mut repo = PgRepository::from_pool(&pool).await?;
+                let mut repo = PgRepository::from_pool(&pool).await?.boxed();
                 let user = repo
                     .user()
                     .find_by_username(username)
@@ -234,7 +234,7 @@ impl Options {
 
                 let config: DatabaseConfig = root.load_config()?;
                 let pool = database_from_config(&config).await?;
-                let mut repo = PgRepository::from_pool(&pool).await?;
+                let mut repo = PgRepository::from_pool(&pool).await?.boxed();
 
                 let user = repo
                     .user()
@@ -262,7 +262,7 @@ impl Options {
                 let pool = database_from_config(&config.database).await?;
                 let encrypter = config.secrets.encrypter();
 
-                let mut repo = PgRepository::from_pool(&pool).await?;
+                let mut repo = PgRepository::from_pool(&pool).await?.boxed();
 
                 for client in config.clients.iter() {
                     let client_id = client.client_id;
