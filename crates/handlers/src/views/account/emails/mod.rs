@@ -55,10 +55,10 @@ pub(crate) async fn get(
 ) -> Result<Response, FancyError> {
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut *repo).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     if let Some(session) = maybe_session {
-        render(&mut rng, &clock, templates, session, cookie_jar, &mut *repo).await
+        render(&mut rng, &clock, templates, session, cookie_jar, &mut repo).await
     } else {
         let login = mas_router::Login::default();
         Ok((cookie_jar, login.go()).into_response())
@@ -130,7 +130,7 @@ pub(crate) async fn post(
 ) -> Result<Response, FancyError> {
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut *repo).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     let mut session = if let Some(session) = maybe_session {
         session
@@ -149,7 +149,7 @@ pub(crate) async fn post(
                 .await?;
 
             let next = mas_router::AccountVerifyEmail::new(email.id);
-            start_email_verification(&mailer, &mut *repo, &mut rng, &clock, &session.user, email)
+            start_email_verification(&mailer, &mut repo, &mut rng, &clock, &session.user, email)
                 .await?;
             repo.save().await?;
             return Ok((cookie_jar, next.go()).into_response());
@@ -168,7 +168,7 @@ pub(crate) async fn post(
             }
 
             let next = mas_router::AccountVerifyEmail::new(email.id);
-            start_email_verification(&mailer, &mut *repo, &mut rng, &clock, &session.user, email)
+            start_email_verification(&mailer, &mut repo, &mut rng, &clock, &session.user, email)
                 .await?;
             repo.save().await?;
             return Ok((cookie_jar, next.go()).into_response());
@@ -211,7 +211,7 @@ pub(crate) async fn post(
         templates.clone(),
         session,
         cookie_jar,
-        &mut *repo,
+        &mut repo,
     )
     .await?;
 

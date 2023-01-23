@@ -32,7 +32,7 @@ pub(crate) async fn post(
 
     let (session_info, mut cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut *repo).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     if let Some(session) = maybe_session {
         repo.browser_session().finish(&clock, session).await?;

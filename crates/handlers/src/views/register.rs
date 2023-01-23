@@ -69,7 +69,7 @@ pub(crate) async fn get(
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut *repo).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     if maybe_session.is_some() {
         let reply = query.go_next();
@@ -79,7 +79,7 @@ pub(crate) async fn get(
             RegisterContext::default(),
             query,
             csrf_token,
-            &mut *repo,
+            &mut repo,
             &templates,
         )
         .await?;
@@ -174,7 +174,7 @@ pub(crate) async fn post(
             RegisterContext::default().with_form_state(state),
             query,
             csrf_token,
-            &mut *repo,
+            &mut repo,
             &templates,
         )
         .await?;

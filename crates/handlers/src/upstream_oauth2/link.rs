@@ -128,7 +128,7 @@ pub(crate) async fn get(
 
     let (user_session_info, cookie_jar) = cookie_jar.session_info();
     let (csrf_token, mut cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
-    let maybe_user_session = user_session_info.load_session(&mut *repo).await?;
+    let maybe_user_session = user_session_info.load_session(&mut repo).await?;
 
     let render = match (maybe_user_session, link.user_id) {
         (Some(session), Some(user_id)) if session.user.id == user_id => {
@@ -249,7 +249,7 @@ pub(crate) async fn post(
     }
 
     let (user_session_info, cookie_jar) = cookie_jar.session_info();
-    let maybe_user_session = user_session_info.load_session(&mut *repo).await?;
+    let maybe_user_session = user_session_info.load_session(&mut repo).await?;
 
     let session = match (maybe_user_session, link.user_id, form) {
         (Some(session), None, FormData::Link) => {

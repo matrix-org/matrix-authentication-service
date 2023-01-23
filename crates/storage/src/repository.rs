@@ -265,3 +265,115 @@ where
         ))
     }
 }
+
+impl<R: Repository + ?Sized> Repository for Box<R> {
+    type Error = R::Error;
+
+    fn save(self: Box<Self>) -> BoxFuture<'static, Result<(), Self::Error>>
+    where
+        Self: Sized,
+    {
+        // This shouldn't be callable?
+        unimplemented!()
+    }
+
+    fn cancel(self: Box<Self>) -> BoxFuture<'static, Result<(), Self::Error>>
+    where
+        Self: Sized,
+    {
+        // This shouldn't be callable?
+        unimplemented!()
+    }
+
+    fn upstream_oauth_link<'c>(
+        &'c mut self,
+    ) -> Box<dyn UpstreamOAuthLinkRepository<Error = Self::Error> + 'c> {
+        (**self).upstream_oauth_link()
+    }
+
+    fn upstream_oauth_provider<'c>(
+        &'c mut self,
+    ) -> Box<dyn UpstreamOAuthProviderRepository<Error = Self::Error> + 'c> {
+        (**self).upstream_oauth_provider()
+    }
+
+    fn upstream_oauth_session<'c>(
+        &'c mut self,
+    ) -> Box<dyn UpstreamOAuthSessionRepository<Error = Self::Error> + 'c> {
+        (**self).upstream_oauth_session()
+    }
+
+    fn user<'c>(&'c mut self) -> Box<dyn UserRepository<Error = Self::Error> + 'c> {
+        (**self).user()
+    }
+
+    fn user_email<'c>(&'c mut self) -> Box<dyn UserEmailRepository<Error = Self::Error> + 'c> {
+        (**self).user_email()
+    }
+
+    fn user_password<'c>(
+        &'c mut self,
+    ) -> Box<dyn UserPasswordRepository<Error = Self::Error> + 'c> {
+        (**self).user_password()
+    }
+
+    fn browser_session<'c>(
+        &'c mut self,
+    ) -> Box<dyn BrowserSessionRepository<Error = Self::Error> + 'c> {
+        (**self).browser_session()
+    }
+
+    fn oauth2_client<'c>(
+        &'c mut self,
+    ) -> Box<dyn OAuth2ClientRepository<Error = Self::Error> + 'c> {
+        (**self).oauth2_client()
+    }
+
+    fn oauth2_authorization_grant<'c>(
+        &'c mut self,
+    ) -> Box<dyn OAuth2AuthorizationGrantRepository<Error = Self::Error> + 'c> {
+        (**self).oauth2_authorization_grant()
+    }
+
+    fn oauth2_session<'c>(
+        &'c mut self,
+    ) -> Box<dyn OAuth2SessionRepository<Error = Self::Error> + 'c> {
+        (**self).oauth2_session()
+    }
+
+    fn oauth2_access_token<'c>(
+        &'c mut self,
+    ) -> Box<dyn OAuth2AccessTokenRepository<Error = Self::Error> + 'c> {
+        (**self).oauth2_access_token()
+    }
+
+    fn oauth2_refresh_token<'c>(
+        &'c mut self,
+    ) -> Box<dyn OAuth2RefreshTokenRepository<Error = Self::Error> + 'c> {
+        (**self).oauth2_refresh_token()
+    }
+
+    fn compat_session<'c>(
+        &'c mut self,
+    ) -> Box<dyn CompatSessionRepository<Error = Self::Error> + 'c> {
+        (**self).compat_session()
+    }
+
+    fn compat_sso_login<'c>(
+        &'c mut self,
+    ) -> Box<dyn CompatSsoLoginRepository<Error = Self::Error> + 'c> {
+        (**self).compat_sso_login()
+    }
+
+    fn compat_access_token<'c>(
+        &'c mut self,
+    ) -> Box<dyn CompatAccessTokenRepository<Error = Self::Error> + 'c> {
+        (**self).compat_access_token()
+    }
+
+    fn compat_refresh_token<'c>(
+        &'c mut self,
+    ) -> Box<dyn CompatRefreshTokenRepository<Error = Self::Error> + 'c> {
+        (**self).compat_refresh_token()
+    }
+}

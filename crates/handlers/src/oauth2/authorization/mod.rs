@@ -167,7 +167,7 @@ pub(crate) async fn get(
         let templates = templates.clone();
         let callback_destination = callback_destination.clone();
         async move {
-            let maybe_session = session_info.load_session(&mut *repo).await?;
+            let maybe_session = session_info.load_session(&mut repo).await?;
             let prompt = params.auth.prompt.as_deref().unwrap_or_default();
 
             // Check if the request/request_uri/registration params are used. If so, reply

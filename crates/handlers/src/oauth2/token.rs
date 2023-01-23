@@ -168,7 +168,7 @@ pub(crate) async fn post(
 ) -> Result<impl IntoResponse, RouteError> {
     let client = client_authorization
         .credentials
-        .fetch(&mut *repo)
+        .fetch(&mut repo)
         .await?
         .ok_or(RouteError::ClientNotFound)?;
 

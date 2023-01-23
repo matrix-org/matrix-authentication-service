@@ -46,7 +46,7 @@ pub(crate) async fn get(
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut *repo).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     let session = if let Some(session) = maybe_session {
         session
@@ -76,7 +76,7 @@ pub(crate) async fn post(
     let form = cookie_jar.verify_form(&clock, form)?;
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut *repo).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     let session = if let Some(session) = maybe_session {
         session
@@ -98,7 +98,7 @@ pub(crate) async fn post(
     };
     start_email_verification(
         &mailer,
-        &mut *repo,
+        &mut repo,
         &mut rng,
         &clock,
         &session.user,

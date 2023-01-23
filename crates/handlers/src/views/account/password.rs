@@ -52,7 +52,7 @@ pub(crate) async fn get(
 ) -> Result<Response, FancyError> {
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut *repo).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     if let Some(session) = maybe_session {
         render(&mut rng, &clock, templates, session, cookie_jar).await
@@ -93,7 +93,7 @@ pub(crate) async fn post(
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut *repo).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     let session = if let Some(session) = maybe_session {
         session

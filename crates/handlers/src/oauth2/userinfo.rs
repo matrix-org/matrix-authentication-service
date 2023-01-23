@@ -103,7 +103,7 @@ pub async fn get(
     State(key_store): State<Keystore>,
     user_authorization: UserAuthorization,
 ) -> Result<Response, RouteError> {
-    let session = user_authorization.protected(&mut *repo, &clock).await?;
+    let session = user_authorization.protected(&mut repo, &clock).await?;
 
     let browser_session = repo
         .browser_session()

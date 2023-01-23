@@ -51,7 +51,7 @@ pub(crate) async fn get(
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut *repo).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     let session = if let Some(session) = maybe_session {
         session
@@ -63,7 +63,7 @@ pub(crate) async fn get(
     };
 
     let ctx = ReauthContext::default();
-    let next = query.load_context(&mut *repo).await?;
+    let next = query.load_context(&mut repo).await?;
     let ctx = if let Some(next) = next {
         ctx.with_post_action(next)
     } else {
@@ -89,7 +89,7 @@ pub(crate) async fn post(
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut *repo).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     let session = if let Some(session) = maybe_session {
         session
