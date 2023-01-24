@@ -52,17 +52,17 @@ pub const CLIENT_SUPPORTED_AUTH_METHODS: &[OAuthClientAuthenticationMethod] = &[
 
 /// A function that takes a map of claims and a signing algorithm and returns a
 /// signed JWT.
-pub type JwtSigningFn = fn(HashMap<String, Value>, JsonWebSignatureAlg) -> Result<String, BoxError>;
+pub type JwtSigningFn =
+    dyn Fn(HashMap<String, Value>, JsonWebSignatureAlg) -> Result<String, BoxError> + Send + Sync;
 
 /// The method used to sign JWTs with a private key.
-#[derive(Clone)]
 pub enum JwtSigningMethod {
     /// Sign the JWTs with this library, by providing the signing keys.
     #[cfg(feature = "keystore")]
     Keystore(Keystore),
 
     /// Sign the JWTs in a callback.
-    Custom(JwtSigningFn),
+    Custom(Box<JwtSigningFn>),
 }
 
 impl JwtSigningMethod {
@@ -75,8 +75,14 @@ impl JwtSigningMethod {
 
     /// Creates a new [`JwtSigningMethod`] from a [`JwtSigningFn`].
     #[must_use]
-    pub fn with_custom_signing_method(signing_fn: JwtSigningFn) -> Self {
-        Self::Custom(signing_fn)
+    pub fn with_custom_signing_method<F>(signing_fn: F) -> Self
+    where
+        F: Fn(HashMap<String, Value>, JsonWebSignatureAlg) -> Result<String, BoxError>
+            + Send
+            + Sync
+            + 'static,
+    {
+        Self::Custom(Box::new(signing_fn))
     }
 
     /// Get the [`Keystore`] from this [`JwtSigningMethod`].
@@ -101,7 +107,6 @@ impl JwtSigningMethod {
 
 /// The credentials obtained during registration, to authenticate a client on
 /// endpoints that require it.
-#[derive(Clone)]
 pub enum ClientCredentials {
     /// No client authentication is used.
     ///
