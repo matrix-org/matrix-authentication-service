@@ -27,7 +27,7 @@ use mas_storage::{
         UpstreamOAuthSessionRepository,
     },
     user::{BrowserSessionRepository, UserEmailRepository, UserPasswordRepository, UserRepository},
-    Repository,
+    Repository, RepositoryAccess, RepositoryTransaction,
 };
 use sqlx::{PgPool, Postgres, Transaction};
 
@@ -62,7 +62,9 @@ impl PgRepository {
     }
 }
 
-impl Repository for PgRepository {
+impl Repository<DatabaseError> for PgRepository {}
+
+impl RepositoryTransaction for PgRepository {
     type Error = DatabaseError;
 
     fn save(self: Box<Self>) -> BoxFuture<'static, Result<(), Self::Error>> {
@@ -72,6 +74,10 @@ impl Repository for PgRepository {
     fn cancel(self: Box<Self>) -> BoxFuture<'static, Result<(), Self::Error>> {
         self.txn.rollback().map_err(DatabaseError::from).boxed()
     }
+}
+
+impl RepositoryAccess for PgRepository {
+    type Error = DatabaseError;
 
     fn upstream_oauth_link<'c>(
         &'c mut self,

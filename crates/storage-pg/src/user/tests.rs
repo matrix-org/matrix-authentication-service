@@ -16,7 +16,7 @@ use chrono::Duration;
 use mas_storage::{
     clock::MockClock,
     user::{BrowserSessionRepository, UserEmailRepository, UserPasswordRepository, UserRepository},
-    Repository,
+    Repository, RepositoryAccess,
 };
 use rand::SeedableRng;
 use rand_chacha::ChaChaRng;

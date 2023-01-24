@@ -28,7 +28,9 @@ use mas_data_model::{BrowserSession, User, UserEmail};
 use mas_email::Mailer;
 use mas_keystore::Encrypter;
 use mas_router::Route;
-use mas_storage::{user::UserEmailRepository, BoxClock, BoxRepository, BoxRng, Clock, Repository};
+use mas_storage::{
+    user::UserEmailRepository, BoxClock, BoxRepository, BoxRng, Clock, RepositoryAccess,
+};
 use mas_templates::{AccountEmailsContext, EmailVerificationContext, TemplateContext, Templates};
 use rand::{distributions::Uniform, Rng};
 use serde::Deserialize;
@@ -71,7 +73,7 @@ async fn render<E: std::error::Error>(
     templates: Templates,
     session: BrowserSession,
     cookie_jar: PrivateCookieJar<Encrypter>,
-    repo: &mut (impl Repository<Error = E> + ?Sized),
+    repo: &mut impl RepositoryAccess<Error = E>,
 ) -> Result<Response, FancyError> {
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock, rng);
 
@@ -88,7 +90,7 @@ async fn render<E: std::error::Error>(
 
 async fn start_email_verification<E: std::error::Error + Send + Sync + 'static>(
     mailer: &Mailer,
-    repo: &mut (impl Repository<Error = E> + ?Sized),
+    repo: &mut impl RepositoryAccess<Error = E>,
     mut rng: impl Rng + Send,
     clock: &impl Clock,
     user: &User,

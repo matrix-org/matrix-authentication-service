@@ -31,7 +31,7 @@ mod tests {
             UpstreamOAuthSessionRepository,
         },
         user::UserRepository,
-        Pagination, Repository,
+        Pagination, RepositoryAccess,
     };
     use oauth2_types::scope::{Scope, OPENID};
     use rand::SeedableRng;

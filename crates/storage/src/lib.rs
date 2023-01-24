@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Interactions with the database
+//! Interactions with the storage backend
 
 #![forbid(unsafe_code)]
 #![deny(
@@ -42,20 +42,25 @@ pub mod user;
 pub use self::{
     clock::{Clock, SystemClock},
     pagination::{Page, Pagination},
-    repository::{BoxRepository, Repository, RepositoryError},
+    repository::{
+        BoxRepository, Repository, RepositoryAccess, RepositoryError, RepositoryTransaction,
+    },
 };
 
-pub struct MapErr<Repository, Mapper> {
-    inner: Repository,
-    mapper: Mapper,
+/// A wrapper which is used to map the error type of a repository to another
+pub struct MapErr<R, F> {
+    inner: R,
+    mapper: F,
 }
 
-impl<Repository, Mapper> MapErr<Repository, Mapper> {
-    fn new(inner: Repository, mapper: Mapper) -> Self {
+impl<R, F> MapErr<R, F> {
+    fn new(inner: R, mapper: F) -> Self {
         Self { inner, mapper }
     }
 }
 
+/// A macro to implement a repository trait for the [`MapErr`] wrapper and for
+/// [`Box<R>`]
 #[macro_export]
 macro_rules! repository_impl {
     ($repo_trait:ident:

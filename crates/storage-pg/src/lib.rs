@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Interactions with the database
+//! An implementation of the storage traits for a PostgreSQL database
 
 #![forbid(unsafe_code)]
 #![deny(

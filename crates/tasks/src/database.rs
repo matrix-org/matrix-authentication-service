@@ -14,7 +14,7 @@
 
 //! Database-related tasks
 
-use mas_storage::{oauth2::OAuth2AccessTokenRepository, Repository, SystemClock};
+use mas_storage::{oauth2::OAuth2AccessTokenRepository, RepositoryAccess, SystemClock};
 use mas_storage_pg::PgRepository;
 use sqlx::{Pool, Postgres};
 use tracing::{debug, error, info};

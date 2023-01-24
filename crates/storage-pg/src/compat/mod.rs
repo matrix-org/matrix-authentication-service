@@ -32,7 +32,7 @@ mod tests {
             CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository,
         },
         user::UserRepository,
-        Clock, Repository,
+        Clock, Repository, RepositoryAccess,
     };
     use rand::SeedableRng;
     use rand_chacha::ChaChaRng;

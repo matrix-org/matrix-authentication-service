@@ -14,7 +14,7 @@
 
 use axum_extra::extract::cookie::{Cookie, PrivateCookieJar};
 use mas_data_model::BrowserSession;
-use mas_storage::{user::BrowserSessionRepository, Repository};
+use mas_storage::{user::BrowserSessionRepository, RepositoryAccess};
 use serde::{Deserialize, Serialize};
 use ulid::Ulid;
 
@@ -45,7 +45,7 @@ impl SessionInfo {
     /// Load the [`BrowserSession`] from database
     pub async fn load_session<E>(
         &self,
-        repo: &mut (impl Repository<Error = E> + ?Sized),
+        repo: &mut impl RepositoryAccess<Error = E>,
     ) -> Result<Option<BrowserSession>, E> {
         let session_id = if let Some(id) = self.current {
             id

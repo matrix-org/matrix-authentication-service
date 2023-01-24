@@ -26,7 +26,7 @@ use mas_keystore::Encrypter;
 use mas_storage::{
     upstream_oauth2::UpstreamOAuthProviderRepository,
     user::{BrowserSessionRepository, UserPasswordRepository, UserRepository},
-    BoxClock, BoxRepository, BoxRng, Clock, Repository,
+    BoxClock, BoxRepository, BoxRng, Clock, RepositoryAccess,
 };
 use mas_templates::{
     FieldError, FormError, LoginContext, LoginFormField, TemplateContext, Templates, ToFormState,
@@ -161,7 +161,7 @@ pub(crate) async fn post(
 // TODO: move that logic elsewhere?
 async fn login(
     password_manager: PasswordManager,
-    repo: &mut (impl Repository + ?Sized),
+    repo: &mut impl RepositoryAccess,
     mut rng: impl Rng + CryptoRng + Send,
     clock: &impl Clock,
     username: &str,
@@ -235,7 +235,7 @@ async fn render(
     ctx: LoginContext,
     action: OptionalPostAuthAction,
     csrf_token: CsrfToken,
-    repo: &mut (impl Repository + ?Sized),
+    repo: &mut impl RepositoryAccess,
     templates: &Templates,
 ) -> Result<String, FancyError> {
     let next = action.load_context(repo).await?;

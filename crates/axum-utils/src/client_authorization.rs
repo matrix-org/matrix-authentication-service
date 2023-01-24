@@ -31,7 +31,7 @@ use mas_http::HttpServiceExt;
 use mas_iana::oauth::OAuthClientAuthenticationMethod;
 use mas_jose::{jwk::PublicJsonWebKeySet, jwt::Jwt};
 use mas_keystore::Encrypter;
-use mas_storage::{oauth2::OAuth2ClientRepository, Repository};
+use mas_storage::{oauth2::OAuth2ClientRepository, RepositoryAccess};
 use serde::{de::DeserializeOwned, Deserialize};
 use serde_json::Value;
 use thiserror::Error;
@@ -74,7 +74,7 @@ pub enum Credentials {
 impl Credentials {
     pub async fn fetch<E>(
         &self,
-        repo: &mut (impl Repository<Error = E> + ?Sized),
+        repo: &mut (impl RepositoryAccess<Error = E> + ?Sized),
     ) -> Result<Option<Client>, E> {
         let client_id = match self {
             Credentials::None { client_id }

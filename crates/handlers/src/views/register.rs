@@ -33,7 +33,7 @@ use mas_policy::PolicyFactory;
 use mas_router::Route;
 use mas_storage::{
     user::{BrowserSessionRepository, UserEmailRepository, UserPasswordRepository, UserRepository},
-    BoxClock, BoxRepository, BoxRng, Repository,
+    BoxClock, BoxRepository, BoxRng, RepositoryAccess,
 };
 use mas_templates::{
     EmailVerificationContext, FieldError, FormError, RegisterContext, RegisterFormField,
@@ -233,7 +233,7 @@ async fn render(
     ctx: RegisterContext,
     action: OptionalPostAuthAction,
     csrf_token: CsrfToken,
-    repo: &mut (impl Repository + ?Sized),
+    repo: &mut impl RepositoryAccess,
     templates: &Templates,
 ) -> Result<String, FancyError> {
     let next = action.load_context(repo).await?;

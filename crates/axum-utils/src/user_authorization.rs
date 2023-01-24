@@ -29,7 +29,7 @@ use http::{header::WWW_AUTHENTICATE, HeaderMap, HeaderValue, Request, StatusCode
 use mas_data_model::Session;
 use mas_storage::{
     oauth2::{OAuth2AccessTokenRepository, OAuth2SessionRepository},
-    Clock, Repository,
+    Clock, RepositoryAccess,
 };
 use serde::{de::DeserializeOwned, Deserialize};
 use thiserror::Error;
@@ -53,7 +53,7 @@ enum AccessToken {
 impl AccessToken {
     async fn fetch<E>(
         &self,
-        repo: &mut (impl Repository<Error = E> + ?Sized),
+        repo: &mut impl RepositoryAccess<Error = E>,
     ) -> Result<(mas_data_model::AccessToken, Session), AuthorizationVerificationError<E>> {
         let token = match self {
             AccessToken::Form(t) | AccessToken::Header(t) => t,
@@ -86,7 +86,7 @@ impl<F: Send> UserAuthorization<F> {
     // TODO: take scopes to validate as parameter
     pub async fn protected_form<E>(
         self,
-        repo: &mut (impl Repository<Error = E> + ?Sized),
+        repo: &mut impl RepositoryAccess<Error = E>,
         clock: &impl Clock,
     ) -> Result<(Session, F), AuthorizationVerificationError<E>> {
         let form = match self.form {
@@ -106,7 +106,7 @@ impl<F: Send> UserAuthorization<F> {
     // TODO: take scopes to validate as parameter
     pub async fn protected<E>(
         self,
-        repo: &mut (impl Repository<Error = E> + ?Sized),
+        repo: &mut impl RepositoryAccess<Error = E>,
         clock: &impl Clock,
     ) -> Result<Session, AuthorizationVerificationError<E>> {
         let (token, session) = self.access_token.fetch(repo).await?;

@@ -21,7 +21,7 @@ use mas_storage::{
     oauth2::OAuth2ClientRepository,
     upstream_oauth2::UpstreamOAuthProviderRepository,
     user::{UserEmailRepository, UserPasswordRepository, UserRepository},
-    Repository, SystemClock,
+    Repository, RepositoryAccess, SystemClock,
 };
 use mas_storage_pg::PgRepository;
 use oauth2_types::scope::Scope;

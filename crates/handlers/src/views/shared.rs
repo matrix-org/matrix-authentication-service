@@ -18,7 +18,7 @@ use mas_storage::{
     compat::CompatSsoLoginRepository,
     oauth2::OAuth2AuthorizationGrantRepository,
     upstream_oauth2::{UpstreamOAuthLinkRepository, UpstreamOAuthProviderRepository},
-    Repository,
+    RepositoryAccess,
 };
 use mas_templates::{PostAuthContext, PostAuthContextInner};
 use serde::{Deserialize, Serialize};
@@ -42,7 +42,7 @@ impl OptionalPostAuthAction {
 
     pub async fn load_context<'a>(
         &'a self,
-        repo: &'a mut (impl Repository + ?Sized),
+        repo: &'a mut impl RepositoryAccess,
     ) -> anyhow::Result<Option<PostAuthContext>> {
         let Some(action) = self.post_auth_action.clone() else { return Ok(None) };
         let ctx = match action {
