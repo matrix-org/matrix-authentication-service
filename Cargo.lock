@@ -329,7 +329,7 @@ dependencies = [
  "aws-http",
  "aws-sdk-sso",
  "aws-sdk-sts",
- "aws-smithy-async",
+ "aws-smithy-async 0.52.0",
  "aws-smithy-client",
  "aws-smithy-http",
  "aws-smithy-http-tower",
@@ -389,7 +389,7 @@ dependencies = [
  "aws-endpoint",
  "aws-http",
  "aws-sig-auth",
- "aws-smithy-async",
+ "aws-smithy-async 0.52.0",
  "aws-smithy-client",
  "aws-smithy-http",
  "aws-smithy-http-tower",
@@ -411,7 +411,7 @@ dependencies = [
  "aws-endpoint",
  "aws-http",
  "aws-sig-auth",
- "aws-smithy-async",
+ "aws-smithy-async 0.52.0",
  "aws-smithy-client",
  "aws-smithy-http",
  "aws-smithy-http-tower",
@@ -433,7 +433,7 @@ dependencies = [
  "aws-endpoint",
  "aws-http",
  "aws-sig-auth",
- "aws-smithy-async",
+ "aws-smithy-async 0.52.0",
  "aws-smithy-client",
  "aws-smithy-http",
  "aws-smithy-http-tower",
@@ -492,12 +492,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "aws-smithy-async"
+version = "0.54.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "249498a7b1422780f07e0391ac450ef891a854720833a1b0ffda1e48842dc8d2"
+dependencies = [
+ "futures-util",
+ "pin-project-lite",
+ "tokio",
+ "tokio-stream",
+]
+
+[[package]]
 name = "aws-smithy-client"
 version = "0.52.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f505bf793eb3e6d7c166ef1275c27b4b2cd5361173fe950ac8e2cfc08c29a7ef"
 dependencies = [
- "aws-smithy-async",
+ "aws-smithy-async 0.52.0",
  "aws-smithy-http",
  "aws-smithy-http-tower",
  "aws-smithy-types",
@@ -595,7 +607,7 @@ version = "0.52.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c05adca3e2bcf686dd2c47836f216ab52ed7845c177d180c84b08522c1166a3"
 dependencies = [
- "aws-smithy-async",
+ "aws-smithy-async 0.52.0",
  "aws-smithy-client",
  "aws-smithy-http",
  "aws-smithy-types",
@@ -2801,7 +2813,7 @@ dependencies = [
  "async-trait",
  "aws-config",
  "aws-sdk-sesv2",
- "aws-smithy-async",
+ "aws-smithy-async 0.54.0",
  "aws-smithy-client",
  "lettre",
  "mas-http",
