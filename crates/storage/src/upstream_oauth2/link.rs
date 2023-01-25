@@ -19,14 +19,39 @@ use ulid::Ulid;
 
 use crate::{pagination::Page, repository_impl, Clock, Pagination};
 
+/// An [`UpstreamOAuthLinkRepository`] helps interacting with
+/// [`UpstreamOAuthLink`] with the storage backend
 #[async_trait]
 pub trait UpstreamOAuthLinkRepository: Send + Sync {
+    /// The error type returned by the repository
     type Error;
 
     /// Lookup an upstream OAuth link by its ID
+    ///
+    /// Returns `None` if the link does not exist
+    ///
+    /// # Parameters
+    ///
+    /// * `id`: The ID of the upstream OAuth link to lookup
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
     async fn lookup(&mut self, id: Ulid) -> Result<Option<UpstreamOAuthLink>, Self::Error>;
 
     /// Find an upstream OAuth link for a provider by its subject
+    ///
+    /// Returns `None` if no matching upstream OAuth link was found
+    ///
+    /// # Parameters
+    ///
+    /// * `upstream_oauth_provider`: The upstream OAuth provider on which to
+    ///   find the link
+    /// * `subject`: The subject of the upstream OAuth link to find
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
     async fn find_by_subject(
         &mut self,
         upstream_oauth_provider: &UpstreamOAuthProvider,
@@ -34,6 +59,20 @@ pub trait UpstreamOAuthLinkRepository: Send + Sync {
     ) -> Result<Option<UpstreamOAuthLink>, Self::Error>;
 
     /// Add a new upstream OAuth link
+    ///
+    /// Returns the newly created upstream OAuth link
+    ///
+    /// # Parameters
+    ///
+    /// * `rng`: The random number generator to use
+    /// * `clock`: The clock used to generate timestamps
+    /// * `upsream_oauth_provider`: The upstream OAuth provider for which to
+    ///   create the link
+    /// * `subject`: The subject of the upstream OAuth link to create
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
@@ -43,6 +82,17 @@ pub trait UpstreamOAuthLinkRepository: Send + Sync {
     ) -> Result<UpstreamOAuthLink, Self::Error>;
 
     /// Associate an upstream OAuth link to a user
+    ///
+    /// Returns the updated upstream OAuth link
+    ///
+    /// # Parameters
+    ///
+    /// * `upstream_oauth_link`: The upstream OAuth link to update
+    /// * `user`: The user to associate to the upstream OAuth link
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
     async fn associate_to_user(
         &mut self,
         upstream_oauth_link: &UpstreamOAuthLink,
@@ -50,6 +100,15 @@ pub trait UpstreamOAuthLinkRepository: Send + Sync {
     ) -> Result<(), Self::Error>;
 
     /// Get a paginated list of upstream OAuth links on a user
+    ///
+    /// # Parameters
+    ///
+    /// * `user`: The user for which to get the upstream OAuth links
+    /// * `pagination`: The pagination parameters
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
     async fn list_paginated(
         &mut self,
         user: &User,

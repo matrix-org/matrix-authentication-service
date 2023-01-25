@@ -30,11 +30,15 @@ use uuid::Uuid;
 
 use crate::{tracing::ExecuteExt, DatabaseError, DatabaseInconsistencyError, LookupResultExt};
 
+/// An implementation of [`OAuth2AuthorizationGrantRepository`] for a PostgreSQL
+/// connection
 pub struct PgOAuth2AuthorizationGrantRepository<'c> {
     conn: &'c mut PgConnection,
 }
 
 impl<'c> PgOAuth2AuthorizationGrantRepository<'c> {
+    /// Create a new [`PgOAuth2AuthorizationGrantRepository`] from an active
+    /// PostgreSQL connection
     pub fn new(conn: &'c mut PgConnection) -> Self {
         Self { conn }
     }

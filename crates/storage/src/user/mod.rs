@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Repositories to interact with entities related to user accounts
+
 use async_trait::async_trait;
 use mas_data_model::User;
 use rand_core::RngCore;
@@ -27,18 +29,70 @@ pub use self::{
     email::UserEmailRepository, password::UserPasswordRepository, session::BrowserSessionRepository,
 };
 
+/// A [`UserRepository`] helps interacting with [`User`] saved in the storage
+/// backend
 #[async_trait]
 pub trait UserRepository: Send + Sync {
+    /// The error type returned by the repository
     type Error;
 
+    /// Lookup a [`User`] by its ID
+    ///
+    /// Returns `None` if no [`User`] was found
+    ///
+    /// # Parameters
+    ///
+    /// * `id`: The ID of the [`User`] to lookup
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
     async fn lookup(&mut self, id: Ulid) -> Result<Option<User>, Self::Error>;
+
+    /// Find a [`User`] by its username
+    ///
+    /// Returns `None` if no [`User`] was found
+    ///
+    /// # Parameters
+    ///
+    /// * `username`: The username of the [`User`] to lookup
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
     async fn find_by_username(&mut self, username: &str) -> Result<Option<User>, Self::Error>;
+
+    /// Create a new [`User`]
+    ///
+    /// Returns the newly created [`User`]
+    ///
+    /// # Parameters
+    ///
+    /// * `rng`: A random number generator to generate the [`User`] ID
+    /// * `clock`: The clock used to generate timestamps
+    /// * `username`: The username of the [`User`]
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
         username: String,
     ) -> Result<User, Self::Error>;
+
+    /// Check if a [`User`] exists
+    ///
+    /// Returns `true` if the [`User`] exists, `false` otherwise
+    ///
+    /// # Parameters
+    ///
+    /// * `username`: The username of the [`User`] to lookup
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
     async fn exists(&mut self, username: &str) -> Result<bool, Self::Error>;
 }
 

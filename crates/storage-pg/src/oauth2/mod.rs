@@ -12,8 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! A module containing the PostgreSQL implementations of the OAuth2-related
+//! repositories
+
 mod access_token;
-pub mod authorization_grant;
+mod authorization_grant;
 mod client;
 mod refresh_token;
 mod session;

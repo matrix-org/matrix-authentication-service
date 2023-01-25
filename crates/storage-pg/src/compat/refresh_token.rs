@@ -25,11 +25,15 @@ use uuid::Uuid;
 
 use crate::{tracing::ExecuteExt, DatabaseError, LookupResultExt};
 
+/// An implementation of [`CompatRefreshTokenRepository`] for a PostgreSQL
+/// connection
 pub struct PgCompatRefreshTokenRepository<'c> {
     conn: &'c mut PgConnection,
 }
 
 impl<'c> PgCompatRefreshTokenRepository<'c> {
+    /// Create a new [`PgCompatRefreshTokenRepository`] from an active
+    /// PostgreSQL connection
     pub fn new(conn: &'c mut PgConnection) -> Self {
         Self { conn }
     }

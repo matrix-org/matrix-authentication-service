@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Repositories to interact with entities of the compatibility layer
+
 mod access_token;
 mod refresh_token;
 mod session;

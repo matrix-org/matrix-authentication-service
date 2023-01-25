@@ -12,8 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Repositories to interact with entities related to the OAuth 2.0 protocol
+
 mod access_token;
-pub mod authorization_grant;
+mod authorization_grant;
 mod client;
 mod refresh_token;
 mod session;

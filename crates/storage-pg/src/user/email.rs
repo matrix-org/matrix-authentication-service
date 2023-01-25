@@ -27,11 +27,14 @@ use crate::{
     LookupResultExt,
 };
 
+/// An implementation of [`UserEmailRepository`] for a PostgreSQL connection
 pub struct PgUserEmailRepository<'c> {
     conn: &'c mut PgConnection,
 }
 
 impl<'c> PgUserEmailRepository<'c> {
+    /// Create a new [`PgUserEmailRepository`] from an active PostgreSQL
+    /// connection
     pub fn new(conn: &'c mut PgConnection) -> Self {
         Self { conn }
     }

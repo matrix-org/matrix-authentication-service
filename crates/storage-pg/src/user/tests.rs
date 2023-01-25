@@ -253,6 +253,7 @@ async fn test_user_email_repo(pool: PgPool) {
     repo.save().await.unwrap();
 }
 
+/// Test the user password repository implementation.
 #[sqlx::test(migrator = "crate::MIGRATOR")]
 async fn test_user_password_repo(pool: PgPool) {
     const USERNAME: &str = "john";

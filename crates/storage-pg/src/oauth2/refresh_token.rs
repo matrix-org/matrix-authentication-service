@@ -23,11 +23,15 @@ use uuid::Uuid;
 
 use crate::{tracing::ExecuteExt, DatabaseError, LookupResultExt};
 
+/// An implementation of [`OAuth2RefreshTokenRepository`] for a PostgreSQL
+/// connection
 pub struct PgOAuth2RefreshTokenRepository<'c> {
     conn: &'c mut PgConnection,
 }
 
 impl<'c> PgOAuth2RefreshTokenRepository<'c> {
+    /// Create a new [`PgOAuth2RefreshTokenRepository`] from an active
+    /// PostgreSQL connection
     pub fn new(conn: &'c mut PgConnection) -> Self {
         Self { conn }
     }

@@ -21,14 +21,47 @@ use ulid::Ulid;
 
 use crate::{pagination::Page, repository_impl, Clock, Pagination};
 
+/// An [`UpstreamOAuthProviderRepository`] helps interacting with
+/// [`UpstreamOAuthProvider`] saved in the storage backend
 #[async_trait]
 pub trait UpstreamOAuthProviderRepository: Send + Sync {
+    /// The error type returned by the repository
     type Error;
 
     /// Lookup an upstream OAuth provider by its ID
+    ///
+    /// Returns `None` if the provider was not found
+    ///
+    /// # Parameters
+    ///
+    /// * `id`: The ID of the provider to lookup
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
     async fn lookup(&mut self, id: Ulid) -> Result<Option<UpstreamOAuthProvider>, Self::Error>;
 
     /// Add a new upstream OAuth provider
+    ///
+    /// Returns the newly created provider
+    ///
+    /// # Parameters
+    ///
+    /// * `rng`: A random number generator
+    /// * `clock`: The clock used to generate timestamps
+    /// * `issuer`: The OIDC issuer of the provider
+    /// * `scope`: The scope to request during the authorization flow
+    /// * `token_endpoint_auth_method`: The token endpoint authentication method
+    /// * `token_endpoint_auth_signing_alg`: The JWT signing algorithm to use
+    ///   when then `client_secret_jwt` or `private_key_jwt` authentication
+    ///   methods are used
+    /// * `client_id`: The client ID to use when authenticating to the upstream
+    /// * `encrypted_client_secret`: The encrypted client secret to use when
+    ///   authenticating to the upstream
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
     #[allow(clippy::too_many_arguments)]
     async fn add(
         &mut self,
@@ -43,12 +76,24 @@ pub trait UpstreamOAuthProviderRepository: Send + Sync {
     ) -> Result<UpstreamOAuthProvider, Self::Error>;
 
     /// Get a paginated list of upstream OAuth providers
+    ///
+    /// # Parameters
+    ///
+    /// * `pagination`: The pagination parameters
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
     async fn list_paginated(
         &mut self,
         pagination: Pagination,
     ) -> Result<Page<UpstreamOAuthProvider>, Self::Error>;
 
     /// Get all upstream OAuth providers
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
     async fn all(&mut self) -> Result<Vec<UpstreamOAuthProvider>, Self::Error>;
 }
 

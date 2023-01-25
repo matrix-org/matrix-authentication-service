@@ -26,11 +26,14 @@ use crate::{
     LookupResultExt,
 };
 
+/// An implementation of [`OAuth2SessionRepository`] for a PostgreSQL connection
 pub struct PgOAuth2SessionRepository<'c> {
     conn: &'c mut PgConnection,
 }
 
 impl<'c> PgOAuth2SessionRepository<'c> {
+    /// Create a new [`PgOAuth2SessionRepository`] from an active PostgreSQL
+    /// connection
     pub fn new(conn: &'c mut PgConnection) -> Self {
         Self { conn }
     }

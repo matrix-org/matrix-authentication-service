@@ -19,14 +19,11 @@
     clippy::all,
     clippy::str_to_string,
     clippy::future_not_send,
-    rustdoc::broken_intra_doc_links
+    rustdoc::broken_intra_doc_links,
+    missing_docs
 )]
 #![warn(clippy::pedantic)]
-#![allow(
-    clippy::missing_errors_doc,
-    clippy::missing_panics_doc,
-    clippy::module_name_repetitions
-)]
+#![allow(clippy::module_name_repetitions)]
 
 use rand_core::CryptoRngCore;
 
@@ -103,5 +100,8 @@ macro_rules! repository_impl {
     };
 }
 
+/// A boxed [`Clock`]
 pub type BoxClock = Box<dyn Clock + Send>;
+
+/// A boxed random number generator
 pub type BoxRng = Box<dyn CryptoRngCore + Send>;

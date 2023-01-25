@@ -22,17 +22,29 @@ use ulid::Ulid;
 #[error("Either 'first' or 'last' must be specified")]
 pub struct InvalidPagination;
 
+/// Pagination parameters
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Pagination {
+    /// The cursor to start from
     pub before: Option<Ulid>,
+
+    /// The cursor to end at
     pub after: Option<Ulid>,
+
+    /// The maximum number of items to return
     pub count: usize,
+
+    /// In which direction to paginate
     pub direction: PaginationDirection,
 }
 
+/// The direction to paginate
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PaginationDirection {
+    /// Paginate forward
     Forward,
+
+    /// Paginate backward
     Backward,
 }
 
@@ -124,13 +136,24 @@ impl Pagination {
     }
 }
 
+/// A page of results returned by a paginated query
 pub struct Page<T> {
+    /// When paginating forwards, this is true if there are more items after
     pub has_next_page: bool,
+
+    /// When paginating backwards, this is true if there are more items before
     pub has_previous_page: bool,
+
+    /// The items in the page
     pub edges: Vec<T>,
 }
 
 impl<T> Page<T> {
+    /// Map the items in this page with the given function
+    ///
+    /// # Parameters
+    ///
+    /// * `f`: The function to map the items with
     #[must_use]
     pub fn map<F, T2>(self, f: F) -> Page<T2>
     where
@@ -144,6 +167,15 @@ impl<T> Page<T> {
         }
     }
 
+    /// Try to map the items in this page with the given fallible function
+    ///
+    /// # Parameters
+    ///
+    /// * `f`: The fallible function to map the items with
+    ///
+    /// # Errors
+    ///
+    /// Returns the first error encountered while mapping the items
     pub fn try_map<F, E, T2>(self, f: F) -> Result<Page<T2>, E>
     where
         F: FnMut(T) -> Result<T2, E>,

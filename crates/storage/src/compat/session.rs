@@ -19,14 +19,40 @@ use ulid::Ulid;
 
 use crate::{repository_impl, Clock};
 
+/// A [`CompatSessionRepository`] helps interacting with
+/// [`CompatSessionRepository`] saved in the storage backend
 #[async_trait]
 pub trait CompatSessionRepository: Send + Sync {
+    /// The error type returned by the repository
     type Error;
 
     /// Lookup a compat session by its ID
+    ///
+    /// Returns the compat session if it exists, `None` otherwise
+    ///
+    /// # Parameters
+    ///
+    /// * `id`: The ID of the compat session to lookup
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
     async fn lookup(&mut self, id: Ulid) -> Result<Option<CompatSession>, Self::Error>;
 
     /// Start a new compat session
+    ///
+    /// Returns the newly created compat session
+    ///
+    /// # Parameters
+    ///
+    /// * `rng`: The random number generator to use
+    /// * `clock`: The clock used to generate timestamps
+    /// * `user`: The user to create the compat session for
+    /// * `device`: The device ID of this session
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
@@ -36,6 +62,17 @@ pub trait CompatSessionRepository: Send + Sync {
     ) -> Result<CompatSession, Self::Error>;
 
     /// End a compat session
+    ///
+    /// Returns the ended compat session
+    ///
+    /// # Parameters
+    ///
+    /// * `clock`: The clock used to generate timestamps
+    /// * `compat_session`: The compat session to end
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
     async fn finish(
         &mut self,
         clock: &dyn Clock,

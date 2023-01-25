@@ -51,11 +51,19 @@ use crate::{
     DatabaseError,
 };
 
+/// An implementation of the [`Repository`] trait backed by a PostgreSQL
+/// transaction.
 pub struct PgRepository {
     txn: Transaction<'static, Postgres>,
 }
 
 impl PgRepository {
+    /// Create a new [`PgRepository`] from a PostgreSQL connection pool,
+    /// starting a transaction.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`DatabaseError`] if the transaction could not be started.
     pub async fn from_pool(pool: &PgPool) -> Result<Self, DatabaseError> {
         let txn = pool.begin().await?;
         Ok(PgRepository { txn })

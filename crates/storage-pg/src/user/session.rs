@@ -26,11 +26,15 @@ use crate::{
     LookupResultExt,
 };
 
+/// An implementation of [`BrowserSessionRepository`] for a PostgreSQL
+/// connection
 pub struct PgBrowserSessionRepository<'c> {
     conn: &'c mut PgConnection,
 }
 
 impl<'c> PgBrowserSessionRepository<'c> {
+    /// Create a new [`PgBrowserSessionRepository`] from an active PostgreSQL
+    /// connection
     pub fn new(conn: &'c mut PgConnection) -> Self {
         Self { conn }
     }

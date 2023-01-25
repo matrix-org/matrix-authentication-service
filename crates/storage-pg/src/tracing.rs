@@ -14,6 +14,8 @@
 
 use tracing::Span;
 
+/// An extension trait for [`sqlx::Execute`] that records the SQL statement as
+/// `db.statement` in a tracing span
 pub trait ExecuteExt<'q, DB>: Sized {
     /// Records the statement as `db.statement` in the current span
     fn traced(self) -> Self {

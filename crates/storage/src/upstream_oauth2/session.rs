@@ -19,17 +19,48 @@ use ulid::Ulid;
 
 use crate::{repository_impl, Clock};
 
+/// An [`UpstreamOAuthSessionRepository`] helps interacting with
+/// [`UpstreamOAuthAuthorizationSession`] saved in the storage backend
 #[async_trait]
 pub trait UpstreamOAuthSessionRepository: Send + Sync {
+    /// The error type returned by the repository
     type Error;
 
     /// Lookup a session by its ID
+    ///
+    /// Returns `None` if the session does not exist
+    ///
+    /// # Parameters
+    ///
+    /// * `id`: the ID of the session to lookup
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
     async fn lookup(
         &mut self,
         id: Ulid,
     ) -> Result<Option<UpstreamOAuthAuthorizationSession>, Self::Error>;
 
     /// Add a session to the database
+    ///
+    /// Returns the newly created session
+    ///
+    /// # Parameters
+    ///
+    /// * `rng`: the random number generator to use
+    /// * `clock`: the clock source
+    /// * `upstream_oauth_provider`: the upstream OAuth provider for which to
+    ///   create the session
+    /// * `state`: the authorization grant `state` parameter sent to the
+    ///   upstream OAuth provider
+    /// * `code_challenge_verifier`: the code challenge verifier used in this
+    ///   session, if PKCE is being used
+    /// * `nonce`: the `nonce` used in this session
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
@@ -41,6 +72,20 @@ pub trait UpstreamOAuthSessionRepository: Send + Sync {
     ) -> Result<UpstreamOAuthAuthorizationSession, Self::Error>;
 
     /// Mark a session as completed and associate the given link
+    ///
+    /// Returns the updated session
+    ///
+    /// # Parameters
+    ///
+    /// * `clock`: the clock source
+    /// * `upstream_oauth_authorization_session`: the session to update
+    /// * `upstream_oauth_link`: the link to associate with the session
+    /// * `id_token`: the ID token returned by the upstream OAuth provider, if
+    ///   present
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
     async fn complete_with_link(
         &mut self,
         clock: &dyn Clock,
@@ -50,6 +95,17 @@ pub trait UpstreamOAuthSessionRepository: Send + Sync {
     ) -> Result<UpstreamOAuthAuthorizationSession, Self::Error>;
 
     /// Mark a session as consumed
+    ///
+    /// Returns the updated session
+    ///
+    /// # Parameters
+    ///
+    /// * `clock`: the clock source
+    /// * `upstream_oauth_authorization_session`: the session to consume
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
     async fn consume(
         &mut self,
         clock: &dyn Clock,

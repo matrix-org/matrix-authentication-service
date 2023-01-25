@@ -20,20 +20,56 @@ use url::Url;
 
 use crate::{pagination::Page, repository_impl, Clock, Pagination};
 
+/// A [`CompatSsoLoginRepository`] helps interacting with
+/// [`CompatSsoLoginRepository`] saved in the storage backend
 #[async_trait]
 pub trait CompatSsoLoginRepository: Send + Sync {
+    /// The error type returned by the repository
     type Error;
 
     /// Lookup a compat SSO login by its ID
+    ///
+    /// Returns the compat SSO login if it exists, `None` otherwise
+    ///
+    /// # Parameters
+    ///
+    /// * `id`: The ID of the compat SSO login to lookup
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
     async fn lookup(&mut self, id: Ulid) -> Result<Option<CompatSsoLogin>, Self::Error>;
 
     /// Find a compat SSO login by its login token
+    ///
+    /// Returns the compat SSO login if found, `None` otherwise
+    ///
+    /// # Parameters
+    ///
+    /// * `login_token`: The login token of the compat SSO login to lookup
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
     async fn find_by_token(
         &mut self,
         login_token: &str,
     ) -> Result<Option<CompatSsoLogin>, Self::Error>;
 
     /// Start a new compat SSO login token
+    ///
+    /// Returns the newly created compat SSO login
+    ///
+    /// # Parameters
+    ///
+    /// * `rng`: The random number generator to use
+    /// * `clock`: The clock used to generate the timestamps
+    /// * `login_token`: The login token given to the client
+    /// * `redirect_uri`: The redirect URI given by the client
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
     async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
@@ -43,6 +79,19 @@ pub trait CompatSsoLoginRepository: Send + Sync {
     ) -> Result<CompatSsoLogin, Self::Error>;
 
     /// Fulfill a compat SSO login by providing a compat session
+    ///
+    /// Returns the fulfilled compat SSO login
+    ///
+    /// # Parameters
+    ///
+    /// * `clock`: The clock used to generate the timestamps
+    /// * `compat_sso_login`: The compat SSO login to fulfill
+    /// * `compat_session`: The compat session to associate with the compat SSO
+    ///   login
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
     async fn fulfill(
         &mut self,
         clock: &dyn Clock,
@@ -51,6 +100,17 @@ pub trait CompatSsoLoginRepository: Send + Sync {
     ) -> Result<CompatSsoLogin, Self::Error>;
 
     /// Mark a compat SSO login as exchanged
+    ///
+    /// Returns the exchanged compat SSO login
+    ///
+    /// # Parameters
+    ///
+    /// * `clock`: The clock used to generate the timestamps
+    /// * `compat_sso_login`: The compat SSO login to mark as exchanged
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
     async fn exchange(
         &mut self,
         clock: &dyn Clock,
@@ -58,6 +118,15 @@ pub trait CompatSsoLoginRepository: Send + Sync {
     ) -> Result<CompatSsoLogin, Self::Error>;
 
     /// Get a paginated list of compat SSO logins for a user
+    ///
+    /// # Parameters
+    ///
+    /// * `user`: The user to get the compat SSO logins for
+    /// * `pagination`: The pagination parameters
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
     async fn list_paginated(
         &mut self,
         user: &User,

@@ -23,11 +23,14 @@ use uuid::Uuid;
 
 use crate::{tracing::ExecuteExt, DatabaseError, DatabaseInconsistencyError, LookupResultExt};
 
+/// An implementation of [`CompatSessionRepository`] for a PostgreSQL connection
 pub struct PgCompatSessionRepository<'c> {
     conn: &'c mut PgConnection,
 }
 
 impl<'c> PgCompatSessionRepository<'c> {
+    /// Create a new [`PgCompatSessionRepository`] from an active PostgreSQL
+    /// connection
     pub fn new(conn: &'c mut PgConnection) -> Self {
         Self { conn }
     }

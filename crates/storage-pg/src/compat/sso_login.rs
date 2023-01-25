@@ -27,11 +27,15 @@ use crate::{
     LookupResultExt,
 };
 
+/// An implementation of [`CompatSsoLoginRepository`] for a PostgreSQL
+/// connection
 pub struct PgCompatSsoLoginRepository<'c> {
     conn: &'c mut PgConnection,
 }
 
 impl<'c> PgCompatSsoLoginRepository<'c> {
+    /// Create a new [`PgCompatSsoLoginRepository`] from an active PostgreSQL
+    /// connection
     pub fn new(conn: &'c mut PgConnection) -> Self {
         Self { conn }
     }

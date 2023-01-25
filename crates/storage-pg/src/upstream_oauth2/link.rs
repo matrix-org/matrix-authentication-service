@@ -23,11 +23,15 @@ use uuid::Uuid;
 
 use crate::{pagination::QueryBuilderExt, tracing::ExecuteExt, DatabaseError, LookupResultExt};
 
+/// An implementation of [`UpstreamOAuthLinkRepository`] for a PostgreSQL
+/// connection
 pub struct PgUpstreamOAuthLinkRepository<'c> {
     conn: &'c mut PgConnection,
 }
 
 impl<'c> PgUpstreamOAuthLinkRepository<'c> {
+    /// Create a new [`PgUpstreamOAuthLinkRepository`] from an active PostgreSQL
+    /// connection
     pub fn new(conn: &'c mut PgConnection) -> Self {
         Self { conn }
     }

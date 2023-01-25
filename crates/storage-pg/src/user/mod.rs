@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! A module containing the PostgreSQL implementation of the user-related
+//! repositories
+
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mas_data_model::User;
@@ -35,11 +38,13 @@ pub use self::{
     session::PgBrowserSessionRepository,
 };
 
+/// An implementation of [`UserRepository`] for a PostgreSQL connection
 pub struct PgUserRepository<'c> {
     conn: &'c mut PgConnection,
 }
 
 impl<'c> PgUserRepository<'c> {
+    /// Create a new [`PgUserRepository`] from an active PostgreSQL connection
     pub fn new(conn: &'c mut PgConnection) -> Self {
         Self { conn }
     }

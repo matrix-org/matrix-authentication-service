@@ -28,11 +28,15 @@ use crate::{
     LookupResultExt,
 };
 
+/// An implementation of [`UpstreamOAuthProviderRepository`] for a PostgreSQL
+/// connection
 pub struct PgUpstreamOAuthProviderRepository<'c> {
     conn: &'c mut PgConnection,
 }
 
 impl<'c> PgUpstreamOAuthProviderRepository<'c> {
+    /// Create a new [`PgUpstreamOAuthProviderRepository`] from an active
+    /// PostgreSQL connection
     pub fn new(conn: &'c mut PgConnection) -> Self {
         Self { conn }
     }

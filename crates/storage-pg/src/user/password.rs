@@ -23,11 +23,14 @@ use uuid::Uuid;
 
 use crate::{tracing::ExecuteExt, DatabaseError, DatabaseInconsistencyError, LookupResultExt};
 
+/// An implementation of [`UserPasswordRepository`] for a PostgreSQL connection
 pub struct PgUserPasswordRepository<'c> {
     conn: &'c mut PgConnection,
 }
 
 impl<'c> PgUserPasswordRepository<'c> {
+    /// Create a new [`PgUserPasswordRepository`] from an active PostgreSQL
+    /// connection
     pub fn new(conn: &'c mut PgConnection) -> Self {
         Self { conn }
     }

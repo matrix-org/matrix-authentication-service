@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Repositories to interact with entities related to the upstream OAuth 2.0
+//! providers
+
 mod link;
 mod provider;
 mod session;

@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! A module containing the PostgreSQL implementation of the repositories
+//! related to the upstream OAuth 2.0 providers
+
 mod link;
 mod provider;
 mod session;
@@ -178,6 +181,8 @@ mod tests {
         assert_eq!(links.edges[0].user_id, Some(user.id));
     }
 
+    /// Test that the pagination works as expected in the upstream OAuth
+    /// provider repository
     #[sqlx::test(migrator = "crate::MIGRATOR")]
     async fn test_provider_repository_pagination(pool: PgPool) {
         const ISSUER: &str = "https://example.com/";
