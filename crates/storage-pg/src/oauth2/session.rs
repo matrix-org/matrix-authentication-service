@@ -232,14 +232,15 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
                      , user_session_id
                      , oauth2_client_id
                      , scope
-                     , created_at
-                     , finished_at
+                     , os.created_at
+                     , os.finished_at
                 FROM oauth2_sessions os
+                INNER JOIN user_sessions USING (user_session_id)
             "#,
         );
 
         query
-            .push(" WHERE us.user_id = ")
+            .push(" WHERE user_id = ")
             .push_bind(Uuid::from(user.id))
             .generate_pagination("oauth2_session_id", pagination);
 

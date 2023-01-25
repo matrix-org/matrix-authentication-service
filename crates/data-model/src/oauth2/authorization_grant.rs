@@ -120,6 +120,22 @@ impl AuthorizationGrantStage {
     pub fn is_pending(&self) -> bool {
         matches!(self, Self::Pending)
     }
+
+    /// Returns `true` if the authorization grant stage is [`Fulfilled`].
+    ///
+    /// [`Fulfilled`]: AuthorizationGrantStage::Fulfilled
+    #[must_use]
+    pub fn is_fulfilled(&self) -> bool {
+        matches!(self, Self::Fulfilled { .. })
+    }
+
+    /// Returns `true` if the authorization grant stage is [`Exchanged`].
+    ///
+    /// [`Exchanged`]: AuthorizationGrantStage::Exchanged
+    #[must_use]
+    pub fn is_exchanged(&self) -> bool {
+        matches!(self, Self::Exchanged { .. })
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -138,6 +154,14 @@ pub struct AuthorizationGrant {
     pub response_type_id_token: bool,
     pub created_at: DateTime<Utc>,
     pub requires_consent: bool,
+}
+
+impl std::ops::Deref for AuthorizationGrant {
+    type Target = AuthorizationGrantStage;
+
+    fn deref(&self) -> &Self::Target {
+        &self.stage
+    }
 }
 
 impl AuthorizationGrant {
