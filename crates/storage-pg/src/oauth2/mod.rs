@@ -176,6 +176,29 @@ mod tests {
             .await
             .unwrap();
 
+        // Lookup the consent the user gave to the client
+        let consent = repo
+            .oauth2_client()
+            .get_consent_for_user(&client, &user)
+            .await
+            .unwrap();
+        assert!(consent.is_empty());
+
+        // Give consent to the client
+        let scope = Scope::from_iter([OPENID]);
+        repo.oauth2_client()
+            .give_consent_for_user(&mut rng, &clock, &client, &user, &scope)
+            .await
+            .unwrap();
+
+        // Lookup the consent the user gave to the client
+        let consent = repo
+            .oauth2_client()
+            .get_consent_for_user(&client, &user)
+            .await
+            .unwrap();
+        assert_eq!(scope, consent);
+
         // Lookup a non-existing session
         let session = repo.oauth2_session().lookup(Ulid::nil()).await.unwrap();
         assert_eq!(session, None);

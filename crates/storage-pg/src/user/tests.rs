@@ -16,7 +16,7 @@ use chrono::Duration;
 use mas_storage::{
     clock::MockClock,
     user::{BrowserSessionRepository, UserEmailRepository, UserPasswordRepository, UserRepository},
-    Repository, RepositoryAccess,
+    Pagination, Repository, RepositoryAccess,
 };
 use rand::SeedableRng;
 use rand_chacha::ChaChaRng;
@@ -229,6 +229,16 @@ async fn test_user_email_repo(pool: PgPool) {
         .await
         .unwrap()
         .is_some());
+
+    // Listing the user emails should work
+    let emails = repo
+        .user_email()
+        .list_paginated(&user, Pagination::first(10))
+        .await
+        .unwrap();
+    assert!(!emails.has_next_page);
+    assert_eq!(emails.edges.len(), 1);
+    assert_eq!(emails.edges[0], user_email);
 
     // Deleting the user email should work
     repo.user_email().remove(user_email).await.unwrap();

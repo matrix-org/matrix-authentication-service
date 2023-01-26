@@ -323,12 +323,12 @@ impl<'c> CompatSsoLoginRepository for PgCompatSsoLoginRepository<'c> {
                      , cl.compat_session_id
 
                 FROM compat_sso_logins cl
-                INNER JOIN compat_sessions ON compat_session_id
+                INNER JOIN compat_sessions cs USING (compat_session_id)
             "#,
         );
 
         query
-            .push(" WHERE user_id = ")
+            .push(" WHERE cs.user_id = ")
             .push_bind(Uuid::from(user.id))
             .generate_pagination("cl.compat_sso_login_id", pagination);
 

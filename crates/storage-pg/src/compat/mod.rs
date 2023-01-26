@@ -35,11 +35,12 @@ mod tests {
             CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository,
         },
         user::UserRepository,
-        Clock, Repository, RepositoryAccess,
+        Clock, Pagination, Repository, RepositoryAccess,
     };
     use rand::SeedableRng;
     use rand_chacha::ChaChaRng;
     use sqlx::PgPool;
+    use ulid::Ulid;
 
     use crate::PgRepository;
 
@@ -322,5 +323,127 @@ mod tests {
             .is_err());
 
         repo.save().await.unwrap();
+    }
+
+    #[sqlx::test(migrator = "crate::MIGRATOR")]
+    async fn test_compat_sso_login_repository(pool: PgPool) {
+        let mut rng = ChaChaRng::seed_from_u64(42);
+        let clock = MockClock::default();
+        let mut repo = PgRepository::from_pool(&pool).await.unwrap().boxed();
+
+        // Create a user
+        let user = repo
+            .user()
+            .add(&mut rng, &clock, "john".to_owned())
+            .await
+            .unwrap();
+
+        // Lookup an unknown SSO login
+        let login = repo.compat_sso_login().lookup(Ulid::nil()).await.unwrap();
+        assert_eq!(login, None);
+
+        // Lookup an unknown login token
+        let login = repo
+            .compat_sso_login()
+            .find_by_token("login-token")
+            .await
+            .unwrap();
+        assert_eq!(login, None);
+
+        // Start a new SSO login
+        let login = repo
+            .compat_sso_login()
+            .add(
+                &mut rng,
+                &clock,
+                "login-token".to_owned(),
+                "https://example.com/callback".parse().unwrap(),
+            )
+            .await
+            .unwrap();
+        assert!(login.is_pending());
+
+        // Lookup the login by ID
+        let login_lookup = repo
+            .compat_sso_login()
+            .lookup(login.id)
+            .await
+            .unwrap()
+            .expect("login not found");
+        assert_eq!(login_lookup, login);
+
+        // Find the login by token
+        let login_lookup = repo
+            .compat_sso_login()
+            .find_by_token("login-token")
+            .await
+            .unwrap()
+            .expect("login not found");
+        assert_eq!(login_lookup, login);
+
+        // Exchanging before fulfilling should not work
+        // Note: It should also not poison the SQL transaction
+        let res = repo
+            .compat_sso_login()
+            .exchange(&clock, login.clone())
+            .await;
+        assert!(res.is_err());
+
+        // Start a compat session for that user
+        let device = Device::generate(&mut rng);
+        let session = repo
+            .compat_session()
+            .add(&mut rng, &clock, &user, device)
+            .await
+            .unwrap();
+
+        // Associate the login with the session
+        let login = repo
+            .compat_sso_login()
+            .fulfill(&clock, login, &session)
+            .await
+            .unwrap();
+        assert!(login.is_fulfilled());
+
+        // Fulfilling again should not work
+        // Note: It should also not poison the SQL transaction
+        let res = repo
+            .compat_sso_login()
+            .fulfill(&clock, login.clone(), &session)
+            .await;
+        assert!(res.is_err());
+
+        // Exchange that login
+        let login = repo
+            .compat_sso_login()
+            .exchange(&clock, login)
+            .await
+            .unwrap();
+        assert!(login.is_exchanged());
+
+        // Exchange again should not work
+        // Note: It should also not poison the SQL transaction
+        let res = repo
+            .compat_sso_login()
+            .exchange(&clock, login.clone())
+            .await;
+        assert!(res.is_err());
+
+        // Fulfilling after exchanging should not work
+        // Note: It should also not poison the SQL transaction
+        let res = repo
+            .compat_sso_login()
+            .fulfill(&clock, login.clone(), &session)
+            .await;
+        assert!(res.is_err());
+
+        // List the logins for the user
+        let logins = repo
+            .compat_sso_login()
+            .list_paginated(&user, Pagination::first(10))
+            .await
+            .unwrap();
+        assert!(!logins.has_next_page);
+        assert_eq!(logins.edges, vec![login]);
     }
 }

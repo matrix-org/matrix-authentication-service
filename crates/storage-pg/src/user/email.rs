@@ -249,7 +249,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
         query
             .push(" WHERE user_id = ")
             .push_bind(Uuid::from(user.id))
-            .generate_pagination("ue.user_email_id", pagination);
+            .generate_pagination("user_email_id", pagination);
 
         let edges: Vec<UserEmailLookup> = query
             .build_query_as()
