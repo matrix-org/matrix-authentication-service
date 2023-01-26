@@ -18,11 +18,13 @@ use tracing::Span;
 /// `db.statement` in a tracing span
 pub trait ExecuteExt<'q, DB>: Sized {
     /// Records the statement as `db.statement` in the current span
+    #[must_use]
     fn traced(self) -> Self {
         self.record(&Span::current())
     }
 
     /// Records the statement as `db.statement` in the given span
+    #[must_use]
     fn record(self, span: &Span) -> Self;
 }
 

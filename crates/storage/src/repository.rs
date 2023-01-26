@@ -101,6 +101,20 @@ pub trait RepositoryTransaction {
 }
 
 /// Access the various repositories the backend implements.
+///
+/// All the methods return a boxed trait object, which can be used to access a
+/// particular repository. The lifetime of the returned object is bound to the
+/// lifetime of the whole repository, so that only one mutable reference to the
+/// repository is used at a time.
+///
+/// When adding a new repository, you should add a new method to this trait, and
+/// update the implementations for [`MapErr`] and [`Box<R>`] below.
+///
+/// Note: this used to have generic associated types to avoid boxing all the
+/// repository traits, but that was removed because it made almost impossible to
+/// box the trait object. This might be a shortcoming of the initial
+/// implementation of generic associated types, and might be fixed in the
+/// future.
 pub trait RepositoryAccess: Send {
     /// The backend-specific error type used by each repository.
     type Error: std::error::Error + Send + Sync + 'static;
