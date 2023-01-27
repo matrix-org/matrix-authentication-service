@@ -35,11 +35,26 @@ jobs:
         with:
           mdbook-version: '0.4.25'
 
+      - name: Install Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Node dependencies
+        working-directory: ./frontend
+        run: npm ci
+
       - name: Build the documentation
         run: mdbook build
 
       - name: Build rustdoc
         run: cargo doc -Zrustdoc-map --workspace --lib --no-deps
+
+      - name: Build storybook
+        working-directory: ./frontend
+        run: npx storybook build -o ../target/book/storybook
 
       - name: Move the Rust documentation within the mdBook
         run: mv target/doc target/book/rustdoc
