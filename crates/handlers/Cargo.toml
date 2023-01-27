@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [dependencies]
 # Async runtime
-tokio = { version = "1.23.0", features = ["macros"] }
+tokio = { version = "1.24.1", features = ["macros"] }
 futures-util = "0.3.25"
 
 # Logging and tracing
@@ -21,11 +21,11 @@ anyhow = "1.0.68"
 hyper = { version = "0.14.23", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.3.5", features = ["cors"] }
-axum = "0.6.1"
-axum-macros = "0.3.0"
+axum = "0.6.2"
+axum-macros = "0.3.1"
 axum-extra = { version = "0.4.2", features = ["cookie-private"] }
 
-async-graphql = { version = "5.0.4", features = ["tracing", "apollo_tracing"] }
+async-graphql = { version = "5.0.5", features = ["tracing", "apollo_tracing"] }
 
 # Emails
 lettre = { version = "0.10.1", default-features = false, features = ["builder"] }
@@ -46,7 +46,7 @@ pbkdf2 = { version = "0.11.0", features = ["password-hash", "std"] }
 zeroize = "1.5.7"
 
 # Various data types and utilities
-camino = "1.1.1"
+camino = "1.1.2"
 chrono = { version = "0.4.23", features = ["serde"] }
 time = "0.3.17"
 url = { version = "2.3.1", features = ["serde"] }
@@ -74,7 +74,7 @@ oauth2-types = { path = "../oauth2-types" }
 
 [dev-dependencies]
 indoc = "1.0.8"
-insta = "1.23.0"
+insta = "1.26.0"
 
 [features]
 # Use the native root certificates

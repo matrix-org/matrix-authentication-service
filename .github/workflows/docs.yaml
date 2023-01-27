@@ -25,7 +25,7 @@ jobs:
 
       - name: Build the documentation
         run: mdbook build
-          
+
       - name: Upload GitHub Pages artifacts
         uses: actions/upload-pages-artifact@v1.0.7
 

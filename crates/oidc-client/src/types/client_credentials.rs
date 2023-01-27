@@ -14,7 +14,7 @@
 
 //! Types and methods for client credentials.
 
-use std::{collections::HashMap, fmt};
+use std::{collections::HashMap, fmt, sync::Arc};
 
 use base64ct::{Base64UrlUnpadded, Encoding};
 use chrono::{DateTime, Duration, Utc};
@@ -56,13 +56,14 @@ pub type JwtSigningFn =
     dyn Fn(HashMap<String, Value>, JsonWebSignatureAlg) -> Result<String, BoxError> + Send + Sync;
 
 /// The method used to sign JWTs with a private key.
+#[derive(Clone)]
 pub enum JwtSigningMethod {
     /// Sign the JWTs with this library, by providing the signing keys.
     #[cfg(feature = "keystore")]
     Keystore(Keystore),
 
     /// Sign the JWTs in a callback.
-    Custom(Box<JwtSigningFn>),
+    Custom(Arc<JwtSigningFn>),
 }
 
 impl JwtSigningMethod {
@@ -82,7 +83,7 @@ impl JwtSigningMethod {
             + Sync
             + 'static,
     {
-        Self::Custom(Box::new(signing_fn))
+        Self::Custom(Arc::new(signing_fn))
     }
 
     /// Get the [`Keystore`] from this [`JwtSigningMethod`].
@@ -99,7 +100,7 @@ impl JwtSigningMethod {
     #[must_use]
     pub fn jwt_custom(&self) -> Option<&JwtSigningFn> {
         match self {
-            JwtSigningMethod::Custom(s) => Some(s),
+            JwtSigningMethod::Custom(s) => Some(s.as_ref()),
             JwtSigningMethod::Keystore(_) => None,
         }
     }

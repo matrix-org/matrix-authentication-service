@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [dependencies]
 tracing = "0.1.37"
-tokio = { version = "1.23.0", features = ["macros", "rt"] }
+tokio = { version = "1.24.1", features = ["macros", "rt"] }
 
 anyhow = "1.0.68"
 thiserror = "1.0.38"
@@ -17,7 +17,7 @@ serde = { version = "1.0.152", features = ["derive"] }
 serde_json = "1.0.91"
 serde_urlencoded = "0.7.1"
 
-camino = "1.1.1"
+camino = "1.1.2"
 chrono = "0.4.23"
 url = "2.3.1"
 http = "0.2.8"
