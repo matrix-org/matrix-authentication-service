@@ -74,7 +74,7 @@ pub enum Credentials {
 impl Credentials {
     pub async fn fetch<E>(
         &self,
-        repo: &mut (impl RepositoryAccess<Error = E> + ?Sized),
+        repo: &mut impl RepositoryAccess<Error = E>,
     ) -> Result<Option<Client>, E> {
         let client_id = match self {
             Credentials::None { client_id }
