@@ -4,5 +4,5 @@ This documentation is intended to give an overview of how the `matrix-authentica
 
 ## Links
 
- - Technical documentation for individual crates: [`rustdoc`](../rustdoc/mas_handlers/index.html)
- - UI components: [`storybook`](../storybook/index.html)
+ - Technical documentation for individual crates: [`rustdoc`](./rustdoc/mas_handlers/index.html)
+ - UI components: [`storybook`](./storybook/index.html)
