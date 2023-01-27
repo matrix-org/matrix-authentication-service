@@ -15,18 +15,18 @@
 use axum::{extract::State, response::IntoResponse, Json};
 use chrono::Duration;
 use hyper::StatusCode;
-use mas_data_model::{CompatSession, CompatSsoLoginState, Device, TokenType};
+use mas_data_model::{CompatSession, CompatSsoLoginState, Device, TokenType, User};
 use mas_storage::{
     compat::{
-        add_compat_access_token, add_compat_refresh_token, get_compat_sso_login_by_token,
-        mark_compat_sso_login_as_exchanged, start_compat_session,
+        CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository,
+        CompatSsoLoginRepository,
     },
-    user::{add_user_password, lookup_user_by_username, lookup_user_password},
-    Clock,
+    user::{UserPasswordRepository, UserRepository},
+    BoxClock, BoxRepository, BoxRng, Clock,
 };
+use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, skip_serializing_none, DurationMilliSeconds};
-use sqlx::{PgPool, Postgres, Transaction};
 use thiserror::Error;
 use zeroize::Zeroizing;
 
@@ -137,6 +137,9 @@ pub enum RouteError {
     #[error("user not found")]
     UserNotFound,
 
+    #[error("session not found")]
+    SessionNotFound,
+
     #[error("user has no password")]
     NoPassword,
 
@@ -150,13 +153,12 @@ pub enum RouteError {
     InvalidLoginToken,
 }
 
-impl_from_error_for_route!(sqlx::Error);
-impl_from_error_for_route!(mas_storage::DatabaseError);
+impl_from_error_for_route!(mas_storage::RepositoryError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         match self {
-            Self::Internal(_) => MatrixError {
+            Self::Internal(_) | Self::SessionNotFound => MatrixError {
                 errcode: "M_UNKNOWN",
                 error: "Internal server error",
                 status: StatusCode::INTERNAL_SERVER_ERROR,
@@ -190,27 +192,37 @@ impl IntoResponse for RouteError {
 
 #[tracing::instrument(skip_all, err)]
 pub(crate) async fn post(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(password_manager): State<PasswordManager>,
-    State(pool): State<PgPool>,
+    mut repo: BoxRepository,
     State(homeserver): State<MatrixHomeserver>,
     Json(input): Json<RequestBody>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let (clock, mut rng) = crate::clock_and_rng();
-    let mut txn = pool.begin().await?;
-    let session = match input.credentials {
+    let (session, user) = match input.credentials {
         Credentials::Password {
             identifier: Identifier::User { user },
             password,
-        } => user_password_login(&password_manager, &mut txn, user, password).await?,
+        } => {
+            user_password_login(
+                &mut rng,
+                &clock,
+                &password_manager,
+                &mut repo,
+                user,
+                password,
+            )
+            .await?
+        }
 
-        Credentials::Token { token } => token_login(&mut txn, &clock, &token).await?,
+        Credentials::Token { token } => token_login(&mut repo, &clock, &token).await?,
 
         _ => {
             return Err(RouteError::Unsupported);
         }
     };
 
-    let user_id = format!("@{username}:{homeserver}", username = session.user.username);
+    let user_id = format!("@{username}:{homeserver}", username = user.username);
 
     // If the client asked for a refreshable token, make it expire
     let expires_in = if input.refresh_token {
@@ -221,33 +233,23 @@ pub(crate) async fn post(
     };
 
     let access_token = TokenType::CompatAccessToken.generate(&mut rng);
-    let access_token = add_compat_access_token(
-        &mut txn,
-        &mut rng,
-        &clock,
-        &session,
-        access_token,
-        expires_in,
-    )
-    .await?;
+    let access_token = repo
+        .compat_access_token()
+        .add(&mut rng, &clock, &session, access_token, expires_in)
+        .await?;
 
     let refresh_token = if input.refresh_token {
         let refresh_token = TokenType::CompatRefreshToken.generate(&mut rng);
-        let refresh_token = add_compat_refresh_token(
-            &mut txn,
-            &mut rng,
-            &clock,
-            &session,
-            &access_token,
-            refresh_token,
-        )
-        .await?;
+        let refresh_token = repo
+            .compat_refresh_token()
+            .add(&mut rng, &clock, &session, &access_token, refresh_token)
+            .await?;
         Some(refresh_token.token)
     } else {
         None
     };
 
-    txn.commit().await?;
+    repo.save().await?;
 
     Ok(Json(ResponseBody {
         access_token: access_token.token,
@@ -259,16 +261,18 @@ pub(crate) async fn post(
 }
 
 async fn token_login(
-    txn: &mut Transaction<'_, Postgres>,
-    clock: &Clock,
+    repo: &mut BoxRepository,
+    clock: &dyn Clock,
     token: &str,
-) -> Result<CompatSession, RouteError> {
-    let login = get_compat_sso_login_by_token(&mut *txn, token)
+) -> Result<(CompatSession, User), RouteError> {
+    let login = repo
+        .compat_sso_login()
+        .find_by_token(token)
         .await?
         .ok_or(RouteError::InvalidLoginToken)?;
 
     let now = clock.now();
-    match login.state {
+    let session_id = match login.state {
         CompatSsoLoginState::Pending => {
             tracing::error!(
                 compat_sso_login.id = %login.id,
@@ -277,49 +281,70 @@ async fn token_login(
             return Err(RouteError::InvalidLoginToken);
         }
         CompatSsoLoginState::Fulfilled {
-            fulfilled_at: fullfilled_at,
+            fulfilled_at,
+            session_id,
             ..
         } => {
-            if now > fullfilled_at + Duration::seconds(30) {
+            if now > fulfilled_at + Duration::seconds(30) {
                 return Err(RouteError::LoginTookTooLong);
             }
+
+            session_id
         }
-        CompatSsoLoginState::Exchanged { exchanged_at, .. } => {
+        CompatSsoLoginState::Exchanged {
+            exchanged_at,
+            session_id,
+            ..
+        } => {
             if now > exchanged_at + Duration::seconds(30) {
                 // TODO: log that session out
                 tracing::error!(
                     compat_sso_login.id = %login.id,
+                    compat_session.id = %session_id,
                     "Login token exchanged a second time more than 30s after"
                 );
             }
 
             return Err(RouteError::InvalidLoginToken);
         }
-    }
+    };
 
-    let login = mark_compat_sso_login_as_exchanged(&mut *txn, clock, login).await?;
+    let session = repo
+        .compat_session()
+        .lookup(session_id)
+        .await?
+        .ok_or(RouteError::SessionNotFound)?;
 
-    match login.state {
-        CompatSsoLoginState::Exchanged { session, .. } => Ok(session),
-        _ => unreachable!(),
-    }
+    let user = repo
+        .user()
+        .lookup(session.user_id)
+        .await?
+        .ok_or(RouteError::UserNotFound)?;
+
+    repo.compat_sso_login().exchange(clock, login).await?;
+
+    Ok((session, user))
 }
 
 async fn user_password_login(
+    mut rng: &mut (impl RngCore + CryptoRng + Send),
+    clock: &impl Clock,
     password_manager: &PasswordManager,
-    txn: &mut Transaction<'_, Postgres>,
+    repo: &mut BoxRepository,
     username: String,
     password: String,
-) -> Result<CompatSession, RouteError> {
-    let (clock, mut rng) = crate::clock_and_rng();
-
+) -> Result<(CompatSession, User), RouteError> {
     // Find the user
-    let user = lookup_user_by_username(&mut *txn, &username)
+    let user = repo
+        .user()
+        .find_by_username(&username)
         .await?
         .ok_or(RouteError::UserNotFound)?;
 
     // Lookup its password
-    let user_password = lookup_user_password(&mut *txn, &user)
+    let user_password = repo
+        .user_password()
+        .active(&user)
         .await?
         .ok_or(RouteError::NoPassword)?;
 
@@ -338,21 +363,24 @@ async fn user_password_login(
 
     if let Some((version, hashed_password)) = new_password_hash {
         // Save the upgraded password if needed
-        add_user_password(
-            &mut *txn,
-            &mut rng,
-            &clock,
-            &user,
-            version,
-            hashed_password,
-            Some(user_password),
-        )
-        .await?;
+        repo.user_password()
+            .add(
+                &mut rng,
+                clock,
+                &user,
+                version,
+                hashed_password,
+                Some(&user_password),
+            )
+            .await?;
     }
 
     // Now that the user credentials have been verified, start a new compat session
     let device = Device::generate(&mut rng);
-    let session = start_compat_session(&mut *txn, &mut rng, &clock, user, device).await?;
+    let session = repo
+        .compat_session()
+        .add(&mut rng, clock, &user, device)
+        .await?;
 
-    Ok(session)
+    Ok((session, user))
 }

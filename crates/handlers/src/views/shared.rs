@@ -15,11 +15,13 @@
 use anyhow::Context;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{
-    compat::get_compat_sso_login_by_id, oauth2::authorization_grant::get_grant_by_id,
+    compat::CompatSsoLoginRepository,
+    oauth2::OAuth2AuthorizationGrantRepository,
+    upstream_oauth2::{UpstreamOAuthLinkRepository, UpstreamOAuthProviderRepository},
+    RepositoryAccess,
 };
 use mas_templates::{PostAuthContext, PostAuthContextInner};
 use serde::{Deserialize, Serialize};
-use sqlx::PgConnection;
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone)]
 pub(crate) struct OptionalPostAuthAction {
@@ -38,14 +40,16 @@ impl OptionalPostAuthAction {
         self.go_next_or_default(&mas_router::Index)
     }
 
-    pub async fn load_context(
-        &self,
-        conn: &mut PgConnection,
+    pub async fn load_context<'a>(
+        &'a self,
+        repo: &'a mut impl RepositoryAccess,
     ) -> anyhow::Result<Option<PostAuthContext>> {
         let Some(action) = self.post_auth_action.clone() else { return Ok(None) };
         let ctx = match action {
             PostAuthAction::ContinueAuthorizationGrant { id } => {
-                let grant = get_grant_by_id(conn, id)
+                let grant = repo
+                    .oauth2_authorization_grant()
+                    .lookup(id)
                     .await?
                     .context("Failed to load authorization grant")?;
                 let grant = Box::new(grant);
@@ -53,7 +57,9 @@ impl OptionalPostAuthAction {
             }
 
             PostAuthAction::ContinueCompatSsoLogin { id } => {
-                let login = get_compat_sso_login_by_id(conn, id)
+                let login = repo
+                    .compat_sso_login()
+                    .lookup(id)
                     .await?
                     .context("Failed to load compat SSO login")?;
                 let login = Box::new(login);
@@ -63,14 +69,17 @@ impl OptionalPostAuthAction {
             PostAuthAction::ChangePassword => PostAuthContextInner::ChangePassword,
 
             PostAuthAction::LinkUpstream { id } => {
-                let link = mas_storage::upstream_oauth2::lookup_link(&mut *conn, id)
+                let link = repo
+                    .upstream_oauth_link()
+                    .lookup(id)
                     .await?
                     .context("Failed to load upstream OAuth 2.0 link")?;
 
-                let provider =
-                    mas_storage::upstream_oauth2::lookup_provider(&mut *conn, link.provider_id)
-                        .await?
-                        .context("Failed to load upstream OAuth 2.0 provider")?;
+                let provider = repo
+                    .upstream_oauth_provider()
+                    .lookup(link.provider_id)
+                    .await?
+                    .context("Failed to load upstream OAuth 2.0 provider")?;
 
                 let provider = Box::new(provider);
                 let link = Box::new(link);

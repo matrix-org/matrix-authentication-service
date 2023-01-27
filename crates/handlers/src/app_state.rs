@@ -12,16 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::sync::Arc;
+use std::{convert::Infallible, sync::Arc};
 
-use axum::extract::FromRef;
+use axum::{
+    async_trait,
+    extract::{FromRef, FromRequestParts},
+    response::IntoResponse,
+};
+use hyper::StatusCode;
 use mas_axum_utils::http_client_factory::HttpClientFactory;
 use mas_email::Mailer;
 use mas_keystore::{Encrypter, Keystore};
 use mas_policy::PolicyFactory;
 use mas_router::UrlBuilder;
+use mas_storage::{BoxClock, BoxRepository, BoxRng, Repository, SystemClock};
+use mas_storage_pg::PgRepository;
 use mas_templates::Templates;
+use rand::SeedableRng;
 use sqlx::PgPool;
+use thiserror::Error;
 
 use crate::{passwords::PasswordManager, MatrixHomeserver};
 
@@ -103,5 +112,60 @@ impl FromRef<AppState> for HttpClientFactory {
 impl FromRef<AppState> for PasswordManager {
     fn from_ref(input: &AppState) -> Self {
         input.password_manager.clone()
+    }
+}
+
+#[async_trait]
+impl FromRequestParts<AppState> for BoxClock {
+    type Rejection = Infallible;
+
+    async fn from_request_parts(
+        _parts: &mut axum::http::request::Parts,
+        _state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        let clock = SystemClock::default();
+        Ok(Box::new(clock))
+    }
+}
+
+#[async_trait]
+impl FromRequestParts<AppState> for BoxRng {
+    type Rejection = Infallible;
+
+    async fn from_request_parts(
+        _parts: &mut axum::http::request::Parts,
+        _state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        // This rng is used to source the local rng
+        #[allow(clippy::disallowed_methods)]
+        let rng = rand::thread_rng();
+
+        let rng = rand_chacha::ChaChaRng::from_rng(rng).expect("Failed to seed RNG");
+        Ok(Box::new(rng))
+    }
+}
+
+#[derive(Debug, Error)]
+#[error(transparent)]
+pub struct RepositoryError(#[from] mas_storage_pg::DatabaseError);
+
+impl IntoResponse for RepositoryError {
+    fn into_response(self) -> axum::response::Response {
+        (StatusCode::INTERNAL_SERVER_ERROR, self.0.to_string()).into_response()
+    }
+}
+
+#[async_trait]
+impl FromRequestParts<AppState> for BoxRepository {
+    type Rejection = RepositoryError;
+
+    async fn from_request_parts(
+        _parts: &mut axum::http::request::Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        let repo = PgRepository::from_pool(&state.pool).await?;
+        Ok(repo
+            .map_err(mas_storage::RepositoryError::from_error)
+            .boxed())
     }
 }

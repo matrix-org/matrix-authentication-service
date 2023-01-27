@@ -28,10 +28,14 @@ use mas_jose::{
 };
 use mas_keystore::Keystore;
 use mas_router::UrlBuilder;
+use mas_storage::{
+    oauth2::OAuth2ClientRepository,
+    user::{BrowserSessionRepository, UserEmailRepository},
+    BoxClock, BoxRepository, BoxRng,
+};
 use oauth2_types::scope;
 use serde::Serialize;
 use serde_with::skip_serializing_none;
-use sqlx::PgPool;
 use thiserror::Error;
 
 use crate::impl_from_error_for_route;
@@ -59,20 +63,31 @@ pub enum RouteError {
     Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
 
     #[error("failed to authenticate")]
-    AuthorizationVerificationError(#[from] AuthorizationVerificationError),
+    AuthorizationVerificationError(
+        #[from] AuthorizationVerificationError<mas_storage::RepositoryError>,
+    ),
 
     #[error("no suitable key found for signing")]
     InvalidSigningKey,
+
+    #[error("failed to load client")]
+    NoSuchClient,
+
+    #[error("failed to load browser session")]
+    NoSuchBrowserSession,
 }
 
-impl_from_error_for_route!(sqlx::Error);
+impl_from_error_for_route!(mas_storage::RepositoryError);
 impl_from_error_for_route!(mas_keystore::WrongAlgorithmError);
 impl_from_error_for_route!(mas_jose::jwt::JwtSignatureError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         match self {
-            Self::Internal(_) | Self::InvalidSigningKey => {
+            Self::Internal(_)
+            | Self::InvalidSigningKey
+            | Self::NoSuchClient
+            | Self::NoSuchBrowserSession => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()).into_response()
             }
             Self::AuthorizationVerificationError(_e) => StatusCode::UNAUTHORIZED.into_response(),
@@ -81,32 +96,43 @@ impl IntoResponse for RouteError {
 }
 
 pub async fn get(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(url_builder): State<UrlBuilder>,
-    State(pool): State<PgPool>,
+    mut repo: BoxRepository,
     State(key_store): State<Keystore>,
     user_authorization: UserAuthorization,
 ) -> Result<Response, RouteError> {
-    let (_clock, mut rng) = crate::clock_and_rng();
-    let mut conn = pool.acquire().await?;
+    let session = user_authorization.protected(&mut repo, &clock).await?;
 
-    let session = user_authorization.protected(&mut conn).await?;
+    let browser_session = repo
+        .browser_session()
+        .lookup(session.user_session_id)
+        .await?
+        .ok_or(RouteError::NoSuchBrowserSession)?;
 
-    let user = session.browser_session.user;
-    let mut user_info = UserInfo {
-        sub: user.sub,
-        username: user.username,
-        email: None,
-        email_verified: None,
+    let user = browser_session.user;
+
+    let user_email = if session.scope.contains(&scope::EMAIL) {
+        repo.user_email().get_primary(&user).await?
+    } else {
+        None
     };
 
-    if session.scope.contains(&scope::EMAIL) {
-        if let Some(email) = user.primary_email {
-            user_info.email_verified = Some(email.confirmed_at.is_some());
-            user_info.email = Some(email.email);
-        }
-    }
+    let user_info = UserInfo {
+        sub: user.sub.clone(),
+        username: user.username.clone(),
+        email_verified: user_email.as_ref().map(|u| u.confirmed_at.is_some()),
+        email: user_email.map(|u| u.email),
+    };
 
-    if let Some(alg) = session.client.userinfo_signed_response_alg {
+    let client = repo
+        .oauth2_client()
+        .lookup(session.client_id)
+        .await?
+        .ok_or(RouteError::NoSuchClient)?;
+
+    if let Some(alg) = client.userinfo_signed_response_alg {
         let key = key_store
             .signing_key_for_algorithm(&alg)
             .ok_or(RouteError::InvalidSigningKey)?;
@@ -117,7 +143,7 @@ pub async fn get(
 
         let user_info = SignedUserInfo {
             iss: url_builder.oidc_issuer().to_string(),
-            aud: session.client.client_id,
+            aud: client.client_id,
             user_info,
         };
 

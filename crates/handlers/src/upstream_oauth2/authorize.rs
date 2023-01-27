@@ -22,8 +22,10 @@ use mas_axum_utils::http_client_factory::HttpClientFactory;
 use mas_keystore::Encrypter;
 use mas_oidc_client::requests::authorization_code::AuthorizationRequestData;
 use mas_router::UrlBuilder;
-use mas_storage::upstream_oauth2::lookup_provider;
-use sqlx::PgPool;
+use mas_storage::{
+    upstream_oauth2::{UpstreamOAuthProviderRepository, UpstreamOAuthSessionRepository},
+    BoxClock, BoxRepository, BoxRng,
+};
 use thiserror::Error;
 use ulid::Ulid;
 
@@ -39,11 +41,10 @@ pub(crate) enum RouteError {
     Internal(Box<dyn std::error::Error>),
 }
 
-impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_http::ClientInitError);
 impl_from_error_for_route!(mas_oidc_client::error::DiscoveryError);
 impl_from_error_for_route!(mas_oidc_client::error::AuthorizationError);
-impl_from_error_for_route!(mas_storage::DatabaseError);
+impl_from_error_for_route!(mas_storage::RepositoryError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
@@ -55,18 +56,18 @@ impl IntoResponse for RouteError {
 }
 
 pub(crate) async fn get(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(http_client_factory): State<HttpClientFactory>,
-    State(pool): State<PgPool>,
+    mut repo: BoxRepository,
     State(url_builder): State<UrlBuilder>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(provider_id): Path<Ulid>,
     Query(query): Query<OptionalPostAuthAction>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let (clock, mut rng) = crate::clock_and_rng();
-
-    let mut txn = pool.begin().await?;
-
-    let provider = lookup_provider(&mut txn, provider_id)
+    let provider = repo
+        .upstream_oauth_provider()
+        .lookup(provider_id)
         .await?
         .ok_or(RouteError::ProviderNotFound)?;
 
@@ -95,22 +96,23 @@ pub(crate) async fn get(
         &mut rng,
     )?;
 
-    let session = mas_storage::upstream_oauth2::add_session(
-        &mut txn,
-        &mut rng,
-        &clock,
-        &provider,
-        data.state.clone(),
-        data.code_challenge_verifier,
-        data.nonce,
-    )
-    .await?;
+    let session = repo
+        .upstream_oauth_session()
+        .add(
+            &mut rng,
+            &clock,
+            &provider,
+            data.state.clone(),
+            data.code_challenge_verifier,
+            data.nonce,
+        )
+        .await?;
 
     let cookie_jar = UpstreamSessionsCookie::load(&cookie_jar)
         .add(session.id, provider.id, data.state, query.post_auth_action)
-        .save(cookie_jar, clock.now());
+        .save(cookie_jar, &clock);
 
-    txn.commit().await?;
+    repo.save().await?;
 
     Ok((cookie_jar, Redirect::temporary(url.as_str())))
 }

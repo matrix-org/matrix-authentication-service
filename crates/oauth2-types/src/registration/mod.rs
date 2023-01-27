@@ -90,6 +90,11 @@ impl<T> Localized<T> {
         &self.non_localized
     }
 
+    /// Get the non-localized variant.
+    pub fn to_non_localized(self) -> T {
+        self.non_localized
+    }
+
     /// Get the variant corresponding to the given language, if it exists.
     pub fn get(&self, language: Option<&LanguageTag>) -> Option<&T> {
         match language {

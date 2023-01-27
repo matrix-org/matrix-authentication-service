@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use async_graphql::{Description, Object, ID};
+use anyhow::Context as _;
+use async_graphql::{Context, Description, Object, ID};
 use chrono::{DateTime, Utc};
-use mas_data_model::CompatSsoLoginState;
+use mas_storage::{compat::CompatSessionRepository, user::UserRepository, BoxRepository};
+use tokio::sync::Mutex;
 use url::Url;
 
 use super::{NodeType, User};
@@ -32,8 +34,14 @@ impl CompatSession {
     }
 
     /// The user authorized for this session.
-    async fn user(&self) -> User {
-        User(self.0.user.clone())
+    async fn user(&self, ctx: &Context<'_>) -> Result<User, async_graphql::Error> {
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
+        let user = repo
+            .user()
+            .lookup(self.0.user_id)
+            .await?
+            .context("Could not load user")?;
+        Ok(User(user))
     }
 
     /// The Matrix Device ID of this session.
@@ -48,7 +56,7 @@ impl CompatSession {
 
     /// When the session ended.
     pub async fn finished_at(&self) -> Option<DateTime<Utc>> {
-        self.0.finished_at
+        self.0.finished_at()
     }
 }
 
@@ -77,29 +85,28 @@ impl CompatSsoLogin {
     /// When the login was fulfilled, and the user was redirected back to the
     /// client.
     async fn fulfilled_at(&self) -> Option<DateTime<Utc>> {
-        match &self.0.state {
-            CompatSsoLoginState::Pending => None,
-            CompatSsoLoginState::Fulfilled { fulfilled_at, .. }
-            | CompatSsoLoginState::Exchanged { fulfilled_at, .. } => Some(*fulfilled_at),
-        }
+        self.0.fulfilled_at()
     }
 
     /// When the client exchanged the login token sent during the redirection.
     async fn exchanged_at(&self) -> Option<DateTime<Utc>> {
-        match &self.0.state {
-            CompatSsoLoginState::Pending | CompatSsoLoginState::Fulfilled { .. } => None,
-            CompatSsoLoginState::Exchanged { exchanged_at, .. } => Some(*exchanged_at),
-        }
+        self.0.exchanged_at()
     }
 
     /// The compat session which was started by this login.
-    async fn session(&self) -> Option<CompatSession> {
-        match &self.0.state {
-            CompatSsoLoginState::Pending => None,
-            CompatSsoLoginState::Fulfilled { session, .. }
-            | CompatSsoLoginState::Exchanged { session, .. } => {
-                Some(CompatSession(session.clone()))
-            }
-        }
+    async fn session(
+        &self,
+        ctx: &Context<'_>,
+    ) -> Result<Option<CompatSession>, async_graphql::Error> {
+        let Some(session_id) = self.0.session_id() else { return Ok(None) };
+
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
+        let session = repo
+            .compat_session()
+            .lookup(session_id)
+            .await?
+            .context("Could not load compat session")?;
+
+        Ok(Some(CompatSession(session)))
     }
 }

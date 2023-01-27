@@ -14,9 +14,9 @@
 
 use anyhow::Context as _;
 use async_graphql::{Context, Description, Object, ID};
-use mas_storage::oauth2::client::lookup_client;
+use mas_storage::{oauth2::OAuth2ClientRepository, user::BrowserSessionRepository, BoxRepository};
 use oauth2_types::scope::Scope;
-use sqlx::PgPool;
+use tokio::sync::Mutex;
 use ulid::Ulid;
 use url::Url;
 
@@ -35,8 +35,15 @@ impl OAuth2Session {
     }
 
     /// OAuth 2.0 client used by this session.
-    pub async fn client(&self) -> OAuth2Client {
-        OAuth2Client(self.0.client.clone())
+    pub async fn client(&self, ctx: &Context<'_>) -> Result<OAuth2Client, async_graphql::Error> {
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
+        let client = repo
+            .oauth2_client()
+            .lookup(self.0.client_id)
+            .await?
+            .context("Could not load client")?;
+
+        Ok(OAuth2Client(client))
     }
 
     /// Scope granted for this session.
@@ -45,13 +52,30 @@ impl OAuth2Session {
     }
 
     /// The browser session which started this OAuth 2.0 session.
-    pub async fn browser_session(&self) -> BrowserSession {
-        BrowserSession(self.0.browser_session.clone())
+    pub async fn browser_session(
+        &self,
+        ctx: &Context<'_>,
+    ) -> Result<BrowserSession, async_graphql::Error> {
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
+        let browser_session = repo
+            .browser_session()
+            .lookup(self.0.user_session_id)
+            .await?
+            .context("Could not load browser session")?;
+
+        Ok(BrowserSession(browser_session))
     }
 
     /// User authorized for this session.
-    pub async fn user(&self) -> User {
-        User(self.0.browser_session.user.clone())
+    pub async fn user(&self, ctx: &Context<'_>) -> Result<User, async_graphql::Error> {
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
+        let browser_session = repo
+            .browser_session()
+            .lookup(self.0.user_session_id)
+            .await?
+            .context("Could not load browser session")?;
+
+        Ok(User(browser_session.user))
     }
 }
 
@@ -114,8 +138,10 @@ impl OAuth2Consent {
 
     /// OAuth 2.0 client for which the user granted access.
     pub async fn client(&self, ctx: &Context<'_>) -> Result<OAuth2Client, async_graphql::Error> {
-        let mut conn = ctx.data::<PgPool>()?.acquire().await?;
-        let client = lookup_client(&mut conn, self.client_id)
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
+        let client = repo
+            .oauth2_client()
+            .lookup(self.client_id)
             .await?
             .context("Could not load client")?;
         Ok(OAuth2Client(client))

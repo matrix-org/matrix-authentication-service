@@ -10,17 +10,31 @@ The whole repository is a [Cargo Workspace](https://doc.rust-lang.org/book/ch14-
 This includes:
 
  - `mas-cli`: Command line utility, main entry point
- - `mas-config`: Configuration parsing and loading
- - `mas-data-model`: Models of objects that live in the database, regardless of the storage backend
- - `mas-email`: High-level email sending abstraction
- - `mas-handlers`: Main HTTP application logic
- - `mas-iana`: Auto-generated enums from IANA registries
- - `mas-iana-codegen`: Code generator for the `mas-iana` crate
- - `mas-jose`: JWT/JWS/JWE/JWK abstraction
- - `mas-static-files`: Frontend static files (CSS/JS). Includes some frontend tooling
- - `mas-storage`: Interactions with the database
- - `mas-tasks`: Asynchronous task runner and scheduler
- - `oauth2-types`: Useful structures and types to deal with OAuth 2.0/OpenID Connect endpoints. This might end up published as a standalone library as it can be useful in other contexts.
+ - [`mas-config`][mas-config]: Configuration parsing and loading
+ - [`mas-data-model`][mas-data-model]: Models of objects that live in the database, regardless of the storage backend
+ - [`mas-email`][mas-email]: High-level email sending abstraction
+ - [`mas-handlers`][mas-handlers]: Main HTTP application logic
+ - [`mas-iana`][mas-iana]: Auto-generated enums from IANA registries
+ - [`mas-iana-codegen`][mas-iana-codegen]: Code generator for the `mas-iana` crate
+ - [`mas-jose`][mas-jose]: JWT/JWS/JWE/JWK abstraction
+ - [`mas-static-files`][mas-static-files]: Frontend static files (CSS/JS). Includes some frontend tooling
+ - [`mas-storage`][mas-storage]: Abstraction of the storage backends
+ - [`mas-storage-pg`][mas-storage-pg]: Storage backend implementation for a PostgreSQL database
+ - [`mas-tasks`][mas-tasks]: Asynchronous task runner and scheduler
+ - [`oauth2-types`][oauth2-types]: Useful structures and types to deal with OAuth 2.0/OpenID Connect endpoints. This might end up published as a standalone library as it can be useful in other contexts.
+
+[mas-config]: ../rustdoc/mas_config/index.html
+[mas-data-model]: ../rustdoc/mas_data_model/index.html
+[mas-email]: ../rustdoc/mas_email/index.html
+[mas-handlers]: ../rustdoc/mas_handlers/index.html
+[mas-iana]: ../rustdoc/mas_iana/index.html
+[mas-iana-codegen]: ../rustdoc/mas_iana_codegen/index.html
+[mas-jose]: ../rustdoc/mas_jose/index.html
+[mas-static-files]: ../rustdoc/mas_static_files/index.html
+[mas-storage]: ../rustdoc/mas_storage/index.html
+[mas-storage-pg]: ../rustdoc/mas_storage/index.html
+[mas-tasks]: ../rustdoc/mas_tasks/index.html
+[oauth2-types]: ../rustdoc/oauth2_types/index.html
 
 ## Important crates
 

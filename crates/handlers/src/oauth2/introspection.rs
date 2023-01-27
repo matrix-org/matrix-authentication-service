@@ -22,18 +22,16 @@ use mas_data_model::{TokenFormatError, TokenType};
 use mas_iana::oauth::{OAuthClientAuthenticationMethod, OAuthTokenTypeHint};
 use mas_keystore::Encrypter;
 use mas_storage::{
-    compat::{lookup_active_compat_access_token, lookup_active_compat_refresh_token},
-    oauth2::{
-        access_token::lookup_active_access_token, refresh_token::lookup_active_refresh_token,
-    },
-    Clock,
+    compat::{CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository},
+    oauth2::{OAuth2AccessTokenRepository, OAuth2RefreshTokenRepository, OAuth2SessionRepository},
+    user::{BrowserSessionRepository, UserRepository},
+    BoxClock, BoxRepository, Clock,
 };
 use oauth2_types::{
     errors::{ClientError, ClientErrorCode},
     requests::{IntrospectionRequest, IntrospectionResponse},
     scope::ScopeToken,
 };
-use sqlx::PgPool;
 use thiserror::Error;
 
 use crate::impl_from_error_for_route;
@@ -97,8 +95,7 @@ impl IntoResponse for RouteError {
     }
 }
 
-impl_from_error_for_route!(sqlx::Error);
-impl_from_error_for_route!(mas_storage::DatabaseError);
+impl_from_error_for_route!(mas_storage::RepositoryError);
 
 impl From<TokenFormatError> for RouteError {
     fn from(_e: TokenFormatError) -> Self {
@@ -125,18 +122,17 @@ const API_SCOPE: ScopeToken = ScopeToken::from_static("urn:matrix:org.matrix.msc
 
 #[allow(clippy::too_many_lines)]
 pub(crate) async fn post(
+    clock: BoxClock,
     State(http_client_factory): State<HttpClientFactory>,
-    State(pool): State<PgPool>,
+    mut repo: BoxRepository,
     State(encrypter): State<Encrypter>,
     client_authorization: ClientAuthorization<IntrospectionRequest>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let clock = Clock::default();
-    let mut conn = pool.acquire().await?;
-
     let client = client_authorization
         .credentials
-        .fetch(&mut conn)
-        .await?
+        .fetch(&mut repo)
+        .await
+        .unwrap()
         .ok_or(RouteError::ClientNotFound)?;
 
     let method = match &client.token_endpoint_auth_method {
@@ -167,48 +163,103 @@ pub(crate) async fn post(
 
     let reply = match token_type {
         TokenType::AccessToken => {
-            let (token, session) = lookup_active_access_token(&mut conn, token)
+            let token = repo
+                .oauth2_access_token()
+                .find_by_token(token)
                 .await?
+                .filter(|t| t.is_valid(clock.now()))
+                .ok_or(RouteError::UnknownToken)?;
+
+            let session = repo
+                .oauth2_session()
+                .lookup(token.session_id)
+                .await?
+                .filter(|s| s.is_valid())
+                // XXX: is that the right error to bubble up?
+                .ok_or(RouteError::UnknownToken)?;
+
+            let browser_session = repo
+                .browser_session()
+                .lookup(session.user_session_id)
+                .await?
+                // XXX: is that the right error to bubble up?
                 .ok_or(RouteError::UnknownToken)?;
 
             IntrospectionResponse {
                 active: true,
                 scope: Some(session.scope),
-                client_id: Some(session.client.client_id),
-                username: Some(session.browser_session.user.username),
+                client_id: Some(session.client_id.to_string()),
+                username: Some(browser_session.user.username),
                 token_type: Some(OAuthTokenTypeHint::AccessToken),
                 exp: Some(token.expires_at),
                 iat: Some(token.created_at),
                 nbf: Some(token.created_at),
-                sub: Some(session.browser_session.user.sub),
+                sub: Some(browser_session.user.sub),
                 aud: None,
                 iss: None,
-                jti: None,
+                jti: Some(token.jti()),
             }
         }
+
         TokenType::RefreshToken => {
-            let (token, session) = lookup_active_refresh_token(&mut conn, token)
+            let token = repo
+                .oauth2_refresh_token()
+                .find_by_token(token)
                 .await?
+                .filter(|t| t.is_valid())
+                .ok_or(RouteError::UnknownToken)?;
+
+            let session = repo
+                .oauth2_session()
+                .lookup(token.session_id)
+                .await?
+                .filter(|s| s.is_valid())
+                // XXX: is that the right error to bubble up?
+                .ok_or(RouteError::UnknownToken)?;
+
+            let browser_session = repo
+                .browser_session()
+                .lookup(session.user_session_id)
+                .await?
+                // XXX: is that the right error to bubble up?
                 .ok_or(RouteError::UnknownToken)?;
 
             IntrospectionResponse {
                 active: true,
                 scope: Some(session.scope),
-                client_id: Some(session.client.client_id),
-                username: Some(session.browser_session.user.username),
+                client_id: Some(session.client_id.to_string()),
+                username: Some(browser_session.user.username),
                 token_type: Some(OAuthTokenTypeHint::RefreshToken),
                 exp: None,
                 iat: Some(token.created_at),
                 nbf: Some(token.created_at),
-                sub: Some(session.browser_session.user.sub),
+                sub: Some(browser_session.user.sub),
                 aud: None,
                 iss: None,
-                jti: None,
+                jti: Some(token.jti()),
             }
         }
+
         TokenType::CompatAccessToken => {
-            let (token, session) = lookup_active_compat_access_token(&mut conn, &clock, token)
+            let access_token = repo
+                .compat_access_token()
+                .find_by_token(token)
                 .await?
+                .filter(|t| t.is_valid(clock.now()))
+                .ok_or(RouteError::UnknownToken)?;
+
+            let session = repo
+                .compat_session()
+                .lookup(access_token.session_id)
+                .await?
+                .filter(|s| s.is_valid())
+                .ok_or(RouteError::UnknownToken)?;
+
+            let user = repo
+                .user()
+                .lookup(session.user_id)
+                .await?
+                // XXX: is that the right error to bubble up?
                 .ok_or(RouteError::UnknownToken)?;
 
             let device_scope = session.device.to_scope_token();
@@ -218,22 +269,39 @@ pub(crate) async fn post(
                 active: true,
                 scope: Some(scope),
                 client_id: Some("legacy".into()),
-                username: Some(session.user.username),
+                username: Some(user.username),
                 token_type: Some(OAuthTokenTypeHint::AccessToken),
-                exp: token.expires_at,
-                iat: Some(token.created_at),
-                nbf: Some(token.created_at),
-                sub: Some(session.user.sub),
+                exp: access_token.expires_at,
+                iat: Some(access_token.created_at),
+                nbf: Some(access_token.created_at),
+                sub: Some(user.sub),
                 aud: None,
                 iss: None,
                 jti: None,
             }
         }
+
         TokenType::CompatRefreshToken => {
-            let (refresh_token, _access_token, session) =
-                lookup_active_compat_refresh_token(&mut conn, token)
-                    .await?
-                    .ok_or(RouteError::UnknownToken)?;
+            let refresh_token = repo
+                .compat_refresh_token()
+                .find_by_token(token)
+                .await?
+                .filter(|t| t.is_valid())
+                .ok_or(RouteError::UnknownToken)?;
+
+            let session = repo
+                .compat_session()
+                .lookup(refresh_token.session_id)
+                .await?
+                .filter(|s| s.is_valid())
+                .ok_or(RouteError::UnknownToken)?;
+
+            let user = repo
+                .user()
+                .lookup(session.user_id)
+                .await?
+                // XXX: is that the right error to bubble up?
+                .ok_or(RouteError::UnknownToken)?;
 
             let device_scope = session.device.to_scope_token();
             let scope = [API_SCOPE, device_scope].into_iter().collect();
@@ -242,12 +310,12 @@ pub(crate) async fn post(
                 active: true,
                 scope: Some(scope),
                 client_id: Some("legacy".into()),
-                username: Some(session.user.username),
+                username: Some(user.username),
                 token_type: Some(OAuthTokenTypeHint::RefreshToken),
                 exp: None,
                 iat: Some(refresh_token.created_at),
                 nbf: Some(refresh_token.created_at),
-                sub: Some(session.user.sub),
+                sub: Some(user.sub),
                 aud: None,
                 iss: None,
                 jti: None,

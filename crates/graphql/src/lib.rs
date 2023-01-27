@@ -30,8 +30,14 @@ use async_graphql::{
     connection::{query, Connection, Edge, OpaqueCursor},
     Context, Description, EmptyMutation, EmptySubscription, ID,
 };
+use mas_storage::{
+    oauth2::OAuth2ClientRepository,
+    upstream_oauth2::{UpstreamOAuthLinkRepository, UpstreamOAuthProviderRepository},
+    user::{BrowserSessionRepository, UserEmailRepository},
+    BoxRepository, Pagination,
+};
 use model::CreationEvent;
-use sqlx::PgPool;
+use tokio::sync::Mutex;
 
 use self::model::{
     BrowserSession, Cursor, Node, NodeCursor, NodeType, OAuth2Client, UpstreamOAuth2Link,
@@ -87,10 +93,9 @@ impl RootQuery {
         id: ID,
     ) -> Result<Option<OAuth2Client>, async_graphql::Error> {
         let id = NodeType::OAuth2Client.extract_ulid(&id)?;
-        let database = ctx.data::<PgPool>()?;
-        let mut conn = database.acquire().await?;
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
 
-        let client = mas_storage::oauth2::client::lookup_client(&mut conn, id).await?;
+        let client = repo.oauth2_client().lookup(id).await?;
 
         Ok(client.map(OAuth2Client))
     }
@@ -118,13 +123,12 @@ impl RootQuery {
     ) -> Result<Option<BrowserSession>, async_graphql::Error> {
         let id = NodeType::BrowserSession.extract_ulid(&id)?;
         let session = ctx.data_opt::<mas_data_model::BrowserSession>().cloned();
-        let database = ctx.data::<PgPool>()?;
-        let mut conn = database.acquire().await?;
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
 
         let Some(session) = session else { return Ok(None) };
         let current_user = session.user;
 
-        let browser_session = mas_storage::user::lookup_active_session(&mut conn, id).await?;
+        let browser_session = repo.browser_session().lookup(id).await?;
 
         let ret = browser_session.and_then(|browser_session| {
             if browser_session.user.id == current_user.id {
@@ -145,14 +149,16 @@ impl RootQuery {
     ) -> Result<Option<UserEmail>, async_graphql::Error> {
         let id = NodeType::UserEmail.extract_ulid(&id)?;
         let session = ctx.data_opt::<mas_data_model::BrowserSession>().cloned();
-        let database = ctx.data::<PgPool>()?;
-        let mut conn = database.acquire().await?;
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
 
         let Some(session) = session else { return Ok(None) };
         let current_user = session.user;
 
-        let user_email =
-            mas_storage::user::lookup_user_email_by_id(&mut conn, &current_user, id).await?;
+        let user_email = repo
+            .user_email()
+            .lookup(id)
+            .await?
+            .filter(|e| e.user_id == current_user.id);
 
         Ok(user_email.map(UserEmail))
     }
@@ -165,13 +171,12 @@ impl RootQuery {
     ) -> Result<Option<UpstreamOAuth2Link>, async_graphql::Error> {
         let id = NodeType::UpstreamOAuth2Link.extract_ulid(&id)?;
         let session = ctx.data_opt::<mas_data_model::BrowserSession>().cloned();
-        let database = ctx.data::<PgPool>()?;
-        let mut conn = database.acquire().await?;
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
 
         let Some(session) = session else { return Ok(None) };
         let current_user = session.user;
 
-        let link = mas_storage::upstream_oauth2::lookup_link(&mut conn, id).await?;
+        let link = repo.upstream_oauth_link().lookup(id).await?;
 
         // Ensure that the link belongs to the current user
         let link = link.filter(|link| link.user_id == Some(current_user.id));
@@ -186,10 +191,9 @@ impl RootQuery {
         id: ID,
     ) -> Result<Option<UpstreamOAuth2Provider>, async_graphql::Error> {
         let id = NodeType::UpstreamOAuth2Provider.extract_ulid(&id)?;
-        let database = ctx.data::<PgPool>()?;
-        let mut conn = database.acquire().await?;
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
 
-        let provider = mas_storage::upstream_oauth2::lookup_provider(&mut conn, id).await?;
+        let provider = repo.upstream_oauth_provider().lookup(id).await?;
 
         Ok(provider.map(UpstreamOAuth2Provider::new))
     }
@@ -206,7 +210,7 @@ impl RootQuery {
         #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
         #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
     ) -> Result<Connection<Cursor, UpstreamOAuth2Provider>, async_graphql::Error> {
-        let database = ctx.data::<PgPool>()?;
+        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
 
         query(
             after,
@@ -214,7 +218,6 @@ impl RootQuery {
             first,
             last,
             |after, before, first, last| async move {
-                let mut conn = database.acquire().await?;
                 let after_id = after
                     .map(|x: OpaqueCursor<NodeCursor>| {
                         x.extract_for_type(NodeType::UpstreamOAuth2Provider)
@@ -225,15 +228,15 @@ impl RootQuery {
                         x.extract_for_type(NodeType::UpstreamOAuth2Provider)
                     })
                     .transpose()?;
+                let pagination = Pagination::try_new(before_id, after_id, first, last)?;
 
-                let (has_previous_page, has_next_page, edges) =
-                    mas_storage::upstream_oauth2::get_paginated_providers(
-                        &mut conn, before_id, after_id, first, last,
-                    )
+                let page = repo
+                    .upstream_oauth_provider()
+                    .list_paginated(pagination)
                     .await?;
 
-                let mut connection = Connection::new(has_previous_page, has_next_page);
-                connection.edges.extend(edges.into_iter().map(|p| {
+                let mut connection = Connection::new(page.has_previous_page, page.has_next_page);
+                connection.edges.extend(page.edges.into_iter().map(|p| {
                     Edge::new(
                         OpaqueCursor(NodeCursor(NodeType::UpstreamOAuth2Provider, p.id)),
                         UpstreamOAuth2Provider::new(p),

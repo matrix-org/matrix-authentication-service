@@ -1,4 +1,4 @@
-// Copyright 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2022, 2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,237 +12,110 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use chrono::{DateTime, Utc};
+use async_trait::async_trait;
 use mas_data_model::UpstreamOAuthProvider;
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
 use oauth2_types::scope::Scope;
-use rand::Rng;
-use sqlx::{PgExecutor, QueryBuilder};
-use tracing::{info_span, Instrument};
+use rand_core::RngCore;
 use ulid::Ulid;
-use uuid::Uuid;
 
-use crate::{
-    pagination::{process_page, QueryBuilderExt},
-    Clock, DatabaseError, DatabaseInconsistencyError, LookupResultExt,
-};
+use crate::{pagination::Page, repository_impl, Clock, Pagination};
 
-#[derive(sqlx::FromRow)]
-struct ProviderLookup {
-    upstream_oauth_provider_id: Uuid,
-    issuer: String,
-    scope: String,
-    client_id: String,
-    encrypted_client_secret: Option<String>,
-    token_endpoint_signing_alg: Option<String>,
-    token_endpoint_auth_method: String,
-    created_at: DateTime<Utc>,
+/// An [`UpstreamOAuthProviderRepository`] helps interacting with
+/// [`UpstreamOAuthProvider`] saved in the storage backend
+#[async_trait]
+pub trait UpstreamOAuthProviderRepository: Send + Sync {
+    /// The error type returned by the repository
+    type Error;
+
+    /// Lookup an upstream OAuth provider by its ID
+    ///
+    /// Returns `None` if the provider was not found
+    ///
+    /// # Parameters
+    ///
+    /// * `id`: The ID of the provider to lookup
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn lookup(&mut self, id: Ulid) -> Result<Option<UpstreamOAuthProvider>, Self::Error>;
+
+    /// Add a new upstream OAuth provider
+    ///
+    /// Returns the newly created provider
+    ///
+    /// # Parameters
+    ///
+    /// * `rng`: A random number generator
+    /// * `clock`: The clock used to generate timestamps
+    /// * `issuer`: The OIDC issuer of the provider
+    /// * `scope`: The scope to request during the authorization flow
+    /// * `token_endpoint_auth_method`: The token endpoint authentication method
+    /// * `token_endpoint_auth_signing_alg`: The JWT signing algorithm to use
+    ///   when then `client_secret_jwt` or `private_key_jwt` authentication
+    ///   methods are used
+    /// * `client_id`: The client ID to use when authenticating to the upstream
+    /// * `encrypted_client_secret`: The encrypted client secret to use when
+    ///   authenticating to the upstream
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    #[allow(clippy::too_many_arguments)]
+    async fn add(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        issuer: String,
+        scope: Scope,
+        token_endpoint_auth_method: OAuthClientAuthenticationMethod,
+        token_endpoint_signing_alg: Option<JsonWebSignatureAlg>,
+        client_id: String,
+        encrypted_client_secret: Option<String>,
+    ) -> Result<UpstreamOAuthProvider, Self::Error>;
+
+    /// Get a paginated list of upstream OAuth providers
+    ///
+    /// # Parameters
+    ///
+    /// * `pagination`: The pagination parameters
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn list_paginated(
+        &mut self,
+        pagination: Pagination,
+    ) -> Result<Page<UpstreamOAuthProvider>, Self::Error>;
+
+    /// Get all upstream OAuth providers
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn all(&mut self) -> Result<Vec<UpstreamOAuthProvider>, Self::Error>;
 }
 
-impl TryFrom<ProviderLookup> for UpstreamOAuthProvider {
-    type Error = DatabaseInconsistencyError;
-    fn try_from(value: ProviderLookup) -> Result<Self, Self::Error> {
-        let id = value.upstream_oauth_provider_id.into();
-        let scope = value.scope.parse().map_err(|e| {
-            DatabaseInconsistencyError::on("upstream_oauth_providers")
-                .column("scope")
-                .row(id)
-                .source(e)
-        })?;
-        let token_endpoint_auth_method = value.token_endpoint_auth_method.parse().map_err(|e| {
-            DatabaseInconsistencyError::on("upstream_oauth_providers")
-                .column("token_endpoint_auth_method")
-                .row(id)
-                .source(e)
-        })?;
-        let token_endpoint_signing_alg = value
-            .token_endpoint_signing_alg
-            .map(|x| x.parse())
-            .transpose()
-            .map_err(|e| {
-                DatabaseInconsistencyError::on("upstream_oauth_providers")
-                    .column("token_endpoint_signing_alg")
-                    .row(id)
-                    .source(e)
-            })?;
+repository_impl!(UpstreamOAuthProviderRepository:
+    async fn lookup(&mut self, id: Ulid) -> Result<Option<UpstreamOAuthProvider>, Self::Error>;
 
-        Ok(UpstreamOAuthProvider {
-            id,
-            issuer: value.issuer,
-            scope,
-            client_id: value.client_id,
-            encrypted_client_secret: value.encrypted_client_secret,
-            token_endpoint_auth_method,
-            token_endpoint_signing_alg,
-            created_at: value.created_at,
-        })
-    }
-}
+    async fn add(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        issuer: String,
+        scope: Scope,
+        token_endpoint_auth_method: OAuthClientAuthenticationMethod,
+        token_endpoint_signing_alg: Option<JsonWebSignatureAlg>,
+        client_id: String,
+        encrypted_client_secret: Option<String>
+    ) -> Result<UpstreamOAuthProvider, Self::Error>;
 
-#[tracing::instrument(
-    skip_all,
-    fields(upstream_oauth_provider.id = %id),
-    err,
-)]
-pub async fn lookup_provider(
-    executor: impl PgExecutor<'_>,
-    id: Ulid,
-) -> Result<Option<UpstreamOAuthProvider>, DatabaseError> {
-    let res = sqlx::query_as!(
-        ProviderLookup,
-        r#"
-            SELECT
-                upstream_oauth_provider_id,
-                issuer,
-                scope,
-                client_id,
-                encrypted_client_secret,
-                token_endpoint_signing_alg,
-                token_endpoint_auth_method,
-                created_at
-            FROM upstream_oauth_providers
-            WHERE upstream_oauth_provider_id = $1
-        "#,
-        Uuid::from(id),
-    )
-    .fetch_one(executor)
-    .await
-    .to_option()?;
+    async fn list_paginated(
+        &mut self,
+        pagination: Pagination
+    ) -> Result<Page<UpstreamOAuthProvider>, Self::Error>;
 
-    let res = res
-        .map(UpstreamOAuthProvider::try_from)
-        .transpose()
-        .map_err(DatabaseError::from)?;
-
-    Ok(res)
-}
-
-#[tracing::instrument(
-    skip_all,
-    fields(
-        upstream_oauth_provider.id,
-        upstream_oauth_provider.issuer = %issuer,
-        upstream_oauth_provider.client_id = %client_id,
-    ),
-    err,
-)]
-#[allow(clippy::too_many_arguments)]
-pub async fn add_provider(
-    executor: impl PgExecutor<'_>,
-    mut rng: impl Rng + Send,
-    clock: &Clock,
-    issuer: String,
-    scope: Scope,
-    token_endpoint_auth_method: OAuthClientAuthenticationMethod,
-    token_endpoint_signing_alg: Option<JsonWebSignatureAlg>,
-    client_id: String,
-    encrypted_client_secret: Option<String>,
-) -> Result<UpstreamOAuthProvider, sqlx::Error> {
-    let created_at = clock.now();
-    let id = Ulid::from_datetime_with_source(created_at.into(), &mut rng);
-    tracing::Span::current().record("upstream_oauth_provider.id", tracing::field::display(id));
-
-    sqlx::query!(
-        r#"
-            INSERT INTO upstream_oauth_providers (
-                upstream_oauth_provider_id,
-                issuer,
-                scope,
-                token_endpoint_auth_method,
-                token_endpoint_signing_alg,
-                client_id,
-                encrypted_client_secret,
-                created_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        "#,
-        Uuid::from(id),
-        &issuer,
-        scope.to_string(),
-        token_endpoint_auth_method.to_string(),
-        token_endpoint_signing_alg.as_ref().map(ToString::to_string),
-        &client_id,
-        encrypted_client_secret.as_deref(),
-        created_at,
-    )
-    .execute(executor)
-    .await?;
-
-    Ok(UpstreamOAuthProvider {
-        id,
-        issuer,
-        scope,
-        client_id,
-        encrypted_client_secret,
-        token_endpoint_signing_alg,
-        token_endpoint_auth_method,
-        created_at,
-    })
-}
-
-#[tracing::instrument(skip_all, err)]
-pub async fn get_paginated_providers(
-    executor: impl PgExecutor<'_>,
-    before: Option<Ulid>,
-    after: Option<Ulid>,
-    first: Option<usize>,
-    last: Option<usize>,
-) -> Result<(bool, bool, Vec<UpstreamOAuthProvider>), DatabaseError> {
-    let mut query = QueryBuilder::new(
-        r#"
-            SELECT
-                upstream_oauth_provider_id,
-                issuer,
-                scope,
-                client_id,
-                encrypted_client_secret,
-                token_endpoint_signing_alg,
-                token_endpoint_auth_method,
-                created_at
-            FROM upstream_oauth_providers
-            WHERE 1 = 1
-        "#,
-    );
-
-    query.generate_pagination("upstream_oauth_provider_id", before, after, first, last)?;
-
-    let span = info_span!(
-        "Fetch paginated upstream OAuth 2.0 providers",
-        db.statement = query.sql()
-    );
-    let page: Vec<ProviderLookup> = query
-        .build_query_as()
-        .fetch_all(executor)
-        .instrument(span)
-        .await?;
-
-    let (has_previous_page, has_next_page, page) = process_page(page, first, last)?;
-
-    let page: Result<Vec<_>, _> = page.into_iter().map(TryInto::try_into).collect();
-    Ok((has_previous_page, has_next_page, page?))
-}
-
-#[tracing::instrument(skip_all, err)]
-pub async fn get_providers(
-    executor: impl PgExecutor<'_>,
-) -> Result<Vec<UpstreamOAuthProvider>, DatabaseError> {
-    let res = sqlx::query_as!(
-        ProviderLookup,
-        r#"
-            SELECT
-                upstream_oauth_provider_id,
-                issuer,
-                scope,
-                client_id,
-                encrypted_client_secret,
-                token_endpoint_signing_alg,
-                token_endpoint_auth_method,
-                created_at
-            FROM upstream_oauth_providers
-        "#,
-    )
-    .fetch_all(executor)
-    .await?;
-
-    let res: Result<Vec<_>, _> = res.into_iter().map(TryInto::try_into).collect();
-    Ok(res?)
-}
+    async fn all(&mut self) -> Result<Vec<UpstreamOAuthProvider>, Self::Error>;
+);

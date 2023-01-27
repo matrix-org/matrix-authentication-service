@@ -12,10 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum::{
-    extract::{Form, State},
-    response::IntoResponse,
-};
+use axum::{extract::Form, response::IntoResponse};
 use axum_extra::extract::PrivateCookieJar;
 use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
@@ -23,29 +20,26 @@ use mas_axum_utils::{
 };
 use mas_keystore::Encrypter;
 use mas_router::{PostAuthAction, Route};
-use mas_storage::{user::end_session, Clock};
-use sqlx::PgPool;
+use mas_storage::{user::BrowserSessionRepository, BoxClock, BoxRepository};
 
 pub(crate) async fn post(
-    State(pool): State<PgPool>,
+    clock: BoxClock,
+    mut repo: BoxRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<Option<PostAuthAction>>>,
 ) -> Result<impl IntoResponse, FancyError> {
-    let clock = Clock::default();
-    let mut txn = pool.begin().await?;
-
-    let form = cookie_jar.verify_form(clock.now(), form)?;
+    let form = cookie_jar.verify_form(&clock, form)?;
 
     let (session_info, mut cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut txn).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     if let Some(session) = maybe_session {
-        end_session(&mut txn, &clock, &session).await?;
+        repo.browser_session().finish(&clock, session).await?;
         cookie_jar = cookie_jar.update_session_info(&session_info.mark_session_ended());
     }
 
-    txn.commit().await?;
+    repo.save().await?;
 
     let destination = if let Some(action) = form {
         action.go_next()

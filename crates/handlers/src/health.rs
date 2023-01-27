@@ -1,4 +1,4 @@
-// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2021-2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ mod tests {
 
     use super::*;
 
-    #[sqlx::test(migrator = "mas_storage::MIGRATOR")]
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_get_health(pool: PgPool) -> Result<(), anyhow::Error> {
         let state = crate::test_state(pool).await?;
         let app = crate::healthcheck_router().with_state(state);

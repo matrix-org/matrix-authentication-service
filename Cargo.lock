@@ -2688,7 +2688,6 @@ dependencies = [
  "serde_json",
  "serde_urlencoded",
  "serde_with",
- "sqlx",
  "thiserror",
  "tokio",
  "tower",
@@ -2721,6 +2720,7 @@ dependencies = [
  "mas-router",
  "mas-spa",
  "mas-storage",
+ "mas-storage-pg",
  "mas-tasks",
  "mas-templates",
  "oauth2-types",
@@ -2821,8 +2821,8 @@ dependencies = [
  "mas-storage",
  "oauth2-types",
  "serde",
- "sqlx",
  "thiserror",
+ "tokio",
  "tracing",
  "ulid",
  "url",
@@ -2859,6 +2859,7 @@ dependencies = [
  "mas-policy",
  "mas-router",
  "mas-storage",
+ "mas-storage-pg",
  "mas-templates",
  "mime",
  "oauth2-types",
@@ -3112,12 +3113,33 @@ dependencies = [
 name = "mas-storage"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "chrono",
+ "futures-util",
  "mas-data-model",
  "mas-iana",
  "mas-jose",
  "oauth2-types",
+ "rand_core 0.6.4",
+ "thiserror",
+ "ulid",
+ "url",
+]
+
+[[package]]
+name = "mas-storage-pg"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "futures-util",
+ "mas-data-model",
+ "mas-iana",
+ "mas-jose",
+ "mas-storage",
+ "oauth2-types",
  "rand 0.8.5",
+ "rand_chacha 0.3.1",
  "serde",
  "serde_json",
  "sqlx",
@@ -3135,6 +3157,7 @@ dependencies = [
  "async-trait",
  "futures-util",
  "mas-storage",
+ "mas-storage-pg",
  "sqlx",
  "tokio",
  "tokio-stream",
@@ -5590,8 +5613,7 @@ checksum = "9e79c4d996edb816c91e4308506774452e55e95c3c9de07b6729e17e15a5ef81"
 [[package]]
 name = "ulid"
 version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13a3aaa69b04e5b66cc27309710a569ea23593612387d67daaf102e73aa974fd"
+source = "git+https://github.com/dylanhart/ulid-rs.git?rev=0b9295c2db2114cd87aa19abcc1fc00c16b272db#0b9295c2db2114cd87aa19abcc1fc00c16b272db"
 dependencies = [
  "rand 0.8.5",
  "serde",

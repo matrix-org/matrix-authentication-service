@@ -24,10 +24,9 @@ use mas_axum_utils::{
 use mas_email::Mailer;
 use mas_keystore::Encrypter;
 use mas_router::Route;
-use mas_storage::user::add_user_email;
+use mas_storage::{user::UserEmailRepository, BoxClock, BoxRepository, BoxRng};
 use mas_templates::{EmailAddContext, TemplateContext, Templates};
 use serde::Deserialize;
-use sqlx::PgPool;
 
 use super::start_email_verification;
 use crate::views::shared::OptionalPostAuthAction;
@@ -38,17 +37,16 @@ pub struct EmailForm {
 }
 
 pub(crate) async fn get(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(templates): State<Templates>,
-    State(pool): State<PgPool>,
+    mut repo: BoxRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
-    let (clock, mut rng) = crate::clock_and_rng();
-    let mut conn = pool.begin().await?;
-
-    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
+    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut conn).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     let session = if let Some(session) = maybe_session {
         session
@@ -67,19 +65,18 @@ pub(crate) async fn get(
 }
 
 pub(crate) async fn post(
-    State(pool): State<PgPool>,
+    mut rng: BoxRng,
+    clock: BoxClock,
+    mut repo: BoxRepository,
     State(mailer): State<Mailer>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Query(query): Query<OptionalPostAuthAction>,
     Form(form): Form<ProtectedForm<EmailForm>>,
 ) -> Result<Response, FancyError> {
-    let (clock, mut rng) = crate::clock_and_rng();
-    let mut txn = pool.begin().await?;
-
-    let form = cookie_jar.verify_form(clock.now(), form)?;
+    let form = cookie_jar.verify_form(&clock, form)?;
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut txn).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     let session = if let Some(session) = maybe_session {
         session
@@ -88,7 +85,11 @@ pub(crate) async fn post(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    let user_email = add_user_email(&mut txn, &mut rng, &clock, &session.user, form.email).await?;
+    let user_email = repo
+        .user_email()
+        .add(&mut rng, &clock, &session.user, form.email)
+        .await?;
+
     let next = mas_router::AccountVerifyEmail::new(user_email.id);
     let next = if let Some(action) = query.post_auth_action {
         next.and_then(action)
@@ -97,7 +98,7 @@ pub(crate) async fn post(
     };
     start_email_verification(
         &mailer,
-        &mut txn,
+        &mut repo,
         &mut rng,
         &clock,
         &session.user,
@@ -105,7 +106,7 @@ pub(crate) async fn post(
     )
     .await?;
 
-    txn.commit().await?;
+    repo.save().await?;
 
     Ok((cookie_jar, next.go()).into_response())
 }

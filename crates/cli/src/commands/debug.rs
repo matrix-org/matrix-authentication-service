@@ -19,7 +19,7 @@ use mas_handlers::HttpClientFactory;
 use mas_http::HttpServiceExt;
 use tokio::io::AsyncWriteExt;
 use tower::{Service, ServiceExt};
-use tracing::info;
+use tracing::{info, info_span};
 
 use crate::util::policy_factory_from_config;
 
@@ -74,6 +74,7 @@ impl Options {
                 json: false,
                 url,
             } => {
+                let _span = info_span!("cli.debug.http").entered();
                 let mut client = http_client_factory.client("cli-debug-http").await?;
                 let request = hyper::Request::builder()
                     .uri(url)
@@ -98,6 +99,7 @@ impl Options {
                 json: true,
                 url,
             } => {
+                let _span = info_span!("cli.debug.http").entered();
                 let mut client = http_client_factory
                     .client("cli-debug-http")
                     .await?
@@ -122,6 +124,7 @@ impl Options {
             }
 
             SC::Policy => {
+                let _span = info_span!("cli.debug.policy").entered();
                 let config: PolicyConfig = root.load_config()?;
                 info!("Loading and compiling the policy module");
                 let policy_factory = policy_factory_from_config(&config).await?;

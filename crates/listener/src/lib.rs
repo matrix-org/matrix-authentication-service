@@ -22,6 +22,9 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 
+//! An utility crate to build flexible [`hyper`] listeners, with optional TLS
+//! and proxy protocol support.
+
 use self::{maybe_tls::TlsStreamInfo, proxy_protocol::ProxyProtocolV1Info};
 
 pub mod maybe_tls;

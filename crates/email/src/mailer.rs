@@ -100,10 +100,10 @@ impl Mailer {
     ///
     /// Will return `Err` if the email failed rendering or failed sending
     #[tracing::instrument(
+        name = "email.verification.send",
         skip_all,
         fields(
             email.to = %to,
-            email.from = %self.from,
             user.id = %context.user().id,
             user_email_verification.id = %context.verification().id,
             user_email_verification.code = context.verification().code,
@@ -125,6 +125,7 @@ impl Mailer {
     /// # Errors
     ///
     /// Returns an error if the connection failed
+    #[tracing::instrument(name = "email.test_connection", skip_all, err)]
     pub async fn test_connection(&self) -> Result<(), crate::transport::Error> {
         self.transport.test_connection().await
     }

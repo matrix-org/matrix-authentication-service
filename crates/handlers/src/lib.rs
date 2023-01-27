@@ -21,14 +21,17 @@
 )]
 #![warn(clippy::pedantic)]
 #![allow(
-    clippy::unused_async // Some axum handlers need that
+    // Some axum handlers need that
+    clippy::unused_async,
+    // Because of how axum handlers work, we sometime have take many arguments
+    clippy::too_many_arguments,
 )]
 
 use std::{convert::Infallible, sync::Arc, time::Duration};
 
 use axum::{
     body::{Bytes, HttpBody},
-    extract::FromRef,
+    extract::{FromRef, FromRequestParts},
     response::{Html, IntoResponse},
     routing::{get, on, post, MethodFilter},
     Router,
@@ -40,9 +43,9 @@ use mas_http::CorsLayerExt;
 use mas_keystore::{Encrypter, Keystore};
 use mas_policy::PolicyFactory;
 use mas_router::{Route, UrlBuilder};
+use mas_storage::{BoxClock, BoxRepository, BoxRng};
 use mas_templates::{ErrorContext, Templates};
 use passwords::PasswordManager;
-use rand::SeedableRng;
 use sqlx::PgPool;
 use tower::util::AndThenLayer;
 use tower_http::cors::{Any, CorsLayer};
@@ -94,7 +97,7 @@ where
     <B as HttpBody>::Error: std::error::Error + Send + Sync,
     S: Clone + Send + Sync + 'static,
     mas_graphql::Schema: FromRef<S>,
-    PgPool: FromRef<S>,
+    BoxRepository: FromRequestParts<S>,
     Encrypter: FromRef<S>,
 {
     let mut router = Router::new().route(
@@ -116,6 +119,8 @@ where
     S: Clone + Send + Sync + 'static,
     Keystore: FromRef<S>,
     UrlBuilder: FromRef<S>,
+    BoxClock: FromRequestParts<S>,
+    BoxRng: FromRequestParts<S>,
 {
     Router::new()
         .route(
@@ -152,9 +157,11 @@ where
     Keystore: FromRef<S>,
     UrlBuilder: FromRef<S>,
     Arc<PolicyFactory>: FromRef<S>,
-    PgPool: FromRef<S>,
+    BoxRepository: FromRequestParts<S>,
     Encrypter: FromRef<S>,
     HttpClientFactory: FromRef<S>,
+    BoxClock: FromRequestParts<S>,
+    BoxRng: FromRequestParts<S>,
 {
     // All those routes are API-like, with a common CORS layer
     Router::new()
@@ -205,9 +212,11 @@ where
     <B as HttpBody>::Error: std::error::Error + Send + Sync,
     S: Clone + Send + Sync + 'static,
     UrlBuilder: FromRef<S>,
-    PgPool: FromRef<S>,
+    BoxRepository: FromRequestParts<S>,
     MatrixHomeserver: FromRef<S>,
     PasswordManager: FromRef<S>,
+    BoxClock: FromRequestParts<S>,
+    BoxRng: FromRequestParts<S>,
 {
     Router::new()
         .route(
@@ -248,13 +257,15 @@ where
     S: Clone + Send + Sync + 'static,
     UrlBuilder: FromRef<S>,
     Arc<PolicyFactory>: FromRef<S>,
-    PgPool: FromRef<S>,
+    BoxRepository: FromRequestParts<S>,
     Encrypter: FromRef<S>,
     Templates: FromRef<S>,
     Mailer: FromRef<S>,
     Keystore: FromRef<S>,
     HttpClientFactory: FromRef<S>,
     PasswordManager: FromRef<S>,
+    BoxClock: FromRequestParts<S>,
+    BoxRng: FromRequestParts<S>,
 {
     Router::new()
         .route(
@@ -350,7 +361,7 @@ where
 }
 
 #[cfg(test)]
-async fn test_state(pool: PgPool) -> Result<AppState, anyhow::Error> {
+async fn test_state(pool: sqlx::PgPool) -> Result<AppState, anyhow::Error> {
     use mas_email::MailTransport;
 
     use crate::passwords::Hasher;
@@ -389,7 +400,7 @@ async fn test_state(pool: PgPool) -> Result<AppState, anyhow::Error> {
 
     let policy_factory = Arc::new(policy_factory);
 
-    let graphql_schema = graphql_schema(&pool);
+    let graphql_schema = graphql_schema();
 
     let http_client_factory = HttpClientFactory::new(10);
 
@@ -406,17 +417,4 @@ async fn test_state(pool: PgPool) -> Result<AppState, anyhow::Error> {
         http_client_factory,
         password_manager,
     })
-}
-
-// XXX: that should be moved somewhere else
-fn clock_and_rng() -> (mas_storage::Clock, rand_chacha::ChaChaRng) {
-    let clock = mas_storage::Clock::default();
-
-    // This rng is used to source the local rng
-    #[allow(clippy::disallowed_methods)]
-    let rng = rand::thread_rng();
-
-    let rng = rand_chacha::ChaChaRng::from_rng(rng).expect("Failed to seed RNG");
-
-    (clock, rng)
 }

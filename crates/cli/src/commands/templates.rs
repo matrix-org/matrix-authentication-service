@@ -14,9 +14,10 @@
 
 use camino::Utf8PathBuf;
 use clap::Parser;
-use mas_storage::Clock;
+use mas_storage::{Clock, SystemClock};
 use mas_templates::Templates;
 use rand::SeedableRng;
+use tracing::info_span;
 
 #[derive(Parser, Debug)]
 pub(super) struct Options {
@@ -38,7 +39,9 @@ impl Options {
         use Subcommand as SC;
         match &self.subcommand {
             SC::Check { path } => {
-                let clock = Clock::default();
+                let _span = info_span!("cli.templates.check").entered();
+
+                let clock = SystemClock::default();
                 // XXX: we should disallow SeedableRng::from_entropy
                 let mut rng = rand_chacha::ChaChaRng::from_entropy();
                 let url_builder = mas_router::UrlBuilder::new("https://example.com/".parse()?);

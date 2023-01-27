@@ -1,4 +1,4 @@
-// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2021-2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,10 +21,10 @@ use mas_config::RootConfig;
 use mas_handlers::{AppState, HttpClientFactory, MatrixHomeserver};
 use mas_listener::{server::Server, shutdown::ShutdownStream};
 use mas_router::UrlBuilder;
-use mas_storage::MIGRATOR;
+use mas_storage_pg::MIGRATOR;
 use mas_tasks::TaskQueue;
 use tokio::signal::unix::SignalKind;
-use tracing::{info, warn};
+use tracing::{info, info_span, warn, Instrument};
 
 use crate::util::{
     database_from_config, mailer_from_config, password_manager_from_config,
@@ -45,6 +45,7 @@ pub(super) struct Options {
 impl Options {
     #[allow(clippy::too_many_lines)]
     pub async fn run(&self, root: &super::Options) -> anyhow::Result<()> {
+        let span = info_span!("cli.run.init").entered();
         let config: RootConfig = root.load_config()?;
 
         // Connect to the database
@@ -55,6 +56,7 @@ impl Options {
             info!("Running pending migrations");
             MIGRATOR
                 .run(&pool)
+                .instrument(info_span!("db.migrate"))
                 .await
                 .context("could not run migrations")?;
         }
@@ -100,7 +102,7 @@ impl Options {
             watch_templates(&templates).await?;
         }
 
-        let graphql_schema = mas_handlers::graphql_schema(&pool);
+        let graphql_schema = mas_handlers::graphql_schema();
 
         // Maximum 50 outgoing HTTP requests at a time
         let http_client_factory = HttpClientFactory::new(50);
@@ -185,6 +187,8 @@ impl Options {
             .with_timeout(Duration::from_secs(60))
             .with_signal(SignalKind::terminate())?
             .with_signal(SignalKind::interrupt())?;
+
+        span.exit();
 
         mas_listener::server::run_servers(servers, shutdown).await;
 

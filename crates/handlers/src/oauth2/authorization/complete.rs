@@ -25,13 +25,12 @@ use mas_data_model::{AuthorizationGrant, BrowserSession};
 use mas_keystore::Encrypter;
 use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
-use mas_storage::oauth2::{
-    authorization_grant::{derive_session, fulfill_grant, get_grant_by_id},
-    consent::fetch_client_consent,
+use mas_storage::{
+    oauth2::{OAuth2AuthorizationGrantRepository, OAuth2ClientRepository, OAuth2SessionRepository},
+    BoxClock, BoxRepository, BoxRng,
 };
 use mas_templates::Templates;
 use oauth2_types::requests::{AccessTokenResponse, AuthorizationResponse};
-use sqlx::{PgPool, Postgres, Transaction};
 use thiserror::Error;
 use ulid::Ulid;
 
@@ -69,8 +68,7 @@ impl IntoResponse for RouteError {
     }
 }
 
-impl_from_error_for_route!(sqlx::Error);
-impl_from_error_for_route!(mas_storage::DatabaseError);
+impl_from_error_for_route!(mas_storage::RepositoryError);
 impl_from_error_for_route!(mas_policy::LoadError);
 impl_from_error_for_route!(mas_policy::InstanciateError);
 impl_from_error_for_route!(mas_policy::EvaluationError);
@@ -78,19 +76,21 @@ impl_from_error_for_route!(super::callback::IntoCallbackDestinationError);
 impl_from_error_for_route!(super::callback::CallbackDestinationError);
 
 pub(crate) async fn get(
+    rng: BoxRng,
+    clock: BoxClock,
     State(policy_factory): State<Arc<PolicyFactory>>,
     State(templates): State<Templates>,
-    State(pool): State<PgPool>,
+    mut repo: BoxRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(grant_id): Path<Ulid>,
 ) -> Result<Response, RouteError> {
-    let mut txn = pool.begin().await?;
-
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut txn).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
-    let grant = get_grant_by_id(&mut txn, grant_id)
+    let grant = repo
+        .oauth2_authorization_grant()
+        .lookup(grant_id)
         .await?
         .ok_or(RouteError::NotFound)?;
 
@@ -105,7 +105,7 @@ pub(crate) async fn get(
         return Ok((cookie_jar, mas_router::Login::and_then(continue_grant).go()).into_response());
     };
 
-    match complete(grant, session, &policy_factory, txn).await {
+    match complete(rng, clock, grant, session, &policy_factory, repo).await {
         Ok(params) => {
             let res = callback_destination.go(&templates, params).await?;
             Ok((cookie_jar, res).into_response())
@@ -121,6 +121,7 @@ pub(crate) async fn get(
         }
         Err(GrantCompletionError::NotPending) => Err(RouteError::NotPending),
         Err(GrantCompletionError::Internal(e)) => Err(RouteError::Internal(e)),
+        Err(e) => Err(RouteError::Internal(e.into())),
     }
 }
 
@@ -140,23 +141,25 @@ pub enum GrantCompletionError {
 
     #[error("denied by the policy")]
     PolicyViolation,
+
+    #[error("failed to load client")]
+    NoSuchClient,
 }
 
-impl_from_error_for_route!(GrantCompletionError: sqlx::Error);
-impl_from_error_for_route!(GrantCompletionError: mas_storage::DatabaseError);
+impl_from_error_for_route!(GrantCompletionError: mas_storage::RepositoryError);
 impl_from_error_for_route!(GrantCompletionError: super::callback::IntoCallbackDestinationError);
 impl_from_error_for_route!(GrantCompletionError: mas_policy::LoadError);
 impl_from_error_for_route!(GrantCompletionError: mas_policy::InstanciateError);
 impl_from_error_for_route!(GrantCompletionError: mas_policy::EvaluationError);
 
 pub(crate) async fn complete(
+    mut rng: BoxRng,
+    clock: BoxClock,
     grant: AuthorizationGrant,
     browser_session: BrowserSession,
     policy_factory: &PolicyFactory,
-    mut txn: Transaction<'_, Postgres>,
+    mut repo: BoxRepository,
 ) -> Result<AuthorizationResponse<Option<AccessTokenResponse>>, GrantCompletionError> {
-    let (clock, mut rng) = crate::clock_and_rng();
-
     // Verify that the grant is in a pending stage
     if !grant.stage.is_pending() {
         return Err(GrantCompletionError::NotPending);
@@ -164,7 +167,7 @@ pub(crate) async fn complete(
 
     // Check if the authentication is fresh enough
     if !browser_session.was_authenticated_after(grant.max_auth_time()) {
-        txn.commit().await?;
+        repo.save().await?;
         return Err(GrantCompletionError::RequiresReauth);
     }
 
@@ -178,8 +181,16 @@ pub(crate) async fn complete(
         return Err(GrantCompletionError::PolicyViolation);
     }
 
-    let current_consent =
-        fetch_client_consent(&mut txn, &browser_session.user, &grant.client).await?;
+    let client = repo
+        .oauth2_client()
+        .lookup(grant.client_id)
+        .await?
+        .ok_or(GrantCompletionError::NoSuchClient)?;
+
+    let current_consent = repo
+        .oauth2_client()
+        .get_consent_for_user(&client, &browser_session.user)
+        .await?;
 
     let lacks_consent = grant
         .scope
@@ -188,14 +199,20 @@ pub(crate) async fn complete(
 
     // Check if the client lacks consent *or* if consent was explicitely asked
     if lacks_consent || grant.requires_consent {
-        txn.commit().await?;
+        repo.save().await?;
         return Err(GrantCompletionError::RequiresConsent);
     }
 
     // All good, let's start the session
-    let session = derive_session(&mut txn, &mut rng, &clock, &grant, browser_session).await?;
+    let session = repo
+        .oauth2_session()
+        .create_from_grant(&mut rng, &clock, &grant, &browser_session)
+        .await?;
 
-    let grant = fulfill_grant(&mut txn, grant, session.clone()).await?;
+    let grant = repo
+        .oauth2_authorization_grant()
+        .fulfill(&clock, &session, grant)
+        .await?;
 
     // Yep! Let's complete the auth now
     let mut params = AuthorizationResponse::default();
@@ -213,6 +230,6 @@ pub(crate) async fn complete(
         ));
     }
 
-    txn.commit().await?;
+    repo.save().await?;
     Ok(params)
 }

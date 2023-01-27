@@ -23,22 +23,23 @@ use axum_extra::extract::PrivateCookieJar;
 use mas_axum_utils::{csrf::CsrfExt, FancyError, SessionInfoExt};
 use mas_keystore::Encrypter;
 use mas_router::Route;
-use mas_storage::user::{count_active_sessions, get_user_emails};
+use mas_storage::{
+    user::{BrowserSessionRepository, UserEmailRepository},
+    BoxClock, BoxRepository, BoxRng,
+};
 use mas_templates::{AccountContext, TemplateContext, Templates};
-use sqlx::PgPool;
 
 pub(crate) async fn get(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(templates): State<Templates>,
-    State(pool): State<PgPool>,
+    mut repo: BoxRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
-    let (clock, mut rng) = crate::clock_and_rng();
-    let mut conn = pool.acquire().await?;
-
-    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
+    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut conn).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     let session = if let Some(session) = maybe_session {
         session
@@ -47,9 +48,9 @@ pub(crate) async fn get(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    let active_sessions = count_active_sessions(&mut conn, &session.user).await?;
+    let active_sessions = repo.browser_session().count_active(&session.user).await?;
 
-    let emails = get_user_emails(&mut conn, &session.user).await?;
+    let emails = repo.user_email().all(&session.user).await?;
 
     let ctx = AccountContext::new(active_sessions, emails)
         .with_session(session)

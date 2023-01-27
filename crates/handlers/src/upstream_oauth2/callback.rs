@@ -25,12 +25,15 @@ use mas_oidc_client::requests::{
     authorization_code::AuthorizationValidationData, jose::JwtVerificationData,
 };
 use mas_router::{Route, UrlBuilder};
-use mas_storage::upstream_oauth2::{
-    add_link, complete_session, lookup_link_by_subject, lookup_session,
+use mas_storage::{
+    upstream_oauth2::{
+        UpstreamOAuthLinkRepository, UpstreamOAuthProviderRepository,
+        UpstreamOAuthSessionRepository,
+    },
+    BoxClock, BoxRepository, BoxRng, Clock,
 };
 use oauth2_types::errors::ClientErrorCode;
 use serde::Deserialize;
-use sqlx::PgPool;
 use thiserror::Error;
 use ulid::Ulid;
 
@@ -64,6 +67,9 @@ pub(crate) enum RouteError {
     #[error("Session not found")]
     SessionNotFound,
 
+    #[error("Provider not found")]
+    ProviderNotFound,
+
     #[error("Provider mismatch")]
     ProviderMismatch,
 
@@ -92,9 +98,8 @@ pub(crate) enum RouteError {
     Internal(Box<dyn std::error::Error>),
 }
 
-impl_from_error_for_route!(mas_storage::DatabaseError);
+impl_from_error_for_route!(mas_storage::RepositoryError);
 impl_from_error_for_route!(mas_http::ClientInitError);
-impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_oidc_client::error::DiscoveryError);
 impl_from_error_for_route!(mas_oidc_client::error::JwksError);
 impl_from_error_for_route!(mas_oidc_client::error::TokenAuthorizationCodeError);
@@ -104,6 +109,7 @@ impl_from_error_for_route!(super::cookie::UpstreamSessionNotFound);
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         match self {
+            Self::ProviderNotFound => (StatusCode::NOT_FOUND, "Provider not found").into_response(),
             Self::SessionNotFound => (StatusCode::NOT_FOUND, "Session not found").into_response(),
             Self::Internal(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
             e => (StatusCode::BAD_REQUEST, e.to_string()).into_response(),
@@ -113,8 +119,10 @@ impl IntoResponse for RouteError {
 
 #[allow(clippy::too_many_lines, clippy::too_many_arguments)]
 pub(crate) async fn get(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(http_client_factory): State<HttpClientFactory>,
-    State(pool): State<PgPool>,
+    mut repo: BoxRepository,
     State(url_builder): State<UrlBuilder>,
     State(encrypter): State<Encrypter>,
     State(keystore): State<Keystore>,
@@ -122,30 +130,34 @@ pub(crate) async fn get(
     Path(provider_id): Path<Ulid>,
     Query(params): Query<QueryParams>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let (clock, mut rng) = crate::clock_and_rng();
-
-    let mut txn = pool.begin().await?;
+    let provider = repo
+        .upstream_oauth_provider()
+        .lookup(provider_id)
+        .await?
+        .ok_or(RouteError::ProviderNotFound)?;
 
     let sessions_cookie = UpstreamSessionsCookie::load(&cookie_jar);
     let (session_id, _post_auth_action) = sessions_cookie
         .find_session(provider_id, &params.state)
         .map_err(|_| RouteError::MissingCookie)?;
 
-    let (provider, session) = lookup_session(&mut txn, session_id)
+    let session = repo
+        .upstream_oauth_session()
+        .lookup(session_id)
         .await?
         .ok_or(RouteError::SessionNotFound)?;
 
-    if provider.id != provider_id {
+    if provider.id != session.provider_id {
         // The provider in the session cookie should match the one from the URL
         return Err(RouteError::ProviderMismatch);
     }
 
-    if params.state != session.state {
+    if params.state != session.state_str {
         // The state in the session cookie should match the one from the params
         return Err(RouteError::StateMismatch);
     }
 
-    if session.completed() {
+    if !session.is_pending() {
         // The session was already completed
         return Err(RouteError::AlreadyCompleted);
     }
@@ -194,7 +206,7 @@ pub(crate) async fn get(
 
     // TODO: all that should be borrowed
     let validation_data = AuthorizationValidationData {
-        state: session.state.clone(),
+        state: session.state_str.clone(),
         nonce: session.nonce.clone(),
         code_challenge_verifier: session.code_challenge_verifier.clone(),
         redirect_uri,
@@ -231,20 +243,29 @@ pub(crate) async fn get(
     let subject = mas_jose::claims::SUB.extract_required(&mut id_token)?;
 
     // Look for an existing link
-    let maybe_link = lookup_link_by_subject(&mut txn, &provider, &subject).await?;
+    let maybe_link = repo
+        .upstream_oauth_link()
+        .find_by_subject(&provider, &subject)
+        .await?;
 
     let link = if let Some(link) = maybe_link {
         link
     } else {
-        add_link(&mut txn, &mut rng, &clock, &provider, subject).await?
+        repo.upstream_oauth_link()
+            .add(&mut rng, &clock, &provider, subject)
+            .await?
     };
 
-    let session = complete_session(&mut txn, &clock, session, &link, response.id_token).await?;
+    let session = repo
+        .upstream_oauth_session()
+        .complete_with_link(&clock, session, &link, response.id_token)
+        .await?;
+
     let cookie_jar = sessions_cookie
         .add_link_to_session(session.id, link.id)?
-        .save(cookie_jar, clock.now());
+        .save(cookie_jar, &clock);
 
-    txn.commit().await?;
+    repo.save().await?;
 
     Ok((
         cookie_jar,

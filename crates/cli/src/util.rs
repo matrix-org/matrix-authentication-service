@@ -110,6 +110,7 @@ pub async fn templates_from_config(
     Templates::load(config.path.clone(), url_builder.clone()).await
 }
 
+#[tracing::instrument(name = "db.connect", skip_all, err(Debug))]
 pub async fn database_from_config(config: &DatabaseConfig) -> Result<PgPool, anyhow::Error> {
     let mut options = match &config.options {
         DatabaseConnectConfig::Uri { uri } => uri

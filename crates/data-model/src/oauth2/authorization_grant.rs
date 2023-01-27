@@ -21,11 +21,11 @@ use oauth2_types::{
     requests::ResponseMode,
 };
 use serde::Serialize;
-use thiserror::Error;
 use ulid::Ulid;
 use url::Url;
 
-use super::{client::Client, session::Session};
+use super::session::Session;
+use crate::InvalidTransitionError;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Pkce {
@@ -53,21 +53,17 @@ pub struct AuthorizationCode {
     pub pkce: Option<Pkce>,
 }
 
-#[derive(Debug, Error)]
-#[error("invalid state transition")]
-pub struct InvalidTransitionError;
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Default)]
 #[serde(tag = "stage", rename_all = "lowercase")]
 pub enum AuthorizationGrantStage {
     #[default]
     Pending,
     Fulfilled {
-        session: Session,
+        session_id: Ulid,
         fulfilled_at: DateTime<Utc>,
     },
     Exchanged {
-        session: Session,
+        session_id: Ulid,
         fulfilled_at: DateTime<Utc>,
         exchanged_at: DateTime<Utc>,
     },
@@ -82,35 +78,35 @@ impl AuthorizationGrantStage {
         Self::Pending
     }
 
-    pub fn fulfill(
+    fn fulfill(
         self,
         fulfilled_at: DateTime<Utc>,
-        session: Session,
+        session: &Session,
     ) -> Result<Self, InvalidTransitionError> {
         match self {
             Self::Pending => Ok(Self::Fulfilled {
                 fulfilled_at,
-                session,
+                session_id: session.id,
             }),
             _ => Err(InvalidTransitionError),
         }
     }
 
-    pub fn exchange(self, exchanged_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
+    fn exchange(self, exchanged_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
         match self {
             Self::Fulfilled {
                 fulfilled_at,
-                session,
+                session_id,
             } => Ok(Self::Exchanged {
                 fulfilled_at,
                 exchanged_at,
-                session,
+                session_id,
             }),
             _ => Err(InvalidTransitionError),
         }
     }
 
-    pub fn cancel(self, cancelled_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
+    fn cancel(self, cancelled_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
         match self {
             Self::Pending => Ok(Self::Cancelled { cancelled_at }),
             _ => Err(InvalidTransitionError),
@@ -124,6 +120,22 @@ impl AuthorizationGrantStage {
     pub fn is_pending(&self) -> bool {
         matches!(self, Self::Pending)
     }
+
+    /// Returns `true` if the authorization grant stage is [`Fulfilled`].
+    ///
+    /// [`Fulfilled`]: AuthorizationGrantStage::Fulfilled
+    #[must_use]
+    pub fn is_fulfilled(&self) -> bool {
+        matches!(self, Self::Fulfilled { .. })
+    }
+
+    /// Returns `true` if the authorization grant stage is [`Exchanged`].
+    ///
+    /// [`Exchanged`]: AuthorizationGrantStage::Exchanged
+    #[must_use]
+    pub fn is_exchanged(&self) -> bool {
+        matches!(self, Self::Exchanged { .. })
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -132,7 +144,7 @@ pub struct AuthorizationGrant {
     #[serde(flatten)]
     pub stage: AuthorizationGrantStage,
     pub code: Option<AuthorizationCode>,
-    pub client: Client,
+    pub client_id: Ulid,
     pub redirect_uri: Url,
     pub scope: oauth2_types::scope::Scope,
     pub state: Option<String>,
@@ -144,10 +156,38 @@ pub struct AuthorizationGrant {
     pub requires_consent: bool,
 }
 
+impl std::ops::Deref for AuthorizationGrant {
+    type Target = AuthorizationGrantStage;
+
+    fn deref(&self) -> &Self::Target {
+        &self.stage
+    }
+}
+
 impl AuthorizationGrant {
     #[must_use]
     pub fn max_auth_time(&self) -> DateTime<Utc> {
         let max_age: Option<i64> = self.max_age.map(|x| x.get().into());
         self.created_at - Duration::seconds(max_age.unwrap_or(3600 * 24 * 365))
+    }
+
+    pub fn exchange(mut self, exchanged_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
+        self.stage = self.stage.exchange(exchanged_at)?;
+        Ok(self)
+    }
+
+    pub fn fulfill(
+        mut self,
+        fulfilled_at: DateTime<Utc>,
+        session: &Session,
+    ) -> Result<Self, InvalidTransitionError> {
+        self.stage = self.stage.fulfill(fulfilled_at, session)?;
+        Ok(self)
+    }
+
+    // TODO: this is not used?
+    pub fn cancel(mut self, canceld_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
+        self.stage = self.stage.cancel(canceld_at)?;
+        Ok(self)
     }
 }

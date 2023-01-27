@@ -25,17 +25,15 @@ use mas_axum_utils::{
 };
 use mas_keystore::Encrypter;
 use mas_storage::{
-    upstream_oauth2::{
-        associate_link_to_user, consume_session, lookup_link, lookup_session_on_link,
-    },
-    user::{add_user, authenticate_session_with_upstream, lookup_user, start_session},
+    upstream_oauth2::{UpstreamOAuthLinkRepository, UpstreamOAuthSessionRepository},
+    user::{BrowserSessionRepository, UserRepository},
+    BoxClock, BoxRepository, BoxRng,
 };
 use mas_templates::{
     EmptyContext, TemplateContext, Templates, UpstreamExistingLinkContext, UpstreamRegister,
     UpstreamSuggestLink,
 };
 use serde::Deserialize;
-use sqlx::PgPool;
 use thiserror::Error;
 use ulid::Ulid;
 
@@ -52,6 +50,10 @@ pub(crate) enum RouteError {
     #[error("Session not found")]
     SessionNotFound,
 
+    /// Couldn't find the user
+    #[error("User not found")]
+    UserNotFound,
+
     /// Session was already consumed
     #[error("Session already consumed")]
     SessionConsumed,
@@ -66,11 +68,10 @@ pub(crate) enum RouteError {
     Internal(Box<dyn std::error::Error>),
 }
 
-impl_from_error_for_route!(sqlx::Error);
 impl_from_error_for_route!(mas_templates::TemplateError);
 impl_from_error_for_route!(mas_axum_utils::csrf::CsrfError);
 impl_from_error_for_route!(super::cookie::UpstreamSessionNotFound);
-impl_from_error_for_route!(mas_storage::DatabaseError);
+impl_from_error_for_route!(mas_storage::RepositoryError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
@@ -91,48 +92,60 @@ pub(crate) enum FormData {
 }
 
 pub(crate) async fn get(
-    State(pool): State<PgPool>,
+    mut rng: BoxRng,
+    clock: BoxClock,
+    mut repo: BoxRepository,
     State(templates): State<Templates>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(link_id): Path<Ulid>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let mut txn = pool.begin().await?;
-    let (clock, mut rng) = crate::clock_and_rng();
-
     let sessions_cookie = UpstreamSessionsCookie::load(&cookie_jar);
     let (session_id, _post_auth_action) = sessions_cookie
         .lookup_link(link_id)
         .map_err(|_| RouteError::MissingCookie)?;
 
-    let link = lookup_link(&mut txn, link_id)
+    let link = repo
+        .upstream_oauth_link()
+        .lookup(link_id)
         .await?
         .ok_or(RouteError::LinkNotFound)?;
 
-    // This checks that we're in a browser session which is allowed to consume this
-    // link: the upstream auth session should have been started in this browser.
-    let upstream_session = lookup_session_on_link(&mut txn, &link, session_id)
+    let upstream_session = repo
+        .upstream_oauth_session()
+        .lookup(session_id)
         .await?
         .ok_or(RouteError::SessionNotFound)?;
 
-    if upstream_session.consumed() {
+    // This checks that we're in a browser session which is allowed to consume this
+    // link: the upstream auth session should have been started in this browser.
+    if upstream_session.link_id() != Some(link.id) {
+        return Err(RouteError::SessionNotFound);
+    }
+
+    if upstream_session.is_consumed() {
         return Err(RouteError::SessionConsumed);
     }
 
     let (user_session_info, cookie_jar) = cookie_jar.session_info();
-    let (csrf_token, mut cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
-    let maybe_user_session = user_session_info.load_session(&mut txn).await?;
+    let (csrf_token, mut cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
+    let maybe_user_session = user_session_info.load_session(&mut repo).await?;
 
     let render = match (maybe_user_session, link.user_id) {
-        (Some(mut session), Some(user_id)) if session.user.id == user_id => {
+        (Some(session), Some(user_id)) if session.user.id == user_id => {
             // Session already linked, and link matches the currently logged
             // user. Mark the session as consumed and renew the authentication.
-            consume_session(&mut txn, &clock, upstream_session).await?;
-            authenticate_session_with_upstream(&mut txn, &mut rng, &clock, &mut session, &link)
+            repo.upstream_oauth_session()
+                .consume(&clock, upstream_session)
+                .await?;
+
+            let session = repo
+                .browser_session()
+                .authenticate_with_upstream(&mut rng, &clock, session, &link)
                 .await?;
 
             cookie_jar = cookie_jar.set_session(&session);
 
-            txn.commit().await?;
+            repo.save().await?;
 
             let ctx = EmptyContext
                 .with_session(session)
@@ -147,7 +160,11 @@ pub(crate) async fn get(
             // Session already linked, but link doesn't match the currently
             // logged user. Suggest logging out of the current user
             // and logging in with the new one
-            let user = lookup_user(&mut txn, user_id).await?;
+            let user = repo
+                .user()
+                .lookup(user_id)
+                .await?
+                .ok_or(RouteError::UserNotFound)?;
 
             let ctx = UpstreamExistingLinkContext::new(user)
                 .with_session(user_session)
@@ -167,7 +184,11 @@ pub(crate) async fn get(
 
         (None, Some(user_id)) => {
             // Session linked, but user not logged in: do the login
-            let user = lookup_user(&mut txn, user_id).await?;
+            let user = repo
+                .user()
+                .lookup(user_id)
+                .await?
+                .ok_or(RouteError::UserNotFound)?;
 
             let ctx = UpstreamExistingLinkContext::new(user).with_csrf(csrf_token.form_value());
 
@@ -187,14 +208,14 @@ pub(crate) async fn get(
 }
 
 pub(crate) async fn post(
-    State(pool): State<PgPool>,
+    mut rng: BoxRng,
+    clock: BoxClock,
+    mut repo: BoxRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(link_id): Path<Ulid>,
     Form(form): Form<ProtectedForm<FormData>>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let mut txn = pool.begin().await?;
-    let (clock, mut rng) = crate::clock_and_rng();
-    let form = cookie_jar.verify_form(clock.now(), form)?;
+    let form = cookie_jar.verify_form(&clock, form)?;
 
     let sessions_cookie = UpstreamSessionsCookie::load(&cookie_jar);
     let (session_id, post_auth_action) = sessions_cookie
@@ -205,53 +226,77 @@ pub(crate) async fn post(
         post_auth_action: post_auth_action.cloned(),
     };
 
-    let link = lookup_link(&mut txn, link_id)
+    let link = repo
+        .upstream_oauth_link()
+        .lookup(link_id)
         .await?
         .ok_or(RouteError::LinkNotFound)?;
 
-    // This checks that we're in a browser session which is allowed to consume this
-    // link: the upstream auth session should have been started in this browser.
-    let upstream_session = lookup_session_on_link(&mut txn, &link, session_id)
+    let upstream_session = repo
+        .upstream_oauth_session()
+        .lookup(session_id)
         .await?
         .ok_or(RouteError::SessionNotFound)?;
 
-    if upstream_session.consumed() {
+    // This checks that we're in a browser session which is allowed to consume this
+    // link: the upstream auth session should have been started in this browser.
+    if upstream_session.link_id() != Some(link.id) {
+        return Err(RouteError::SessionNotFound);
+    }
+
+    if upstream_session.is_consumed() {
         return Err(RouteError::SessionConsumed);
     }
 
     let (user_session_info, cookie_jar) = cookie_jar.session_info();
-    let maybe_user_session = user_session_info.load_session(&mut txn).await?;
+    let maybe_user_session = user_session_info.load_session(&mut repo).await?;
 
-    let mut session = match (maybe_user_session, link.user_id, form) {
+    let session = match (maybe_user_session, link.user_id, form) {
         (Some(session), None, FormData::Link) => {
-            associate_link_to_user(&mut txn, &link, &session.user).await?;
+            repo.upstream_oauth_link()
+                .associate_to_user(&link, &session.user)
+                .await?;
+
             session
         }
 
         (None, Some(user_id), FormData::Login) => {
-            let user = lookup_user(&mut txn, user_id).await?;
-            start_session(&mut txn, &mut rng, &clock, user).await?
+            let user = repo
+                .user()
+                .lookup(user_id)
+                .await?
+                .ok_or(RouteError::UserNotFound)?;
+
+            repo.browser_session().add(&mut rng, &clock, &user).await?
         }
 
         (None, None, FormData::Register { username }) => {
-            let user = add_user(&mut txn, &mut rng, &clock, &username).await?;
-            associate_link_to_user(&mut txn, &link, &user).await?;
+            let user = repo.user().add(&mut rng, &clock, username).await?;
+            repo.upstream_oauth_link()
+                .associate_to_user(&link, &user)
+                .await?;
 
-            start_session(&mut txn, &mut rng, &clock, user).await?
+            repo.browser_session().add(&mut rng, &clock, &user).await?
         }
 
         _ => return Err(RouteError::InvalidFormAction),
     };
 
-    consume_session(&mut txn, &clock, upstream_session).await?;
-    authenticate_session_with_upstream(&mut txn, &mut rng, &clock, &mut session, &link).await?;
+    repo.upstream_oauth_session()
+        .consume(&clock, upstream_session)
+        .await?;
+
+    let session = repo
+        .browser_session()
+        .authenticate_with_upstream(&mut rng, &clock, session, &link)
+        .await?;
 
     let cookie_jar = sessions_cookie
         .consume_link(link_id)?
-        .save(cookie_jar, clock.now());
+        .save(cookie_jar, &clock);
     let cookie_jar = cookie_jar.set_session(&session);
 
-    txn.commit().await?;
+    repo.save().await?;
 
     Ok((cookie_jar, post_auth_action.go_next()))
 }

@@ -71,7 +71,7 @@ impl PasswordManager {
     /// # Errors
     ///
     /// Returns an error if the hashing failed
-    #[tracing::instrument(skip_all)]
+    #[tracing::instrument(name = "passwords.hash", skip_all)]
     pub async fn hash<R: CryptoRng + RngCore + Send>(
         &self,
         rng: R,
@@ -82,13 +82,16 @@ impl PasswordManager {
         let rng = rand_chacha::ChaChaRng::from_rng(rng)?;
         let hashers = self.hashers.clone();
         let default_hasher_version = self.default_hasher;
+        let span = tracing::Span::current();
 
         let hashed = tokio::task::spawn_blocking(move || {
-            let default_hasher = hashers
-                .get(&default_hasher_version)
-                .context("Default hasher not found")?;
+            span.in_scope(move || {
+                let default_hasher = hashers
+                    .get(&default_hasher_version)
+                    .context("Default hasher not found")?;
 
-            default_hasher.hash_blocking(rng, &password)
+                default_hasher.hash_blocking(rng, &password)
+            })
         })
         .await??;
 
@@ -100,7 +103,7 @@ impl PasswordManager {
     /// # Errors
     ///
     /// Returns an error if the password hash verification failed
-    #[tracing::instrument(skip_all, fields(%scheme))]
+    #[tracing::instrument(name = "passwords.verify", skip_all, fields(%scheme))]
     pub async fn verify(
         &self,
         scheme: SchemeVersion,
@@ -108,10 +111,13 @@ impl PasswordManager {
         hashed_password: String,
     ) -> Result<(), anyhow::Error> {
         let hashers = self.hashers.clone();
+        let span = tracing::Span::current();
 
         tokio::task::spawn_blocking(move || {
-            let hasher = hashers.get(&scheme).context("Hashing scheme not found")?;
-            hasher.verify_blocking(&hashed_password, &password)
+            span.in_scope(move || {
+                let hasher = hashers.get(&scheme).context("Hashing scheme not found")?;
+                hasher.verify_blocking(&hashed_password, &password)
+            })
         })
         .await??;
 
@@ -124,7 +130,7 @@ impl PasswordManager {
     /// # Errors
     ///
     /// Returns an error if the password hash verification failed
-    #[tracing::instrument(skip_all, fields(%scheme))]
+    #[tracing::instrument(name = "passwords.verify_and_upgrade", skip_all, fields(%scheme))]
     pub async fn verify_and_upgrade<R: CryptoRng + RngCore + Send>(
         &self,
         rng: R,

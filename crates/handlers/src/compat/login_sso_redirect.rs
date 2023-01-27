@@ -19,11 +19,10 @@ use axum::{
 };
 use hyper::StatusCode;
 use mas_router::{CompatLoginSsoAction, CompatLoginSsoComplete, UrlBuilder};
-use mas_storage::compat::insert_compat_sso_login;
+use mas_storage::{compat::CompatSsoLoginRepository, BoxClock, BoxRepository, BoxRng};
 use rand::distributions::{Alphanumeric, DistString};
 use serde::Deserialize;
 use serde_with::serde;
-use sqlx::PgPool;
 use thiserror::Error;
 use url::Url;
 
@@ -48,7 +47,7 @@ pub enum RouteError {
     InvalidRedirectUrl,
 }
 
-impl_from_error_for_route!(sqlx::Error);
+impl_from_error_for_route!(mas_storage::RepositoryError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
@@ -56,14 +55,13 @@ impl IntoResponse for RouteError {
     }
 }
 
-#[tracing::instrument(skip(pool, url_builder), err)]
 pub async fn get(
-    State(pool): State<PgPool>,
+    mut rng: BoxRng,
+    clock: BoxClock,
+    mut repo: BoxRepository,
     State(url_builder): State<UrlBuilder>,
     Query(params): Query<Params>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let (clock, mut rng) = crate::clock_and_rng();
-
     // Check the redirectUrl parameter
     let redirect_url = params.redirect_url.ok_or(RouteError::MissingRedirectUrl)?;
     let redirect_url = Url::parse(&redirect_url).map_err(|_| RouteError::InvalidRedirectUrl)?;
@@ -79,8 +77,10 @@ pub async fn get(
     }
 
     let token = Alphanumeric.sample_string(&mut rng, 32);
-    let mut conn = pool.acquire().await?;
-    let login = insert_compat_sso_login(&mut conn, &mut rng, &clock, token, redirect_url).await?;
+    let login = repo
+        .compat_sso_login()
+        .add(&mut rng, &clock, token, redirect_url)
+        .await?;
 
     Ok(url_builder.absolute_redirect(&CompatLoginSsoComplete::new(login.id, params.action)))
 }

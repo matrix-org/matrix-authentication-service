@@ -12,17 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum::{extract::State, response::IntoResponse, Json};
+use axum::{response::IntoResponse, Json};
 use chrono::Duration;
 use hyper::StatusCode;
 use mas_data_model::{TokenFormatError, TokenType};
-use mas_storage::compat::{
-    add_compat_access_token, add_compat_refresh_token, consume_compat_refresh_token,
-    expire_compat_access_token, lookup_active_compat_refresh_token,
+use mas_storage::{
+    compat::{CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository},
+    BoxClock, BoxRepository, BoxRng, Clock,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DurationMilliSeconds};
-use sqlx::PgPool;
 use thiserror::Error;
 
 use super::MatrixError;
@@ -40,17 +39,26 @@ pub enum RouteError {
 
     #[error("invalid token")]
     InvalidToken,
+
+    #[error("refresh token already consumed")]
+    RefreshTokenConsumed,
+
+    #[error("invalid session")]
+    InvalidSession,
+
+    #[error("unknown session")]
+    UnknownSession,
 }
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         match self {
-            Self::Internal(_) => MatrixError {
+            Self::Internal(_) | Self::UnknownSession => MatrixError {
                 errcode: "M_UNKNOWN",
                 error: "Internal error",
                 status: StatusCode::INTERNAL_SERVER_ERROR,
             },
-            Self::InvalidToken => MatrixError {
+            Self::InvalidToken | Self::InvalidSession | Self::RefreshTokenConsumed => MatrixError {
                 errcode: "M_UNKNOWN_TOKEN",
                 error: "Invalid refresh token",
                 status: StatusCode::UNAUTHORIZED,
@@ -60,8 +68,7 @@ impl IntoResponse for RouteError {
     }
 }
 
-impl_from_error_for_route!(sqlx::Error);
-impl_from_error_for_route!(mas_storage::DatabaseError);
+impl_from_error_for_route!(mas_storage::RepositoryError);
 
 impl From<TokenFormatError> for RouteError {
     fn from(_e: TokenFormatError) -> Self {
@@ -79,50 +86,79 @@ pub struct ResponseBody {
 }
 
 pub(crate) async fn post(
-    State(pool): State<PgPool>,
+    mut rng: BoxRng,
+    clock: BoxClock,
+    mut repo: BoxRepository,
     Json(input): Json<RequestBody>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let (clock, mut rng) = crate::clock_and_rng();
-    let mut txn = pool.begin().await?;
-
     let token_type = TokenType::check(&input.refresh_token)?;
 
     if token_type != TokenType::CompatRefreshToken {
         return Err(RouteError::InvalidToken);
     }
 
-    let (refresh_token, access_token, session) =
-        lookup_active_compat_refresh_token(&mut txn, &input.refresh_token)
-            .await?
-            .ok_or(RouteError::InvalidToken)?;
+    let refresh_token = repo
+        .compat_refresh_token()
+        .find_by_token(&input.refresh_token)
+        .await?
+        .ok_or(RouteError::InvalidToken)?;
+
+    if !refresh_token.is_valid() {
+        return Err(RouteError::RefreshTokenConsumed);
+    }
+
+    let session = repo
+        .compat_session()
+        .lookup(refresh_token.session_id)
+        .await?
+        .ok_or(RouteError::UnknownSession)?;
+
+    if !session.is_valid() {
+        return Err(RouteError::InvalidSession);
+    }
+
+    let access_token = repo
+        .compat_access_token()
+        .lookup(refresh_token.access_token_id)
+        .await?
+        .filter(|t| t.is_valid(clock.now()));
 
     let new_refresh_token_str = TokenType::CompatRefreshToken.generate(&mut rng);
     let new_access_token_str = TokenType::CompatAccessToken.generate(&mut rng);
 
     let expires_in = Duration::minutes(5);
-    let new_access_token = add_compat_access_token(
-        &mut txn,
-        &mut rng,
-        &clock,
-        &session,
-        new_access_token_str,
-        Some(expires_in),
-    )
-    .await?;
-    let new_refresh_token = add_compat_refresh_token(
-        &mut txn,
-        &mut rng,
-        &clock,
-        &session,
-        &new_access_token,
-        new_refresh_token_str,
-    )
-    .await?;
+    let new_access_token = repo
+        .compat_access_token()
+        .add(
+            &mut rng,
+            &clock,
+            &session,
+            new_access_token_str,
+            Some(expires_in),
+        )
+        .await?;
+    let new_refresh_token = repo
+        .compat_refresh_token()
+        .add(
+            &mut rng,
+            &clock,
+            &session,
+            &new_access_token,
+            new_refresh_token_str,
+        )
+        .await?;
 
-    consume_compat_refresh_token(&mut txn, &clock, refresh_token).await?;
-    expire_compat_access_token(&mut txn, &clock, access_token).await?;
+    repo.compat_refresh_token()
+        .consume(&clock, refresh_token)
+        .await?;
 
-    txn.commit().await?;
+    if let Some(access_token) = access_token {
+        repo.compat_access_token()
+            .expire(&clock, access_token)
+            .await?;
+    }
+
+    repo.save().await?;
 
     Ok(Json(ResponseBody {
         access_token: new_access_token.token,

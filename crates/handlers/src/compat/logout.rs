@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum::{extract::State, response::IntoResponse, Json, TypedHeader};
+use axum::{response::IntoResponse, Json, TypedHeader};
 use headers::{authorization::Bearer, Authorization};
 use hyper::StatusCode;
 use mas_data_model::TokenType;
-use mas_storage::{compat::compat_logout, Clock};
-use sqlx::PgPool;
+use mas_storage::{
+    compat::{CompatAccessTokenRepository, CompatSessionRepository},
+    BoxClock, BoxRepository, Clock,
+};
 use thiserror::Error;
 
 use super::MatrixError;
@@ -36,12 +38,9 @@ pub enum RouteError {
 
     #[error("Invalid access token")]
     InvalidAuthorization,
-
-    #[error("Logout failed")]
-    LogoutFailed,
 }
 
-impl_from_error_for_route!(sqlx::Error);
+impl_from_error_for_route!(mas_storage::RepositoryError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
@@ -56,7 +55,7 @@ impl IntoResponse for RouteError {
                 error: "Missing access token",
                 status: StatusCode::UNAUTHORIZED,
             },
-            Self::InvalidAuthorization | Self::LogoutFailed | Self::TokenFormat(_) => MatrixError {
+            Self::InvalidAuthorization | Self::TokenFormat(_) => MatrixError {
                 errcode: "M_UNKNOWN_TOKEN",
                 error: "Invalid access token",
                 status: StatusCode::UNAUTHORIZED,
@@ -67,12 +66,10 @@ impl IntoResponse for RouteError {
 }
 
 pub(crate) async fn post(
-    State(pool): State<PgPool>,
+    clock: BoxClock,
+    mut repo: BoxRepository,
     maybe_authorization: Option<TypedHeader<Authorization<Bearer>>>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let clock = Clock::default();
-    let mut conn = pool.acquire().await?;
-
     let TypedHeader(authorization) = maybe_authorization.ok_or(RouteError::MissingAuthorization)?;
 
     let token = authorization.token();
@@ -82,9 +79,23 @@ pub(crate) async fn post(
         return Err(RouteError::InvalidAuthorization);
     }
 
-    if !compat_logout(&mut conn, &clock, token).await? {
-        return Err(RouteError::LogoutFailed);
-    }
+    let token = repo
+        .compat_access_token()
+        .find_by_token(token)
+        .await?
+        .filter(|t| t.is_valid(clock.now()))
+        .ok_or(RouteError::InvalidAuthorization)?;
+
+    let session = repo
+        .compat_session()
+        .lookup(token.session_id)
+        .await?
+        .filter(|s| s.is_valid())
+        .ok_or(RouteError::InvalidAuthorization)?;
+
+    repo.compat_session().finish(&clock, session).await?;
+
+    repo.save().await?;
 
     Ok(Json(serde_json::json!({})))
 }

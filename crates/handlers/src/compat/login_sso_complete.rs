@@ -29,10 +29,12 @@ use mas_axum_utils::{
 use mas_data_model::Device;
 use mas_keystore::Encrypter;
 use mas_router::{CompatLoginSsoAction, PostAuthAction, Route};
-use mas_storage::compat::{fullfill_compat_sso_login, get_compat_sso_login_by_id};
+use mas_storage::{
+    compat::{CompatSessionRepository, CompatSsoLoginRepository},
+    BoxClock, BoxRepository, BoxRng, Clock,
+};
 use mas_templates::{CompatSsoContext, ErrorContext, TemplateContext, Templates};
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
 use ulid::Ulid;
 
 #[derive(Serialize)]
@@ -50,19 +52,18 @@ pub struct Params {
 }
 
 pub async fn get(
-    State(pool): State<PgPool>,
+    mut rng: BoxRng,
+    clock: BoxClock,
+    mut repo: BoxRepository,
     State(templates): State<Templates>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(id): Path<Ulid>,
     Query(params): Query<Params>,
 ) -> Result<Response, FancyError> {
-    let (clock, mut rng) = crate::clock_and_rng();
-    let mut conn = pool.acquire().await?;
-
     let (session_info, cookie_jar) = cookie_jar.session_info();
-    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
+    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
 
-    let maybe_session = session_info.load_session(&mut conn).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     let session = if let Some(session) = maybe_session {
         session
@@ -80,20 +81,16 @@ pub async fn get(
         return Ok((cookie_jar, url).into_response());
     };
 
-    // TODO: make that more generic
-    if session
-        .user
-        .primary_email
-        .as_ref()
-        .and_then(|e| e.confirmed_at)
-        .is_none()
-    {
+    // TODO: make that more generic, check that the email has been confirmed
+    if session.user.primary_user_email_id.is_none() {
         let destination = mas_router::AccountAddEmail::default()
             .and_then(PostAuthAction::continue_compat_sso_login(id));
         return Ok((cookie_jar, destination.go()).into_response());
     }
 
-    let login = get_compat_sso_login_by_id(&mut conn, id)
+    let login = repo
+        .compat_sso_login()
+        .lookup(id)
         .await?
         .context("Could not find compat SSO login")?;
 
@@ -117,20 +114,19 @@ pub async fn get(
 }
 
 pub async fn post(
-    State(pool): State<PgPool>,
+    mut rng: BoxRng,
+    clock: BoxClock,
+    mut repo: BoxRepository,
     State(templates): State<Templates>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(id): Path<Ulid>,
     Query(params): Query<Params>,
     Form(form): Form<ProtectedForm<()>>,
 ) -> Result<Response, FancyError> {
-    let (clock, mut rng) = crate::clock_and_rng();
-    let mut txn = pool.begin().await?;
-
     let (session_info, cookie_jar) = cookie_jar.session_info();
-    cookie_jar.verify_form(clock.now(), form)?;
+    cookie_jar.verify_form(&clock, form)?;
 
-    let maybe_session = session_info.load_session(&mut txn).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     let session = if let Some(session) = maybe_session {
         session
@@ -149,19 +145,15 @@ pub async fn post(
     };
 
     // TODO: make that more generic
-    if session
-        .user
-        .primary_email
-        .as_ref()
-        .and_then(|e| e.confirmed_at)
-        .is_none()
-    {
+    if session.user.primary_user_email_id.is_none() {
         let destination = mas_router::AccountAddEmail::default()
             .and_then(PostAuthAction::continue_compat_sso_login(id));
         return Ok((cookie_jar, destination.go()).into_response());
     }
 
-    let login = get_compat_sso_login_by_id(&mut txn, id)
+    let login = repo
+        .compat_sso_login()
+        .lookup(id)
         .await?
         .context("Could not find compat SSO login")?;
 
@@ -193,10 +185,16 @@ pub async fn post(
     };
 
     let device = Device::generate(&mut rng);
-    let _login =
-        fullfill_compat_sso_login(&mut txn, &mut rng, &clock, session.user, login, device).await?;
+    let compat_session = repo
+        .compat_session()
+        .add(&mut rng, &clock, &session.user, device)
+        .await?;
 
-    txn.commit().await?;
+    repo.compat_sso_login()
+        .fulfill(&clock, login, &compat_session)
+        .await?;
+
+    repo.save().await?;
 
     Ok((cookie_jar, Redirect::to(redirect_uri.as_str())).into_response())
 }

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use anyhow::{anyhow, Context};
 use axum::{
     extract::{Form, State},
     response::{Html, IntoResponse, Response},
@@ -28,16 +29,11 @@ use mas_email::Mailer;
 use mas_keystore::Encrypter;
 use mas_router::Route;
 use mas_storage::{
-    user::{
-        add_user_email, add_user_email_verification_code, get_user_email, get_user_emails,
-        remove_user_email, set_user_email_as_primary,
-    },
-    Clock,
+    user::UserEmailRepository, BoxClock, BoxRepository, BoxRng, Clock, RepositoryAccess,
 };
 use mas_templates::{AccountEmailsContext, EmailVerificationContext, TemplateContext, Templates};
 use rand::{distributions::Uniform, Rng};
 use serde::Deserialize;
-use sqlx::{PgExecutor, PgPool};
 use tracing::info;
 
 pub mod add;
@@ -53,37 +49,35 @@ pub enum ManagementForm {
 }
 
 pub(crate) async fn get(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(templates): State<Templates>,
-    State(pool): State<PgPool>,
+    mut repo: BoxRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
-    let (clock, mut rng) = crate::clock_and_rng();
-
-    let mut conn = pool.acquire().await?;
-
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut conn).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     if let Some(session) = maybe_session {
-        render(&mut rng, &clock, templates, session, cookie_jar, &mut conn).await
+        render(&mut rng, &clock, templates, session, cookie_jar, &mut repo).await
     } else {
         let login = mas_router::Login::default();
         Ok((cookie_jar, login.go()).into_response())
     }
 }
 
-async fn render(
+async fn render<E: std::error::Error>(
     rng: impl Rng + Send,
-    clock: &Clock,
+    clock: &impl Clock,
     templates: Templates,
     session: BrowserSession,
     cookie_jar: PrivateCookieJar<Encrypter>,
-    executor: impl PgExecutor<'_>,
+    repo: &mut impl RepositoryAccess<Error = E>,
 ) -> Result<Response, FancyError> {
-    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), rng);
+    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock, rng);
 
-    let emails = get_user_emails(executor, &session.user).await?;
+    let emails = repo.user_email().all(&session.user).await?;
 
     let ctx = AccountEmailsContext::new(emails)
         .with_session(session)
@@ -94,11 +88,11 @@ async fn render(
     Ok((cookie_jar, Html(content)).into_response())
 }
 
-async fn start_email_verification(
+async fn start_email_verification<E: std::error::Error + Send + Sync + 'static>(
     mailer: &Mailer,
-    executor: impl PgExecutor<'_>,
+    repo: &mut impl RepositoryAccess<Error = E>,
     mut rng: impl Rng + Send,
-    clock: &Clock,
+    clock: &impl Clock,
     user: &User,
     user_email: UserEmail,
 ) -> anyhow::Result<()> {
@@ -108,15 +102,10 @@ async fn start_email_verification(
 
     let address: Address = user_email.email.parse()?;
 
-    let verification = add_user_email_verification_code(
-        executor,
-        &mut rng,
-        clock,
-        user_email,
-        Duration::hours(8),
-        code,
-    )
-    .await?;
+    let verification = repo
+        .user_email()
+        .add_verification_code(&mut rng, clock, &user_email, Duration::hours(8), code)
+        .await?;
 
     // And send the verification email
     let mailbox = Mailbox::new(Some(user.username.clone()), address);
@@ -126,25 +115,24 @@ async fn start_email_verification(
     mailer.send_verification_email(mailbox, &context).await?;
 
     info!(
-        email.id = %verification.email.id,
+        email.id = %user_email.id,
         "Verification email sent"
     );
     Ok(())
 }
 
 pub(crate) async fn post(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(templates): State<Templates>,
-    State(pool): State<PgPool>,
+    mut repo: BoxRepository,
     State(mailer): State<Mailer>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<ManagementForm>>,
 ) -> Result<Response, FancyError> {
-    let (clock, mut rng) = crate::clock_and_rng();
-    let mut txn = pool.begin().await?;
-
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut txn).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     let mut session = if let Some(session) = maybe_session {
         session
@@ -153,53 +141,69 @@ pub(crate) async fn post(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    let form = cookie_jar.verify_form(clock.now(), form)?;
+    let form = cookie_jar.verify_form(&clock, form)?;
 
     match form {
         ManagementForm::Add { email } => {
-            let user_email =
-                add_user_email(&mut txn, &mut rng, &clock, &session.user, email).await?;
-            let next = mas_router::AccountVerifyEmail::new(user_email.id);
-            start_email_verification(
-                &mailer,
-                &mut txn,
-                &mut rng,
-                &clock,
-                &session.user,
-                user_email,
-            )
-            .await?;
-            txn.commit().await?;
+            let email = repo
+                .user_email()
+                .add(&mut rng, &clock, &session.user, email)
+                .await?;
+
+            let next = mas_router::AccountVerifyEmail::new(email.id);
+            start_email_verification(&mailer, &mut repo, &mut rng, &clock, &session.user, email)
+                .await?;
+            repo.save().await?;
             return Ok((cookie_jar, next.go()).into_response());
         }
         ManagementForm::ResendConfirmation { id } => {
             let id = id.parse()?;
 
-            let user_email = get_user_email(&mut txn, &session.user, id).await?;
-            let next = mas_router::AccountVerifyEmail::new(user_email.id);
-            start_email_verification(
-                &mailer,
-                &mut txn,
-                &mut rng,
-                &clock,
-                &session.user,
-                user_email,
-            )
-            .await?;
-            txn.commit().await?;
+            let email = repo
+                .user_email()
+                .lookup(id)
+                .await?
+                .context("Email not found")?;
+
+            if email.user_id != session.user.id {
+                return Err(anyhow!("Email not found").into());
+            }
+
+            let next = mas_router::AccountVerifyEmail::new(email.id);
+            start_email_verification(&mailer, &mut repo, &mut rng, &clock, &session.user, email)
+                .await?;
+            repo.save().await?;
             return Ok((cookie_jar, next.go()).into_response());
         }
         ManagementForm::Remove { id } => {
             let id = id.parse()?;
 
-            let email = get_user_email(&mut txn, &session.user, id).await?;
-            remove_user_email(&mut txn, email).await?;
+            let email = repo
+                .user_email()
+                .lookup(id)
+                .await?
+                .context("Email not found")?;
+
+            if email.user_id != session.user.id {
+                return Err(anyhow!("Email not found").into());
+            }
+
+            repo.user_email().remove(email).await?;
         }
         ManagementForm::SetPrimary { id } => {
             let id = id.parse()?;
-            let email = get_user_email(&mut txn, &session.user, id).await?;
-            set_user_email_as_primary(&mut txn, &email).await?;
-            session.user.primary_email = Some(email);
+            let email = repo
+                .user_email()
+                .lookup(id)
+                .await?
+                .context("Email not found")?;
+
+            if email.user_id != session.user.id {
+                return Err(anyhow!("Email not found").into());
+            }
+
+            repo.user_email().set_as_primary(&email).await?;
+            session.user.primary_user_email_id = Some(email.id);
         }
     };
 
@@ -209,11 +213,11 @@ pub(crate) async fn post(
         templates.clone(),
         session,
         cookie_jar,
-        &mut txn,
+        &mut repo,
     )
     .await?;
 
-    txn.commit().await?;
+    repo.save().await?;
 
     Ok(reply)
 }

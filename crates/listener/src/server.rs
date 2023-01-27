@@ -39,7 +39,7 @@ pub struct Server<S> {
 impl<S> Server<S> {
     /// # Errors
     ///
-    /// Returns an error if the listener couldn't be converted via [`TryInfo`]
+    /// Returns an error if the listener couldn't be converted via [`TryInto`]
     pub fn try_new<L>(listener: L, service: S) -> Result<Self, L::Error>
     where
         L: TryInto<UnixOrTcpListener>,

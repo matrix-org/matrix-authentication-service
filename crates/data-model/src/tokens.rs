@@ -15,25 +15,135 @@
 use chrono::{DateTime, Utc};
 use crc::{Crc, CRC_32_ISO_HDLC};
 use mas_iana::oauth::OAuthTokenTypeHint;
-use rand::{distributions::Alphanumeric, Rng};
+use rand::{distributions::Alphanumeric, Rng, RngCore};
 use thiserror::Error;
 use ulid::Ulid;
+
+use crate::InvalidTransitionError;
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub enum AccessTokenState {
+    #[default]
+    Valid,
+    Revoked {
+        revoked_at: DateTime<Utc>,
+    },
+}
+
+impl AccessTokenState {
+    fn revoke(self, revoked_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
+        match self {
+            Self::Valid => Ok(Self::Revoked { revoked_at }),
+            Self::Revoked { .. } => Err(InvalidTransitionError),
+        }
+    }
+
+    /// Returns `true` if the refresh token state is [`Valid`].
+    ///
+    /// [`Valid`]: AccessTokenState::Valid
+    #[must_use]
+    pub fn is_valid(&self) -> bool {
+        matches!(self, Self::Valid)
+    }
+
+    /// Returns `true` if the refresh token state is [`Revoked`].
+    ///
+    /// [`Revoked`]: AccessTokenState::Revoked
+    #[must_use]
+    pub fn is_revoked(&self) -> bool {
+        matches!(self, Self::Revoked { .. })
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AccessToken {
     pub id: Ulid,
-    pub jti: String,
+    pub state: AccessTokenState,
+    pub session_id: Ulid,
     pub access_token: String,
     pub created_at: DateTime<Utc>,
     pub expires_at: DateTime<Utc>,
 }
 
+impl AccessToken {
+    #[must_use]
+    pub fn jti(&self) -> String {
+        self.id.to_string()
+    }
+
+    #[must_use]
+    pub fn is_valid(&self, now: DateTime<Utc>) -> bool {
+        self.state.is_valid() && self.expires_at > now
+    }
+
+    pub fn revoke(mut self, revoked_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
+        self.state = self.state.revoke(revoked_at)?;
+        Ok(self)
+    }
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub enum RefreshTokenState {
+    #[default]
+    Valid,
+    Consumed {
+        consumed_at: DateTime<Utc>,
+    },
+}
+
+impl RefreshTokenState {
+    fn consume(self, consumed_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
+        match self {
+            Self::Valid => Ok(Self::Consumed { consumed_at }),
+            Self::Consumed { .. } => Err(InvalidTransitionError),
+        }
+    }
+
+    /// Returns `true` if the refresh token state is [`Valid`].
+    ///
+    /// [`Valid`]: RefreshTokenState::Valid
+    #[must_use]
+    pub fn is_valid(&self) -> bool {
+        matches!(self, Self::Valid)
+    }
+
+    /// Returns `true` if the refresh token state is [`Consumed`].
+    ///
+    /// [`Consumed`]: RefreshTokenState::Consumed
+    #[must_use]
+    pub fn is_consumed(&self) -> bool {
+        matches!(self, Self::Consumed { .. })
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RefreshToken {
     pub id: Ulid,
+    pub state: RefreshTokenState,
     pub refresh_token: String,
+    pub session_id: Ulid,
     pub created_at: DateTime<Utc>,
-    pub access_token: Option<AccessToken>,
+    pub access_token_id: Option<Ulid>,
+}
+
+impl std::ops::Deref for RefreshToken {
+    type Target = RefreshTokenState;
+
+    fn deref(&self) -> &Self::Target {
+        &self.state
+    }
+}
+
+impl RefreshToken {
+    #[must_use]
+    pub fn jti(&self) -> String {
+        self.id.to_string()
+    }
+
+    pub fn consume(mut self, consumed_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
+        self.state = self.state.consume(consumed_at)?;
+        Ok(self)
+    }
 }
 
 /// Type of token to generate or validate
@@ -80,10 +190,10 @@ impl TokenType {
     /// use rand::thread_rng;
     /// use mas_data_model::TokenType::{AccessToken, RefreshToken};
     ///
-    /// AccessToken.generate(thread_rng());
-    /// RefreshToken.generate(thread_rng());
+    /// AccessToken.generate(&mut thread_rng());
+    /// RefreshToken.generate(&mut thread_rng());
     /// ```
-    pub fn generate(self, rng: impl Rng) -> String {
+    pub fn generate(self, rng: &mut (impl RngCore + ?Sized)) -> String {
         let random_part: String = rng
             .sample_iter(&Alphanumeric)
             .take(30)

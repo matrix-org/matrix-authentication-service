@@ -25,8 +25,9 @@ use mas_data_model::{AuthorizationCode, Pkce};
 use mas_keystore::Encrypter;
 use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
-use mas_storage::oauth2::{
-    authorization_grant::new_authorization_grant, client::lookup_client_by_client_id,
+use mas_storage::{
+    oauth2::{OAuth2AuthorizationGrantRepository, OAuth2ClientRepository},
+    BoxClock, BoxRepository, BoxRng,
 };
 use mas_templates::Templates;
 use oauth2_types::{
@@ -37,7 +38,6 @@ use oauth2_types::{
 };
 use rand::{distributions::Alphanumeric, Rng};
 use serde::Deserialize;
-use sqlx::PgPool;
 use thiserror::Error;
 
 use self::{callback::CallbackDestination, complete::GrantCompletionError};
@@ -89,8 +89,7 @@ impl IntoResponse for RouteError {
     }
 }
 
-impl_from_error_for_route!(sqlx::Error);
-impl_from_error_for_route!(mas_storage::DatabaseError);
+impl_from_error_for_route!(mas_storage::RepositoryError);
 impl_from_error_for_route!(self::callback::CallbackDestinationError);
 impl_from_error_for_route!(mas_policy::LoadError);
 impl_from_error_for_route!(mas_policy::InstanciateError);
@@ -131,17 +130,18 @@ fn resolve_response_mode(
 
 #[allow(clippy::too_many_lines)]
 pub(crate) async fn get(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(policy_factory): State<Arc<PolicyFactory>>,
     State(templates): State<Templates>,
-    State(pool): State<PgPool>,
+    mut repo: BoxRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(params): Form<Params>,
 ) -> Result<Response, RouteError> {
-    let (clock, mut rng) = crate::clock_and_rng();
-    let mut txn = pool.begin().await?;
-
     // First, figure out what client it is
-    let client = lookup_client_by_client_id(&mut txn, &params.auth.client_id)
+    let client = repo
+        .oauth2_client()
+        .find_by_client_id(&params.auth.client_id)
         .await?
         .ok_or(RouteError::ClientNotFound)?;
 
@@ -167,7 +167,7 @@ pub(crate) async fn get(
         let templates = templates.clone();
         let callback_destination = callback_destination.clone();
         async move {
-            let maybe_session = session_info.load_session(&mut txn).await?;
+            let maybe_session = session_info.load_session(&mut repo).await?;
             let prompt = params.auth.prompt.as_deref().unwrap_or_default();
 
             // Check if the request/request_uri/registration params are used. If so, reply
@@ -272,23 +272,23 @@ pub(crate) async fn get(
 
             let requires_consent = prompt.contains(&Prompt::Consent);
 
-            let grant = new_authorization_grant(
-                &mut txn,
-                &mut rng,
-                &clock,
-                client,
-                redirect_uri.clone(),
-                params.auth.scope,
-                code,
-                params.auth.state.clone(),
-                params.auth.nonce,
-                params.auth.max_age,
-                None,
-                response_mode,
-                response_type.has_id_token(),
-                requires_consent,
-            )
-            .await?;
+            let grant = repo
+                .oauth2_authorization_grant()
+                .add(
+                    &mut rng,
+                    &clock,
+                    &client,
+                    redirect_uri.clone(),
+                    params.auth.scope,
+                    code,
+                    params.auth.state.clone(),
+                    params.auth.nonce,
+                    params.auth.max_age,
+                    response_mode,
+                    response_type.has_id_token(),
+                    requires_consent,
+                )
+                .await?;
             let continue_grant = PostAuthAction::continue_grant(grant.id);
 
             let res = match maybe_session {
@@ -299,7 +299,7 @@ pub(crate) async fn get(
                 }
                 None if prompt.contains(&Prompt::Create) => {
                     // Client asked for a registration, show the registration prompt
-                    txn.commit().await?;
+                    repo.save().await?;
 
                     mas_router::Register::and_then(continue_grant)
                         .go()
@@ -307,7 +307,7 @@ pub(crate) async fn get(
                 }
                 None => {
                     // Other cases where we don't have a session, ask for a login
-                    txn.commit().await?;
+                    repo.save().await?;
 
                     mas_router::Login::and_then(continue_grant)
                         .go()
@@ -320,7 +320,7 @@ pub(crate) async fn get(
                         || prompt.contains(&Prompt::SelectAccount) =>
                 {
                     // TODO: better pages here
-                    txn.commit().await?;
+                    repo.save().await?;
 
                     mas_router::Reauth::and_then(continue_grant)
                         .go()
@@ -330,7 +330,15 @@ pub(crate) async fn get(
                 // Else, we immediately try to complete the authorization grant
                 Some(user_session) if prompt.contains(&Prompt::None) => {
                     // With prompt=none, we should get back to the client immediately
-                    match self::complete::complete(grant, user_session, &policy_factory, txn).await
+                    match self::complete::complete(
+                        rng,
+                        clock,
+                        grant,
+                        user_session,
+                        &policy_factory,
+                        repo,
+                    )
+                    .await
                     {
                         Ok(params) => callback_destination.go(&templates, params).await?,
                         Err(GrantCompletionError::RequiresConsent) => {
@@ -357,7 +365,10 @@ pub(crate) async fn get(
                         Err(GrantCompletionError::Internal(e)) => {
                             return Err(RouteError::Internal(e))
                         }
-                        Err(e @ GrantCompletionError::NotPending) => {
+                        Err(
+                            e @ (GrantCompletionError::NotPending
+                            | GrantCompletionError::NoSuchClient),
+                        ) => {
                             // This should never happen
                             return Err(RouteError::Internal(Box::new(e)));
                         }
@@ -366,7 +377,15 @@ pub(crate) async fn get(
                 Some(user_session) => {
                     let grant_id = grant.id;
                     // Else, we show the relevant reauth/consent page if necessary
-                    match self::complete::complete(grant, user_session, &policy_factory, txn).await
+                    match self::complete::complete(
+                        rng,
+                        clock,
+                        grant,
+                        user_session,
+                        &policy_factory,
+                        repo,
+                    )
+                    .await
                     {
                         Ok(params) => callback_destination.go(&templates, params).await?,
                         Err(
@@ -387,7 +406,10 @@ pub(crate) async fn get(
                         Err(GrantCompletionError::Internal(e)) => {
                             return Err(RouteError::Internal(e))
                         }
-                        Err(e @ GrantCompletionError::NotPending) => {
+                        Err(
+                            e @ (GrantCompletionError::NotPending
+                            | GrantCompletionError::NoSuchClient),
+                        ) => {
                             // This should never happen
                             return Err(RouteError::Internal(Box::new(e)));
                         }

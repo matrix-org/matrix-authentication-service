@@ -31,9 +31,9 @@ use mas_email::Mailer;
 use mas_keystore::Encrypter;
 use mas_policy::PolicyFactory;
 use mas_router::Route;
-use mas_storage::user::{
-    add_user, add_user_email, add_user_email_verification_code, add_user_password,
-    authenticate_session_with_password, start_session, username_exists,
+use mas_storage::{
+    user::{BrowserSessionRepository, UserEmailRepository, UserPasswordRepository, UserRepository},
+    BoxClock, BoxRepository, BoxRng, RepositoryAccess,
 };
 use mas_templates::{
     EmailVerificationContext, FieldError, FormError, RegisterContext, RegisterFormField,
@@ -41,7 +41,6 @@ use mas_templates::{
 };
 use rand::{distributions::Uniform, Rng};
 use serde::{Deserialize, Serialize};
-use sqlx::{PgConnection, PgPool};
 use zeroize::Zeroizing;
 
 use super::shared::OptionalPostAuthAction;
@@ -60,18 +59,17 @@ impl ToFormState for RegisterForm {
 }
 
 pub(crate) async fn get(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(templates): State<Templates>,
-    State(pool): State<PgPool>,
+    mut repo: BoxRepository,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
-    let (clock, mut rng) = crate::clock_and_rng();
-    let mut conn = pool.acquire().await?;
-
-    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
+    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
-    let maybe_session = session_info.load_session(&mut conn).await?;
+    let maybe_session = session_info.load_session(&mut repo).await?;
 
     if maybe_session.is_some() {
         let reply = query.go_next();
@@ -81,7 +79,7 @@ pub(crate) async fn get(
             RegisterContext::default(),
             query,
             csrf_token,
-            &mut conn,
+            &mut repo,
             &templates,
         )
         .await?;
@@ -92,21 +90,20 @@ pub(crate) async fn get(
 
 #[allow(clippy::too_many_lines, clippy::too_many_arguments)]
 pub(crate) async fn post(
+    mut rng: BoxRng,
+    clock: BoxClock,
     State(password_manager): State<PasswordManager>,
     State(mailer): State<Mailer>,
     State(policy_factory): State<Arc<PolicyFactory>>,
     State(templates): State<Templates>,
-    State(pool): State<PgPool>,
+    mut repo: BoxRepository,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<RegisterForm>>,
 ) -> Result<Response, FancyError> {
-    let (clock, mut rng) = crate::clock_and_rng();
-    let mut txn = pool.begin().await?;
+    let form = cookie_jar.verify_form(&clock, form)?;
 
-    let form = cookie_jar.verify_form(clock.now(), form)?;
-
-    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock.now(), &mut rng);
+    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
 
     // Validate the form
     let state = {
@@ -114,7 +111,7 @@ pub(crate) async fn post(
 
         if form.username.is_empty() {
             state.add_error_on_field(RegisterFormField::Username, FieldError::Required);
-        } else if username_exists(&mut txn, &form.username).await? {
+        } else if repo.user().exists(&form.username).await? {
             state.add_error_on_field(RegisterFormField::Username, FieldError::Exists);
         }
 
@@ -177,7 +174,7 @@ pub(crate) async fn post(
             RegisterContext::default().with_form_state(state),
             query,
             csrf_token,
-            &mut txn,
+            &mut repo,
             &templates,
         )
         .await?;
@@ -185,21 +182,18 @@ pub(crate) async fn post(
         return Ok((cookie_jar, Html(content)).into_response());
     }
 
-    let user = add_user(&mut txn, &mut rng, &clock, &form.username).await?;
+    let user = repo.user().add(&mut rng, &clock, form.username).await?;
     let password = Zeroizing::new(form.password.into_bytes());
     let (version, hashed_password) = password_manager.hash(&mut rng, password).await?;
-    let user_password = add_user_password(
-        &mut txn,
-        &mut rng,
-        &clock,
-        &user,
-        version,
-        hashed_password,
-        None,
-    )
-    .await?;
+    let user_password = repo
+        .user_password()
+        .add(&mut rng, &clock, &user, version, hashed_password, None)
+        .await?;
 
-    let user_email = add_user_email(&mut txn, &mut rng, &clock, &user, form.email).await?;
+    let user_email = repo
+        .user_email()
+        .add(&mut rng, &clock, &user, form.email)
+        .await?;
 
     // First, generate a code
     let range = Uniform::<u32>::from(0..1_000_000);
@@ -208,15 +202,10 @@ pub(crate) async fn post(
 
     let address: Address = user_email.email.parse()?;
 
-    let verification = add_user_email_verification_code(
-        &mut txn,
-        &mut rng,
-        &clock,
-        user_email,
-        Duration::hours(8),
-        code,
-    )
-    .await?;
+    let verification = repo
+        .user_email()
+        .add_verification_code(&mut rng, &clock, &user_email, Duration::hours(8), code)
+        .await?;
 
     // And send the verification email
     let mailbox = Mailbox::new(Some(user.username.clone()), address);
@@ -225,14 +214,16 @@ pub(crate) async fn post(
 
     mailer.send_verification_email(mailbox, &context).await?;
 
-    let next = mas_router::AccountVerifyEmail::new(verification.email.id)
-        .and_maybe(query.post_auth_action);
+    let next = mas_router::AccountVerifyEmail::new(user_email.id).and_maybe(query.post_auth_action);
 
-    let mut session = start_session(&mut txn, &mut rng, &clock, user).await?;
-    authenticate_session_with_password(&mut txn, &mut rng, &clock, &mut session, &user_password)
+    let session = repo.browser_session().add(&mut rng, &clock, &user).await?;
+
+    let session = repo
+        .browser_session()
+        .authenticate_with_password(&mut rng, &clock, session, &user_password)
         .await?;
 
-    txn.commit().await?;
+    repo.save().await?;
 
     let cookie_jar = cookie_jar.set_session(&session);
     Ok((cookie_jar, next.go()).into_response())
@@ -242,10 +233,10 @@ async fn render(
     ctx: RegisterContext,
     action: OptionalPostAuthAction,
     csrf_token: CsrfToken,
-    conn: &mut PgConnection,
+    repo: &mut impl RepositoryAccess,
     templates: &Templates,
 ) -> Result<String, FancyError> {
-    let next = action.load_context(conn).await?;
+    let next = action.load_context(repo).await?;
     let ctx = if let Some(next) = next {
         ctx.with_post_action(next)
     } else {

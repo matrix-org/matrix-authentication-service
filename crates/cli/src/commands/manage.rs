@@ -18,15 +18,15 @@ use mas_config::{DatabaseConfig, PasswordsConfig, RootConfig};
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
 use mas_router::UrlBuilder;
 use mas_storage::{
-    oauth2::client::{insert_client_from_config, lookup_client, truncate_clients},
-    user::{
-        add_user_password, lookup_user_by_username, lookup_user_email, mark_user_email_as_verified,
-    },
-    Clock,
+    oauth2::OAuth2ClientRepository,
+    upstream_oauth2::UpstreamOAuthProviderRepository,
+    user::{UserEmailRepository, UserPasswordRepository, UserRepository},
+    Repository, RepositoryAccess, SystemClock,
 };
+use mas_storage_pg::PgRepository;
 use oauth2_types::scope::Scope;
 use rand::SeedableRng;
-use tracing::{info, warn};
+use tracing::{info, info_span, warn};
 
 use crate::util::{database_from_config, password_manager_from_config};
 
@@ -147,9 +147,9 @@ enum Subcommand {
 
     /// Import clients from config
     ImportClients {
-        /// Remove all clients before importing
+        /// Update existing clients
         #[arg(long)]
-        truncate: bool,
+        update: bool,
     },
 
     /// Set a user password
@@ -188,20 +188,25 @@ impl Options {
     #[allow(clippy::too_many_lines)]
     pub async fn run(&self, root: &super::Options) -> anyhow::Result<()> {
         use Subcommand as SC;
-        let clock = Clock::default();
+        let clock = SystemClock::default();
         // XXX: we should disallow SeedableRng::from_entropy
         let mut rng = rand_chacha::ChaChaRng::from_entropy();
 
         match &self.subcommand {
             SC::SetPassword { username, password } => {
+                let _span =
+                    info_span!("cli.manage.set_password", user.username = %username).entered();
+
                 let database_config: DatabaseConfig = root.load_config()?;
                 let passwords_config: PasswordsConfig = root.load_config()?;
 
                 let pool = database_from_config(&database_config).await?;
                 let password_manager = password_manager_from_config(&passwords_config).await?;
 
-                let mut txn = pool.begin().await?;
-                let user = lookup_user_by_username(&mut txn, username)
+                let mut repo = PgRepository::from_pool(&pool).await?.boxed();
+                let user = repo
+                    .user()
+                    .find_by_username(username)
                     .await?
                     .context("User not found")?;
 
@@ -209,89 +214,96 @@ impl Options {
 
                 let (version, hashed_password) = password_manager.hash(&mut rng, password).await?;
 
-                add_user_password(
-                    &mut txn,
-                    &mut rng,
-                    &clock,
-                    &user,
-                    version,
-                    hashed_password,
-                    None,
-                )
-                .await?;
+                repo.user_password()
+                    .add(&mut rng, &clock, &user, version, hashed_password, None)
+                    .await?;
 
                 info!(%user.id, %user.username, "Password changed");
-                txn.commit().await?;
+                repo.save().await?;
 
                 Ok(())
             }
 
             SC::VerifyEmail { username, email } => {
+                let _span = info_span!(
+                    "cli.manage.verify_email",
+                    user.username = username,
+                    user_email.email = email
+                )
+                .entered();
+
                 let config: DatabaseConfig = root.load_config()?;
                 let pool = database_from_config(&config).await?;
-                let mut txn = pool.begin().await?;
+                let mut repo = PgRepository::from_pool(&pool).await?.boxed();
 
-                let user = lookup_user_by_username(&mut txn, username)
+                let user = repo
+                    .user()
+                    .find_by_username(username)
                     .await?
                     .context("User not found")?;
-                let email = lookup_user_email(&mut txn, &user, email)
+
+                let email = repo
+                    .user_email()
+                    .find(&user, email)
                     .await?
                     .context("Email not found")?;
-                let email = mark_user_email_as_verified(&mut txn, &clock, email).await?;
+                let email = repo.user_email().mark_as_verified(&clock, email).await?;
 
-                txn.commit().await?;
+                repo.save().await?;
                 info!(?email, "Email marked as verified");
 
                 Ok(())
             }
 
-            SC::ImportClients { truncate } => {
+            SC::ImportClients { update } => {
+                let _span = info_span!("cli.manage.import_clients").entered();
+
                 let config: RootConfig = root.load_config()?;
                 let pool = database_from_config(&config.database).await?;
                 let encrypter = config.secrets.encrypter();
 
-                let mut txn = pool.begin().await?;
-
-                if *truncate {
-                    warn!("Removing all clients first");
-                    truncate_clients(&mut txn).await?;
-                }
+                let mut repo = PgRepository::from_pool(&pool).await?.boxed();
 
                 for client in config.clients.iter() {
                     let client_id = client.client_id;
-                    let res = lookup_client(&mut txn, client_id).await?;
-                    if res.is_some() {
-                        warn!(%client_id, "Skipping already imported client");
+
+                    let existing = repo.oauth2_client().lookup(client_id).await?.is_some();
+                    if !update && existing {
+                        warn!(%client_id, "Skipping already imported client. Run with --update to update existing clients.");
                         continue;
                     }
 
-                    info!(%client_id, "Importing client");
+                    if existing {
+                        info!(%client_id, "Updating client");
+                    } else {
+                        info!(%client_id, "Importing client");
+                    }
+
                     let client_secret = client.client_secret();
                     let client_auth_method = client.client_auth_method();
                     let jwks = client.jwks();
                     let jwks_uri = client.jwks_uri();
-                    let redirect_uris = &client.redirect_uris;
 
                     // TODO: should be moved somewhere else
                     let encrypted_client_secret = client_secret
                         .map(|client_secret| encrypter.encryt_to_string(client_secret.as_bytes()))
                         .transpose()?;
 
-                    insert_client_from_config(
-                        &mut txn,
-                        &mut rng,
-                        &clock,
-                        client_id,
-                        client_auth_method,
-                        encrypted_client_secret.as_deref(),
-                        jwks,
-                        jwks_uri,
-                        redirect_uris,
-                    )
-                    .await?;
+                    repo.oauth2_client()
+                        .add_from_config(
+                            &mut rng,
+                            &clock,
+                            client_id,
+                            client_auth_method,
+                            encrypted_client_secret,
+                            jwks.cloned(),
+                            jwks_uri.cloned(),
+                            client.redirect_uris.clone(),
+                        )
+                        .await?;
                 }
 
-                txn.commit().await?;
+                repo.save().await?;
 
                 Ok(())
             }
@@ -304,11 +316,18 @@ impl Options {
                 client_secret,
                 signing_alg,
             } => {
+                let _span = info_span!(
+                    "cli.manage.add_oauth_upstream",
+                    upstream_oauth_provider.issuer = issuer,
+                    upstream_oauth_provider.client_id = client_id,
+                )
+                .entered();
+
                 let config: RootConfig = root.load_config()?;
                 let encrypter = config.secrets.encrypter();
                 let pool = database_from_config(&config.database).await?;
                 let url_builder = UrlBuilder::new(config.http.public_base);
-                let mut conn = pool.acquire().await?;
+                let mut repo = PgRepository::from_pool(&pool).await?;
 
                 let requires_client_secret = token_endpoint_auth_method.requires_client_secret();
 
@@ -329,18 +348,19 @@ impl Options {
                     .map(|client_secret| encrypter.encryt_to_string(client_secret.as_bytes()))
                     .transpose()?;
 
-                let provider = mas_storage::upstream_oauth2::add_provider(
-                    &mut conn,
-                    &mut rng,
-                    &clock,
-                    issuer.clone(),
-                    scope.clone(),
-                    token_endpoint_auth_method,
-                    token_endpoint_signing_alg,
-                    client_id.clone(),
-                    encrypted_client_secret,
-                )
-                .await?;
+                let provider = repo
+                    .upstream_oauth_provider()
+                    .add(
+                        &mut rng,
+                        &clock,
+                        issuer.clone(),
+                        scope.clone(),
+                        token_endpoint_auth_method,
+                        token_endpoint_signing_alg,
+                        client_id.clone(),
+                        encrypted_client_secret,
+                    )
+                    .await?;
 
                 let redirect_uri = url_builder.upstream_oauth_callback(provider.id);
                 let auth_uri = url_builder.upstream_oauth_authorize(provider.id);

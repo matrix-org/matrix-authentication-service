@@ -14,14 +14,15 @@
 
 //! Database-related tasks
 
-use mas_storage::Clock;
+use mas_storage::{oauth2::OAuth2AccessTokenRepository, RepositoryAccess, SystemClock};
+use mas_storage_pg::PgRepository;
 use sqlx::{Pool, Postgres};
 use tracing::{debug, error, info};
 
 use super::Task;
 
 #[derive(Clone)]
-struct CleanupExpired(Pool<Postgres>, Clock);
+struct CleanupExpired(Pool<Postgres>, SystemClock);
 
 impl std::fmt::Debug for CleanupExpired {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -32,7 +33,13 @@ impl std::fmt::Debug for CleanupExpired {
 #[async_trait::async_trait]
 impl Task for CleanupExpired {
     async fn run(&self) {
-        let res = mas_storage::oauth2::access_token::cleanup_expired(&self.0, &self.1).await;
+        let res = async move {
+            let mut repo = PgRepository::from_pool(&self.0).await?;
+            let res = repo.oauth2_access_token().cleanup_expired(&self.1).await;
+            res
+        }
+        .await;
+
         match res {
             Ok(0) => {
                 debug!("no token to clean up");
@@ -51,5 +58,5 @@ impl Task for CleanupExpired {
 #[must_use]
 pub fn cleanup_expired(pool: &Pool<Postgres>) -> impl Task + Clone {
     // XXX: the clock should come from somewhere else
-    CleanupExpired(pool.clone(), Clock::default())
+    CleanupExpired(pool.clone(), SystemClock::default())
 }

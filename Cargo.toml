@@ -7,3 +7,8 @@ opt-level = 3
 
 [profile.dev.package.sqlx-macros]
 opt-level = 3
+
+# Until https://github.com/dylanhart/ulid-rs/pull/56 gets released
+[patch.crates-io.ulid]
+git = "https://github.com/dylanhart/ulid-rs.git"
+rev = "0b9295c2db2114cd87aa19abcc1fc00c16b272db"

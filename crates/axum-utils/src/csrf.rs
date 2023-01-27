@@ -15,6 +15,7 @@
 use axum_extra::extract::cookie::{Cookie, PrivateCookieJar};
 use chrono::{DateTime, Duration, Utc};
 use data_encoding::{DecodeError, BASE64URL_NOPAD};
+use mas_storage::Clock;
 use rand::{Rng, RngCore};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, TimestampSeconds};
@@ -108,22 +109,27 @@ pub struct ProtectedForm<T> {
 }
 
 pub trait CsrfExt {
-    fn csrf_token<R>(self, now: DateTime<Utc>, rng: R) -> (CsrfToken, Self)
+    fn csrf_token<C, R>(self, clock: &C, rng: R) -> (CsrfToken, Self)
     where
-        R: RngCore;
-    fn verify_form<T>(&self, now: DateTime<Utc>, form: ProtectedForm<T>) -> Result<T, CsrfError>;
+        R: RngCore,
+        C: Clock;
+    fn verify_form<C, T>(&self, clock: &C, form: ProtectedForm<T>) -> Result<T, CsrfError>
+    where
+        C: Clock;
 }
 
 impl<K> CsrfExt for PrivateCookieJar<K> {
-    fn csrf_token<R>(self, now: DateTime<Utc>, rng: R) -> (CsrfToken, Self)
+    fn csrf_token<C, R>(self, clock: &C, rng: R) -> (CsrfToken, Self)
     where
         R: RngCore,
+        C: Clock,
     {
         let jar = self;
         let mut cookie = jar.get("csrf").unwrap_or_else(|| Cookie::new("csrf", ""));
         cookie.set_path("/");
         cookie.set_http_only(true);
 
+        let now = clock.now();
         let new_token = cookie
             .decode()
             .ok()
@@ -136,10 +142,13 @@ impl<K> CsrfExt for PrivateCookieJar<K> {
         (new_token, jar)
     }
 
-    fn verify_form<T>(&self, now: DateTime<Utc>, form: ProtectedForm<T>) -> Result<T, CsrfError> {
+    fn verify_form<C, T>(&self, clock: &C, form: ProtectedForm<T>) -> Result<T, CsrfError>
+    where
+        C: Clock,
+    {
         let cookie = self.get("csrf").ok_or(CsrfError::Missing)?;
         let token: CsrfToken = cookie.decode()?;
-        let token = token.verify_expiration(now)?;
+        let token = token.verify_expiration(clock.now())?;
         token.verify_form_value(&form.csrf)?;
         Ok(form.inner)
     }

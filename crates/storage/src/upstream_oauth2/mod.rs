@@ -1,4 +1,4 @@
-// Copyright 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2022, 2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,17 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! Repositories to interact with entities related to the upstream OAuth 2.0
+//! providers
+
 mod link;
 mod provider;
 mod session;
 
 pub use self::{
-    link::{
-        add_link, associate_link_to_user, get_paginated_user_links, lookup_link,
-        lookup_link_by_subject,
-    },
-    provider::{add_provider, get_paginated_providers, get_providers, lookup_provider},
-    session::{
-        add_session, complete_session, consume_session, lookup_session, lookup_session_on_link,
-    },
+    link::UpstreamOAuthLinkRepository, provider::UpstreamOAuthProviderRepository,
+    session::UpstreamOAuthSessionRepository,
 };

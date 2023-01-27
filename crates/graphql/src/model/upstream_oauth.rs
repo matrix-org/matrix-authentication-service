@@ -15,7 +15,10 @@
 use anyhow::Context as _;
 use async_graphql::{Context, Object, ID};
 use chrono::{DateTime, Utc};
-use sqlx::PgPool;
+use mas_storage::{
+    upstream_oauth2::UpstreamOAuthProviderRepository, user::UserRepository, BoxRepository,
+};
+use tokio::sync::Mutex;
 
 use super::{NodeType, User};
 
@@ -99,11 +102,13 @@ impl UpstreamOAuth2Link {
             provider.clone()
         } else {
             // Fetch on-the-fly
-            let database = ctx.data::<PgPool>()?;
-            let mut conn = database.acquire().await?;
-            mas_storage::upstream_oauth2::lookup_provider(&mut conn, self.link.provider_id)
+            let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
+            let provider = repo
+                .upstream_oauth_provider()
+                .lookup(self.link.provider_id)
                 .await?
-                .context("Upstream OAuth 2.0 provider not found")?
+                .context("Upstream OAuth 2.0 provider not found")?;
+            provider
         };
 
         Ok(UpstreamOAuth2Provider::new(provider))
@@ -116,9 +121,13 @@ impl UpstreamOAuth2Link {
             user.clone()
         } else if let Some(user_id) = &self.link.user_id {
             // Fetch on-the-fly
-            let database = ctx.data::<PgPool>()?;
-            let mut conn = database.acquire().await?;
-            mas_storage::user::lookup_user(&mut conn, *user_id).await?
+            let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
+            let user = repo
+                .user()
+                .lookup(*user_id)
+                .await?
+                .context("User not found")?;
+            user
         } else {
             return Ok(None);
         };

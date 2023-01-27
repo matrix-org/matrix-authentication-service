@@ -27,9 +27,11 @@ use axum::{
 use headers::{authorization::Bearer, Authorization, Header, HeaderMapExt, HeaderName};
 use http::{header::WWW_AUTHENTICATE, HeaderMap, HeaderValue, Request, StatusCode};
 use mas_data_model::Session;
-use mas_storage::{oauth2::access_token::lookup_active_access_token, DatabaseError};
+use mas_storage::{
+    oauth2::{OAuth2AccessTokenRepository, OAuth2SessionRepository},
+    Clock, RepositoryAccess,
+};
 use serde::{de::DeserializeOwned, Deserialize};
-use sqlx::PgConnection;
 use thiserror::Error;
 
 #[derive(Debug, Deserialize)]
@@ -49,16 +51,24 @@ enum AccessToken {
 }
 
 impl AccessToken {
-    pub async fn fetch(
+    async fn fetch<E>(
         &self,
-        conn: &mut PgConnection,
-    ) -> Result<(mas_data_model::AccessToken, Session), AuthorizationVerificationError> {
+        repo: &mut impl RepositoryAccess<Error = E>,
+    ) -> Result<(mas_data_model::AccessToken, Session), AuthorizationVerificationError<E>> {
         let token = match self {
             AccessToken::Form(t) | AccessToken::Header(t) => t,
             AccessToken::None => return Err(AuthorizationVerificationError::MissingToken),
         };
 
-        let (token, session) = lookup_active_access_token(conn, token.as_str())
+        let token = repo
+            .oauth2_access_token()
+            .find_by_token(token.as_str())
+            .await?
+            .ok_or(AuthorizationVerificationError::InvalidToken)?;
+
+        let session = repo
+            .oauth2_session()
+            .lookup(token.session_id)
             .await?
             .ok_or(AuthorizationVerificationError::InvalidToken)?;
 
@@ -74,26 +84,36 @@ pub struct UserAuthorization<F = ()> {
 
 impl<F: Send> UserAuthorization<F> {
     // TODO: take scopes to validate as parameter
-    pub async fn protected_form(
+    pub async fn protected_form<E>(
         self,
-        conn: &mut PgConnection,
-    ) -> Result<(Session, F), AuthorizationVerificationError> {
+        repo: &mut impl RepositoryAccess<Error = E>,
+        clock: &impl Clock,
+    ) -> Result<(Session, F), AuthorizationVerificationError<E>> {
         let form = match self.form {
             Some(f) => f,
             None => return Err(AuthorizationVerificationError::MissingForm),
         };
 
-        let (_token, session) = self.access_token.fetch(conn).await?;
+        let (token, session) = self.access_token.fetch(repo).await?;
+
+        if !token.is_valid(clock.now()) || !session.is_valid() {
+            return Err(AuthorizationVerificationError::InvalidToken);
+        }
 
         Ok((session, form))
     }
 
     // TODO: take scopes to validate as parameter
-    pub async fn protected(
+    pub async fn protected<E>(
         self,
-        conn: &mut PgConnection,
-    ) -> Result<Session, AuthorizationVerificationError> {
-        let (_token, session) = self.access_token.fetch(conn).await?;
+        repo: &mut impl RepositoryAccess<Error = E>,
+        clock: &impl Clock,
+    ) -> Result<Session, AuthorizationVerificationError<E>> {
+        let (token, session) = self.access_token.fetch(repo).await?;
+
+        if !token.is_valid(clock.now()) || !session.is_valid() {
+            return Err(AuthorizationVerificationError::InvalidToken);
+        }
 
         Ok(session)
     }
@@ -107,7 +127,7 @@ pub enum UserAuthorizationError {
 }
 
 #[derive(Debug, Error)]
-pub enum AuthorizationVerificationError {
+pub enum AuthorizationVerificationError<E> {
     #[error("missing token")]
     MissingToken,
 
@@ -118,7 +138,7 @@ pub enum AuthorizationVerificationError {
     MissingForm,
 
     #[error(transparent)]
-    Internal(#[from] DatabaseError),
+    Internal(#[from] E),
 }
 
 enum BearerError {
@@ -226,7 +246,10 @@ impl IntoResponse for UserAuthorizationError {
     }
 }
 
-impl IntoResponse for AuthorizationVerificationError {
+impl<E> IntoResponse for AuthorizationVerificationError<E>
+where
+    E: ToString,
+{
     fn into_response(self) -> Response {
         match self {
             Self::MissingForm | Self::MissingToken => {

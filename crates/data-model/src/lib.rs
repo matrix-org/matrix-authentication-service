@@ -1,4 +1,4 @@
-// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2021-2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,24 +23,33 @@
     clippy::type_repetition_in_bounds
 )]
 
+use thiserror::Error;
+
 pub(crate) mod compat;
 pub(crate) mod oauth2;
 pub(crate) mod tokens;
 pub(crate) mod upstream_oauth2;
 pub(crate) mod users;
 
+#[derive(Debug, Error)]
+#[error("invalid state transition")]
+pub struct InvalidTransitionError;
+
 pub use self::{
     compat::{
-        CompatAccessToken, CompatRefreshToken, CompatSession, CompatSsoLogin, CompatSsoLoginState,
-        Device,
+        CompatAccessToken, CompatRefreshToken, CompatRefreshTokenState, CompatSession,
+        CompatSessionState, CompatSsoLogin, CompatSsoLoginState, Device,
     },
     oauth2::{
         AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, Client,
-        InvalidRedirectUriError, JwksOrJwksUri, Pkce, Session,
+        InvalidRedirectUriError, JwksOrJwksUri, Pkce, Session, SessionState,
     },
-    tokens::{AccessToken, RefreshToken, TokenFormatError, TokenType},
+    tokens::{
+        AccessToken, AccessTokenState, RefreshToken, RefreshTokenState, TokenFormatError, TokenType,
+    },
     upstream_oauth2::{
-        UpstreamOAuthAuthorizationSession, UpstreamOAuthLink, UpstreamOAuthProvider,
+        UpstreamOAuthAuthorizationSession, UpstreamOAuthAuthorizationSessionState,
+        UpstreamOAuthLink, UpstreamOAuthProvider,
     },
     users::{
         Authentication, BrowserSession, Password, User, UserEmail, UserEmailVerification,
