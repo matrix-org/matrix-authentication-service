@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import type { StorybookConfig } from "@storybook/builder-vite";
+import type { StorybookConfig } from "@storybook/react-vite";
 
 const config: StorybookConfig = {
   stories: ["../src/**/*.stories.mdx", "../src/**/*.stories.@(js|jsx|ts|tsx)"],
@@ -51,7 +51,7 @@ const config: StorybookConfig = {
   },
 
   docs: {
-    docsPage: true,
+    autodocs: true,
   },
 };
 

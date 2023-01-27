@@ -19,17 +19,18 @@ export const globalTypes: ArgTypes = {
     description: "Global theme for components",
     defaultValue: "light",
     toolbar: {
+      icon: "circlehollow",
       title: "Theme",
       items: [
         {
           title: "Light",
           value: "light",
-          icon: "circle",
+          icon: "sun",
         },
         {
           title: "Dark",
           value: "dark",
-          icon: "circlehollow",
+          icon: "moon",
         },
       ],
     },
