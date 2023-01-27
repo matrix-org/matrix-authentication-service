@@ -40,16 +40,35 @@ impl<S: ArrayLength<u8>> std::fmt::Debug for Signature<S> {
     }
 }
 
-impl<S: ArrayLength<u8>> signature::Signature for Signature<S> {
-    fn from_bytes(bytes: &[u8]) -> Result<Self, signature::Error> {
-        if bytes.len() != S::to_usize() {
-            return Err(signature::Error::new());
+impl<S: ArrayLength<u8>> Clone for Signature<S> {
+    fn clone(&self) -> Self {
+        Self {
+            signature: self.signature.clone(),
         }
-
-        Ok(Self {
-            signature: GenericArray::from_slice(bytes).clone(),
-        })
     }
+}
+
+impl<S: ArrayLength<u8>> From<Signature<S>> for GenericArray<u8, S> {
+    fn from(val: Signature<S>) -> Self {
+        val.signature
+    }
+}
+
+impl<'a, S: ArrayLength<u8>> TryFrom<&'a [u8]> for Signature<S> {
+    type Error = InvalidLength;
+
+    fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
+        if value.len() != S::to_usize() {
+            return Err(InvalidLength);
+        }
+        let mut signature = GenericArray::default();
+        signature.copy_from_slice(value);
+        Ok(Self { signature })
+    }
+}
+
+impl<S: ArrayLength<u8>> signature::SignatureEncoding for Signature<S> {
+    type Repr = GenericArray<u8, S>;
 }
 
 impl<S: ArrayLength<u8>> AsRef<[u8]> for Signature<S> {
