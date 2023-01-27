@@ -13,9 +13,9 @@
 // limitations under the License.
 
 use base64ct::{Base64UrlUnpadded, Encoding};
-use rand::{thread_rng, CryptoRng, RngCore};
+use rand::thread_rng;
 use serde::{de::DeserializeOwned, Serialize};
-use signature::{RandomizedSigner, Signature, Verifier};
+use signature::{rand_core::CryptoRngCore, RandomizedSigner, SignatureEncoding, Verifier};
 use thiserror::Error;
 
 use super::{header::JsonWebSignatureHeader, raw::RawJwt};
@@ -165,10 +165,7 @@ where
 #[derive(Debug, Error)]
 pub enum JwtVerificationError {
     #[error("failed to parse signature")]
-    ParseSignature {
-        #[source]
-        inner: signature::Error,
-    },
+    ParseSignature,
 
     #[error("signature verification failed")]
     Verify {
@@ -178,8 +175,9 @@ pub enum JwtVerificationError {
 }
 
 impl JwtVerificationError {
-    fn parse_signature(inner: signature::Error) -> Self {
-        Self::ParseSignature { inner }
+    #[allow(clippy::needless_pass_by_value)]
+    fn parse_signature<E>(_inner: E) -> Self {
+        Self::ParseSignature
     }
 
     fn verify(inner: signature::Error) -> Self {
@@ -214,10 +212,10 @@ impl<'a, T> Jwt<'a, T> {
     pub fn verify<K, S>(&self, key: &K) -> Result<(), JwtVerificationError>
     where
         K: Verifier<S>,
-        S: Signature,
+        S: SignatureEncoding,
     {
         let signature =
-            S::from_bytes(&self.signature).map_err(JwtVerificationError::parse_signature)?;
+            S::try_from(&self.signature).map_err(JwtVerificationError::parse_signature)?;
 
         key.verify(self.raw.signed_part().as_bytes(), &signature)
             .map_err(JwtVerificationError::verify)
@@ -306,23 +304,23 @@ impl<T> Jwt<'static, T> {
     ) -> Result<Self, JwtSignatureError>
     where
         K: RandomizedSigner<S>,
-        S: Signature,
+        S: SignatureEncoding,
         T: Serialize,
     {
         #[allow(clippy::disallowed_methods)]
-        Self::sign_with_rng(thread_rng(), header, payload, key)
+        Self::sign_with_rng(&mut thread_rng(), header, payload, key)
     }
 
     pub fn sign_with_rng<R, K, S>(
-        rng: R,
+        rng: &mut R,
         header: JsonWebSignatureHeader,
         payload: T,
         key: &K,
     ) -> Result<Self, JwtSignatureError>
     where
-        R: CryptoRng + RngCore,
+        R: CryptoRngCore,
         K: RandomizedSigner<S>,
-        S: Signature,
+        S: SignatureEncoding,
         T: Serialize,
     {
         let header_ = serde_json::to_vec(&header).map_err(JwtSignatureError::encode_header)?;
@@ -336,10 +334,7 @@ impl<T> Jwt<'static, T> {
         let first_dot = header_.len();
         let second_dot = inner.len();
 
-        let signature = key
-            .try_sign_with_rng(rng, inner.as_bytes())?
-            .as_bytes()
-            .to_vec();
+        let signature = key.try_sign_with_rng(rng, inner.as_bytes())?.to_vec();
         let signature_ = Base64UrlUnpadded::encode_string(&signature);
         inner.reserve_exact(1 + signature_.len());
         inner.push('.');
@@ -386,7 +381,9 @@ mod tests {
         let payload = serde_json::json!({"hello": "world"});
 
         let key = ecdsa::SigningKey::<p256::NistP256>::random(&mut thread_rng());
-        let signed = Jwt::sign(header, payload, &key).unwrap();
-        signed.verify(&key.verifying_key()).unwrap();
+        let signed = Jwt::sign::<_, ecdsa::Signature<_>>(header, payload, &key).unwrap();
+        signed
+            .verify::<_, ecdsa::Signature<_>>(key.verifying_key())
+            .unwrap();
     }
 }

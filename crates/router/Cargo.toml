@@ -6,7 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-axum = { version = "0.6.2", default-features = false }
+axum = { version = "0.6.4", default-features = false }
 serde = { version = "1.0.152", features = ["derive"] }
 serde_urlencoded = "0.7.1"
 url = "2.3.1"

@@ -116,7 +116,7 @@ macro_rules! asymetric_jwt_test {
 
                 #[test]
                 fn sign_jwt() {
-                    let rng = ChaCha8Rng::seed_from_u64(42);
+                    let mut rng = ChaCha8Rng::seed_from_u64(42);
                     let alg = JsonWebSignatureAlg::$alg;
                     let payload = Payload {
                         hello: "world".to_string(),
@@ -129,7 +129,7 @@ macro_rules! asymetric_jwt_test {
                     let key = mas_jose::jwa::AsymmetricSigningKey::from_jwk_and_alg(key.params(), &alg)
                         .unwrap();
 
-                    let jwt: Jwt<'_, Payload> = Jwt::sign_with_rng(rng, header, payload, &key).unwrap();
+                    let jwt: Jwt<'_, Payload> = Jwt::sign_with_rng(&mut rng, header, payload, &key).unwrap();
                     insta::assert_snapshot!(jwt.as_str());
                 }
 

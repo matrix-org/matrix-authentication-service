@@ -12,45 +12,51 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use signature::Signature as _;
+use signature::SignatureEncoding as _;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Signature {
-    bytes: Vec<u8>,
+    bytes: Box<[u8]>,
 }
 
-impl AsRef<[u8]> for Signature {
-    fn as_ref(&self) -> &[u8] {
-        &self.bytes
+impl From<Signature> for Box<[u8]> {
+    fn from(val: Signature) -> Self {
+        val.bytes
     }
 }
 
-impl signature::Signature for Signature {
-    fn from_bytes(bytes: &[u8]) -> Result<Self, signature::Error> {
-        Ok(Self {
-            bytes: bytes.to_vec(),
-        })
+impl<'a> From<&'a [u8]> for Signature {
+    fn from(value: &'a [u8]) -> Self {
+        Self {
+            bytes: value.into(),
+        }
     }
+}
+
+impl signature::SignatureEncoding for Signature {
+    type Repr = Box<[u8]>;
 }
 
 impl Signature {
     pub fn new(bytes: Vec<u8>) -> Self {
-        Self { bytes }
+        Self {
+            bytes: bytes.into(),
+        }
     }
 
     pub fn from_signature<S>(signature: &S) -> Self
     where
-        S: signature::Signature,
+        S: signature::SignatureEncoding,
     {
         Self {
-            bytes: signature.as_bytes().to_vec(),
+            bytes: signature.to_vec().into(),
         }
     }
 
     pub fn to_signature<S>(&self) -> Result<S, signature::Error>
     where
-        S: signature::Signature,
+        S: signature::SignatureEncoding,
     {
-        S::from_bytes(self.as_bytes())
+        S::try_from(&self.to_bytes()).map_err(|_| signature::Error::default())
     }
 }

@@ -11,16 +11,16 @@ aead = { version = "0.5.1", features = ["std"] }
 const-oid = { version = "0.9.1", features = ["std"] }
 cookie = { version = "0.16.2", features = ["key-expansion", "private"] }
 der = { version = "0.6.1", features = ["std"] }
-ecdsa = { version = "0.14.8", features = ["std"] }
+ecdsa = { version = "0.15.1", features = ["std"] }
 elliptic-curve = { version = "0.12.3", features = ["std", "pem", "sec1"] }
-k256 = { version = "0.11.6", features = ["std"] }
-p256 = { version = "0.11.1", features = ["std"] }
-p384 = { version = "0.11.2", features = ["std"] }
+k256 = { version = "0.12.0", features = ["std"] }
+p256 = { version = "0.12.0", features = ["std"] }
+p384 = { version = "0.12.0", features = ["std"] }
 pem-rfc7468 = { version = "0.6.0", features = ["std"] }
 pkcs1 = { version = "0.4.1", features = ["std"] }
 pkcs8 = { version = "0.9.0", features = ["std", "pkcs5", "encryption"] }
 rand = "0.8.5"
-rsa = { version = "0.7.2", features = ["std", "pem"] }
+rsa = { version = "0.8.1", features = ["std", "pem"] }
 sec1 = { version = "0.3.0", features = ["std"] }
 spki = { version = "0.6.0", features = ["std"] }
 thiserror = "1.0.38"

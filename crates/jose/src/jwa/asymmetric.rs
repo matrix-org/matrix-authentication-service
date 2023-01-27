@@ -15,6 +15,7 @@
 use digest::Digest;
 use mas_iana::jose::{JsonWebKeyEcEllipticCurve, JsonWebSignatureAlg};
 use sha2::{Sha256, Sha384, Sha512};
+use signature::rand_core::CryptoRngCore;
 use thiserror::Error;
 
 use super::signature::Signature;
@@ -215,7 +216,7 @@ impl From<super::Es256KSigningKey> for AsymmetricSigningKey {
 impl signature::RandomizedSigner<Signature> for AsymmetricSigningKey {
     fn try_sign_with_rng(
         &self,
-        rng: impl rand::CryptoRng + rand::RngCore,
+        rng: &mut impl CryptoRngCore,
         msg: &[u8],
     ) -> Result<Signature, signature::Error> {
         match self {
@@ -244,15 +245,15 @@ impl signature::RandomizedSigner<Signature> for AsymmetricSigningKey {
                 Ok(Signature::from_signature(&signature))
             }
             Self::Es256(key) => {
-                let signature = key.try_sign_with_rng(rng, msg)?;
+                let signature: ecdsa::Signature<_> = key.try_sign_with_rng(rng, msg)?;
                 Ok(Signature::from_signature(&signature))
             }
             Self::Es384(key) => {
-                let signature = key.try_sign_with_rng(rng, msg)?;
+                let signature: ecdsa::Signature<_> = key.try_sign_with_rng(rng, msg)?;
                 Ok(Signature::from_signature(&signature))
             }
             Self::Es256K(key) => {
-                let signature = key.try_sign_with_rng(rng, msg)?;
+                let signature: ecdsa::Signature<_> = key.try_sign_with_rng(rng, msg)?;
                 Ok(Signature::from_signature(&signature))
             }
         }
@@ -449,15 +450,15 @@ impl signature::Verifier<Signature> for AsymmetricVerifyingKey {
                 key.verify(msg, &signature)
             }
             Self::Es256(key) => {
-                let signature = signature.to_signature()?;
+                let signature: ecdsa::Signature<_> = signature.to_signature()?;
                 key.verify(msg, &signature)
             }
             Self::Es384(key) => {
-                let signature = signature.to_signature()?;
+                let signature: ecdsa::Signature<_> = signature.to_signature()?;
                 key.verify(msg, &signature)
             }
             Self::Es256K(key) => {
-                let signature = signature.to_signature()?;
+                let signature: ecdsa::Signature<_> = signature.to_signature()?;
                 key.verify(msg, &signature)
             }
         }
