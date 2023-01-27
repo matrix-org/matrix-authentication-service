@@ -5,18 +5,22 @@ It provides async database operations with connection pooling, migrations suppor
 
 ## Writing database interactions
 
-All database interactions are done through repositoriy traits. Each repository trait usually manages one type of data, defined in the `mas-data-model` crate.
+All database interactions are done through repositoriy traits. Each repository trait usually manages one type of data, defined in the [`mas-data-model`][mas-data-model] crate.
 
 Defining a new data type and associated repository looks like this:
 
- - Define new structs in `mas-data-model` crate
- - Define the repository trait in `mas-storage` crate
- - Make that repository trait available via the `RepositoryAccess` trait in `mas-storage` crate
- - Setup the database schema by writing a migration file in `mas-storage-pg` crate
- - Implement the new repository trait in `mas-storage-pg` crate
- - Write tests for the PostgreSQL implementation in `mas-storage-pg` crate
+ - Define new structs in [`mas-data-model`][mas-data-model] crate
+ - Define the repository trait in [`mas-storage`][mas-storage] crate
+ - Make that repository trait available via the `RepositoryAccess` trait in [`mas-storage`][mas-storage] crate
+ - Setup the database schema by writing a migration file in [`mas-storage-pg`][mas-storage-pg] crate
+ - Implement the new repository trait in [`mas-storage-pg`][mas-storage-pg] crate
+ - Write tests for the PostgreSQL implementation in [`mas-storage-pg`][mas-storage-pg] crate
 
-Some of those steps are documented in more details in the `mas-storage` and `mas-storage-pg` crates.
+Some of those steps are documented in more details in the [`mas-storage`][mas-storage] and [`mas-storage-pg`][mas-storage-pg] crates.
+
+[mas-data-model]: ../rustdoc/mas_data_model/index.html
+[mas-storage]: ../rustdoc/mas_storage/index.html
+[mas-storage-pg]: ../rustdoc/mas_storage_pg/index.html
 
 ## Compile-time check of queries
 
