@@ -48,7 +48,7 @@ oauth2-types = { path = "../oauth2-types" }
 
 # Default http service
 http-body = { version = "0.4.5", optional = true }
-rustls = {version = "0.20.7", optional = true }
+rustls = {version = "0.20.8", optional = true }
 [dependencies.hyper-rustls]
 version = "0.23.2"
 features = ["http1", "http2", "rustls-native-certs"]
