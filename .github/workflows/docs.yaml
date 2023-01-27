@@ -28,6 +28,8 @@ jobs:
 
       - name: Upload GitHub Pages artifacts
         uses: actions/upload-pages-artifact@v1.0.7
+        with:
+          path: target/book/
 
   deploy:
     name: Deploy the documentation on GitHub Pages
