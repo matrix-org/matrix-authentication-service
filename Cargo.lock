@@ -978,18 +978,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "29c39203181991a7dd4343b8005bd804e7a9a37afb8ac070e43771e8c820bbde"
 dependencies = [
  "chrono",
- "chrono-tz-build 0.0.3",
- "phf",
-]
-
-[[package]]
-name = "chrono-tz"
-version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa48fa079165080f11d7753fd0bc175b7d391f276b965fe4b55bfad67856e463"
-dependencies = [
- "chrono",
- "chrono-tz-build 0.1.0",
+ "chrono-tz-build",
  "phf",
 ]
 
@@ -998,17 +987,6 @@ name = "chrono-tz-build"
 version = "0.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6f509c3a87b33437b05e2458750a0700e5bdd6956176773e6c7d6dd15a283a0c"
-dependencies = [
- "parse-zoneinfo",
- "phf",
- "phf_codegen",
-]
-
-[[package]]
-name = "chrono-tz-build"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d9998fb9f7e9b2111641485bf8beb32f92945f97f92a3d061f744cfef335f751"
 dependencies = [
  "parse-zoneinfo",
  "phf",
@@ -3483,13 +3461,13 @@ checksum = "6f61fba1741ea2b3d6a1e3178721804bb716a68a6aeba1149b5d52e3d464ea66"
 [[package]]
 name = "opa-wasm"
 version = "0.1.0"
-source = "git+https://github.com/matrix-org/rust-opa-wasm.git#9922eddbb6b05583f03898765e153abf85fa817d"
+source = "git+https://github.com/matrix-org/rust-opa-wasm.git#dd3f699714efaec30d64801aea043d5cbbbb00f7"
 dependencies = [
  "anyhow",
  "base64 0.20.0",
  "cc",
  "chrono",
- "chrono-tz 0.8.1",
+ "chrono-tz",
  "chronoutil",
  "digest",
  "duration-str",
@@ -5187,7 +5165,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3df578c295f9ec044ff1c829daf31bb7581d5b3c2a7a3d87419afe1f2531438c"
 dependencies = [
  "chrono",
- "chrono-tz 0.6.3",
+ "chrono-tz",
  "globwalk",
  "humansize",
  "lazy_static",
