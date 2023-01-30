@@ -51,6 +51,12 @@ pub struct Params {
     action: Option<CompatLoginSsoAction>,
 }
 
+#[tracing::instrument(
+    name = "handlers.compat.login_sso_complete.get",
+    fields(compat_sso_login.id = %id),
+    skip_all,
+    err,
+)]
 pub async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
@@ -113,6 +119,12 @@ pub async fn get(
     Ok((cookie_jar, Html(content)).into_response())
 }
 
+#[tracing::instrument(
+    name = "handlers.compat.login_sso_complete.post",
+    fields(compat_sso_login.id = %id),
+    skip_all,
+    err,
+)]
 pub async fn post(
     mut rng: BoxRng,
     clock: BoxClock,

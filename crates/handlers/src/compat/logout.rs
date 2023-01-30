@@ -65,6 +65,7 @@ impl IntoResponse for RouteError {
     }
 }
 
+#[tracing::instrument(name = "handlers.compat.logout.post", skip_all, err)]
 pub(crate) async fn post(
     clock: BoxClock,
     mut repo: BoxRepository,

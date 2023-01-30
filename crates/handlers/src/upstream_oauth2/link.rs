@@ -91,6 +91,12 @@ pub(crate) enum FormData {
     Login,
 }
 
+#[tracing::instrument(
+    name = "handlers.upstream_oauth2.link.get",
+    fields(upstream_oauth_link.id = %link_id),
+    skip_all,
+    err,
+)]
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
@@ -207,6 +213,12 @@ pub(crate) async fn get(
     Ok((cookie_jar, Html(render)))
 }
 
+#[tracing::instrument(
+    name = "handlers.upstream_oauth2.link.post",
+    fields(upstream_oauth_link.id = %link_id),
+    skip_all,
+    err,
+)]
 pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,

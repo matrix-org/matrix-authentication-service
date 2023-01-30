@@ -103,7 +103,7 @@ impl IntoResponse for RouteError {
     }
 }
 
-#[tracing::instrument(skip_all, err)]
+#[tracing::instrument(name = "handlers.oauth2.registration.post", skip_all, err)]
 pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,

@@ -36,6 +36,7 @@ pub struct EmailForm {
     email: String,
 }
 
+#[tracing::instrument(name = "handlers.views.account_email_add.get", skip_all, err)]
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
@@ -64,6 +65,7 @@ pub(crate) async fn get(
     Ok((cookie_jar, Html(content)).into_response())
 }
 
+#[tracing::instrument(name = "handlers.views.account_email_add.post", skip_all, err)]
 pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,

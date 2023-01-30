@@ -23,6 +23,23 @@ pub struct FancyError {
     context: ErrorContext,
 }
 
+impl std::fmt::Display for FancyError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let code = self.context.code().unwrap_or("Internal error");
+        match (self.context.description(), self.context.details()) {
+            (Some(description), Some(details)) => {
+                write!(f, "{code}: {description} ({details})")
+            }
+            (Some(message), None) | (None, Some(message)) => {
+                write!(f, "{code}: {message}")
+            }
+            (None, None) => {
+                write!(f, "{code}")
+            }
+        }
+    }
+}
+
 impl<E: std::fmt::Debug + std::fmt::Display> From<E> for FancyError {
     fn from(err: E) -> Self {
         let context = ErrorContext::new()

@@ -36,6 +36,12 @@ pub struct CodeForm {
     code: String,
 }
 
+#[tracing::instrument(
+    name = "handlers.views.account_email_verify.get",
+    fields(user_email.id = %id),
+    skip_all,
+    err,
+)]
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
@@ -79,6 +85,12 @@ pub(crate) async fn get(
     Ok((cookie_jar, Html(content)).into_response())
 }
 
+#[tracing::instrument(
+    name = "handlers.views.account_email_verify.post",
+    fields(user_email.id = %id),
+    skip_all,
+    err,
+)]
 pub(crate) async fn post(
     clock: BoxClock,
     mut repo: BoxRepository,

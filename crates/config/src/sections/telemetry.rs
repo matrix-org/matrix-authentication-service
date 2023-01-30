@@ -257,6 +257,19 @@ pub struct MetricsConfig {
     pub exporter: MetricsExporterConfig,
 }
 
+fn sentry_dsn_example() -> &'static str {
+    "https://public@host:port/1"
+}
+
+/// Configuration related to the Sentry integration
+#[derive(Clone, Debug, Default, Serialize, Deserialize, JsonSchema)]
+pub struct SentryConfig {
+    /// Sentry DSN
+    #[schemars(url, example = "sentry_dsn_example")]
+    #[serde(default)]
+    pub dsn: Option<String>,
+}
+
 /// Configuration related to sending monitoring data
 #[derive(Clone, Debug, Default, Serialize, Deserialize, JsonSchema)]
 pub struct TelemetryConfig {
@@ -267,6 +280,10 @@ pub struct TelemetryConfig {
     /// Configuration related to exporting metrics
     #[serde(default)]
     pub metrics: MetricsConfig,
+
+    /// Configuration related to the Sentry integration
+    #[serde(default)]
+    pub sentry: SentryConfig,
 }
 
 #[async_trait]

@@ -72,6 +72,17 @@ pub enum Credentials {
 }
 
 impl Credentials {
+    /// Get the `client_id` of the credentials
+    #[must_use]
+    pub fn client_id(&self) -> &str {
+        match self {
+            Credentials::None { client_id }
+            | Credentials::ClientSecretBasic { client_id, .. }
+            | Credentials::ClientSecretPost { client_id, .. }
+            | Credentials::ClientAssertionJwtBearer { client_id, .. } => client_id,
+        }
+    }
+
     pub async fn fetch<E>(
         &self,
         repo: &mut impl RepositoryAccess<Error = E>,
@@ -215,6 +226,14 @@ pub enum CredentialsVerificationError {
 pub struct ClientAuthorization<F = ()> {
     pub credentials: Credentials,
     pub form: Option<F>,
+}
+
+impl<F> ClientAuthorization<F> {
+    /// Get the `client_id` from the credentials.
+    #[must_use]
+    pub fn client_id(&self) -> &str {
+        self.credentials.client_id()
+    }
 }
 
 #[derive(Debug)]

@@ -64,6 +64,7 @@ struct LoginTypes {
     flows: Vec<LoginType>,
 }
 
+#[tracing::instrument(name = "handlers.compat.login.get", skip_all)]
 pub(crate) async fn get() -> impl IntoResponse {
     let res = LoginTypes {
         flows: vec![
@@ -190,7 +191,7 @@ impl IntoResponse for RouteError {
     }
 }
 
-#[tracing::instrument(skip_all, err)]
+#[tracing::instrument(name = "handlers.compat.login.post", skip_all, err)]
 pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,

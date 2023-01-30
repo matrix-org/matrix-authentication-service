@@ -75,6 +75,12 @@ impl_from_error_for_route!(mas_policy::EvaluationError);
 impl_from_error_for_route!(super::callback::IntoCallbackDestinationError);
 impl_from_error_for_route!(super::callback::CallbackDestinationError);
 
+#[tracing::instrument(
+    name = "handlers.oauth2.authorization_complete.get",
+    fields(grant.id = %grant_id),
+    skip_all,
+    err,
+)]
 pub(crate) async fn get(
     rng: BoxRng,
     clock: BoxClock,

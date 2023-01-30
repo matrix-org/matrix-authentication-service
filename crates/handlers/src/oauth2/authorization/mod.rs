@@ -128,6 +128,12 @@ fn resolve_response_mode(
     }
 }
 
+#[tracing::instrument(
+    name = "handlers.oauth2.authorization.get",
+    fields(client.id = %params.auth.client_id),
+    skip_all,
+    err,
+)]
 #[allow(clippy::too_many_lines)]
 pub(crate) async fn get(
     mut rng: BoxRng,

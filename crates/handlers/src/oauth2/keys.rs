@@ -15,6 +15,7 @@
 use axum::{extract::State, response::IntoResponse, Json};
 use mas_keystore::Keystore;
 
+#[tracing::instrument(name = "handlers.oauth2.keys.get", skip_all)]
 pub(crate) async fn get(State(key_store): State<Keystore>) -> impl IntoResponse {
     let jwks = key_store.public_jwks();
     Json(jwks)

@@ -40,6 +40,7 @@ pub(crate) struct ReauthForm {
     password: String,
 }
 
+#[tracing::instrument(name = "handlers.views.reauth.get", skip_all, err)]
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
@@ -76,6 +77,7 @@ pub(crate) async fn get(
     Ok((cookie_jar, Html(content)).into_response())
 }
 
+#[tracing::instrument(name = "handlers.views.reauth.post", skip_all, err)]
 pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,

@@ -95,6 +95,7 @@ impl IntoResponse for RouteError {
     }
 }
 
+#[tracing::instrument(name = "handlers.oauth2.userinfo.get", skip_all, err)]
 pub async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
