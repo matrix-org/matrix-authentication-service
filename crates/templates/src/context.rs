@@ -912,10 +912,27 @@ impl ErrorContext {
     }
 
     /// Add the error details to the context
-    #[allow(dead_code)]
     #[must_use]
     pub fn with_details(mut self, details: String) -> Self {
         self.details = Some(details);
         self
+    }
+
+    /// Get the error code, if any
+    #[must_use]
+    pub fn code(&self) -> Option<&'static str> {
+        self.code
+    }
+
+    /// Get the description, if any
+    #[must_use]
+    pub fn description(&self) -> Option<&str> {
+        self.description.as_deref()
+    }
+
+    /// Get the details, if any
+    #[must_use]
+    pub fn details(&self) -> Option<&str> {
+        self.details.as_deref()
     }
 }

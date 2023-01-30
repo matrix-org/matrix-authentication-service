@@ -85,6 +85,7 @@ pub struct ResponseBody {
     expires_in_ms: Duration,
 }
 
+#[tracing::instrument(name = "handlers.compat.refresh.post", skip_all, err)]
 pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,

@@ -26,6 +26,7 @@ use oauth2_types::{
     scope,
 };
 
+#[tracing::instrument(name = "handlers.oauth2.discovery.get", skip_all)]
 #[allow(clippy::too_many_lines)]
 pub(crate) async fn get(
     State(key_store): State<Keystore>,

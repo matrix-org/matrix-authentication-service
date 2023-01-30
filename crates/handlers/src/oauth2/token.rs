@@ -155,7 +155,12 @@ impl_from_error_for_route!(mas_jose::claims::ClaimError);
 impl_from_error_for_route!(mas_jose::claims::TokenHashError);
 impl_from_error_for_route!(mas_jose::jwt::JwtSignatureError);
 
-#[tracing::instrument(skip_all, err)]
+#[tracing::instrument(
+    name = "handlers.oauth2.token.post",
+    fields(client.id = client_authorization.client_id()),
+    skip_all,
+    err,
+)]
 pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,

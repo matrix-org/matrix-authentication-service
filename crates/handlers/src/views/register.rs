@@ -58,6 +58,7 @@ impl ToFormState for RegisterForm {
     type Field = RegisterFormField;
 }
 
+#[tracing::instrument(name = "handlers.views.register.get", skip_all, err)]
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
@@ -88,6 +89,7 @@ pub(crate) async fn get(
     }
 }
 
+#[tracing::instrument(name = "handlers.views.register.post", skip_all, err)]
 #[allow(clippy::too_many_lines, clippy::too_many_arguments)]
 pub(crate) async fn post(
     mut rng: BoxRng,

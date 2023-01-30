@@ -71,6 +71,12 @@ impl IntoResponse for RouteError {
     }
 }
 
+#[tracing::instrument(
+    name = "handlers.oauth2.consent.get",
+    fields(grant.id = %grant_id),
+    skip_all,
+    err,
+)]
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
@@ -125,6 +131,12 @@ pub(crate) async fn get(
     }
 }
 
+#[tracing::instrument(
+    name = "handlers.oauth2.consent.post",
+    fields(grant.id = %grant_id),
+    skip_all,
+    err,
+)]
 pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,

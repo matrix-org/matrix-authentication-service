@@ -48,6 +48,7 @@ impl ToFormState for LoginForm {
     type Field = LoginFormField;
 }
 
+#[tracing::instrument(name = "handlers.views.login.get", skip_all, err)]
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
@@ -79,6 +80,7 @@ pub(crate) async fn get(
     }
 }
 
+#[tracing::instrument(name = "handlers.views.login.post", skip_all, err)]
 pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,

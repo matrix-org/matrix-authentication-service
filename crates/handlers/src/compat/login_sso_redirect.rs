@@ -55,6 +55,7 @@ impl IntoResponse for RouteError {
     }
 }
 
+#[tracing::instrument(name = "handlers.compat.login_sso_redirect.get", skip_all, err)]
 pub async fn get(
     mut rng: BoxRng,
     clock: BoxClock,

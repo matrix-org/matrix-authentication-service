@@ -22,6 +22,7 @@ use mas_keystore::Encrypter;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{user::BrowserSessionRepository, BoxClock, BoxRepository};
 
+#[tracing::instrument(name = "handlers.views.logout.post", skip_all, err)]
 pub(crate) async fn post(
     clock: BoxClock,
     mut repo: BoxRepository,

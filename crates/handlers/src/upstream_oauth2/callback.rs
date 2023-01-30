@@ -117,6 +117,12 @@ impl IntoResponse for RouteError {
     }
 }
 
+#[tracing::instrument(
+    name = "handlers.upstream_oauth2.callback.get",
+    fields(upstream_oauth_provider.id = %provider_id),
+    skip_all,
+    err,
+)]
 #[allow(clippy::too_many_lines, clippy::too_many_arguments)]
 pub(crate) async fn get(
     mut rng: BoxRng,

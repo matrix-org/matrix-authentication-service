@@ -31,6 +31,7 @@ use mas_spa::ViteManifestService;
 use mas_templates::Templates;
 use opentelemetry::KeyValue;
 use rustls::ServerConfig;
+use sentry_tower::{NewSentryLayer, SentryHttpLayer};
 use tower::Layer;
 use tower_http::{compression::CompressionLayer, services::ServeDir};
 
@@ -119,6 +120,8 @@ where
     }
 
     router
+        .layer(SentryHttpLayer::new())
+        .layer(NewSentryLayer::new_from_top())
         .layer(trace_layer)
         .layer(CompressionLayer::new())
         .with_state(state)

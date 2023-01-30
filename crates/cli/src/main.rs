@@ -60,12 +60,17 @@ async fn try_main() -> anyhow::Result<()> {
 
     // Don't fill the telemetry layer for now, we want to configure it based on the
     // app config, so we need to delay that a bit
-    let (telemetry_layer, handle) = reload::Layer::new(None);
+    let (telemetry_layer, telemetry_handle) = reload::Layer::new(None);
     // We only want "INFO" level spans to go through OpenTelemetry
     let telemetry_layer = telemetry_layer.with_filter(LevelFilter::INFO);
 
+    // Don't fill the Sentry layer for now, we want to configure it based on the
+    // app config, so we need to delay that a bit
+    let (sentry_layer, sentry_handle) = reload::Layer::new(None);
+
     let subscriber = Registry::default()
         .with(telemetry_layer)
+        .with(sentry_layer)
         .with(filter_layer)
         .with(fmt_layer);
     subscriber
@@ -88,13 +93,19 @@ async fn try_main() -> anyhow::Result<()> {
     // Falling back to default.
     let telemetry_config: TelemetryConfig = opts.load_config().unwrap_or_default();
 
+    // Setup Sentry
+    let sentry = sentry::init(telemetry_config.sentry.dsn.as_deref());
+    if sentry.is_enabled() {
+        sentry_handle.reload(sentry_tracing::layer())?;
+    }
+
     // Setup OpenTelemtry tracing and metrics
     let (tracer, _meter) = telemetry::setup(&telemetry_config)
         .await
         .context("failed to setup opentelemetry")?;
     if let Some(tracer) = tracer {
         // Now we can swap out the actual opentelemetry tracing layer
-        handle.reload(
+        telemetry_handle.reload(
             tracing_opentelemetry::layer()
                 .with_tracer(tracer)
                 .with_tracked_inactivity(false),

@@ -55,6 +55,12 @@ impl IntoResponse for RouteError {
     }
 }
 
+#[tracing::instrument(
+    name = "handlers.upstream_oauth2.authorize.get",
+    fields(upstream_oauth_provider.id = %provider_id),
+    skip_all,
+    err,
+)]
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,

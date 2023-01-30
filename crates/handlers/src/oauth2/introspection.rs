@@ -120,6 +120,12 @@ const INACTIVE: IntrospectionResponse = IntrospectionResponse {
 
 const API_SCOPE: ScopeToken = ScopeToken::from_static("urn:matrix:org.matrix.msc2967.client:api:*");
 
+#[tracing::instrument(
+    name = "handlers.oauth2.introspection.post",
+    fields(client.id = client_authorization.client_id()),
+    skip_all,
+    err,
+)]
 #[allow(clippy::too_many_lines)]
 pub(crate) async fn post(
     clock: BoxClock,

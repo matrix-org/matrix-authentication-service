@@ -43,6 +43,7 @@ pub struct ChangeForm {
     new_password_confirm: String,
 }
 
+#[tracing::instrument(name = "handlers.views.account_password.get", skip_all, err)]
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
@@ -80,6 +81,7 @@ async fn render(
     Ok((cookie_jar, Html(content)).into_response())
 }
 
+#[tracing::instrument(name = "handlers.views.account_password.post", skip_all, err)]
 pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,

@@ -48,6 +48,7 @@ pub enum ManagementForm {
     Remove { id: String },
 }
 
+#[tracing::instrument(name = "handlers.views.account_email_list.get", skip_all, err)]
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
@@ -121,6 +122,7 @@ async fn start_email_verification<E: std::error::Error + Send + Sync + 'static>(
     Ok(())
 }
 
+#[tracing::instrument(name = "handlers.views.account_email_list.post", skip_all, err)]
 pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,

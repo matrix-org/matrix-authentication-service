@@ -35,6 +35,7 @@ fn jrd() -> mime::Mime {
     "application/jrd+json".parse().unwrap()
 }
 
+#[tracing::instrument(name = "handlers.oauth2.webfinger.get", skip_all)]
 pub(crate) async fn get(
     Query(params): Query<Params>,
     State(url_builder): State<UrlBuilder>,

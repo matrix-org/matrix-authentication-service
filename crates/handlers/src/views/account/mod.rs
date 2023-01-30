@@ -29,6 +29,7 @@ use mas_storage::{
 };
 use mas_templates::{AccountContext, TemplateContext, Templates};
 
+#[tracing::instrument(name = "handlers.views.account.get", skip_all, err)]
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,

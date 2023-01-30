@@ -173,6 +173,9 @@
         "metrics": {
           "exporter": "none"
         },
+        "sentry": {
+          "dsn": null
+        },
         "tracing": {
           "exporter": "none",
           "propagators": []
@@ -1578,6 +1581,21 @@
         }
       }
     },
+    "SentryConfig": {
+      "description": "Configuration related to the Sentry integration",
+      "type": "object",
+      "properties": {
+        "dsn": {
+          "description": "Sentry DSN",
+          "default": null,
+          "examples": [
+            "https://public@host:port/1"
+          ],
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    },
     "TelemetryConfig": {
       "description": "Configuration related to sending monitoring data",
       "type": "object",
@@ -1590,6 +1608,17 @@
           "allOf": [
             {
               "$ref": "#/definitions/MetricsConfig"
+            }
+          ]
+        },
+        "sentry": {
+          "description": "Configuration related to the Sentry integration",
+          "default": {
+            "dsn": null
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/SentryConfig"
             }
           ]
         },
