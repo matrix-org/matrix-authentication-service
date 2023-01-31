@@ -12,11 +12,11 @@
 # The Debian version and version name must be in sync
 ARG DEBIAN_VERSION=11
 ARG DEBIAN_VERSION_NAME=bullseye
-ARG RUSTC_VERSION=1.66.0
+ARG RUSTC_VERSION=1.67.0
 # XXX: Upgrade to 0.10.0 blocked by https://github.com/ziglang/zig/issues/10915#issuecomment-1354548110
 ARG ZIG_VERSION=0.9.1
 ARG NODEJS_VERSION=18
-ARG OPA_VERSION=0.47.3
+ARG OPA_VERSION=0.48.0
 
 ##########################################
 ## Build stage that builds the frontend ##
