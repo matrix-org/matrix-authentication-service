@@ -19,6 +19,11 @@ use mas_iana::oauth::PkceCodeChallengeMethod;
 use oauth2_types::{
     pkce::{CodeChallengeError, CodeChallengeMethodExt},
     requests::ResponseMode,
+    scope::{Scope, OPENID, PROFILE},
+};
+use rand::{
+    distributions::{Alphanumeric, DistString},
+    RngCore,
 };
 use serde::Serialize;
 use ulid::Ulid;
@@ -146,7 +151,7 @@ pub struct AuthorizationGrant {
     pub code: Option<AuthorizationCode>,
     pub client_id: Ulid,
     pub redirect_uri: Url,
-    pub scope: oauth2_types::scope::Scope,
+    pub scope: Scope,
     pub state: Option<String>,
     pub nonce: Option<String>,
     pub max_age: Option<NonZeroU32>,
@@ -189,5 +194,26 @@ impl AuthorizationGrant {
     pub fn cancel(mut self, canceld_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
         self.stage = self.stage.cancel(canceld_at)?;
         Ok(self)
+    }
+
+    pub fn sample(now: DateTime<Utc>, rng: &mut impl RngCore) -> Self {
+        Self {
+            id: Ulid::from_datetime_with_source(now.into(), rng),
+            stage: AuthorizationGrantStage::Pending,
+            code: Some(AuthorizationCode {
+                code: Alphanumeric.sample_string(rng, 10),
+                pkce: None,
+            }),
+            client_id: Ulid::from_datetime_with_source(now.into(), rng),
+            redirect_uri: Url::parse("http://localhost:8080").unwrap(),
+            scope: Scope::from_iter([OPENID, PROFILE]),
+            state: Some(Alphanumeric.sample_string(rng, 10)),
+            nonce: Some(Alphanumeric.sample_string(rng, 10)),
+            max_age: None,
+            response_mode: ResponseMode::Query,
+            response_type_id_token: false,
+            created_at: now,
+            requires_consent: false,
+        }
     }
 }

@@ -17,7 +17,7 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::missing_errors_doc)]
 
-use mas_data_model::{AuthorizationGrant, User};
+use mas_data_model::{AuthorizationGrant, Client, User};
 use oauth2_types::registration::VerifiedClientMetadata;
 use opa_wasm::Runtime;
 use serde::Deserialize;
@@ -246,6 +246,7 @@ impl Policy {
         skip_all,
         fields(
             data.authorization_grant.id = %authorization_grant.id,
+            data.client.id = %client.id,
             data.user.id = %user.id,
         ),
         err,
@@ -253,12 +254,14 @@ impl Policy {
     pub async fn evaluate_authorization_grant(
         &mut self,
         authorization_grant: &AuthorizationGrant,
+        client: &Client,
         user: &User,
     ) -> Result<EvaluationResult, EvaluationError> {
         let authorization_grant = serde_json::to_value(authorization_grant)?;
         let user = serde_json::to_value(user)?;
         let input = serde_json::json!({
             "authorization_grant": authorization_grant,
+            "client": client,
             "user": user,
         });
 

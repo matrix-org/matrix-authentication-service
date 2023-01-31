@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use chrono::{DateTime, Utc};
 use mas_iana::{
     jose::JsonWebSignatureAlg,
     oauth::{OAuthAuthorizationEndpointResponseType, OAuthClientAuthenticationMethod},
 };
 use mas_jose::jwk::PublicJsonWebKeySet;
 use oauth2_types::requests::GrantType;
+use rand::RngCore;
 use serde::Serialize;
 use thiserror::Error;
 use ulid::Ulid;
@@ -119,5 +121,57 @@ impl Client {
             (uris, Some(uri)) if uris.contains(uri) => Ok(uri),
             _ => Err(InvalidRedirectUriError::NotAllowed),
         }
+    }
+
+    pub fn samples(now: DateTime<Utc>, rng: &mut impl RngCore) -> Vec<Client> {
+        vec![
+            // A client with all the URIs set
+            Self {
+                id: Ulid::from_datetime_with_source(now.into(), rng),
+                client_id: "client1".to_owned(),
+                encrypted_client_secret: None,
+                redirect_uris: vec![
+                    Url::parse("https://client1.example.com/redirect").unwrap(),
+                    Url::parse("https://client1.example.com/redirect2").unwrap(),
+                ],
+                response_types: vec![OAuthAuthorizationEndpointResponseType::Code],
+                grant_types: vec![GrantType::AuthorizationCode, GrantType::RefreshToken],
+                contacts: vec!["foo@client1.example.com".to_owned()],
+                client_name: Some("Client 1".to_owned()),
+                client_uri: Some(Url::parse("https://client1.example.com").unwrap()),
+                logo_uri: Some(Url::parse("https://client1.example.com/logo.png").unwrap()),
+                tos_uri: Some(Url::parse("https://client1.example.com/tos").unwrap()),
+                policy_uri: Some(Url::parse("https://client1.example.com/policy").unwrap()),
+                initiate_login_uri: Some(
+                    Url::parse("https://client1.example.com/initiate-login").unwrap(),
+                ),
+                token_endpoint_auth_method: Some(OAuthClientAuthenticationMethod::None),
+                token_endpoint_auth_signing_alg: None,
+                id_token_signed_response_alg: None,
+                userinfo_signed_response_alg: None,
+                jwks: None,
+            },
+            // Another client without any URIs set
+            Self {
+                id: Ulid::from_datetime_with_source(now.into(), rng),
+                client_id: "client2".to_owned(),
+                encrypted_client_secret: None,
+                redirect_uris: vec![Url::parse("https://client2.example.com/redirect").unwrap()],
+                response_types: vec![OAuthAuthorizationEndpointResponseType::Code],
+                grant_types: vec![GrantType::AuthorizationCode, GrantType::RefreshToken],
+                contacts: vec!["foo@client2.example.com".to_owned()],
+                client_name: None,
+                client_uri: None,
+                logo_uri: None,
+                tos_uri: None,
+                policy_uri: None,
+                initiate_login_uri: None,
+                token_endpoint_auth_method: None,
+                token_endpoint_auth_signing_alg: None,
+                id_token_signed_response_alg: None,
+                userinfo_signed_response_alg: None,
+                jwks: None,
+            },
+        ]
     }
 }

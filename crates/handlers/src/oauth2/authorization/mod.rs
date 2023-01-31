@@ -341,6 +341,7 @@ pub(crate) async fn get(
                         rng,
                         clock,
                         grant,
+                        client,
                         user_session,
                         &policy_factory,
                         repo,
@@ -372,10 +373,7 @@ pub(crate) async fn get(
                         Err(GrantCompletionError::Internal(e)) => {
                             return Err(RouteError::Internal(e))
                         }
-                        Err(
-                            e @ (GrantCompletionError::NotPending
-                            | GrantCompletionError::NoSuchClient),
-                        ) => {
+                        Err(e @ GrantCompletionError::NotPending) => {
                             // This should never happen
                             return Err(RouteError::Internal(Box::new(e)));
                         }
@@ -388,6 +386,7 @@ pub(crate) async fn get(
                         rng,
                         clock,
                         grant,
+                        client,
                         user_session,
                         &policy_factory,
                         repo,
@@ -413,10 +412,7 @@ pub(crate) async fn get(
                         Err(GrantCompletionError::Internal(e)) => {
                             return Err(RouteError::Internal(e))
                         }
-                        Err(
-                            e @ (GrantCompletionError::NotPending
-                            | GrantCompletionError::NoSuchClient),
-                        ) => {
+                        Err(e @ GrantCompletionError::NotPending) => {
                             // This should never happen
                             return Err(RouteError::Internal(Box::new(e)));
                         }
