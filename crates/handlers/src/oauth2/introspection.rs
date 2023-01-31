@@ -59,6 +59,7 @@ pub enum RouteError {
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
+        sentry::capture_error(&self);
         match self {
             Self::Internal(e) => (
                 StatusCode::INTERNAL_SERVER_ERROR,

@@ -83,6 +83,7 @@ impl_from_error_for_route!(mas_jose::jwt::JwtSignatureError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
+        sentry::capture_error(&self);
         match self {
             Self::Internal(_)
             | Self::InvalidSigningKey

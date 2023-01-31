@@ -52,6 +52,7 @@ impl<E: std::fmt::Debug + std::fmt::Display> From<E> for FancyError {
 impl IntoResponse for FancyError {
     fn into_response(self) -> Response {
         let error = format!("{:?}", self.context);
+        sentry::capture_message(&error, sentry::Level::Error);
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             Extension(self.context),
