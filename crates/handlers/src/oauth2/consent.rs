@@ -67,6 +67,7 @@ impl_from_error_for_route!(mas_policy::EvaluationError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
+        sentry::capture_error(&self);
         StatusCode::INTERNAL_SERVER_ERROR.into_response()
     }
 }

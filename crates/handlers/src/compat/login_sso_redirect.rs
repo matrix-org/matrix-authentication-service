@@ -51,6 +51,7 @@ impl_from_error_for_route!(mas_storage::RepositoryError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
+        sentry::capture_error(&self);
         (StatusCode::INTERNAL_SERVER_ERROR, format!("{self}")).into_response()
     }
 }

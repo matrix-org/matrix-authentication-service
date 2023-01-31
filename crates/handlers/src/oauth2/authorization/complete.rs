@@ -51,6 +51,7 @@ pub enum RouteError {
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
+        sentry::capture_error(&self);
         // TODO: better error pages
         match self {
             RouteError::NotFound => {

@@ -20,6 +20,7 @@
 use anyhow::Context;
 use clap::Parser;
 use mas_config::TelemetryConfig;
+use sentry_tracing::EventFilter;
 use tracing_subscriber::{
     filter::LevelFilter, layer::SubscriberExt, reload, util::SubscriberInitExt, EnvFilter, Layer,
     Registry,
@@ -69,8 +70,8 @@ async fn try_main() -> anyhow::Result<()> {
     let (sentry_layer, sentry_handle) = reload::Layer::new(None);
 
     let subscriber = Registry::default()
-        .with(telemetry_layer)
         .with(sentry_layer)
+        .with(telemetry_layer)
         .with(filter_layer)
         .with(fmt_layer);
     subscriber
@@ -94,9 +95,27 @@ async fn try_main() -> anyhow::Result<()> {
     let telemetry_config: TelemetryConfig = opts.load_config().unwrap_or_default();
 
     // Setup Sentry
-    let sentry = sentry::init(telemetry_config.sentry.dsn.as_deref());
+    let sentry = sentry::init((
+        telemetry_config.sentry.dsn.as_deref(),
+        sentry::ClientOptions {
+            traces_sample_rate: 1.0,
+            auto_session_tracking: true,
+            session_mode: sentry::SessionMode::Request,
+            ..Default::default()
+        },
+    ));
     if sentry.is_enabled() {
-        sentry_handle.reload(sentry_tracing::layer())?;
+        let layer = sentry_tracing::layer().event_filter(|md| {
+            // All the spans in the handlers module send their data to Sentry themselves, so
+            // we only create breadcrumbs for them, instead of full events
+            if md.target().starts_with("mas_handlers::") {
+                EventFilter::Breadcrumb
+            } else {
+                sentry_tracing::default_event_filter(md)
+            }
+        });
+
+        sentry_handle.reload(layer)?;
     }
 
     // Setup OpenTelemtry tracing and metrics
