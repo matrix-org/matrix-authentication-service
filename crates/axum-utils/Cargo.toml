@@ -11,7 +11,7 @@ axum = { version = "0.6.4", features = ["headers"] }
 axum-extra = { version = "0.4.2", features = ["cookie-private"] }
 chrono = "0.4.23"
 data-encoding = "2.3.3"
-futures-util = "0.3.25"
+futures-util = "0.3.26"
 headers = "0.3.8"
 http = "0.2.8"
 http-body = "0.4.5"

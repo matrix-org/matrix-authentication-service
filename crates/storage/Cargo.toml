@@ -9,7 +9,7 @@ license = "Apache-2.0"
 async-trait = "0.1.63"
 chrono = "0.4.23"
 thiserror = "1.0.38"
-futures-util = "0.3.25"
+futures-util = "0.3.26"
 
 rand_core = "0.6.4"
 url = "2.3.1"
