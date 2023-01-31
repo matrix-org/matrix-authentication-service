@@ -18,8 +18,8 @@
 
 use chrono::Utc;
 use mas_data_model::{
-    AuthorizationGrant, BrowserSession, CompatSsoLogin, CompatSsoLoginState, UpstreamOAuthLink,
-    UpstreamOAuthProvider, User, UserEmail, UserEmailVerification,
+    AuthorizationGrant, BrowserSession, Client, CompatSsoLogin, CompatSsoLoginState,
+    UpstreamOAuthLink, UpstreamOAuthProvider, User, UserEmail, UserEmailVerification,
 };
 use mas_router::{PostAuthAction, Route};
 use rand::Rng;
@@ -395,25 +395,42 @@ impl RegisterContext {
 #[derive(Serialize)]
 pub struct ConsentContext {
     grant: AuthorizationGrant,
+    client: Client,
     action: PostAuthAction,
 }
 
 impl TemplateContext for ConsentContext {
-    fn sample(_now: chrono::DateTime<Utc>, _rng: &mut impl Rng) -> Vec<Self>
+    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {
-        // TODO
-        vec![]
+        Client::samples(now, rng)
+            .into_iter()
+            .map(|client| {
+                let mut grant = AuthorizationGrant::sample(now, rng);
+                let action = PostAuthAction::continue_grant(grant.id);
+                // XXX
+                grant.client_id = client.id;
+                Self {
+                    grant,
+                    client,
+                    action,
+                }
+            })
+            .collect()
     }
 }
 
 impl ConsentContext {
     /// Constructs a context for the client consent page
     #[must_use]
-    pub fn new(grant: AuthorizationGrant) -> Self {
+    pub fn new(grant: AuthorizationGrant, client: Client) -> Self {
         let action = PostAuthAction::continue_grant(grant.id);
-        Self { grant, action }
+        Self {
+            grant,
+            client,
+            action,
+        }
     }
 }
 
@@ -421,25 +438,42 @@ impl ConsentContext {
 #[derive(Serialize)]
 pub struct PolicyViolationContext {
     grant: AuthorizationGrant,
+    client: Client,
     action: PostAuthAction,
 }
 
 impl TemplateContext for PolicyViolationContext {
-    fn sample(_now: chrono::DateTime<Utc>, _rng: &mut impl Rng) -> Vec<Self>
+    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
     where
         Self: Sized,
     {
-        // TODO
-        vec![]
+        Client::samples(now, rng)
+            .into_iter()
+            .map(|client| {
+                let mut grant = AuthorizationGrant::sample(now, rng);
+                let action = PostAuthAction::continue_grant(grant.id);
+                // XXX
+                grant.client_id = client.id;
+                Self {
+                    grant,
+                    client,
+                    action,
+                }
+            })
+            .collect()
     }
 }
 
 impl PolicyViolationContext {
     /// Constructs a context for the policy violation page
     #[must_use]
-    pub const fn new(grant: AuthorizationGrant) -> Self {
+    pub const fn new(grant: AuthorizationGrant, client: Client) -> Self {
         let action = PostAuthAction::continue_grant(grant.id);
-        Self { grant, action }
+        Self {
+            grant,
+            client,
+            action,
+        }
     }
 }
 

@@ -97,6 +97,12 @@ pub(crate) async fn get(
         .await?
         .ok_or(RouteError::GrantNotFound)?;
 
+    let client = repo
+        .oauth2_client()
+        .lookup(grant.client_id)
+        .await?
+        .ok_or(RouteError::NoSuchClient)?;
+
     if !matches!(grant.stage, AuthorizationGrantStage::Pending) {
         return Err(RouteError::GrantNotPending);
     }
@@ -106,11 +112,11 @@ pub(crate) async fn get(
 
         let mut policy = policy_factory.instantiate().await?;
         let res = policy
-            .evaluate_authorization_grant(&grant, &session.user)
+            .evaluate_authorization_grant(&grant, &client, &session.user)
             .await?;
 
         if res.valid() {
-            let ctx = ConsentContext::new(grant)
+            let ctx = ConsentContext::new(grant, client)
                 .with_session(session)
                 .with_csrf(csrf_token.form_value());
 
@@ -118,7 +124,7 @@ pub(crate) async fn get(
 
             Ok((cookie_jar, Html(content)).into_response())
         } else {
-            let ctx = PolicyViolationContext::new(grant)
+            let ctx = PolicyViolationContext::new(grant, client)
                 .with_session(session)
                 .with_csrf(csrf_token.form_value());
 
@@ -167,20 +173,20 @@ pub(crate) async fn post(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    let mut policy = policy_factory.instantiate().await?;
-    let res = policy
-        .evaluate_authorization_grant(&grant, &session.user)
-        .await?;
-
-    if !res.valid() {
-        return Err(RouteError::PolicyViolation);
-    }
-
     let client = repo
         .oauth2_client()
         .lookup(grant.client_id)
         .await?
         .ok_or(RouteError::NoSuchClient)?;
+
+    let mut policy = policy_factory.instantiate().await?;
+    let res = policy
+        .evaluate_authorization_grant(&grant, &client, &session.user)
+        .await?;
+
+    if !res.valid() {
+        return Err(RouteError::PolicyViolation);
+    }
 
     // Do not consent for the "urn:matrix:org.matrix.msc2967.client:device:*" scope
     let scope_without_device = grant

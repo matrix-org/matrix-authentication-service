@@ -24,11 +24,11 @@ limitations under the License.
         <p>This might be because of the client which authored the request, the currently logged in user, or the request itself.</p>
         <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-2 flex items-center">
           <div class="bg-white rounded w-16 h-16 overflow-hidden mx-auto">
-            {% if grant.client.logo_uri %}
-            <img class="w-16 h-16" src="{{ grant.client.logo_uri }}" />
+            {% if client.logo_uri %}
+            <img class="w-16 h-16" src="{{ client.logo_uri }}" />
             {% endif %}
           </div>
-          <h1 class="text-lg text-center font-medium flex-1"><a target="_blank" href="{{ grant.client.client_uri }}" class="text-accent">{{ grant.client.client_name | default(value=grant.client.client_id) }}</a></h1>
+          <h1 class="text-lg text-center font-medium flex-1"><a target="_blank" href="{{ client.client_uri }}" class="text-accent">{{ client.client_name | default(value=client.client_id) }}</a></h1>
         </div>
 
         <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-2 flex items-center">

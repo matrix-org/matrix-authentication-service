@@ -21,7 +21,7 @@ use axum::{
 use axum_extra::extract::PrivateCookieJar;
 use hyper::StatusCode;
 use mas_axum_utils::SessionInfoExt;
-use mas_data_model::{AuthorizationGrant, BrowserSession};
+use mas_data_model::{AuthorizationGrant, BrowserSession, Client};
 use mas_keystore::Encrypter;
 use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
@@ -47,6 +47,9 @@ pub enum RouteError {
 
     #[error("authorization grant is not in a pending state")]
     NotPending,
+
+    #[error("failed to load client")]
+    NoSuchClient,
 }
 
 impl IntoResponse for RouteError {
@@ -62,8 +65,8 @@ impl IntoResponse for RouteError {
                 "authorization grant not in a pending state",
             )
                 .into_response(),
-            RouteError::Internal(e) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
+            RouteError::Internal(_) | Self::NoSuchClient => {
+                (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()).into_response()
             }
         }
     }
@@ -112,7 +115,13 @@ pub(crate) async fn get(
         return Ok((cookie_jar, mas_router::Login::and_then(continue_grant).go()).into_response());
     };
 
-    match complete(rng, clock, grant, session, &policy_factory, repo).await {
+    let client = repo
+        .oauth2_client()
+        .lookup(grant.client_id)
+        .await?
+        .ok_or(RouteError::NoSuchClient)?;
+
+    match complete(rng, clock, grant, client, session, &policy_factory, repo).await {
         Ok(params) => {
             let res = callback_destination.go(&templates, params).await?;
             Ok((cookie_jar, res).into_response())
@@ -128,7 +137,6 @@ pub(crate) async fn get(
         }
         Err(GrantCompletionError::NotPending) => Err(RouteError::NotPending),
         Err(GrantCompletionError::Internal(e)) => Err(RouteError::Internal(e)),
-        Err(e) => Err(RouteError::Internal(e.into())),
     }
 }
 
@@ -148,9 +156,6 @@ pub enum GrantCompletionError {
 
     #[error("denied by the policy")]
     PolicyViolation,
-
-    #[error("failed to load client")]
-    NoSuchClient,
 }
 
 impl_from_error_for_route!(GrantCompletionError: mas_storage::RepositoryError);
@@ -163,6 +168,7 @@ pub(crate) async fn complete(
     mut rng: BoxRng,
     clock: BoxClock,
     grant: AuthorizationGrant,
+    client: Client,
     browser_session: BrowserSession,
     policy_factory: &PolicyFactory,
     mut repo: BoxRepository,
@@ -181,18 +187,12 @@ pub(crate) async fn complete(
     // Run through the policy
     let mut policy = policy_factory.instantiate().await?;
     let res = policy
-        .evaluate_authorization_grant(&grant, &browser_session.user)
+        .evaluate_authorization_grant(&grant, &client, &browser_session.user)
         .await?;
 
     if !res.valid() {
         return Err(GrantCompletionError::PolicyViolation);
     }
-
-    let client = repo
-        .oauth2_client()
-        .lookup(grant.client_id)
-        .await?
-        .ok_or(GrantCompletionError::NoSuchClient)?;
 
     let current_consent = repo
         .oauth2_client()
