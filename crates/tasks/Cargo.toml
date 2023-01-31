@@ -9,7 +9,7 @@ license = "Apache-2.0"
 tokio = "1.25.0"
 async-trait = "0.1.63"
 tokio-stream = "0.1.11"
-futures-util = "0.3.25"
+futures-util = "0.3.26"
 tracing = "0.1.37"
 sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres"] }
 
