@@ -84,5 +84,7 @@ pub async fn get(
         .add(&mut rng, &clock, token, redirect_url)
         .await?;
 
+    repo.save().await?;
+
     Ok(url_builder.absolute_redirect(&CompatLoginSsoComplete::new(login.id, params.action)))
 }
