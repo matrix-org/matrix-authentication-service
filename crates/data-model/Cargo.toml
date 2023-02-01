@@ -10,7 +10,7 @@ chrono = "0.4.23"
 thiserror = "1.0.38"
 serde = "1.0.152"
 url = { version = "2.3.1", features = ["serde"] }
-crc = "3.0.0"
+crc = "3.0.1"
 ulid = { version = "1.0.0", features = ["serde"] }
 rand = "0.8.5"
 rand_chacha = "0.3.1"
