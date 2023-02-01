@@ -89,9 +89,8 @@ impl<F: Send> UserAuthorization<F> {
         repo: &mut impl RepositoryAccess<Error = E>,
         clock: &impl Clock,
     ) -> Result<(Session, F), AuthorizationVerificationError<E>> {
-        let form = match self.form {
-            Some(f) => f,
-            None => return Err(AuthorizationVerificationError::MissingForm),
+        let Some(form) = self.form else {
+            return Err(AuthorizationVerificationError::MissingForm);
         };
 
         let (token, session) = self.access_token.fetch(repo).await?;

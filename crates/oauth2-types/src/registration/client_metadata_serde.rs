@@ -59,9 +59,8 @@ impl<T> Localized<T> {
     where
         T: DeserializeOwned,
     {
-        let map = match map.remove(field_name) {
-            Some(map) => map,
-            None => return Ok(None),
+        let Some(map) = map.remove(field_name) else {
+            return Ok(None);
         };
 
         let mut non_localized = None;

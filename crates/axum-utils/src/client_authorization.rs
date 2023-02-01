@@ -560,8 +560,7 @@ mod tests {
         // Signed with client_secret = "client-secret"
         let jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjbGllbnQtaWQiLCJzdWIiOiJjbGllbnQtaWQiLCJhdWQiOiJodHRwczovL2V4YW1wbGUuY29tL29hdXRoMi9pbnRyb3NwZWN0IiwianRpIjoiYWFiYmNjIiwiZXhwIjoxNTE2MjM5MzIyLCJpYXQiOjE1MTYyMzkwMjJ9.XTaACG_Rww0GPecSZvkbem-AczNy9LLNBueCLCiQajU";
         let body = Bytes::from(format!(
-            "client_assertion_type={}&client_assertion={}&foo=bar",
-            JWT_BEARER_CLIENT_ASSERTION, jwt,
+            "client_assertion_type={JWT_BEARER_CLIENT_ASSERTION}&client_assertion={jwt}&foo=bar",
         ));
 
         let req = Request::builder()
@@ -578,12 +577,9 @@ mod tests {
             .unwrap();
         assert_eq!(authz.form, Some(serde_json::json!({"foo": "bar"})));
 
-        let (client_id, jwt) =
-            if let Credentials::ClientAssertionJwtBearer { client_id, jwt } = authz.credentials {
-                (client_id, jwt)
-            } else {
-                panic!("expected a JWT client_assertion");
-            };
+        let Credentials::ClientAssertionJwtBearer { client_id, jwt } = authz.credentials else {
+            panic!("expected a JWT client_assertion");
+        };
 
         assert_eq!(client_id, "client-id");
         jwt.verify_with_shared_secret(b"client-secret".to_vec())

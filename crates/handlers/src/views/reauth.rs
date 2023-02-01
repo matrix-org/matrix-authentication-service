@@ -54,9 +54,7 @@ pub(crate) async fn get(
 
     let maybe_session = session_info.load_session(&mut repo).await?;
 
-    let session = if let Some(session) = maybe_session {
-        session
-    } else {
+    let Some(session) = maybe_session else {
         // If there is no session, redirect to the login screen, keeping the
         // PostAuthAction
         let login = mas_router::Login::from(query.post_auth_action);
@@ -93,9 +91,7 @@ pub(crate) async fn post(
 
     let maybe_session = session_info.load_session(&mut repo).await?;
 
-    let session = if let Some(session) = maybe_session {
-        session
-    } else {
+    let Some(session) = maybe_session else {
         // If there is no session, redirect to the login screen, keeping the
         // PostAuthAction
         let login = mas_router::Login::from(query.post_auth_action);

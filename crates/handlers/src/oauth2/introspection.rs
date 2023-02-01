@@ -154,9 +154,7 @@ pub(crate) async fn post(
         .verify(&http_client_factory, &encrypter, method, &client)
         .await?;
 
-    let form = if let Some(form) = client_authorization.form {
-        form
-    } else {
+    let Some(form) = client_authorization.form else {
         return Err(RouteError::BadRequest);
     };
 

@@ -190,26 +190,23 @@ pub fn verify_id_token<'a>(
     // Subject identifier must be present.
     let sub = claims::SUB.extract_required(&mut claims)?;
 
-    // No more checks if there is no previous ID token.
-    let auth_id_token = match auth_id_token {
-        Some(id_token) => id_token,
-        None => return Ok(id_token),
-    };
+    // More checks if there is a previous ID token.
+    if let Some(auth_id_token) = auth_id_token {
+        let mut auth_claims = auth_id_token.payload().clone();
 
-    let mut auth_claims = auth_id_token.payload().clone();
+        // Subject identifier must always be the same.
+        let auth_sub = claims::SUB.extract_required(&mut auth_claims)?;
+        if sub != auth_sub {
+            return Err(IdTokenError::WrongSubjectIdentifier);
+        }
 
-    // Subject identifier must always be the same.
-    let auth_sub = claims::SUB.extract_required(&mut auth_claims)?;
-    if sub != auth_sub {
-        return Err(IdTokenError::WrongSubjectIdentifier);
-    }
+        // If the authentication time is present, it must be unchanged.
+        if let Some(auth_time) = claims::AUTH_TIME.extract_optional(&mut claims)? {
+            let prev_auth_time = claims::AUTH_TIME.extract_required(&mut auth_claims)?;
 
-    // If the authentication time is present, it must be unchanged.
-    if let Some(auth_time) = claims::AUTH_TIME.extract_optional(&mut claims)? {
-        let prev_auth_time = claims::AUTH_TIME.extract_required(&mut auth_claims)?;
-
-        if prev_auth_time != auth_time {
-            return Err(IdTokenError::WrongAuthTime);
+            if prev_auth_time != auth_time {
+                return Err(IdTokenError::WrongAuthTime);
+            }
         }
     }
 

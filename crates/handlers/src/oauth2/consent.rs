@@ -166,9 +166,7 @@ pub(crate) async fn post(
         .ok_or(RouteError::GrantNotFound)?;
     let next = PostAuthAction::continue_grant(grant_id);
 
-    let session = if let Some(session) = maybe_session {
-        session
-    } else {
+    let Some(session) = maybe_session else {
         let login = mas_router::Login::and_then(next);
         return Ok((cookie_jar, login.go()).into_response());
     };
