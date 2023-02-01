@@ -107,9 +107,7 @@ pub(crate) async fn get(
     let callback_destination = CallbackDestination::try_from(&grant)?;
     let continue_grant = PostAuthAction::continue_grant(grant.id);
 
-    let session = if let Some(session) = maybe_session {
-        session
-    } else {
+    let Some(session) = maybe_session else {
         // If there is no session, redirect to the login screen, redirecting here after
         // logout
         return Ok((cookie_jar, mas_router::Login::and_then(continue_grant).go()).into_response());

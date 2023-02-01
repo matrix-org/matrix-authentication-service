@@ -235,17 +235,13 @@ impl<'a, T> Jwt<'a, T> {
         let candidates = constraints.filter(&**jwks);
 
         for candidate in candidates {
-            let key = match crate::jwa::AsymmetricVerifyingKey::from_jwk_and_alg(
+            let Ok(key) = crate::jwa::AsymmetricVerifyingKey::from_jwk_and_alg(
                 candidate.params(),
                 self.header().alg(),
-            ) {
-                Ok(v) => v,
-                Err(_) => continue,
-            };
+            ) else { continue };
 
-            match self.verify(&key) {
-                Ok(_) => return Ok(()),
-                Err(_) => continue,
+            if self.verify(&key).is_ok() {
+                return Ok(());
             }
         }
 

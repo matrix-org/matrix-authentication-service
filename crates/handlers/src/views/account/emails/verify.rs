@@ -56,9 +56,7 @@ pub(crate) async fn get(
 
     let maybe_session = session_info.load_session(&mut repo).await?;
 
-    let session = if let Some(session) = maybe_session {
-        session
-    } else {
+    let Some(session) = maybe_session else {
         let login = mas_router::Login::default();
         return Ok((cookie_jar, login.go()).into_response());
     };
@@ -104,9 +102,7 @@ pub(crate) async fn post(
 
     let maybe_session = session_info.load_session(&mut repo).await?;
 
-    let session = if let Some(session) = maybe_session {
-        session
-    } else {
+    let Some(session) = maybe_session else {
         let login = mas_router::Login::default();
         return Ok((cookie_jar, login.go()).into_response());
     };

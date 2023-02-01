@@ -255,7 +255,7 @@ where
             // Then look for connections to accept
             res = accept_all.next(), if !accept_all.is_empty() => {
                 // SAFETY: We shouldn't reach this branch if the unordered future set is empty
-                let res = if let Some(res) = res { res } else { unreachable!() };
+                let Some(res) = res else { unreachable!() };
 
                 // Spawn the connection in the set, so we don't have to wait for the handshake to
                 // accept the next connection. This allows us to keep track of active connections

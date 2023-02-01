@@ -47,9 +47,7 @@ impl SessionInfo {
         &self,
         repo: &mut impl RepositoryAccess<Error = E>,
     ) -> Result<Option<BrowserSession>, E> {
-        let session_id = if let Some(id) = self.current {
-            id
-        } else {
+        let Some(session_id) = self.current else {
             return Ok(None);
         };
 

@@ -306,9 +306,8 @@ mod ec_impls {
     {
         fn from(key: &PublicKey<C>) -> Self {
             let point = key.to_encoded_point(false);
-            let (x, y) = match point.coordinates() {
-                Coordinates::Uncompressed { x, y } => (x, y),
-                _ => unreachable!(),
+            let Coordinates::Uncompressed { x, y } = point.coordinates() else {
+                unreachable!()
             };
             EcPublicParameters {
                 crv: C::CRV,

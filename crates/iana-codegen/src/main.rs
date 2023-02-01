@@ -111,9 +111,7 @@ use serde_with::{{DeserializeFromStr, SerializeDisplay}};"#,
         )?;
 
         for section in &self.sections {
-            let list = if let Some(list) = self.items.get(section.key) {
-                list
-            } else {
+            let Some(list) = self.items.get(section.key) else {
                 continue;
             };
 

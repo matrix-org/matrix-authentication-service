@@ -74,14 +74,11 @@ impl ProxyProtocolV1Info {
         }
 
         // Let's check in the first 108 bytes if we find a CRLF
-        let crlf = if let Some(crlf) = buf
+        let Some(crlf) = buf
             .as_ref()
             .windows(2)
             .take(108)
-            .position(|needle| needle == [0x0D, 0x0A])
-        {
-            crlf
-        } else {
+            .position(|needle| needle == [0x0D, 0x0A]) else {
             // If not, it might be because we don't have enough bytes
             return if buf.remaining() < 108 {
                 Err(E::NotEnoughBytes)
