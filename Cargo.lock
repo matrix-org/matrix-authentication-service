@@ -2975,9 +2975,8 @@ dependencies = [
 name = "mas-iana"
 version = "0.1.0"
 dependencies = [
- "parse-display",
  "schemars",
- "serde_with",
+ "serde",
 ]
 
 [[package]]
