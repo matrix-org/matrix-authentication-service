@@ -759,129 +759,81 @@
       }
     },
     "JsonWebKeyEcEllipticCurve": {
-      "description": "JSON Web Key EC Elliptic Curve\n\nSource: <https://www.iana.org/assignments/jose/web-key-elliptic-curve.csv>",
-      "oneOf": [
+      "description": "JSON Web Key EC Elliptic Curve",
+      "anyOf": [
         {
           "description": "P-256 Curve",
-          "type": "string",
-          "enum": [
-            "P-256"
-          ]
+          "const": "P-256"
         },
         {
           "description": "P-384 Curve",
-          "type": "string",
-          "enum": [
-            "P-384"
-          ]
+          "const": "P-384"
         },
         {
           "description": "P-521 Curve",
-          "type": "string",
-          "enum": [
-            "P-521"
-          ]
+          "const": "P-521"
         },
         {
           "description": "SECG secp256k1 curve",
-          "type": "string",
-          "enum": [
-            "secp256k1"
-          ]
+          "const": "secp256k1"
         }
       ]
     },
     "JsonWebKeyOkpEllipticCurve": {
-      "description": "JSON Web Key OKP Elliptic Curve\n\nSource: <https://www.iana.org/assignments/jose/web-key-elliptic-curve.csv>",
-      "oneOf": [
+      "description": "JSON Web Key OKP Elliptic Curve",
+      "anyOf": [
         {
           "description": "Ed25519 signature algorithm key pairs",
-          "type": "string",
-          "enum": [
-            "Ed25519"
-          ]
+          "const": "Ed25519"
         },
         {
           "description": "Ed448 signature algorithm key pairs",
-          "type": "string",
-          "enum": [
-            "Ed448"
-          ]
+          "const": "Ed448"
         },
         {
           "description": "X25519 function key pairs",
-          "type": "string",
-          "enum": [
-            "X25519"
-          ]
+          "const": "X25519"
         },
         {
           "description": "X448 function key pairs",
-          "type": "string",
-          "enum": [
-            "X448"
-          ]
+          "const": "X448"
         }
       ]
     },
     "JsonWebKeyOperation": {
-      "description": "JSON Web Key Operation\n\nSource: <https://www.iana.org/assignments/jose/web-key-operations.csv>",
-      "oneOf": [
+      "description": "JSON Web Key Operation",
+      "anyOf": [
         {
           "description": "Compute digital signature or MAC",
-          "type": "string",
-          "enum": [
-            "sign"
-          ]
+          "const": "sign"
         },
         {
           "description": "Verify digital signature or MAC",
-          "type": "string",
-          "enum": [
-            "verify"
-          ]
+          "const": "verify"
         },
         {
           "description": "Encrypt content",
-          "type": "string",
-          "enum": [
-            "encrypt"
-          ]
+          "const": "encrypt"
         },
         {
           "description": "Decrypt content and validate decryption, if applicable",
-          "type": "string",
-          "enum": [
-            "decrypt"
-          ]
+          "const": "decrypt"
         },
         {
           "description": "Encrypt key",
-          "type": "string",
-          "enum": [
-            "wrapKey"
-          ]
+          "const": "wrapKey"
         },
         {
           "description": "Decrypt key and validate decryption, if applicable",
-          "type": "string",
-          "enum": [
-            "unwrapKey"
-          ]
+          "const": "unwrapKey"
         },
         {
           "description": "Derive key",
-          "type": "string",
-          "enum": [
-            "deriveKey"
-          ]
+          "const": "deriveKey"
         },
         {
           "description": "Derive bits not to be used as a key",
-          "type": "string",
-          "enum": [
-            "deriveBits"
-          ]
+          "const": "deriveBits"
         }
       ]
     },
@@ -900,21 +852,15 @@
       }
     },
     "JsonWebKeyUse": {
-      "description": "JSON Web Key Use\n\nSource: <https://www.iana.org/assignments/jose/web-key-use.csv>",
-      "oneOf": [
+      "description": "JSON Web Key Use",
+      "anyOf": [
         {
           "description": "Digital Signature or MAC",
-          "type": "string",
-          "enum": [
-            "sig"
-          ]
+          "const": "sig"
         },
         {
           "description": "Encryption",
-          "type": "string",
-          "enum": [
-            "enc"
-          ]
+          "const": "enc"
         }
       ]
     },
@@ -1026,112 +972,67 @@
       }
     },
     "JsonWebSignatureAlg": {
-      "description": "JSON Web Signature \"alg\" parameter\n\nSource: <https://www.iana.org/assignments/jose/web-signature-encryption-algorithms.csv>",
-      "oneOf": [
+      "description": "JSON Web Signature \"alg\" parameter",
+      "anyOf": [
         {
           "description": "HMAC using SHA-256",
-          "type": "string",
-          "enum": [
-            "HS256"
-          ]
+          "const": "HS256"
         },
         {
           "description": "HMAC using SHA-384",
-          "type": "string",
-          "enum": [
-            "HS384"
-          ]
+          "const": "HS384"
         },
         {
           "description": "HMAC using SHA-512",
-          "type": "string",
-          "enum": [
-            "HS512"
-          ]
+          "const": "HS512"
         },
         {
           "description": "RSASSA-PKCS1-v1_5 using SHA-256",
-          "type": "string",
-          "enum": [
-            "RS256"
-          ]
+          "const": "RS256"
         },
         {
           "description": "RSASSA-PKCS1-v1_5 using SHA-384",
-          "type": "string",
-          "enum": [
-            "RS384"
-          ]
+          "const": "RS384"
         },
         {
           "description": "RSASSA-PKCS1-v1_5 using SHA-512",
-          "type": "string",
-          "enum": [
-            "RS512"
-          ]
+          "const": "RS512"
         },
         {
           "description": "ECDSA using P-256 and SHA-256",
-          "type": "string",
-          "enum": [
-            "ES256"
-          ]
+          "const": "ES256"
         },
         {
           "description": "ECDSA using P-384 and SHA-384",
-          "type": "string",
-          "enum": [
-            "ES384"
-          ]
+          "const": "ES384"
         },
         {
           "description": "ECDSA using P-521 and SHA-512",
-          "type": "string",
-          "enum": [
-            "ES512"
-          ]
+          "const": "ES512"
         },
         {
           "description": "RSASSA-PSS using SHA-256 and MGF1 with SHA-256",
-          "type": "string",
-          "enum": [
-            "PS256"
-          ]
+          "const": "PS256"
         },
         {
           "description": "RSASSA-PSS using SHA-384 and MGF1 with SHA-384",
-          "type": "string",
-          "enum": [
-            "PS384"
-          ]
+          "const": "PS384"
         },
         {
           "description": "RSASSA-PSS using SHA-512 and MGF1 with SHA-512",
-          "type": "string",
-          "enum": [
-            "PS512"
-          ]
+          "const": "PS512"
         },
         {
           "description": "No digital signature or MAC performed",
-          "type": "string",
-          "enum": [
-            "none"
-          ]
+          "const": "none"
         },
         {
           "description": "EdDSA signature algorithms",
-          "type": "string",
-          "enum": [
-            "EdDSA"
-          ]
+          "const": "EdDSA"
         },
         {
           "description": "ECDSA using secp256k1 curve and SHA-256",
-          "type": "string",
-          "enum": [
-            "ES256K"
-          ]
+          "const": "ES256K"
         }
       ]
     },

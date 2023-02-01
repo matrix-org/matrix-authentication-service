@@ -6,6 +6,10 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-serde_with = "2.2.0"
-schemars = "0.8.11"
-parse-display = "0.8.0"
+serde = { version = "1.0.130", optional = true }
+schemars = { version = "0.8.11", default-features = false, optional = true }
+
+[features]
+default = ["serde", "schemars"]
+serde = ["dep:serde"]
+schemars = ["dep:schemars"]
