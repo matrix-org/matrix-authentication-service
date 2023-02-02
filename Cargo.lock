@@ -1825,9 +1825,9 @@ checksum = "3a471a38ef8ed83cd6e40aa59c1ffe17db6855c18e3604d9c4ed8c08ebc28678"
 
 [[package]]
 name = "futures"
-version = "0.3.25"
+version = "0.3.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38390104763dc37a5145a53c29c63c1290b5d316d6086ec32c293f6736051bb0"
+checksum = "13e2792b0ff0340399d58445b88fd9770e3489eff258a4cbc1523418f12abf84"
 dependencies = [
  "futures-channel",
  "futures-core",
@@ -1856,9 +1856,9 @@ checksum = "ec90ff4d0fe1f57d600049061dc6bb68ed03c7d2fbd697274c41805dcb3f8608"
 
 [[package]]
 name = "futures-executor"
-version = "0.3.25"
+version = "0.3.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7acc85df6714c176ab5edf386123fafe217be88c0840ec11f199441134a074e2"
+checksum = "e8de0a35a6ab97ec8869e32a2473f4b1324459e14c29275d14b10cb1fd19b50e"
 dependencies = [
  "futures-core",
  "futures-task",
@@ -3090,7 +3090,7 @@ dependencies = [
  "bytes 1.4.0",
  "chrono",
  "form_urlencoded",
- "futures 0.3.25",
+ "futures 0.3.26",
  "futures-signals",
  "futures-util",
  "headers",
@@ -3580,7 +3580,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e785d273968748578931e4dc3b4f5ec86b26e09d9e0d66b55adda7fce742f7a"
 dependencies = [
  "async-trait",
- "futures 0.3.25",
+ "futures 0.3.26",
  "futures-executor",
  "http",
  "once_cell",
@@ -3599,7 +3599,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d1c928609d087790fc936a1067bdc310ae702bdf3b090c3f281b713622c8bbde"
 dependencies = [
  "async-trait",
- "futures 0.3.25",
+ "futures 0.3.26",
  "futures-util",
  "http",
  "opentelemetry",
@@ -3628,7 +3628,7 @@ version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d61a2f56df5574508dd86aaca016c917489e589ece4141df1b5e349af8d66c28"
 dependencies = [
- "futures 0.3.25",
+ "futures 0.3.26",
  "futures-util",
  "opentelemetry",
  "prost",
@@ -5758,7 +5758,7 @@ version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97d095ae15e245a057c8e8451bab9b3ee1e1f68e9ba2b4fbc18d0ac5237835f2"
 dependencies = [
- "futures 0.3.25",
+ "futures 0.3.26",
  "futures-task",
  "pin-project",
  "tracing",
@@ -6406,7 +6406,7 @@ checksum = "839fea2d85719bb69089290d7970bba2131f544448db8f990ea75813c30775ca"
 dependencies = [
  "anyhow",
  "bytes 1.4.0",
- "futures 0.3.25",
+ "futures 0.3.26",
  "maplit",
  "serde",
  "serde_bser",
@@ -6573,7 +6573,7 @@ dependencies = [
  "async-trait",
  "base64 0.13.1",
  "deadpool",
- "futures 0.3.25",
+ "futures 0.3.26",
  "futures-timer",
  "http-types",
  "hyper",
