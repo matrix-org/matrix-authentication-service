@@ -42,7 +42,7 @@ serde_urlencoded = "0.7.1"
 
 # Password hashing
 argon2 = { version = "0.4.1", features = ["password-hash", "std"] }
-bcrypt = "0.13.0"
+bcrypt = "0.14.0"
 pbkdf2 = { version = "0.11.0", features = ["password-hash", "std"] }
 zeroize = "1.5.7"
 
