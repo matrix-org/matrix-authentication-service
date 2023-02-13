@@ -812,7 +812,7 @@ checksum = "f9a320103719de37b7b4da4c8eb629d4573f6bcfd3dfe80d3208806895ccf81d"
 dependencies = [
  "axum",
  "bytes 1.4.0",
- "cookie",
+ "cookie 0.16.2",
  "futures-util",
  "http",
  "mime",
@@ -1259,8 +1259,22 @@ checksum = "e859cd57d0710d9e06c381b550c06e76992472a8c6d527aecd2fc673dcc231fb"
 dependencies = [
  "aes-gcm",
  "base64 0.20.0",
- "hkdf",
  "percent-encoding",
+ "rand 0.8.5",
+ "subtle",
+ "time 0.3.17",
+ "version_check",
+]
+
+[[package]]
+name = "cookie"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7efb37c3e1ccb1ff97164ad95ac1606e8ccd35b3fa0a7d99a304c7f4a428cc24"
+dependencies = [
+ "aes-gcm",
+ "base64 0.21.0",
+ "hkdf",
  "rand 0.8.5",
  "sha2",
  "subtle",
@@ -3189,7 +3203,7 @@ dependencies = [
  "base64ct",
  "chacha20poly1305",
  "const-oid",
- "cookie",
+ "cookie 0.17.0",
  "der",
  "ecdsa",
  "elliptic-curve",
