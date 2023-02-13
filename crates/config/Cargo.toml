@@ -11,7 +11,7 @@ tracing = { version = "0.1.37" }
 async-trait = "0.1.64"
 
 thiserror = "1.0.38"
-anyhow = "1.0.68"
+anyhow = "1.0.69"
 
 camino = { version = "1.1.2", features = ["serde1"] }
 chrono = { version = "0.4.23", features = ["serde"] }
@@ -22,7 +22,7 @@ url = { version = "2.3.1", features = ["serde"] }
 
 serde = { version = "1.0.152", features = ["derive"] }
 serde_with = { version = "2.2.0", features = ["hex", "chrono"] }
-serde_json = "1.0.91"
+serde_json = "1.0.93"
 
 pem-rfc7468 = "0.6.0"
 rustls-pemfile = "1.0.2"

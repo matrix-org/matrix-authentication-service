@@ -15,18 +15,18 @@ tracing = "0.1.37"
 
 # Error management
 thiserror = "1.0.38"
-anyhow = "1.0.68"
-sentry = { version = "0.29.2", default-features = false }
+anyhow = "1.0.69"
+sentry = { version = "0.29.3", default-features = false }
 
 # Web server
 hyper = { version = "0.14.24", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.3.5", features = ["cors"] }
-axum = "0.6.4"
-axum-macros = "0.3.2"
-axum-extra = { version = "0.4.2", features = ["cookie-private"] }
+axum = "0.6.6"
+axum-macros = "0.3.4"
+axum-extra = { version = "0.5.0", features = ["cookie-private"] }
 
-async-graphql = { version = "5.0.5", features = ["tracing", "apollo_tracing"] }
+async-graphql = { version = "5.0.6", features = ["tracing", "apollo_tracing"] }
 
 # Emails
 lettre = { version = "0.10.2", default-features = false, features = ["builder"] }
@@ -37,7 +37,7 @@ sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres"] }
 # Various structure (de)serialization
 serde = { version = "1.0.152", features = ["derive"] }
 serde_with = { version = "2.2.0", features = ["hex", "chrono"] }
-serde_json = "1.0.91"
+serde_json = "1.0.93"
 serde_urlencoded = "0.7.1"
 
 # Password hashing

@@ -6,10 +6,10 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-anyhow = "1.0.68"
+anyhow = "1.0.69"
 aead = { version = "0.5.1", features = ["std"] }
 const-oid = { version = "0.9.1", features = ["std"] }
-cookie = { version = "0.16.2", features = ["key-expansion", "private"] }
+cookie = { version = "0.17.0", features = ["key-expansion", "private"] }
 der = { version = "0.6.1", features = ["std"] }
 ecdsa = { version = "0.15.1", features = ["std"] }
 elliptic-curve = { version = "0.12.3", features = ["std", "pem", "sec1"] }

@@ -31,7 +31,7 @@ once_cell = "1.17.0"
 mime = "0.3.16"
 rand = "0.8.5"
 serde = { version = "1.0.152", features = ["derive"] }
-serde_json = "1.0.91"
+serde_json = "1.0.93"
 serde_urlencoded = "0.7.1"
 serde_with = "2.2.0"
 thiserror = "1.0.38"

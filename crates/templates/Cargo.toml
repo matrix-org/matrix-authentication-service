@@ -9,12 +9,12 @@ license = "Apache-2.0"
 tracing = "0.1.37"
 tokio = { version = "1.25.0", features = ["macros", "rt"] }
 
-anyhow = "1.0.68"
+anyhow = "1.0.69"
 thiserror = "1.0.38"
 
 tera = "1.17.1"
 serde = { version = "1.0.152", features = ["derive"] }
-serde_json = "1.0.91"
+serde_json = "1.0.93"
 serde_urlencoded = "0.7.1"
 
 camino = "1.1.2"

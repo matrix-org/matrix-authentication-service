@@ -6,8 +6,8 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-anyhow = "1.0.68"
-async-graphql = { version = "5.0.5", features = ["chrono", "url"] }
+anyhow = "1.0.69"
+async-graphql = { version = "5.0.6", features = ["chrono", "url"] }
 chrono = "0.4.23"
 serde = { version = "1.0.152", features = ["derive"] }
 tokio = { version = "1.25.0", features = ["sync"] }
