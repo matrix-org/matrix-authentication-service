@@ -21,7 +21,7 @@ rsa = "0.8.1"
 schemars = "0.8.11"
 sec1 = "0.3.0"
 serde = { version = "1.0.152", features = ["derive"] }
-serde_json = "1.0.91"
+serde_json = "1.0.93"
 serde_with = { version = "2.2.0", features = ["base64"] }
 sha2 = { version = "0.10.6", features = ["oid"] }
 signature = "2.0.0"
