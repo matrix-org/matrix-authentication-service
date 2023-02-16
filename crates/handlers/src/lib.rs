@@ -181,6 +181,10 @@ where
             post(self::oauth2::introspection::post),
         )
         .route(
+            mas_router::OAuth2Revocation::route(),
+            post(self::oauth2::revoke::post),
+        )
+        .route(
             mas_router::OAuth2TokenEndpoint::route(),
             post(self::oauth2::token::post),
         )

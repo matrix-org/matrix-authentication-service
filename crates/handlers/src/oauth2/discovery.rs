@@ -53,6 +53,7 @@ pub(crate) async fn get(
     let token_endpoint = Some(url_builder.oauth_token_endpoint());
     let jwks_uri = Some(url_builder.jwks_uri());
     let introspection_endpoint = Some(url_builder.oauth_introspection_endpoint());
+    let revocation_endpoint = Some(url_builder.oauth_revocation_endpoint());
     let userinfo_endpoint = Some(url_builder.oidc_userinfo_endpoint());
     let registration_endpoint = Some(url_builder.oauth_registration_endpoint());
 
@@ -74,6 +75,10 @@ pub(crate) async fn get(
 
     let token_endpoint_auth_methods_supported = client_auth_methods_supported.clone();
     let token_endpoint_auth_signing_alg_values_supported =
+        client_auth_signing_alg_values_supported.clone();
+
+    let revocation_endpoint_auth_methods_supported = client_auth_methods_supported.clone();
+    let revocation_endpoint_auth_signing_alg_values_supported =
         client_auth_signing_alg_values_supported.clone();
 
     let introspection_endpoint_auth_methods_supported =
@@ -125,6 +130,9 @@ pub(crate) async fn get(
         grant_types_supported,
         token_endpoint_auth_methods_supported,
         token_endpoint_auth_signing_alg_values_supported,
+        revocation_endpoint,
+        revocation_endpoint_auth_methods_supported,
+        revocation_endpoint_auth_signing_alg_values_supported,
         introspection_endpoint,
         introspection_endpoint_auth_methods_supported,
         introspection_endpoint_auth_signing_alg_values_supported,
