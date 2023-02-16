@@ -75,6 +75,12 @@ impl UrlBuilder {
         self.url_for(&crate::endpoints::OAuth2Introspection)
     }
 
+    /// OAuth 2.0 revocation endpoint
+    #[must_use]
+    pub fn oauth_revocation_endpoint(&self) -> Url {
+        self.url_for(&crate::endpoints::OAuth2Revocation)
+    }
+
     /// OAuth 2.0 client registration endpoint
     #[must_use]
     pub fn oauth_registration_endpoint(&self) -> Url {

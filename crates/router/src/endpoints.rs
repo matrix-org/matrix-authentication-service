@@ -91,12 +91,20 @@ impl SimpleRoute for OidcUserinfo {
     const PATH: &'static str = "/oauth2/userinfo";
 }
 
-/// `POST /oauth2/userinfo`
+/// `POST /oauth2/introspect`
 #[derive(Default, Debug, Clone)]
 pub struct OAuth2Introspection;
 
 impl SimpleRoute for OAuth2Introspection {
     const PATH: &'static str = "/oauth2/introspect";
+}
+
+/// `POST /oauth2/revoke`
+#[derive(Default, Debug, Clone)]
+pub struct OAuth2Revocation;
+
+impl SimpleRoute for OAuth2Revocation {
+    const PATH: &'static str = "/oauth2/revoke";
 }
 
 /// `POST /oauth2/token`

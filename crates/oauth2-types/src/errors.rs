@@ -265,6 +265,15 @@ pub enum ClientErrorCode {
     /// From [RFC8628](https://www.rfc-editor.org/rfc/rfc8628#section-3.5).
     ExpiredToken,
 
+    /// `unsupported_token_type`
+    ///
+    /// The authorization server does not support the revocation of the
+    /// presented token type.  That is, the client tried to revoke an access
+    /// token on a server not supporting this feature.
+    ///
+    /// From [RFC7009](https://www.rfc-editor.org/rfc/rfc7009#section-2.2.1).
+    UnsupportedTokenType,
+
     /// Another error code.
     #[display("{0}")]
     Unknown(String),
@@ -353,6 +362,9 @@ impl ClientErrorCode {
             ClientErrorCode::ExpiredToken => {
                 "The \"device_code\" has expired, and the device authorization session has concluded"
             }
+            ClientErrorCode::UnsupportedTokenType => {
+                "The authorization server does not support the revocation of the presented token type."
+            },
             ClientErrorCode::Unknown(_) => "",
         }
     }

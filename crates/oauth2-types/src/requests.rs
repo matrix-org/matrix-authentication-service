@@ -716,6 +716,27 @@ pub struct IntrospectionResponse {
     pub jti: Option<String>,
 }
 
+/// A request to the [Revocation Endpoint].
+///
+/// [Revocation Endpoint]: https://www.rfc-editor.org/rfc/rfc7009#section-2
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
+pub struct RevocationRequest {
+    /// The value of the token.
+    pub token: String,
+
+    /// A hint about the type of the token submitted for introspection.
+    pub token_type_hint: Option<OAuthTokenTypeHint>,
+}
+
+impl fmt::Debug for RevocationRequest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("RevocationRequest")
+            .field("token_type_hint", &self.token_type_hint)
+            .finish_non_exhaustive()
+    }
+}
+
 /// A successful response from the [Pushed Authorization Request Endpoint].
 ///
 /// Note that there is no request type because it is by definition the same as
