@@ -367,6 +367,7 @@ where
 #[cfg(test)]
 async fn test_state(pool: sqlx::PgPool) -> Result<AppState, anyhow::Error> {
     use mas_email::MailTransport;
+    use mas_keystore::{JsonWebKey, JsonWebKeySet, PrivateKey};
 
     use crate::passwords::Hasher;
 
@@ -378,8 +379,13 @@ async fn test_state(pool: sqlx::PgPool) -> Result<AppState, anyhow::Error> {
 
     let templates = Templates::load(workspace_root.join("templates"), url_builder.clone()).await?;
 
-    // TODO: add test keys to the store
-    let key_store = Keystore::default();
+    // TODO: add more test keys to the store
+    let rsa =
+        PrivateKey::load_pem(include_str!("../../keystore/tests/keys/rsa.pkcs1.pem")).unwrap();
+    let rsa = JsonWebKey::new(rsa).with_kid("test-rsa");
+
+    let jwks = JsonWebKeySet::new(vec![rsa]);
+    let key_store = Keystore::new(jwks);
 
     let encrypter = Encrypter::new(&[0x42; 32]);
 
