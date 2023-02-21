@@ -18,7 +18,7 @@
 //! [`SystemClock`] which uses the system time, and a [`MockClock`], which can
 //! be used and freely manipulated in tests.
 
-use std::sync::atomic::AtomicI64;
+use std::sync::{atomic::AtomicI64, Arc};
 
 use chrono::{DateTime, TimeZone, Utc};
 
@@ -26,6 +26,12 @@ use chrono::{DateTime, TimeZone, Utc};
 pub trait Clock: Sync {
     /// Get the current date and time
     fn now(&self) -> DateTime<Utc>;
+}
+
+impl<C: Clock + Send + ?Sized> Clock for Arc<C> {
+    fn now(&self) -> DateTime<Utc> {
+        (**self).now()
+    }
 }
 
 impl<C: Clock + ?Sized> Clock for Box<C> {

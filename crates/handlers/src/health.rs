@@ -31,24 +31,18 @@ pub async fn get(State(pool): State<PgPool>) -> Result<impl IntoResponse, FancyE
 
 #[cfg(test)]
 mod tests {
-    use hyper::{Body, Request, StatusCode};
-    use tower::ServiceExt;
+    use hyper::{Request, StatusCode};
 
     use super::*;
+    use crate::test_utils::{RequestBuilderExt, ResponseExt, TestState};
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
-    async fn test_get_health(pool: PgPool) -> Result<(), anyhow::Error> {
-        let state = crate::test_state(pool).await?;
-        let app = crate::healthcheck_router().with_state(state);
+    async fn test_get_health(pool: PgPool) {
+        let state = TestState::from_pool(pool).await.unwrap();
+        let request = Request::get("/health").empty();
 
-        let request = Request::builder().uri("/health").body(Body::empty())?;
-
-        let response = app.oneshot(request).await?;
-
-        assert_eq!(response.status(), StatusCode::OK);
-        let body = hyper::body::to_bytes(response.into_body()).await?;
-        assert_eq!(body, "ok");
-
-        Ok(())
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+        assert_eq!(response.body(), "ok");
     }
 }
