@@ -12,7 +12,7 @@ axum = { version = "0.6.6", optional = true }
 bytes = "1.4.0"
 futures-util = "0.3.26"
 headers = "0.3.8"
-http = "0.2.8"
+http = "0.2.9"
 http-body = "0.4.5"
 hyper = "0.14.24"
 hyper-rustls = { version = "0.23.2", features = ["http1", "http2"], default-features = false, optional = true }
