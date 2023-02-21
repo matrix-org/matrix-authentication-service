@@ -20,7 +20,7 @@ serde_urlencoded = "0.7.1"
 camino = "1.1.2"
 chrono = "0.4.23"
 url = "2.3.1"
-http = "0.2.8"
+http = "0.2.9"
 ulid = { version = "1.0.0", features = ["serde"] }
 rand = "0.8.5"
 
