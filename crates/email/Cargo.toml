@@ -19,7 +19,7 @@ mas-templates = { path = "../templates" }
 mas-http = { path = "../http", features = ["aws-sdk", "client"] }
 
 [dependencies.lettre]
-version = "0.10.2"
+version = "0.10.3"
 default-features = false
 features = ["tokio1-rustls-tls", "hostname", "builder", "tracing", "pool", "smtp-transport", "sendmail-transport"]
 
