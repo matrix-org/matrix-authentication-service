@@ -201,24 +201,19 @@ pub(crate) async fn post(
 
 #[cfg(test)]
 mod tests {
-    use hyper::{
-        header::{AUTHORIZATION, CONTENT_TYPE},
-        Request,
-    };
+    use hyper::Request;
     use mas_data_model::AuthorizationCode;
     use mas_router::SimpleRoute;
-    use mas_storage::{RepositoryAccess, RepositoryTransaction, SystemClock};
-    use mas_storage_pg::PgRepository;
+    use mas_storage::RepositoryAccess;
     use oauth2_types::{
         registration::ClientRegistrationResponse,
         requests::{AccessTokenResponse, ResponseMode},
         scope::{Scope, OPENID},
     };
-    use rand::SeedableRng;
     use sqlx::PgPool;
-    use tower::{Service, ServiceExt};
 
     use super::*;
+    use crate::test_utils::{RequestBuilderExt, ResponseExt, TestState};
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_revoke_access_token(pool: PgPool) {
@@ -227,50 +222,40 @@ mod tests {
             .with_test_writer()
             .init();
 
-        let clock = SystemClock::default();
-        let mut rng = rand_chacha::ChaChaRng::seed_from_u64(42);
+        let state = TestState::from_pool(pool).await.unwrap();
 
-        let state = crate::test_state(pool.clone()).await.unwrap();
-        let mut app = crate::api_router().with_state(state);
+        let request =
+            Request::post(mas_router::OAuth2RegistrationEndpoint::PATH).json(serde_json::json!({
+                "client_uri": "https://example.com/",
+                "redirect_uris": ["https://example.com/callback"],
+                "contacts": ["contact@example.com"],
+                "token_endpoint_auth_method": "client_secret_post",
+                "response_types": ["code"],
+                "grant_types": ["authorization_code"],
+            }));
 
-        let request = Request::post(mas_router::OAuth2RegistrationEndpoint::PATH)
-            .header(CONTENT_TYPE, "application/json")
-            .body(
-                serde_json::json!({
-                    "client_uri": "https://example.com/",
-                    "redirect_uris": ["https://example.com/callback"],
-                    "contacts": ["contact@example.com"],
-                    "token_endpoint_auth_method": "client_secret_post",
-                    "response_types": ["code"],
-                    "grant_types": ["authorization_code"],
-                })
-                .to_string(),
-            )
-            .unwrap();
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::CREATED);
 
-        let response = app.ready().await.unwrap().call(request).await.unwrap();
-        assert_eq!(response.status(), StatusCode::CREATED);
-
-        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
         let client_registration: ClientRegistrationResponse =
-            serde_json::from_slice(&body).unwrap();
+            serde_json::from_str(response.body()).unwrap();
 
         let client_id = client_registration.client_id;
         let client_secret = client_registration.client_secret.unwrap();
 
         // Let's provision a user and create a session for them. This part is hard to
         // test with just HTTP requests, so we'll use the repository directly.
-        let mut repo = PgRepository::from_pool(&pool).await.unwrap();
+        let mut repo = state.repository().await.unwrap();
 
         let user = repo
             .user()
-            .add(&mut rng, &clock, "alice".to_owned())
+            .add(&mut state.rng(), &state.clock, "alice".to_owned())
             .await
             .unwrap();
 
         let browser_session = repo
             .browser_session()
-            .add(&mut rng, &clock, &user)
+            .add(&mut state.rng(), &state.clock, &user)
             .await
             .unwrap();
 
@@ -286,8 +271,8 @@ mod tests {
         let grant = repo
             .oauth2_authorization_grant()
             .add(
-                &mut rng,
-                &clock,
+                &mut state.rng(),
+                &state.clock,
                 &client,
                 "https://example.com/redirect".parse().unwrap(),
                 Scope::from_iter([OPENID]),
@@ -299,7 +284,7 @@ mod tests {
                 Some("nonce".to_owned()),
                 None,
                 ResponseMode::Query,
-                true,
+                false,
                 false,
             )
             .await
@@ -307,69 +292,169 @@ mod tests {
 
         let session = repo
             .oauth2_session()
-            .create_from_grant(&mut rng, &clock, &grant, &browser_session)
+            .create_from_grant(&mut state.rng(), &state.clock, &grant, &browser_session)
             .await
             .unwrap();
 
         let grant = repo
             .oauth2_authorization_grant()
-            .fulfill(&clock, &session, grant)
+            .fulfill(&state.clock, &session, grant)
             .await
             .unwrap();
 
-        Box::new(repo).save().await.unwrap();
+        repo.save().await.unwrap();
 
         // Now call the token endpoint to get an access token.
-        let request = Request::post(mas_router::OAuth2TokenEndpoint::PATH)
-            .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
-            .body(
-                format!(
-                    "grant_type=authorization_code&code={code}&redirect_uri={redirect_uri}&client_id={client_id}&client_secret={client_secret}",
-                    code = grant.code.unwrap().code,
-                    redirect_uri = grant.redirect_uri,
-                ),
-            )
-            .unwrap();
+        let request =
+            Request::post(mas_router::OAuth2TokenEndpoint::PATH).form(serde_json::json!({
+                "grant_type": "authorization_code",
+                "code": grant.code.unwrap().code,
+                "redirect_uri": grant.redirect_uri,
+                "client_id": client_id,
+                "client_secret": client_secret,
+            }));
 
-        let response = app.ready().await.unwrap().call(request).await.unwrap();
-        let status = response.status();
-        assert_eq!(status, StatusCode::OK);
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
 
-        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-        let token: AccessTokenResponse = serde_json::from_slice(&body).unwrap();
+        let token: AccessTokenResponse = serde_json::from_str(response.body()).unwrap();
 
-        // Let's call the userinfo endpoint to make sure we can access it.
-        let request = Request::get(mas_router::OidcUserinfo::PATH)
-            .header(AUTHORIZATION, format!("Bearer {}", token.access_token))
-            .body(String::new())
-            .unwrap();
-
-        let response = app.ready().await.unwrap().call(request).await.unwrap();
-        let status = response.status();
-        assert_eq!(status, StatusCode::OK);
+        // Check that the token is valid
+        assert!(state.is_access_token_valid(&token.access_token).await);
 
         // Now let's revoke the access token.
-        let request = Request::post(mas_router::OAuth2Revocation::PATH)
-            .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
-            .body(format!(
-                "token={token}&token_type_hint=access_token&client_id={client_id}&client_secret={client_secret}",
-                token = token.access_token
-            ))
+        let request = Request::post(mas_router::OAuth2Revocation::PATH).form(serde_json::json!({
+            "token": token.access_token,
+            "token_type_hint": "access_token",
+            "client_id": client_id,
+            "client_secret": client_secret,
+        }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+
+        // Check that the token is no longer valid
+        assert!(!state.is_access_token_valid(&token.access_token).await);
+
+        // Try using the refresh token to get a new access token, it should fail.
+        let request =
+            Request::post(mas_router::OAuth2TokenEndpoint::PATH).form(serde_json::json!({
+                "grant_type": "refresh_token",
+                "refresh_token": token.refresh_token,
+                "client_id": client_id,
+                "client_secret": client_secret,
+            }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::BAD_REQUEST);
+
+        // Now try with a new grant, and by revoking the refresh token instead
+        let mut repo = state.repository().await.unwrap();
+        let grant = repo
+            .oauth2_authorization_grant()
+            .add(
+                &mut state.rng(),
+                &state.clock,
+                &client,
+                "https://example.com/redirect".parse().unwrap(),
+                Scope::from_iter([OPENID]),
+                Some(AuthorizationCode {
+                    code: "anotherverysecretcode".to_owned(),
+                    pkce: None,
+                }),
+                Some("state".to_owned()),
+                Some("nonce".to_owned()),
+                None,
+                ResponseMode::Query,
+                false,
+                false,
+            )
+            .await
             .unwrap();
 
-        let response = app.ready().await.unwrap().call(request).await.unwrap();
-        let status = response.status();
-        assert_eq!(status, StatusCode::OK);
-
-        // Call the userinfo endpoint again to make sure we can't access it anymore.
-        let request = Request::get(mas_router::OidcUserinfo::PATH)
-            .header(AUTHORIZATION, format!("Bearer {}", token.access_token))
-            .body(String::new())
+        let session = repo
+            .oauth2_session()
+            .create_from_grant(&mut state.rng(), &state.clock, &grant, &browser_session)
+            .await
             .unwrap();
 
-        let response = app.ready().await.unwrap().call(request).await.unwrap();
-        let status = response.status();
-        assert_eq!(status, StatusCode::UNAUTHORIZED);
-        // TODO: test refreshing the access token, test refresh token revocation
+        let grant = repo
+            .oauth2_authorization_grant()
+            .fulfill(&state.clock, &session, grant)
+            .await
+            .unwrap();
+
+        repo.save().await.unwrap();
+
+        // Now call the token endpoint to get an access token.
+        let request =
+            Request::post(mas_router::OAuth2TokenEndpoint::PATH).form(serde_json::json!({
+                "grant_type": "authorization_code",
+                "code": grant.code.unwrap().code,
+                "redirect_uri": grant.redirect_uri,
+                "client_id": client_id,
+                "client_secret": client_secret,
+            }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+
+        let token: AccessTokenResponse = serde_json::from_str(response.body()).unwrap();
+
+        // Use the refresh token to get a new access token.
+        let request =
+            Request::post(mas_router::OAuth2TokenEndpoint::PATH).form(serde_json::json!({
+                "grant_type": "refresh_token",
+                "refresh_token": token.refresh_token,
+                "client_id": client_id,
+                "client_secret": client_secret,
+            }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+
+        let old_token = token;
+        let token: AccessTokenResponse = serde_json::from_str(response.body()).unwrap();
+        assert!(state.is_access_token_valid(&token.access_token).await);
+        assert!(!state.is_access_token_valid(&old_token.access_token).await);
+
+        // Revoking the old access token shouldn't do anything.
+        let request = Request::post(mas_router::OAuth2Revocation::PATH).form(serde_json::json!({
+            "token": old_token.access_token,
+            "token_type_hint": "access_token",
+            "client_id": client_id,
+            "client_secret": client_secret,
+        }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+
+        assert!(state.is_access_token_valid(&token.access_token).await);
+
+        // Revoking the old refresh token shouldn't do anything.
+        let request = Request::post(mas_router::OAuth2Revocation::PATH).form(serde_json::json!({
+            "token": old_token.refresh_token,
+            "token_type_hint": "refresh_token",
+            "client_id": client_id,
+            "client_secret": client_secret,
+        }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+
+        assert!(state.is_access_token_valid(&token.access_token).await);
+
+        // Revoking the new refresh token should invalidate the session
+        let request = Request::post(mas_router::OAuth2Revocation::PATH).form(serde_json::json!({
+            "token": token.refresh_token,
+            "token_type_hint": "refresh_token",
+            "client_id": client_id,
+            "client_secret": client_secret,
+        }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+
+        assert!(!state.is_access_token_valid(&token.access_token).await);
     }
 }

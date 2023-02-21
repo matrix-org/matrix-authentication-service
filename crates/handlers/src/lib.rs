@@ -59,6 +59,9 @@ pub mod passwords;
 mod upstream_oauth2;
 mod views;
 
+#[cfg(test)]
+mod test_utils;
+
 /// Implement `From<E>` for `RouteError`, for "internal server error" kind of
 /// errors.
 #[macro_export]
@@ -362,69 +365,4 @@ where
                 Ok::<_, Infallible>(response)
             },
         ))
-}
-
-#[cfg(test)]
-async fn test_state(pool: sqlx::PgPool) -> Result<AppState, anyhow::Error> {
-    use mas_email::MailTransport;
-    use mas_keystore::{JsonWebKey, JsonWebKeySet, PrivateKey};
-
-    use crate::passwords::Hasher;
-
-    let workspace_root = camino::Utf8Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("..")
-        .join("..");
-
-    let url_builder = UrlBuilder::new("https://example.com/".parse()?);
-
-    let templates = Templates::load(workspace_root.join("templates"), url_builder.clone()).await?;
-
-    // TODO: add more test keys to the store
-    let rsa =
-        PrivateKey::load_pem(include_str!("../../keystore/tests/keys/rsa.pkcs1.pem")).unwrap();
-    let rsa = JsonWebKey::new(rsa).with_kid("test-rsa");
-
-    let jwks = JsonWebKeySet::new(vec![rsa]);
-    let key_store = Keystore::new(jwks);
-
-    let encrypter = Encrypter::new(&[0x42; 32]);
-
-    let password_manager = PasswordManager::new([(1, Hasher::argon2id(None))])?;
-
-    let transport = MailTransport::blackhole();
-    let mailbox: lettre::message::Mailbox = "server@example.com".parse()?;
-    let mailer = Mailer::new(templates.clone(), transport, mailbox.clone(), mailbox);
-
-    let homeserver = MatrixHomeserver::new("example.com".to_owned());
-
-    let file = tokio::fs::File::open(workspace_root.join("policies").join("policy.wasm")).await?;
-
-    let policy_factory = PolicyFactory::load(
-        file,
-        serde_json::json!({}),
-        "register/violation".to_owned(),
-        "client_registration/violation".to_owned(),
-        "authorization_grant/violation".to_owned(),
-    )
-    .await?;
-
-    let policy_factory = Arc::new(policy_factory);
-
-    let graphql_schema = graphql_schema();
-
-    let http_client_factory = HttpClientFactory::new(10);
-
-    Ok(AppState {
-        pool,
-        templates,
-        key_store,
-        encrypter,
-        url_builder,
-        mailer,
-        homeserver,
-        policy_factory,
-        graphql_schema,
-        http_client_factory,
-        password_manager,
-    })
 }
