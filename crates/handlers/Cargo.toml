@@ -75,7 +75,7 @@ oauth2-types = { path = "../oauth2-types" }
 
 [dev-dependencies]
 indoc = "2.0.0"
-insta = "1.26.0"
+insta = "1.28.0"
 tracing-subscriber = "0.3.16"
 
 [features]
