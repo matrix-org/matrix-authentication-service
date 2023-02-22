@@ -22,20 +22,20 @@ use axum_extra::extract::PrivateCookieJar;
 use hyper::StatusCode;
 use mas_axum_utils::SessionInfoExt;
 use mas_data_model::{AuthorizationGrant, BrowserSession, Client};
-use mas_keystore::Encrypter;
+use mas_keystore::{Encrypter, Keystore};
 use mas_policy::PolicyFactory;
-use mas_router::{PostAuthAction, Route};
+use mas_router::{PostAuthAction, Route, UrlBuilder};
 use mas_storage::{
     oauth2::{OAuth2AuthorizationGrantRepository, OAuth2ClientRepository, OAuth2SessionRepository},
     BoxClock, BoxRepository, BoxRng,
 };
 use mas_templates::Templates;
-use oauth2_types::requests::{AccessTokenResponse, AuthorizationResponse};
+use oauth2_types::requests::AuthorizationResponse;
 use thiserror::Error;
 use ulid::Ulid;
 
 use super::callback::CallbackDestination;
-use crate::impl_from_error_for_route;
+use crate::{impl_from_error_for_route, oauth2::generate_id_token};
 
 #[derive(Debug, Error)]
 pub enum RouteError {
@@ -90,6 +90,8 @@ pub(crate) async fn get(
     clock: BoxClock,
     State(policy_factory): State<Arc<PolicyFactory>>,
     State(templates): State<Templates>,
+    State(url_builder): State<UrlBuilder>,
+    State(key_store): State<Keystore>,
     mut repo: BoxRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Path(grant_id): Path<Ulid>,
@@ -119,7 +121,19 @@ pub(crate) async fn get(
         .await?
         .ok_or(RouteError::NoSuchClient)?;
 
-    match complete(rng, clock, grant, client, session, &policy_factory, repo).await {
+    match complete(
+        rng,
+        clock,
+        repo,
+        key_store,
+        &policy_factory,
+        url_builder,
+        grant,
+        client,
+        session,
+    )
+    .await
+    {
         Ok(params) => {
             let res = callback_destination.go(&templates, params).await?;
             Ok((cookie_jar, res).into_response())
@@ -161,16 +175,19 @@ impl_from_error_for_route!(GrantCompletionError: super::callback::IntoCallbackDe
 impl_from_error_for_route!(GrantCompletionError: mas_policy::LoadError);
 impl_from_error_for_route!(GrantCompletionError: mas_policy::InstanciateError);
 impl_from_error_for_route!(GrantCompletionError: mas_policy::EvaluationError);
+impl_from_error_for_route!(GrantCompletionError: super::super::IdTokenSignatureError);
 
 pub(crate) async fn complete(
     mut rng: BoxRng,
     clock: BoxClock,
+    mut repo: BoxRepository,
+    key_store: Keystore,
+    policy_factory: &PolicyFactory,
+    url_builder: UrlBuilder,
     grant: AuthorizationGrant,
     client: Client,
     browser_session: BrowserSession,
-    policy_factory: &PolicyFactory,
-    mut repo: BoxRepository,
-) -> Result<AuthorizationResponse<Option<AccessTokenResponse>>, GrantCompletionError> {
+) -> Result<AuthorizationResponse, GrantCompletionError> {
     // Verify that the grant is in a pending stage
     if !grant.stage.is_pending() {
         return Err(GrantCompletionError::NotPending);
@@ -211,7 +228,13 @@ pub(crate) async fn complete(
     // All good, let's start the session
     let session = repo
         .oauth2_session()
-        .create_from_grant(&mut rng, &clock, &grant, &browser_session)
+        .add(
+            &mut rng,
+            &clock,
+            &client,
+            &browser_session,
+            grant.scope.clone(),
+        )
         .await?;
 
     let grant = repo
@@ -222,17 +245,23 @@ pub(crate) async fn complete(
     // Yep! Let's complete the auth now
     let mut params = AuthorizationResponse::default();
 
+    // Did they request an ID token?
+    if grant.response_type_id_token {
+        params.id_token = Some(generate_id_token(
+            &mut rng,
+            &clock,
+            &url_builder,
+            &key_store,
+            &client,
+            &grant,
+            &browser_session,
+            None,
+        )?);
+    }
+
     // Did they request an auth code?
     if let Some(code) = grant.code {
         params.code = Some(code.code);
-    }
-
-    // Did they request an ID token?
-    if grant.response_type_id_token {
-        // TODO
-        return Err(GrantCompletionError::Internal(
-            "ID tokens are not implemented yet".into(),
-        ));
     }
 
     repo.save().await?;

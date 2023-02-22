@@ -19,7 +19,7 @@ use axum::{
     body::HttpBody,
     extract::{FromRef, FromRequestParts},
 };
-use headers::{Authorization, ContentType, HeaderMapExt, HeaderName, HeaderValue};
+use headers::{Authorization, ContentType, HeaderMapExt, HeaderName};
 use hyper::{header::CONTENT_TYPE, Request, Response, StatusCode};
 use mas_axum_utils::http_client_factory::HttpClientFactory;
 use mas_email::{MailTransport, Mailer};

@@ -203,10 +203,16 @@ mod tests {
         let session = repo.oauth2_session().lookup(Ulid::nil()).await.unwrap();
         assert_eq!(session, None);
 
-        // Create a session out of the grant
+        // Create an OAuth session
         let session = repo
             .oauth2_session()
-            .create_from_grant(&mut rng, &clock, &grant, &user_session)
+            .add(
+                &mut rng,
+                &clock,
+                &client,
+                &user_session,
+                grant.scope.clone(),
+            )
             .await
             .unwrap();
 

@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::HashMap;
-
 use axum::{extract::State, response::IntoResponse, Json};
 use chrono::{DateTime, Duration, Utc};
 use headers::{CacheControl, HeaderMap, HeaderMapExt, Pragma};
@@ -22,13 +20,7 @@ use mas_axum_utils::{
     client_authorization::{ClientAuthorization, CredentialsVerificationError},
     http_client_factory::HttpClientFactory,
 };
-use mas_data_model::{AuthorizationGrantStage, Client, TokenType};
-use mas_iana::jose::JsonWebSignatureAlg;
-use mas_jose::{
-    claims::{self, hash_token},
-    constraints::Constrainable,
-    jwt::{JsonWebSignatureHeader, Jwt},
-};
+use mas_data_model::{AuthorizationGrantStage, Client};
 use mas_keystore::{Encrypter, Keystore};
 use mas_router::UrlBuilder;
 use mas_storage::{
@@ -53,6 +45,7 @@ use thiserror::Error;
 use tracing::debug;
 use url::Url;
 
+use super::{generate_id_token, generate_token_pair};
 use crate::impl_from_error_for_route;
 
 #[serde_as]
@@ -98,11 +91,11 @@ pub(crate) enum RouteError {
     #[error("invalid grant")]
     InvalidGrant,
 
+    #[error("unsupported grant type")]
+    UnsupportedGrantType,
+
     #[error("unauthorized client")]
     UnauthorizedClient,
-
-    #[error("no suitable key found for signing")]
-    InvalidSigningKey,
 
     #[error("failed to load browser session")]
     NoSuchBrowserSession,
@@ -115,10 +108,7 @@ impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         sentry::capture_error(&self);
         match self {
-            Self::Internal(_)
-            | Self::InvalidSigningKey
-            | Self::NoSuchBrowserSession
-            | Self::NoSuchOAuthSession => (
+            Self::Internal(_) | Self::NoSuchBrowserSession | Self::NoSuchOAuthSession => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ClientError::from(ClientErrorCode::ServerError)),
             ),
@@ -145,16 +135,17 @@ impl IntoResponse for RouteError {
                 StatusCode::BAD_REQUEST,
                 Json(ClientError::from(ClientErrorCode::InvalidGrant)),
             ),
+            Self::UnsupportedGrantType => (
+                StatusCode::BAD_REQUEST,
+                Json(ClientError::from(ClientErrorCode::UnsupportedGrantType)),
+            ),
         }
         .into_response()
     }
 }
 
 impl_from_error_for_route!(mas_storage::RepositoryError);
-impl_from_error_for_route!(mas_keystore::WrongAlgorithmError);
-impl_from_error_for_route!(mas_jose::claims::ClaimError);
-impl_from_error_for_route!(mas_jose::claims::TokenHashError);
-impl_from_error_for_route!(mas_jose::jwt::JwtSignatureError);
+impl_from_error_for_route!(super::IdTokenSignatureError);
 
 #[tracing::instrument(
     name = "handlers.oauth2.token.post",
@@ -207,7 +198,7 @@ pub(crate) async fn post(
             refresh_token_grant(&mut rng, &clock, &grant, &client, repo).await?
         }
         _ => {
-            return Err(RouteError::InvalidGrant);
+            return Err(RouteError::UnsupportedGrantType);
         }
     };
 
@@ -220,7 +211,6 @@ pub(crate) async fn post(
     Ok((headers, Json(reply)))
 }
 
-#[allow(clippy::too_many_lines)]
 async fn authorization_code_grant(
     mut rng: &mut BoxRng,
     clock: &impl Clock,
@@ -311,52 +301,20 @@ async fn authorization_code_grant(
         .ok_or(RouteError::NoSuchBrowserSession)?;
 
     let ttl = Duration::minutes(5);
-    let access_token_str = TokenType::AccessToken.generate(&mut rng);
-    let refresh_token_str = TokenType::RefreshToken.generate(&mut rng);
-
-    let access_token = repo
-        .oauth2_access_token()
-        .add(&mut rng, clock, &session, access_token_str, ttl)
-        .await?;
-
-    let refresh_token = repo
-        .oauth2_refresh_token()
-        .add(&mut rng, clock, &session, &access_token, refresh_token_str)
-        .await?;
+    let (access_token, refresh_token) =
+        generate_token_pair(&mut rng, clock, &mut repo, &session, ttl).await?;
 
     let id_token = if session.scope.contains(&scope::OPENID) {
-        let mut claims = HashMap::new();
-        let now = clock.now();
-        claims::ISS.insert(&mut claims, url_builder.oidc_issuer().to_string())?;
-        claims::SUB.insert(&mut claims, &browser_session.user.sub)?;
-        claims::AUD.insert(&mut claims, client.client_id.clone())?;
-        claims::IAT.insert(&mut claims, now)?;
-        claims::EXP.insert(&mut claims, now + Duration::hours(1))?;
-
-        if let Some(ref nonce) = authz_grant.nonce {
-            claims::NONCE.insert(&mut claims, nonce.clone())?;
-        }
-        if let Some(ref last_authentication) = browser_session.last_authentication {
-            claims::AUTH_TIME.insert(&mut claims, last_authentication.created_at)?;
-        }
-
-        let alg = client
-            .id_token_signed_response_alg
-            .clone()
-            .unwrap_or(JsonWebSignatureAlg::Rs256);
-        let key = key_store
-            .signing_key_for_algorithm(&alg)
-            .ok_or(RouteError::InvalidSigningKey)?;
-
-        claims::AT_HASH.insert(&mut claims, hash_token(&alg, &access_token.access_token)?)?;
-        claims::C_HASH.insert(&mut claims, hash_token(&alg, &grant.code)?)?;
-
-        let signer = key.params().signing_key_for_alg(&alg)?;
-        let header = JsonWebSignatureHeader::new(alg)
-            .with_kid(key.kid().ok_or(RouteError::InvalidSigningKey)?);
-        let id_token = Jwt::sign_with_rng(&mut rng, header, claims, &signer)?;
-
-        Some(id_token.as_str().to_owned())
+        Some(generate_id_token(
+            &mut rng,
+            clock,
+            url_builder,
+            key_store,
+            client,
+            &authz_grant,
+            &browser_session,
+            Some(&access_token),
+        )?)
     } else {
         None
     };
@@ -378,7 +336,7 @@ async fn authorization_code_grant(
 }
 
 async fn refresh_token_grant(
-    mut rng: &mut BoxRng,
+    rng: &mut BoxRng,
     clock: &impl Clock,
     grant: &RefreshTokenGrant,
     client: &Client,
@@ -406,24 +364,8 @@ async fn refresh_token_grant(
     }
 
     let ttl = Duration::minutes(5);
-    let access_token_str = TokenType::AccessToken.generate(&mut rng);
-    let refresh_token_str = TokenType::RefreshToken.generate(&mut rng);
-
-    let new_access_token = repo
-        .oauth2_access_token()
-        .add(&mut rng, clock, &session, access_token_str.clone(), ttl)
-        .await?;
-
-    let new_refresh_token = repo
-        .oauth2_refresh_token()
-        .add(
-            &mut rng,
-            clock,
-            &session,
-            &new_access_token,
-            refresh_token_str,
-        )
-        .await?;
+    let (new_access_token, new_refresh_token) =
+        generate_token_pair(rng, clock, &mut repo, &session, ttl).await?;
 
     let refresh_token = repo
         .oauth2_refresh_token()
@@ -439,10 +381,394 @@ async fn refresh_token_grant(
         }
     }
 
-    let params = AccessTokenResponse::new(access_token_str)
+    let params = AccessTokenResponse::new(new_access_token.access_token)
         .with_expires_in(ttl)
         .with_refresh_token(new_refresh_token.refresh_token)
         .with_scope(session.scope);
 
     Ok((params, repo))
+}
+
+#[cfg(test)]
+mod tests {
+    use hyper::Request;
+    use mas_data_model::{AccessToken, AuthorizationCode, RefreshToken};
+    use mas_router::SimpleRoute;
+    use oauth2_types::{
+        registration::ClientRegistrationResponse,
+        requests::ResponseMode,
+        scope::{Scope, OPENID},
+    };
+    use sqlx::PgPool;
+
+    use super::*;
+    use crate::test_utils::{init_tracing, RequestBuilderExt, ResponseExt, TestState};
+
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_auth_code_grant(pool: PgPool) {
+        init_tracing();
+        let state = TestState::from_pool(pool).await.unwrap();
+
+        // Provision a client
+        let request =
+            Request::post(mas_router::OAuth2RegistrationEndpoint::PATH).json(serde_json::json!({
+                "client_uri": "https://example.com/",
+                "redirect_uris": ["https://example.com/callback"],
+                "contacts": ["contact@example.com"],
+                "token_endpoint_auth_method": "none",
+                "response_types": ["code"],
+                "grant_types": ["authorization_code"],
+            }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::CREATED);
+
+        let ClientRegistrationResponse { client_id, .. } = response.json();
+
+        // Let's provision a user and create a session for them. This part is hard to
+        // test with just HTTP requests, so we'll use the repository directly.
+        let mut repo = state.repository().await.unwrap();
+
+        let user = repo
+            .user()
+            .add(&mut state.rng(), &state.clock, "alice".to_owned())
+            .await
+            .unwrap();
+
+        let browser_session = repo
+            .browser_session()
+            .add(&mut state.rng(), &state.clock, &user)
+            .await
+            .unwrap();
+
+        // Lookup the client in the database.
+        let client = repo
+            .oauth2_client()
+            .find_by_client_id(&client_id)
+            .await
+            .unwrap()
+            .unwrap();
+
+        // Start a grant
+        let code = "thisisaverysecurecode";
+        let grant = repo
+            .oauth2_authorization_grant()
+            .add(
+                &mut state.rng(),
+                &state.clock,
+                &client,
+                "https://example.com/redirect".parse().unwrap(),
+                Scope::from_iter([OPENID]),
+                Some(AuthorizationCode {
+                    code: code.to_owned(),
+                    pkce: None,
+                }),
+                Some("state".to_owned()),
+                Some("nonce".to_owned()),
+                None,
+                ResponseMode::Query,
+                false,
+                false,
+            )
+            .await
+            .unwrap();
+
+        let session = repo
+            .oauth2_session()
+            .add(
+                &mut state.rng(),
+                &state.clock,
+                &client,
+                &browser_session,
+                grant.scope.clone(),
+            )
+            .await
+            .unwrap();
+
+        // And fulfill it
+        let grant = repo
+            .oauth2_authorization_grant()
+            .fulfill(&state.clock, &session, grant)
+            .await
+            .unwrap();
+
+        repo.save().await.unwrap();
+
+        // Now call the token endpoint to get an access token.
+        let request =
+            Request::post(mas_router::OAuth2TokenEndpoint::PATH).form(serde_json::json!({
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": grant.redirect_uri,
+                "client_id": client.client_id,
+            }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+
+        let AccessTokenResponse { access_token, .. } = response.json();
+
+        // Check that the token is valid
+        assert!(state.is_access_token_valid(&access_token).await);
+
+        // Exchange it again, this it should fail
+        let request =
+            Request::post(mas_router::OAuth2TokenEndpoint::PATH).form(serde_json::json!({
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": grant.redirect_uri,
+                "client_id": client.client_id,
+            }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::BAD_REQUEST);
+        let error: ClientError = response.json();
+        assert_eq!(error.error, ClientErrorCode::InvalidGrant);
+
+        // The token should still be valid
+        assert!(state.is_access_token_valid(&access_token).await);
+
+        // Now wait a bit
+        state.clock.advance(Duration::minutes(1));
+
+        // Exchange it again, this it should fail
+        let request =
+            Request::post(mas_router::OAuth2TokenEndpoint::PATH).form(serde_json::json!({
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": grant.redirect_uri,
+                "client_id": client.client_id,
+            }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::BAD_REQUEST);
+        let error: ClientError = response.json();
+        assert_eq!(error.error, ClientErrorCode::InvalidGrant);
+
+        // And it should have revoked the token we got
+        assert!(!state.is_access_token_valid(&access_token).await);
+
+        // Try another one and wait for too long before exchanging it
+        let mut repo = state.repository().await.unwrap();
+        let code = "thisisanothercode";
+        let grant = repo
+            .oauth2_authorization_grant()
+            .add(
+                &mut state.rng(),
+                &state.clock,
+                &client,
+                "https://example.com/redirect".parse().unwrap(),
+                Scope::from_iter([OPENID]),
+                Some(AuthorizationCode {
+                    code: code.to_owned(),
+                    pkce: None,
+                }),
+                Some("state".to_owned()),
+                Some("nonce".to_owned()),
+                None,
+                ResponseMode::Query,
+                false,
+                false,
+            )
+            .await
+            .unwrap();
+
+        let session = repo
+            .oauth2_session()
+            .add(
+                &mut state.rng(),
+                &state.clock,
+                &client,
+                &browser_session,
+                grant.scope.clone(),
+            )
+            .await
+            .unwrap();
+
+        // And fulfill it
+        let grant = repo
+            .oauth2_authorization_grant()
+            .fulfill(&state.clock, &session, grant)
+            .await
+            .unwrap();
+
+        repo.save().await.unwrap();
+
+        // Now wait a bit
+        state.clock.advance(Duration::minutes(15));
+
+        // Exchange it, it should fail
+        let request =
+            Request::post(mas_router::OAuth2TokenEndpoint::PATH).form(serde_json::json!({
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": grant.redirect_uri,
+                "client_id": client.client_id,
+            }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::BAD_REQUEST);
+        let ClientError { error, .. } = response.json();
+        assert_eq!(error, ClientErrorCode::InvalidGrant);
+    }
+
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_refresh_token_grant(pool: PgPool) {
+        init_tracing();
+        let state = TestState::from_pool(pool).await.unwrap();
+
+        // Provision a client
+        let request =
+            Request::post(mas_router::OAuth2RegistrationEndpoint::PATH).json(serde_json::json!({
+                "client_uri": "https://example.com/",
+                "redirect_uris": ["https://example.com/callback"],
+                "contacts": ["contact@example.com"],
+                "token_endpoint_auth_method": "none",
+                "response_types": ["code"],
+                "grant_types": ["authorization_code"],
+            }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::CREATED);
+
+        let ClientRegistrationResponse { client_id, .. } = response.json();
+
+        // Let's provision a user and create a session for them. This part is hard to
+        // test with just HTTP requests, so we'll use the repository directly.
+        let mut repo = state.repository().await.unwrap();
+
+        let user = repo
+            .user()
+            .add(&mut state.rng(), &state.clock, "alice".to_owned())
+            .await
+            .unwrap();
+
+        let browser_session = repo
+            .browser_session()
+            .add(&mut state.rng(), &state.clock, &user)
+            .await
+            .unwrap();
+
+        // Lookup the client in the database.
+        let client = repo
+            .oauth2_client()
+            .find_by_client_id(&client_id)
+            .await
+            .unwrap()
+            .unwrap();
+
+        // Get a token pair
+        let session = repo
+            .oauth2_session()
+            .add(
+                &mut state.rng(),
+                &state.clock,
+                &client,
+                &browser_session,
+                Scope::from_iter([OPENID]),
+            )
+            .await
+            .unwrap();
+
+        let (AccessToken { access_token, .. }, RefreshToken { refresh_token, .. }) =
+            generate_token_pair(
+                &mut state.rng(),
+                &state.clock,
+                &mut repo,
+                &session,
+                Duration::minutes(5),
+            )
+            .await
+            .unwrap();
+
+        repo.save().await.unwrap();
+
+        // First check that the token is valid
+        assert!(state.is_access_token_valid(&access_token).await);
+
+        // Now call the token endpoint to get an access token.
+        let request =
+            Request::post(mas_router::OAuth2TokenEndpoint::PATH).form(serde_json::json!({
+                "grant_type": "refresh_token",
+                "refresh_token": refresh_token,
+                "client_id": client.client_id,
+            }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+
+        let old_access_token = access_token;
+        let old_refresh_token = refresh_token;
+        let response: AccessTokenResponse = response.json();
+        let access_token = response.access_token;
+        let refresh_token = response.refresh_token.expect("to have a refresh token");
+
+        // Check that the new token is valid
+        assert!(state.is_access_token_valid(&access_token).await);
+
+        // Check that the old token is no longer valid
+        assert!(!state.is_access_token_valid(&old_access_token).await);
+
+        // Call it again with the old token, it should fail
+        let request =
+            Request::post(mas_router::OAuth2TokenEndpoint::PATH).form(serde_json::json!({
+                "grant_type": "refresh_token",
+                "refresh_token": old_refresh_token,
+                "client_id": client.client_id,
+            }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::BAD_REQUEST);
+        let ClientError { error, .. } = response.json();
+        assert_eq!(error, ClientErrorCode::InvalidGrant);
+
+        // Call it again with the new token, it should work
+        let request =
+            Request::post(mas_router::OAuth2TokenEndpoint::PATH).form(serde_json::json!({
+                "grant_type": "refresh_token",
+                "refresh_token": refresh_token,
+                "client_id": client.client_id,
+            }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+        let _: AccessTokenResponse = response.json();
+    }
+
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_unsupported_grant(pool: PgPool) {
+        init_tracing();
+        let state = TestState::from_pool(pool).await.unwrap();
+
+        // Provision a client
+        let request =
+            Request::post(mas_router::OAuth2RegistrationEndpoint::PATH).json(serde_json::json!({
+                "client_uri": "https://example.com/",
+                "redirect_uris": ["https://example.com/callback"],
+                "contacts": ["contact@example.com"],
+                "token_endpoint_auth_method": "client_secret_post",
+                "grant_types": ["client_credentials"],
+                "response_types": [],
+            }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::CREATED);
+
+        let response: ClientRegistrationResponse = response.json();
+        let client_id = response.client_id;
+        let client_secret = response.client_secret.expect("to have a client secret");
+
+        // Call the token endpoint with an unsupported grant type
+        let request =
+            Request::post(mas_router::OAuth2TokenEndpoint::PATH).form(serde_json::json!({
+                "grant_type": "client_credentials",
+                "client_id": client_id,
+                "client_secret": client_secret,
+            }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::BAD_REQUEST);
+        let ClientError { error, .. } = response.json();
+        assert_eq!(error, ClientErrorCode::UnsupportedGrantType);
+    }
 }

@@ -13,7 +13,8 @@
 // limitations under the License.
 
 use async_trait::async_trait;
-use mas_data_model::{AuthorizationGrant, BrowserSession, Session, User};
+use mas_data_model::{BrowserSession, Client, Session, User};
+use oauth2_types::scope::Scope;
 use rand_core::RngCore;
 use ulid::Ulid;
 
@@ -39,7 +40,7 @@ pub trait OAuth2SessionRepository: Send + Sync {
     /// Returns [`Self::Error`] if the underlying repository fails
     async fn lookup(&mut self, id: Ulid) -> Result<Option<Session>, Self::Error>;
 
-    /// Create a new [`Session`] from an [`AuthorizationGrant`]
+    /// Create a new [`Session`]
     ///
     /// Returns the newly created [`Session`]
     ///
@@ -47,19 +48,21 @@ pub trait OAuth2SessionRepository: Send + Sync {
     ///
     /// * `rng`: The random number generator to use
     /// * `clock`: The clock used to generate timestamps
-    /// * `grant`: The [`AuthorizationGrant`] to create the [`Session`] from
+    /// * `client`: The [`Client`] which created the [`Session`]
     /// * `user_session`: The [`BrowserSession`] of the user which completed the
     ///   authorization
+    /// * `scope`: The [`Scope`] of the [`Session`]
     ///
     /// # Errors
     ///
     /// Returns [`Self::Error`] if the underlying repository fails
-    async fn create_from_grant(
+    async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
-        grant: &AuthorizationGrant,
+        client: &Client,
         user_session: &BrowserSession,
+        scope: Scope,
     ) -> Result<Session, Self::Error>;
 
     /// Mark a [`Session`] as finished
@@ -97,12 +100,13 @@ pub trait OAuth2SessionRepository: Send + Sync {
 repository_impl!(OAuth2SessionRepository:
     async fn lookup(&mut self, id: Ulid) -> Result<Option<Session>, Self::Error>;
 
-    async fn create_from_grant(
+    async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
-        grant: &AuthorizationGrant,
+        client: &Client,
         user_session: &BrowserSession,
+        scope: Scope,
     ) -> Result<Session, Self::Error>;
 
     async fn finish(&mut self, clock: &dyn Clock, session: Session)

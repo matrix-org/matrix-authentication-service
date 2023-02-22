@@ -14,8 +14,9 @@
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use mas_data_model::{AuthorizationGrant, BrowserSession, Session, SessionState, User};
+use mas_data_model::{BrowserSession, Client, Session, SessionState, User};
 use mas_storage::{oauth2::OAuth2SessionRepository, Clock, Page, Pagination};
+use oauth2_types::scope::Scope;
 use rand::RngCore;
 use sqlx::{PgConnection, QueryBuilder};
 use ulid::Ulid;
@@ -118,25 +119,25 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
     }
 
     #[tracing::instrument(
-        name = "db.oauth2_session.create_from_grant",
+        name = "db.oauth2_session.add",
         skip_all,
         fields(
             db.statement,
             %user_session.id,
             user.id = %user_session.user.id,
-            %grant.id,
-            client.id = %grant.client_id,
+            %client.id,
             session.id,
-            session.scope = %grant.scope,
+            session.scope = %scope,
         ),
         err,
     )]
-    async fn create_from_grant(
+    async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
-        grant: &AuthorizationGrant,
+        client: &Client,
         user_session: &BrowserSession,
+        scope: Scope,
     ) -> Result<Session, Self::Error> {
         let created_at = clock.now();
         let id = Ulid::from_datetime_with_source(created_at.into(), rng);
@@ -155,8 +156,8 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
             "#,
             Uuid::from(id),
             Uuid::from(user_session.id),
-            Uuid::from(grant.client_id),
-            grant.scope.to_string(),
+            Uuid::from(client.id),
+            scope.to_string(),
             created_at,
         )
         .traced()
@@ -168,8 +169,8 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
             state: SessionState::Valid,
             created_at,
             user_session_id: user_session.id,
-            client_id: grant.client_id,
-            scope: grant.scope.clone(),
+            client_id: client.id,
+            scope,
         })
     }
 
