@@ -19,8 +19,8 @@ use axum::{
     body::HttpBody,
     extract::{FromRef, FromRequestParts},
 };
-use headers::{Authorization, ContentType, HeaderMapExt};
-use hyper::{Request, Response, StatusCode};
+use headers::{Authorization, ContentType, HeaderMapExt, HeaderName, HeaderValue};
+use hyper::{header::CONTENT_TYPE, Request, Response, StatusCode};
 use mas_axum_utils::http_client_factory::HttpClientFactory;
 use mas_email::{MailTransport, Mailer};
 use mas_keystore::{Encrypter, JsonWebKey, JsonWebKeySet, Keystore, PrivateKey};
@@ -31,7 +31,7 @@ use mas_storage_pg::PgRepository;
 use mas_templates::Templates;
 use rand::SeedableRng;
 use rand_chacha::ChaChaRng;
-use serde::Serialize;
+use serde::{de::DeserializeOwned, Serialize};
 use sqlx::PgPool;
 use tokio::sync::Mutex;
 use tower::{Service, ServiceExt};
@@ -366,6 +366,22 @@ pub(crate) trait ResponseExt {
     ///
     /// Panics if the response has a different status code.
     fn assert_status(&self, status: StatusCode);
+
+    /// Asserts that the response has the given header value.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the response does not have the given header or if the header
+    /// value does not match.
+    fn assert_header_value(&self, header: HeaderName, value: &str);
+
+    /// Get the response body as JSON.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the response is missing the `Content-Type: application/json`,
+    /// or if the body is not valid JSON.
+    fn json<T: DeserializeOwned>(&self) -> T;
 }
 
 impl ResponseExt for Response<String> {
@@ -379,5 +395,27 @@ impl ResponseExt for Response<String> {
             status,
             self.body()
         );
+    }
+
+    #[track_caller]
+    fn assert_header_value(&self, header: HeaderName, value: &str) {
+        let actual_value = self
+            .headers()
+            .get(&header)
+            .unwrap_or_else(|| panic!("Missing header {header}"));
+
+        assert_eq!(
+            actual_value,
+            value,
+            "Header mismatch: got {:?}, expected {:?}",
+            self.headers().get(header),
+            value
+        );
+    }
+
+    #[track_caller]
+    fn json<T: DeserializeOwned>(&self) -> T {
+        self.assert_header_value(CONTENT_TYPE, "application/json");
+        serde_json::from_str(self.body()).expect("JSON deserialization failed")
     }
 }

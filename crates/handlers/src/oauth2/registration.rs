@@ -234,7 +234,7 @@ mod tests {
 
         let response = state.request(request).await;
         response.assert_status(StatusCode::BAD_REQUEST);
-        let response: ClientError = serde_json::from_str(response.body()).unwrap();
+        let response: ClientError = response.json();
         assert_eq!(response.error, ClientErrorCode::InvalidRequest);
 
         // Invalid client metadata
@@ -245,7 +245,7 @@ mod tests {
 
         let response = state.request(request).await;
         response.assert_status(StatusCode::BAD_REQUEST);
-        let response: ClientError = serde_json::from_str(response.body()).unwrap();
+        let response: ClientError = response.json();
         assert_eq!(response.error, ClientErrorCode::InvalidClientMetadata);
 
         // Invalid redirect URI
@@ -259,7 +259,7 @@ mod tests {
 
         let response = state.request(request).await;
         response.assert_status(StatusCode::BAD_REQUEST);
-        let response: ClientError = serde_json::from_str(response.body()).unwrap();
+        let response: ClientError = response.json();
         assert_eq!(response.error, ClientErrorCode::InvalidRedirectUri);
 
         // Incoherent response types
@@ -274,7 +274,7 @@ mod tests {
 
         let response = state.request(request).await;
         response.assert_status(StatusCode::BAD_REQUEST);
-        let response: ClientError = serde_json::from_str(response.body()).unwrap();
+        let response: ClientError = response.json();
         assert_eq!(response.error, ClientErrorCode::InvalidClientMetadata);
     }
 
@@ -297,7 +297,7 @@ mod tests {
 
         let response = state.request(request).await;
         response.assert_status(StatusCode::CREATED);
-        let response: ClientRegistrationResponse = serde_json::from_str(response.body()).unwrap();
+        let response: ClientRegistrationResponse = response.json();
         assert!(response.client_secret.is_none());
 
         // A successful registration with client_secret based authentication should
@@ -314,7 +314,7 @@ mod tests {
 
         let response = state.request(request).await;
         response.assert_status(StatusCode::CREATED);
-        let response: ClientRegistrationResponse = serde_json::from_str(response.body()).unwrap();
+        let response: ClientRegistrationResponse = response.json();
         assert!(response.client_secret.is_some());
     }
 }

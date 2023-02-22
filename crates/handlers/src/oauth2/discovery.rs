@@ -153,3 +153,27 @@ pub(crate) async fn get(
 
     Json(metadata)
 }
+
+#[cfg(test)]
+mod tests {
+    use hyper::{Request, StatusCode};
+    use oauth2_types::oidc::ProviderMetadata;
+    use sqlx::PgPool;
+
+    use crate::test_utils::{init_tracing, RequestBuilderExt, ResponseExt, TestState};
+
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_valid_discovery_metadata(pool: PgPool) {
+        init_tracing();
+        let state = TestState::from_pool(pool).await.unwrap();
+
+        let request = Request::get("/.well-known/openid-configuration").empty();
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+
+        let metadata: ProviderMetadata = response.json();
+        metadata
+            .validate(state.url_builder.oidc_issuer().as_str())
+            .expect("Invalid metadata");
+    }
+}
