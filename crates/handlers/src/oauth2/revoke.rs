@@ -233,8 +233,7 @@ mod tests {
         let response = state.request(request).await;
         response.assert_status(StatusCode::CREATED);
 
-        let client_registration: ClientRegistrationResponse =
-            serde_json::from_str(response.body()).unwrap();
+        let client_registration: ClientRegistrationResponse = response.json();
 
         let client_id = client_registration.client_id;
         let client_secret = client_registration.client_secret.unwrap();
@@ -313,7 +312,7 @@ mod tests {
         let response = state.request(request).await;
         response.assert_status(StatusCode::OK);
 
-        let token: AccessTokenResponse = serde_json::from_str(response.body()).unwrap();
+        let token: AccessTokenResponse = response.json();
 
         // Check that the token is valid
         assert!(state.is_access_token_valid(&token.access_token).await);
@@ -395,7 +394,7 @@ mod tests {
         let response = state.request(request).await;
         response.assert_status(StatusCode::OK);
 
-        let token: AccessTokenResponse = serde_json::from_str(response.body()).unwrap();
+        let token: AccessTokenResponse = response.json();
 
         // Use the refresh token to get a new access token.
         let request =
@@ -410,7 +409,7 @@ mod tests {
         response.assert_status(StatusCode::OK);
 
         let old_token = token;
-        let token: AccessTokenResponse = serde_json::from_str(response.body()).unwrap();
+        let token: AccessTokenResponse = response.json();
         assert!(state.is_access_token_valid(&token.access_token).await);
         assert!(!state.is_access_token_valid(&old_token.access_token).await);
 
