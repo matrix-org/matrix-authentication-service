@@ -43,6 +43,13 @@ use crate::{
     MatrixHomeserver,
 };
 
+pub(crate) fn init_tracing() {
+    let _ = tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .with_test_writer()
+        .try_init();
+}
+
 #[derive(Clone)]
 pub(crate) struct TestState {
     pub pool: PgPool,

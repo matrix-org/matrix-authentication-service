@@ -213,15 +213,11 @@ mod tests {
     use sqlx::PgPool;
 
     use super::*;
-    use crate::test_utils::{RequestBuilderExt, ResponseExt, TestState};
+    use crate::test_utils::{init_tracing, RequestBuilderExt, ResponseExt, TestState};
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_revoke_access_token(pool: PgPool) {
-        tracing_subscriber::fmt()
-            .with_max_level(tracing::Level::INFO)
-            .with_test_writer()
-            .init();
-
+        init_tracing();
         let state = TestState::from_pool(pool).await.unwrap();
 
         let request =
