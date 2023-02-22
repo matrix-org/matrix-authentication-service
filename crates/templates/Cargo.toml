@@ -17,7 +17,7 @@ serde = { version = "1.0.152", features = ["derive"] }
 serde_json = "1.0.93"
 serde_urlencoded = "0.7.1"
 
-camino = "1.1.2"
+camino = "1.1.3"
 chrono = "0.4.23"
 url = "2.3.1"
 http = "0.2.9"
