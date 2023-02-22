@@ -22,9 +22,9 @@ use axum_extra::extract::PrivateCookieJar;
 use hyper::StatusCode;
 use mas_axum_utils::SessionInfoExt;
 use mas_data_model::{AuthorizationCode, Pkce};
-use mas_keystore::Encrypter;
+use mas_keystore::{Encrypter, Keystore};
 use mas_policy::PolicyFactory;
-use mas_router::{PostAuthAction, Route};
+use mas_router::{PostAuthAction, Route, UrlBuilder};
 use mas_storage::{
     oauth2::{OAuth2AuthorizationGrantRepository, OAuth2ClientRepository},
     BoxClock, BoxRepository, BoxRng,
@@ -141,6 +141,8 @@ pub(crate) async fn get(
     clock: BoxClock,
     State(policy_factory): State<Arc<PolicyFactory>>,
     State(templates): State<Templates>,
+    State(key_store): State<Keystore>,
+    State(url_builder): State<UrlBuilder>,
     mut repo: BoxRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(params): Form<Params>,
@@ -340,11 +342,13 @@ pub(crate) async fn get(
                     match self::complete::complete(
                         rng,
                         clock,
+                        repo,
+                        key_store,
+                        &policy_factory,
+                        url_builder,
                         grant,
                         client,
                         user_session,
-                        &policy_factory,
-                        repo,
                     )
                     .await
                     {
@@ -385,11 +389,13 @@ pub(crate) async fn get(
                     match self::complete::complete(
                         rng,
                         clock,
+                        repo,
+                        key_store,
+                        &policy_factory,
+                        url_builder,
                         grant,
                         client,
                         user_session,
-                        &policy_factory,
-                        repo,
                     )
                     .await
                     {

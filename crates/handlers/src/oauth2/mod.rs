@@ -12,6 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::collections::HashMap;
+
+use chrono::Duration;
+use mas_data_model::{
+    AccessToken, AuthorizationGrant, BrowserSession, Client, RefreshToken, Session, TokenType,
+};
+use mas_iana::jose::JsonWebSignatureAlg;
+use mas_jose::{
+    claims::{self, hash_token},
+    constraints::Constrainable,
+    jwt::{JsonWebSignatureHeader, Jwt},
+};
+use mas_keystore::Keystore;
+use mas_router::UrlBuilder;
+use mas_storage::{Clock, RepositoryAccess};
+use thiserror::Error;
+
 pub mod authorization;
 pub mod consent;
 pub mod discovery;
@@ -22,3 +39,87 @@ pub mod revoke;
 pub mod token;
 pub mod userinfo;
 pub mod webfinger;
+
+#[derive(Debug, Error)]
+#[error(transparent)]
+pub(crate) enum IdTokenSignatureError {
+    #[error("The signing key is invalid")]
+    InvalidSigningKey,
+    Claim(#[from] mas_jose::claims::ClaimError),
+    JwtSignature(#[from] mas_jose::jwt::JwtSignatureError),
+    WrongAlgorithm(#[from] mas_keystore::WrongAlgorithmError),
+    TokenHash(#[from] mas_jose::claims::TokenHashError),
+}
+
+pub(crate) fn generate_id_token(
+    rng: &mut (impl rand::RngCore + rand::CryptoRng),
+    clock: &impl Clock,
+    url_builder: &UrlBuilder,
+    key_store: &Keystore,
+    client: &Client,
+    grant: &AuthorizationGrant,
+    browser_session: &BrowserSession,
+    access_token: Option<&AccessToken>,
+) -> Result<String, IdTokenSignatureError> {
+    let mut claims = HashMap::new();
+    let now = clock.now();
+    claims::ISS.insert(&mut claims, url_builder.oidc_issuer().to_string())?;
+    claims::SUB.insert(&mut claims, &browser_session.user.sub)?;
+    claims::AUD.insert(&mut claims, client.client_id.clone())?;
+    claims::IAT.insert(&mut claims, now)?;
+    claims::EXP.insert(&mut claims, now + Duration::hours(1))?;
+
+    if let Some(ref nonce) = grant.nonce {
+        claims::NONCE.insert(&mut claims, nonce.clone())?;
+    }
+
+    if let Some(ref last_authentication) = browser_session.last_authentication {
+        claims::AUTH_TIME.insert(&mut claims, last_authentication.created_at)?;
+    }
+
+    let alg = client
+        .id_token_signed_response_alg
+        .clone()
+        .unwrap_or(JsonWebSignatureAlg::Rs256);
+    let key = key_store
+        .signing_key_for_algorithm(&alg)
+        .ok_or(IdTokenSignatureError::InvalidSigningKey)?;
+
+    if let Some(access_token) = access_token {
+        claims::AT_HASH.insert(&mut claims, hash_token(&alg, &access_token.access_token)?)?;
+    }
+
+    if let Some(ref code) = grant.code {
+        claims::C_HASH.insert(&mut claims, hash_token(&alg, &code.code)?)?;
+    }
+
+    let signer = key.params().signing_key_for_alg(&alg)?;
+    let header = JsonWebSignatureHeader::new(alg)
+        .with_kid(key.kid().ok_or(IdTokenSignatureError::InvalidSigningKey)?);
+    let id_token = Jwt::sign_with_rng(rng, header, claims, &signer)?;
+
+    Ok(id_token.into_string())
+}
+
+pub(crate) async fn generate_token_pair<R: RepositoryAccess>(
+    rng: &mut (impl rand::RngCore + Send),
+    clock: &impl Clock,
+    repo: &mut R,
+    session: &Session,
+    ttl: Duration,
+) -> Result<(AccessToken, RefreshToken), R::Error> {
+    let access_token_str = TokenType::AccessToken.generate(rng);
+    let refresh_token_str = TokenType::RefreshToken.generate(rng);
+
+    let access_token = repo
+        .oauth2_access_token()
+        .add(rng, clock, session, access_token_str.clone(), ttl)
+        .await?;
+
+    let refresh_token = repo
+        .oauth2_refresh_token()
+        .add(rng, clock, session, &access_token, refresh_token_str)
+        .await?;
+
+    Ok((access_token, refresh_token))
+}
