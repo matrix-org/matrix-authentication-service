@@ -325,6 +325,10 @@ pub(crate) trait RequestBuilderExt {
     /// Sets the request Authorization header to the given bearer token.
     fn bearer(self, token: &str) -> Self;
 
+    /// Sets the request Authorization header to the given basic auth
+    /// credentials.
+    fn basic_auth(self, username: &str, password: &str) -> Self;
+
     /// Builds the request with an empty body.
     fn empty(self) -> hyper::Request<String>;
 }
@@ -351,6 +355,13 @@ impl RequestBuilderExt for hyper::http::request::Builder {
         self.headers_mut()
             .unwrap()
             .typed_insert(Authorization::bearer(token).unwrap());
+        self
+    }
+
+    fn basic_auth(mut self, username: &str, password: &str) -> Self {
+        self.headers_mut()
+            .unwrap()
+            .typed_insert(Authorization::basic(username, password));
         self
     }
 
