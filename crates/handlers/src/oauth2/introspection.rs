@@ -330,3 +330,346 @@ pub(crate) async fn post(
 
     Ok(Json(reply))
 }
+
+#[cfg(test)]
+mod tests {
+    use chrono::Duration;
+    use hyper::{Request, StatusCode};
+    use mas_data_model::{AccessToken, RefreshToken};
+    use mas_iana::oauth::OAuthTokenTypeHint;
+    use mas_router::{OAuth2Introspection, OAuth2RegistrationEndpoint, SimpleRoute};
+    use oauth2_types::{
+        registration::ClientRegistrationResponse,
+        requests::IntrospectionResponse,
+        scope::{Scope, OPENID},
+    };
+    use serde_json::json;
+    use sqlx::PgPool;
+    use zeroize::Zeroizing;
+
+    use crate::{
+        oauth2::generate_token_pair,
+        test_utils::{init_tracing, RequestBuilderExt, ResponseExt, TestState},
+    };
+
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_introspect_oauth_tokens(pool: PgPool) {
+        init_tracing();
+        let state = TestState::from_pool(pool).await.unwrap();
+
+        // Provision a client which will be used to do introspection requests
+        let request = Request::post(OAuth2RegistrationEndpoint::PATH).json(json!({
+            "contacts": ["hello@introspecting.com"],
+            "client_uri": "https://introspecting.com/",
+            // XXX: even though we don't use the authorization_code flow, we need to specify at
+            // least one redirect_uri
+            "redirect_uris": ["https://introspecting.com/"],
+            "response_types": [],
+            "grant_types": [],
+            "token_endpoint_auth_method": "client_secret_basic",
+        }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::CREATED);
+        let client: ClientRegistrationResponse = response.json();
+        let introspecting_client_id = client.client_id;
+        let introspecting_client_secret = client.client_secret.unwrap();
+
+        // Provision a client which will be used to generate tokens
+        let request = Request::post(OAuth2RegistrationEndpoint::PATH).json(json!({
+            "contacts": ["hello@client.com"],
+            "client_uri": "https://client.com/",
+            "redirect_uris": ["https://client.com/"],
+            "response_types": ["code"],
+            "grant_types": ["authorization_code", "refresh_token"],
+            "token_endpoint_auth_method": "none",
+        }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::CREATED);
+        let ClientRegistrationResponse { client_id, .. } = response.json();
+
+        let mut repo = state.repository().await.unwrap();
+        // Provision a user and an oauth session
+        let user = repo
+            .user()
+            .add(&mut state.rng(), &state.clock, "alice".to_owned())
+            .await
+            .unwrap();
+
+        let client = repo
+            .oauth2_client()
+            .find_by_client_id(&client_id)
+            .await
+            .unwrap()
+            .unwrap();
+
+        let browser_session = repo
+            .browser_session()
+            .add(&mut state.rng(), &state.clock, &user)
+            .await
+            .unwrap();
+
+        let session = repo
+            .oauth2_session()
+            .add(
+                &mut state.rng(),
+                &state.clock,
+                &client,
+                &browser_session,
+                Scope::from_iter([OPENID]),
+            )
+            .await
+            .unwrap();
+
+        let (AccessToken { access_token, .. }, RefreshToken { refresh_token, .. }) =
+            generate_token_pair(
+                &mut state.rng(),
+                &state.clock,
+                &mut repo,
+                &session,
+                Duration::minutes(5),
+            )
+            .await
+            .unwrap();
+
+        repo.save().await.unwrap();
+
+        // Now that we have a token, we can introspect it
+        let request = Request::post(OAuth2Introspection::PATH)
+            .basic_auth(&introspecting_client_id, &introspecting_client_secret)
+            .form(json!({ "token": access_token }));
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+        let response: IntrospectionResponse = response.json();
+        assert!(response.active);
+        assert_eq!(response.username, Some("alice".to_owned()));
+        assert_eq!(response.client_id, Some(client_id.clone()));
+        assert_eq!(response.token_type, Some(OAuthTokenTypeHint::AccessToken));
+        assert_eq!(response.scope, Some(Scope::from_iter([OPENID])));
+
+        // Do the same request, but with a token_type_hint
+        let request = Request::post(OAuth2Introspection::PATH)
+            .basic_auth(&introspecting_client_id, &introspecting_client_secret)
+            .form(json!({"token": access_token, "token_type_hint": "access_token"}));
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+        let response: IntrospectionResponse = response.json();
+        assert!(response.active);
+
+        // Do the same request, but with the wrong token_type_hint
+        let request = Request::post(OAuth2Introspection::PATH)
+            .basic_auth(&introspecting_client_id, &introspecting_client_secret)
+            .form(json!({"token": access_token, "token_type_hint": "refresh_token"}));
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+        let response: IntrospectionResponse = response.json();
+        assert!(!response.active); // It shouldn't be active
+
+        // Do the same, but with a refresh token
+        let request = Request::post(OAuth2Introspection::PATH)
+            .basic_auth(&introspecting_client_id, &introspecting_client_secret)
+            .form(json!({ "token": refresh_token }));
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+        let response: IntrospectionResponse = response.json();
+        assert!(response.active);
+        assert_eq!(response.username, Some("alice".to_owned()));
+        assert_eq!(response.client_id, Some(client_id.clone()));
+        assert_eq!(response.token_type, Some(OAuthTokenTypeHint::RefreshToken));
+        assert_eq!(response.scope, Some(Scope::from_iter([OPENID])));
+
+        // Do the same request, but with a token_type_hint
+        let request = Request::post(OAuth2Introspection::PATH)
+            .basic_auth(&introspecting_client_id, &introspecting_client_secret)
+            .form(json!({"token": refresh_token, "token_type_hint": "refresh_token"}));
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+        let response: IntrospectionResponse = response.json();
+        assert!(response.active);
+
+        // Do the same request, but with the wrong token_type_hint
+        let request = Request::post(OAuth2Introspection::PATH)
+            .basic_auth(&introspecting_client_id, &introspecting_client_secret)
+            .form(json!({"token": refresh_token, "token_type_hint": "access_token"}));
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+        let response: IntrospectionResponse = response.json();
+        assert!(!response.active); // It shouldn't be active
+
+        // Advance the clock to invalidate the access token
+        state.clock.advance(Duration::hours(1));
+
+        let request = Request::post(OAuth2Introspection::PATH)
+            .basic_auth(&introspecting_client_id, &introspecting_client_secret)
+            .form(json!({ "token": access_token }));
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+        let response: IntrospectionResponse = response.json();
+        assert!(!response.active); // It shouldn't be active anymore
+
+        // But the refresh token should still be valid
+        let request = Request::post(OAuth2Introspection::PATH)
+            .basic_auth(&introspecting_client_id, &introspecting_client_secret)
+            .form(json!({ "token": refresh_token }));
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+        let response: IntrospectionResponse = response.json();
+        assert!(response.active);
+    }
+
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_introspect_compat_tokens(pool: PgPool) {
+        init_tracing();
+        let state = TestState::from_pool(pool).await.unwrap();
+
+        // Provision a client which will be used to do introspection requests
+        let request = Request::post(OAuth2RegistrationEndpoint::PATH).json(json!({
+            "contacts": ["hello@introspecting.com"],
+            "client_uri": "https://introspecting.com/",
+            // XXX: even though we don't use the authorization_code flow, we need to specify at
+            // least one redirect_uri
+            "redirect_uris": ["https://introspecting.com/"],
+            "response_types": [],
+            "grant_types": [],
+            "token_endpoint_auth_method": "client_secret_basic",
+        }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::CREATED);
+        let client: ClientRegistrationResponse = response.json();
+        let introspecting_client_id = client.client_id;
+        let introspecting_client_secret = client.client_secret.unwrap();
+
+        // Provision a user with a password, so that we can use the password flow
+        let mut repo = state.repository().await.unwrap();
+        let user = repo
+            .user()
+            .add(&mut state.rng(), &state.clock, "alice".to_owned())
+            .await
+            .unwrap();
+
+        let (version, hashed_password) = state
+            .password_manager
+            .hash(&mut state.rng(), Zeroizing::new(b"password".to_vec()))
+            .await
+            .unwrap();
+
+        repo.user_password()
+            .add(
+                &mut state.rng(),
+                &state.clock,
+                &user,
+                version,
+                hashed_password,
+                None,
+            )
+            .await
+            .unwrap();
+
+        repo.save().await.unwrap();
+
+        // Now do a password flow to get an access token and a refresh token
+        let request = Request::post("/_matrix/client/v3/login").json(json!({
+            "type": "m.login.password",
+            "refresh_token": true,
+            "identifier": {
+                "type": "m.id.user",
+                "user": "alice",
+            },
+            "password": "password",
+        }));
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+        let response: serde_json::Value = response.json();
+        let access_token = response["access_token"].as_str().unwrap();
+        let refresh_token = response["refresh_token"].as_str().unwrap();
+        let device_id = response["device_id"].as_str().unwrap();
+        let expected_scope: Scope =
+            format!("urn:matrix:org.matrix.msc2967.client:api:* urn:matrix:org.matrix.msc2967.client:device:{device_id}")
+                .parse()
+                .unwrap();
+
+        // Now that we have a token, we can introspect it
+        let request = Request::post(OAuth2Introspection::PATH)
+            .basic_auth(&introspecting_client_id, &introspecting_client_secret)
+            .form(json!({ "token": access_token }));
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+        let response: IntrospectionResponse = response.json();
+        assert!(response.active);
+        assert_eq!(response.username, Some("alice".to_owned()));
+        assert_eq!(response.client_id, Some("legacy".to_owned()));
+        assert_eq!(response.token_type, Some(OAuthTokenTypeHint::AccessToken));
+        assert_eq!(response.scope, Some(expected_scope.clone()));
+
+        // Do the same request, but with a token_type_hint
+        let request = Request::post(OAuth2Introspection::PATH)
+            .basic_auth(&introspecting_client_id, &introspecting_client_secret)
+            .form(json!({"token": access_token, "token_type_hint": "access_token"}));
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+        let response: IntrospectionResponse = response.json();
+        assert!(response.active);
+
+        // Do the same request, but with the wrong token_type_hint
+        let request = Request::post(OAuth2Introspection::PATH)
+            .basic_auth(&introspecting_client_id, &introspecting_client_secret)
+            .form(json!({"token": access_token, "token_type_hint": "refresh_token"}));
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+        let response: IntrospectionResponse = response.json();
+        assert!(!response.active); // It shouldn't be active
+
+        // Do the same, but with a refresh token
+        let request = Request::post(OAuth2Introspection::PATH)
+            .basic_auth(&introspecting_client_id, &introspecting_client_secret)
+            .form(json!({ "token": refresh_token }));
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+        let response: IntrospectionResponse = response.json();
+        assert!(response.active);
+        assert_eq!(response.username, Some("alice".to_owned()));
+        assert_eq!(response.client_id, Some("legacy".to_owned()));
+        assert_eq!(response.token_type, Some(OAuthTokenTypeHint::RefreshToken));
+        assert_eq!(response.scope, Some(expected_scope.clone()));
+
+        // Do the same request, but with a token_type_hint
+        let request = Request::post(OAuth2Introspection::PATH)
+            .basic_auth(&introspecting_client_id, &introspecting_client_secret)
+            .form(json!({"token": refresh_token, "token_type_hint": "refresh_token"}));
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+        let response: IntrospectionResponse = response.json();
+        assert!(response.active);
+
+        // Do the same request, but with the wrong token_type_hint
+        let request = Request::post(OAuth2Introspection::PATH)
+            .basic_auth(&introspecting_client_id, &introspecting_client_secret)
+            .form(json!({"token": refresh_token, "token_type_hint": "access_token"}));
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+        let response: IntrospectionResponse = response.json();
+        assert!(!response.active); // It shouldn't be active
+
+        // Advance the clock to invalidate the access token
+        state.clock.advance(Duration::hours(1));
+
+        let request = Request::post(OAuth2Introspection::PATH)
+            .basic_auth(&introspecting_client_id, &introspecting_client_secret)
+            .form(json!({ "token": access_token }));
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+        let response: IntrospectionResponse = response.json();
+        assert!(!response.active); // It shouldn't be active anymore
+
+        // But the refresh token should still be valid
+        let request = Request::post(OAuth2Introspection::PATH)
+            .basic_auth(&introspecting_client_id, &introspecting_client_secret)
+            .form(json!({ "token": refresh_token }));
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+        let response: IntrospectionResponse = response.json();
+        assert!(response.active);
+    }
+}
