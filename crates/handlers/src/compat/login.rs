@@ -117,7 +117,7 @@ pub enum Identifier {
 
 #[skip_serializing_none]
 #[serde_as]
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ResponseBody {
     access_token: String,
     device_id: Device,
@@ -385,4 +385,292 @@ async fn user_password_login(
         .await?;
 
     Ok((session, user))
+}
+
+#[cfg(test)]
+mod tests {
+    use hyper::Request;
+    use rand::distributions::{Alphanumeric, DistString};
+    use sqlx::PgPool;
+
+    use super::*;
+    use crate::test_utils::{init_tracing, RequestBuilderExt, ResponseExt, TestState};
+
+    /// Test that the server advertises the right login flows.
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_get_login(pool: PgPool) {
+        init_tracing();
+        let state = TestState::from_pool(pool).await.unwrap();
+
+        // Now let's try to login with the password, without asking for a refresh token.
+        let request = Request::get("/_matrix/client/v3/login").empty();
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+        let body: serde_json::Value = response.json();
+
+        assert_eq!(
+            body,
+            serde_json::json!({
+                "flows": [
+                    {
+                        "type": "m.login.password",
+                    },
+                    {
+                        "type": "m.login.sso",
+                        "org.matrix.msc3824.delegated_oidc_compatibility": true,
+                    },
+                    {
+                        "type": "m.login.token",
+                    }
+                ],
+            })
+        );
+    }
+
+    /// Test that a user can login with a password using the Matrix
+    /// compatibility API.
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_user_password_login(pool: PgPool) {
+        init_tracing();
+        let state = TestState::from_pool(pool).await.unwrap();
+
+        // Let's provision a user and add a password to it. This part is hard to test
+        // with just HTTP requests, so we'll use the repository directly.
+        let mut repo = state.repository().await.unwrap();
+
+        let user = repo
+            .user()
+            .add(&mut state.rng(), &state.clock, "alice".to_owned())
+            .await
+            .unwrap();
+
+        let (version, hashed_password) = state
+            .password_manager
+            .hash(
+                &mut state.rng(),
+                Zeroizing::new("password".to_owned().into_bytes()),
+            )
+            .await
+            .unwrap();
+
+        repo.user_password()
+            .add(
+                &mut state.rng(),
+                &state.clock,
+                &user,
+                version,
+                hashed_password,
+                None,
+            )
+            .await
+            .unwrap();
+
+        repo.save().await.unwrap();
+
+        // Now let's try to login with the password, without asking for a refresh token.
+        let request = Request::post("/_matrix/client/v3/login").json(serde_json::json!({
+            "type": "m.login.password",
+            "identifier": {
+                "type": "m.id.user",
+                "user": "alice",
+            },
+            "password": "password",
+        }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+
+        let body: ResponseBody = response.json();
+        assert!(!body.access_token.is_empty());
+        assert_eq!(body.device_id.as_str().len(), 10);
+        assert_eq!(body.user_id, "@alice:example.com");
+        assert_eq!(body.refresh_token, None);
+        assert_eq!(body.expires_in_ms, None);
+
+        // Do the same, but this time ask for a refresh token.
+        let request = Request::post("/_matrix/client/v3/login").json(serde_json::json!({
+            "type": "m.login.password",
+            "identifier": {
+                "type": "m.id.user",
+                "user": "alice",
+            },
+            "password": "password",
+            "refresh_token": true,
+        }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+
+        let body: ResponseBody = response.json();
+        assert!(!body.access_token.is_empty());
+        assert_eq!(body.device_id.as_str().len(), 10);
+        assert_eq!(body.user_id, "@alice:example.com");
+        assert!(body.refresh_token.is_some());
+        assert!(body.expires_in_ms.is_some());
+
+        // Try to login with a wrong password.
+        let request = Request::post("/_matrix/client/v3/login").json(serde_json::json!({
+            "type": "m.login.password",
+            "identifier": {
+                "type": "m.id.user",
+                "user": "alice",
+            },
+            "password": "wrongpassword",
+        }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::FORBIDDEN);
+        let body: serde_json::Value = response.json();
+        assert_eq!(body["errcode"], "M_UNAUTHORIZED");
+
+        // Try to login with a wrong username.
+        let request = Request::post("/_matrix/client/v3/login").json(serde_json::json!({
+            "type": "m.login.password",
+            "identifier": {
+                "type": "m.id.user",
+                "user": "bob",
+            },
+            "password": "wrongpassword",
+        }));
+
+        let old_body = body;
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::FORBIDDEN);
+        let body: serde_json::Value = response.json();
+
+        // The response should be the same as the previous one, so that we don't leak if
+        // it's the user that is invalid or the password.
+        assert_eq!(body, old_body);
+    }
+
+    /// Test the response of an unsupported login flow.
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_unsupported_login(pool: PgPool) {
+        init_tracing();
+        let state = TestState::from_pool(pool).await.unwrap();
+
+        // Try to login with an unsupported login flow.
+        let request = Request::post("/_matrix/client/v3/login").json(serde_json::json!({
+            "type": "m.login.unsupported",
+        }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::BAD_REQUEST);
+        let body: serde_json::Value = response.json();
+        assert_eq!(body["errcode"], "M_UNRECOGNIZED");
+    }
+
+    /// Test `m.login.token` login flow.
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_login_token_login(pool: PgPool) {
+        init_tracing();
+        let state = TestState::from_pool(pool).await.unwrap();
+
+        // Provision a user
+        let mut repo = state.repository().await.unwrap();
+
+        let user = repo
+            .user()
+            .add(&mut state.rng(), &state.clock, "alice".to_owned())
+            .await
+            .unwrap();
+        repo.save().await.unwrap();
+
+        // First try with an invalid token
+        let request = Request::post("/_matrix/client/v3/login").json(serde_json::json!({
+            "type": "m.login.token",
+            "token": "someinvalidtoken",
+        }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::FORBIDDEN);
+        let body: serde_json::Value = response.json();
+        assert_eq!(body["errcode"], "M_UNAUTHORIZED");
+
+        let (device, token) = get_login_token(&state, &user).await;
+
+        // Try to login with the token.
+        let request = Request::post("/_matrix/client/v3/login").json(serde_json::json!({
+            "type": "m.login.token",
+            "token": token,
+        }));
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+
+        let body: ResponseBody = response.json();
+        assert!(!body.access_token.is_empty());
+        assert_eq!(body.device_id, device);
+        assert_eq!(body.user_id, "@alice:example.com");
+        assert_eq!(body.refresh_token, None);
+        assert_eq!(body.expires_in_ms, None);
+
+        // Try again with the same token, it should fail.
+        let request = Request::post("/_matrix/client/v3/login").json(serde_json::json!({
+            "type": "m.login.token",
+            "token": token,
+        }));
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::FORBIDDEN);
+        let body: serde_json::Value = response.json();
+        assert_eq!(body["errcode"], "M_UNAUTHORIZED");
+
+        // Try to login, but wait too long before sending the request.
+        let (_device, token) = get_login_token(&state, &user).await;
+
+        // Advance the clock to make the token expire.
+        state.clock.advance(Duration::minutes(1));
+
+        let request = Request::post("/_matrix/client/v3/login").json(serde_json::json!({
+            "type": "m.login.token",
+            "token": token,
+        }));
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::FORBIDDEN);
+        let body: serde_json::Value = response.json();
+        assert_eq!(body["errcode"], "M_UNAUTHORIZED");
+    }
+
+    /// Get a login token for a user.
+    /// Returns the device and the token.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the repository fails.
+    async fn get_login_token(state: &TestState, user: &User) -> (Device, String) {
+        // XXX: This is a bit manual, but this is what basically the SSO login flow
+        // does.
+        let mut repo = state.repository().await.unwrap();
+
+        // Generate a device and a token randomly
+        let token = Alphanumeric.sample_string(&mut state.rng(), 32);
+        let device = Device::generate(&mut state.rng());
+
+        // Start a compat SSO login flow
+        let login = repo
+            .compat_sso_login()
+            .add(
+                &mut state.rng(),
+                &state.clock,
+                token.clone(),
+                "http://example.com/".parse().unwrap(),
+            )
+            .await
+            .unwrap();
+
+        // Complete the flow by fulfilling it with a session
+        let compat_session = repo
+            .compat_session()
+            .add(&mut state.rng(), &state.clock, user, device.clone())
+            .await
+            .unwrap();
+
+        repo.compat_sso_login()
+            .fulfill(&state.clock, login, &compat_session)
+            .await
+            .unwrap();
+
+        repo.save().await.unwrap();
+
+        (device, token)
+    }
 }
