@@ -200,7 +200,7 @@ jobs:
 
       - name: Run clippy
         run: |
-          cargo clippy --workspace -- -D warnings
+          cargo clippy --workspace --tests --bins --lib -- -D warnings
 
 
   test:
