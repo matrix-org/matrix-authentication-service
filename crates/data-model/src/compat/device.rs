@@ -17,12 +17,12 @@ use rand::{
     distributions::{Alphanumeric, DistString},
     RngCore,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 static DEVICE_ID_LENGTH: usize = 10;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct Device {
     id: String,
