@@ -60,7 +60,7 @@ async function fetchRelay(
 }
 
 // Export a singleton instance of Relay Environment configured with our network layer:
-export default new Environment({
+const environment = new Environment({
   network: Network.create(fetchRelay),
   store: new Store(new RecordSource(), {
     // This property tells Relay to not immediately clear its cache when the user
@@ -70,3 +70,5 @@ export default new Environment({
     gcReleaseBufferSize: 10,
   }),
 });
+
+export default environment;
