@@ -12,8 +12,8 @@ thiserror = "1.0.38"
 
 aws-sdk-sesv2 = { version = "0.24.0", default-features = false }
 aws-config = { version = "0.54.1", default-features = false }
-aws-smithy-client = { version = "0.54.3", default-features = false, features = ["client-hyper"] }
-aws-smithy-async = { version = "0.54.3", default-features = false, features = ["rt-tokio"] }
+aws-smithy-client = { version = "0.54.4", default-features = false, features = ["client-hyper"] }
+aws-smithy-async = { version = "0.54.4", default-features = false, features = ["rt-tokio"] }
 
 mas-templates = { path = "../templates" }
 mas-http = { path = "../http", features = ["aws-sdk", "client"] }
