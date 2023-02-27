@@ -108,6 +108,7 @@ impl JwtSigningMethod {
 
 /// The credentials obtained during registration, to authenticate a client on
 /// endpoints that require it.
+#[derive(Clone)]
 pub enum ClientCredentials {
     /// No client authentication is used.
     ///
