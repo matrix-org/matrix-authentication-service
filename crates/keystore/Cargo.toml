@@ -8,7 +8,7 @@ license = "Apache-2.0"
 [dependencies]
 anyhow = "1.0.69"
 aead = { version = "0.5.1", features = ["std"] }
-const-oid = { version = "0.9.1", features = ["std"] }
+const-oid = { version = "0.9.2", features = ["std"] }
 cookie = { version = "0.17.0", features = ["key-expansion", "private"] }
 der = { version = "0.6.1", features = ["std"] }
 ecdsa = { version = "0.15.1", features = ["std"] }
@@ -26,7 +26,7 @@ spki = { version = "0.6.0", features = ["std"] }
 thiserror = "1.0.38"
 generic-array = "0.14.6"
 chacha20poly1305 = { version = "0.10.1", features = ["std"] }
-base64ct = "1.5.3"
+base64ct = "1.6.0"
 
 mas-iana = { path = "../iana" }
 mas-jose = { path = "../jose" }

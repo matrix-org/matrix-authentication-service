@@ -16,15 +16,15 @@ tracing = "0.1.37"
 # Error management
 thiserror = "1.0.38"
 anyhow = "1.0.69"
-sentry = { version = "0.29.3", default-features = false }
+sentry = { version = "0.30.0", default-features = false }
 
 # Web server
 hyper = { version = "0.14.24", features = ["full"] }
 tower = "0.4.13"
-tower-http = { version = "0.3.5", features = ["cors"] }
-axum = "0.6.8"
+tower-http = { version = "0.4.0", features = ["cors"] }
+axum = "0.6.9"
 axum-macros = "0.3.4"
-axum-extra = { version = "0.5.0", features = ["cookie-private"] }
+axum-extra = { version = "0.6.0", features = ["cookie-private"] }
 
 async-graphql = { version = "5.0.6", features = ["tracing", "apollo_tracing"] }
 
@@ -49,7 +49,7 @@ zeroize = "1.5.7"
 # Various data types and utilities
 camino = "1.1.3"
 chrono = { version = "0.4.23", features = ["serde"] }
-time = "0.3.19"
+time = "0.3.20"
 url = { version = "2.3.1", features = ["serde"] }
 mime = "0.3.16"
 rand = "0.8.5"

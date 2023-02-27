@@ -18,7 +18,7 @@ hyper = [
 keystore = ["dep:mas-keystore"]
 
 [dependencies]
-base64ct = { version = "1.5.3", features = ["std"] }
+base64ct = { version = "1.6.0", features = ["std"] }
 bytes = "1.4.0"
 chrono = "0.4.23"
 form_urlencoded = "1.1.0"
@@ -59,7 +59,7 @@ version = "0.14.24"
 features = ["client", "http1", "http2", "stream", "runtime" ]
 optional = true
 [dependencies.tower-http]
-version = "0.3.5"
+version = "0.4.0"
 features = ["follow-redirect", "decompression-full", "set-header", "timeout"]
 optional = true
 

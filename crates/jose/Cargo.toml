@@ -6,7 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-base64ct = { version = "1.5.3", features = ["std"] }
+base64ct = { version = "1.6.0", features = ["std"] }
 chrono = { version = "0.4.23", features = ["serde"] }
 digest = "0.10.6"
 ecdsa = { version = "0.15.1", features = ["signing", "verifying"] }
@@ -18,7 +18,7 @@ p256 = { version = "0.12.0", features = ["ecdsa"] }
 p384 = { version = "0.12.0", features = ["ecdsa"] }
 rand = "0.8.5"
 rsa = "0.8.1"
-schemars = "0.8.11"
+schemars = "0.8.12"
 sec1 = "0.3.0"
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = "1.0.93"
