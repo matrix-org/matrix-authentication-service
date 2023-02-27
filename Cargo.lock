@@ -3187,7 +3187,7 @@ dependencies = [
  "mas-jose",
  "p256",
  "p384",
- "pem-rfc7468 0.6.0",
+ "pem-rfc7468 0.7.0",
  "pkcs1",
  "pkcs8",
  "rand 0.8.5",
