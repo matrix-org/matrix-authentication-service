@@ -185,13 +185,18 @@ pub(crate) async fn post(
         .await?
         .ok_or(RouteError::UnknownToken)?;
 
+    // Check that the session is still valid.
+    if !session.is_valid() {
+        return Err(RouteError::UnknownToken);
+    }
+
     // Check that the client ending the session is the same as the client that
     // created it.
     if client.id != session.client_id {
         return Err(RouteError::UnauthorizedClient);
     }
 
-    // Now that we checked eveyrthing, we can end the session.
+    // Now that we checked everything, we can end the session.
     repo.oauth2_session().finish(&clock, session).await?;
 
     repo.save().await?;
@@ -307,6 +312,17 @@ mod tests {
 
         // Check that the token is no longer valid
         assert!(!state.is_access_token_valid(&access_token).await);
+
+        // Revoking a second time shouldn't fail
+        let request = Request::post(mas_router::OAuth2Revocation::PATH).form(serde_json::json!({
+            "token": access_token,
+            "token_type_hint": "access_token",
+            "client_id": client_id,
+            "client_secret": client_secret,
+        }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
 
         // Try using the refresh token to get a new access token, it should fail.
         let request =
