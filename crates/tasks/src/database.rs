@@ -14,7 +14,7 @@
 
 //! Database-related tasks
 
-use mas_storage::{oauth2::OAuth2AccessTokenRepository, RepositoryAccess, SystemClock};
+use mas_storage::{oauth2::OAuth2AccessTokenRepository, Repository, RepositoryAccess, SystemClock};
 use mas_storage_pg::PgRepository;
 use sqlx::{Pool, Postgres};
 use tracing::{debug, error, info};
@@ -34,8 +34,9 @@ impl std::fmt::Debug for CleanupExpired {
 impl Task for CleanupExpired {
     async fn run(&self) {
         let res = async move {
-            let mut repo = PgRepository::from_pool(&self.0).await?;
+            let mut repo = PgRepository::from_pool(&self.0).await?.boxed();
             let res = repo.oauth2_access_token().cleanup_expired(&self.1).await;
+            repo.save().await?;
             res
         }
         .await;
