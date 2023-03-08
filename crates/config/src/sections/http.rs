@@ -358,8 +358,9 @@ impl Default for HttpConfig {
                     resources: vec![Resource::Health],
                     tls: None,
                     proxy_protocol: false,
-                    binds: vec![BindConfig::Address {
-                        address: "localhost:8081".into(),
+                    binds: vec![BindConfig::Listen {
+                        host: Some("localhost".to_owned()),
+                        port: 8081,
                     }],
                 },
             ],

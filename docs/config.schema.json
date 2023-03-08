@@ -97,7 +97,8 @@
           {
             "binds": [
               {
-                "address": "localhost:8081"
+                "host": "localhost",
+                "port": 8081
               }
             ],
             "name": "internal",
