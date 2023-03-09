@@ -27,6 +27,11 @@ See the [Documentation](https://matrix-org.github.io/matrix-authentication-servi
   cd ..
   ```
 - Generate the sample config via `cargo run -- config generate > config.yaml`
+- Run a PostgreSQL database locally
+  ```sh
+  docker run -p 5432:5432 -e 'POSTGRES_USER=postgres' -e 'POSTGRES_PASSWORD=postgres' -e 'POSTGRES_DATABASE=postgres' postgres
+  ```
+- Update the database URI in `config.yaml` to `postgresql://postgres:postgres@localhost/postgres`
 - Run the database migrations via `cargo run -- database migrate`
 - Run the server via `cargo run -- server -c config.yaml`
 - Go to <http://localhost:8080/>
