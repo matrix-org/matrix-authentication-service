@@ -7,25 +7,25 @@ license = "Apache-2.0"
 
 [dependencies]
 base64ct = { version = "1.6.0", features = ["std"] }
-chrono = { version = "0.4.23", features = ["serde"] }
+chrono = { version = "0.4.24", features = ["serde"] }
 digest = "0.10.6"
-ecdsa = { version = "0.15.1", features = ["signing", "verifying"] }
-elliptic-curve = "0.12.3"
+ecdsa = { version = "0.16.1", features = ["signing", "verifying"] }
+elliptic-curve = "0.13.2"
 generic-array = "0.14.6"
 hmac = "0.12.1"
-k256 = { version = "0.12.0", features = ["ecdsa"] }
-p256 = { version = "0.12.0", features = ["ecdsa"] }
-p384 = { version = "0.12.0", features = ["ecdsa"] }
+k256 = { version = "0.13.0", features = ["ecdsa"] }
+p256 = { version = "0.13.0", features = ["ecdsa"] }
+p384 = { version = "0.13.0", features = ["ecdsa"] }
 rand = "0.8.5"
-rsa = "0.8.1"
+rsa = "0.9.0-pre.0"
 schemars = "0.8.12"
-sec1 = "0.3.0"
-serde = { version = "1.0.152", features = ["derive"] }
-serde_json = "1.0.93"
-serde_with = { version = "2.2.0", features = ["base64"] }
+sec1 = "0.7.1"
+serde = { version = "1.0.155", features = ["derive"] }
+serde_json = "1.0.94"
+serde_with = { version = "2.3.1", features = ["base64"] }
 sha2 = { version = "0.10.6", features = ["oid"] }
 signature = "2.0.0"
-thiserror = "1.0.38"
+thiserror = "1.0.39"
 tracing = "0.1.37"
 url = { version = "2.3.1", features = ["serde"] }
 

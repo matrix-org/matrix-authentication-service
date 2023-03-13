@@ -20,8 +20,8 @@
 
 use std::{ops::Deref, sync::Arc};
 
-use der::{zeroize::Zeroizing, Decode};
-use elliptic_curve::pkcs8::EncodePrivateKey;
+use der::{zeroize::Zeroizing, Decode, Encode, EncodePem};
+use elliptic_curve::{pkcs8::EncodePrivateKey, sec1::ToEncodedPoint};
 use mas_iana::jose::{JsonWebKeyType, JsonWebSignatureAlg};
 pub use mas_jose::jwk::{JsonWebKey, JsonWebKeySet};
 use mas_jose::{
@@ -33,7 +33,6 @@ use pkcs1::EncodeRsaPrivateKey;
 use pkcs8::{AssociatedOid, PrivateKeyInfo};
 use rand::{CryptoRng, RngCore};
 use rsa::BigUint;
-use sec1::EncodeEcPrivateKey;
 use thiserror::Error;
 
 mod encrypter;
@@ -200,12 +199,12 @@ impl PrivateKey {
     /// # Errors
     ///
     /// Returns an error if the encoding failed
-    pub fn to_der(&self) -> Result<Zeroizing<Vec<u8>>, anyhow::Error> {
+    pub fn to_der(&self) -> Result<Zeroizing<Vec<u8>>, pkcs1::Error> {
         let der = match self {
             PrivateKey::Rsa(key) => key.to_pkcs1_der()?.to_bytes(),
-            PrivateKey::EcP256(key) => key.to_sec1_der()?,
-            PrivateKey::EcP384(key) => key.to_sec1_der()?,
-            PrivateKey::EcK256(key) => key.to_sec1_der()?,
+            PrivateKey::EcP256(key) => to_sec1_der(key)?,
+            PrivateKey::EcP384(key) => to_sec1_der(key)?,
+            PrivateKey::EcK256(key) => to_sec1_der(key)?,
         };
 
         Ok(der)
@@ -216,7 +215,7 @@ impl PrivateKey {
     /// # Errors
     ///
     /// Returns an error if the encoding failed
-    pub fn to_pkcs8_der(&self) -> Result<Zeroizing<Vec<u8>>, anyhow::Error> {
+    pub fn to_pkcs8_der(&self) -> Result<Zeroizing<Vec<u8>>, pkcs8::Error> {
         let der = match self {
             PrivateKey::Rsa(key) => key.to_pkcs8_der()?,
             PrivateKey::EcP256(key) => key.to_pkcs8_der()?,
@@ -238,12 +237,12 @@ impl PrivateKey {
     pub fn to_pem(
         &self,
         line_ending: pem_rfc7468::LineEnding,
-    ) -> Result<Zeroizing<String>, anyhow::Error> {
+    ) -> Result<Zeroizing<String>, pkcs1::Error> {
         let pem = match self {
             PrivateKey::Rsa(key) => key.to_pkcs1_pem(line_ending)?,
-            PrivateKey::EcP256(key) => key.to_sec1_pem(line_ending)?,
-            PrivateKey::EcP384(key) => key.to_sec1_pem(line_ending)?,
-            PrivateKey::EcK256(key) => key.to_sec1_pem(line_ending)?,
+            PrivateKey::EcP256(key) => to_sec1_pem(key, line_ending)?,
+            PrivateKey::EcP384(key) => to_sec1_pem(key, line_ending)?,
+            PrivateKey::EcK256(key) => to_sec1_pem(key, line_ending)?,
         };
 
         Ok(pem)
@@ -516,22 +515,64 @@ impl PrivateKey {
     }
 
     /// Generate an Elliptic Curve key for the P-256 curve
-    pub fn generate_ec_p256<R: RngCore + CryptoRng>(rng: R) -> Self {
-        let key = elliptic_curve::SecretKey::random(rng);
+    pub fn generate_ec_p256<R: RngCore + CryptoRng>(mut rng: R) -> Self {
+        let key = elliptic_curve::SecretKey::random(&mut rng);
         Self::EcP256(Box::new(key))
     }
 
     /// Generate an Elliptic Curve key for the P-384 curve
-    pub fn generate_ec_p384<R: RngCore + CryptoRng>(rng: R) -> Self {
-        let key = elliptic_curve::SecretKey::random(rng);
+    pub fn generate_ec_p384<R: RngCore + CryptoRng>(mut rng: R) -> Self {
+        let key = elliptic_curve::SecretKey::random(&mut rng);
         Self::EcP384(Box::new(key))
     }
 
     /// Generate an Elliptic Curve key for the secp256k1 curve
-    pub fn generate_ec_k256<R: RngCore + CryptoRng>(rng: R) -> Self {
-        let key = elliptic_curve::SecretKey::random(rng);
+    pub fn generate_ec_k256<R: RngCore + CryptoRng>(mut rng: R) -> Self {
+        let key = elliptic_curve::SecretKey::random(&mut rng);
         Self::EcK256(Box::new(key))
     }
+}
+
+// The default implementation of SecretKey::to_sec1_pem/der do not include the
+// named curve OID. This is a basic reimplementation of those two functions with
+// the OID included, so that it matches the implementation in OpenSSL.
+fn to_sec1_der<C>(key: &elliptic_curve::SecretKey<C>) -> Result<Zeroizing<Vec<u8>>, der::Error>
+where
+    C: elliptic_curve::Curve + elliptic_curve::CurveArithmetic + AssociatedOid,
+    elliptic_curve::PublicKey<C>: elliptic_curve::sec1::ToEncodedPoint<C>,
+    C::FieldBytesSize: elliptic_curve::sec1::ModulusSize,
+{
+    let private_key_bytes = Zeroizing::new(key.to_bytes());
+    let public_key_bytes = key.public_key().to_encoded_point(false);
+    Ok(Zeroizing::new(
+        sec1::EcPrivateKey {
+            private_key: &private_key_bytes,
+            parameters: Some(sec1::EcParameters::NamedCurve(C::OID)),
+            public_key: Some(public_key_bytes.as_bytes()),
+        }
+        .to_der()?,
+    ))
+}
+
+fn to_sec1_pem<C>(
+    key: &elliptic_curve::SecretKey<C>,
+    line_ending: pem_rfc7468::LineEnding,
+) -> Result<Zeroizing<String>, der::Error>
+where
+    C: elliptic_curve::Curve + elliptic_curve::CurveArithmetic + AssociatedOid,
+    elliptic_curve::PublicKey<C>: elliptic_curve::sec1::ToEncodedPoint<C>,
+    C::FieldBytesSize: elliptic_curve::sec1::ModulusSize,
+{
+    let private_key_bytes = Zeroizing::new(key.to_bytes());
+    let public_key_bytes = key.public_key().to_encoded_point(false);
+    Ok(Zeroizing::new(
+        sec1::EcPrivateKey {
+            private_key: &private_key_bytes,
+            parameters: Some(sec1::EcParameters::NamedCurve(C::OID)),
+            public_key: Some(public_key_bytes.as_bytes()),
+        }
+        .to_pem(line_ending)?,
+    ))
 }
 
 impl From<&PrivateKey> for JsonWebKeyPublicParameters {

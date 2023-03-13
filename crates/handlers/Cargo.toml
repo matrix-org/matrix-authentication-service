@@ -7,24 +7,24 @@ license = "Apache-2.0"
 
 [dependencies]
 # Async runtime
-tokio = { version = "1.25.0", features = ["macros"] }
-futures-util = "0.3.26"
+tokio = { version = "1.26.0", features = ["macros"] }
+futures-util = "0.3.27"
 
 # Logging and tracing
 tracing = "0.1.37"
 
 # Error management
-thiserror = "1.0.38"
+thiserror = "1.0.39"
 anyhow = "1.0.69"
 sentry = { version = "0.30.0", default-features = false }
 
 # Web server
-hyper = { version = "0.14.24", features = ["full"] }
+hyper = { version = "0.14.25", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.4.0", features = ["cors"] }
-axum = "0.6.9"
-axum-macros = "0.3.4"
-axum-extra = { version = "0.6.0", features = ["cookie-private"] }
+axum = "0.6.11"
+axum-macros = "0.3.6"
+axum-extra = { version = "0.7.1", features = ["cookie-private"] }
 
 async-graphql = { version = "5.0.6", features = ["tracing", "apollo_tracing"] }
 
@@ -35,20 +35,20 @@ lettre = { version = "0.10.3", default-features = false, features = ["builder"] 
 sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres"] }
 
 # Various structure (de)serialization
-serde = { version = "1.0.152", features = ["derive"] }
-serde_with = { version = "2.2.0", features = ["hex", "chrono"] }
-serde_json = "1.0.93"
+serde = { version = "1.0.155", features = ["derive"] }
+serde_with = { version = "2.3.1", features = ["hex", "chrono"] }
+serde_json = "1.0.94"
 serde_urlencoded = "0.7.1"
 
 # Password hashing
-argon2 = { version = "0.4.1", features = ["password-hash", "std"] }
+argon2 = { version = "0.5.0", features = ["password-hash", "std"] }
 bcrypt = "0.14.0"
-pbkdf2 = { version = "0.11.0", features = ["password-hash", "std"] }
+pbkdf2 = { version = "0.12.1", features = ["password-hash", "std", "simple"] }
 zeroize = "1.5.7"
 
 # Various data types and utilities
-camino = "1.1.3"
-chrono = { version = "0.4.23", features = ["serde"] }
+camino = "1.1.4"
+chrono = { version = "0.4.24", features = ["serde"] }
 time = "0.3.20"
 url = { version = "2.3.1", features = ["serde"] }
 mime = "0.3.16"
@@ -74,7 +74,7 @@ mas-templates = { path = "../templates" }
 oauth2-types = { path = "../oauth2-types" }
 
 [dev-dependencies]
-indoc = "2.0.0"
+indoc = "2.0.1"
 insta = "1.28.0"
 tracing-subscriber = "0.3.16"
 

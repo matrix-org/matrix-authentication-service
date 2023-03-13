@@ -8,18 +8,18 @@ license = "Apache-2.0"
 [dependencies]
 anyhow = "1.0.69"
 opa-wasm = { git = "https://github.com/matrix-org/rust-opa-wasm.git" }
-serde = { version = "1.0.152", features = ["derive"] }
-serde_json = "1.0.93"
-thiserror = "1.0.38"
-tokio = { version = "1.25.0", features = ["io-util"] }
+serde = { version = "1.0.155", features = ["derive"] }
+serde_json = "1.0.94"
+thiserror = "1.0.39"
+tokio = { version = "1.26.0", features = ["io-util"] }
 tracing = "0.1.37"
-wasmtime = { version = "6.0.0", default-features = false, features = ["async", "cranelift"] }
+wasmtime = { version = "6.0.1", default-features = false, features = ["async", "cranelift"] }
 
 mas-data-model = { path = "../data-model" }
 oauth2-types = { path = "../oauth2-types" }
 
 [dev-dependencies]
-tokio = { version = "1.25.0", features = ["fs", "rt", "macros"] }
+tokio = { version = "1.26.0", features = ["fs", "rt", "macros"] }
 
 [features]
 cache = ["wasmtime/cache"]
