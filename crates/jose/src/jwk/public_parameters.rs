@@ -235,26 +235,26 @@ mod ec_impls {
     use ecdsa::EncodedPoint;
     use elliptic_curve::{
         sec1::{Coordinates, FromEncodedPoint, ModulusSize, ToEncodedPoint},
-        AffinePoint, Curve, FieldBytes, FieldSize, PublicKey,
+        AffinePoint, FieldBytes, PublicKey,
     };
 
     use super::{super::JwkEcCurve, EcPublicParameters, JsonWebKeyPublicParameters};
 
     impl<C> TryFrom<&EcPublicParameters> for PublicKey<C>
     where
-        C: Curve + elliptic_curve::ProjectiveArithmetic,
+        C: elliptic_curve::CurveArithmetic,
         AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-        FieldSize<C>: ModulusSize,
+        C::FieldBytesSize: ModulusSize + Unsigned,
     {
         type Error = elliptic_curve::Error;
         fn try_from(value: &EcPublicParameters) -> Result<Self, Self::Error> {
             let x = value
                 .x
-                .get(..FieldSize::<C>::USIZE)
+                .get(..C::FieldBytesSize::USIZE)
                 .ok_or(elliptic_curve::Error)?;
             let y = value
                 .y
-                .get(..FieldSize::<C>::USIZE)
+                .get(..C::FieldBytesSize::USIZE)
                 .ok_or(elliptic_curve::Error)?;
 
             let x = FieldBytes::<C>::from_slice(x);
@@ -267,9 +267,9 @@ mod ec_impls {
 
     impl<C> From<PublicKey<C>> for JsonWebKeyPublicParameters
     where
-        C: Curve + elliptic_curve::ProjectiveArithmetic + JwkEcCurve,
+        C: elliptic_curve::CurveArithmetic + JwkEcCurve,
         AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-        FieldSize<C>: ModulusSize,
+        C::FieldBytesSize: ModulusSize,
     {
         fn from(key: PublicKey<C>) -> Self {
             (&key).into()
@@ -278,9 +278,9 @@ mod ec_impls {
 
     impl<C> From<&PublicKey<C>> for JsonWebKeyPublicParameters
     where
-        C: Curve + elliptic_curve::ProjectiveArithmetic + JwkEcCurve,
+        C: elliptic_curve::CurveArithmetic + JwkEcCurve,
         AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-        FieldSize<C>: ModulusSize,
+        C::FieldBytesSize: ModulusSize,
     {
         fn from(key: &PublicKey<C>) -> Self {
             Self::Ec(key.into())
@@ -289,9 +289,9 @@ mod ec_impls {
 
     impl<C> From<PublicKey<C>> for EcPublicParameters
     where
-        C: Curve + elliptic_curve::ProjectiveArithmetic + JwkEcCurve,
+        C: elliptic_curve::CurveArithmetic + JwkEcCurve,
         AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-        FieldSize<C>: ModulusSize,
+        C::FieldBytesSize: ModulusSize,
     {
         fn from(key: PublicKey<C>) -> Self {
             (&key).into()
@@ -300,9 +300,9 @@ mod ec_impls {
 
     impl<C> From<&PublicKey<C>> for EcPublicParameters
     where
-        C: Curve + elliptic_curve::ProjectiveArithmetic + JwkEcCurve,
+        C: elliptic_curve::CurveArithmetic + JwkEcCurve,
         AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-        FieldSize<C>: ModulusSize,
+        C::FieldBytesSize: ModulusSize,
     {
         fn from(key: &PublicKey<C>) -> Self {
             let point = key.to_encoded_point(false);

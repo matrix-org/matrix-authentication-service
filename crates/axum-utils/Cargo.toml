@@ -6,24 +6,24 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-async-trait = "0.1.64"
-axum = { version = "0.6.9", features = ["headers"] }
-axum-extra = { version = "0.6.0", features = ["cookie-private"] }
-chrono = "0.4.23"
+async-trait = "0.1.66"
+axum = { version = "0.6.11", features = ["headers"] }
+axum-extra = { version = "0.7.1", features = ["cookie-private"] }
+chrono = "0.4.24"
 data-encoding = "2.3.3"
-futures-util = "0.3.26"
+futures-util = "0.3.27"
 headers = "0.3.8"
 http = "0.2.9"
 http-body = "0.4.5"
 mime = "0.3.16"
 rand = "0.8.5"
 sentry = { version = "0.30.0", default-features = false }
-serde = "1.0.152"
-serde_with = "2.2.0"
+serde = "1.0.155"
+serde_with = "2.3.1"
 serde_urlencoded = "0.7.1"
-serde_json = "1.0.93"
-thiserror = "1.0.38"
-tokio = "1.25.0"
+serde_json = "1.0.94"
+thiserror = "1.0.39"
+tokio = "1.26.0"
 tower = { version = "0.4.13", features = ["util"] }
 tracing = "0.1.37"
 url = "2.3.1"

@@ -306,7 +306,7 @@ impl From<EcPrivateParameters> for super::public_parameters::EcPublicParameters 
 mod ec_impls {
     use elliptic_curve::{
         sec1::{Coordinates, FromEncodedPoint, ModulusSize, ToEncodedPoint},
-        AffinePoint, Curve, FieldSize, SecretKey,
+        AffinePoint, Curve, SecretKey,
     };
 
     use super::{super::JwkEcCurve, EcPrivateParameters};
@@ -328,15 +328,15 @@ mod ec_impls {
         type Error = elliptic_curve::Error;
 
         fn try_from(value: &EcPrivateParameters) -> Result<Self, Self::Error> {
-            SecretKey::from_be_bytes(&value.d)
+            SecretKey::from_slice(&value.d)
         }
     }
 
     impl<C> From<SecretKey<C>> for EcPrivateParameters
     where
-        C: Curve + elliptic_curve::ProjectiveArithmetic + JwkEcCurve,
+        C: elliptic_curve::CurveArithmetic + JwkEcCurve,
         AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-        FieldSize<C>: ModulusSize,
+        C::FieldBytesSize: ModulusSize,
     {
         fn from(key: SecretKey<C>) -> Self {
             (&key).into()
@@ -345,16 +345,16 @@ mod ec_impls {
 
     impl<C> From<&SecretKey<C>> for EcPrivateParameters
     where
-        C: Curve + elliptic_curve::ProjectiveArithmetic + JwkEcCurve,
+        C: elliptic_curve::CurveArithmetic + JwkEcCurve,
         AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-        FieldSize<C>: ModulusSize,
+        C::FieldBytesSize: ModulusSize,
     {
         fn from(key: &SecretKey<C>) -> Self {
             let point = key.public_key().to_encoded_point(false);
             let Coordinates::Uncompressed { x, y } = point.coordinates() else {
                 unreachable!()
             };
-            let d = key.to_be_bytes();
+            let d = key.to_bytes();
             EcPrivateParameters {
                 crv: C::CRV,
                 x: x.to_vec(),
