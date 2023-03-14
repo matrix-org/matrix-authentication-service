@@ -103,6 +103,9 @@ impl UpstreamOAuth2Link {
         } else {
             // Fetch on-the-fly
             let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
+
+            // This is a false positive, since it would have a lifetime error
+            #[allow(clippy::let_and_return)]
             let provider = repo
                 .upstream_oauth_provider()
                 .lookup(self.link.provider_id)
@@ -122,6 +125,9 @@ impl UpstreamOAuth2Link {
         } else if let Some(user_id) = &self.link.user_id {
             // Fetch on-the-fly
             let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
+
+            // This is a false positive, since it would have a lifetime error
+            #[allow(clippy::let_and_return)]
             let user = repo
                 .user()
                 .lookup(*user_id)

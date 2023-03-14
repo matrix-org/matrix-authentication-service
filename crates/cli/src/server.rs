@@ -35,7 +35,6 @@ use sentry_tower::{NewSentryLayer, SentryHttpLayer};
 use tower::Layer;
 use tower_http::{compression::CompressionLayer, services::ServeDir};
 
-#[allow(clippy::trait_duplication_in_bounds)]
 pub fn build_router<B>(
     state: AppState,
     resources: &[HttpResource],

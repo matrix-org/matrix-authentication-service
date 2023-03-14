@@ -14,8 +14,6 @@
 
 //! Contexts used in templates
 
-#![allow(clippy::trait_duplication_in_bounds, clippy::type_repetition_in_bounds)]
-
 use chrono::Utc;
 use mas_data_model::{
     AuthorizationGrant, BrowserSession, Client, CompatSsoLogin, CompatSsoLoginState,

@@ -82,7 +82,6 @@ pub use mas_axum_utils::http_client_factory::HttpClientFactory;
 
 pub use self::{app_state::AppState, compat::MatrixHomeserver, graphql::schema as graphql_schema};
 
-#[must_use]
 pub fn healthcheck_router<S, B>() -> Router<S, B>
 where
     B: HttpBody + Send + 'static,
@@ -92,7 +91,6 @@ where
     Router::new().route(mas_router::Healthcheck::route(), get(self::health::get))
 }
 
-#[must_use]
 pub fn graphql_router<S, B>(playground: bool) -> Router<S, B>
 where
     B: HttpBody + Send + 'static,
@@ -115,7 +113,6 @@ where
     router
 }
 
-#[must_use]
 pub fn discovery_router<S, B>() -> Router<S, B>
 where
     B: HttpBody + Send + 'static,
@@ -149,8 +146,6 @@ where
         )
 }
 
-#[must_use]
-#[allow(clippy::trait_duplication_in_bounds)]
 pub fn api_router<S, B>() -> Router<S, B>
 where
     B: HttpBody + Send + 'static,
@@ -210,7 +205,6 @@ where
         )
 }
 
-#[must_use]
 #[allow(clippy::trait_duplication_in_bounds)]
 pub fn compat_router<S, B>() -> Router<S, B>
 where
@@ -254,8 +248,6 @@ where
         )
 }
 
-#[must_use]
-#[allow(clippy::trait_duplication_in_bounds)]
 pub fn human_router<S, B>(templates: Templates) -> Router<S, B>
 where
     B: HttpBody + Send + 'static,
