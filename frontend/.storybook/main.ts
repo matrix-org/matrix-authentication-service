@@ -15,7 +15,7 @@
 import type { StorybookConfig } from "@storybook/react-vite";
 
 const config: StorybookConfig = {
-  stories: ["../src/**/*.stories.mdx", "../src/**/*.stories.@(js|jsx|ts|tsx)"],
+  stories: ["../src/**/*.stories.@(js|jsx|ts|tsx)"],
 
   addons: [
     // Automatic docs pages
@@ -44,7 +44,7 @@ const config: StorybookConfig = {
 
   typescript: {
     reactDocgen: "react-docgen-typescript",
-  } as any, // XXX
+  },
 
   core: {
     disableTelemetry: true,

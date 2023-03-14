@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { expect, it } from "@jest/globals";
+import { expect, it } from "vitest";
 import renderer from "react-test-renderer";
 
 import LoadingScreen from "./LoadingScreen";
