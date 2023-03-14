@@ -100,7 +100,7 @@ jobs:
 
       - name: Test
         working-directory: ./frontend
-        run: npm test
+        run: npm run coverage
 
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v3
