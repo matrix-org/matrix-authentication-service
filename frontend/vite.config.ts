@@ -15,7 +15,7 @@
 import { defineConfig } from "vite";
 import eslint from "vite-plugin-eslint";
 import react from "@vitejs/plugin-react";
-import relay from "vite-plugin-relay";
+import relay from "vite-plugin-relay-lite";
 
 export default defineConfig({
   base: "/app/",
@@ -30,7 +30,7 @@ export default defineConfig({
       // Explicitly set the config file, else storybook gets confused
       overrideConfigFile: "./.eslintrc.cjs",
     }),
-    relay,
+    relay(),
   ],
   server: {
     proxy: {
