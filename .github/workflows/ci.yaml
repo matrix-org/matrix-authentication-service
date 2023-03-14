@@ -443,7 +443,6 @@ jobs:
         run: cosign sign ${TAGS}
         env:
           TAGS: "${{ steps.meta.outputs.tags }} ${{ steps.meta-debug.outputs.tags }}"
-          COSIGN_EXPERIMENTAL: 1
 
 
   tests-done:
