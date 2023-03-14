@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/// <reference types="vitest" />
 import { defineConfig } from "vite";
 import eslint from "vite-plugin-eslint";
 import react from "@vitejs/plugin-react";
@@ -37,6 +38,14 @@ export default defineConfig({
       // Routes mostly extracted from crates/router/src/endpoints.rs
       "^/(|graphql.*|assets.*|\\.well-known.*|oauth2.*|login.*|logout.*|register.*|reauth.*|account.*|consent.*|_matrix.*|complete-compat-sso.*)$":
         "http://127.0.0.1:8080",
+    },
+  },
+  test: {
+    coverage: {
+      provider: "c8",
+      src: ["./src/"],
+      exclude: ["**/__generated__/**", "**/*.d.ts", "**/*.stories.*"],
+      all: true,
     },
   },
 });
