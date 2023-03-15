@@ -372,6 +372,16 @@ async fn test_user_session(pool: PgPool) {
 
     assert_eq!(repo.browser_session().count_active(&user).await.unwrap(), 1);
 
+    // The session should be in the list of active sessions
+    let session_list = repo
+        .browser_session()
+        .list_active_paginated(&user, Pagination::first(10))
+        .await
+        .unwrap();
+    assert!(!session_list.has_next_page);
+    assert_eq!(session_list.edges.len(), 1);
+    assert_eq!(session_list.edges[0], session);
+
     let session_lookup = repo
         .browser_session()
         .lookup(session.id)
@@ -391,6 +401,15 @@ async fn test_user_session(pool: PgPool) {
 
     // The active session counter is back to 0
     assert_eq!(repo.browser_session().count_active(&user).await.unwrap(), 0);
+
+    // The session should not be in the list of active sessions anymore
+    let session_list = repo
+        .browser_session()
+        .list_active_paginated(&user, Pagination::first(10))
+        .await
+        .unwrap();
+    assert!(!session_list.has_next_page);
+    assert!(session_list.edges.is_empty());
 
     // Reload the session
     let session_lookup = repo
