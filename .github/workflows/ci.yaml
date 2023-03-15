@@ -421,6 +421,7 @@ jobs:
             base.cache-from=type=registry,ref=${{ env.IMAGE }}:buildcache
 
       - name: Build and push
+        id: bake
         uses: docker/bake-action@v2
         if: github.event_name != 'pull_request'
         with:
