@@ -232,11 +232,13 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
             r#"
                 SELECT DISTINCT ON (s.user_session_id)
                     s.user_session_id,
+                    s.created_at                     AS "user_session_created_at",
+                    s.finished_at                    AS "user_session_finished_at",
                     u.user_id,
-                    u.username,
-                    s.created_at,
+                    u.username                       AS "user_username",
+                    u.primary_user_email_id          AS "user_primary_user_email_id",
                     a.user_session_authentication_id AS "last_authentication_id",
-                    a.created_at                     AS "last_authd_at",
+                    a.created_at                     AS "last_authd_at"
                 FROM user_sessions s
                 INNER JOIN users u
                     USING (user_id)
