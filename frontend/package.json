@@ -26,7 +26,7 @@
   },
   "devDependencies": {
     "@graphql-eslint/eslint-plugin": "^3.16.1",
-    "@storybook/addon-actions": "^7.0.0-rc.3",
+    "@storybook/addon-actions": "^7.0.0-rc.4",
     "@storybook/addon-backgrounds": "^7.0.0-rc.3",
     "@storybook/addon-controls": "^7.0.0-rc.3",
     "@storybook/addon-docs": "^7.0.0-rc.3",
