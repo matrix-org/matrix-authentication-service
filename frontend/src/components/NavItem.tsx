@@ -12,25 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { NavLink, To } from "react-router-dom";
+import { useAtomValue } from "jotai";
+import { Link, Route, routeAtom } from "../Router";
 
-const NavItem: React.FC<{ to: To; children: React.ReactNode }> = ({
-  to,
+const NavItem: React.FC<{ route: Route; children: React.ReactNode }> = ({
+  route,
   children,
-}) => (
-  <li className="m-1 mr-0">
-    <NavLink
-      to={to}
-      className={({ isActive }) =>
-        (isActive
-          ? "bg-accent text-white"
-          : "hover:bg-grey-100 dark:hover:bg-grey-450 opacity-80 hover:opacity-100") +
-        " p-2 rounded block uppercase font-medium"
-      }
-    >
-      {children}
-    </NavLink>
-  </li>
-);
+}) => {
+  const currentRoute = useAtomValue(routeAtom);
+  return (
+    <li className="m-1 mr-0">
+      <Link
+        route={route}
+        className={
+          (currentRoute.type === route.type
+            ? "bg-accent text-white"
+            : "hover:bg-grey-100 dark:hover:bg-grey-450 opacity-80 hover:opacity-100") +
+          " p-2 rounded block uppercase font-medium"
+        }
+      >
+        {children}
+      </Link>
+    </li>
+  );
+};
 
 export default NavItem;

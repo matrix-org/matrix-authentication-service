@@ -12,38 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import type { OAuth2Session_session$key } from "./__generated__/OAuth2Session_session.graphql";
-import { graphql, useFragment } from "react-relay";
 import { Body, Bold, Code } from "./Typography";
 import Block from "./Block";
-import { Link } from "react-router-dom";
+import { Link } from "../Router";
+import { FragmentType, graphql, useFragment } from "../gql";
+
+const FRAGMENT = graphql(/* GraphQL */ `
+  fragment OAuth2Session_session on Oauth2Session {
+    id
+    scope
+    client {
+      id
+      clientId
+      clientName
+      clientUri
+    }
+  }
+`);
 
 type Props = {
-  session: OAuth2Session_session$key;
+  session: FragmentType<typeof FRAGMENT>;
 };
 
 const OAuth2Session: React.FC<Props> = ({ session }) => {
-  const data = useFragment(
-    graphql`
-      fragment OAuth2Session_session on Oauth2Session {
-        id
-        scope
-        client {
-          id
-          clientId
-          clientName
-          clientUri
-        }
-      }
-    `,
-    session
-  );
+  const data = useFragment(FRAGMENT, session);
 
   return (
     <Block>
       <Body>
         <Link
-          to={`/client/${data.client.id}`}
+          route={{ type: "client", id: data.client.id }}
           className="text-links hover:text-links/75"
         >
           Client ID: <Code>{data.client.clientId}</Code>

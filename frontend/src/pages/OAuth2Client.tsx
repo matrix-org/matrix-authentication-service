@@ -12,32 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { graphql, useLazyLoadQuery } from "react-relay";
-import { useParams } from "react-router-dom";
+import { useAtomValue } from "jotai";
+import { useMemo } from "react";
+import { atomsWithQuery } from "jotai-urql";
+import { graphql } from "../gql";
 
-import type { OAuth2ClientQuery } from "./__generated__/OAuth2ClientQuery.graphql";
-
-const OAuth2Client: React.FC = () => {
-  const { id } = useParams();
-  if (!id) {
-    throw new Error("Missing parameter");
+const QUERY = graphql(/* GraphQL */ `
+  query OAuth2ClientQuery($id: ID!) {
+    oauth2Client(id: $id) {
+      id
+      clientId
+      clientName
+      clientUri
+      tosUri
+      policyUri
+      redirectUris
+    }
   }
+`);
 
-  const data = useLazyLoadQuery<OAuth2ClientQuery>(
-    graphql`
-      query OAuth2ClientQuery($id: ID!) {
-        oauth2Client(id: $id) {
-          id
-          clientId
-          clientName
-          clientUri
-          tosUri
-          policyUri
-          redirectUris
-        }
-      }
-    `,
-    { id }
+const OAuth2Client: React.FC<{ id: string }> = ({ id }) => {
+  const data = useAtomValue(
+    useMemo(() => atomsWithQuery(QUERY, () => ({ id })), [id])[0]
   );
 
   return (

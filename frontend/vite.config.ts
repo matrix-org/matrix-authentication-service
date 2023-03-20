@@ -16,7 +16,7 @@
 import { defineConfig } from "vite";
 import eslint from "vite-plugin-eslint";
 import react from "@vitejs/plugin-react";
-import relay from "vite-plugin-relay-lite";
+import codegen from "vite-plugin-graphql-codegen";
 
 export default defineConfig({
   base: "/app/",
@@ -26,12 +26,12 @@ export default defineConfig({
     sourcemap: true,
   },
   plugins: [
+    codegen(),
     react(),
     eslint({
       // Explicitly set the config file, else storybook gets confused
       overrideConfigFile: "./.eslintrc.cjs",
     }),
-    relay(),
   ],
   server: {
     proxy: {
@@ -44,7 +44,7 @@ export default defineConfig({
     coverage: {
       provider: "c8",
       src: ["./src/"],
-      exclude: ["**/__generated__/**", "**/*.d.ts", "**/*.stories.*"],
+      exclude: ["**/gql/**", "**/*.d.ts", "**/*.stories.*"],
       all: true,
     },
   },
