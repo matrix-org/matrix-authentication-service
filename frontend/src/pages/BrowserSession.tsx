@@ -12,35 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { graphql, useLazyLoadQuery } from "react-relay";
-import { useParams } from "react-router-dom";
+import { useAtomValue } from "jotai";
+import { atomsWithQuery } from "jotai-urql";
+import { useMemo } from "react";
+import { graphql } from "../gql";
 
-import type { BrowserSessionQuery } from "./__generated__/BrowserSessionQuery.graphql";
-
-const BrowserSession: React.FC = () => {
-  const { id } = useParams();
-  if (!id) {
-    throw new Error("Missing parameter");
-  }
-
-  const data = useLazyLoadQuery<BrowserSessionQuery>(
-    graphql`
-      query BrowserSessionQuery($id: ID!) {
-        browserSession(id: $id) {
-          id
-          createdAt
-          lastAuthentication {
-            id
-            createdAt
-          }
-          user {
-            id
-            username
-          }
-        }
+const QUERY = graphql(/* GraphQL */ `
+  query BrowserSessionQuery($id: ID!) {
+    browserSession(id: $id) {
+      id
+      createdAt
+      lastAuthentication {
+        id
+        createdAt
       }
-    `,
-    { id }
+      user {
+        id
+        username
+      }
+    }
+  }
+`);
+
+const BrowserSession: React.FC<{ id: string }> = ({ id }) => {
+  const data = useAtomValue(
+    useMemo(() => atomsWithQuery(QUERY, () => ({ id })), [id])[0]
   );
 
   return (

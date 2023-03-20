@@ -12,33 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { graphql, useLazyLoadQuery } from "react-relay";
-import BrowserSessionList from "../components/BrowserSessionList";
+import { useAtomValue } from "jotai";
+import { atomsWithQuery } from "jotai-urql";
 
+import BrowserSessionList from "../components/BrowserSessionList";
 import CompatSsoLoginList from "../components/CompatSsoLoginList";
 import OAuth2SessionList from "../components/OAuth2SessionList";
 import Typography from "../components/Typography";
-import type { HomeQuery } from "./__generated__/HomeQuery.graphql";
+import { graphql } from "../gql";
+
+const QUERY = graphql(/* GraphQL */ `
+  query HomeQuery($count: Int!, $cursor: String) {
+    currentBrowserSession {
+      id
+      user {
+        id
+        username
+
+        ...CompatSsoLoginList_user
+        ...BrowserSessionList_user
+        ...OAuth2SessionList_user
+      }
+    }
+  }
+`);
+
+const [homeDataAtom] = atomsWithQuery(QUERY, () => ({ count: 10 }));
 
 const Home: React.FC = () => {
-  const data = useLazyLoadQuery<HomeQuery>(
-    graphql`
-      query HomeQuery($count: Int!, $cursor: String) {
-        currentBrowserSession {
-          id
-          user {
-            id
-            username
-
-            ...CompatSsoLoginList_user
-            ...BrowserSessionList_user
-            ...OAuth2SessionList_user
-          }
-        }
-      }
-    `,
-    { count: 2 }
-  );
+  const data = useAtomValue(homeDataAtom);
 
   if (data.currentBrowserSession) {
     const session = data.currentBrowserSession;

@@ -12,33 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import type { BrowserSession_session$key } from "./__generated__/BrowserSession_session.graphql";
-import { graphql, useFragment } from "react-relay";
-
 import Block from "./Block";
 import { Body, Subtitle } from "./Typography";
 import DateTime from "./DateTime";
-import { Link } from "react-router-dom";
+import { Link } from "../Router";
+import { FragmentType, graphql, useFragment } from "../gql";
+
+const FRAGMENT = graphql(/* GraphQL */ `
+  fragment BrowserSession_session on BrowserSession {
+    id
+    createdAt
+    lastAuthentication {
+      id
+      createdAt
+    }
+  }
+`);
 
 type Props = {
-  session: BrowserSession_session$key;
+  session: FragmentType<typeof FRAGMENT>;
   isCurrent: boolean;
 };
 
 const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
-  const data = useFragment(
-    graphql`
-      fragment BrowserSession_session on BrowserSession {
-        id
-        createdAt
-        lastAuthentication {
-          id
-          createdAt
-        }
-      }
-    `,
-    session
-  );
+  const data = useFragment(FRAGMENT, session);
 
   const lastAuthentication = data.lastAuthentication?.createdAt;
   const createdAt = data.createdAt;
@@ -48,7 +45,7 @@ const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
       {isCurrent && <Subtitle>Current session</Subtitle>}
       <Body>
         <Link
-          to={`/session/${data.id}`}
+          route={{ type: "session", id: data.id }}
           className="text-links hover:text-links/75"
         >
           Started: <DateTime datetime={createdAt} />

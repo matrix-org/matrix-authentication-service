@@ -12,38 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { graphql, usePaginationFragment } from "react-relay";
 import BlockList from "./BlockList";
 import BrowserSession from "./BrowserSession";
-import Button from "./Button";
 import { Title } from "./Typography";
+import { FragmentType, graphql, useFragment } from "../gql";
 
-import { BrowserSessionList_user$key } from "./__generated__/BrowserSessionList_user.graphql";
+const FRAGMENT = graphql(/* GraphQL */ `
+  fragment BrowserSessionList_user on User {
+    browserSessions(first: $count, after: $cursor) {
+      edges {
+        cursor
+        node {
+          id
+          ...BrowserSession_session
+        }
+      }
+    }
+  }
+`);
 
 type Props = {
-  user: BrowserSessionList_user$key;
+  user: FragmentType<typeof FRAGMENT>;
   currentSessionId: string;
 };
 
 const BrowserSessionList: React.FC<Props> = ({ user, currentSessionId }) => {
-  const { data, loadNext, hasNext } = usePaginationFragment(
-    graphql`
-      fragment BrowserSessionList_user on User
-      @refetchable(queryName: "BrowserSessionListQuery") {
-        browserSessions(first: $count, after: $cursor)
-          @connection(key: "BrowserSessionList_user_browserSessions") {
-          edges {
-            cursor
-            node {
-              id
-              ...BrowserSession_session
-            }
-          }
-        }
-      }
-    `,
-    user
-  );
+  const data = useFragment(FRAGMENT, user);
 
   return (
     <BlockList>
@@ -55,7 +49,6 @@ const BrowserSessionList: React.FC<Props> = ({ user, currentSessionId }) => {
           isCurrent={n.node.id === currentSessionId}
         />
       ))}
-      {hasNext && <Button onClick={() => loadNext(2)}>Load more</Button>}
     </BlockList>
   );
 };

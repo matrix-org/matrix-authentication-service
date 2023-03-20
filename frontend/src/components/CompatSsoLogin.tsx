@@ -12,33 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import type { CompatSsoLogin_login$key } from "./__generated__/CompatSsoLogin_login.graphql";
-import { graphql, useFragment } from "react-relay";
 import Block from "./Block";
 import { Body, Bold, Code } from "./Typography";
 import DateTime from "./DateTime";
+import { FragmentType, graphql, useFragment } from "../gql";
+
+const FRAGMENT = graphql(/* GraphQL */ `
+  fragment CompatSsoLogin_login on CompatSsoLogin {
+    id
+    redirectUri
+    createdAt
+    session {
+      id
+      createdAt
+      deviceId
+      finishedAt
+    }
+  }
+`);
 
 type Props = {
-  login: CompatSsoLogin_login$key;
+  login: FragmentType<typeof FRAGMENT>;
 };
 
 const CompatSsoLogin: React.FC<Props> = ({ login }) => {
-  const data = useFragment(
-    graphql`
-      fragment CompatSsoLogin_login on CompatSsoLogin {
-        id
-        redirectUri
-        createdAt
-        session {
-          id
-          createdAt
-          deviceId
-          finishedAt
-        }
-      }
-    `,
-    login
-  );
+  const data = useFragment(FRAGMENT, login);
 
   let info = null;
   if (data.session) {

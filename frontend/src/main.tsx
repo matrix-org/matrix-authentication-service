@@ -14,18 +14,20 @@
 
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { RelayEnvironmentProvider } from "react-relay";
+import { Provider } from "jotai";
 
 import LoadingScreen from "./components/LoadingScreen";
-import RelayEnvironment from "./RelayEnvironment";
 import Router from "./Router";
+import { HydrateAtoms } from "./atoms";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <RelayEnvironmentProvider environment={RelayEnvironment}>
-      <React.Suspense fallback={<LoadingScreen />}>
-        <Router />
-      </React.Suspense>
-    </RelayEnvironmentProvider>
+    <Provider>
+      <HydrateAtoms>
+        <React.Suspense fallback={<LoadingScreen />}>
+          <Router />
+        </React.Suspense>
+      </HydrateAtoms>
+    </Provider>
   </React.StrictMode>
 );

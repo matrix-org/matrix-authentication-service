@@ -1,6 +1,5 @@
 import { ArgTypes, Decorator, Parameters } from "@storybook/react";
 import { useLayoutEffect } from "react";
-import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import "../src/index.css";
 
 export const parameters: Parameters = {
@@ -60,15 +59,4 @@ const withThemeProvider: Decorator = (Story, context) => {
   );
 };
 
-const withRouter: Decorator = (Story, _context) => {
-  const router = createMemoryRouter([
-    {
-      path: "/*",
-      element: <Story />,
-    },
-  ]);
-
-  return <RouterProvider router={router} />;
-};
-
-export const decorators: Decorator[] = [withThemeProvider, withRouter];
+export const decorators: Decorator[] = [withThemeProvider];

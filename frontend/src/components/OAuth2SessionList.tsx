@@ -12,37 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { graphql, usePaginationFragment } from "react-relay";
 import BlockList from "./BlockList";
-import Button from "./Button";
 import OAuth2Session from "./OAuth2Session";
 import { Title } from "./Typography";
 
-import { OAuth2SessionList_user$key } from "./__generated__/OAuth2SessionList_user.graphql";
+import { FragmentType, graphql, useFragment } from "../gql";
+
+const FRAGMENT = graphql(/* GraphQL */ `
+  fragment OAuth2SessionList_user on User {
+    oauth2Sessions(first: $count, after: $cursor) {
+      edges {
+        cursor
+        node {
+          id
+          ...OAuth2Session_session
+        }
+      }
+    }
+  }
+`);
 
 type Props = {
-  user: OAuth2SessionList_user$key;
+  user: FragmentType<typeof FRAGMENT>;
 };
 
 const OAuth2SessionList: React.FC<Props> = ({ user }) => {
-  const { data, loadNext, hasNext } = usePaginationFragment(
-    graphql`
-      fragment OAuth2SessionList_user on User
-      @refetchable(queryName: "OAuth2SessionListQuery") {
-        oauth2Sessions(first: $count, after: $cursor)
-          @connection(key: "OAuth2SessionList_user_oauth2Sessions") {
-          edges {
-            cursor
-            node {
-              id
-              ...OAuth2Session_session
-            }
-          }
-        }
-      }
-    `,
-    user
-  );
+  const data = useFragment(FRAGMENT, user);
 
   return (
     <BlockList>
@@ -50,7 +45,6 @@ const OAuth2SessionList: React.FC<Props> = ({ user }) => {
       {data.oauth2Sessions.edges.map((n) => (
         <OAuth2Session key={n.cursor} session={n.node} />
       ))}
-      {hasNext && <Button onClick={() => loadNext(2)}>Load more</Button>}
     </BlockList>
   );
 };

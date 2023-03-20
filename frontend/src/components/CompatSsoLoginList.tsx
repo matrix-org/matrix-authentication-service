@@ -12,35 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { graphql, usePaginationFragment } from "react-relay";
 import BlockList from "./BlockList";
-import Button from "./Button";
 import CompatSsoLogin from "./CompatSsoLogin";
 import { Title } from "./Typography";
-import { CompatSsoLoginList_user$key } from "./__generated__/CompatSsoLoginList_user.graphql";
+import { FragmentType, graphql, useFragment } from "../gql";
+
+const FRAGMENT = graphql(/* GraphQL */ `
+  fragment CompatSsoLoginList_user on User {
+    compatSsoLogins(first: $count, after: $cursor) {
+      edges {
+        node {
+          id
+          ...CompatSsoLogin_login
+        }
+      }
+    }
+  }
+`);
 
 type Props = {
-  user: CompatSsoLoginList_user$key;
+  user: FragmentType<typeof FRAGMENT>;
 };
 
 const CompatSsoLoginList: React.FC<Props> = ({ user }) => {
-  const { data, loadNext, hasNext } = usePaginationFragment(
-    graphql`
-      fragment CompatSsoLoginList_user on User
-      @refetchable(queryName: "CompatSsoLoginListQuery") {
-        compatSsoLogins(first: $count, after: $cursor)
-          @connection(key: "CompatSsoLoginList_user_compatSsoLogins") {
-          edges {
-            node {
-              id
-              ...CompatSsoLogin_login
-            }
-          }
-        }
-      }
-    `,
-    user
-  );
+  const data = useFragment(FRAGMENT, user);
 
   return (
     <BlockList>
@@ -48,7 +43,6 @@ const CompatSsoLoginList: React.FC<Props> = ({ user }) => {
       {data.compatSsoLogins.edges.map((n) => (
         <CompatSsoLogin login={n.node} key={n.node.id} />
       ))}
-      {hasNext && <Button onClick={() => loadNext(2)}>Load more</Button>}
     </BlockList>
   );
 };
