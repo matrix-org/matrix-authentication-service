@@ -29,7 +29,7 @@
     "@graphql-codegen/cli": "^3.2.2",
     "@graphql-codegen/client-preset": "^2.1.1",
     "@graphql-eslint/eslint-plugin": "^3.16.1",
-    "@storybook/addon-actions": "^7.0.0-rc.3",
+    "@storybook/addon-actions": "^7.0.0-rc.5",
     "@storybook/addon-backgrounds": "^7.0.0-rc.3",
     "@storybook/addon-controls": "^7.0.0-rc.3",
     "@storybook/addon-docs": "^7.0.0-rc.3",
