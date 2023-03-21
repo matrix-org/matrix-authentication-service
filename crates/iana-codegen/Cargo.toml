@@ -6,7 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-anyhow = "1.0.69"
+anyhow = "1.0.70"
 async-trait = "0.1.66"
 camino = "1.1.4"
 convert_case = "0.6.0"

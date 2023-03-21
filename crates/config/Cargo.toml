@@ -11,7 +11,7 @@ tracing = { version = "0.1.37" }
 async-trait = "0.1.66"
 
 thiserror = "1.0.39"
-anyhow = "1.0.69"
+anyhow = "1.0.70"
 
 camino = { version = "1.1.4", features = ["serde1"] }
 chrono = { version = "0.4.24", features = ["serde"] }
