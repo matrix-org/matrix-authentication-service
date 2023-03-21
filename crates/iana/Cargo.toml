@@ -6,7 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-serde = { version = "1.0.156", optional = true }
+serde = { version = "1.0.158", optional = true }
 schemars = { version = "0.8.12", default-features = false, optional = true }
 
 [features]

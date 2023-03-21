@@ -8,7 +8,7 @@ license = "Apache-2.0"
 [dependencies]
 anyhow = "1.0.69"
 opa-wasm = { git = "https://github.com/matrix-org/rust-opa-wasm.git" }
-serde = { version = "1.0.156", features = ["derive"] }
+serde = { version = "1.0.158", features = ["derive"] }
 serde_json = "1.0.94"
 thiserror = "1.0.39"
 tokio = { version = "1.26.0", features = ["io-util"] }
