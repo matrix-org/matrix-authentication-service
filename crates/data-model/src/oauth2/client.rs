@@ -118,7 +118,7 @@ impl Client {
             ([], _) => Err(InvalidRedirectUriError::NoneRegistered),
             ([one], None) => Ok(one),
             (_, None) => Err(InvalidRedirectUriError::MultipleRegistered),
-            (uris, Some(uri)) if uris.contains(uri) => Ok(uri),
+            (uris, Some(uri)) if uri_matches_one_of(uri, uris) => Ok(uri),
             _ => Err(InvalidRedirectUriError::NotAllowed),
         }
     }
@@ -173,5 +173,63 @@ impl Client {
                 jwks: None,
             },
         ]
+    }
+}
+
+/// The hosts that match the loopback interface.
+const LOCAL_HOSTS: &[&str] = &["localhost", "127.0.0.1", "[::1]"];
+
+/// Whether the given URI matches one of the registered URIs.
+///
+/// If the URI host is one if `localhost`, `127.0.0.1` or `[::1]`, any port is
+/// accepted.
+fn uri_matches_one_of(uri: &Url, registered_uris: &[Url]) -> bool {
+    if LOCAL_HOSTS.contains(&uri.host_str().unwrap_or_default()) {
+        let mut uri = uri.clone();
+        // Try matching without the port first
+        if uri.set_port(None).is_ok() && registered_uris.contains(&uri) {
+            return true;
+        }
+    }
+
+    registered_uris.contains(uri)
+}
+
+#[cfg(test)]
+mod tests {
+    use url::Url;
+
+    use super::*;
+
+    #[test]
+    fn test_uri_matches_one_of() {
+        let registered_uris = &[
+            Url::parse("http://127.0.0.1").unwrap(),
+            Url::parse("https://example.org").unwrap(),
+        ];
+
+        // Non-loopback interface URIs.
+        assert!(uri_matches_one_of(
+            &Url::parse("https://example.org").unwrap(),
+            registered_uris
+        ));
+        assert!(!uri_matches_one_of(
+            &Url::parse("https://example.org:8080").unwrap(),
+            registered_uris
+        ));
+
+        // Loopback interface URIS.
+        assert!(uri_matches_one_of(
+            &Url::parse("http://127.0.0.1").unwrap(),
+            registered_uris
+        ));
+        assert!(uri_matches_one_of(
+            &Url::parse("http://127.0.0.1:8080").unwrap(),
+            registered_uris
+        ));
+        assert!(!uri_matches_one_of(
+            &Url::parse("http://localhost").unwrap(),
+            registered_uris
+        ));
     }
 }
