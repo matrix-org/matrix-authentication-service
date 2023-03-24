@@ -63,7 +63,7 @@ jobs:
         run: mv target/doc target/book/rustdoc
 
       - name: Upload GitHub Pages artifacts
-        uses: actions/upload-pages-artifact@v1.0.7
+        uses: actions/upload-pages-artifact@v1.0.8
         with:
           path: target/book/
 
