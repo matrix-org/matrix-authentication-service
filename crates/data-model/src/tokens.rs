@@ -178,6 +178,8 @@ impl TokenType {
             "mar" => Some(TokenType::RefreshToken),
             "mct" => Some(TokenType::CompatAccessToken),
             "mcr" => Some(TokenType::CompatRefreshToken),
+            "syt" => Some(TokenType::CompatAccessToken), // Synapse access token
+            "syr" => Some(TokenType::CompatRefreshToken), // Synapse refresh token
             _ => None,
         }
     }
@@ -220,8 +222,22 @@ impl TokenType {
     ///     TokenType::check("mar_PkpplxPkfjsqvtdfUlYR1Afg2TpaHF_GaTQd2"),
     ///     Ok(TokenType::RefreshToken)
     /// );
+    ///
+    /// assert_eq!(
+    ///     TokenType::check("syt_PkpplxPkfjsqvtdfUlYR1Afg2TpaHF_GaTQd2"),
+    ///     Ok(TokenType::CompatAccessToken)
+    /// );
     /// ```
     pub fn check(token: &str) -> Result<TokenType, TokenFormatError> {
+        // these are legacy tokens imported from Synapse
+        // we don't do any validation on them and continue as is
+        if token.starts_with("syt_") {
+            return Ok(TokenType::CompatAccessToken);
+        }
+        if token.starts_with("syr_") {
+            return Ok(TokenType::CompatRefreshToken);
+        }
+
         let split: Vec<&str> = token.split('_').collect();
         let [prefix, random_part, crc]: [&str; 3] = split
             .try_into()
@@ -314,6 +330,8 @@ mod tests {
     #[test]
     fn test_prefix_match() {
         use TokenType::{AccessToken, CompatAccessToken, CompatRefreshToken, RefreshToken};
+        assert_eq!(TokenType::match_prefix("syt"), Some(CompatAccessToken));
+        assert_eq!(TokenType::match_prefix("syr"), Some(CompatRefreshToken));
         assert_eq!(TokenType::match_prefix("mct"), Some(CompatAccessToken));
         assert_eq!(TokenType::match_prefix("mcr"), Some(CompatRefreshToken));
         assert_eq!(TokenType::match_prefix("mat"), Some(AccessToken));
