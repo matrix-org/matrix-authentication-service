@@ -3170,9 +3170,6 @@ name = "mas-handlers"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "apalis-core",
- "apalis-cron",
- "apalis-sql",
  "argon2",
  "async-graphql",
  "axum",
@@ -3189,7 +3186,6 @@ dependencies = [
  "lettre",
  "mas-axum-utils",
  "mas-data-model",
- "mas-email",
  "mas-graphql",
  "mas-http",
  "mas-iana",
@@ -3200,7 +3196,6 @@ dependencies = [
  "mas-router",
  "mas-storage",
  "mas-storage-pg",
- "mas-tasks",
  "mas-templates",
  "mime",
  "oauth2-types",
@@ -3454,6 +3449,7 @@ dependencies = [
 name = "mas-storage"
 version = "0.1.0"
 dependencies = [
+ "apalis-core",
  "async-trait",
  "chrono",
  "futures-util",
@@ -3462,6 +3458,8 @@ dependencies = [
  "mas-jose",
  "oauth2-types",
  "rand_core 0.6.4",
+ "serde",
+ "serde_json",
  "thiserror",
  "ulid",
  "url",
@@ -5332,9 +5330,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.94"
+version = "1.0.95"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c533a59c9d8a93a09c6ab31f0fd5e5f4dd1b8fc9434804029839884765d04ea"
+checksum = "d721eca97ac802aa7777b701877c8004d950fc142651367300d21c1cc0194744"
 dependencies = [
  "itoa",
  "ryu",

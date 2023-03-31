@@ -17,38 +17,17 @@ use apalis_core::{
     builder::{WorkerBuilder, WorkerFactory},
     context::JobContext,
     executor::TokioExecutor,
-    job::Job,
     job_fn::job_fn,
     monitor::Monitor,
     storage::builder::WithStorage,
 };
 use chrono::Duration;
-use mas_data_model::UserEmail;
 use mas_email::{Address, EmailVerificationContext, Mailbox};
+use mas_storage::job::VerifyEmailJob;
 use rand::{distributions::Uniform, Rng};
-use serde::{Deserialize, Serialize};
 use tracing::info;
-use ulid::Ulid;
 
 use crate::{JobContextExt, State};
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct VerifyEmailJob {
-    user_email_id: Ulid,
-}
-
-impl VerifyEmailJob {
-    #[must_use]
-    pub fn new(user_email: &UserEmail) -> Self {
-        Self {
-            user_email_id: user_email.id,
-        }
-    }
-}
-
-impl Job for VerifyEmailJob {
-    const NAME: &'static str = "verify-email";
-}
 
 async fn verify_email(job: VerifyEmailJob, ctx: JobContext) -> Result<(), anyhow::Error> {
     let state = ctx.state();
@@ -60,7 +39,7 @@ async fn verify_email(job: VerifyEmailJob, ctx: JobContext) -> Result<(), anyhow
     // Lookup the user email
     let user_email = repo
         .user_email()
-        .lookup(job.user_email_id)
+        .lookup(job.user_email_id())
         .await?
         .context("User email not found")?;
 

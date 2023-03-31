@@ -18,6 +18,7 @@ use mas_storage::{
         CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository,
         CompatSsoLoginRepository,
     },
+    job::JobRepository,
     oauth2::{
         OAuth2AccessTokenRepository, OAuth2AuthorizationGrantRepository, OAuth2ClientRepository,
         OAuth2RefreshTokenRepository, OAuth2SessionRepository,
@@ -36,6 +37,7 @@ use crate::{
         PgCompatAccessTokenRepository, PgCompatRefreshTokenRepository, PgCompatSessionRepository,
         PgCompatSsoLoginRepository,
     },
+    job::PgJobRepository,
     oauth2::{
         PgOAuth2AccessTokenRepository, PgOAuth2AuthorizationGrantRepository,
         PgOAuth2ClientRepository, PgOAuth2RefreshTokenRepository, PgOAuth2SessionRepository,
@@ -177,5 +179,9 @@ impl RepositoryAccess for PgRepository {
         &'c mut self,
     ) -> Box<dyn CompatRefreshTokenRepository<Error = Self::Error> + 'c> {
         Box::new(PgCompatRefreshTokenRepository::new(&mut self.txn))
+    }
+
+    fn job<'c>(&'c mut self) -> Box<dyn JobRepository<Error = Self::Error> + 'c> {
+        Box::new(PgJobRepository::new(&mut self.txn))
     }
 }

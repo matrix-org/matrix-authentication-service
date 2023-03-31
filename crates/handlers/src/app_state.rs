@@ -107,12 +107,6 @@ impl FromRef<AppState> for PasswordManager {
     }
 }
 
-impl<J: apalis_core::job::Job> FromRef<AppState> for apalis_sql::postgres::PostgresStorage<J> {
-    fn from_ref(input: &AppState) -> Self {
-        apalis_sql::postgres::PostgresStorage::new(input.pool.clone())
-    }
-}
-
 #[async_trait]
 impl FromRequestParts<AppState> for BoxClock {
     type Rejection = Infallible;

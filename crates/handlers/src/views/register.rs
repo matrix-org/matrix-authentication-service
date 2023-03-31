@@ -14,8 +14,6 @@
 
 use std::{str::FromStr, sync::Arc};
 
-use apalis_core::storage::Storage;
-use apalis_sql::postgres::PostgresStorage;
 use axum::{
     extract::{Form, Query, State},
     response::{Html, IntoResponse, Response},
@@ -30,10 +28,10 @@ use mas_keystore::Encrypter;
 use mas_policy::PolicyFactory;
 use mas_router::Route;
 use mas_storage::{
+    job::{JobRepositoryExt, VerifyEmailJob},
     user::{BrowserSessionRepository, UserEmailRepository, UserPasswordRepository, UserRepository},
     BoxClock, BoxRepository, BoxRng, RepositoryAccess,
 };
-use mas_tasks::VerifyEmailJob;
 use mas_templates::{
     FieldError, FormError, RegisterContext, RegisterFormField, TemplateContext, Templates,
     ToFormState,
@@ -96,7 +94,6 @@ pub(crate) async fn post(
     State(policy_factory): State<Arc<PolicyFactory>>,
     State(templates): State<Templates>,
     mut repo: BoxRepository,
-    State(mut job_storage): State<PostgresStorage<VerifyEmailJob>>,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<RegisterForm>>,
@@ -204,10 +201,11 @@ pub(crate) async fn post(
         .authenticate_with_password(&mut rng, &clock, session, &user_password)
         .await?;
 
-    repo.save().await?;
+    repo.job()
+        .schedule_job(VerifyEmailJob::new(&user_email))
+        .await?;
 
-    // XXX: this grabs a new connection from the pool, which is not ideal
-    job_storage.push(VerifyEmailJob::new(&user_email)).await?;
+    repo.save().await?;
 
     let cookie_jar = cookie_jar.set_session(&session);
     Ok((cookie_jar, next.go()).into_response())

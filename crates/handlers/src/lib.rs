@@ -29,7 +29,6 @@
 
 use std::{convert::Infallible, sync::Arc, time::Duration};
 
-use apalis_sql::postgres::PostgresStorage;
 use axum::{
     body::{Bytes, HttpBody},
     extract::{FromRef, FromRequestParts},
@@ -44,7 +43,6 @@ use mas_keystore::{Encrypter, Keystore};
 use mas_policy::PolicyFactory;
 use mas_router::{Route, UrlBuilder};
 use mas_storage::{BoxClock, BoxRepository, BoxRng};
-use mas_tasks::VerifyEmailJob;
 use mas_templates::{ErrorContext, Templates};
 use passwords::PasswordManager;
 use sqlx::PgPool;
@@ -263,7 +261,6 @@ where
     Keystore: FromRef<S>,
     HttpClientFactory: FromRef<S>,
     PasswordManager: FromRef<S>,
-    PostgresStorage<VerifyEmailJob>: FromRef<S>,
     BoxClock: FromRequestParts<S>,
     BoxRng: FromRequestParts<S>,
 {

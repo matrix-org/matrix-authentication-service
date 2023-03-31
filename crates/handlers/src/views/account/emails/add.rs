@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use apalis_core::storage::Storage;
-use apalis_sql::postgres::PostgresStorage;
 use axum::{
     extract::{Form, Query, State},
     response::{Html, IntoResponse, Response},
@@ -25,8 +23,11 @@ use mas_axum_utils::{
 };
 use mas_keystore::Encrypter;
 use mas_router::Route;
-use mas_storage::{user::UserEmailRepository, BoxClock, BoxRepository, BoxRng};
-use mas_tasks::VerifyEmailJob;
+use mas_storage::{
+    job::{JobRepositoryExt, VerifyEmailJob},
+    user::UserEmailRepository,
+    BoxClock, BoxRepository, BoxRng,
+};
 use mas_templates::{EmailAddContext, TemplateContext, Templates};
 use serde::Deserialize;
 
@@ -69,7 +70,6 @@ pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
     mut repo: BoxRepository,
-    State(mut job_storage): State<PostgresStorage<VerifyEmailJob>>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Query(query): Query<OptionalPostAuthAction>,
     Form(form): Form<ProtectedForm<EmailForm>>,
@@ -96,10 +96,11 @@ pub(crate) async fn post(
         next
     };
 
-    repo.save().await?;
+    repo.job()
+        .schedule_job(VerifyEmailJob::new(&user_email))
+        .await?;
 
-    // XXX: this grabs a new connection from the pool, which is not ideal
-    job_storage.push(VerifyEmailJob::new(&user_email)).await?;
+    repo.save().await?;
 
     Ok((cookie_jar, next.go()).into_response())
 }

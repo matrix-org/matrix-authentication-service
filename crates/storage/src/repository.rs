@@ -20,6 +20,7 @@ use crate::{
         CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository,
         CompatSsoLoginRepository,
     },
+    job::JobRepository,
     oauth2::{
         OAuth2AccessTokenRepository, OAuth2AuthorizationGrantRepository, OAuth2ClientRepository,
         OAuth2RefreshTokenRepository, OAuth2SessionRepository,
@@ -192,6 +193,9 @@ pub trait RepositoryAccess: Send {
     fn compat_refresh_token<'c>(
         &'c mut self,
     ) -> Box<dyn CompatRefreshTokenRepository<Error = Self::Error> + 'c>;
+
+    /// Get a [`JobRepository`]
+    fn job<'c>(&'c mut self) -> Box<dyn JobRepository<Error = Self::Error> + 'c>;
 }
 
 /// Implementations of the [`RepositoryAccess`], [`RepositoryTransaction`] and
@@ -205,6 +209,7 @@ mod impls {
             CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository,
             CompatSsoLoginRepository,
         },
+        job::JobRepository,
         oauth2::{
             OAuth2AccessTokenRepository, OAuth2AuthorizationGrantRepository,
             OAuth2ClientRepository, OAuth2RefreshTokenRepository, OAuth2SessionRepository,
@@ -373,6 +378,10 @@ mod impls {
                 &mut self.mapper,
             ))
         }
+
+        fn job<'c>(&'c mut self) -> Box<dyn JobRepository<Error = Self::Error> + 'c> {
+            Box::new(MapErr::new(self.inner.job(), &mut self.mapper))
+        }
     }
 
     impl<R: RepositoryAccess + ?Sized> RepositoryAccess for Box<R> {
@@ -468,6 +477,10 @@ mod impls {
             &'c mut self,
         ) -> Box<dyn CompatRefreshTokenRepository<Error = Self::Error> + 'c> {
             (**self).compat_refresh_token()
+        }
+
+        fn job<'c>(&'c mut self) -> Box<dyn JobRepository<Error = Self::Error> + 'c> {
+            (**self).job()
         }
     }
 }

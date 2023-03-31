@@ -13,8 +13,6 @@
 // limitations under the License.
 
 use anyhow::{anyhow, Context};
-use apalis_core::storage::Storage;
-use apalis_sql::postgres::PostgresStorage;
 use axum::{
     extract::{Form, State},
     response::{Html, IntoResponse, Response},
@@ -28,9 +26,10 @@ use mas_data_model::BrowserSession;
 use mas_keystore::Encrypter;
 use mas_router::Route;
 use mas_storage::{
-    user::UserEmailRepository, BoxClock, BoxRepository, BoxRng, Clock, RepositoryAccess,
+    job::{JobRepositoryExt, VerifyEmailJob},
+    user::UserEmailRepository,
+    BoxClock, BoxRepository, BoxRng, Clock, RepositoryAccess,
 };
-use mas_tasks::VerifyEmailJob;
 use mas_templates::{AccountEmailsContext, TemplateContext, Templates};
 use rand::Rng;
 use serde::Deserialize;
@@ -93,7 +92,6 @@ pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
     State(templates): State<Templates>,
-    State(mut job_storage): State<PostgresStorage<VerifyEmailJob>>,
     mut repo: BoxRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<ManagementForm>>,
@@ -111,37 +109,41 @@ pub(crate) async fn post(
 
     match form {
         ManagementForm::Add { email } => {
-            let email = repo
+            let user_email = repo
                 .user_email()
                 .add(&mut rng, &clock, &session.user, email)
                 .await?;
 
-            let next = mas_router::AccountVerifyEmail::new(email.id);
+            let next = mas_router::AccountVerifyEmail::new(user_email.id);
+
+            repo.job()
+                .schedule_job(VerifyEmailJob::new(&user_email))
+                .await?;
 
             repo.save().await?;
-
-            // XXX: this grabs a new connection from the pool, which is not ideal
-            job_storage.push(VerifyEmailJob::new(&email)).await?;
 
             return Ok((cookie_jar, next.go()).into_response());
         }
         ManagementForm::ResendConfirmation { id } => {
             let id = id.parse()?;
 
-            let email = repo
+            let user_email = repo
                 .user_email()
                 .lookup(id)
                 .await?
                 .context("Email not found")?;
 
-            if email.user_id != session.user.id {
+            if user_email.user_id != session.user.id {
                 return Err(anyhow!("Email not found").into());
             }
 
-            let next = mas_router::AccountVerifyEmail::new(email.id);
+            let next = mas_router::AccountVerifyEmail::new(user_email.id);
 
-            // XXX: this grabs a new connection from the pool, which is not ideal
-            job_storage.push(VerifyEmailJob::new(&email)).await?;
+            repo.job()
+                .schedule_job(VerifyEmailJob::new(&user_email))
+                .await?;
+
+            repo.save().await?;
 
             return Ok((cookie_jar, next.go()).into_response());
         }
