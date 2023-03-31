@@ -23,6 +23,7 @@ mod debug;
 mod manage;
 mod server;
 mod templates;
+mod worker;
 
 #[derive(Parser, Debug)]
 enum Subcommand {
@@ -34,6 +35,9 @@ enum Subcommand {
 
     /// Runs the web server
     Server(self::server::Options),
+
+    /// Run the worker
+    Worker(self::worker::Options),
 
     /// Manage the instance
     Manage(self::manage::Options),
@@ -62,6 +66,7 @@ impl Options {
             Some(S::Config(c)) => c.run(self).await,
             Some(S::Database(c)) => c.run(self).await,
             Some(S::Server(c)) => c.run(self).await,
+            Some(S::Worker(c)) => c.run(self).await,
             Some(S::Manage(c)) => c.run(self).await,
             Some(S::Templates(c)) => c.run(self).await,
             Some(S::Debug(c)) => c.run(self).await,

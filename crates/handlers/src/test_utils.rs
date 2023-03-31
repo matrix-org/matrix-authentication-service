@@ -22,7 +22,6 @@ use axum::{
 use headers::{Authorization, ContentType, HeaderMapExt, HeaderName};
 use hyper::{header::CONTENT_TYPE, Request, Response, StatusCode};
 use mas_axum_utils::http_client_factory::HttpClientFactory;
-use mas_email::{MailTransport, Mailer};
 use mas_keystore::{Encrypter, JsonWebKey, JsonWebKeySet, Keystore, PrivateKey};
 use mas_policy::PolicyFactory;
 use mas_router::{SimpleRoute, UrlBuilder};
@@ -57,7 +56,6 @@ pub(crate) struct TestState {
     pub key_store: Keystore,
     pub encrypter: Encrypter,
     pub url_builder: UrlBuilder,
-    pub mailer: Mailer,
     pub homeserver: MatrixHomeserver,
     pub policy_factory: Arc<PolicyFactory>,
     pub graphql_schema: mas_graphql::Schema,
@@ -91,10 +89,6 @@ impl TestState {
 
         let password_manager = PasswordManager::new([(1, Hasher::argon2id(None))])?;
 
-        let transport = MailTransport::blackhole();
-        let mailbox: lettre::message::Mailbox = "server@example.com".parse()?;
-        let mailer = Mailer::new(templates.clone(), transport, mailbox.clone(), mailbox);
-
         let homeserver = MatrixHomeserver::new("example.com".to_owned());
 
         let file =
@@ -124,7 +118,6 @@ impl TestState {
             key_store,
             encrypter,
             url_builder,
-            mailer,
             homeserver,
             policy_factory,
             graphql_schema,
@@ -244,12 +237,6 @@ impl FromRef<TestState> for UrlBuilder {
     }
 }
 
-impl FromRef<TestState> for Mailer {
-    fn from_ref(input: &TestState) -> Self {
-        input.mailer.clone()
-    }
-}
-
 impl FromRef<TestState> for MatrixHomeserver {
     fn from_ref(input: &TestState) -> Self {
         input.homeserver.clone()
@@ -271,6 +258,12 @@ impl FromRef<TestState> for HttpClientFactory {
 impl FromRef<TestState> for PasswordManager {
     fn from_ref(input: &TestState) -> Self {
         input.password_manager.clone()
+    }
+}
+
+impl<J: apalis_core::job::Job> FromRef<TestState> for apalis_sql::postgres::PostgresStorage<J> {
+    fn from_ref(input: &TestState) -> Self {
+        apalis_sql::postgres::PostgresStorage::new(input.pool.clone())
     }
 }
 

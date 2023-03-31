@@ -6,12 +6,25 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-tokio = "1.26.0"
+anyhow = "1.0.70"
+apalis-core = { version = "0.4.0-alpha.4", features = ["extensions", "tokio-comp"] }
+apalis-cron = "0.4.0-alpha.4"
+apalis-sql = { version = "0.4.0-alpha.4", features = ["postgres", "tokio-comp"] }
 async-trait = "0.1.66"
-tokio-stream = "0.1.12"
+chrono = "0.4.24"
 futures-util = "0.3.27"
-tracing = "0.1.37"
+rand = "0.8.5"
+rand_chacha = "0.3.1"
 sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres"] }
+thiserror = "1.0.30"
+tokio = "1.26.0"
+tokio-stream = "0.1.12"
+tower = { version = "0.4.13", features = ["util"] }
+tracing = "0.1.37"
+ulid = "1.0.0"
+serde = { version = "1.0.159", features = ["derive"] }
 
 mas-storage = { path = "../storage" }
 mas-storage-pg = { path = "../storage-pg" }
+mas-email = { path = "../email" }
+mas-data-model = { path = "../data-model" }

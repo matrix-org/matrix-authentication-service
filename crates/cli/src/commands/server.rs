@@ -22,7 +22,6 @@ use mas_handlers::{AppState, HttpClientFactory, MatrixHomeserver};
 use mas_listener::{server::Server, shutdown::ShutdownStream};
 use mas_router::UrlBuilder;
 use mas_storage_pg::MIGRATOR;
-use mas_tasks::TaskQueue;
 use tokio::signal::unix::SignalKind;
 use tracing::{info, info_span, warn, Instrument};
 
@@ -36,6 +35,10 @@ pub(super) struct Options {
     /// Automatically apply pending migrations
     #[arg(long)]
     migrate: bool,
+
+    /// Do not start the task worker
+    #[arg(long)]
+    no_worker: bool,
 
     /// Watch for changes for templates on the filesystem
     #[arg(short, long)]
@@ -61,11 +64,6 @@ impl Options {
                 .context("could not run migrations")?;
         }
 
-        info!("Starting task scheduler");
-        let queue = TaskQueue::default();
-        queue.recuring(Duration::from_secs(15), mas_tasks::cleanup_expired(&pool));
-        queue.start();
-
         // Initialize the key store
         let key_store = config
             .secrets
@@ -85,8 +83,15 @@ impl Options {
         // Load and compile the templates
         let templates = templates_from_config(&config.templates, &url_builder).await?;
 
-        let mailer = mailer_from_config(&config.email, &templates).await?;
-        mailer.test_connection().await?;
+        if !self.no_worker {
+            let mailer = mailer_from_config(&config.email, &templates).await?;
+            mailer.test_connection().await?;
+
+            info!("Starting task worker");
+            let monitor = mas_tasks::init(&pool, &mailer);
+            // TODO: grab the handle
+            tokio::spawn(monitor.run());
+        }
 
         let homeserver = MatrixHomeserver::new(config.matrix.homeserver.clone());
 
@@ -113,7 +118,6 @@ impl Options {
             key_store,
             encrypter,
             url_builder,
-            mailer,
             homeserver,
             policy_factory,
             graphql_schema,

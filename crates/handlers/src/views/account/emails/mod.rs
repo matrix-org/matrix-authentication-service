@@ -13,28 +13,27 @@
 // limitations under the License.
 
 use anyhow::{anyhow, Context};
+use apalis_core::storage::Storage;
+use apalis_sql::postgres::PostgresStorage;
 use axum::{
     extract::{Form, State},
     response::{Html, IntoResponse, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
-use chrono::Duration;
-use lettre::{message::Mailbox, Address};
 use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     FancyError, SessionInfoExt,
 };
-use mas_data_model::{BrowserSession, User, UserEmail};
-use mas_email::Mailer;
+use mas_data_model::BrowserSession;
 use mas_keystore::Encrypter;
 use mas_router::Route;
 use mas_storage::{
     user::UserEmailRepository, BoxClock, BoxRepository, BoxRng, Clock, RepositoryAccess,
 };
-use mas_templates::{AccountEmailsContext, EmailVerificationContext, TemplateContext, Templates};
-use rand::{distributions::Uniform, Rng};
+use mas_tasks::VerifyEmailJob;
+use mas_templates::{AccountEmailsContext, TemplateContext, Templates};
+use rand::Rng;
 use serde::Deserialize;
-use tracing::info;
 
 pub mod add;
 pub mod verify;
@@ -89,46 +88,13 @@ async fn render<E: std::error::Error>(
     Ok((cookie_jar, Html(content)).into_response())
 }
 
-async fn start_email_verification<E: std::error::Error + Send + Sync + 'static>(
-    mailer: &Mailer,
-    repo: &mut impl RepositoryAccess<Error = E>,
-    mut rng: impl Rng + Send,
-    clock: &impl Clock,
-    user: &User,
-    user_email: UserEmail,
-) -> anyhow::Result<()> {
-    // First, generate a code
-    let range = Uniform::<u32>::from(0..1_000_000);
-    let code = rng.sample(range).to_string();
-
-    let address: Address = user_email.email.parse()?;
-
-    let verification = repo
-        .user_email()
-        .add_verification_code(&mut rng, clock, &user_email, Duration::hours(8), code)
-        .await?;
-
-    // And send the verification email
-    let mailbox = Mailbox::new(Some(user.username.clone()), address);
-
-    let context = EmailVerificationContext::new(user.clone(), verification.clone());
-
-    mailer.send_verification_email(mailbox, &context).await?;
-
-    info!(
-        email.id = %user_email.id,
-        "Verification email sent"
-    );
-    Ok(())
-}
-
 #[tracing::instrument(name = "handlers.views.account_email_list.post", skip_all, err)]
 pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
     State(templates): State<Templates>,
+    State(mut job_storage): State<PostgresStorage<VerifyEmailJob>>,
     mut repo: BoxRepository,
-    State(mailer): State<Mailer>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<ManagementForm>>,
 ) -> Result<Response, FancyError> {
@@ -151,9 +117,12 @@ pub(crate) async fn post(
                 .await?;
 
             let next = mas_router::AccountVerifyEmail::new(email.id);
-            start_email_verification(&mailer, &mut repo, &mut rng, &clock, &session.user, email)
-                .await?;
+
             repo.save().await?;
+
+            // XXX: this grabs a new connection from the pool, which is not ideal
+            job_storage.push(VerifyEmailJob::new(&email)).await?;
+
             return Ok((cookie_jar, next.go()).into_response());
         }
         ManagementForm::ResendConfirmation { id } => {
@@ -170,9 +139,10 @@ pub(crate) async fn post(
             }
 
             let next = mas_router::AccountVerifyEmail::new(email.id);
-            start_email_verification(&mailer, &mut repo, &mut rng, &clock, &session.user, email)
-                .await?;
-            repo.save().await?;
+
+            // XXX: this grabs a new connection from the pool, which is not ideal
+            job_storage.push(VerifyEmailJob::new(&email)).await?;
+
             return Ok((cookie_jar, next.go()).into_response());
         }
         ManagementForm::Remove { id } => {

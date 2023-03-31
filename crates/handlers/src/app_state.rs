@@ -21,7 +21,6 @@ use axum::{
 };
 use hyper::StatusCode;
 use mas_axum_utils::http_client_factory::HttpClientFactory;
-use mas_email::Mailer;
 use mas_keystore::{Encrypter, Keystore};
 use mas_policy::PolicyFactory;
 use mas_router::UrlBuilder;
@@ -41,7 +40,6 @@ pub struct AppState {
     pub key_store: Keystore,
     pub encrypter: Encrypter,
     pub url_builder: UrlBuilder,
-    pub mailer: Mailer,
     pub homeserver: MatrixHomeserver,
     pub policy_factory: Arc<PolicyFactory>,
     pub graphql_schema: mas_graphql::Schema,
@@ -85,12 +83,6 @@ impl FromRef<AppState> for UrlBuilder {
     }
 }
 
-impl FromRef<AppState> for Mailer {
-    fn from_ref(input: &AppState) -> Self {
-        input.mailer.clone()
-    }
-}
-
 impl FromRef<AppState> for MatrixHomeserver {
     fn from_ref(input: &AppState) -> Self {
         input.homeserver.clone()
@@ -112,6 +104,12 @@ impl FromRef<AppState> for HttpClientFactory {
 impl FromRef<AppState> for PasswordManager {
     fn from_ref(input: &AppState) -> Self {
         input.password_manager.clone()
+    }
+}
+
+impl<J: apalis_core::job::Job> FromRef<AppState> for apalis_sql::postgres::PostgresStorage<J> {
+    fn from_ref(input: &AppState) -> Self {
+        apalis_sql::postgres::PostgresStorage::new(input.pool.clone())
     }
 }
 
