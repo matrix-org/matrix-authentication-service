@@ -209,6 +209,7 @@ impl<T> LookupResultExt for Result<T, sqlx::Error> {
 }
 
 pub mod compat;
+pub mod job;
 pub mod oauth2;
 pub mod upstream_oauth2;
 pub mod user;

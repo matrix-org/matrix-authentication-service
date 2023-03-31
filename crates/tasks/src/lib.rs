@@ -28,8 +28,6 @@ use tracing::debug;
 mod database;
 mod email;
 
-pub use self::email::VerifyEmailJob;
-
 #[derive(Clone)]
 struct State {
     pool: Pool<Postgres>,

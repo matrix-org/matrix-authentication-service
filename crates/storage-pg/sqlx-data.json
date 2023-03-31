@@ -1799,6 +1799,27 @@
     },
     "query": "\n                UPDATE oauth2_sessions\n                SET finished_at = $2\n                WHERE oauth2_session_id = $1\n            "
   },
+  "b753790eecbbb4bcd87b9e9a1d1b0dd6c3b50e82ffbfee356e2cf755d72f00be": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id!",
+          "ordinal": 0,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Json"
+        ]
+      }
+    },
+    "query": "\n                SELECT id as \"id!\"\n                FROM apalis.push_job($1::text, $2::json, 'Pending', now(), 25)\n            "
+  },
   "b9875a270f7e753e48075ccae233df6e24a91775ceb877735508c1d5b2300d64": {
     "describe": {
       "columns": [],
