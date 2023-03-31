@@ -12,3 +12,15 @@ opt-level = 3
 [patch.crates-io.ulid]
 git = "https://github.com/dylanhart/ulid-rs.git"
 rev = "0b9295c2db2114cd87aa19abcc1fc00c16b272db"
+
+[patch.crates-io.apalis-core]
+git = "https://github.com/geofmureithi/apalis.git"
+rev = "ead6f840b92a3590a8bf46398eaf65ed55aa92dc"
+
+[patch.crates-io.apalis-sql]
+git = "https://github.com/geofmureithi/apalis.git"
+rev = "ead6f840b92a3590a8bf46398eaf65ed55aa92dc"
+
+[patch.crates-io.apalis-cron]
+git = "https://github.com/geofmureithi/apalis.git"
+rev = "ead6f840b92a3590a8bf46398eaf65ed55aa92dc"

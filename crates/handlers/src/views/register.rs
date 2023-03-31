@@ -14,18 +14,18 @@
 
 use std::{str::FromStr, sync::Arc};
 
+use apalis_core::storage::Storage;
+use apalis_sql::postgres::PostgresStorage;
 use axum::{
     extract::{Form, Query, State},
     response::{Html, IntoResponse, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
-use chrono::Duration;
-use lettre::{message::Mailbox, Address};
+use lettre::Address;
 use mas_axum_utils::{
     csrf::{CsrfExt, CsrfToken, ProtectedForm},
     FancyError, SessionInfoExt,
 };
-use mas_email::Mailer;
 use mas_keystore::Encrypter;
 use mas_policy::PolicyFactory;
 use mas_router::Route;
@@ -33,11 +33,11 @@ use mas_storage::{
     user::{BrowserSessionRepository, UserEmailRepository, UserPasswordRepository, UserRepository},
     BoxClock, BoxRepository, BoxRng, RepositoryAccess,
 };
+use mas_tasks::VerifyEmailJob;
 use mas_templates::{
-    EmailVerificationContext, FieldError, FormError, RegisterContext, RegisterFormField,
-    TemplateContext, Templates, ToFormState,
+    FieldError, FormError, RegisterContext, RegisterFormField, TemplateContext, Templates,
+    ToFormState,
 };
-use rand::{distributions::Uniform, Rng};
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroizing;
 
@@ -93,10 +93,10 @@ pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
     State(password_manager): State<PasswordManager>,
-    State(mailer): State<Mailer>,
     State(policy_factory): State<Arc<PolicyFactory>>,
     State(templates): State<Templates>,
     mut repo: BoxRepository,
+    State(mut job_storage): State<PostgresStorage<VerifyEmailJob>>,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<RegisterForm>>,
@@ -195,25 +195,6 @@ pub(crate) async fn post(
         .add(&mut rng, &clock, &user, form.email)
         .await?;
 
-    // First, generate a code
-    let range = Uniform::<u32>::from(0..1_000_000);
-    let code = rng.sample(range);
-    let code = format!("{code:06}");
-
-    let address: Address = user_email.email.parse()?;
-
-    let verification = repo
-        .user_email()
-        .add_verification_code(&mut rng, &clock, &user_email, Duration::hours(8), code)
-        .await?;
-
-    // And send the verification email
-    let mailbox = Mailbox::new(Some(user.username.clone()), address);
-
-    let context = EmailVerificationContext::new(user.clone(), verification.clone());
-
-    mailer.send_verification_email(mailbox, &context).await?;
-
     let next = mas_router::AccountVerifyEmail::new(user_email.id).and_maybe(query.post_auth_action);
 
     let session = repo.browser_session().add(&mut rng, &clock, &user).await?;
@@ -224,6 +205,9 @@ pub(crate) async fn post(
         .await?;
 
     repo.save().await?;
+
+    // XXX: this grabs a new connection from the pool, which is not ideal
+    job_storage.push(VerifyEmailJob::new(&user_email)).await?;
 
     let cookie_jar = cookie_jar.set_session(&session);
     Ok((cookie_jar, next.go()).into_response())

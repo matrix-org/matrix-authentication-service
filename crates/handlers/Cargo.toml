@@ -31,6 +31,11 @@ async-graphql = { version = "5.0.6", features = ["tracing", "apollo_tracing"] }
 # Emails
 lettre = { version = "0.10.3", default-features = false, features = ["builder"] }
 
+# Job scheduling
+apalis-core = "0.4.0-alpha.4"
+apalis-cron = "0.4.0-alpha.4"
+apalis-sql = { version = "0.4.0-alpha.4", features = ["postgres"] }
+
 # Database access
 sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres"] }
 
@@ -70,6 +75,7 @@ mas-policy = { path = "../policy" }
 mas-router = { path = "../router" }
 mas-storage = { path = "../storage" }
 mas-storage-pg = { path = "../storage-pg" }
+mas-tasks = { path = "../tasks" }
 mas-templates = { path = "../templates" }
 oauth2-types = { path = "../oauth2-types" }
 

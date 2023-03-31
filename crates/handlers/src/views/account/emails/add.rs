@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use apalis_core::storage::Storage;
+use apalis_sql::postgres::PostgresStorage;
 use axum::{
     extract::{Form, Query, State},
     response::{Html, IntoResponse, Response},
@@ -21,14 +23,13 @@ use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     FancyError, SessionInfoExt,
 };
-use mas_email::Mailer;
 use mas_keystore::Encrypter;
 use mas_router::Route;
 use mas_storage::{user::UserEmailRepository, BoxClock, BoxRepository, BoxRng};
+use mas_tasks::VerifyEmailJob;
 use mas_templates::{EmailAddContext, TemplateContext, Templates};
 use serde::Deserialize;
 
-use super::start_email_verification;
 use crate::views::shared::OptionalPostAuthAction;
 
 #[derive(Deserialize, Debug)]
@@ -68,7 +69,7 @@ pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
     mut repo: BoxRepository,
-    State(mailer): State<Mailer>,
+    State(mut job_storage): State<PostgresStorage<VerifyEmailJob>>,
     cookie_jar: PrivateCookieJar<Encrypter>,
     Query(query): Query<OptionalPostAuthAction>,
     Form(form): Form<ProtectedForm<EmailForm>>,
@@ -94,17 +95,11 @@ pub(crate) async fn post(
     } else {
         next
     };
-    start_email_verification(
-        &mailer,
-        &mut repo,
-        &mut rng,
-        &clock,
-        &session.user,
-        user_email,
-    )
-    .await?;
 
     repo.save().await?;
+
+    // XXX: this grabs a new connection from the pool, which is not ideal
+    job_storage.push(VerifyEmailJob::new(&user_email)).await?;
 
     Ok((cookie_jar, next.go()).into_response())
 }

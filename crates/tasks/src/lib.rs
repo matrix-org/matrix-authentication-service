@@ -1,4 +1,4 @@
-// Copyright 2021 The Matrix.org Foundation C.I.C.
+// Copyright 2021-2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,113 +12,96 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Generic, sequential task scheduler
-//!
-//! Tasks here are ran one after another to avoid having to unnecesarily lock
-//! resources and avoid database conflicts. Tasks are not persisted, which is
-//! considered "good enough" for now.
-
 #![forbid(unsafe_code)]
-#![deny(
-    clippy::all,
-    clippy::str_to_string,
-    missing_docs,
-    rustdoc::broken_intra_doc_links
-)]
+#![deny(clippy::all, clippy::str_to_string, rustdoc::broken_intra_doc_links)]
 #![warn(clippy::pedantic)]
 
-use std::{collections::VecDeque, sync::Arc, time::Duration};
-
-use futures_util::StreamExt;
-use tokio::{
-    sync::{Mutex, Notify},
-    time::Interval,
-};
-use tokio_stream::wrappers::IntervalStream;
+use apalis_core::{executor::TokioExecutor, layers::extensions::Extension, monitor::Monitor};
+use apalis_sql::postgres::PostgresStorage;
+use mas_email::Mailer;
+use mas_storage::{BoxClock, BoxRepository, Repository, SystemClock};
+use mas_storage_pg::{DatabaseError, PgRepository};
+use rand::SeedableRng;
+use sqlx::{Pool, Postgres};
 use tracing::debug;
 
 mod database;
+mod email;
 
-pub use self::database::cleanup_expired;
+pub use self::email::VerifyEmailJob;
 
-/// A [`Task`] can be executed by a [`TaskQueue`]
-#[async_trait::async_trait]
-pub trait Task: std::fmt::Debug + Send + Sync + 'static {
-    /// Execute the [`Task`]
-    async fn run(&self);
+#[derive(Clone)]
+struct State {
+    pool: Pool<Postgres>,
+    mailer: Mailer,
+    clock: SystemClock,
 }
 
-#[derive(Default)]
-struct TaskQueueInner {
-    pending_tasks: Mutex<VecDeque<Box<dyn Task>>>,
-    notifier: Notify,
-}
-
-impl TaskQueueInner {
-    async fn recuring<T: Task + Clone>(&self, interval: Interval, task: T) {
-        let mut stream = IntervalStream::new(interval);
-
-        while (stream.next()).await.is_some() {
-            self.schedule(task.clone()).await;
+impl State {
+    pub fn new(pool: Pool<Postgres>, clock: SystemClock, mailer: Mailer) -> Self {
+        Self {
+            pool,
+            mailer,
+            clock,
         }
     }
 
-    async fn schedule<T: Task>(&self, task: T) {
-        let task = Box::new(task);
-        self.pending_tasks.lock().await.push_back(task);
-        self.notifier.notify_one();
+    pub fn inject(&self) -> Extension<Self> {
+        Extension(self.clone())
     }
 
-    async fn tick(&self) {
-        loop {
-            let pending = {
-                let mut tasks = self.pending_tasks.lock().await;
-                tasks.pop_front()
-            };
-
-            if let Some(pending) = pending {
-                pending.run().await;
-            } else {
-                break;
-            }
-        }
+    pub fn pool(&self) -> &Pool<Postgres> {
+        &self.pool
     }
 
-    async fn run_forever(&self) {
-        loop {
-            self.notifier.notified().await;
-            self.tick().await;
-        }
+    pub fn clock(&self) -> BoxClock {
+        Box::new(self.clock.clone())
+    }
+
+    pub fn store<J>(&self) -> PostgresStorage<J> {
+        PostgresStorage::new(self.pool.clone())
+    }
+
+    pub fn mailer(&self) -> &Mailer {
+        &self.mailer
+    }
+
+    pub fn rng(&self) -> rand_chacha::ChaChaRng {
+        let _ = self;
+
+        // This is fine.
+        #[allow(clippy::disallowed_methods)]
+        rand_chacha::ChaChaRng::from_rng(rand::thread_rng()).expect("failed to seed rng")
+    }
+
+    pub async fn repository(&self) -> Result<BoxRepository, DatabaseError> {
+        let repo = PgRepository::from_pool(self.pool())
+            .await?
+            .map_err(mas_storage::RepositoryError::from_error)
+            .boxed();
+
+        Ok(repo)
     }
 }
 
-/// A [`TaskQueue`] executes tasks inserted in it in order
-#[derive(Default)]
-pub struct TaskQueue {
-    inner: Arc<TaskQueueInner>,
+trait JobContextExt {
+    fn state(&self) -> State;
 }
 
-impl TaskQueue {
-    /// Start the task queue to run forever
-    pub fn start(&self) {
-        let queue = self.inner.clone();
-        tokio::task::spawn(async move {
-            queue.run_forever().await;
-        });
+impl JobContextExt for apalis_core::context::JobContext {
+    fn state(&self) -> State {
+        self.data_opt::<State>()
+            .expect("state not injected in job context")
+            .clone()
     }
+}
 
-    #[allow(dead_code)]
-    async fn schedule<T: Task>(&self, task: T) {
-        let queue = self.inner.clone();
-        queue.schedule(task).await;
-    }
-
-    /// Schedule a task in the queue at regular intervals
-    pub fn recuring(&self, every: Duration, task: impl Task + Clone + std::fmt::Debug) {
-        debug!(?task, period = every.as_secs(), "Scheduling recuring task");
-        let queue = self.inner.clone();
-        tokio::task::spawn(async move {
-            queue.recuring(tokio::time::interval(every), task).await;
-        });
-    }
+#[must_use]
+pub fn init(pool: &Pool<Postgres>, mailer: &Mailer) -> Monitor<TokioExecutor> {
+    let state = State::new(pool.clone(), SystemClock::default(), mailer.clone());
+    let monitor = Monitor::new();
+    let monitor = self::database::register(monitor, &state);
+    let monitor = self::email::register(monitor, &state);
+    debug!(?monitor, "workers registered");
+    monitor
 }

@@ -117,9 +117,63 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.69"
+version = "1.0.70"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "224afbd727c3d6e4b90103ece64b8d1b67fbb1973b1046c2281eed3f3803f800"
+checksum = "7de8ce5e0f9f8d88245311066a578d72b7af3e7088f32783804676302df237e4"
+
+[[package]]
+name = "apalis-core"
+version = "0.4.0-alpha.4"
+source = "git+https://github.com/geofmureithi/apalis.git?rev=ead6f840b92a3590a8bf46398eaf65ed55aa92dc#ead6f840b92a3590a8bf46398eaf65ed55aa92dc"
+dependencies = [
+ "async-stream",
+ "async-trait",
+ "chrono",
+ "futures 0.3.27",
+ "graceful-shutdown",
+ "http",
+ "log",
+ "pin-project-lite",
+ "serde",
+ "serde_json",
+ "strum",
+ "thiserror",
+ "tokio",
+ "tower",
+ "tracing",
+ "ulid",
+]
+
+[[package]]
+name = "apalis-cron"
+version = "0.4.0-alpha.4"
+source = "git+https://github.com/geofmureithi/apalis.git?rev=ead6f840b92a3590a8bf46398eaf65ed55aa92dc#ead6f840b92a3590a8bf46398eaf65ed55aa92dc"
+dependencies = [
+ "apalis-core",
+ "async-stream",
+ "chrono",
+ "cron",
+ "futures 0.3.27",
+ "tokio",
+ "tower",
+]
+
+[[package]]
+name = "apalis-sql"
+version = "0.4.0-alpha.4"
+source = "git+https://github.com/geofmureithi/apalis.git?rev=ead6f840b92a3590a8bf46398eaf65ed55aa92dc#ead6f840b92a3590a8bf46398eaf65ed55aa92dc"
+dependencies = [
+ "apalis-core",
+ "async-stream",
+ "async-trait",
+ "chrono",
+ "futures 0.3.27",
+ "futures-lite",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "tokio",
+]
 
 [[package]]
 name = "argon2"
@@ -1434,6 +1488,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "cron"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d76219e9243e100d5a37676005f08379297f8addfebc247613299600625c734d"
+dependencies = [
+ "chrono",
+ "nom",
+ "once_cell",
+]
+
+[[package]]
 name = "crossbeam-channel"
 version = "0.5.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1950,6 +2015,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "flume"
+version = "0.10.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1657b4441c3403d9f7b3409e47575237dac27b1b5726df654a6ecbf92f0f7577"
+dependencies = [
+ "futures-core",
+ "futures-sink",
+ "pin-project",
+ "spin 0.9.6",
+]
+
+[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2229,6 +2306,17 @@ dependencies = [
  "futures-core",
  "js-sys",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "graceful-shutdown"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3effbaf774a1da3462925bb182ccf975c284cf46edca5569ea93420a657af484"
+dependencies = [
+ "futures-core",
+ "pin-project-lite",
+ "tokio",
 ]
 
 [[package]]
@@ -2829,6 +2917,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "348108ab3fba42ec82ff6e9564fc4ca0247bdccdc68dd8af9764bbc79c3c8ffb"
 
 [[package]]
+name = "libsqlite3-sys"
+version = "0.24.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "898745e570c7d0453cc1fbc4a701eb6c662ed54e8fec8b7d14be137ebeeb9d14"
+dependencies = [
+ "cc",
+ "pkg-config",
+ "vcpkg",
+]
+
+[[package]]
 name = "link-cplusplus"
 version = "1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2935,6 +3034,7 @@ name = "mas-cli"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "apalis-core",
  "atty",
  "axum",
  "camino",
@@ -3070,6 +3170,9 @@ name = "mas-handlers"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "apalis-core",
+ "apalis-cron",
+ "apalis-sql",
  "argon2",
  "async-graphql",
  "axum",
@@ -3097,6 +3200,7 @@ dependencies = [
  "mas-router",
  "mas-storage",
  "mas-storage-pg",
+ "mas-tasks",
  "mas-templates",
  "mime",
  "oauth2-types",
@@ -3391,14 +3495,27 @@ dependencies = [
 name = "mas-tasks"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "apalis-core",
+ "apalis-cron",
+ "apalis-sql",
  "async-trait",
+ "chrono",
  "futures-util",
+ "mas-data-model",
+ "mas-email",
  "mas-storage",
  "mas-storage-pg",
+ "rand 0.8.5",
+ "rand_chacha 0.3.1",
+ "serde",
  "sqlx",
+ "thiserror",
  "tokio",
  "tokio-stream",
+ "tower",
  "tracing",
+ "ulid",
 ]
 
 [[package]]
@@ -5171,9 +5288,9 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.158"
+version = "1.0.159"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "771d4d9c4163ee138805e12c710dd365e4f44be8be0503cb1bb9eb989425d9c9"
+checksum = "3c04e8343c3daeec41f58990b9d77068df31209f2af111e059e9fe9646693065"
 dependencies = [
  "serde_derive",
 ]
@@ -5193,9 +5310,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.158"
+version = "1.0.159"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e801c1712f48475582b7696ac71e0ca34ebb30e09338425384269d9717c62cad"
+checksum = "4c614d17805b093df4b147b51339e7e44bf05ef59fba1e45d83500bcfb4d8585"
 dependencies = [
  "proc-macro2 1.0.52",
  "quote 1.0.26",
@@ -5420,6 +5537,9 @@ name = "spin"
 version = "0.9.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5d6e0250b93c8427a177b849d144a96d5acc57006149479403d7861ab721e34"
+dependencies = [
+ "lock_api",
+]
 
 [[package]]
 name = "spki"
@@ -5477,8 +5597,10 @@ dependencies = [
  "dotenvy",
  "either",
  "event-listener",
+ "flume",
  "futures-channel",
  "futures-core",
+ "futures-executor",
  "futures-intrusive",
  "futures-util",
  "hashlink",
@@ -5488,6 +5610,7 @@ dependencies = [
  "indexmap",
  "itoa",
  "libc",
+ "libsqlite3-sys",
  "log",
  "md-5",
  "memchr",
@@ -5594,6 +5717,28 @@ checksum = "bafede0d0a2f21910f36d47b1558caae3076ed80f6f3ad0fc85a91e6ba7e5938"
 dependencies = [
  "proc-macro2 1.0.52",
  "quote 1.0.26",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "strum"
+version = "0.24.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "063e6045c0e62079840579a7e47a355ae92f60eb74daaf156fb1e84ba164e63f"
+dependencies = [
+ "strum_macros",
+]
+
+[[package]]
+name = "strum_macros"
+version = "0.24.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e385be0d24f186b4ce2f9982191e7101bb737312ad61c1f2f984f34bcf85d59"
+dependencies = [
+ "heck",
+ "proc-macro2 1.0.52",
+ "quote 1.0.26",
+ "rustversion",
  "syn 1.0.109",
 ]
 
@@ -6400,6 +6545,12 @@ dependencies = [
  "ctor",
  "version_check",
 ]
+
+[[package]]
+name = "vcpkg"
+version = "0.2.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 
 [[package]]
 name = "version_check"

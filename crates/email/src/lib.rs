@@ -26,7 +26,10 @@
 mod mailer;
 mod transport;
 
-pub use lettre::transport::smtp::authentication::Credentials as SmtpCredentials;
+pub use lettre::{
+    message::Mailbox, transport::smtp::authentication::Credentials as SmtpCredentials, Address,
+};
+pub use mas_templates::EmailVerificationContext;
 
 pub use self::{
     mailer::Mailer,
