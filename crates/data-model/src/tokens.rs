@@ -176,10 +176,8 @@ impl TokenType {
         match prefix {
             "mat" => Some(TokenType::AccessToken),
             "mar" => Some(TokenType::RefreshToken),
-            "mct" => Some(TokenType::CompatAccessToken),
-            "mcr" => Some(TokenType::CompatRefreshToken),
-            "syt" => Some(TokenType::CompatAccessToken), // Synapse access token
-            "syr" => Some(TokenType::CompatRefreshToken), // Synapse refresh token
+            "mct" | "syt" => Some(TokenType::CompatAccessToken),
+            "mcr" | "syr" => Some(TokenType::CompatRefreshToken),
             _ => None,
         }
     }
