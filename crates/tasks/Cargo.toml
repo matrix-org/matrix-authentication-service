@@ -1,9 +1,9 @@
 [package]
 name = "mas-tasks"
 version = "0.1.0"
-authors = ["Quentin Gliech <quenting@element.io>"]
+authors = ["quentin gliech <quenting@element.io>"]
 edition = "2021"
-license = "Apache-2.0"
+license = "apache-2.0"
 
 [dependencies]
 anyhow = "1.0.70"
@@ -19,7 +19,6 @@ thiserror = "1.0.30"
 tower = "0.4.13"
 tracing = "0.1.37"
 tracing-opentelemetry = "0.18.0"
-opentelemetry = "0.18.0"
 ulid = "1.0.0"
 serde = { version = "1.0.159", features = ["derive"] }
 

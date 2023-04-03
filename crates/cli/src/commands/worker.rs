@@ -15,7 +15,11 @@
 use clap::Parser;
 use mas_config::RootConfig;
 use mas_router::UrlBuilder;
-use tracing::{info_span, log::info};
+use rand::{
+    distributions::{Alphanumeric, DistString},
+    thread_rng,
+};
+use tracing::{info, info_span};
 
 use crate::util::{database_from_config, mailer_from_config, templates_from_config};
 
@@ -28,7 +32,7 @@ impl Options {
         let config: RootConfig = root.load_config()?;
 
         // Connect to the database
-        info!("Conntecting to the database");
+        info!("Connecting to the database");
         let pool = database_from_config(&config.database).await?;
 
         let url_builder = UrlBuilder::new(config.http.public_base.clone());
@@ -40,8 +44,12 @@ impl Options {
         mailer.test_connection().await?;
         drop(config);
 
-        info!("Starting task scheduler");
-        let monitor = mas_tasks::init(&pool, &mailer);
+        #[allow(clippy::disallowed_methods)]
+        let mut rng = thread_rng();
+        let worker_name = Alphanumeric.sample_string(&mut rng, 10);
+
+        info!(worker_name, "Starting task scheduler");
+        let monitor = mas_tasks::init(&worker_name, &pool, &mailer);
 
         span.exit();
 

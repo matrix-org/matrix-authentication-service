@@ -15,12 +15,12 @@ rev = "0b9295c2db2114cd87aa19abcc1fc00c16b272db"
 
 [patch.crates-io.apalis-core]
 git = "https://github.com/geofmureithi/apalis.git"
-rev = "ead6f840b92a3590a8bf46398eaf65ed55aa92dc"
+rev = "1cc600571c0dc4f5bd6cbb90fa9eef7f34888ba8"
 
 [patch.crates-io.apalis-sql]
 git = "https://github.com/geofmureithi/apalis.git"
-rev = "ead6f840b92a3590a8bf46398eaf65ed55aa92dc"
+rev = "1cc600571c0dc4f5bd6cbb90fa9eef7f34888ba8"
 
 [patch.crates-io.apalis-cron]
 git = "https://github.com/geofmureithi/apalis.git"
-rev = "ead6f840b92a3590a8bf46398eaf65ed55aa92dc"
+rev = "1cc600571c0dc4f5bd6cbb90fa9eef7f34888ba8"

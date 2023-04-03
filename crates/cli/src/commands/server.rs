@@ -22,6 +22,10 @@ use mas_handlers::{AppState, HttpClientFactory, MatrixHomeserver};
 use mas_listener::{server::Server, shutdown::ShutdownStream};
 use mas_router::UrlBuilder;
 use mas_storage_pg::MIGRATOR;
+use rand::{
+    distributions::{Alphanumeric, DistString},
+    thread_rng,
+};
 use tokio::signal::unix::SignalKind;
 use tracing::{info, info_span, warn, Instrument};
 
@@ -52,7 +56,7 @@ impl Options {
         let config: RootConfig = root.load_config()?;
 
         // Connect to the database
-        info!("Conntecting to the database");
+        info!("Connecting to the database");
         let pool = database_from_config(&config.database).await?;
 
         if self.migrate {
@@ -87,8 +91,12 @@ impl Options {
             let mailer = mailer_from_config(&config.email, &templates).await?;
             mailer.test_connection().await?;
 
-            info!("Starting task worker");
-            let monitor = mas_tasks::init(&pool, &mailer);
+            #[allow(clippy::disallowed_methods)]
+            let mut rng = thread_rng();
+            let worker_name = Alphanumeric.sample_string(&mut rng, 10);
+
+            info!(worker_name, "Starting task worker");
+            let monitor = mas_tasks::init(&worker_name, &pool, &mailer);
             // TODO: grab the handle
             tokio::spawn(monitor.run());
         }
