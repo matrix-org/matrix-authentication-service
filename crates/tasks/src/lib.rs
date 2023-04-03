@@ -27,6 +27,7 @@ use tracing::debug;
 
 mod database;
 mod email;
+mod layers;
 
 #[derive(Clone)]
 struct State {
@@ -95,11 +96,11 @@ impl JobContextExt for apalis_core::context::JobContext {
 }
 
 #[must_use]
-pub fn init(pool: &Pool<Postgres>, mailer: &Mailer) -> Monitor<TokioExecutor> {
+pub fn init(name: &str, pool: &Pool<Postgres>, mailer: &Mailer) -> Monitor<TokioExecutor> {
     let state = State::new(pool.clone(), SystemClock::default(), mailer.clone());
     let monitor = Monitor::new();
-    let monitor = self::database::register(monitor, &state);
-    let monitor = self::email::register(monitor, &state);
+    let monitor = self::database::register(name, monitor, &state);
+    let monitor = self::email::register(name, monitor, &state);
     debug!(?monitor, "workers registered");
     monitor
 }
