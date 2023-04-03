@@ -23,61 +23,80 @@ use apalis_core::{
 };
 use chrono::Duration;
 use mas_email::{Address, EmailVerificationContext, Mailbox};
-use mas_storage::job::VerifyEmailJob;
+use mas_storage::job::{JobWithSpanContext, VerifyEmailJob};
 use rand::{distributions::Uniform, Rng};
-use tracing::info;
+use tracing::{info, info_span, Instrument};
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use crate::{JobContextExt, State};
 
-async fn verify_email(job: VerifyEmailJob, ctx: JobContext) -> Result<(), anyhow::Error> {
-    let state = ctx.state();
-    let mut repo = state.repository().await?;
-    let mut rng = state.rng();
-    let mailer = state.mailer();
-    let clock = state.clock();
-
-    // Lookup the user email
-    let user_email = repo
-        .user_email()
-        .lookup(job.user_email_id())
-        .await?
-        .context("User email not found")?;
-
-    // Lookup the user associated with the email
-    let user = repo
-        .user()
-        .lookup(user_email.user_id)
-        .await?
-        .context("User not found")?;
-
-    // Generate a verification code
-    let range = Uniform::<u32>::from(0..1_000_000);
-    let code = rng.sample(range);
-    let code = format!("{code:06}");
-
-    let address: Address = user_email.email.parse()?;
-
-    // Save the verification code in the database
-    let verification = repo
-        .user_email()
-        .add_verification_code(&mut rng, &clock, &user_email, Duration::hours(8), code)
-        .await?;
-
-    // And send the verification email
-    let mailbox = Mailbox::new(Some(user.username.clone()), address);
-
-    let context = EmailVerificationContext::new(user.clone(), verification.clone());
-
-    mailer.send_verification_email(mailbox, &context).await?;
-
-    info!(
-        email.id = %user_email.id,
-        "Verification email sent"
+async fn verify_email(
+    job: JobWithSpanContext<VerifyEmailJob>,
+    ctx: JobContext,
+) -> Result<(), anyhow::Error> {
+    let span = info_span!(
+        "job.verify_email",
+        job.id = %ctx.id(),
+        job.attempts = ctx.attempts(),
+        user_email.id = %job.user_email_id(),
     );
 
-    repo.save().await?;
+    if let Some(context) = job.span_context() {
+        span.add_link(context);
+    }
 
-    Ok(())
+    async move {
+        let state = ctx.state();
+        let mut repo = state.repository().await?;
+        let mut rng = state.rng();
+        let mailer = state.mailer();
+        let clock = state.clock();
+
+        // Lookup the user email
+        let user_email = repo
+            .user_email()
+            .lookup(job.user_email_id())
+            .await?
+            .context("User email not found")?;
+
+        // Lookup the user associated with the email
+        let user = repo
+            .user()
+            .lookup(user_email.user_id)
+            .await?
+            .context("User not found")?;
+
+        // Generate a verification code
+        let range = Uniform::<u32>::from(0..1_000_000);
+        let code = rng.sample(range);
+        let code = format!("{code:06}");
+
+        let address: Address = user_email.email.parse()?;
+
+        // Save the verification code in the database
+        let verification = repo
+            .user_email()
+            .add_verification_code(&mut rng, &clock, &user_email, Duration::hours(8), code)
+            .await?;
+
+        // And send the verification email
+        let mailbox = Mailbox::new(Some(user.username.clone()), address);
+
+        let context = EmailVerificationContext::new(user.clone(), verification.clone());
+
+        mailer.send_verification_email(mailbox, &context).await?;
+
+        info!(
+            email.id = %user_email.id,
+            "Verification email sent"
+        );
+
+        repo.save().await?;
+
+        Ok(())
+    }
+    .instrument(span)
+    .await
 }
 
 pub(crate) fn register(monitor: Monitor<TokioExecutor>, state: &State) -> Monitor<TokioExecutor> {
