@@ -21,8 +21,9 @@ use mas_storage::{
         CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository,
         CompatSsoLoginRepository,
     },
+    job::{JobRepositoryExt, ProvisionDeviceJob},
     user::{UserPasswordRepository, UserRepository},
-    BoxClock, BoxRepository, BoxRng, Clock,
+    BoxClock, BoxRepository, BoxRng, Clock, RepositoryAccess,
 };
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
@@ -379,6 +380,10 @@ async fn user_password_login(
 
     // Now that the user credentials have been verified, start a new compat session
     let device = Device::generate(&mut rng);
+    repo.job()
+        .schedule_job(ProvisionDeviceJob::new(&user, &device))
+        .await?;
+
     let session = repo
         .compat_session()
         .add(&mut rng, clock, &user, device)

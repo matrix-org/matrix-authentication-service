@@ -216,7 +216,7 @@ where
 mod jobs {
     // XXX: Move this somewhere else?
     use apalis_core::job::Job;
-    use mas_data_model::{User, UserEmail};
+    use mas_data_model::{Device, User, UserEmail};
     use serde::{Deserialize, Serialize};
     use ulid::Ulid;
 
@@ -280,10 +280,10 @@ mod jobs {
     impl ProvisionDeviceJob {
         /// Create a new job to provision a device for a user on the homeserver.
         #[must_use]
-        pub fn new(user: &User, device_id: &str) -> Self {
+        pub fn new(user: &User, device: &Device) -> Self {
             Self {
                 user_id: user.id,
-                device_id: device_id.to_owned(),
+                device_id: device.as_str().to_owned(),
             }
         }
 
@@ -314,10 +314,10 @@ mod jobs {
     impl DeleteDeviceJob {
         /// Create a new job to delete a device for a user on the homeserver.
         #[must_use]
-        pub fn new(user: &User, device_id: &str) -> Self {
+        pub fn new(user: &User, device: &Device) -> Self {
             Self {
                 user_id: user.id,
-                device_id: device_id.to_owned(),
+                device_id: device.as_str().to_owned(),
             }
         }
 
