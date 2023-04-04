@@ -3502,8 +3502,10 @@ dependencies = [
  "apalis-sql",
  "async-trait",
  "chrono",
+ "mas-axum-utils",
  "mas-data-model",
  "mas-email",
+ "mas-http",
  "mas-storage",
  "mas-storage-pg",
  "rand 0.8.5",
@@ -3515,6 +3517,7 @@ dependencies = [
  "tracing",
  "tracing-opentelemetry",
  "ulid",
+ "url",
 ]
 
 [[package]]

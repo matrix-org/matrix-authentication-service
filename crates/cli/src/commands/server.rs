@@ -22,6 +22,7 @@ use mas_handlers::{AppState, HttpClientFactory, MatrixHomeserver};
 use mas_listener::{server::Server, shutdown::ShutdownStream};
 use mas_router::UrlBuilder;
 use mas_storage_pg::MIGRATOR;
+use mas_tasks::HomeserverConnection;
 use rand::{
     distributions::{Alphanumeric, DistString},
     thread_rng,
@@ -96,7 +97,13 @@ impl Options {
             let worker_name = Alphanumeric.sample_string(&mut rng, 10);
 
             info!(worker_name, "Starting task worker");
-            let monitor = mas_tasks::init(&worker_name, &pool, &mailer);
+            let http_client_factory = HttpClientFactory::new(50);
+            let conn = HomeserverConnection::new(
+                config.matrix.homeserver.clone(),
+                config.matrix.endpoint.clone(),
+                config.matrix.secret.clone(),
+            );
+            let monitor = mas_tasks::init(&worker_name, &pool, &mailer, conn, &http_client_factory);
             // TODO: grab the handle
             tokio::spawn(monitor.run());
         }

@@ -25,9 +25,10 @@ use mas_axum_utils::{
 };
 use mas_keystore::Encrypter;
 use mas_storage::{
+    job::{JobRepositoryExt, ProvisionUserJob},
     upstream_oauth2::{UpstreamOAuthLinkRepository, UpstreamOAuthSessionRepository},
     user::{BrowserSessionRepository, UserRepository},
-    BoxClock, BoxRepository, BoxRng,
+    BoxClock, BoxRepository, BoxRng, RepositoryAccess,
 };
 use mas_templates::{
     EmptyContext, TemplateContext, Templates, UpstreamExistingLinkContext, UpstreamRegister,
@@ -285,6 +286,11 @@ pub(crate) async fn post(
 
         (None, None, FormData::Register { username }) => {
             let user = repo.user().add(&mut rng, &clock, username).await?;
+
+            repo.job()
+                .schedule_job(ProvisionUserJob::new(&user))
+                .await?;
+
             repo.upstream_oauth_link()
                 .associate_to_user(&link, &user)
                 .await?;

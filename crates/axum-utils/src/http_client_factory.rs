@@ -48,7 +48,7 @@ impl HttpClientFactory {
         operation: &'static str,
     ) -> Result<ClientService<TracedClient<B>>, ClientInitError>
     where
-        B: axum::body::HttpBody + Send + Sync + 'static,
+        B: axum::body::HttpBody + Send,
         B::Data: Send,
     {
         let client = mas_http::make_traced_client::<B>().await?;

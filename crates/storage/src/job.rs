@@ -216,7 +216,7 @@ where
 mod jobs {
     // XXX: Move this somewhere else?
     use apalis_core::job::Job;
-    use mas_data_model::UserEmail;
+    use mas_data_model::{User, UserEmail};
     use serde::{Deserialize, Serialize};
     use ulid::Ulid;
 
@@ -245,6 +245,98 @@ mod jobs {
     impl Job for VerifyEmailJob {
         const NAME: &'static str = "verify-email";
     }
+
+    /// A job to provision the user on the homeserver.
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct ProvisionUserJob {
+        user_id: Ulid,
+    }
+
+    impl ProvisionUserJob {
+        /// Create a new job to provision the user on the homeserver.
+        #[must_use]
+        pub fn new(user: &User) -> Self {
+            Self { user_id: user.id }
+        }
+
+        /// The ID of the user to provision.
+        #[must_use]
+        pub fn user_id(&self) -> Ulid {
+            self.user_id
+        }
+    }
+
+    impl Job for ProvisionUserJob {
+        const NAME: &'static str = "provision-user";
+    }
+
+    /// A job to provision a device for a user on the homeserver.
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct ProvisionDeviceJob {
+        user_id: Ulid,
+        device_id: String,
+    }
+
+    impl ProvisionDeviceJob {
+        /// Create a new job to provision a device for a user on the homeserver.
+        #[must_use]
+        pub fn new(user: &User, device_id: &str) -> Self {
+            Self {
+                user_id: user.id,
+                device_id: device_id.to_owned(),
+            }
+        }
+
+        /// The ID of the user to provision the device for.
+        #[must_use]
+        pub fn user_id(&self) -> Ulid {
+            self.user_id
+        }
+
+        /// The ID of the device to provision.
+        #[must_use]
+        pub fn device_id(&self) -> &str {
+            &self.device_id
+        }
+    }
+
+    impl Job for ProvisionDeviceJob {
+        const NAME: &'static str = "provision-device";
+    }
+
+    /// A job to delete a device for a user on the homeserver.
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct DeleteDeviceJob {
+        user_id: Ulid,
+        device_id: String,
+    }
+
+    impl DeleteDeviceJob {
+        /// Create a new job to delete a device for a user on the homeserver.
+        #[must_use]
+        pub fn new(user: &User, device_id: &str) -> Self {
+            Self {
+                user_id: user.id,
+                device_id: device_id.to_owned(),
+            }
+        }
+
+        /// The ID of the user to delete the device for.
+        #[must_use]
+        pub fn user_id(&self) -> Ulid {
+            self.user_id
+        }
+
+        /// The ID of the device to delete.
+        #[must_use]
+        pub fn device_id(&self) -> &str {
+            &self.device_id
+        }
+    }
+
+    impl Job for DeleteDeviceJob {
+        const NAME: &'static str = "delete-device";
+    }
 }
 
-pub use self::jobs::VerifyEmailJob;
+pub use self::jobs::{DeleteDeviceJob, ProvisionDeviceJob, ProvisionUserJob, VerifyEmailJob};

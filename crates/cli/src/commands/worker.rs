@@ -14,7 +14,9 @@
 
 use clap::Parser;
 use mas_config::RootConfig;
+use mas_handlers::HttpClientFactory;
 use mas_router::UrlBuilder;
+use mas_tasks::HomeserverConnection;
 use rand::{
     distributions::{Alphanumeric, DistString},
     thread_rng,
@@ -42,6 +44,14 @@ impl Options {
 
         let mailer = mailer_from_config(&config.email, &templates).await?;
         mailer.test_connection().await?;
+
+        let http_client_factory = HttpClientFactory::new(50);
+        let conn = HomeserverConnection::new(
+            config.matrix.homeserver.clone(),
+            config.matrix.endpoint.clone(),
+            config.matrix.secret.clone(),
+        );
+
         drop(config);
 
         #[allow(clippy::disallowed_methods)]
@@ -49,7 +59,7 @@ impl Options {
         let worker_name = Alphanumeric.sample_string(&mut rng, 10);
 
         info!(worker_name, "Starting task scheduler");
-        let monitor = mas_tasks::init(&worker_name, &pool, &mailer);
+        let monitor = mas_tasks::init(&worker_name, &pool, &mailer, conn, &http_client_factory);
 
         span.exit();
 

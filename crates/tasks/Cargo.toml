@@ -20,9 +20,12 @@ tower = "0.4.13"
 tracing = "0.1.37"
 tracing-opentelemetry = "0.18.0"
 ulid = "1.0.0"
+url = "2.3.1"
 serde = { version = "1.0.159", features = ["derive"] }
 
+mas-axum-utils = { path = "../axum-utils" }
 mas-storage = { path = "../storage" }
 mas-storage-pg = { path = "../storage-pg" }
 mas-email = { path = "../email" }
+mas-http = { path = "../http" }
 mas-data-model = { path = "../data-model" }

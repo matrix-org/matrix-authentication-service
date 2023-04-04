@@ -16,9 +16,13 @@
 #![deny(clippy::all, clippy::str_to_string, rustdoc::broken_intra_doc_links)]
 #![warn(clippy::pedantic)]
 
+use std::sync::Arc;
+
 use apalis_core::{executor::TokioExecutor, layers::extensions::Extension, monitor::Monitor};
 use apalis_sql::postgres::PostgresStorage;
+use mas_axum_utils::http_client_factory::HttpClientFactory;
 use mas_email::Mailer;
+use mas_http::{ClientInitError, ClientService, TracedClient};
 use mas_storage::{BoxClock, BoxRepository, Repository, SystemClock};
 use mas_storage_pg::{DatabaseError, PgRepository};
 use rand::SeedableRng;
@@ -28,20 +32,33 @@ use tracing::debug;
 mod database;
 mod email;
 mod layers;
+mod matrix;
+
+pub use self::matrix::HomeserverConnection;
 
 #[derive(Clone)]
 struct State {
     pool: Pool<Postgres>,
     mailer: Mailer,
     clock: SystemClock,
+    homeserver: Arc<HomeserverConnection>,
+    http_client_factory: HttpClientFactory,
 }
 
 impl State {
-    pub fn new(pool: Pool<Postgres>, clock: SystemClock, mailer: Mailer) -> Self {
+    pub fn new(
+        pool: Pool<Postgres>,
+        clock: SystemClock,
+        mailer: Mailer,
+        homeserver: HomeserverConnection,
+        http_client_factory: HttpClientFactory,
+    ) -> Self {
         Self {
             pool,
             mailer,
             clock,
+            homeserver: Arc::new(homeserver),
+            http_client_factory,
         }
     }
 
@@ -81,6 +98,21 @@ impl State {
 
         Ok(repo)
     }
+
+    pub fn matrix_connection(&self) -> &HomeserverConnection {
+        &self.homeserver
+    }
+
+    pub async fn http_client<B>(
+        &self,
+        operation: &'static str,
+    ) -> Result<ClientService<TracedClient<B>>, ClientInitError>
+    where
+        B: mas_axum_utils::axum::body::HttpBody + Send,
+        B::Data: Send,
+    {
+        self.http_client_factory.client(operation).await
+    }
 }
 
 trait JobContextExt {
@@ -96,11 +128,24 @@ impl JobContextExt for apalis_core::context::JobContext {
 }
 
 #[must_use]
-pub fn init(name: &str, pool: &Pool<Postgres>, mailer: &Mailer) -> Monitor<TokioExecutor> {
-    let state = State::new(pool.clone(), SystemClock::default(), mailer.clone());
+pub fn init(
+    name: &str,
+    pool: &Pool<Postgres>,
+    mailer: &Mailer,
+    homeserver: HomeserverConnection,
+    http_client_factory: &HttpClientFactory,
+) -> Monitor<TokioExecutor> {
+    let state = State::new(
+        pool.clone(),
+        SystemClock::default(),
+        mailer.clone(),
+        homeserver,
+        http_client_factory.clone(),
+    );
     let monitor = Monitor::new();
     let monitor = self::database::register(name, monitor, &state);
     let monitor = self::email::register(name, monitor, &state);
+    let monitor = self::matrix::register(name, monitor, &state);
     debug!(?monitor, "workers registered");
     monitor
 }

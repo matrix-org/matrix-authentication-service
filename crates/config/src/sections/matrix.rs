@@ -13,15 +13,23 @@
 // limitations under the License.
 
 use async_trait::async_trait;
-use rand::Rng;
+use rand::{
+    distributions::{Alphanumeric, DistString},
+    Rng,
+};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
+use url::Url;
 
 use super::ConfigurationSection;
 
 fn default_homeserver() -> String {
     "localhost:8008".to_owned()
+}
+
+fn default_endpoint() -> Url {
+    Url::parse("http://localhost:8008/").unwrap()
 }
 
 /// Configuration related to the Matrix homeserver
@@ -31,14 +39,13 @@ pub struct MatrixConfig {
     /// Time-to-live of a CSRF token in seconds
     #[serde(default = "default_homeserver")]
     pub homeserver: String,
-}
 
-impl Default for MatrixConfig {
-    fn default() -> Self {
-        Self {
-            homeserver: default_homeserver(),
-        }
-    }
+    /// Shared secret to use for calls to the admin API
+    pub secret: String,
+
+    /// The base URL of the homeserver's client API
+    #[serde(default = "default_endpoint")]
+    pub endpoint: Url,
 }
 
 #[async_trait]
@@ -47,15 +54,23 @@ impl ConfigurationSection<'_> for MatrixConfig {
         "matrix"
     }
 
-    async fn generate<R>(_rng: R) -> anyhow::Result<Self>
+    async fn generate<R>(mut rng: R) -> anyhow::Result<Self>
     where
         R: Rng + Send,
     {
-        Ok(Self::default())
+        Ok(Self {
+            homeserver: default_homeserver(),
+            secret: Alphanumeric.sample_string(&mut rng, 32),
+            endpoint: default_endpoint(),
+        })
     }
 
     fn test() -> Self {
-        Self::default()
+        Self {
+            homeserver: default_homeserver(),
+            secret: "test".to_owned(),
+            endpoint: default_endpoint(),
+        }
     }
 }
 
@@ -73,12 +88,14 @@ mod tests {
                 r#"
                     matrix:
                       homeserver: matrix.org
+                      secret: test
                 "#,
             )?;
 
             let config = MatrixConfig::load_from_file("config.yaml")?;
 
             assert_eq!(config.homeserver, "matrix.org".to_owned());
+            assert_eq!(config.secret, "test".to_owned());
 
             Ok(())
         });

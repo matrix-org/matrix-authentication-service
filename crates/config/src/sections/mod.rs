@@ -89,7 +89,6 @@ pub struct RootConfig {
     pub passwords: PasswordsConfig,
 
     /// Configuration related to the homeserver
-    #[serde(default)]
     pub matrix: MatrixConfig,
 
     /// Configuration related to the OPA policies

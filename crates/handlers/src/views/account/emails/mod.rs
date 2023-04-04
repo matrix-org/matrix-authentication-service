@@ -26,7 +26,7 @@ use mas_data_model::BrowserSession;
 use mas_keystore::Encrypter;
 use mas_router::Route;
 use mas_storage::{
-    job::{JobRepositoryExt, VerifyEmailJob},
+    job::{JobRepositoryExt, ProvisionUserJob, VerifyEmailJob},
     user::UserEmailRepository,
     BoxClock, BoxRepository, BoxRng, Clock, RepositoryAccess,
 };
@@ -178,6 +178,12 @@ pub(crate) async fn post(
             session.user.primary_user_email_id = Some(email.id);
         }
     };
+
+    // XXX: It shouldn't hurt to do this even if the user didn't change their emails
+    // in a meaningful way
+    repo.job()
+        .schedule_job(ProvisionUserJob::new(&session.user))
+        .await?;
 
     let reply = render(
         &mut rng,
