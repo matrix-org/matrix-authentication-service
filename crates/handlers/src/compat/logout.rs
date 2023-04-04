@@ -18,7 +18,8 @@ use hyper::StatusCode;
 use mas_data_model::TokenType;
 use mas_storage::{
     compat::{CompatAccessTokenRepository, CompatSessionRepository},
-    BoxClock, BoxRepository, Clock,
+    job::{DeleteDeviceJob, JobRepositoryExt},
+    BoxClock, BoxRepository, Clock, RepositoryAccess,
 };
 use thiserror::Error;
 
@@ -94,6 +95,17 @@ pub(crate) async fn post(
         .await?
         .filter(|s| s.is_valid())
         .ok_or(RouteError::InvalidAuthorization)?;
+
+    let user = repo
+        .user()
+        .lookup(session.user_id)
+        .await?
+        // XXX: this is probably not the right error
+        .ok_or(RouteError::InvalidAuthorization)?;
+
+    repo.job()
+        .schedule_job(DeleteDeviceJob::new(&user, &session.device))
+        .await?;
 
     repo.compat_session().finish(&clock, session).await?;
 

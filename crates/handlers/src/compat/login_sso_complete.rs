@@ -31,7 +31,8 @@ use mas_keystore::Encrypter;
 use mas_router::{CompatLoginSsoAction, PostAuthAction, Route};
 use mas_storage::{
     compat::{CompatSessionRepository, CompatSsoLoginRepository},
-    BoxClock, BoxRepository, BoxRng, Clock,
+    job::{JobRepositoryExt, ProvisionDeviceJob},
+    BoxClock, BoxRepository, BoxRng, Clock, RepositoryAccess,
 };
 use mas_templates::{CompatSsoContext, ErrorContext, TemplateContext, Templates};
 use serde::{Deserialize, Serialize};
@@ -193,6 +194,10 @@ pub async fn post(
     };
 
     let device = Device::generate(&mut rng);
+    repo.job()
+        .schedule_job(ProvisionDeviceJob::new(&session.user, &device))
+        .await?;
+
     let compat_session = repo
         .compat_session()
         .add(&mut rng, &clock, &session.user, device)
