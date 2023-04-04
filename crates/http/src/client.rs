@@ -158,7 +158,7 @@ where
 /// Returns an error if it failed to load the TLS certificates
 pub async fn make_traced_client<B>() -> Result<TracedClient<B>, ClientInitError>
 where
-    B: http_body::Body + Send + 'static,
+    B: http_body::Body + Send,
     B::Data: Send,
 {
     let https = make_traced_connector().await?;

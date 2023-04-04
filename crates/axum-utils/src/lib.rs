@@ -31,6 +31,8 @@ pub mod jwt;
 pub mod session;
 pub mod user_authorization;
 
+pub use axum;
+
 pub use self::{
     cookies::CookieExt,
     fancy_error::FancyError,

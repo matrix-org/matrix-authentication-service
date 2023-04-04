@@ -24,7 +24,11 @@ use mas_axum_utils::{
 };
 use mas_keystore::Encrypter;
 use mas_router::Route;
-use mas_storage::{user::UserEmailRepository, BoxClock, BoxRepository, BoxRng};
+use mas_storage::{
+    job::{JobRepositoryExt, ProvisionUserJob},
+    user::UserEmailRepository,
+    BoxClock, BoxRepository, BoxRng, RepositoryAccess,
+};
 use mas_templates::{EmailVerificationPageContext, TemplateContext, Templates};
 use serde::Deserialize;
 use ulid::Ulid;
@@ -131,6 +135,10 @@ pub(crate) async fn post(
 
     repo.user_email()
         .mark_as_verified(&clock, user_email)
+        .await?;
+
+    repo.job()
+        .schedule_job(ProvisionUserJob::new(&session.user))
         .await?;
 
     repo.save().await?;

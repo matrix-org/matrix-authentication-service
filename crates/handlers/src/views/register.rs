@@ -28,7 +28,7 @@ use mas_keystore::Encrypter;
 use mas_policy::PolicyFactory;
 use mas_router::Route;
 use mas_storage::{
-    job::{JobRepositoryExt, VerifyEmailJob},
+    job::{JobRepositoryExt, ProvisionUserJob, VerifyEmailJob},
     user::{BrowserSessionRepository, UserEmailRepository, UserPasswordRepository, UserRepository},
     BoxClock, BoxRepository, BoxRng, RepositoryAccess,
 };
@@ -203,6 +203,10 @@ pub(crate) async fn post(
 
     repo.job()
         .schedule_job(VerifyEmailJob::new(&user_email))
+        .await?;
+
+    repo.job()
+        .schedule_job(ProvisionUserJob::new(&user))
         .await?;
 
     repo.save().await?;
