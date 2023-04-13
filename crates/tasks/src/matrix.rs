@@ -14,7 +14,7 @@
 
 use anyhow::Context;
 use apalis_core::{
-    builder::{WorkerBuilder, WorkerFactory, WorkerFactoryFn},
+    builder::{WorkerBuilder, WorkerFactoryFn},
     context::JobContext,
     executor::TokioExecutor,
     job::Job,
@@ -45,6 +45,7 @@ pub struct HomeserverConnection {
 }
 
 impl HomeserverConnection {
+    #[must_use]
     pub fn new(homeserver: String, endpoint: Url, access_token: String) -> Self {
         Self {
             homeserver,
@@ -64,7 +65,7 @@ struct ExternalID {
 #[serde(rename_all = "lowercase")]
 enum ThreePIDMedium {
     Email,
-    MSISDN,
+    Msisdn,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -142,14 +143,14 @@ async fn provision_user(
         display_name,
         three_pids,
         external_ids: vec![ExternalID {
-            auth_provider: "oauth-delegated".to_string(),
+            auth_provider: "oauth-delegated".to_owned(),
             external_id: user.sub,
         }],
     };
 
     repo.cancel().await?;
 
-    let path = format!("_synapse/admin/v2/users/{user_id}", user_id = mxid,);
+    let path = format!("_synapse/admin/v2/users/{mxid}",);
     let mut req = Request::put(matrix.endpoint.join(&path)?.as_str());
     req.headers_mut()
         .context("Failed to get headers")?
@@ -212,7 +213,7 @@ async fn provision_device(
         homeserver = matrix.homeserver
     );
 
-    let path = format!("_synapse/admin/v2/users/{user_id}/devices", user_id = mxid);
+    let path = format!("_synapse/admin/v2/users/{mxid}/devices");
     let mut req = Request::post(matrix.endpoint.join(&path)?.as_str());
     req.headers_mut()
         .context("Failed to get headers")?
@@ -228,7 +229,7 @@ async fn provision_device(
 
     match response.status() {
         StatusCode::CREATED => {
-            info!(%user.id, %mxid, device.id = job.device_id(), "Device created")
+            info!(%user.id, %mxid, device.id = job.device_id(), "Device created");
         }
         code => anyhow::bail!("Failed to provision device. Status code: {code}"),
     }
