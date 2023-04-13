@@ -14,7 +14,7 @@
 
 use anyhow::Context;
 use apalis_core::{
-    builder::{WorkerBuilder, WorkerFactory, WorkerFactoryFn},
+    builder::{WorkerBuilder, WorkerFactoryFn},
     context::JobContext,
     executor::TokioExecutor,
     job::Job,

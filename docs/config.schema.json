@@ -4,6 +4,7 @@
   "description": "Application configuration root",
   "type": "object",
   "required": [
+    "matrix",
     "secrets"
   ],
   "properties": {
@@ -120,9 +121,6 @@
     },
     "matrix": {
       "description": "Configuration related to the homeserver",
-      "default": {
-        "homeserver": "localhost:8008"
-      },
       "allOf": [
         {
           "$ref": "#/definitions/MatrixConfig"
@@ -1118,10 +1116,23 @@
     "MatrixConfig": {
       "description": "Configuration related to the Matrix homeserver",
       "type": "object",
+      "required": [
+        "secret"
+      ],
       "properties": {
+        "endpoint": {
+          "description": "The base URL of the homeserver's client API",
+          "default": "http://localhost:8008/",
+          "type": "string",
+          "format": "uri"
+        },
         "homeserver": {
           "description": "Time-to-live of a CSRF token in seconds",
           "default": "localhost:8008",
+          "type": "string"
+        },
+        "secret": {
+          "description": "Shared secret to use for calls to the admin API",
           "type": "string"
         }
       }
