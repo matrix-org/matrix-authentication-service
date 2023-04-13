@@ -185,7 +185,10 @@ pub trait JobRepositoryExt {
     /// # Errors
     ///
     /// Returns [`Self::Error`] if the underlying repository fails
-    async fn schedule_job<J: Job + Serialize>(&mut self, job: J) -> Result<JobId, Self::Error>;
+    async fn schedule_job<J: Job + Serialize + Send>(
+        &mut self,
+        job: J,
+    ) -> Result<JobId, Self::Error>;
 }
 
 #[async_trait]
@@ -202,7 +205,10 @@ where
             job.name = J::NAME,
         ),
     )]
-    async fn schedule_job<J: Job + Serialize>(&mut self, job: J) -> Result<JobId, Self::Error> {
+    async fn schedule_job<J: Job + Serialize + Send>(
+        &mut self,
+        job: J,
+    ) -> Result<JobId, Self::Error> {
         let span = tracing::Span::current();
         let ctx = span.context();
         let span = ctx.span();

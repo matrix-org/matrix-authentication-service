@@ -142,7 +142,7 @@ pub fn init(
         homeserver,
         http_client_factory.clone(),
     );
-    let monitor = Monitor::new();
+    let monitor = Monitor::new().executor(TokioExecutor::new());
     let monitor = self::database::register(name, monitor, &state);
     let monitor = self::email::register(name, monitor, &state);
     let monitor = self::matrix::register(name, monitor, &state);

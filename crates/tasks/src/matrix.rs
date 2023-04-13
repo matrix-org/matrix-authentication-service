@@ -14,11 +14,10 @@
 
 use anyhow::Context;
 use apalis_core::{
-    builder::{WorkerBuilder, WorkerFactory},
+    builder::{WorkerBuilder, WorkerFactory, WorkerFactoryFn},
     context::JobContext,
     executor::TokioExecutor,
     job::Job,
-    job_fn::job_fn,
     monitor::Monitor,
     storage::builder::WithStorage,
 };
@@ -101,7 +100,7 @@ async fn provision_user(
     let state = ctx.state();
     let matrix = state.matrix_connection();
     let mut client = state
-        .http_client("matrx.provision_user")
+        .http_client("matrix.provision_user")
         .await?
         .request_bytes_to_body()
         .json_request();
@@ -305,7 +304,7 @@ pub(crate) fn register(
         .layer(state.inject())
         .layer(TracingLayer::new())
         .with_storage(storage)
-        .build(job_fn(provision_user));
+        .build_fn(provision_user);
 
     let storage = state.store();
     let worker_name = format!("{job}-{suffix}", job = ProvisionDeviceJob::NAME);
@@ -313,7 +312,7 @@ pub(crate) fn register(
         .layer(state.inject())
         .layer(TracingLayer::new())
         .with_storage(storage)
-        .build(job_fn(provision_device));
+        .build_fn(provision_device);
 
     let storage = state.store();
     let worker_name = format!("{job}-{suffix}", job = DeleteDeviceJob::NAME);
@@ -321,7 +320,7 @@ pub(crate) fn register(
         .layer(state.inject())
         .layer(TracingLayer::new())
         .with_storage(storage)
-        .build(job_fn(delete_device));
+        .build_fn(delete_device);
 
     monitor
         .register(provision_user_worker)
