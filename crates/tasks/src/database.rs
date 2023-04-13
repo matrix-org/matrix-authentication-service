@@ -17,11 +17,10 @@
 use std::str::FromStr;
 
 use apalis_core::{
-    builder::{WorkerBuilder, WorkerFactory},
+    builder::{WorkerBuilder, WorkerFactory, WorkerFactoryFn},
     context::JobContext,
     executor::TokioExecutor,
     job::Job,
-    job_fn::job_fn,
     monitor::Monitor,
 };
 use apalis_cron::CronStream;
@@ -78,7 +77,7 @@ pub(crate) fn register(
     let worker = WorkerBuilder::new(worker_name)
         .stream(CronStream::new(schedule).to_stream())
         .layer(state.inject())
-        .build(job_fn(cleanup_expired_tokens));
+        .build_fn(cleanup_expired_tokens);
 
     monitor.register(worker)
 }

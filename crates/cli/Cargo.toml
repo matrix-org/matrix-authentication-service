@@ -6,7 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-apalis-core = "0.4.0-alpha.4"
+apalis-core = "=0.4.0-alpha.5"
 anyhow = "1.0.69"
 atty = "0.2.14"
 axum = "0.6.11"

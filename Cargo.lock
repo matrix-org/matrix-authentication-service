@@ -123,8 +123,9 @@ checksum = "7de8ce5e0f9f8d88245311066a578d72b7af3e7088f32783804676302df237e4"
 
 [[package]]
 name = "apalis-core"
-version = "0.4.0-alpha.4"
-source = "git+https://github.com/geofmureithi/apalis.git?rev=1cc600571c0dc4f5bd6cbb90fa9eef7f34888ba8#1cc600571c0dc4f5bd6cbb90fa9eef7f34888ba8"
+version = "0.4.0-alpha.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23f04b6479bb7cf688641d70a948384dbac83a3af98e217f389e835713884ccd"
 dependencies = [
  "async-stream",
  "async-trait",
@@ -135,7 +136,6 @@ dependencies = [
  "log",
  "pin-project-lite",
  "serde",
- "serde_json",
  "strum",
  "thiserror",
  "tokio",
@@ -146,8 +146,9 @@ dependencies = [
 
 [[package]]
 name = "apalis-cron"
-version = "0.4.0-alpha.4"
-source = "git+https://github.com/geofmureithi/apalis.git?rev=1cc600571c0dc4f5bd6cbb90fa9eef7f34888ba8#1cc600571c0dc4f5bd6cbb90fa9eef7f34888ba8"
+version = "0.4.0-alpha.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cbe7a486a93e7965f19cf6b3738161aeb3079ca00f80b81557579fd720ce86ae"
 dependencies = [
  "apalis-core",
  "async-stream",
@@ -160,8 +161,9 @@ dependencies = [
 
 [[package]]
 name = "apalis-sql"
-version = "0.4.0-alpha.4"
-source = "git+https://github.com/geofmureithi/apalis.git?rev=1cc600571c0dc4f5bd6cbb90fa9eef7f34888ba8#1cc600571c0dc4f5bd6cbb90fa9eef7f34888ba8"
+version = "0.4.0-alpha.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0f5876546628bfece76812f305a242b76a78ebe5868317bd15ca2446072094ba"
 dependencies = [
  "apalis-core",
  "async-stream",

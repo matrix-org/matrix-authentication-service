@@ -14,11 +14,10 @@
 
 use anyhow::Context;
 use apalis_core::{
-    builder::{WorkerBuilder, WorkerFactory},
+    builder::{WorkerBuilder, WorkerFactory, WorkerFactoryFn},
     context::JobContext,
     executor::TokioExecutor,
     job::Job,
-    job_fn::job_fn,
     monitor::Monitor,
     storage::builder::WithStorage,
 };
@@ -101,6 +100,6 @@ pub(crate) fn register(
         .layer(state.inject())
         .layer(TracingLayer::new())
         .with_storage(storage)
-        .build(job_fn(verify_email));
+        .build_fn(verify_email);
     monitor.register(worker)
 }
