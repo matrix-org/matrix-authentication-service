@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [dependencies]
 anyhow = "1.0.69"
-async-trait = "0.1.66"
+async-trait = "0.1.67"
 camino = "1.1.4"
 convert_case = "0.6.0"
 csv = "1.2.1"
