@@ -25,7 +25,7 @@ rustls-native-certs = { version = "0.6.2", optional = true }
 serde = "1.0.158"
 serde_json = "1.0.94"
 serde_urlencoded = "0.7.1"
-thiserror = "1.0.39"
+thiserror = "1.0.40"
 tokio = { version = "1.26.0", features = ["sync", "parking_lot"], optional = true }
 tower = { version = "0.4.13", features = [] }
 tower-http = { version = "0.4.0", features = ["cors"] }

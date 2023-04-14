@@ -15,7 +15,7 @@ chrono = "0.4.24"
 rand = "0.8.5"
 rand_chacha = "0.3.1"
 sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres"] }
-thiserror = "1.0.30"
+thiserror = "1.0.40"
 tower = "0.4.13"
 tracing = "0.1.37"
 tracing-opentelemetry = "0.18.0"
