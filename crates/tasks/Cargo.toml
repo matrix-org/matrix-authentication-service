@@ -10,7 +10,7 @@ anyhow = "1.0.70"
 apalis-core = { version = "=0.4.0-alpha.5", features = ["extensions", "tokio-comp"] }
 apalis-cron = "=0.4.0-alpha.5"
 apalis-sql = { version = "=0.4.0-alpha.5", features = ["postgres", "tokio-comp"] }
-async-trait = "0.1.67"
+async-trait = "0.1.68"
 chrono = "0.4.24"
 rand = "0.8.5"
 rand_chacha = "0.3.1"
