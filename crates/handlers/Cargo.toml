@@ -44,7 +44,7 @@ serde_urlencoded = "0.7.1"
 argon2 = { version = "0.5.0", features = ["password-hash", "std"] }
 bcrypt = "0.14.0"
 pbkdf2 = { version = "0.12.1", features = ["password-hash", "std", "simple"] }
-zeroize = "1.5.7"
+zeroize = "1.6.0"
 
 # Various data types and utilities
 camino = "1.1.4"
