@@ -184,18 +184,12 @@ pub(crate) async fn get(
         CodeOrError::Code { code } => code,
     };
 
-    let http_service = http_client_factory
-        .http_service("upstream-discover")
-        .await?;
+    let http_service = http_client_factory.http_service().await?;
 
     // XXX: we shouldn't discover on-the-fly
     // Discover the provider
     let metadata =
         mas_oidc_client::requests::discovery::discover(&http_service, &provider.issuer).await?;
-
-    let http_service = http_client_factory
-        .http_service("upstream-fetch-jwks")
-        .await?;
 
     // Fetch the JWKS
     let jwks =
@@ -226,10 +220,6 @@ pub(crate) async fn get(
         signing_algorithm: &mas_iana::jose::JsonWebSignatureAlg::Rs256,
         client_id: &provider.client_id,
     };
-
-    let http_service = http_client_factory
-        .http_service("upstream-exchange-code")
-        .await?;
 
     let (response, id_token) =
         mas_oidc_client::requests::authorization_code::access_token_with_authorization_code(

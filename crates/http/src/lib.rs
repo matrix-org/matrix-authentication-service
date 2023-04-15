@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! [`tower`] layers and services to help building HTTP client and servers
+//! [`tower`] layers and services to help building HTTP client and servers
 
 #![forbid(unsafe_code)]
 #![deny(
@@ -47,7 +47,6 @@ pub use self::{
         form_urlencoded_request::{self, FormUrlencodedRequest, FormUrlencodedRequestLayer},
         json_request::{self, JsonRequest, JsonRequestLayer},
         json_response::{self, JsonResponse, JsonResponseLayer},
-        otel,
     },
     service::{BoxCloneSyncService, HttpService},
 };

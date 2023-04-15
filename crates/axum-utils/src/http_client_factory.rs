@@ -43,16 +43,13 @@ impl HttpClientFactory {
     /// # Errors
     ///
     /// Returns an error if the client failed to initialise
-    pub async fn client<B>(
-        &self,
-        operation: &'static str,
-    ) -> Result<ClientService<TracedClient<B>>, ClientInitError>
+    pub async fn client<B>(&self) -> Result<ClientService<TracedClient<B>>, ClientInitError>
     where
         B: axum::body::HttpBody + Send,
         B::Data: Send,
     {
         let client = mas_http::make_traced_client::<B>().await?;
-        let layer = ClientLayer::with_semaphore(operation, self.semaphore.clone());
+        let layer = ClientLayer::with_semaphore(self.semaphore.clone());
         Ok(layer.layer(client))
     }
 
@@ -61,11 +58,8 @@ impl HttpClientFactory {
     /// # Errors
     ///
     /// Returns an error if the client failed to initialise
-    pub async fn http_service(
-        &self,
-        operation: &'static str,
-    ) -> Result<HttpService, ClientInitError> {
-        let client = self.client(operation).await?;
+    pub async fn http_service(&self) -> Result<HttpService, ClientInitError> {
+        let client = self.client().await?;
         let client = (
             MapErrLayer::new(BoxError::from),
             MapRequestLayer::new(|req: http::Request<_>| req.map(Full::new)),

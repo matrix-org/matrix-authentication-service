@@ -25,8 +25,11 @@ use aws_sdk_sesv2::{
 };
 use aws_smithy_async::rt::sleep::TokioSleep;
 use aws_smithy_client::erase::{DynConnector, DynMiddleware};
+use headers::{ContentLength, HeaderMapExt, Host, UserAgent};
 use lettre::{address::Envelope, AsyncTransport};
-use mas_http::{otel::TraceLayer, ClientInitError};
+use mas_http::ClientInitError;
+use mas_tower::{enrich_span_fn, make_span_fn, TraceContextLayer, TraceLayer};
+use tracing::{info_span, Span};
 
 pub type Error = aws_smithy_client::SdkError<aws_sdk_sesv2::error::SendEmailError>;
 
@@ -58,7 +61,77 @@ impl Transport {
         let http_connector = DynConnector::new(http_connector);
 
         // Middleware to add tracing to AWS SDK operations
-        let middleware = DynMiddleware::new((TraceLayer::aws_sdk(), DefaultMiddleware::default()));
+        let middleware = DynMiddleware::new((
+            DefaultMiddleware::default(),
+            // TODO: factor this out somewhere else
+            TraceLayer::new(make_span_fn(|op: &aws_smithy_http::operation::Request| {
+                let properties = op.properties();
+                let request = op.http();
+                let span = info_span!(
+                    "aws.sdk.operation",
+                    "otel.kind" = "client",
+                    "otel.name" = tracing::field::Empty,
+                    "otel.status_code" = tracing::field::Empty,
+                    "rpc.system" = "aws-api",
+                    "rpc.service" = tracing::field::Empty,
+                    "rpc.method" = tracing::field::Empty,
+                    "http.method" = %request.method(),
+                    "http.url" = %request.uri(),
+                    "http.host" = tracing::field::Empty,
+                    "http.request_content_length" = tracing::field::Empty,
+                    "http.response_content_length" = tracing::field::Empty,
+                    "http.status_code" = tracing::field::Empty,
+                    "user_agent.original" = tracing::field::Empty,
+                );
+
+                if let Some(metadata) = properties.get::<aws_smithy_http::operation::Metadata>() {
+                    span.record("rpc.service", metadata.service());
+                    span.record("rpc.method", metadata.name());
+                    let name = format!("{}::{}", metadata.service(), metadata.name());
+                    span.record("otel.name", name);
+                } else if let Some(service) = properties.get::<aws_types::SigningService>() {
+                    span.record("rpc.service", tracing::field::debug(service));
+                    span.record("otel.name", tracing::field::debug(service));
+                }
+
+                let headers = request.headers();
+
+                if let Some(host) = headers.typed_get::<Host>() {
+                    span.record("http.host", tracing::field::display(host));
+                }
+
+                if let Some(user_agent) = headers.typed_get::<UserAgent>() {
+                    span.record("user_agent.original", tracing::field::display(user_agent));
+                }
+
+                if let Some(ContentLength(content_length)) = headers.typed_get() {
+                    span.record("http.request_content_length", content_length);
+                }
+
+                span
+            }))
+            .on_response(enrich_span_fn(
+                |span: &Span, res: &aws_smithy_http::operation::Response| {
+                    span.record("otel.status_code", "OK");
+                    let response = res.http();
+
+                    let status = response.status();
+                    span.record("http.status_code", status.as_u16());
+
+                    let headers = response.headers();
+                    if let Some(ContentLength(content_length)) = headers.typed_get() {
+                        span.record("http.response_content_length", content_length);
+                    }
+                },
+            ))
+            .on_error(enrich_span_fn(
+                |span: &Span, err: &aws_smithy_http_tower::SendOperationError| {
+                    span.record("otel.status_code", "ERROR");
+                    span.record("exception.message", tracing::field::debug(err));
+                },
+            )),
+            TraceContextLayer::new(),
+        ));
 
         // Use that connector for discovering the config
         let config = ProviderConfig::default().with_http_connector(http_connector.clone());

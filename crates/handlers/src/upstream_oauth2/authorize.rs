@@ -78,9 +78,7 @@ pub(crate) async fn get(
         .await?
         .ok_or(RouteError::ProviderNotFound)?;
 
-    let http_service = http_client_factory
-        .http_service("upstream-discover")
-        .await?;
+    let http_service = http_client_factory.http_service().await?;
 
     // First, discover the provider
     let metadata =

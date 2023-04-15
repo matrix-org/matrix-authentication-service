@@ -14,7 +14,8 @@
 
 use std::{sync::Arc, time::Duration};
 
-use http::{header::USER_AGENT, HeaderValue};
+use http::{header::USER_AGENT, HeaderValue, Request};
+use mas_tower::{MakeSpan, TraceContextLayer, TraceContextService, TraceLayer, TraceService};
 use tokio::sync::Semaphore;
 use tower::{
     limit::{ConcurrencyLimit, GlobalConcurrencyLimitLayer},
@@ -26,42 +27,61 @@ use tower_http::{
     timeout::{Timeout, TimeoutLayer},
 };
 
-use super::otel::TraceLayer;
-use crate::otel::{TraceHttpClient, TraceHttpClientLayer};
-
 pub type ClientService<S> = SetRequestHeader<
-    TraceHttpClient<ConcurrencyLimit<FollowRedirect<TraceHttpClient<Timeout<S>>>>>,
+    ConcurrencyLimit<
+        FollowRedirect<TraceService<TraceContextService<Timeout<S>>, MakeSpanForRequest>>,
+    >,
     HeaderValue,
 >;
 
 #[derive(Debug, Clone)]
+pub struct MakeSpanForRequest;
+
+impl<B> MakeSpan<Request<B>> for MakeSpanForRequest {
+    fn make_span(&self, request: &Request<B>) -> tracing::Span {
+        // TODO: better attributes
+        tracing::info_span!(
+            "http.client.request",
+            "http.method" = %request.method(),
+            "http.uri" = %request.uri(),
+        )
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct ClientLayer {
     user_agent_layer: SetRequestHeaderLayer<HeaderValue>,
-    outer_trace_layer: TraceHttpClientLayer,
     concurrency_limit_layer: GlobalConcurrencyLimitLayer,
     follow_redirect_layer: FollowRedirectLayer,
-    inner_trace_layer: TraceHttpClientLayer,
+    trace_layer: TraceLayer<MakeSpanForRequest>,
+    trace_context_layer: TraceContextLayer,
     timeout_layer: TimeoutLayer,
+}
+
+impl Default for ClientLayer {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ClientLayer {
     #[must_use]
-    pub fn new(operation: &'static str) -> Self {
+    pub fn new() -> Self {
         let semaphore = Arc::new(Semaphore::new(10));
-        Self::with_semaphore(operation, semaphore)
+        Self::with_semaphore(semaphore)
     }
 
     #[must_use]
-    pub fn with_semaphore(operation: &'static str, semaphore: Arc<Semaphore>) -> Self {
+    pub fn with_semaphore(semaphore: Arc<Semaphore>) -> Self {
         Self {
             user_agent_layer: SetRequestHeaderLayer::overriding(
                 USER_AGENT,
                 HeaderValue::from_static("matrix-authentication-service/0.0.1"),
             ),
-            outer_trace_layer: TraceLayer::http_client(operation),
             concurrency_limit_layer: GlobalConcurrencyLimitLayer::with_semaphore(semaphore),
             follow_redirect_layer: FollowRedirectLayer::new(),
-            inner_trace_layer: TraceLayer::inner_http_client(),
+            trace_layer: TraceLayer::new(MakeSpanForRequest),
+            trace_context_layer: TraceContextLayer::new(),
             timeout_layer: TimeoutLayer::new(Duration::from_secs(10)),
         }
     }
@@ -76,10 +96,10 @@ where
     fn layer(&self, inner: S) -> Self::Service {
         (
             &self.user_agent_layer,
-            &self.outer_trace_layer,
             &self.concurrency_limit_layer,
             &self.follow_redirect_layer,
-            &self.inner_trace_layer,
+            &self.trace_layer,
+            &self.trace_context_layer,
             &self.timeout_layer,
         )
             .layer(inner)

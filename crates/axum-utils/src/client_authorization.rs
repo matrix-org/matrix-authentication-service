@@ -191,7 +191,7 @@ async fn fetch_jwks(
         .unwrap();
 
     let mut client = http_client_factory
-        .client("fetch-jwks")
+        .client()
         .await?
         .response_body_to_bytes()
         .json_response::<PublicJsonWebKeySet>();

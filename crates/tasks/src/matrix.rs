@@ -33,10 +33,13 @@ use mas_storage::{
 };
 use serde::{Deserialize, Serialize};
 use tower::{Service, ServiceExt};
-use tracing::info;
+use tracing::{info, info_span, Instrument};
 use url::Url;
 
-use crate::{layers::TracingLayer, JobContextExt, State};
+use crate::{
+    utils::{metrics_layer, trace_layer},
+    JobContextExt, State,
+};
 
 pub struct HomeserverConnection {
     homeserver: String,
@@ -101,7 +104,7 @@ async fn provision_user(
     let state = ctx.state();
     let matrix = state.matrix_connection();
     let mut client = state
-        .http_client("matrix.provision_user")
+        .http_client()
         .await?
         .request_bytes_to_body()
         .json_request();
@@ -158,7 +161,12 @@ async fn provision_user(
 
     let req = req.body(body).context("Failed to build request")?;
 
-    let response = client.ready().await?.call(req).await?;
+    let response = client
+        .ready()
+        .await?
+        .call(req)
+        .instrument(info_span!("matrix.provision_user"))
+        .await?;
 
     match response.status() {
         StatusCode::CREATED => info!(%user.id, %mxid, "User created"),
@@ -194,7 +202,7 @@ async fn provision_device(
     let state = ctx.state();
     let matrix = state.matrix_connection();
     let mut client = state
-        .http_client("matrix.provision_device")
+        .http_client()
         .await?
         .request_bytes_to_body()
         .json_request();
@@ -225,7 +233,12 @@ async fn provision_device(
         })
         .context("Failed to build request")?;
 
-    let response = client.ready().await?.call(req).await?;
+    let response = client
+        .ready()
+        .await?
+        .call(req)
+        .instrument(info_span!("matrix.create_device"))
+        .await?;
 
     match response.status() {
         StatusCode::CREATED => {
@@ -255,7 +268,7 @@ async fn delete_device(
 ) -> Result<(), anyhow::Error> {
     let state = ctx.state();
     let matrix = state.matrix_connection();
-    let mut client = state.http_client("matrix.delete_device").await?;
+    let mut client = state.http_client().await?;
     let mut repo = state.repository().await?;
 
     let user = repo
@@ -284,7 +297,12 @@ async fn delete_device(
         .body(EmptyBody::new())
         .context("Failed to build request")?;
 
-    let response = client.ready().await?.call(req).await?;
+    let response = client
+        .ready()
+        .await?
+        .call(req)
+        .instrument(info_span!("matrix.delete_device"))
+        .await?;
 
     match response.status() {
         StatusCode::OK => info!(%user.id, %mxid, "Device deleted"),
@@ -303,7 +321,8 @@ pub(crate) fn register(
     let worker_name = format!("{job}-{suffix}", job = ProvisionUserJob::NAME);
     let provision_user_worker = WorkerBuilder::new(worker_name)
         .layer(state.inject())
-        .layer(TracingLayer::new())
+        .layer(trace_layer())
+        .layer(metrics_layer::<JobWithSpanContext<ProvisionUserJob>>())
         .with_storage(storage)
         .build_fn(provision_user);
 
@@ -311,7 +330,8 @@ pub(crate) fn register(
     let worker_name = format!("{job}-{suffix}", job = ProvisionDeviceJob::NAME);
     let provision_device_worker = WorkerBuilder::new(worker_name)
         .layer(state.inject())
-        .layer(TracingLayer::new())
+        .layer(trace_layer())
+        .layer(metrics_layer::<JobWithSpanContext<ProvisionDeviceJob>>())
         .with_storage(storage)
         .build_fn(provision_device);
 
@@ -319,7 +339,8 @@ pub(crate) fn register(
     let worker_name = format!("{job}-{suffix}", job = DeleteDeviceJob::NAME);
     let delete_device_worker = WorkerBuilder::new(worker_name)
         .layer(state.inject())
-        .layer(TracingLayer::new())
+        .layer(trace_layer())
+        .layer(metrics_layer::<JobWithSpanContext<DeleteDeviceJob>>())
         .with_storage(storage)
         .build_fn(delete_device);
 

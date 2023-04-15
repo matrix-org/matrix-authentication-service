@@ -28,7 +28,7 @@ use chrono::{DateTime, Utc};
 use mas_storage::{oauth2::OAuth2AccessTokenRepository, RepositoryAccess};
 use tracing::{debug, info};
 
-use crate::{JobContextExt, State};
+use crate::{utils::metrics_layer, JobContextExt, State};
 
 #[derive(Default, Clone)]
 pub struct CleanupExpiredTokensJob {
@@ -77,6 +77,7 @@ pub(crate) fn register(
     let worker = WorkerBuilder::new(worker_name)
         .stream(CronStream::new(schedule).to_stream())
         .layer(state.inject())
+        .layer(metrics_layer::<CleanupExpiredTokensJob>())
         .build_fn(cleanup_expired_tokens);
 
     monitor.register(worker)
