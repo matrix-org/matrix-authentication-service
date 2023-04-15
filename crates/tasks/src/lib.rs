@@ -31,8 +31,8 @@ use tracing::debug;
 
 mod database;
 mod email;
-mod layers;
 mod matrix;
+mod utils;
 
 pub use self::matrix::HomeserverConnection;
 
@@ -103,15 +103,12 @@ impl State {
         &self.homeserver
     }
 
-    pub async fn http_client<B>(
-        &self,
-        operation: &'static str,
-    ) -> Result<ClientService<TracedClient<B>>, ClientInitError>
+    pub async fn http_client<B>(&self) -> Result<ClientService<TracedClient<B>>, ClientInitError>
     where
         B: mas_axum_utils::axum::body::HttpBody + Send,
         B::Data: Send,
     {
-        self.http_client_factory.client(operation).await
+        self.http_client_factory.client().await
     }
 }
 

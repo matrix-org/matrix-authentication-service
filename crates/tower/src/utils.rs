@@ -1,4 +1,4 @@
-// Copyright 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,12 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub mod body_to_bytes_response;
-pub mod bytes_to_body_request;
-pub mod catch_http_codes;
-pub mod form_urlencoded_request;
-pub mod json_request;
-pub mod json_response;
+use opentelemetry::{KeyValue, Value};
 
-#[cfg(feature = "client")]
-pub(crate) mod client;
+/// A simple static key-value pair.
+#[derive(Clone, Debug)]
+pub struct KV<V>(pub &'static str, pub V);
+
+impl<V> From<KV<V>> for KeyValue
+where
+    V: Into<Value>,
+{
+    fn from(value: KV<V>) -> Self {
+        Self::new(value.0, value.1.into())
+    }
+}
+
+/// A wrapper around a function that can be used to generate a key-value pair,
+/// make or enrich spans.
+#[derive(Clone, Debug)]
+pub struct FnWrapper<F>(pub F);

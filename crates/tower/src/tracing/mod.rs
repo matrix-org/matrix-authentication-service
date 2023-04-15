@@ -1,4 +1,4 @@
-// Copyright 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,12 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub mod body_to_bytes_response;
-pub mod bytes_to_body_request;
-pub mod catch_http_codes;
-pub mod form_urlencoded_request;
-pub mod json_request;
-pub mod json_response;
+mod enrich_span;
+mod future;
+mod layer;
+mod make_span;
+mod service;
 
-#[cfg(feature = "client")]
-pub(crate) mod client;
+pub use self::{
+    enrich_span::{enrich_span_fn, EnrichSpan},
+    future::TraceFuture,
+    layer::TraceLayer,
+    make_span::{make_span_fn, MakeSpan},
+    service::TraceService,
+};

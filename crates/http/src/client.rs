@@ -15,14 +15,20 @@
 use std::convert::Infallible;
 
 use hyper::{
-    client::{connect::dns::GaiResolver, HttpConnector},
+    client::{
+        connect::dns::{GaiResolver, Name},
+        HttpConnector,
+    },
     Client,
 };
 use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
+use mas_tower::{
+    DurationRecorderLayer, DurationRecorderService, FnWrapper, InFlightCounterLayer,
+    InFlightCounterService, TraceLayer, TraceService,
+};
 use thiserror::Error;
 use tower::Layer;
-
-use crate::layers::otel::{TraceDns, TraceLayer};
+use tracing::Span;
 
 #[cfg(all(not(feature = "webpki-roots"), not(feature = "native-roots")))]
 compile_error!("enabling the 'client' feature requires also enabling the 'webpki-roots' or the 'native-roots' features");
@@ -165,8 +171,10 @@ where
     Ok(Client::builder().build(https))
 }
 
+pub type TraceResolver<S> =
+    InFlightCounterService<DurationRecorderService<TraceService<S, FnWrapper<fn(&Name) -> Span>>>>;
 pub type UntracedConnector = HttpsConnector<HttpConnector<GaiResolver>>;
-pub type TracedConnector = HttpsConnector<HttpConnector<TraceDns<GaiResolver>>>;
+pub type TracedConnector = HttpsConnector<HttpConnector<TraceResolver<GaiResolver>>>;
 
 /// Create a traced HTTP and HTTPS connector
 ///
@@ -176,8 +184,20 @@ pub type TracedConnector = HttpsConnector<HttpConnector<TraceDns<GaiResolver>>>;
 pub async fn make_traced_connector() -> Result<TracedConnector, ClientInitError>
 where
 {
-    // Trace DNS requests
-    let resolver = TraceLayer::dns().layer(GaiResolver::new());
+    let in_flight_counter = InFlightCounterLayer::new("dns.resolve.active_requests");
+    let duration_recorder = DurationRecorderLayer::new("dns.resolve.duration");
+    let trace_layer = TraceLayer::from_fn(
+        (|request: &Name| {
+            tracing::info_span!(
+                "dns.resolve",
+                "otel.kind" = "client",
+                "net.host.name" = %request,
+            )
+        }) as fn(&Name) -> Span,
+    );
+
+    let resolver = (in_flight_counter, duration_recorder, trace_layer).layer(GaiResolver::new());
+
     let tls_config = make_tls_config().await?;
     Ok(make_connector(resolver, tls_config))
 }

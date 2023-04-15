@@ -27,7 +27,10 @@ use mas_storage::job::{JobWithSpanContext, VerifyEmailJob};
 use rand::{distributions::Uniform, Rng};
 use tracing::info;
 
-use crate::{layers::TracingLayer, JobContextExt, State};
+use crate::{
+    utils::{metrics_layer, trace_layer},
+    JobContextExt, State,
+};
 
 #[tracing::instrument(
     name = "job.verify_email",
@@ -98,7 +101,8 @@ pub(crate) fn register(
     let worker_name = format!("{job}-{suffix}", job = VerifyEmailJob::NAME);
     let worker = WorkerBuilder::new(worker_name)
         .layer(state.inject())
-        .layer(TracingLayer::new())
+        .layer(trace_layer::<VerifyEmailJob>())
+        .layer(metrics_layer::<JobWithSpanContext<VerifyEmailJob>>())
         .with_storage(storage)
         .build_fn(verify_email);
     monitor.register(worker)
