@@ -124,7 +124,7 @@ pub enum NativeRootsLoadError {
     Io(#[from] std::io::Error),
 
     #[error("invalid root certificate")]
-    Webpki(#[from] webpki::Error),
+    Rustls(#[from] rustls::Error),
 
     #[error("no root certificate loaded")]
     Empty,
