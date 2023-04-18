@@ -1,4 +1,5 @@
 // Taken from sentry/transports/ratelimit.rs
+#![allow(clippy::all, clippy::pedantic)]
 
 use std::time::{Duration, SystemTime};
 
