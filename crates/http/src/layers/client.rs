@@ -14,7 +14,12 @@
 
 use std::{sync::Arc, time::Duration};
 
-use http::{header::USER_AGENT, HeaderValue};
+use headers::{ContentLength, HeaderMapExt, Host, UserAgent};
+use http::{header::USER_AGENT, HeaderValue, Request, Response};
+use hyper::client::connect::HttpInfo;
+use mas_tower::{
+    EnrichSpan, MakeSpan, TraceContextLayer, TraceContextService, TraceLayer, TraceService,
+};
 use tokio::sync::Semaphore;
 use tower::{
     limit::{ConcurrencyLimit, GlobalConcurrencyLimitLayer},
@@ -25,43 +30,135 @@ use tower_http::{
     set_header::{SetRequestHeader, SetRequestHeaderLayer},
     timeout::{Timeout, TimeoutLayer},
 };
-
-use super::otel::TraceLayer;
-use crate::otel::{TraceHttpClient, TraceHttpClientLayer};
+use tracing::Span;
 
 pub type ClientService<S> = SetRequestHeader<
-    TraceHttpClient<ConcurrencyLimit<FollowRedirect<TraceHttpClient<Timeout<S>>>>>,
+    ConcurrencyLimit<
+        FollowRedirect<
+            TraceService<
+                TraceContextService<Timeout<S>>,
+                MakeSpanForRequest,
+                EnrichSpanOnResponse,
+                EnrichSpanOnError,
+            >,
+        >,
+    >,
     HeaderValue,
 >;
 
 #[derive(Debug, Clone)]
+pub struct MakeSpanForRequest;
+
+impl<B> MakeSpan<Request<B>> for MakeSpanForRequest {
+    fn make_span(&self, request: &Request<B>) -> Span {
+        let headers = request.headers();
+        let host = headers.typed_get::<Host>().map(tracing::field::display);
+        let user_agent = headers
+            .typed_get::<UserAgent>()
+            .map(tracing::field::display);
+        let content_length = headers.typed_get().map(|ContentLength(len)| len);
+        let net_sock_peer_name = request.uri().host();
+
+        tracing::info_span!(
+            "http.client.request",
+            "otel.kind" = "client",
+            "otel.status_code" = tracing::field::Empty,
+            "http.method" = %request.method(),
+            "http.url" = %request.uri(),
+            "http.status_code" = tracing::field::Empty,
+            "http.host" = host,
+            "http.request_content_length" = content_length,
+            "http.response_content_length" = tracing::field::Empty,
+            "net.transport" = "ip_tcp",
+            "net.sock.family" = tracing::field::Empty,
+            "net.sock.peer.name" = net_sock_peer_name,
+            "net.sock.peer.addr" = tracing::field::Empty,
+            "net.sock.peer.port" = tracing::field::Empty,
+            "net.sock.host.addr" = tracing::field::Empty,
+            "net.sock.host.port" = tracing::field::Empty,
+            "user_agent.original" = user_agent,
+            "rust.error" = tracing::field::Empty,
+        )
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct EnrichSpanOnResponse;
+
+impl<B> EnrichSpan<Response<B>> for EnrichSpanOnResponse {
+    fn enrich_span(&self, span: &Span, response: &Response<B>) {
+        span.record("otel.status_code", "OK");
+        span.record("http.status_code", response.status().as_u16());
+
+        if let Some(ContentLength(content_length)) = response.headers().typed_get() {
+            span.record("http.response_content_length", content_length);
+        }
+
+        if let Some(http_info) = response.extensions().get::<HttpInfo>() {
+            let local = http_info.local_addr();
+            let remote = http_info.remote_addr();
+
+            let family = if local.is_ipv4() { "inet" } else { "inet6" };
+            span.record("net.sock.family", family);
+            span.record("net.sock.peer.addr", remote.ip().to_string());
+            span.record("net.sock.peer.port", remote.port());
+            span.record("net.sock.host.addr", local.ip().to_string());
+            span.record("net.sock.host.port", local.port());
+        } else {
+            tracing::warn!("No HttpInfo injected in response extensions");
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct EnrichSpanOnError;
+
+impl<E> EnrichSpan<E> for EnrichSpanOnError
+where
+    E: std::error::Error + 'static,
+{
+    fn enrich_span(&self, span: &Span, error: &E) {
+        span.record("otel.status_code", "ERROR");
+        span.record("rust.error", error as &dyn std::error::Error);
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct ClientLayer {
     user_agent_layer: SetRequestHeaderLayer<HeaderValue>,
-    outer_trace_layer: TraceHttpClientLayer,
     concurrency_limit_layer: GlobalConcurrencyLimitLayer,
     follow_redirect_layer: FollowRedirectLayer,
-    inner_trace_layer: TraceHttpClientLayer,
+    trace_layer: TraceLayer<MakeSpanForRequest, EnrichSpanOnResponse, EnrichSpanOnError>,
+    trace_context_layer: TraceContextLayer,
     timeout_layer: TimeoutLayer,
+}
+
+impl Default for ClientLayer {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ClientLayer {
     #[must_use]
-    pub fn new(operation: &'static str) -> Self {
+    pub fn new() -> Self {
         let semaphore = Arc::new(Semaphore::new(10));
-        Self::with_semaphore(operation, semaphore)
+        Self::with_semaphore(semaphore)
     }
 
     #[must_use]
-    pub fn with_semaphore(operation: &'static str, semaphore: Arc<Semaphore>) -> Self {
+    pub fn with_semaphore(semaphore: Arc<Semaphore>) -> Self {
         Self {
             user_agent_layer: SetRequestHeaderLayer::overriding(
                 USER_AGENT,
                 HeaderValue::from_static("matrix-authentication-service/0.0.1"),
             ),
-            outer_trace_layer: TraceLayer::http_client(operation),
             concurrency_limit_layer: GlobalConcurrencyLimitLayer::with_semaphore(semaphore),
             follow_redirect_layer: FollowRedirectLayer::new(),
-            inner_trace_layer: TraceLayer::inner_http_client(),
+            trace_layer: TraceLayer::new(MakeSpanForRequest)
+                .on_response(EnrichSpanOnResponse)
+                .on_error(EnrichSpanOnError),
+            trace_context_layer: TraceContextLayer::new(),
             timeout_layer: TimeoutLayer::new(Duration::from_secs(10)),
         }
     }
@@ -76,10 +173,10 @@ where
     fn layer(&self, inner: S) -> Self::Service {
         (
             &self.user_agent_layer,
-            &self.outer_trace_layer,
             &self.concurrency_limit_layer,
             &self.follow_redirect_layer,
-            &self.inner_trace_layer,
+            &self.trace_layer,
+            &self.trace_context_layer,
             &self.timeout_layer,
         )
             .layer(inner)

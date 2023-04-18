@@ -75,7 +75,7 @@ impl Options {
                 url,
             } => {
                 let _span = info_span!("cli.debug.http").entered();
-                let mut client = http_client_factory.client("cli-debug-http").await?;
+                let mut client = http_client_factory.client().await?;
                 let request = hyper::Request::builder()
                     .uri(url)
                     .body(hyper::Body::empty())?;
@@ -101,7 +101,7 @@ impl Options {
             } => {
                 let _span = info_span!("cli.debug.http").entered();
                 let mut client = http_client_factory
-                    .client("cli-debug-http")
+                    .client()
                     .await?
                     .response_body_to_bytes()
                     .json_response();
