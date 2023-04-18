@@ -62,7 +62,7 @@ pub struct WebEncryptionSignatureAlgorithm {
 
 impl EnumEntry for WebEncryptionSignatureAlgorithm {
     const URL: &'static str =
-        "https://www.iana.org/assignments/jose/web-signature-encryption-algorithms.csv";
+        "http://www.iana.org/assignments/jose/web-signature-encryption-algorithms.csv";
     const SECTIONS: &'static [Section] = &[
         s(
             "JsonWebSignatureAlg",
@@ -126,7 +126,7 @@ pub struct WebEncryptionCompressionAlgorithm {
 
 impl EnumEntry for WebEncryptionCompressionAlgorithm {
     const URL: &'static str =
-        "https://www.iana.org/assignments/jose/web-encryption-compression-algorithms.csv";
+        "http://www.iana.org/assignments/jose/web-encryption-compression-algorithms.csv";
     const SECTIONS: &'static [Section] = &[s(
         "JsonWebEncryptionCompressionAlgorithm",
         "JSON Web Encryption Compression Algorithm",
@@ -161,7 +161,7 @@ pub struct WebKeyType {
 }
 
 impl EnumEntry for WebKeyType {
-    const URL: &'static str = "https://www.iana.org/assignments/jose/web-key-types.csv";
+    const URL: &'static str = "http://www.iana.org/assignments/jose/web-key-types.csv";
     const SECTIONS: &'static [Section] = &[s("JsonWebKeyType", "JSON Web Key Type")];
 
     fn key(&self) -> Option<&'static str> {
@@ -193,7 +193,7 @@ pub struct WebKeyEllipticCurve {
 }
 
 impl EnumEntry for WebKeyEllipticCurve {
-    const URL: &'static str = "https://www.iana.org/assignments/jose/web-key-elliptic-curve.csv";
+    const URL: &'static str = "http://www.iana.org/assignments/jose/web-key-elliptic-curve.csv";
     const SECTIONS: &'static [Section] = &[
         s(
             "JsonWebKeyEcEllipticCurve",
@@ -236,7 +236,7 @@ pub struct WebKeyUse {
 }
 
 impl EnumEntry for WebKeyUse {
-    const URL: &'static str = "https://www.iana.org/assignments/jose/web-key-use.csv";
+    const URL: &'static str = "http://www.iana.org/assignments/jose/web-key-use.csv";
     const SECTIONS: &'static [Section] = &[s("JsonWebKeyUse", "JSON Web Key Use")];
 
     fn key(&self) -> Option<&'static str> {
@@ -266,7 +266,7 @@ pub struct WebKeyOperation {
 }
 
 impl EnumEntry for WebKeyOperation {
-    const URL: &'static str = "https://www.iana.org/assignments/jose/web-key-operations.csv";
+    const URL: &'static str = "http://www.iana.org/assignments/jose/web-key-operations.csv";
     const SECTIONS: &'static [Section] = &[s("JsonWebKeyOperation", "JSON Web Key Operation")];
 
     fn key(&self) -> Option<&'static str> {

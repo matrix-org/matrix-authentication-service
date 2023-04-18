@@ -3394,7 +3394,7 @@ dependencies = [
  "convert_case",
  "csv",
  "futures-util",
- "reqwest",
+ "hyper",
  "serde",
  "tokio",
  "tracing",
