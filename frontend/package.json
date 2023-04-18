@@ -30,7 +30,7 @@
     "@graphql-codegen/client-preset": "^3.0.0",
     "@graphql-eslint/eslint-plugin": "^3.18.0",
     "@storybook/addon-actions": "^7.0.5",
-    "@storybook/addon-backgrounds": "^7.0.5",
+    "@storybook/addon-backgrounds": "^7.0.6",
     "@storybook/addon-controls": "^7.0.5",
     "@storybook/addon-docs": "^7.0.5",
     "@storybook/addon-essentials": "^7.0.5",
