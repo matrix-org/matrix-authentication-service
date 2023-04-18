@@ -14,8 +14,12 @@
 
 use std::{sync::Arc, time::Duration};
 
-use http::{header::USER_AGENT, HeaderValue, Request};
-use mas_tower::{MakeSpan, TraceContextLayer, TraceContextService, TraceLayer, TraceService};
+use headers::{ContentLength, HeaderMapExt, Host, UserAgent};
+use http::{header::USER_AGENT, HeaderValue, Request, Response};
+use hyper::client::connect::HttpInfo;
+use mas_tower::{
+    EnrichSpan, MakeSpan, TraceContextLayer, TraceContextService, TraceLayer, TraceService,
+};
 use tokio::sync::Semaphore;
 use tower::{
     limit::{ConcurrencyLimit, GlobalConcurrencyLimitLayer},
@@ -26,10 +30,18 @@ use tower_http::{
     set_header::{SetRequestHeader, SetRequestHeaderLayer},
     timeout::{Timeout, TimeoutLayer},
 };
+use tracing::Span;
 
 pub type ClientService<S> = SetRequestHeader<
     ConcurrencyLimit<
-        FollowRedirect<TraceService<TraceContextService<Timeout<S>>, MakeSpanForRequest>>,
+        FollowRedirect<
+            TraceService<
+                TraceContextService<Timeout<S>>,
+                MakeSpanForRequest,
+                EnrichSpanOnResponse,
+                EnrichSpanOnError,
+            >,
+        >,
     >,
     HeaderValue,
 >;
@@ -38,13 +50,76 @@ pub type ClientService<S> = SetRequestHeader<
 pub struct MakeSpanForRequest;
 
 impl<B> MakeSpan<Request<B>> for MakeSpanForRequest {
-    fn make_span(&self, request: &Request<B>) -> tracing::Span {
-        // TODO: better attributes
+    fn make_span(&self, request: &Request<B>) -> Span {
+        let headers = request.headers();
+        let host = headers.typed_get::<Host>().map(tracing::field::display);
+        let user_agent = headers
+            .typed_get::<UserAgent>()
+            .map(tracing::field::display);
+        let content_length = headers.typed_get().map(|ContentLength(len)| len);
+        let net_sock_peer_name = request.uri().host();
+
         tracing::info_span!(
             "http.client.request",
+            "otel.kind" = "client",
+            "otel.status_code" = tracing::field::Empty,
             "http.method" = %request.method(),
-            "http.uri" = %request.uri(),
+            "http.url" = %request.uri(),
+            "http.status_code" = tracing::field::Empty,
+            "http.host" = host,
+            "http.request_content_length" = content_length,
+            "http.response_content_length" = tracing::field::Empty,
+            "net.transport" = "ip_tcp",
+            "net.sock.family" = tracing::field::Empty,
+            "net.sock.peer.name" = net_sock_peer_name,
+            "net.sock.peer.addr" = tracing::field::Empty,
+            "net.sock.peer.port" = tracing::field::Empty,
+            "net.sock.host.addr" = tracing::field::Empty,
+            "net.sock.host.port" = tracing::field::Empty,
+            "user_agent.original" = user_agent,
+            "rust.error" = tracing::field::Empty,
         )
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct EnrichSpanOnResponse;
+
+impl<B> EnrichSpan<Response<B>> for EnrichSpanOnResponse {
+    fn enrich_span(&self, span: &Span, response: &Response<B>) {
+        span.record("otel.status_code", "OK");
+        span.record("http.status_code", response.status().as_u16());
+
+        if let Some(ContentLength(content_length)) = response.headers().typed_get() {
+            span.record("http.response_content_length", content_length);
+        }
+
+        if let Some(http_info) = response.extensions().get::<HttpInfo>() {
+            let local = http_info.local_addr();
+            let remote = http_info.remote_addr();
+
+            let family = if local.is_ipv4() { "inet" } else { "inet6" };
+            span.record("net.sock.family", family);
+            span.record("net.sock.peer.addr", remote.ip().to_string());
+            span.record("net.sock.peer.port", remote.port());
+            span.record("net.sock.host.addr", local.ip().to_string());
+            span.record("net.sock.host.port", local.port());
+        } else {
+            tracing::warn!("No HttpInfo injected in response extensions");
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct EnrichSpanOnError;
+
+impl<E> EnrichSpan<E> for EnrichSpanOnError
+where
+    E: std::error::Error + 'static,
+{
+    fn enrich_span(&self, span: &Span, error: &E) {
+        span.record("otel.status_code", "ERROR");
+        span.record("rust.error", error as &dyn std::error::Error);
     }
 }
 
@@ -53,7 +128,7 @@ pub struct ClientLayer {
     user_agent_layer: SetRequestHeaderLayer<HeaderValue>,
     concurrency_limit_layer: GlobalConcurrencyLimitLayer,
     follow_redirect_layer: FollowRedirectLayer,
-    trace_layer: TraceLayer<MakeSpanForRequest>,
+    trace_layer: TraceLayer<MakeSpanForRequest, EnrichSpanOnResponse, EnrichSpanOnError>,
     trace_context_layer: TraceContextLayer,
     timeout_layer: TimeoutLayer,
 }
@@ -80,7 +155,9 @@ impl ClientLayer {
             ),
             concurrency_limit_layer: GlobalConcurrencyLimitLayer::with_semaphore(semaphore),
             follow_redirect_layer: FollowRedirectLayer::new(),
-            trace_layer: TraceLayer::new(MakeSpanForRequest),
+            trace_layer: TraceLayer::new(MakeSpanForRequest)
+                .on_response(EnrichSpanOnResponse)
+                .on_error(EnrichSpanOnError),
             trace_context_layer: TraceContextLayer::new(),
             timeout_layer: TimeoutLayer::new(Duration::from_secs(10)),
         }
