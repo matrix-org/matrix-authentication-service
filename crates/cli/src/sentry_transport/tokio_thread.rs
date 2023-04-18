@@ -1,4 +1,5 @@
 // Copied from sentry/transports/tokio_thread.rs
+#![allow(clippy::all, clippy::pedantic)]
 
 use std::{
     sync::{
