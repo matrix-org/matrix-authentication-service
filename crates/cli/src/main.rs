@@ -17,6 +17,8 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 
+use std::sync::Arc;
+
 use anyhow::Context;
 use clap::Parser;
 use mas_config::TelemetryConfig;
@@ -25,7 +27,10 @@ use tracing_subscriber::{
     filter::LevelFilter, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer, Registry,
 };
 
+use crate::sentry_transport::HyperTransportFactory;
+
 mod commands;
+mod sentry_transport;
 mod server;
 mod telemetry;
 mod util;
@@ -70,6 +75,9 @@ async fn try_main() -> anyhow::Result<()> {
     let sentry = sentry::init((
         telemetry_config.sentry.dsn.as_deref(),
         sentry::ClientOptions {
+            transport: Some(Arc::new(HyperTransportFactory::new(
+                mas_http::make_untraced_client().await?,
+            ))),
             traces_sample_rate: 1.0,
             auto_session_tracking: true,
             session_mode: sentry::SessionMode::Request,
