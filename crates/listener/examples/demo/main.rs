@@ -24,7 +24,10 @@ use anyhow::Context;
 use hyper::{service::service_fn, Request, Response};
 use mas_listener::{server::Server, shutdown::ShutdownStream, ConnectionInfo};
 use tokio::signal::unix::SignalKind;
-use tokio_rustls::rustls::{Certificate, PrivateKey, RootCertStore, ServerConfig};
+use tokio_rustls::rustls::{
+    server::AllowAnyAnonymousOrAuthenticatedClient, Certificate, PrivateKey, RootCertStore,
+    ServerConfig,
+};
 
 static CA_CERT_PEM: &[u8] = include_bytes!("./certs/ca.pem");
 static SERVER_CERT_PEM: &[u8] = include_bytes!("./certs/server.pem");
@@ -88,13 +91,10 @@ fn load_tls_config() -> Result<Arc<ServerConfig>, anyhow::Error> {
         .context("Invalid server TLS keys")?;
     let server_key = PrivateKey(server_key.pop().context("Missing server TLS key")?);
 
+    let client_cert_verifier = Arc::new(AllowAnyAnonymousOrAuthenticatedClient::new(ca_cert_store));
     let mut config = ServerConfig::builder()
         .with_safe_defaults()
-        .with_client_cert_verifier(
-            tokio_rustls::rustls::server::AllowAnyAnonymousOrAuthenticatedClient::new(
-                ca_cert_store,
-            ),
-        )
+        .with_client_cert_verifier(client_cert_verifier)
         .with_single_cert(server_cert, server_key)?;
     config.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
 
