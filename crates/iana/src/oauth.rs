@@ -19,7 +19,7 @@
 
 /// OAuth Access Token Type
 ///
-/// Source: <https://www.iana.org/assignments/oauth-parameters/token-types.csv>
+/// Source: <http://www.iana.org/assignments/oauth-parameters/token-types.csv>
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub enum OAuthAccessTokenType {
@@ -128,7 +128,7 @@ impl schemars::JsonSchema for OAuthAccessTokenType {
 
 /// OAuth Authorization Endpoint Response Type
 ///
-/// Source: <https://www.iana.org/assignments/oauth-parameters/endpoint.csv>
+/// Source: <http://www.iana.org/assignments/oauth-parameters/endpoint.csv>
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum OAuthAuthorizationEndpointResponseType {
     /// `code`
@@ -287,7 +287,7 @@ impl schemars::JsonSchema for OAuthAuthorizationEndpointResponseType {
 
 /// OAuth Token Type Hint
 ///
-/// Source: <https://www.iana.org/assignments/oauth-parameters/token-type-hint.csv>
+/// Source: <http://www.iana.org/assignments/oauth-parameters/token-type-hint.csv>
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub enum OAuthTokenTypeHint {
@@ -396,7 +396,7 @@ impl schemars::JsonSchema for OAuthTokenTypeHint {
 
 /// OAuth Token Endpoint Authentication Method
 ///
-/// Source: <https://www.iana.org/assignments/oauth-parameters/token-endpoint-auth-method.csv>
+/// Source: <http://www.iana.org/assignments/oauth-parameters/token-endpoint-auth-method.csv>
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub enum OAuthClientAuthenticationMethod {
@@ -549,7 +549,7 @@ impl schemars::JsonSchema for OAuthClientAuthenticationMethod {
 
 /// PKCE Code Challenge Method
 ///
-/// Source: <https://www.iana.org/assignments/oauth-parameters/pkce-code-challenge-method.csv>
+/// Source: <http://www.iana.org/assignments/oauth-parameters/pkce-code-challenge-method.csv>
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub enum PkceCodeChallengeMethod {

@@ -35,7 +35,7 @@ pub struct AccessTokenType {
 }
 
 impl EnumEntry for AccessTokenType {
-    const URL: &'static str = "https://www.iana.org/assignments/oauth-parameters/token-types.csv";
+    const URL: &'static str = "http://www.iana.org/assignments/oauth-parameters/token-types.csv";
     const SECTIONS: &'static [Section] = &[s("OAuthAccessTokenType", "OAuth Access Token Type")];
 
     fn key(&self) -> Option<&'static str> {
@@ -59,7 +59,7 @@ pub struct AuthorizationEndpointResponseType {
 }
 
 impl EnumEntry for AuthorizationEndpointResponseType {
-    const URL: &'static str = "https://www.iana.org/assignments/oauth-parameters/endpoint.csv";
+    const URL: &'static str = "http://www.iana.org/assignments/oauth-parameters/endpoint.csv";
     const SECTIONS: &'static [Section] = &[s(
         "OAuthAuthorizationEndpointResponseType",
         "OAuth Authorization Endpoint Response Type",
@@ -98,7 +98,7 @@ pub struct TokenTypeHint {
 
 impl EnumEntry for TokenTypeHint {
     const URL: &'static str =
-        "https://www.iana.org/assignments/oauth-parameters/token-type-hint.csv";
+        "http://www.iana.org/assignments/oauth-parameters/token-type-hint.csv";
     const SECTIONS: &'static [Section] = &[s("OAuthTokenTypeHint", "OAuth Token Type Hint")];
 
     fn key(&self) -> Option<&'static str> {
@@ -112,7 +112,7 @@ impl EnumEntry for TokenTypeHint {
 
 impl EnumEntry for TokenEndpointAuthenticationMethod {
     const URL: &'static str =
-        "https://www.iana.org/assignments/oauth-parameters/token-endpoint-auth-method.csv";
+        "http://www.iana.org/assignments/oauth-parameters/token-endpoint-auth-method.csv";
     const SECTIONS: &'static [Section] = &[s(
         "OAuthClientAuthenticationMethod",
         "OAuth Token Endpoint Authentication Method",
@@ -140,7 +140,7 @@ pub struct PkceCodeChallengeMethod {
 
 impl EnumEntry for PkceCodeChallengeMethod {
     const URL: &'static str =
-        "https://www.iana.org/assignments/oauth-parameters/pkce-code-challenge-method.csv";
+        "http://www.iana.org/assignments/oauth-parameters/pkce-code-challenge-method.csv";
     const SECTIONS: &'static [Section] =
         &[s("PkceCodeChallengeMethod", "PKCE Code Challenge Method")];
 

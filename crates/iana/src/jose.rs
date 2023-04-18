@@ -19,7 +19,7 @@
 
 /// JSON Web Signature "alg" parameter
 ///
-/// Source: <https://www.iana.org/assignments/jose/web-signature-encryption-algorithms.csv>
+/// Source: <http://www.iana.org/assignments/jose/web-signature-encryption-algorithms.csv>
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub enum JsonWebSignatureAlg {
@@ -365,7 +365,7 @@ impl schemars::JsonSchema for JsonWebSignatureAlg {
 
 /// JSON Web Encryption "alg" parameter
 ///
-/// Source: <https://www.iana.org/assignments/jose/web-signature-encryption-algorithms.csv>
+/// Source: <http://www.iana.org/assignments/jose/web-signature-encryption-algorithms.csv>
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub enum JsonWebEncryptionAlg {
@@ -783,7 +783,7 @@ impl schemars::JsonSchema for JsonWebEncryptionAlg {
 
 /// JSON Web Encryption "enc" parameter
 ///
-/// Source: <https://www.iana.org/assignments/jose/web-signature-encryption-algorithms.csv>
+/// Source: <http://www.iana.org/assignments/jose/web-signature-encryption-algorithms.csv>
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub enum JsonWebEncryptionEnc {
@@ -967,7 +967,7 @@ impl schemars::JsonSchema for JsonWebEncryptionEnc {
 
 /// JSON Web Encryption Compression Algorithm
 ///
-/// Source: <https://www.iana.org/assignments/jose/web-encryption-compression-algorithms.csv>
+/// Source: <http://www.iana.org/assignments/jose/web-encryption-compression-algorithms.csv>
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub enum JsonWebEncryptionCompressionAlgorithm {
@@ -1061,7 +1061,7 @@ impl schemars::JsonSchema for JsonWebEncryptionCompressionAlgorithm {
 
 /// JSON Web Key Type
 ///
-/// Source: <https://www.iana.org/assignments/jose/web-key-types.csv>
+/// Source: <http://www.iana.org/assignments/jose/web-key-types.csv>
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub enum JsonWebKeyType {
@@ -1209,7 +1209,7 @@ impl schemars::JsonSchema for JsonWebKeyType {
 
 /// JSON Web Key EC Elliptic Curve
 ///
-/// Source: <https://www.iana.org/assignments/jose/web-key-elliptic-curve.csv>
+/// Source: <http://www.iana.org/assignments/jose/web-key-elliptic-curve.csv>
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub enum JsonWebKeyEcEllipticCurve {
@@ -1357,7 +1357,7 @@ impl schemars::JsonSchema for JsonWebKeyEcEllipticCurve {
 
 /// JSON Web Key OKP Elliptic Curve
 ///
-/// Source: <https://www.iana.org/assignments/jose/web-key-elliptic-curve.csv>
+/// Source: <http://www.iana.org/assignments/jose/web-key-elliptic-curve.csv>
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub enum JsonWebKeyOkpEllipticCurve {
@@ -1505,7 +1505,7 @@ impl schemars::JsonSchema for JsonWebKeyOkpEllipticCurve {
 
 /// JSON Web Key Use
 ///
-/// Source: <https://www.iana.org/assignments/jose/web-key-use.csv>
+/// Source: <http://www.iana.org/assignments/jose/web-key-use.csv>
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub enum JsonWebKeyUse {
@@ -1617,7 +1617,7 @@ impl schemars::JsonSchema for JsonWebKeyUse {
 
 /// JSON Web Key Operation
 ///
-/// Source: <https://www.iana.org/assignments/jose/web-key-operations.csv>
+/// Source: <http://www.iana.org/assignments/jose/web-key-operations.csv>
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub enum JsonWebKeyOperation {

@@ -19,9 +19,10 @@
 use std::{collections::HashMap, fmt::Display, sync::Arc};
 
 use camino::{Utf8Path, Utf8PathBuf};
-use reqwest::Client;
 use tokio::io::AsyncWriteExt;
 use tracing::Level;
+
+type Client = hyper::Client<hyper::client::HttpConnector>;
 
 mod gen;
 pub mod jose;
@@ -208,7 +209,7 @@ async fn main() -> anyhow::Result<()> {
         .pretty()
         .init();
 
-    let client = Client::builder().user_agent("iana-parser/0.0.1").build()?;
+    let client = Client::new();
     let client = Arc::new(client);
 
     let iana_crate_root = Utf8Path::new("crates/iana/");
