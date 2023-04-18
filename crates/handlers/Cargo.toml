@@ -7,37 +7,37 @@ license = "Apache-2.0"
 
 [dependencies]
 # Async runtime
-tokio = { version = "1.26.0", features = ["macros"] }
-futures-util = "0.3.27"
+tokio = { version = "1.27.0", features = ["macros"] }
+futures-util = "0.3.28"
 
 # Logging and tracing
 tracing = "0.1.37"
 
 # Error management
 thiserror = "1.0.40"
-anyhow = "1.0.69"
+anyhow = "1.0.70"
 sentry = { version = "0.30.0", default-features = false }
 
 # Web server
-hyper = { version = "0.14.25", features = ["full"] }
+hyper = { version = "0.14.26", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.4.0", features = ["cors"] }
-axum = "0.6.11"
-axum-macros = "0.3.6"
+axum = "0.6.15"
+axum-macros = "0.3.7"
 axum-extra = { version = "0.7.3", features = ["cookie-private"] }
 
-async-graphql = { version = "5.0.6", features = ["tracing", "apollo_tracing"] }
+async-graphql = { version = "5.0.7", features = ["tracing", "apollo_tracing"] }
 
 # Emails
-lettre = { version = "0.10.3", default-features = false, features = ["builder"] }
+lettre = { version = "0.10.4", default-features = false, features = ["builder"] }
 
 # Database access
-sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres"] }
+sqlx = { version = "0.6.3", features = ["runtime-tokio-rustls", "postgres"] }
 
 # Various structure (de)serialization
-serde = { version = "1.0.158", features = ["derive"] }
-serde_with = { version = "2.3.1", features = ["hex", "chrono"] }
-serde_json = "1.0.94"
+serde = { version = "1.0.160", features = ["derive"] }
+serde_with = { version = "2.3.2", features = ["hex", "chrono"] }
+serde_json = "1.0.96"
 serde_urlencoded = "0.7.1"
 
 # Password hashing
@@ -74,7 +74,7 @@ oauth2-types = { path = "../oauth2-types" }
 
 [dev-dependencies]
 indoc = "2.0.1"
-insta = "1.28.0"
+insta = "1.29.0"
 tracing-subscriber = "0.3.16"
 
 [features]

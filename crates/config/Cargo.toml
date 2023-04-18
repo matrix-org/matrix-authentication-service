@@ -6,12 +6,12 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-tokio = { version = "1.26.0", features = ["fs", "rt"] }
+tokio = { version = "1.27.0", features = ["fs", "rt"] }
 tracing = { version = "0.1.37" }
 async-trait = "0.1.68"
 
 thiserror = "1.0.40"
-anyhow = "1.0.69"
+anyhow = "1.0.70"
 
 camino = { version = "1.1.4", features = ["serde1"] }
 chrono = { version = "0.4.24", features = ["serde"] }
@@ -20,9 +20,9 @@ schemars = { version = "0.8.12", features = ["url", "chrono"] }
 ulid = { version = "1.0.0", features = ["serde"] }
 url = { version = "2.3.1", features = ["serde"] }
 
-serde = { version = "1.0.158", features = ["derive"] }
-serde_with = { version = "2.3.1", features = ["hex", "chrono"] }
-serde_json = "1.0.94"
+serde = { version = "1.0.160", features = ["derive"] }
+serde_with = { version = "2.3.2", features = ["hex", "chrono"] }
+serde_json = "1.0.96"
 
 pem-rfc7468 = "0.7.0"
 rustls-pemfile = "1.0.2"

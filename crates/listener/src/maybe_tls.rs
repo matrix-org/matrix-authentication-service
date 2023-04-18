@@ -92,7 +92,7 @@ impl<T> MaybeTlsStream<T> {
             .negotiated_cipher_suite()
             .expect("TLS handshake is not done yet");
 
-        let sni_hostname = conn.sni_hostname().map(ToOwned::to_owned);
+        let sni_hostname = conn.server_name().map(ToOwned::to_owned);
         let alpn_protocol = conn.alpn_protocol().map(ToOwned::to_owned);
         let peer_certificates = conn.peer_certificates().map(ToOwned::to_owned);
         Some(TlsStreamInfo {

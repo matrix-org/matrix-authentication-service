@@ -18,9 +18,9 @@ use async_trait::async_trait;
 use aws_config::provider_config::ProviderConfig;
 use aws_sdk_sesv2::{
     middleware::DefaultMiddleware,
-    model::{EmailContent, RawMessage},
-    output::SendEmailOutput,
-    types::Blob,
+    operation::send_email::{SendEmailError, SendEmailOutput},
+    primitives::Blob,
+    types::{EmailContent, RawMessage},
     Client,
 };
 use aws_smithy_async::rt::sleep::TokioSleep;
@@ -31,7 +31,7 @@ use mas_http::ClientInitError;
 use mas_tower::{enrich_span_fn, make_span_fn, TraceContextLayer, TraceLayer};
 use tracing::{info_span, Span};
 
-pub type Error = aws_smithy_client::SdkError<aws_sdk_sesv2::error::SendEmailError>;
+pub type Error = aws_smithy_client::SdkError<SendEmailError>;
 
 /// An asynchronous email transport that sends email via the AWS Simple Email
 /// Service v2 API
