@@ -13,7 +13,7 @@ tracing-opentelemetry = "0.18.0"
 tower = "0.4.13"
 tokio = { version = "1.27.0", features = ["time"] }
 opentelemetry = { version = "0.18.0", features = ["metrics"] }
-opentelemetry-http = "0.7.0"
+opentelemetry-http = "0.8.0"
 pin-project-lite = "0.2.9"
 
 [features]
