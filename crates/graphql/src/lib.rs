@@ -45,6 +45,7 @@ use self::model::{
 };
 
 mod model;
+mod mutations;
 
 pub type Schema = async_graphql::Schema<RootQuery, EmptyMutation, EmptySubscription>;
 pub type SchemaBuilder = async_graphql::SchemaBuilder<RootQuery, EmptyMutation, EmptySubscription>;
