@@ -39,6 +39,12 @@ impl ScopeToken {
     pub const fn from_static(token: &'static str) -> Self {
         Self(Cow::Borrowed(token))
     }
+
+    /// Get the scope token as a string slice.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        self.0.as_ref()
+    }
 }
 
 /// `openid`.
@@ -115,7 +121,7 @@ impl std::fmt::Display for ScopeToken {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Scope(BTreeSet<ScopeToken>);
 
-impl std::ops::Deref for Scope {
+impl Deref for Scope {
     type Target = BTreeSet<ScopeToken>;
 
     fn deref(&self) -> &Self::Target {
