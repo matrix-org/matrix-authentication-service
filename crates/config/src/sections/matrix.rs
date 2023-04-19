@@ -36,7 +36,7 @@ fn default_endpoint() -> Url {
 #[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct MatrixConfig {
-    /// Time-to-live of a CSRF token in seconds
+    /// The server name of the homeserver.
     #[serde(default = "default_homeserver")]
     pub homeserver: String,
 
