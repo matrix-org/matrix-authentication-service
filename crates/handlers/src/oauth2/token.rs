@@ -20,16 +20,17 @@ use mas_axum_utils::{
     client_authorization::{ClientAuthorization, CredentialsVerificationError},
     http_client_factory::HttpClientFactory,
 };
-use mas_data_model::{AuthorizationGrantStage, Client};
+use mas_data_model::{AuthorizationGrantStage, Client, Device};
 use mas_keystore::{Encrypter, Keystore};
 use mas_router::UrlBuilder;
 use mas_storage::{
+    job::{JobRepositoryExt, ProvisionDeviceJob},
     oauth2::{
         OAuth2AccessTokenRepository, OAuth2AuthorizationGrantRepository,
         OAuth2RefreshTokenRepository, OAuth2SessionRepository,
     },
     user::BrowserSessionRepository,
-    BoxClock, BoxRepository, BoxRng, Clock,
+    BoxClock, BoxRepository, BoxRng, Clock, RepositoryAccess,
 };
 use oauth2_types::{
     errors::{ClientError, ClientErrorCode},
@@ -326,6 +327,20 @@ async fn authorization_code_grant(
 
     if let Some(id_token) = id_token {
         params = params.with_id_token(id_token);
+    }
+
+    // Look for device to provision
+    for scope in session.scope.iter() {
+        if let Some(device) = Device::from_scope_token(scope) {
+            // Note that we're not waiting for the job to finish, we just schedule it. We
+            // might get in a situation where the provisioning job is not finished when the
+            // client does its first request to the Homeserver. This is fine for now, since
+            // Synapse still provision devices on-the-fly if it doesn't find them in the
+            // database.
+            repo.job()
+                .schedule_job(ProvisionDeviceJob::new(&browser_session.user, &device))
+                .await?;
+        }
     }
 
     repo.oauth2_authorization_grant()

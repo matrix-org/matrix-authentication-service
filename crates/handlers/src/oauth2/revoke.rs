@@ -18,10 +18,14 @@ use mas_axum_utils::{
     client_authorization::{ClientAuthorization, CredentialsVerificationError},
     http_client_factory::HttpClientFactory,
 };
-use mas_data_model::TokenType;
+use mas_data_model::{Device, TokenType};
 use mas_iana::oauth::OAuthTokenTypeHint;
 use mas_keystore::Encrypter;
-use mas_storage::{BoxClock, BoxRepository};
+use mas_storage::{
+    job::{DeleteDeviceJob, JobRepositoryExt},
+    user::BrowserSessionRepository,
+    BoxClock, BoxRepository, RepositoryAccess,
+};
 use oauth2_types::{
     errors::{ClientError, ClientErrorCode},
     requests::RevocationRequest,
@@ -194,6 +198,28 @@ pub(crate) async fn post(
     // created it.
     if client.id != session.client_id {
         return Err(RouteError::UnauthorizedClient);
+    }
+
+    // Fetch the user session
+    let user_session = repo
+        .browser_session()
+        .lookup(session.user_session_id)
+        .await?
+        .ok_or(RouteError::UnknownToken)?;
+
+    // Scan the scopes of the session to find if there is any device that should be
+    // deleted from the Matrix server.
+    // TODO: this should be moved in a higher level "end oauth session" method.
+    // XXX: this might not be the right semantic, but it's the best we
+    // can do for now, since we're not explicitly storing devices for OAuth2
+    // sessions.
+    for scope in session.scope.iter() {
+        if let Some(device) = Device::from_scope_token(scope) {
+            // Schedule a job to delete the device.
+            repo.job()
+                .schedule_job(DeleteDeviceJob::new(&user_session.user, &device))
+                .await?;
+        }
     }
 
     // Now that we checked everything, we can end the session.

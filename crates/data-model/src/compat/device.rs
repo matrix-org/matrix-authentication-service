@@ -20,7 +20,8 @@ use rand::{
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-static DEVICE_ID_LENGTH: usize = 10;
+static GENERATED_DEVICE_ID_LENGTH: usize = 10;
+static DEVICE_SCOPE_PREFIX: &str = "urn:matrix:org.matrix.msc2967.client:device:";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
@@ -30,9 +31,6 @@ pub struct Device {
 
 #[derive(Debug, Error)]
 pub enum InvalidDeviceID {
-    #[error("Device ID does not have the right size")]
-    InvalidLength,
-
     #[error("Device ID contains invalid characters")]
     InvalidCharacters,
 }
@@ -42,14 +40,24 @@ impl Device {
     #[must_use]
     pub fn to_scope_token(&self) -> ScopeToken {
         // SAFETY: the inner id should only have valid scope characters
-        format!("urn:matrix:org.matrix.msc2967.client:device:{}", self.id)
+        format!("{DEVICE_SCOPE_PREFIX}:{}", self.id)
             .parse()
             .unwrap()
     }
 
+    /// Get the corresponding [`Device`] from a [`ScopeToken`]
+    ///
+    /// Returns `None` if the [`ScopeToken`] is not a device scope
+    #[must_use]
+    pub fn from_scope_token(token: &ScopeToken) -> Option<Self> {
+        let id = token.as_str().strip_prefix(DEVICE_SCOPE_PREFIX)?;
+        // XXX: we might be silently ignoring errors here, but it's probably fine?
+        Device::try_from(id.to_owned()).ok()
+    }
+
     /// Generate a random device ID
     pub fn generate<R: RngCore + ?Sized>(rng: &mut R) -> Self {
-        let id: String = Alphanumeric.sample_string(rng, DEVICE_ID_LENGTH);
+        let id: String = Alphanumeric.sample_string(rng, GENERATED_DEVICE_ID_LENGTH);
         Self { id }
     }
 
@@ -65,11 +73,8 @@ impl TryFrom<String> for Device {
 
     /// Create a [`Device`] out of an ID, validating the ID has the right shape
     fn try_from(id: String) -> Result<Self, Self::Error> {
-        if id.len() != DEVICE_ID_LENGTH {
-            return Err(InvalidDeviceID::InvalidLength);
-        }
-
-        if !id.chars().all(|c| c.is_ascii_alphanumeric()) {
+        // This matches the regex in the policy
+        if !id.chars().all(|c| c.is_ascii_alphanumeric() || c == '-') {
             return Err(InvalidDeviceID::InvalidCharacters);
         }
 

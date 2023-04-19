@@ -21,7 +21,7 @@ use axum::{
 use axum_extra::extract::PrivateCookieJar;
 use hyper::StatusCode;
 use mas_axum_utils::SessionInfoExt;
-use mas_data_model::{AuthorizationGrant, BrowserSession, Client};
+use mas_data_model::{AuthorizationGrant, BrowserSession, Client, Device};
 use mas_keystore::{Encrypter, Keystore};
 use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route, UrlBuilder};
@@ -217,9 +217,10 @@ pub(crate) async fn complete(
     let lacks_consent = grant
         .scope
         .difference(&current_consent)
-        .any(|scope| !scope.starts_with("urn:matrix:org.matrix.msc2967.client:device:"));
+        .filter(|scope| Device::from_scope_token(scope).is_none())
+        .any(|_| true);
 
-    // Check if the client lacks consent *or* if consent was explicitely asked
+    // Check if the client lacks consent *or* if consent was explicitly asked
     if lacks_consent || grant.requires_consent {
         repo.save().await?;
         return Err(GrantCompletionError::RequiresConsent);

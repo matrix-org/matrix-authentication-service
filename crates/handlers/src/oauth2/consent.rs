@@ -24,7 +24,7 @@ use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     SessionInfoExt,
 };
-use mas_data_model::AuthorizationGrantStage;
+use mas_data_model::{AuthorizationGrantStage, Device};
 use mas_keystore::Encrypter;
 use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
@@ -190,9 +190,10 @@ pub(crate) async fn post(
     let scope_without_device = grant
         .scope
         .iter()
-        .filter(|s| !s.starts_with("urn:matrix:org.matrix.msc2967.client:device:"))
+        .filter(|s| Device::from_scope_token(s).is_none())
         .cloned()
         .collect();
+
     repo.oauth2_client()
         .give_consent_for_user(
             &mut rng,
