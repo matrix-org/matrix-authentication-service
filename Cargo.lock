@@ -3262,6 +3262,7 @@ dependencies = [
  "mas-data-model",
  "mas-storage",
  "oauth2-types",
+ "rand_chacha 0.3.1",
  "serde",
  "thiserror",
  "tokio",
