@@ -14,7 +14,7 @@
 
 import { useAtomValue } from "jotai";
 import { useMemo } from "react";
-import { atomsWithQuery } from "jotai-urql";
+import { atomWithQuery } from "jotai-urql";
 import { graphql } from "../gql";
 
 const QUERY = graphql(/* GraphQL */ `
@@ -32,9 +32,18 @@ const QUERY = graphql(/* GraphQL */ `
 `);
 
 const OAuth2Client: React.FC<{ id: string }> = ({ id }) => {
-  const data = useAtomValue(
-    useMemo(() => atomsWithQuery(QUERY, () => ({ id })), [id])[0]
+  const result = useAtomValue(
+    useMemo(
+      () => atomWithQuery({ query: QUERY, getVariables: () => ({ id }) }),
+      [id]
+    )
   );
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  const data = result.data!!;
 
   return (
     <pre>
