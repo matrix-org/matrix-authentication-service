@@ -9,6 +9,9 @@ const config: CodegenConfig = {
       preset: "client",
       plugins: [],
     },
+    "./src/gql/schema.ts": {
+      plugins: ["urql-introspection"],
+    },
   },
   hooks: { afterAllFileWrite: ["eslint --fix"] },
 };

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { useAtomValue } from "jotai";
-import { atomsWithQuery } from "jotai-urql";
+import { atomWithQuery } from "jotai-urql";
 import { useMemo } from "react";
 import { graphql } from "../gql";
 
@@ -35,9 +35,18 @@ const QUERY = graphql(/* GraphQL */ `
 `);
 
 const BrowserSession: React.FC<{ id: string }> = ({ id }) => {
-  const data = useAtomValue(
-    useMemo(() => atomsWithQuery(QUERY, () => ({ id })), [id])[0]
+  const result = useAtomValue(
+    useMemo(
+      () => atomWithQuery({ query: QUERY, getVariables: () => ({ id }) }),
+      [id]
+    )
   );
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  const data = result.data!!;
 
   return (
     <pre>

@@ -12,14 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {
-  createClient,
-  dedupExchange,
-  cacheExchange,
-  fetchExchange,
-} from "@urql/core";
+import { createClient, fetchExchange } from "@urql/core";
+import { cacheExchange } from "@urql/exchange-graphcache";
+
+import schema from "./gql/schema";
 
 export const client = createClient({
   url: "/graphql",
-  exchanges: [dedupExchange, cacheExchange, fetchExchange],
+  exchanges: [cacheExchange({ schema }), fetchExchange],
 });

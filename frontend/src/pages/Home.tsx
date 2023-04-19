@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { useAtomValue } from "jotai";
-import { atomsWithQuery } from "jotai-urql";
+import { atomWithQuery } from "jotai-urql";
 
 import BrowserSessionList from "../components/BrowserSessionList";
 import CompatSsoLoginList from "../components/CompatSsoLoginList";
@@ -37,10 +37,19 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-const [homeDataAtom] = atomsWithQuery(QUERY, () => ({ count: 10 }));
+const homeDataAtom = atomWithQuery({
+  query: QUERY,
+  getVariables: () => ({ count: 10 }),
+});
 
 const Home: React.FC = () => {
-  const data = useAtomValue(homeDataAtom);
+  const result = useAtomValue(homeDataAtom);
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  const data = result.data!!;
 
   if (data.currentBrowserSession) {
     const session = data.currentBrowserSession;
