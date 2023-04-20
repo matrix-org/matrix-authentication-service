@@ -15,12 +15,10 @@
 use anyhow::Context as _;
 use async_graphql::{Context, Object, ID};
 use chrono::{DateTime, Utc};
-use mas_storage::{
-    upstream_oauth2::UpstreamOAuthProviderRepository, user::UserRepository, BoxRepository,
-};
-use tokio::sync::Mutex;
+use mas_storage::{upstream_oauth2::UpstreamOAuthProviderRepository, user::UserRepository};
 
 use super::{NodeType, User};
+use crate::state::ContextExt;
 
 #[derive(Debug, Clone)]
 pub struct UpstreamOAuth2Provider {
@@ -97,20 +95,21 @@ impl UpstreamOAuth2Link {
         &self,
         ctx: &Context<'_>,
     ) -> Result<UpstreamOAuth2Provider, async_graphql::Error> {
+        let state = ctx.state();
         let provider = if let Some(provider) = &self.provider {
             // Cached
             provider.clone()
         } else {
             // Fetch on-the-fly
-            let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
+            let mut repo = state.repository().await?;
 
-            // This is a false positive, since it would have a lifetime error
-            #[allow(clippy::let_and_return)]
             let provider = repo
                 .upstream_oauth_provider()
                 .lookup(self.link.provider_id)
                 .await?
                 .context("Upstream OAuth 2.0 provider not found")?;
+            repo.cancel().await?;
+
             provider
         };
 
@@ -119,20 +118,21 @@ impl UpstreamOAuth2Link {
 
     /// The user to which this link is associated.
     pub async fn user(&self, ctx: &Context<'_>) -> Result<Option<User>, async_graphql::Error> {
+        let state = ctx.state();
         let user = if let Some(user) = &self.user {
             // Cached
             user.clone()
         } else if let Some(user_id) = &self.link.user_id {
             // Fetch on-the-fly
-            let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
+            let mut repo = state.repository().await?;
 
-            // This is a false positive, since it would have a lifetime error
-            #[allow(clippy::let_and_return)]
             let user = repo
                 .user()
                 .lookup(*user_id)
                 .await?
                 .context("User not found")?;
+            repo.cancel().await?;
+
             user
         } else {
             return Ok(None);

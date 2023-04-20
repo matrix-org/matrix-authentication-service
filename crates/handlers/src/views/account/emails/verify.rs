@@ -118,6 +118,9 @@ pub(crate) async fn post(
         .filter(|u| u.user_id == session.user.id)
         .context("Could not find user email")?;
 
+    // XXX: this logic should be extracted somewhere else, since most of it is
+    // duplicated in mas_graphql
+
     let verification = repo
         .user_email()
         .find_verification_code(&clock, &user_email, &form.code)

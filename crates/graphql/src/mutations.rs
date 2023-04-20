@@ -12,38 +12,45 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use async_graphql::{Context, Object, ID};
+use anyhow::Context as _;
+use async_graphql::{Context, Description, Object, ID};
 use mas_storage::{
-    job::{JobRepositoryExt, VerifyEmailJob},
+    job::{JobRepositoryExt, ProvisionUserJob, VerifyEmailJob},
     user::UserEmailRepository,
-    BoxClock, BoxRepository, BoxRng, RepositoryAccess, SystemClock,
+    RepositoryAccess,
 };
-use rand_chacha::{rand_core::SeedableRng, ChaChaRng};
-use tokio::sync::Mutex;
 
-use crate::model::{NodeType, UserEmail};
+use crate::{
+    model::{NodeType, UserEmail},
+    state::ContextExt,
+};
 
-struct RootMutations;
-
-fn clock_and_rng() -> (BoxClock, BoxRng) {
-    // XXX: this should be moved somewhere else
-    let clock = SystemClock::default();
-    let rng = ChaChaRng::from_entropy();
-    (Box::new(clock), Box::new(rng))
+/// The mutations root of the GraphQL interface.
+#[derive(Default, Description)]
+pub struct RootMutations {
+    _private: (),
 }
 
-#[Object]
 impl RootMutations {
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+#[Object(use_type_description)]
+impl RootMutations {
+    /// Add an email address to the specified user
     async fn add_email(
         &self,
         ctx: &Context<'_>,
-        email: String,
-        user_id: ID,
+
+        #[graphql(desc = "The email address to add")] email: String,
+        #[graphql(desc = "The ID of the user to add the email address to")] user_id: ID,
     ) -> Result<UserEmail, async_graphql::Error> {
+        let state = ctx.state();
         let id = NodeType::User.extract_ulid(&user_id)?;
-        let session = ctx.data_opt::<mas_data_model::BrowserSession>().cloned();
-        let (clock, mut rng) = clock_and_rng();
-        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
+        let session = ctx.session();
 
         let Some(session) = session else {
             return Err(async_graphql::Error::new("Unauthorized"));
@@ -53,15 +60,133 @@ impl RootMutations {
             return Err(async_graphql::Error::new("Unauthorized"));
         }
 
+        let mut repo = state.repository().await?;
+
+        // XXX: this logic should be extracted somewhere else, since most of it is
+        // duplicated in mas_handlers
+        // Find an existing email address
+        let existing_user_email = repo.user_email().find(&session.user, &email).await?;
+        let user_email = if let Some(user_email) = existing_user_email {
+            user_email
+        } else {
+            let clock = state.clock();
+            let mut rng = state.rng();
+
+            repo.user_email()
+                .add(&mut rng, &clock, &session.user, email)
+                .await?
+        };
+
+        // Schedule a job to verify the email address if needed
+        if user_email.confirmed_at.is_none() {
+            repo.job()
+                .schedule_job(VerifyEmailJob::new(&user_email))
+                .await?;
+        }
+
+        repo.save().await?;
+
+        Ok(UserEmail(user_email))
+    }
+
+    /// Send a verification code for an email address
+    async fn send_verification_email(
+        &self,
+        ctx: &Context<'_>,
+
+        #[graphql(desc = "The ID of the email address to verify")] user_email_id: ID,
+    ) -> Result<UserEmail, async_graphql::Error> {
+        let state = ctx.state();
+        let user_email_id = NodeType::UserEmail.extract_ulid(&user_email_id)?;
+        let session = ctx.session();
+
+        let Some(session) = session else {
+            return Err(async_graphql::Error::new("Unauthorized"));
+        };
+
+        let mut repo = state.repository().await?;
+
         let user_email = repo
             .user_email()
-            .add(&mut rng, &clock, &session.user, email)
+            .lookup(user_email_id)
+            .await?
+            .context("User email not found")?;
+
+        if user_email.user_id != session.user.id {
+            return Err(async_graphql::Error::new("Unauthorized"));
+        }
+
+        // Schedule a job to verify the email address if needed
+        if user_email.confirmed_at.is_none() {
+            repo.job()
+                .schedule_job(VerifyEmailJob::new(&user_email))
+                .await?;
+        }
+
+        repo.save().await?;
+
+        Ok(UserEmail(user_email))
+    }
+
+    /// Submit a verification code for an email address
+    async fn verify_email(
+        &self,
+        ctx: &Context<'_>,
+
+        #[graphql(desc = "The ID of the email address to verify")] user_email_id: ID,
+        #[graphql(desc = "The verification code to submit")] code: String,
+    ) -> Result<UserEmail, async_graphql::Error> {
+        let state = ctx.state();
+        let user_email_id = NodeType::UserEmail.extract_ulid(&user_email_id)?;
+        let session = ctx.session();
+
+        let Some(session) = session else {
+            return Err(async_graphql::Error::new("Unauthorized"));
+        };
+
+        let clock = state.clock();
+        let mut repo = state.repository().await?;
+
+        let user_email = repo
+            .user_email()
+            .lookup(user_email_id)
+            .await?
+            .context("User email not found")?;
+
+        if user_email.user_id != session.user.id {
+            return Err(async_graphql::Error::new("Unauthorized"));
+        }
+
+        // XXX: this logic should be extracted somewhere else, since most of it is
+        // duplicated in mas_handlers
+
+        // Find the verification code
+        let verification = repo
+            .user_email()
+            .find_verification_code(&clock, &user_email, &code)
+            .await?
+            .context("Invalid verification code")?;
+
+        // TODO: display nice errors if the code was already consumed or expired
+        repo.user_email()
+            .consume_verification_code(&clock, verification)
+            .await?;
+
+        // XXX: is this the right place to do this?
+        if session.user.primary_user_email_id.is_none() {
+            repo.user_email().set_as_primary(&user_email).await?;
+        }
+
+        let user_email = repo
+            .user_email()
+            .mark_as_verified(&clock, user_email)
             .await?;
 
         repo.job()
-            .schedule_job(VerifyEmailJob::new(&user_email))
+            .schedule_job(ProvisionUserJob::new(&session.user))
             .await?;
-        // TODO: how do we save the transaction here?
+
+        repo.save().await?;
 
         Ok(UserEmail(user_email))
     }

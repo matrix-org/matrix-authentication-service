@@ -122,7 +122,7 @@ impl Options {
             watch_templates(&templates).await?;
         }
 
-        let graphql_schema = mas_handlers::graphql_schema();
+        let graphql_schema = mas_handlers::graphql_schema(&pool);
 
         // Maximum 50 outgoing HTTP requests at a time
         let http_client_factory = HttpClientFactory::new(50);

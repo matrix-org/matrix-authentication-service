@@ -207,6 +207,37 @@ export type PageInfo = {
   startCursor?: Maybe<Scalars['String']>;
 };
 
+/** The mutations root of the GraphQL interface. */
+export type RootMutations = {
+  __typename?: 'RootMutations';
+  /** Add an email address to the specified user */
+  addEmail: UserEmail;
+  /** Send a verification code for an email address */
+  sendVerificationEmail: UserEmail;
+  /** Submit a verification code for an email address */
+  verifyEmail: UserEmail;
+};
+
+
+/** The mutations root of the GraphQL interface. */
+export type RootMutationsAddEmailArgs = {
+  email: Scalars['String'];
+  userId: Scalars['ID'];
+};
+
+
+/** The mutations root of the GraphQL interface. */
+export type RootMutationsSendVerificationEmailArgs = {
+  userEmailId: Scalars['ID'];
+};
+
+
+/** The mutations root of the GraphQL interface. */
+export type RootMutationsVerifyEmailArgs = {
+  code: Scalars['String'];
+  userEmailId: Scalars['ID'];
+};
+
 /** The query root of the GraphQL interface. */
 export type RootQuery = {
   __typename?: 'RootQuery';

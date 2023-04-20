@@ -15,11 +15,11 @@
 use anyhow::Context as _;
 use async_graphql::{Context, Description, Object, ID};
 use chrono::{DateTime, Utc};
-use mas_storage::{compat::CompatSessionRepository, user::UserRepository, BoxRepository};
-use tokio::sync::Mutex;
+use mas_storage::{compat::CompatSessionRepository, user::UserRepository};
 use url::Url;
 
 use super::{NodeType, User};
+use crate::state::ContextExt;
 
 /// A compat session represents a client session which used the legacy Matrix
 /// login API.
@@ -35,12 +35,15 @@ impl CompatSession {
 
     /// The user authorized for this session.
     async fn user(&self, ctx: &Context<'_>) -> Result<User, async_graphql::Error> {
-        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
+        let state = ctx.state();
+        let mut repo = state.repository().await?;
         let user = repo
             .user()
             .lookup(self.0.user_id)
             .await?
             .context("Could not load user")?;
+        repo.cancel().await?;
+
         Ok(User(user))
     }
 
@@ -100,12 +103,14 @@ impl CompatSsoLogin {
     ) -> Result<Option<CompatSession>, async_graphql::Error> {
         let Some(session_id) = self.0.session_id() else { return Ok(None) };
 
-        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
+        let state = ctx.state();
+        let mut repo = state.repository().await?;
         let session = repo
             .compat_session()
             .lookup(session_id)
             .await?
             .context("Could not load compat session")?;
+        repo.cancel().await?;
 
         Ok(Some(CompatSession(session)))
     }

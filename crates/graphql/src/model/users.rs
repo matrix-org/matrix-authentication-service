@@ -22,14 +22,14 @@ use mas_storage::{
     oauth2::OAuth2SessionRepository,
     upstream_oauth2::UpstreamOAuthLinkRepository,
     user::{BrowserSessionRepository, UserEmailRepository},
-    BoxRepository, Pagination,
+    Pagination,
 };
-use tokio::sync::Mutex;
 
 use super::{
     compat_sessions::CompatSsoLogin, BrowserSession, Cursor, NodeCursor, NodeType, OAuth2Session,
     UpstreamOAuth2Link,
 };
+use crate::state::ContextExt;
 
 #[derive(Description)]
 /// A user is an individual's account.
@@ -64,10 +64,12 @@ impl User {
         &self,
         ctx: &Context<'_>,
     ) -> Result<Option<UserEmail>, async_graphql::Error> {
-        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
+        let state = ctx.state();
+        let mut repo = state.repository().await?;
 
-        let mut user_email_repo = repo.user_email();
-        Ok(user_email_repo.get_primary(&self.0).await?.map(UserEmail))
+        let user_email = repo.user_email().get_primary(&self.0).await?.map(UserEmail);
+        repo.cancel().await?;
+        Ok(user_email)
     }
 
     /// Get the list of compatibility SSO logins, chronologically sorted
@@ -82,7 +84,8 @@ impl User {
         #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
         #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
     ) -> Result<Connection<Cursor, CompatSsoLogin>, async_graphql::Error> {
-        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
+        let state = ctx.state();
+        let mut repo = state.repository().await?;
 
         query(
             after,
@@ -102,6 +105,8 @@ impl User {
                     .compat_sso_login()
                     .list_paginated(&self.0, pagination)
                     .await?;
+
+                repo.cancel().await?;
 
                 let mut connection = Connection::new(page.has_previous_page, page.has_next_page);
                 connection.edges.extend(page.edges.into_iter().map(|u| {
@@ -129,7 +134,8 @@ impl User {
         #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
         #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
     ) -> Result<Connection<Cursor, BrowserSession>, async_graphql::Error> {
-        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
+        let state = ctx.state();
+        let mut repo = state.repository().await?;
 
         query(
             after,
@@ -149,6 +155,8 @@ impl User {
                     .browser_session()
                     .list_active_paginated(&self.0, pagination)
                     .await?;
+
+                repo.cancel().await?;
 
                 let mut connection = Connection::new(page.has_previous_page, page.has_next_page);
                 connection.edges.extend(page.edges.into_iter().map(|u| {
@@ -176,7 +184,8 @@ impl User {
         #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
         #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
     ) -> Result<Connection<Cursor, UserEmail, UserEmailsPagination>, async_graphql::Error> {
-        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
+        let state = ctx.state();
+        let mut repo = state.repository().await?;
 
         query(
             after,
@@ -196,6 +205,8 @@ impl User {
                     .user_email()
                     .list_paginated(&self.0, pagination)
                     .await?;
+
+                repo.cancel().await?;
 
                 let mut connection = Connection::with_additional_fields(
                     page.has_previous_page,
@@ -227,7 +238,8 @@ impl User {
         #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
         #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
     ) -> Result<Connection<Cursor, OAuth2Session>, async_graphql::Error> {
-        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
+        let state = ctx.state();
+        let mut repo = state.repository().await?;
 
         query(
             after,
@@ -247,6 +259,8 @@ impl User {
                     .oauth2_session()
                     .list_paginated(&self.0, pagination)
                     .await?;
+
+                repo.cancel().await?;
 
                 let mut connection = Connection::new(page.has_previous_page, page.has_next_page);
                 connection.edges.extend(page.edges.into_iter().map(|s| {
@@ -274,7 +288,8 @@ impl User {
         #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
         #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
     ) -> Result<Connection<Cursor, UpstreamOAuth2Link>, async_graphql::Error> {
-        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
+        let state = ctx.state();
+        let mut repo = state.repository().await?;
 
         query(
             after,
@@ -298,6 +313,8 @@ impl User {
                     .upstream_oauth_link()
                     .list_paginated(&self.0, pagination)
                     .await?;
+
+                repo.cancel().await?;
 
                 let mut connection = Connection::new(page.has_previous_page, page.has_next_page);
                 connection.edges.extend(page.edges.into_iter().map(|s| {
@@ -348,8 +365,10 @@ pub struct UserEmailsPagination(mas_data_model::User);
 impl UserEmailsPagination {
     /// Identifies the total count of items in the connection.
     async fn total_count(&self, ctx: &Context<'_>) -> Result<usize, async_graphql::Error> {
-        let mut repo = ctx.data::<Mutex<BoxRepository>>()?.lock().await;
+        let state = ctx.state();
+        let mut repo = state.repository().await?;
         let count = repo.user_email().count(&self.0).await?;
+        repo.cancel().await?;
         Ok(count)
     }
 }

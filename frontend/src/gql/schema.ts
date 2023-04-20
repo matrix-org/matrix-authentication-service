@@ -4,7 +4,9 @@ export default {
     queryType: {
       name: "RootQuery",
     },
-    mutationType: null,
+    mutationType: {
+      name: "RootMutations",
+    },
     subscriptionType: null,
     types: [
       {
@@ -796,6 +798,102 @@ export default {
               name: "Any",
             },
             args: [],
+          },
+        ],
+        interfaces: [],
+      },
+      {
+        kind: "OBJECT",
+        name: "RootMutations",
+        fields: [
+          {
+            name: "addEmail",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "UserEmail",
+                ofType: null,
+              },
+            },
+            args: [
+              {
+                name: "email",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+              {
+                name: "userId",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
+          },
+          {
+            name: "sendVerificationEmail",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "UserEmail",
+                ofType: null,
+              },
+            },
+            args: [
+              {
+                name: "userEmailId",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
+          },
+          {
+            name: "verifyEmail",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "UserEmail",
+                ofType: null,
+              },
+            },
+            args: [
+              {
+                name: "code",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+              {
+                name: "userEmailId",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
           },
         ],
         interfaces: [],
