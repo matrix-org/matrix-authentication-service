@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@urql/core": "^4.0.4",
-    "@urql/exchange-graphcache": "^6.0.1",
+    "@urql/exchange-graphcache": "^6.0.2",
     "date-fns": "^2.29.3",
     "graphql": "^16.6.0",
     "jotai": "^2.0.4",
