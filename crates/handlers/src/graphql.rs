@@ -17,6 +17,7 @@ use async_graphql::{
     http::{playground_source, GraphQLPlaygroundConfig, MultipartOptions},
 };
 use axum::{
+    async_trait,
     extract::{BodyStream, RawQuery, State},
     response::{Html, IntoResponse},
     Json, TypedHeader,
@@ -28,15 +29,50 @@ use hyper::header::CACHE_CONTROL;
 use mas_axum_utils::{FancyError, SessionInfoExt};
 use mas_graphql::Schema;
 use mas_keystore::Encrypter;
-use mas_storage::BoxRepository;
-use tokio::sync::Mutex;
+use mas_storage::{BoxClock, BoxRepository, BoxRng, Repository, RepositoryError, SystemClock};
+use mas_storage_pg::PgRepository;
+use rand::{thread_rng, SeedableRng};
+use rand_chacha::ChaChaRng;
+use sqlx::PgPool;
 use tracing::{info_span, Instrument};
 
+struct GraphQLState {
+    pool: PgPool,
+}
+
+#[async_trait]
+impl mas_graphql::State for GraphQLState {
+    async fn repository(&self) -> Result<BoxRepository, RepositoryError> {
+        let repo = PgRepository::from_pool(&self.pool)
+            .await
+            .map_err(RepositoryError::from_error)?;
+
+        Ok(repo.map_err(RepositoryError::from_error).boxed())
+    }
+
+    fn clock(&self) -> BoxClock {
+        let clock = SystemClock::default();
+        Box::new(clock)
+    }
+
+    fn rng(&self) -> BoxRng {
+        #[allow(clippy::disallowed_methods)]
+        let rng = thread_rng();
+
+        let rng = ChaChaRng::from_rng(rng).expect("Failed to seed rng");
+        Box::new(rng)
+    }
+}
+
 #[must_use]
-pub fn schema() -> Schema {
+pub fn schema(pool: &PgPool) -> Schema {
+    let state = GraphQLState { pool: pool.clone() };
+    let state: mas_graphql::BoxState = Box::new(state);
+
     mas_graphql::schema_builder()
         .extension(Tracing)
         .extension(ApolloTracing)
+        .data(state)
         .finish()
 }
 
@@ -68,6 +104,7 @@ pub async fn post(
 
     let (session_info, _cookie_jar) = cookie_jar.session_info();
     let maybe_session = session_info.load_session(&mut repo).await?;
+    repo.cancel().await?;
 
     let mut request = async_graphql::http::receive_body(
         content_type,
@@ -75,8 +112,7 @@ pub async fn post(
             .into_async_read(),
         MultipartOptions::default(),
     )
-    .await? // XXX: this should probably return another error response?
-    .data(Mutex::new(repo));
+    .await?; // XXX: this should probably return another error response?
 
     if let Some(session) = maybe_session {
         request = request.data(session);
@@ -104,9 +140,9 @@ pub async fn get(
 ) -> Result<impl IntoResponse, FancyError> {
     let (session_info, _cookie_jar) = cookie_jar.session_info();
     let maybe_session = session_info.load_session(&mut repo).await?;
+    repo.cancel().await?;
 
-    let mut request =
-        async_graphql::http::parse_query_string(&query.unwrap_or_default())?.data(Mutex::new(repo));
+    let mut request = async_graphql::http::parse_query_string(&query.unwrap_or_default())?;
 
     if let Some(session) = maybe_session {
         request = request.data(session);

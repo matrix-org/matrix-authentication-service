@@ -292,6 +292,24 @@ type PageInfo {
 }
 
 """
+The mutations root of the GraphQL interface.
+"""
+type RootMutations {
+  """
+  Add an email address to the specified user
+  """
+  addEmail(email: String!, userId: ID!): UserEmail!
+  """
+  Send a verification code for an email address
+  """
+  sendVerificationEmail(userEmailId: ID!): UserEmail!
+  """
+  Submit a verification code for an email address
+  """
+  verifyEmail(userEmailId: ID!, code: String!): UserEmail!
+}
+
+"""
 The query root of the GraphQL interface.
 """
 type RootQuery {
@@ -568,4 +586,5 @@ type UserEmailEdge {
 
 schema {
   query: RootQuery
+  mutation: RootMutations
 }
