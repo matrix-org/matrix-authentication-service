@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use mas_data_model::BrowserSession;
 use mas_storage::{BoxClock, BoxRepository, BoxRng, RepositoryError};
+
+use crate::Requester;
 
 #[async_trait::async_trait]
 pub trait State {
@@ -27,15 +28,15 @@ pub type BoxState = Box<dyn State + Send + Sync + 'static>;
 pub trait ContextExt {
     fn state(&self) -> &BoxState;
 
-    fn session(&self) -> Option<&BrowserSession>;
+    fn requester(&self) -> &Requester;
 }
 
 impl ContextExt for async_graphql::Context<'_> {
     fn state(&self) -> &BoxState {
-        self.data_unchecked::<BoxState>()
+        self.data_unchecked()
     }
 
-    fn session(&self) -> Option<&BrowserSession> {
-        self.data_opt()
+    fn requester(&self) -> &Requester {
+        self.data_unchecked()
     }
 }

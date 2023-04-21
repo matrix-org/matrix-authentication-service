@@ -27,7 +27,7 @@ use futures_util::TryStreamExt;
 use headers::{ContentType, HeaderValue};
 use hyper::header::CACHE_CONTROL;
 use mas_axum_utils::{FancyError, SessionInfoExt};
-use mas_graphql::Schema;
+use mas_graphql::{Requester, Schema};
 use mas_keystore::Encrypter;
 use mas_storage::{BoxClock, BoxRepository, BoxRng, Repository, RepositoryError, SystemClock};
 use mas_storage_pg::PgRepository;
@@ -100,23 +100,21 @@ pub async fn post(
     content_type: Option<TypedHeader<ContentType>>,
     body: BodyStream,
 ) -> Result<impl IntoResponse, FancyError> {
-    let content_type = content_type.map(|TypedHeader(h)| h.to_string());
-
     let (session_info, _cookie_jar) = cookie_jar.session_info();
     let maybe_session = session_info.load_session(&mut repo).await?;
+    let requester = Requester::from(maybe_session);
     repo.cancel().await?;
 
-    let mut request = async_graphql::http::receive_body(
+    let content_type = content_type.map(|TypedHeader(h)| h.to_string());
+
+    let request = async_graphql::http::receive_body(
         content_type,
         body.map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
             .into_async_read(),
         MultipartOptions::default(),
     )
-    .await?; // XXX: this should probably return another error response?
-
-    if let Some(session) = maybe_session {
-        request = request.data(session);
-    }
+    .await?
+    .data(requester); // XXX: this should probably return another error response?
 
     let span = span_for_graphql_request(&request);
     let response = schema.execute(request).instrument(span).await;
@@ -140,13 +138,11 @@ pub async fn get(
 ) -> Result<impl IntoResponse, FancyError> {
     let (session_info, _cookie_jar) = cookie_jar.session_info();
     let maybe_session = session_info.load_session(&mut repo).await?;
+    let requester = Requester::from(maybe_session);
     repo.cancel().await?;
 
-    let mut request = async_graphql::http::parse_query_string(&query.unwrap_or_default())?;
-
-    if let Some(session) = maybe_session {
-        request = request.data(session);
-    }
+    let request =
+        async_graphql::http::parse_query_string(&query.unwrap_or_default())?.data(requester);
 
     let span = span_for_graphql_request(&request);
     let response = schema.execute(request).instrument(span).await;
