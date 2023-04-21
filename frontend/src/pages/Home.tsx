@@ -23,6 +23,7 @@ import { graphql } from "../gql";
 
 const QUERY = graphql(/* GraphQL */ `
   query HomeQuery($count: Int!, $cursor: String) {
+    # eslint-disable-next-line @graphql-eslint/no-deprecated
     currentBrowserSession {
       id
       user {

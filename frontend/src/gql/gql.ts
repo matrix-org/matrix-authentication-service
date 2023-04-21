@@ -20,7 +20,7 @@ const documents = {
     "\n  fragment OAuth2Session_session on Oauth2Session {\n    id\n    scope\n    client {\n      id\n      clientId\n      clientName\n      clientUri\n    }\n  }\n": types.OAuth2Session_SessionFragmentDoc,
     "\n  fragment OAuth2SessionList_user on User {\n    oauth2Sessions(first: $count, after: $cursor) {\n      edges {\n        cursor\n        node {\n          id\n          ...OAuth2Session_session\n        }\n      }\n    }\n  }\n": types.OAuth2SessionList_UserFragmentDoc,
     "\n  query BrowserSessionQuery($id: ID!) {\n    browserSession(id: $id) {\n      id\n      createdAt\n      lastAuthentication {\n        id\n        createdAt\n      }\n      user {\n        id\n        username\n      }\n    }\n  }\n": types.BrowserSessionQueryDocument,
-    "\n  query HomeQuery($count: Int!, $cursor: String) {\n    currentBrowserSession {\n      id\n      user {\n        id\n        username\n\n        ...CompatSsoLoginList_user\n        ...BrowserSessionList_user\n        ...OAuth2SessionList_user\n      }\n    }\n  }\n": types.HomeQueryDocument,
+    "\n  query HomeQuery($count: Int!, $cursor: String) {\n    # eslint-disable-next-line @graphql-eslint/no-deprecated\n    currentBrowserSession {\n      id\n      user {\n        id\n        username\n\n        ...CompatSsoLoginList_user\n        ...BrowserSessionList_user\n        ...OAuth2SessionList_user\n      }\n    }\n  }\n": types.HomeQueryDocument,
     "\n  query OAuth2ClientQuery($id: ID!) {\n    oauth2Client(id: $id) {\n      id\n      clientId\n      clientName\n      clientUri\n      tosUri\n      policyUri\n      redirectUris\n    }\n  }\n": types.OAuth2ClientQueryDocument,
 };
 
@@ -69,7 +69,7 @@ export function graphql(source: "\n  query BrowserSessionQuery($id: ID!) {\n    
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query HomeQuery($count: Int!, $cursor: String) {\n    currentBrowserSession {\n      id\n      user {\n        id\n        username\n\n        ...CompatSsoLoginList_user\n        ...BrowserSessionList_user\n        ...OAuth2SessionList_user\n      }\n    }\n  }\n"): (typeof documents)["\n  query HomeQuery($count: Int!, $cursor: String) {\n    currentBrowserSession {\n      id\n      user {\n        id\n        username\n\n        ...CompatSsoLoginList_user\n        ...BrowserSessionList_user\n        ...OAuth2SessionList_user\n      }\n    }\n  }\n"];
+export function graphql(source: "\n  query HomeQuery($count: Int!, $cursor: String) {\n    # eslint-disable-next-line @graphql-eslint/no-deprecated\n    currentBrowserSession {\n      id\n      user {\n        id\n        username\n\n        ...CompatSsoLoginList_user\n        ...BrowserSessionList_user\n        ...OAuth2SessionList_user\n      }\n    }\n  }\n"): (typeof documents)["\n  query HomeQuery($count: Int!, $cursor: String) {\n    # eslint-disable-next-line @graphql-eslint/no-deprecated\n    currentBrowserSession {\n      id\n      user {\n        id\n        username\n\n        ...CompatSsoLoginList_user\n        ...BrowserSessionList_user\n        ...OAuth2SessionList_user\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

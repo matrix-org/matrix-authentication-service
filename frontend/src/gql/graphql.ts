@@ -30,6 +30,11 @@ export type AddEmailInput = {
   userId: Scalars['ID'];
 };
 
+export type Anonymous = Node & {
+  __typename?: 'Anonymous';
+  id: Scalars['ID'];
+};
+
 /**
  * An authentication records when a user enter their credential in a browser
  * session.
@@ -249,9 +254,15 @@ export type RootQuery = {
   __typename?: 'RootQuery';
   /** Fetch a browser session by its ID. */
   browserSession?: Maybe<BrowserSession>;
-  /** Get the current logged in browser session */
+  /**
+   * Get the current logged in browser session
+   * @deprecated Use `viewerSession` instead.
+   */
   currentBrowserSession?: Maybe<BrowserSession>;
-  /** Get the current logged in user */
+  /**
+   * Get the current logged in user
+   * @deprecated Use `viewer` instead.
+   */
   currentUser?: Maybe<User>;
   /** Fetches an object given its ID. */
   node?: Maybe<Node>;
@@ -267,6 +278,10 @@ export type RootQuery = {
   user?: Maybe<User>;
   /** Fetch a user email by its ID. */
   userEmail?: Maybe<UserEmail>;
+  /** Get the viewer */
+  viewer: Viewer;
+  /** Get the viewer's session */
+  viewerSession: ViewerSession;
 };
 
 
@@ -500,6 +515,12 @@ export type VerifyEmailInput = {
   /** The ID of the email address to verify */
   userEmailId: Scalars['ID'];
 };
+
+/** Represents the current viewer */
+export type Viewer = Anonymous | User;
+
+/** Represents the current viewer's session */
+export type ViewerSession = Anonymous | BrowserSession;
 
 export type BrowserSession_SessionFragment = { __typename?: 'BrowserSession', id: string, createdAt: any, lastAuthentication?: { __typename?: 'Authentication', id: string, createdAt: any } | null } & { ' $fragmentName'?: 'BrowserSession_SessionFragment' };
 

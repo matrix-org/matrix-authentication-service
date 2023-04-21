@@ -11,6 +11,29 @@ export default {
     types: [
       {
         kind: "OBJECT",
+        name: "Anonymous",
+        fields: [
+          {
+            name: "id",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+        ],
+        interfaces: [
+          {
+            kind: "INTERFACE",
+            name: "Node",
+          },
+        ],
+      },
+      {
+        kind: "OBJECT",
         name: "Authentication",
         fields: [
           {
@@ -477,6 +500,10 @@ export default {
         ],
         interfaces: [],
         possibleTypes: [
+          {
+            kind: "OBJECT",
+            name: "Anonymous",
+          },
           {
             kind: "OBJECT",
             name: "Authentication",
@@ -1080,6 +1107,30 @@ export default {
                 },
               },
             ],
+          },
+          {
+            name: "viewer",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "UNION",
+                name: "Viewer",
+                ofType: null,
+              },
+            },
+            args: [],
+          },
+          {
+            name: "viewerSession",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "UNION",
+                name: "ViewerSession",
+                ofType: null,
+              },
+            },
+            args: [],
           },
         ],
         interfaces: [],
@@ -1784,6 +1835,34 @@ export default {
           },
         ],
         interfaces: [],
+      },
+      {
+        kind: "UNION",
+        name: "Viewer",
+        possibleTypes: [
+          {
+            kind: "OBJECT",
+            name: "Anonymous",
+          },
+          {
+            kind: "OBJECT",
+            name: "User",
+          },
+        ],
+      },
+      {
+        kind: "UNION",
+        name: "ViewerSession",
+        possibleTypes: [
+          {
+            kind: "OBJECT",
+            name: "Anonymous",
+          },
+          {
+            kind: "OBJECT",
+            name: "BrowserSession",
+          },
+        ],
       },
       {
         kind: "SCALAR",

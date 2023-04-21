@@ -22,6 +22,7 @@ mod node;
 mod oauth;
 mod upstream_oauth;
 mod users;
+mod viewer;
 
 pub use self::{
     browser_sessions::{Authentication, BrowserSession},
@@ -31,6 +32,7 @@ pub use self::{
     oauth::{OAuth2Client, OAuth2Consent, OAuth2Session},
     upstream_oauth::{UpstreamOAuth2Link, UpstreamOAuth2Provider},
     users::{User, UserEmail},
+    viewer::{Anonymous, Viewer, ViewerSession},
 };
 
 /// An object with a creation date.

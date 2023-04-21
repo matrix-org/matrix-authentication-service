@@ -18,8 +18,8 @@ use thiserror::Error;
 use ulid::Ulid;
 
 use super::{
-    Authentication, BrowserSession, CompatSession, CompatSsoLogin, OAuth2Client, OAuth2Session,
-    UpstreamOAuth2Link, UpstreamOAuth2Provider, User, UserEmail,
+    Anonymous, Authentication, BrowserSession, CompatSession, CompatSsoLogin, OAuth2Client,
+    OAuth2Session, UpstreamOAuth2Link, UpstreamOAuth2Provider, User, UserEmail,
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -116,6 +116,7 @@ impl NodeType {
 #[derive(Interface)]
 #[graphql(field(name = "id", desc = "ID of the object.", type = "ID"))]
 pub enum Node {
+    Anonymous(Box<Anonymous>),
     Authentication(Box<Authentication>),
     BrowserSession(Box<BrowserSession>),
     CompatSession(Box<CompatSession>),
