@@ -12,25 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use async_graphql::{
-    connection::{query, Connection, Edge, OpaqueCursor},
-    Context, Description, Object, ID,
-};
-use mas_storage::Pagination;
+use async_graphql::{Context, MergedObject, Object, ID};
 
 use crate::{
-    model::{
-        BrowserSession, Cursor, Node, NodeCursor, NodeType, OAuth2Client, UpstreamOAuth2Link,
-        UpstreamOAuth2Provider, User, UserEmail,
-    },
+    model::{Anonymous, BrowserSession, Node, NodeType, OAuth2Client, User, UserEmail},
     state::ContextExt,
 };
 
+mod upstream_oauth;
+mod viewer;
+
+use self::{upstream_oauth::UpstreamOAuthQuery, viewer::ViewerQuery};
+
 /// The query root of the GraphQL interface.
-#[derive(Default, Description)]
-pub struct RootQuery {
-    _private: (),
-}
+#[derive(Default, MergedObject)]
+pub struct RootQuery(BaseQuery, UpstreamOAuthQuery, ViewerQuery);
 
 impl RootQuery {
     #[must_use]
@@ -39,9 +35,14 @@ impl RootQuery {
     }
 }
 
-#[Object(use_type_description)]
-impl RootQuery {
+#[derive(Default)]
+struct BaseQuery;
+
+// TODO: move the rest of the queries in separate modules
+#[Object]
+impl BaseQuery {
     /// Get the current logged in browser session
+    #[graphql(deprecation = "Use `viewerSession` instead.")]
     async fn current_browser_session(
         &self,
         ctx: &Context<'_>,
@@ -54,6 +55,7 @@ impl RootQuery {
     }
 
     /// Get the current logged in user
+    #[graphql(deprecation = "Use `viewer` instead.")]
     async fn current_user(&self, ctx: &Context<'_>) -> Result<Option<User>, async_graphql::Error> {
         let requester = ctx.requester();
         Ok(requester.user().cloned().map(User::from))
@@ -141,99 +143,13 @@ impl RootQuery {
         Ok(user_email.map(UserEmail))
     }
 
-    /// Fetch an upstream OAuth 2.0 link by its ID.
-    async fn upstream_oauth2_link(
-        &self,
-        ctx: &Context<'_>,
-        id: ID,
-    ) -> Result<Option<UpstreamOAuth2Link>, async_graphql::Error> {
-        let state = ctx.state();
-        let id = NodeType::UpstreamOAuth2Link.extract_ulid(&id)?;
-        let requester = ctx.requester();
-
-        let Some(current_user) = requester.user() else { return Ok(None) };
-        let mut repo = state.repository().await?;
-
-        let link = repo.upstream_oauth_link().lookup(id).await?;
-
-        // Ensure that the link belongs to the current user
-        let link = link.filter(|link| link.user_id == Some(current_user.id));
-
-        Ok(link.map(UpstreamOAuth2Link::new))
-    }
-
-    /// Fetch an upstream OAuth 2.0 provider by its ID.
-    async fn upstream_oauth2_provider(
-        &self,
-        ctx: &Context<'_>,
-        id: ID,
-    ) -> Result<Option<UpstreamOAuth2Provider>, async_graphql::Error> {
-        let state = ctx.state();
-        let id = NodeType::UpstreamOAuth2Provider.extract_ulid(&id)?;
-
-        let mut repo = state.repository().await?;
-        let provider = repo.upstream_oauth_provider().lookup(id).await?;
-        repo.cancel().await?;
-
-        Ok(provider.map(UpstreamOAuth2Provider::new))
-    }
-
-    /// Get a list of upstream OAuth 2.0 providers.
-    async fn upstream_oauth2_providers(
-        &self,
-        ctx: &Context<'_>,
-
-        #[graphql(desc = "Returns the elements in the list that come after the cursor.")]
-        after: Option<String>,
-        #[graphql(desc = "Returns the elements in the list that come before the cursor.")]
-        before: Option<String>,
-        #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
-        #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
-    ) -> Result<Connection<Cursor, UpstreamOAuth2Provider>, async_graphql::Error> {
-        let state = ctx.state();
-        let mut repo = state.repository().await?;
-
-        query(
-            after,
-            before,
-            first,
-            last,
-            |after, before, first, last| async move {
-                let after_id = after
-                    .map(|x: OpaqueCursor<NodeCursor>| {
-                        x.extract_for_type(NodeType::UpstreamOAuth2Provider)
-                    })
-                    .transpose()?;
-                let before_id = before
-                    .map(|x: OpaqueCursor<NodeCursor>| {
-                        x.extract_for_type(NodeType::UpstreamOAuth2Provider)
-                    })
-                    .transpose()?;
-                let pagination = Pagination::try_new(before_id, after_id, first, last)?;
-
-                let page = repo
-                    .upstream_oauth_provider()
-                    .list_paginated(pagination)
-                    .await?;
-
-                repo.cancel().await?;
-
-                let mut connection = Connection::new(page.has_previous_page, page.has_next_page);
-                connection.edges.extend(page.edges.into_iter().map(|p| {
-                    Edge::new(
-                        OpaqueCursor(NodeCursor(NodeType::UpstreamOAuth2Provider, p.id)),
-                        UpstreamOAuth2Provider::new(p),
-                    )
-                }));
-
-                Ok::<_, async_graphql::Error>(connection)
-            },
-        )
-        .await
-    }
-
     /// Fetches an object given its ID.
     async fn node(&self, ctx: &Context<'_>, id: ID) -> Result<Option<Node>, async_graphql::Error> {
+        // Special case for the anonymous user
+        if id.as_str() == "anonymous" {
+            return Ok(Some(Node::Anonymous(Box::new(Anonymous))));
+        }
+
         let (node_type, _id) = NodeType::from_id(&id)?;
 
         let ret = match node_type {
@@ -243,12 +159,12 @@ impl RootQuery {
             | NodeType::CompatSsoLogin
             | NodeType::OAuth2Session => None,
 
-            NodeType::UpstreamOAuth2Provider => self
+            NodeType::UpstreamOAuth2Provider => UpstreamOAuthQuery
                 .upstream_oauth2_provider(ctx, id)
                 .await?
                 .map(|c| Node::UpstreamOAuth2Provider(Box::new(c))),
 
-            NodeType::UpstreamOAuth2Link => self
+            NodeType::UpstreamOAuth2Link => UpstreamOAuthQuery
                 .upstream_oauth2_link(ctx, id)
                 .await?
                 .map(|c| Node::UpstreamOAuth2Link(Box::new(c))),

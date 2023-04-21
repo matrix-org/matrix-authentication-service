@@ -12,6 +12,10 @@ input AddEmailInput {
   userId: ID!
 }
 
+type Anonymous implements Node {
+  id: ID!
+}
+
 """
 An authentication records when a user enter their credential in a browser
 session.
@@ -331,10 +335,11 @@ type RootQuery {
   Get the current logged in browser session
   """
   currentBrowserSession: BrowserSession
+    @deprecated(reason: "Use `viewerSession` instead.")
   """
   Get the current logged in user
   """
-  currentUser: User
+  currentUser: User @deprecated(reason: "Use `viewer` instead.")
   """
   Fetch an OAuth 2.0 client by its ID.
   """
@@ -351,6 +356,10 @@ type RootQuery {
   Fetch a user email by its ID.
   """
   userEmail(id: ID!): UserEmail
+  """
+  Fetches an object given its ID.
+  """
+  node(id: ID!): Node
   """
   Fetch an upstream OAuth 2.0 link by its ID.
   """
@@ -369,9 +378,13 @@ type RootQuery {
     last: Int
   ): UpstreamOAuth2ProviderConnection!
   """
-  Fetches an object given its ID.
+  Get the viewer
   """
-  node(id: ID!): Node
+  viewer: Viewer!
+  """
+  Get the viewer's session
+  """
+  viewerSession: ViewerSession!
 }
 
 """
@@ -621,6 +634,16 @@ input VerifyEmailInput {
   """
   code: String!
 }
+
+"""
+Represents the current viewer
+"""
+union Viewer = User | Anonymous
+
+"""
+Represents the current viewer's session
+"""
+union ViewerSession = BrowserSession | Anonymous
 
 schema {
   query: RootQuery
