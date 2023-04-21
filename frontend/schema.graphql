@@ -1,4 +1,18 @@
 """
+The input for the `addEmail` mutation
+"""
+input AddEmailInput {
+  """
+  The email address to add
+  """
+  email: String!
+  """
+  The ID of the user to add the email address to
+  """
+  userId: ID!
+}
+
+"""
 An authentication records when a user enter their credential in a browser
 session.
 """
@@ -298,15 +312,15 @@ type RootMutations {
   """
   Add an email address to the specified user
   """
-  addEmail(email: String!, userId: ID!): UserEmail!
+  addEmail(input: AddEmailInput!): UserEmail!
   """
   Send a verification code for an email address
   """
-  sendVerificationEmail(userEmailId: ID!): UserEmail!
+  sendVerificationEmail(input: SendVerificationEmailInput!): UserEmail!
   """
   Submit a verification code for an email address
   """
-  verifyEmail(userEmailId: ID!, code: String!): UserEmail!
+  verifyEmail(input: VerifyEmailInput!): UserEmail!
 }
 
 """
@@ -358,6 +372,16 @@ type RootQuery {
   Fetches an object given its ID.
   """
   node(id: ID!): Node
+}
+
+"""
+The input for the `sendVerificationEmail` mutation
+"""
+input SendVerificationEmailInput {
+  """
+  The ID of the email address to verify
+  """
+  userEmailId: ID!
 }
 
 type UpstreamOAuth2Link implements Node & CreationEvent {
@@ -582,6 +606,20 @@ type UserEmailEdge {
   The item at the end of the edge
   """
   node: UserEmail!
+}
+
+"""
+The input for the `verifyEmail` mutation
+"""
+input VerifyEmailInput {
+  """
+  The ID of the email address to verify
+  """
+  userEmailId: ID!
+  """
+  The verification code
+  """
+  code: String!
 }
 
 schema {

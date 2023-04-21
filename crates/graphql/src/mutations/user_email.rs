@@ -13,43 +13,54 @@
 // limitations under the License.
 
 use anyhow::Context as _;
-use async_graphql::{Context, Description, Object, ID};
-use mas_storage::{
-    job::{JobRepositoryExt, ProvisionUserJob, VerifyEmailJob},
-    user::UserEmailRepository,
-    RepositoryAccess,
-};
+use async_graphql::{Context, InputObject, Object, ID};
+use mas_storage::job::{JobRepositoryExt, ProvisionUserJob, VerifyEmailJob};
 
 use crate::{
     model::{NodeType, UserEmail},
     state::ContextExt,
 };
 
-/// The mutations root of the GraphQL interface.
-#[derive(Default, Description)]
-pub struct RootMutations {
+#[derive(Default)]
+pub struct UserEmailMutations {
     _private: (),
 }
 
-impl RootMutations {
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
+/// The input for the `addEmail` mutation
+#[derive(InputObject)]
+struct AddEmailInput {
+    /// The email address to add
+    email: String,
+    /// The ID of the user to add the email address to
+    user_id: ID,
 }
 
-#[Object(use_type_description)]
-impl RootMutations {
+/// The input for the `sendVerificationEmail` mutation
+#[derive(InputObject)]
+struct SendVerificationEmailInput {
+    /// The ID of the email address to verify
+    user_email_id: ID,
+}
+
+/// The input for the `verifyEmail` mutation
+#[derive(InputObject)]
+struct VerifyEmailInput {
+    /// The ID of the email address to verify
+    user_email_id: ID,
+    /// The verification code
+    code: String,
+}
+
+#[Object]
+impl UserEmailMutations {
     /// Add an email address to the specified user
     async fn add_email(
         &self,
         ctx: &Context<'_>,
-
-        #[graphql(desc = "The email address to add")] email: String,
-        #[graphql(desc = "The ID of the user to add the email address to")] user_id: ID,
+        input: AddEmailInput,
     ) -> Result<UserEmail, async_graphql::Error> {
         let state = ctx.state();
-        let id = NodeType::User.extract_ulid(&user_id)?;
+        let id = NodeType::User.extract_ulid(&input.user_id)?;
         let requester = ctx.requester();
 
         let user = requester.user().context("Unauthorized")?;
@@ -63,14 +74,16 @@ impl RootMutations {
         // XXX: this logic should be extracted somewhere else, since most of it is
         // duplicated in mas_handlers
         // Find an existing email address
-        let existing_user_email = repo.user_email().find(user, &email).await?;
+        let existing_user_email = repo.user_email().find(user, &input.email).await?;
         let user_email = if let Some(user_email) = existing_user_email {
             user_email
         } else {
             let clock = state.clock();
             let mut rng = state.rng();
 
-            repo.user_email().add(&mut rng, &clock, user, email).await?
+            repo.user_email()
+                .add(&mut rng, &clock, user, input.email)
+                .await?
         };
 
         // Schedule a job to verify the email address if needed
@@ -89,11 +102,10 @@ impl RootMutations {
     async fn send_verification_email(
         &self,
         ctx: &Context<'_>,
-
-        #[graphql(desc = "The ID of the email address to verify")] user_email_id: ID,
+        input: SendVerificationEmailInput,
     ) -> Result<UserEmail, async_graphql::Error> {
         let state = ctx.state();
-        let user_email_id = NodeType::UserEmail.extract_ulid(&user_email_id)?;
+        let user_email_id = NodeType::UserEmail.extract_ulid(&input.user_email_id)?;
         let requester = ctx.requester();
         let user = requester.user().context("Unauthorized")?;
 
@@ -125,12 +137,10 @@ impl RootMutations {
     async fn verify_email(
         &self,
         ctx: &Context<'_>,
-
-        #[graphql(desc = "The ID of the email address to verify")] user_email_id: ID,
-        #[graphql(desc = "The verification code to submit")] code: String,
+        input: VerifyEmailInput,
     ) -> Result<UserEmail, async_graphql::Error> {
         let state = ctx.state();
-        let user_email_id = NodeType::UserEmail.extract_ulid(&user_email_id)?;
+        let user_email_id = NodeType::UserEmail.extract_ulid(&input.user_email_id)?;
         let requester = ctx.requester();
 
         let user = requester.user().context("Unauthorized")?;
@@ -148,15 +158,25 @@ impl RootMutations {
             return Err(async_graphql::Error::new("Unauthorized"));
         }
 
+        if user_email.confirmed_at.is_some() {
+            // Just return the email address if it's already verified
+            // XXX: should we return an error instead?
+            return Ok(UserEmail(user_email));
+        }
+
         // XXX: this logic should be extracted somewhere else, since most of it is
         // duplicated in mas_handlers
 
         // Find the verification code
         let verification = repo
             .user_email()
-            .find_verification_code(&clock, &user_email, &code)
+            .find_verification_code(&clock, &user_email, &input.code)
             .await?
             .context("Invalid verification code")?;
+
+        if verification.is_valid() {
+            return Err(async_graphql::Error::new("Invalid verification code"));
+        }
 
         // TODO: display nice errors if the code was already consumed or expired
         repo.user_email()

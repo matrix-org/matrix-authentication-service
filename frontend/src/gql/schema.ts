@@ -818,17 +818,7 @@ export default {
             },
             args: [
               {
-                name: "email",
-                type: {
-                  kind: "NON_NULL",
-                  ofType: {
-                    kind: "SCALAR",
-                    name: "Any",
-                  },
-                },
-              },
-              {
-                name: "userId",
+                name: "input",
                 type: {
                   kind: "NON_NULL",
                   ofType: {
@@ -851,7 +841,7 @@ export default {
             },
             args: [
               {
-                name: "userEmailId",
+                name: "input",
                 type: {
                   kind: "NON_NULL",
                   ofType: {
@@ -874,17 +864,7 @@ export default {
             },
             args: [
               {
-                name: "code",
-                type: {
-                  kind: "NON_NULL",
-                  ofType: {
-                    kind: "SCALAR",
-                    name: "Any",
-                  },
-                },
-              },
-              {
-                name: "userEmailId",
+                name: "input",
                 type: {
                   kind: "NON_NULL",
                   ofType: {
