@@ -40,9 +40,7 @@ impl Device {
     #[must_use]
     pub fn to_scope_token(&self) -> ScopeToken {
         // SAFETY: the inner id should only have valid scope characters
-        format!("{DEVICE_SCOPE_PREFIX}:{}", self.id)
-            .parse()
-            .unwrap()
+        format!("{DEVICE_SCOPE_PREFIX}{}", self.id).parse().unwrap()
     }
 
     /// Get the corresponding [`Device`] from a [`ScopeToken`]
@@ -79,5 +77,24 @@ impl TryFrom<String> for Device {
         }
 
         Ok(Self { id })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use oauth2_types::scope::OPENID;
+
+    use crate::Device;
+
+    #[test]
+    fn test_device_id_to_from_scope_token() {
+        let device = Device::try_from("AABBCCDDEE".to_owned()).unwrap();
+        let scope_token = device.to_scope_token();
+        assert_eq!(
+            scope_token.as_str(),
+            "urn:matrix:org.matrix.msc2967.client:device:AABBCCDDEE"
+        );
+        assert_eq!(Device::from_scope_token(&scope_token), Some(device));
+        assert_eq!(Device::from_scope_token(&OPENID), None);
     }
 }
