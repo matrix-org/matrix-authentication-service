@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::ops::Deref;
+
 use chrono::{DateTime, Duration, Utc};
 use rand::{Rng, SeedableRng};
 use serde::Serialize;
@@ -131,6 +133,13 @@ pub enum UserEmailVerificationState {
     Valid,
 }
 
+impl UserEmailVerificationState {
+    #[must_use]
+    pub fn is_valid(&self) -> bool {
+        matches!(self, Self::Valid)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct UserEmailVerification {
     pub id: Ulid,
@@ -138,6 +147,14 @@ pub struct UserEmailVerification {
     pub code: String,
     pub created_at: DateTime<Utc>,
     pub state: UserEmailVerificationState,
+}
+
+impl Deref for UserEmailVerification {
+    type Target = UserEmailVerificationState;
+
+    fn deref(&self) -> &Self::Target {
+        &self.state
+    }
 }
 
 impl UserEmailVerification {

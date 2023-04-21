@@ -22,6 +22,14 @@ export type Scalars = {
   Url: any;
 };
 
+/** The input for the `addEmail` mutation */
+export type AddEmailInput = {
+  /** The email address to add */
+  email: Scalars['String'];
+  /** The ID of the user to add the email address to */
+  userId: Scalars['ID'];
+};
+
 /**
  * An authentication records when a user enter their credential in a browser
  * session.
@@ -221,21 +229,19 @@ export type RootMutations = {
 
 /** The mutations root of the GraphQL interface. */
 export type RootMutationsAddEmailArgs = {
-  email: Scalars['String'];
-  userId: Scalars['ID'];
+  input: AddEmailInput;
 };
 
 
 /** The mutations root of the GraphQL interface. */
 export type RootMutationsSendVerificationEmailArgs = {
-  userEmailId: Scalars['ID'];
+  input: SendVerificationEmailInput;
 };
 
 
 /** The mutations root of the GraphQL interface. */
 export type RootMutationsVerifyEmailArgs = {
-  code: Scalars['String'];
-  userEmailId: Scalars['ID'];
+  input: VerifyEmailInput;
 };
 
 /** The query root of the GraphQL interface. */
@@ -312,6 +318,12 @@ export type RootQueryUserArgs = {
 /** The query root of the GraphQL interface. */
 export type RootQueryUserEmailArgs = {
   id: Scalars['ID'];
+};
+
+/** The input for the `sendVerificationEmail` mutation */
+export type SendVerificationEmailInput = {
+  /** The ID of the email address to verify */
+  userEmailId: Scalars['ID'];
 };
 
 export type UpstreamOAuth2Link = CreationEvent & Node & {
@@ -479,6 +491,14 @@ export type UserEmailEdge = {
   cursor: Scalars['String'];
   /** The item at the end of the edge */
   node: UserEmail;
+};
+
+/** The input for the `verifyEmail` mutation */
+export type VerifyEmailInput = {
+  /** The verification code */
+  code: Scalars['String'];
+  /** The ID of the email address to verify */
+  userEmailId: Scalars['ID'];
 };
 
 export type BrowserSession_SessionFragment = { __typename?: 'BrowserSession', id: string, createdAt: any, lastAuthentication?: { __typename?: 'Authentication', id: string, createdAt: any } | null } & { ' $fragmentName'?: 'BrowserSession_SessionFragment' };
