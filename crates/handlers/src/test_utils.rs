@@ -105,7 +105,7 @@ impl TestState {
 
         let policy_factory = Arc::new(policy_factory);
 
-        let graphql_schema = graphql_schema();
+        let graphql_schema = graphql_schema(&pool);
 
         let http_client_factory = HttpClientFactory::new(10);
 

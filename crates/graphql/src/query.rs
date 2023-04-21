@@ -46,14 +46,17 @@ impl RootQuery {
         &self,
         ctx: &Context<'_>,
     ) -> Result<Option<BrowserSession>, async_graphql::Error> {
-        let session = ctx.session().cloned();
-        Ok(session.map(BrowserSession::from))
+        let requester = ctx.requester();
+        Ok(requester
+            .browser_session()
+            .cloned()
+            .map(BrowserSession::from))
     }
 
     /// Get the current logged in user
     async fn current_user(&self, ctx: &Context<'_>) -> Result<Option<User>, async_graphql::Error> {
-        let session = ctx.session().cloned();
-        Ok(session.map(User::from))
+        let requester = ctx.requester();
+        Ok(requester.user().cloned().map(User::from))
     }
 
     /// Fetch an OAuth 2.0 client by its ID.
@@ -75,14 +78,12 @@ impl RootQuery {
     /// Fetch a user by its ID.
     async fn user(&self, ctx: &Context<'_>, id: ID) -> Result<Option<User>, async_graphql::Error> {
         let id = NodeType::User.extract_ulid(&id)?;
+        let requester = ctx.requester();
 
-        let session = ctx.session().cloned();
-
-        let Some(session) = session else { return Ok(None) };
-        let current_user = session.user;
+        let Some(current_user) = requester.user() else { return Ok(None) };
 
         if current_user.id == id {
-            Ok(Some(User(current_user)))
+            Ok(Some(User(current_user.clone())))
         } else {
             Ok(None)
         }
@@ -96,12 +97,10 @@ impl RootQuery {
     ) -> Result<Option<BrowserSession>, async_graphql::Error> {
         let state = ctx.state();
         let id = NodeType::BrowserSession.extract_ulid(&id)?;
+        let requester = ctx.requester();
 
-        let session = ctx.session().cloned();
+        let Some(current_user) = requester.user() else { return Ok(None) };
         let mut repo = state.repository().await?;
-
-        let Some(session) = session else { return Ok(None) };
-        let current_user = session.user;
 
         let browser_session = repo.browser_session().lookup(id).await?;
 
@@ -126,12 +125,10 @@ impl RootQuery {
     ) -> Result<Option<UserEmail>, async_graphql::Error> {
         let state = ctx.state();
         let id = NodeType::UserEmail.extract_ulid(&id)?;
+        let requester = ctx.requester();
 
-        let session = ctx.session().cloned();
+        let Some(current_user) = requester.user() else { return Ok(None) };
         let mut repo = state.repository().await?;
-
-        let Some(session) = session else { return Ok(None) };
-        let current_user = session.user;
 
         let user_email = repo
             .user_email()
@@ -152,12 +149,10 @@ impl RootQuery {
     ) -> Result<Option<UpstreamOAuth2Link>, async_graphql::Error> {
         let state = ctx.state();
         let id = NodeType::UpstreamOAuth2Link.extract_ulid(&id)?;
+        let requester = ctx.requester();
 
-        let session = ctx.session().cloned();
+        let Some(current_user) = requester.user() else { return Ok(None) };
         let mut repo = state.repository().await?;
-
-        let Some(session) = session else { return Ok(None) };
-        let current_user = session.user;
 
         let link = repo.upstream_oauth_link().lookup(id).await?;
 

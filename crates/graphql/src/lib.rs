@@ -27,6 +27,7 @@
 )]
 
 use async_graphql::EmptySubscription;
+use mas_data_model::{BrowserSession, User};
 
 mod model;
 mod mutations;
@@ -48,4 +49,43 @@ pub fn schema_builder() -> SchemaBuilder {
     async_graphql::Schema::build(RootQuery::new(), RootMutations::new(), EmptySubscription)
         .register_output_type::<Node>()
         .register_output_type::<CreationEvent>()
+}
+
+/// The identity of the requester.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub enum Requester {
+    /// The requester presented no authentication information.
+    #[default]
+    Anonymous,
+
+    /// The requester is a browser session, stored in a cookie.
+    BrowserSession(BrowserSession),
+}
+
+impl Requester {
+    fn browser_session(&self) -> Option<&BrowserSession> {
+        match self {
+            Self::BrowserSession(session) => Some(session),
+            Self::Anonymous => None,
+        }
+    }
+
+    fn user(&self) -> Option<&User> {
+        self.browser_session().map(|session| &session.user)
+    }
+}
+
+impl From<BrowserSession> for Requester {
+    fn from(session: BrowserSession) -> Self {
+        Self::BrowserSession(session)
+    }
+}
+
+impl<T> From<Option<T>> for Requester
+where
+    T: Into<Requester>,
+{
+    fn from(session: Option<T>) -> Self {
+        session.map(Into::into).unwrap_or_default()
+    }
 }

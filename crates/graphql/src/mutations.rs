@@ -50,13 +50,11 @@ impl RootMutations {
     ) -> Result<UserEmail, async_graphql::Error> {
         let state = ctx.state();
         let id = NodeType::User.extract_ulid(&user_id)?;
-        let session = ctx.session();
+        let requester = ctx.requester();
 
-        let Some(session) = session else {
-            return Err(async_graphql::Error::new("Unauthorized"));
-        };
+        let user = requester.user().context("Unauthorized")?;
 
-        if session.user.id != id {
+        if user.id != id {
             return Err(async_graphql::Error::new("Unauthorized"));
         }
 
@@ -65,16 +63,14 @@ impl RootMutations {
         // XXX: this logic should be extracted somewhere else, since most of it is
         // duplicated in mas_handlers
         // Find an existing email address
-        let existing_user_email = repo.user_email().find(&session.user, &email).await?;
+        let existing_user_email = repo.user_email().find(user, &email).await?;
         let user_email = if let Some(user_email) = existing_user_email {
             user_email
         } else {
             let clock = state.clock();
             let mut rng = state.rng();
 
-            repo.user_email()
-                .add(&mut rng, &clock, &session.user, email)
-                .await?
+            repo.user_email().add(&mut rng, &clock, user, email).await?
         };
 
         // Schedule a job to verify the email address if needed
@@ -98,11 +94,8 @@ impl RootMutations {
     ) -> Result<UserEmail, async_graphql::Error> {
         let state = ctx.state();
         let user_email_id = NodeType::UserEmail.extract_ulid(&user_email_id)?;
-        let session = ctx.session();
-
-        let Some(session) = session else {
-            return Err(async_graphql::Error::new("Unauthorized"));
-        };
+        let requester = ctx.requester();
+        let user = requester.user().context("Unauthorized")?;
 
         let mut repo = state.repository().await?;
 
@@ -112,7 +105,7 @@ impl RootMutations {
             .await?
             .context("User email not found")?;
 
-        if user_email.user_id != session.user.id {
+        if user_email.user_id != user.id {
             return Err(async_graphql::Error::new("Unauthorized"));
         }
 
@@ -138,11 +131,9 @@ impl RootMutations {
     ) -> Result<UserEmail, async_graphql::Error> {
         let state = ctx.state();
         let user_email_id = NodeType::UserEmail.extract_ulid(&user_email_id)?;
-        let session = ctx.session();
+        let requester = ctx.requester();
 
-        let Some(session) = session else {
-            return Err(async_graphql::Error::new("Unauthorized"));
-        };
+        let user = requester.user().context("Unauthorized")?;
 
         let clock = state.clock();
         let mut repo = state.repository().await?;
@@ -153,7 +144,7 @@ impl RootMutations {
             .await?
             .context("User email not found")?;
 
-        if user_email.user_id != session.user.id {
+        if user_email.user_id != user.id {
             return Err(async_graphql::Error::new("Unauthorized"));
         }
 
@@ -173,7 +164,7 @@ impl RootMutations {
             .await?;
 
         // XXX: is this the right place to do this?
-        if session.user.primary_user_email_id.is_none() {
+        if user.primary_user_email_id.is_none() {
             repo.user_email().set_as_primary(&user_email).await?;
         }
 
@@ -182,9 +173,7 @@ impl RootMutations {
             .mark_as_verified(&clock, user_email)
             .await?;
 
-        repo.job()
-            .schedule_job(ProvisionUserJob::new(&session.user))
-            .await?;
+        repo.job().schedule_job(ProvisionUserJob::new(user)).await?;
 
         repo.save().await?;
 
