@@ -368,16 +368,13 @@ fn prometheus_meter() -> anyhow::Result<BasicController> {
 
 #[cfg(feature = "prometheus")]
 fn prometheus_meter() -> anyhow::Result<BasicController> {
-    let controller = sdk::metrics::controllers::basic(
-        sdk::metrics::processors::factory(
-            // All histogram metrics are in milliseconds. Each bucket is ~2x the previous one.
-            sdk::metrics::selectors::simple::histogram([
-                1.0, 3.0, 5.0, 10.0, 30.0, 50.0, 100.0, 300.0, 1000.0,
-            ]),
-            sdk::export::metrics::aggregation::cumulative_temporality_selector(),
-        )
-        .with_memory(true),
-    )
+    let controller = sdk::metrics::controllers::basic(sdk::metrics::processors::factory(
+        // All histogram metrics are in milliseconds. Each bucket is ~2x the previous one.
+        sdk::metrics::selectors::simple::histogram([
+            1.0, 3.0, 5.0, 10.0, 30.0, 50.0, 100.0, 300.0, 1000.0,
+        ]),
+        sdk::export::metrics::aggregation::cumulative_temporality_selector(),
+    ))
     .with_resource(resource())
     .build();
 
