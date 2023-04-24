@@ -16,7 +16,7 @@ k256 = { version = "0.13.1", features = ["std"] }
 p256 = { version = "0.13.2", features = ["std"] }
 p384 = { version = "0.13.0", features = ["std"] }
 pem-rfc7468 = { version = "0.7.0", features = ["std"] }
-pkcs1 = { version = "0.7.3", features = ["std"] }
+pkcs1 = { version = "0.7.5", features = ["std"] }
 pkcs8 = { version = "0.10.2", features = ["std", "pkcs5", "encryption"] }
 rand = "0.8.5"
 rsa = { version = "0.9.0-pre.1", features = ["std", "pem"] }
