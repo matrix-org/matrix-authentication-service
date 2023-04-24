@@ -7,7 +7,7 @@ license = "apache-2.0"
 
 [dependencies]
 anyhow = "1.0.70"
-apalis-core = { version = "=0.4.0-alpha.5", features = ["extensions", "tokio-comp"] }
+apalis-core = { version = "=0.4.0-alpha.8", features = ["extensions", "tokio-comp"] }
 apalis-cron = "=0.4.0-alpha.5"
 apalis-sql = { version = "=0.4.0-alpha.5", features = ["postgres", "tokio-comp"] }
 async-trait = "0.1.68"
