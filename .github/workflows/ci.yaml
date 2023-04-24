@@ -29,7 +29,7 @@ jobs:
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.0.1
         with:
-          version: 0.47.3
+          version: 0.51.0
 
       - name: Lint policies
         working-directory: ./policies
@@ -189,7 +189,7 @@ jobs:
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.0.1
         with:
-          version: 0.47.3
+          version: 0.51.0
 
       - name: Compile OPA policies
         working-directory: ./policies
@@ -246,7 +246,7 @@ jobs:
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.0.1
         with:
-          version: 0.47.3
+          version: 0.51.0
 
       - name: Compile OPA policies
         working-directory: ./policies
@@ -308,7 +308,7 @@ jobs:
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.0.1
         with:
-          version: 0.47.3
+          version: 0.51.0
 
       - name: Compile OPA policies
         working-directory: ./policies
@@ -416,7 +416,8 @@ jobs:
             ${{ steps.meta.outputs.bake-file }}
             ${{ steps.meta-debug.outputs.bake-file }}
           set: |
-            base.context=https://github.com/${{ github.repository }}.git#${{ github.ref }}
+            # This is broken: https://github.com/docker/bake-action/issues/136
+            # base.context=https://github.com/${{ github.repository }}.git#${{ github.ref }}
             base.platform=linux/amd64
             base.cache-from=type=registry,ref=${{ env.IMAGE }}:buildcache
 
@@ -430,7 +431,8 @@ jobs:
             ${{ steps.meta.outputs.bake-file }}
             ${{ steps.meta-debug.outputs.bake-file }}
           set: |
-            base.context=https://github.com/${{ github.repository }}.git#${{ github.ref }}
+            # This is broken: https://github.com/docker/bake-action/issues/136
+            # base.context=https://github.com/${{ github.repository }}.git#${{ github.ref }}
             base.output=type=image,push=true
             base.cache-from=type=registry,ref=${{ env.IMAGE }}:buildcache
             base.cache-to=type=registry,ref=${{ env.IMAGE }}:buildcache,mode=max

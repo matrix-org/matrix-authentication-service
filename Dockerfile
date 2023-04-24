@@ -15,8 +15,11 @@ ARG DEBIAN_VERSION_NAME=bullseye
 ARG RUSTC_VERSION=1.69.0
 # XXX: Upgrade to 0.10.0 blocked by https://github.com/ziglang/zig/issues/10915#issuecomment-1354548110
 ARG ZIG_VERSION=0.9.1
-ARG NODEJS_VERSION=18
-ARG OPA_VERSION=0.48.0
+ARG NODEJS_VERSION=18.16.0
+ARG OPA_VERSION=0.51.0
+ARG CARGO_AUDITABLE_VERSION=0.6.1
+ARG CARGO_CHEF_VERSION=0.1.59
+ARG CARGO_ZIGBUILD_VERSION=0.16.7
 
 ##########################################
 ## Build stage that builds the frontend ##
@@ -26,14 +29,17 @@ FROM --platform=${BUILDPLATFORM} docker.io/library/node:${NODEJS_VERSION}-${DEBI
 WORKDIR /app/frontend
 
 COPY ./frontend/package.json ./frontend/package-lock.json /app/frontend/
-RUN npm ci
+# Network access: to fetch dependencies
+RUN --network=default \
+  npm ci
 
 COPY ./frontend/ /app/frontend/
 COPY ./templates/ /app/templates/
-RUN npm run build
+RUN --network=none \
+  npm run build
 
 # Move the built files
-RUN \
+RUN --network=none \
   mkdir -p /share/assets && \
   cp ./dist/manifest.json /share/manifest.json && \
   rm -f ./dist/index.html* ./dist/manifest.json* && \
@@ -42,7 +48,7 @@ RUN \
 ##############################################
 ## Build stage that builds the OPA policies ##
 ##############################################
-FROM --platform=${BUILDPLATFORM} docker.io/library/debian:${DEBIAN_VERSION_NAME} AS policy
+FROM --platform=${BUILDPLATFORM} docker.io/library/buildpack-deps:${DEBIAN_VERSION_NAME} AS policy
 
 ARG BUILDOS
 ARG BUILDARCH
@@ -53,38 +59,51 @@ ADD --chmod=755 https://github.com/open-policy-agent/opa/releases/download/v${OP
 
 WORKDIR /app/policies
 COPY ./policies /app/policies
-RUN make -B
-RUN chmod a+r ./policy.wasm
+RUN --network=none  \
+  make -B && \
+  chmod a+r ./policy.wasm
 
 ##########################################################################
 ## Base image with cargo-chef and the right cross-compilation toolchain ##
 ##########################################################################
 FROM --platform=${BUILDPLATFORM} docker.io/library/rust:${RUSTC_VERSION}-${DEBIAN_VERSION_NAME} AS toolchain
 
-ARG ZIG_VERSION
+ARG CARGO_AUDITABLE_VERSION
+ARG CARGO_CHEF_VERSION
+ARG CARGO_ZIGBUILD_VERSION
 ARG RUSTC_VERSION
+ARG ZIG_VERSION
 
 # Make cargo use the git cli for fetching dependencies
 ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 
-# Install the protobuf compiler
-RUN apt update && apt install -y --no-install-recommends \
-  protobuf-compiler
+# Install pinned versions of cargo-chef, cargo-zigbuild and cargo-auditable
+# Network access: to fetch dependencies
+RUN --network=default \
+  cargo install --locked \
+    cargo-chef@=${CARGO_CHEF_VERSION} \
+    cargo-zigbuild@=${CARGO_ZIGBUILD_VERSION} \
+    cargo-auditable@=${CARGO_AUDITABLE_VERSION}
 
 # Download zig compiler for cross-compilation
-RUN curl -L "https://ziglang.org/download/${ZIG_VERSION}/zig-linux-$(uname -m)-${ZIG_VERSION}.tar.xz" | tar -J -x -C /usr/local && \
+# Network access: to download zig
+RUN --network=default \
+  curl -L "https://ziglang.org/download/${ZIG_VERSION}/zig-linux-$(uname -m)-${ZIG_VERSION}.tar.xz" | tar -J -x -C /usr/local && \
   ln -s "/usr/local/zig-linux-$(uname -m)-${ZIG_VERSION}/zig" /usr/local/bin/zig
 
-WORKDIR /app
-RUN cargo install --locked cargo-chef cargo-zigbuild cargo-auditable
-
 # Install all cross-compilation targets
-RUN rustup target add --toolchain "${RUSTC_VERSION}" \
-  x86_64-unknown-linux-musl \
-  aarch64-unknown-linux-musl
+# Network access: to download the targets
+RUN --network=default \
+  rustup target add  \
+    --toolchain "${RUSTC_VERSION}" \
+    x86_64-unknown-linux-musl \
+    aarch64-unknown-linux-musl
 
 # Helper script that transforms docker platforms to LLVM triples
 COPY ./misc/docker-arch-to-rust-target.sh /
+
+# Set the working directory
+WORKDIR /app
 
 #####################################
 ## Run the planner from cargo-chef ##
@@ -92,7 +111,8 @@ COPY ./misc/docker-arch-to-rust-target.sh /
 FROM --platform=${BUILDPLATFORM} toolchain AS planner
 COPY ./Cargo.toml ./Cargo.lock /app/
 COPY ./crates /app/crates
-RUN cargo chef prepare --recipe-path recipe.json --bin crates/cli
+RUN --network=none \
+    cargo chef prepare --recipe-path recipe.json --bin crates/cli
 
 ########################
 ## Actual build stage ##
@@ -103,30 +123,35 @@ ARG TARGETPLATFORM
 
 # Build dependencies
 COPY --from=planner /app/recipe.json recipe.json
-RUN cargo chef cook \
-  --zigbuild \
-  --bin mas-cli \
-  --release \
-  --recipe-path recipe.json \
-  --no-default-features \
-  --features docker \
-  --target $(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}") \
-  --package mas-cli
+# Network access: cargo-chef cook fetches the dependencies
+RUN --network=default \
+  cargo chef cook \
+    --zigbuild \
+    --bin mas-cli \
+    --release \
+    --recipe-path recipe.json \
+    --no-default-features \
+    --features docker \
+    --target "$(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")" \
+    --package mas-cli
 
 # Build the rest
 COPY ./Cargo.toml ./Cargo.lock /app/
 COPY ./crates /app/crates
 ENV SQLX_OFFLINE=true
-RUN cargo auditable zigbuild \
-  --locked \
-  --release \
-  --bin mas-cli \
-  --no-default-features \
-  --features docker \
-  --target $(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")
+# Network access: cargo auditable needs it
+RUN --network=default \
+  cargo auditable zigbuild \
+    --locked \
+    --release \
+    --bin mas-cli \
+    --no-default-features \
+    --features docker \
+    --target "$(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")"
 
 # Move the binary to avoid having to guess its name in the next stage
-RUN mv target/$(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")/release/mas-cli /usr/local/bin/mas-cli
+RUN --network=none \
+  mv "target/$(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")/release/mas-cli" /usr/local/bin/mas-cli
 
 #######################################
 ## Prepare /usr/local/share/mas-cli/ ##
