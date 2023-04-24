@@ -212,6 +212,7 @@ pub(crate) async fn post(
     Ok((headers, Json(reply)))
 }
 
+#[allow(clippy::too_many_lines)] // TODO: refactor some parts out
 async fn authorization_code_grant(
     mut rng: &mut BoxRng,
     clock: &impl Clock,
