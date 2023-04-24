@@ -188,7 +188,7 @@ pub async fn post(
             existing_params,
             login_token: &login.login_token,
         };
-        let query = serde_urlencoded::to_string(&params)?;
+        let query = serde_urlencoded::to_string(params)?;
         redirect_uri.set_query(Some(&query));
         redirect_uri
     };

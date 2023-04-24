@@ -46,8 +46,6 @@ mod tests {
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]
     async fn test_session_repository(pool: PgPool) {
-        const FIRST_TOKEN: &str = "first_access_token";
-        const SECOND_TOKEN: &str = "second_access_token";
         let mut rng = ChaChaRng::seed_from_u64(42);
         let clock = MockClock::default();
         let mut repo = PgRepository::from_pool(&pool).await.unwrap();

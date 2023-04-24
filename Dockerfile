@@ -12,7 +12,7 @@
 # The Debian version and version name must be in sync
 ARG DEBIAN_VERSION=11
 ARG DEBIAN_VERSION_NAME=bullseye
-ARG RUSTC_VERSION=1.67.0
+ARG RUSTC_VERSION=1.69.0
 # XXX: Upgrade to 0.10.0 blocked by https://github.com/ziglang/zig/issues/10915#issuecomment-1354548110
 ARG ZIG_VERSION=0.9.1
 ARG NODEJS_VERSION=18
@@ -21,8 +21,7 @@ ARG OPA_VERSION=0.48.0
 ##########################################
 ## Build stage that builds the frontend ##
 ##########################################
-
-FROM --platform=${BUILDPLATFORM} docker.io/library/node:${NODEJS_VERSION}-${DEBIAN_VERSION_NAME}-slim AS frontend
+FROM --platform=${BUILDPLATFORM} docker.io/library/node:${NODEJS_VERSION}-${DEBIAN_VERSION_NAME} AS frontend
 
 WORKDIR /app/frontend
 
@@ -43,11 +42,7 @@ RUN \
 ##############################################
 ## Build stage that builds the OPA policies ##
 ##############################################
-
-FROM --platform=${BUILDPLATFORM} docker.io/library/debian:${DEBIAN_VERSION_NAME}-slim AS policy
-
-# Install make
-RUN apt update && apt install -y --no-install-recommends make
+FROM --platform=${BUILDPLATFORM} docker.io/library/debian:${DEBIAN_VERSION_NAME} AS policy
 
 ARG BUILDOS
 ARG BUILDARCH
@@ -64,8 +59,7 @@ RUN chmod a+r ./policy.wasm
 ##########################################################################
 ## Base image with cargo-chef and the right cross-compilation toolchain ##
 ##########################################################################
-
-FROM --platform=${BUILDPLATFORM} docker.io/library/rust:${RUSTC_VERSION}-slim-${DEBIAN_VERSION_NAME} AS toolchain
+FROM --platform=${BUILDPLATFORM} docker.io/library/rust:${RUSTC_VERSION}-${DEBIAN_VERSION_NAME} AS toolchain
 
 ARG ZIG_VERSION
 ARG RUSTC_VERSION
@@ -73,11 +67,8 @@ ARG RUSTC_VERSION
 # Make cargo use the git cli for fetching dependencies
 ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 
-# Install the protobuf compiler, git, curl and xz
+# Install the protobuf compiler
 RUN apt update && apt install -y --no-install-recommends \
-  git \
-  curl \
-  xz-utils \
   protobuf-compiler
 
 # Download zig compiler for cross-compilation
@@ -98,7 +89,6 @@ COPY ./misc/docker-arch-to-rust-target.sh /
 #####################################
 ## Run the planner from cargo-chef ##
 #####################################
-
 FROM --platform=${BUILDPLATFORM} toolchain AS planner
 COPY ./Cargo.toml ./Cargo.lock /app/
 COPY ./crates /app/crates
@@ -107,7 +97,6 @@ RUN cargo chef prepare --recipe-path recipe.json --bin crates/cli
 ########################
 ## Actual build stage ##
 ########################
-
 FROM --platform=${BUILDPLATFORM} toolchain AS builder
 
 ARG TARGETPLATFORM

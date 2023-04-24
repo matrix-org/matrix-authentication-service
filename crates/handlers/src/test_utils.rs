@@ -42,8 +42,11 @@ use crate::{
     MatrixHomeserver,
 };
 
+// This might fail if it's not the first time it's being called, which is fine,
+// so we ignore the result
+#[allow(unused_must_use)]
 pub(crate) fn init_tracing() {
-    let _ = tracing_subscriber::fmt()
+    tracing_subscriber::fmt()
         .with_max_level(tracing::Level::INFO)
         .with_test_writer()
         .try_init();
