@@ -416,7 +416,7 @@ jobs:
             ${{ steps.meta.outputs.bake-file }}
             ${{ steps.meta-debug.outputs.bake-file }}
           set: |
-            base.context="https://github.com/${{ github.repository }}.git#${{ github.ref }}"
+            base.context=https://github.com/${{ github.repository }}.git\#${{ github.ref }}
             base.platform=linux/amd64
             base.cache-from=type=registry,ref=${{ env.IMAGE }}:buildcache
 
@@ -430,7 +430,7 @@ jobs:
             ${{ steps.meta.outputs.bake-file }}
             ${{ steps.meta-debug.outputs.bake-file }}
           set: |
-            base.context="https://github.com/${{ github.repository }}.git#${{ github.ref }}"
+            base.context=https://github.com/${{ github.repository }}.git\#${{ github.ref }}
             base.output=type=image,push=true
             base.cache-from=type=registry,ref=${{ env.IMAGE }}:buildcache
             base.cache-to=type=registry,ref=${{ env.IMAGE }}:buildcache,mode=max
