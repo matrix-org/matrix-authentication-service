@@ -130,7 +130,7 @@ fn stdout_tracer() -> Tracer {
 }
 
 #[cfg(feature = "otlp")]
-fn otlp_tracer(endpoint: &Option<Url>) -> anyhow::Result<Tracer> {
+fn otlp_tracer(endpoint: Option<&Url>) -> anyhow::Result<Tracer> {
     use opentelemetry_otlp::WithExportConfig;
 
     let mut exporter = opentelemetry_otlp::new_exporter().tonic();
@@ -149,15 +149,14 @@ fn otlp_tracer(endpoint: &Option<Url>) -> anyhow::Result<Tracer> {
 }
 
 #[cfg(not(feature = "otlp"))]
-fn otlp_tracer(endpoint: &Option<Url>) -> anyhow::Result<Tracer> {
-    let _ = endpoint;
+#[allow(unused_variables)]
+fn otlp_tracer(endpoint: Option<&Url>) -> anyhow::Result<Tracer> {
     anyhow::bail!("The service was compiled without OTLP exporter support, but config exports traces via OTLP.")
 }
 
 #[cfg(not(feature = "jaeger"))]
+#[allow(unused_variables)]
 fn jaeger_agent_tracer(host: &str, port: u16) -> anyhow::Result<Tracer> {
-    let _ = host;
-    let _ = port;
     anyhow::bail!("The service was compiled without Jaeger exporter support, but config exports traces via Jaeger.")
 }
 
@@ -176,15 +175,12 @@ fn jaeger_agent_tracer(host: &str, port: u16) -> anyhow::Result<Tracer> {
 }
 
 #[cfg(not(feature = "jaeger"))]
+#[allow(unused_variables, clippy::unused_async)]
 async fn jaeger_collector_tracer(
     endpoint: &str,
     username: Option<&str>,
     password: Option<&str>,
 ) -> anyhow::Result<Tracer> {
-    let _ = endpoint;
-    let _ = username;
-    let _ = password;
-    futures_util::future::ready(()).await; // Silence the "unused async" lint
     anyhow::bail!("The service was compiled without Jaeger exporter support, but config exports traces via Jaeger.")
 }
 
@@ -217,9 +213,8 @@ async fn jaeger_collector_tracer(
 }
 
 #[cfg(not(feature = "zipkin"))]
+#[allow(unused_variables, clippy::unused_async)]
 async fn zipkin_tracer(collector_endpoint: &Option<Url>) -> anyhow::Result<Tracer> {
-    let _ = collector_endpoint;
-    futures_util::future::ready(()).await; // Silence the "unused async" lint
     anyhow::bail!("The service was compiled without Jaeger exporter support, but config exports traces via Jaeger.")
 }
 
@@ -247,7 +242,7 @@ async fn tracer(config: &TracingExporterConfig) -> anyhow::Result<Option<Tracer>
     let tracer = match config {
         TracingExporterConfig::None => return Ok(None),
         TracingExporterConfig::Stdout => stdout_tracer(),
-        TracingExporterConfig::Otlp { endpoint } => otlp_tracer(endpoint)?,
+        TracingExporterConfig::Otlp { endpoint } => otlp_tracer(endpoint.as_ref())?,
         TracingExporterConfig::Jaeger(JaegerExporterProtocolConfig::UdpThriftCompact {
             agent_host,
             agent_port,
@@ -266,7 +261,7 @@ async fn tracer(config: &TracingExporterConfig) -> anyhow::Result<Option<Tracer>
 }
 
 #[cfg(feature = "otlp")]
-fn otlp_meter(endpoint: &Option<url::Url>) -> anyhow::Result<BasicController> {
+fn otlp_meter(endpoint: Option<&url::Url>) -> anyhow::Result<BasicController> {
     use opentelemetry_otlp::WithExportConfig;
 
     let mut exporter = opentelemetry_otlp::new_exporter().tonic();
@@ -289,8 +284,8 @@ fn otlp_meter(endpoint: &Option<url::Url>) -> anyhow::Result<BasicController> {
 }
 
 #[cfg(not(feature = "otlp"))]
-fn otlp_meter(endpoint: &Option<url::Url>) -> anyhow::Result<BasicController> {
-    let _ = endpoint;
+#[allow(unused_variables)]
+fn otlp_meter(endpoint: Option<&url::Url>) -> anyhow::Result<BasicController> {
     anyhow::bail!("The service was compiled without OTLP exporter support, but config exports metrics via OTLP.")
 }
 
@@ -396,7 +391,7 @@ fn meter(config: &MetricsExporterConfig) -> anyhow::Result<Option<BasicControlle
     let controller = match config {
         MetricsExporterConfig::None => None,
         MetricsExporterConfig::Stdout => Some(stdout_meter()?),
-        MetricsExporterConfig::Otlp { endpoint } => Some(otlp_meter(endpoint)?),
+        MetricsExporterConfig::Otlp { endpoint } => Some(otlp_meter(endpoint.as_ref())?),
         MetricsExporterConfig::Prometheus => Some(prometheus_meter()?),
     };
 

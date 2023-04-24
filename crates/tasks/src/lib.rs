@@ -82,11 +82,9 @@ impl State {
         &self.mailer
     }
 
+    // This is fine for now, we may move that to a trait at some point.
+    #[allow(clippy::unused_self, clippy::disallowed_methods)]
     pub fn rng(&self) -> rand_chacha::ChaChaRng {
-        let _ = self;
-
-        // This is fine.
-        #[allow(clippy::disallowed_methods)]
         rand_chacha::ChaChaRng::from_rng(rand::thread_rng()).expect("failed to seed rng")
     }
 
