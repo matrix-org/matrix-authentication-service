@@ -39,7 +39,7 @@
     "@storybook/addon-measure": "^7.0.6",
     "@storybook/addon-outline": "^7.0.6",
     "@storybook/addon-toolbars": "^7.0.6",
-    "@storybook/addon-viewport": "^7.0.6",
+    "@storybook/addon-viewport": "^7.0.7",
     "@storybook/react": "^7.0.6",
     "@storybook/react-vite": "^7.0.6",
     "@types/node": "^18.16.0",
