@@ -27,7 +27,7 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@graphql-codegen/cli": "^3.3.0",
+    "@graphql-codegen/cli": "^3.3.1",
     "@graphql-codegen/client-preset": "^3.0.0",
     "@graphql-codegen/urql-introspection": "^2.2.1",
     "@graphql-eslint/eslint-plugin": "^3.18.0",
