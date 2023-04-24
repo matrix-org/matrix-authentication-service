@@ -33,7 +33,7 @@
     "@graphql-eslint/eslint-plugin": "^3.18.0",
     "@storybook/addon-actions": "^7.0.6",
     "@storybook/addon-backgrounds": "^7.0.6",
-    "@storybook/addon-controls": "^7.0.6",
+    "@storybook/addon-controls": "^7.0.7",
     "@storybook/addon-docs": "^7.0.6",
     "@storybook/addon-essentials": "^7.0.6",
     "@storybook/addon-measure": "^7.0.6",
