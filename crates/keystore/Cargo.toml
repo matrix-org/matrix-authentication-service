@@ -9,7 +9,7 @@ license = "Apache-2.0"
 aead = { version = "0.5.2", features = ["std"] }
 const-oid = { version = "0.9.2", features = ["std"] }
 cookie = { version = "0.17.0", features = ["key-expansion", "private"] }
-der = { version = "0.7.4", features = ["std"] }
+der = { version = "0.7.5", features = ["std"] }
 ecdsa = { version = "0.16.6", features = ["std"] }
 elliptic-curve = { version = "0.13.4", features = ["std", "pem", "sec1"] }
 k256 = { version = "0.13.1", features = ["std"] }
