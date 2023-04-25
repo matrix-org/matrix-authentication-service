@@ -6,7 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-tracing = "0.1.37"
+tracing = "0.1.38"
 tokio = { version = "1.27.0", features = ["macros", "rt"] }
 
 anyhow = "1.0.70"
