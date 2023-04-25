@@ -18,9 +18,9 @@ use async_graphql::MergedObject;
 
 /// The mutations root of the GraphQL interface.
 #[derive(Default, MergedObject)]
-pub struct RootMutations(user_email::UserEmailMutations);
+pub struct Mutation(user_email::UserEmailMutations);
 
-impl RootMutations {
+impl Mutation {
     #[must_use]
     pub fn new() -> Self {
         Self::default()
