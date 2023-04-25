@@ -27,7 +27,7 @@ thiserror = "1.0.40"
 tokio = { version = "1.27.0", features = ["sync", "parking_lot"], optional = true }
 tower = { version = "0.4.13", features = [] }
 tower-http = { version = "0.4.0", features = ["cors"] }
-tracing = "0.1.37"
+tracing = "0.1.38"
 tracing-opentelemetry = "0.19.0"
 webpki = { version = "0.22.0", optional = true }
 webpki-roots = { version = "0.23.0", optional = true }

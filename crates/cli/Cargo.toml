@@ -28,7 +28,7 @@ tower-http = { version = "0.4.0", features = ["fs", "compression-full"] }
 url = "2.3.1"
 watchman_client = "0.8.0"
 
-tracing = "0.1.37"
+tracing = "0.1.38"
 tracing-appender = "0.2.2"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 tracing-opentelemetry = "0.19.0"
