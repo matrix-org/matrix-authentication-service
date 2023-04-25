@@ -12,6 +12,38 @@ input AddEmailInput {
   userId: ID!
 }
 
+"""
+The payload of the `addEmail` mutation
+"""
+type AddEmailPayload {
+  """
+  Status of the operation
+  """
+  status: AddEmailStatus!
+  """
+  The email address that was added
+  """
+  email: UserEmail!
+  """
+  The user to whom the email address was added
+  """
+  user: User!
+}
+
+"""
+The status of the `addEmail` mutation
+"""
+enum AddEmailStatus {
+  """
+  The email address was added
+  """
+  ADDED
+  """
+  The email address already exists
+  """
+  EXISTS
+}
+
 type Anonymous implements Node {
   id: ID!
 }
@@ -188,6 +220,26 @@ The input/output is a string in RFC3339 format.
 scalar DateTime
 
 """
+The mutations root of the GraphQL interface.
+"""
+type Mutation {
+  """
+  Add an email address to the specified user
+  """
+  addEmail(input: AddEmailInput!): AddEmailPayload!
+  """
+  Send a verification code for an email address
+  """
+  sendVerificationEmail(
+    input: SendVerificationEmailInput!
+  ): SendVerificationEmailPayload!
+  """
+  Submit a verification code for an email address
+  """
+  verifyEmail(input: VerifyEmailInput!): VerifyEmailPayload!
+}
+
+"""
 An object with an ID.
 """
 interface Node {
@@ -310,27 +362,9 @@ type PageInfo {
 }
 
 """
-The mutations root of the GraphQL interface.
-"""
-type RootMutations {
-  """
-  Add an email address to the specified user
-  """
-  addEmail(input: AddEmailInput!): UserEmail!
-  """
-  Send a verification code for an email address
-  """
-  sendVerificationEmail(input: SendVerificationEmailInput!): UserEmail!
-  """
-  Submit a verification code for an email address
-  """
-  verifyEmail(input: VerifyEmailInput!): UserEmail!
-}
-
-"""
 The query root of the GraphQL interface.
 """
-type RootQuery {
+type Query {
   """
   Get the current logged in browser session
   """
@@ -395,6 +429,38 @@ input SendVerificationEmailInput {
   The ID of the email address to verify
   """
   userEmailId: ID!
+}
+
+"""
+The payload of the `sendVerificationEmail` mutation
+"""
+type SendVerificationEmailPayload {
+  """
+  Status of the operation
+  """
+  status: SendVerificationEmailStatus!
+  """
+  The email address to which the verification email was sent
+  """
+  email: UserEmail!
+  """
+  The user to whom the email address belongs
+  """
+  user: User!
+}
+
+"""
+The status of the `sendVerificationEmail` mutation
+"""
+enum SendVerificationEmailStatus {
+  """
+  The verification email was sent
+  """
+  SENT
+  """
+  The email address is already verified
+  """
+  ALREADY_VERIFIED
 }
 
 type UpstreamOAuth2Link implements Node & CreationEvent {
@@ -636,6 +702,42 @@ input VerifyEmailInput {
 }
 
 """
+The payload of the `verifyEmail` mutation
+"""
+type VerifyEmailPayload {
+  """
+  Status of the operation
+  """
+  status: VerifyEmailStatus!
+  """
+  The email address that was verified
+  """
+  email: UserEmail
+  """
+  The user to whom the email address belongs
+  """
+  user: User
+}
+
+"""
+The status of the `verifyEmail` mutation
+"""
+enum VerifyEmailStatus {
+  """
+  The email address was just verified
+  """
+  VERIFIED
+  """
+  The email address was already verified before
+  """
+  ALREADY_VERIFIED
+  """
+  The verification code is invalid
+  """
+  INVALID_CODE
+}
+
+"""
 Represents the current viewer
 """
 union Viewer = User | Anonymous
@@ -646,6 +748,6 @@ Represents the current viewer's session
 union ViewerSession = BrowserSession | Anonymous
 
 schema {
-  query: RootQuery
-  mutation: RootMutations
+  query: Query
+  mutation: Mutation
 }

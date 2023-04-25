@@ -51,6 +51,10 @@ module.exports = {
         "plugin:prettier/recommended",
       ],
       rules: {
+        "@graphql-eslint/input-name": [
+          "error",
+          { checkInputType: true, caseSensitiveInputType: false },
+        ],
         "@graphql-eslint/relay-edge-types": [
           "error",
           {
@@ -64,9 +68,9 @@ module.exports = {
           "error",
           {
             exceptions: {
-              // The '*Connection', '*Edge' and 'PageInfo' types don't have IDs
+              // The '*Connection', '*Edge', '*Payload' and 'PageInfo' types don't have IDs
               types: ["PageInfo"],
-              suffixes: ["Connection", "Edge"],
+              suffixes: ["Connection", "Edge", "Payload"],
             },
           },
         ],

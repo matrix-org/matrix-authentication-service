@@ -30,6 +30,25 @@ export type AddEmailInput = {
   userId: Scalars['ID'];
 };
 
+/** The payload of the `addEmail` mutation */
+export type AddEmailPayload = {
+  __typename?: 'AddEmailPayload';
+  /** The email address that was added */
+  email: UserEmail;
+  /** Status of the operation */
+  status: AddEmailStatus;
+  /** The user to whom the email address was added */
+  user: User;
+};
+
+/** The status of the `addEmail` mutation */
+export enum AddEmailStatus {
+  /** The email address was added */
+  Added = 'ADDED',
+  /** The email address already exists */
+  Exists = 'EXISTS'
+}
+
 export type Anonymous = Node & {
   __typename?: 'Anonymous';
   id: Scalars['ID'];
@@ -145,6 +164,35 @@ export type CreationEvent = {
   createdAt: Scalars['DateTime'];
 };
 
+/** The mutations root of the GraphQL interface. */
+export type Mutation = {
+  __typename?: 'Mutation';
+  /** Add an email address to the specified user */
+  addEmail: AddEmailPayload;
+  /** Send a verification code for an email address */
+  sendVerificationEmail: SendVerificationEmailPayload;
+  /** Submit a verification code for an email address */
+  verifyEmail: VerifyEmailPayload;
+};
+
+
+/** The mutations root of the GraphQL interface. */
+export type MutationAddEmailArgs = {
+  input: AddEmailInput;
+};
+
+
+/** The mutations root of the GraphQL interface. */
+export type MutationSendVerificationEmailArgs = {
+  input: SendVerificationEmailInput;
+};
+
+
+/** The mutations root of the GraphQL interface. */
+export type MutationVerifyEmailArgs = {
+  input: VerifyEmailInput;
+};
+
 /** An object with an ID. */
 export type Node = {
   /** ID of the object. */
@@ -220,38 +268,9 @@ export type PageInfo = {
   startCursor?: Maybe<Scalars['String']>;
 };
 
-/** The mutations root of the GraphQL interface. */
-export type RootMutations = {
-  __typename?: 'RootMutations';
-  /** Add an email address to the specified user */
-  addEmail: UserEmail;
-  /** Send a verification code for an email address */
-  sendVerificationEmail: UserEmail;
-  /** Submit a verification code for an email address */
-  verifyEmail: UserEmail;
-};
-
-
-/** The mutations root of the GraphQL interface. */
-export type RootMutationsAddEmailArgs = {
-  input: AddEmailInput;
-};
-
-
-/** The mutations root of the GraphQL interface. */
-export type RootMutationsSendVerificationEmailArgs = {
-  input: SendVerificationEmailInput;
-};
-
-
-/** The mutations root of the GraphQL interface. */
-export type RootMutationsVerifyEmailArgs = {
-  input: VerifyEmailInput;
-};
-
 /** The query root of the GraphQL interface. */
-export type RootQuery = {
-  __typename?: 'RootQuery';
+export type Query = {
+  __typename?: 'Query';
   /** Fetch a browser session by its ID. */
   browserSession?: Maybe<BrowserSession>;
   /**
@@ -286,37 +305,37 @@ export type RootQuery = {
 
 
 /** The query root of the GraphQL interface. */
-export type RootQueryBrowserSessionArgs = {
+export type QueryBrowserSessionArgs = {
   id: Scalars['ID'];
 };
 
 
 /** The query root of the GraphQL interface. */
-export type RootQueryNodeArgs = {
+export type QueryNodeArgs = {
   id: Scalars['ID'];
 };
 
 
 /** The query root of the GraphQL interface. */
-export type RootQueryOauth2ClientArgs = {
+export type QueryOauth2ClientArgs = {
   id: Scalars['ID'];
 };
 
 
 /** The query root of the GraphQL interface. */
-export type RootQueryUpstreamOauth2LinkArgs = {
+export type QueryUpstreamOauth2LinkArgs = {
   id: Scalars['ID'];
 };
 
 
 /** The query root of the GraphQL interface. */
-export type RootQueryUpstreamOauth2ProviderArgs = {
+export type QueryUpstreamOauth2ProviderArgs = {
   id: Scalars['ID'];
 };
 
 
 /** The query root of the GraphQL interface. */
-export type RootQueryUpstreamOauth2ProvidersArgs = {
+export type QueryUpstreamOauth2ProvidersArgs = {
   after?: InputMaybe<Scalars['String']>;
   before?: InputMaybe<Scalars['String']>;
   first?: InputMaybe<Scalars['Int']>;
@@ -325,13 +344,13 @@ export type RootQueryUpstreamOauth2ProvidersArgs = {
 
 
 /** The query root of the GraphQL interface. */
-export type RootQueryUserArgs = {
+export type QueryUserArgs = {
   id: Scalars['ID'];
 };
 
 
 /** The query root of the GraphQL interface. */
-export type RootQueryUserEmailArgs = {
+export type QueryUserEmailArgs = {
   id: Scalars['ID'];
 };
 
@@ -340,6 +359,25 @@ export type SendVerificationEmailInput = {
   /** The ID of the email address to verify */
   userEmailId: Scalars['ID'];
 };
+
+/** The payload of the `sendVerificationEmail` mutation */
+export type SendVerificationEmailPayload = {
+  __typename?: 'SendVerificationEmailPayload';
+  /** The email address to which the verification email was sent */
+  email: UserEmail;
+  /** Status of the operation */
+  status: SendVerificationEmailStatus;
+  /** The user to whom the email address belongs */
+  user: User;
+};
+
+/** The status of the `sendVerificationEmail` mutation */
+export enum SendVerificationEmailStatus {
+  /** The email address is already verified */
+  AlreadyVerified = 'ALREADY_VERIFIED',
+  /** The verification email was sent */
+  Sent = 'SENT'
+}
 
 export type UpstreamOAuth2Link = CreationEvent & Node & {
   __typename?: 'UpstreamOAuth2Link';
@@ -516,6 +554,27 @@ export type VerifyEmailInput = {
   userEmailId: Scalars['ID'];
 };
 
+/** The payload of the `verifyEmail` mutation */
+export type VerifyEmailPayload = {
+  __typename?: 'VerifyEmailPayload';
+  /** The email address that was verified */
+  email?: Maybe<UserEmail>;
+  /** Status of the operation */
+  status: VerifyEmailStatus;
+  /** The user to whom the email address belongs */
+  user?: Maybe<User>;
+};
+
+/** The status of the `verifyEmail` mutation */
+export enum VerifyEmailStatus {
+  /** The email address was already verified before */
+  AlreadyVerified = 'ALREADY_VERIFIED',
+  /** The verification code is invalid */
+  InvalidCode = 'INVALID_CODE',
+  /** The email address was just verified */
+  Verified = 'VERIFIED'
+}
+
 /** Represents the current viewer */
 export type Viewer = Anonymous | User;
 
@@ -548,7 +607,7 @@ export type BrowserSessionQueryQueryVariables = Exact<{
 }>;
 
 
-export type BrowserSessionQueryQuery = { __typename?: 'RootQuery', browserSession?: { __typename?: 'BrowserSession', id: string, createdAt: any, lastAuthentication?: { __typename?: 'Authentication', id: string, createdAt: any } | null, user: { __typename?: 'User', id: string, username: string } } | null };
+export type BrowserSessionQueryQuery = { __typename?: 'Query', browserSession?: { __typename?: 'BrowserSession', id: string, createdAt: any, lastAuthentication?: { __typename?: 'Authentication', id: string, createdAt: any } | null, user: { __typename?: 'User', id: string, username: string } } | null };
 
 export type HomeQueryQueryVariables = Exact<{
   count: Scalars['Int'];
@@ -556,7 +615,7 @@ export type HomeQueryQueryVariables = Exact<{
 }>;
 
 
-export type HomeQueryQuery = { __typename?: 'RootQuery', currentBrowserSession?: { __typename?: 'BrowserSession', id: string, user: (
+export type HomeQueryQuery = { __typename?: 'Query', currentBrowserSession?: { __typename?: 'BrowserSession', id: string, user: (
       { __typename?: 'User', id: string, username: string }
       & { ' $fragmentRefs'?: { 'CompatSsoLoginList_UserFragment': CompatSsoLoginList_UserFragment;'BrowserSessionList_UserFragment': BrowserSessionList_UserFragment;'OAuth2SessionList_UserFragment': OAuth2SessionList_UserFragment } }
     ) } | null };
@@ -566,7 +625,7 @@ export type OAuth2ClientQueryQueryVariables = Exact<{
 }>;
 
 
-export type OAuth2ClientQueryQuery = { __typename?: 'RootQuery', oauth2Client?: { __typename?: 'Oauth2Client', id: string, clientId: string, clientName?: string | null, clientUri?: any | null, tosUri?: any | null, policyUri?: any | null, redirectUris: Array<any> } | null };
+export type OAuth2ClientQueryQuery = { __typename?: 'Query', oauth2Client?: { __typename?: 'Oauth2Client', id: string, clientId: string, clientName?: string | null, clientUri?: any | null, tosUri?: any | null, policyUri?: any | null, redirectUris: Array<any> } | null };
 
 export const BrowserSession_SessionFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BrowserSession_session"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BrowserSession"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"lastAuthentication"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<BrowserSession_SessionFragment, unknown>;
 export const BrowserSessionList_UserFragmentDoc = {"kind":"Document","definitions":[{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BrowserSessionList_user"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"User"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"browserSessions"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"first"},"value":{"kind":"Variable","name":{"kind":"Name","value":"count"}}},{"kind":"Argument","name":{"kind":"Name","value":"after"},"value":{"kind":"Variable","name":{"kind":"Name","value":"cursor"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"edges"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"cursor"}},{"kind":"Field","name":{"kind":"Name","value":"node"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"FragmentSpread","name":{"kind":"Name","value":"BrowserSession_session"}}]}}]}}]}}]}},{"kind":"FragmentDefinition","name":{"kind":"Name","value":"BrowserSession_session"},"typeCondition":{"kind":"NamedType","name":{"kind":"Name","value":"BrowserSession"}},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"lastAuthentication"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<BrowserSessionList_UserFragment, unknown>;

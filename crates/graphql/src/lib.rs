@@ -36,17 +36,17 @@ mod state;
 
 pub use self::{
     model::{CreationEvent, Node},
-    mutations::RootMutations,
-    query::RootQuery,
+    mutations::Mutation,
+    query::Query,
     state::{BoxState, State},
 };
 
-pub type Schema = async_graphql::Schema<RootQuery, RootMutations, EmptySubscription>;
-pub type SchemaBuilder = async_graphql::SchemaBuilder<RootQuery, RootMutations, EmptySubscription>;
+pub type Schema = async_graphql::Schema<Query, Mutation, EmptySubscription>;
+pub type SchemaBuilder = async_graphql::SchemaBuilder<Query, Mutation, EmptySubscription>;
 
 #[must_use]
 pub fn schema_builder() -> SchemaBuilder {
-    async_graphql::Schema::build(RootQuery::new(), RootMutations::new(), EmptySubscription)
+    async_graphql::Schema::build(Query::new(), Mutation::new(), EmptySubscription)
         .register_output_type::<Node>()
         .register_output_type::<CreationEvent>()
 }

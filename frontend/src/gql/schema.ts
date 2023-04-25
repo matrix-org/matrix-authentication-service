@@ -2,13 +2,55 @@ import { IntrospectionQuery } from "graphql";
 export default {
   __schema: {
     queryType: {
-      name: "RootQuery",
+      name: "Query",
     },
     mutationType: {
-      name: "RootMutations",
+      name: "Mutation",
     },
     subscriptionType: null,
     types: [
+      {
+        kind: "OBJECT",
+        name: "AddEmailPayload",
+        fields: [
+          {
+            name: "email",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "UserEmail",
+                ofType: null,
+              },
+            },
+            args: [],
+          },
+          {
+            name: "status",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+          {
+            name: "user",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "User",
+                ofType: null,
+              },
+            },
+            args: [],
+          },
+        ],
+        interfaces: [],
+      },
       {
         kind: "OBJECT",
         name: "Anonymous",
@@ -483,6 +525,82 @@ export default {
         ],
       },
       {
+        kind: "OBJECT",
+        name: "Mutation",
+        fields: [
+          {
+            name: "addEmail",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "AddEmailPayload",
+                ofType: null,
+              },
+            },
+            args: [
+              {
+                name: "input",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
+          },
+          {
+            name: "sendVerificationEmail",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "SendVerificationEmailPayload",
+                ofType: null,
+              },
+            },
+            args: [
+              {
+                name: "input",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
+          },
+          {
+            name: "verifyEmail",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "VerifyEmailPayload",
+                ofType: null,
+              },
+            },
+            args: [
+              {
+                name: "input",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
+          },
+        ],
+        interfaces: [],
+      },
+      {
         kind: "INTERFACE",
         name: "Node",
         fields: [
@@ -831,83 +949,7 @@ export default {
       },
       {
         kind: "OBJECT",
-        name: "RootMutations",
-        fields: [
-          {
-            name: "addEmail",
-            type: {
-              kind: "NON_NULL",
-              ofType: {
-                kind: "OBJECT",
-                name: "UserEmail",
-                ofType: null,
-              },
-            },
-            args: [
-              {
-                name: "input",
-                type: {
-                  kind: "NON_NULL",
-                  ofType: {
-                    kind: "SCALAR",
-                    name: "Any",
-                  },
-                },
-              },
-            ],
-          },
-          {
-            name: "sendVerificationEmail",
-            type: {
-              kind: "NON_NULL",
-              ofType: {
-                kind: "OBJECT",
-                name: "UserEmail",
-                ofType: null,
-              },
-            },
-            args: [
-              {
-                name: "input",
-                type: {
-                  kind: "NON_NULL",
-                  ofType: {
-                    kind: "SCALAR",
-                    name: "Any",
-                  },
-                },
-              },
-            ],
-          },
-          {
-            name: "verifyEmail",
-            type: {
-              kind: "NON_NULL",
-              ofType: {
-                kind: "OBJECT",
-                name: "UserEmail",
-                ofType: null,
-              },
-            },
-            args: [
-              {
-                name: "input",
-                type: {
-                  kind: "NON_NULL",
-                  ofType: {
-                    kind: "SCALAR",
-                    name: "Any",
-                  },
-                },
-              },
-            ],
-          },
-        ],
-        interfaces: [],
-      },
-      {
-        kind: "OBJECT",
-        name: "RootQuery",
+        name: "Query",
         fields: [
           {
             name: "browserSession",
@@ -1127,6 +1169,48 @@ export default {
               ofType: {
                 kind: "UNION",
                 name: "ViewerSession",
+                ofType: null,
+              },
+            },
+            args: [],
+          },
+        ],
+        interfaces: [],
+      },
+      {
+        kind: "OBJECT",
+        name: "SendVerificationEmailPayload",
+        fields: [
+          {
+            name: "email",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "UserEmail",
+                ofType: null,
+              },
+            },
+            args: [],
+          },
+          {
+            name: "status",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+          {
+            name: "user",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "User",
                 ofType: null,
               },
             },
@@ -1830,6 +1914,42 @@ export default {
                 name: "UserEmail",
                 ofType: null,
               },
+            },
+            args: [],
+          },
+        ],
+        interfaces: [],
+      },
+      {
+        kind: "OBJECT",
+        name: "VerifyEmailPayload",
+        fields: [
+          {
+            name: "email",
+            type: {
+              kind: "OBJECT",
+              name: "UserEmail",
+              ofType: null,
+            },
+            args: [],
+          },
+          {
+            name: "status",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+          {
+            name: "user",
+            type: {
+              kind: "OBJECT",
+              name: "User",
+              ofType: null,
             },
             args: [],
           },
