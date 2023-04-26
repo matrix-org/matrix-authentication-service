@@ -19,11 +19,14 @@ type Props = {
   /** Makes the button more compact */
   compact?: boolean;
 
-  /** Uses the 'ghotst' (outline) alternative */
+  /** Uses the 'ghost' (outline) alternative */
   ghost?: boolean;
 
   /** Disables all interactions with the button */
   disabled?: boolean;
+
+  /** The type of the button */
+  type?: "button" | "submit" | "reset";
 } & React.HTMLProps<HTMLButtonElement>;
 
 const Button: React.FC<Props> = ({
@@ -31,12 +34,13 @@ const Button: React.FC<Props> = ({
   compact,
   ghost,
   disabled,
+  type,
   ...props
 }) => {
   const sizeClass = compact ? "py-1 px-3" : "py-1 px-5";
 
-  let ghostClass = "";
-  let normalClass = "";
+  let ghostClass;
+  let normalClass;
 
   if (disabled) {
     ghostClass = "opacity-30 border border-accent text-accent";
@@ -52,7 +56,7 @@ const Button: React.FC<Props> = ({
   return (
     <button
       {...props}
-      type="button"
+      type={type || "button"}
       className={`rounded-lg font-semibold ${colors} ${sizeClass}`}
       disabled={disabled}
     >

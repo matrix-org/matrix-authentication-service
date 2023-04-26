@@ -20,7 +20,7 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     <div className="bg-grey-25 text-black-900 dark:bg-black-800 dark:text-white flex flex-col min-h-screen">
       <NavBar className="mx-auto px-3 py-4 container">
         <NavItem route={{ type: "home" }}>Home</NavItem>
-        <NavItem route={{ type: "dumb" }}>Dumb</NavItem>
+        <NavItem route={{ type: "account" }}>My Account</NavItem>
       </NavBar>
 
       <main className="mx-auto p-4 container">{children}</main>
