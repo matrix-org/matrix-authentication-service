@@ -27,10 +27,18 @@ export default defineConfig({
   },
   plugins: [
     codegen(),
-    react(),
+    react({
+      babel: {
+        plugins: [
+          "jotai/babel/plugin-react-refresh",
+          "jotai/babel/plugin-debug-label",
+        ],
+      },
+    }),
     eslint({
       // Explicitly set the config file, else storybook gets confused
       overrideConfigFile: "./.eslintrc.cjs",
+      exclude: ["./src/gql/*"],
     }),
   ],
   server: {

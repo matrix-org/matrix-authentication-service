@@ -10,10 +10,17 @@ const config: CodegenConfig = {
       plugins: [],
     },
     "./src/gql/schema.ts": {
-      plugins: ["urql-introspection"],
+      plugins: [
+        {
+          add: {
+            content: "/* eslint-disable */",
+          },
+        },
+        "urql-introspection",
+      ],
     },
   },
-  hooks: { afterAllFileWrite: ["eslint --fix"] },
+  hooks: { afterOneFileWrite: ["prettier --write"] },
 };
 
 export default config;

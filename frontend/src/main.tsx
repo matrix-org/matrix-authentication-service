@@ -15,6 +15,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { Provider } from "jotai";
+import { DevTools } from "jotai-devtools";
 
 import LoadingScreen from "./components/LoadingScreen";
 import Router from "./Router";
@@ -23,6 +24,7 @@ import { HydrateAtoms } from "./atoms";
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <Provider>
+      <DevTools />
       <HydrateAtoms>
         <React.Suspense fallback={<LoadingScreen />}>
           <Router />
