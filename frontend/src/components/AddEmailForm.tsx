@@ -25,6 +25,9 @@ const ADD_EMAIL_MUTATION = graphql(/* GraphQL */ `
   mutation AddEmail($userId: ID!, $email: String!) {
     addEmail(input: { userId: $userId, email: $email }) {
       status
+      user {
+        id
+      }
       email {
         id
         ...UserEmail_email

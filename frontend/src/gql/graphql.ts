@@ -587,6 +587,7 @@ export type AddEmailMutation = {
   addEmail: {
     __typename?: "AddEmailPayload";
     status: AddEmailStatus;
+    user: { __typename?: "User"; id: string };
     email: { __typename?: "UserEmail"; id: string } & {
       " $fragmentRefs"?: { UserEmail_EmailFragment: UserEmail_EmailFragment };
     };
@@ -688,17 +689,20 @@ export type UserEmail_EmailFragment = {
 
 export type UserEmailListQueryQueryVariables = Exact<{
   userId: Scalars["ID"];
-  first: Scalars["Int"];
+  first?: InputMaybe<Scalars["Int"]>;
   after?: InputMaybe<Scalars["String"]>;
+  last?: InputMaybe<Scalars["Int"]>;
+  before?: InputMaybe<Scalars["String"]>;
 }>;
 
 export type UserEmailListQueryQuery = {
   __typename?: "Query";
   user?: {
-    __typename?: "User";
+    __typename: "User";
     id: string;
     emails: {
       __typename?: "UserEmailConnection";
+      totalCount: number;
       edges: Array<{
         __typename?: "UserEmailEdge";
         cursor: string;
@@ -711,6 +715,8 @@ export type UserEmailListQueryQuery = {
       pageInfo: {
         __typename?: "PageInfo";
         hasNextPage: boolean;
+        hasPreviousPage: boolean;
+        startCursor?: string | null;
         endCursor?: string | null;
       };
     };
@@ -1296,6 +1302,16 @@ export const AddEmailDocument = {
                 { kind: "Field", name: { kind: "Name", value: "status" } },
                 {
                   kind: "Field",
+                  name: { kind: "Name", value: "user" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
                   name: { kind: "Name", value: "email" },
                   selectionSet: {
                     kind: "SelectionSet",
@@ -1358,16 +1374,26 @@ export const UserEmailListQueryDocument = {
             kind: "Variable",
             name: { kind: "Name", value: "first" },
           },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
-          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
         },
         {
           kind: "VariableDefinition",
           variable: {
             kind: "Variable",
             name: { kind: "Name", value: "after" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "last" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "before" },
           },
           type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
         },
@@ -1391,6 +1417,7 @@ export const UserEmailListQueryDocument = {
             selectionSet: {
               kind: "SelectionSet",
               selections: [
+                { kind: "Field", name: { kind: "Name", value: "__typename" } },
                 { kind: "Field", name: { kind: "Name", value: "id" } },
                 {
                   kind: "Field",
@@ -1410,6 +1437,22 @@ export const UserEmailListQueryDocument = {
                       value: {
                         kind: "Variable",
                         name: { kind: "Name", value: "after" },
+                      },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "last" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "last" },
+                      },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "before" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "before" },
                       },
                     },
                   ],
@@ -1451,6 +1494,10 @@ export const UserEmailListQueryDocument = {
                       },
                       {
                         kind: "Field",
+                        name: { kind: "Name", value: "totalCount" },
+                      },
+                      {
+                        kind: "Field",
                         name: { kind: "Name", value: "pageInfo" },
                         selectionSet: {
                           kind: "SelectionSet",
@@ -1458,6 +1505,14 @@ export const UserEmailListQueryDocument = {
                             {
                               kind: "Field",
                               name: { kind: "Name", value: "hasNextPage" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "hasPreviousPage" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "startCursor" },
                             },
                             {
                               kind: "Field",
