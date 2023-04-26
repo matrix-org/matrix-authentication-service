@@ -24,7 +24,7 @@ serde = "1.0.160"
 serde_json = "1.0.96"
 serde_urlencoded = "0.7.1"
 thiserror = "1.0.40"
-tokio = { version = "1.27.0", features = ["sync", "parking_lot"], optional = true }
+tokio = { version = "1.28.0", features = ["sync", "parking_lot"], optional = true }
 tower = { version = "0.4.13", features = [] }
 tower-http = { version = "0.4.0", features = ["cors"] }
 tracing = "0.1.38"
@@ -37,7 +37,7 @@ mas-tower = { path = "../tower" }
 [dev-dependencies]
 anyhow = "1.0.70"
 serde = { version = "1.0.160", features = ["derive"] }
-tokio = { version = "1.27.0", features = ["macros", "rt"] }
+tokio = { version = "1.28.0", features = ["macros", "rt"] }
 tower = { version = "0.4.13", features = ["util"] }
 
 [features]
