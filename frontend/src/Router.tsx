@@ -25,14 +25,14 @@ type Location = {
 };
 
 type HomeRoute = { type: "home" };
-type DumbRoute = { type: "dumb" };
+type AccountRoute = { type: "account" };
 type OAuth2ClientRoute = { type: "client"; id: string };
 type BrowserSessionRoute = { type: "session"; id: string };
 type UnknownRoute = { type: "unknown"; segments: string[] };
 
 export type Route =
   | HomeRoute
-  | DumbRoute
+  | AccountRoute
   | OAuth2ClientRoute
   | BrowserSessionRoute
   | UnknownRoute;
@@ -41,8 +41,8 @@ const routeToSegments = (route: Route): string[] => {
   switch (route.type) {
     case "home":
       return [];
-    case "dumb":
-      return ["dumb"];
+    case "account":
+      return ["account"];
     case "client":
       return ["client", route.id];
     case "session":
@@ -57,8 +57,8 @@ const segmentsToRoute = (segments: string[]): Route => {
     return { type: "home" };
   }
 
-  if (segments.length === 1 && segments[0] === "dumb") {
-    return { type: "dumb" };
+  if (segments.length === 1 && segments[0] === "account") {
+    return { type: "account" };
   }
 
   if (segments.length === 2 && segments[0] === "client") {
@@ -105,6 +105,7 @@ export const routeAtom = atom(
 );
 
 const Home = lazy(() => import("./pages/Home"));
+const Account = lazy(() => import("./pages/Account"));
 const OAuth2Client = lazy(() => import("./pages/OAuth2Client"));
 const BrowserSession = lazy(() => import("./pages/BrowserSession"));
 
@@ -114,12 +115,12 @@ const InnerRouter: React.FC = () => {
   switch (route.type) {
     case "home":
       return <Home />;
+    case "account":
+      return <Account />;
     case "client":
       return <OAuth2Client id={route.id} />;
     case "session":
       return <BrowserSession id={route.id} />;
-    case "dumb":
-      return <>Dumb route.</>;
     case "unknown":
       return <>Unknown route {JSON.stringify(route.segments)}</>;
   }
