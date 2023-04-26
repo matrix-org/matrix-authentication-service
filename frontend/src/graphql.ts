@@ -16,8 +16,34 @@ import { createClient, fetchExchange } from "@urql/core";
 import { cacheExchange } from "@urql/exchange-graphcache";
 
 import schema from "./gql/schema";
+import type { MutationAddEmailArgs } from "./gql/graphql";
 
 export const client = createClient({
   url: "/graphql",
-  exchanges: [cacheExchange({ schema }), fetchExchange],
+  // XXX: else queries don't refetch on cache invalidation for some reason
+  requestPolicy: "cache-and-network",
+  exchanges: [
+    cacheExchange({
+      schema,
+      updates: {
+        Mutation: {
+          addEmail: (result, args: MutationAddEmailArgs, cache, _info) => {
+            const key = cache.keyOfEntity({
+              __typename: "User",
+              id: args.input.userId,
+            });
+
+            // Invalidate the emails field on the User object so that it gets refetched
+            cache
+              .inspectFields(key)
+              .filter((field) => field.fieldName === "emails")
+              .forEach((field) => {
+                cache.invalidate(key, field.fieldName, field.arguments);
+              });
+          },
+        },
+      },
+    }),
+    fetchExchange,
+  ],
 });
