@@ -14,7 +14,7 @@ headers = "0.3.8"
 aws-sdk-sesv2 = { version = "0.26.0", default-features = false }
 aws-config = { version = "0.55.1", default-features = false }
 aws-smithy-client = { version = "0.55.1", default-features = false, features = ["client-hyper"] }
-aws-smithy-async = { version = "0.55.1", default-features = false, features = ["rt-tokio"] }
+aws-smithy-async = { version = "0.55.2", default-features = false, features = ["rt-tokio"] }
 aws-smithy-http = { version = "0.55.1", default-features = false }
 aws-smithy-http-tower = { version = "0.55.1", default-features = false }
 aws-types = "0.55.1"
