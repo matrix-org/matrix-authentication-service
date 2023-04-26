@@ -14,8 +14,7 @@
 
 import { atom, useAtomValue, useSetAtom } from "jotai";
 import { atomWithQuery } from "jotai-urql";
-import { atomFamily } from "jotai/utils";
-import deepEqual from "fast-deep-equal";
+import { atomFamily, atomWithDefault } from "jotai/utils";
 
 import { graphql } from "../gql";
 import { useTransition } from "react";
@@ -24,10 +23,17 @@ import UserEmail from "./UserEmail";
 import BlockList from "./BlockList";
 
 const QUERY = graphql(/* GraphQL */ `
-  query UserEmailListQuery($userId: ID!, $first: Int!, $after: String) {
+  query UserEmailListQuery(
+    $userId: ID!
+    $first: Int
+    $after: String
+    $last: Int
+    $before: String
+  ) {
     user(id: $userId) {
+      __typename
       id
-      emails(first: $first, after: $after) {
+      emails(first: $first, after: $after, last: $last, before: $before) {
         edges {
           cursor
           node {
@@ -35,8 +41,11 @@ const QUERY = graphql(/* GraphQL */ `
             ...UserEmail_email
           }
         }
+        totalCount
         pageInfo {
           hasNextPage
+          hasPreviousPage
+          startCursor
           endCursor
         }
       }
@@ -44,64 +53,145 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-const emailPageResultFamily = atomFamily(
-  ({ userId, after }: { userId: string; after: string | null }) =>
-    atomWithQuery({
-      query: QUERY,
-      getVariables: () => ({ userId, first: 5, after }),
-    }),
-  deepEqual
-);
+type ForwardPagination = {
+  first: int;
+  after: string | null;
+};
 
-const emailPageListFamily = atomFamily((_userId: string) =>
-  atom([null as string | null])
-);
+type BackwardPagination = {
+  last: int;
+  before: string | null;
+};
 
-const emailNextPageFamily = atomFamily((userId: string) =>
-  atom(null, (get, set, after: string) => {
-    const currentList = get(emailPageListFamily(userId));
-    set(emailPageListFamily(userId), [...currentList, after]);
-  })
-);
+type Pagination = ForwardPagination | BackwardPagination;
 
-const emailPageFamily = atomFamily((userId: string) =>
-  atom(async (get) => {
-    const list = get(emailPageListFamily(userId));
-    return await Promise.all(
-      list.map((after) => get(emailPageResultFamily({ userId, after })))
-    );
-  })
-);
+const isForwardPagination = (
+  pagination: Pagination
+): pagination is ForwardPagination => {
+  return pagination.hasOwnProperty("first");
+};
+
+const isBackwardPagination = (
+  pagination: Pagination
+): pagination is BackwardPagination => {
+  return pagination.hasOwnProperty("last");
+};
+
+const pageSize = atom(6);
+
+const currentPagination = atomWithDefault<Pagination>((get) => ({
+  first: get(pageSize),
+  after: null,
+}));
+
+const emailPageResultFamily = atomFamily((userId: string) => {
+  const emailPageResult = atomWithQuery({
+    query: QUERY,
+    getVariables: (get) => ({ userId, ...get(currentPagination) }),
+  });
+  return emailPageResult;
+});
+
+const nextPagePaginationFamily = atomFamily((userId: string) => {
+  const nextPagePagination = atom(
+    async (get): Promise<ForwardPagination | null> => {
+      // If we are paginating backwards, we can assume there is a next page
+      const pagination = get(currentPagination);
+      const hasProbablyNextPage =
+        isBackwardPagination(pagination) && pagination.before !== null;
+
+      const result = await get(emailPageResultFamily(userId));
+      const pageInfo = result.data?.user?.emails?.pageInfo;
+      if (pageInfo?.hasNextPage || hasProbablyNextPage) {
+        return {
+          first: get(pageSize),
+          after: pageInfo?.endCursor ?? null,
+        };
+      }
+
+      return null;
+    }
+  );
+  return nextPagePagination;
+});
+
+const prevPagePaginationFamily = atomFamily((userId: string) => {
+  const prevPagePagination = atom(
+    async (get): Promise<BackwardPagination | null> => {
+      // If we are paginating forwards, we can assume there is a previous page
+      const pagination = get(currentPagination);
+      const hasProbablyPreviousPage =
+        isForwardPagination(pagination) && pagination.after !== null;
+
+      const result = await get(emailPageResultFamily(userId));
+      const pageInfo = result.data?.user?.emails?.pageInfo;
+      if (pageInfo?.hasPreviousPage || hasProbablyPreviousPage) {
+        return {
+          last: get(pageSize),
+          before: pageInfo?.startCursor ?? null,
+        };
+      }
+
+      return null;
+    }
+  );
+  return prevPagePagination;
+});
 
 const UserEmailList: React.FC<{ userId: string }> = ({ userId }) => {
   const [pending, startTransition] = useTransition();
-  const result = useAtomValue(emailPageFamily(userId));
-  const setLoadNextPage = useSetAtom(emailNextPageFamily(userId));
-  const endPageInfo = result[result.length - 1]?.data?.user?.emails?.pageInfo;
+  const result = useAtomValue(emailPageResultFamily(userId));
+  const setPagination = useSetAtom(currentPagination);
+  const nextPagePagination = useAtomValue(nextPagePaginationFamily(userId));
+  const prevPagePagination = useAtomValue(prevPagePaginationFamily(userId));
 
-  const loadNextPage = () => {
-    if (endPageInfo?.hasNextPage && endPageInfo.endCursor) {
-      const cursor = endPageInfo.endCursor;
-      startTransition(() => {
-        setLoadNextPage(cursor);
-      });
-    }
+  const paginate = (pagination: Pagination) => {
+    startTransition(() => {
+      setPagination(pagination);
+    });
   };
 
   return (
-    <BlockList>
-      {result.flatMap(
-        (page) =>
-          page.data?.user?.emails?.edges?.map((edge) => (
-            <UserEmail email={edge.node} key={edge.cursor} />
-          )) || []
-      )}
-      {endPageInfo?.hasNextPage && (
-        <Button compact ghost onClick={loadNextPage}>
-          {pending ? "Loading..." : "Load more"}
-        </Button>
-      )}
-    </BlockList>
+    <div>
+      <div className="grid items-center grid-cols-3 gap-2 mb-2">
+        {prevPagePagination ? (
+          <Button
+            compact
+            disabled={pending}
+            ghost
+            onClick={() => paginate(prevPagePagination)}
+          >
+            Previous
+          </Button>
+        ) : (
+          <Button compact disabled ghost>
+            Previous
+          </Button>
+        )}
+        <div className="text-center">
+          Total: {result.data?.user?.emails?.totalCount}
+        </div>
+        {nextPagePagination ? (
+          <Button
+            compact
+            disabled={pending}
+            ghost
+            onClick={() => paginate(nextPagePagination)}
+          >
+            Next
+          </Button>
+        ) : (
+          <Button compact disabled ghost>
+            Next
+          </Button>
+        )}
+      </div>
+      <BlockList>
+        {result.data?.user?.emails?.edges?.map((edge) => (
+          <UserEmail email={edge.node} key={edge.cursor} />
+        ))}
+      </BlockList>
+    </div>
   );
 };
 
