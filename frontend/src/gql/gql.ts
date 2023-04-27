@@ -17,11 +17,11 @@ const documents = {
     types.CurrentViewerQueryDocument,
   "\n  query CurrentViewerSessionQuery {\n    viewerSession {\n      __typename\n      ... on BrowserSession {\n        id\n      }\n\n      ... on Anonymous {\n        id\n      }\n    }\n  }\n":
     types.CurrentViewerSessionQueryDocument,
-  "\n  mutation AddEmail($userId: ID!, $email: String!) {\n    addEmail(input: { userId: $userId, email: $email }) {\n      status\n      user {\n        id\n      }\n      email {\n        id\n        ...UserEmail_email\n      }\n    }\n  }\n":
+  "\n  mutation AddEmail($userId: ID!, $email: String!) {\n    addEmail(input: { userId: $userId, email: $email }) {\n      status\n      email {\n        id\n        ...UserEmail_email\n      }\n    }\n  }\n":
     types.AddEmailDocument,
   "\n  fragment BrowserSession_session on BrowserSession {\n    id\n    createdAt\n    lastAuthentication {\n      id\n      createdAt\n    }\n  }\n":
     types.BrowserSession_SessionFragmentDoc,
-  "\n  query BrowserSessionList($userId: ID!) {\n    user(id: $userId) {\n      id\n      browserSessions(first: 10) {\n        edges {\n          cursor\n          node {\n            id\n            ...BrowserSession_session\n          }\n        }\n      }\n    }\n  }\n":
+  "\n  query BrowserSessionList($userId: ID!) {\n    user(id: $userId) {\n      id\n      browserSessions(first: 10) {\n        edges {\n          cursor\n          node {\n            id\n            ...BrowserSession_session\n          }\n        }\n\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n":
     types.BrowserSessionListDocument,
   "\n  fragment CompatSsoLogin_login on CompatSsoLogin {\n    id\n    redirectUri\n    createdAt\n    session {\n      id\n      createdAt\n      deviceId\n      finishedAt\n    }\n  }\n":
     types.CompatSsoLogin_LoginFragmentDoc,
@@ -73,8 +73,8 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  mutation AddEmail($userId: ID!, $email: String!) {\n    addEmail(input: { userId: $userId, email: $email }) {\n      status\n      user {\n        id\n      }\n      email {\n        id\n        ...UserEmail_email\n      }\n    }\n  }\n"
-): (typeof documents)["\n  mutation AddEmail($userId: ID!, $email: String!) {\n    addEmail(input: { userId: $userId, email: $email }) {\n      status\n      user {\n        id\n      }\n      email {\n        id\n        ...UserEmail_email\n      }\n    }\n  }\n"];
+  source: "\n  mutation AddEmail($userId: ID!, $email: String!) {\n    addEmail(input: { userId: $userId, email: $email }) {\n      status\n      email {\n        id\n        ...UserEmail_email\n      }\n    }\n  }\n"
+): (typeof documents)["\n  mutation AddEmail($userId: ID!, $email: String!) {\n    addEmail(input: { userId: $userId, email: $email }) {\n      status\n      email {\n        id\n        ...UserEmail_email\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -85,8 +85,8 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  query BrowserSessionList($userId: ID!) {\n    user(id: $userId) {\n      id\n      browserSessions(first: 10) {\n        edges {\n          cursor\n          node {\n            id\n            ...BrowserSession_session\n          }\n        }\n      }\n    }\n  }\n"
-): (typeof documents)["\n  query BrowserSessionList($userId: ID!) {\n    user(id: $userId) {\n      id\n      browserSessions(first: 10) {\n        edges {\n          cursor\n          node {\n            id\n            ...BrowserSession_session\n          }\n        }\n      }\n    }\n  }\n"];
+  source: "\n  query BrowserSessionList($userId: ID!) {\n    user(id: $userId) {\n      id\n      browserSessions(first: 10) {\n        edges {\n          cursor\n          node {\n            id\n            ...BrowserSession_session\n          }\n        }\n\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n"
+): (typeof documents)["\n  query BrowserSessionList($userId: ID!) {\n    user(id: $userId) {\n      id\n      browserSessions(first: 10) {\n        edges {\n          cursor\n          node {\n            id\n            ...BrowserSession_session\n          }\n        }\n\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

@@ -33,6 +33,13 @@ const QUERY = graphql(/* GraphQL */ `
             ...BrowserSession_session
           }
         }
+
+        pageInfo {
+          hasNextPage
+          hasPreviousPage
+          startCursor
+          endCursor
+        }
       }
     }
   }
