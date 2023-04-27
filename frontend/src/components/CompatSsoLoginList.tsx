@@ -48,6 +48,13 @@ const QUERY = graphql(/* GraphQL */ `
             ...CompatSsoLogin_login
           }
         }
+
+        pageInfo {
+          hasNextPage
+          hasPreviousPage
+          startCursor
+          endCursor
+        }
       }
     }
   }
@@ -70,7 +77,7 @@ const compatSsoLoginListFamily = atomFamily((userId: string) => {
 const pageInfoFamily = atomFamily((userId: string) => {
   const pageInfoAtom = atom(async (get): Promise<PageInfo | null> => {
     const result = await get(compatSsoLoginListFamily(userId));
-    return result.data?.user?.oauth2Sessions?.pageInfo ?? null;
+    return result.data?.user?.compatSsoLogins?.pageInfo ?? null;
   });
 
   return pageInfoAtom;
