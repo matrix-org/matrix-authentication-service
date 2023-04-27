@@ -19,7 +19,7 @@ import { FragmentType, graphql, useFragment } from "../gql";
 
 const FRAGMENT = graphql(/* GraphQL */ `
   fragment CompatSsoLoginList_user on User {
-    compatSsoLogins(first: $count, after: $cursor) {
+    compatSsoLogins(first: 10) {
       edges {
         node {
           id
