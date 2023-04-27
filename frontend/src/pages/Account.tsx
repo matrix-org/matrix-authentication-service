@@ -12,16 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React from "react";
 import { useAtomValue } from "jotai";
-import { atomFamily } from "jotai/utils";
-import { atomWithQuery } from "jotai-urql";
 
-import { graphql } from "../gql";
-import UserEmailList from "../components/UserEmailList";
-import { Title } from "../components/Typography";
-import AddEmailForm from "../components/AddEmailForm";
 import { currentUserIdAtom } from "../atoms";
+import AddEmailForm from "../components/AddEmailForm";
+import UserEmailList from "../components/UserEmailList";
 import UserGreeting from "../components/UserGreeting";
 
 const UserAccount: React.FC<{ id: string }> = ({ id }) => {

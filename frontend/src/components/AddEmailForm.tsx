@@ -12,14 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React, { useRef, useTransition } from "react";
-import { atomWithMutation } from "jotai-urql";
 import { useAtom, useSetAtom } from "jotai";
+import { atomWithMutation } from "jotai-urql";
+import { useRef, useTransition } from "react";
+
 import { graphql } from "../gql";
+
 import Button from "./Button";
-import UserEmail from "./UserEmail";
 import Input from "./Input";
 import Typography from "./Typography";
+import UserEmail from "./UserEmail";
 import { emailPageResultFamily } from "./UserEmailList";
 
 const ADD_EMAIL_MUTATION = graphql(/* GraphQL */ `

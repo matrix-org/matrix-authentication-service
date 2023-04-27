@@ -13,10 +13,10 @@
 // limitations under the License.
 
 import { useAtomValue } from "jotai";
-import { atomWithQuery } from "jotai-urql";
-import { useMemo } from "react";
-import { graphql } from "../gql";
 import { atomFamily } from "jotai/utils";
+import { atomWithQuery } from "jotai-urql";
+
+import { graphql } from "../gql";
 
 const QUERY = graphql(/* GraphQL */ `
   query BrowserSessionQuery($id: ID!) {

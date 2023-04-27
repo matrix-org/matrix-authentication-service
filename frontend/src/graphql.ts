@@ -13,13 +13,13 @@
 // limitations under the License.
 
 import { createClient, fetchExchange } from "@urql/core";
-import { cacheExchange } from "@urql/exchange-graphcache";
 import { devtoolsExchange } from "@urql/devtools";
+import { cacheExchange } from "@urql/exchange-graphcache";
 import { refocusExchange } from "@urql/exchange-refocus";
-
-import schema from "./gql/schema";
-import type { MutationAddEmailArgs } from "./gql/graphql";
 import { requestPolicyExchange } from "@urql/exchange-request-policy";
+
+import type { MutationAddEmailArgs } from "./gql/graphql";
+import schema from "./gql/schema";
 
 const cache = cacheExchange({
   schema,

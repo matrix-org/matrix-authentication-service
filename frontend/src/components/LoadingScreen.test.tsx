@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { create } from "react-test-renderer";
 import { expect, it } from "vitest";
-import renderer from "react-test-renderer";
 
 import LoadingScreen from "./LoadingScreen";
 
 it("render <LoadingScreen />", () => {
-  const component = renderer.create(<LoadingScreen />);
+  const component = create(<LoadingScreen />);
   let tree = component.toJSON();
   expect(tree).toMatchSnapshot();
 });

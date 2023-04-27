@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Body, Bold, Code } from "./Typography";
-import Block from "./Block";
 import { Link } from "../Router";
 import { FragmentType, graphql, useFragment } from "../gql";
+
+import Block from "./Block";
+import { Body, Bold, Code } from "./Typography";
 
 const FRAGMENT = graphql(/* GraphQL */ `
   fragment OAuth2Session_session on Oauth2Session {
