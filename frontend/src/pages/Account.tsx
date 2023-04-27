@@ -22,26 +22,12 @@ import UserEmailList from "../components/UserEmailList";
 import { Title } from "../components/Typography";
 import AddEmailForm from "../components/AddEmailForm";
 import { currentUserIdAtom } from "../atoms";
-
-const QUERY = graphql(/* GraphQL */ `
-  query AccountQuery($id: ID!) {
-    user(id: $id) {
-      id
-      username
-    }
-  }
-`);
-
-const accountAtomFamily = atomFamily((id: string) =>
-  atomWithQuery({ query: QUERY, getVariables: () => ({ id }) })
-);
+import UserGreeting from "../components/UserGreeting";
 
 const UserAccount: React.FC<{ id: string }> = ({ id }) => {
-  const result = useAtomValue(accountAtomFamily(id));
-
   return (
     <div className="grid grid-cols-1 gap-4">
-      <Title>Hello {result.data?.user?.username}</Title>
+      <UserGreeting userId={id} />
       <UserEmailList userId={id} />
       <AddEmailForm userId={id} />
     </div>

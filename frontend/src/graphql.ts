@@ -43,8 +43,6 @@ const cache = cacheExchange({
 
 export const client = createClient({
   url: "/graphql",
-  // XXX: else queries don't refetch on cache invalidation for some reason
-  requestPolicy: "cache-and-network",
   exchanges: import.meta.env.DEV
     ? [devtoolsExchange, cache, fetchExchange]
     : [cache, fetchExchange],
