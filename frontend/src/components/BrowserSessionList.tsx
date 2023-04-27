@@ -12,20 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { useTransition } from "react";
+import { atomFamily, atomWithDefault } from "jotai/utils";
+import { atomWithQuery } from "jotai-urql";
+import { atom, useAtomValue, useSetAtom } from "jotai";
+
 import BlockList from "./BlockList";
 import BrowserSession from "./BrowserSession";
 import { Title } from "./Typography";
+import PaginationControls from "./PaginationControls";
 import { graphql } from "../gql";
-import { atomFamily } from "jotai/utils";
-import { atomWithQuery } from "jotai-urql";
-import { useAtomValue } from "jotai";
 import { currentBrowserSessionIdAtom } from "../atoms";
+import { atomWithPagination, pageSizeAtom, Pagination } from "../pagination";
+import { PageInfo } from "../gql/graphql";
 
 const QUERY = graphql(/* GraphQL */ `
-  query BrowserSessionList($userId: ID!) {
+  query BrowserSessionList(
+    $userId: ID!
+    $first: Int
+    $after: String
+    $last: Int
+    $before: String
+  ) {
     user(id: $userId) {
       id
-      browserSessions(first: 10) {
+      browserSessions(
+        first: $first
+        after: $after
+        last: $last
+        before: $before
+      ) {
         edges {
           cursor
           node {
@@ -45,23 +61,59 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
+const currentPagination = atomWithDefault<Pagination>((get) => ({
+  first: get(pageSizeAtom),
+  after: null,
+}));
+
 const browserSessionListFamily = atomFamily((userId: string) => {
   const browserSessionList = atomWithQuery({
     query: QUERY,
-    getVariables: () => ({ userId }),
+    getVariables: (get) => ({ userId, ...get(currentPagination) }),
   });
   return browserSessionList;
 });
 
+const pageInfoFamily = atomFamily((userId: string) => {
+  const pageInfoAtom = atom(async (get): Promise<PageInfo | null> => {
+    const result = await get(browserSessionListFamily(userId));
+    return result.data?.user?.browserSessions?.pageInfo ?? null;
+  });
+  return pageInfoAtom;
+});
+
+const paginationFamily = atomFamily((userId: string) => {
+  const paginationAtom = atomWithPagination(
+    currentPagination,
+    pageInfoFamily(userId)
+  );
+
+  return paginationAtom;
+});
+
 const BrowserSessionList: React.FC<{ userId: string }> = ({ userId }) => {
-  const result = useAtomValue(browserSessionListFamily(userId));
   const currentSessionId = useAtomValue(currentBrowserSessionIdAtom);
+  const [pending, startTransition] = useTransition();
+  const result = useAtomValue(browserSessionListFamily(userId));
+  const setPagination = useSetAtom(currentPagination);
+  const [prevPage, nextPage] = useAtomValue(paginationFamily(userId));
+
+  const paginate = (pagination: Pagination) => {
+    startTransition(() => {
+      setPagination(pagination);
+    });
+  };
 
   if (result.data?.user?.browserSessions) {
     const data = result.data.user.browserSessions;
     return (
       <BlockList>
         <Title>List of browser sessions:</Title>
+        <PaginationControls
+          onPrev={prevPage ? () => paginate(prevPage) : null}
+          onNext={nextPage ? () => paginate(nextPage) : null}
+          disabled={pending}
+        />
         {data.edges.map((n) => (
           <BrowserSession
             key={n.cursor}

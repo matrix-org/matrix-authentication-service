@@ -14,10 +14,12 @@
 
 import { createClient, fetchExchange } from "@urql/core";
 import { cacheExchange } from "@urql/exchange-graphcache";
+import { devtoolsExchange } from "@urql/devtools";
+import { refocusExchange } from "@urql/exchange-refocus";
 
 import schema from "./gql/schema";
 import type { MutationAddEmailArgs } from "./gql/graphql";
-import { devtoolsExchange } from "@urql/devtools";
+import { requestPolicyExchange } from "@urql/exchange-request-policy";
 
 const cache = cacheExchange({
   schema,
@@ -41,9 +43,24 @@ const cache = cacheExchange({
   },
 });
 
+const exchanges = [
+  // This sets the policy to 'cache-and-network' after 5 minutes
+  requestPolicyExchange({
+    ttl: 1000 * 60 * 5, // 5 minute
+  }),
+
+  // This refetches all queries when the tab is refocused
+  refocusExchange(),
+
+  // The unified cache
+  cache,
+
+  // Use `fetch` to execute the requests
+  fetchExchange,
+];
+
 export const client = createClient({
   url: "/graphql",
-  exchanges: import.meta.env.DEV
-    ? [devtoolsExchange, cache, fetchExchange]
-    : [cache, fetchExchange],
+  // Add the devtools exchange in development
+  exchanges: import.meta.env.DEV ? [devtoolsExchange, ...exchanges] : exchanges,
 });

@@ -21,7 +21,12 @@ type Props = {
   disabled?: boolean;
 };
 
-const Pagination: React.FC<Props> = ({ onNext, onPrev, count, disabled }) => {
+const PaginationControls: React.FC<Props> = ({
+  onNext,
+  onPrev,
+  count,
+  disabled,
+}) => {
   return (
     <div className="grid items-center grid-cols-3 gap-2">
       {onPrev ? (
@@ -51,4 +56,4 @@ const Pagination: React.FC<Props> = ({ onNext, onPrev, count, disabled }) => {
   );
 };
 
-export default Pagination;
+export default PaginationControls;
