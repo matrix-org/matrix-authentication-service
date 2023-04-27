@@ -18,9 +18,9 @@ import { atomFamily, atomWithDefault } from "jotai/utils";
 
 import { graphql } from "../gql";
 import { useTransition } from "react";
-import Button from "./Button";
 import UserEmail from "./UserEmail";
 import BlockList from "./BlockList";
+import Pagination from "./Pagination";
 
 const QUERY = graphql(/* GraphQL */ `
   query UserEmailListQuery(
@@ -151,46 +151,17 @@ const UserEmailList: React.FC<{ userId: string }> = ({ userId }) => {
   };
 
   return (
-    <div>
-      <div className="grid items-center grid-cols-3 gap-2 mb-2">
-        {prevPagePagination ? (
-          <Button
-            compact
-            disabled={pending}
-            ghost
-            onClick={() => paginate(prevPagePagination)}
-          >
-            Previous
-          </Button>
-        ) : (
-          <Button compact disabled ghost>
-            Previous
-          </Button>
-        )}
-        <div className="text-center">
-          Total: {result.data?.user?.emails?.totalCount}
-        </div>
-        {nextPagePagination ? (
-          <Button
-            compact
-            disabled={pending}
-            ghost
-            onClick={() => paginate(nextPagePagination)}
-          >
-            Next
-          </Button>
-        ) : (
-          <Button compact disabled ghost>
-            Next
-          </Button>
-        )}
-      </div>
-      <BlockList>
-        {result.data?.user?.emails?.edges?.map((edge) => (
-          <UserEmail email={edge.node} key={edge.cursor} />
-        ))}
-      </BlockList>
-    </div>
+    <BlockList>
+      <Pagination
+        count={result.data?.user?.emails?.totalCount ?? 0}
+        onPrev={prevPagePagination ? () => paginate(prevPagePagination) : null}
+        onNext={nextPagePagination ? () => paginate(nextPagePagination) : null}
+        disabled={pending}
+      />
+      {result.data?.user?.emails?.edges?.map((edge) => (
+        <UserEmail email={edge.node} key={edge.cursor} />
+      ))}
+    </BlockList>
   );
 };
 
