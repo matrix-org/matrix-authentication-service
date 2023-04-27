@@ -607,7 +607,6 @@ export type AddEmailMutation = {
   addEmail: {
     __typename?: "AddEmailPayload";
     status: AddEmailStatus;
-    user: { __typename?: "User"; id: string };
     email: { __typename?: "UserEmail"; id: string } & {
       " $fragmentRefs"?: { UserEmail_EmailFragment: UserEmail_EmailFragment };
     };
@@ -645,6 +644,13 @@ export type BrowserSessionListQuery = {
           };
         };
       }>;
+      pageInfo: {
+        __typename?: "PageInfo";
+        hasNextPage: boolean;
+        hasPreviousPage: boolean;
+        startCursor?: string | null;
+        endCursor?: string | null;
+      };
     };
   } | null;
 };
@@ -1114,16 +1120,6 @@ export const AddEmailDocument = {
                 { kind: "Field", name: { kind: "Name", value: "status" } },
                 {
                   kind: "Field",
-                  name: { kind: "Name", value: "user" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "id" } },
-                    ],
-                  },
-                },
-                {
-                  kind: "Field",
                   name: { kind: "Name", value: "email" },
                   selectionSet: {
                     kind: "SelectionSet",
@@ -1243,6 +1239,31 @@ export const BrowserSessionListDocument = {
                                   },
                                 ],
                               },
+                            },
+                          ],
+                        },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "pageInfo" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "hasNextPage" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "hasPreviousPage" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "startCursor" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "endCursor" },
                             },
                           ],
                         },
