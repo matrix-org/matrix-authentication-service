@@ -15,42 +15,58 @@
 import BlockList from "./BlockList";
 import BrowserSession from "./BrowserSession";
 import { Title } from "./Typography";
-import { FragmentType, graphql, useFragment } from "../gql";
+import { graphql } from "../gql";
+import { atomFamily } from "jotai/utils";
+import { atomWithQuery } from "jotai-urql";
+import { useAtomValue } from "jotai";
+import { currentBrowserSessionIdAtom } from "../atoms";
 
-const FRAGMENT = graphql(/* GraphQL */ `
-  fragment BrowserSessionList_user on User {
-    browserSessions(first: 10) {
-      edges {
-        cursor
-        node {
-          id
-          ...BrowserSession_session
+const QUERY = graphql(/* GraphQL */ `
+  query BrowserSessionList($userId: ID!) {
+    user(id: $userId) {
+      id
+      browserSessions(first: 10) {
+        edges {
+          cursor
+          node {
+            id
+            ...BrowserSession_session
+          }
         }
       }
     }
   }
 `);
 
-type Props = {
-  user: FragmentType<typeof FRAGMENT>;
-  currentSessionId: string;
-};
+const browserSessionListFamily = atomFamily((userId: string) => {
+  const browserSessionList = atomWithQuery({
+    query: QUERY,
+    getVariables: () => ({ userId }),
+  });
+  return browserSessionList;
+});
 
-const BrowserSessionList: React.FC<Props> = ({ user, currentSessionId }) => {
-  const data = useFragment(FRAGMENT, user);
+const BrowserSessionList: React.FC<{ userId: string }> = ({ userId }) => {
+  const result = useAtomValue(browserSessionListFamily(userId));
+  const currentSessionId = useAtomValue(currentBrowserSessionIdAtom);
 
-  return (
-    <BlockList>
-      <Title>List of browser sessions:</Title>
-      {data.browserSessions.edges.map((n) => (
-        <BrowserSession
-          key={n.cursor}
-          session={n.node}
-          isCurrent={n.node.id === currentSessionId}
-        />
-      ))}
-    </BlockList>
-  );
+  if (result.data?.user?.browserSessions) {
+    const data = result.data.user.browserSessions;
+    return (
+      <BlockList>
+        <Title>List of browser sessions:</Title>
+        {data.edges.map((n) => (
+          <BrowserSession
+            key={n.cursor}
+            session={n.node}
+            isCurrent={n.node.id === currentSessionId}
+          />
+        ))}
+      </BlockList>
+    );
+  }
+
+  return <>Failed to load browser sessions</>;
 };
 
 export default BrowserSessionList;

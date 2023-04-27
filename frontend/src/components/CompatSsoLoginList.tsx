@@ -15,36 +15,52 @@
 import BlockList from "./BlockList";
 import CompatSsoLogin from "./CompatSsoLogin";
 import { Title } from "./Typography";
-import { FragmentType, graphql, useFragment } from "../gql";
+import { graphql } from "../gql";
+import { atomFamily } from "jotai/utils";
+import { atomWithQuery } from "jotai-urql";
+import { useAtomValue } from "jotai";
 
-const FRAGMENT = graphql(/* GraphQL */ `
-  fragment CompatSsoLoginList_user on User {
-    compatSsoLogins(first: 10) {
-      edges {
-        node {
-          id
-          ...CompatSsoLogin_login
+const QUERY = graphql(/* GraphQL */ `
+  query CompatSsoLoginList($userId: ID!) {
+    user(id: $userId) {
+      id
+      compatSsoLogins(first: 10) {
+        edges {
+          node {
+            id
+            ...CompatSsoLogin_login
+          }
         }
       }
     }
   }
 `);
 
-type Props = {
-  user: FragmentType<typeof FRAGMENT>;
-};
+const compatSsoLoginListFamily = atomFamily((userId: string) => {
+  const compatSsoLoginList = atomWithQuery({
+    query: QUERY,
+    getVariables: () => ({ userId }),
+  });
 
-const CompatSsoLoginList: React.FC<Props> = ({ user }) => {
-  const data = useFragment(FRAGMENT, user);
+  return compatSsoLoginList;
+});
 
-  return (
-    <BlockList>
-      <Title>List of compatibility sessions:</Title>
-      {data.compatSsoLogins.edges.map((n) => (
-        <CompatSsoLogin login={n.node} key={n.node.id} />
-      ))}
-    </BlockList>
-  );
+const CompatSsoLoginList: React.FC<{ userId: string }> = ({ userId }) => {
+  const result = useAtomValue(compatSsoLoginListFamily(userId));
+
+  if (result.data?.user?.compatSsoLogins) {
+    const data = result.data.user.compatSsoLogins;
+    return (
+      <BlockList>
+        <Title>List of compatibility sessions:</Title>
+        {data.edges.map((n) => (
+          <CompatSsoLogin login={n.node} key={n.node.id} />
+        ))}
+      </BlockList>
+    );
+  }
+
+  return <>Failed to load list of compatibility sessions.</>;
 };
 
 export default CompatSsoLoginList;

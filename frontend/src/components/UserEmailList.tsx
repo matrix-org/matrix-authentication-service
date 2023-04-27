@@ -83,7 +83,7 @@ const currentPagination = atomWithDefault<Pagination>((get) => ({
   after: null,
 }));
 
-const emailPageResultFamily = atomFamily((userId: string) => {
+export const emailPageResultFamily = atomFamily((userId: string) => {
   const emailPageResult = atomWithQuery({
     query: QUERY,
     getVariables: (get) => ({ userId, ...get(currentPagination) }),

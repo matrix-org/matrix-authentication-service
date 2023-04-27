@@ -16,6 +16,7 @@ import { useAtomValue } from "jotai";
 import { useMemo } from "react";
 import { atomWithQuery } from "jotai-urql";
 import { graphql } from "../gql";
+import { atomFamily } from "jotai/utils";
 
 const QUERY = graphql(/* GraphQL */ `
   query OAuth2ClientQuery($id: ID!) {
@@ -31,25 +32,27 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-const OAuth2Client: React.FC<{ id: string }> = ({ id }) => {
-  const result = useAtomValue(
-    useMemo(
-      () => atomWithQuery({ query: QUERY, getVariables: () => ({ id }) }),
-      [id]
-    )
-  );
+const oauth2ClientFamily = atomFamily((id: string) => {
+  const oauth2ClientAtom = atomWithQuery({
+    query: QUERY,
+    getVariables: () => ({ id }),
+  });
 
-  if (result.error) {
-    throw result.error;
+  return oauth2ClientAtom;
+});
+
+const OAuth2Client: React.FC<{ id: string }> = ({ id }) => {
+  const result = useAtomValue(oauth2ClientFamily(id));
+
+  if (result.data?.oauth2Client) {
+    return (
+      <pre>
+        <code>{JSON.stringify(result.data.oauth2Client, null, 2)}</code>
+      </pre>
+    );
   }
 
-  const data = result.data!!;
-
-  return (
-    <pre>
-      <code>{JSON.stringify(data.oauth2Client, null, 2)}</code>
-    </pre>
-  );
+  return <>Failed to load OAuth2 client</>;
 };
 
 export default OAuth2Client;
