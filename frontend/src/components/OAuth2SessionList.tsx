@@ -12,19 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { useAtomValue, atom, useSetAtom } from "jotai";
 import { atomFamily, atomWithDefault } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
-import { useAtomValue, atom, useSetAtom } from "jotai";
+import { useTransition } from "react";
+
+import { graphql } from "../gql";
+import { PageInfo } from "../gql/graphql";
+import { atomWithPagination, pageSizeAtom, Pagination } from "../pagination";
 
 import BlockList from "./BlockList";
 import OAuth2Session from "./OAuth2Session";
-import { Title } from "./Typography";
-
-import { graphql } from "../gql";
-import { atomWithPagination, pageSizeAtom, Pagination } from "../pagination";
-import { PageInfo } from "../gql/graphql";
 import PaginationControls from "./PaginationControls";
-import { useTransition } from "react";
+import { Title } from "./Typography";
 
 const QUERY = graphql(/* GraphQL */ `
   query OAuth2SessionListQuery(

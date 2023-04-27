@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { graphql } from "../gql";
+import { useAtomValue } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
-import { useAtomValue } from "jotai";
+
+import { graphql } from "../gql";
+
 import { Title } from "./Typography";
 
 const QUERY = graphql(/* GraphQL */ `

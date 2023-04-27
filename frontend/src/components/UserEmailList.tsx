@@ -13,16 +13,17 @@
 // limitations under the License.
 
 import { atom, useAtomValue, useSetAtom } from "jotai";
-import { atomWithQuery } from "jotai-urql";
 import { atomFamily, atomWithDefault } from "jotai/utils";
+import { atomWithQuery } from "jotai-urql";
+import { useTransition } from "react";
 
 import { graphql } from "../gql";
-import { useTransition } from "react";
-import UserEmail from "./UserEmail";
+import { PageInfo } from "../gql/graphql";
+import { atomWithPagination, pageSizeAtom, Pagination } from "../pagination";
+
 import BlockList from "./BlockList";
 import PaginationControls from "./PaginationControls";
-import { atomWithPagination, pageSizeAtom, Pagination } from "../pagination";
-import { PageInfo } from "../gql/graphql";
+import UserEmail from "./UserEmail";
 
 const QUERY = graphql(/* GraphQL */ `
   query UserEmailListQuery(

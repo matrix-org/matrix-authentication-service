@@ -13,10 +13,10 @@
 // limitations under the License.
 
 import { FragmentType, graphql, useFragment } from "../gql";
-import React from "react";
+
 import Block from "./Block";
-import Typography, { Bold } from "./Typography";
 import DateTime from "./DateTime";
+import Typography, { Bold } from "./Typography";
 
 const FRAGMENT = graphql(/* GraphQL */ `
   fragment UserEmail_email on UserEmail {

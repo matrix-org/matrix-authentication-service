@@ -13,14 +13,11 @@
 // limitations under the License.
 
 import { useAtomValue } from "jotai";
-import { atomWithQuery } from "jotai-urql";
 
+import { currentUserIdAtom } from "../atoms";
 import BrowserSessionList from "../components/BrowserSessionList";
 import CompatSsoLoginList from "../components/CompatSsoLoginList";
 import OAuth2SessionList from "../components/OAuth2SessionList";
-import Typography from "../components/Typography";
-import { graphql } from "../gql";
-import { currentUserIdAtom } from "../atoms";
 import UserGreeting from "../components/UserGreeting";
 
 const Home: React.FC = () => {

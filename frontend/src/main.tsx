@@ -12,24 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React from "react";
-import ReactDOM from "react-dom/client";
 import { Provider } from "jotai";
 import { DevTools } from "jotai-devtools";
+import { Suspense, StrictMode } from "react";
+import { createRoot } from "react-dom/client";
 
-import LoadingScreen from "./components/LoadingScreen";
 import Router from "./Router";
 import { HydrateAtoms } from "./atoms";
+import LoadingScreen from "./components/LoadingScreen";
 
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-  <React.StrictMode>
+createRoot(document.getElementById("root") as HTMLElement).render(
+  <StrictMode>
     <Provider>
       {import.meta.env.DEV && <DevTools />}
       <HydrateAtoms>
-        <React.Suspense fallback={<LoadingScreen />}>
+        <Suspense fallback={<LoadingScreen />}>
           <Router />
-        </React.Suspense>
+        </Suspense>
       </HydrateAtoms>
     </Provider>
-  </React.StrictMode>
+  </StrictMode>
 );

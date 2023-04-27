@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Block from "./Block";
-import { Body, Subtitle } from "./Typography";
-import DateTime from "./DateTime";
 import { Link } from "../Router";
 import { FragmentType, graphql, useFragment } from "../gql";
+
+import Block from "./Block";
+import DateTime from "./DateTime";
+import { Body, Subtitle } from "./Typography";
 
 const FRAGMENT = graphql(/* GraphQL */ `
   fragment BrowserSession_session on BrowserSession {

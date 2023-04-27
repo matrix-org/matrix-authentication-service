@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { lazy, Suspense, useTransition } from "react";
-import { atomWithLocation } from "jotai-location";
 import { atom, useAtomValue, useSetAtom } from "jotai";
+import { atomWithLocation } from "jotai-location";
+import { lazy, Suspense, useTransition } from "react";
 
 import Layout from "./components/Layout";
 import LoadingSpinner from "./components/LoadingSpinner";

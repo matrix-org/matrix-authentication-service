@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import type { ReactElement } from "react";
 import { atom } from "jotai";
 import { useHydrateAtoms } from "jotai/utils";
 import { atomWithQuery, clientAtom } from "jotai-urql";
+import type { ReactElement } from "react";
 
-import { client } from "./graphql";
 import { graphql } from "./gql";
+import { client } from "./graphql";
 
 export const HydrateAtoms = ({ children }: { children: ReactElement }) => {
   useHydrateAtoms([[clientAtom, client]]);
