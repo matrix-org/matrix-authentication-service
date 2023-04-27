@@ -38,7 +38,6 @@ export default defineConfig({
     eslint({
       // Explicitly set the config file, else storybook gets confused
       overrideConfigFile: "./.eslintrc.cjs",
-      exclude: ["./src/gql/*"],
     }),
   ],
   server: {
