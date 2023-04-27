@@ -31,7 +31,6 @@ const QUERY = graphql(/* GraphQL */ `
     $before: String
   ) {
     user(id: $userId) {
-      __typename
       id
       emails(first: $first, after: $after, last: $last, before: $before) {
         edges {
@@ -54,12 +53,12 @@ const QUERY = graphql(/* GraphQL */ `
 `);
 
 type ForwardPagination = {
-  first: int;
+  first: number;
   after: string | null;
 };
 
 type BackwardPagination = {
-  last: int;
+  last: number;
   before: string | null;
 };
 

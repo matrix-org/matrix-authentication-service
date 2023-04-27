@@ -577,6 +577,26 @@ export type Viewer = Anonymous | User;
 /** Represents the current viewer's session */
 export type ViewerSession = Anonymous | BrowserSession;
 
+export type CurrentViewerQueryQueryVariables = Exact<{ [key: string]: never }>;
+
+export type CurrentViewerQueryQuery = {
+  __typename?: "Query";
+  viewer:
+    | { __typename?: "Anonymous"; id: string }
+    | { __typename?: "User"; id: string };
+};
+
+export type CurrentViewerSessionQueryQueryVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type CurrentViewerSessionQueryQuery = {
+  __typename?: "Query";
+  viewerSession:
+    | { __typename?: "Anonymous"; id: string }
+    | { __typename?: "BrowserSession"; id: string };
+};
+
 export type AddEmailMutationVariables = Exact<{
   userId: Scalars["ID"];
   email: Scalars["String"];
@@ -698,7 +718,7 @@ export type UserEmailListQueryQueryVariables = Exact<{
 export type UserEmailListQueryQuery = {
   __typename?: "Query";
   user?: {
-    __typename: "User";
+    __typename?: "User";
     id: string;
     emails: {
       __typename?: "UserEmailConnection";
@@ -721,13 +741,6 @@ export type UserEmailListQueryQuery = {
       };
     };
   } | null;
-};
-
-export type CurrentUserQueryQueryVariables = Exact<{ [key: string]: never }>;
-
-export type CurrentUserQueryQuery = {
-  __typename?: "Query";
-  viewer: { __typename?: "Anonymous" } | { __typename: "User"; id: string };
 };
 
 export type AccountQueryQueryVariables = Exact<{
@@ -758,10 +771,7 @@ export type BrowserSessionQueryQuery = {
   } | null;
 };
 
-export type HomeQueryQueryVariables = Exact<{
-  count: Scalars["Int"];
-  cursor?: InputMaybe<Scalars["String"]>;
-}>;
+export type HomeQueryQueryVariables = Exact<{ [key: string]: never }>;
 
 export type HomeQueryQuery = {
   __typename?: "Query";
@@ -847,18 +857,7 @@ export const BrowserSessionList_UserFragmentDoc = {
               {
                 kind: "Argument",
                 name: { kind: "Name", value: "first" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "count" },
-                },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "after" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "cursor" },
-                },
+                value: { kind: "IntValue", value: "10" },
               },
             ],
             selectionSet: {
@@ -985,18 +984,7 @@ export const CompatSsoLoginList_UserFragmentDoc = {
               {
                 kind: "Argument",
                 name: { kind: "Name", value: "first" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "count" },
-                },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "after" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "cursor" },
-                },
+                value: { kind: "IntValue", value: "10" },
               },
             ],
             selectionSet: {
@@ -1121,18 +1109,7 @@ export const OAuth2SessionList_UserFragmentDoc = {
               {
                 kind: "Argument",
                 name: { kind: "Name", value: "first" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "count" },
-                },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "after" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "cursor" },
-                },
+                value: { kind: "IntValue", value: "10" },
               },
             ],
             selectionSet: {
@@ -1229,6 +1206,112 @@ export const UserEmail_EmailFragmentDoc = {
     },
   ],
 } as unknown as DocumentNode<UserEmail_EmailFragment, unknown>;
+export const CurrentViewerQueryDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "CurrentViewerQuery" },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "viewer" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                {
+                  kind: "InlineFragment",
+                  typeCondition: {
+                    kind: "NamedType",
+                    name: { kind: "Name", value: "User" },
+                  },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                    ],
+                  },
+                },
+                {
+                  kind: "InlineFragment",
+                  typeCondition: {
+                    kind: "NamedType",
+                    name: { kind: "Name", value: "Anonymous" },
+                  },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  CurrentViewerQueryQuery,
+  CurrentViewerQueryQueryVariables
+>;
+export const CurrentViewerSessionQueryDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "CurrentViewerSessionQuery" },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "viewerSession" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                {
+                  kind: "InlineFragment",
+                  typeCondition: {
+                    kind: "NamedType",
+                    name: { kind: "Name", value: "BrowserSession" },
+                  },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                    ],
+                  },
+                },
+                {
+                  kind: "InlineFragment",
+                  typeCondition: {
+                    kind: "NamedType",
+                    name: { kind: "Name", value: "Anonymous" },
+                  },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  CurrentViewerSessionQueryQuery,
+  CurrentViewerSessionQueryQueryVariables
+>;
 export const AddEmailDocument = {
   kind: "Document",
   definitions: [
@@ -1417,7 +1500,6 @@ export const UserEmailListQueryDocument = {
             selectionSet: {
               kind: "SelectionSet",
               selections: [
-                { kind: "Field", name: { kind: "Name", value: "__typename" } },
                 { kind: "Field", name: { kind: "Name", value: "id" } },
                 {
                   kind: "Field",
@@ -1552,50 +1634,6 @@ export const UserEmailListQueryDocument = {
   UserEmailListQueryQuery,
   UserEmailListQueryQueryVariables
 >;
-export const CurrentUserQueryDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "query",
-      name: { kind: "Name", value: "CurrentUserQuery" },
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "viewer" },
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                {
-                  kind: "InlineFragment",
-                  typeCondition: {
-                    kind: "NamedType",
-                    name: { kind: "Name", value: "User" },
-                  },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "__typename" },
-                      },
-                      { kind: "Field", name: { kind: "Name", value: "id" } },
-                    ],
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<
-  CurrentUserQueryQuery,
-  CurrentUserQueryQueryVariables
->;
 export const AccountQueryDocument = {
   kind: "Document",
   definitions: [
@@ -1726,27 +1764,6 @@ export const HomeQueryDocument = {
       kind: "OperationDefinition",
       operation: "query",
       name: { kind: "Name", value: "HomeQuery" },
-      variableDefinitions: [
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "count" },
-          },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
-          },
-        },
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "cursor" },
-          },
-          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
-        },
-      ],
       selectionSet: {
         kind: "SelectionSet",
         selections: [
@@ -1895,18 +1912,7 @@ export const HomeQueryDocument = {
               {
                 kind: "Argument",
                 name: { kind: "Name", value: "first" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "count" },
-                },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "after" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "cursor" },
-                },
+                value: { kind: "IntValue", value: "10" },
               },
             ],
             selectionSet: {
@@ -1964,18 +1970,7 @@ export const HomeQueryDocument = {
               {
                 kind: "Argument",
                 name: { kind: "Name", value: "first" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "count" },
-                },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "after" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "cursor" },
-                },
+                value: { kind: "IntValue", value: "10" },
               },
             ],
             selectionSet: {
@@ -2037,18 +2032,7 @@ export const HomeQueryDocument = {
               {
                 kind: "Argument",
                 name: { kind: "Name", value: "first" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "count" },
-                },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "after" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "cursor" },
-                },
+                value: { kind: "IntValue", value: "10" },
               },
             ],
             selectionSet: {

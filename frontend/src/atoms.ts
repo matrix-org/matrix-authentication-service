@@ -13,12 +13,66 @@
 // limitations under the License.
 
 import type { ReactElement } from "react";
+import { atom } from "jotai";
 import { useHydrateAtoms } from "jotai/utils";
-import { clientAtom } from "jotai-urql";
+import { atomWithQuery, clientAtom } from "jotai-urql";
 
 import { client } from "./graphql";
+import { graphql } from "./gql";
 
 export const HydrateAtoms = ({ children }: { children: ReactElement }) => {
   useHydrateAtoms([[clientAtom, client]]);
   return children;
 };
+
+const CURRENT_VIEWER_QUERY = graphql(/* GraphQL */ `
+  query CurrentViewerQuery {
+    viewer {
+      ... on User {
+        id
+      }
+
+      ... on Anonymous {
+        id
+      }
+    }
+  }
+`);
+
+const currentViewerAtom = atomWithQuery({ query: CURRENT_VIEWER_QUERY });
+
+export const currentUserIdAtom = atom(async (get) => {
+  const result = await get(currentViewerAtom);
+  if (result.data?.viewer.__typename === "User") {
+    return result.data.viewer.id;
+  }
+  return null;
+});
+
+const CURRENT_VIEWER_SESSION_QUERY = graphql(/* GraphQL */ `
+  query CurrentViewerSessionQuery {
+    viewerSession {
+      ... on BrowserSession {
+        id
+      }
+
+      ... on Anonymous {
+        id
+      }
+    }
+  }
+`);
+
+const currentViewerSessionAtom = atomWithQuery({
+  query: CURRENT_VIEWER_SESSION_QUERY,
+});
+
+export const currentBrowserSessionIdAtom = atom(
+  async (get): Promise<string | null> => {
+    const result = await get(currentViewerSessionAtom);
+    if (result.data?.viewerSession.__typename === "BrowserSession") {
+      return result.data.viewerSession.id;
+    }
+    return null;
+  }
+);
