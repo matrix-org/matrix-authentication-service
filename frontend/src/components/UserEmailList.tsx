@@ -20,7 +20,9 @@ import { graphql } from "../gql";
 import { useTransition } from "react";
 import UserEmail from "./UserEmail";
 import BlockList from "./BlockList";
-import Pagination from "./Pagination";
+import PaginationControls from "./PaginationControls";
+import { atomWithPagination, pageSizeAtom, Pagination } from "../pagination";
+import { PageInfo } from "../gql/graphql";
 
 const QUERY = graphql(/* GraphQL */ `
   query UserEmailListQuery(
@@ -52,34 +54,8 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-type ForwardPagination = {
-  first: number;
-  after: string | null;
-};
-
-type BackwardPagination = {
-  last: number;
-  before: string | null;
-};
-
-type Pagination = ForwardPagination | BackwardPagination;
-
-const isForwardPagination = (
-  pagination: Pagination
-): pagination is ForwardPagination => {
-  return pagination.hasOwnProperty("first");
-};
-
-const isBackwardPagination = (
-  pagination: Pagination
-): pagination is BackwardPagination => {
-  return pagination.hasOwnProperty("last");
-};
-
-const pageSize = atom(6);
-
 const currentPagination = atomWithDefault<Pagination>((get) => ({
-  first: get(pageSize),
+  first: get(pageSizeAtom),
   after: null,
 }));
 
@@ -91,58 +67,28 @@ export const emailPageResultFamily = atomFamily((userId: string) => {
   return emailPageResult;
 });
 
-const nextPagePaginationFamily = atomFamily((userId: string) => {
-  const nextPagePagination = atom(
-    async (get): Promise<ForwardPagination | null> => {
-      // If we are paginating backwards, we can assume there is a next page
-      const pagination = get(currentPagination);
-      const hasProbablyNextPage =
-        isBackwardPagination(pagination) && pagination.before !== null;
+const pageInfoFamily = atomFamily((userId: string) => {
+  const pageInfoAtom = atom(async (get): Promise<PageInfo | null> => {
+    const result = await get(emailPageResultFamily(userId));
+    return result.data?.user?.emails?.pageInfo ?? null;
+  });
 
-      const result = await get(emailPageResultFamily(userId));
-      const pageInfo = result.data?.user?.emails?.pageInfo;
-      if (pageInfo?.hasNextPage || hasProbablyNextPage) {
-        return {
-          first: get(pageSize),
-          after: pageInfo?.endCursor ?? null,
-        };
-      }
-
-      return null;
-    }
-  );
-  return nextPagePagination;
+  return pageInfoAtom;
 });
 
-const prevPagePaginationFamily = atomFamily((userId: string) => {
-  const prevPagePagination = atom(
-    async (get): Promise<BackwardPagination | null> => {
-      // If we are paginating forwards, we can assume there is a previous page
-      const pagination = get(currentPagination);
-      const hasProbablyPreviousPage =
-        isForwardPagination(pagination) && pagination.after !== null;
-
-      const result = await get(emailPageResultFamily(userId));
-      const pageInfo = result.data?.user?.emails?.pageInfo;
-      if (pageInfo?.hasPreviousPage || hasProbablyPreviousPage) {
-        return {
-          last: get(pageSize),
-          before: pageInfo?.startCursor ?? null,
-        };
-      }
-
-      return null;
-    }
+const paginationFamily = atomFamily((userId: string) => {
+  const paginationAtom = atomWithPagination(
+    currentPagination,
+    pageInfoFamily(userId)
   );
-  return prevPagePagination;
+  return paginationAtom;
 });
 
 const UserEmailList: React.FC<{ userId: string }> = ({ userId }) => {
   const [pending, startTransition] = useTransition();
   const result = useAtomValue(emailPageResultFamily(userId));
   const setPagination = useSetAtom(currentPagination);
-  const nextPagePagination = useAtomValue(nextPagePaginationFamily(userId));
-  const prevPagePagination = useAtomValue(prevPagePaginationFamily(userId));
+  const [prevPage, nextPage] = useAtomValue(paginationFamily(userId));
 
   const paginate = (pagination: Pagination) => {
     startTransition(() => {
@@ -152,10 +98,10 @@ const UserEmailList: React.FC<{ userId: string }> = ({ userId }) => {
 
   return (
     <BlockList>
-      <Pagination
+      <PaginationControls
         count={result.data?.user?.emails?.totalCount ?? 0}
-        onPrev={prevPagePagination ? () => paginate(prevPagePagination) : null}
-        onNext={nextPagePagination ? () => paginate(nextPagePagination) : null}
+        onPrev={prevPage ? () => paginate(prevPage) : null}
+        onNext={nextPage ? () => paginate(nextPage) : null}
         disabled={pending}
       />
       {result.data?.user?.emails?.edges?.map((edge) => (

@@ -20,6 +20,8 @@
     "@urql/core": "^4.0.7",
     "@urql/devtools": "^2.0.3",
     "@urql/exchange-graphcache": "^6.0.3",
+    "@urql/exchange-refocus": "^1.0.2",
+    "@urql/exchange-request-policy": "^1.0.2",
     "date-fns": "^2.29.3",
     "graphql": "^16.6.0",
     "jotai": "^2.0.4",

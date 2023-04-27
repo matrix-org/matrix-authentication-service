@@ -21,15 +21,15 @@ const documents = {
     types.AddEmailDocument,
   "\n  fragment BrowserSession_session on BrowserSession {\n    id\n    createdAt\n    lastAuthentication {\n      id\n      createdAt\n    }\n  }\n":
     types.BrowserSession_SessionFragmentDoc,
-  "\n  query BrowserSessionList($userId: ID!) {\n    user(id: $userId) {\n      id\n      browserSessions(first: 10) {\n        edges {\n          cursor\n          node {\n            id\n            ...BrowserSession_session\n          }\n        }\n\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n":
+  "\n  query BrowserSessionList(\n    $userId: ID!\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n      browserSessions(\n        first: $first\n        after: $after\n        last: $last\n        before: $before\n      ) {\n        edges {\n          cursor\n          node {\n            id\n            ...BrowserSession_session\n          }\n        }\n\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n":
     types.BrowserSessionListDocument,
   "\n  fragment CompatSsoLogin_login on CompatSsoLogin {\n    id\n    redirectUri\n    createdAt\n    session {\n      id\n      createdAt\n      deviceId\n      finishedAt\n    }\n  }\n":
     types.CompatSsoLogin_LoginFragmentDoc,
-  "\n  query CompatSsoLoginList($userId: ID!) {\n    user(id: $userId) {\n      id\n      compatSsoLogins(first: 10) {\n        edges {\n          node {\n            id\n            ...CompatSsoLogin_login\n          }\n        }\n      }\n    }\n  }\n":
+  "\n  query CompatSsoLoginList(\n    $userId: ID!\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n      compatSsoLogins(\n        first: $first\n        after: $after\n        last: $last\n        before: $before\n      ) {\n        edges {\n          node {\n            id\n            ...CompatSsoLogin_login\n          }\n        }\n      }\n    }\n  }\n":
     types.CompatSsoLoginListDocument,
   "\n  fragment OAuth2Session_session on Oauth2Session {\n    id\n    scope\n    client {\n      id\n      clientId\n      clientName\n      clientUri\n    }\n  }\n":
     types.OAuth2Session_SessionFragmentDoc,
-  "\n  query OAuth2SessionListQuery($userId: ID!) {\n    user(id: $userId) {\n      id\n      oauth2Sessions(first: 10) {\n        edges {\n          cursor\n          node {\n            id\n            ...OAuth2Session_session\n          }\n        }\n      }\n    }\n  }\n":
+  "\n  query OAuth2SessionListQuery(\n    $userId: ID!\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n      oauth2Sessions(\n        first: $first\n        after: $after\n        last: $last\n        before: $before\n      ) {\n        edges {\n          cursor\n          node {\n            id\n            ...OAuth2Session_session\n          }\n        }\n\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n":
     types.OAuth2SessionListQueryDocument,
   "\n  fragment UserEmail_email on UserEmail {\n    id\n    email\n    createdAt\n    confirmedAt\n  }\n":
     types.UserEmail_EmailFragmentDoc,
@@ -85,8 +85,8 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  query BrowserSessionList($userId: ID!) {\n    user(id: $userId) {\n      id\n      browserSessions(first: 10) {\n        edges {\n          cursor\n          node {\n            id\n            ...BrowserSession_session\n          }\n        }\n\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n"
-): (typeof documents)["\n  query BrowserSessionList($userId: ID!) {\n    user(id: $userId) {\n      id\n      browserSessions(first: 10) {\n        edges {\n          cursor\n          node {\n            id\n            ...BrowserSession_session\n          }\n        }\n\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n"];
+  source: "\n  query BrowserSessionList(\n    $userId: ID!\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n      browserSessions(\n        first: $first\n        after: $after\n        last: $last\n        before: $before\n      ) {\n        edges {\n          cursor\n          node {\n            id\n            ...BrowserSession_session\n          }\n        }\n\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n"
+): (typeof documents)["\n  query BrowserSessionList(\n    $userId: ID!\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n      browserSessions(\n        first: $first\n        after: $after\n        last: $last\n        before: $before\n      ) {\n        edges {\n          cursor\n          node {\n            id\n            ...BrowserSession_session\n          }\n        }\n\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -97,8 +97,8 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  query CompatSsoLoginList($userId: ID!) {\n    user(id: $userId) {\n      id\n      compatSsoLogins(first: 10) {\n        edges {\n          node {\n            id\n            ...CompatSsoLogin_login\n          }\n        }\n      }\n    }\n  }\n"
-): (typeof documents)["\n  query CompatSsoLoginList($userId: ID!) {\n    user(id: $userId) {\n      id\n      compatSsoLogins(first: 10) {\n        edges {\n          node {\n            id\n            ...CompatSsoLogin_login\n          }\n        }\n      }\n    }\n  }\n"];
+  source: "\n  query CompatSsoLoginList(\n    $userId: ID!\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n      compatSsoLogins(\n        first: $first\n        after: $after\n        last: $last\n        before: $before\n      ) {\n        edges {\n          node {\n            id\n            ...CompatSsoLogin_login\n          }\n        }\n      }\n    }\n  }\n"
+): (typeof documents)["\n  query CompatSsoLoginList(\n    $userId: ID!\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n      compatSsoLogins(\n        first: $first\n        after: $after\n        last: $last\n        before: $before\n      ) {\n        edges {\n          node {\n            id\n            ...CompatSsoLogin_login\n          }\n        }\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -109,8 +109,8 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  query OAuth2SessionListQuery($userId: ID!) {\n    user(id: $userId) {\n      id\n      oauth2Sessions(first: 10) {\n        edges {\n          cursor\n          node {\n            id\n            ...OAuth2Session_session\n          }\n        }\n      }\n    }\n  }\n"
-): (typeof documents)["\n  query OAuth2SessionListQuery($userId: ID!) {\n    user(id: $userId) {\n      id\n      oauth2Sessions(first: 10) {\n        edges {\n          cursor\n          node {\n            id\n            ...OAuth2Session_session\n          }\n        }\n      }\n    }\n  }\n"];
+  source: "\n  query OAuth2SessionListQuery(\n    $userId: ID!\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n      oauth2Sessions(\n        first: $first\n        after: $after\n        last: $last\n        before: $before\n      ) {\n        edges {\n          cursor\n          node {\n            id\n            ...OAuth2Session_session\n          }\n        }\n\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n"
+): (typeof documents)["\n  query OAuth2SessionListQuery(\n    $userId: ID!\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n      oauth2Sessions(\n        first: $first\n        after: $after\n        last: $last\n        before: $before\n      ) {\n        edges {\n          cursor\n          node {\n            id\n            ...OAuth2Session_session\n          }\n        }\n\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
