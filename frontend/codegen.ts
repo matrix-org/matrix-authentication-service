@@ -7,7 +7,13 @@ const config: CodegenConfig = {
   generates: {
     "./src/gql/": {
       preset: "client",
-      plugins: [],
+      plugins: [
+        {
+          add: {
+            content: "/* eslint-disable */",
+          },
+        },
+      ],
     },
     "./src/gql/schema.ts": {
       plugins: [
@@ -20,7 +26,9 @@ const config: CodegenConfig = {
       ],
     },
   },
-  hooks: { afterOneFileWrite: ["prettier --write"] },
+  hooks: {
+    afterOneFileWrite: ["prettier --write"],
+  },
 };
 
 export default config;
