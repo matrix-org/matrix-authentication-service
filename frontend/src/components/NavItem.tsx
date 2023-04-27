@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import { useAtomValue } from "jotai";
+
 import { Link, Route, routeAtom } from "../Router";
 
 const NavItem: React.FC<{ route: Route; children: React.ReactNode }> = ({

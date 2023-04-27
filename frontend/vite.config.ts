@@ -13,9 +13,9 @@
 // limitations under the License.
 
 /// <reference types="vitest" />
+import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import eslint from "vite-plugin-eslint";
-import react from "@vitejs/plugin-react";
 import codegen from "vite-plugin-graphql-codegen";
 
 export default defineConfig({

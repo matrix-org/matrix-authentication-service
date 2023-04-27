@@ -30,9 +30,25 @@ module.exports = {
         "prettier",
         "plugin:prettier/recommended",
         "plugin:jsx-a11y/recommended",
+        "plugin:import/recommended",
+        "plugin:import/typescript",
       ],
       plugins: ["jsx-a11y"],
       files: ["*.ts", "*.tsx", "*.cjs", "*.js"],
+      rules: {
+        "import/order": [
+          "error",
+          {
+            "newlines-between": "always",
+            alphabetize: { order: "asc" },
+          },
+        ],
+      },
+      settings: {
+        "import/resolver": {
+          typescript: true,
+        },
+      },
     },
 
     // Processor to extract GraphQL operations embedded in TS files

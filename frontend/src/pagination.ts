@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import { atom, Atom } from "jotai";
+
 import { PageInfo } from "./gql/graphql";
 
 export type ForwardPagination = {
