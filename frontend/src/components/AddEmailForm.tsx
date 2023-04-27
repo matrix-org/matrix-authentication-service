@@ -14,12 +14,13 @@
 
 import React, { useRef, useTransition } from "react";
 import { atomWithMutation } from "jotai-urql";
-import { useAtom } from "jotai";
+import { useAtom, useSetAtom } from "jotai";
 import { graphql } from "../gql";
 import Button from "./Button";
 import UserEmail from "./UserEmail";
 import Input from "./Input";
 import Typography from "./Typography";
+import { emailPageResultFamily } from "./UserEmailList";
 
 const ADD_EMAIL_MUTATION = graphql(/* GraphQL */ `
   mutation AddEmail($userId: ID!, $email: String!) {
@@ -42,12 +43,15 @@ const AddEmailForm: React.FC<{ userId: string }> = ({ userId }) => {
   const formRef = useRef<HTMLFormElement>(null);
   const [addEmailResult, addEmail] = useAtom(addUserEmailAtom);
   const [pending, startTransition] = useTransition();
+  // XXX: is this the right way to do this?
+  const refetchList = useSetAtom(emailPageResultFamily(userId));
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const email = e.currentTarget.email.value;
     startTransition(() => {
       addEmail({ userId, email }).then(() => {
+        refetchList();
         if (formRef.current) {
           formRef.current.reset();
         }
@@ -59,7 +63,7 @@ const AddEmailForm: React.FC<{ userId: string }> = ({ userId }) => {
     <>
       {addEmailResult.data?.addEmail.status === "ADDED" && (
         <>
-          <div className="p-4">
+          <div className="pt-4">
             <Typography variant="subtitle">Email added!</Typography>
           </div>
           <UserEmail email={addEmailResult.data?.addEmail.email} />
@@ -67,7 +71,7 @@ const AddEmailForm: React.FC<{ userId: string }> = ({ userId }) => {
       )}
       {addEmailResult.data?.addEmail.status === "EXISTS" && (
         <>
-          <div className="p-4">
+          <div className="pt-4">
             <Typography variant="subtitle">Email already exists!</Typography>
           </div>
           <UserEmail email={addEmailResult.data?.addEmail.email} />

@@ -28,6 +28,7 @@ export const HydrateAtoms = ({ children }: { children: ReactElement }) => {
 const CURRENT_VIEWER_QUERY = graphql(/* GraphQL */ `
   query CurrentViewerQuery {
     viewer {
+      __typename
       ... on User {
         id
       }
@@ -52,6 +53,7 @@ export const currentUserIdAtom = atom(async (get) => {
 const CURRENT_VIEWER_SESSION_QUERY = graphql(/* GraphQL */ `
   query CurrentViewerSessionQuery {
     viewerSession {
+      __typename
       ... on BrowserSession {
         id
       }

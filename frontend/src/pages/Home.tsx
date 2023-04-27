@@ -20,48 +20,20 @@ import CompatSsoLoginList from "../components/CompatSsoLoginList";
 import OAuth2SessionList from "../components/OAuth2SessionList";
 import Typography from "../components/Typography";
 import { graphql } from "../gql";
-
-const QUERY = graphql(/* GraphQL */ `
-  query HomeQuery {
-    # eslint-disable-next-line @graphql-eslint/no-deprecated
-    currentBrowserSession {
-      id
-      user {
-        id
-        username
-
-        ...CompatSsoLoginList_user
-        ...BrowserSessionList_user
-        ...OAuth2SessionList_user
-      }
-    }
-  }
-`);
-
-const homeDataAtom = atomWithQuery({
-  query: QUERY,
-});
+import { currentUserIdAtom } from "../atoms";
+import UserGreeting from "../components/UserGreeting";
 
 const Home: React.FC = () => {
-  const result = useAtomValue(homeDataAtom);
+  const currentUserId = useAtomValue(currentUserIdAtom);
 
-  if (result.error) {
-    throw result.error;
-  }
-
-  const data = result.data!!;
-
-  if (data.currentBrowserSession) {
-    const session = data.currentBrowserSession;
-    const user = session.user;
-
+  if (currentUserId) {
     return (
       <>
-        <Typography variant="headline">Hello {user.username}!</Typography>
+        <UserGreeting userId={currentUserId} />
         <div className="mt-4 grid lg:grid-cols-3 gap-1">
-          <OAuth2SessionList user={user} />
-          <CompatSsoLoginList user={user} />
-          <BrowserSessionList user={user} currentSessionId={session.id} />
+          <OAuth2SessionList userId={currentUserId} />
+          <CompatSsoLoginList userId={currentUserId} />
+          <BrowserSessionList userId={currentUserId} />
         </div>
       </>
     );

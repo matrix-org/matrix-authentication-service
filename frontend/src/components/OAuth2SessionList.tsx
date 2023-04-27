@@ -12,41 +12,62 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { atomFamily } from "jotai/utils";
+import { atomWithQuery } from "jotai-urql";
+import { useAtomValue } from "jotai";
+
 import BlockList from "./BlockList";
 import OAuth2Session from "./OAuth2Session";
 import { Title } from "./Typography";
 
-import { FragmentType, graphql, useFragment } from "../gql";
+import { graphql } from "../gql";
 
-const FRAGMENT = graphql(/* GraphQL */ `
-  fragment OAuth2SessionList_user on User {
-    oauth2Sessions(first: 10) {
-      edges {
-        cursor
-        node {
-          id
-          ...OAuth2Session_session
+const QUERY = graphql(/* GraphQL */ `
+  query OAuth2SessionListQuery($userId: ID!) {
+    user(id: $userId) {
+      id
+      oauth2Sessions(first: 10) {
+        edges {
+          cursor
+          node {
+            id
+            ...OAuth2Session_session
+          }
         }
       }
     }
   }
 `);
 
+const oauth2SessionListFamily = atomFamily((userId: string) => {
+  const oauth2SessionList = atomWithQuery({
+    query: QUERY,
+    getVariables: () => ({ userId }),
+  });
+
+  return oauth2SessionList;
+});
+
 type Props = {
-  user: FragmentType<typeof FRAGMENT>;
+  userId: string;
 };
 
-const OAuth2SessionList: React.FC<Props> = ({ user }) => {
-  const data = useFragment(FRAGMENT, user);
+const OAuth2SessionList: React.FC<Props> = ({ userId }) => {
+  const result = useAtomValue(oauth2SessionListFamily(userId));
 
-  return (
-    <BlockList>
-      <Title>List of OAuth 2.0 sessions:</Title>
-      {data.oauth2Sessions.edges.map((n) => (
-        <OAuth2Session key={n.cursor} session={n.node} />
-      ))}
-    </BlockList>
-  );
+  if (result.data?.user?.oauth2Sessions) {
+    const data = result.data.user.oauth2Sessions;
+    return (
+      <BlockList>
+        <Title>List of OAuth 2.0 sessions:</Title>
+        {data.edges.map((n) => (
+          <OAuth2Session key={n.cursor} session={n.node} />
+        ))}
+      </BlockList>
+    );
+  } else {
+    return <>Failed to load OAuth 2.0 session list</>;
+  }
 };
 
 export default OAuth2SessionList;

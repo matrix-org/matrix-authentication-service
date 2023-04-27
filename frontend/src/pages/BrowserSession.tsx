@@ -16,6 +16,7 @@ import { useAtomValue } from "jotai";
 import { atomWithQuery } from "jotai-urql";
 import { useMemo } from "react";
 import { graphql } from "../gql";
+import { atomFamily } from "jotai/utils";
 
 const QUERY = graphql(/* GraphQL */ `
   query BrowserSessionQuery($id: ID!) {
@@ -34,25 +35,27 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-const BrowserSession: React.FC<{ id: string }> = ({ id }) => {
-  const result = useAtomValue(
-    useMemo(
-      () => atomWithQuery({ query: QUERY, getVariables: () => ({ id }) }),
-      [id]
-    )
-  );
+const browserSessionFamily = atomFamily((id: string) => {
+  const browserSessionAtom = atomWithQuery({
+    query: QUERY,
+    getVariables: () => ({ id }),
+  });
 
-  if (result.error) {
-    throw result.error;
+  return browserSessionAtom;
+});
+
+const BrowserSession: React.FC<{ id: string }> = ({ id }) => {
+  const result = useAtomValue(browserSessionFamily(id));
+
+  if (result.data?.browserSession) {
+    return (
+      <pre>
+        <code>{JSON.stringify(result.data.browserSession, null, 2)}</code>
+      </pre>
+    );
   }
 
-  const data = result.data!!;
-
-  return (
-    <pre>
-      <code>{JSON.stringify(data.browserSession, null, 2)}</code>
-    </pre>
-  );
+  return <>Failed to load browser session</>;
 };
 
 export default BrowserSession;
