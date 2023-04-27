@@ -20,7 +20,7 @@ import { FragmentType, graphql, useFragment } from "../gql";
 
 const FRAGMENT = graphql(/* GraphQL */ `
   fragment OAuth2SessionList_user on User {
-    oauth2Sessions(first: $count, after: $cursor) {
+    oauth2Sessions(first: 10) {
       edges {
         cursor
         node {

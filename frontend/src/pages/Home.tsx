@@ -22,7 +22,7 @@ import Typography from "../components/Typography";
 import { graphql } from "../gql";
 
 const QUERY = graphql(/* GraphQL */ `
-  query HomeQuery($count: Int!, $cursor: String) {
+  query HomeQuery {
     # eslint-disable-next-line @graphql-eslint/no-deprecated
     currentBrowserSession {
       id
@@ -40,7 +40,6 @@ const QUERY = graphql(/* GraphQL */ `
 
 const homeDataAtom = atomWithQuery({
   query: QUERY,
-  getVariables: () => ({ count: 10 }),
 });
 
 const Home: React.FC = () => {

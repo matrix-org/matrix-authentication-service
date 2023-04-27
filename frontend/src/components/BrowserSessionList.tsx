@@ -19,7 +19,7 @@ import { FragmentType, graphql, useFragment } from "../gql";
 
 const FRAGMENT = graphql(/* GraphQL */ `
   fragment BrowserSessionList_user on User {
-    browserSessions(first: $count, after: $cursor) {
+    browserSessions(first: 10) {
       edges {
         cursor
         node {

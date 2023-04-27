@@ -24,7 +24,7 @@ import { HydrateAtoms } from "./atoms";
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <Provider>
-      <DevTools />
+      {import.meta.env.DEV && <DevTools />}
       <HydrateAtoms>
         <React.Suspense fallback={<LoadingScreen />}>
           <Router />

@@ -21,19 +21,7 @@ import { graphql } from "../gql";
 import UserEmailList from "../components/UserEmailList";
 import { Title } from "../components/Typography";
 import AddEmailForm from "../components/AddEmailForm";
-
-const CURRENT_USER_QUERY = graphql(/* GraphQL */ `
-  query CurrentUserQuery {
-    viewer {
-      ... on User {
-        __typename
-        id
-      }
-    }
-  }
-`);
-
-const currentUserAtom = atomWithQuery({ query: CURRENT_USER_QUERY });
+import { currentUserIdAtom } from "../atoms";
 
 const QUERY = graphql(/* GraphQL */ `
   query AccountQuery($id: ID!) {
@@ -61,11 +49,11 @@ const UserAccount: React.FC<{ id: string }> = ({ id }) => {
 };
 
 const CurrentUserAccount: React.FC = () => {
-  const result = useAtomValue(currentUserAtom);
-  if (result.data?.viewer?.__typename === "User") {
+  const userId = useAtomValue(currentUserIdAtom);
+  if (userId !== null) {
     return (
       <div className="w-96 mx-auto">
-        <UserAccount id={result.data.viewer.id} />
+        <UserAccount id={userId} />
       </div>
     );
   }
