@@ -16,6 +16,9 @@ type Props = {
   /** The label of the button */
   children: string;
 
+  /** Additional classes to apply to the button */
+  className?: string;
+
   /** Makes the button more compact */
   compact?: boolean;
 
@@ -31,6 +34,7 @@ type Props = {
 
 const Button: React.FC<Props> = ({
   children,
+  className: extraClassName,
   compact,
   ghost,
   disabled,
@@ -57,7 +61,7 @@ const Button: React.FC<Props> = ({
     <button
       {...props}
       type={type || "button"}
-      className={`rounded-lg font-semibold ${colors} ${sizeClass}`}
+      className={`rounded-lg font-semibold ${colors} ${sizeClass} ${extraClassName}`}
       disabled={disabled}
     >
       {children}
