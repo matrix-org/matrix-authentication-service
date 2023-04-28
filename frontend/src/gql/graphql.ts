@@ -440,6 +440,8 @@ export enum SetPrimaryEmailStatus {
   NotFound = "NOT_FOUND",
   /** The email address was set as primary */
   Set = "SET",
+  /** Can't make an unverified email address primary */
+  Unverified = "UNVERIFIED",
 }
 
 export type UpstreamOAuth2Link = CreationEvent &
