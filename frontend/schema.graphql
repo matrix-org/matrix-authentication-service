@@ -554,6 +554,10 @@ enum SetPrimaryEmailStatus {
   The email address was not found
   """
   NOT_FOUND
+  """
+  Can't make an unverified email address primary
+  """
+  UNVERIFIED
 }
 
 type UpstreamOAuth2Link implements Node & CreationEvent {
