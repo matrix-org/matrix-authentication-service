@@ -184,6 +184,8 @@ export type Mutation = {
   removeEmail: RemoveEmailPayload;
   /** Send a verification code for an email address */
   sendVerificationEmail: SendVerificationEmailPayload;
+  /** Set an email address as primary */
+  setPrimaryEmail: SetPrimaryEmailPayload;
   /** Submit a verification code for an email address */
   verifyEmail: VerifyEmailPayload;
 };
@@ -201,6 +203,11 @@ export type MutationRemoveEmailArgs = {
 /** The mutations root of the GraphQL interface. */
 export type MutationSendVerificationEmailArgs = {
   input: SendVerificationEmailInput;
+};
+
+/** The mutations root of the GraphQL interface. */
+export type MutationSetPrimaryEmailArgs = {
+  input: SetPrimaryEmailInput;
 };
 
 /** The mutations root of the GraphQL interface. */
@@ -411,6 +418,28 @@ export enum SendVerificationEmailStatus {
   AlreadyVerified = "ALREADY_VERIFIED",
   /** The verification email was sent */
   Sent = "SENT",
+}
+
+/** The input for the `setPrimaryEmail` mutation */
+export type SetPrimaryEmailInput = {
+  /** The ID of the email address to set as primary */
+  userEmailId: Scalars["ID"];
+};
+
+/** The payload of the `setPrimaryEmail` mutation */
+export type SetPrimaryEmailPayload = {
+  __typename?: "SetPrimaryEmailPayload";
+  status: SetPrimaryEmailStatus;
+  /** The user to whom the email address belongs */
+  user?: Maybe<User>;
+};
+
+/** The status of the `setPrimaryEmail` mutation */
+export enum SetPrimaryEmailStatus {
+  /** The email address was not found */
+  NotFound = "NOT_FOUND",
+  /** The email address was set as primary */
+  Set = "SET",
 }
 
 export type UpstreamOAuth2Link = CreationEvent &
@@ -858,6 +887,23 @@ export type RemoveEmailMutation = {
     __typename?: "RemoveEmailPayload";
     status: RemoveEmailStatus;
     user?: { __typename?: "User"; id: string } | null;
+  };
+};
+
+export type SetPrimaryEmailMutationVariables = Exact<{
+  id: Scalars["ID"];
+}>;
+
+export type SetPrimaryEmailMutation = {
+  __typename?: "Mutation";
+  setPrimaryEmail: {
+    __typename?: "SetPrimaryEmailPayload";
+    status: SetPrimaryEmailStatus;
+    user?: {
+      __typename?: "User";
+      id: string;
+      primaryEmail?: { __typename?: "UserEmail"; id: string } | null;
+    } | null;
   };
 };
 
@@ -2218,6 +2264,86 @@ export const RemoveEmailDocument = {
     },
   ],
 } as unknown as DocumentNode<RemoveEmailMutation, RemoveEmailMutationVariables>;
+export const SetPrimaryEmailDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "SetPrimaryEmail" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "setPrimaryEmail" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: {
+                  kind: "ObjectValue",
+                  fields: [
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "userEmailId" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "id" },
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "status" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "user" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "primaryEmail" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "id" },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  SetPrimaryEmailMutation,
+  SetPrimaryEmailMutationVariables
+>;
 export const UserEmailListQueryDocument = {
   kind: "Document",
   definitions: [

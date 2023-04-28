@@ -12,21 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useAtom, useSetAtom } from "jotai";
+import { atom, useAtom } from "jotai";
 import { atomWithMutation } from "jotai-urql";
 import { useRef, useTransition } from "react";
 
 import { graphql } from "../gql";
-import { LAST_PAGE } from "../pagination";
 
 import Button from "./Button";
 import Input from "./Input";
 import Typography from "./Typography";
-import {
-  currentPaginationAtom,
-  emailPageResultFamily,
-  primaryEmailResultFamily,
-} from "./UserEmailList";
 
 const ADD_EMAIL_MUTATION = graphql(/* GraphQL */ `
   mutation AddEmail($userId: ID!, $email: String!) {
@@ -40,17 +34,20 @@ const ADD_EMAIL_MUTATION = graphql(/* GraphQL */ `
   }
 `);
 
-export const addUserEmailAtom = atomWithMutation(ADD_EMAIL_MUTATION);
+const addUserEmailAtom = atomWithMutation(ADD_EMAIL_MUTATION);
 
-const AddEmailForm: React.FC<{ userId: string }> = ({ userId }) => {
+export const latestAddedEmailAtom = atom(async (get) => {
+  const result = await get(addUserEmailAtom);
+  return result.data?.addEmail.email?.id ?? null;
+});
+
+const AddEmailForm: React.FC<{ userId: string; onAdd?: () => void }> = ({
+  userId,
+  onAdd,
+}) => {
   const formRef = useRef<HTMLFormElement>(null);
   const [addEmailResult, addEmail] = useAtom(addUserEmailAtom);
   const [pending, startTransition] = useTransition();
-
-  // XXX: is this the right way to do this?
-  const refetchList = useSetAtom(emailPageResultFamily(userId));
-  const refetchPrimaryEmail = useSetAtom(primaryEmailResultFamily(userId));
-  const setCurrentPagination = useSetAtom(currentPaginationAtom);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -64,17 +61,11 @@ const AddEmailForm: React.FC<{ userId: string }> = ({ userId }) => {
           return;
         }
 
-        startTransition(() => {
-          // Paginate to the last page
-          setCurrentPagination(LAST_PAGE);
+        // Call the onAdd callback if provided
+        onAdd?.();
 
-          // Make it refetch the list and the primary email, in case they changed
-          refetchList();
-          refetchPrimaryEmail();
-
-          // Reset the form
-          formRef.current?.reset();
-        });
+        // Reset the form
+        formRef.current?.reset();
       });
     });
   };

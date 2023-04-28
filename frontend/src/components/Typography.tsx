@@ -18,6 +18,7 @@ type Variant = "headline" | "title" | "subtitle" | "body" | "caption" | "micro";
 
 type Props = {
   children: React.ReactNode;
+  className?: string;
   variant: Variant;
   bold?: boolean;
   justified?: boolean;
@@ -41,11 +42,17 @@ const classMap: Record<Variant, string> = {
   micro: "text-xs",
 };
 
-const Typography = ({ variant, children, bold, justified }: Props) => {
+const Typography = ({
+  variant,
+  children,
+  bold,
+  justified,
+  className: extraClassName,
+}: Props) => {
   const element = elementMap[variant];
   const boldClass = bold ? "font-semibold" : "";
   const justifiedClass = justified ? "text-justify" : "";
-  const className = `text-black dark:text-white ${boldClass} ${justifiedClass} ${classMap[variant]}`;
+  const className = `text-black dark:text-white ${boldClass} ${justifiedClass} ${classMap[variant]} ${extraClassName}`;
   return createElement(element, { className }, ...Children.toArray(children));
 };
 

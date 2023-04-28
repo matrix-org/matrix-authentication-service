@@ -245,6 +245,10 @@ type Mutation {
   Remove an email address
   """
   removeEmail(input: RemoveEmailInput!): RemoveEmailPayload!
+  """
+  Set an email address as primary
+  """
+  setPrimaryEmail(input: SetPrimaryEmailInput!): SetPrimaryEmailPayload!
 }
 
 """
@@ -515,6 +519,41 @@ enum SendVerificationEmailStatus {
   The email address is already verified
   """
   ALREADY_VERIFIED
+}
+
+"""
+The input for the `setPrimaryEmail` mutation
+"""
+input SetPrimaryEmailInput {
+  """
+  The ID of the email address to set as primary
+  """
+  userEmailId: ID!
+}
+
+"""
+The payload of the `setPrimaryEmail` mutation
+"""
+type SetPrimaryEmailPayload {
+  status: SetPrimaryEmailStatus!
+  """
+  The user to whom the email address belongs
+  """
+  user: User
+}
+
+"""
+The status of the `setPrimaryEmail` mutation
+"""
+enum SetPrimaryEmailStatus {
+  """
+  The email address was set as primary
+  """
+  SET
+  """
+  The email address was not found
+  """
+  NOT_FOUND
 }
 
 type UpstreamOAuth2Link implements Node & CreationEvent {

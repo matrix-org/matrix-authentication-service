@@ -16,7 +16,7 @@ use anyhow::Context as _;
 use async_graphql::{Context, Description, Enum, InputObject, Object, ID};
 use mas_storage::{
     job::{JobRepositoryExt, ProvisionUserJob, VerifyEmailJob},
-    user::UserRepository,
+    user::{UserEmailRepository, UserRepository},
     RepositoryAccess,
 };
 
@@ -304,6 +304,51 @@ impl RemoveEmailPayload {
     }
 }
 
+/// The input for the `setPrimaryEmail` mutation
+#[derive(InputObject)]
+struct SetPrimaryEmailInput {
+    /// The ID of the email address to set as primary
+    user_email_id: ID,
+}
+
+/// The status of the `setPrimaryEmail` mutation
+#[derive(Enum, Copy, Clone, Eq, PartialEq)]
+enum SetPrimaryEmailStatus {
+    /// The email address was set as primary
+    Set,
+    /// The email address was not found
+    NotFound,
+    /// Can't make an unverified email address primary
+    Unverified,
+}
+
+/// The payload of the `setPrimaryEmail` mutation
+#[derive(Description)]
+enum SetPrimaryEmailPayload {
+    Set(mas_data_model::User),
+    NotFound,
+    Unverified,
+}
+
+#[Object(use_type_description)]
+impl SetPrimaryEmailPayload {
+    async fn status(&self) -> SetPrimaryEmailStatus {
+        match self {
+            SetPrimaryEmailPayload::Set(_) => SetPrimaryEmailStatus::Set,
+            SetPrimaryEmailPayload::NotFound => SetPrimaryEmailStatus::NotFound,
+            SetPrimaryEmailPayload::Unverified => SetPrimaryEmailStatus::Unverified,
+        }
+    }
+
+    /// The user to whom the email address belongs
+    async fn user(&self) -> Option<User> {
+        match self {
+            SetPrimaryEmailPayload::Set(user) => Some(User(user.clone())),
+            SetPrimaryEmailPayload::NotFound | SetPrimaryEmailPayload::Unverified => None,
+        }
+    }
+}
+
 #[Object]
 impl UserEmailMutations {
     /// Add an email address to the specified user
@@ -505,5 +550,41 @@ impl UserEmailMutations {
         repo.save().await?;
 
         Ok(RemoveEmailPayload::Removed(user_email))
+    }
+
+    /// Set an email address as primary
+    async fn set_primary_email(
+        &self,
+        ctx: &Context<'_>,
+        input: SetPrimaryEmailInput,
+    ) -> Result<SetPrimaryEmailPayload, async_graphql::Error> {
+        let state = ctx.state();
+        let user_email_id = NodeType::UserEmail.extract_ulid(&input.user_email_id)?;
+        let requester = ctx.requester();
+
+        let user = requester.user().context("Unauthorized")?;
+
+        let mut repo = state.repository().await?;
+
+        let user_email = repo.user_email().lookup(user_email_id).await?;
+        let Some(user_email) = user_email else {
+            return Ok(SetPrimaryEmailPayload::NotFound);
+        };
+
+        if user_email.user_id != user.id {
+            return Err(async_graphql::Error::new("Unauthorized"));
+        }
+
+        if user_email.confirmed_at.is_none() {
+            return Ok(SetPrimaryEmailPayload::Unverified);
+        }
+
+        repo.user_email().set_as_primary(&user_email).await?;
+
+        repo.save().await?;
+
+        let mut user = user.clone();
+        user.primary_user_email_id = Some(user_email.id);
+        Ok(SetPrimaryEmailPayload::Set(user))
     }
 }
