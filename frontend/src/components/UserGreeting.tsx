@@ -18,7 +18,7 @@ import { atomWithQuery } from "jotai-urql";
 
 import { graphql } from "../gql";
 
-import { Title } from "./Typography";
+import Typography from "./Typography";
 
 const QUERY = graphql(/* GraphQL */ `
   query UserGreeting($userId: ID!) {
@@ -42,7 +42,11 @@ const UserGreeting: React.FC<{ userId: string }> = ({ userId }) => {
   const result = useAtomValue(userGreetingFamily(userId));
 
   if (result.data?.user) {
-    return <Title>Hello, {result.data.user.username}!</Title>;
+    return (
+      <Typography variant="headline">
+        Hello, {result.data.user.username}!
+      </Typography>
+    );
   }
 
   return <>Failed to load user</>;
