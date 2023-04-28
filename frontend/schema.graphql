@@ -23,11 +23,11 @@ type AddEmailPayload {
   """
   The email address that was added
   """
-  email: UserEmail!
+  email: UserEmail
   """
   The user to whom the email address was added
   """
-  user: User!
+  user: User
 }
 
 """
@@ -42,6 +42,10 @@ enum AddEmailStatus {
   The email address already exists
   """
   EXISTS
+  """
+  The email address is invalid
+  """
+  INVALID
 }
 
 type Anonymous implements Node {
@@ -237,6 +241,10 @@ type Mutation {
   Submit a verification code for an email address
   """
   verifyEmail(input: VerifyEmailInput!): VerifyEmailPayload!
+  """
+  Remove an email address
+  """
+  removeEmail(input: RemoveEmailInput!): RemoveEmailPayload!
 }
 
 """
@@ -419,6 +427,52 @@ type Query {
   Get the viewer's session
   """
   viewerSession: ViewerSession!
+}
+
+"""
+The input for the `removeEmail` mutation
+"""
+input RemoveEmailInput {
+  """
+  The ID of the email address to remove
+  """
+  userEmailId: ID!
+}
+
+"""
+The payload of the `removeEmail` mutation
+"""
+type RemoveEmailPayload {
+  """
+  Status of the operation
+  """
+  status: RemoveEmailStatus!
+  """
+  The email address that was removed
+  """
+  email: UserEmail
+  """
+  The user to whom the email address belonged
+  """
+  user: User
+}
+
+"""
+The status of the `removeEmail` mutation
+"""
+enum RemoveEmailStatus {
+  """
+  The email address was removed
+  """
+  REMOVED
+  """
+  Can't remove the primary email address
+  """
+  PRIMARY
+  """
+  The email address was not found
+  """
+  NOT_FOUND
 }
 
 """

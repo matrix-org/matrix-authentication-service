@@ -18,7 +18,11 @@ import { cacheExchange } from "@urql/exchange-graphcache";
 import { refocusExchange } from "@urql/exchange-refocus";
 import { requestPolicyExchange } from "@urql/exchange-request-policy";
 
-import type { MutationAddEmailArgs } from "./gql/graphql";
+import type {
+  MutationAddEmailArgs,
+  MutationRemoveEmailArgs,
+  RemoveEmailPayload,
+} from "./gql/graphql";
 import schema from "./gql/schema";
 
 const cache = cacheExchange({
@@ -38,6 +42,36 @@ const cache = cacheExchange({
           .forEach((field) => {
             cache.invalidate(key, field.fieldName, field.arguments);
           });
+      },
+
+      removeEmail: (
+        result: { removeEmail?: RemoveEmailPayload },
+        args: MutationRemoveEmailArgs,
+        cache,
+        _info
+      ) => {
+        // Invalidate the email entity
+        cache.invalidate({
+          __typename: "UserEmail",
+          id: args.input.userEmailId,
+        });
+
+        // Let's try to figure out the userId to invalidate the emails field on the User object
+        const userId = result.removeEmail?.user?.id;
+        if (userId) {
+          const key = cache.keyOfEntity({
+            __typename: "User",
+            id: userId,
+          });
+
+          // Invalidate the emails field on the User object so that it gets refetched
+          cache
+            .inspectFields(key)
+            .filter((field) => field.fieldName === "emails")
+            .forEach((field) => {
+              cache.invalidate(key, field.fieldName, field.arguments);
+            });
+        }
       },
     },
   },

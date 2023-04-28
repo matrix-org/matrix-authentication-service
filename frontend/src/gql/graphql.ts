@@ -40,11 +40,11 @@ export type AddEmailInput = {
 export type AddEmailPayload = {
   __typename?: "AddEmailPayload";
   /** The email address that was added */
-  email: UserEmail;
+  email?: Maybe<UserEmail>;
   /** Status of the operation */
   status: AddEmailStatus;
   /** The user to whom the email address was added */
-  user: User;
+  user?: Maybe<User>;
 };
 
 /** The status of the `addEmail` mutation */
@@ -53,6 +53,8 @@ export enum AddEmailStatus {
   Added = "ADDED",
   /** The email address already exists */
   Exists = "EXISTS",
+  /** The email address is invalid */
+  Invalid = "INVALID",
 }
 
 export type Anonymous = Node & {
@@ -178,6 +180,8 @@ export type Mutation = {
   __typename?: "Mutation";
   /** Add an email address to the specified user */
   addEmail: AddEmailPayload;
+  /** Remove an email address */
+  removeEmail: RemoveEmailPayload;
   /** Send a verification code for an email address */
   sendVerificationEmail: SendVerificationEmailPayload;
   /** Submit a verification code for an email address */
@@ -187,6 +191,11 @@ export type Mutation = {
 /** The mutations root of the GraphQL interface. */
 export type MutationAddEmailArgs = {
   input: AddEmailInput;
+};
+
+/** The mutations root of the GraphQL interface. */
+export type MutationRemoveEmailArgs = {
+  input: RemoveEmailInput;
 };
 
 /** The mutations root of the GraphQL interface. */
@@ -351,6 +360,33 @@ export type QueryUserArgs = {
 export type QueryUserEmailArgs = {
   id: Scalars["ID"];
 };
+
+/** The input for the `removeEmail` mutation */
+export type RemoveEmailInput = {
+  /** The ID of the email address to remove */
+  userEmailId: Scalars["ID"];
+};
+
+/** The payload of the `removeEmail` mutation */
+export type RemoveEmailPayload = {
+  __typename?: "RemoveEmailPayload";
+  /** The email address that was removed */
+  email?: Maybe<UserEmail>;
+  /** Status of the operation */
+  status: RemoveEmailStatus;
+  /** The user to whom the email address belonged */
+  user?: Maybe<User>;
+};
+
+/** The status of the `removeEmail` mutation */
+export enum RemoveEmailStatus {
+  /** The email address was not found */
+  NotFound = "NOT_FOUND",
+  /** Can't remove the primary email address */
+  Primary = "PRIMARY",
+  /** The email address was removed */
+  Removed = "REMOVED",
+}
 
 /** The input for the `sendVerificationEmail` mutation */
 export type SendVerificationEmailInput = {
@@ -607,9 +643,13 @@ export type AddEmailMutation = {
   addEmail: {
     __typename?: "AddEmailPayload";
     status: AddEmailStatus;
-    email: { __typename?: "UserEmail"; id: string } & {
-      " $fragmentRefs"?: { UserEmail_EmailFragment: UserEmail_EmailFragment };
-    };
+    email?:
+      | ({ __typename?: "UserEmail"; id: string } & {
+          " $fragmentRefs"?: {
+            UserEmail_EmailFragment: UserEmail_EmailFragment;
+          };
+        })
+      | null;
   };
 };
 
@@ -805,6 +845,19 @@ export type ResendVerificationEmailMutation = {
     email: { __typename?: "UserEmail"; id: string } & {
       " $fragmentRefs"?: { UserEmail_EmailFragment: UserEmail_EmailFragment };
     };
+  };
+};
+
+export type RemoveEmailMutationVariables = Exact<{
+  id: Scalars["ID"];
+}>;
+
+export type RemoveEmailMutation = {
+  __typename?: "Mutation";
+  removeEmail: {
+    __typename?: "RemoveEmailPayload";
+    status: RemoveEmailStatus;
+    user?: { __typename?: "User"; id: string } | null;
   };
 };
 
@@ -2101,6 +2154,70 @@ export const ResendVerificationEmailDocument = {
   ResendVerificationEmailMutation,
   ResendVerificationEmailMutationVariables
 >;
+export const RemoveEmailDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "RemoveEmail" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "removeEmail" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: {
+                  kind: "ObjectValue",
+                  fields: [
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "userEmailId" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "id" },
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "status" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "user" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<RemoveEmailMutation, RemoveEmailMutationVariables>;
 export const UserEmailListQueryDocument = {
   kind: "Document",
   definitions: [

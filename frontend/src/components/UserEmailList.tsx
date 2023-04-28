@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { atom, useAtomValue, useSetAtom } from "jotai";
-import { atomFamily, atomWithDefault } from "jotai/utils";
+import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
 import { useTransition } from "react";
 
@@ -22,7 +22,6 @@ import { PageInfo } from "../gql/graphql";
 import {
   atomForCurrentPagination,
   atomWithPagination,
-  pageSizeAtom,
   Pagination,
 } from "../pagination";
 
@@ -143,6 +142,7 @@ const UserEmailList: React.FC<{
       {result.data?.user?.emails?.edges?.map((edge) => (
         <UserEmail
           email={edge.node}
+          userId={userId}
           key={edge.cursor}
           isPrimary={primaryEmailId === edge.node.id}
           highlight={highlightedEmail === edge.node.id}
