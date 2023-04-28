@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { atom, useAtomValue, useSetAtom } from "jotai";
+import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
 import { useTransition } from "react";
@@ -22,9 +22,12 @@ import { PageInfo } from "../gql/graphql";
 import {
   atomForCurrentPagination,
   atomWithPagination,
+  FIRST_PAGE,
+  LAST_PAGE,
   Pagination,
 } from "../pagination";
 
+import AddEmailForm, { latestAddedEmailAtom } from "./AddEmailForm";
 import BlockList from "./BlockList";
 import PaginationControls from "./PaginationControls";
 import UserEmail from "./UserEmail";
@@ -80,10 +83,15 @@ export const primaryEmailResultFamily = atomFamily((userId: string) => {
 });
 
 const primaryEmailIdFamily = atomFamily((userId: string) => {
-  const primaryEmailIdAtom = atom(async (get) => {
-    const result = await get(primaryEmailResultFamily(userId));
-    return result.data?.user?.primaryEmail?.id ?? null;
-  });
+  const primaryEmailIdAtom = atom(
+    async (get) => {
+      const result = await get(primaryEmailResultFamily(userId));
+      return result.data?.user?.primaryEmail?.id ?? null;
+    },
+    (get, set) => {
+      set(primaryEmailResultFamily(userId));
+    }
+  );
 
   return primaryEmailIdAtom;
 });
@@ -117,17 +125,36 @@ const paginationFamily = atomFamily((userId: string) => {
 
 const UserEmailList: React.FC<{
   userId: string;
-  highlightedEmail?: string;
-}> = ({ userId, highlightedEmail }) => {
+}> = ({ userId }) => {
   const [pending, startTransition] = useTransition();
-  const result = useAtomValue(emailPageResultFamily(userId));
+  const [result, refreshList] = useAtom(emailPageResultFamily(userId));
   const setPagination = useSetAtom(currentPaginationAtom);
   const [prevPage, nextPage] = useAtomValue(paginationFamily(userId));
-  const primaryEmailId = useAtomValue(primaryEmailIdFamily(userId));
+  const [primaryEmailId, refreshPrimaryEmailId] = useAtom(
+    primaryEmailIdFamily(userId)
+  );
+  // XXX: we may not want to directly use that atom here, but rather have a local state
+  const latestAddedEmail = useAtomValue(latestAddedEmailAtom);
 
   const paginate = (pagination: Pagination) => {
     startTransition(() => {
       setPagination(pagination);
+    });
+  };
+
+  // When removing an email, we want to refresh the list and go back to the first page
+  const onRemove = () => {
+    startTransition(() => {
+      setPagination(FIRST_PAGE);
+      refreshList();
+    });
+  };
+
+  // When adding an email, we want to refresh the list and go to the last page
+  const onAdd = () => {
+    startTransition(() => {
+      setPagination(LAST_PAGE);
+      refreshList();
     });
   };
 
@@ -142,12 +169,14 @@ const UserEmailList: React.FC<{
       {result.data?.user?.emails?.edges?.map((edge) => (
         <UserEmail
           email={edge.node}
-          userId={userId}
           key={edge.cursor}
           isPrimary={primaryEmailId === edge.node.id}
-          highlight={highlightedEmail === edge.node.id}
+          onSetPrimary={refreshPrimaryEmailId}
+          onRemove={onRemove}
+          highlight={latestAddedEmail === edge.node.id}
         />
       ))}
+      <AddEmailForm userId={userId} onAdd={onAdd} />
     </BlockList>
   );
 };

@@ -23,8 +23,10 @@ import Block from "./Block";
 import Button from "./Button";
 import DateTime from "./DateTime";
 import Input from "./Input";
-import Typography, { Bold } from "./Typography";
-import { emailPageResultFamily } from "./UserEmailList";
+import Typography from "./Typography";
+
+// This component shows a single user email address, with controls to verify it,
+// resend the verification email, remove it, and set it as the primary email address.
 
 const FRAGMENT = graphql(/* GraphQL */ `
   fragment UserEmail_email on UserEmail {
@@ -87,6 +89,20 @@ const REMOVE_EMAIL_MUTATION = graphql(/* GraphQL */ `
   }
 `);
 
+const SET_PRIMARY_EMAIL_MUTATION = graphql(/* GraphQL */ `
+  mutation SetPrimaryEmail($id: ID!) {
+    setPrimaryEmail(input: { userEmailId: $id }) {
+      status
+      user {
+        id
+        primaryEmail {
+          id
+        }
+      }
+    }
+  }
+`);
+
 const verifyEmailFamily = atomFamily((id: string) => {
   const verifyEmail = atomWithMutation(VERIFY_EMAIL_MUTATION);
 
@@ -125,30 +141,49 @@ const removeEmailFamily = atomFamily((id: string) => {
   return removeEmailAtom;
 });
 
+const setPrimaryEmailFamily = atomFamily((id: string) => {
+  const setPrimaryEmail = atomWithMutation(SET_PRIMARY_EMAIL_MUTATION);
+
+  // A proxy atom which pre-sets the id variable in the mutation
+  const setPrimaryEmailAtom = atom(
+    (get) => get(setPrimaryEmail),
+    (get, set) => set(setPrimaryEmail, { id })
+  );
+
+  return setPrimaryEmailAtom;
+});
+
 const UserEmail: React.FC<{
   email: FragmentType<typeof FRAGMENT>;
-  userId: string; // XXX: Can we get this from the fragment?
+  onRemove?: () => void;
+  onSetPrimary?: () => void;
   isPrimary?: boolean;
   highlight?: boolean;
-}> = ({ email, userId, isPrimary, highlight }) => {
+}> = ({ email, isPrimary, highlight, onSetPrimary, onRemove }) => {
   const [pending, startTransition] = useTransition();
   const data = useFragment(FRAGMENT, email);
   const [verifyEmailResult, verifyEmail] = useAtom(verifyEmailFamily(data.id));
   const [resendVerificationEmailResult, resendVerificationEmail] = useAtom(
     resendVerificationEmailFamily(data.id)
   );
-  const resetEmailPage = useSetAtom(emailPageResultFamily(userId));
+  const setPrimaryEmail = useSetAtom(setPrimaryEmailFamily(data.id));
   const removeEmail = useSetAtom(removeEmailFamily(data.id));
   const formRef = useRef<HTMLFormElement>(null);
 
-  // XXX: we probably want those callbacks passed in props instead
   const onFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const code = formData.get("code") as string;
     startTransition(() => {
-      verifyEmail(code).then(() => {
+      verifyEmail(code).then((result) => {
+        // Clear the form
         formRef.current?.reset();
+
+        if (result.data?.verifyEmail.status === "VERIFIED") {
+          // Call the onSetPrimary callback if provided
+          // XXX: do we need a dedicated onVerify callback?
+          onSetPrimary?.();
+        }
       });
     });
   };
@@ -164,9 +199,17 @@ const UserEmail: React.FC<{
   const onRemoveClick = () => {
     startTransition(() => {
       removeEmail().then(() => {
-        // XXX: this forces a re-fetch of the user's emails,
-        // but maybe it's not the right place to do this
-        resetEmailPage();
+        // Call the onRemove callback if provided
+        onRemove?.();
+      });
+    });
+  };
+
+  const onSetPrimaryClick = () => {
+    startTransition(() => {
+      setPrimaryEmail().then(() => {
+        // Call the onSetPrimary callback if provided
+        onSetPrimary?.();
       });
     });
   };
@@ -184,13 +227,31 @@ const UserEmail: React.FC<{
         </Typography>
       )}
       <div className="flex justify-between items-center">
-        <Typography variant="caption">
-          <Bold>{data.email}</Bold>
+        <Typography variant="caption" bold className="flex-1">
+          {data.email}
         </Typography>
         {!isPrimary && (
-          <Button disabled={pending} onClick={onRemoveClick} compact>
-            Remove
-          </Button>
+          <>
+            {/* The primary email can only be set if the email was verified */}
+            {data.confirmedAt && (
+              <Button
+                disabled={pending}
+                onClick={onSetPrimaryClick}
+                compact
+                className="ml-2"
+              >
+                Set primary
+              </Button>
+            )}
+            <Button
+              disabled={pending}
+              onClick={onRemoveClick}
+              compact
+              className="ml-2"
+            >
+              Remove
+            </Button>
+          </>
         )}
       </div>
       {data.confirmedAt ? (
