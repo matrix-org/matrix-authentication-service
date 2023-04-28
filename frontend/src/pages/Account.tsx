@@ -15,15 +15,19 @@
 import { useAtomValue } from "jotai";
 
 import { currentUserIdAtom } from "../atoms";
-import AddEmailForm from "../components/AddEmailForm";
+import AddEmailForm, { addUserEmailAtom } from "../components/AddEmailForm";
 import UserEmailList from "../components/UserEmailList";
 import UserGreeting from "../components/UserGreeting";
 
 const UserAccount: React.FC<{ id: string }> = ({ id }) => {
+  const addUserEmail = useAtomValue(addUserEmailAtom);
   return (
     <div className="grid grid-cols-1 gap-4">
       <UserGreeting userId={id} />
-      <UserEmailList userId={id} />
+      <UserEmailList
+        userId={id}
+        highlightedEmail={addUserEmail.data?.addEmail?.email?.id}
+      />
       <AddEmailForm userId={id} />
     </div>
   );

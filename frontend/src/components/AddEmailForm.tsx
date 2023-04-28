@@ -17,12 +17,16 @@ import { atomWithMutation } from "jotai-urql";
 import { useRef, useTransition } from "react";
 
 import { graphql } from "../gql";
+import { LAST_PAGE } from "../pagination";
 
 import Button from "./Button";
 import Input from "./Input";
 import Typography from "./Typography";
-import UserEmail from "./UserEmail";
-import { emailPageResultFamily } from "./UserEmailList";
+import {
+  currentPaginationAtom,
+  emailPageResultFamily,
+  primaryEmailResultFamily,
+} from "./UserEmailList";
 
 const ADD_EMAIL_MUTATION = graphql(/* GraphQL */ `
   mutation AddEmail($userId: ID!, $email: String!) {
@@ -36,24 +40,36 @@ const ADD_EMAIL_MUTATION = graphql(/* GraphQL */ `
   }
 `);
 
-const addUserEmailAtom = atomWithMutation(ADD_EMAIL_MUTATION);
+export const addUserEmailAtom = atomWithMutation(ADD_EMAIL_MUTATION);
 
 const AddEmailForm: React.FC<{ userId: string }> = ({ userId }) => {
   const formRef = useRef<HTMLFormElement>(null);
   const [addEmailResult, addEmail] = useAtom(addUserEmailAtom);
   const [pending, startTransition] = useTransition();
+
   // XXX: is this the right way to do this?
   const refetchList = useSetAtom(emailPageResultFamily(userId));
+  const refetchPrimaryEmail = useSetAtom(primaryEmailResultFamily(userId));
+  const setCurrentPagination = useSetAtom(currentPaginationAtom);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const email = e.currentTarget.email.value;
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
     startTransition(() => {
       addEmail({ userId, email }).then(() => {
-        refetchList();
-        if (formRef.current) {
-          formRef.current.reset();
-        }
+        startTransition(() => {
+          // Paginate to the last page
+          setCurrentPagination(LAST_PAGE);
+
+          // Make it refetch the list and the primary email, in case they changed
+          refetchList();
+          refetchPrimaryEmail();
+
+          // Reset the form
+          formRef.current?.reset();
+        });
       });
     });
   };
@@ -65,7 +81,6 @@ const AddEmailForm: React.FC<{ userId: string }> = ({ userId }) => {
           <div className="pt-4">
             <Typography variant="subtitle">Email added!</Typography>
           </div>
-          <UserEmail email={addEmailResult.data?.addEmail.email} />
         </>
       )}
       {addEmailResult.data?.addEmail.status === "EXISTS" && (
@@ -73,14 +88,14 @@ const AddEmailForm: React.FC<{ userId: string }> = ({ userId }) => {
           <div className="pt-4">
             <Typography variant="subtitle">Email already exists!</Typography>
           </div>
-          <UserEmail email={addEmailResult.data?.addEmail.email} />
         </>
       )}
       <form className="flex" onSubmit={handleSubmit} ref={formRef}>
         <Input
           className="flex-1 mr-2"
           disabled={pending}
-          type="text"
+          type="email"
+          inputMode="email"
           name="email"
         />
         <Button disabled={pending} type="submit">

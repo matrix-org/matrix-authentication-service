@@ -19,7 +19,12 @@ import { useTransition } from "react";
 
 import { graphql } from "../gql";
 import { PageInfo } from "../gql/graphql";
-import { atomWithPagination, pageSizeAtom, Pagination } from "../pagination";
+import {
+  atomForCurrentPagination,
+  atomWithPagination,
+  pageSizeAtom,
+  Pagination,
+} from "../pagination";
 
 import BlockList from "./BlockList";
 import PaginationControls from "./PaginationControls";
@@ -35,6 +40,7 @@ const QUERY = graphql(/* GraphQL */ `
   ) {
     user(id: $userId) {
       id
+
       emails(first: $first, after: $after, last: $last, before: $before) {
         edges {
           cursor
@@ -55,15 +61,40 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-const currentPagination = atomWithDefault<Pagination>((get) => ({
-  first: get(pageSizeAtom),
-  after: null,
-}));
+const PRIMARY_EMAIL_QUERY = graphql(/* GraphQL */ `
+  query UserPrimaryEmail($userId: ID!) {
+    user(id: $userId) {
+      id
+      primaryEmail {
+        id
+      }
+    }
+  }
+`);
+
+export const primaryEmailResultFamily = atomFamily((userId: string) => {
+  const primaryEmailResult = atomWithQuery({
+    query: PRIMARY_EMAIL_QUERY,
+    getVariables: () => ({ userId }),
+  });
+  return primaryEmailResult;
+});
+
+const primaryEmailIdFamily = atomFamily((userId: string) => {
+  const primaryEmailIdAtom = atom(async (get) => {
+    const result = await get(primaryEmailResultFamily(userId));
+    return result.data?.user?.primaryEmail?.id ?? null;
+  });
+
+  return primaryEmailIdAtom;
+});
+
+export const currentPaginationAtom = atomForCurrentPagination();
 
 export const emailPageResultFamily = atomFamily((userId: string) => {
   const emailPageResult = atomWithQuery({
     query: QUERY,
-    getVariables: (get) => ({ userId, ...get(currentPagination) }),
+    getVariables: (get) => ({ userId, ...get(currentPaginationAtom) }),
   });
   return emailPageResult;
 });
@@ -79,17 +110,21 @@ const pageInfoFamily = atomFamily((userId: string) => {
 
 const paginationFamily = atomFamily((userId: string) => {
   const paginationAtom = atomWithPagination(
-    currentPagination,
+    currentPaginationAtom,
     pageInfoFamily(userId)
   );
   return paginationAtom;
 });
 
-const UserEmailList: React.FC<{ userId: string }> = ({ userId }) => {
+const UserEmailList: React.FC<{
+  userId: string;
+  highlightedEmail?: string;
+}> = ({ userId, highlightedEmail }) => {
   const [pending, startTransition] = useTransition();
   const result = useAtomValue(emailPageResultFamily(userId));
-  const setPagination = useSetAtom(currentPagination);
+  const setPagination = useSetAtom(currentPaginationAtom);
   const [prevPage, nextPage] = useAtomValue(paginationFamily(userId));
+  const primaryEmailId = useAtomValue(primaryEmailIdFamily(userId));
 
   const paginate = (pagination: Pagination) => {
     startTransition(() => {
@@ -106,7 +141,12 @@ const UserEmailList: React.FC<{ userId: string }> = ({ userId }) => {
         disabled={pending}
       />
       {result.data?.user?.emails?.edges?.map((edge) => (
-        <UserEmail email={edge.node} key={edge.cursor} />
+        <UserEmail
+          email={edge.node}
+          key={edge.cursor}
+          isPrimary={primaryEmailId === edge.node.id}
+          highlight={highlightedEmail === edge.node.id}
+        />
       ))}
     </BlockList>
   );
