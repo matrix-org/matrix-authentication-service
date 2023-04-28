@@ -24,6 +24,7 @@ import Button from "./Button";
 import DateTime from "./DateTime";
 import Input from "./Input";
 import Typography, { Bold } from "./Typography";
+import { emailPageResultFamily } from "./UserEmailList";
 
 const FRAGMENT = graphql(/* GraphQL */ `
   fragment UserEmail_email on UserEmail {
@@ -74,6 +75,18 @@ const RESEND_VERIFICATION_EMAIL_MUTATION = graphql(/* GraphQL */ `
   }
 `);
 
+const REMOVE_EMAIL_MUTATION = graphql(/* GraphQL */ `
+  mutation RemoveEmail($id: ID!) {
+    removeEmail(input: { userEmailId: $id }) {
+      status
+
+      user {
+        id
+      }
+    }
+  }
+`);
+
 const verifyEmailFamily = atomFamily((id: string) => {
   const verifyEmail = atomWithMutation(VERIFY_EMAIL_MUTATION);
 
@@ -100,19 +113,35 @@ const resendVerificationEmailFamily = atomFamily((id: string) => {
   return resendVerificationEmailAtom;
 });
 
+const removeEmailFamily = atomFamily((id: string) => {
+  const removeEmail = atomWithMutation(REMOVE_EMAIL_MUTATION);
+
+  // A proxy atom which pre-sets the id variable in the mutation
+  const removeEmailAtom = atom(
+    (get) => get(removeEmail),
+    (get, set) => set(removeEmail, { id })
+  );
+
+  return removeEmailAtom;
+});
+
 const UserEmail: React.FC<{
   email: FragmentType<typeof FRAGMENT>;
+  userId: string; // XXX: Can we get this from the fragment?
   isPrimary?: boolean;
   highlight?: boolean;
-}> = ({ email, isPrimary, highlight }) => {
+}> = ({ email, userId, isPrimary, highlight }) => {
   const [pending, startTransition] = useTransition();
   const data = useFragment(FRAGMENT, email);
   const [verifyEmailResult, verifyEmail] = useAtom(verifyEmailFamily(data.id));
   const [resendVerificationEmailResult, resendVerificationEmail] = useAtom(
     resendVerificationEmailFamily(data.id)
   );
+  const resetEmailPage = useSetAtom(emailPageResultFamily(userId));
+  const removeEmail = useSetAtom(removeEmailFamily(data.id));
   const formRef = useRef<HTMLFormElement>(null);
 
+  // XXX: we probably want those callbacks passed in props instead
   const onFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -132,8 +161,20 @@ const UserEmail: React.FC<{
     });
   };
 
+  const onRemoveClick = () => {
+    startTransition(() => {
+      removeEmail().then(() => {
+        // XXX: this forces a re-fetch of the user's emails,
+        // but maybe it's not the right place to do this
+        resetEmailPage();
+      });
+    });
+  };
+
   const emailSent =
     resendVerificationEmailResult.data?.sendVerificationEmail.status === "SENT";
+  const invalidCode =
+    verifyEmailResult.data?.verifyEmail.status === "INVALID_CODE";
 
   return (
     <Block highlight={highlight}>
@@ -142,9 +183,16 @@ const UserEmail: React.FC<{
           Primary
         </Typography>
       )}
-      <Typography variant="caption">
-        <Bold>{data.email}</Bold>
-      </Typography>
+      <div className="flex justify-between items-center">
+        <Typography variant="caption">
+          <Bold>{data.email}</Bold>
+        </Typography>
+        {!isPrimary && (
+          <Button disabled={pending} onClick={onRemoveClick} compact>
+            Remove
+          </Button>
+        )}
+      </div>
       {data.confirmedAt ? (
         <Typography variant="micro">
           Verified <DateTime datetime={data.confirmedAt} />
@@ -162,6 +210,9 @@ const UserEmail: React.FC<{
             type="text"
             inputMode="numeric"
           />
+          {invalidCode && (
+            <div className="col-span-2 text-alert font-bold">Invalid code</div>
+          )}
           <Button type="submit" disabled={pending}>
             Submit
           </Button>

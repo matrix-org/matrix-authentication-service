@@ -58,7 +58,12 @@ const AddEmailForm: React.FC<{ userId: string }> = ({ userId }) => {
     const formData = new FormData(e.currentTarget);
     const email = formData.get("email") as string;
     startTransition(() => {
-      addEmail({ userId, email }).then(() => {
+      addEmail({ userId, email }).then((result) => {
+        // Don't clear the form if the email was invalid
+        if (result.data?.addEmail.status === "INVALID") {
+          return;
+        }
+
         startTransition(() => {
           // Paginate to the last page
           setCurrentPagination(LAST_PAGE);
@@ -74,22 +79,33 @@ const AddEmailForm: React.FC<{ userId: string }> = ({ userId }) => {
     });
   };
 
+  const status = addEmailResult.data?.addEmail.status ?? null;
+  const emailAdded = status === "ADDED";
+  const emailExists = status === "EXISTS";
+  const emailInvalid = status === "INVALID";
+
   return (
     <>
-      {addEmailResult.data?.addEmail.status === "ADDED" && (
-        <>
-          <div className="pt-4">
-            <Typography variant="subtitle">Email added!</Typography>
-          </div>
-        </>
+      {emailAdded && (
+        <div className="pt-4">
+          <Typography variant="subtitle">Email added!</Typography>
+        </div>
       )}
-      {addEmailResult.data?.addEmail.status === "EXISTS" && (
-        <>
-          <div className="pt-4">
-            <Typography variant="subtitle">Email already exists!</Typography>
-          </div>
-        </>
+
+      {emailExists && (
+        <div className="pt-4">
+          <Typography variant="subtitle">Email already exists!</Typography>
+        </div>
       )}
+
+      {emailInvalid && (
+        <div className="pt-4 text-alert">
+          <Typography variant="subtitle" bold>
+            Invalid email address
+          </Typography>
+        </div>
+      )}
+
       <form className="flex" onSubmit={handleSubmit} ref={formRef}>
         <Input
           className="flex-1 mr-2"

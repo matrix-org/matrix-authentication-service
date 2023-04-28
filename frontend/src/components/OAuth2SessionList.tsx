@@ -13,13 +13,17 @@
 // limitations under the License.
 
 import { useAtomValue, atom, useSetAtom } from "jotai";
-import { atomFamily, atomWithDefault } from "jotai/utils";
+import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
 import { useTransition } from "react";
 
 import { graphql } from "../gql";
 import { PageInfo } from "../gql/graphql";
-import { atomWithPagination, pageSizeAtom, Pagination } from "../pagination";
+import {
+  atomForCurrentPagination,
+  atomWithPagination,
+  Pagination,
+} from "../pagination";
 
 import BlockList from "./BlockList";
 import OAuth2Session from "./OAuth2Session";
@@ -61,15 +65,12 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-const currentPagination = atomWithDefault<Pagination>((get) => ({
-  first: get(pageSizeAtom),
-  after: null,
-}));
+const currentPaginationAtom = atomForCurrentPagination();
 
 const oauth2SessionListFamily = atomFamily((userId: string) => {
   const oauth2SessionList = atomWithQuery({
     query: QUERY,
-    getVariables: (get) => ({ userId, ...get(currentPagination) }),
+    getVariables: (get) => ({ userId, ...get(currentPaginationAtom) }),
   });
 
   return oauth2SessionList;
@@ -86,7 +87,7 @@ const pageInfoFamily = atomFamily((userId: string) => {
 
 const paginationFamily = atomFamily((userId: string) => {
   const paginationAtom = atomWithPagination(
-    currentPagination,
+    currentPaginationAtom,
     pageInfoFamily(userId)
   );
   return paginationAtom;
@@ -99,7 +100,7 @@ type Props = {
 const OAuth2SessionList: React.FC<Props> = ({ userId }) => {
   const [pending, startTransition] = useTransition();
   const result = useAtomValue(oauth2SessionListFamily(userId));
-  const setPagination = useSetAtom(currentPagination);
+  const setPagination = useSetAtom(currentPaginationAtom);
   const [prevPage, nextPage] = useAtomValue(paginationFamily(userId));
 
   const paginate = (pagination: Pagination) => {
