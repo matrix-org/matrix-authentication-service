@@ -16,6 +16,10 @@ import { atom, Atom } from "jotai";
 
 import { PageInfo } from "./gql/graphql";
 
+export const FIRST_PAGE = Symbol("FIRST_PAGE");
+export const LAST_PAGE = Symbol("LAST_PAGE");
+const EMPTY = Symbol("EMPTY");
+
 export type ForwardPagination = {
   first: number;
   after: string | null;
@@ -44,6 +48,42 @@ export const isBackwardPagination = (
 
 // This atom sets the default page size for pagination.
 export const pageSizeAtom = atom(6);
+
+export const atomForCurrentPagination = () => {
+  const dataAtom = atom<typeof EMPTY | Pagination>(EMPTY);
+
+  const currentPaginationAtom = atom(
+    (get) => {
+      const data = get(dataAtom);
+      if (data === EMPTY) {
+        return {
+          first: get(pageSizeAtom),
+          after: null,
+        };
+      }
+
+      return data;
+    },
+    (get, set, action: Pagination | typeof FIRST_PAGE | typeof LAST_PAGE) => {
+      if (action === FIRST_PAGE) {
+        set(dataAtom, EMPTY);
+      } else if (action === LAST_PAGE) {
+        set(dataAtom, {
+          last: get(pageSizeAtom),
+          before: null,
+        });
+      } else {
+        set(dataAtom, action);
+      }
+    }
+  );
+
+  currentPaginationAtom.onMount = (setAtom) => {
+    setAtom(FIRST_PAGE);
+  };
+
+  return currentPaginationAtom;
+};
 
 // This atom is used to create a pagination atom that gives the previous and
 // next pagination objects, given the current pagination and the page info.

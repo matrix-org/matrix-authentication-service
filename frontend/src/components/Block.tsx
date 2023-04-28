@@ -14,11 +14,18 @@
 
 type Props = {
   children: React.ReactNode;
+  highlight?: boolean;
 };
 
-const Block: React.FC<Props> = ({ children }) => {
+const Block: React.FC<Props> = ({ children, highlight }) => {
   return (
-    <div className="p-4 bg-grey-50 dark:bg-grey-450 dark:text-white rounded">
+    <div
+      className={`p-4 dark:text-white rounded ${
+        highlight
+          ? "border-2 border-grey-50 dark:border-grey-450 bg-white dark:bg-black"
+          : "bg-grey-50 dark:bg-grey-450"
+      }`}
+    >
       {children}
     </div>
   );

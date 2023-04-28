@@ -19,9 +19,9 @@ type Props = {
 
 const Input: React.FC<Props> = ({ disabled, className, ...props }) => {
   const disabledClass = disabled
-    ? "bg-grey-50 dark:bg-grey-400"
+    ? "bg-grey-100 dark:bg-grey-400"
     : "bg-white dark:bg-grey-450";
-  const fullClassName = `${className} px-2 py-1 border-2 border-grey-50 dark:border-grey-400 dark:text-white placeholder-grey-100 dark:placeholder-grey-150 rounded-lg ${disabledClass}`;
+  const fullClassName = `${className} px-2 py-1 border-2 border-grey-100 dark:border-grey-400 dark:text-white placeholder-grey-100 dark:placeholder-grey-150 rounded-lg ${disabledClass}`;
   return <input disabled={disabled} className={fullClassName} {...props} />;
 };
 
