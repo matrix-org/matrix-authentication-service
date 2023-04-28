@@ -3224,6 +3224,7 @@ dependencies = [
  "async-graphql",
  "async-trait",
  "chrono",
+ "lettre",
  "mas-data-model",
  "mas-storage",
  "oauth2-types",

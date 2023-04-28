@@ -46,6 +46,8 @@ pub enum AddEmailStatus {
     Added,
     /// The email address already exists
     Exists,
+    /// The email address is invalid
+    Invalid,
 }
 
 /// The payload of the `addEmail` mutation
@@ -53,6 +55,7 @@ pub enum AddEmailStatus {
 enum AddEmailPayload {
     Added(mas_data_model::UserEmail),
     Exists(mas_data_model::UserEmail),
+    Invalid,
 }
 
 #[Object(use_type_description)]
@@ -62,25 +65,28 @@ impl AddEmailPayload {
         match self {
             AddEmailPayload::Added(_) => AddEmailStatus::Added,
             AddEmailPayload::Exists(_) => AddEmailStatus::Exists,
+            AddEmailPayload::Invalid => AddEmailStatus::Invalid,
         }
     }
 
     /// The email address that was added
-    async fn email(&self) -> UserEmail {
+    async fn email(&self) -> Option<UserEmail> {
         match self {
             AddEmailPayload::Added(email) | AddEmailPayload::Exists(email) => {
-                UserEmail(email.clone())
+                Some(UserEmail(email.clone()))
             }
+            AddEmailPayload::Invalid => None,
         }
     }
 
     /// The user to whom the email address was added
-    async fn user(&self, ctx: &Context<'_>) -> Result<User, async_graphql::Error> {
+    async fn user(&self, ctx: &Context<'_>) -> Result<Option<User>, async_graphql::Error> {
         let state = ctx.state();
         let mut repo = state.repository().await?;
 
         let user_id = match self {
             AddEmailPayload::Added(email) | AddEmailPayload::Exists(email) => email.user_id,
+            AddEmailPayload::Invalid => return Ok(None),
         };
 
         let user = repo
@@ -89,7 +95,7 @@ impl AddEmailPayload {
             .await?
             .context("User not found")?;
 
-        Ok(User(user))
+        Ok(Some(User(user)))
     }
 }
 
@@ -227,6 +233,77 @@ impl VerifyEmailPayload {
     }
 }
 
+/// The input for the `removeEmail` mutation
+#[derive(InputObject)]
+struct RemoveEmailInput {
+    /// The ID of the email address to remove
+    user_email_id: ID,
+}
+
+/// The status of the `removeEmail` mutation
+#[derive(Enum, Copy, Clone, Eq, PartialEq)]
+enum RemoveEmailStatus {
+    /// The email address was removed
+    Removed,
+
+    /// Can't remove the primary email address
+    Primary,
+
+    /// The email address was not found
+    NotFound,
+}
+
+/// The payload of the `removeEmail` mutation
+#[derive(Description)]
+enum RemoveEmailPayload {
+    Removed(mas_data_model::UserEmail),
+    Primary(mas_data_model::UserEmail),
+    NotFound,
+}
+
+#[Object(use_type_description)]
+impl RemoveEmailPayload {
+    /// Status of the operation
+    async fn status(&self) -> RemoveEmailStatus {
+        match self {
+            RemoveEmailPayload::Removed(_) => RemoveEmailStatus::Removed,
+            RemoveEmailPayload::Primary(_) => RemoveEmailStatus::Primary,
+            RemoveEmailPayload::NotFound => RemoveEmailStatus::NotFound,
+        }
+    }
+
+    /// The email address that was removed
+    async fn email(&self) -> Option<UserEmail> {
+        match self {
+            RemoveEmailPayload::Removed(email) | RemoveEmailPayload::Primary(email) => {
+                Some(UserEmail(email.clone()))
+            }
+            RemoveEmailPayload::NotFound => None,
+        }
+    }
+
+    /// The user to whom the email address belonged
+    async fn user(&self, ctx: &Context<'_>) -> Result<Option<User>, async_graphql::Error> {
+        let state = ctx.state();
+        let mut repo = state.repository().await?;
+
+        let user_id = match self {
+            RemoveEmailPayload::Removed(email) | RemoveEmailPayload::Primary(email) => {
+                email.user_id
+            }
+            RemoveEmailPayload::NotFound => return Ok(None),
+        };
+
+        let user = repo
+            .user()
+            .lookup(user_id)
+            .await?
+            .context("User not found")?;
+
+        Ok(Some(User(user)))
+    }
+}
+
 #[Object]
 impl UserEmailMutations {
     /// Add an email address to the specified user
@@ -249,6 +326,12 @@ impl UserEmailMutations {
 
         // XXX: this logic should be extracted somewhere else, since most of it is
         // duplicated in mas_handlers
+
+        // Validate the email address
+        if input.email.parse::<lettre::Address>().is_err() {
+            return Ok(AddEmailPayload::Invalid);
+        }
+
         // Find an existing email address
         let existing_user_email = repo.user_email().find(user, &input.email).await?;
         let (added, user_email) = if let Some(user_email) = existing_user_email {
@@ -387,5 +470,40 @@ impl UserEmailMutations {
         repo.save().await?;
 
         Ok(VerifyEmailPayload::Verified(user_email))
+    }
+
+    /// Remove an email address
+    async fn remove_email(
+        &self,
+        ctx: &Context<'_>,
+        input: RemoveEmailInput,
+    ) -> Result<RemoveEmailPayload, async_graphql::Error> {
+        let state = ctx.state();
+        let user_email_id = NodeType::UserEmail.extract_ulid(&input.user_email_id)?;
+        let requester = ctx.requester();
+
+        let user = requester.user().context("Unauthorized")?;
+
+        let mut repo = state.repository().await?;
+
+        let user_email = repo.user_email().lookup(user_email_id).await?;
+        let Some(user_email) = user_email else {
+            return Ok(RemoveEmailPayload::NotFound);
+        };
+
+        if user_email.user_id != user.id {
+            return Err(async_graphql::Error::new("Unauthorized"));
+        }
+
+        if user.primary_user_email_id == Some(user_email.id) {
+            // Prevent removing the primary email address
+            return Ok(RemoveEmailPayload::Primary(user_email));
+        }
+
+        repo.user_email().remove(user_email.clone()).await?;
+
+        repo.save().await?;
+
+        Ok(RemoveEmailPayload::Removed(user_email))
     }
 }

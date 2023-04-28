@@ -13,14 +13,18 @@
 // limitations under the License.
 
 import { atom, useAtomValue, useSetAtom } from "jotai";
-import { atomFamily, atomWithDefault } from "jotai/utils";
+import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
 import { useTransition } from "react";
 
 import { currentBrowserSessionIdAtom } from "../atoms";
 import { graphql } from "../gql";
 import { PageInfo } from "../gql/graphql";
-import { atomWithPagination, pageSizeAtom, Pagination } from "../pagination";
+import {
+  atomForCurrentPagination,
+  atomWithPagination,
+  Pagination,
+} from "../pagination";
 
 import BlockList from "./BlockList";
 import BrowserSession from "./BrowserSession";
@@ -62,15 +66,12 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-const currentPagination = atomWithDefault<Pagination>((get) => ({
-  first: get(pageSizeAtom),
-  after: null,
-}));
+const currentPaginationAtom = atomForCurrentPagination();
 
 const browserSessionListFamily = atomFamily((userId: string) => {
   const browserSessionList = atomWithQuery({
     query: QUERY,
-    getVariables: (get) => ({ userId, ...get(currentPagination) }),
+    getVariables: (get) => ({ userId, ...get(currentPaginationAtom) }),
   });
   return browserSessionList;
 });
@@ -85,7 +86,7 @@ const pageInfoFamily = atomFamily((userId: string) => {
 
 const paginationFamily = atomFamily((userId: string) => {
   const paginationAtom = atomWithPagination(
-    currentPagination,
+    currentPaginationAtom,
     pageInfoFamily(userId)
   );
 
@@ -96,7 +97,7 @@ const BrowserSessionList: React.FC<{ userId: string }> = ({ userId }) => {
   const currentSessionId = useAtomValue(currentBrowserSessionIdAtom);
   const [pending, startTransition] = useTransition();
   const result = useAtomValue(browserSessionListFamily(userId));
-  const setPagination = useSetAtom(currentPagination);
+  const setPagination = useSetAtom(currentPaginationAtom);
   const [prevPage, nextPage] = useAtomValue(paginationFamily(userId));
 
   const paginate = (pagination: Pagination) => {
