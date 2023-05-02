@@ -777,7 +777,7 @@ impl ClientMetadata {
 /// ```
 ///
 /// [OpenID Connect Dynamic Client Registration Spec 1.0]: https://openid.net/specs/openid-connect-registration-1_0.html#ClientMetadata
-#[derive(Serialize, Debug, PartialEq, Eq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 #[serde(into = "ClientMetadataSerdeHelper")]
 pub struct VerifiedClientMetadata {
     inner: ClientMetadata,
