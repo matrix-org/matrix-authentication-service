@@ -175,11 +175,57 @@ export type CreationEvent = {
   createdAt: Scalars["DateTime"];
 };
 
+/** The input of the `endCompatSession` mutation. */
+export type EndCompatSessionInput = {
+  /** The ID of the session to end. */
+  compatSessionId: Scalars["ID"];
+};
+
+export type EndCompatSessionPayload = {
+  __typename?: "EndCompatSessionPayload";
+  /** Returns the ended session. */
+  compatSession?: Maybe<CompatSession>;
+  /** The status of the mutation. */
+  status: EndCompatSessionStatus;
+};
+
+/** The status of the `endCompatSession` mutation. */
+export enum EndCompatSessionStatus {
+  /** The session was ended. */
+  Ended = "ENDED",
+  /** The session was not found. */
+  NotFound = "NOT_FOUND",
+}
+
+/** The input of the `endOauth2Session` mutation. */
+export type EndOAuth2SessionInput = {
+  /** The ID of the session to end. */
+  oauth2SessionId: Scalars["ID"];
+};
+
+export type EndOAuth2SessionPayload = {
+  __typename?: "EndOAuth2SessionPayload";
+  /** Returns the ended session. */
+  oauth2Session?: Maybe<Oauth2Session>;
+  /** The status of the mutation. */
+  status: EndOAuth2SessionStatus;
+};
+
+/** The status of the `endOauth2Session` mutation. */
+export enum EndOAuth2SessionStatus {
+  /** The session was ended. */
+  Ended = "ENDED",
+  /** The session was not found. */
+  NotFound = "NOT_FOUND",
+}
+
 /** The mutations root of the GraphQL interface. */
 export type Mutation = {
   __typename?: "Mutation";
   /** Add an email address to the specified user */
   addEmail: AddEmailPayload;
+  endCompatSession: EndCompatSessionPayload;
+  endOauth2Session: EndOAuth2SessionPayload;
   /** Remove an email address */
   removeEmail: RemoveEmailPayload;
   /** Send a verification code for an email address */
@@ -193,6 +239,16 @@ export type Mutation = {
 /** The mutations root of the GraphQL interface. */
 export type MutationAddEmailArgs = {
   input: AddEmailInput;
+};
+
+/** The mutations root of the GraphQL interface. */
+export type MutationEndCompatSessionArgs = {
+  input: EndCompatSessionInput;
+};
+
+/** The mutations root of the GraphQL interface. */
+export type MutationEndOauth2SessionArgs = {
+  input: EndOAuth2SessionInput;
 };
 
 /** The mutations root of the GraphQL interface. */
@@ -244,19 +300,24 @@ export type Oauth2Client = Node & {
  * An OAuth 2.0 session represents a client session which used the OAuth APIs
  * to login.
  */
-export type Oauth2Session = Node & {
-  __typename?: "Oauth2Session";
-  /** The browser session which started this OAuth 2.0 session. */
-  browserSession: BrowserSession;
-  /** OAuth 2.0 client used by this session. */
-  client: Oauth2Client;
-  /** ID of the object. */
-  id: Scalars["ID"];
-  /** Scope granted for this session. */
-  scope: Scalars["String"];
-  /** User authorized for this session. */
-  user: User;
-};
+export type Oauth2Session = CreationEvent &
+  Node & {
+    __typename?: "Oauth2Session";
+    /** The browser session which started this OAuth 2.0 session. */
+    browserSession: BrowserSession;
+    /** OAuth 2.0 client used by this session. */
+    client: Oauth2Client;
+    /** When the object was created. */
+    createdAt: Scalars["DateTime"];
+    /** When the session ended. */
+    finishedAt?: Maybe<Scalars["DateTime"]>;
+    /** ID of the object. */
+    id: Scalars["ID"];
+    /** Scope granted for this session. */
+    scope: Scalars["String"];
+    /** User authorized for this session. */
+    user: User;
+  };
 
 export type Oauth2SessionConnection = {
   __typename?: "Oauth2SessionConnection";
@@ -735,14 +796,47 @@ export type CompatSsoLogin_LoginFragment = {
   id: string;
   redirectUri: any;
   createdAt: any;
-  session?: {
-    __typename?: "CompatSession";
-    id: string;
-    createdAt: any;
-    deviceId: string;
-    finishedAt?: any | null;
-  } | null;
+  session?:
+    | ({
+        __typename?: "CompatSession";
+        id: string;
+        createdAt: any;
+        deviceId: string;
+        finishedAt?: any | null;
+      } & {
+        " $fragmentRefs"?: {
+          CompatSsoLogin_SessionFragment: CompatSsoLogin_SessionFragment;
+        };
+      })
+    | null;
 } & { " $fragmentName"?: "CompatSsoLogin_LoginFragment" };
+
+export type CompatSsoLogin_SessionFragment = {
+  __typename?: "CompatSession";
+  id: string;
+  createdAt: any;
+  deviceId: string;
+  finishedAt?: any | null;
+} & { " $fragmentName"?: "CompatSsoLogin_SessionFragment" };
+
+export type EndCompatSessionMutationVariables = Exact<{
+  id: Scalars["ID"];
+}>;
+
+export type EndCompatSessionMutation = {
+  __typename?: "Mutation";
+  endCompatSession: {
+    __typename?: "EndCompatSessionPayload";
+    status: EndCompatSessionStatus;
+    compatSession?:
+      | ({ __typename?: "CompatSession"; id: string } & {
+          " $fragmentRefs"?: {
+            CompatSsoLogin_SessionFragment: CompatSsoLogin_SessionFragment;
+          };
+        })
+      | null;
+  };
+};
 
 export type CompatSsoLoginListQueryVariables = Exact<{
   userId: Scalars["ID"];
@@ -782,6 +876,8 @@ export type OAuth2Session_SessionFragment = {
   __typename?: "Oauth2Session";
   id: string;
   scope: string;
+  createdAt: any;
+  finishedAt?: any | null;
   client: {
     __typename?: "Oauth2Client";
     id: string;
@@ -790,6 +886,25 @@ export type OAuth2Session_SessionFragment = {
     clientUri?: any | null;
   };
 } & { " $fragmentName"?: "OAuth2Session_SessionFragment" };
+
+export type EndSessionMutationVariables = Exact<{
+  id: Scalars["ID"];
+}>;
+
+export type EndSessionMutation = {
+  __typename?: "Mutation";
+  endOauth2Session: {
+    __typename?: "EndOAuth2SessionPayload";
+    status: EndOAuth2SessionStatus;
+    oauth2Session?:
+      | ({ __typename?: "Oauth2Session"; id: string } & {
+          " $fragmentRefs"?: {
+            OAuth2Session_SessionFragment: OAuth2Session_SessionFragment;
+          };
+        })
+      | null;
+  };
+};
 
 export type OAuth2SessionListQueryQueryVariables = Exact<{
   userId: Scalars["ID"];
@@ -1035,6 +1150,28 @@ export const BrowserSession_SessionFragmentDoc = {
     },
   ],
 } as unknown as DocumentNode<BrowserSession_SessionFragment, unknown>;
+export const CompatSsoLogin_SessionFragmentDoc = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "CompatSsoLogin_session" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "CompatSession" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+          { kind: "Field", name: { kind: "Name", value: "deviceId" } },
+          { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<CompatSsoLogin_SessionFragment, unknown>;
 export const CompatSsoLogin_LoginFragmentDoc = {
   kind: "Document",
   definitions: [
@@ -1058,12 +1195,33 @@ export const CompatSsoLogin_LoginFragmentDoc = {
               kind: "SelectionSet",
               selections: [
                 { kind: "Field", name: { kind: "Name", value: "id" } },
+                {
+                  kind: "FragmentSpread",
+                  name: { kind: "Name", value: "CompatSsoLogin_session" },
+                },
                 { kind: "Field", name: { kind: "Name", value: "createdAt" } },
                 { kind: "Field", name: { kind: "Name", value: "deviceId" } },
                 { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
               ],
             },
           },
+        ],
+      },
+    },
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "CompatSsoLogin_session" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "CompatSession" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+          { kind: "Field", name: { kind: "Name", value: "deviceId" } },
+          { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
         ],
       },
     },
@@ -1084,6 +1242,8 @@ export const OAuth2Session_SessionFragmentDoc = {
         selections: [
           { kind: "Field", name: { kind: "Name", value: "id" } },
           { kind: "Field", name: { kind: "Name", value: "scope" } },
+          { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+          { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
           {
             kind: "Field",
             name: { kind: "Name", value: "client" },
@@ -1549,6 +1709,94 @@ export const BrowserSessionListDocument = {
   BrowserSessionListQuery,
   BrowserSessionListQueryVariables
 >;
+export const EndCompatSessionDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "EndCompatSession" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "endCompatSession" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: {
+                  kind: "ObjectValue",
+                  fields: [
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "compatSessionId" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "id" },
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "status" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "compatSession" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                      {
+                        kind: "FragmentSpread",
+                        name: { kind: "Name", value: "CompatSsoLogin_session" },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "CompatSsoLogin_session" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "CompatSession" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+          { kind: "Field", name: { kind: "Name", value: "deviceId" } },
+          { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  EndCompatSessionMutation,
+  EndCompatSessionMutationVariables
+>;
 export const CompatSsoLoginListDocument = {
   kind: "Document",
   definitions: [
@@ -1723,6 +1971,23 @@ export const CompatSsoLoginListDocument = {
     },
     {
       kind: "FragmentDefinition",
+      name: { kind: "Name", value: "CompatSsoLogin_session" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "CompatSession" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+          { kind: "Field", name: { kind: "Name", value: "deviceId" } },
+          { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
+        ],
+      },
+    },
+    {
+      kind: "FragmentDefinition",
       name: { kind: "Name", value: "CompatSsoLogin_login" },
       typeCondition: {
         kind: "NamedType",
@@ -1741,6 +2006,10 @@ export const CompatSsoLoginListDocument = {
               kind: "SelectionSet",
               selections: [
                 { kind: "Field", name: { kind: "Name", value: "id" } },
+                {
+                  kind: "FragmentSpread",
+                  name: { kind: "Name", value: "CompatSsoLogin_session" },
+                },
                 { kind: "Field", name: { kind: "Name", value: "createdAt" } },
                 { kind: "Field", name: { kind: "Name", value: "deviceId" } },
                 { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
@@ -1755,6 +2024,104 @@ export const CompatSsoLoginListDocument = {
   CompatSsoLoginListQuery,
   CompatSsoLoginListQueryVariables
 >;
+export const EndSessionDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "EndSession" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "endOauth2Session" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: {
+                  kind: "ObjectValue",
+                  fields: [
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "oauth2SessionId" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "id" },
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "status" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "oauth2Session" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                      {
+                        kind: "FragmentSpread",
+                        name: { kind: "Name", value: "OAuth2Session_session" },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "OAuth2Session_session" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "Oauth2Session" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          { kind: "Field", name: { kind: "Name", value: "scope" } },
+          { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+          { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "client" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "clientId" } },
+                { kind: "Field", name: { kind: "Name", value: "clientName" } },
+                { kind: "Field", name: { kind: "Name", value: "clientUri" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<EndSessionMutation, EndSessionMutationVariables>;
 export const OAuth2SessionListQueryDocument = {
   kind: "Document",
   definitions: [
@@ -1943,6 +2310,8 @@ export const OAuth2SessionListQueryDocument = {
         selections: [
           { kind: "Field", name: { kind: "Name", value: "id" } },
           { kind: "Field", name: { kind: "Name", value: "scope" } },
+          { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+          { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
           {
             kind: "Field",
             name: { kind: "Name", value: "client" },

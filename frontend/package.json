@@ -29,7 +29,8 @@
     "jotai-location": "^0.5.1",
     "jotai-urql": "^0.7.1",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "@vector-im/compound-web": "https://github.com/vector-im/compound-web.git#quenting/packaging"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^3.3.1",

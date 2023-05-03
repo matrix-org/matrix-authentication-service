@@ -507,6 +507,10 @@ export default {
           },
           {
             kind: "OBJECT",
+            name: "Oauth2Session",
+          },
+          {
+            kind: "OBJECT",
             name: "UpstreamOAuth2Link",
           },
           {
@@ -521,6 +525,60 @@ export default {
       },
       {
         kind: "OBJECT",
+        name: "EndCompatSessionPayload",
+        fields: [
+          {
+            name: "compatSession",
+            type: {
+              kind: "OBJECT",
+              name: "CompatSession",
+              ofType: null,
+            },
+            args: [],
+          },
+          {
+            name: "status",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+        ],
+        interfaces: [],
+      },
+      {
+        kind: "OBJECT",
+        name: "EndOAuth2SessionPayload",
+        fields: [
+          {
+            name: "oauth2Session",
+            type: {
+              kind: "OBJECT",
+              name: "Oauth2Session",
+              ofType: null,
+            },
+            args: [],
+          },
+          {
+            name: "status",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+        ],
+        interfaces: [],
+      },
+      {
+        kind: "OBJECT",
         name: "Mutation",
         fields: [
           {
@@ -530,6 +588,52 @@ export default {
               ofType: {
                 kind: "OBJECT",
                 name: "AddEmailPayload",
+                ofType: null,
+              },
+            },
+            args: [
+              {
+                name: "input",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
+          },
+          {
+            name: "endCompatSession",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "EndCompatSessionPayload",
+                ofType: null,
+              },
+            },
+            args: [
+              {
+                name: "input",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
+          },
+          {
+            name: "endOauth2Session",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "EndOAuth2SessionPayload",
                 ofType: null,
               },
             },
@@ -817,6 +921,25 @@ export default {
             args: [],
           },
           {
+            name: "createdAt",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+          {
+            name: "finishedAt",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
+            },
+            args: [],
+          },
+          {
             name: "id",
             type: {
               kind: "NON_NULL",
@@ -852,6 +975,10 @@ export default {
           },
         ],
         interfaces: [
+          {
+            kind: "INTERFACE",
+            name: "CreationEvent",
+          },
           {
             kind: "INTERFACE",
             name: "Node",
