@@ -20,6 +20,7 @@ module.exports = {
     "**/__generated__/**",
     "**/coverage/**",
     "!.storybook",
+    "*/gql/*.ts",
   ],
   overrides: [
     // General rules for JS/TS files
