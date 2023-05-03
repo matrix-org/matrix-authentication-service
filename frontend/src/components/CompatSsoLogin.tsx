@@ -12,6 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Button } from "@vector-im/compound-web";
+import { atom, useSetAtom } from "jotai";
+import { atomFamily } from "jotai/utils";
+import { atomWithMutation } from "jotai-urql";
+import { useTransition } from "react";
+
 import { FragmentType, graphql, useFragment } from "../gql";
 
 import Block from "./Block";
@@ -25,6 +31,7 @@ const FRAGMENT = graphql(/* GraphQL */ `
     createdAt
     session {
       id
+      ...CompatSsoLogin_session
       createdAt
       deviceId
       finishedAt
@@ -32,41 +39,96 @@ const FRAGMENT = graphql(/* GraphQL */ `
   }
 `);
 
+const SESSION_FRAGMENT = graphql(/* GraphQL */ `
+  fragment CompatSsoLogin_session on CompatSession {
+    id
+    createdAt
+    deviceId
+    finishedAt
+  }
+`);
+
+const END_SESSION_MUTATION = graphql(/* GraphQL */ `
+  mutation EndCompatSession($id: ID!) {
+    endCompatSession(input: { compatSessionId: $id }) {
+      status
+      compatSession {
+        id
+        ...CompatSsoLogin_session
+      }
+    }
+  }
+`);
+
+const endCompatSessionFamily = atomFamily((id: string) => {
+  const endCompatSession = atomWithMutation(END_SESSION_MUTATION);
+
+  // A proxy atom which pre-sets the id variable in the mutation
+  const endCompatSessionAtom = atom(
+    (get) => get(endCompatSession),
+    (get, set) => set(endCompatSession, { id })
+  );
+
+  return endCompatSessionAtom;
+});
+
 type Props = {
   login: FragmentType<typeof FRAGMENT>;
 };
 
+const CompatSession: React.FC<{
+  session: FragmentType<typeof SESSION_FRAGMENT>;
+}> = ({ session }) => {
+  const [pending, startTransition] = useTransition();
+  const data = useFragment(SESSION_FRAGMENT, session);
+  const endCompatSession = useSetAtom(endCompatSessionFamily(data.id));
+
+  const onSessionEnd = () => {
+    startTransition(() => {
+      endCompatSession();
+    });
+  };
+
+  return (
+    <>
+      <Body>
+        Started: <DateTime datetime={data.createdAt} />
+      </Body>
+      {data.finishedAt ? (
+        <div className="text-alert font-semibold">
+          Finished: <DateTime datetime={data.finishedAt} />
+        </div>
+      ) : null}
+      <Body>
+        Device ID: <Code>{data.deviceId}</Code>
+      </Body>
+      {data.finishedAt ? null : (
+        <Button
+          className="mt-2"
+          size="sm"
+          disabled={pending}
+          onClick={onSessionEnd}
+          kind="destructive"
+        >
+          End session
+        </Button>
+      )}
+    </>
+  );
+};
+
 const CompatSsoLogin: React.FC<Props> = ({ login }) => {
   const data = useFragment(FRAGMENT, login);
-
-  let info = null;
-  if (data.session) {
-    info = (
-      <>
-        <Body>
-          Started: <DateTime datetime={data.session.createdAt} />
-        </Body>
-        {data.session.finishedAt ? (
-          <Body>
-            Finished: <DateTime datetime={data.session.finishedAt} />
-          </Body>
-        ) : null}
-        <Body>
-          Device ID: <Code>{data.session.deviceId}</Code>
-        </Body>
-      </>
-    );
-  }
 
   return (
     <Block>
       <Body>
         Requested: <DateTime datetime={data.createdAt} />
       </Body>
-      {info}
       <Body>
         Redirect URI: <Bold>{data.redirectUri}</Bold>
       </Body>
+      {data.session && <CompatSession session={data.session} />}
     </Block>
   );
 };

@@ -224,6 +224,76 @@ The input/output is a string in RFC3339 format.
 scalar DateTime
 
 """
+The input of the `endCompatSession` mutation.
+"""
+input EndCompatSessionInput {
+  """
+  The ID of the session to end.
+  """
+  compatSessionId: ID!
+}
+
+type EndCompatSessionPayload {
+  """
+  The status of the mutation.
+  """
+  status: EndCompatSessionStatus!
+  """
+  Returns the ended session.
+  """
+  compatSession: CompatSession
+}
+
+"""
+The status of the `endCompatSession` mutation.
+"""
+enum EndCompatSessionStatus {
+  """
+  The session was ended.
+  """
+  ENDED
+  """
+  The session was not found.
+  """
+  NOT_FOUND
+}
+
+"""
+The input of the `endOauth2Session` mutation.
+"""
+input EndOAuth2SessionInput {
+  """
+  The ID of the session to end.
+  """
+  oauth2SessionId: ID!
+}
+
+type EndOAuth2SessionPayload {
+  """
+  The status of the mutation.
+  """
+  status: EndOAuth2SessionStatus!
+  """
+  Returns the ended session.
+  """
+  oauth2Session: Oauth2Session
+}
+
+"""
+The status of the `endOauth2Session` mutation.
+"""
+enum EndOAuth2SessionStatus {
+  """
+  The session was ended.
+  """
+  ENDED
+  """
+  The session was not found.
+  """
+  NOT_FOUND
+}
+
+"""
 The mutations root of the GraphQL interface.
 """
 type Mutation {
@@ -249,6 +319,8 @@ type Mutation {
   Set an email address as primary
   """
   setPrimaryEmail(input: SetPrimaryEmailInput!): SetPrimaryEmailPayload!
+  endOauth2Session(input: EndOAuth2SessionInput!): EndOAuth2SessionPayload!
+  endCompatSession(input: EndCompatSessionInput!): EndCompatSessionPayload!
 }
 
 """
@@ -299,7 +371,7 @@ type Oauth2Client implements Node {
 An OAuth 2.0 session represents a client session which used the OAuth APIs
 to login.
 """
-type Oauth2Session implements Node {
+type Oauth2Session implements Node & CreationEvent {
   """
   ID of the object.
   """
@@ -312,6 +384,14 @@ type Oauth2Session implements Node {
   Scope granted for this session.
   """
   scope: String!
+  """
+  When the object was created.
+  """
+  createdAt: DateTime!
+  """
+  When the session ended.
+  """
+  finishedAt: DateTime
   """
   The browser session which started this OAuth 2.0 session.
   """

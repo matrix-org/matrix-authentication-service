@@ -14,6 +14,8 @@
 
 use anyhow::Context as _;
 use async_graphql::{Context, Description, Object, ID};
+use chrono::{DateTime, Utc};
+use mas_data_model::SessionState;
 use mas_storage::{oauth2::OAuth2ClientRepository, user::BrowserSessionRepository};
 use oauth2_types::scope::Scope;
 use ulid::Ulid;
@@ -51,6 +53,19 @@ impl OAuth2Session {
     /// Scope granted for this session.
     pub async fn scope(&self) -> String {
         self.0.scope.to_string()
+    }
+
+    /// When the object was created.
+    pub async fn created_at(&self) -> DateTime<Utc> {
+        self.0.created_at
+    }
+
+    /// When the session ended.
+    pub async fn finished_at(&self) -> Option<DateTime<Utc>> {
+        match &self.0.state {
+            SessionState::Valid => None,
+            SessionState::Finished { finished_at } => Some(*finished_at),
+        }
     }
 
     /// The browser session which started this OAuth 2.0 session.
