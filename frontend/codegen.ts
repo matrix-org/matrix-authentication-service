@@ -7,23 +7,9 @@ const config: CodegenConfig = {
   generates: {
     "./src/gql/": {
       preset: "client",
-      plugins: [
-        {
-          add: {
-            content: "/* eslint-disable */",
-          },
-        },
-      ],
     },
     "./src/gql/schema.ts": {
-      plugins: [
-        {
-          add: {
-            content: "/* eslint-disable */",
-          },
-        },
-        "urql-introspection",
-      ],
+      plugins: ["urql-introspection"],
     },
   },
   hooks: {

@@ -11,29 +11,38 @@ export type MakeOptional<T, K extends keyof T> = Omit<T, K> & {
 export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & {
   [SubKey in K]: Maybe<T[SubKey]>;
 };
+export type MakeEmpty<
+  T extends { [key: string]: unknown },
+  K extends keyof T
+> = { [_ in K]?: never };
+export type Incremental<T> =
+  | T
+  | {
+      [P in keyof T]?: P extends " $fragmentName" | "__typename" ? T[P] : never;
+    };
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
-  ID: string;
-  String: string;
-  Boolean: boolean;
-  Int: number;
-  Float: number;
+  ID: { input: string | number; output: string };
+  String: { input: string; output: string };
+  Boolean: { input: boolean; output: boolean };
+  Int: { input: number; output: number };
+  Float: { input: number; output: number };
   /**
    * Implement the DateTime<Utc> scalar
    *
    * The input/output is a string in RFC3339 format.
    */
-  DateTime: any;
+  DateTime: { input: any; output: any };
   /** URL is a String implementing the [URL Standard](http://url.spec.whatwg.org/) */
-  Url: any;
+  Url: { input: any; output: any };
 };
 
 /** The input for the `addEmail` mutation */
 export type AddEmailInput = {
   /** The email address to add */
-  email: Scalars["String"];
+  email: Scalars["String"]["input"];
   /** The ID of the user to add the email address to */
-  userId: Scalars["ID"];
+  userId: Scalars["ID"]["input"];
 };
 
 /** The payload of the `addEmail` mutation */
@@ -59,7 +68,7 @@ export enum AddEmailStatus {
 
 export type Anonymous = Node & {
   __typename?: "Anonymous";
-  id: Scalars["ID"];
+  id: Scalars["ID"]["output"];
 };
 
 /**
@@ -70,9 +79,9 @@ export type Authentication = CreationEvent &
   Node & {
     __typename?: "Authentication";
     /** When the object was created. */
-    createdAt: Scalars["DateTime"];
+    createdAt: Scalars["DateTime"]["output"];
     /** ID of the object. */
-    id: Scalars["ID"];
+    id: Scalars["ID"]["output"];
   };
 
 /** A browser session represents a logged in user in a browser. */
@@ -80,9 +89,9 @@ export type BrowserSession = CreationEvent &
   Node & {
     __typename?: "BrowserSession";
     /** When the object was created. */
-    createdAt: Scalars["DateTime"];
+    createdAt: Scalars["DateTime"]["output"];
     /** ID of the object. */
-    id: Scalars["ID"];
+    id: Scalars["ID"]["output"];
     /** The most recent authentication of this session. */
     lastAuthentication?: Maybe<Authentication>;
     /** The user logged in this session. */
@@ -103,7 +112,7 @@ export type BrowserSessionConnection = {
 export type BrowserSessionEdge = {
   __typename?: "BrowserSessionEdge";
   /** A cursor for use in pagination */
-  cursor: Scalars["String"];
+  cursor: Scalars["String"]["output"];
   /** The item at the end of the edge */
   node: BrowserSession;
 };
@@ -116,13 +125,13 @@ export type CompatSession = CreationEvent &
   Node & {
     __typename?: "CompatSession";
     /** When the object was created. */
-    createdAt: Scalars["DateTime"];
+    createdAt: Scalars["DateTime"]["output"];
     /** The Matrix Device ID of this session. */
-    deviceId: Scalars["String"];
+    deviceId: Scalars["String"]["output"];
     /** When the session ended. */
-    finishedAt?: Maybe<Scalars["DateTime"]>;
+    finishedAt?: Maybe<Scalars["DateTime"]["output"]>;
     /** ID of the object. */
-    id: Scalars["ID"];
+    id: Scalars["ID"]["output"];
     /** The user authorized for this session. */
     user: User;
   };
@@ -134,18 +143,18 @@ export type CompatSession = CreationEvent &
 export type CompatSsoLogin = Node & {
   __typename?: "CompatSsoLogin";
   /** When the object was created. */
-  createdAt: Scalars["DateTime"];
+  createdAt: Scalars["DateTime"]["output"];
   /** When the client exchanged the login token sent during the redirection. */
-  exchangedAt?: Maybe<Scalars["DateTime"]>;
+  exchangedAt?: Maybe<Scalars["DateTime"]["output"]>;
   /**
    * When the login was fulfilled, and the user was redirected back to the
    * client.
    */
-  fulfilledAt?: Maybe<Scalars["DateTime"]>;
+  fulfilledAt?: Maybe<Scalars["DateTime"]["output"]>;
   /** ID of the object. */
-  id: Scalars["ID"];
+  id: Scalars["ID"]["output"];
   /** The redirect URI used during the login. */
-  redirectUri: Scalars["Url"];
+  redirectUri: Scalars["Url"]["output"];
   /** The compat session which was started by this login. */
   session?: Maybe<CompatSession>;
 };
@@ -164,7 +173,7 @@ export type CompatSsoLoginConnection = {
 export type CompatSsoLoginEdge = {
   __typename?: "CompatSsoLoginEdge";
   /** A cursor for use in pagination */
-  cursor: Scalars["String"];
+  cursor: Scalars["String"]["output"];
   /** The item at the end of the edge */
   node: CompatSsoLogin;
 };
@@ -172,13 +181,13 @@ export type CompatSsoLoginEdge = {
 /** An object with a creation date. */
 export type CreationEvent = {
   /** When the object was created. */
-  createdAt: Scalars["DateTime"];
+  createdAt: Scalars["DateTime"]["output"];
 };
 
 /** The input of the `endCompatSession` mutation. */
 export type EndCompatSessionInput = {
   /** The ID of the session to end. */
-  compatSessionId: Scalars["ID"];
+  compatSessionId: Scalars["ID"]["input"];
 };
 
 export type EndCompatSessionPayload = {
@@ -200,7 +209,7 @@ export enum EndCompatSessionStatus {
 /** The input of the `endOauth2Session` mutation. */
 export type EndOAuth2SessionInput = {
   /** The ID of the session to end. */
-  oauth2SessionId: Scalars["ID"];
+  oauth2SessionId: Scalars["ID"]["input"];
 };
 
 export type EndOAuth2SessionPayload = {
@@ -274,26 +283,26 @@ export type MutationVerifyEmailArgs = {
 /** An object with an ID. */
 export type Node = {
   /** ID of the object. */
-  id: Scalars["ID"];
+  id: Scalars["ID"]["output"];
 };
 
 /** An OAuth 2.0 client */
 export type Oauth2Client = Node & {
   __typename?: "Oauth2Client";
   /** OAuth 2.0 client ID */
-  clientId: Scalars["String"];
+  clientId: Scalars["String"]["output"];
   /** Client name advertised by the client. */
-  clientName?: Maybe<Scalars["String"]>;
+  clientName?: Maybe<Scalars["String"]["output"]>;
   /** Client URI advertised by the client. */
-  clientUri?: Maybe<Scalars["Url"]>;
+  clientUri?: Maybe<Scalars["Url"]["output"]>;
   /** ID of the object. */
-  id: Scalars["ID"];
+  id: Scalars["ID"]["output"];
   /** Privacy policy URI advertised by the client. */
-  policyUri?: Maybe<Scalars["Url"]>;
+  policyUri?: Maybe<Scalars["Url"]["output"]>;
   /** List of redirect URIs used for authorization grants by the client. */
-  redirectUris: Array<Scalars["Url"]>;
+  redirectUris: Array<Scalars["Url"]["output"]>;
   /** Terms of services URI advertised by the client. */
-  tosUri?: Maybe<Scalars["Url"]>;
+  tosUri?: Maybe<Scalars["Url"]["output"]>;
 };
 
 /**
@@ -308,13 +317,13 @@ export type Oauth2Session = CreationEvent &
     /** OAuth 2.0 client used by this session. */
     client: Oauth2Client;
     /** When the object was created. */
-    createdAt: Scalars["DateTime"];
+    createdAt: Scalars["DateTime"]["output"];
     /** When the session ended. */
-    finishedAt?: Maybe<Scalars["DateTime"]>;
+    finishedAt?: Maybe<Scalars["DateTime"]["output"]>;
     /** ID of the object. */
-    id: Scalars["ID"];
+    id: Scalars["ID"]["output"];
     /** Scope granted for this session. */
-    scope: Scalars["String"];
+    scope: Scalars["String"]["output"];
     /** User authorized for this session. */
     user: User;
   };
@@ -333,7 +342,7 @@ export type Oauth2SessionConnection = {
 export type Oauth2SessionEdge = {
   __typename?: "Oauth2SessionEdge";
   /** A cursor for use in pagination */
-  cursor: Scalars["String"];
+  cursor: Scalars["String"]["output"];
   /** The item at the end of the edge */
   node: Oauth2Session;
 };
@@ -342,13 +351,13 @@ export type Oauth2SessionEdge = {
 export type PageInfo = {
   __typename?: "PageInfo";
   /** When paginating forwards, the cursor to continue. */
-  endCursor?: Maybe<Scalars["String"]>;
+  endCursor?: Maybe<Scalars["String"]["output"]>;
   /** When paginating forwards, are there more items? */
-  hasNextPage: Scalars["Boolean"];
+  hasNextPage: Scalars["Boolean"]["output"];
   /** When paginating backwards, are there more items? */
-  hasPreviousPage: Scalars["Boolean"];
+  hasPreviousPage: Scalars["Boolean"]["output"];
   /** When paginating backwards, the cursor to continue. */
-  startCursor?: Maybe<Scalars["String"]>;
+  startCursor?: Maybe<Scalars["String"]["output"]>;
 };
 
 /** The query root of the GraphQL interface. */
@@ -388,51 +397,51 @@ export type Query = {
 
 /** The query root of the GraphQL interface. */
 export type QueryBrowserSessionArgs = {
-  id: Scalars["ID"];
+  id: Scalars["ID"]["input"];
 };
 
 /** The query root of the GraphQL interface. */
 export type QueryNodeArgs = {
-  id: Scalars["ID"];
+  id: Scalars["ID"]["input"];
 };
 
 /** The query root of the GraphQL interface. */
 export type QueryOauth2ClientArgs = {
-  id: Scalars["ID"];
+  id: Scalars["ID"]["input"];
 };
 
 /** The query root of the GraphQL interface. */
 export type QueryUpstreamOauth2LinkArgs = {
-  id: Scalars["ID"];
+  id: Scalars["ID"]["input"];
 };
 
 /** The query root of the GraphQL interface. */
 export type QueryUpstreamOauth2ProviderArgs = {
-  id: Scalars["ID"];
+  id: Scalars["ID"]["input"];
 };
 
 /** The query root of the GraphQL interface. */
 export type QueryUpstreamOauth2ProvidersArgs = {
-  after?: InputMaybe<Scalars["String"]>;
-  before?: InputMaybe<Scalars["String"]>;
-  first?: InputMaybe<Scalars["Int"]>;
-  last?: InputMaybe<Scalars["Int"]>;
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  before?: InputMaybe<Scalars["String"]["input"]>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  last?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
 /** The query root of the GraphQL interface. */
 export type QueryUserArgs = {
-  id: Scalars["ID"];
+  id: Scalars["ID"]["input"];
 };
 
 /** The query root of the GraphQL interface. */
 export type QueryUserEmailArgs = {
-  id: Scalars["ID"];
+  id: Scalars["ID"]["input"];
 };
 
 /** The input for the `removeEmail` mutation */
 export type RemoveEmailInput = {
   /** The ID of the email address to remove */
-  userEmailId: Scalars["ID"];
+  userEmailId: Scalars["ID"]["input"];
 };
 
 /** The payload of the `removeEmail` mutation */
@@ -459,7 +468,7 @@ export enum RemoveEmailStatus {
 /** The input for the `sendVerificationEmail` mutation */
 export type SendVerificationEmailInput = {
   /** The ID of the email address to verify */
-  userEmailId: Scalars["ID"];
+  userEmailId: Scalars["ID"]["input"];
 };
 
 /** The payload of the `sendVerificationEmail` mutation */
@@ -484,7 +493,7 @@ export enum SendVerificationEmailStatus {
 /** The input for the `setPrimaryEmail` mutation */
 export type SetPrimaryEmailInput = {
   /** The ID of the email address to set as primary */
-  userEmailId: Scalars["ID"];
+  userEmailId: Scalars["ID"]["input"];
 };
 
 /** The payload of the `setPrimaryEmail` mutation */
@@ -509,13 +518,13 @@ export type UpstreamOAuth2Link = CreationEvent &
   Node & {
     __typename?: "UpstreamOAuth2Link";
     /** When the object was created. */
-    createdAt: Scalars["DateTime"];
+    createdAt: Scalars["DateTime"]["output"];
     /** ID of the object. */
-    id: Scalars["ID"];
+    id: Scalars["ID"]["output"];
     /** The provider for which this link is. */
     provider: UpstreamOAuth2Provider;
     /** Subject used for linking */
-    subject: Scalars["String"];
+    subject: Scalars["String"]["output"];
     /** The user to which this link is associated. */
     user?: Maybe<User>;
   };
@@ -534,7 +543,7 @@ export type UpstreamOAuth2LinkConnection = {
 export type UpstreamOAuth2LinkEdge = {
   __typename?: "UpstreamOAuth2LinkEdge";
   /** A cursor for use in pagination */
-  cursor: Scalars["String"];
+  cursor: Scalars["String"]["output"];
   /** The item at the end of the edge */
   node: UpstreamOAuth2Link;
 };
@@ -543,13 +552,13 @@ export type UpstreamOAuth2Provider = CreationEvent &
   Node & {
     __typename?: "UpstreamOAuth2Provider";
     /** Client ID used for this provider. */
-    clientId: Scalars["String"];
+    clientId: Scalars["String"]["output"];
     /** When the object was created. */
-    createdAt: Scalars["DateTime"];
+    createdAt: Scalars["DateTime"]["output"];
     /** ID of the object. */
-    id: Scalars["ID"];
+    id: Scalars["ID"]["output"];
     /** OpenID Connect issuer URL. */
-    issuer: Scalars["String"];
+    issuer: Scalars["String"]["output"];
   };
 
 export type UpstreamOAuth2ProviderConnection = {
@@ -566,7 +575,7 @@ export type UpstreamOAuth2ProviderConnection = {
 export type UpstreamOAuth2ProviderEdge = {
   __typename?: "UpstreamOAuth2ProviderEdge";
   /** A cursor for use in pagination */
-  cursor: Scalars["String"];
+  cursor: Scalars["String"]["output"];
   /** The item at the end of the edge */
   node: UpstreamOAuth2Provider;
 };
@@ -581,7 +590,7 @@ export type User = Node & {
   /** Get the list of emails, chronologically sorted */
   emails: UserEmailConnection;
   /** ID of the object. */
-  id: Scalars["ID"];
+  id: Scalars["ID"]["output"];
   /** Get the list of OAuth 2.0 sessions, chronologically sorted */
   oauth2Sessions: Oauth2SessionConnection;
   /** Primary email address of the user. */
@@ -589,47 +598,47 @@ export type User = Node & {
   /** Get the list of upstream OAuth 2.0 links */
   upstreamOauth2Links: UpstreamOAuth2LinkConnection;
   /** Username chosen by the user. */
-  username: Scalars["String"];
+  username: Scalars["String"]["output"];
 };
 
 /** A user is an individual's account. */
 export type UserBrowserSessionsArgs = {
-  after?: InputMaybe<Scalars["String"]>;
-  before?: InputMaybe<Scalars["String"]>;
-  first?: InputMaybe<Scalars["Int"]>;
-  last?: InputMaybe<Scalars["Int"]>;
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  before?: InputMaybe<Scalars["String"]["input"]>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  last?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
 /** A user is an individual's account. */
 export type UserCompatSsoLoginsArgs = {
-  after?: InputMaybe<Scalars["String"]>;
-  before?: InputMaybe<Scalars["String"]>;
-  first?: InputMaybe<Scalars["Int"]>;
-  last?: InputMaybe<Scalars["Int"]>;
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  before?: InputMaybe<Scalars["String"]["input"]>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  last?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
 /** A user is an individual's account. */
 export type UserEmailsArgs = {
-  after?: InputMaybe<Scalars["String"]>;
-  before?: InputMaybe<Scalars["String"]>;
-  first?: InputMaybe<Scalars["Int"]>;
-  last?: InputMaybe<Scalars["Int"]>;
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  before?: InputMaybe<Scalars["String"]["input"]>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  last?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
 /** A user is an individual's account. */
 export type UserOauth2SessionsArgs = {
-  after?: InputMaybe<Scalars["String"]>;
-  before?: InputMaybe<Scalars["String"]>;
-  first?: InputMaybe<Scalars["Int"]>;
-  last?: InputMaybe<Scalars["Int"]>;
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  before?: InputMaybe<Scalars["String"]["input"]>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  last?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
 /** A user is an individual's account. */
 export type UserUpstreamOauth2LinksArgs = {
-  after?: InputMaybe<Scalars["String"]>;
-  before?: InputMaybe<Scalars["String"]>;
-  first?: InputMaybe<Scalars["Int"]>;
-  last?: InputMaybe<Scalars["Int"]>;
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  before?: InputMaybe<Scalars["String"]["input"]>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  last?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
 /** A user email address */
@@ -640,13 +649,13 @@ export type UserEmail = CreationEvent &
      * When the email address was confirmed. Is `null` if the email was never
      * verified by the user.
      */
-    confirmedAt?: Maybe<Scalars["DateTime"]>;
+    confirmedAt?: Maybe<Scalars["DateTime"]["output"]>;
     /** When the object was created. */
-    createdAt: Scalars["DateTime"];
+    createdAt: Scalars["DateTime"]["output"];
     /** Email address */
-    email: Scalars["String"];
+    email: Scalars["String"]["output"];
     /** ID of the object. */
-    id: Scalars["ID"];
+    id: Scalars["ID"]["output"];
   };
 
 export type UserEmailConnection = {
@@ -658,14 +667,14 @@ export type UserEmailConnection = {
   /** Information to aid in pagination. */
   pageInfo: PageInfo;
   /** Identifies the total count of items in the connection. */
-  totalCount: Scalars["Int"];
+  totalCount: Scalars["Int"]["output"];
 };
 
 /** An edge in a connection. */
 export type UserEmailEdge = {
   __typename?: "UserEmailEdge";
   /** A cursor for use in pagination */
-  cursor: Scalars["String"];
+  cursor: Scalars["String"]["output"];
   /** The item at the end of the edge */
   node: UserEmail;
 };
@@ -673,9 +682,9 @@ export type UserEmailEdge = {
 /** The input for the `verifyEmail` mutation */
 export type VerifyEmailInput = {
   /** The verification code */
-  code: Scalars["String"];
+  code: Scalars["String"]["input"];
   /** The ID of the email address to verify */
-  userEmailId: Scalars["ID"];
+  userEmailId: Scalars["ID"]["input"];
 };
 
 /** The payload of the `verifyEmail` mutation */
@@ -726,8 +735,8 @@ export type CurrentViewerSessionQueryQuery = {
 };
 
 export type AddEmailMutationVariables = Exact<{
-  userId: Scalars["ID"];
-  email: Scalars["String"];
+  userId: Scalars["ID"]["input"];
+  email: Scalars["String"]["input"];
 }>;
 
 export type AddEmailMutation = {
@@ -757,11 +766,11 @@ export type BrowserSession_SessionFragment = {
 } & { " $fragmentName"?: "BrowserSession_SessionFragment" };
 
 export type BrowserSessionListQueryVariables = Exact<{
-  userId: Scalars["ID"];
-  first?: InputMaybe<Scalars["Int"]>;
-  after?: InputMaybe<Scalars["String"]>;
-  last?: InputMaybe<Scalars["Int"]>;
-  before?: InputMaybe<Scalars["String"]>;
+  userId: Scalars["ID"]["input"];
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  last?: InputMaybe<Scalars["Int"]["input"]>;
+  before?: InputMaybe<Scalars["String"]["input"]>;
 }>;
 
 export type BrowserSessionListQuery = {
@@ -820,7 +829,7 @@ export type CompatSsoLogin_SessionFragment = {
 } & { " $fragmentName"?: "CompatSsoLogin_SessionFragment" };
 
 export type EndCompatSessionMutationVariables = Exact<{
-  id: Scalars["ID"];
+  id: Scalars["ID"]["input"];
 }>;
 
 export type EndCompatSessionMutation = {
@@ -839,11 +848,11 @@ export type EndCompatSessionMutation = {
 };
 
 export type CompatSsoLoginListQueryVariables = Exact<{
-  userId: Scalars["ID"];
-  first?: InputMaybe<Scalars["Int"]>;
-  after?: InputMaybe<Scalars["String"]>;
-  last?: InputMaybe<Scalars["Int"]>;
-  before?: InputMaybe<Scalars["String"]>;
+  userId: Scalars["ID"]["input"];
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  last?: InputMaybe<Scalars["Int"]["input"]>;
+  before?: InputMaybe<Scalars["String"]["input"]>;
 }>;
 
 export type CompatSsoLoginListQuery = {
@@ -888,7 +897,7 @@ export type OAuth2Session_SessionFragment = {
 } & { " $fragmentName"?: "OAuth2Session_SessionFragment" };
 
 export type EndSessionMutationVariables = Exact<{
-  id: Scalars["ID"];
+  id: Scalars["ID"]["input"];
 }>;
 
 export type EndSessionMutation = {
@@ -907,11 +916,11 @@ export type EndSessionMutation = {
 };
 
 export type OAuth2SessionListQueryQueryVariables = Exact<{
-  userId: Scalars["ID"];
-  first?: InputMaybe<Scalars["Int"]>;
-  after?: InputMaybe<Scalars["String"]>;
-  last?: InputMaybe<Scalars["Int"]>;
-  before?: InputMaybe<Scalars["String"]>;
+  userId: Scalars["ID"]["input"];
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  last?: InputMaybe<Scalars["Int"]["input"]>;
+  before?: InputMaybe<Scalars["String"]["input"]>;
 }>;
 
 export type OAuth2SessionListQueryQuery = {
@@ -950,8 +959,8 @@ export type UserEmail_EmailFragment = {
 } & { " $fragmentName"?: "UserEmail_EmailFragment" };
 
 export type VerifyEmailMutationVariables = Exact<{
-  id: Scalars["ID"];
-  code: Scalars["String"];
+  id: Scalars["ID"]["input"];
+  code: Scalars["String"]["input"];
 }>;
 
 export type VerifyEmailMutation = {
@@ -975,7 +984,7 @@ export type VerifyEmailMutation = {
 };
 
 export type ResendVerificationEmailMutationVariables = Exact<{
-  id: Scalars["ID"];
+  id: Scalars["ID"]["input"];
 }>;
 
 export type ResendVerificationEmailMutation = {
@@ -995,7 +1004,7 @@ export type ResendVerificationEmailMutation = {
 };
 
 export type RemoveEmailMutationVariables = Exact<{
-  id: Scalars["ID"];
+  id: Scalars["ID"]["input"];
 }>;
 
 export type RemoveEmailMutation = {
@@ -1008,7 +1017,7 @@ export type RemoveEmailMutation = {
 };
 
 export type SetPrimaryEmailMutationVariables = Exact<{
-  id: Scalars["ID"];
+  id: Scalars["ID"]["input"];
 }>;
 
 export type SetPrimaryEmailMutation = {
@@ -1025,11 +1034,11 @@ export type SetPrimaryEmailMutation = {
 };
 
 export type UserEmailListQueryQueryVariables = Exact<{
-  userId: Scalars["ID"];
-  first?: InputMaybe<Scalars["Int"]>;
-  after?: InputMaybe<Scalars["String"]>;
-  last?: InputMaybe<Scalars["Int"]>;
-  before?: InputMaybe<Scalars["String"]>;
+  userId: Scalars["ID"]["input"];
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  last?: InputMaybe<Scalars["Int"]["input"]>;
+  before?: InputMaybe<Scalars["String"]["input"]>;
 }>;
 
 export type UserEmailListQueryQuery = {
@@ -1061,7 +1070,7 @@ export type UserEmailListQueryQuery = {
 };
 
 export type UserPrimaryEmailQueryVariables = Exact<{
-  userId: Scalars["ID"];
+  userId: Scalars["ID"]["input"];
 }>;
 
 export type UserPrimaryEmailQuery = {
@@ -1074,7 +1083,7 @@ export type UserPrimaryEmailQuery = {
 };
 
 export type UserGreetingQueryVariables = Exact<{
-  userId: Scalars["ID"];
+  userId: Scalars["ID"]["input"];
 }>;
 
 export type UserGreetingQuery = {
@@ -1083,7 +1092,7 @@ export type UserGreetingQuery = {
 };
 
 export type BrowserSessionQueryQueryVariables = Exact<{
-  id: Scalars["ID"];
+  id: Scalars["ID"]["input"];
 }>;
 
 export type BrowserSessionQueryQuery = {
@@ -1102,7 +1111,7 @@ export type BrowserSessionQueryQuery = {
 };
 
 export type OAuth2ClientQueryQueryVariables = Exact<{
-  id: Scalars["ID"];
+  id: Scalars["ID"]["input"];
 }>;
 
 export type OAuth2ClientQueryQuery = {
