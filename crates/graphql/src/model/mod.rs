@@ -49,4 +49,5 @@ pub enum CreationEvent {
     UserEmail(Box<UserEmail>),
     UpstreamOAuth2Provider(Box<UpstreamOAuth2Provider>),
     UpstreamOAuth2Link(Box<UpstreamOAuth2Link>),
+    OAuth2Session(Box<OAuth2Session>),
 }

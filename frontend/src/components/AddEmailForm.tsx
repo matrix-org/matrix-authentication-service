@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Button } from "@vector-im/compound-web";
 import { atom, useAtom } from "jotai";
 import { atomWithMutation } from "jotai-urql";
 import { useRef, useTransition } from "react";
 
 import { graphql } from "../gql";
 
-import Button from "./Button";
 import Input from "./Input";
 import Typography from "./Typography";
 
@@ -105,7 +105,7 @@ const AddEmailForm: React.FC<{ userId: string; onAdd?: () => void }> = ({
           inputMode="email"
           name="email"
         />
-        <Button disabled={pending} type="submit">
+        <Button kind="primary" disabled={pending} type="submit">
           Add
         </Button>
       </form>

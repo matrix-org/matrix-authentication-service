@@ -12,13 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+mod compat_session;
+mod oauth2_session;
 mod user_email;
 
 use async_graphql::MergedObject;
 
 /// The mutations root of the GraphQL interface.
 #[derive(Default, MergedObject)]
-pub struct Mutation(user_email::UserEmailMutations);
+pub struct Mutation(
+    user_email::UserEmailMutations,
+    oauth2_session::OAuth2SessionMutations,
+    compat_session::CompatSessionMutations,
+);
 
 impl Mutation {
     #[must_use]
