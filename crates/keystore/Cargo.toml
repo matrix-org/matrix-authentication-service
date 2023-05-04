@@ -19,7 +19,7 @@ pem-rfc7468 = { version = "0.7.0", features = ["std"] }
 pkcs1 = { version = "0.7.5", features = ["std"] }
 pkcs8 = { version = "0.10.2", features = ["std", "pkcs5", "encryption"] }
 rand = "0.8.5"
-rsa = { version = "0.9.0-pre.1", features = ["std", "pem"] }
+rsa = { version = "0.9.1", features = ["std", "pem"] }
 sec1 = { version = "0.7.2", features = ["std"] }
 spki = { version = "0.7.1", features = ["std"] }
 thiserror = "1.0.40"
