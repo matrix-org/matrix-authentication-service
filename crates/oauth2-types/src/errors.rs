@@ -30,7 +30,8 @@ pub struct ClientError {
     pub error: ClientErrorCode,
 
     /// A human-readable description of the error.
-    pub error_description: Cow<'static, str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error_description: Option<Cow<'static, str>>,
 }
 
 impl ClientError {
@@ -39,14 +40,14 @@ impl ClientError {
     pub const fn new(error: ClientErrorCode, error_description: &'static str) -> Self {
         Self {
             error,
-            error_description: Cow::Borrowed(error_description),
+            error_description: Some(Cow::Borrowed(error_description)),
         }
     }
 
     /// Changes the description of this `ClientError` with the given `String`.
     #[must_use]
     pub fn with_description(mut self, description: String) -> Self {
-        self.error_description = Cow::Owned(description);
+        self.error_description = Some(Cow::Owned(description));
         self
     }
 }
