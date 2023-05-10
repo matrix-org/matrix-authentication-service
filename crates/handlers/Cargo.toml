@@ -11,7 +11,7 @@ tokio = { version = "1.28.0", features = ["macros"] }
 futures-util = "0.3.28"
 
 # Logging and tracing
-tracing = "0.1.38"
+tracing = "0.1.37"
 
 # Error management
 thiserror = "1.0.40"
