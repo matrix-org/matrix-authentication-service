@@ -37,7 +37,7 @@ serde_with = "2.3.2"
 thiserror = "1.0.40"
 tokio = { version = "1.28.0", features = ["rt", "macros", "rt-multi-thread"] }
 tower = { version = "0.4.13", features = ["full"] }
-tracing = "0.1.38"
+tracing = "0.1.37"
 url = { version = "2.3.1", features = ["serde"] }
 
 mas-http = { path = "../http" }

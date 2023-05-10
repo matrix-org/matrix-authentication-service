@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [dependencies]
 async-trait = "0.1.68"
-tracing = "0.1.38"
+tracing = "0.1.37"
 thiserror = "1.0.40"
 headers = "0.3.8"
 
