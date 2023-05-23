@@ -130,6 +130,7 @@
     "passwords": {
       "description": "Configuration related to user passwords",
       "default": {
+        "enabled": true,
         "schemes": [
           {
             "algorithm": "argon2id",
@@ -1215,6 +1216,11 @@
       "description": "User password hashing config",
       "type": "object",
       "properties": {
+        "enabled": {
+          "description": "Whether password-based authentication is enabled",
+          "default": true,
+          "type": "boolean"
+        },
         "schemes": {
           "default": [
             {

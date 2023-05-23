@@ -19,65 +19,75 @@ limitations under the License.
 {% block content %}
   <section class="flex items-center justify-center flex-1">
     <form method="POST" class="grid grid-cols-1 gap-6 w-96 m-2">
-      {% if next and next.kind == "link_upstream" %}
-        <div class="text-center">
-          <h1 class="text-lg text-center font-medium">Sign in to link</h1>
-          <p class="text-sm">Linking your <span class="break-keep text-links">{{ next.provider.issuer }}</span> account</p>
-        </div>
-      {% else %}
-        <div class="text-center">
-          <h1 class="text-lg text-center font-medium">Sign in</h1>
-          <p>Please sign in to continue:</p>
-        </div>
-      {% endif %}
-
-      {% if form.errors is not empty %}
-        {% for error in form.errors %}
-          <div class="text-alert font-medium">
-            {{ errors::form_error_message(error=error) }}
+      {% if not password_disabled %}
+        {% if next and next.kind == "link_upstream" %}
+          <div class="text-center">
+            <h1 class="text-lg text-center font-medium">Sign in to link</h1>
+            <p class="text-sm">Linking your <span class="break-keep text-links">{{ next.provider.issuer }}</span> account</p>
           </div>
-        {% endfor %}
-      {% endif %}
+        {% else %}
+          <div class="text-center">
+            <h1 class="text-lg text-center font-medium">Sign in</h1>
+            <p>Please sign in to continue:</p>
+          </div>
+        {% endif %}
 
-      <input type="hidden" name="csrf" value="{{ csrf_token }}" />
-      {{ field::input(label="Username", name="username", form_state=form, autocomplete="username", autocorrect="off", autocapitalize="none") }}
-      {{ field::input(label="Password", name="password", type="password", form_state=form, autocomplete="password") }}
-      {% if next and next.kind == "continue_authorization_grant" %}
-        <div class="grid grid-cols-2 gap-4">
-          {{ back_to_client::link(
-            text="Cancel",
-            class=button::outline_error_class(),
-            uri=next.grant.redirect_uri,
-            mode=next.grant.response_mode,
-            params=dict(error="access_denied", state=next.grant.state)
-          ) }}
-          {{ button::button(text="Next") }}
-        </div>
-      {% else %}
-        <div class="grid grid-cols-1 gap-4">    
-          {{ button::button(text="Next") }}
-        </div>
-      {% endif %}
+        {% if form.errors is not empty %}
+          {% for error in form.errors %}
+            <div class="text-alert font-medium">
+              {{ errors::form_error_message(error=error) }}
+            </div>
+          {% endfor %}
+        {% endif %}
 
-      {% if not next or next.kind != "link_upstream" %}
-        <div class="text-center mt-4">
-          Don't have an account yet?
-          {% set params = next | safe_get(key="params") | to_params(prefix="?") %}
-          {{ button::link_text(text="Create an account", href="/register" ~ params) }}
-        </div>
+        <input type="hidden" name="csrf" value="{{ csrf_token }}" />
+        {{ field::input(label="Username", name="username", form_state=form, autocomplete="username", autocorrect="off", autocapitalize="none") }}
+        {{ field::input(label="Password", name="password", type="password", form_state=form, autocomplete="password") }}
+        {% if next and next.kind == "continue_authorization_grant" %}
+          <div class="grid grid-cols-2 gap-4">
+            {{ back_to_client::link(
+              text="Cancel",
+              class=button::outline_error_class(),
+              uri=next.grant.redirect_uri,
+              mode=next.grant.response_mode,
+              params=dict(error="access_denied", state=next.grant.state)
+            ) }}
+            {{ button::button(text="Next") }}
+          </div>
+        {% else %}
+          <div class="grid grid-cols-1 gap-4">
+            {{ button::button(text="Next") }}
+          </div>
+        {% endif %}
+
+        {% if not next or next.kind != "link_upstream" %}
+          <div class="text-center mt-4">
+            Don't have an account yet?
+            {% set params = next | safe_get(key="params") | to_params(prefix="?") %}
+            {{ button::link_text(text="Create an account", href="/register" ~ params) }}
+          </div>
+        {% endif %}
       {% endif %}
 
       {% if providers %}
-        <div class="flex items-center">
-          <hr class="flex-1" />
-          <div class="mx-2">Or</div>
-          <hr class="flex-1" />
-        </div>
+        {% if not password_disabled %}
+          <div class="flex items-center">
+            <hr class="flex-1" />
+            <div class="mx-2">Or</div>
+            <hr class="flex-1" />
+          </div>
+        {% endif %}
 
         {% for provider in providers %}
           {% set params = next | safe_get(key="params") | to_params(prefix="?") %}
           {{ button::link(text="Continue with " ~ provider.issuer, href="/upstream/authorize/" ~ provider.id ~ params) }}
         {% endfor %}
+      {% endif %}
+
+      {% if not providers and password_disabled %}
+        <div class="text-center">
+          No login method available.
+        </div>
       {% endif %}
     </form>
   </section>

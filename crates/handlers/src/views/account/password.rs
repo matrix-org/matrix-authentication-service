@@ -15,6 +15,7 @@
 use anyhow::Context;
 use axum::{
     extract::{Form, State},
+    http::StatusCode,
     response::{Html, IntoResponse, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
@@ -48,9 +49,15 @@ pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
     State(templates): State<Templates>,
+    State(password_manager): State<PasswordManager>,
     mut repo: BoxRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
+    // If the password manager is disabled, we can go back to the account page.
+    if !password_manager.is_enabled() {
+        return Ok(mas_router::Account.go().into_response());
+    }
+
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
     let maybe_session = session_info.load_session(&mut repo).await?;
@@ -91,6 +98,11 @@ pub(crate) async fn post(
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<ChangeForm>>,
 ) -> Result<Response, FancyError> {
+    if !password_manager.is_enabled() {
+        // XXX: do something better here
+        return Ok(StatusCode::METHOD_NOT_ALLOWED.into_response());
+    }
+
     let form = cookie_jar.verify_form(&clock, form)?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();

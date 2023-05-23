@@ -18,6 +18,7 @@ use axum::{
     response::{Html, IntoResponse, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
+use hyper::StatusCode;
 use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     FancyError, SessionInfoExt,
@@ -44,11 +45,17 @@ pub(crate) struct ReauthForm {
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
+    State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
     mut repo: BoxRepository,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: PrivateCookieJar<Encrypter>,
 ) -> Result<Response, FancyError> {
+    if !password_manager.is_enabled() {
+        // XXX: do something better here
+        return Ok(mas_router::Account.go().into_response());
+    }
+
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
 
@@ -85,6 +92,11 @@ pub(crate) async fn post(
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<ReauthForm>>,
 ) -> Result<Response, FancyError> {
+    if !password_manager.is_enabled() {
+        // XXX: do something better here
+        return Ok(StatusCode::METHOD_NOT_ALLOWED.into_response());
+    }
+
     let form = cookie_jar.verify_form(&clock, form)?;
 
     let (session_info, cookie_jar) = cookie_jar.session_info();

@@ -31,6 +31,7 @@ use camino::{Utf8Path, Utf8PathBuf};
 use mas_router::UrlBuilder;
 use rand::Rng;
 use serde::Serialize;
+pub use tera::escape_html;
 use tera::{Context, Error as TeraError, Tera};
 use thiserror::Error;
 use tokio::{sync::RwLock, task::JoinError};

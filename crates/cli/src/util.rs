@@ -33,6 +33,10 @@ use tracing::{error, info, log::LevelFilter};
 pub async fn password_manager_from_config(
     config: &PasswordsConfig,
 ) -> Result<PasswordManager, anyhow::Error> {
+    if !config.enabled() {
+        return Ok(PasswordManager::disabled());
+    }
+
     let schemes = config
         .load()
         .await?
@@ -226,4 +230,77 @@ pub async fn watch_templates(templates: &Templates) -> anyhow::Result<()> {
     });
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use rand::SeedableRng;
+    use zeroize::Zeroizing;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_password_manager_from_config() {
+        let mut rng = rand_chacha::ChaChaRng::seed_from_u64(42);
+        let password = Zeroizing::new(b"hunter2".to_vec());
+
+        // Test a valid, enabled config
+        let config = serde_json::from_value(serde_json::json!({
+            "schemes": [{
+                "version": 42,
+                "algorithm": "argon2id"
+            }, {
+                "version": 10,
+                "algorithm": "bcrypt"
+            }]
+        }))
+        .unwrap();
+
+        let manager = password_manager_from_config(&config).await;
+        assert!(manager.is_ok());
+        let manager = manager.unwrap();
+        assert!(manager.is_enabled());
+        let hashed = manager.hash(&mut rng, password.clone()).await;
+        assert!(hashed.is_ok());
+        let (version, hashed) = hashed.unwrap();
+        assert_eq!(version, 42);
+        assert!(hashed.starts_with("$argon2id$"));
+
+        // Test a valid, disabled config
+        let config = serde_json::from_value(serde_json::json!({
+            "enabled": false,
+            "schemes": []
+        }))
+        .unwrap();
+
+        let manager = password_manager_from_config(&config).await;
+        assert!(manager.is_ok());
+        let manager = manager.unwrap();
+        assert!(!manager.is_enabled());
+        let res = manager.hash(&mut rng, password.clone()).await;
+        assert!(res.is_err());
+
+        // Test an invalid config
+        // Repeat the same version twice
+        let config = serde_json::from_value(serde_json::json!({
+            "schemes": [{
+                "version": 42,
+                "algorithm": "argon2id"
+            }, {
+                "version": 42,
+                "algorithm": "bcrypt"
+            }]
+        }))
+        .unwrap();
+        let manager = password_manager_from_config(&config).await;
+        assert!(manager.is_err());
+
+        // Empty schemes
+        let config = serde_json::from_value(serde_json::json!({
+            "schemes": []
+        }))
+        .unwrap();
+        let manager = password_manager_from_config(&config).await;
+        assert!(manager.is_err());
+    }
 }

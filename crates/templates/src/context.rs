@@ -286,6 +286,7 @@ pub struct PostAuthContext {
 pub struct LoginContext {
     form: FormState<LoginFormField>,
     next: Option<PostAuthContext>,
+    password_disabled: bool,
     providers: Vec<UpstreamOAuthProvider>,
 }
 
@@ -295,15 +296,33 @@ impl TemplateContext for LoginContext {
         Self: Sized,
     {
         // TODO: samples with errors
-        vec![LoginContext {
-            form: FormState::default(),
-            next: None,
-            providers: Vec::new(),
-        }]
+        vec![
+            LoginContext {
+                form: FormState::default(),
+                next: None,
+                password_disabled: true,
+                providers: Vec::new(),
+            },
+            LoginContext {
+                form: FormState::default(),
+                next: None,
+                password_disabled: false,
+                providers: Vec::new(),
+            },
+        ]
     }
 }
 
 impl LoginContext {
+    /// Set whether password login is enabled or not
+    #[must_use]
+    pub fn with_password_login(self, enabled: bool) -> Self {
+        Self {
+            password_disabled: !enabled,
+            ..self
+        }
+    }
+
     /// Set the form state
     #[must_use]
     pub fn with_form_state(self, form: FormState<LoginFormField>) -> Self {
@@ -312,7 +331,7 @@ impl LoginContext {
 
     /// Set the upstream OAuth 2.0 providers
     #[must_use]
-    pub fn with_upstrem_providers(self, providers: Vec<UpstreamOAuthProvider>) -> Self {
+    pub fn with_upstream_providers(self, providers: Vec<UpstreamOAuthProvider>) -> Self {
         Self { providers, ..self }
     }
 
