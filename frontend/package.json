@@ -37,7 +37,7 @@
     "@storybook/addon-docs": "^7.0.6",
     "@storybook/addon-essentials": "^7.0.6",
     "@storybook/addon-measure": "^7.0.6",
-    "@storybook/addon-outline": "^7.0.6",
+    "@storybook/addon-outline": "^7.0.15",
     "@storybook/addon-toolbars": "^7.0.6",
     "@storybook/addon-viewport": "^7.0.6",
     "@storybook/react": "^7.0.6",
