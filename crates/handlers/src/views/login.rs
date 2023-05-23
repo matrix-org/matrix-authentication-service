@@ -17,12 +17,14 @@ use axum::{
     response::{Html, IntoResponse, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
+use hyper::StatusCode;
 use mas_axum_utils::{
     csrf::{CsrfExt, CsrfToken, ProtectedForm},
     FancyError, SessionInfoExt,
 };
 use mas_data_model::BrowserSession;
 use mas_keystore::Encrypter;
+use mas_router::{Route, UpstreamOAuth2Authorize};
 use mas_storage::{
     upstream_oauth2::UpstreamOAuthProviderRepository,
     user::{BrowserSessionRepository, UserPasswordRepository, UserRepository},
@@ -52,6 +54,7 @@ impl ToFormState for LoginForm {
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
+    State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
     mut repo: BoxRepository,
     Query(query): Query<OptionalPostAuthAction>,
@@ -64,20 +67,38 @@ pub(crate) async fn get(
 
     if maybe_session.is_some() {
         let reply = query.go_next();
-        Ok((cookie_jar, reply).into_response())
-    } else {
-        let providers = repo.upstream_oauth_provider().all().await?;
-        let content = render(
-            LoginContext::default().with_upstrem_providers(providers),
-            query,
-            csrf_token,
-            &mut repo,
-            &templates,
-        )
-        .await?;
+        return Ok((cookie_jar, reply).into_response());
+    };
 
-        Ok((cookie_jar, Html(content)).into_response())
-    }
+    let providers = repo.upstream_oauth_provider().all().await?;
+
+    // If password-based login is disabled, and there is only one upstream provider,
+    // we can directly start an authorization flow
+    if !password_manager.is_enabled() && providers.len() == 1 {
+        let provider = providers.into_iter().next().unwrap();
+
+        let mut destination = UpstreamOAuth2Authorize::new(provider.id);
+
+        if let Some(action) = query.post_auth_action {
+            destination = destination.and_then(action);
+        };
+
+        return Ok((cookie_jar, destination.go()).into_response());
+    };
+
+    let content = render(
+        LoginContext::default()
+            // XXX: we might want to have a site-wide config in the templates context instead?
+            .with_password_login(password_manager.is_enabled())
+            .with_upstream_providers(providers),
+        query,
+        csrf_token,
+        &mut repo,
+        &templates,
+    )
+    .await?;
+
+    Ok((cookie_jar, Html(content)).into_response())
 }
 
 #[tracing::instrument(name = "handlers.views.login.post", skip_all, err)]
@@ -91,6 +112,11 @@ pub(crate) async fn post(
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<LoginForm>>,
 ) -> Result<Response, FancyError> {
+    if !password_manager.is_enabled() {
+        // XXX: is it necessary to have better errors here?
+        return Ok(StatusCode::METHOD_NOT_ALLOWED.into_response());
+    }
+
     let form = cookie_jar.verify_form(&clock, form)?;
 
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
@@ -115,7 +141,7 @@ pub(crate) async fn post(
         let content = render(
             LoginContext::default()
                 .with_form_state(state)
-                .with_upstrem_providers(providers),
+                .with_upstream_providers(providers),
             query,
             csrf_token,
             &mut repo,
@@ -250,4 +276,101 @@ async fn render(
 
     let content = templates.render_login(&ctx).await?;
     Ok(content)
+}
+
+#[cfg(test)]
+mod test {
+    use hyper::{
+        header::{CONTENT_TYPE, LOCATION},
+        Request, StatusCode,
+    };
+    use mas_iana::oauth::OAuthClientAuthenticationMethod;
+    use mas_router::Route;
+    use mas_storage::{upstream_oauth2::UpstreamOAuthProviderRepository, RepositoryAccess};
+    use mas_templates::escape_html;
+    use oauth2_types::scope::OPENID;
+    use sqlx::PgPool;
+
+    use crate::{
+        passwords::PasswordManager,
+        test_utils::{init_tracing, RequestBuilderExt, ResponseExt, TestState},
+    };
+
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_password_disabled(pool: PgPool) {
+        init_tracing();
+        let state = {
+            let mut state = TestState::from_pool(pool).await.unwrap();
+            state.password_manager = PasswordManager::disabled();
+            state
+        };
+        let mut rng = state.rng();
+
+        // Without password login and no upstream providers, we should get an error
+        // message
+        let response = state.request(Request::get("/login").empty()).await;
+        response.assert_status(StatusCode::OK);
+        response.assert_header_value(CONTENT_TYPE, "text/html; charset=utf-8");
+        assert!(response.body().contains("No login method available"));
+
+        // Adding an upstream provider should redirect to it
+        let mut repo = state.repository().await.unwrap();
+        let first_provider = repo
+            .upstream_oauth_provider()
+            .add(
+                &mut rng,
+                &state.clock,
+                "https://first.com/".into(),
+                [OPENID].into_iter().collect(),
+                OAuthClientAuthenticationMethod::None,
+                None,
+                "first_client".into(),
+                None,
+            )
+            .await
+            .unwrap();
+        repo.save().await.unwrap();
+
+        let first_provider_login = mas_router::UpstreamOAuth2Authorize::new(first_provider.id);
+
+        let response = state.request(Request::get("/login").empty()).await;
+        response.assert_status(StatusCode::SEE_OTHER);
+        response.assert_header_value(LOCATION, &first_provider_login.relative_url());
+
+        // Adding a second provider should show a login page with both providers
+        let mut repo = state.repository().await.unwrap();
+        let second_provider = repo
+            .upstream_oauth_provider()
+            .add(
+                &mut rng,
+                &state.clock,
+                "https://second.com/".into(),
+                [OPENID].into_iter().collect(),
+                OAuthClientAuthenticationMethod::None,
+                None,
+                "second_client".into(),
+                None,
+            )
+            .await
+            .unwrap();
+        repo.save().await.unwrap();
+
+        let second_provider_login = mas_router::UpstreamOAuth2Authorize::new(second_provider.id);
+
+        let response = state.request(Request::get("/login").empty()).await;
+        response.assert_status(StatusCode::OK);
+        response.assert_header_value(CONTENT_TYPE, "text/html; charset=utf-8");
+        assert!(response
+            .body()
+            .contains(&escape_html(&first_provider.issuer)));
+        assert!(response
+            .body()
+            .contains(&escape_html(&first_provider_login.relative_url())));
+        assert!(response
+            .body()
+            .contains(&escape_html(&second_provider.issuer)));
+        assert!(response
+            .body()
+            .contains(&escape_html(&second_provider_login.relative_url())));
+    }
 }

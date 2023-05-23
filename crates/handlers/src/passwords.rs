@@ -19,14 +19,26 @@ use argon2::{password_hash::SaltString, Argon2, PasswordHash, PasswordHasher, Pa
 use futures_util::future::OptionFuture;
 use pbkdf2::Pbkdf2;
 use rand::{CryptoRng, Rng, RngCore, SeedableRng};
+use thiserror::Error;
 use zeroize::Zeroizing;
 
 pub type SchemeVersion = u16;
 
+#[derive(Debug, Error)]
+#[error("Password manager is disabled")]
+pub struct PasswordManagerDisabledError;
+
 #[derive(Clone)]
 pub struct PasswordManager {
-    hashers: Arc<HashMap<SchemeVersion, Hasher>>,
-    default_hasher: SchemeVersion,
+    inner: Option<Arc<InnerPasswordManager>>,
+}
+
+struct InnerPasswordManager {
+    current_hasher: Hasher,
+    current_version: SchemeVersion,
+
+    /// A map of "old" hashers used only for verification
+    other_hashers: HashMap<SchemeVersion, Hasher>,
 }
 
 impl PasswordManager {
@@ -51,18 +63,47 @@ impl PasswordManager {
     pub fn new<I: IntoIterator<Item = (SchemeVersion, Hasher)>>(
         iter: I,
     ) -> Result<Self, anyhow::Error> {
-        let mut iter = iter.into_iter().peekable();
-        let (default_hasher, _) = iter
-            .peek()
-            .context("Iterator must have at least one item")?;
-        let default_hasher = *default_hasher;
+        let mut iter = iter.into_iter();
 
-        let hashers = iter.collect();
+        // Take the first hasher as the current hasher
+        let (current_version, current_hasher) = iter
+            .next()
+            .context("Iterator must have at least one item")?;
+
+        // Collect the other hashers in a map used only in verification
+        let other_hashers = iter.collect();
 
         Ok(Self {
-            hashers: Arc::new(hashers),
-            default_hasher,
+            inner: Some(Arc::new(InnerPasswordManager {
+                current_hasher,
+                current_version,
+                other_hashers,
+            })),
         })
+    }
+
+    /// Creates a new disabled password manager
+    #[must_use]
+    pub const fn disabled() -> Self {
+        Self { inner: None }
+    }
+
+    /// Checks if the password manager is enabled or not
+    #[must_use]
+    pub const fn is_enabled(&self) -> bool {
+        self.inner.is_some()
+    }
+
+    /// Get the inner password manager
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the password manager is disabled
+    fn get_inner(&self) -> Result<Arc<InnerPasswordManager>, PasswordManagerDisabledError> {
+        self.inner
+            .as_ref()
+            .map(Arc::clone)
+            .ok_or(PasswordManagerDisabledError)
     }
 
     /// Hash a password with the default hashing scheme.
@@ -70,39 +111,39 @@ impl PasswordManager {
     ///
     /// # Errors
     ///
-    /// Returns an error if the hashing failed
+    /// Returns an error if the hashing failed or if the password manager is
+    /// disabled
     #[tracing::instrument(name = "passwords.hash", skip_all)]
     pub async fn hash<R: CryptoRng + RngCore + Send>(
         &self,
         rng: R,
         password: Zeroizing<Vec<u8>>,
     ) -> Result<(SchemeVersion, String), anyhow::Error> {
+        let inner = self.get_inner()?;
+
         // Seed a future-local RNG so the RNG passed in parameters doesn't have to be
         // 'static
         let rng = rand_chacha::ChaChaRng::from_rng(rng)?;
-        let hashers = self.hashers.clone();
-        let default_hasher_version = self.default_hasher;
         let span = tracing::Span::current();
 
-        let hashed = tokio::task::spawn_blocking(move || {
-            span.in_scope(move || {
-                let default_hasher = hashers
-                    .get(&default_hasher_version)
-                    .context("Default hasher not found")?;
+        // `inner` is being moved in the blocking task, so we need to copy the version
+        // first
+        let version = inner.current_version;
 
-                default_hasher.hash_blocking(rng, &password)
-            })
+        let hashed = tokio::task::spawn_blocking(move || {
+            span.in_scope(move || inner.current_hasher.hash_blocking(rng, &password))
         })
         .await??;
 
-        Ok((default_hasher_version, hashed))
+        Ok((version, hashed))
     }
 
     /// Verify a password hash for the given hashing scheme.
     ///
     /// # Errors
     ///
-    /// Returns an error if the password hash verification failed
+    /// Returns an error if the password hash verification failed or if the
+    /// password manager is disabled
     #[tracing::instrument(name = "passwords.verify", skip_all, fields(%scheme))]
     pub async fn verify(
         &self,
@@ -110,12 +151,20 @@ impl PasswordManager {
         password: Zeroizing<Vec<u8>>,
         hashed_password: String,
     ) -> Result<(), anyhow::Error> {
-        let hashers = self.hashers.clone();
+        let inner = self.get_inner()?;
         let span = tracing::Span::current();
 
         tokio::task::spawn_blocking(move || {
             span.in_scope(move || {
-                let hasher = hashers.get(&scheme).context("Hashing scheme not found")?;
+                let hasher = if scheme == inner.current_version {
+                    &inner.current_hasher
+                } else {
+                    inner
+                        .other_hashers
+                        .get(&scheme)
+                        .context("Hashing scheme not found")?
+                };
+
                 hasher.verify_blocking(&hashed_password, &password)
             })
         })
@@ -129,7 +178,8 @@ impl PasswordManager {
     ///
     /// # Errors
     ///
-    /// Returns an error if the password hash verification failed
+    /// Returns an error if the password hash verification failed or if the
+    /// password manager is disabled
     #[tracing::instrument(name = "passwords.verify_and_upgrade", skip_all, fields(%scheme))]
     pub async fn verify_and_upgrade<R: CryptoRng + RngCore + Send>(
         &self,
@@ -138,9 +188,11 @@ impl PasswordManager {
         password: Zeroizing<Vec<u8>>,
         hashed_password: String,
     ) -> Result<Option<(SchemeVersion, String)>, anyhow::Error> {
+        let inner = self.get_inner()?;
+
         // If the current scheme isn't the default one, we also hash with the default
         // one so that
-        let new_hash_fut: OptionFuture<_> = (scheme != self.default_hasher)
+        let new_hash_fut: OptionFuture<_> = (scheme != inner.current_version)
             .then(|| self.hash(rng, password.clone()))
             .into();
 

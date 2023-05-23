@@ -66,17 +66,27 @@ struct LoginTypes {
 }
 
 #[tracing::instrument(name = "handlers.compat.login.get", skip_all)]
-pub(crate) async fn get() -> impl IntoResponse {
-    let res = LoginTypes {
-        flows: vec![
+pub(crate) async fn get(State(password_manager): State<PasswordManager>) -> impl IntoResponse {
+    let flows = if password_manager.is_enabled() {
+        vec![
             LoginType::Password,
             LoginType::Sso {
                 identity_providers: vec![],
                 delegated_oidc_compatibility: true,
             },
             LoginType::Token,
-        ],
+        ]
+    } else {
+        vec![
+            LoginType::Sso {
+                identity_providers: vec![],
+                delegated_oidc_compatibility: true,
+            },
+            LoginType::Token,
+        ]
     };
+
+    let res = LoginTypes { flows };
 
     Json(res)
 }
@@ -202,11 +212,14 @@ pub(crate) async fn post(
     State(homeserver): State<MatrixHomeserver>,
     Json(input): Json<RequestBody>,
 ) -> Result<impl IntoResponse, RouteError> {
-    let (session, user) = match input.credentials {
-        Credentials::Password {
-            identifier: Identifier::User { user },
-            password,
-        } => {
+    let (session, user) = match (password_manager.is_enabled(), input.credentials) {
+        (
+            true,
+            Credentials::Password {
+                identifier: Identifier::User { user },
+                password,
+            },
+        ) => {
             user_password_login(
                 &mut rng,
                 &clock,
@@ -218,7 +231,7 @@ pub(crate) async fn post(
             .await?
         }
 
-        Credentials::Token { token } => token_login(&mut repo, &clock, &token).await?,
+        (_, Credentials::Token { token }) => token_login(&mut repo, &clock, &token).await?,
 
         _ => {
             return Err(RouteError::Unsupported);
@@ -407,7 +420,7 @@ mod tests {
         init_tracing();
         let state = TestState::from_pool(pool).await.unwrap();
 
-        // Now let's try to login with the password, without asking for a refresh token.
+        // Now let's get the login flows
         let request = Request::get("/_matrix/client/v3/login").empty();
         let response = state.request(request).await;
         response.assert_status(StatusCode::OK);
@@ -430,6 +443,54 @@ mod tests {
                 ],
             })
         );
+    }
+
+    /// Test that the server doesn't allow login with a password if the password
+    /// manager is disabled
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_password_disabled(pool: PgPool) {
+        init_tracing();
+        let state = {
+            let mut state = TestState::from_pool(pool).await.unwrap();
+            state.password_manager = PasswordManager::disabled();
+            state
+        };
+
+        // Now let's get the login flows
+        let request = Request::get("/_matrix/client/v3/login").empty();
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::OK);
+        let body: serde_json::Value = response.json();
+
+        assert_eq!(
+            body,
+            serde_json::json!({
+                "flows": [
+                    {
+                        "type": "m.login.sso",
+                        "org.matrix.msc3824.delegated_oidc_compatibility": true,
+                    },
+                    {
+                        "type": "m.login.token",
+                    }
+                ],
+            })
+        );
+
+        // Try to login with a password, it should be rejected
+        let request = Request::post("/_matrix/client/v3/login").json(serde_json::json!({
+            "type": "m.login.password",
+            "identifier": {
+                "type": "m.id.user",
+                "user": "alice",
+            },
+            "password": "password",
+        }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::BAD_REQUEST);
+        let body: serde_json::Value = response.json();
+        assert_eq!(body["errcode"], "M_UNRECOGNIZED");
     }
 
     /// Test that a user can login with a password using the Matrix

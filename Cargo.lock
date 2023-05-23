@@ -3178,6 +3178,7 @@ dependencies = [
  "tracing-subscriber",
  "url",
  "watchman_client",
+ "zeroize",
 ]
 
 [[package]]

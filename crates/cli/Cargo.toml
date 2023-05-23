@@ -27,6 +27,7 @@ tower = { version = "0.4.13", features = ["full"] }
 tower-http = { version = "0.4.0", features = ["fs", "compression-full"] }
 url = "2.3.1"
 watchman_client = "0.8.0"
+zeroize = "1.6.0"
 
 tracing = "0.1.37"
 tracing-appender = "0.2.2"

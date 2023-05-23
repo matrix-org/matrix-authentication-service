@@ -8,6 +8,16 @@ opt-level = 3
 [profile.dev.package.sqlx-macros]
 opt-level = 3
 
+[profile.dev.package.cranelift-codegen]
+opt-level = 3
+
+[profile.dev.package.regalloc2]
+opt-level = 3
+
+[profile.dev.package.argon2]
+opt-level = 3
+
+
 # Until https://github.com/dylanhart/ulid-rs/pull/56 gets released
 [patch.crates-io.ulid]
 git = "https://github.com/dylanhart/ulid-rs.git"

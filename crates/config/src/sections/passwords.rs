@@ -31,9 +31,17 @@ fn default_schemes() -> Vec<HashingScheme> {
     }]
 }
 
+fn default_enabled() -> bool {
+    true
+}
+
 /// User password hashing config
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct PasswordsConfig {
+    /// Whether password-based authentication is enabled
+    #[serde(default = "default_enabled")]
+    enabled: bool,
+
     #[serde(default = "default_schemes")]
     schemes: Vec<HashingScheme>,
 }
@@ -41,6 +49,7 @@ pub struct PasswordsConfig {
 impl Default for PasswordsConfig {
     fn default() -> Self {
         Self {
+            enabled: default_enabled(),
             schemes: default_schemes(),
         }
     }
@@ -65,6 +74,12 @@ impl ConfigurationSection<'_> for PasswordsConfig {
 }
 
 impl PasswordsConfig {
+    /// Whether password-based authentication is enabled
+    #[must_use]
+    pub fn enabled(&self) -> bool {
+        self.enabled
+    }
+
     /// Load the password hashing schemes defined by the config
     ///
     /// # Errors

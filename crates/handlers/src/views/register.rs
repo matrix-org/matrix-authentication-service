@@ -19,6 +19,7 @@ use axum::{
     response::{Html, IntoResponse, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
+use hyper::StatusCode;
 use lettre::Address;
 use mas_axum_utils::{
     csrf::{CsrfExt, CsrfToken, ProtectedForm},
@@ -59,6 +60,7 @@ pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
     State(templates): State<Templates>,
+    State(password_manager): State<PasswordManager>,
     mut repo: BoxRepository,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: PrivateCookieJar<Encrypter>,
@@ -70,19 +72,26 @@ pub(crate) async fn get(
 
     if maybe_session.is_some() {
         let reply = query.go_next();
-        Ok((cookie_jar, reply).into_response())
-    } else {
-        let content = render(
-            RegisterContext::default(),
-            query,
-            csrf_token,
-            &mut repo,
-            &templates,
-        )
-        .await?;
-
-        Ok((cookie_jar, Html(content)).into_response())
+        return Ok((cookie_jar, reply).into_response());
     }
+
+    if !password_manager.is_enabled() {
+        // If password-based login is disabled, redirect to the login page here
+        return Ok(mas_router::Login::from(query.post_auth_action)
+            .go()
+            .into_response());
+    }
+
+    let content = render(
+        RegisterContext::default(),
+        query,
+        csrf_token,
+        &mut repo,
+        &templates,
+    )
+    .await?;
+
+    Ok((cookie_jar, Html(content)).into_response())
 }
 
 #[tracing::instrument(name = "handlers.views.register.post", skip_all, err)]
@@ -98,6 +107,10 @@ pub(crate) async fn post(
     cookie_jar: PrivateCookieJar<Encrypter>,
     Form(form): Form<ProtectedForm<RegisterForm>>,
 ) -> Result<Response, FancyError> {
+    if !password_manager.is_enabled() {
+        return Ok(StatusCode::METHOD_NOT_ALLOWED.into_response());
+    }
+
     let form = cookie_jar.verify_form(&clock, form)?;
 
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
@@ -232,4 +245,43 @@ async fn render(
 
     let content = templates.render_register(&ctx).await?;
     Ok(content)
+}
+
+#[cfg(test)]
+mod tests {
+    use hyper::{header::LOCATION, Request, StatusCode};
+    use mas_router::Route;
+    use sqlx::PgPool;
+
+    use crate::{
+        passwords::PasswordManager,
+        test_utils::{init_tracing, RequestBuilderExt, ResponseExt, TestState},
+    };
+
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_password_disabled(pool: PgPool) {
+        init_tracing();
+        let state = {
+            let mut state = TestState::from_pool(pool).await.unwrap();
+            state.password_manager = PasswordManager::disabled();
+            state
+        };
+
+        let request = Request::get(&*mas_router::Register::default().relative_url()).empty();
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::SEE_OTHER);
+        response.assert_header_value(LOCATION, "/login");
+
+        let request = Request::post(&*mas_router::Register::default().relative_url()).form(
+            serde_json::json!({
+                "csrf": "abc",
+                "username": "john",
+                "email": "john@example.com",
+                "password": "hunter2",
+                "password_confirm": "hunter2",
+            }),
+        );
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::METHOD_NOT_ALLOWED);
+    }
 }

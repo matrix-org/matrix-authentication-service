@@ -327,7 +327,7 @@ impl Options {
                 let encrypter = config.secrets.encrypter();
                 let pool = database_from_config(&config.database).await?;
                 let url_builder = UrlBuilder::new(config.http.public_base);
-                let mut repo = PgRepository::from_pool(&pool).await?;
+                let mut repo = PgRepository::from_pool(&pool).await?.boxed();
 
                 let requires_client_secret = token_endpoint_auth_method.requires_client_secret();
 
@@ -361,6 +361,8 @@ impl Options {
                         encrypted_client_secret,
                     )
                     .await?;
+
+                repo.save().await?;
 
                 let redirect_uri = url_builder.upstream_oauth_callback(provider.id);
                 let auth_uri = url_builder.upstream_oauth_authorize(provider.id);
