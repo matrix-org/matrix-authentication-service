@@ -101,8 +101,8 @@ pub(crate) fn register(
     let worker_name = format!("{job}-{suffix}", job = VerifyEmailJob::NAME);
     let worker = WorkerBuilder::new(worker_name)
         .layer(state.inject())
-        .layer(trace_layer::<VerifyEmailJob>())
-        .layer(metrics_layer::<JobWithSpanContext<VerifyEmailJob>>())
+        .layer(trace_layer())
+        .layer(metrics_layer())
         .with_storage(storage)
         .build_fn(verify_email);
     monitor.register(worker)

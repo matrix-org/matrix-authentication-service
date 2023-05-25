@@ -322,7 +322,7 @@ pub(crate) fn register(
     let provision_user_worker = WorkerBuilder::new(worker_name)
         .layer(state.inject())
         .layer(trace_layer())
-        .layer(metrics_layer::<JobWithSpanContext<ProvisionUserJob>>())
+        .layer(metrics_layer())
         .with_storage(storage)
         .build_fn(provision_user);
 
@@ -331,7 +331,7 @@ pub(crate) fn register(
     let provision_device_worker = WorkerBuilder::new(worker_name)
         .layer(state.inject())
         .layer(trace_layer())
-        .layer(metrics_layer::<JobWithSpanContext<ProvisionDeviceJob>>())
+        .layer(metrics_layer())
         .with_storage(storage)
         .build_fn(provision_device);
 
@@ -340,7 +340,7 @@ pub(crate) fn register(
     let delete_device_worker = WorkerBuilder::new(worker_name)
         .layer(state.inject())
         .layer(trace_layer())
-        .layer(metrics_layer::<JobWithSpanContext<DeleteDeviceJob>>())
+        .layer(metrics_layer())
         .with_storage(storage)
         .build_fn(delete_device);
 
