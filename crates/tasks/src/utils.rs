@@ -15,7 +15,8 @@
 use apalis_core::{job::Job, request::JobRequest};
 use mas_storage::job::JobWithSpanContext;
 use mas_tower::{
-    make_span_fn, DurationRecorderLayer, FnWrapper, InFlightCounterLayer, TraceLayer, KV,
+    make_span_fn, DurationRecorderLayer, FnWrapper, IdentityLayer, InFlightCounterLayer,
+    TraceLayer, KV,
 };
 use opentelemetry::{Key, KeyValue};
 use tracing::info_span;
@@ -61,10 +62,13 @@ where
     .on_error(KV("otel.status_code", "ERROR"))
 }
 
-pub(crate) fn metrics_layer<J>() -> (
+type MetricsLayerForJob<J> = (
+    IdentityLayer<JobRequest<J>>,
     DurationRecorderLayer<KeyValue, KeyValue, KeyValue>,
     InFlightCounterLayer<KeyValue>,
-)
+);
+
+pub(crate) fn metrics_layer<J>() -> MetricsLayerForJob<J>
 where
     J: Job,
 {
@@ -75,5 +79,9 @@ where
     let in_flight_counter =
         InFlightCounterLayer::new("job.run.active").on_request(JOB_NAME.string(J::NAME));
 
-    (duration_recorder, in_flight_counter)
+    (
+        IdentityLayer::default(),
+        duration_recorder,
+        in_flight_counter,
+    )
 }

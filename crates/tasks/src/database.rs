@@ -78,7 +78,7 @@ pub(crate) fn register(
     let worker = WorkerBuilder::new(worker_name)
         .stream(CronStream::new(schedule).timer(TokioTimer).to_stream())
         .layer(state.inject())
-        .layer(metrics_layer::<CleanupExpiredTokensJob>())
+        .layer(metrics_layer())
         .build_fn(cleanup_expired_tokens);
 
     monitor.register(worker)
