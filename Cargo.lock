@@ -2021,9 +2021,9 @@ dependencies = [
 
 [[package]]
 name = "figment"
-version = "0.10.8"
+version = "0.10.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e56602b469b2201400dec66a66aec5a9b8761ee97cd1b8c96ab2483fcc16cc9"
+checksum = "05d79dace1d256182aa00f1ead2e5042558f420af2e1ed24dd79e00214e9ed99"
 dependencies = [
  "atomic",
  "parking_lot 0.12.1",
