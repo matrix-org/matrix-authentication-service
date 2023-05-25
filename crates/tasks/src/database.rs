@@ -22,6 +22,7 @@ use apalis_core::{
     executor::TokioExecutor,
     job::Job,
     monitor::Monitor,
+    utils::timer::TokioTimer,
 };
 use apalis_cron::CronStream;
 use chrono::{DateTime, Utc};
@@ -75,7 +76,7 @@ pub(crate) fn register(
     let schedule = apalis_cron::Schedule::from_str("*/15 * * * * *").unwrap();
     let worker_name = format!("{job}-{suffix}", job = CleanupExpiredTokensJob::NAME);
     let worker = WorkerBuilder::new(worker_name)
-        .stream(CronStream::new(schedule).to_stream())
+        .stream(CronStream::new(schedule).timer(TokioTimer).to_stream())
         .layer(state.inject())
         .layer(metrics_layer::<CleanupExpiredTokensJob>())
         .build_fn(cleanup_expired_tokens);

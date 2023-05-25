@@ -59,17 +59,17 @@ pub enum AsymmetricSigningKey {
 impl AsymmetricSigningKey {
     #[must_use]
     pub fn rs256(key: rsa::RsaPrivateKey) -> Self {
-        Self::Rs256(rsa::pkcs1v15::SigningKey::new_with_prefix(key))
+        Self::Rs256(rsa::pkcs1v15::SigningKey::new(key))
     }
 
     #[must_use]
     pub fn rs384(key: rsa::RsaPrivateKey) -> Self {
-        Self::Rs384(rsa::pkcs1v15::SigningKey::new_with_prefix(key))
+        Self::Rs384(rsa::pkcs1v15::SigningKey::new(key))
     }
 
     #[must_use]
     pub fn rs512(key: rsa::RsaPrivateKey) -> Self {
-        Self::Rs512(rsa::pkcs1v15::SigningKey::new_with_prefix(key))
+        Self::Rs512(rsa::pkcs1v15::SigningKey::new(key))
     }
 
     #[must_use]
@@ -277,17 +277,17 @@ pub enum AsymmetricVerifyingKey {
 impl AsymmetricVerifyingKey {
     #[must_use]
     pub fn rs256(key: rsa::RsaPublicKey) -> Self {
-        Self::Rs256(rsa::pkcs1v15::VerifyingKey::new_with_prefix(key))
+        Self::Rs256(rsa::pkcs1v15::VerifyingKey::new(key))
     }
 
     #[must_use]
     pub fn rs384(key: rsa::RsaPublicKey) -> Self {
-        Self::Rs384(rsa::pkcs1v15::VerifyingKey::new_with_prefix(key))
+        Self::Rs384(rsa::pkcs1v15::VerifyingKey::new(key))
     }
 
     #[must_use]
     pub fn rs512(key: rsa::RsaPublicKey) -> Self {
-        Self::Rs512(rsa::pkcs1v15::VerifyingKey::new_with_prefix(key))
+        Self::Rs512(rsa::pkcs1v15::VerifyingKey::new(key))
     }
 
     #[must_use]

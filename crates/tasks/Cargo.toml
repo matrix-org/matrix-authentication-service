@@ -6,10 +6,10 @@ edition = "2021"
 license = "apache-2.0"
 
 [dependencies]
-anyhow = "1.0.70"
-apalis-core = { version = "=0.4.0-alpha.5", features = ["extensions", "tokio-comp"] }
-apalis-cron = "=0.4.0-alpha.5"
-apalis-sql = { version = "=0.4.0-alpha.5", features = ["postgres", "tokio-comp"] }
+anyhow = "1.0.71"
+apalis-core = { version = "=0.4.0", features = ["extensions", "tokio-comp"] }
+apalis-cron = "=0.4.0"
+apalis-sql = { version = "=0.4.0", features = ["postgres", "tokio-comp"] }
 async-trait = "0.1.68"
 chrono = "0.4.24"
 rand = "0.8.5"
@@ -22,7 +22,7 @@ tracing-opentelemetry = "0.19.0"
 opentelemetry = "0.19.0"
 ulid = "1.0.0"
 url = "2.3.1"
-serde = { version = "1.0.160", features = ["derive"] }
+serde = { version = "1.0.163", features = ["derive"] }
 
 mas-axum-utils = { path = "../axum-utils" }
 mas-data-model = { path = "../data-model" }
