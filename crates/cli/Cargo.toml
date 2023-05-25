@@ -6,23 +6,23 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-apalis-core = "=0.4.0-alpha.5"
-anyhow = "1.0.70"
+apalis-core = "=0.4.0"
+anyhow = "1.0.71"
 atty = "0.2.14"
-axum = "0.6.17"
+axum = "0.6.18"
 camino = "1.1.4"
-clap = { version = "4.2.4", features = ["derive"] }
+clap = { version = "4.3.0", features = ["derive"] }
 dotenv = "0.15.0"
 hyper = { version = "0.14.26", features = ["full"] }
 itertools = "0.10.5"
 listenfd = "1.0.1"
 rand = "0.8.5"
 rand_chacha = "0.3.1"
-rustls = "0.21.0"
+rustls = "0.21.1"
 serde_json = "1.0.96"
 serde_yaml = "0.9.21"
 sqlx = { version = "0.6.3", features = ["runtime-tokio-rustls", "postgres"] }
-tokio = { version = "1.28.0", features = ["full"] }
+tokio = { version = "1.28.1", features = ["full"] }
 tower = { version = "0.4.13", features = ["full"] }
 tower-http = { version = "0.4.0", features = ["fs", "compression-full"] }
 url = "2.3.1"
@@ -41,9 +41,9 @@ opentelemetry-zipkin = { version = "0.17.0", features = ["opentelemetry-http"], 
 opentelemetry-http = { version = "0.8.0", features = ["tokio", "hyper"], optional = true }
 opentelemetry-prometheus = { version = "0.12.0", optional = true }
 prometheus = { version = "0.13.3", optional = true }
-sentry = { version = "0.30.0", default-features = false, features = ["backtrace", "contexts", "panic", "tower"] }
-sentry-tracing = "0.30.0"
-sentry-tower = { version = "0.30.0", features = ["http"] }
+sentry = { version = "0.31.2", default-features = false, features = ["backtrace", "contexts", "panic", "tower"] }
+sentry-tracing = "0.31.2"
+sentry-tower = { version = "0.31.2", features = ["http"] }
 
 mas-config = { path = "../config" }
 mas-email = { path = "../email" }

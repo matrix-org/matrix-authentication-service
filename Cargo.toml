@@ -22,8 +22,3 @@ opt-level = 3
 [patch.crates-io.ulid]
 git = "https://github.com/dylanhart/ulid-rs.git"
 rev = "0b9295c2db2114cd87aa19abcc1fc00c16b272db"
-
-# Until https://github.com/tokio-rs/tracing-opentelemetry/pull/12 gets merged and released
-[patch.crates-io.tracing-opentelemetry]
-git = "https://github.com/jaysonsantos/tracing-opentelemetry.git"
-rev = "76b0a0fe45fd53c352e8bfdcdfad775aed727e4c"

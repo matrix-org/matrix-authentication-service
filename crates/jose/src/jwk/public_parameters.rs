@@ -181,7 +181,7 @@ impl OkpPublicParameters {
 }
 
 mod rsa_impls {
-    use rsa::{BigUint, PublicKeyParts, RsaPublicKey};
+    use rsa::{traits::PublicKeyParts, BigUint, RsaPublicKey};
 
     use super::{JsonWebKeyPublicParameters, RsaPublicParameters};
 

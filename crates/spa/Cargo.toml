@@ -6,7 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-serde = { version = "1.0.160", features = ["derive"] }
+serde = { version = "1.0.163", features = ["derive"] }
 serde_json = "1.0.96"
 thiserror = "1.0.40"
 camino = { version = "1.1.4", features = ["serde1"] }
@@ -14,7 +14,7 @@ headers = "0.3.8"
 http = "0.2.9"
 tower-service = "0.3.2"
 tower-http = { version = "0.4.0", features = ["fs"] }
-tokio = { version = "1.28.0", features = ["fs"] }
+tokio = { version = "1.28.1", features = ["fs"] }
 
 [[bin]]
 name = "render"
