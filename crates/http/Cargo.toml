@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [dependencies]
 aws-smithy-http = { version = "0.55.3", optional = true }
-aws-types = { version = "0.55.2", optional = true }
+aws-types = { version = "0.55.3", optional = true }
 axum = { version = "0.6.18", optional = true }
 bytes = "1.4.0"
 futures-util = "0.3.28"
