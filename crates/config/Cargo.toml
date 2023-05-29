@@ -14,7 +14,7 @@ thiserror = "1.0.40"
 anyhow = "1.0.71"
 
 camino = { version = "1.1.4", features = ["serde1"] }
-chrono = { version = "0.4.24", features = ["serde"] }
+chrono = { version = "0.4.25", features = ["serde"] }
 figment = { version = "0.10.9", features = ["env", "yaml", "test"] }
 schemars = { version = "0.8.12", features = ["url", "chrono"] }
 ulid = { version = "1.0.0", features = ["serde"] }

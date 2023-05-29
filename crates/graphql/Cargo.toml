@@ -9,7 +9,7 @@ license = "Apache-2.0"
 anyhow = "1.0.71"
 async-graphql = { version = "5.0.9", features = ["chrono", "url"] }
 async-trait = "0.1.68"
-chrono = "0.4.24"
+chrono = "0.4.25"
 serde = { version = "1.0.163", features = ["derive"] }
 thiserror = "1.0.40"
 tokio = { version = "1.28.1", features = ["sync"] }
