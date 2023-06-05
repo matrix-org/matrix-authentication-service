@@ -27,7 +27,7 @@ futures-signals = "0.3.32"
 futures-util = "0.3.28"
 headers = "0.3.8"
 http = "0.2.9"
-once_cell = "1.17.1"
+once_cell = "1.18.0"
 mime = "0.3.17"
 rand = "0.8.5"
 serde = { version = "1.0.163", features = ["derive"] }
