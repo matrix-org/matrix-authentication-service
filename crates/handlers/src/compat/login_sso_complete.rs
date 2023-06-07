@@ -40,8 +40,8 @@ use ulid::Ulid;
 
 #[derive(Serialize)]
 struct AllParams<'s> {
-    #[serde(flatten, skip_serializing_if = "Option::is_none")]
-    existing_params: Option<HashMap<&'s str, &'s str>>,
+    #[serde(flatten)]
+    existing_params: HashMap<&'s str, &'s str>,
 
     #[serde(rename = "loginToken")]
     login_token: &'s str,
