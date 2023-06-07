@@ -149,11 +149,15 @@ export const Link: React.FC<
   return (
     <a
       href={path}
-      onClick={(e) => {
-        e.preventDefault();
-        startTransition(() => {
-          setRoute(route);
-        });
+      onClick={(e: React.MouseEvent) => {
+        // Local links should be handled by the internal routers
+        // external links do not require a transition
+        if (!path.startsWith("http")) {
+          e.preventDefault();
+          startTransition(() => {
+            setRoute(route);
+          });
+        }
       }}
       {...props}
     >

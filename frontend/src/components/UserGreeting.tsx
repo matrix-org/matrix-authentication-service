@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Heading, Body } from "@vector-im/compound-web";
 import { useAtomValue } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
 
 import { graphql } from "../gql";
-
-import Typography from "./Typography";
 
 const QUERY = graphql(/* GraphQL */ `
   query UserGreeting($userId: ID!) {
@@ -43,9 +42,12 @@ const UserGreeting: React.FC<{ userId: string }> = ({ userId }) => {
 
   if (result.data?.user) {
     return (
-      <Typography variant="headline">
-        Hello, {result.data.user.username}!
-      </Typography>
+      <header className="oidc_Header">
+        <Heading size="xl" weight="semibold">
+          John Doe
+        </Heading>
+        <Body size="lg">{result.data.user.username}</Body>
+      </header>
     );
   }
 

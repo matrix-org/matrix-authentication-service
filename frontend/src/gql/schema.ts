@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { IntrospectionQuery } from "graphql";
 export default {
   __schema: {
