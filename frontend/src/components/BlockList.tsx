@@ -17,9 +17,7 @@ type Props = {
 };
 
 const BlockList: React.FC<Props> = ({ children }) => {
-  return (
-    <div className="grid grid-cols-1 gap-1 group content-start">{children}</div>
-  );
+  return <div className="my-2">{children}</div>;
 };
 
 export default BlockList;

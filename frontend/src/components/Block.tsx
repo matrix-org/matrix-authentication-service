@@ -20,13 +20,7 @@ type Props = {
 
 const Block: React.FC<Props> = ({ children, highlight, className }) => {
   return (
-    <div
-      className={`p-4 dark:text-white grid rounded ${className} ${
-        highlight
-          ? "border-2 border-grey-50 dark:border-grey-450 bg-white dark:bg-black"
-          : "bg-grey-50 dark:bg-grey-450"
-      }`}
-    >
+    <div className={className} data-active={highlight}>
       {children}
     </div>
   );

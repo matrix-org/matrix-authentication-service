@@ -19,6 +19,60 @@
 @tailwind components;
 @tailwind utilities;
 
-body, .docs-story {
-  @apply bg-grey-25 text-black-900 dark:bg-black-800 dark:text-white;
+body {
+  font: var(--cpd-font-body-md-regular);
+  background: var(--cpd-color-bg-canvas-default);
+
+  width: 378px;
+  margin: var(--cpd-space-10x) auto var(--cpd-space-6x) auto;
+}
+
+.oidc_Header {
+  text-align: center;
+}
+
+.oidc_Header > * {
+  margin: 0;
+}
+
+.secondary-text {
+  color: var(--cpd-color-text-secondary);
+}
+
+a {
+  text-decoration: underline;
+}
+
+a:hover {
+  text-decoration: none;
+}
+
+[data-kind="critical"] {
+  color: var(--cpd-color-text-critical-primary);
+}
+
+.nav-bar a {
+  color: var(--cpd-color-text-action-primary);
+}
+
+.nav-bar .active {
+  font-weight: var(--cpd-font-weight-semibold);
+}
+
+.nav-bar li:not(:first-child) {
+  list-style-type: disc;
+  color: var(--cpd-color-text-secondary);
+}
+
+hr {
+  border: 0;
+  height: 1px;
+  background: var(--cpd-color-gray-400);
+}
+
+.session-icon {
+  color: var(--cpd-color-icon-secondary);
+  background: var(--cpd-color-bg-subtle-secondary);
+  padding: var(--cpd-space-1x);
+  border-radius: 4px;
 }
