@@ -22,7 +22,7 @@
     "@urql/exchange-graphcache": "^6.0.4",
     "@urql/exchange-refocus": "^1.0.2",
     "@urql/exchange-request-policy": "^1.0.2",
-    "@vector-im/compound-web": "https://github.com/vector-im/compound-web.git#5208d2d442587efb9938265841574f73ce97dff1",
+    "@vector-im/compound-web": "https://github.com/vector-im/compound-web.git",
     "date-fns": "^2.30.0",
     "graphql": "^16.6.0",
     "jotai": "^2.1.0",
@@ -70,6 +70,7 @@
     "vite": "^4.3.8",
     "vite-plugin-eslint": "^1.8.1",
     "vite-plugin-graphql-codegen": "^3.2.2",
+    "vite-plugin-svgr": "^3.2.0",
     "vitest": "^0.31.1"
   }
 }

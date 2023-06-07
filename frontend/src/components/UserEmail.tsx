@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Button } from "@vector-im/compound-web";
 import { atom, useAtom, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
@@ -20,7 +21,6 @@ import { useRef, useTransition } from "react";
 import { FragmentType, graphql, useFragment } from "../gql";
 
 import Block from "./Block";
-import Button from "./Button";
 import DateTime from "./DateTime";
 import Input from "./Input";
 import Typography from "./Typography";
@@ -237,18 +237,12 @@ const UserEmail: React.FC<{
               <Button
                 disabled={pending}
                 onClick={onSetPrimaryClick}
-                compact
                 className="ml-2"
               >
                 Set primary
               </Button>
             )}
-            <Button
-              disabled={pending}
-              onClick={onRemoveClick}
-              compact
-              className="ml-2"
-            >
+            <Button disabled={pending} onClick={onRemoveClick} className="ml-2">
               Remove
             </Button>
           </>

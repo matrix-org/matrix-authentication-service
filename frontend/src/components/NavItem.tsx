@@ -16,24 +16,35 @@ import { useAtomValue } from "jotai";
 
 import { Link, Route, routeAtom } from "../Router";
 
-const NavItem: React.FC<{ route: Route; children: React.ReactNode }> = ({
-  route,
-  children,
-}) => {
+type NavItemProps = {
+  children: React.ReactNode;
+} & ({ route: Route; href?: never } | { route?: never; href: string });
+
+function isRoute(route: Route | undefined): route is Route {
+  return !!route?.type;
+}
+
+function isHref(href: string | undefined): href is string {
+  return typeof href === "string";
+}
+
+const NavItem: React.FC<NavItemProps> = ({ route, href, children }) => {
   const currentRoute = useAtomValue(routeAtom);
   return (
     <li className="m-1 mr-0">
-      <Link
-        route={route}
-        className={
-          (currentRoute.type === route.type
-            ? "bg-accent text-white"
-            : "hover:bg-grey-100 dark:hover:bg-grey-450 opacity-80 hover:opacity-100") +
-          " p-2 rounded block uppercase font-medium"
-        }
-      >
-        {children}
-      </Link>
+      {isRoute(route) && (
+        <Link
+          route={route}
+          className={currentRoute.type === route.type ? "active" : ""}
+        >
+          {children}
+        </Link>
+      )}
+      {isHref(href) && (
+        <a href={href} target="_blank" rel="noopenner noreferrer">
+          {children}
+        </a>
+      )}
     </li>
   );
 };

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Button from "./Button";
+import { Button } from "@vector-im/compound-web";
 
 type Props = {
   onNext: (() => void) | null;
@@ -28,30 +28,24 @@ const PaginationControls: React.FC<Props> = ({
   disabled,
 }) => {
   return (
-    <div className="grid items-center grid-cols-3 gap-2">
-      {onPrev ? (
-        <Button compact disabled={disabled} ghost onClick={onPrev}>
-          Previous
-        </Button>
-      ) : (
-        <Button compact disabled ghost>
-          Previous
-        </Button>
-      )}
-      {count !== undefined ? (
-        <div className="text-center">Total: {count}</div>
-      ) : (
-        <div></div>
-      )}
-      {onNext ? (
-        <Button compact disabled={disabled} ghost onClick={onNext}>
-          Next
-        </Button>
-      ) : (
-        <Button compact disabled ghost>
-          Next
-        </Button>
-      )}
+    <div className="grid items-center grid-cols-3 gap-2 my-2">
+      <Button
+        kind="secondary"
+        size="sm"
+        disabled={disabled || !onPrev}
+        onClick={() => onPrev?.()}
+      >
+        Previous
+      </Button>
+      <div className="text-center">{count && <>Total: {count}</>}</div>
+      <Button
+        kind="secondary"
+        size="sm"
+        disabled={disabled || !onNext}
+        onClick={() => onNext?.()}
+      >
+        Next
+      </Button>
     </div>
   );
 };

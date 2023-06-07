@@ -17,14 +17,40 @@ import NavItem from "./NavItem";
 
 const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   return (
-    <div className="bg-grey-25 text-black-900 dark:bg-black-800 dark:text-white flex flex-col min-h-screen">
-      <NavBar className="mx-auto px-3 py-4 container">
+    <>
+      <NavBar className="nav-bar container">
         <NavItem route={{ type: "home" }}>Home</NavItem>
         <NavItem route={{ type: "account" }}>My Account</NavItem>
       </NavBar>
 
-      <main className="mx-auto p-4 container">{children}</main>
-    </div>
+      <hr className="my-2" />
+
+      <main className="container">{children}</main>
+
+      <hr className="my-2" />
+
+      <footer className="text-center">
+        <a href="https://matrix.org" target="_blank" rel="noreferrer noopener">
+          <img
+            className="inline my-2"
+            src="https://matrix.org/images/matrix-logo.svg"
+            alt="Matrix.org"
+          />
+        </a>
+
+        <NavBar className="nav-bar container">
+          <NavItem href="https://matrix.org/legal/copyright-notice">
+            Info
+          </NavItem>
+          <NavItem href="https://matrix.org/legal/privacy-notice">
+            Privacy
+          </NavItem>
+          <NavItem href="https://matrix.org/legal/terms-and-conditions">
+            Terms & Conditions
+          </NavItem>
+        </NavBar>
+      </footer>
+    </>
   );
 };
 
