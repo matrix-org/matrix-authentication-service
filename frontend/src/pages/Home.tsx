@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Alert } from "@vector-im/compound-web";
 import { useAtomValue } from "jotai";
 
 import { currentUserIdAtom } from "../atoms";
@@ -35,7 +36,7 @@ const Home: React.FC = () => {
       </>
     );
   } else {
-    return <div className="font-bold text-alert">You're not logged in.</div>;
+    return <Alert type="critical" title="You're not logged in." />;
   }
 };
 
