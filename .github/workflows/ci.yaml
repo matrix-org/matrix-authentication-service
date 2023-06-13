@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3.5.3
 
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.0.1
@@ -44,7 +44,7 @@ jobs:
         run: make coverage
 
       - name: Upload to codecov.io
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v3.1.4
         with:
           files: policies/coverage.json
           flags: policies
@@ -58,10 +58,10 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3.5.3
 
       - name: Install Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v3.6.0
         with:
           node-version: 18
           cache: 'npm'
@@ -85,10 +85,10 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3.5.3
 
       - name: Install Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v3.6.0
         with:
           node-version: 18
           cache: 'npm'
@@ -103,7 +103,7 @@ jobs:
         run: npm run coverage
 
       - name: Upload to codecov.io
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v3.1.4
         with:
           directory: frontend/coverage/
           flags: frontend
@@ -118,7 +118,7 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3.5.3
 
       - name: Install toolchain
         run: |
@@ -139,7 +139,7 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3.5.3
 
       - name: Install Rust toolchain
         run: |
@@ -147,10 +147,10 @@ jobs:
           rustup default stable
 
       - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@v2.4.0
 
       - name: Install Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v3.6.0
         with:
           node-version: 18
           cache: 'npm'
@@ -178,7 +178,7 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3.5.3
 
       - name: Install toolchain
         run: |
@@ -196,7 +196,7 @@ jobs:
         run: make
 
       - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@v2.4.0
 
       - name: Run clippy
         run: |
@@ -236,7 +236,7 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3.5.3
 
       - name: Install toolchain
         run: |
@@ -253,7 +253,7 @@ jobs:
         run: make
 
       - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@v2.4.0
 
       - name: Test
         id: test
@@ -297,7 +297,7 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3.5.3
 
       - name: Install toolchain
         run: |
@@ -315,7 +315,7 @@ jobs:
         run: make
 
       - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@v2.4.0
 
       - name: Download grcov
         run: |
@@ -338,7 +338,7 @@ jobs:
           grcov . --binary-path ./target/debug/deps/ -s . -t lcov --branch --ignore-not-existing --ignore '../*' --ignore "/*" -o target/coverage/tests.lcov
 
       - name: Upload to codecov.io
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v3.1.4
         with:
           files: target/coverage/*.lcov
           flags: unit
@@ -358,11 +358,11 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3.5.3
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v4.6.0
         with:
           images: "${{ env.IMAGE }}"
           bake-target: docker-metadata-action
@@ -375,7 +375,7 @@ jobs:
 
       - name: Docker meta (debug variant)
         id: meta-debug
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v4.6.0
         with:
           images: "${{ env.IMAGE }}"
           bake-target: docker-metadata-action-debug
@@ -390,7 +390,7 @@ jobs:
         uses: sigstore/cosign-installer@v3.0.5
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v2.7.0
         with:
           config-inline: |
             [registry."docker.io"]
@@ -398,7 +398,7 @@ jobs:
 
       - name: Login to GitHub Container Registry
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v2
+        uses: docker/login-action@v2.2.0
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
@@ -408,7 +408,7 @@ jobs:
       # cache or the image itself
       # We only build for the amd64 platform in pull-requests to speed-up CI
       - name: Build
-        uses: docker/bake-action@v3
+        uses: docker/bake-action@v3.1.0
         if: github.event_name == 'pull_request'
         with:
           files: |
@@ -422,7 +422,7 @@ jobs:
 
       - name: Build and push
         id: bake
-        uses: docker/bake-action@v3
+        uses: docker/bake-action@v3.1.0
         if: github.event_name != 'pull_request'
         with:
           files: |
