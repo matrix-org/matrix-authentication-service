@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/** @type {import('postcss-load-config').Config */
+// @ts-check
+
+/** @type {import('postcss-load-config').Config} */
 
 module.exports = {
   plugins: [require("tailwindcss"), require("autoprefixer")],

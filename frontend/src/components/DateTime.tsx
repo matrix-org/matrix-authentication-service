@@ -26,11 +26,11 @@ type Props = {
   now?: Date;
 };
 
-const DateTime = ({
+const DateTime: React.FC<Props> = ({
   datetime: datetimeProps,
   now: nowProps,
   className,
-}: Props) => {
+}) => {
   const datetime =
     typeof datetimeProps === "string" ? parseISO(datetimeProps) : datetimeProps;
   const now = nowProps || new Date();

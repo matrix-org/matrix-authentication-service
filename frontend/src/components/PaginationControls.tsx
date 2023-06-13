@@ -33,7 +33,7 @@ const PaginationControls: React.FC<Props> = ({
         kind="secondary"
         size="sm"
         disabled={disabled || !onPrev}
-        onClick={() => onPrev?.()}
+        onClick={(): void => onPrev?.()}
       >
         Previous
       </Button>
@@ -42,7 +42,7 @@ const PaginationControls: React.FC<Props> = ({
         kind="secondary"
         size="sm"
         disabled={disabled || !onNext}
-        onClick={() => onNext?.()}
+        onClick={(): void => onNext?.()}
       >
         Next
       </Button>

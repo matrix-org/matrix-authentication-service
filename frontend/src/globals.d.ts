@@ -1,4 +1,4 @@
-// Copyright 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,14 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// @ts-check
+declare module "*.svg" {
+  const ReactComponent: React.FunctionComponent<
+    React.SVGAttributes<SVGElement>
+  >;
+  export default ReactComponent;
+}
 
-/* eslint-disable-next-line @typescript-eslint/no-var-requires */
-const base = require("./tailwind.config.cjs");
-
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  ...base,
-  content: ["../templates/**/*.html"],
-  darkMode: "media",
-};
+declare module "*.module.css";

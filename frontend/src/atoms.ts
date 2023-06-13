@@ -20,7 +20,9 @@ import type { ReactElement } from "react";
 import { graphql } from "./gql";
 import { client } from "./graphql";
 
-export const HydrateAtoms = ({ children }: { children: ReactElement }) => {
+export const HydrateAtoms: React.FC<{ children: ReactElement }> = ({
+  children,
+}) => {
   useHydrateAtoms([[clientAtom, client]]);
   return children;
 };

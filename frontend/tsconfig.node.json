@@ -10,6 +10,9 @@
     ".storybook/main.ts",
     "vite.config.ts",
     ".eslintrc.cjs",
-    "tailwind.config.cjs"
+    "postcss.config.cjs",
+    "tailwind.config.cjs",
+    "tailwind.templates.config.cjs",
+    "codegen.ts"
   ]
 }

@@ -26,17 +26,25 @@ module.exports = {
     // General rules for JS/TS files
     {
       extends: [
-        "react-app",
-        "react-app/jest",
-        "prettier",
         "plugin:prettier/recommended",
-        "plugin:jsx-a11y/recommended",
         "plugin:import/recommended",
         "plugin:import/typescript",
+        "plugin:matrix-org/typescript",
+        "plugin:matrix-org/react",
+        "plugin:matrix-org/a11y",
       ],
-      plugins: ["jsx-a11y"],
+      env: {
+        browser: true,
+        node: true,
+        es6: true,
+      },
+      plugins: ["jsx-a11y", "matrix-org"],
+      parserOptions: {
+        project: ["./tsconfig.node.json", "./tsconfig.json"],
+      },
       files: ["*.ts", "*.tsx", "*.cjs", "*.js"],
       rules: {
+        "matrix-org/require-copyright-header": "error",
         "import/order": [
           "error",
           {
@@ -48,6 +56,9 @@ module.exports = {
       settings: {
         "import/resolver": {
           typescript: true,
+        },
+        react: {
+          version: "detect",
         },
       },
     },

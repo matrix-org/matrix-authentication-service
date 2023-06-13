@@ -92,7 +92,7 @@ const OAuth2Session: React.FC<Props> = ({ session }) => {
   const data = useFragment(FRAGMENT, session);
   const endSession = useSetAtom(endSessionFamily(data.id));
 
-  const onSessionEnd = () => {
+  const onSessionEnd = (): void => {
     startTransition(() => {
       endSession();
     });
