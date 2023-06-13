@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3.5.3
 
       - name: Install Rust toolchain
         run: |
@@ -28,7 +28,7 @@ jobs:
           rustup default stable
 
       - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@v2.4.0
 
       - name: Setup mdBook
         uses: peaceiris/actions-mdbook@v1.2.0
@@ -36,7 +36,7 @@ jobs:
           mdbook-version: '0.4.25'
 
       - name: Install Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v3.6.0
         with:
           node-version: 18
           cache: 'npm'
@@ -51,7 +51,7 @@ jobs:
 
       - name: Build rustdoc
         env:
-          # This is required to be able use to use the unstable `-Zrustdoc-map` flag
+          # This is required to be able to use the unstable `-Zrustdoc-map` flag
           RUSTC_BOOTSTRAP: "1"
         run: cargo doc -Zrustdoc-map --workspace --lib --no-deps
 
