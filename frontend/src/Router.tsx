@@ -126,7 +126,7 @@ const InnerRouter: React.FC = () => {
   }
 };
 
-const Router = () => (
+const Router: React.FC = () => (
   <Layout>
     <Suspense fallback={<LoadingSpinner />}>
       <InnerRouter />
@@ -149,7 +149,7 @@ export const Link: React.FC<
   return (
     <a
       href={path}
-      onClick={(e: React.MouseEvent) => {
+      onClick={(e: React.MouseEvent): void => {
         // Local links should be handled by the internal routers
         // external links do not require a transition
         if (!path.startsWith("http")) {

@@ -24,7 +24,7 @@ const meta = {
     Title,
     Subtitle,
     Body,
-  } as Record<string, React.ComponentType<any>>,
+  } as Record<string, React.ComponentType<unknown>>,
   tags: ["autodocs"],
 } satisfies Meta<typeof Block>;
 

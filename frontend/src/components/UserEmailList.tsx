@@ -136,14 +136,14 @@ const UserEmailList: React.FC<{
   // XXX: we may not want to directly use that atom here, but rather have a local state
   const latestAddedEmail = useAtomValue(latestAddedEmailAtom);
 
-  const paginate = (pagination: Pagination) => {
+  const paginate = (pagination: Pagination): void => {
     startTransition(() => {
       setPagination(pagination);
     });
   };
 
   // When removing an email, we want to refresh the list and go back to the first page
-  const onRemove = () => {
+  const onRemove = (): void => {
     startTransition(() => {
       setPagination(FIRST_PAGE);
       refreshList();
@@ -151,7 +151,7 @@ const UserEmailList: React.FC<{
   };
 
   // When adding an email, we want to refresh the list and go to the last page
-  const onAdd = () => {
+  const onAdd = (): void => {
     startTransition(() => {
       setPagination(LAST_PAGE);
       refreshList();
@@ -162,8 +162,8 @@ const UserEmailList: React.FC<{
     <BlockList>
       <PaginationControls
         count={result.data?.user?.emails?.totalCount ?? 0}
-        onPrev={prevPage ? () => paginate(prevPage) : null}
-        onNext={nextPage ? () => paginate(nextPage) : null}
+        onPrev={prevPage ? (): void => paginate(prevPage) : null}
+        onNext={nextPage ? (): void => paginate(nextPage) : null}
         disabled={pending}
       />
       {result.data?.user?.emails?.edges?.map((edge) => (

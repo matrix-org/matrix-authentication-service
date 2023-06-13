@@ -49,7 +49,7 @@ const AddEmailForm: React.FC<{ userId: string; onAdd?: () => void }> = ({
   const [addEmailResult, addEmail] = useAtom(addUserEmailAtom);
   const [pending, startTransition] = useTransition();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
 
     const formData = new FormData(e.currentTarget);

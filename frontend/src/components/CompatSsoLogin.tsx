@@ -83,7 +83,7 @@ const CompatSession: React.FC<{
   const data = useFragment(SESSION_FRAGMENT, session);
   const endCompatSession = useSetAtom(endCompatSessionFamily(data.id));
 
-  const onSessionEnd = () => {
+  const onSessionEnd = (): void => {
     startTransition(() => {
       endCompatSession();
     });

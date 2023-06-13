@@ -100,7 +100,7 @@ const BrowserSessionList: React.FC<{ userId: string }> = ({ userId }) => {
   const setPagination = useSetAtom(currentPaginationAtom);
   const [prevPage, nextPage] = useAtomValue(paginationFamily(userId));
 
-  const paginate = (pagination: Pagination) => {
+  const paginate = (pagination: Pagination): void => {
     startTransition(() => {
       setPagination(pagination);
     });
@@ -112,8 +112,8 @@ const BrowserSessionList: React.FC<{ userId: string }> = ({ userId }) => {
       <BlockList>
         <Title>List of browser sessions:</Title>
         <PaginationControls
-          onPrev={prevPage ? () => paginate(prevPage) : null}
-          onNext={nextPage ? () => paginate(nextPage) : null}
+          onPrev={prevPage ? (): void => paginate(prevPage) : null}
+          onNext={nextPage ? (): void => paginate(nextPage) : null}
           disabled={pending}
         />
         {data.edges.map((n) => (

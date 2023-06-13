@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { atom, Atom } from "jotai";
+import { atom, Atom, WritableAtom } from "jotai";
 
 import { PageInfo } from "./gql/graphql";
 
@@ -49,7 +49,13 @@ export const isBackwardPagination = (
 // This atom sets the default page size for pagination.
 export const pageSizeAtom = atom(6);
 
-export const atomForCurrentPagination = () => {
+type Action = typeof FIRST_PAGE | typeof LAST_PAGE | Pagination;
+
+export const atomForCurrentPagination = (): WritableAtom<
+  Pagination,
+  [Action],
+  void
+> => {
   const dataAtom = atom<typeof EMPTY | Pagination>(EMPTY);
 
   const currentPaginationAtom = atom(
@@ -64,7 +70,7 @@ export const atomForCurrentPagination = () => {
 
       return data;
     },
-    (get, set, action: Pagination | typeof FIRST_PAGE | typeof LAST_PAGE) => {
+    (get, set, action: Action) => {
       if (action === FIRST_PAGE) {
         set(dataAtom, EMPTY);
       } else if (action === LAST_PAGE) {
@@ -78,7 +84,7 @@ export const atomForCurrentPagination = () => {
     }
   );
 
-  currentPaginationAtom.onMount = (setAtom) => {
+  currentPaginationAtom.onMount = (setAtom): void => {
     setAtom(FIRST_PAGE);
   };
 

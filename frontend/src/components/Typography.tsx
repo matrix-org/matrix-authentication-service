@@ -42,13 +42,13 @@ const classMap: Record<Variant, string> = {
   micro: "text-xs",
 };
 
-const Typography = ({
+const Typography: React.FC<Props> = ({
   variant,
   children,
   bold,
   justified,
   className: extraClassName,
-}: Props) => {
+}) => {
   const element = elementMap[variant];
   const boldClass = bold ? "font-semibold" : "";
   const justifiedClass = justified ? "text-justify" : "";
@@ -58,28 +58,27 @@ const Typography = ({
 
 type SimpleProps = { children: React.ReactNode };
 
-export const Bold = ({ children }: SimpleProps) => (
+export const Bold: React.FC<SimpleProps> = ({ children }) => (
   <strong className="font-semibold">{children}</strong>
 );
 
-export const Code = ({ children }: SimpleProps) => (
+export const Code: React.FC<SimpleProps> = ({ children }) => (
   <code className="font-mono text-sm">{children}</code>
 );
 
-export const Title = ({ children }: SimpleProps) => (
+export const Title: React.FC<SimpleProps> = ({ children }) => (
   <Typography variant="title" children={children} />
 );
 
-export const Subtitle = ({ children }: SimpleProps) => (
+export const Subtitle: React.FC<SimpleProps> = ({ children }) => (
   <Typography variant="subtitle" children={children} />
 );
 
-export const Body = ({
-  children,
-  justified,
-}: {
+export const Body: React.FC<{
   children: React.ReactNode;
   justified?: boolean;
-}) => <Typography variant="body" children={children} justified={justified} />;
+}> = ({ children, justified }) => (
+  <Typography variant="body" children={children} justified={justified} />
+);
 
 export default Typography;

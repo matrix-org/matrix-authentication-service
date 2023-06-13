@@ -170,7 +170,7 @@ const UserEmail: React.FC<{
   const removeEmail = useSetAtom(removeEmailFamily(data.id));
   const formRef = useRef<HTMLFormElement>(null);
 
-  const onFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const onFormSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const code = formData.get("code") as string;
@@ -188,7 +188,7 @@ const UserEmail: React.FC<{
     });
   };
 
-  const onResendClick = () => {
+  const onResendClick = (): void => {
     startTransition(() => {
       resendVerificationEmail().then(() => {
         formRef.current?.code.focus();
@@ -196,7 +196,7 @@ const UserEmail: React.FC<{
     });
   };
 
-  const onRemoveClick = () => {
+  const onRemoveClick = (): void => {
     startTransition(() => {
       removeEmail().then(() => {
         // Call the onRemove callback if provided
@@ -205,7 +205,7 @@ const UserEmail: React.FC<{
     });
   };
 
-  const onSetPrimaryClick = () => {
+  const onSetPrimaryClick = (): void => {
     startTransition(() => {
       setPrimaryEmail().then(() => {
         // Call the onSetPrimary callback if provided

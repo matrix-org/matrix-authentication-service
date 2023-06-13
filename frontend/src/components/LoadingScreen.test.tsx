@@ -19,6 +19,6 @@ import LoadingScreen from "./LoadingScreen";
 
 it("render <LoadingScreen />", () => {
   const component = create(<LoadingScreen />);
-  let tree = component.toJSON();
+  const tree = component.toJSON();
   expect(tree).toMatchSnapshot();
 });
