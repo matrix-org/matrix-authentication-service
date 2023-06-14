@@ -11,7 +11,7 @@ apalis-core = { version = "=0.4.0", features = ["extensions", "tokio-comp"] }
 apalis-cron = "=0.4.0"
 apalis-sql = { version = "=0.4.0", features = ["postgres", "tokio-comp"] }
 async-trait = "0.1.68"
-chrono = "0.4.24"
+chrono = "0.4.26"
 rand = "0.8.5"
 rand_chacha = "0.3.1"
 sqlx = { version = "0.6.3", features = ["runtime-tokio-rustls", "postgres"] }
