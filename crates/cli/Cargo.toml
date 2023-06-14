@@ -18,7 +18,7 @@ itertools = "0.10.5"
 listenfd = "1.0.1"
 rand = "0.8.5"
 rand_chacha = "0.3.1"
-rustls = "0.21.1"
+rustls = "0.21.2"
 serde_json = "1.0.96"
 serde_yaml = "0.9.21"
 sqlx = { version = "0.6.3", features = ["runtime-tokio-rustls", "postgres"] }
