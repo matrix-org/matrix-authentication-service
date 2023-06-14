@@ -7,16 +7,16 @@ license = "Apache-2.0"
 
 [dependencies]
 anyhow = "1.0.71"
-async-graphql = { version = "5.0.9", features = ["chrono", "url"] }
+async-graphql = { version = "5.0.10", features = ["chrono", "url"] }
 async-trait = "0.1.68"
-chrono = "0.4.24"
+chrono = "0.4.26"
 lettre = { version = "0.10.4", default-features = false  }
-serde = { version = "1.0.163", features = ["derive"] }
+serde = { version = "1.0.164", features = ["derive"] }
 thiserror = "1.0.40"
-tokio = { version = "1.28.1", features = ["sync"] }
+tokio = { version = "1.28.2", features = ["sync"] }
 tracing = "0.1.37"
 ulid = "1.0.0"
-url = "2.3.1"
+url = "2.4.0"
 
 oauth2-types = { path = "../oauth2-types" }
 mas-data-model = { path = "../data-model" }

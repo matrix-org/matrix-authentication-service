@@ -29,7 +29,7 @@ jobs:
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.0.1
         with:
-          version: 0.51.0
+          version: 0.53.1
 
       - name: Lint policies
         working-directory: ./policies
@@ -182,14 +182,14 @@ jobs:
 
       - name: Install toolchain
         run: |
-          rustup toolchain install 1.69.0
-          rustup default 1.69.0
+          rustup toolchain install 1.70.0
+          rustup default 1.70.0
           rustup component add clippy
 
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.0.1
         with:
-          version: 0.51.0
+          version: 0.53.1
 
       - name: Compile OPA policies
         working-directory: ./policies
@@ -246,7 +246,7 @@ jobs:
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.0.1
         with:
-          version: 0.51.0
+          version: 0.53.1
 
       - name: Compile OPA policies
         working-directory: ./policies
@@ -308,7 +308,7 @@ jobs:
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.0.1
         with:
-          version: 0.51.0
+          version: 0.53.1
 
       - name: Compile OPA policies
         working-directory: ./policies
@@ -320,7 +320,7 @@ jobs:
       - name: Download grcov
         run: |
           mkdir -p "${HOME}/.local/bin"
-          curl -sL https://github.com/mozilla/grcov/releases/download/v0.8.13/grcov-x86_64-unknown-linux-gnu.tar.bz2 | tar jxf - -C "${HOME}/.local/bin"
+          curl -sL https://github.com/mozilla/grcov/releases/download/v0.8.18/grcov-x86_64-unknown-linux-gnu.tar.bz2 | tar jxf - -C "${HOME}/.local/bin"
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Run test suite with profiling enabled

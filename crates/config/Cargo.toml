@@ -6,7 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-tokio = { version = "1.28.1", features = ["fs", "rt"] }
+tokio = { version = "1.28.2", features = ["fs", "rt"] }
 tracing = "0.1.37"
 async-trait = "0.1.68"
 
@@ -14,13 +14,13 @@ thiserror = "1.0.40"
 anyhow = "1.0.71"
 
 camino = { version = "1.1.4", features = ["serde1"] }
-chrono = { version = "0.4.24", features = ["serde"] }
-figment = { version = "0.10.9", features = ["env", "yaml", "test"] }
+chrono = { version = "0.4.26", features = ["serde"] }
+figment = { version = "0.10.10", features = ["env", "yaml", "test"] }
 schemars = { version = "0.8.12", features = ["url", "chrono"] }
 ulid = { version = "1.0.0", features = ["serde"] }
-url = { version = "2.3.1", features = ["serde"] }
+url = { version = "2.4.0", features = ["serde"] }
 
-serde = { version = "1.0.163", features = ["derive"] }
+serde = { version = "1.0.164", features = ["derive"] }
 serde_with = { version = "3.0.0", features = ["hex", "chrono"] }
 serde_json = "1.0.96"
 

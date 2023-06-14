@@ -109,13 +109,13 @@ An edge in a connection.
 """
 type BrowserSessionEdge {
   """
-  A cursor for use in pagination
-  """
-  cursor: String!
-  """
   The item at the end of the edge
   """
   node: BrowserSession!
+  """
+  A cursor for use in pagination
+  """
+  cursor: String!
 }
 
 """
@@ -197,13 +197,13 @@ An edge in a connection.
 """
 type CompatSsoLoginEdge {
   """
-  A cursor for use in pagination
-  """
-  cursor: String!
-  """
   The item at the end of the edge
   """
   node: CompatSsoLogin!
+  """
+  A cursor for use in pagination
+  """
+  cursor: String!
 }
 
 """
@@ -422,13 +422,13 @@ An edge in a connection.
 """
 type Oauth2SessionEdge {
   """
-  A cursor for use in pagination
-  """
-  cursor: String!
-  """
   The item at the end of the edge
   """
   node: Oauth2Session!
+  """
+  A cursor for use in pagination
+  """
+  cursor: String!
 }
 
 """
@@ -683,13 +683,13 @@ An edge in a connection.
 """
 type UpstreamOAuth2LinkEdge {
   """
-  A cursor for use in pagination
-  """
-  cursor: String!
-  """
   The item at the end of the edge
   """
   node: UpstreamOAuth2Link!
+  """
+  A cursor for use in pagination
+  """
+  cursor: String!
 }
 
 type UpstreamOAuth2Provider implements Node & CreationEvent {
@@ -731,13 +731,13 @@ An edge in a connection.
 """
 type UpstreamOAuth2ProviderEdge {
   """
-  A cursor for use in pagination
-  """
-  cursor: String!
-  """
   The item at the end of the edge
   """
   node: UpstreamOAuth2Provider!
+  """
+  A cursor for use in pagination
+  """
+  cursor: String!
 }
 
 """
@@ -855,13 +855,13 @@ An edge in a connection.
 """
 type UserEmailEdge {
   """
-  A cursor for use in pagination
-  """
-  cursor: String!
-  """
   The item at the end of the edge
   """
   node: UserEmail!
+  """
+  A cursor for use in pagination
+  """
+  cursor: String!
 }
 
 """
