@@ -1128,7 +1128,7 @@
           "format": "uri"
         },
         "homeserver": {
-          "description": "Time-to-live of a CSRF token in seconds",
+          "description": "The server name of the homeserver.",
           "default": "localhost:8008",
           "type": "string"
         },
