@@ -7,19 +7,19 @@ license = "Apache-2.0"
 
 [dependencies]
 tracing = "0.1.37"
-tokio = { version = "1.28.1", features = ["macros", "rt"] }
+tokio = { version = "1.28.2", features = ["macros", "rt"] }
 
 anyhow = "1.0.71"
 thiserror = "1.0.40"
 
-tera = "1.18.1"
-serde = { version = "1.0.163", features = ["derive"] }
+tera = "1.19.0"
+serde = { version = "1.0.164", features = ["derive"] }
 serde_json = "1.0.96"
 serde_urlencoded = "0.7.1"
 
 camino = "1.1.4"
-chrono = "0.4.24"
-url = "2.3.1"
+chrono = "0.4.26"
+url = "2.4.0"
 http = "0.2.9"
 ulid = { version = "1.0.0", features = ["serde"] }
 rand = "0.8.5"

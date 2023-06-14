@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [dependencies]
 base64ct = { version = "1.6.0", features = ["std"] }
-chrono = { version = "0.4.24", features = ["serde"] }
+chrono = { version = "0.4.26", features = ["serde"] }
 digest = "0.10.7"
 ecdsa = { version = "0.16.7", features = ["signing", "verifying"] }
 elliptic-curve = "0.13.5"
@@ -20,14 +20,14 @@ rand = "0.8.5"
 rsa = "0.9.2"
 schemars = "0.8.12"
 sec1 = "0.7.2"
-serde = { version = "1.0.163", features = ["derive"] }
+serde = { version = "1.0.164", features = ["derive"] }
 serde_json = "1.0.96"
 serde_with = { version = "3.0.0", features = ["base64"] }
 sha2 = { version = "0.10.6", features = ["oid"] }
 signature = "2.1.0"
 thiserror = "1.0.40"
 tracing = "0.1.37"
-url = { version = "2.3.1", features = ["serde"] }
+url = { version = "2.4.0", features = ["serde"] }
 
 mas-iana = { path = "../iana" }
 

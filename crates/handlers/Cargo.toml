@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [dependencies]
 # Async runtime
-tokio = { version = "1.28.1", features = ["macros"] }
+tokio = { version = "1.28.2", features = ["macros"] }
 futures-util = "0.3.28"
 
 # Logging and tracing
@@ -26,7 +26,7 @@ axum = "0.6.18"
 axum-macros = "0.3.7"
 axum-extra = { version = "0.7.4", features = ["cookie-private"] }
 
-async-graphql = { version = "5.0.9", features = ["tracing", "apollo_tracing"] }
+async-graphql = { version = "5.0.10", features = ["tracing", "apollo_tracing"] }
 
 # Emails
 lettre = { version = "0.10.4", default-features = false, features = ["builder"] }
@@ -35,7 +35,7 @@ lettre = { version = "0.10.4", default-features = false, features = ["builder"] 
 sqlx = { version = "0.6.3", features = ["runtime-tokio-rustls", "postgres"] }
 
 # Various structure (de)serialization
-serde = { version = "1.0.163", features = ["derive"] }
+serde = { version = "1.0.164", features = ["derive"] }
 serde_with = { version = "3.0.0", features = ["hex", "chrono"] }
 serde_json = "1.0.96"
 serde_urlencoded = "0.7.1"
@@ -48,9 +48,9 @@ zeroize = "1.6.0"
 
 # Various data types and utilities
 camino = "1.1.4"
-chrono = { version = "0.4.24", features = ["serde"] }
-time = "0.3.21"
-url = { version = "2.3.1", features = ["serde"] }
+chrono = { version = "0.4.26", features = ["serde"] }
+time = "0.3.22"
+url = { version = "2.4.0", features = ["serde"] }
 mime = "0.3.17"
 rand = "0.8.5"
 rand_chacha = "0.3.1"

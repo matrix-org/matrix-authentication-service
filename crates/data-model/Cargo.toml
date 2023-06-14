@@ -6,10 +6,10 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-chrono = "0.4.24"
+chrono = "0.4.26"
 thiserror = "1.0.40"
-serde = "1.0.163"
-url = { version = "2.3.1", features = ["serde"] }
+serde = "1.0.164"
+url = { version = "2.4.0", features = ["serde"] }
 crc = "3.0.1"
 ulid = { version = "1.0.0", features = ["serde"] }
 rand = "0.8.5"
