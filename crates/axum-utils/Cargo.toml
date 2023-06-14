@@ -17,7 +17,7 @@ http = "0.2.9"
 http-body = "0.4.5"
 mime = "0.3.17"
 rand = "0.8.5"
-sentry = { version = "0.31.3", default-features = false }
+sentry = { version = "0.31.4", default-features = false }
 serde = "1.0.164"
 serde_with = "3.0.0"
 serde_urlencoded = "0.7.1"
