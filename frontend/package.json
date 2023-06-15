@@ -45,7 +45,7 @@
     "@storybook/addon-measure": "^7.0.20",
     "@storybook/addon-outline": "^7.0.20",
     "@storybook/addon-toolbars": "^7.0.20",
-    "@storybook/addon-viewport": "^7.0.20",
+    "@storybook/addon-viewport": "^7.0.21",
     "@storybook/react": "^7.0.20",
     "@storybook/react-vite": "^7.0.20",
     "@types/node": "^20.3.1",
