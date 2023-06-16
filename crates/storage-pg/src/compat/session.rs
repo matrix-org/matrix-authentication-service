@@ -42,6 +42,7 @@ struct CompatSessionLookup {
     user_id: Uuid,
     created_at: DateTime<Utc>,
     finished_at: Option<DateTime<Utc>>,
+    is_synapse_admin: bool,
 }
 
 impl TryFrom<CompatSessionLookup> for CompatSession {
@@ -67,6 +68,7 @@ impl TryFrom<CompatSessionLookup> for CompatSession {
             user_id: value.user_id.into(),
             device,
             created_at: value.created_at,
+            is_synapse_admin: value.is_synapse_admin,
         };
 
         Ok(session)
@@ -95,6 +97,7 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
                      , user_id
                      , created_at
                      , finished_at
+                     , is_synapse_admin
                 FROM compat_sessions
                 WHERE compat_session_id = $1
             "#,
@@ -128,6 +131,7 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
         clock: &dyn Clock,
         user: &User,
         device: Device,
+        is_synapse_admin: bool,
     ) -> Result<CompatSession, Self::Error> {
         let created_at = clock.now();
         let id = Ulid::from_datetime_with_source(created_at.into(), rng);
@@ -135,13 +139,14 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
 
         sqlx::query!(
             r#"
-                INSERT INTO compat_sessions (compat_session_id, user_id, device_id, created_at)
-                VALUES ($1, $2, $3, $4)
+                INSERT INTO compat_sessions (compat_session_id, user_id, device_id, created_at, is_synapse_admin)
+                VALUES ($1, $2, $3, $4, $5)
             "#,
             Uuid::from(id),
             Uuid::from(user.id),
             device.as_str(),
             created_at,
+            is_synapse_admin,
         )
         .traced()
         .execute(&mut *self.conn)
@@ -153,6 +158,7 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
             user_id: user.id,
             device,
             created_at,
+            is_synapse_admin,
         })
     }
 

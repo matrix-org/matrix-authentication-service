@@ -68,6 +68,7 @@ pub struct CompatSession {
     pub user_id: Ulid,
     pub device: Device,
     pub created_at: DateTime<Utc>,
+    pub is_synapse_admin: bool,
 }
 
 impl std::ops::Deref for CompatSession {

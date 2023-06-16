@@ -200,7 +200,7 @@ pub async fn post(
 
     let compat_session = repo
         .compat_session()
-        .add(&mut rng, &clock, &session.user, device)
+        .add(&mut rng, &clock, &session.user, device, false)
         .await?;
 
     repo.compat_sso_login()
