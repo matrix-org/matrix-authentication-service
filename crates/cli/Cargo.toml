@@ -13,6 +13,7 @@ axum = "0.6.18"
 camino = "1.1.4"
 clap = { version = "4.3.3", features = ["derive"] }
 dotenv = "0.15.0"
+httpdate = "1.0.2"
 hyper = { version = "0.14.26", features = ["full"] }
 itertools = "0.10.5"
 listenfd = "1.0.1"
@@ -51,6 +52,8 @@ mas-handlers = { path = "../handlers", default-features = false }
 mas-http = { path = "../http", default-features = false, features = ["axum", "client"] }
 mas-iana = { path = "../iana" }
 mas-listener = { path = "../listener" }
+mas-matrix = { path = "../matrix" }
+mas-matrix-synapse = { path = "../matrix-synapse" }
 mas-policy = { path = "../policy" }
 mas-router = { path = "../router" }
 mas-spa = { path = "../spa" }
@@ -60,7 +63,6 @@ mas-tasks = { path = "../tasks" }
 mas-templates = { path = "../templates" }
 mas-tower = { path = "../tower" }
 oauth2-types = { path = "../oauth2-types" }
-httpdate = "1.0.2"
 
 [dev-dependencies]
 indoc = "2.0.1"

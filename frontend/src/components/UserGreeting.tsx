@@ -24,6 +24,10 @@ const QUERY = graphql(/* GraphQL */ `
     user(id: $userId) {
       id
       username
+      matrix {
+        mxid
+        displayName
+      }
     }
   }
 `);
@@ -44,9 +48,9 @@ const UserGreeting: React.FC<{ userId: string }> = ({ userId }) => {
     return (
       <header className="oidc_Header">
         <Heading size="xl" weight="semibold">
-          John Doe
+          {result.data.user.matrix.displayName || result.data.user.username}
         </Heading>
-        <Body size="lg">{result.data.user.username}</Body>
+        <Body size="lg">{result.data.user.matrix.mxid}</Body>
       </header>
     );
   }

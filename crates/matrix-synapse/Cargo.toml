@@ -1,0 +1,18 @@
+[package]
+name = "mas-matrix-synapse"
+version = "0.1.0"
+authors = ["Quentin Gliech <quenting@element.io>"]
+edition = "2021"
+license = "Apache-2.0"
+
+[dependencies]
+anyhow = "1.0.71"
+async-trait = "0.1.68"
+http = "0.2.9"
+url = "2.4.0"
+serde = { version = "1.0.164", features = ["derive"] }
+tower = { version = "0.4.13", features = ["util"] }
+
+mas-axum-utils = { path = "../axum-utils" }
+mas-http = { path = "../http" }
+mas-matrix = { path = "../matrix" }

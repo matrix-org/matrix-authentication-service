@@ -20,9 +20,8 @@ use std::sync::Arc;
 
 use apalis_core::{executor::TokioExecutor, layers::extensions::Extension, monitor::Monitor};
 use apalis_sql::postgres::PostgresStorage;
-use mas_axum_utils::http_client_factory::HttpClientFactory;
 use mas_email::Mailer;
-use mas_http::{ClientInitError, ClientService, TracedClient};
+use mas_matrix::HomeserverConnection;
 use mas_storage::{BoxClock, BoxRepository, Repository, SystemClock};
 use mas_storage_pg::{DatabaseError, PgRepository};
 use rand::SeedableRng;
@@ -34,15 +33,12 @@ mod email;
 mod matrix;
 mod utils;
 
-pub use self::matrix::HomeserverConnection;
-
 #[derive(Clone)]
 struct State {
     pool: Pool<Postgres>,
     mailer: Mailer,
     clock: SystemClock,
-    homeserver: Arc<HomeserverConnection>,
-    http_client_factory: HttpClientFactory,
+    homeserver: Arc<dyn HomeserverConnection<Error = anyhow::Error>>,
 }
 
 impl State {
@@ -50,15 +46,13 @@ impl State {
         pool: Pool<Postgres>,
         clock: SystemClock,
         mailer: Mailer,
-        homeserver: HomeserverConnection,
-        http_client_factory: HttpClientFactory,
+        homeserver: impl HomeserverConnection<Error = anyhow::Error> + 'static,
     ) -> Self {
         Self {
             pool,
             mailer,
             clock,
             homeserver: Arc::new(homeserver),
-            http_client_factory,
         }
     }
 
@@ -97,16 +91,8 @@ impl State {
         Ok(repo)
     }
 
-    pub fn matrix_connection(&self) -> &HomeserverConnection {
-        &self.homeserver
-    }
-
-    pub async fn http_client<B>(&self) -> Result<ClientService<TracedClient<B>>, ClientInitError>
-    where
-        B: mas_axum_utils::axum::body::HttpBody + Send,
-        B::Data: Send,
-    {
-        self.http_client_factory.client().await
+    pub fn matrix_connection(&self) -> &dyn HomeserverConnection<Error = anyhow::Error> {
+        self.homeserver.as_ref()
     }
 }
 
@@ -127,15 +113,13 @@ pub fn init(
     name: &str,
     pool: &Pool<Postgres>,
     mailer: &Mailer,
-    homeserver: HomeserverConnection,
-    http_client_factory: &HttpClientFactory,
+    homeserver: impl HomeserverConnection<Error = anyhow::Error> + 'static,
 ) -> Monitor<TokioExecutor> {
     let state = State::new(
         pool.clone(),
         SystemClock::default(),
         mailer.clone(),
         homeserver,
-        http_client_factory.clone(),
     );
     let monitor = Monitor::new().executor(TokioExecutor::new());
     let monitor = self::database::register(name, monitor, &state);

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::sync::Arc;
+
 use async_graphql::{
     extensions::{ApolloTracing, Tracing},
     http::{playground_source, GraphQLPlaygroundConfig, MultipartOptions},
@@ -29,6 +31,7 @@ use hyper::header::CACHE_CONTROL;
 use mas_axum_utils::{FancyError, SessionInfoExt};
 use mas_graphql::{Requester, Schema};
 use mas_keystore::Encrypter;
+use mas_matrix::HomeserverConnection;
 use mas_storage::{BoxClock, BoxRepository, BoxRng, Repository, RepositoryError, SystemClock};
 use mas_storage_pg::PgRepository;
 use rand::{thread_rng, SeedableRng};
@@ -38,6 +41,7 @@ use tracing::{info_span, Instrument};
 
 struct GraphQLState {
     pool: PgPool,
+    homeserver_connection: Arc<dyn HomeserverConnection<Error = anyhow::Error>>,
 }
 
 #[async_trait]
@@ -48,6 +52,10 @@ impl mas_graphql::State for GraphQLState {
             .map_err(RepositoryError::from_error)?;
 
         Ok(repo.map_err(RepositoryError::from_error).boxed())
+    }
+
+    fn homeserver_connection(&self) -> &dyn HomeserverConnection<Error = anyhow::Error> {
+        self.homeserver_connection.as_ref()
     }
 
     fn clock(&self) -> BoxClock {
@@ -65,8 +73,14 @@ impl mas_graphql::State for GraphQLState {
 }
 
 #[must_use]
-pub fn schema(pool: &PgPool) -> Schema {
-    let state = GraphQLState { pool: pool.clone() };
+pub fn schema(
+    pool: &PgPool,
+    homeserver_connection: impl HomeserverConnection<Error = anyhow::Error> + 'static,
+) -> Schema {
+    let state = GraphQLState {
+        pool: pool.clone(),
+        homeserver_connection: Arc::new(homeserver_connection),
+    };
     let state: mas_graphql::BoxState = Box::new(state);
 
     mas_graphql::schema_builder()

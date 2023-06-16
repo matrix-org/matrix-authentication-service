@@ -64,6 +64,7 @@ mas-http = { path = "../http", default-features = false }
 mas-iana = { path = "../iana" }
 mas-jose = { path = "../jose" }
 mas-keystore = { path = "../keystore" }
+mas-matrix = { path = "../matrix" }
 mas-oidc-client = { path = "../oidc-client" }
 mas-policy = { path = "../policy" }
 mas-router = { path = "../router" }

@@ -293,6 +293,21 @@ enum EndOAuth2SessionStatus {
   NOT_FOUND
 }
 
+type MatrixUser {
+  """
+  The Matrix ID of the user.
+  """
+  mxid: String!
+  """
+  The display name of the user, if any.
+  """
+  displayName: String
+  """
+  The avatar URL of the user, if any.
+  """
+  avatarUrl: String
+}
+
 """
 The mutations root of the GraphQL interface.
 """
@@ -757,6 +772,10 @@ type User implements Node {
   Username chosen by the user.
   """
   username: String!
+  """
+  Access to the user's Matrix account information.
+  """
+  matrix: MatrixUser!
   """
   Primary email address of the user.
   """

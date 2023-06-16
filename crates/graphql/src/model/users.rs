@@ -29,7 +29,7 @@ use super::{
     compat_sessions::CompatSsoLogin, BrowserSession, Cursor, NodeCursor, NodeType, OAuth2Session,
     UpstreamOAuth2Link,
 };
-use crate::state::ContextExt;
+use crate::{model::matrix::MatrixUser, state::ContextExt};
 
 #[derive(Description)]
 /// A user is an individual's account.
@@ -57,6 +57,13 @@ impl User {
     /// Username chosen by the user.
     async fn username(&self) -> &str {
         &self.0.username
+    }
+
+    /// Access to the user's Matrix account information.
+    async fn matrix(&self, ctx: &Context<'_>) -> Result<MatrixUser, async_graphql::Error> {
+        let state = ctx.state();
+        let conn = state.homeserver_connection();
+        Ok(MatrixUser::load(conn, &self.0.username).await?)
     }
 
     /// Primary email address of the user.
