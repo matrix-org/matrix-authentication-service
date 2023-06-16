@@ -15,11 +15,13 @@ serde = { version = "1.0.164", features = ["derive"] }
 thiserror = "1.0.40"
 tokio = { version = "1.28.2", features = ["sync"] }
 tracing = "0.1.37"
+tower = { version = "0.4.13", features = ["util"] }
 ulid = "1.0.0"
 url = "2.4.0"
 
 oauth2-types = { path = "../oauth2-types" }
 mas-data-model = { path = "../data-model" }
+mas-matrix = { path = "../matrix" }
 mas-storage = { path = "../storage" }
 
 [[bin]]

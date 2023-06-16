@@ -23,6 +23,7 @@ use headers::{Authorization, ContentType, HeaderMapExt, HeaderName};
 use hyper::{header::CONTENT_TYPE, Request, Response, StatusCode};
 use mas_axum_utils::http_client_factory::HttpClientFactory;
 use mas_keystore::{Encrypter, JsonWebKey, JsonWebKeySet, Keystore, PrivateKey};
+use mas_matrix::{HomeserverConnection, MatrixUser, ProvisionRequest};
 use mas_policy::PolicyFactory;
 use mas_router::{SimpleRoute, UrlBuilder};
 use mas_storage::{clock::MockClock, BoxClock, BoxRepository, BoxRng, Repository};
@@ -68,6 +69,40 @@ pub(crate) struct TestState {
     pub rng: Arc<Mutex<ChaChaRng>>,
 }
 
+/// A Mock implementation of a [`HomeserverConnection`], which never fails and
+/// doesn't do anything.
+struct MockHomeserverConnection {
+    homeserver: String,
+}
+
+#[async_trait]
+impl HomeserverConnection for MockHomeserverConnection {
+    type Error = anyhow::Error;
+
+    fn homeserver(&self) -> &str {
+        &self.homeserver
+    }
+
+    async fn query_user(&self, _mxid: &str) -> Result<MatrixUser, Self::Error> {
+        Ok(MatrixUser {
+            displayname: None,
+            avatar_url: None,
+        })
+    }
+
+    async fn provision_user(&self, _request: &ProvisionRequest) -> Result<bool, Self::Error> {
+        Ok(false)
+    }
+
+    async fn create_device(&self, _mxid: &str, _device_id: &str) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    async fn delete_device(&self, _mxid: &str, _device_id: &str) -> Result<(), Self::Error> {
+        Ok(())
+    }
+}
+
 impl TestState {
     /// Create a new test state from the given database pool
     pub async fn from_pool(pool: PgPool) -> Result<Self, anyhow::Error> {
@@ -106,9 +141,13 @@ impl TestState {
         )
         .await?;
 
+        let homeserver_connection = MockHomeserverConnection {
+            homeserver: "example.com".to_owned(),
+        };
+
         let policy_factory = Arc::new(policy_factory);
 
-        let graphql_schema = graphql_schema(&pool);
+        let graphql_schema = graphql_schema(&pool, homeserver_connection);
 
         let http_client_factory = HttpClientFactory::new(10);
 

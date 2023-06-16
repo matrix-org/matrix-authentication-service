@@ -228,6 +228,16 @@ export enum EndOAuth2SessionStatus {
   NotFound = "NOT_FOUND",
 }
 
+export type MatrixUser = {
+  __typename?: "MatrixUser";
+  /** The avatar URL of the user, if any. */
+  avatarUrl?: Maybe<Scalars["String"]["output"]>;
+  /** The display name of the user, if any. */
+  displayName?: Maybe<Scalars["String"]["output"]>;
+  /** The Matrix ID of the user. */
+  mxid: Scalars["String"]["output"];
+};
+
 /** The mutations root of the GraphQL interface. */
 export type Mutation = {
   __typename?: "Mutation";
@@ -591,6 +601,8 @@ export type User = Node & {
   emails: UserEmailConnection;
   /** ID of the object. */
   id: Scalars["ID"]["output"];
+  /** Access to the user's Matrix account information. */
+  matrix: MatrixUser;
   /** Get the list of OAuth 2.0 sessions, chronologically sorted */
   oauth2Sessions: Oauth2SessionConnection;
   /** Primary email address of the user. */
@@ -1088,7 +1100,16 @@ export type UserGreetingQueryVariables = Exact<{
 
 export type UserGreetingQuery = {
   __typename?: "Query";
-  user?: { __typename?: "User"; id: string; username: string } | null;
+  user?: {
+    __typename?: "User";
+    id: string;
+    username: string;
+    matrix: {
+      __typename?: "MatrixUser";
+      mxid: string;
+      displayName?: string | null;
+    };
+  } | null;
 };
 
 export type BrowserSessionQueryQueryVariables = Exact<{
@@ -3028,6 +3049,20 @@ export const UserGreetingDocument = {
               selections: [
                 { kind: "Field", name: { kind: "Name", value: "id" } },
                 { kind: "Field", name: { kind: "Name", value: "username" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "matrix" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "mxid" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "displayName" },
+                      },
+                    ],
+                  },
+                },
               ],
             },
           },

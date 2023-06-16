@@ -51,7 +51,7 @@ const documents = {
     types.UserEmailListQueryDocument,
   "\n  query UserPrimaryEmail($userId: ID!) {\n    user(id: $userId) {\n      id\n      primaryEmail {\n        id\n      }\n    }\n  }\n":
     types.UserPrimaryEmailDocument,
-  "\n  query UserGreeting($userId: ID!) {\n    user(id: $userId) {\n      id\n      username\n    }\n  }\n":
+  "\n  query UserGreeting($userId: ID!) {\n    user(id: $userId) {\n      id\n      username\n      matrix {\n        mxid\n        displayName\n      }\n    }\n  }\n":
     types.UserGreetingDocument,
   "\n  query BrowserSessionQuery($id: ID!) {\n    browserSession(id: $id) {\n      id\n      createdAt\n      lastAuthentication {\n        id\n        createdAt\n      }\n      user {\n        id\n        username\n      }\n    }\n  }\n":
     types.BrowserSessionQueryDocument,
@@ -191,8 +191,8 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  query UserGreeting($userId: ID!) {\n    user(id: $userId) {\n      id\n      username\n    }\n  }\n"
-): typeof documents["\n  query UserGreeting($userId: ID!) {\n    user(id: $userId) {\n      id\n      username\n    }\n  }\n"];
+  source: "\n  query UserGreeting($userId: ID!) {\n    user(id: $userId) {\n      id\n      username\n      matrix {\n        mxid\n        displayName\n      }\n    }\n  }\n"
+): typeof documents["\n  query UserGreeting($userId: ID!) {\n    user(id: $userId) {\n      id\n      username\n      matrix {\n        mxid\n        displayName\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

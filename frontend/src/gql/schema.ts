@@ -578,6 +578,40 @@ export default {
       },
       {
         kind: "OBJECT",
+        name: "MatrixUser",
+        fields: [
+          {
+            name: "avatarUrl",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
+            },
+            args: [],
+          },
+          {
+            name: "displayName",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
+            },
+            args: [],
+          },
+          {
+            name: "mxid",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+        ],
+        interfaces: [],
+      },
+      {
+        kind: "OBJECT",
         name: "Mutation",
         fields: [
           {
@@ -1883,6 +1917,18 @@ export default {
               ofType: {
                 kind: "SCALAR",
                 name: "Any",
+              },
+            },
+            args: [],
+          },
+          {
+            name: "matrix",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "MatrixUser",
+                ofType: null,
               },
             },
             args: [],

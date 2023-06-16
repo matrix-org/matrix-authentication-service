@@ -24,10 +24,9 @@ ulid = "1.0.0"
 url = "2.4.0"
 serde = { version = "1.0.164", features = ["derive"] }
 
-mas-axum-utils = { path = "../axum-utils" }
 mas-data-model = { path = "../data-model" }
 mas-email = { path = "../email" }
-mas-http = { path = "../http" }
+mas-matrix = { path = "../matrix" }
 mas-storage = { path = "../storage" }
 mas-storage-pg = { path = "../storage-pg" }
 mas-tower = { path = "../tower" }

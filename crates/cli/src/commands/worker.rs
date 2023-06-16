@@ -15,8 +15,8 @@
 use clap::Parser;
 use mas_config::RootConfig;
 use mas_handlers::HttpClientFactory;
+use mas_matrix_synapse::SynapseConnection;
 use mas_router::UrlBuilder;
-use mas_tasks::HomeserverConnection;
 use rand::{
     distributions::{Alphanumeric, DistString},
     thread_rng,
@@ -46,10 +46,11 @@ impl Options {
         mailer.test_connection().await?;
 
         let http_client_factory = HttpClientFactory::new(50);
-        let conn = HomeserverConnection::new(
+        let conn = SynapseConnection::new(
             config.matrix.homeserver.clone(),
             config.matrix.endpoint.clone(),
             config.matrix.secret.clone(),
+            http_client_factory,
         );
 
         drop(config);
@@ -59,7 +60,7 @@ impl Options {
         let worker_name = Alphanumeric.sample_string(&mut rng, 10);
 
         info!(worker_name, "Starting task scheduler");
-        let monitor = mas_tasks::init(&worker_name, &pool, &mailer, conn, &http_client_factory);
+        let monitor = mas_tasks::init(&worker_name, &pool, &mailer, conn);
 
         span.exit();
 

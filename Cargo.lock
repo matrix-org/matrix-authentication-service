@@ -3145,6 +3145,8 @@ dependencies = [
  "mas-http",
  "mas-iana",
  "mas-listener",
+ "mas-matrix",
+ "mas-matrix-synapse",
  "mas-policy",
  "mas-router",
  "mas-spa",
@@ -3259,11 +3261,13 @@ dependencies = [
  "chrono",
  "lettre",
  "mas-data-model",
+ "mas-matrix",
  "mas-storage",
  "oauth2-types",
  "serde",
  "thiserror",
  "tokio",
+ "tower",
  "tracing",
  "ulid",
  "url",
@@ -3295,6 +3299,7 @@ dependencies = [
  "mas-iana",
  "mas-jose",
  "mas-keystore",
+ "mas-matrix",
  "mas-oidc-client",
  "mas-policy",
  "mas-router",
@@ -3466,6 +3471,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "mas-matrix"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "http",
+ "serde",
+ "url",
+]
+
+[[package]]
+name = "mas-matrix-synapse"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "http",
+ "mas-axum-utils",
+ "mas-http",
+ "mas-matrix",
+ "serde",
+ "tower",
+ "url",
+]
+
+[[package]]
 name = "mas-oidc-client"
 version = "0.1.0"
 dependencies = [
@@ -3605,10 +3635,9 @@ dependencies = [
  "apalis-sql",
  "async-trait",
  "chrono",
- "mas-axum-utils",
  "mas-data-model",
  "mas-email",
- "mas-http",
+ "mas-matrix",
  "mas-storage",
  "mas-storage-pg",
  "mas-tower",
