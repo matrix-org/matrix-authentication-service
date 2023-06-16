@@ -14,6 +14,56 @@
     },
     "query": "\n                UPDATE oauth2_authorization_grants\n                SET fulfilled_at = $2\n                  , oauth2_session_id = $3\n                WHERE oauth2_authorization_grant_id = $1\n            "
   },
+  "0469c1d3ad11fd96febacad33302709c870ead848d6920cdfdb18912d543488e": {
+    "describe": {
+      "columns": [
+        {
+          "name": "compat_session_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "device_id",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "user_id",
+          "ordinal": 2,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "finished_at",
+          "ordinal": 4,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "is_synapse_admin",
+          "ordinal": 5,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n                SELECT compat_session_id\n                     , device_id\n                     , user_id\n                     , created_at\n                     , finished_at\n                     , is_synapse_admin\n                FROM compat_sessions\n                WHERE compat_session_id = $1\n            "
+  },
   "08d7df347c806ef14b6d0fb031cab041d79ba48528420160e23286369db7af35": {
     "describe": {
       "columns": [
@@ -111,21 +161,6 @@
       }
     },
     "query": "\n                SELECT\n                    upstream_oauth_provider_id,\n                    issuer,\n                    scope,\n                    client_id,\n                    encrypted_client_secret,\n                    token_endpoint_signing_alg,\n                    token_endpoint_auth_method,\n                    created_at\n                FROM upstream_oauth_providers\n            "
-  },
-  "18c3e56c72ef26bd42653c379767ffdd97bb06cb1686dfbf4099f3ad3d7b22c8": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Uuid",
-          "Uuid",
-          "Text",
-          "Timestamptz"
-        ]
-      }
-    },
-    "query": "\n                INSERT INTO compat_sessions (compat_session_id, user_id, device_id, created_at)\n                VALUES ($1, $2, $3, $4)\n            "
   },
   "1a8701f5672de052bb766933f60b93249acc7237b996e8b93cd61b9f69c902ff": {
     "describe": {
@@ -1913,6 +1948,22 @@
     },
     "query": "\n                UPDATE oauth2_authorization_grants\n                SET exchanged_at = $2\n                WHERE oauth2_authorization_grant_id = $1\n            "
   },
+  "cff3ac0fff62ffdc5640fce08c2ffabc1d89202561b736c5d03b501dfcd8d886": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid",
+          "Text",
+          "Timestamptz",
+          "Bool"
+        ]
+      }
+    },
+    "query": "\n                INSERT INTO compat_sessions (compat_session_id, user_id, device_id, created_at, is_synapse_admin)\n                VALUES ($1, $2, $3, $4, $5)\n            "
+  },
   "d0b403e9c843ef19fa5ad60bec32ebf14a1ba0d01681c3836366d3f55e7851f4": {
     "describe": {
       "columns": [],
@@ -2387,50 +2438,6 @@
       }
     },
     "query": "\n                SELECT oauth2_session_id\n                     , user_session_id\n                     , oauth2_client_id\n                     , scope\n                     , created_at\n                     , finished_at\n                FROM oauth2_sessions\n\n                WHERE oauth2_session_id = $1\n            "
-  },
-  "f3ee06958d827b152c57328caa0a6030c372cb99cdb60e4b75a28afeb5096f45": {
-    "describe": {
-      "columns": [
-        {
-          "name": "compat_session_id",
-          "ordinal": 0,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "device_id",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "user_id",
-          "ordinal": 2,
-          "type_info": "Uuid"
-        },
-        {
-          "name": "created_at",
-          "ordinal": 3,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "finished_at",
-          "ordinal": 4,
-          "type_info": "Timestamptz"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        true
-      ],
-      "parameters": {
-        "Left": [
-          "Uuid"
-        ]
-      }
-    },
-    "query": "\n                SELECT compat_session_id\n                     , device_id\n                     , user_id\n                     , created_at\n                     , finished_at\n                FROM compat_sessions\n                WHERE compat_session_id = $1\n            "
   },
   "f5edcd4c306ca8179cdf9d4aab59fbba971b54611c91345849920954dd8089b3": {
     "describe": {

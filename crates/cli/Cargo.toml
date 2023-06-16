@@ -46,6 +46,7 @@ sentry-tracing = "0.31.3"
 sentry-tower = { version = "0.31.3", features = ["http"] }
 
 mas-config = { path = "../config" }
+mas-data-model = { path = "../data-model" }
 mas-email = { path = "../email" }
 mas-handlers = { path = "../handlers", default-features = false }
 mas-http = { path = "../http", default-features = false, features = ["axum", "client"] }

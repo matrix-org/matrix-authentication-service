@@ -62,7 +62,7 @@ mod tests {
         let device_str = device.as_str().to_owned();
         let session = repo
             .compat_session()
-            .add(&mut rng, &clock, &user, device)
+            .add(&mut rng, &clock, &user, device, false)
             .await
             .unwrap();
         assert_eq!(session.user_id, user.id);
@@ -118,7 +118,7 @@ mod tests {
         let device = Device::generate(&mut rng);
         let session = repo
             .compat_session()
-            .add(&mut rng, &clock, &user, device)
+            .add(&mut rng, &clock, &user, device, false)
             .await
             .unwrap();
 
@@ -238,7 +238,7 @@ mod tests {
         let device = Device::generate(&mut rng);
         let session = repo
             .compat_session()
-            .add(&mut rng, &clock, &user, device)
+            .add(&mut rng, &clock, &user, device, false)
             .await
             .unwrap();
 
@@ -391,7 +391,7 @@ mod tests {
         let device = Device::generate(&mut rng);
         let session = repo
             .compat_session()
-            .add(&mut rng, &clock, &user, device)
+            .add(&mut rng, &clock, &user, device, false)
             .await
             .unwrap();
 
