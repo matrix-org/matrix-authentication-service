@@ -15,9 +15,11 @@
 use anyhow::Context;
 use clap::{Parser, ValueEnum};
 use mas_config::{DatabaseConfig, PasswordsConfig, RootConfig};
+use mas_data_model::{Device, TokenType};
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
 use mas_router::UrlBuilder;
 use mas_storage::{
+    compat::{CompatAccessTokenRepository, CompatSessionRepository},
     oauth2::OAuth2ClientRepository,
     upstream_oauth2::UpstreamOAuthProviderRepository,
     user::{UserEmailRepository, UserPasswordRepository, UserRepository},
@@ -181,6 +183,20 @@ enum Subcommand {
         /// Client Secret
         #[arg(long)]
         client_secret: Option<String>,
+    },
+
+    /// Issue a compatibility token
+    IssueCompatibilityToken {
+        /// User for which to issue the token
+        username: String,
+
+        /// Device ID to set in the token. If not specified, a random device ID
+        /// will be generated.
+        device_id: Option<String>,
+
+        /// Whether that token should be admin
+        #[arg(long = "yes-i-want-to-grant-synapse-admin-privileges")]
+        admin: bool,
     },
 }
 
@@ -371,6 +387,53 @@ impl Options {
                     %provider.client_id,
                     provider.redirect_uri = %redirect_uri,
                     "Test authorization by going to {auth_uri}"
+                );
+
+                Ok(())
+            }
+
+            SC::IssueCompatibilityToken {
+                username,
+                admin,
+                device_id,
+            } => {
+                let config: DatabaseConfig = root.load_config()?;
+                let pool = database_from_config(&config).await?;
+                let mut repo = PgRepository::from_pool(&pool).await?.boxed();
+
+                let user = repo
+                    .user()
+                    .find_by_username(username)
+                    .await?
+                    .context("User not found")?;
+
+                let device = if let Some(device_id) = device_id {
+                    device_id.clone().try_into()?
+                } else {
+                    Device::generate(&mut rng)
+                };
+
+                let compat_session = repo
+                    .compat_session()
+                    .add(&mut rng, &clock, &user, device, *admin)
+                    .await?;
+
+                let token = TokenType::CompatAccessToken.generate(&mut rng);
+
+                let compat_access_token = repo
+                    .compat_access_token()
+                    .add(&mut rng, &clock, &compat_session, token, None)
+                    .await?;
+
+                repo.save().await?;
+
+                info!(
+                    %compat_access_token.id,
+                    %compat_session.id,
+                    %compat_session.device,
+                    %user.id,
+                    %user.username,
+                    "Compatibility token issued: {}", compat_access_token.token
                 );
 
                 Ok(())

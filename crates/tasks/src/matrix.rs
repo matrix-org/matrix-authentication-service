@@ -21,72 +21,18 @@ use apalis_core::{
     monitor::Monitor,
     storage::builder::WithStorage,
 };
-use mas_axum_utils::axum::{
-    headers::{Authorization, HeaderMapExt},
-    http::{Request, StatusCode},
-};
-use mas_http::{EmptyBody, HttpServiceExt};
+use mas_matrix::ProvisionRequest;
 use mas_storage::{
     job::{DeleteDeviceJob, JobWithSpanContext, ProvisionDeviceJob, ProvisionUserJob},
     user::{UserEmailRepository, UserRepository},
     RepositoryAccess,
 };
-use serde::{Deserialize, Serialize};
-use tower::{Service, ServiceExt};
-use tracing::{info, info_span, Instrument};
-use url::Url;
+use tracing::info;
 
 use crate::{
     utils::{metrics_layer, trace_layer},
     JobContextExt, State,
 };
-
-pub struct HomeserverConnection {
-    homeserver: String,
-    endpoint: Url,
-    access_token: String,
-}
-
-impl HomeserverConnection {
-    #[must_use]
-    pub fn new(homeserver: String, endpoint: Url, access_token: String) -> Self {
-        Self {
-            homeserver,
-            endpoint,
-            access_token,
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-struct ExternalID {
-    pub auth_provider: String,
-    pub external_id: String,
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-enum ThreePIDMedium {
-    Email,
-    Msisdn,
-}
-
-#[derive(Serialize, Deserialize)]
-struct ThreePID {
-    pub medium: ThreePIDMedium,
-    pub address: String,
-}
-
-#[derive(Serialize, Deserialize)]
-struct UserRequest {
-    #[serde(rename = "displayname")]
-    pub display_name: String,
-
-    #[serde(rename = "threepids")]
-    pub three_pids: Vec<ThreePID>,
-
-    pub external_ids: Vec<ExternalID>,
-}
 
 /// Job to provision a user on the Matrix homeserver.
 /// This works by doing a PUT request to the /_synapse/admin/v2/users/{user_id}
@@ -103,11 +49,6 @@ async fn provision_user(
 ) -> Result<(), anyhow::Error> {
     let state = ctx.state();
     let matrix = state.matrix_connection();
-    let mut client = state
-        .http_client()
-        .await?
-        .request_bytes_to_body()
-        .json_request();
     let mut repo = state.repository().await?;
 
     let user = repo
@@ -116,71 +57,28 @@ async fn provision_user(
         .await?
         .context("User not found")?;
 
-    // XXX: there is a lot that could go wrong in terms of encoding here
-    let mxid = format!(
-        "@{localpart}:{homeserver}",
-        localpart = user.username,
-        homeserver = matrix.homeserver
-    );
-
-    let three_pids = repo
+    let mxid = matrix.mxid(&user.username);
+    let emails = repo
         .user_email()
         .all(&user)
         .await?
         .into_iter()
-        .filter_map(|email| {
-            if email.confirmed_at.is_some() {
-                Some(ThreePID {
-                    medium: ThreePIDMedium::Email,
-                    address: email.email,
-                })
-            } else {
-                None
-            }
-        })
+        .filter(|email| email.confirmed_at.is_some())
+        .map(|email| email.email)
         .collect();
-
-    let display_name = user.username.clone();
-
-    let body = UserRequest {
-        display_name,
-        three_pids,
-        external_ids: vec![ExternalID {
-            auth_provider: "oauth-delegated".to_owned(),
-            external_id: user.sub,
-        }],
-    };
 
     repo.cancel().await?;
 
-    let path = format!("_synapse/admin/v2/users/{mxid}",);
-    let mut req = Request::put(matrix.endpoint.join(&path)?.as_str());
-    req.headers_mut()
-        .context("Failed to get headers")?
-        .typed_insert(Authorization::bearer(&matrix.access_token)?);
+    let request = ProvisionRequest::new(mxid.clone(), user.sub.clone()).set_emails(emails);
+    let created = matrix.provision_user(&request).await?;
 
-    let req = req.body(body).context("Failed to build request")?;
-
-    let response = client
-        .ready()
-        .await?
-        .call(req)
-        .instrument(info_span!("matrix.provision_user"))
-        .await?;
-
-    match response.status() {
-        StatusCode::CREATED => info!(%user.id, %mxid, "User created"),
-        StatusCode::OK => info!(%user.id, %mxid, "User updated"),
-        // TODO: Better error handling
-        code => anyhow::bail!("Failed to provision user. Status code: {code}"),
+    if created {
+        info!(%user.id, %mxid, "User created");
+    } else {
+        info!(%user.id, %mxid, "User updated");
     }
 
     Ok(())
-}
-
-#[derive(Serialize, Deserialize)]
-struct DeviceRequest {
-    device_id: String,
 }
 
 /// Job to provision a device on the Matrix homeserver.
@@ -201,11 +99,6 @@ async fn provision_device(
 ) -> Result<(), anyhow::Error> {
     let state = ctx.state();
     let matrix = state.matrix_connection();
-    let mut client = state
-        .http_client()
-        .await?
-        .request_bytes_to_body()
-        .json_request();
     let mut repo = state.repository().await?;
 
     let user = repo
@@ -214,38 +107,10 @@ async fn provision_device(
         .await?
         .context("User not found")?;
 
-    // XXX: there is a lot that could go wrong in terms of encoding here
-    let mxid = format!(
-        "@{localpart}:{homeserver}",
-        localpart = user.username,
-        homeserver = matrix.homeserver
-    );
+    let mxid = matrix.mxid(&user.username);
 
-    let path = format!("_synapse/admin/v2/users/{mxid}/devices");
-    let mut req = Request::post(matrix.endpoint.join(&path)?.as_str());
-    req.headers_mut()
-        .context("Failed to get headers")?
-        .typed_insert(Authorization::bearer(&matrix.access_token)?);
-
-    let req = req
-        .body(DeviceRequest {
-            device_id: job.device_id().to_owned(),
-        })
-        .context("Failed to build request")?;
-
-    let response = client
-        .ready()
-        .await?
-        .call(req)
-        .instrument(info_span!("matrix.create_device"))
-        .await?;
-
-    match response.status() {
-        StatusCode::CREATED => {
-            info!(%user.id, %mxid, device.id = job.device_id(), "Device created");
-        }
-        code => anyhow::bail!("Failed to provision device. Status code: {code}"),
-    }
+    matrix.create_device(&mxid, job.device_id()).await?;
+    info!(%user.id, %mxid, device.id = job.device_id(), "Device created");
 
     Ok(())
 }
@@ -268,7 +133,6 @@ async fn delete_device(
 ) -> Result<(), anyhow::Error> {
     let state = ctx.state();
     let matrix = state.matrix_connection();
-    let mut client = state.http_client().await?;
     let mut repo = state.repository().await?;
 
     let user = repo
@@ -277,37 +141,10 @@ async fn delete_device(
         .await?
         .context("User not found")?;
 
-    // XXX: there is a lot that could go wrong in terms of encoding here
-    let mxid = format!(
-        "@{localpart}:{homeserver}",
-        localpart = user.username,
-        homeserver = matrix.homeserver
-    );
+    let mxid = matrix.mxid(&user.username);
 
-    let path = format!(
-        "_synapse/admin/v2/users/{mxid}/devices/{device_id}",
-        device_id = job.device_id()
-    );
-
-    let mut req = Request::delete(matrix.endpoint.join(&path)?.as_str());
-    req.headers_mut()
-        .context("Failed to get headers")?
-        .typed_insert(Authorization::bearer(&matrix.access_token)?);
-    let req = req
-        .body(EmptyBody::new())
-        .context("Failed to build request")?;
-
-    let response = client
-        .ready()
-        .await?
-        .call(req)
-        .instrument(info_span!("matrix.delete_device"))
-        .await?;
-
-    match response.status() {
-        StatusCode::OK => info!(%user.id, %mxid, "Device deleted"),
-        code => anyhow::bail!("Failed to delete device. Status code: {code}"),
-    };
+    matrix.delete_device(&mxid, job.device_id()).await?;
+    info!(%user.id, %mxid, device.id = job.device_id(), "Device deleted");
 
     Ok(())
 }

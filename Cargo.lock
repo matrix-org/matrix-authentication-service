@@ -2691,7 +2691,7 @@ checksum = "0646026eb1b3eea4cd9ba47912ea5ce9cc07713d105b1a14698f4e6433d348b7"
 dependencies = [
  "http",
  "hyper",
- "rustls 0.21.1",
+ "rustls 0.21.2",
  "rustls-native-certs",
  "tokio",
  "tokio-rustls 0.24.1",
@@ -2998,7 +2998,7 @@ dependencies = [
  "nom",
  "once_cell",
  "quoted_printable",
- "rustls 0.21.1",
+ "rustls 0.21.2",
  "rustls-pemfile",
  "socket2",
  "tokio",
@@ -3139,11 +3139,14 @@ dependencies = [
  "itertools",
  "listenfd",
  "mas-config",
+ "mas-data-model",
  "mas-email",
  "mas-handlers",
  "mas-http",
  "mas-iana",
  "mas-listener",
+ "mas-matrix",
+ "mas-matrix-synapse",
  "mas-policy",
  "mas-router",
  "mas-spa",
@@ -3163,7 +3166,7 @@ dependencies = [
  "prometheus",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
- "rustls 0.21.1",
+ "rustls 0.21.2",
  "sentry",
  "sentry-tower",
  "sentry-tracing",
@@ -3258,11 +3261,13 @@ dependencies = [
  "chrono",
  "lettre",
  "mas-data-model",
+ "mas-matrix",
  "mas-storage",
  "oauth2-types",
  "serde",
  "thiserror",
  "tokio",
+ "tower",
  "tracing",
  "ulid",
  "url",
@@ -3294,6 +3299,7 @@ dependencies = [
  "mas-iana",
  "mas-jose",
  "mas-keystore",
+ "mas-matrix",
  "mas-oidc-client",
  "mas-policy",
  "mas-router",
@@ -3341,7 +3347,7 @@ dependencies = [
  "mas-tower",
  "once_cell",
  "opentelemetry",
- "rustls 0.21.1",
+ "rustls 0.21.2",
  "rustls-native-certs",
  "serde",
  "serde_json",
@@ -3465,6 +3471,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "mas-matrix"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "http",
+ "serde",
+ "url",
+]
+
+[[package]]
+name = "mas-matrix-synapse"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "http",
+ "mas-axum-utils",
+ "mas-http",
+ "mas-matrix",
+ "serde",
+ "tower",
+ "url",
+]
+
+[[package]]
 name = "mas-oidc-client"
 version = "0.1.0"
 dependencies = [
@@ -3491,7 +3522,7 @@ dependencies = [
  "once_cell",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
- "rustls 0.21.1",
+ "rustls 0.21.2",
  "serde",
  "serde_json",
  "serde_urlencoded",
@@ -3604,10 +3635,9 @@ dependencies = [
  "apalis-sql",
  "async-trait",
  "chrono",
- "mas-axum-utils",
  "mas-data-model",
  "mas-email",
- "mas-http",
+ "mas-matrix",
  "mas-storage",
  "mas-storage-pg",
  "mas-tower",
@@ -5069,9 +5099,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.21.1"
+version = "0.21.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c911ba11bc8433e811ce56fde130ccf32f5127cab0e0194e9c68c5a5b671791e"
+checksum = "e32ca28af694bc1bbf399c33a516dbdf1c90090b8ab23c2bc24f834aa2247f5f"
 dependencies = [
  "log",
  "ring",
@@ -6065,7 +6095,7 @@ version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c28327cf380ac148141087fbfb9de9d7bd4e84ab5d2c28fbc911d753de8a7081"
 dependencies = [
- "rustls 0.21.1",
+ "rustls 0.21.2",
  "tokio",
 ]
 

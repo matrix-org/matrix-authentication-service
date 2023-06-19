@@ -20,9 +20,9 @@ use itertools::Itertools;
 use mas_config::RootConfig;
 use mas_handlers::{AppState, HttpClientFactory, MatrixHomeserver};
 use mas_listener::{server::Server, shutdown::ShutdownStream};
+use mas_matrix_synapse::SynapseConnection;
 use mas_router::UrlBuilder;
 use mas_storage_pg::MIGRATOR;
-use mas_tasks::HomeserverConnection;
 use rand::{
     distributions::{Alphanumeric, DistString},
     thread_rng,
@@ -96,14 +96,17 @@ impl Options {
             let mut rng = thread_rng();
             let worker_name = Alphanumeric.sample_string(&mut rng, 10);
 
-            info!(worker_name, "Starting task worker");
+            // Maximum 50 outgoing HTTP requests at a time
             let http_client_factory = HttpClientFactory::new(50);
-            let conn = HomeserverConnection::new(
+
+            info!(worker_name, "Starting task worker");
+            let conn = SynapseConnection::new(
                 config.matrix.homeserver.clone(),
                 config.matrix.endpoint.clone(),
                 config.matrix.secret.clone(),
+                http_client_factory,
             );
-            let monitor = mas_tasks::init(&worker_name, &pool, &mailer, conn, &http_client_factory);
+            let monitor = mas_tasks::init(&worker_name, &pool, &mailer, conn);
             // TODO: grab the handle
             tokio::spawn(monitor.run());
         }
@@ -114,7 +117,17 @@ impl Options {
 
         let password_manager = password_manager_from_config(&config.passwords).await?;
 
-        // Explicitely the config to properly zeroize secret keys
+        // Maximum 50 outgoing HTTP requests at a time
+        let http_client_factory = HttpClientFactory::new(50);
+
+        let conn = SynapseConnection::new(
+            config.matrix.homeserver.clone(),
+            config.matrix.endpoint.clone(),
+            config.matrix.secret.clone(),
+            http_client_factory.clone(),
+        );
+
+        // Explicitly the config to properly zeroize secret keys
         drop(config);
 
         // Watch for changes in templates if the --watch flag is present
@@ -122,10 +135,7 @@ impl Options {
             watch_templates(&templates).await?;
         }
 
-        let graphql_schema = mas_handlers::graphql_schema(&pool);
-
-        // Maximum 50 outgoing HTTP requests at a time
-        let http_client_factory = HttpClientFactory::new(50);
+        let graphql_schema = mas_handlers::graphql_schema(&pool, conn);
 
         let state = AppState {
             pool,

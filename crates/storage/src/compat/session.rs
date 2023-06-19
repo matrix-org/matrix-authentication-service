@@ -49,6 +49,7 @@ pub trait CompatSessionRepository: Send + Sync {
     /// * `clock`: The clock used to generate timestamps
     /// * `user`: The user to create the compat session for
     /// * `device`: The device ID of this session
+    /// * `is_synapse_admin`: Whether the session is a synapse admin session
     ///
     /// # Errors
     ///
@@ -59,6 +60,7 @@ pub trait CompatSessionRepository: Send + Sync {
         clock: &dyn Clock,
         user: &User,
         device: Device,
+        is_synapse_admin: bool,
     ) -> Result<CompatSession, Self::Error>;
 
     /// End a compat session
@@ -89,6 +91,7 @@ repository_impl!(CompatSessionRepository:
         clock: &dyn Clock,
         user: &User,
         device: Device,
+        is_synapse_admin: bool,
     ) -> Result<CompatSession, Self::Error>;
 
     async fn finish(

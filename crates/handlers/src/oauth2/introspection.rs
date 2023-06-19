@@ -120,6 +120,7 @@ const INACTIVE: IntrospectionResponse = IntrospectionResponse {
 };
 
 const API_SCOPE: ScopeToken = ScopeToken::from_static("urn:matrix:org.matrix.msc2967.client:api:*");
+const SYNAPSE_ADMIN_SCOPE: ScopeToken = ScopeToken::from_static("urn:synapse:admin:*");
 
 #[tracing::instrument(
     name = "handlers.oauth2.introspection.post",
@@ -267,8 +268,13 @@ pub(crate) async fn post(
                 // XXX: is that the right error to bubble up?
                 .ok_or(RouteError::UnknownToken)?;
 
+            // Grant the synapse admin scope if the session has the admin flag set.
+            let synapse_admin = session.is_synapse_admin.then_some(SYNAPSE_ADMIN_SCOPE);
             let device_scope = session.device.to_scope_token();
-            let scope = [API_SCOPE, device_scope].into_iter().collect();
+            let scope = [API_SCOPE, device_scope]
+                .into_iter()
+                .chain(synapse_admin)
+                .collect();
 
             IntrospectionResponse {
                 active: true,
@@ -308,8 +314,13 @@ pub(crate) async fn post(
                 // XXX: is that the right error to bubble up?
                 .ok_or(RouteError::UnknownToken)?;
 
+            // Grant the synapse admin scope if the session has the admin flag set.
+            let synapse_admin = session.is_synapse_admin.then_some(SYNAPSE_ADMIN_SCOPE);
             let device_scope = session.device.to_scope_token();
-            let scope = [API_SCOPE, device_scope].into_iter().collect();
+            let scope = [API_SCOPE, device_scope]
+                .into_iter()
+                .chain(synapse_admin)
+                .collect();
 
             IntrospectionResponse {
                 active: true,

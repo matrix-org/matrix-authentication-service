@@ -18,6 +18,7 @@ use chrono::{DateTime, Utc};
 mod browser_sessions;
 mod compat_sessions;
 mod cursor;
+mod matrix;
 mod node;
 mod oauth;
 mod upstream_oauth;

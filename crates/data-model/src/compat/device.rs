@@ -80,6 +80,12 @@ impl TryFrom<String> for Device {
     }
 }
 
+impl std::fmt::Display for Device {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.id)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use oauth2_types::scope::OPENID;
