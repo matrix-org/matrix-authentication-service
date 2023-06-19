@@ -40,7 +40,7 @@
     "@storybook/addon-actions": "^7.0.20",
     "@storybook/addon-backgrounds": "^7.0.20",
     "@storybook/addon-controls": "^7.0.20",
-    "@storybook/addon-docs": "^7.0.20",
+    "@storybook/addon-docs": "^7.0.22",
     "@storybook/addon-essentials": "^7.0.20",
     "@storybook/addon-measure": "^7.0.20",
     "@storybook/addon-outline": "^7.0.20",
