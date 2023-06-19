@@ -28,7 +28,7 @@ const Home: React.FC = () => {
     return (
       <>
         <UserGreeting userId={currentUserId} />
-        <div className="mt-4 grid lg:grid-cols-3 gap-1">
+        <div className="mt-4 grid gap-1">
           <OAuth2SessionList userId={currentUserId} />
           <CompatSsoLoginList userId={currentUserId} />
           <BrowserSessionList userId={currentUserId} />

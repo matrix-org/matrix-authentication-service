@@ -17,7 +17,7 @@ const NavBar: React.FC<{
   children: React.ReactNode;
 }> = ({ className, children }) => (
   <nav className={className}>
-    <ul className="flex flex-row gap-4 justify-center	">{children}</ul>
+    <ul className="flex flex-row gap-4 justify-center">{children}</ul>
   </nav>
 );
 

@@ -41,6 +41,7 @@ module.exports = {
       plugins: ["jsx-a11y", "matrix-org"],
       parserOptions: {
         project: ["./tsconfig.node.json", "./tsconfig.json"],
+        warnOnUnsupportedTypeScriptVersion: false,
       },
       files: ["*.ts", "*.tsx", "*.cjs", "*.js"],
       rules: {

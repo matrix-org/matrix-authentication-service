@@ -43,29 +43,31 @@ const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
   const createdAt = data.createdAt;
 
   return (
-    <Block className="my-2">
-      <IconWebBrowser
-        className="session-icon float-left mr-2"
-        width="24"
-        height="24"
-      />
-      <Body size="md" weight="medium">
-        {isCurrent ? (
-          <>
-            <strong>Current</strong> browser session
-          </>
-        ) : (
-          <>Browser Session</>
-        )}
-      </Body>
-      <div className="flex flex-row justify-between">
-        <Body size="sm" className="secondary-text">
+    <Block className="my-4 flex items-center">
+      <IconWebBrowser className="mr-4 session-icon" />
+      <div className="flex-1">
+        <Body size="md" weight="medium">
+          {isCurrent ? (
+            <>
+              <strong>Current</strong> browser session
+            </>
+          ) : (
+            <>Browser Session</>
+          )}
+        </Body>
+        <Body size="sm" className="text-secondary">
           Signed in <DateTime datetime={createdAt} />
         </Body>
-        <Body as="a" size="sm" weight="medium" href="#" data-kind="critical">
-          Sign out
-        </Body>
       </div>
+      <Body
+        as="a"
+        size="sm"
+        weight="medium"
+        href="#"
+        className="text-critical underline hover:no-underline"
+      >
+        Sign out
+      </Body>
     </Block>
   );
 };

@@ -23,6 +23,8 @@ module.exports = {
   theme: {
     colors: {
       white: "#FFFFFF",
+      secondary: "var(--cpd-color-text-secondary)",
+      critical: "var(--cpd-color-text-critical-primary)",
       accent: "#0DBD8B",
       alert: "#FF5B55",
       links: "#0086E6",

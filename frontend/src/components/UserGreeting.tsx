@@ -46,7 +46,7 @@ const UserGreeting: React.FC<{ userId: string }> = ({ userId }) => {
 
   if (result.data?.user) {
     return (
-      <header className="oidc_Header">
+      <header className="text-center">
         <Heading size="xl" weight="semibold">
           {result.data.user.matrix.displayName || result.data.user.username}
         </Heading>

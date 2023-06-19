@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-@import "@vector-im/compound-web/dist/style.css";
+@import "@vector-im/compound-web/dist/index.css";
 
 @tailwind base;
 @tailwind components;
@@ -25,30 +25,6 @@ body {
 
   width: 378px;
   margin: var(--cpd-space-10x) auto var(--cpd-space-6x) auto;
-}
-
-.oidc_Header {
-  text-align: center;
-}
-
-.oidc_Header > * {
-  margin: 0;
-}
-
-.secondary-text {
-  color: var(--cpd-color-text-secondary);
-}
-
-a {
-  text-decoration: underline;
-}
-
-a:hover {
-  text-decoration: none;
-}
-
-[data-kind="critical"] {
-  color: var(--cpd-color-text-critical-primary);
 }
 
 .nav-bar a {
@@ -73,6 +49,8 @@ hr {
 .session-icon {
   color: var(--cpd-color-icon-secondary);
   background: var(--cpd-color-bg-subtle-secondary);
-  padding: var(--cpd-space-1x);
-  border-radius: 4px;
+  height: var(--cpd-space-10x);
+  width: var(--cpd-space-10x);
+  padding: var(--cpd-space-2x);
+  border-radius: var(--cpd-space-1x);
 }
