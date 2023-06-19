@@ -15,9 +15,7 @@
 /// <reference types="vitest" />
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
-import eslint from "vite-plugin-eslint";
 import codegen from "vite-plugin-graphql-codegen";
-import svgr from "vite-plugin-svgr";
 
 export default defineConfig({
   base: "/app/",
@@ -34,22 +32,6 @@ export default defineConfig({
           "jotai/babel/plugin-react-refresh",
           "jotai/babel/plugin-debug-label",
         ],
-      },
-    }),
-    eslint({
-      // Explicitly set the config file, else storybook gets confused
-      overrideConfigFile: "./.eslintrc.cjs",
-    }),
-    svgr({
-      exportAsDefault: true,
-      svgrOptions: {
-        // Using 1em in order to make SVG size inherits from text size.
-        icon: "1em",
-        svgProps: {
-          // Adding a class in case we want to add global overrides, but one
-          // should probably stick to using CSS modules most of the time
-          class: "cpd-icon",
-        },
       },
     }),
   ],
