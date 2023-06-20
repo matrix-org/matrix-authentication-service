@@ -17,9 +17,5 @@
 /** @type {import('postcss-load-config').Config} */
 
 module.exports = {
-  plugins: [
-    require("tailwindcss"),
-    require("autoprefixer"),
-    require("postcss-prune-var"),
-  ],
+  plugins: [require("tailwindcss"), require("autoprefixer")],
 };

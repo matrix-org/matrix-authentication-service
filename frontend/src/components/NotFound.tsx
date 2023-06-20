@@ -12,25 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod browser_session;
-mod compat_session;
-mod oauth2_session;
-mod user_email;
+import { Alert } from "@vector-im/compound-web";
 
-use async_graphql::MergedObject;
+const NotFound: React.FC = () => <Alert type="critical" title="Not found." />;
 
-/// The mutations root of the GraphQL interface.
-#[derive(Default, MergedObject)]
-pub struct Mutation(
-    user_email::UserEmailMutations,
-    oauth2_session::OAuth2SessionMutations,
-    compat_session::CompatSessionMutations,
-    browser_session::BrowserSessionMutations,
-);
-
-impl Mutation {
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-}
+export default NotFound;

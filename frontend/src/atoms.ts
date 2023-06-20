@@ -12,13 +12,52 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { atom } from "jotai";
+import { AnyVariables, CombinedError, OperationContext } from "@urql/core";
+import { atom, WritableAtom } from "jotai";
 import { useHydrateAtoms } from "jotai/utils";
-import { atomWithQuery, clientAtom } from "jotai-urql";
+import { AtomWithQuery, atomWithQuery, clientAtom } from "jotai-urql";
 import type { ReactElement } from "react";
 
 import { graphql } from "./gql";
 import { client } from "./graphql";
+import { err, ok, Result } from "./result";
+
+export type GqlResult<T> = Result<T, CombinedError>;
+export type GqlAtom<T> = WritableAtom<
+  Promise<GqlResult<T>>,
+  [context?: Partial<OperationContext>],
+  void
+>;
+
+/**
+ * Map the result of a query atom to a new value, making it a GqlResult
+ *
+ * @param queryAtom: An atom got from atomWithQuery
+ * @param mapper: A function that takes the data from the query and returns a new value
+ */
+export const mapQueryAtom = <Data, Variables extends AnyVariables, NewData>(
+  queryAtom: AtomWithQuery<Data, Variables>,
+  mapper: (data: Data) => NewData
+): GqlAtom<NewData> => {
+  return atom(
+    async (get): Promise<GqlResult<NewData>> => {
+      const result = await get(queryAtom);
+      if (result.error) {
+        return err(result.error);
+      }
+
+      if (result.data === undefined) {
+        throw new Error("Query result is undefined");
+      }
+
+      return ok(mapper(result.data));
+    },
+
+    (_get, set, context) => {
+      set(queryAtom, context);
+    }
+  );
+};
 
 export const HydrateAtoms: React.FC<{ children: ReactElement }> = ({
   children,
@@ -44,13 +83,15 @@ const CURRENT_VIEWER_QUERY = graphql(/* GraphQL */ `
 
 const currentViewerAtom = atomWithQuery({ query: CURRENT_VIEWER_QUERY });
 
-export const currentUserIdAtom = atom(async (get) => {
-  const result = await get(currentViewerAtom);
-  if (result.data?.viewer.__typename === "User") {
-    return result.data.viewer.id;
+export const currentUserIdAtom: GqlAtom<string | null> = mapQueryAtom(
+  currentViewerAtom,
+  (data) => {
+    if (data.viewer.__typename === "User") {
+      return data.viewer.id;
+    }
+    return null;
   }
-  return null;
-});
+);
 
 const CURRENT_VIEWER_SESSION_QUERY = graphql(/* GraphQL */ `
   query CurrentViewerSessionQuery {
@@ -71,11 +112,11 @@ const currentViewerSessionAtom = atomWithQuery({
   query: CURRENT_VIEWER_SESSION_QUERY,
 });
 
-export const currentBrowserSessionIdAtom = atom(
-  async (get): Promise<string | null> => {
-    const result = await get(currentViewerSessionAtom);
-    if (result.data?.viewerSession.__typename === "BrowserSession") {
-      return result.data.viewerSession.id;
+export const currentBrowserSessionIdAtom: GqlAtom<string | null> = mapQueryAtom(
+  currentViewerSessionAtom,
+  (data) => {
+    if (data.viewerSession.__typename === "BrowserSession") {
+      return data.viewerSession.id;
     }
     return null;
   }

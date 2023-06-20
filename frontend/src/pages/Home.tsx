@@ -12,32 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Alert } from "@vector-im/compound-web";
 import { useAtomValue } from "jotai";
 
 import { currentUserIdAtom } from "../atoms";
 import BrowserSessionList from "../components/BrowserSessionList";
 import CompatSsoLoginList from "../components/CompatSsoLoginList";
+import GraphQLError from "../components/GraphQLError";
+import NotLoggedIn from "../components/NotLoggedIn";
 import OAuth2SessionList from "../components/OAuth2SessionList";
 import UserGreeting from "../components/UserGreeting";
+import { isErr, unwrapErr, unwrapOk } from "../result";
 
 const Home: React.FC = () => {
-  const currentUserId = useAtomValue(currentUserIdAtom);
+  const result = useAtomValue(currentUserIdAtom);
+  if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
 
-  if (currentUserId) {
-    return (
-      <>
-        <UserGreeting userId={currentUserId} />
-        <div className="mt-4 grid gap-1">
-          <OAuth2SessionList userId={currentUserId} />
-          <CompatSsoLoginList userId={currentUserId} />
-          <BrowserSessionList userId={currentUserId} />
-        </div>
-      </>
-    );
-  } else {
-    return <Alert type="critical" title="You're not logged in." />;
-  }
+  const currentUserId = unwrapOk(result);
+  if (currentUserId === null) return <NotLoggedIn />;
+
+  return (
+    <>
+      <UserGreeting userId={currentUserId} />
+      <div className="mt-4 grid gap-1">
+        <OAuth2SessionList userId={currentUserId} />
+        <CompatSsoLoginList userId={currentUserId} />
+        <BrowserSessionList userId={currentUserId} />
+      </div>
+    </>
+  );
 };
 
 export default Home;

@@ -13,8 +13,13 @@
 // limitations under the License.
 
 import IconWebBrowser from "@vector-im/compound-design-tokens/icons/web-browser.svg";
-import { Body } from "@vector-im/compound-web";
+import { Body, Button } from "@vector-im/compound-web";
+import { atom, useSetAtom } from "jotai";
+import { atomFamily } from "jotai/utils";
+import { atomWithMutation } from "jotai-urql";
+import { useTransition } from "react";
 
+import { currentBrowserSessionIdAtom, currentUserIdAtom } from "../atoms";
 import { FragmentType, graphql, useFragment } from "../gql";
 
 import Block from "./Block";
@@ -31,6 +36,30 @@ const FRAGMENT = graphql(/* GraphQL */ `
   }
 `);
 
+const END_SESSION_MUTATION = graphql(/* GraphQL */ `
+  mutation EndBrowserSession($id: ID!) {
+    endBrowserSession(input: { browserSessionId: $id }) {
+      status
+      browserSession {
+        id
+        ...BrowserSession_session
+      }
+    }
+  }
+`);
+
+const endSessionFamily = atomFamily((id: string) => {
+  const endSession = atomWithMutation(END_SESSION_MUTATION);
+
+  // A proxy atom which pre-sets the id variable in the mutation
+  const endSessionAtom = atom(
+    (get) => get(endSession),
+    (get, set) => set(endSession, { id })
+  );
+
+  return endSessionAtom;
+});
+
 type Props = {
   session: FragmentType<typeof FRAGMENT>;
   isCurrent: boolean;
@@ -38,9 +67,29 @@ type Props = {
 
 const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
   const data = useFragment(FRAGMENT, session);
+  const [pending, startTransition] = useTransition();
+  const endSession = useSetAtom(endSessionFamily(data.id));
 
-  // const lastAuthentication = data.lastAuthentication?.createdAt;
+  // Pull those atoms to reset them when the current session is ended
+  const currentUserId = useSetAtom(currentUserIdAtom);
+  const currentBrowserSessionId = useSetAtom(currentBrowserSessionIdAtom);
+
   const createdAt = data.createdAt;
+
+  const onSessionEnd = () => {
+    startTransition(() => {
+      endSession().then(() => {
+        if (isCurrent) {
+          currentBrowserSessionId({
+            requestPolicy: "network-only",
+          });
+          currentUserId({
+            requestPolicy: "network-only",
+          });
+        }
+      });
+    });
+  };
 
   return (
     <Block className="my-4 flex items-center">
@@ -59,15 +108,16 @@ const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
           Signed in <DateTime datetime={createdAt} />
         </Body>
       </div>
-      <Body
-        as="a"
+
+      <Button
+        kind="destructive"
         size="sm"
-        weight="medium"
-        href="#"
-        className="text-critical underline hover:no-underline"
+        className="mt-2"
+        onClick={onSessionEnd}
+        disabled={pending}
       >
         Sign out
-      </Body>
+      </Button>
     </Block>
   );
 };

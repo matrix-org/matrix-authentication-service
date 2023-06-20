@@ -15,8 +15,11 @@
 import { useAtomValue } from "jotai";
 
 import { currentUserIdAtom } from "../atoms";
+import GraphQLError from "../components/GraphQLError";
+import NotLoggedIn from "../components/NotLoggedIn";
 import UserEmailList from "../components/UserEmailList";
 import UserGreeting from "../components/UserGreeting";
+import { isErr, unwrapErr, unwrapOk } from "../result";
 
 const UserAccount: React.FC<{ id: string }> = ({ id }) => {
   return (
@@ -28,16 +31,17 @@ const UserAccount: React.FC<{ id: string }> = ({ id }) => {
 };
 
 const CurrentUserAccount: React.FC = () => {
-  const userId = useAtomValue(currentUserIdAtom);
-  if (userId !== null) {
-    return (
-      <div className="w-96 mx-auto">
-        <UserAccount id={userId} />
-      </div>
-    );
-  }
+  const result = useAtomValue(currentUserIdAtom);
+  if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
 
-  return <div className="w-96 mx-auto">Not logged in.</div>;
+  const userId = unwrapOk(result);
+  if (userId === null) return <NotLoggedIn />;
+
+  return (
+    <div className="w-96 mx-auto">
+      <UserAccount id={userId} />
+    </div>
+  );
 };
 
 export default CurrentUserAccount;
