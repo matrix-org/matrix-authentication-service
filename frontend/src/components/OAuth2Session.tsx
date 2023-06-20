@@ -41,7 +41,7 @@ const FRAGMENT = graphql(/* GraphQL */ `
 `);
 
 const END_SESSION_MUTATION = graphql(/* GraphQL */ `
-  mutation EndSession($id: ID!) {
+  mutation EndOAuth2Session($id: ID!) {
     endOauth2Session(input: { oauth2SessionId: $id }) {
       status
       oauth2Session {

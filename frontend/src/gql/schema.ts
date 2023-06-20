@@ -524,6 +524,33 @@ export default {
       },
       {
         kind: "OBJECT",
+        name: "EndBrowserSessionPayload",
+        fields: [
+          {
+            name: "browserSession",
+            type: {
+              kind: "OBJECT",
+              name: "BrowserSession",
+              ofType: null,
+            },
+            args: [],
+          },
+          {
+            name: "status",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+        ],
+        interfaces: [],
+      },
+      {
+        kind: "OBJECT",
         name: "EndCompatSessionPayload",
         fields: [
           {
@@ -621,6 +648,29 @@ export default {
               ofType: {
                 kind: "OBJECT",
                 name: "AddEmailPayload",
+                ofType: null,
+              },
+            },
+            args: [
+              {
+                name: "input",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
+          },
+          {
+            name: "endBrowserSession",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "EndBrowserSessionPayload",
                 ofType: null,
               },
             },

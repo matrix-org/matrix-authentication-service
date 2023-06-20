@@ -12,25 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod browser_session;
-mod compat_session;
-mod oauth2_session;
-mod user_email;
+import { CombinedError } from "@urql/core";
+import { Alert } from "@vector-im/compound-web";
 
-use async_graphql::MergedObject;
-
-/// The mutations root of the GraphQL interface.
-#[derive(Default, MergedObject)]
-pub struct Mutation(
-    user_email::UserEmailMutations,
-    oauth2_session::OAuth2SessionMutations,
-    compat_session::CompatSessionMutations,
-    browser_session::BrowserSessionMutations,
+const GraphQLError: React.FC<{ error: CombinedError }> = ({ error }) => (
+  <Alert type="critical" title={error.message}>
+    {error.toString()}
+  </Alert>
 );
 
-impl Mutation {
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-}
+export default GraphQLError;

@@ -17,6 +17,7 @@ import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
 import { useTransition } from "react";
 
+import { mapQueryAtom } from "../atoms";
 import { graphql } from "../gql";
 import { PageInfo } from "../gql/graphql";
 import {
@@ -24,8 +25,10 @@ import {
   atomWithPagination,
   Pagination,
 } from "../pagination";
+import { isErr, isOk, unwrapErr, unwrapOk } from "../result";
 
 import BlockList from "./BlockList";
+import GraphQLError from "./GraphQLError";
 import OAuth2Session from "./OAuth2Session";
 import PaginationControls from "./PaginationControls";
 import { Title } from "./Typography";
@@ -68,10 +71,15 @@ const QUERY = graphql(/* GraphQL */ `
 const currentPaginationAtom = atomForCurrentPagination();
 
 const oauth2SessionListFamily = atomFamily((userId: string) => {
-  const oauth2SessionList = atomWithQuery({
+  const oauth2SessionListQuery = atomWithQuery({
     query: QUERY,
     getVariables: (get) => ({ userId, ...get(currentPaginationAtom) }),
   });
+
+  const oauth2SessionList = mapQueryAtom(
+    oauth2SessionListQuery,
+    (data) => data.user?.oauth2Sessions || null
+  );
 
   return oauth2SessionList;
 });
@@ -79,7 +87,7 @@ const oauth2SessionListFamily = atomFamily((userId: string) => {
 const pageInfoFamily = atomFamily((userId: string) => {
   const pageInfoAtom = atom(async (get): Promise<PageInfo | null> => {
     const result = await get(oauth2SessionListFamily(userId));
-    return result.data?.user?.oauth2Sessions?.pageInfo ?? null;
+    return (isOk(result) && unwrapOk(result)?.pageInfo) || null;
   });
 
   return pageInfoAtom;
@@ -103,30 +111,30 @@ const OAuth2SessionList: React.FC<Props> = ({ userId }) => {
   const setPagination = useSetAtom(currentPaginationAtom);
   const [prevPage, nextPage] = useAtomValue(paginationFamily(userId));
 
+  if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
+  const oauth2Sessions = unwrapOk(result);
+  if (oauth2Sessions === null)
+    return <>Failed to load OAuth 2.0 session list</>;
+
   const paginate = (pagination: Pagination): void => {
     startTransition(() => {
       setPagination(pagination);
     });
   };
 
-  if (result.data?.user?.oauth2Sessions) {
-    const data = result.data.user.oauth2Sessions;
-    return (
-      <BlockList>
-        <Title>List of OAuth 2.0 sessions:</Title>
-        <PaginationControls
-          onPrev={prevPage ? (): void => paginate(prevPage) : null}
-          onNext={nextPage ? (): void => paginate(nextPage) : null}
-          disabled={pending}
-        />
-        {data.edges.map((n) => (
-          <OAuth2Session key={n.cursor} session={n.node} />
-        ))}
-      </BlockList>
-    );
-  } else {
-    return <>Failed to load OAuth 2.0 session list</>;
-  }
+  return (
+    <BlockList>
+      <Title>List of OAuth 2.0 sessions:</Title>
+      <PaginationControls
+        onPrev={prevPage ? (): void => paginate(prevPage) : null}
+        onNext={nextPage ? (): void => paginate(nextPage) : null}
+        disabled={pending}
+      />
+      {oauth2Sessions.edges.map((n) => (
+        <OAuth2Session key={n.cursor} session={n.node} />
+      ))}
+    </BlockList>
+  );
 };
 
 export default OAuth2SessionList;

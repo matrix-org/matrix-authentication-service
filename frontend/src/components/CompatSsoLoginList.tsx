@@ -17,6 +17,7 @@ import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
 import { useTransition } from "react";
 
+import { mapQueryAtom } from "../atoms";
 import { graphql } from "../gql";
 import { PageInfo } from "../gql/graphql";
 import {
@@ -24,9 +25,11 @@ import {
   atomWithPagination,
   Pagination,
 } from "../pagination";
+import { isErr, isOk, unwrapErr, unwrapOk } from "../result";
 
 import BlockList from "./BlockList";
 import CompatSsoLogin from "./CompatSsoLogin";
+import GraphQLError from "./GraphQLError";
 import PaginationControls from "./PaginationControls";
 import { Title } from "./Typography";
 
@@ -67,10 +70,15 @@ const QUERY = graphql(/* GraphQL */ `
 const currentPaginationAtom = atomForCurrentPagination();
 
 const compatSsoLoginListFamily = atomFamily((userId: string) => {
-  const compatSsoLoginList = atomWithQuery({
+  const compatSsoLoginListQuery = atomWithQuery({
     query: QUERY,
     getVariables: (get) => ({ userId, ...get(currentPaginationAtom) }),
   });
+
+  const compatSsoLoginList = mapQueryAtom(
+    compatSsoLoginListQuery,
+    (data) => data.user?.compatSsoLogins || null
+  );
 
   return compatSsoLoginList;
 });
@@ -78,7 +86,7 @@ const compatSsoLoginListFamily = atomFamily((userId: string) => {
 const pageInfoFamily = atomFamily((userId: string) => {
   const pageInfoAtom = atom(async (get): Promise<PageInfo | null> => {
     const result = await get(compatSsoLoginListFamily(userId));
-    return result.data?.user?.compatSsoLogins?.pageInfo ?? null;
+    return (isOk(result) && unwrapOk(result)?.pageInfo) || null;
   });
 
   return pageInfoAtom;
@@ -98,30 +106,30 @@ const CompatSsoLoginList: React.FC<{ userId: string }> = ({ userId }) => {
   const setPagination = useSetAtom(currentPaginationAtom);
   const [prevPage, nextPage] = useAtomValue(paginationFamily(userId));
 
+  if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
+  const compatSsoLoginList = unwrapOk(result);
+  if (compatSsoLoginList === null)
+    return <>Failed to load list of compatibility sessions.</>;
+
   const paginate = (pagination: Pagination): void => {
     startTransition(() => {
       setPagination(pagination);
     });
   };
 
-  if (result.data?.user?.compatSsoLogins) {
-    const data = result.data.user.compatSsoLogins;
-    return (
-      <BlockList>
-        <Title>List of compatibility sessions:</Title>
-        <PaginationControls
-          onPrev={prevPage ? (): void => paginate(prevPage) : null}
-          onNext={nextPage ? (): void => paginate(nextPage) : null}
-          disabled={pending}
-        />
-        {data.edges.map((n) => (
-          <CompatSsoLogin login={n.node} key={n.node.id} />
-        ))}
-      </BlockList>
-    );
-  }
-
-  return <>Failed to load list of compatibility sessions.</>;
+  return (
+    <BlockList>
+      <Title>List of compatibility sessions:</Title>
+      <PaginationControls
+        onPrev={prevPage ? (): void => paginate(prevPage) : null}
+        onNext={nextPage ? (): void => paginate(nextPage) : null}
+        disabled={pending}
+      />
+      {compatSsoLoginList.edges.map((n) => (
+        <CompatSsoLogin login={n.node} key={n.node.id} />
+      ))}
+    </BlockList>
+  );
 };
 
 export default CompatSsoLoginList;

@@ -184,6 +184,28 @@ export type CreationEvent = {
   createdAt: Scalars["DateTime"]["output"];
 };
 
+/** The input of the `endBrowserSession` mutation. */
+export type EndBrowserSessionInput = {
+  /** The ID of the session to end. */
+  browserSessionId: Scalars["ID"]["input"];
+};
+
+export type EndBrowserSessionPayload = {
+  __typename?: "EndBrowserSessionPayload";
+  /** Returns the ended session. */
+  browserSession?: Maybe<BrowserSession>;
+  /** The status of the mutation. */
+  status: EndBrowserSessionStatus;
+};
+
+/** The status of the `endBrowserSession` mutation. */
+export enum EndBrowserSessionStatus {
+  /** The session was ended. */
+  Ended = "ENDED",
+  /** The session was not found. */
+  NotFound = "NOT_FOUND",
+}
+
 /** The input of the `endCompatSession` mutation. */
 export type EndCompatSessionInput = {
   /** The ID of the session to end. */
@@ -243,6 +265,7 @@ export type Mutation = {
   __typename?: "Mutation";
   /** Add an email address to the specified user */
   addEmail: AddEmailPayload;
+  endBrowserSession: EndBrowserSessionPayload;
   endCompatSession: EndCompatSessionPayload;
   endOauth2Session: EndOAuth2SessionPayload;
   /** Remove an email address */
@@ -258,6 +281,11 @@ export type Mutation = {
 /** The mutations root of the GraphQL interface. */
 export type MutationAddEmailArgs = {
   input: AddEmailInput;
+};
+
+/** The mutations root of the GraphQL interface. */
+export type MutationEndBrowserSessionArgs = {
+  input: EndBrowserSessionInput;
 };
 
 /** The mutations root of the GraphQL interface. */
@@ -777,6 +805,25 @@ export type BrowserSession_SessionFragment = {
   } | null;
 } & { " $fragmentName"?: "BrowserSession_SessionFragment" };
 
+export type EndBrowserSessionMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type EndBrowserSessionMutation = {
+  __typename?: "Mutation";
+  endBrowserSession: {
+    __typename?: "EndBrowserSessionPayload";
+    status: EndBrowserSessionStatus;
+    browserSession?:
+      | ({ __typename?: "BrowserSession"; id: string } & {
+          " $fragmentRefs"?: {
+            BrowserSession_SessionFragment: BrowserSession_SessionFragment;
+          };
+        })
+      | null;
+  };
+};
+
 export type BrowserSessionListQueryVariables = Exact<{
   userId: Scalars["ID"]["input"];
   first?: InputMaybe<Scalars["Int"]["input"]>;
@@ -908,11 +955,11 @@ export type OAuth2Session_SessionFragment = {
   };
 } & { " $fragmentName"?: "OAuth2Session_SessionFragment" };
 
-export type EndSessionMutationVariables = Exact<{
+export type EndOAuth2SessionMutationVariables = Exact<{
   id: Scalars["ID"]["input"];
 }>;
 
-export type EndSessionMutation = {
+export type EndOAuth2SessionMutation = {
   __typename?: "Mutation";
   endOauth2Session: {
     __typename?: "EndOAuth2SessionPayload";
@@ -1532,6 +1579,103 @@ export const AddEmailDocument = {
     },
   ],
 } as unknown as DocumentNode<AddEmailMutation, AddEmailMutationVariables>;
+export const EndBrowserSessionDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "EndBrowserSession" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "endBrowserSession" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: {
+                  kind: "ObjectValue",
+                  fields: [
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "browserSessionId" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "id" },
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "status" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "browserSession" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                      {
+                        kind: "FragmentSpread",
+                        name: { kind: "Name", value: "BrowserSession_session" },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "BrowserSession_session" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "BrowserSession" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "lastAuthentication" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  EndBrowserSessionMutation,
+  EndBrowserSessionMutationVariables
+>;
 export const BrowserSessionListDocument = {
   kind: "Document",
   definitions: [
@@ -2054,13 +2198,13 @@ export const CompatSsoLoginListDocument = {
   CompatSsoLoginListQuery,
   CompatSsoLoginListQueryVariables
 >;
-export const EndSessionDocument = {
+export const EndOAuth2SessionDocument = {
   kind: "Document",
   definitions: [
     {
       kind: "OperationDefinition",
       operation: "mutation",
-      name: { kind: "Name", value: "EndSession" },
+      name: { kind: "Name", value: "EndOAuth2Session" },
       variableDefinitions: [
         {
           kind: "VariableDefinition",
@@ -2151,7 +2295,10 @@ export const EndSessionDocument = {
       },
     },
   ],
-} as unknown as DocumentNode<EndSessionMutation, EndSessionMutationVariables>;
+} as unknown as DocumentNode<
+  EndOAuth2SessionMutation,
+  EndOAuth2SessionMutationVariables
+>;
 export const OAuth2SessionListQueryDocument = {
   kind: "Document",
   definitions: [

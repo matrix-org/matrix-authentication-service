@@ -224,6 +224,41 @@ The input/output is a string in RFC3339 format.
 scalar DateTime
 
 """
+The input of the `endBrowserSession` mutation.
+"""
+input EndBrowserSessionInput {
+  """
+  The ID of the session to end.
+  """
+  browserSessionId: ID!
+}
+
+type EndBrowserSessionPayload {
+  """
+  The status of the mutation.
+  """
+  status: EndBrowserSessionStatus!
+  """
+  Returns the ended session.
+  """
+  browserSession: BrowserSession
+}
+
+"""
+The status of the `endBrowserSession` mutation.
+"""
+enum EndBrowserSessionStatus {
+  """
+  The session was ended.
+  """
+  ENDED
+  """
+  The session was not found.
+  """
+  NOT_FOUND
+}
+
+"""
 The input of the `endCompatSession` mutation.
 """
 input EndCompatSessionInput {
@@ -336,6 +371,7 @@ type Mutation {
   setPrimaryEmail(input: SetPrimaryEmailInput!): SetPrimaryEmailPayload!
   endOauth2Session(input: EndOAuth2SessionInput!): EndOAuth2SessionPayload!
   endCompatSession(input: EndCompatSessionInput!): EndCompatSessionPayload!
+  endBrowserSession(input: EndBrowserSessionInput!): EndBrowserSessionPayload!
 }
 
 """

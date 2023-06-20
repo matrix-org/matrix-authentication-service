@@ -16,8 +16,9 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import codegen from "vite-plugin-graphql-codegen";
+import svgr from "vite-plugin-svgr";
 
-export default defineConfig({
+export default defineConfig((env) => ({
   base: "/app/",
   build: {
     manifest: true,
@@ -29,9 +30,48 @@ export default defineConfig({
     react({
       babel: {
         plugins: [
-          "jotai/babel/plugin-react-refresh",
-          "jotai/babel/plugin-debug-label",
+          [
+            "jotai/babel/plugin-react-refresh",
+            {
+              customAtomNames: [
+                "mapQueryAtom",
+                "atomWithPagination",
+                "atomWithCurrentPagination",
+              ],
+            },
+          ],
+          [
+            "jotai/babel/plugin-debug-label",
+            {
+              customAtomNames: [
+                "mapQueryAtom",
+                "atomWithPagination",
+                "atomWithCurrentPagination",
+              ],
+            },
+          ],
         ],
+      },
+    }),
+
+    svgr({
+      exportAsDefault: true,
+
+      esbuildOptions: {
+        // This makes sure we're using the same JSX runtime as React itself
+        jsx: "automatic",
+        jsxDev: env.mode === "development",
+      },
+
+      svgrOptions: {
+        // Using 1em in order to make SVG size inherits from text size.
+        icon: "1em",
+
+        svgProps: {
+          // Adding a class in case we want to add global overrides, but one
+          // should probably stick to using CSS modules most of the time
+          className: "cpd-icon",
+        },
       },
     }),
   ],
@@ -50,4 +90,4 @@ export default defineConfig({
       all: true,
     },
   },
-});
+}));

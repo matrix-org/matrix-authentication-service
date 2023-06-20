@@ -17,7 +17,7 @@ import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
 import { useTransition } from "react";
 
-import { currentBrowserSessionIdAtom } from "../atoms";
+import { currentBrowserSessionIdAtom, mapQueryAtom } from "../atoms";
 import { graphql } from "../gql";
 import { PageInfo } from "../gql/graphql";
 import {
@@ -25,9 +25,11 @@ import {
   atomWithPagination,
   Pagination,
 } from "../pagination";
+import { isErr, isOk, unwrapErr, unwrapOk } from "../result";
 
 import BlockList from "./BlockList";
 import BrowserSession from "./BrowserSession";
+import GraphQLError from "./GraphQLError";
 import PaginationControls from "./PaginationControls";
 import { Title } from "./Typography";
 
@@ -69,17 +71,23 @@ const QUERY = graphql(/* GraphQL */ `
 const currentPaginationAtom = atomForCurrentPagination();
 
 const browserSessionListFamily = atomFamily((userId: string) => {
-  const browserSessionList = atomWithQuery({
+  const browserSessionListQuery = atomWithQuery({
     query: QUERY,
     getVariables: (get) => ({ userId, ...get(currentPaginationAtom) }),
   });
+
+  const browserSessionList = mapQueryAtom(
+    browserSessionListQuery,
+    (data) => data.user?.browserSessions || null
+  );
+
   return browserSessionList;
 });
 
 const pageInfoFamily = atomFamily((userId: string) => {
   const pageInfoAtom = atom(async (get): Promise<PageInfo | null> => {
     const result = await get(browserSessionListFamily(userId));
-    return result.data?.user?.browserSessions?.pageInfo ?? null;
+    return (isOk(result) && unwrapOk(result)?.pageInfo) || null;
   });
   return pageInfoAtom;
 });
@@ -94,11 +102,19 @@ const paginationFamily = atomFamily((userId: string) => {
 });
 
 const BrowserSessionList: React.FC<{ userId: string }> = ({ userId }) => {
-  const currentSessionId = useAtomValue(currentBrowserSessionIdAtom);
+  const currentSessionIdResult = useAtomValue(currentBrowserSessionIdAtom);
   const [pending, startTransition] = useTransition();
   const result = useAtomValue(browserSessionListFamily(userId));
   const setPagination = useSetAtom(currentPaginationAtom);
   const [prevPage, nextPage] = useAtomValue(paginationFamily(userId));
+
+  if (isErr(currentSessionIdResult))
+    return <GraphQLError error={unwrapErr(currentSessionIdResult)} />;
+  if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
+
+  const browserSessions = unwrapOk(result);
+  if (browserSessions === null) return <>Failed to load browser sessions</>;
+  const currentSessionId = unwrapOk(currentSessionIdResult);
 
   const paginate = (pagination: Pagination): void => {
     startTransition(() => {
@@ -106,28 +122,23 @@ const BrowserSessionList: React.FC<{ userId: string }> = ({ userId }) => {
     });
   };
 
-  if (result.data?.user?.browserSessions) {
-    const data = result.data.user.browserSessions;
-    return (
-      <BlockList>
-        <Title>List of browser sessions:</Title>
-        <PaginationControls
-          onPrev={prevPage ? (): void => paginate(prevPage) : null}
-          onNext={nextPage ? (): void => paginate(nextPage) : null}
-          disabled={pending}
+  return (
+    <BlockList>
+      <Title>List of browser sessions:</Title>
+      <PaginationControls
+        onPrev={prevPage ? (): void => paginate(prevPage) : null}
+        onNext={nextPage ? (): void => paginate(nextPage) : null}
+        disabled={pending}
+      />
+      {browserSessions.edges.map((n) => (
+        <BrowserSession
+          key={n.cursor}
+          session={n.node}
+          isCurrent={n.node.id === currentSessionId}
         />
-        {data.edges.map((n) => (
-          <BrowserSession
-            key={n.cursor}
-            session={n.node}
-            isCurrent={n.node.id === currentSessionId}
-          />
-        ))}
-      </BlockList>
-    );
-  }
-
-  return <>Failed to load browser sessions</>;
+      ))}
+    </BlockList>
+  );
 };
 
 export default BrowserSessionList;
