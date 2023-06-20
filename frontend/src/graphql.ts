@@ -27,6 +27,10 @@ import schema from "./gql/schema";
 
 const cache = cacheExchange({
   schema,
+  keys: {
+    // This is embedded in the `User` entity and has no ID
+    MatrixUser: () => null,
+  },
   updates: {
     Mutation: {
       addEmail: (result, args: MutationAddEmailArgs, cache, _info) => {
