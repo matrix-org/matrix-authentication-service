@@ -28,7 +28,7 @@ jobs:
           rustup default stable
 
       - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2.4.0
+        uses: Swatinem/rust-cache@v2.5.0
 
       - name: Setup mdBook
         uses: peaceiris/actions-mdbook@v1.2.0

@@ -131,7 +131,7 @@ jobs:
           rustup default stable
 
       - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2.4.0
+        uses: Swatinem/rust-cache@v2.5.0
 
       - name: Install Node
         uses: actions/setup-node@v3.6.0
@@ -192,7 +192,7 @@ jobs:
         run: make
 
       - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2.4.0
+        uses: Swatinem/rust-cache@v2.5.0
 
       - name: Run clippy
         run: |
@@ -249,7 +249,7 @@ jobs:
         run: make
 
       - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2.4.0
+        uses: Swatinem/rust-cache@v2.5.0
 
       - name: Test
         id: test
