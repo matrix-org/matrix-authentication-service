@@ -11,7 +11,7 @@ anyhow = "1.0.71"
 atty = "0.2.14"
 axum = "0.6.18"
 camino = "1.1.4"
-clap = { version = "4.3.3", features = ["derive"] }
+clap = { version = "4.3.4", features = ["derive"] }
 dotenv = "0.15.0"
 httpdate = "1.0.2"
 hyper = { version = "0.14.26", features = ["full"] }
@@ -20,12 +20,12 @@ listenfd = "1.0.1"
 rand = "0.8.5"
 rand_chacha = "0.3.1"
 rustls = "0.21.2"
-serde_json = "1.0.96"
+serde_json = "1.0.97"
 serde_yaml = "0.9.21"
 sqlx = { version = "0.6.3", features = ["runtime-tokio-rustls", "postgres"] }
 tokio = { version = "1.28.2", features = ["full"] }
 tower = { version = "0.4.13", features = ["full"] }
-tower-http = { version = "0.4.0", features = ["fs", "compression-full"] }
+tower-http = { version = "0.4.1", features = ["fs", "compression-full"] }
 url = "2.4.0"
 watchman_client = "0.8.0"
 zeroize = "1.6.0"
@@ -42,9 +42,9 @@ opentelemetry-zipkin = { version = "0.17.0", features = ["opentelemetry-http"], 
 opentelemetry-http = { version = "0.8.0", features = ["tokio", "hyper"], optional = true }
 opentelemetry-prometheus = { version = "0.12.0", optional = true }
 prometheus = { version = "0.13.3", optional = true }
-sentry = { version = "0.31.3", default-features = false, features = ["backtrace", "contexts", "panic", "tower"] }
-sentry-tracing = "0.31.3"
-sentry-tower = { version = "0.31.3", features = ["http"] }
+sentry = { version = "0.31.5", default-features = false, features = ["backtrace", "contexts", "panic", "tower"] }
+sentry-tracing = "0.31.5"
+sentry-tower = { version = "0.31.5", features = ["http"] }
 
 mas-config = { path = "../config" }
 mas-data-model = { path = "../data-model" }
