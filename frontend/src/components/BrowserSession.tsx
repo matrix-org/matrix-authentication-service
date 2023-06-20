@@ -76,7 +76,7 @@ const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
 
   const createdAt = data.createdAt;
 
-  const onSessionEnd = () => {
+  const onSessionEnd = (): void => {
     startTransition(() => {
       endSession().then(() => {
         if (isCurrent) {
