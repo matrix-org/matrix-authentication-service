@@ -16,12 +16,12 @@ tracing = "0.1.37"
 # Error management
 thiserror = "1.0.40"
 anyhow = "1.0.71"
-sentry = { version = "0.31.3", default-features = false }
+sentry = { version = "0.31.5", default-features = false }
 
 # Web server
 hyper = { version = "0.14.26", features = ["full"] }
 tower = "0.4.13"
-tower-http = { version = "0.4.0", features = ["cors"] }
+tower-http = { version = "0.4.1", features = ["cors"] }
 axum = "0.6.18"
 axum-macros = "0.3.7"
 axum-extra = { version = "0.7.4", features = ["cookie-private"] }
@@ -37,7 +37,7 @@ sqlx = { version = "0.6.3", features = ["runtime-tokio-rustls", "postgres"] }
 # Various structure (de)serialization
 serde = { version = "1.0.164", features = ["derive"] }
 serde_with = { version = "3.0.0", features = ["hex", "chrono"] }
-serde_json = "1.0.96"
+serde_json = "1.0.97"
 serde_urlencoded = "0.7.1"
 
 # Password hashing

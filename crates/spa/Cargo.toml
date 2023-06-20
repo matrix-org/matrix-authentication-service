@@ -7,13 +7,13 @@ license = "Apache-2.0"
 
 [dependencies]
 serde = { version = "1.0.164", features = ["derive"] }
-serde_json = "1.0.96"
+serde_json = "1.0.97"
 thiserror = "1.0.40"
 camino = { version = "1.1.4", features = ["serde1"] }
 headers = "0.3.8"
 http = "0.2.9"
 tower-service = "0.3.2"
-tower-http = { version = "0.4.0", features = ["fs"] }
+tower-http = { version = "0.4.1", features = ["fs"] }
 tokio = { version = "1.28.2", features = ["fs"] }
 
 [[bin]]
