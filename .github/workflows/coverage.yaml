@@ -1,0 +1,144 @@
+name: Coverage
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+
+jobs:
+  opa:
+    name: Run OPA test suite with coverage
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v3.5.3
+
+      - name: Setup OPA
+        uses: open-policy-agent/setup-opa@v2.1.0
+        with:
+          version: 0.53.1
+
+      - name: Run OPA tests with coverage
+        working-directory: ./policies
+        run: make coverage
+
+      - name: Upload to codecov.io
+        uses: codecov/codecov-action@v3.1.4
+        with:
+          files: policies/coverage.json
+          flags: policies
+
+  frontend:
+    name: Run frontend test suite with coverage
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v3.5.3
+
+      - name: Install Node
+        uses: actions/setup-node@v3.6.0
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Node dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Test
+        working-directory: ./frontend
+        run: npm run coverage
+
+      - name: Upload to codecov.io
+        uses: codecov/codecov-action@v3.1.4
+        with:
+          directory: frontend/coverage/
+          flags: frontend
+
+  rust:
+    name: Run Rust test suite with coverage
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    services:
+      postgres:
+        image: docker.io/library/postgres:15.1
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - "5432:5432"
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v3.5.3
+
+      - name: Install toolchain
+        run: |
+          rustup toolchain install stable
+          rustup default stable
+          rustup component add llvm-tools-preview
+
+      - name: Setup OPA
+        uses: open-policy-agent/setup-opa@v2.1.0
+        with:
+          version: 0.53.1
+
+      - name: Compile OPA policies
+        working-directory: ./policies
+        run: make
+
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2.4.0
+
+      - name: Download grcov
+        run: |
+          mkdir -p "${HOME}/.local/bin"
+          curl -sL https://github.com/mozilla/grcov/releases/download/v0.8.18/grcov-x86_64-unknown-linux-gnu.tar.bz2 | tar jxf - -C "${HOME}/.local/bin"
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Run test suite with profiling enabled
+        run: |
+          cargo test --no-fail-fast --workspace
+        env:
+          RUSTFLAGS: '-Cinstrument-coverage'
+          LLVM_PROFILE_FILE: "cargo-test-%p-%m.profraw"
+          DATABASE_URL: postgresql://postgres:postgres@localhost/postgres
+          SQLX_OFFLINE: '1'
+
+      - name: Build grcov report
+        run: |
+          mkdir -p target/coverage
+          grcov . --binary-path ./target/debug/deps/ -s . -t lcov --branch --ignore-not-existing --ignore '../*' --ignore "/*" -o target/coverage/tests.lcov
+
+      - name: Upload to codecov.io
+        uses: codecov/codecov-action@v3.1.4
+        with:
+          files: target/coverage/*.lcov
+          flags: unit
