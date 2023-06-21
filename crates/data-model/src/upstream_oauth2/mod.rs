@@ -18,6 +18,9 @@ mod session;
 
 pub use self::{
     link::UpstreamOAuthLink,
-    provider::UpstreamOAuthProvider,
+    provider::{
+        ClaimsImports as UpstreamOAuthProviderClaimsImports,
+        ImportPreference as UpstreamOAuthProviderImportPreference, UpstreamOAuthProvider,
+    },
     session::{UpstreamOAuthAuthorizationSession, UpstreamOAuthAuthorizationSessionState},
 };

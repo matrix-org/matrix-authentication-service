@@ -47,7 +47,8 @@ pub use self::{
     },
     upstream_oauth2::{
         UpstreamOAuthAuthorizationSession, UpstreamOAuthAuthorizationSessionState,
-        UpstreamOAuthLink, UpstreamOAuthProvider,
+        UpstreamOAuthLink, UpstreamOAuthProvider, UpstreamOAuthProviderClaimsImports,
+        UpstreamOAuthProviderImportPreference,
     },
     users::{
         Authentication, BrowserSession, Password, User, UserEmail, UserEmailVerification,

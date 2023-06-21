@@ -14,12 +14,12 @@
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use mas_data_model::UpstreamOAuthProvider;
+use mas_data_model::{UpstreamOAuthProvider, UpstreamOAuthProviderClaimsImports};
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
 use mas_storage::{upstream_oauth2::UpstreamOAuthProviderRepository, Clock, Page, Pagination};
 use oauth2_types::scope::Scope;
 use rand::RngCore;
-use sqlx::{PgConnection, QueryBuilder};
+use sqlx::{types::Json, PgConnection, QueryBuilder};
 use ulid::Ulid;
 use uuid::Uuid;
 
@@ -52,6 +52,7 @@ struct ProviderLookup {
     token_endpoint_signing_alg: Option<String>,
     token_endpoint_auth_method: String,
     created_at: DateTime<Utc>,
+    claims_imports: Json<UpstreamOAuthProviderClaimsImports>,
 }
 
 impl TryFrom<ProviderLookup> for UpstreamOAuthProvider {
@@ -90,6 +91,7 @@ impl TryFrom<ProviderLookup> for UpstreamOAuthProvider {
             token_endpoint_auth_method,
             token_endpoint_signing_alg,
             created_at: value.created_at,
+            claims_imports: value.claims_imports.0,
         })
     }
 }
@@ -119,7 +121,8 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
                     encrypted_client_secret,
                     token_endpoint_signing_alg,
                     token_endpoint_auth_method,
-                    created_at
+                    created_at,
+                    claims_imports as "claims_imports: Json<UpstreamOAuthProviderClaimsImports>"
                 FROM upstream_oauth_providers
                 WHERE upstream_oauth_provider_id = $1
             "#,
@@ -165,6 +168,8 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
         let id = Ulid::from_datetime_with_source(created_at.into(), rng);
         tracing::Span::current().record("upstream_oauth_provider.id", tracing::field::display(id));
 
+        let claims_imports = UpstreamOAuthProviderClaimsImports::default();
+
         sqlx::query!(
             r#"
             INSERT INTO upstream_oauth_providers (
@@ -175,8 +180,9 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
                 token_endpoint_signing_alg,
                 client_id,
                 encrypted_client_secret,
-                created_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                created_at,
+                claims_imports
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         "#,
             Uuid::from(id),
             &issuer,
@@ -186,6 +192,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
             &client_id,
             encrypted_client_secret.as_deref(),
             created_at,
+            Json(&claims_imports) as _,
         )
         .traced()
         .execute(&mut *self.conn)
@@ -200,6 +207,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
             token_endpoint_signing_alg,
             token_endpoint_auth_method,
             created_at,
+            claims_imports,
         })
     }
 
@@ -225,7 +233,8 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
                     encrypted_client_secret,
                     token_endpoint_signing_alg,
                     token_endpoint_auth_method,
-                    created_at
+                    created_at,
+                    claims_imports
                 FROM upstream_oauth_providers
                 WHERE 1 = 1
             "#,
@@ -263,7 +272,8 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
                     encrypted_client_secret,
                     token_endpoint_signing_alg,
                     token_endpoint_auth_method,
-                    created_at
+                    created_at,
+                    claims_imports as "claims_imports: Json<UpstreamOAuthProviderClaimsImports>"
                 FROM upstream_oauth_providers
             "#,
         )
