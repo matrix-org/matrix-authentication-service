@@ -21,7 +21,11 @@ limitations under the License.
     <div class="grid grid-cols-1 gap-6 w-96">
       <form method="POST" class="grid grid-cols-1 gap-6">
         <h1 class="rounded-lg bg-grey-25 dark:bg-grey-450 p-2 text-center font-medium text-lg">
-          Choose your username
+          {% if force_localpart %}
+            Create a new account
+          {% else %}
+            Choose your username
+          {% endif %}
         </h1>
 
         <input type="hidden" name="csrf" value="{{ csrf_token }}" />
@@ -34,7 +38,7 @@ limitations under the License.
               {% if force_email %}
                 Will import the following email address
               {% else %}
-                <input type="checkbox" name="import_email" id="import_email" value="1" checked="checked" />
+                <input type="checkbox" name="import_email" id="import_email" checked="checked" />
                 <label for="import_email">Import email address</label>
               {% endif %}
             </div>
@@ -48,7 +52,7 @@ limitations under the License.
               {% if force_display_name %}
                 Will import the following display name
               {% else %}
-              <input type="checkbox" name="import_display_name" id="import_display_name" value="1" checked="checked" />
+              <input type="checkbox" name="import_display_name" id="import_display_name" checked="checked" />
               <label for="import_display_name">Import display name</label>
               {% endif %}
             </div>
