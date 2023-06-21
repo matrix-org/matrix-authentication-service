@@ -69,7 +69,12 @@ async fn provision_user(
 
     repo.cancel().await?;
 
-    let request = ProvisionRequest::new(mxid.clone(), user.sub.clone()).set_emails(emails);
+    let mut request = ProvisionRequest::new(mxid.clone(), user.sub.clone()).set_emails(emails);
+
+    if let Some(display_name) = job.display_name_to_set() {
+        request = request.set_displayname(display_name.to_owned());
+    }
+
     let created = matrix.provision_user(&request).await?;
 
     if created {

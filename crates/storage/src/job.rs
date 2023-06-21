@@ -256,13 +256,30 @@ mod jobs {
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct ProvisionUserJob {
         user_id: Ulid,
+        set_display_name: Option<String>,
     }
 
     impl ProvisionUserJob {
         /// Create a new job to provision the user on the homeserver.
         #[must_use]
         pub fn new(user: &User) -> Self {
-            Self { user_id: user.id }
+            Self {
+                user_id: user.id,
+                set_display_name: None,
+            }
+        }
+
+        /// Set the display name of the user.
+        #[must_use]
+        pub fn set_display_name(mut self, display_name: String) -> Self {
+            self.set_display_name = Some(display_name);
+            self
+        }
+
+        /// Get the display name to be set.
+        #[must_use]
+        pub fn display_name_to_set(&self) -> Option<&str> {
+            self.set_display_name.as_deref()
         }
 
         /// The ID of the user to provision.

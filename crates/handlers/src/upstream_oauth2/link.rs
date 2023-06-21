@@ -29,7 +29,7 @@ use mas_keystore::Encrypter;
 use mas_storage::{
     job::{JobRepositoryExt, ProvisionUserJob},
     upstream_oauth2::{UpstreamOAuthLinkRepository, UpstreamOAuthSessionRepository},
-    user::{BrowserSessionRepository, UserRepository},
+    user::{BrowserSessionRepository, UserEmailRepository, UserRepository},
     BoxClock, BoxRepository, BoxRng, RepositoryAccess,
 };
 use mas_templates::{
@@ -100,6 +100,8 @@ impl IntoResponse for RouteError {
 struct StandardClaims {
     name: Option<String>,
     email: Option<String>,
+    #[serde(default)]
+    email_verified: bool,
     preferred_username: Option<String>,
 }
 
@@ -144,7 +146,13 @@ fn import_claim(
 #[derive(Deserialize)]
 #[serde(rename_all = "lowercase", tag = "action")]
 pub(crate) enum FormData {
-    Register { username: String },
+    Register {
+        username: String,
+        #[serde(default)]
+        import_email: Option<String>,
+        #[serde(default)]
+        import_display_name: Option<String>,
+    },
     Link,
     Login,
 }
@@ -298,7 +306,7 @@ pub(crate) async fn get(
             )?;
 
             import_claim(
-                "username",
+                "preferred_username",
                 payload.preferred_username,
                 &provider.claims_imports.localpart,
                 |value, force| {
@@ -384,12 +392,102 @@ pub(crate) async fn post(
             repo.browser_session().add(&mut rng, &clock, &user).await?
         }
 
-        (None, None, FormData::Register { username }) => {
+        (
+            None,
+            None,
+            FormData::Register {
+                username,
+                import_email,
+                import_display_name,
+            },
+        ) => {
+            // Those fields are Some("on") if the checkbox is checked
+            let import_email = import_email.is_some();
+            let import_display_name = import_display_name.is_some();
+
+            let id_token = upstream_session
+                .id_token()
+                .map(Jwt::<'_, StandardClaims>::try_from)
+                .transpose()?;
+
+            let provider = repo
+                .upstream_oauth_provider()
+                .lookup(link.provider_id)
+                .await?
+                .ok_or(RouteError::ProviderNotFound)?;
+
+            let payload = id_token
+                .map(|id_token| id_token.into_parts().1)
+                .unwrap_or_default();
+
+            // Let's try to import the claims from the ID token
+
+            let mut name = None;
+            import_claim(
+                "name",
+                payload.name,
+                &provider.claims_imports.displayname,
+                |value, force| {
+                    // Import the display name if it is either forced or the user has requested it
+                    if force || import_display_name {
+                        name = Some(value);
+                    }
+                },
+            )?;
+
+            let mut email = None;
+            import_claim(
+                "email",
+                payload.email,
+                &provider.claims_imports.email,
+                |value, force| {
+                    // Import the email if it is either forced or the user has requested it
+                    if force || import_email {
+                        email = Some(value);
+                    }
+                },
+            )?;
+
+            let mut username = username;
+            import_claim(
+                "preferred_username",
+                payload.preferred_username,
+                &provider.claims_imports.localpart,
+                |value, force| {
+                    // If the username is forced, override whatever was in the form
+                    if force {
+                        username = value;
+                    }
+                },
+            )?;
+
+            // Now we can create the user
             let user = repo.user().add(&mut rng, &clock, username).await?;
 
-            repo.job()
-                .schedule_job(ProvisionUserJob::new(&user))
-                .await?;
+            // And schedule the job to provision it
+            let mut job = ProvisionUserJob::new(&user);
+
+            // If we have a display name, set it during provisioning
+            if let Some(name) = name {
+                job = job.set_display_name(name);
+            }
+
+            repo.job().schedule_job(job).await?;
+
+            // If we have an email, add it to the user
+            if let Some(email) = email {
+                let user_email = repo
+                    .user_email()
+                    .add(&mut rng, &clock, &user, email)
+                    .await?;
+
+                // Mark the email as verified if the upstream provider says it is.
+                if payload.email_verified {
+                    repo.user_email()
+                        .mark_as_verified(&clock, user_email)
+                        .await?;
+                }
+            }
 
             repo.upstream_oauth_link()
                 .associate_to_user(&link, &user)
