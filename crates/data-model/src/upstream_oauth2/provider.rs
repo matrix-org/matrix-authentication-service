@@ -15,7 +15,7 @@
 use chrono::{DateTime, Utc};
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
 use oauth2_types::scope::Scope;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use ulid::Ulid;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -28,4 +28,62 @@ pub struct UpstreamOAuthProvider {
     pub token_endpoint_signing_alg: Option<JsonWebSignatureAlg>,
     pub token_endpoint_auth_method: OAuthClientAuthenticationMethod,
     pub created_at: DateTime<Utc>,
+    pub claims_imports: ClaimsImports,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct ClaimsImports {
+    #[serde(default)]
+    pub localpart: ImportPreference,
+
+    #[serde(default)]
+    pub displayname: ImportPreference,
+
+    #[serde(default)]
+    pub email: ImportPreference,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub struct ImportPreference {
+    #[serde(default)]
+    pub action: ImportAction,
+}
+
+impl std::ops::Deref for ImportPreference {
+    type Target = ImportAction;
+
+    fn deref(&self) -> &Self::Target {
+        &self.action
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum ImportAction {
+    /// Ignore the claim
+    #[default]
+    Ignore,
+
+    /// Suggest the claim value, but allow the user to change it
+    Suggest,
+
+    /// Force the claim value, but don't fail if it is missing
+    Force,
+
+    /// Force the claim value, and fail if it is missing
+    Require,
+}
+
+impl ImportAction {
+    pub fn is_forced(&self) -> bool {
+        matches!(self, Self::Force | Self::Require)
+    }
+
+    pub fn ignore(&self) -> bool {
+        matches!(self, Self::Ignore)
+    }
+
+    pub fn is_required(&self) -> bool {
+        matches!(self, Self::Require)
+    }
 }

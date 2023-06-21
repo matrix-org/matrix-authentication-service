@@ -856,6 +856,12 @@ impl TemplateContext for UpstreamSuggestLink {
 #[derive(Serialize)]
 pub struct UpstreamRegister {
     login_link: String,
+    suggested_localpart: Option<String>,
+    force_localpart: bool,
+    suggested_display_name: Option<String>,
+    force_display_name: bool,
+    suggested_email: Option<String>,
+    force_email: bool,
 }
 
 impl UpstreamRegister {
@@ -865,12 +871,38 @@ impl UpstreamRegister {
         Self::for_link_id(link.id)
     }
 
+    /// Set the suggested localpart
+    pub fn set_localpart(&mut self, localpart: String, force: bool) {
+        self.suggested_localpart = Some(localpart);
+        self.force_localpart = force;
+    }
+
+    /// Set the suggested display name
+    pub fn set_display_name(&mut self, display_name: String, force: bool) {
+        self.suggested_display_name = Some(display_name);
+        self.force_display_name = force;
+    }
+
+    /// Set the suggested email
+    pub fn set_email(&mut self, email: String, force: bool) {
+        self.suggested_email = Some(email);
+        self.force_email = force;
+    }
+
     fn for_link_id(id: Ulid) -> Self {
         let login_link = mas_router::Login::and_link_upstream(id)
             .relative_url()
             .into();
 
-        Self { login_link }
+        Self {
+            login_link,
+            suggested_localpart: None,
+            force_localpart: false,
+            suggested_display_name: None,
+            force_display_name: false,
+            suggested_email: None,
+            force_email: false,
+        }
     }
 }
 

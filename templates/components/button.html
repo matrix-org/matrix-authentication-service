@@ -50,14 +50,68 @@ limitations under the License.
   <a class="{{ self::outline_class() }} {{ class }}" href="{{ href }}">{{ text }}</a>
 {% endmacro %}
 
-{% macro button(text, name="", type="submit", class="", value="") %}
-  <button name="{{ name }}" value="{{ value }}" type="{{ type }}" class="{{ self::plain_class() }} {{ class }}">{{ text }}</button>
+{% macro button(
+  text,
+  name="",
+  type="submit",
+  class="",
+  value="",
+  disabled=False,
+  autocomplete=False,
+  autocorrect=False,
+  autocapitalize=False) %}
+  <button
+    name="{{ name }}"
+    value="{{ value }}"
+    type="{{ type }}"
+    {% if disabled %}disabled{% endif %}
+    class="{{ self::plain_class() }} {{ class }}"
+    {% if autocapitalize %}autocapitilize="{{ autocapitilize }}"{% endif %}
+    {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+    {% if autocorrect %}autocorrect="{{ autocorrect }}"{% endif %}
+  >{{ text }}</button>
 {% endmacro %}
 
-{% macro button_text(text, name="", type="submit", class="", value="") %}
-  <button name="{{ name }}" value="{{ value }}" type="{{ type }}" class="{{ self::text_class() }} {{ class }}">{{ text }}</button>
+{% macro button_text(
+  text,
+  name="",
+  type="submit",
+  class="",
+  value="",
+  disabled=False,
+  autocomplete=False,
+  autocorrect=False,
+  autocapitalize=False) %}
+  <button
+    name="{{ name }}"
+    value="{{ value }}"
+    type="{{ type }}"
+    {% if disabled %}disabled{% endif %}
+    class="{{ self::text_class() }} {{ class }}"
+    {% if autocapitalize %}autocapitilize="{{ autocapitilize }}"{% endif %}
+    {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+    {% if autocorrect %}autocorrect="{{ autocorrect }}"{% endif %}
+  >{{ text }}</button>
 {% endmacro %}
 
-{% macro button_outline(text, name="", type="submit", class="", value="") %}
-  <button name="{{ name }}" value="{{ value }}" type="{{ type }}" class="{{ self::outline_class() }} {{ class }}">{{ text }}</button>
+{% macro button_outline(
+  text,
+  name="",
+  type="submit",
+  class="",
+  value="",
+  disabled=False,
+  autocomplete=False,
+  autocorrect=False,
+  autocapitalize=False) %}
+  <button
+    name="{{ name }}"
+    value="{{ value }}"
+    type="{{ type }}"
+    {% if disabled %}disabled{% endif %}
+    {% if autocapitalize %}autocapitilize="{{ autocapitilize }}"{% endif %}
+    {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
+    {% if autocorrect %}autocorrect="{{ autocorrect }}"{% endif %}
+    class="{{ self::outline_class() }} {{ class }}"
+  >{{ text }}</button>
 {% endmacro %}

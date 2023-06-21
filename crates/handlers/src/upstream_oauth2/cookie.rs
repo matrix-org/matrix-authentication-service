@@ -143,7 +143,9 @@ impl UpstreamSessions {
     ) -> Result<(Ulid, Option<&PostAuthAction>), UpstreamSessionNotFound> {
         self.0
             .iter()
-            .find(|p| p.link == Some(link_id))
+            .filter(|p| p.link == Some(link_id))
+            // Find the session with the highest ID, aka. the most recent one
+            .reduce(|a, b| if a.session > b.session { a } else { b })
             .map(|p| (p.session, p.post_auth_action.as_ref()))
             .ok_or(UpstreamSessionNotFound)
     }
