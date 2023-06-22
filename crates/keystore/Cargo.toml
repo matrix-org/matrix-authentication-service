@@ -31,5 +31,5 @@ mas-iana = { path = "../iana" }
 mas-jose = { path = "../jose" }
 
 [dev-dependencies]
-insta = { version = "1.29.0", features = ["yaml"] }
+insta = { version = "1.30.0", features = ["yaml"] }
 rand_chacha = "0.3.1"
