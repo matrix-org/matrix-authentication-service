@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use async_trait::async_trait;
-use mas_data_model::UpstreamOAuthProvider;
+use mas_data_model::{UpstreamOAuthProvider, UpstreamOAuthProviderClaimsImports};
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
 use oauth2_types::scope::Scope;
 use rand_core::RngCore;
@@ -58,6 +58,8 @@ pub trait UpstreamOAuthProviderRepository: Send + Sync {
     /// * `client_id`: The client ID to use when authenticating to the upstream
     /// * `encrypted_client_secret`: The encrypted client secret to use when
     ///   authenticating to the upstream
+    /// * `claims_imports`: How claims should be imported from the upstream
+    ///   provider
     ///
     /// # Errors
     ///
@@ -73,6 +75,7 @@ pub trait UpstreamOAuthProviderRepository: Send + Sync {
         token_endpoint_signing_alg: Option<JsonWebSignatureAlg>,
         client_id: String,
         encrypted_client_secret: Option<String>,
+        claims_imports: UpstreamOAuthProviderClaimsImports,
     ) -> Result<UpstreamOAuthProvider, Self::Error>;
 
     /// Get a paginated list of upstream OAuth providers
@@ -109,7 +112,8 @@ repository_impl!(UpstreamOAuthProviderRepository:
         token_endpoint_auth_method: OAuthClientAuthenticationMethod,
         token_endpoint_signing_alg: Option<JsonWebSignatureAlg>,
         client_id: String,
-        encrypted_client_secret: Option<String>
+        encrypted_client_secret: Option<String>,
+        claims_imports: UpstreamOAuthProviderClaimsImports
     ) -> Result<UpstreamOAuthProvider, Self::Error>;
 
     async fn list_paginated(

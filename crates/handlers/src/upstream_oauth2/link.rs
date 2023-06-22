@@ -124,7 +124,7 @@ fn import_claim(
     name: &'static str,
     value: Option<String>,
     preference: &UpstreamOAuthProviderImportPreference,
-    mut run: impl FnMut(String, bool) -> (),
+    mut run: impl FnMut(String, bool),
 ) -> Result<(), RouteError> {
     // If this claim is ignored, we don't need to do anything.
     if preference.ignore() {

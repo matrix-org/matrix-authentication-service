@@ -27,6 +27,7 @@ pub use self::{
 #[cfg(test)]
 mod tests {
     use chrono::Duration;
+    use mas_data_model::UpstreamOAuthProviderClaimsImports;
     use mas_storage::{
         clock::MockClock,
         upstream_oauth2::{
@@ -64,6 +65,7 @@ mod tests {
                 None,
                 "client-id".to_owned(),
                 None,
+                UpstreamOAuthProviderClaimsImports::default(),
             )
             .await
             .unwrap();
@@ -207,6 +209,7 @@ mod tests {
                     None,
                     client_id,
                     None,
+                    UpstreamOAuthProviderClaimsImports::default(),
                 )
                 .await
                 .unwrap();

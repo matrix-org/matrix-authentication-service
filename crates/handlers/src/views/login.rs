@@ -284,6 +284,7 @@ mod test {
         header::{CONTENT_TYPE, LOCATION},
         Request, StatusCode,
     };
+    use mas_data_model::UpstreamOAuthProviderClaimsImports;
     use mas_iana::oauth::OAuthClientAuthenticationMethod;
     use mas_router::Route;
     use mas_storage::{upstream_oauth2::UpstreamOAuthProviderRepository, RepositoryAccess};
@@ -326,6 +327,7 @@ mod test {
                 None,
                 "first_client".into(),
                 None,
+                UpstreamOAuthProviderClaimsImports::default(),
             )
             .await
             .unwrap();
@@ -350,6 +352,7 @@ mod test {
                 None,
                 "second_client".into(),
                 None,
+                UpstreamOAuthProviderClaimsImports::default(),
             )
             .await
             .unwrap();

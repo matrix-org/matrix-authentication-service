@@ -20,6 +20,7 @@ pub use self::{
     link::UpstreamOAuthLink,
     provider::{
         ClaimsImports as UpstreamOAuthProviderClaimsImports,
+        ImportAction as UpstreamOAuthProviderImportAction,
         ImportPreference as UpstreamOAuthProviderImportPreference, UpstreamOAuthProvider,
     },
     session::{UpstreamOAuthAuthorizationSession, UpstreamOAuthAuthorizationSessionState},

@@ -15,7 +15,7 @@
 use anyhow::Context;
 use clap::{Parser, ValueEnum};
 use mas_config::{DatabaseConfig, PasswordsConfig, RootConfig};
-use mas_data_model::{Device, TokenType};
+use mas_data_model::{Device, TokenType, UpstreamOAuthProviderClaimsImports};
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
 use mas_router::UrlBuilder;
 use mas_storage::{
@@ -375,6 +375,7 @@ impl Options {
                         token_endpoint_signing_alg,
                         client_id.clone(),
                         encrypted_client_secret,
+                        UpstreamOAuthProviderClaimsImports::default(),
                     )
                     .await?;
 
