@@ -28,6 +28,7 @@ mod policy;
 mod secrets;
 mod telemetry;
 mod templates;
+mod upstream_oauth2;
 
 pub use self::{
     clients::{ClientAuthMethodConfig, ClientConfig, ClientsConfig},
@@ -47,6 +48,7 @@ pub use self::{
         TelemetryConfig, TracingConfig, TracingExporterConfig,
     },
     templates::TemplatesConfig,
+    upstream_oauth2::UpstreamOAuth2Config,
 };
 use crate::util::ConfigurationSection;
 
@@ -94,6 +96,10 @@ pub struct RootConfig {
     /// Configuration related to the OPA policies
     #[serde(default)]
     pub policy: PolicyConfig,
+
+    /// Configuration related to upstream OAuth providers
+    #[serde(default)]
+    pub upstream_oauth2: UpstreamOAuth2Config,
 }
 
 #[async_trait]
@@ -118,6 +124,7 @@ impl ConfigurationSection<'_> for RootConfig {
             secrets: SecretsConfig::generate(&mut rng).await?,
             matrix: MatrixConfig::generate(&mut rng).await?,
             policy: PolicyConfig::generate(&mut rng).await?,
+            upstream_oauth2: UpstreamOAuth2Config::generate(&mut rng).await?,
         })
     }
 
@@ -134,6 +141,7 @@ impl ConfigurationSection<'_> for RootConfig {
             secrets: SecretsConfig::test(),
             matrix: MatrixConfig::test(),
             policy: PolicyConfig::test(),
+            upstream_oauth2: UpstreamOAuth2Config::test(),
         }
     }
 }

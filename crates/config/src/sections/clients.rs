@@ -69,7 +69,7 @@ pub enum ClientAuthMethodConfig {
     },
 
     /// `client_secret_basic`: a `client_assertion` sent in the request body and
-    /// signed by an asymetric key
+    /// signed by an asymmetric key
     PrivateKeyJwt(JwksOrJwksUri),
 }
 

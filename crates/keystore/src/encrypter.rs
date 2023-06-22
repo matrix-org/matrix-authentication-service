@@ -81,7 +81,7 @@ impl Encrypter {
     /// # Errors
     ///
     /// Will return `Err` when the payload failed to encrypt
-    pub fn encryt_to_string(&self, decrypted: &[u8]) -> Result<String, aead::Error> {
+    pub fn encrypt_to_string(&self, decrypted: &[u8]) -> Result<String, aead::Error> {
         let nonce = rand::random();
         let encrypted = self.encrypt(&nonce, decrypted)?;
         let encrypted = [&nonce[..], &encrypted].concat();

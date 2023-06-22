@@ -52,7 +52,7 @@ pub(super) struct Options {
 
 impl Options {
     #[allow(clippy::too_many_lines)]
-    pub async fn run(&self, root: &super::Options) -> anyhow::Result<()> {
+    pub async fn run(self, root: &super::Options) -> anyhow::Result<()> {
         let span = info_span!("cli.run.init").entered();
         let config: RootConfig = root.load_config()?;
 

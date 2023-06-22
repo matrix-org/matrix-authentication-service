@@ -60,17 +60,17 @@ pub struct Options {
 }
 
 impl Options {
-    pub async fn run(&self) -> anyhow::Result<()> {
+    pub async fn run(mut self) -> anyhow::Result<()> {
         use Subcommand as S;
-        match &self.subcommand {
-            Some(S::Config(c)) => c.run(self).await,
-            Some(S::Database(c)) => c.run(self).await,
-            Some(S::Server(c)) => c.run(self).await,
-            Some(S::Worker(c)) => c.run(self).await,
-            Some(S::Manage(c)) => c.run(self).await,
-            Some(S::Templates(c)) => c.run(self).await,
-            Some(S::Debug(c)) => c.run(self).await,
-            None => self::server::Options::default().run(self).await,
+        match self.subcommand.take() {
+            Some(S::Config(c)) => c.run(&self).await,
+            Some(S::Database(c)) => c.run(&self).await,
+            Some(S::Server(c)) => c.run(&self).await,
+            Some(S::Worker(c)) => c.run(&self).await,
+            Some(S::Manage(c)) => c.run(&self).await,
+            Some(S::Templates(c)) => c.run(&self).await,
+            Some(S::Debug(c)) => c.run(&self).await,
+            None => self::server::Options::default().run(&self).await,
         }
     }
 
