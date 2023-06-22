@@ -29,7 +29,7 @@ use crate::util::{database_from_config, mailer_from_config, templates_from_confi
 pub(super) struct Options {}
 
 impl Options {
-    pub async fn run(&self, root: &super::Options) -> anyhow::Result<()> {
+    pub async fn run(self, root: &super::Options) -> anyhow::Result<()> {
         let span = info_span!("cli.worker.init").entered();
         let config: RootConfig = root.load_config()?;
 

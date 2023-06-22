@@ -35,9 +35,9 @@ enum Subcommand {
 }
 
 impl Options {
-    pub async fn run(&self, _root: &super::Options) -> anyhow::Result<()> {
+    pub async fn run(self, _root: &super::Options) -> anyhow::Result<()> {
         use Subcommand as SC;
-        match &self.subcommand {
+        match self.subcommand {
             SC::Check { path } => {
                 let _span = info_span!("cli.templates.check").entered();
 
@@ -45,7 +45,7 @@ impl Options {
                 // XXX: we should disallow SeedableRng::from_entropy
                 let mut rng = rand_chacha::ChaChaRng::from_entropy();
                 let url_builder = mas_router::UrlBuilder::new("https://example.com/".parse()?);
-                let templates = Templates::load(path.clone(), url_builder).await?;
+                let templates = Templates::load(path, url_builder).await?;
                 templates.check_render(clock.now(), &mut rng).await?;
 
                 Ok(())

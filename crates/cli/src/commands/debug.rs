@@ -65,10 +65,10 @@ fn print_headers(parts: &hyper::http::response::Parts) {
 
 impl Options {
     #[tracing::instrument(skip_all)]
-    pub async fn run(&self, root: &super::Options) -> anyhow::Result<()> {
+    pub async fn run(self, root: &super::Options) -> anyhow::Result<()> {
         use Subcommand as SC;
         let http_client_factory = HttpClientFactory::new(10);
-        match &self.subcommand {
+        match self.subcommand {
             SC::Http {
                 show_headers,
                 json: false,
@@ -83,15 +83,13 @@ impl Options {
                 let response = client.ready().await?.call(request).await?;
                 let (parts, body) = response.into_parts();
 
-                if *show_headers {
+                if show_headers {
                     print_headers(&parts);
                 }
 
                 let mut body = hyper::body::aggregate(body).await?;
                 let mut stdout = tokio::io::stdout();
                 stdout.write_all_buf(&mut body).await?;
-
-                Ok(())
             }
 
             SC::Http {
@@ -113,14 +111,12 @@ impl Options {
                     client.ready().await?.call(request).await?;
                 let (parts, body) = response.into_parts();
 
-                if *show_headers {
+                if show_headers {
                     print_headers(&parts);
                 }
 
                 let body = serde_json::to_string_pretty(&body)?;
                 println!("{body}");
-
-                Ok(())
             }
 
             SC::Policy => {
@@ -130,8 +126,9 @@ impl Options {
                 let policy_factory = policy_factory_from_config(&config).await?;
 
                 let _instance = policy_factory.instantiate().await?;
-                Ok(())
             }
         }
+
+        Ok(())
     }
 }

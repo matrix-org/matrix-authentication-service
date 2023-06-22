@@ -202,13 +202,13 @@ enum Subcommand {
 
 impl Options {
     #[allow(clippy::too_many_lines)]
-    pub async fn run(&self, root: &super::Options) -> anyhow::Result<()> {
+    pub async fn run(self, root: &super::Options) -> anyhow::Result<()> {
         use Subcommand as SC;
         let clock = SystemClock::default();
         // XXX: we should disallow SeedableRng::from_entropy
         let mut rng = rand_chacha::ChaChaRng::from_entropy();
 
-        match &self.subcommand {
+        match self.subcommand {
             SC::SetPassword { username, password } => {
                 let _span =
                     info_span!("cli.manage.set_password", user.username = %username).entered();
@@ -222,11 +222,11 @@ impl Options {
                 let mut repo = PgRepository::from_pool(&pool).await?.boxed();
                 let user = repo
                     .user()
-                    .find_by_username(username)
+                    .find_by_username(&username)
                     .await?
                     .context("User not found")?;
 
-                let password = password.as_bytes().to_vec().into();
+                let password = password.into_bytes().into();
 
                 let (version, hashed_password) = password_manager.hash(&mut rng, password).await?;
 
@@ -254,13 +254,13 @@ impl Options {
 
                 let user = repo
                     .user()
-                    .find_by_username(username)
+                    .find_by_username(&username)
                     .await?
                     .context("User not found")?;
 
                 let email = repo
                     .user_email()
-                    .find(&user, email)
+                    .find(&user, &email)
                     .await?
                     .context("Email not found")?;
                 let email = repo.user_email().mark_as_verified(&clock, email).await?;
@@ -302,7 +302,7 @@ impl Options {
 
                     // TODO: should be moved somewhere else
                     let encrypted_client_secret = client_secret
-                        .map(|client_secret| encrypter.encryt_to_string(client_secret.as_bytes()))
+                        .map(|client_secret| encrypter.encrypt_to_string(client_secret.as_bytes()))
                         .transpose()?;
 
                     repo.oauth2_client()
@@ -361,7 +361,7 @@ impl Options {
 
                 let encrypted_client_secret = client_secret
                     .as_deref()
-                    .map(|client_secret| encrypter.encryt_to_string(client_secret.as_bytes()))
+                    .map(|client_secret| encrypter.encrypt_to_string(client_secret.as_bytes()))
                     .transpose()?;
 
                 let provider = repo
@@ -369,11 +369,11 @@ impl Options {
                     .add(
                         &mut rng,
                         &clock,
-                        issuer.clone(),
-                        scope.clone(),
+                        issuer,
+                        scope,
                         token_endpoint_auth_method,
                         token_endpoint_signing_alg,
-                        client_id.clone(),
+                        client_id,
                         encrypted_client_secret,
                         UpstreamOAuthProviderClaimsImports::default(),
                     )
@@ -404,19 +404,19 @@ impl Options {
 
                 let user = repo
                     .user()
-                    .find_by_username(username)
+                    .find_by_username(&username)
                     .await?
                     .context("User not found")?;
 
                 let device = if let Some(device_id) = device_id {
-                    device_id.clone().try_into()?
+                    device_id.try_into()?
                 } else {
                     Device::generate(&mut rng)
                 };
 
                 let compat_session = repo
                     .compat_session()
-                    .add(&mut rng, &clock, &user, device, *admin)
+                    .add(&mut rng, &clock, &user, device, admin)
                     .await?;
 
                 let token = TokenType::CompatAccessToken.generate(&mut rng);

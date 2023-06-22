@@ -12,10 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::collections::HashSet;
+
 use clap::Parser;
 use mas_config::{ConfigurationSection, RootConfig};
+use mas_storage::{upstream_oauth2::UpstreamOAuthProviderRepository, Repository, RepositoryAccess};
+use mas_storage_pg::PgRepository;
 use rand::SeedableRng;
-use tracing::{info, info_span};
+use tracing::{info, info_span, warn};
+
+use crate::util::database_from_config;
 
 #[derive(Parser, Debug)]
 pub(super) struct Options {
@@ -33,27 +39,36 @@ enum Subcommand {
 
     /// Generate a new config file
     Generate,
+
+    /// Sync the clients and providers from the config file to the database
+    Sync {
+        /// Prune elements that are in the database but not in the config file
+        /// anymore
+        #[clap(long)]
+        prune: bool,
+
+        /// Do not actually write to the database
+        #[clap(long)]
+        dry_run: bool,
+    },
 }
 
 impl Options {
-    pub async fn run(&self, root: &super::Options) -> anyhow::Result<()> {
+    pub async fn run(self, root: &super::Options) -> anyhow::Result<()> {
         use Subcommand as SC;
-        match &self.subcommand {
+        match self.subcommand {
             SC::Dump => {
                 let _span = info_span!("cli.config.dump").entered();
 
                 let config: RootConfig = root.load_config()?;
 
                 serde_yaml::to_writer(std::io::stdout(), &config)?;
-
-                Ok(())
             }
             SC::Check => {
                 let _span = info_span!("cli.config.check").entered();
 
                 let _config: RootConfig = root.load_config()?;
                 info!(path = ?root.config, "Configuration file looks good");
-                Ok(())
             }
             SC::Generate => {
                 let _span = info_span!("cli.config.generate").entered();
@@ -63,9 +78,60 @@ impl Options {
                 let config = RootConfig::load_and_generate(rng).await?;
 
                 serde_yaml::to_writer(std::io::stdout(), &config)?;
+            }
 
-                Ok(())
+            SC::Sync { prune, dry_run } => {
+                let _span = info_span!("cli.config.sync").entered();
+
+                let config: RootConfig = root.load_config()?;
+                let pool = database_from_config(&config.database).await?;
+                let mut repo = PgRepository::from_pool(&pool).await?.boxed();
+
+                tracing::info!(
+                    prune,
+                    dry_run,
+                    "Syncing providers and clients defined in config to database"
+                );
+
+                let existing = repo.upstream_oauth_provider().all().await?;
+
+                let existing_ids = existing.iter().map(|p| p.id).collect::<HashSet<_>>();
+                let config_ids = config
+                    .upstream_oauth2
+                    .providers
+                    .iter()
+                    .map(|p| p.id)
+                    .collect::<HashSet<_>>();
+
+                let needs_pruning = existing_ids.difference(&config_ids).collect::<Vec<_>>();
+                if prune {
+                    for id in needs_pruning {
+                        info!(provider.id = %id, "Deleting provider");
+                    }
+                } else if !needs_pruning.is_empty() {
+                    warn!(
+                        "{} provider(s) in the database are not in the config. Run with `--prune` to delete them.",
+                        needs_pruning.len()
+                    );
+                }
+
+                for provider in config.upstream_oauth2.providers {
+                    if existing_ids.contains(&provider.id) {
+                        info!(%provider.id, "Updating provider");
+                    } else {
+                        info!(%provider.id, "Adding provider");
+                    }
+                }
+
+                if dry_run {
+                    info!("Dry run, rolling back changes");
+                    repo.cancel().await?;
+                } else {
+                    repo.save().await?;
+                }
             }
         }
+
+        Ok(())
     }
 }

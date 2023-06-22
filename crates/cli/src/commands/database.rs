@@ -33,7 +33,7 @@ enum Subcommand {
 }
 
 impl Options {
-    pub async fn run(&self, root: &super::Options) -> anyhow::Result<()> {
+    pub async fn run(self, root: &super::Options) -> anyhow::Result<()> {
         let _span = info_span!("cli.database.migrate").entered();
         let config: DatabaseConfig = root.load_config()?;
         let pool = database_from_config(&config).await?;

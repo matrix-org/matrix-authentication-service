@@ -162,7 +162,7 @@ pub(crate) async fn post(
         ) => {
             // Let's generate a random client secret
             let client_secret = Alphanumeric.sample_string(&mut rng, 20);
-            let encrypted_client_secret = encrypter.encryt_to_string(client_secret.as_bytes())?;
+            let encrypted_client_secret = encrypter.encrypt_to_string(client_secret.as_bytes())?;
             (Some(client_secret), Some(encrypted_client_secret))
         }
         _ => (None, None),
