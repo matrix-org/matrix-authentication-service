@@ -163,12 +163,11 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
         token_endpoint_signing_alg: Option<JsonWebSignatureAlg>,
         client_id: String,
         encrypted_client_secret: Option<String>,
+        claims_imports: UpstreamOAuthProviderClaimsImports,
     ) -> Result<UpstreamOAuthProvider, Self::Error> {
         let created_at = clock.now();
         let id = Ulid::from_datetime_with_source(created_at.into(), rng);
         tracing::Span::current().record("upstream_oauth_provider.id", tracing::field::display(id));
-
-        let claims_imports = UpstreamOAuthProviderClaimsImports::default();
 
         sqlx::query!(
             r#"
