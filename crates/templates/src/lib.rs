@@ -305,7 +305,7 @@ mod tests {
         let mut rng = rand::thread_rng();
 
         let path = Utf8Path::new(env!("CARGO_MANIFEST_DIR")).join("../../templates/");
-        let url_builder = UrlBuilder::new("https://example.com/".parse().unwrap());
+        let url_builder = UrlBuilder::new("https://example.com/".parse().unwrap(), None);
         let templates = Templates::load(path, url_builder).await.unwrap();
         templates.check_render(now, &mut rng).await.unwrap();
     }

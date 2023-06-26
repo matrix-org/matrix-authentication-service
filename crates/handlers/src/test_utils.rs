@@ -110,7 +110,7 @@ impl TestState {
             .join("..")
             .join("..");
 
-        let url_builder = UrlBuilder::new("https://example.com/".parse()?);
+        let url_builder = UrlBuilder::new("https://example.com/".parse()?, None);
 
         let templates =
             Templates::load(workspace_root.join("templates"), url_builder.clone()).await?;
