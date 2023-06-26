@@ -80,6 +80,12 @@ mod tests {
         assert_eq!(provider.issuer, "https://example.com/");
         assert_eq!(provider.client_id, "client-id");
 
+        // It should be in the list of all providers
+        let providers = repo.upstream_oauth_provider().all().await.unwrap();
+        assert_eq!(providers.len(), 1);
+        assert_eq!(providers[0].issuer, "https://example.com/");
+        assert_eq!(providers[0].client_id, "client-id");
+
         // Start a session
         let session = repo
             .upstream_oauth_session()
@@ -181,6 +187,11 @@ mod tests {
         assert_eq!(links.edges.len(), 1);
         assert_eq!(links.edges[0].id, link.id);
         assert_eq!(links.edges[0].user_id, Some(user.id));
+
+        // Try deleting the provider
+        repo.upstream_oauth_provider().delete(provider).await.unwrap();
+        let providers = repo.upstream_oauth_provider().all().await.unwrap();
+        assert!(providers.is_empty());
     }
 
     /// Test that the pagination works as expected in the upstream OAuth
