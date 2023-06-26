@@ -21,7 +21,7 @@ opentelemetry = "0.19.0"
 rustls = { version = "0.21.2", optional = true }
 rustls-native-certs = { version = "0.6.3", optional = true }
 serde = "1.0.164"
-serde_json = "1.0.97"
+serde_json = "1.0.99"
 serde_urlencoded = "0.7.1"
 thiserror = "1.0.40"
 tokio = { version = "1.28.2", features = ["sync", "parking_lot"], optional = true }

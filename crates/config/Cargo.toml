@@ -22,7 +22,7 @@ url = { version = "2.4.0", features = ["serde"] }
 
 serde = { version = "1.0.164", features = ["derive"] }
 serde_with = { version = "3.0.0", features = ["hex", "chrono"] }
-serde_json = "1.0.97"
+serde_json = "1.0.99"
 
 pem-rfc7468 = "0.7.0"
 rustls-pemfile = "1.0.2"
