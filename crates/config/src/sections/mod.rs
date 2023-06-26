@@ -48,7 +48,10 @@ pub use self::{
         TelemetryConfig, TracingConfig, TracingExporterConfig,
     },
     templates::TemplatesConfig,
-    upstream_oauth2::UpstreamOAuth2Config,
+    upstream_oauth2::{
+        ClaimsImports as UpstreamOAuth2ClaimsImports, ImportAction as UpstreamOAuth2ImportAction,
+        ImportPreference as UpstreamOAuth2ImportPreference, UpstreamOAuth2Config,
+    },
 };
 use crate::util::ConfigurationSection;
 

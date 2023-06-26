@@ -1447,6 +1447,18 @@
     },
     "query": "\n                INSERT INTO user_emails (user_email_id, user_id, email, created_at)\n                VALUES ($1, $2, $3, $4)\n            "
   },
+  "91a3ee5ad64a947b7807a590f6b014c6856229918b972b98946f98b75686ab6c": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n                DELETE FROM upstream_oauth_providers\n                WHERE upstream_oauth_provider_id = $1\n            "
+  },
   "921d77c194609615a7e9a6fd806e9cc17a7927e3e5deb58f3917ceeb9ab4dede": {
     "describe": {
       "columns": [],
@@ -2401,6 +2413,34 @@
       }
     },
     "query": "\n                SELECT oauth2_refresh_token_id\n                     , refresh_token\n                     , created_at\n                     , consumed_at\n                     , oauth2_access_token_id\n                     , oauth2_session_id\n                FROM oauth2_refresh_tokens\n\n                WHERE refresh_token = $1\n            "
+  },
+  "e7ce95415bb6b57cd601393c6abe5febfec2a963ce6eac7b099b761594b1dfaf": {
+    "describe": {
+      "columns": [
+        {
+          "name": "created_at",
+          "ordinal": 0,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Timestamptz",
+          "Jsonb"
+        ]
+      }
+    },
+    "query": "\n                INSERT INTO upstream_oauth_providers (\n                    upstream_oauth_provider_id,\n                    issuer,\n                    scope,\n                    token_endpoint_auth_method,\n                    token_endpoint_signing_alg,\n                    client_id,\n                    encrypted_client_secret,\n                    created_at,\n                    claims_imports\n                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)\n                ON CONFLICT (upstream_oauth_provider_id) \n                    DO UPDATE\n                    SET\n                        issuer = EXCLUDED.issuer,\n                        scope = EXCLUDED.scope,\n                        token_endpoint_auth_method = EXCLUDED.token_endpoint_auth_method,\n                        token_endpoint_signing_alg = EXCLUDED.token_endpoint_signing_alg,\n                        client_id = EXCLUDED.client_id,\n                        encrypted_client_secret = EXCLUDED.encrypted_client_secret,\n                        claims_imports = EXCLUDED.claims_imports\n                RETURNING created_at\n            "
   },
   "f0ace1af3775192a555c4ebb59b81183f359771f9f77e5fad759d38d872541d1": {
     "describe": {
