@@ -1226,6 +1226,18 @@
     },
     "query": "\n                UPDATE upstream_oauth_links\n                SET user_id = $1\n                WHERE upstream_oauth_link_id = $2\n            "
   },
+  "82fec0e13755e7032457d94fe8d212c62f14c80a98b61d82965f1b93f841c014": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n                DELETE FROM upstream_oauth_authorization_sessions\n                WHERE upstream_oauth_provider_id = $1\n            "
+  },
   "836fb7567d84057fa7f1edaab834c21a158a5762fe220b6bfacd6576be6c613c": {
     "describe": {
       "columns": [
@@ -1379,6 +1391,18 @@
       }
     },
     "query": "\n                SELECT oauth2_client_id\n                     , encrypted_client_secret\n                     , ARRAY(\n                           SELECT redirect_uri\n                           FROM oauth2_client_redirect_uris r\n                           WHERE r.oauth2_client_id = c.oauth2_client_id\n                       ) AS \"redirect_uris!\"\n                     , grant_type_authorization_code\n                     , grant_type_refresh_token\n                     , client_name\n                     , logo_uri\n                     , client_uri\n                     , policy_uri\n                     , tos_uri\n                     , jwks_uri\n                     , jwks\n                     , id_token_signed_response_alg\n                     , userinfo_signed_response_alg\n                     , token_endpoint_auth_method\n                     , token_endpoint_auth_signing_alg\n                     , initiate_login_uri\n                FROM oauth2_clients c\n\n                WHERE oauth2_client_id = ANY($1::uuid[])\n            "
+  },
+  "8a32a39c43147dfd9dbd25ff04686c3cdbc52ea5689ce3454d15e8ed31756f38": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n                DELETE FROM upstream_oauth_links\n                WHERE upstream_oauth_provider_id = $1\n            "
   },
   "8a79c7c392dd930628caadec80c9b2645501475ab4feacbac59ca1bc52b16c3f": {
     "describe": {

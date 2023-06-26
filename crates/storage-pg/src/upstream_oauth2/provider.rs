@@ -298,7 +298,32 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
         err,
     )]
     async fn delete_by_id(&mut self, id: Ulid) -> Result<(), Self::Error> {
+        // Delete the authorization sessions first, as they have a foreign key constraint
+        // on the links and the providers.
         sqlx::query!(
+            r#"
+                DELETE FROM upstream_oauth_authorization_sessions
+                WHERE upstream_oauth_provider_id = $1
+            "#,
+            Uuid::from(id),
+        )
+            .traced()
+            .execute(&mut *self.conn)
+            .await?;
+
+        // Delete the links next, as they have a foreign key constraint on the providers.
+        sqlx::query!(
+            r#"
+                DELETE FROM upstream_oauth_links
+                WHERE upstream_oauth_provider_id = $1
+            "#,
+            Uuid::from(id),
+        )
+            .traced()
+            .execute(&mut *self.conn)
+            .await?;
+
+        let res = sqlx::query!(
             r#"
                 DELETE FROM upstream_oauth_providers
                 WHERE upstream_oauth_provider_id = $1
@@ -309,7 +334,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
         .execute(&mut *self.conn)
         .await?;
 
-        Ok(())
+        DatabaseError::ensure_affected_rows(&res, 1)
     }
 
     #[tracing::instrument(
