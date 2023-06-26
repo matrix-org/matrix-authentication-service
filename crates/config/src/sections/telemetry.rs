@@ -287,7 +287,7 @@ pub struct TelemetryConfig {
 }
 
 #[async_trait]
-impl ConfigurationSection<'_> for TelemetryConfig {
+impl ConfigurationSection for TelemetryConfig {
     fn path() -> &'static str {
         "telemetry"
     }

@@ -124,7 +124,7 @@ impl Default for EmailConfig {
 }
 
 #[async_trait]
-impl ConfigurationSection<'_> for EmailConfig {
+impl ConfigurationSection for EmailConfig {
     fn path() -> &'static str {
         "email"
     }

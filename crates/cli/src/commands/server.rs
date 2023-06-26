@@ -17,7 +17,7 @@ use std::{sync::Arc, time::Duration};
 use anyhow::Context;
 use clap::Parser;
 use itertools::Itertools;
-use mas_config::RootConfig;
+use mas_config::AppConfig;
 use mas_handlers::{AppState, HttpClientFactory, MatrixHomeserver};
 use mas_listener::{server::Server, shutdown::ShutdownStream};
 use mas_matrix_synapse::SynapseConnection;
@@ -54,7 +54,7 @@ impl Options {
     #[allow(clippy::too_many_lines)]
     pub async fn run(self, root: &super::Options) -> anyhow::Result<()> {
         let span = info_span!("cli.run.init").entered();
-        let config: RootConfig = root.load_config()?;
+        let config: AppConfig = root.load_config()?;
 
         // Connect to the database
         info!("Connecting to the database");

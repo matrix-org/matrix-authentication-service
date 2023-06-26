@@ -48,7 +48,7 @@ impl Default for TemplatesConfig {
 }
 
 #[async_trait]
-impl ConfigurationSection<'_> for TemplatesConfig {
+impl ConfigurationSection for TemplatesConfig {
     fn path() -> &'static str {
         "templates"
     }

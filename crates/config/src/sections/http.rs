@@ -370,7 +370,7 @@ impl Default for HttpConfig {
 }
 
 #[async_trait]
-impl ConfigurationSection<'_> for HttpConfig {
+impl ConfigurationSection for HttpConfig {
     fn path() -> &'static str {
         "http"
     }

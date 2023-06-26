@@ -106,7 +106,7 @@ pub struct RootConfig {
 }
 
 #[async_trait]
-impl ConfigurationSection<'_> for RootConfig {
+impl ConfigurationSection for RootConfig {
     fn path() -> &'static str {
         ""
     }
@@ -144,6 +144,118 @@ impl ConfigurationSection<'_> for RootConfig {
             secrets: SecretsConfig::test(),
             matrix: MatrixConfig::test(),
             policy: PolicyConfig::test(),
+            upstream_oauth2: UpstreamOAuth2Config::test(),
+        }
+    }
+}
+
+/// Partial configuration actually used by the server
+#[allow(missing_docs)]
+#[derive(Debug, Deserialize, Serialize)]
+pub struct AppConfig {
+    #[serde(default)]
+    pub http: HttpConfig,
+
+    #[serde(default)]
+    pub database: DatabaseConfig,
+
+    #[serde(default)]
+    pub templates: TemplatesConfig,
+
+    #[serde(default)]
+    pub csrf: CsrfConfig,
+
+    #[serde(default)]
+    pub email: EmailConfig,
+
+    pub secrets: SecretsConfig,
+
+    #[serde(default)]
+    pub passwords: PasswordsConfig,
+
+    pub matrix: MatrixConfig,
+
+    #[serde(default)]
+    pub policy: PolicyConfig,
+}
+
+#[async_trait]
+impl ConfigurationSection for AppConfig {
+    fn path() -> &'static str {
+        ""
+    }
+
+    async fn generate<R>(mut rng: R) -> anyhow::Result<Self>
+    where
+        R: Rng + Send,
+    {
+        Ok(Self {
+            http: HttpConfig::generate(&mut rng).await?,
+            database: DatabaseConfig::generate(&mut rng).await?,
+            templates: TemplatesConfig::generate(&mut rng).await?,
+            csrf: CsrfConfig::generate(&mut rng).await?,
+            email: EmailConfig::generate(&mut rng).await?,
+            passwords: PasswordsConfig::generate(&mut rng).await?,
+            secrets: SecretsConfig::generate(&mut rng).await?,
+            matrix: MatrixConfig::generate(&mut rng).await?,
+            policy: PolicyConfig::generate(&mut rng).await?,
+        })
+    }
+
+    fn test() -> Self {
+        Self {
+            http: HttpConfig::test(),
+            database: DatabaseConfig::test(),
+            templates: TemplatesConfig::test(),
+            passwords: PasswordsConfig::test(),
+            csrf: CsrfConfig::test(),
+            email: EmailConfig::test(),
+            secrets: SecretsConfig::test(),
+            matrix: MatrixConfig::test(),
+            policy: PolicyConfig::test(),
+        }
+    }
+}
+
+/// Partial config used by the `mas-cli config sync` command
+#[allow(missing_docs)]
+#[derive(Debug, Deserialize, Serialize)]
+pub struct SyncConfig {
+    #[serde(default)]
+    pub database: DatabaseConfig,
+
+    pub secrets: SecretsConfig,
+
+    #[serde(default)]
+    pub clients: ClientsConfig,
+
+    #[serde(default)]
+    pub upstream_oauth2: UpstreamOAuth2Config,
+}
+
+#[async_trait]
+impl ConfigurationSection for SyncConfig {
+    fn path() -> &'static str {
+        ""
+    }
+
+    async fn generate<R>(mut rng: R) -> anyhow::Result<Self>
+    where
+        R: Rng + Send,
+    {
+        Ok(Self {
+            database: DatabaseConfig::generate(&mut rng).await?,
+            secrets: SecretsConfig::generate(&mut rng).await?,
+            clients: ClientsConfig::generate(&mut rng).await?,
+            upstream_oauth2: UpstreamOAuth2Config::generate(&mut rng).await?,
+        })
+    }
+
+    fn test() -> Self {
+        Self {
+            database: DatabaseConfig::test(),
+            secrets: SecretsConfig::test(),
+            clients: ClientsConfig::test(),
             upstream_oauth2: UpstreamOAuth2Config::test(),
         }
     }

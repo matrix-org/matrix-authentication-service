@@ -15,7 +15,7 @@
 use std::collections::HashSet;
 
 use clap::Parser;
-use mas_config::{ConfigurationSection, RootConfig};
+use mas_config::{ConfigurationSection, RootConfig, SyncConfig};
 use mas_storage::{
     upstream_oauth2::UpstreamOAuthProviderRepository, Repository, RepositoryAccess, SystemClock,
 };
@@ -142,7 +142,7 @@ async fn sync(root: &super::Options, prune: bool, dry_run: bool) -> anyhow::Resu
     let mut rng = rand_chacha::ChaChaRng::from_entropy();
     let clock = SystemClock::default();
 
-    let config: RootConfig = root.load_config()?;
+    let config: SyncConfig = root.load_config()?;
     let encrypter = config.secrets.encrypter();
     let pool = database_from_config(&config.database).await?;
     let mut repo = PgRepository::from_pool(&pool).await?.boxed();

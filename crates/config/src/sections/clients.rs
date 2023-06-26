@@ -171,7 +171,7 @@ impl DerefMut for ClientsConfig {
 }
 
 #[async_trait]
-impl ConfigurationSection<'_> for ClientsConfig {
+impl ConfigurationSection for ClientsConfig {
     fn path() -> &'static str {
         "clients"
     }

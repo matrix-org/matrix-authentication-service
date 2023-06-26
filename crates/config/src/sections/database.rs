@@ -145,7 +145,7 @@ pub struct DatabaseConfig {
 }
 
 #[async_trait]
-impl ConfigurationSection<'_> for DatabaseConfig {
+impl ConfigurationSection for DatabaseConfig {
     fn path() -> &'static str {
         "database"
     }

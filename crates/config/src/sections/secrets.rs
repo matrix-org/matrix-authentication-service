@@ -138,7 +138,7 @@ impl SecretsConfig {
 }
 
 #[async_trait]
-impl ConfigurationSection<'_> for SecretsConfig {
+impl ConfigurationSection for SecretsConfig {
     fn path() -> &'static str {
         "secrets"
     }

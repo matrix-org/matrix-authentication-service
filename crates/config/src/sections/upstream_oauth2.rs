@@ -32,7 +32,7 @@ pub struct UpstreamOAuth2Config {
 }
 
 #[async_trait]
-impl<'a> ConfigurationSection<'a> for UpstreamOAuth2Config {
+impl ConfigurationSection for UpstreamOAuth2Config {
     fn path() -> &'static str {
         "upstream_oauth2"
     }
