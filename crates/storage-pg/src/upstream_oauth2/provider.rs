@@ -20,6 +20,7 @@ use mas_storage::{upstream_oauth2::UpstreamOAuthProviderRepository, Clock, Page,
 use oauth2_types::scope::Scope;
 use rand::RngCore;
 use sqlx::{types::Json, PgConnection, QueryBuilder};
+use tracing::{info_span, Instrument};
 use ulid::Ulid;
 use uuid::Uuid;
 
@@ -298,30 +299,47 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
         err,
     )]
     async fn delete_by_id(&mut self, id: Ulid) -> Result<(), Self::Error> {
-        // Delete the authorization sessions first, as they have a foreign key constraint
-        // on the links and the providers.
-        sqlx::query!(
-            r#"
-                DELETE FROM upstream_oauth_authorization_sessions
-                WHERE upstream_oauth_provider_id = $1
-            "#,
-            Uuid::from(id),
-        )
-            .traced()
+        // Delete the authorization sessions first, as they have a foreign key
+        // constraint on the links and the providers.
+        {
+            let span = info_span!(
+                "db.oauth2_client.delete_by_id.authorization_sessions",
+                upstream_oauth_provider.id = %id,
+                db.statement = tracing::field::Empty,
+            );
+            sqlx::query!(
+                r#"
+                    DELETE FROM upstream_oauth_authorization_sessions
+                    WHERE upstream_oauth_provider_id = $1
+                "#,
+                Uuid::from(id),
+            )
+            .record(&span)
             .execute(&mut *self.conn)
+            .instrument(span)
             .await?;
+        }
 
-        // Delete the links next, as they have a foreign key constraint on the providers.
-        sqlx::query!(
-            r#"
-                DELETE FROM upstream_oauth_links
-                WHERE upstream_oauth_provider_id = $1
-            "#,
-            Uuid::from(id),
-        )
-            .traced()
+        // Delete the links next, as they have a foreign key constraint on the
+        // providers.
+        {
+            let span = info_span!(
+                "db.oauth2_client.delete_by_id.links",
+                upstream_oauth_provider.id = %id,
+                db.statement = tracing::field::Empty,
+            );
+            sqlx::query!(
+                r#"
+                    DELETE FROM upstream_oauth_links
+                    WHERE upstream_oauth_provider_id = $1
+                "#,
+                Uuid::from(id),
+            )
+            .record(&span)
             .execute(&mut *self.conn)
+            .instrument(span)
             .await?;
+        }
 
         let res = sqlx::query!(
             r#"
