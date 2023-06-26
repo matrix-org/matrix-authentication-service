@@ -59,6 +59,7 @@
     "http": {
       "description": "Configuration of the HTTP server",
       "default": {
+        "issuer": "http://[::]:8080/",
         "listeners": [
           {
             "binds": [
@@ -787,6 +788,11 @@
         "public_base"
       ],
       "properties": {
+        "issuer": {
+          "description": "OIDC issuer URL. Defaults to `public_base` if not set.",
+          "type": "string",
+          "format": "uri"
+        },
         "listeners": {
           "description": "List of listeners to run",
           "default": [],

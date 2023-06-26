@@ -83,7 +83,8 @@ impl Options {
         let policy_factory = policy_factory_from_config(&config.policy).await?;
         let policy_factory = Arc::new(policy_factory);
 
-        let url_builder = UrlBuilder::new(config.http.public_base.clone());
+        let url_builder =
+            UrlBuilder::new(config.http.public_base.clone(), config.http.issuer.clone());
 
         // Load and compile the templates
         let templates = templates_from_config(&config.templates, &url_builder).await?;

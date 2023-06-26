@@ -22,6 +22,7 @@ use crate::traits::Route;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct UrlBuilder {
     base: Url,
+    issuer: Url,
 }
 
 impl UrlBuilder {
@@ -41,20 +42,21 @@ impl UrlBuilder {
 
     /// Create a new [`UrlBuilder`] from a base URL
     #[must_use]
-    pub fn new(base: Url) -> Self {
-        Self { base }
+    pub fn new(base: Url, issuer: Option<Url>) -> Self {
+        let issuer = issuer.unwrap_or_else(|| base.clone());
+        Self { base, issuer }
     }
 
     /// OIDC issuer
     #[must_use]
     pub fn oidc_issuer(&self) -> Url {
-        self.base.clone()
+        self.issuer.clone()
     }
 
-    /// OIDC dicovery document URL
+    /// OIDC discovery document URL
     #[must_use]
     pub fn oidc_discovery(&self) -> Url {
-        self.url_for(&crate::endpoints::OidcConfiguration)
+        crate::endpoints::OidcConfiguration.absolute_url(&self.issuer)
     }
 
     /// OAuth 2.0 authorization endpoint

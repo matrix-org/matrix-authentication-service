@@ -326,6 +326,9 @@ pub struct HttpConfig {
 
     /// Public URL base from where the authentication service is reachable
     pub public_base: Url,
+
+    /// OIDC issuer URL. Defaults to `public_base` if not set.
+    pub issuer: Option<Url>,
 }
 
 impl Default for HttpConfig {
@@ -364,6 +367,7 @@ impl Default for HttpConfig {
                     }],
                 },
             ],
+            issuer: Some(default_public_base()),
             public_base: default_public_base(),
         }
     }
