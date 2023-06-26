@@ -12,7 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::ops::Deref;
+
 use async_trait::async_trait;
+use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
 use rand::Rng;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -65,16 +68,17 @@ pub enum TokenAuthMethod {
     /// signed using the `client_secret`
     ClientSecretJwt {
         client_secret: String,
-        token_endpoint_auth_signing_alg: Option<String>,
+        token_endpoint_auth_signing_alg: Option<JsonWebSignatureAlg>,
     },
 
     /// `client_secret_basic`: a `client_assertion` sent in the request body and
     /// signed by an asymmetric key
     PrivateKeyJwt {
-        token_endpoint_auth_signing_alg: Option<String>,
+        token_endpoint_auth_signing_alg: Option<JsonWebSignatureAlg>,
     },
 }
 
+/// How to handle a claim
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum ImportAction {
@@ -92,6 +96,7 @@ pub enum ImportAction {
     Require,
 }
 
+/// What should be done with a claim
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, JsonSchema)]
 pub struct ImportPreference {
     /// How to handle the claim
@@ -99,6 +104,7 @@ pub struct ImportPreference {
     pub action: ImportAction,
 }
 
+/// How claims should be imported
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, JsonSchema)]
 pub struct ClaimsImports {
     /// Import the localpart of the MXID based on the `preferred_username` claim
@@ -141,4 +147,59 @@ pub struct Provider {
     /// How claims should be imported from the `id_token` provided by the
     /// provider
     pub claims_imports: ClaimsImports,
+}
+
+impl Deref for Provider {
+    type Target = TokenAuthMethod;
+
+    fn deref(&self) -> &Self::Target {
+        &self.token_auth_method
+    }
+}
+
+impl TokenAuthMethod {
+    #[doc(hidden)]
+    #[must_use]
+    pub fn client_auth_method(&self) -> OAuthClientAuthenticationMethod {
+        match self {
+            TokenAuthMethod::None => OAuthClientAuthenticationMethod::None,
+            TokenAuthMethod::ClientSecretBasic { .. } => {
+                OAuthClientAuthenticationMethod::ClientSecretBasic
+            }
+            TokenAuthMethod::ClientSecretPost { .. } => {
+                OAuthClientAuthenticationMethod::ClientSecretPost
+            }
+            TokenAuthMethod::ClientSecretJwt { .. } => {
+                OAuthClientAuthenticationMethod::ClientSecretJwt
+            }
+            TokenAuthMethod::PrivateKeyJwt { .. } => OAuthClientAuthenticationMethod::PrivateKeyJwt,
+        }
+    }
+
+    #[doc(hidden)]
+    #[must_use]
+    pub fn client_secret(&self) -> Option<&str> {
+        match self {
+            TokenAuthMethod::None | TokenAuthMethod::PrivateKeyJwt { .. } => None,
+            TokenAuthMethod::ClientSecretBasic { client_secret }
+            | TokenAuthMethod::ClientSecretPost { client_secret }
+            | TokenAuthMethod::ClientSecretJwt { client_secret, .. } => Some(client_secret),
+        }
+    }
+
+    #[doc(hidden)]
+    #[must_use]
+    pub fn client_auth_signing_alg(&self) -> Option<JsonWebSignatureAlg> {
+        match self {
+            TokenAuthMethod::ClientSecretJwt {
+                token_endpoint_auth_signing_alg,
+                ..
+            }
+            | TokenAuthMethod::PrivateKeyJwt {
+                token_endpoint_auth_signing_alg,
+                ..
+            } => token_endpoint_auth_signing_alg.clone(),
+            _ => None,
+        }
+    }
 }

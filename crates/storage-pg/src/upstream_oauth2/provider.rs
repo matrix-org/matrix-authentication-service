@@ -211,6 +211,108 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
     }
 
     #[tracing::instrument(
+        name = "db.upstream_oauth_provider.add",
+        skip_all,
+        fields(
+            db.statement,
+            upstream_oauth_provider.id = %id,
+            upstream_oauth_provider.issuer = %issuer,
+            upstream_oauth_provider.client_id = %client_id,
+        ),
+        err,
+    )]
+    #[allow(clippy::too_many_arguments)]
+    async fn upsert(
+        &mut self,
+        clock: &dyn Clock,
+        id: Ulid,
+        issuer: String,
+        scope: Scope,
+        token_endpoint_auth_method: OAuthClientAuthenticationMethod,
+        token_endpoint_signing_alg: Option<JsonWebSignatureAlg>,
+        client_id: String,
+        encrypted_client_secret: Option<String>,
+        claims_imports: UpstreamOAuthProviderClaimsImports,
+    ) -> Result<UpstreamOAuthProvider, Self::Error> {
+        let created_at = clock.now();
+
+        let created_at = sqlx::query_scalar!(
+            r#"
+                INSERT INTO upstream_oauth_providers (
+                    upstream_oauth_provider_id,
+                    issuer,
+                    scope,
+                    token_endpoint_auth_method,
+                    token_endpoint_signing_alg,
+                    client_id,
+                    encrypted_client_secret,
+                    created_at,
+                    claims_imports
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                ON CONFLICT (upstream_oauth_provider_id) 
+                    DO UPDATE
+                    SET
+                        issuer = EXCLUDED.issuer,
+                        scope = EXCLUDED.scope,
+                        token_endpoint_auth_method = EXCLUDED.token_endpoint_auth_method,
+                        token_endpoint_signing_alg = EXCLUDED.token_endpoint_signing_alg,
+                        client_id = EXCLUDED.client_id,
+                        encrypted_client_secret = EXCLUDED.encrypted_client_secret,
+                        claims_imports = EXCLUDED.claims_imports
+                RETURNING created_at
+            "#,
+            Uuid::from(id),
+            &issuer,
+            scope.to_string(),
+            token_endpoint_auth_method.to_string(),
+            token_endpoint_signing_alg.as_ref().map(ToString::to_string),
+            &client_id,
+            encrypted_client_secret.as_deref(),
+            created_at,
+            Json(&claims_imports) as _,
+        )
+        .traced()
+        .fetch_one(&mut *self.conn)
+        .await?;
+
+        Ok(UpstreamOAuthProvider {
+            id,
+            issuer,
+            scope,
+            client_id,
+            encrypted_client_secret,
+            token_endpoint_signing_alg,
+            token_endpoint_auth_method,
+            created_at,
+            claims_imports,
+        })
+    }
+
+    #[tracing::instrument(
+        name = "db.upstream_oauth_provider.delete_by_id",
+        skip_all,
+        fields(
+            db.statement,
+            upstream_oauth_provider.id = %id,
+        ),
+        err,
+    )]
+    async fn delete_by_id(&mut self, id: Ulid) -> Result<(), Self::Error> {
+        sqlx::query!(
+            r#"
+                DELETE FROM upstream_oauth_providers
+                WHERE upstream_oauth_provider_id = $1
+            "#,
+            Uuid::from(id),
+        )
+        .traced()
+        .execute(&mut *self.conn)
+        .await?;
+
+        Ok(())
+    }
+
+    #[tracing::instrument(
         name = "db.upstream_oauth_provider.list_paginated",
         skip_all,
         fields(

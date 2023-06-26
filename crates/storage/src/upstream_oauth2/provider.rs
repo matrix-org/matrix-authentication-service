@@ -78,6 +78,65 @@ pub trait UpstreamOAuthProviderRepository: Send + Sync {
         claims_imports: UpstreamOAuthProviderClaimsImports,
     ) -> Result<UpstreamOAuthProvider, Self::Error>;
 
+    /// Delete an upstream OAuth provider
+    ///
+    /// # Parameters
+    ///
+    /// * `provider`: The provider to delete
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn delete(&mut self, provider: UpstreamOAuthProvider) -> Result<(), Self::Error> {
+        self.delete_by_id(provider.id).await
+    }
+
+    /// Delete an upstream OAuth provider by its ID
+    ///
+    /// # Parameters
+    ///
+    /// * `id`: The ID of the provider to delete
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn delete_by_id(&mut self, id: Ulid) -> Result<(), Self::Error>;
+
+    /// Insert or update an upstream OAuth provider
+    ///
+    /// # Parameters
+    ///
+    /// * `clock`: The clock used to generate timestamps
+    /// * `id`: The ID of the provider to update
+    /// * `issuer`: The OIDC issuer of the provider
+    /// * `scope`: The scope to request during the authorization flow
+    /// * `token_endpoint_auth_method`: The token endpoint authentication method
+    /// * `token_endpoint_auth_signing_alg`: The JWT signing algorithm to use
+    ///   when then `client_secret_jwt` or `private_key_jwt` authentication
+    ///   methods are used
+    /// * `client_id`: The client ID to use when authenticating to the upstream
+    /// * `encrypted_client_secret`: The encrypted client secret to use when
+    ///   authenticating to the upstream
+    /// * `claims_imports`: How claims should be imported from the upstream
+    ///   provider
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    #[allow(clippy::too_many_arguments)]
+    async fn upsert(
+        &mut self,
+        clock: &dyn Clock,
+        id: Ulid,
+        issuer: String,
+        scope: Scope,
+        token_endpoint_auth_method: OAuthClientAuthenticationMethod,
+        token_endpoint_signing_alg: Option<JsonWebSignatureAlg>,
+        client_id: String,
+        encrypted_client_secret: Option<String>,
+        claims_imports: UpstreamOAuthProviderClaimsImports,
+    ) -> Result<UpstreamOAuthProvider, Self::Error>;
+
     /// Get a paginated list of upstream OAuth providers
     ///
     /// # Parameters
@@ -115,6 +174,23 @@ repository_impl!(UpstreamOAuthProviderRepository:
         encrypted_client_secret: Option<String>,
         claims_imports: UpstreamOAuthProviderClaimsImports
     ) -> Result<UpstreamOAuthProvider, Self::Error>;
+
+    async fn upsert(
+        &mut self,
+        clock: &dyn Clock,
+        id: Ulid,
+        issuer: String,
+        scope: Scope,
+        token_endpoint_auth_method: OAuthClientAuthenticationMethod,
+        token_endpoint_signing_alg: Option<JsonWebSignatureAlg>,
+        client_id: String,
+        encrypted_client_secret: Option<String>,
+        claims_imports: UpstreamOAuthProviderClaimsImports,
+    ) -> Result<UpstreamOAuthProvider, Self::Error>;
+
+    async fn delete(&mut self, provider: UpstreamOAuthProvider) -> Result<(), Self::Error>;
+
+    async fn delete_by_id(&mut self, id: Ulid) -> Result<(), Self::Error>;
 
     async fn list_paginated(
         &mut self,

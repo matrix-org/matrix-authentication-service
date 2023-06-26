@@ -290,6 +290,7 @@
       ]
     },
     "ClaimsImports": {
+      "description": "How claims should be imported",
       "type": "object",
       "properties": {
         "displayname": {
@@ -802,6 +803,7 @@
       }
     },
     "ImportAction": {
+      "description": "How to handle a claim",
       "oneOf": [
         {
           "description": "Ignore the claim",
@@ -834,6 +836,7 @@
       ]
     },
     "ImportPreference": {
+      "description": "What should be done with a claim",
       "type": "object",
       "properties": {
         "action": {
@@ -1469,7 +1472,7 @@
               ]
             },
             "token_endpoint_auth_signing_alg": {
-              "type": "string"
+              "$ref": "#/definitions/JsonWebSignatureAlg"
             }
           }
         },
@@ -1487,7 +1490,7 @@
               ]
             },
             "token_endpoint_auth_signing_alg": {
-              "type": "string"
+              "$ref": "#/definitions/JsonWebSignatureAlg"
             }
           }
         }

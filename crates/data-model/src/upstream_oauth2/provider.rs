@@ -75,14 +75,17 @@ pub enum ImportAction {
 }
 
 impl ImportAction {
+    #[must_use]
     pub fn is_forced(&self) -> bool {
         matches!(self, Self::Force | Self::Require)
     }
 
+    #[must_use]
     pub fn ignore(&self) -> bool {
         matches!(self, Self::Ignore)
     }
 
+    #[must_use]
     pub fn is_required(&self) -> bool {
         matches!(self, Self::Require)
     }
