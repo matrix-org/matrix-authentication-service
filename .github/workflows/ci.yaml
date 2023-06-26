@@ -311,7 +311,7 @@ jobs:
             type=sha,suffix=-debug
 
       - name: Setup Cosign
-        uses: sigstore/cosign-installer@v3.0.5
+        uses: sigstore/cosign-installer@v3.1.0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2.7.0
