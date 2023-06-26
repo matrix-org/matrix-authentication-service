@@ -55,7 +55,7 @@ features = ["http1", "http2", "rustls-native-certs"]
 default-features = false
 optional = true
 [dependencies.hyper]
-version = "0.14.26"
+version = "0.14.27"
 features = ["client", "http1", "http2", "stream", "runtime" ]
 optional = true
 [dependencies.tower-http]
