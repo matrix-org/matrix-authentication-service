@@ -124,7 +124,7 @@ pub trait OAuth2ClientRepository: Send + Sync {
         initiate_login_uri: Option<Url>,
     ) -> Result<Client, Self::Error>;
 
-    /// Add or replace a client from the configuration
+    /// Add or replace a static client
     ///
     /// Returns the client that was added or replaced
     ///
@@ -143,7 +143,7 @@ pub trait OAuth2ClientRepository: Send + Sync {
     ///
     /// Returns [`Self::Error`] if the underlying repository fails
     #[allow(clippy::too_many_arguments)]
-    async fn add_from_config(
+    async fn upsert_static(
         &mut self,
         rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
@@ -154,6 +154,13 @@ pub trait OAuth2ClientRepository: Send + Sync {
         jwks_uri: Option<Url>,
         redirect_uris: Vec<Url>,
     ) -> Result<Client, Self::Error>;
+
+    /// List all static clients
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn all_static(&mut self) -> Result<Vec<Client>, Self::Error>;
 
     /// Get the list of scopes that the user has given consent for the given
     /// client
@@ -193,6 +200,32 @@ pub trait OAuth2ClientRepository: Send + Sync {
         user: &User,
         scope: &Scope,
     ) -> Result<(), Self::Error>;
+
+    /// Delete a client
+    ///
+    /// # Parameters
+    ///
+    /// * `client`: The client to delete
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails, or if the
+    /// client does not exist
+    async fn delete(&mut self, client: Client) -> Result<(), Self::Error> {
+        self.delete_by_id(client.id).await
+    }
+
+    /// Delete a client by ID
+    ///
+    /// # Parameters
+    ///
+    /// * `id`: The ID of the client to delete
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails, or if the
+    /// client does not exist
+    async fn delete_by_id(&mut self, id: Ulid) -> Result<(), Self::Error>;
 }
 
 repository_impl!(OAuth2ClientRepository:
@@ -225,7 +258,7 @@ repository_impl!(OAuth2ClientRepository:
         initiate_login_uri: Option<Url>,
     ) -> Result<Client, Self::Error>;
 
-    async fn add_from_config(
+    async fn upsert_static(
         &mut self,
         rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
@@ -236,6 +269,12 @@ repository_impl!(OAuth2ClientRepository:
         jwks_uri: Option<Url>,
         redirect_uris: Vec<Url>,
     ) -> Result<Client, Self::Error>;
+
+    async fn all_static(&mut self) -> Result<Vec<Client>, Self::Error>;
+
+    async fn delete(&mut self, client: Client) -> Result<(), Self::Error>;
+
+    async fn delete_by_id(&mut self, id: Ulid) -> Result<(), Self::Error>;
 
     async fn get_consent_for_user(
         &mut self,

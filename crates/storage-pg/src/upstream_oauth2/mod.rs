@@ -189,7 +189,10 @@ mod tests {
         assert_eq!(links.edges[0].user_id, Some(user.id));
 
         // Try deleting the provider
-        repo.upstream_oauth_provider().delete(provider).await.unwrap();
+        repo.upstream_oauth_provider()
+            .delete(provider)
+            .await
+            .unwrap();
         let providers = repo.upstream_oauth_provider().all().await.unwrap();
         assert!(providers.is_empty());
     }

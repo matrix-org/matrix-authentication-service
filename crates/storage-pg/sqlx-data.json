@@ -14,6 +14,18 @@
     },
     "query": "\n                UPDATE oauth2_authorization_grants\n                SET fulfilled_at = $2\n                  , oauth2_session_id = $3\n                WHERE oauth2_authorization_grant_id = $1\n            "
   },
+  "036e9e2cb7271782e48700fecd3fdd80f596ed433f37f2528c7edbdc88b13646": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n                    DELETE FROM oauth2_consents\n                    WHERE oauth2_client_id = $1\n                "
+  },
   "0469c1d3ad11fd96febacad33302709c870ead848d6920cdfdb18912d543488e": {
     "describe": {
       "columns": [
@@ -165,6 +177,18 @@
     },
     "query": "\n                SELECT user_email_confirmation_code_id\n                     , user_email_id\n                     , code\n                     , created_at\n                     , expires_at\n                     , consumed_at\n                FROM user_email_confirmation_codes\n                WHERE code = $1\n                  AND user_email_id = $2\n            "
   },
+  "1eb829460407fca22b717b88a1a0a9b7b920d807a4b6c235e1bee524cd73b266": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n                    DELETE FROM upstream_oauth_links\n                    WHERE upstream_oauth_provider_id = $1\n                "
+  },
   "1f6297fb323e9f2fbfa1c9e3225c0b3037c8c4714533a6240c62275332aa58dc": {
     "describe": {
       "columns": [],
@@ -189,6 +213,57 @@
       }
     },
     "query": "\n                UPDATE oauth2_access_tokens\n                SET revoked_at = $2\n                WHERE oauth2_access_token_id = $1\n            "
+  },
+  "2a0d8d70d21afa9a2c9c1c432853361bb85911c48f7db6c3873b0f5abf35940b": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n                    DELETE FROM oauth2_authorization_grants\n                    WHERE oauth2_client_id = $1\n                "
+  },
+  "2ee26886c56f04cd53d4c0968f5cf0963f92b6d15e6af0e69378a6447dee677c": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n                    DELETE FROM oauth2_access_tokens\n                    WHERE oauth2_session_id IN (\n                        SELECT oauth2_session_id\n                        FROM oauth2_sessions\n                        WHERE oauth2_client_id = $1\n                    )\n                "
+  },
+  "31cbbd841029812c6d3500cae04a8e9e5723e4749d339465492b68e072c3a802": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Text",
+          "Bool",
+          "Bool",
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Jsonb",
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n                INSERT INTO oauth2_clients\n                    ( oauth2_client_id\n                    , encrypted_client_secret\n                    , grant_type_authorization_code\n                    , grant_type_refresh_token\n                    , client_name\n                    , logo_uri\n                    , client_uri\n                    , policy_uri\n                    , tos_uri\n                    , jwks_uri\n                    , jwks\n                    , id_token_signed_response_alg\n                    , userinfo_signed_response_alg\n                    , token_endpoint_auth_method\n                    , token_endpoint_auth_signing_alg\n                    , initiate_login_uri\n                    , is_static\n                    )\n                VALUES\n                    ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, FALSE)\n            "
   },
   "3d66f3121b11ce923b9c60609b510a8ca899640e78cc8f5b03168622928ffe94": {
     "describe": {
@@ -706,6 +781,18 @@
     },
     "query": "\n                INSERT INTO oauth2_sessions\n                    ( oauth2_session_id\n                    , user_session_id\n                    , oauth2_client_id\n                    , scope\n                    , created_at\n                    )\n                VALUES ($1, $2, $3, $4, $5)\n            "
   },
+  "5b697dd7834d33ec55972d3ba43d25fe794bc0b69c5938275711faa7a80b811f": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n                    DELETE FROM oauth2_refresh_tokens\n                    WHERE oauth2_session_id IN (\n                        SELECT oauth2_session_id\n                        FROM oauth2_sessions\n                        WHERE oauth2_client_id = $1\n                    )\n                "
+  },
   "5f6b7e38ef9bc3b39deabba277d0255fb8cfb2adaa65f47b78a8fac11d8c91c3": {
     "describe": {
       "columns": [],
@@ -720,6 +807,18 @@
       }
     },
     "query": "\n                INSERT INTO upstream_oauth_links (\n                    upstream_oauth_link_id,\n                    upstream_oauth_provider_id,\n                    user_id,\n                    subject,\n                    created_at\n                ) VALUES ($1, $2, NULL, $3, $4)\n            "
+  },
+  "5fe1bb569d13a7d3ff22887b3fc5b76ff901c183b314f8ccb5018d70c516abf6": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n                DELETE FROM oauth2_clients\n                WHERE oauth2_client_id = $1\n            "
   },
   "6021c1b9e17b0b2e8b511888f8c6be00683ba0635a13eb7fcd403d3d4a3f90db": {
     "describe": {
@@ -912,6 +1011,24 @@
       }
     },
     "query": "\n                UPDATE upstream_oauth_authorization_sessions\n                SET consumed_at = $1\n                WHERE upstream_oauth_authorization_session_id = $2\n            "
+  },
+  "68c4cd463e4035ba8384f11818b7be602e2fbc34a5582f31f95b0cc5fa2aeb92": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Text",
+          "Bool",
+          "Bool",
+          "Text",
+          "Jsonb",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n                INSERT INTO oauth2_clients\n                    ( oauth2_client_id\n                    , encrypted_client_secret\n                    , grant_type_authorization_code\n                    , grant_type_refresh_token\n                    , token_endpoint_auth_method\n                    , jwks\n                    , jwks_uri\n                    , is_static\n                    )\n                VALUES\n                    ($1, $2, $3, $4, $5, $6, $7, TRUE)\n                ON CONFLICT (oauth2_client_id)\n                DO\n                    UPDATE SET encrypted_client_secret = EXCLUDED.encrypted_client_secret\n                             , grant_type_authorization_code = EXCLUDED.grant_type_authorization_code\n                             , grant_type_refresh_token = EXCLUDED.grant_type_refresh_token\n                             , token_endpoint_auth_method = EXCLUDED.token_endpoint_auth_method\n                             , jwks = EXCLUDED.jwks\n                             , jwks_uri = EXCLUDED.jwks_uri\n                             , is_static = TRUE\n            "
   },
   "6a3b543ec53ce242866d1e84de26728e6dd275cae745f9c646e3824d859c5384": {
     "describe": {
@@ -1213,6 +1330,18 @@
     },
     "query": "\n                    INSERT INTO oauth2_client_redirect_uris\n                        (oauth2_client_redirect_uri_id, oauth2_client_id, redirect_uri)\n                    SELECT id, $2, redirect_uri\n                    FROM UNNEST($1::uuid[], $3::text[]) r(id, redirect_uri)\n                "
   },
+  "7cd0264707100f5b3cb2582f3f840bf66649742374e3643f1902ae69377fc9b6": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n                    DELETE FROM oauth2_client_redirect_uris\n                    WHERE oauth2_client_id = $1\n                "
+  },
   "7ce387b1b0aaf10e72adde667b19521b66eaafa51f73bf2f95e38b8f3b64a229": {
     "describe": {
       "columns": [],
@@ -1226,17 +1355,119 @@
     },
     "query": "\n                UPDATE upstream_oauth_links\n                SET user_id = $1\n                WHERE upstream_oauth_link_id = $2\n            "
   },
-  "82fec0e13755e7032457d94fe8d212c62f14c80a98b61d82965f1b93f841c014": {
+  "7e676491b077d4bc8a9cdb4a27ebf119d98cd35ebb52b1064fdb2d9eed78d0e8": {
     "describe": {
-      "columns": [],
-      "nullable": [],
+      "columns": [
+        {
+          "name": "oauth2_client_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "encrypted_client_secret",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "redirect_uris!",
+          "ordinal": 2,
+          "type_info": "TextArray"
+        },
+        {
+          "name": "grant_type_authorization_code",
+          "ordinal": 3,
+          "type_info": "Bool"
+        },
+        {
+          "name": "grant_type_refresh_token",
+          "ordinal": 4,
+          "type_info": "Bool"
+        },
+        {
+          "name": "client_name",
+          "ordinal": 5,
+          "type_info": "Text"
+        },
+        {
+          "name": "logo_uri",
+          "ordinal": 6,
+          "type_info": "Text"
+        },
+        {
+          "name": "client_uri",
+          "ordinal": 7,
+          "type_info": "Text"
+        },
+        {
+          "name": "policy_uri",
+          "ordinal": 8,
+          "type_info": "Text"
+        },
+        {
+          "name": "tos_uri",
+          "ordinal": 9,
+          "type_info": "Text"
+        },
+        {
+          "name": "jwks_uri",
+          "ordinal": 10,
+          "type_info": "Text"
+        },
+        {
+          "name": "jwks",
+          "ordinal": 11,
+          "type_info": "Jsonb"
+        },
+        {
+          "name": "id_token_signed_response_alg",
+          "ordinal": 12,
+          "type_info": "Text"
+        },
+        {
+          "name": "userinfo_signed_response_alg",
+          "ordinal": 13,
+          "type_info": "Text"
+        },
+        {
+          "name": "token_endpoint_auth_method",
+          "ordinal": 14,
+          "type_info": "Text"
+        },
+        {
+          "name": "token_endpoint_auth_signing_alg",
+          "ordinal": 15,
+          "type_info": "Text"
+        },
+        {
+          "name": "initiate_login_uri",
+          "ordinal": 16,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        true,
+        null,
+        false,
+        false,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
       "parameters": {
-        "Left": [
-          "Uuid"
-        ]
+        "Left": []
       }
     },
-    "query": "\n                DELETE FROM upstream_oauth_authorization_sessions\n                WHERE upstream_oauth_provider_id = $1\n            "
+    "query": "\n                SELECT oauth2_client_id\n                     , encrypted_client_secret\n                     , ARRAY(\n                           SELECT redirect_uri\n                           FROM oauth2_client_redirect_uris r\n                           WHERE r.oauth2_client_id = c.oauth2_client_id\n                       ) AS \"redirect_uris!\"\n                     , grant_type_authorization_code\n                     , grant_type_refresh_token\n                     , client_name\n                     , logo_uri\n                     , client_uri\n                     , policy_uri\n                     , tos_uri\n                     , jwks_uri\n                     , jwks\n                     , id_token_signed_response_alg\n                     , userinfo_signed_response_alg\n                     , token_endpoint_auth_method\n                     , token_endpoint_auth_signing_alg\n                     , initiate_login_uri\n                FROM oauth2_clients c\n                WHERE is_static = TRUE\n            "
   },
   "836fb7567d84057fa7f1edaab834c21a158a5762fe220b6bfacd6576be6c613c": {
     "describe": {
@@ -1392,7 +1623,7 @@
     },
     "query": "\n                SELECT oauth2_client_id\n                     , encrypted_client_secret\n                     , ARRAY(\n                           SELECT redirect_uri\n                           FROM oauth2_client_redirect_uris r\n                           WHERE r.oauth2_client_id = c.oauth2_client_id\n                       ) AS \"redirect_uris!\"\n                     , grant_type_authorization_code\n                     , grant_type_refresh_token\n                     , client_name\n                     , logo_uri\n                     , client_uri\n                     , policy_uri\n                     , tos_uri\n                     , jwks_uri\n                     , jwks\n                     , id_token_signed_response_alg\n                     , userinfo_signed_response_alg\n                     , token_endpoint_auth_method\n                     , token_endpoint_auth_signing_alg\n                     , initiate_login_uri\n                FROM oauth2_clients c\n\n                WHERE oauth2_client_id = ANY($1::uuid[])\n            "
   },
-  "8a32a39c43147dfd9dbd25ff04686c3cdbc52ea5689ce3454d15e8ed31756f38": {
+  "8acbdc892d44efb53529da1c2df65bea6b799a43cf4c9264a37d392847e6eff0": {
     "describe": {
       "columns": [],
       "nullable": [],
@@ -1402,25 +1633,7 @@
         ]
       }
     },
-    "query": "\n                DELETE FROM upstream_oauth_links\n                WHERE upstream_oauth_provider_id = $1\n            "
-  },
-  "8a79c7c392dd930628caadec80c9b2645501475ab4feacbac59ca1bc52b16c3f": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Uuid",
-          "Text",
-          "Bool",
-          "Bool",
-          "Text",
-          "Jsonb",
-          "Text"
-        ]
-      }
-    },
-    "query": "\n                INSERT INTO oauth2_clients\n                    ( oauth2_client_id\n                    , encrypted_client_secret\n                    , grant_type_authorization_code\n                    , grant_type_refresh_token\n                    , token_endpoint_auth_method\n                    , jwks\n                    , jwks_uri\n                    )\n                VALUES\n                    ($1, $2, $3, $4, $5, $6, $7)\n                ON CONFLICT (oauth2_client_id)\n                DO\n                    UPDATE SET encrypted_client_secret = EXCLUDED.encrypted_client_secret\n                             , grant_type_authorization_code = EXCLUDED.grant_type_authorization_code\n                             , grant_type_refresh_token = EXCLUDED.grant_type_refresh_token\n                             , token_endpoint_auth_method = EXCLUDED.token_endpoint_auth_method\n                             , jwks = EXCLUDED.jwks\n                             , jwks_uri = EXCLUDED.jwks_uri\n            "
+    "query": "\n                    DELETE FROM oauth2_sessions\n                    WHERE oauth2_client_id = $1\n                "
   },
   "8b7297c263336d70c2b647212b16f7ae39bc5cb1572e3a2dcfcd67f196a1fa39": {
     "describe": {
@@ -1918,6 +2131,18 @@
       }
     },
     "query": "\n                UPDATE upstream_oauth_authorization_sessions\n                SET upstream_oauth_link_id = $1,\n                    completed_at = $2,\n                    id_token = $3\n                WHERE upstream_oauth_authorization_session_id = $4\n            "
+  },
+  "b992283a9b43cbb8f86149f3f55cb47fb628dabd8fadc50e6a5772903f851e1c": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n                    DELETE FROM upstream_oauth_authorization_sessions\n                    WHERE upstream_oauth_provider_id = $1\n                "
   },
   "bbf62633c561706a762089bbab2f76a9ba3e2ed3539ef16accb601fb609c2ec9": {
     "describe": {
@@ -2515,32 +2740,5 @@
       }
     },
     "query": "\n                SELECT oauth2_session_id\n                     , user_session_id\n                     , oauth2_client_id\n                     , scope\n                     , created_at\n                     , finished_at\n                FROM oauth2_sessions\n\n                WHERE oauth2_session_id = $1\n            "
-  },
-  "f5edcd4c306ca8179cdf9d4aab59fbba971b54611c91345849920954dd8089b3": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Uuid",
-          "Text",
-          "Bool",
-          "Bool",
-          "Text",
-          "Text",
-          "Text",
-          "Text",
-          "Text",
-          "Text",
-          "Jsonb",
-          "Text",
-          "Text",
-          "Text",
-          "Text",
-          "Text"
-        ]
-      }
-    },
-    "query": "\n                INSERT INTO oauth2_clients\n                    ( oauth2_client_id\n                    , encrypted_client_secret\n                    , grant_type_authorization_code\n                    , grant_type_refresh_token\n                    , client_name\n                    , logo_uri\n                    , client_uri\n                    , policy_uri\n                    , tos_uri\n                    , jwks_uri\n                    , jwks\n                    , id_token_signed_response_alg\n                    , userinfo_signed_response_alg\n                    , token_endpoint_auth_method\n                    , token_endpoint_auth_signing_alg\n                    , initiate_login_uri\n                    )\n                VALUES\n                    ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)\n            "
   }
 }

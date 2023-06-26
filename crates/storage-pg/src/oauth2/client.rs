@@ -428,9 +428,10 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
                     , token_endpoint_auth_method
                     , token_endpoint_auth_signing_alg
                     , initiate_login_uri
+                    , is_static
                     )
                 VALUES
-                    ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+                    ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, FALSE)
             "#,
             Uuid::from(id),
             encrypted_client_secret,
@@ -527,7 +528,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
     }
 
     #[tracing::instrument(
-        name = "db.oauth2_client.add_from_config",
+        name = "db.oauth2_client.upsert_static",
         skip_all,
         fields(
             db.statement,
@@ -535,7 +536,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
         ),
         err,
     )]
-    async fn add_from_config(
+    async fn upsert_static(
         &mut self,
         rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
@@ -564,9 +565,10 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
                     , token_endpoint_auth_method
                     , jwks
                     , jwks_uri
+                    , is_static
                     )
                 VALUES
-                    ($1, $2, $3, $4, $5, $6, $7)
+                    ($1, $2, $3, $4, $5, $6, $7, TRUE)
                 ON CONFLICT (oauth2_client_id)
                 DO
                     UPDATE SET encrypted_client_secret = EXCLUDED.encrypted_client_secret
@@ -575,6 +577,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
                              , token_endpoint_auth_method = EXCLUDED.token_endpoint_auth_method
                              , jwks = EXCLUDED.jwks
                              , jwks_uri = EXCLUDED.jwks_uri
+                             , is_static = TRUE
             "#,
             Uuid::from(client_id),
             encrypted_client_secret,
@@ -590,7 +593,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
 
         {
             let span = info_span!(
-                "db.oauth2_client.add_from_config.redirect_uris",
+                "db.oauth2_client.upsert_static.redirect_uris",
                 client.id = %client_id,
                 db.statement = tracing::field::Empty,
             );
@@ -657,6 +660,52 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
     }
 
     #[tracing::instrument(
+        name = "db.oauth2_client.all_static",
+        skip_all,
+        fields(
+            db.statement,
+        ),
+        err,
+    )]
+    async fn all_static(&mut self) -> Result<Vec<Client>, Self::Error> {
+        let res = sqlx::query_as!(
+            OAuth2ClientLookup,
+            r#"
+                SELECT oauth2_client_id
+                     , encrypted_client_secret
+                     , ARRAY(
+                           SELECT redirect_uri
+                           FROM oauth2_client_redirect_uris r
+                           WHERE r.oauth2_client_id = c.oauth2_client_id
+                       ) AS "redirect_uris!"
+                     , grant_type_authorization_code
+                     , grant_type_refresh_token
+                     , client_name
+                     , logo_uri
+                     , client_uri
+                     , policy_uri
+                     , tos_uri
+                     , jwks_uri
+                     , jwks
+                     , id_token_signed_response_alg
+                     , userinfo_signed_response_alg
+                     , token_endpoint_auth_method
+                     , token_endpoint_auth_signing_alg
+                     , initiate_login_uri
+                FROM oauth2_clients c
+                WHERE is_static = TRUE
+            "#,
+        )
+        .traced()
+        .fetch_all(&mut *self.conn)
+        .await?;
+
+        res.into_iter()
+            .map(|r| r.try_into().map_err(DatabaseError::from))
+            .collect()
+    }
+
+    #[tracing::instrument(
         name = "db.oauth2_client.get_consent_for_user",
         skip_all,
         fields(
@@ -698,6 +747,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
     }
 
     #[tracing::instrument(
+        name = "db.oauth2_client.give_consent_for_user",
         skip_all,
         fields(
             db.statement,
@@ -739,10 +789,161 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
             &tokens,
             now,
         )
-            .traced()
+        .traced()
         .execute(&mut *self.conn)
         .await?;
 
         Ok(())
+    }
+
+    #[tracing::instrument(
+        name = "db.oauth2_client.delete_by_id",
+        skip_all,
+        fields(
+            db.statement,
+            client.id = %id,
+        ),
+        err,
+    )]
+    async fn delete_by_id(&mut self, id: Ulid) -> Result<(), Self::Error> {
+        // Delete the authorization grants
+        {
+            let span = info_span!(
+                "db.oauth2_client.delete_by_id.authorization_grants",
+                db.statement = tracing::field::Empty,
+            );
+
+            sqlx::query!(
+                r#"
+                    DELETE FROM oauth2_authorization_grants
+                    WHERE oauth2_client_id = $1
+                "#,
+                Uuid::from(id),
+            )
+            .record(&span)
+            .execute(&mut *self.conn)
+            .instrument(span)
+            .await?;
+        }
+
+        // Delete the user consents
+        {
+            let span = info_span!(
+                "db.oauth2_client.delete_by_id.consents",
+                db.statement = tracing::field::Empty,
+            );
+
+            sqlx::query!(
+                r#"
+                    DELETE FROM oauth2_consents
+                    WHERE oauth2_client_id = $1
+                "#,
+                Uuid::from(id),
+            )
+            .record(&span)
+            .execute(&mut *self.conn)
+            .instrument(span)
+            .await?;
+        }
+
+        // Delete the OAuth 2 sessions related data
+        {
+            let span = info_span!(
+                "db.oauth2_client.delete_by_id.access_tokens",
+                db.statement = tracing::field::Empty,
+            );
+
+            sqlx::query!(
+                r#"
+                    DELETE FROM oauth2_access_tokens
+                    WHERE oauth2_session_id IN (
+                        SELECT oauth2_session_id
+                        FROM oauth2_sessions
+                        WHERE oauth2_client_id = $1
+                    )
+                "#,
+                Uuid::from(id),
+            )
+            .record(&span)
+            .execute(&mut *self.conn)
+            .instrument(span)
+            .await?;
+        }
+
+        {
+            let span = info_span!(
+                "db.oauth2_client.delete_by_id.refresh_tokens",
+                db.statement = tracing::field::Empty,
+            );
+
+            sqlx::query!(
+                r#"
+                    DELETE FROM oauth2_refresh_tokens
+                    WHERE oauth2_session_id IN (
+                        SELECT oauth2_session_id
+                        FROM oauth2_sessions
+                        WHERE oauth2_client_id = $1
+                    )
+                "#,
+                Uuid::from(id),
+            )
+            .record(&span)
+            .execute(&mut *self.conn)
+            .instrument(span)
+            .await?;
+        }
+
+        {
+            let span = info_span!(
+                "db.oauth2_client.delete_by_id.sessions",
+                db.statement = tracing::field::Empty,
+            );
+
+            sqlx::query!(
+                r#"
+                    DELETE FROM oauth2_sessions
+                    WHERE oauth2_client_id = $1
+                "#,
+                Uuid::from(id),
+            )
+            .record(&span)
+            .execute(&mut *self.conn)
+            .instrument(span)
+            .await?;
+        }
+
+        // Delete the redirect URIs
+        {
+            let span = info_span!(
+                "db.oauth2_client.delete_by_id.redirect_uris",
+                db.statement = tracing::field::Empty,
+            );
+
+            sqlx::query!(
+                r#"
+                    DELETE FROM oauth2_client_redirect_uris
+                    WHERE oauth2_client_id = $1
+                "#,
+                Uuid::from(id),
+            )
+            .record(&span)
+            .execute(&mut *self.conn)
+            .instrument(span)
+            .await?;
+        }
+
+        // Now delete the client itself
+        let res = sqlx::query!(
+            r#"
+                DELETE FROM oauth2_clients
+                WHERE oauth2_client_id = $1
+            "#,
+            Uuid::from(id),
+        )
+        .traced()
+        .execute(&mut *self.conn)
+        .await?;
+
+        DatabaseError::ensure_affected_rows(&res, 1)
     }
 }
