@@ -49,7 +49,7 @@ pub struct MatrixConfig {
 }
 
 #[async_trait]
-impl ConfigurationSection<'_> for MatrixConfig {
+impl ConfigurationSection for MatrixConfig {
     fn path() -> &'static str {
         "matrix"
     }

@@ -43,7 +43,7 @@ impl Default for CsrfConfig {
 }
 
 #[async_trait]
-impl ConfigurationSection<'_> for CsrfConfig {
+impl ConfigurationSection for CsrfConfig {
     fn path() -> &'static str {
         "csrf"
     }

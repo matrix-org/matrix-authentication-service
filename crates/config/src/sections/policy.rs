@@ -82,7 +82,7 @@ impl Default for PolicyConfig {
 }
 
 #[async_trait]
-impl ConfigurationSection<'_> for PolicyConfig {
+impl ConfigurationSection for PolicyConfig {
     fn path() -> &'static str {
         "policy"
     }

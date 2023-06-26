@@ -74,7 +74,7 @@ impl Options {
         }
     }
 
-    pub fn load_config<'de, T: ConfigurationSection<'de>>(&self) -> anyhow::Result<T> {
+    pub fn load_config<T: ConfigurationSection>(&self) -> anyhow::Result<T> {
         let configs = if self.config.is_empty() {
             // Read the MAS_CONFIG environment variable
             std::env::var("MAS_CONFIG")

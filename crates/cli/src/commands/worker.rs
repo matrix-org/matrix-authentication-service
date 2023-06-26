@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use clap::Parser;
-use mas_config::RootConfig;
+use mas_config::AppConfig;
 use mas_handlers::HttpClientFactory;
 use mas_matrix_synapse::SynapseConnection;
 use mas_router::UrlBuilder;
@@ -31,7 +31,7 @@ pub(super) struct Options {}
 impl Options {
     pub async fn run(self, root: &super::Options) -> anyhow::Result<()> {
         let span = info_span!("cli.worker.init").entered();
-        let config: RootConfig = root.load_config()?;
+        let config: AppConfig = root.load_config()?;
 
         // Connect to the database
         info!("Connecting to the database");

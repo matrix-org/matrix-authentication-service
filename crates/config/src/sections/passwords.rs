@@ -56,7 +56,7 @@ impl Default for PasswordsConfig {
 }
 
 #[async_trait]
-impl ConfigurationSection<'_> for PasswordsConfig {
+impl ConfigurationSection for PasswordsConfig {
     fn path() -> &'static str {
         "passwords"
     }

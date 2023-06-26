@@ -21,12 +21,12 @@ use figment::{
     Figment, Profile,
 };
 use rand::Rng;
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Serialize};
 
 #[async_trait]
 /// Trait implemented by all configuration section to help loading specific part
 /// of the config and generate the sample config.
-pub trait ConfigurationSection<'a>: Sized + Deserialize<'a> + Serialize {
+pub trait ConfigurationSection: Sized + DeserializeOwned + Serialize {
     /// Specify where this section should live relative to the root.
     fn path() -> &'static str;
 
@@ -39,7 +39,7 @@ pub trait ConfigurationSection<'a>: Sized + Deserialize<'a> + Serialize {
     /// variables.
     ///
     /// This is what backs the `config generate` subcommand, allowing to
-    /// programatically generate a configuration file, e.g.
+    /// programmatically generate a configuration file, e.g.
     ///
     /// ```sh
     /// export MAS_OAUTH2_ISSUER=https://example.com/
