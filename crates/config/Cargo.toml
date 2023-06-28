@@ -25,7 +25,7 @@ serde_with = { version = "3.0.0", features = ["hex", "chrono"] }
 serde_json = "1.0.99"
 
 pem-rfc7468 = "0.7.0"
-rustls-pemfile = "1.0.2"
+rustls-pemfile = "1.0.3"
 rand = "0.8.5"
 rand_chacha = "0.3.1"
 
