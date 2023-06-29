@@ -269,6 +269,15 @@ mod jobs {
             }
         }
 
+        #[doc(hidden)]
+        #[must_use]
+        pub fn new_for_id(user_id: Ulid) -> Self {
+            Self {
+                user_id,
+                set_display_name: None,
+            }
+        }
+
         /// Set the display name of the user.
         #[must_use]
         pub fn set_display_name(mut self, display_name: String) -> Self {
