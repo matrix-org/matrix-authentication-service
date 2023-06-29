@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 #}
 
-{% macro input(label, name, type="text", form_state=false, autocomplete=false, class="", inputmode="text", autocorrect=false, autocapitalize=false) %}
+{% macro input(label, name, type="text", form_state=false, autocomplete=false, class="", inputmode="text", autocorrect=false, autocapitalize=false, disabled=false, value="") %}
   {% if not form_state %}
     {% set form_state = dict(errors=[], fields=dict()) %}
   {% endif %}
@@ -35,9 +35,10 @@ limitations under the License.
       class="z-0 px-3 py-2 bg-white dark:bg-black-900 rounded-lg {{ border_color }} border-2 focus:border-accent focus:ring-0 focus:outline-0"
       type="{{ type }}" 
       inputmode="{{ inputmode }}"
+      value="{{ state.value | default(value=value) }}"
+      {% if disabled %} disabled {% endif %}
       {% if autocomplete %} autocomplete="{{ autocomplete }}" {% endif %} 
-      {% if state.value %} value="{{ state.value }}" {% endif %}  
-      {% if autocorrect %} autocorrect="{{ autocorrect }}" {% endif %} 
+      {% if autocorrect %} autocorrect="{{ autocorrect }}" {% endif %}
       {% if autocapitalize %} autocapitalize="{{ autocapitalize }}" {% endif %} 
       />
 
