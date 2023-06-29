@@ -23,7 +23,7 @@ rustls = "0.21.2"
 serde_json = "1.0.99"
 serde_yaml = "0.9.22"
 sqlx = { version = "0.6.3", features = ["runtime-tokio-rustls", "postgres"] }
-tokio = { version = "1.28.2", features = ["full"] }
+tokio = { version = "1.29.0", features = ["full"] }
 tower = { version = "0.4.13", features = ["full"] }
 tower-http = { version = "0.4.1", features = ["fs", "compression-full"] }
 url = "2.4.0"
