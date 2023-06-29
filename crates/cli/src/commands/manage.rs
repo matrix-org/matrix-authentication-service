@@ -18,11 +18,13 @@ use mas_config::{DatabaseConfig, PasswordsConfig};
 use mas_data_model::{Device, TokenType};
 use mas_storage::{
     compat::{CompatAccessTokenRepository, CompatSessionRepository},
+    job::{JobRepositoryExt, ProvisionUserJob},
     user::{UserEmailRepository, UserPasswordRepository, UserRepository},
     Repository, RepositoryAccess, SystemClock,
 };
 use mas_storage_pg::PgRepository;
 use rand::SeedableRng;
+use sqlx::types::Uuid;
 use tracing::{info, info_span};
 
 use crate::util::{database_from_config, password_manager_from_config};
@@ -54,6 +56,9 @@ enum Subcommand {
         #[arg(long = "yes-i-want-to-grant-synapse-admin-privileges")]
         admin: bool,
     },
+
+    /// Trigger a provisioning job for all users
+    ProvisionAllUsers,
 }
 
 impl Options {
@@ -170,6 +175,31 @@ impl Options {
                     %user.username,
                     "Compatibility token issued: {}", compat_access_token.token
                 );
+
+                Ok(())
+            }
+
+            SC::ProvisionAllUsers => {
+                let _span = info_span!("cli.manage.provision_all_users").entered();
+                let config: DatabaseConfig = root.load_config()?;
+                let pool = database_from_config(&config).await?;
+                let mut conn = pool.acquire().await?;
+                let mut repo = PgRepository::from_pool(&pool).await?.boxed();
+
+                // TODO: do some pagination here
+                let ids: Vec<Uuid> = sqlx::query_scalar("SELECT user_id FROM users")
+                    .fetch_all(&mut conn)
+                    .await?;
+                drop(conn);
+
+                for id in ids {
+                    let id = id.into();
+                    info!(user.id = %id, "Scheduling provisioning job");
+                    let job = ProvisionUserJob::new_for_id(id);
+                    repo.job().schedule_job(job).await?;
+                }
+
+                repo.save().await?;
 
                 Ok(())
             }
