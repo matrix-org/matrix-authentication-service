@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [dependencies]
 # Async runtime
-tokio = { version = "1.29.0", features = ["macros"] }
+tokio = { version = "1.29.1", features = ["macros"] }
 futures-util = "0.3.28"
 
 # Logging and tracing

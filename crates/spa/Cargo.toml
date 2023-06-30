@@ -14,7 +14,7 @@ headers = "0.3.8"
 http = "0.2.9"
 tower-service = "0.3.2"
 tower-http = { version = "0.4.1", features = ["fs"] }
-tokio = { version = "1.29.0", features = ["fs"] }
+tokio = { version = "1.29.1", features = ["fs"] }
 
 [[bin]]
 name = "render"
