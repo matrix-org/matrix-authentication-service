@@ -75,6 +75,9 @@ pub(crate) enum RouteError {
     #[error("Invalid form action")]
     InvalidFormAction,
 
+    #[error("Missing username")]
+    MissingUsername,
+
     #[error(transparent)]
     Internal(Box<dyn std::error::Error>),
 }
@@ -147,7 +150,8 @@ fn import_claim(
 #[serde(rename_all = "lowercase", tag = "action")]
 pub(crate) enum FormData {
     Register {
-        username: String,
+        #[serde(default)]
+        username: Option<String>,
         #[serde(default)]
         import_email: Option<String>,
         #[serde(default)]
@@ -456,10 +460,12 @@ pub(crate) async fn post(
                 |value, force| {
                     // If the username is forced, override whatever was in the form
                     if force {
-                        username = value;
+                        username = Some(value);
                     }
                 },
             )?;
+
+            let username = username.ok_or(RouteError::MissingUsername)?;
 
             // Now we can create the user
             let user = repo.user().add(&mut rng, &clock, username).await?;

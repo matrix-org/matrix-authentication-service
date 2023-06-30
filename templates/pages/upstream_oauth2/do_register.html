@@ -30,7 +30,14 @@ limitations under the License.
 
         <input type="hidden" name="csrf" value="{{ csrf_token }}" />
         <input type="hidden" name="action" value="register" />
-        {{ field::input(label="Username", name="username", autocomplete="username", autocorrect="off", autocapitalize="none", disabled=force_localpart, value=suggested_localpart) }}
+        {% if force_localpart %}
+          <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-4">
+            <div class="font-medium">Will use the following username</div>
+            <div class="font-mono">{{ suggested_localpart }}</div>
+          </div>
+        {% else %}
+          {{ field::input(label="Username", name="username", autocomplete="username", autocorrect="off", autocapitalize="none") }}
+        {% endif %}
 
         {% if suggested_email %}
           <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-4">
