@@ -74,9 +74,9 @@ impl ProvisionRequest {
 
     pub fn on_displayname(&self, callback: impl FnOnce(Option<&str>)) -> &Self {
         match &self.displayname {
-            FieldAction::DoNothing => callback(None),
+            FieldAction::Unset => callback(None),
             FieldAction::Set(displayname) => callback(Some(displayname)),
-            FieldAction::Unset => {}
+            FieldAction::DoNothing => {}
         }
 
         self
@@ -96,9 +96,9 @@ impl ProvisionRequest {
 
     pub fn on_avatar_url(&self, callback: impl FnOnce(Option<&str>)) -> &Self {
         match &self.avatar_url {
-            FieldAction::DoNothing => callback(None),
+            FieldAction::Unset => callback(None),
             FieldAction::Set(avatar_url) => callback(Some(avatar_url)),
-            FieldAction::Unset => {}
+            FieldAction::DoNothing => {}
         }
 
         self
@@ -118,9 +118,9 @@ impl ProvisionRequest {
 
     pub fn on_emails(&self, callback: impl FnOnce(Option<&[String]>)) -> &Self {
         match &self.emails {
-            FieldAction::DoNothing => callback(None),
+            FieldAction::Unset => callback(None),
             FieldAction::Set(emails) => callback(Some(emails)),
-            FieldAction::Unset => {}
+            FieldAction::DoNothing => {}
         }
 
         self
