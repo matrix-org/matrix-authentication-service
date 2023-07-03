@@ -4,11 +4,34 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    groups:
+      aws:
+        patterns:
+          - "aws-*"
+      opentelemetry:
+        patterns:
+          - "opentelemetry-*"
+          - "tracing-opentelemetry"
+      sentry:
+        patterns:
+          - "sentry"
+          - "sentry-*"
+      tracing:
+        patterns:
+          - "tracing-*"
+        exclude-patterns:
+          - "tracing-opentelemetry"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "daily"
+
   - package-ecosystem: "npm"
     directory: "/frontend/"
     schedule:
       interval: "daily"
+    groups:
+      storybook:
+        patterns:
+         - "@storybook/*"
