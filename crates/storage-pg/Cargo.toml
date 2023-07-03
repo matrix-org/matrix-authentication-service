@@ -6,7 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-async-trait = "0.1.68"
+async-trait = "0.1.69"
 sqlx = { version = "0.6.3", features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "offline", "json", "uuid"] }
 chrono = { version = "0.4.26", features = ["serde"] }
 serde = { version = "1.0.164", features = ["derive"] }
