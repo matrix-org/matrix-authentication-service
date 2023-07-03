@@ -35,3 +35,26 @@ updates:
       storybook:
         patterns:
          - "@storybook/*"
+      vitest:
+        patterns:
+         - "vitest"
+         - "@vitest/*"
+      vite:
+        patterns:
+          - "vite"
+          - "@vitejs/*"
+          - "vite-*"
+      react:
+        patterns:
+          - "react"
+          - "react-*"
+      jotai:
+        patterns:
+          - "jotai"
+          - "jotai-*"
+      urql:
+        patterns:
+          - "@urql/*"
+      graphql-codegen:
+        patterns:
+          - "@graphql-codegen/*"
