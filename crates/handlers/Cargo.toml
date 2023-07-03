@@ -74,7 +74,7 @@ mas-templates = { path = "../templates" }
 oauth2-types = { path = "../oauth2-types" }
 
 [dev-dependencies]
-indoc = "2.0.1"
+indoc = "2.0.2"
 insta = "1.30.0"
 tracing-subscriber = "0.3.17"
 
