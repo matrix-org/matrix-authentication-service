@@ -28,8 +28,12 @@ where
 }
 
 pub fn http_all_error_status_codes() -> impl RangeBounds<StatusCode> {
-    let Ok(client_errors_start_code) = StatusCode::from_u16(400) else { unreachable!() };
-    let Ok(server_errors_end_code) = StatusCode::from_u16(599) else { unreachable!() };
+    let Ok(client_errors_start_code) = StatusCode::from_u16(400) else {
+        unreachable!()
+    };
+    let Ok(server_errors_end_code) = StatusCode::from_u16(599) else {
+        unreachable!()
+    };
 
     client_errors_start_code..=server_errors_end_code
 }

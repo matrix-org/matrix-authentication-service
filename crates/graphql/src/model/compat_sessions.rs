@@ -101,7 +101,9 @@ impl CompatSsoLogin {
         &self,
         ctx: &Context<'_>,
     ) -> Result<Option<CompatSession>, async_graphql::Error> {
-        let Some(session_id) = self.0.session_id() else { return Ok(None) };
+        let Some(session_id) = self.0.session_id() else {
+            return Ok(None);
+        };
 
         let state = ctx.state();
         let mut repo = state.repository().await?;

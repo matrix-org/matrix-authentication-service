@@ -238,7 +238,9 @@ impl<'a, T> Jwt<'a, T> {
             let Ok(key) = crate::jwa::AsymmetricVerifyingKey::from_jwk_and_alg(
                 candidate.params(),
                 self.header().alg(),
-            ) else { continue };
+            ) else {
+                continue;
+            };
 
             if self.verify(&key).is_ok() {
                 return Ok(());

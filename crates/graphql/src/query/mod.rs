@@ -82,7 +82,9 @@ impl BaseQuery {
         let id = NodeType::User.extract_ulid(&id)?;
         let requester = ctx.requester();
 
-        let Some(current_user) = requester.user() else { return Ok(None) };
+        let Some(current_user) = requester.user() else {
+            return Ok(None);
+        };
 
         if current_user.id == id {
             Ok(Some(User(current_user.clone())))
@@ -101,7 +103,9 @@ impl BaseQuery {
         let id = NodeType::BrowserSession.extract_ulid(&id)?;
         let requester = ctx.requester();
 
-        let Some(current_user) = requester.user() else { return Ok(None) };
+        let Some(current_user) = requester.user() else {
+            return Ok(None);
+        };
         let mut repo = state.repository().await?;
 
         let browser_session = repo.browser_session().lookup(id).await?;
@@ -129,7 +133,9 @@ impl BaseQuery {
         let id = NodeType::UserEmail.extract_ulid(&id)?;
         let requester = ctx.requester();
 
-        let Some(current_user) = requester.user() else { return Ok(None) };
+        let Some(current_user) = requester.user() else {
+            return Ok(None);
+        };
         let mut repo = state.repository().await?;
 
         let user_email = repo

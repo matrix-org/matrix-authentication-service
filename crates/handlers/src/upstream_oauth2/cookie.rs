@@ -41,8 +41,12 @@ pub struct Payload {
 
 impl Payload {
     fn expired(&self, now: DateTime<Utc>) -> bool {
-        let Ok(ts) = self.session.timestamp_ms().try_into() else { return true };
-        let Some(when) = NaiveDateTime::from_timestamp_millis(ts) else { return true };
+        let Ok(ts) = self.session.timestamp_ms().try_into() else {
+            return true;
+        };
+        let Some(when) = NaiveDateTime::from_timestamp_millis(ts) else {
+            return true;
+        };
         let when = DateTime::from_utc(when, Utc);
         let max_age = Duration::seconds(SESSION_MAX_TIME_SECS);
         now - when > max_age

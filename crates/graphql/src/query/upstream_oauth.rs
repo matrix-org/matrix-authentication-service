@@ -38,7 +38,9 @@ impl UpstreamOAuthQuery {
         let id = NodeType::UpstreamOAuth2Link.extract_ulid(&id)?;
         let requester = ctx.requester();
 
-        let Some(current_user) = requester.user() else { return Ok(None) };
+        let Some(current_user) = requester.user() else {
+            return Ok(None);
+        };
         let mut repo = state.repository().await?;
 
         let link = repo.upstream_oauth_link().lookup(id).await?;

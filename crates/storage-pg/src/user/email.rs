@@ -126,7 +126,9 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
         .await
         .to_option()?;
 
-        let Some(user_email) = res else { return Ok(None) };
+        let Some(user_email) = res else {
+            return Ok(None);
+        };
 
         Ok(Some(user_email.into()))
     }
@@ -162,7 +164,9 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
         .await
         .to_option()?;
 
-        let Some(user_email) = res else { return Ok(None) };
+        let Some(user_email) = res else {
+            return Ok(None);
+        };
 
         Ok(Some(user_email.into()))
     }
@@ -177,7 +181,9 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
         err,
     )]
     async fn get_primary(&mut self, user: &User) -> Result<Option<UserEmail>, Self::Error> {
-        let Some(id) = user.primary_user_email_id else { return Ok(None) };
+        let Some(id) = user.primary_user_email_id else {
+            return Ok(None);
+        };
 
         let user_email = self.lookup(id).await?.ok_or_else(|| {
             DatabaseInconsistencyError::on("users")

@@ -47,7 +47,9 @@ pub trait OAuth2ClientRepository: Send + Sync {
 
     /// Find an OAuth2 client by its client ID
     async fn find_by_client_id(&mut self, client_id: &str) -> Result<Option<Client>, Self::Error> {
-        let Ok(id) = client_id.parse() else { return Ok(None) };
+        let Ok(id) = client_id.parse() else {
+            return Ok(None);
+        };
         self.lookup(id).await
     }
 

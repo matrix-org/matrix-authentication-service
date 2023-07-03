@@ -78,7 +78,8 @@ impl ProxyProtocolV1Info {
             .as_ref()
             .windows(2)
             .take(108)
-            .position(|needle| needle == [0x0D, 0x0A]) else {
+            .position(|needle| needle == [0x0D, 0x0A])
+        else {
             // If not, it might be because we don't have enough bytes
             return if buf.remaining() < 108 {
                 Err(E::NotEnoughBytes)

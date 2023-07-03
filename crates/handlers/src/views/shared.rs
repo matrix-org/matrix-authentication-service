@@ -44,7 +44,9 @@ impl OptionalPostAuthAction {
         &'a self,
         repo: &'a mut impl RepositoryAccess,
     ) -> anyhow::Result<Option<PostAuthContext>> {
-        let Some(action) = self.post_auth_action.clone() else { return Ok(None) };
+        let Some(action) = self.post_auth_action.clone() else {
+            return Ok(None);
+        };
         let ctx = match action {
             PostAuthAction::ContinueAuthorizationGrant { id } => {
                 let grant = repo
