@@ -66,7 +66,7 @@ mas-tower = { path = "../tower" }
 oauth2-types = { path = "../oauth2-types" }
 
 [dev-dependencies]
-indoc = "2.0.1"
+indoc = "2.0.2"
 
 [features]
 default = ["jaeger", "zipkin", "webpki-roots", "policy-cache"]
