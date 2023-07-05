@@ -14,7 +14,7 @@
 
 import { ArgTypes, Decorator, Parameters } from "@storybook/react";
 import { useLayoutEffect } from "react";
-import "../src/index.css";
+import "../src/main.css";
 
 export const parameters: Parameters = {
   actions: { argTypesRegex: "^on[A-Z].*" },

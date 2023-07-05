@@ -13,9 +13,13 @@
 // limitations under the License.
 
 /// <reference types="vitest" />
+import { resolve } from "path";
+
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
+import compression from "vite-plugin-compression";
 import codegen from "vite-plugin-graphql-codegen";
+import manifestSRI from "vite-plugin-manifest-sri";
 import svgr from "vite-plugin-svgr";
 
 export default defineConfig((env) => ({
@@ -24,9 +28,18 @@ export default defineConfig((env) => ({
     manifest: true,
     assetsDir: "",
     sourcemap: true,
+    modulePreload: false,
+
+    rollupOptions: {
+      input: [
+        resolve(__dirname, "index.html"),
+        resolve(__dirname, "src/templates.css"),
+      ],
+    },
   },
   plugins: [
     codegen(),
+
     react({
       babel: {
         plugins: [
@@ -54,6 +67,8 @@ export default defineConfig((env) => ({
       },
     }),
 
+    manifestSRI(),
+
     svgr({
       exportAsDefault: true,
 
@@ -73,6 +88,15 @@ export default defineConfig((env) => ({
           className: "cpd-icon",
         },
       },
+    }),
+
+    compression({
+      algorithm: "gzip",
+      ext: ".gz",
+    }),
+    compression({
+      algorithm: "brotliCompress",
+      ext: ".br",
     }),
   ],
   server: {

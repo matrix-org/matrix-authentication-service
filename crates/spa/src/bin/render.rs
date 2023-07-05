@@ -19,10 +19,10 @@ fn main() {
     let mut stdin = std::io::stdin();
     let manifest: ViteManifest =
         serde_json::from_reader(&mut stdin).expect("failed to read manifest from stdin");
-    let assets_base = Utf8Path::new("/assets/");
+    let assets_base = Utf8Path::new("https://cdn.example.com/assets");
 
     let config = serde_json::json!({
-        "root": "/app/",
+        "root": "/account/",
     });
 
     let html = manifest

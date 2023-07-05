@@ -60,7 +60,7 @@ features = ["client", "http1", "http2", "stream", "runtime" ]
 optional = true
 [dependencies.tower-http]
 version = "0.4.1"
-features = ["follow-redirect", "decompression-full", "set-header", "timeout"]
+features = ["follow-redirect", "set-header", "timeout", "map-request-body", "util"]
 optional = true
 
 [dev-dependencies]

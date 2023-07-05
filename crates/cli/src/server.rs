@@ -46,7 +46,7 @@ use opentelemetry_semantic_conventions::trace::{
 use rustls::ServerConfig;
 use sentry_tower::{NewSentryLayer, SentryHttpLayer};
 use tower::Layer;
-use tower_http::{compression::CompressionLayer, services::ServeDir};
+use tower_http::services::ServeDir;
 use tracing::Span;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
@@ -192,7 +192,10 @@ where
                 router.merge(mas_handlers::graphql_router::<AppState, B>(*playground))
             }
             mas_config::HttpResource::Assets { path } => {
-                let static_service = ServeDir::new(path).append_index_html_on_directories(false);
+                let static_service = ServeDir::new(path)
+                    .append_index_html_on_directories(false)
+                    .precompressed_br()
+                    .precompressed_gzip();
                 let error_layer =
                     HandleErrorLayer::new(|_e| ready(StatusCode::INTERNAL_SERVER_ERROR));
 
@@ -266,7 +269,6 @@ where
         )
         .layer(SentryHttpLayer::new())
         .layer(NewSentryLayer::new_from_top())
-        .layer(CompressionLayer::new())
         .with_state(state)
 }
 

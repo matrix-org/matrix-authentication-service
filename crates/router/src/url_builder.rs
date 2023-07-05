@@ -21,7 +21,8 @@ use crate::traits::Route;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct UrlBuilder {
-    base: Url,
+    http_base: Url,
+    frontend_base: Url,
     issuer: Url,
 }
 
@@ -30,21 +31,25 @@ impl UrlBuilder {
     where
         U: Route,
     {
-        destination.absolute_url(&self.base)
+        destination.absolute_url(&self.http_base)
     }
 
     pub fn absolute_redirect<U>(&self, destination: &U) -> axum::response::Redirect
     where
         U: Route,
     {
-        destination.go_absolute(&self.base)
+        destination.go_absolute(&self.http_base)
     }
 
     /// Create a new [`UrlBuilder`] from a base URL
     #[must_use]
     pub fn new(base: Url, issuer: Option<Url>) -> Self {
         let issuer = issuer.unwrap_or_else(|| base.clone());
-        Self { base, issuer }
+        Self {
+            frontend_base: base.join("/account/").expect("base URL is valid"),
+            http_base: base,
+            issuer,
+        }
     }
 
     /// OIDC issuer

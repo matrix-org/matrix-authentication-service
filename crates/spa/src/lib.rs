@@ -58,8 +58,8 @@ impl<T, R> Service<R> for ViteManifestService<T>
 where
     T: Clone + Serialize + Send + Sync + 'static,
 {
-    type Error = std::io::Error;
     type Response = Response<String>;
+    type Error = std::io::Error;
     type Future =
         Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send + Sync + 'static>>;
 
@@ -84,9 +84,12 @@ where
                 .map_err(|error| std::io::Error::new(std::io::ErrorKind::Other, error))?;
 
             // Render the HTML out of the manifest
-            let html = manifest
-                .render(&assets_base, &config)
-                .map_err(|error| std::io::Error::new(std::io::ErrorKind::Other, error))?;
+            let html = manifest.render(&assets_base, &config).map_err(|error| {
+                // The error is serialised to a string, because it is not 'static, as it
+                // references the manifest
+                let error = error.to_string();
+                std::io::Error::new(std::io::ErrorKind::Other, error)
+            })?;
 
             let mut response = Response::new(html);
             response.headers_mut().typed_insert(ContentType::html());

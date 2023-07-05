@@ -20,6 +20,7 @@ import { createRoot } from "react-dom/client";
 import Router from "./Router";
 import { HydrateAtoms } from "./atoms";
 import LoadingScreen from "./components/LoadingScreen";
+import "./main.css";
 
 createRoot(document.getElementById("root") as HTMLElement).render(
   <StrictMode>

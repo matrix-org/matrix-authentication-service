@@ -19,17 +19,13 @@
 use std::time::Duration;
 
 use http::{header::USER_AGENT, HeaderValue};
+use http_body::Full;
 use hyper::client::{connect::dns::GaiResolver, HttpConnector};
 use hyper_rustls::{ConfigBuilderExt, HttpsConnectorBuilder};
-use tower::{limit::ConcurrencyLimitLayer, BoxError, ServiceBuilder};
-use tower_http::{
-    decompression::DecompressionLayer, follow_redirect::FollowRedirectLayer,
-    set_header::SetRequestHeaderLayer, timeout::TimeoutLayer,
-};
+use mas_http::BodyToBytesResponseLayer;
+use tower::{BoxError, ServiceBuilder};
+use tower_http::{timeout::TimeoutLayer, ServiceBuilderExt};
 
-mod body_layer;
-
-use self::body_layer::BodyLayer;
 use super::HttpService;
 
 static MAS_USER_AGENT: HeaderValue = HeaderValue::from_static("mas-oidc-client/0.0.1");
@@ -60,14 +56,11 @@ pub fn hyper_service() -> HttpService {
 
     let client = ServiceBuilder::new()
         .map_err(BoxError::from)
-        .layer(BodyLayer::default())
-        .layer(DecompressionLayer::new())
-        .layer(SetRequestHeaderLayer::overriding(
-            USER_AGENT,
-            MAS_USER_AGENT.clone(),
-        ))
-        .layer(ConcurrencyLimitLayer::new(10))
-        .layer(FollowRedirectLayer::new())
+        .map_request_body(Full::new)
+        .layer(BodyToBytesResponseLayer::default())
+        .override_request_header(USER_AGENT, MAS_USER_AGENT.clone())
+        .concurrency_limit(10)
+        .follow_redirects()
         .layer(TimeoutLayer::new(Duration::from_secs(10)))
         .service(client);
 
