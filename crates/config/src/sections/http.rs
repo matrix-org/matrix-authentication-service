@@ -44,18 +44,8 @@ fn http_address_example_4() -> &'static str {
 }
 
 #[cfg(not(feature = "docker"))]
-fn http_listener_spa_manifest_default() -> Utf8PathBuf {
-    "./frontend/dist/manifest.json".into()
-}
-
-#[cfg(not(feature = "docker"))]
 fn http_listener_assets_path_default() -> Utf8PathBuf {
     "./frontend/dist/".into()
-}
-
-#[cfg(feature = "docker")]
-fn http_listener_spa_manifest_default() -> Utf8PathBuf {
-    "/usr/local/share/mas-cli/manifest.json".into()
 }
 
 #[cfg(feature = "docker")]
@@ -285,12 +275,9 @@ pub enum Resource {
     ConnectionInfo,
 
     /// Mount the single page app
-    Spa {
-        /// Path to the vite manifest.json
-        #[serde(default = "http_listener_spa_manifest_default")]
-        #[schemars(with = "String")]
-        manifest: Utf8PathBuf,
-    },
+    ///
+    /// This is deprecated and will be removed in a future release.
+    Spa,
 }
 
 /// Configuration of a listener
@@ -345,9 +332,6 @@ impl Default for HttpConfig {
                         Resource::GraphQL { playground: true },
                         Resource::Assets {
                             path: http_listener_assets_path_default(),
-                        },
-                        Resource::Spa {
-                            manifest: http_listener_spa_manifest_default(),
                         },
                     ],
                     tls: None,

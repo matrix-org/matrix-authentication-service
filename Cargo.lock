@@ -3244,6 +3244,7 @@ dependencies = [
  "mas-oidc-client",
  "mas-policy",
  "mas-router",
+ "mas-spa",
  "mas-storage",
  "mas-storage-pg",
  "mas-templates",
@@ -3509,14 +3510,8 @@ name = "mas-spa"
 version = "0.1.0"
 dependencies = [
  "camino",
- "headers",
- "http",
  "serde",
- "serde_json",
  "thiserror",
- "tokio",
- "tower-http",
- "tower-service",
 ]
 
 [[package]]
@@ -3605,6 +3600,7 @@ dependencies = [
  "http",
  "mas-data-model",
  "mas-router",
+ "mas-spa",
  "oauth2-types",
  "rand 0.8.5",
  "serde",

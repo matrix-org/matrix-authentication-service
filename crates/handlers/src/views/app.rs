@@ -1,4 +1,4 @@
-// Copyright 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,21 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use camino::Utf8Path;
-use mas_spa::ViteManifest;
+use axum::{
+    extract::State,
+    response::{Html, IntoResponse},
+};
+use mas_axum_utils::FancyError;
+use mas_templates::{AppContext, Templates};
 
-fn main() {
-    let mut stdin = std::io::stdin();
-    let manifest: ViteManifest =
-        serde_json::from_reader(&mut stdin).expect("failed to read manifest from stdin");
-    let assets_base = Utf8Path::new("https://cdn.example.com/assets");
+#[tracing::instrument(name = "handlers.views.app.get", skip_all, err)]
+pub async fn get(State(templates): State<Templates>) -> Result<impl IntoResponse, FancyError> {
+    // XXX: should we redirect from here if the user is not logged in?
+    let ctx = AppContext::default();
+    let content = templates.render_app(&ctx).await?;
 
-    let config = serde_json::json!({
-        "root": "/account/",
-    });
-
-    let html = manifest
-        .render(assets_base, &config)
-        .expect("failed to render");
-    println!("{html}");
+    Ok(Html(content))
 }

@@ -22,7 +22,7 @@ use crate::traits::Route;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct UrlBuilder {
     http_base: Url,
-    frontend_base: Url,
+    assets_base: String,
     issuer: Url,
 }
 
@@ -46,8 +46,8 @@ impl UrlBuilder {
     pub fn new(base: Url, issuer: Option<Url>) -> Self {
         let issuer = issuer.unwrap_or_else(|| base.clone());
         Self {
-            frontend_base: base.join("/account/").expect("base URL is valid"),
             http_base: base,
+            assets_base: "/assets/".into(),
             issuer,
         }
     }
@@ -110,6 +110,12 @@ impl UrlBuilder {
     #[must_use]
     pub fn static_asset(&self, path: String) -> Url {
         self.url_for(&crate::endpoints::StaticAsset::new(path))
+    }
+
+    /// Static asset base
+    #[must_use]
+    pub fn assets_base(&self) -> &str {
+        &self.assets_base
     }
 
     /// Upstream redirect URI

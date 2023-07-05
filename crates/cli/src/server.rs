@@ -32,7 +32,6 @@ use mas_config::{HttpBindConfig, HttpResource, HttpTlsConfig, UnixOrTcp};
 use mas_handlers::AppState;
 use mas_listener::{unix_or_tcp::UnixOrTcpListener, ConnectionInfo};
 use mas_router::Route;
-use mas_spa::ViteManifestService;
 use mas_templates::Templates;
 use mas_tower::{
     make_span_fn, metrics_attributes_fn, DurationRecorderLayer, InFlightCounterLayer, TraceLayer,
@@ -47,7 +46,7 @@ use rustls::ServerConfig;
 use sentry_tower::{NewSentryLayer, SentryHttpLayer};
 use tower::Layer;
 use tower_http::services::ServeDir;
-use tracing::Span;
+use tracing::{warn, Span};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 const NET_PROTOCOL_NAME: Key = Key::from_static_str("net.protocol.name");
@@ -218,25 +217,9 @@ where
                 }),
             ),
 
-            mas_config::HttpResource::Spa { manifest } => {
-                let error_layer =
-                    HandleErrorLayer::new(|_e| ready(StatusCode::INTERNAL_SERVER_ERROR));
-
-                // TODO: make those paths configurable
-                let app_base = "/app/";
-
-                // TODO: make that config typed and configurable
-                let config = serde_json::json!({
-                    "root": app_base,
-                });
-
-                let index_service = ViteManifestService::new(
-                    manifest.clone(),
-                    mas_router::StaticAsset::route().into(),
-                    config,
-                );
-
-                router.nest_service(app_base, error_layer.layer(index_service))
+            mas_config::HttpResource::Spa { .. } => {
+                warn!("The SPA HTTP resource is deprecated");
+                router
             }
         }
     }

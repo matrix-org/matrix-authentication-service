@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use camino::Utf8PathBuf;
 use clap::Parser;
+use mas_config::TemplatesConfig;
 use mas_storage::{Clock, SystemClock};
-use mas_templates::Templates;
 use rand::SeedableRng;
 use tracing::info_span;
+
+use crate::util::templates_from_config;
 
 #[derive(Parser, Debug)]
 pub(super) struct Options {
@@ -27,26 +28,24 @@ pub(super) struct Options {
 
 #[derive(Parser, Debug)]
 enum Subcommand {
-    /// Check for template validity at given path.
-    Check {
-        /// Path where the templates are
-        path: Utf8PathBuf,
-    },
+    /// Check that the templates specified in the config are valid
+    Check,
 }
 
 impl Options {
-    pub async fn run(self, _root: &super::Options) -> anyhow::Result<()> {
+    pub async fn run(self, root: &super::Options) -> anyhow::Result<()> {
         use Subcommand as SC;
         match self.subcommand {
-            SC::Check { path } => {
+            SC::Check => {
                 let _span = info_span!("cli.templates.check").entered();
 
+                let config: TemplatesConfig = root.load_config()?;
                 let clock = SystemClock::default();
                 // XXX: we should disallow SeedableRng::from_entropy
                 let mut rng = rand_chacha::ChaChaRng::from_entropy();
                 let url_builder =
                     mas_router::UrlBuilder::new("https://example.com/".parse()?, None);
-                let templates = Templates::load(path, url_builder).await?;
+                let templates = templates_from_config(&config, &url_builder).await?;
                 templates.check_render(clock.now(), &mut rng).await?;
 
                 Ok(())

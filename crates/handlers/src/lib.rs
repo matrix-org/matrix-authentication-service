@@ -268,6 +268,9 @@ where
     BoxRng: FromRequestParts<S>,
 {
     Router::new()
+        // TODO: mount this route somewhere else?
+        .route("/app/", get(self::views::app::get))
+        .route("/app/*rest", get(self::views::app::get))
         .route(
             mas_router::ChangePasswordDiscovery::route(),
             get(|| async { mas_router::AccountPassword.go() }),

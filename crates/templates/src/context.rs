@@ -220,6 +220,35 @@ impl TemplateContext for IndexContext {
     }
 }
 
+/// Config used by the frontend app
+#[derive(Serialize)]
+pub struct AppConfig {
+    root: String,
+}
+
+impl Default for AppConfig {
+    fn default() -> Self {
+        Self {
+            root: "/app/".into(),
+        }
+    }
+}
+
+/// Context used by the `app.html` template
+#[derive(Serialize, Default)]
+pub struct AppContext {
+    app_config: AppConfig,
+}
+
+impl TemplateContext for AppContext {
+    fn sample(_now: chrono::DateTime<Utc>, _rng: &mut impl Rng) -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        vec![Self::default()]
+    }
+}
+
 /// Fields of the login form
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Hash, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]

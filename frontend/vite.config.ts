@@ -23,7 +23,7 @@ import manifestSRI from "vite-plugin-manifest-sri";
 import svgr from "vite-plugin-svgr";
 
 export default defineConfig((env) => ({
-  base: "/app/",
+  base: "./",
   build: {
     manifest: true,
     assetsDir: "",
@@ -32,7 +32,7 @@ export default defineConfig((env) => ({
 
     rollupOptions: {
       input: [
-        resolve(__dirname, "index.html"),
+        resolve(__dirname, "src/main.tsx"),
         resolve(__dirname, "src/templates.css"),
       ],
     },
@@ -100,6 +100,7 @@ export default defineConfig((env) => ({
     }),
   ],
   server: {
+    base: "/app/",
     proxy: {
       // Routes mostly extracted from crates/router/src/endpoints.rs
       "^/(|graphql.*|assets.*|\\.well-known.*|oauth2.*|login.*|logout.*|register.*|reauth.*|account.*|consent.*|_matrix.*|complete-compat-sso.*)$":

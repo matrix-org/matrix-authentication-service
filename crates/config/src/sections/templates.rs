@@ -30,6 +30,16 @@ fn default_path() -> Utf8PathBuf {
     "/usr/local/share/mas-cli/templates/".into()
 }
 
+#[cfg(not(feature = "docker"))]
+fn default_assets_path() -> Utf8PathBuf {
+    "./frontend/dist/manifest.json".into()
+}
+
+#[cfg(feature = "docker")]
+fn default_assets_path() -> Utf8PathBuf {
+    "/usr/local/share/mas-cli/manifest.json".into()
+}
+
 /// Configuration related to templates
 #[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
 pub struct TemplatesConfig {
@@ -37,12 +47,18 @@ pub struct TemplatesConfig {
     #[serde(default = "default_path")]
     #[schemars(with = "Option<String>")]
     pub path: Utf8PathBuf,
+
+    /// Path to the assets manifest
+    #[serde(default = "default_assets_path")]
+    #[schemars(with = "Option<String>")]
+    pub assets_manifest: Utf8PathBuf,
 }
 
 impl Default for TemplatesConfig {
     fn default() -> Self {
         Self {
             path: default_path(),
+            assets_manifest: default_assets_path(),
         }
     }
 }

@@ -112,8 +112,12 @@ impl TestState {
 
         let url_builder = UrlBuilder::new("https://example.com/".parse()?, None);
 
-        let templates =
-            Templates::load(workspace_root.join("templates"), url_builder.clone()).await?;
+        let templates = Templates::load(
+            workspace_root.join("templates"),
+            url_builder.clone(),
+            workspace_root.join("frontend/dist/manifest.json"),
+        )
+        .await?;
 
         // TODO: add more test keys to the store
         let rsa =

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 pub mod account;
+pub mod app;
 pub mod index;
 pub mod login;
 pub mod logout;
