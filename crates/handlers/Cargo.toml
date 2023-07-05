@@ -37,7 +37,7 @@ sqlx = { version = "0.6.3", features = ["runtime-tokio-rustls", "postgres"] }
 # Various structure (de)serialization
 serde = { version = "1.0.166", features = ["derive"] }
 serde_with = { version = "3.0.0", features = ["hex", "chrono"] }
-serde_json = "1.0.99"
+serde_json = "1.0.100"
 serde_urlencoded = "0.7.1"
 
 # Password hashing

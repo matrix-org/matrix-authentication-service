@@ -10,7 +10,7 @@ async-trait = "0.1.71"
 sqlx = { version = "0.6.3", features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "offline", "json", "uuid"] }
 chrono = { version = "0.4.26", features = ["serde"] }
 serde = { version = "1.0.166", features = ["derive"] }
-serde_json = "1.0.99"
+serde_json = "1.0.100"
 thiserror = "1.0.41"
 tracing = "0.1.37"
 futures-util = "0.3.28"
