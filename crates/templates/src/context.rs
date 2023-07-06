@@ -229,7 +229,7 @@ pub struct AppConfig {
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
-            root: "/app/".into(),
+            root: "/account/".into(),
         }
     }
 }
@@ -238,6 +238,16 @@ impl Default for AppConfig {
 #[derive(Serialize, Default)]
 pub struct AppContext {
     app_config: AppConfig,
+}
+
+impl AppContext {
+    /// Constructs the context for the app page with the given app root
+    #[must_use]
+    pub fn with_app_root(root: String) -> Self {
+        Self {
+            app_config: AppConfig { root },
+        }
+    }
 }
 
 impl TemplateContext for AppContext {
@@ -297,6 +307,9 @@ pub enum PostAuthContextInner {
         /// The link
         link: Box<UpstreamOAuthLink>,
     },
+
+    /// Go to the account management page
+    ManageAccount,
 }
 
 /// Context used in login and reauth screens, for the post-auth action to do
@@ -606,58 +619,6 @@ impl CompatSsoContext {
 where {
         let action = PostAuthAction::continue_compat_sso_login(login.id);
         Self { login, action }
-    }
-}
-
-/// Context used by the `account/index.html` template
-#[derive(Serialize)]
-pub struct AccountContext {
-    active_sessions: usize,
-    emails: Vec<UserEmail>,
-}
-
-impl AccountContext {
-    /// Constructs a context for the "my account" page
-    #[must_use]
-    pub fn new(active_sessions: usize, emails: Vec<UserEmail>) -> Self {
-        Self {
-            active_sessions,
-            emails,
-        }
-    }
-}
-
-impl TemplateContext for AccountContext {
-    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
-    where
-        Self: Sized,
-    {
-        let emails: Vec<UserEmail> = UserEmail::samples(now, rng);
-        vec![Self::new(5, emails)]
-    }
-}
-
-/// Context used by the `account/emails.html` template
-#[derive(Serialize)]
-pub struct AccountEmailsContext {
-    emails: Vec<UserEmail>,
-}
-
-impl AccountEmailsContext {
-    /// Constructs a context for the email management page
-    #[must_use]
-    pub fn new(emails: Vec<UserEmail>) -> Self {
-        Self { emails }
-    }
-}
-
-impl TemplateContext for AccountEmailsContext {
-    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
-    where
-        Self: Sized,
-    {
-        let emails: Vec<UserEmail> = UserEmail::samples(now, rng);
-        vec![Self::new(emails)]
     }
 }
 

@@ -47,13 +47,12 @@ mod macros;
 
 pub use self::{
     context::{
-        AccountContext, AccountEmailsContext, AppContext, CompatSsoContext, ConsentContext,
-        EmailAddContext, EmailVerificationContext, EmailVerificationPageContext, EmptyContext,
-        ErrorContext, FormPostContext, IndexContext, LoginContext, LoginFormField,
-        PolicyViolationContext, PostAuthContext, PostAuthContextInner, ReauthContext,
-        ReauthFormField, RegisterContext, RegisterFormField, TemplateContext,
-        UpstreamExistingLinkContext, UpstreamRegister, UpstreamSuggestLink, WithCsrf,
-        WithOptionalSession, WithSession,
+        AppContext, CompatSsoContext, ConsentContext, EmailAddContext, EmailVerificationContext,
+        EmailVerificationPageContext, EmptyContext, ErrorContext, FormPostContext, IndexContext,
+        LoginContext, LoginFormField, PolicyViolationContext, PostAuthContext,
+        PostAuthContextInner, ReauthContext, ReauthFormField, RegisterContext, RegisterFormField,
+        TemplateContext, UpstreamExistingLinkContext, UpstreamRegister, UpstreamSuggestLink,
+        WithCsrf, WithOptionalSession, WithSession,
     },
     forms::{FieldError, FormError, FormField, FormState, ToFormState},
 };
@@ -244,14 +243,8 @@ register_templates! {
     /// Render the home page
     pub fn render_index(WithCsrf<WithOptionalSession<IndexContext>>) { "pages/index.html" }
 
-    /// Render the account management page
-    pub fn render_account_index(WithCsrf<WithSession<AccountContext>>) { "pages/account/index.html" }
-
     /// Render the password change page
     pub fn render_account_password(WithCsrf<WithSession<EmptyContext>>) { "pages/account/password.html" }
-
-    /// Render the emails management
-    pub fn render_account_emails(WithCsrf<WithSession<AccountEmailsContext>>) { "pages/account/emails/index.html" }
 
     /// Render the email verification page
     pub fn render_account_verify_email(WithCsrf<WithSession<EmailVerificationPageContext>>) { "pages/account/emails/verify.html" }
@@ -308,9 +301,7 @@ impl Templates {
         check::render_policy_violation(self, now, rng).await?;
         check::render_sso_login(self, now, rng).await?;
         check::render_index(self, now, rng).await?;
-        check::render_account_index(self, now, rng).await?;
         check::render_account_password(self, now, rng).await?;
-        check::render_account_emails(self, now, rng).await?;
         check::render_account_add_email(self, now, rng).await?;
         check::render_account_verify_email(self, now, rng).await?;
         check::render_reauth(self, now, rng).await?;
@@ -340,7 +331,7 @@ mod tests {
         let mut rng = rand::thread_rng();
 
         let path = Utf8Path::new(env!("CARGO_MANIFEST_DIR")).join("../../templates/");
-        let url_builder = UrlBuilder::new("https://example.com/".parse().unwrap(), None);
+        let url_builder = UrlBuilder::new("https://example.com/".parse().unwrap(), None, None);
         let vite_manifest_path =
             Utf8Path::new(env!("CARGO_MANIFEST_DIR")).join("../../frontend/dist/manifest.json");
         let templates = Templates::load(path, url_builder, vite_manifest_path)

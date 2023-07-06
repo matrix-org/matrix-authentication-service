@@ -194,7 +194,8 @@ where
                 let static_service = ServeDir::new(path)
                     .append_index_html_on_directories(false)
                     .precompressed_br()
-                    .precompressed_gzip();
+                    .precompressed_gzip()
+                    .precompressed_deflate();
                 let error_layer =
                     HandleErrorLayer::new(|_e| ready(StatusCode::INTERNAL_SERVER_ERROR));
 

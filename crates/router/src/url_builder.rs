@@ -1,4 +1,4 @@
-// Copyright 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2022, 2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
 
 //! Utility to build URLs
 
+use std::borrow::Cow;
+
 use ulid::Ulid;
 use url::Url;
 
@@ -22,7 +24,7 @@ use crate::traits::Route;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct UrlBuilder {
     http_base: Url,
-    assets_base: String,
+    assets_base: Cow<'static, str>,
     issuer: Url,
 }
 
@@ -43,11 +45,14 @@ impl UrlBuilder {
 
     /// Create a new [`UrlBuilder`] from a base URL
     #[must_use]
-    pub fn new(base: Url, issuer: Option<Url>) -> Self {
+    pub fn new(base: Url, issuer: Option<Url>, assets_base: Option<String>) -> Self {
         let issuer = issuer.unwrap_or_else(|| base.clone());
+        let assets_base = assets_base
+            .map(Cow::Owned)
+            .unwrap_or(Cow::Borrowed("/assets/"));
         Self {
             http_base: base,
-            assets_base: "/assets/".into(),
+            assets_base,
             issuer,
         }
     }

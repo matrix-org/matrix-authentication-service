@@ -87,6 +87,8 @@ impl OptionalPostAuthAction {
                 let link = Box::new(link);
                 PostAuthContextInner::LinkUpstream { provider, link }
             }
+
+            PostAuthAction::ManageAccount => PostAuthContextInner::ManageAccount,
         };
 
         Ok(Some(PostAuthContext {

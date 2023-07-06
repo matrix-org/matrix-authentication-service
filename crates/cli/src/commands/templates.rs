@@ -44,7 +44,7 @@ impl Options {
                 // XXX: we should disallow SeedableRng::from_entropy
                 let mut rng = rand_chacha::ChaChaRng::from_entropy();
                 let url_builder =
-                    mas_router::UrlBuilder::new("https://example.com/".parse()?, None);
+                    mas_router::UrlBuilder::new("https://example.com/".parse()?, None, None);
                 let templates = templates_from_config(&config, &url_builder).await?;
                 templates.check_render(clock.now(), &mut rng).await?;
 

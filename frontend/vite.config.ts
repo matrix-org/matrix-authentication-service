@@ -90,6 +90,7 @@ export default defineConfig((env) => ({
       },
     }),
 
+    // Pre-compress the assets, so that the server can serve them directly
     compression({
       algorithm: "gzip",
       ext: ".gz",
@@ -98,12 +99,16 @@ export default defineConfig((env) => ({
       algorithm: "brotliCompress",
       ext: ".br",
     }),
+    compression({
+      algorithm: "deflate",
+      ext: ".zz",
+    }),
   ],
   server: {
-    base: "/app/",
+    base: "/account/",
     proxy: {
       // Routes mostly extracted from crates/router/src/endpoints.rs
-      "^/(|graphql.*|assets.*|\\.well-known.*|oauth2.*|login.*|logout.*|register.*|reauth.*|account.*|consent.*|_matrix.*|complete-compat-sso.*)$":
+      "^/(|graphql.*|assets.*|\\.well-known.*|oauth2.*|login.*|logout.*|register.*|reauth.*|add-email.*|verify-email.*|change-password.*|consent.*|_matrix.*|complete-compat-sso.*)$":
         "http://127.0.0.1:8080",
     },
   },
