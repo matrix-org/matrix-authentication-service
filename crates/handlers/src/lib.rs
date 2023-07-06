@@ -40,7 +40,9 @@ use axum::{
     Router,
 };
 use headers::HeaderName;
-use hyper::header::{ACCEPT, ACCEPT_LANGUAGE, AUTHORIZATION, CONTENT_LANGUAGE, CONTENT_TYPE};
+use hyper::header::{
+    ACCEPT, ACCEPT_LANGUAGE, AUTHORIZATION, CONTENT_LANGUAGE, CONTENT_LENGTH, CONTENT_TYPE,
+};
 use mas_http::CorsLayerExt;
 use mas_keystore::{Encrypter, Keystore};
 use mas_policy::PolicyFactory;
@@ -268,7 +270,8 @@ where
     BoxRng: FromRequestParts<S>,
 {
     Router::new()
-        // TODO: mount this route somewhere else?
+        // XXX: hard-coded redirect from /account to /account/
+        .route("/account", get(|| async { mas_router::Account.go() }))
         .route(mas_router::Account::route(), get(self::views::app::get))
         .route(
             mas_router::AccountWildcard::route(),
@@ -351,6 +354,7 @@ where
                         if let Ok(res) = templates.render_error(ctx).await {
                             let (mut parts, _original_body) = response.into_parts();
                             parts.headers.remove(CONTENT_TYPE);
+                            parts.headers.remove(CONTENT_LENGTH);
                             return Ok((parts, Html(res)).into_response());
                         }
                     }

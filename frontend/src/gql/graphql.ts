@@ -132,9 +132,30 @@ export type CompatSession = CreationEvent &
     finishedAt?: Maybe<Scalars["DateTime"]["output"]>;
     /** ID of the object. */
     id: Scalars["ID"]["output"];
+    /** The associated SSO login, if any. */
+    ssoLogin?: Maybe<CompatSsoLogin>;
     /** The user authorized for this session. */
     user: User;
   };
+
+export type CompatSessionConnection = {
+  __typename?: "CompatSessionConnection";
+  /** A list of edges. */
+  edges: Array<CompatSessionEdge>;
+  /** A list of nodes. */
+  nodes: Array<CompatSession>;
+  /** Information to aid in pagination. */
+  pageInfo: PageInfo;
+};
+
+/** An edge in a connection. */
+export type CompatSessionEdge = {
+  __typename?: "CompatSessionEdge";
+  /** A cursor for use in pagination */
+  cursor: Scalars["String"]["output"];
+  /** The item at the end of the edge */
+  node: CompatSession;
+};
 
 /**
  * A compat SSO login represents a login done through the legacy Matrix login
@@ -623,6 +644,8 @@ export type User = Node & {
   __typename?: "User";
   /** Get the list of active browser sessions, chronologically sorted */
   browserSessions: BrowserSessionConnection;
+  /** Get the list of compatibility sessions, chronologically sorted */
+  compatSessions: CompatSessionConnection;
   /** Get the list of compatibility SSO logins, chronologically sorted */
   compatSsoLogins: CompatSsoLoginConnection;
   /** Get the list of emails, chronologically sorted */
@@ -643,6 +666,14 @@ export type User = Node & {
 
 /** A user is an individual's account. */
 export type UserBrowserSessionsArgs = {
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  before?: InputMaybe<Scalars["String"]["input"]>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  last?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+/** A user is an individual's account. */
+export type UserCompatSessionsArgs = {
   after?: InputMaybe<Scalars["String"]["input"]>;
   before?: InputMaybe<Scalars["String"]["input"]>;
   first?: InputMaybe<Scalars["Int"]["input"]>;
@@ -859,33 +890,26 @@ export type BrowserSessionListQuery = {
   } | null;
 };
 
-export type CompatSsoLogin_LoginFragment = {
+export type CompatSession_Sso_LoginFragment = {
   __typename?: "CompatSsoLogin";
   id: string;
   redirectUri: any;
-  createdAt: any;
-  session?:
-    | ({
-        __typename?: "CompatSession";
-        id: string;
-        createdAt: any;
-        deviceId: string;
-        finishedAt?: any | null;
-      } & {
-        " $fragmentRefs"?: {
-          CompatSsoLogin_SessionFragment: CompatSsoLogin_SessionFragment;
-        };
-      })
-    | null;
-} & { " $fragmentName"?: "CompatSsoLogin_LoginFragment" };
+} & { " $fragmentName"?: "CompatSession_Sso_LoginFragment" };
 
-export type CompatSsoLogin_SessionFragment = {
+export type CompatSession_SessionFragment = {
   __typename?: "CompatSession";
   id: string;
   createdAt: any;
   deviceId: string;
   finishedAt?: any | null;
-} & { " $fragmentName"?: "CompatSsoLogin_SessionFragment" };
+  ssoLogin?:
+    | ({ __typename?: "CompatSsoLogin"; id: string } & {
+        " $fragmentRefs"?: {
+          CompatSession_Sso_LoginFragment: CompatSession_Sso_LoginFragment;
+        };
+      })
+    | null;
+} & { " $fragmentName"?: "CompatSession_SessionFragment" };
 
 export type EndCompatSessionMutationVariables = Exact<{
   id: Scalars["ID"]["input"];
@@ -896,17 +920,15 @@ export type EndCompatSessionMutation = {
   endCompatSession: {
     __typename?: "EndCompatSessionPayload";
     status: EndCompatSessionStatus;
-    compatSession?:
-      | ({ __typename?: "CompatSession"; id: string } & {
-          " $fragmentRefs"?: {
-            CompatSsoLogin_SessionFragment: CompatSsoLogin_SessionFragment;
-          };
-        })
-      | null;
+    compatSession?: {
+      __typename?: "CompatSession";
+      id: string;
+      finishedAt?: any | null;
+    } | null;
   };
 };
 
-export type CompatSsoLoginListQueryVariables = Exact<{
+export type CompatSessionListQueryVariables = Exact<{
   userId: Scalars["ID"]["input"];
   first?: InputMaybe<Scalars["Int"]["input"]>;
   after?: InputMaybe<Scalars["String"]["input"]>;
@@ -914,18 +936,18 @@ export type CompatSsoLoginListQueryVariables = Exact<{
   before?: InputMaybe<Scalars["String"]["input"]>;
 }>;
 
-export type CompatSsoLoginListQuery = {
+export type CompatSessionListQuery = {
   __typename?: "Query";
   user?: {
     __typename?: "User";
     id: string;
-    compatSsoLogins: {
-      __typename?: "CompatSsoLoginConnection";
+    compatSessions: {
+      __typename?: "CompatSessionConnection";
       edges: Array<{
-        __typename?: "CompatSsoLoginEdge";
-        node: { __typename?: "CompatSsoLogin"; id: string } & {
+        __typename?: "CompatSessionEdge";
+        node: { __typename?: "CompatSession"; id: string } & {
           " $fragmentRefs"?: {
-            CompatSsoLogin_LoginFragment: CompatSsoLogin_LoginFragment;
+            CompatSession_SessionFragment: CompatSession_SessionFragment;
           };
         };
       }>;
@@ -1227,34 +1249,12 @@ export const BrowserSession_SessionFragmentDoc = {
     },
   ],
 } as unknown as DocumentNode<BrowserSession_SessionFragment, unknown>;
-export const CompatSsoLogin_SessionFragmentDoc = {
+export const CompatSession_Sso_LoginFragmentDoc = {
   kind: "Document",
   definitions: [
     {
       kind: "FragmentDefinition",
-      name: { kind: "Name", value: "CompatSsoLogin_session" },
-      typeCondition: {
-        kind: "NamedType",
-        name: { kind: "Name", value: "CompatSession" },
-      },
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          { kind: "Field", name: { kind: "Name", value: "id" } },
-          { kind: "Field", name: { kind: "Name", value: "createdAt" } },
-          { kind: "Field", name: { kind: "Name", value: "deviceId" } },
-          { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<CompatSsoLogin_SessionFragment, unknown>;
-export const CompatSsoLogin_LoginFragmentDoc = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "FragmentDefinition",
-      name: { kind: "Name", value: "CompatSsoLogin_login" },
+      name: { kind: "Name", value: "CompatSession_sso_login" },
       typeCondition: {
         kind: "NamedType",
         name: { kind: "Name", value: "CompatSsoLogin" },
@@ -1264,30 +1264,17 @@ export const CompatSsoLogin_LoginFragmentDoc = {
         selections: [
           { kind: "Field", name: { kind: "Name", value: "id" } },
           { kind: "Field", name: { kind: "Name", value: "redirectUri" } },
-          { kind: "Field", name: { kind: "Name", value: "createdAt" } },
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "session" },
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "id" } },
-                {
-                  kind: "FragmentSpread",
-                  name: { kind: "Name", value: "CompatSsoLogin_session" },
-                },
-                { kind: "Field", name: { kind: "Name", value: "createdAt" } },
-                { kind: "Field", name: { kind: "Name", value: "deviceId" } },
-                { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
-              ],
-            },
-          },
         ],
       },
     },
+  ],
+} as unknown as DocumentNode<CompatSession_Sso_LoginFragment, unknown>;
+export const CompatSession_SessionFragmentDoc = {
+  kind: "Document",
+  definitions: [
     {
       kind: "FragmentDefinition",
-      name: { kind: "Name", value: "CompatSsoLogin_session" },
+      name: { kind: "Name", value: "CompatSession_session" },
       typeCondition: {
         kind: "NamedType",
         name: { kind: "Name", value: "CompatSession" },
@@ -1299,11 +1286,40 @@ export const CompatSsoLogin_LoginFragmentDoc = {
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "deviceId" } },
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "ssoLogin" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                {
+                  kind: "FragmentSpread",
+                  name: { kind: "Name", value: "CompatSession_sso_login" },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "CompatSession_sso_login" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "CompatSsoLogin" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          { kind: "Field", name: { kind: "Name", value: "redirectUri" } },
         ],
       },
     },
   ],
-} as unknown as DocumentNode<CompatSsoLogin_LoginFragment, unknown>;
+} as unknown as DocumentNode<CompatSession_SessionFragment, unknown>;
 export const OAuth2Session_SessionFragmentDoc = {
   kind: "Document",
   definitions: [
@@ -1937,8 +1953,8 @@ export const EndCompatSessionDocument = {
                     selections: [
                       { kind: "Field", name: { kind: "Name", value: "id" } },
                       {
-                        kind: "FragmentSpread",
-                        name: { kind: "Name", value: "CompatSsoLogin_session" },
+                        kind: "Field",
+                        name: { kind: "Name", value: "finishedAt" },
                       },
                     ],
                   },
@@ -1949,35 +1965,18 @@ export const EndCompatSessionDocument = {
         ],
       },
     },
-    {
-      kind: "FragmentDefinition",
-      name: { kind: "Name", value: "CompatSsoLogin_session" },
-      typeCondition: {
-        kind: "NamedType",
-        name: { kind: "Name", value: "CompatSession" },
-      },
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          { kind: "Field", name: { kind: "Name", value: "id" } },
-          { kind: "Field", name: { kind: "Name", value: "createdAt" } },
-          { kind: "Field", name: { kind: "Name", value: "deviceId" } },
-          { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
-        ],
-      },
-    },
   ],
 } as unknown as DocumentNode<
   EndCompatSessionMutation,
   EndCompatSessionMutationVariables
 >;
-export const CompatSsoLoginListDocument = {
+export const CompatSessionListDocument = {
   kind: "Document",
   definitions: [
     {
       kind: "OperationDefinition",
       operation: "query",
-      name: { kind: "Name", value: "CompatSsoLoginList" },
+      name: { kind: "Name", value: "CompatSessionList" },
       variableDefinitions: [
         {
           kind: "VariableDefinition",
@@ -2042,7 +2041,7 @@ export const CompatSsoLoginListDocument = {
                 { kind: "Field", name: { kind: "Name", value: "id" } },
                 {
                   kind: "Field",
-                  name: { kind: "Name", value: "compatSsoLogins" },
+                  name: { kind: "Name", value: "compatSessions" },
                   arguments: [
                     {
                       kind: "Argument",
@@ -2100,7 +2099,7 @@ export const CompatSsoLoginListDocument = {
                                     kind: "FragmentSpread",
                                     name: {
                                       kind: "Name",
-                                      value: "CompatSsoLogin_login",
+                                      value: "CompatSession_session",
                                     },
                                   },
                                 ],
@@ -2145,7 +2144,22 @@ export const CompatSsoLoginListDocument = {
     },
     {
       kind: "FragmentDefinition",
-      name: { kind: "Name", value: "CompatSsoLogin_session" },
+      name: { kind: "Name", value: "CompatSession_sso_login" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "CompatSsoLogin" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          { kind: "Field", name: { kind: "Name", value: "redirectUri" } },
+        ],
+      },
+    },
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "CompatSession_session" },
       typeCondition: {
         kind: "NamedType",
         name: { kind: "Name", value: "CompatSession" },
@@ -2157,36 +2171,17 @@ export const CompatSsoLoginListDocument = {
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "deviceId" } },
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
-        ],
-      },
-    },
-    {
-      kind: "FragmentDefinition",
-      name: { kind: "Name", value: "CompatSsoLogin_login" },
-      typeCondition: {
-        kind: "NamedType",
-        name: { kind: "Name", value: "CompatSsoLogin" },
-      },
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          { kind: "Field", name: { kind: "Name", value: "id" } },
-          { kind: "Field", name: { kind: "Name", value: "redirectUri" } },
-          { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           {
             kind: "Field",
-            name: { kind: "Name", value: "session" },
+            name: { kind: "Name", value: "ssoLogin" },
             selectionSet: {
               kind: "SelectionSet",
               selections: [
                 { kind: "Field", name: { kind: "Name", value: "id" } },
                 {
                   kind: "FragmentSpread",
-                  name: { kind: "Name", value: "CompatSsoLogin_session" },
+                  name: { kind: "Name", value: "CompatSession_sso_login" },
                 },
-                { kind: "Field", name: { kind: "Name", value: "createdAt" } },
-                { kind: "Field", name: { kind: "Name", value: "deviceId" } },
-                { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
               ],
             },
           },
@@ -2195,8 +2190,8 @@ export const CompatSsoLoginListDocument = {
     },
   ],
 } as unknown as DocumentNode<
-  CompatSsoLoginListQuery,
-  CompatSsoLoginListQueryVariables
+  CompatSessionListQuery,
+  CompatSessionListQueryVariables
 >;
 export const EndOAuth2SessionDocument = {
   kind: "Document",

@@ -19,8 +19,8 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   return (
     <>
       <NavBar className="nav-bar container">
-        <NavItem route={{ type: "home" }}>Home</NavItem>
-        <NavItem route={{ type: "account" }}>My Account</NavItem>
+        <NavItem route={{ type: "home" }}>Sessions</NavItem>
+        <NavItem route={{ type: "account" }}>Emails</NavItem>
       </NavBar>
 
       <hr className="my-2" />
@@ -33,6 +33,8 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
         <a href="https://matrix.org" target="_blank" rel="noreferrer noopener">
           <img
             className="inline my-2"
+            height={32}
+            width={75}
             src="https://matrix.org/images/matrix-logo.svg"
             alt="Matrix.org"
           />

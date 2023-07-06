@@ -37,11 +37,7 @@ const CurrentUserAccount: React.FC = () => {
   const userId = unwrapOk(result);
   if (userId === null) return <NotLoggedIn />;
 
-  return (
-    <div className="w-96 mx-auto">
-      <UserAccount id={userId} />
-    </div>
-  );
+  return <UserAccount id={userId} />;
 };
 
 export default CurrentUserAccount;

@@ -28,13 +28,13 @@ import {
 import { isErr, isOk, unwrapErr, unwrapOk } from "../result";
 
 import BlockList from "./BlockList";
-import CompatSsoLogin from "./CompatSsoLogin";
+import CompatSession from "./CompatSession";
 import GraphQLError from "./GraphQLError";
 import PaginationControls from "./PaginationControls";
 import { Title } from "./Typography";
 
 const QUERY = graphql(/* GraphQL */ `
-  query CompatSsoLoginList(
+  query CompatSessionList(
     $userId: ID!
     $first: Int
     $after: String
@@ -43,7 +43,7 @@ const QUERY = graphql(/* GraphQL */ `
   ) {
     user(id: $userId) {
       id
-      compatSsoLogins(
+      compatSessions(
         first: $first
         after: $after
         last: $last
@@ -52,7 +52,7 @@ const QUERY = graphql(/* GraphQL */ `
         edges {
           node {
             id
-            ...CompatSsoLogin_login
+            ...CompatSession_session
           }
         }
 
@@ -69,23 +69,23 @@ const QUERY = graphql(/* GraphQL */ `
 
 const currentPaginationAtom = atomForCurrentPagination();
 
-const compatSsoLoginListFamily = atomFamily((userId: string) => {
-  const compatSsoLoginListQuery = atomWithQuery({
+const compatSessionListFamily = atomFamily((userId: string) => {
+  const compatSessionListQuery = atomWithQuery({
     query: QUERY,
     getVariables: (get) => ({ userId, ...get(currentPaginationAtom) }),
   });
 
-  const compatSsoLoginList = mapQueryAtom(
-    compatSsoLoginListQuery,
-    (data) => data.user?.compatSsoLogins || null
+  const compatSessionList = mapQueryAtom(
+    compatSessionListQuery,
+    (data) => data.user?.compatSessions || null
   );
 
-  return compatSsoLoginList;
+  return compatSessionList;
 });
 
 const pageInfoFamily = atomFamily((userId: string) => {
   const pageInfoAtom = atom(async (get): Promise<PageInfo | null> => {
-    const result = await get(compatSsoLoginListFamily(userId));
+    const result = await get(compatSessionListFamily(userId));
     return (isOk(result) && unwrapOk(result)?.pageInfo) || null;
   });
 
@@ -100,15 +100,15 @@ const paginationFamily = atomFamily((userId: string) => {
   return paginationAtom;
 });
 
-const CompatSsoLoginList: React.FC<{ userId: string }> = ({ userId }) => {
+const CompatSessionList: React.FC<{ userId: string }> = ({ userId }) => {
   const [pending, startTransition] = useTransition();
-  const result = useAtomValue(compatSsoLoginListFamily(userId));
+  const result = useAtomValue(compatSessionListFamily(userId));
   const setPagination = useSetAtom(currentPaginationAtom);
   const [prevPage, nextPage] = useAtomValue(paginationFamily(userId));
 
   if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
-  const compatSsoLoginList = unwrapOk(result);
-  if (compatSsoLoginList === null)
+  const compatSessionList = unwrapOk(result);
+  if (compatSessionList === null)
     return <>Failed to load list of compatibility sessions.</>;
 
   const paginate = (pagination: Pagination): void => {
@@ -125,11 +125,11 @@ const CompatSsoLoginList: React.FC<{ userId: string }> = ({ userId }) => {
         onNext={nextPage ? (): void => paginate(nextPage) : null}
         disabled={pending}
       />
-      {compatSsoLoginList.edges.map((n) => (
-        <CompatSsoLogin login={n.node} key={n.node.id} />
+      {compatSessionList.edges.map((n) => (
+        <CompatSession session={n.node} key={n.node.id} />
       ))}
     </BlockList>
   );
 };
 
-export default CompatSsoLoginList;
+export default CompatSessionList;

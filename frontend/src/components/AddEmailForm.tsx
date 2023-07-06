@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Button } from "@vector-im/compound-web";
+import { Control, Field, Root, Submit } from "@vector-im/compound-web";
 import { atom, useAtom } from "jotai";
 import { atomWithMutation } from "jotai-urql";
-import { useRef, useTransition } from "react";
+import { useTransition } from "react";
 
 import { graphql } from "../gql";
 
-import Input from "./Input";
 import Typography from "./Typography";
 
 const ADD_EMAIL_MUTATION = graphql(/* GraphQL */ `
@@ -45,7 +44,8 @@ const AddEmailForm: React.FC<{ userId: string; onAdd?: () => void }> = ({
   userId,
   onAdd,
 }) => {
-  const formRef = useRef<HTMLFormElement>(null);
+  // TODO: there is a problem with refs in compound
+  //const formRef = useRef<HTMLFormElement>(null);
   const [addEmailResult, addEmail] = useAtom(addUserEmailAtom);
   const [pending, startTransition] = useTransition();
 
@@ -65,7 +65,7 @@ const AddEmailForm: React.FC<{ userId: string; onAdd?: () => void }> = ({
         onAdd?.();
 
         // Reset the form
-        formRef.current?.reset();
+        //formRef.current?.reset();
       });
     });
   };
@@ -97,18 +97,12 @@ const AddEmailForm: React.FC<{ userId: string; onAdd?: () => void }> = ({
         </div>
       )}
 
-      <form className="flex" onSubmit={handleSubmit} ref={formRef}>
-        <Input
-          className="flex-1 mr-2"
-          disabled={pending}
-          type="email"
-          inputMode="email"
-          name="email"
-        />
-        <Button kind="primary" disabled={pending} type="submit">
-          Add
-        </Button>
-      </form>
+      <Root className="flex" onSubmit={handleSubmit}>
+        <Field name="email" className="flex-1 mr-2">
+          <Control disabled={pending} type="email" inputMode="email" />
+        </Field>
+        <Submit disabled={pending}>Add</Submit>
+      </Root>
     </>
   );
 };

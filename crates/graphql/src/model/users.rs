@@ -22,14 +22,17 @@ use mas_storage::{
     oauth2::OAuth2SessionRepository,
     upstream_oauth2::UpstreamOAuthLinkRepository,
     user::{BrowserSessionRepository, UserEmailRepository},
-    Pagination,
+    Pagination, RepositoryAccess,
 };
 
 use super::{
     compat_sessions::CompatSsoLogin, BrowserSession, Cursor, NodeCursor, NodeType, OAuth2Session,
     UpstreamOAuth2Link,
 };
-use crate::{model::matrix::MatrixUser, state::ContextExt};
+use crate::{
+    model::{matrix::MatrixUser, CompatSession},
+    state::ContextExt,
+};
 
 #[derive(Description)]
 /// A user is an individual's account.
@@ -122,6 +125,58 @@ impl User {
                         CompatSsoLogin(u),
                     )
                 }));
+
+                Ok::<_, async_graphql::Error>(connection)
+            },
+        )
+        .await
+    }
+
+    /// Get the list of compatibility sessions, chronologically sorted
+    async fn compat_sessions(
+        &self,
+        ctx: &Context<'_>,
+
+        #[graphql(desc = "Returns the elements in the list that come after the cursor.")]
+        after: Option<String>,
+        #[graphql(desc = "Returns the elements in the list that come before the cursor.")]
+        before: Option<String>,
+        #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
+        #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
+    ) -> Result<Connection<Cursor, CompatSession>, async_graphql::Error> {
+        let state = ctx.state();
+        let mut repo = state.repository().await?;
+
+        query(
+            after,
+            before,
+            first,
+            last,
+            |after, before, first, last| async move {
+                let after_id = after
+                    .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::CompatSsoLogin))
+                    .transpose()?;
+                let before_id = before
+                    .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::CompatSsoLogin))
+                    .transpose()?;
+                let pagination = Pagination::try_new(before_id, after_id, first, last)?;
+
+                let page = repo
+                    .compat_session()
+                    .list_paginated(&self.0, pagination)
+                    .await?;
+
+                repo.cancel().await?;
+
+                let mut connection = Connection::new(page.has_previous_page, page.has_next_page);
+                connection
+                    .edges
+                    .extend(page.edges.into_iter().map(|(session, sso_login)| {
+                        Edge::new(
+                            OpaqueCursor(NodeCursor(NodeType::CompatSession, session.id)),
+                            CompatSession(session, sso_login),
+                        )
+                    }));
 
                 Ok::<_, async_graphql::Error>(connection)
             },

@@ -25,14 +25,14 @@ const documents = {
     types.EndBrowserSessionDocument,
   "\n  query BrowserSessionList(\n    $userId: ID!\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n      browserSessions(\n        first: $first\n        after: $after\n        last: $last\n        before: $before\n      ) {\n        edges {\n          cursor\n          node {\n            id\n            ...BrowserSession_session\n          }\n        }\n\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n":
     types.BrowserSessionListDocument,
-  "\n  fragment CompatSsoLogin_login on CompatSsoLogin {\n    id\n    redirectUri\n    createdAt\n    session {\n      id\n      ...CompatSsoLogin_session\n      createdAt\n      deviceId\n      finishedAt\n    }\n  }\n":
-    types.CompatSsoLogin_LoginFragmentDoc,
-  "\n  fragment CompatSsoLogin_session on CompatSession {\n    id\n    createdAt\n    deviceId\n    finishedAt\n  }\n":
-    types.CompatSsoLogin_SessionFragmentDoc,
-  "\n  mutation EndCompatSession($id: ID!) {\n    endCompatSession(input: { compatSessionId: $id }) {\n      status\n      compatSession {\n        id\n        ...CompatSsoLogin_session\n      }\n    }\n  }\n":
+  "\n  fragment CompatSession_sso_login on CompatSsoLogin {\n    id\n    redirectUri\n  }\n":
+    types.CompatSession_Sso_LoginFragmentDoc,
+  "\n  fragment CompatSession_session on CompatSession {\n    id\n    createdAt\n    deviceId\n    finishedAt\n    ssoLogin {\n      id\n      ...CompatSession_sso_login\n    }\n  }\n":
+    types.CompatSession_SessionFragmentDoc,
+  "\n  mutation EndCompatSession($id: ID!) {\n    endCompatSession(input: { compatSessionId: $id }) {\n      status\n      compatSession {\n        id\n        finishedAt\n      }\n    }\n  }\n":
     types.EndCompatSessionDocument,
-  "\n  query CompatSsoLoginList(\n    $userId: ID!\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n      compatSsoLogins(\n        first: $first\n        after: $after\n        last: $last\n        before: $before\n      ) {\n        edges {\n          node {\n            id\n            ...CompatSsoLogin_login\n          }\n        }\n\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n":
-    types.CompatSsoLoginListDocument,
+  "\n  query CompatSessionList(\n    $userId: ID!\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n      compatSessions(\n        first: $first\n        after: $after\n        last: $last\n        before: $before\n      ) {\n        edges {\n          node {\n            id\n            ...CompatSession_session\n          }\n        }\n\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n":
+    types.CompatSessionListDocument,
   "\n  fragment OAuth2Session_session on Oauth2Session {\n    id\n    scope\n    createdAt\n    finishedAt\n    client {\n      id\n      clientId\n      clientName\n      clientUri\n    }\n  }\n":
     types.OAuth2Session_SessionFragmentDoc,
   "\n  mutation EndOAuth2Session($id: ID!) {\n    endOauth2Session(input: { oauth2SessionId: $id }) {\n      status\n      oauth2Session {\n        id\n        ...OAuth2Session_session\n      }\n    }\n  }\n":
@@ -115,26 +115,26 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  fragment CompatSsoLogin_login on CompatSsoLogin {\n    id\n    redirectUri\n    createdAt\n    session {\n      id\n      ...CompatSsoLogin_session\n      createdAt\n      deviceId\n      finishedAt\n    }\n  }\n"
-): typeof documents["\n  fragment CompatSsoLogin_login on CompatSsoLogin {\n    id\n    redirectUri\n    createdAt\n    session {\n      id\n      ...CompatSsoLogin_session\n      createdAt\n      deviceId\n      finishedAt\n    }\n  }\n"];
+  source: "\n  fragment CompatSession_sso_login on CompatSsoLogin {\n    id\n    redirectUri\n  }\n"
+): typeof documents["\n  fragment CompatSession_sso_login on CompatSsoLogin {\n    id\n    redirectUri\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  fragment CompatSsoLogin_session on CompatSession {\n    id\n    createdAt\n    deviceId\n    finishedAt\n  }\n"
-): typeof documents["\n  fragment CompatSsoLogin_session on CompatSession {\n    id\n    createdAt\n    deviceId\n    finishedAt\n  }\n"];
+  source: "\n  fragment CompatSession_session on CompatSession {\n    id\n    createdAt\n    deviceId\n    finishedAt\n    ssoLogin {\n      id\n      ...CompatSession_sso_login\n    }\n  }\n"
+): typeof documents["\n  fragment CompatSession_session on CompatSession {\n    id\n    createdAt\n    deviceId\n    finishedAt\n    ssoLogin {\n      id\n      ...CompatSession_sso_login\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  mutation EndCompatSession($id: ID!) {\n    endCompatSession(input: { compatSessionId: $id }) {\n      status\n      compatSession {\n        id\n        ...CompatSsoLogin_session\n      }\n    }\n  }\n"
-): typeof documents["\n  mutation EndCompatSession($id: ID!) {\n    endCompatSession(input: { compatSessionId: $id }) {\n      status\n      compatSession {\n        id\n        ...CompatSsoLogin_session\n      }\n    }\n  }\n"];
+  source: "\n  mutation EndCompatSession($id: ID!) {\n    endCompatSession(input: { compatSessionId: $id }) {\n      status\n      compatSession {\n        id\n        finishedAt\n      }\n    }\n  }\n"
+): typeof documents["\n  mutation EndCompatSession($id: ID!) {\n    endCompatSession(input: { compatSessionId: $id }) {\n      status\n      compatSession {\n        id\n        finishedAt\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  query CompatSsoLoginList(\n    $userId: ID!\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n      compatSsoLogins(\n        first: $first\n        after: $after\n        last: $last\n        before: $before\n      ) {\n        edges {\n          node {\n            id\n            ...CompatSsoLogin_login\n          }\n        }\n\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n"
-): typeof documents["\n  query CompatSsoLoginList(\n    $userId: ID!\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n      compatSsoLogins(\n        first: $first\n        after: $after\n        last: $last\n        before: $before\n      ) {\n        edges {\n          node {\n            id\n            ...CompatSsoLogin_login\n          }\n        }\n\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n"];
+  source: "\n  query CompatSessionList(\n    $userId: ID!\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n      compatSessions(\n        first: $first\n        after: $after\n        last: $last\n        before: $before\n      ) {\n        edges {\n          node {\n            id\n            ...CompatSession_session\n          }\n        }\n\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n"
+): typeof documents["\n  query CompatSessionList(\n    $userId: ID!\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n      compatSessions(\n        first: $first\n        after: $after\n        last: $last\n        before: $before\n      ) {\n        edges {\n          node {\n            id\n            ...CompatSession_session\n          }\n        }\n\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

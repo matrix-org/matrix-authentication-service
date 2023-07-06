@@ -19,7 +19,7 @@
 module.exports = {
   mode: "jit",
   content: ["./src/**/*.tsx", "./index.html"],
-  darkMode: "class",
+  darkMode: ["class", ".cpd-theme-dark"],
   theme: {
     colors: {
       white: "#FFFFFF",

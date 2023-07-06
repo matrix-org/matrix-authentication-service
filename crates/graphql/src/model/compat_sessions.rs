@@ -24,7 +24,10 @@ use crate::state::ContextExt;
 /// A compat session represents a client session which used the legacy Matrix
 /// login API.
 #[derive(Description)]
-pub struct CompatSession(pub mas_data_model::CompatSession);
+pub struct CompatSession(
+    pub mas_data_model::CompatSession,
+    pub Option<mas_data_model::CompatSsoLogin>,
+);
 
 #[Object(use_type_description)]
 impl CompatSession {
@@ -60,6 +63,11 @@ impl CompatSession {
     /// When the session ended.
     pub async fn finished_at(&self) -> Option<DateTime<Utc>> {
         self.0.finished_at()
+    }
+
+    /// The associated SSO login, if any.
+    pub async fn sso_login(&self) -> Option<CompatSsoLogin> {
+        self.1.as_ref().map(|l| CompatSsoLogin(l.clone()))
     }
 }
 
@@ -114,6 +122,6 @@ impl CompatSsoLogin {
             .context("Could not load compat session")?;
         repo.cancel().await?;
 
-        Ok(Some(CompatSession(session)))
+        Ok(Some(CompatSession(session, Some(self.0.clone()))))
     }
 }

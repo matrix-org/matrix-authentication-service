@@ -100,10 +100,11 @@ const OAuth2Session: React.FC<Props> = ({ session }) => {
 
   return (
     <Block
-      className={
-        data.finishedAt &&
-        "opacity-50 group-hover:opacity-100 transition-opacity"
-      }
+      className={`p-4 bg-grey-25 dark:bg-grey-450 rounded-lg ${
+        data.finishedAt
+          ? "opacity-50 group-hover:opacity-100 transition-opacity"
+          : ""
+      }`}
     >
       <Typography variant="body" bold>
         <Link

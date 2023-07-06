@@ -12,17 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Button } from "@vector-im/compound-web";
+import {
+  Button,
+  Control,
+  Field,
+  Label,
+  Message,
+  Root as Form,
+  Submit,
+} from "@vector-im/compound-web";
 import { atom, useAtom, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
-import { useRef, useTransition } from "react";
+import { useTransition } from "react";
 
 import { FragmentType, graphql, useFragment } from "../gql";
 
 import Block from "./Block";
 import DateTime from "./DateTime";
-import Input from "./Input";
 import Typography from "./Typography";
 
 // This component shows a single user email address, with controls to verify it,
@@ -168,7 +175,8 @@ const UserEmail: React.FC<{
   );
   const setPrimaryEmail = useSetAtom(setPrimaryEmailFamily(data.id));
   const removeEmail = useSetAtom(removeEmailFamily(data.id));
-  const formRef = useRef<HTMLFormElement>(null);
+  // TODO: compound doesn't forward the refs properly
+  // const fieldRef = useRef<HTMLInputElement>(null);
 
   const onFormSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
@@ -177,7 +185,7 @@ const UserEmail: React.FC<{
     startTransition(() => {
       verifyEmail(code).then((result) => {
         // Clear the form
-        formRef.current?.reset();
+        e.currentTarget?.reset();
 
         if (result.data?.verifyEmail.status === "VERIFIED") {
           // Call the onSetPrimary callback if provided
@@ -191,7 +199,7 @@ const UserEmail: React.FC<{
   const onResendClick = (): void => {
     startTransition(() => {
       resendVerificationEmail().then(() => {
-        formRef.current?.code.focus();
+        // TODO: fieldRef.current?.focus();
       });
     });
   };
@@ -220,61 +228,70 @@ const UserEmail: React.FC<{
     verifyEmailResult.data?.verifyEmail.status === "INVALID_CODE";
 
   return (
-    <Block highlight={highlight}>
+    <Block
+      highlight={highlight}
+      className="grid grid-col-1 gap-2 pb-4 border-b-2 border-b-grey-200"
+    >
       {isPrimary && (
         <Typography variant="body" bold>
           Primary
         </Typography>
       )}
-      <div className="flex justify-between items-center">
-        <Typography variant="caption" bold className="flex-1">
-          {data.email}
-        </Typography>
-        {!isPrimary && (
-          <>
-            {/* The primary email can only be set if the email was verified */}
-            {data.confirmedAt && (
-              <Button
-                disabled={pending}
-                onClick={onSetPrimaryClick}
-                className="ml-2"
-              >
-                Set primary
-              </Button>
-            )}
-            <Button disabled={pending} onClick={onRemoveClick} className="ml-2">
-              Remove
-            </Button>
-          </>
-        )}
-      </div>
+      <Typography variant="caption" bold className="flex-1">
+        {data.email}
+      </Typography>
       {data.confirmedAt ? (
         <Typography variant="micro">
           Verified <DateTime datetime={data.confirmedAt} />
         </Typography>
       ) : (
-        <form
-          onSubmit={onFormSubmit}
-          className="mt-2 grid grid-cols-2 gap-2"
-          ref={formRef}
-        >
-          <Input
-            className="col-span-2"
-            name="code"
-            placeholder="Code"
-            type="text"
-            inputMode="numeric"
-          />
+        <Form onSubmit={onFormSubmit} className="grid grid-cols-2 gap-2">
+          <Field name="code" className="col-span-2">
+            <Label>Code</Label>
+            <Control
+              // ref={fieldRef}
+              placeholder="xxxxxx"
+              type="text"
+              inputMode="numeric"
+            />
+          </Field>
           {invalidCode && (
-            <div className="col-span-2 text-alert font-bold">Invalid code</div>
+            <Message className="col-span-2 text-alert font-bold">
+              Invalid code
+            </Message>
           )}
-          <Button type="submit" disabled={pending}>
+          <Submit size="sm" type="submit" disabled={pending}>
             Submit
-          </Button>
-          <Button disabled={pending || emailSent} onClick={onResendClick}>
+          </Submit>
+          <Button
+            size="sm"
+            kind="secondary"
+            disabled={pending || emailSent}
+            onClick={onResendClick}
+          >
             {emailSent ? "Sent!" : "Resend"}
           </Button>
-        </form>
+        </Form>
+      )}
+      {!isPrimary && (
+        <div className="flex justify-between items-center">
+          {/* The primary email can only be set if the email was verified */}
+          {data.confirmedAt ? (
+            <Button size="sm" disabled={pending} onClick={onSetPrimaryClick}>
+              Set primary
+            </Button>
+          ) : (
+            <div />
+          )}
+          <Button
+            kind="destructive"
+            size="sm"
+            disabled={pending}
+            onClick={onRemoveClick}
+          >
+            Remove
+          </Button>
+        </div>
       )}
     </Block>
   );
