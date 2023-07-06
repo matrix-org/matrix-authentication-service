@@ -16,18 +16,26 @@
 
 use std::{collections::HashMap, str::FromStr};
 
-use mas_router::{Route, UrlBuilder};
+use camino::Utf8Path;
+use mas_router::UrlBuilder;
+use mas_spa::ViteManifest;
 use tera::{helpers::tests::number_args_allowed, Tera, Value};
 use url::Url;
 
-pub fn register(tera: &mut Tera, url_builder: UrlBuilder) {
+pub fn register(tera: &mut Tera, url_builder: UrlBuilder, vite_manifest: ViteManifest) {
     tera.register_tester("empty", self::tester_empty);
     tera.register_filter("to_params", filter_to_params);
     tera.register_filter("safe_get", filter_safe_get);
     tera.register_function("add_params_to_url", function_add_params_to_url);
     tera.register_function("merge", function_merge);
     tera.register_function("dict", function_dict);
-    tera.register_function("static_asset", make_static_asset(url_builder));
+    tera.register_function(
+        "include_asset",
+        IncludeAsset {
+            url_builder,
+            vite_manifest,
+        },
+    );
 }
 
 fn tester_empty(value: Option<&Value>, params: &[Value]) -> Result<bool, tera::Error> {
@@ -145,25 +153,53 @@ fn function_dict(params: &HashMap<String, Value>) -> Result<Value, tera::Error> 
     Ok(Value::Object(ret))
 }
 
-fn make_static_asset(url_builder: UrlBuilder) -> impl tera::Function {
-    Box::new(
-        move |args: &HashMap<String, Value>| -> Result<Value, tera::Error> {
-            if let Some(path) = args.get("path").and_then(Value::as_str) {
-                let absolute = args
-                    .get("absolute")
-                    .and_then(Value::as_bool)
-                    .unwrap_or(false);
-                let path = path.to_owned();
-                let url = if absolute {
-                    url_builder.static_asset(path).into()
-                } else {
-                    let destination = mas_router::StaticAsset::new(path);
-                    destination.relative_url().into_owned()
-                };
-                Ok(Value::String(url))
-            } else {
-                Err(tera::Error::msg("Invalid parameter 'path'"))
-            }
-        },
-    )
+struct IncludeAsset {
+    url_builder: UrlBuilder,
+    vite_manifest: ViteManifest,
+}
+
+impl tera::Function for IncludeAsset {
+    fn call(&self, args: &HashMap<String, Value>) -> tera::Result<Value> {
+        let path = args.get("path").ok_or(tera::Error::msg(
+            "Function `include_asset` was missing parameter `path`",
+        ))?;
+        let path: &Utf8Path = path
+            .as_str()
+            .ok_or_else(|| {
+                tera::Error::msg(
+                    "Function `include_asset` received an incorrect type for arg `path`",
+                )
+            })?
+            .into();
+
+        let assets = self.vite_manifest.assets_for(path).map_err(|e| {
+            tera::Error::chain(
+                "Invalid assets manifest while calling function `include_asset`",
+                e.to_string(),
+            )
+        })?;
+
+        let preloads = self.vite_manifest.preload_for(path).map_err(|e| {
+            tera::Error::chain(
+                "Invalid assets manifest while calling function `include_asset`",
+                e.to_string(),
+            )
+        })?;
+
+        let tags: Vec<String> = preloads
+            .iter()
+            .map(|asset| asset.preload_tag(self.url_builder.assets_base().into()))
+            .chain(
+                assets
+                    .iter()
+                    .filter_map(|asset| asset.include_tag(self.url_builder.assets_base().into())),
+            )
+            .collect();
+
+        Ok(Value::String(tags.join("\n")))
+    }
+
+    fn is_safe(&self) -> bool {
+        true
+    }
 }

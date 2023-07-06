@@ -1,4 +1,4 @@
-// Copyright 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2022, 2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
 
 //! Utility to build URLs
 
+use std::borrow::Cow;
+
 use ulid::Ulid;
 use url::Url;
 
@@ -21,7 +23,8 @@ use crate::traits::Route;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct UrlBuilder {
-    base: Url,
+    http_base: Url,
+    assets_base: Cow<'static, str>,
     issuer: Url,
 }
 
@@ -30,21 +33,26 @@ impl UrlBuilder {
     where
         U: Route,
     {
-        destination.absolute_url(&self.base)
+        destination.absolute_url(&self.http_base)
     }
 
     pub fn absolute_redirect<U>(&self, destination: &U) -> axum::response::Redirect
     where
         U: Route,
     {
-        destination.go_absolute(&self.base)
+        destination.go_absolute(&self.http_base)
     }
 
     /// Create a new [`UrlBuilder`] from a base URL
     #[must_use]
-    pub fn new(base: Url, issuer: Option<Url>) -> Self {
+    pub fn new(base: Url, issuer: Option<Url>, assets_base: Option<String>) -> Self {
         let issuer = issuer.unwrap_or_else(|| base.clone());
-        Self { base, issuer }
+        let assets_base = assets_base.map_or(Cow::Borrowed("/assets/"), Cow::Owned);
+        Self {
+            http_base: base,
+            assets_base,
+            issuer,
+        }
     }
 
     /// OIDC issuer
@@ -105,6 +113,12 @@ impl UrlBuilder {
     #[must_use]
     pub fn static_asset(&self, path: String) -> Url {
         self.url_for(&crate::endpoints::StaticAsset::new(path))
+    }
+
+    /// Static asset base
+    #[must_use]
+    pub fn assets_base(&self) -> &str {
+        &self.assets_base
     }
 
     /// Upstream redirect URI

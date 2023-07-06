@@ -24,7 +24,7 @@ limitations under the License.
           Signed in as <span class="font-bold">{{ current_session.user.username }}</span>.
         </div>
 
-        {{ button::link(text="My account", href="/account") }}
+        {{ button::link(text="My account", href="/account/") }}
         {{ logout::button(text="Sign out", class=button::outline_class(), csrf_token=csrf_token) }}
       {% else %}
         {{ button::link(text="Sign in", href="/login") }}

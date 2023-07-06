@@ -24,6 +24,7 @@ pub enum PostAuthAction {
     ContinueCompatSsoLogin { id: Ulid },
     ChangePassword,
     LinkUpstream { id: Ulid },
+    ManageAccount,
 }
 
 impl PostAuthAction {
@@ -48,6 +49,7 @@ impl PostAuthAction {
             Self::ContinueCompatSsoLogin { id } => CompatLoginSsoComplete::new(*id, None).go(),
             Self::ChangePassword => AccountPassword.go(),
             Self::LinkUpstream { id } => UpstreamOAuth2Link::new(*id).go(),
+            Self::ManageAccount => Account.go(),
         }
     }
 }
@@ -335,7 +337,7 @@ impl From<Option<PostAuthAction>> for Register {
     }
 }
 
-/// `GET|POST /account/emails/verify/:id`
+/// `GET|POST /verify-email/:id`
 #[derive(Debug, Clone)]
 pub struct AccountVerifyEmail {
     id: Ulid,
@@ -367,19 +369,19 @@ impl AccountVerifyEmail {
 impl Route for AccountVerifyEmail {
     type Query = PostAuthAction;
     fn route() -> &'static str {
-        "/account/emails/verify/:id"
-    }
-
-    fn path(&self) -> std::borrow::Cow<'static, str> {
-        format!("/account/emails/verify/{}", self.id).into()
+        "/verify-email/:id"
     }
 
     fn query(&self) -> Option<&Self::Query> {
         self.post_auth_action.as_ref()
     }
+
+    fn path(&self) -> std::borrow::Cow<'static, str> {
+        format!("/verify-email/{}", self.id).into()
+    }
 }
 
-/// `GET /account/emails/add`
+/// `GET /add-email`
 #[derive(Default, Debug, Clone)]
 pub struct AccountAddEmail {
     post_auth_action: Option<PostAuthAction>,
@@ -388,7 +390,7 @@ pub struct AccountAddEmail {
 impl Route for AccountAddEmail {
     type Query = PostAuthAction;
     fn route() -> &'static str {
-        "/account/emails/add"
+        "/add-email"
     }
 
     fn query(&self) -> Option<&Self::Query> {
@@ -404,28 +406,28 @@ impl AccountAddEmail {
     }
 }
 
-/// `GET /account`
+/// `GET /account/`
 #[derive(Default, Debug, Clone)]
 pub struct Account;
 
 impl SimpleRoute for Account {
-    const PATH: &'static str = "/account";
+    const PATH: &'static str = "/account/";
 }
 
-/// `GET|POST /account/password`
+/// `GET /account/*`
+#[derive(Default, Debug, Clone)]
+pub struct AccountWildcard;
+
+impl SimpleRoute for AccountWildcard {
+    const PATH: &'static str = "/account/*rest";
+}
+
+/// `GET|POST /change-password`
 #[derive(Default, Debug, Clone)]
 pub struct AccountPassword;
 
 impl SimpleRoute for AccountPassword {
-    const PATH: &'static str = "/account/password";
-}
-
-/// `GET|POST /account/emails`
-#[derive(Default, Debug, Clone)]
-pub struct AccountEmails;
-
-impl SimpleRoute for AccountEmails {
-    const PATH: &'static str = "/account/emails";
+    const PATH: &'static str = "/change-password";
 }
 
 /// `GET /authorize/:grant_id`

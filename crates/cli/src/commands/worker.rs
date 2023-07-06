@@ -37,8 +37,11 @@ impl Options {
         info!("Connecting to the database");
         let pool = database_from_config(&config.database).await?;
 
-        let url_builder =
-            UrlBuilder::new(config.http.public_base.clone(), config.http.issuer.clone());
+        let url_builder = UrlBuilder::new(
+            config.http.public_base.clone(),
+            config.http.issuer.clone(),
+            None,
+        );
 
         // Load and compile the templates
         let templates = templates_from_config(&config.templates, &url_builder).await?;

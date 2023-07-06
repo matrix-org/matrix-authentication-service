@@ -239,6 +239,21 @@ jobs:
           rustup toolchain install ${{ matrix.toolchain }}
           rustup default ${{ matrix.toolchain }}
 
+      - name: Install Node
+        uses: actions/setup-node@v3.6.0
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Node dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Build the frontend
+        working-directory: ./frontend
+        run: npm run build
+
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.1.0
         with:

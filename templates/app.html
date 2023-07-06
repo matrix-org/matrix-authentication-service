@@ -1,20 +1,20 @@
-<!--
-Copyright 2022 The Matrix.org Foundation C.I.C.
+{#
+Copyright 2023 The Matrix.org Foundation C.I.C.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
--->
+#}
 
-<!-- Must be kept in sync with templates/app.html -->
+{# Must be kept in sync with frontend/index.html #}
 
 <!DOCTYPE html>
 <html lang="en">
@@ -23,7 +23,7 @@ limitations under the License.
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>matrix-authentication-service</title>
     <script>
-      window.APP_CONFIG = JSON.parse('{root: "/app/"}');
+      window.APP_CONFIG = JSON.parse("{{ app_config | json_encode | addslashes | safe }}");
       (function () {
         const query = window.matchMedia("(prefers-color-scheme: dark)");
         function handleChange(list) {
@@ -38,10 +38,10 @@ limitations under the License.
         handleChange(query);
       })();
     </script>
+    {{ include_asset(path='src/main.tsx') | indent(prefix="    ") | safe }}
   </head>
 
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

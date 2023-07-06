@@ -268,6 +268,12 @@ where
     BoxRng: FromRequestParts<S>,
 {
     Router::new()
+        // TODO: mount this route somewhere else?
+        .route(mas_router::Account::route(), get(self::views::app::get))
+        .route(
+            mas_router::AccountWildcard::route(),
+            get(self::views::app::get),
+        )
         .route(
             mas_router::ChangePasswordDiscovery::route(),
             get(|| async { mas_router::AccountPassword.go() }),
@@ -286,14 +292,9 @@ where
             mas_router::Register::route(),
             get(self::views::register::get).post(self::views::register::post),
         )
-        .route(mas_router::Account::route(), get(self::views::account::get))
         .route(
             mas_router::AccountPassword::route(),
             get(self::views::account::password::get).post(self::views::account::password::post),
-        )
-        .route(
-            mas_router::AccountEmails::route(),
-            get(self::views::account::emails::get).post(self::views::account::emails::post),
         )
         .route(
             mas_router::AccountVerifyEmail::route(),

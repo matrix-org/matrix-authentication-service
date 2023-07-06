@@ -13,20 +13,33 @@
 // limitations under the License.
 
 /// <reference types="vitest" />
+import { resolve } from "path";
+
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
+import compression from "vite-plugin-compression";
 import codegen from "vite-plugin-graphql-codegen";
+import manifestSRI from "vite-plugin-manifest-sri";
 import svgr from "vite-plugin-svgr";
 
 export default defineConfig((env) => ({
-  base: "/app/",
+  base: "./",
   build: {
     manifest: true,
     assetsDir: "",
     sourcemap: true,
+    modulePreload: false,
+
+    rollupOptions: {
+      input: [
+        resolve(__dirname, "src/main.tsx"),
+        resolve(__dirname, "src/templates.css"),
+      ],
+    },
   },
   plugins: [
     codegen(),
+
     react({
       babel: {
         plugins: [
@@ -54,6 +67,8 @@ export default defineConfig((env) => ({
       },
     }),
 
+    manifestSRI(),
+
     svgr({
       exportAsDefault: true,
 
@@ -74,11 +89,26 @@ export default defineConfig((env) => ({
         },
       },
     }),
+
+    // Pre-compress the assets, so that the server can serve them directly
+    compression({
+      algorithm: "gzip",
+      ext: ".gz",
+    }),
+    compression({
+      algorithm: "brotliCompress",
+      ext: ".br",
+    }),
+    compression({
+      algorithm: "deflate",
+      ext: ".zz",
+    }),
   ],
   server: {
+    base: "/account/",
     proxy: {
       // Routes mostly extracted from crates/router/src/endpoints.rs
-      "^/(|graphql.*|assets.*|\\.well-known.*|oauth2.*|login.*|logout.*|register.*|reauth.*|account.*|consent.*|_matrix.*|complete-compat-sso.*)$":
+      "^/(|graphql.*|assets.*|\\.well-known.*|oauth2.*|login.*|logout.*|register.*|reauth.*|add-email.*|verify-email.*|change-password.*|consent.*|_matrix.*|complete-compat-sso.*)$":
         "http://127.0.0.1:8080",
     },
   },

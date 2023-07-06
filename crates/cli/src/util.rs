@@ -111,7 +111,12 @@ pub async fn templates_from_config(
     config: &TemplatesConfig,
     url_builder: &UrlBuilder,
 ) -> Result<Templates, TemplateLoadingError> {
-    Templates::load(config.path.clone(), url_builder.clone()).await
+    Templates::load(
+        config.path.clone(),
+        url_builder.clone(),
+        config.assets_manifest.clone(),
+    )
+    .await
 }
 
 #[tracing::instrument(name = "db.connect", skip_all, err(Debug))]

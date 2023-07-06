@@ -29,6 +29,7 @@ use std::{collections::HashSet, string::ToString, sync::Arc};
 use anyhow::Context as _;
 use camino::{Utf8Path, Utf8PathBuf};
 use mas_router::UrlBuilder;
+use mas_spa::ViteManifest;
 use rand::Rng;
 use serde::Serialize;
 pub use tera::escape_html;
@@ -46,12 +47,12 @@ mod macros;
 
 pub use self::{
     context::{
-        AccountContext, AccountEmailsContext, CompatSsoContext, ConsentContext, EmailAddContext,
-        EmailVerificationContext, EmailVerificationPageContext, EmptyContext, ErrorContext,
-        FormPostContext, IndexContext, LoginContext, LoginFormField, PolicyViolationContext,
-        PostAuthContext, PostAuthContextInner, ReauthContext, ReauthFormField, RegisterContext,
-        RegisterFormField, TemplateContext, UpstreamExistingLinkContext, UpstreamRegister,
-        UpstreamSuggestLink, WithCsrf, WithOptionalSession, WithSession,
+        AppContext, CompatSsoContext, ConsentContext, EmailAddContext, EmailVerificationContext,
+        EmailVerificationPageContext, EmptyContext, ErrorContext, FormPostContext, IndexContext,
+        LoginContext, LoginFormField, PolicyViolationContext, PostAuthContext,
+        PostAuthContextInner, ReauthContext, ReauthFormField, RegisterContext, RegisterFormField,
+        TemplateContext, UpstreamExistingLinkContext, UpstreamRegister, UpstreamSuggestLink,
+        WithCsrf, WithOptionalSession, WithSession,
     },
     forms::{FieldError, FormError, FormField, FormState, ToFormState},
 };
@@ -61,6 +62,7 @@ pub use self::{
 pub struct Templates {
     tera: Arc<RwLock<Tera>>,
     url_builder: UrlBuilder,
+    vite_manifest_path: Utf8PathBuf,
     path: Utf8PathBuf,
 }
 
@@ -70,6 +72,14 @@ pub enum TemplateLoadingError {
     /// I/O error
     #[error(transparent)]
     IO(#[from] std::io::Error),
+
+    /// Failed to read the assets manifest
+    #[error("failed to read the assets manifest")]
+    ViteManifestIO(#[source] std::io::Error),
+
+    /// Failed to deserialize the assets manifest
+    #[error("invalid assets manifest")]
+    ViteManifest(#[from] serde_json::Error),
 
     /// Some templates failed to compile
     #[error("could not load and compile some templates")]
@@ -106,18 +116,33 @@ impl Templates {
     pub async fn load(
         path: Utf8PathBuf,
         url_builder: UrlBuilder,
+        vite_manifest_path: Utf8PathBuf,
     ) -> Result<Self, TemplateLoadingError> {
-        let tera = Self::load_(&path, url_builder.clone()).await?;
+        let tera = Self::load_(&path, url_builder.clone(), &vite_manifest_path).await?;
         Ok(Self {
             tera: Arc::new(RwLock::new(tera)),
             path,
             url_builder,
+            vite_manifest_path,
         })
     }
 
-    async fn load_(path: &Utf8Path, url_builder: UrlBuilder) -> Result<Tera, TemplateLoadingError> {
+    async fn load_(
+        path: &Utf8Path,
+        url_builder: UrlBuilder,
+        vite_manifest_path: &Utf8Path,
+    ) -> Result<Tera, TemplateLoadingError> {
         let path = path.to_owned();
         let span = tracing::Span::current();
+
+        // Read the assets manifest from disk
+        let vite_manifest = tokio::fs::read(vite_manifest_path)
+            .await
+            .map_err(TemplateLoadingError::ViteManifestIO)?;
+
+        // Parse it
+        let vite_manifest: ViteManifest =
+            serde_json::from_slice(&vite_manifest).map_err(TemplateLoadingError::ViteManifest)?;
 
         // This uses blocking I/Os, do that in a blocking task
         let mut tera = tokio::task::spawn_blocking(move || {
@@ -131,7 +156,7 @@ impl Templates {
         })
         .await??;
 
-        self::functions::register(&mut tera, url_builder);
+        self::functions::register(&mut tera, url_builder, vite_manifest);
 
         let loaded: HashSet<_> = tera.get_template_names().collect();
         let needed: HashSet<_> = TEMPLATES.into_iter().collect();
@@ -156,7 +181,12 @@ impl Templates {
     )]
     pub async fn reload(&self) -> Result<(), TemplateLoadingError> {
         // Prepare the new Tera instance
-        let new_tera = Self::load_(&self.path, self.url_builder.clone()).await?;
+        let new_tera = Self::load_(
+            &self.path,
+            self.url_builder.clone(),
+            &self.vite_manifest_path,
+        )
+        .await?;
 
         // Swap it
         *self.tera.write().await = new_tera;
@@ -192,6 +222,9 @@ pub enum TemplateError {
 }
 
 register_templates! {
+    /// Render the frontend app
+    pub fn render_app(AppContext) { "app.html" }
+
     /// Render the login page
     pub fn render_login(WithCsrf<LoginContext>) { "pages/login.html" }
 
@@ -210,14 +243,8 @@ register_templates! {
     /// Render the home page
     pub fn render_index(WithCsrf<WithOptionalSession<IndexContext>>) { "pages/index.html" }
 
-    /// Render the account management page
-    pub fn render_account_index(WithCsrf<WithSession<AccountContext>>) { "pages/account/index.html" }
-
     /// Render the password change page
     pub fn render_account_password(WithCsrf<WithSession<EmptyContext>>) { "pages/account/password.html" }
-
-    /// Render the emails management
-    pub fn render_account_emails(WithCsrf<WithSession<AccountEmailsContext>>) { "pages/account/emails/index.html" }
 
     /// Render the email verification page
     pub fn render_account_verify_email(WithCsrf<WithSession<EmailVerificationPageContext>>) { "pages/account/emails/verify.html" }
@@ -267,15 +294,14 @@ impl Templates {
         now: chrono::DateTime<chrono::Utc>,
         rng: &mut impl Rng,
     ) -> anyhow::Result<()> {
+        check::render_app(self, now, rng).await?;
         check::render_login(self, now, rng).await?;
         check::render_register(self, now, rng).await?;
         check::render_consent(self, now, rng).await?;
         check::render_policy_violation(self, now, rng).await?;
         check::render_sso_login(self, now, rng).await?;
         check::render_index(self, now, rng).await?;
-        check::render_account_index(self, now, rng).await?;
         check::render_account_password(self, now, rng).await?;
-        check::render_account_emails(self, now, rng).await?;
         check::render_account_add_email(self, now, rng).await?;
         check::render_account_verify_email(self, now, rng).await?;
         check::render_reauth(self, now, rng).await?;
@@ -305,8 +331,12 @@ mod tests {
         let mut rng = rand::thread_rng();
 
         let path = Utf8Path::new(env!("CARGO_MANIFEST_DIR")).join("../../templates/");
-        let url_builder = UrlBuilder::new("https://example.com/".parse().unwrap(), None);
-        let templates = Templates::load(path, url_builder).await.unwrap();
+        let url_builder = UrlBuilder::new("https://example.com/".parse().unwrap(), None, None);
+        let vite_manifest_path =
+            Utf8Path::new(env!("CARGO_MANIFEST_DIR")).join("../../frontend/dist/manifest.json");
+        let templates = Templates::load(path, url_builder, vite_manifest_path)
+            .await
+            .unwrap();
         templates.check_render(now, &mut rng).await.unwrap();
     }
 }

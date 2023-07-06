@@ -74,7 +74,7 @@ pub(crate) async fn get(
 
     if user_email.confirmed_at.is_some() {
         // This email was already verified, skip
-        let destination = query.go_next_or_default(&mas_router::AccountEmails);
+        let destination = query.go_next_or_default(&mas_router::Account);
         return Ok((cookie_jar, destination).into_response());
     }
 
@@ -146,6 +146,6 @@ pub(crate) async fn post(
 
     repo.save().await?;
 
-    let destination = query.go_next_or_default(&mas_router::AccountEmails);
+    let destination = query.go_next_or_default(&mas_router::Account);
     Ok((cookie_jar, destination).into_response())
 }
