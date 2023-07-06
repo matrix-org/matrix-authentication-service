@@ -3250,6 +3250,7 @@ dependencies = [
  "mas-templates",
  "mime",
  "oauth2-types",
+ "opentelemetry",
  "pbkdf2",
  "rand 0.8.5",
  "rand_chacha 0.3.1",

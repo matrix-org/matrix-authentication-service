@@ -141,17 +141,22 @@ impl Options {
 
         let graphql_schema = mas_handlers::graphql_schema(&pool, conn);
 
-        let state = AppState {
-            pool,
-            templates,
-            key_store,
-            encrypter,
-            url_builder,
-            homeserver,
-            policy_factory,
-            graphql_schema,
-            http_client_factory,
-            password_manager,
+        let state = {
+            let mut s = AppState {
+                pool,
+                templates,
+                key_store,
+                encrypter,
+                url_builder,
+                homeserver,
+                policy_factory,
+                graphql_schema,
+                http_client_factory,
+                password_manager,
+                conn_acquisition_histogram: None,
+            };
+            s.init_metrics()?;
+            s
         };
 
         let mut fd_manager = listenfd::ListenFd::from_env();
