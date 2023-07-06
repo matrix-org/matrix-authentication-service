@@ -28,7 +28,7 @@ const PaginationControls: React.FC<Props> = ({
   disabled,
 }) => {
   return (
-    <div className="grid items-center grid-cols-3 gap-2 my-2">
+    <div className="grid items-center grid-cols-3 gap-2">
       <Button
         kind="secondary"
         size="sm"

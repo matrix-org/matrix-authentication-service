@@ -24,27 +24,23 @@ import Block from "./Block";
 import DateTime from "./DateTime";
 import { Body, Bold, Code } from "./Typography";
 
-const FRAGMENT = graphql(/* GraphQL */ `
-  fragment CompatSsoLogin_login on CompatSsoLogin {
+const LOGIN_FRAGMENT = graphql(/* GraphQL */ `
+  fragment CompatSession_sso_login on CompatSsoLogin {
     id
     redirectUri
-    createdAt
-    session {
-      id
-      ...CompatSsoLogin_session
-      createdAt
-      deviceId
-      finishedAt
-    }
   }
 `);
 
-const SESSION_FRAGMENT = graphql(/* GraphQL */ `
-  fragment CompatSsoLogin_session on CompatSession {
+const FRAGMENT = graphql(/* GraphQL */ `
+  fragment CompatSession_session on CompatSession {
     id
     createdAt
     deviceId
     finishedAt
+    ssoLogin {
+      id
+      ...CompatSession_sso_login
+    }
   }
 `);
 
@@ -54,7 +50,7 @@ const END_SESSION_MUTATION = graphql(/* GraphQL */ `
       status
       compatSession {
         id
-        ...CompatSsoLogin_session
+        finishedAt
       }
     }
   }
@@ -72,15 +68,11 @@ const endCompatSessionFamily = atomFamily((id: string) => {
   return endCompatSessionAtom;
 });
 
-type Props = {
-  login: FragmentType<typeof FRAGMENT>;
-};
-
 const CompatSession: React.FC<{
-  session: FragmentType<typeof SESSION_FRAGMENT>;
+  session: FragmentType<typeof FRAGMENT>;
 }> = ({ session }) => {
   const [pending, startTransition] = useTransition();
-  const data = useFragment(SESSION_FRAGMENT, session);
+  const data = useFragment(FRAGMENT, session);
   const endCompatSession = useSetAtom(endCompatSessionFamily(data.id));
 
   const onSessionEnd = (): void => {
@@ -90,7 +82,7 @@ const CompatSession: React.FC<{
   };
 
   return (
-    <>
+    <Block className="p-4 bg-grey-25 dark:bg-grey-450 rounded-lg">
       <Body>
         Started: <DateTime datetime={data.createdAt} />
       </Body>
@@ -102,6 +94,7 @@ const CompatSession: React.FC<{
       <Body>
         Device ID: <Code>{data.deviceId}</Code>
       </Body>
+      {data.ssoLogin && <CompatSsoLogin login={data.ssoLogin} />}
       {data.finishedAt ? null : (
         <Button
           className="mt-2"
@@ -113,24 +106,22 @@ const CompatSession: React.FC<{
           End session
         </Button>
       )}
-    </>
-  );
-};
-
-const CompatSsoLogin: React.FC<Props> = ({ login }) => {
-  const data = useFragment(FRAGMENT, login);
-
-  return (
-    <Block>
-      <Body>
-        Requested: <DateTime datetime={data.createdAt} />
-      </Body>
-      <Body>
-        Redirect URI: <Bold>{data.redirectUri}</Bold>
-      </Body>
-      {data.session && <CompatSession session={data.session} />}
     </Block>
   );
 };
 
-export default CompatSsoLogin;
+const CompatSsoLogin: React.FC<{
+  login: FragmentType<typeof LOGIN_FRAGMENT>;
+}> = ({ login }) => {
+  const data = useFragment(LOGIN_FRAGMENT, login);
+
+  return (
+    <>
+      <Body>
+        Redirect URI: <Bold>{data.redirectUri}</Bold>
+      </Body>
+    </>
+  );
+};
+
+export default CompatSession;

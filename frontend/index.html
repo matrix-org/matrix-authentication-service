@@ -22,15 +22,15 @@ limitations under the License.
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>matrix-authentication-service</title>
-    <script>
-      window.APP_CONFIG = JSON.parse('{root: "/app/"}');
+    <script type="application/javascript">
+      window.APP_CONFIG = JSON.parse('{"root": "/account/"}');
       (function () {
         const query = window.matchMedia("(prefers-color-scheme: dark)");
         function handleChange(list) {
           if (list.matches) {
-            document.documentElement.classList.add("dark");
+            document.documentElement.classList.add("cpd-theme-dark");
           } else {
-            document.documentElement.classList.remove("dark");
+            document.documentElement.classList.remove("cpd-theme-dark");
           }
         }
 

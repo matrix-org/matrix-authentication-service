@@ -16,7 +16,7 @@ import { useAtomValue } from "jotai";
 
 import { currentUserIdAtom } from "../atoms";
 import BrowserSessionList from "../components/BrowserSessionList";
-import CompatSsoLoginList from "../components/CompatSsoLoginList";
+import CompatSessionList from "../components/CompatSessionList";
 import GraphQLError from "../components/GraphQLError";
 import NotLoggedIn from "../components/NotLoggedIn";
 import OAuth2SessionList from "../components/OAuth2SessionList";
@@ -33,9 +33,9 @@ const Home: React.FC = () => {
   return (
     <>
       <UserGreeting userId={currentUserId} />
-      <div className="mt-4 grid gap-1">
+      <div className="mt-4 grid gap-8">
         <OAuth2SessionList userId={currentUserId} />
-        <CompatSsoLoginList userId={currentUserId} />
+        <CompatSessionList userId={currentUserId} />
         <BrowserSessionList userId={currentUserId} />
       </div>
     </>

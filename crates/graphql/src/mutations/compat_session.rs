@@ -66,7 +66,8 @@ impl EndCompatSessionPayload {
     /// Returns the ended session.
     async fn compat_session(&self) -> Option<CompatSession> {
         match self {
-            Self::Ended(session) => Some(CompatSession(session.clone())),
+            // XXX: the SSO login is not returned here.
+            Self::Ended(session) => Some(CompatSession(session.clone(), None)),
             Self::NotFound => None,
         }
     }

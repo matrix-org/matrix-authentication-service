@@ -296,6 +296,15 @@ export default {
             args: [],
           },
           {
+            name: "ssoLogin",
+            type: {
+              kind: "OBJECT",
+              name: "CompatSsoLogin",
+              ofType: null,
+            },
+            args: [],
+          },
+          {
             name: "user",
             type: {
               kind: "NON_NULL",
@@ -318,6 +327,91 @@ export default {
             name: "Node",
           },
         ],
+      },
+      {
+        kind: "OBJECT",
+        name: "CompatSessionConnection",
+        fields: [
+          {
+            name: "edges",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "LIST",
+                ofType: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "OBJECT",
+                    name: "CompatSessionEdge",
+                    ofType: null,
+                  },
+                },
+              },
+            },
+            args: [],
+          },
+          {
+            name: "nodes",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "LIST",
+                ofType: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "OBJECT",
+                    name: "CompatSession",
+                    ofType: null,
+                  },
+                },
+              },
+            },
+            args: [],
+          },
+          {
+            name: "pageInfo",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "PageInfo",
+                ofType: null,
+              },
+            },
+            args: [],
+          },
+        ],
+        interfaces: [],
+      },
+      {
+        kind: "OBJECT",
+        name: "CompatSessionEdge",
+        fields: [
+          {
+            name: "cursor",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+          {
+            name: "node",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "CompatSession",
+                ofType: null,
+              },
+            },
+            args: [],
+          },
+        ],
+        interfaces: [],
       },
       {
         kind: "OBJECT",
@@ -1844,6 +1938,47 @@ export default {
               ofType: {
                 kind: "OBJECT",
                 name: "BrowserSessionConnection",
+                ofType: null,
+              },
+            },
+            args: [
+              {
+                name: "after",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "before",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "first",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "last",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+            ],
+          },
+          {
+            name: "compatSessions",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "CompatSessionConnection",
                 ofType: null,
               },
             },

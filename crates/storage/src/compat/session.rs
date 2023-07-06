@@ -13,11 +13,11 @@
 // limitations under the License.
 
 use async_trait::async_trait;
-use mas_data_model::{CompatSession, Device, User};
+use mas_data_model::{CompatSession, CompatSsoLogin, Device, User};
 use rand_core::RngCore;
 use ulid::Ulid;
 
-use crate::{repository_impl, Clock};
+use crate::{repository_impl, Clock, Page, Pagination};
 
 /// A [`CompatSessionRepository`] helps interacting with
 /// [`CompatSessionRepository`] saved in the storage backend
@@ -80,6 +80,24 @@ pub trait CompatSessionRepository: Send + Sync {
         clock: &dyn Clock,
         compat_session: CompatSession,
     ) -> Result<CompatSession, Self::Error>;
+
+    /// Get a paginated list of compat sessions for a user
+    ///
+    /// Returns a page of compat sessions, with the associated SSO logins if any
+    ///
+    /// # Parameters
+    ///
+    /// * `user`: The user to get the compat sessions for
+    /// * `pagination`: The pagination parameters
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn list_paginated(
+        &mut self,
+        user: &User,
+        pagination: Pagination,
+    ) -> Result<Page<(CompatSession, Option<CompatSsoLogin>)>, Self::Error>;
 }
 
 repository_impl!(CompatSessionRepository:
@@ -99,4 +117,10 @@ repository_impl!(CompatSessionRepository:
         clock: &dyn Clock,
         compat_session: CompatSession,
     ) -> Result<CompatSession, Self::Error>;
+
+    async fn list_paginated(
+        &mut self,
+        user: &User,
+        pagination: Pagination,
+    ) -> Result<Page<(CompatSession, Option<CompatSsoLogin>)>, Self::Error>;
 );

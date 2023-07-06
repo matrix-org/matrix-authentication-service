@@ -92,7 +92,7 @@ const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
   };
 
   return (
-    <Block className="my-4 flex items-center">
+    <Block className="flex items-center">
       <IconWebBrowser className="mr-4 session-icon" />
       <div className="flex-1">
         <Body size="md" weight="medium">
