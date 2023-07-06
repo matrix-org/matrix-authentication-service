@@ -47,9 +47,7 @@ impl UrlBuilder {
     #[must_use]
     pub fn new(base: Url, issuer: Option<Url>, assets_base: Option<String>) -> Self {
         let issuer = issuer.unwrap_or_else(|| base.clone());
-        let assets_base = assets_base
-            .map(Cow::Owned)
-            .unwrap_or(Cow::Borrowed("/assets/"));
+        let assets_base = assets_base.map_or(Cow::Borrowed("/assets/"), Cow::Owned);
         Self {
             http_base: base,
             assets_base,

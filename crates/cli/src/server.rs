@@ -26,7 +26,10 @@ use axum::{
     extract::{FromRef, MatchedPath},
     Extension, Router,
 };
-use hyper::{Method, Request, Response, StatusCode, Version};
+use hyper::{
+    header::{HeaderValue, CACHE_CONTROL},
+    Method, Request, Response, StatusCode, Version,
+};
 use listenfd::ListenFd;
 use mas_config::{HttpBindConfig, HttpResource, HttpTlsConfig, UnixOrTcp};
 use mas_handlers::AppState;
@@ -45,7 +48,7 @@ use opentelemetry_semantic_conventions::trace::{
 use rustls::ServerConfig;
 use sentry_tower::{NewSentryLayer, SentryHttpLayer};
 use tower::Layer;
-use tower_http::services::ServeDir;
+use tower_http::{services::ServeDir, set_header::SetResponseHeaderLayer};
 use tracing::{warn, Span};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
@@ -196,12 +199,18 @@ where
                     .precompressed_br()
                     .precompressed_gzip()
                     .precompressed_deflate();
+
                 let error_layer =
                     HandleErrorLayer::new(|_e| ready(StatusCode::INTERNAL_SERVER_ERROR));
 
+                let cache_layer = SetResponseHeaderLayer::overriding(
+                    CACHE_CONTROL,
+                    HeaderValue::from_static("public, max-age=31536000, immutable"),
+                );
+
                 router.nest_service(
                     mas_router::StaticAsset::route(),
-                    error_layer.layer(static_service),
+                    (error_layer, cache_layer).layer(static_service),
                 )
             }
             mas_config::HttpResource::OAuth => {
