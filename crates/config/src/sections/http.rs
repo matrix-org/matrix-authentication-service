@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![allow(deprecated)]
+
 use std::{borrow::Cow, io::Cursor, ops::Deref};
 
 use anyhow::bail;
@@ -277,6 +279,7 @@ pub enum Resource {
     /// Mount the single page app
     ///
     /// This is deprecated and will be removed in a future release.
+    #[deprecated = "This resource is deprecated and will be removed in a future release"]
     Spa,
 }
 

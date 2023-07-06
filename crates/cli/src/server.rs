@@ -218,6 +218,7 @@ where
                 }),
             ),
 
+            #[allow(deprecated)]
             mas_config::HttpResource::Spa { .. } => {
                 warn!("The SPA HTTP resource is deprecated");
                 router

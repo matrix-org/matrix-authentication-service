@@ -89,10 +89,6 @@
               {
                 "name": "assets",
                 "path": "./frontend/dist/"
-              },
-              {
-                "manifest": "./frontend/dist/manifest.json",
-                "name": "spa"
               }
             ]
           },
@@ -191,6 +187,7 @@
     "templates": {
       "description": "Configuration related to templates",
       "default": {
+        "assets_manifest": "./frontend/dist/manifest.json",
         "path": "./templates/"
       },
       "allOf": [
@@ -1685,17 +1682,13 @@
           }
         },
         {
-          "description": "Mount the single page app",
+          "description": "Mount the single page app\n\nThis is deprecated and will be removed in a future release.",
+          "deprecated": true,
           "type": "object",
           "required": [
             "name"
           ],
           "properties": {
-            "manifest": {
-              "description": "Path to the vite manifest.json",
-              "default": "./frontend/dist/manifest.json",
-              "type": "string"
-            },
             "name": {
               "type": "string",
               "enum": [
@@ -1790,6 +1783,11 @@
       "description": "Configuration related to templates",
       "type": "object",
       "properties": {
+        "assets_manifest": {
+          "description": "Path to the assets manifest",
+          "default": "./frontend/dist/manifest.json",
+          "type": "string"
+        },
         "path": {
           "description": "Path to the folder which holds the templates",
           "default": "./templates/",
