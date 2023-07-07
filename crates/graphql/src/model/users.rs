@@ -154,10 +154,10 @@ impl User {
             last,
             |after, before, first, last| async move {
                 let after_id = after
-                    .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::CompatSsoLogin))
+                    .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::CompatSession))
                     .transpose()?;
                 let before_id = before
-                    .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::CompatSsoLogin))
+                    .map(|x: OpaqueCursor<NodeCursor>| x.extract_for_type(NodeType::CompatSession))
                     .transpose()?;
                 let pagination = Pagination::try_new(before_id, after_id, first, last)?;
 
