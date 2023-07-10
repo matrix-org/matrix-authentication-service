@@ -2613,7 +2613,7 @@ dependencies = [
  "futures-util",
  "http",
  "hyper",
- "rustls 0.21.3",
+ "rustls 0.21.5",
  "rustls-native-certs",
  "tokio",
  "tokio-rustls 0.24.1",
@@ -2939,7 +2939,7 @@ dependencies = [
  "nom",
  "once_cell",
  "quoted_printable",
- "rustls 0.21.3",
+ "rustls 0.21.5",
  "rustls-pemfile",
  "socket2",
  "tokio",
@@ -3107,7 +3107,7 @@ dependencies = [
  "prometheus",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
- "rustls 0.21.3",
+ "rustls 0.21.5",
  "sentry",
  "sentry-tower",
  "sentry-tracing",
@@ -3290,7 +3290,7 @@ dependencies = [
  "mas-tower",
  "once_cell",
  "opentelemetry",
- "rustls 0.21.3",
+ "rustls 0.21.5",
  "rustls-native-certs",
  "serde",
  "serde_json",
@@ -3465,7 +3465,7 @@ dependencies = [
  "once_cell",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
- "rustls 0.21.3",
+ "rustls 0.21.5",
  "serde",
  "serde_json",
  "serde_urlencoded",
@@ -4990,9 +4990,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.21.3"
+version = "0.21.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b19faa85ecb5197342b54f987b142fb3e30d0c90da40f80ef4fa9a726e6676ed"
+checksum = "79ea77c539259495ce8ca47f53e66ae0330a8819f67e23ac96ca02f50e7b7d36"
 dependencies = [
  "log",
  "ring",
@@ -5997,7 +5997,7 @@ version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c28327cf380ac148141087fbfb9de9d7bd4e84ab5d2c28fbc911d753de8a7081"
 dependencies = [
- "rustls 0.21.3",
+ "rustls 0.21.5",
  "tokio",
 ]
 
