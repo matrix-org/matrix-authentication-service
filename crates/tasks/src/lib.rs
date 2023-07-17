@@ -19,7 +19,6 @@
 use std::sync::Arc;
 
 use apalis_core::{executor::TokioExecutor, layers::extensions::Extension, monitor::Monitor};
-use apalis_sql::postgres::PostgresStorage;
 use mas_email::Mailer;
 use mas_matrix::HomeserverConnection;
 use mas_storage::{BoxClock, BoxRepository, Repository, SystemClock};
@@ -28,9 +27,12 @@ use rand::SeedableRng;
 use sqlx::{Pool, Postgres};
 use tracing::debug;
 
+use crate::storage::PostgresStorageFactory;
+
 mod database;
 mod email;
 mod matrix;
+mod storage;
 mod utils;
 
 #[derive(Clone)]
@@ -66,10 +68,6 @@ impl State {
 
     pub fn clock(&self) -> BoxClock {
         Box::new(self.clock.clone())
-    }
-
-    pub fn store<J>(&self) -> PostgresStorage<J> {
-        PostgresStorage::new(self.pool.clone())
     }
 
     pub fn mailer(&self) -> &Mailer {
@@ -108,23 +106,30 @@ impl JobContextExt for apalis_core::context::JobContext {
     }
 }
 
-#[must_use]
-pub fn init(
+/// Initialise the workers.
+///
+/// # Errors
+///
+/// This function can fail if the database connection fails.
+pub async fn init(
     name: &str,
     pool: &Pool<Postgres>,
     mailer: &Mailer,
     homeserver: impl HomeserverConnection<Error = anyhow::Error> + 'static,
-) -> Monitor<TokioExecutor> {
+) -> Result<Monitor<TokioExecutor>, sqlx::Error> {
     let state = State::new(
         pool.clone(),
         SystemClock::default(),
         mailer.clone(),
         homeserver,
     );
+    let factory = PostgresStorageFactory::new(pool.clone());
     let monitor = Monitor::new().executor(TokioExecutor::new());
     let monitor = self::database::register(name, monitor, &state);
-    let monitor = self::email::register(name, monitor, &state);
-    let monitor = self::matrix::register(name, monitor, &state);
+    let monitor = self::email::register(name, monitor, &state, &factory);
+    let monitor = self::matrix::register(name, monitor, &state, &factory);
+    // TODO: we might want to grab the join handle here
+    factory.listen().await?;
     debug!(?monitor, "workers registered");
-    monitor
+    Ok(monitor)
 }

@@ -106,9 +106,7 @@ pub struct JsonRequestLayer<T> {
 
 impl<T> Default for JsonRequestLayer<T> {
     fn default() -> Self {
-        Self {
-            _t: PhantomData::default(),
-        }
+        Self { _t: PhantomData }
     }
 }
 

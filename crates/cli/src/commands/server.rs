@@ -110,7 +110,7 @@ impl Options {
                 config.matrix.secret.clone(),
                 http_client_factory,
             );
-            let monitor = mas_tasks::init(&worker_name, &pool, &mailer, conn);
+            let monitor = mas_tasks::init(&worker_name, &pool, &mailer, conn).await?;
             // TODO: grab the handle
             tokio::spawn(monitor.run());
         }

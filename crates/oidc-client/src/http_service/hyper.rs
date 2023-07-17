@@ -57,7 +57,7 @@ pub fn hyper_service() -> HttpService {
     let client = ServiceBuilder::new()
         .map_err(BoxError::from)
         .map_request_body(Full::new)
-        .layer(BodyToBytesResponseLayer::default())
+        .layer(BodyToBytesResponseLayer)
         .override_request_header(USER_AGENT, MAS_USER_AGENT.clone())
         .concurrency_limit(10)
         .follow_redirects()
