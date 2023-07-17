@@ -29,7 +29,7 @@ jobs:
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.1.0
         with:
-          version: 0.53.1
+          version: 0.54.0
 
       - name: Run OPA tests with coverage
         working-directory: ./policies
@@ -82,7 +82,7 @@ jobs:
 
     services:
       postgres:
-        image: docker.io/library/postgres:15.1
+        image: docker.io/library/postgres:15.3
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -123,7 +123,7 @@ jobs:
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.1.0
         with:
-          version: 0.53.1
+          version: 0.54.0
 
       - name: Compile OPA policies
         working-directory: ./policies

@@ -33,7 +33,7 @@ jobs:
       - name: Setup mdBook
         uses: peaceiris/actions-mdbook@v1.2.0
         with:
-          mdbook-version: '0.4.25'
+          mdbook-version: '0.4.32'
 
       - name: Install Node
         uses: actions/setup-node@v3.7.0

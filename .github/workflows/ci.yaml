@@ -29,7 +29,7 @@ jobs:
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.1.0
         with:
-          version: 0.53.1
+          version: 0.54.0
 
       - name: Lint policies
         working-directory: ./policies
@@ -178,14 +178,14 @@ jobs:
 
       - name: Install toolchain
         run: |
-          rustup toolchain install 1.70.0
-          rustup default 1.70.0
+          rustup toolchain install 1.71.0
+          rustup default 1.71.0
           rustup component add clippy
 
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.1.0
         with:
-          version: 0.53.1
+          version: 0.54.0
 
       - name: Compile OPA policies
         working-directory: ./policies
@@ -217,7 +217,7 @@ jobs:
 
     services:
       postgres:
-        image: docker.io/library/postgres:15.1
+        image: docker.io/library/postgres:15.3
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -257,7 +257,7 @@ jobs:
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.1.0
         with:
-          version: 0.53.1
+          version: 0.54.0
 
       - name: Compile OPA policies
         working-directory: ./policies
