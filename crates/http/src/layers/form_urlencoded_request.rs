@@ -106,9 +106,7 @@ pub struct FormUrlencodedRequestLayer<T> {
 
 impl<T> Default for FormUrlencodedRequestLayer<T> {
     fn default() -> Self {
-        Self {
-            _t: PhantomData::default(),
-        }
+        Self { _t: PhantomData }
     }
 }
 

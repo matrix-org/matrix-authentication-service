@@ -63,7 +63,7 @@ impl HttpClientFactory {
         let client = (
             MapErrLayer::new(BoxError::from),
             MapRequestLayer::new(|req: http::Request<_>| req.map(Full::new)),
-            BodyToBytesResponseLayer::default(),
+            BodyToBytesResponseLayer,
         )
             .layer(client);
 

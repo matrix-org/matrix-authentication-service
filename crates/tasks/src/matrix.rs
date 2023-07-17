@@ -30,6 +30,7 @@ use mas_storage::{
 use tracing::info;
 
 use crate::{
+    storage::PostgresStorageFactory,
     utils::{metrics_layer, trace_layer},
     JobContextExt, State,
 };
@@ -158,8 +159,9 @@ pub(crate) fn register(
     suffix: &str,
     monitor: Monitor<TokioExecutor>,
     state: &State,
+    storage_factory: &PostgresStorageFactory,
 ) -> Monitor<TokioExecutor> {
-    let storage = state.store();
+    let storage = storage_factory.build();
     let worker_name = format!("{job}-{suffix}", job = ProvisionUserJob::NAME);
     let provision_user_worker = WorkerBuilder::new(worker_name)
         .layer(state.inject())
@@ -168,7 +170,7 @@ pub(crate) fn register(
         .with_storage(storage)
         .build_fn(provision_user);
 
-    let storage = state.store();
+    let storage = storage_factory.build();
     let worker_name = format!("{job}-{suffix}", job = ProvisionDeviceJob::NAME);
     let provision_device_worker = WorkerBuilder::new(worker_name)
         .layer(state.inject())
@@ -177,7 +179,7 @@ pub(crate) fn register(
         .with_storage(storage)
         .build_fn(provision_device);
 
-    let storage = state.store();
+    let storage = storage_factory.build();
     let worker_name = format!("{job}-{suffix}", job = DeleteDeviceJob::NAME);
     let delete_device_worker = WorkerBuilder::new(worker_name)
         .layer(state.inject())

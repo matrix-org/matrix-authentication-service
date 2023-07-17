@@ -28,6 +28,7 @@ use rand::{distributions::Uniform, Rng};
 use tracing::info;
 
 use crate::{
+    storage::PostgresStorageFactory,
     utils::{metrics_layer, trace_layer},
     JobContextExt, State,
 };
@@ -96,8 +97,9 @@ pub(crate) fn register(
     suffix: &str,
     monitor: Monitor<TokioExecutor>,
     state: &State,
+    storage_factory: &PostgresStorageFactory,
 ) -> Monitor<TokioExecutor> {
-    let storage = state.store();
+    let storage = storage_factory.build();
     let worker_name = format!("{job}-{suffix}", job = VerifyEmailJob::NAME);
     let worker = WorkerBuilder::new(worker_name)
         .layer(state.inject())
