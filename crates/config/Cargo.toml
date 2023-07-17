@@ -21,7 +21,7 @@ ulid = { version = "1.0.0", features = ["serde"] }
 url = { version = "2.4.0", features = ["serde"] }
 
 serde = { version = "1.0.171", features = ["derive"] }
-serde_with = { version = "3.0.0", features = ["hex", "chrono"] }
+serde_with = { version = "3.1.0", features = ["hex", "chrono"] }
 serde_json = "1.0.103"
 
 pem-rfc7468 = "0.7.0"
