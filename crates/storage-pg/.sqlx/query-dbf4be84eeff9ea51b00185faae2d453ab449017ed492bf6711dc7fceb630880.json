@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                UPDATE user_sessions\n                SET finished_at = $1\n                WHERE user_session_id = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "dbf4be84eeff9ea51b00185faae2d453ab449017ed492bf6711dc7fceb630880"
+}

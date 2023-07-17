@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                UPDATE compat_access_tokens\n                SET expires_at = $2\n                WHERE compat_access_token_id = $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "bbf62633c561706a762089bbab2f76a9ba3e2ed3539ef16accb601fb609c2ec9"
+}

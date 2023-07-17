@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                INSERT INTO upstream_oauth_providers (\n                    upstream_oauth_provider_id,\n                    issuer,\n                    scope,\n                    token_endpoint_auth_method,\n                    token_endpoint_signing_alg,\n                    client_id,\n                    encrypted_client_secret,\n                    created_at,\n                    claims_imports\n                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)\n                ON CONFLICT (upstream_oauth_provider_id) \n                    DO UPDATE\n                    SET\n                        issuer = EXCLUDED.issuer,\n                        scope = EXCLUDED.scope,\n                        token_endpoint_auth_method = EXCLUDED.token_endpoint_auth_method,\n                        token_endpoint_signing_alg = EXCLUDED.token_endpoint_signing_alg,\n                        client_id = EXCLUDED.client_id,\n                        encrypted_client_secret = EXCLUDED.encrypted_client_secret,\n                        claims_imports = EXCLUDED.claims_imports\n                RETURNING created_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Timestamptz",
+        "Jsonb"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "e7ce95415bb6b57cd601393c6abe5febfec2a963ce6eac7b099b761594b1dfaf"
+}

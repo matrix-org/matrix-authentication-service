@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                INSERT INTO compat_sso_logins\n                    (compat_sso_login_id, login_token, redirect_uri, created_at)\n                VALUES ($1, $2, $3, $4)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6e21e7d816f806da9bb5176931bdb550dee05c44c9d93f53df95fe3b4a840347"
+}

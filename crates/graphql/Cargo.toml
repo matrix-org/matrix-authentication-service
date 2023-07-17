@@ -6,13 +6,13 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-anyhow = "1.0.71"
+anyhow = "1.0.72"
 async-graphql = { version = "5.0.10", features = ["chrono", "url"] }
 async-trait = "0.1.71"
 chrono = "0.4.26"
 lettre = { version = "0.10.4", default-features = false  }
-serde = { version = "1.0.166", features = ["derive"] }
-thiserror = "1.0.41"
+serde = { version = "1.0.171", features = ["derive"] }
+thiserror = "1.0.43"
 tokio = { version = "1.29.1", features = ["sync"] }
 tracing = "0.1.37"
 tower = { version = "0.4.13", features = ["util"] }

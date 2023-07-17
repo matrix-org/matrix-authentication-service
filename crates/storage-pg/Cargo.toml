@@ -7,18 +7,18 @@ license = "Apache-2.0"
 
 [dependencies]
 async-trait = "0.1.71"
-sqlx = { version = "0.6.3", features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "offline", "json", "uuid"] }
+sqlx = { version = "0.7.1", features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "json", "uuid"] }
 chrono = { version = "0.4.26", features = ["serde"] }
-serde = { version = "1.0.166", features = ["derive"] }
-serde_json = "1.0.100"
-thiserror = "1.0.41"
+serde = { version = "1.0.171", features = ["derive"] }
+serde_json = "1.0.103"
+thiserror = "1.0.43"
 tracing = "0.1.37"
 futures-util = "0.3.28"
 
 rand = "0.8.5"
 rand_chacha = "0.3.1"
 url = { version = "2.4.0", features = ["serde"] }
-uuid = "1.4.0"
+uuid = "1.4.1"
 ulid = { version = "1.0.0", features = ["uuid", "serde"] }
 
 oauth2-types = { path = "../oauth2-types" }

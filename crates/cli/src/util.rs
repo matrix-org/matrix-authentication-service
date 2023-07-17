@@ -121,7 +121,7 @@ pub async fn templates_from_config(
 
 #[tracing::instrument(name = "db.connect", skip_all, err(Debug))]
 pub async fn database_from_config(config: &DatabaseConfig) -> Result<PgPool, anyhow::Error> {
-    let mut options = match &config.options {
+    let options = match &config.options {
         DatabaseConnectConfig::Uri { uri } => uri
             .parse()
             .context("could not parse database connection string")?,
@@ -164,7 +164,7 @@ pub async fn database_from_config(config: &DatabaseConfig) -> Result<PgPool, any
         }
     };
 
-    options
+    let options = options
         .log_statements(LevelFilter::Debug)
         .log_slow_statements(LevelFilter::Warn, Duration::from_millis(100));
 

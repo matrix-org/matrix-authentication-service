@@ -198,7 +198,7 @@ impl Options {
 
                 // TODO: do some pagination here
                 let ids: Vec<Uuid> = sqlx::query_scalar("SELECT user_id FROM users")
-                    .fetch_all(&mut conn)
+                    .fetch_all(&mut *conn)
                     .await?;
                 drop(conn);
 
@@ -235,7 +235,7 @@ impl Options {
                     "#,
                 )
                 .bind(Uuid::from(user.id))
-                .fetch_all(&mut conn)
+                .fetch_all(&mut *conn)
                 .await?;
 
                 for id in compat_sessions_ids {
@@ -265,7 +265,7 @@ impl Options {
                     "#,
                 )
                 .bind(Uuid::from(user.id))
-                .fetch_all(&mut conn)
+                .fetch_all(&mut *conn)
                 .await?;
 
                 for id in oauth2_sessions_ids {
@@ -300,7 +300,7 @@ impl Options {
                     "#,
                 )
                 .bind(Uuid::from(user.id))
-                .fetch_all(&mut conn)
+                .fetch_all(&mut *conn)
                 .await?;
 
                 for id in user_sessions_ids {

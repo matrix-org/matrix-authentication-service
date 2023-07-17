@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                INSERT INTO compat_refresh_tokens\n                    (compat_refresh_token_id, compat_session_id,\n                     compat_access_token_id, refresh_token, created_at)\n                VALUES ($1, $2, $3, $4, $5)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9f7bdc034c618e47e49c467d0d7f5b8c297d055abe248cc876dbc12c5a7dc920"
+}

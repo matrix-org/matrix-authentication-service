@@ -7,8 +7,8 @@ license = "Apache-2.0"
 
 [dependencies]
 async-trait = "0.1.71"
-axum = { version = "0.6.18", features = ["headers"] }
-axum-extra = { version = "0.7.4", features = ["cookie-private"] }
+axum = { version = "0.6.19", features = ["headers"] }
+axum-extra = { version = "0.7.5", features = ["cookie-private"] }
 chrono = "0.4.26"
 data-encoding = "2.4.0"
 futures-util = "0.3.28"
@@ -18,11 +18,11 @@ http-body = "0.4.5"
 mime = "0.3.17"
 rand = "0.8.5"
 sentry = { version = "0.31.5", default-features = false }
-serde = "1.0.166"
+serde = "1.0.171"
 serde_with = "3.0.0"
 serde_urlencoded = "0.7.1"
-serde_json = "1.0.100"
-thiserror = "1.0.41"
+serde_json = "1.0.103"
+thiserror = "1.0.43"
 tokio = "1.29.1"
 tower = { version = "0.4.13", features = ["util"] }
 tracing = "0.1.37"

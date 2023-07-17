@@ -22,7 +22,7 @@ pub async fn get(State(pool): State<PgPool>) -> Result<impl IntoResponse, FancyE
 
     sqlx::query("SELECT $1")
         .bind(1_i64)
-        .execute(&mut conn)
+        .execute(&mut *conn)
         .instrument(info_span!("DB health"))
         .await?;
 
