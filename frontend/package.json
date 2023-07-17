@@ -35,7 +35,7 @@
     "@graphql-codegen/cli": "^4.0.1",
     "@graphql-codegen/client-preset": "^4.0.1",
     "@graphql-codegen/urql-introspection": "^2.2.1",
-    "@graphql-eslint/eslint-plugin": "^3.20.0",
+    "@graphql-eslint/eslint-plugin": "^3.20.1",
     "@storybook/addon-actions": "^7.0.27",
     "@storybook/addon-backgrounds": "^7.0.27",
     "@storybook/addon-controls": "^7.0.27",
