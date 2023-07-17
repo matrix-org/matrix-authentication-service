@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                INSERT INTO oauth2_clients\n                    ( oauth2_client_id\n                    , encrypted_client_secret\n                    , grant_type_authorization_code\n                    , grant_type_refresh_token\n                    , token_endpoint_auth_method\n                    , jwks\n                    , jwks_uri\n                    , is_static\n                    )\n                VALUES\n                    ($1, $2, $3, $4, $5, $6, $7, TRUE)\n                ON CONFLICT (oauth2_client_id)\n                DO\n                    UPDATE SET encrypted_client_secret = EXCLUDED.encrypted_client_secret\n                             , grant_type_authorization_code = EXCLUDED.grant_type_authorization_code\n                             , grant_type_refresh_token = EXCLUDED.grant_type_refresh_token\n                             , token_endpoint_auth_method = EXCLUDED.token_endpoint_auth_method\n                             , jwks = EXCLUDED.jwks\n                             , jwks_uri = EXCLUDED.jwks_uri\n                             , is_static = TRUE\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Bool",
+        "Bool",
+        "Text",
+        "Jsonb",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "68c4cd463e4035ba8384f11818b7be602e2fbc34a5582f31f95b0cc5fa2aeb92"
+}

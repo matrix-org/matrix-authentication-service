@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                UPDATE compat_sessions cs\n                SET finished_at = $2\n                WHERE compat_session_id = $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ab34912b42a48a8b5c8d63e271b99b7d0b690a2471873c6654b1b6cf2079b95c"
+}

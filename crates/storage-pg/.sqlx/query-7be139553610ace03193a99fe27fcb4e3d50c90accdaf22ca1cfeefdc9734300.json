@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                    INSERT INTO oauth2_client_redirect_uris\n                        (oauth2_client_redirect_uri_id, oauth2_client_id, redirect_uri)\n                    SELECT id, $2, redirect_uri\n                    FROM UNNEST($1::uuid[], $3::text[]) r(id, redirect_uri)\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Uuid",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7be139553610ace03193a99fe27fcb4e3d50c90accdaf22ca1cfeefdc9734300"
+}

@@ -15,17 +15,17 @@ tracing = "0.1.37"
 opentelemetry = "0.19.0"
 
 # Error management
-thiserror = "1.0.41"
-anyhow = "1.0.71"
+thiserror = "1.0.43"
+anyhow = "1.0.72"
 sentry = { version = "0.31.5", default-features = false }
 
 # Web server
 hyper = { version = "0.14.27", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.4.1", features = ["cors"] }
-axum = "0.6.18"
-axum-macros = "0.3.7"
-axum-extra = { version = "0.7.4", features = ["cookie-private"] }
+axum = "0.6.19"
+axum-macros = "0.3.8"
+axum-extra = { version = "0.7.5", features = ["cookie-private"] }
 
 async-graphql = { version = "5.0.10", features = ["tracing", "apollo_tracing"] }
 
@@ -33,24 +33,24 @@ async-graphql = { version = "5.0.10", features = ["tracing", "apollo_tracing"] }
 lettre = { version = "0.10.4", default-features = false, features = ["builder"] }
 
 # Database access
-sqlx = { version = "0.6.3", features = ["runtime-tokio-rustls", "postgres"] }
+sqlx = { version = "0.7.1", features = ["runtime-tokio-rustls", "postgres"] }
 
 # Various structure (de)serialization
-serde = { version = "1.0.166", features = ["derive"] }
+serde = { version = "1.0.171", features = ["derive"] }
 serde_with = { version = "3.0.0", features = ["hex", "chrono"] }
-serde_json = "1.0.100"
+serde_json = "1.0.103"
 serde_urlencoded = "0.7.1"
 
 # Password hashing
-argon2 = { version = "0.5.0", features = ["password-hash", "std"] }
+argon2 = { version = "0.5.1", features = ["password-hash", "std"] }
 bcrypt = "0.15.0"
-pbkdf2 = { version = "0.12.1", features = ["password-hash", "std", "simple"] }
+pbkdf2 = { version = "0.12.2", features = ["password-hash", "std", "simple", "parallel"] }
 zeroize = "1.6.0"
 
 # Various data types and utilities
-camino = "1.1.4"
+camino = "1.1.6"
 chrono = { version = "0.4.26", features = ["serde"] }
-time = "0.3.22"
+time = "0.3.23"
 url = { version = "2.4.0", features = ["serde"] }
 mime = "0.3.17"
 rand = "0.8.5"
@@ -76,8 +76,8 @@ mas-templates = { path = "../templates" }
 oauth2-types = { path = "../oauth2-types" }
 
 [dev-dependencies]
-indoc = "2.0.2"
-insta = "1.30.0"
+indoc = "2.0.3"
+insta = "1.31.0"
 tracing-subscriber = "0.3.17"
 
 [features]

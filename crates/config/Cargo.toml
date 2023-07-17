@@ -10,26 +10,26 @@ tokio = { version = "1.29.1", features = ["fs", "rt"] }
 tracing = "0.1.37"
 async-trait = "0.1.71"
 
-thiserror = "1.0.41"
-anyhow = "1.0.71"
+thiserror = "1.0.43"
+anyhow = "1.0.72"
 
-camino = { version = "1.1.4", features = ["serde1"] }
+camino = { version = "1.1.6", features = ["serde1"] }
 chrono = { version = "0.4.26", features = ["serde"] }
 figment = { version = "0.10.10", features = ["env", "yaml", "test"] }
 schemars = { version = "0.8.12", features = ["url", "chrono"] }
 ulid = { version = "1.0.0", features = ["serde"] }
 url = { version = "2.4.0", features = ["serde"] }
 
-serde = { version = "1.0.166", features = ["derive"] }
+serde = { version = "1.0.171", features = ["derive"] }
 serde_with = { version = "3.0.0", features = ["hex", "chrono"] }
-serde_json = "1.0.100"
+serde_json = "1.0.103"
 
 pem-rfc7468 = "0.7.0"
 rustls-pemfile = "1.0.3"
 rand = "0.8.5"
 rand_chacha = "0.3.1"
 
-indoc = "2.0.2"
+indoc = "2.0.3"
 
 mas-jose = { path = "../jose" }
 mas-keystore = { path = "../keystore" }

@@ -17,6 +17,24 @@ opt-level = 3
 [profile.dev.package.argon2]
 opt-level = 3
 
+[profile.dev.package.pbkdf2]
+opt-level = 3
+
+[profile.dev.package.bcrypt]
+opt-level = 3
+
+[profile.dev.package.sha2]
+opt-level = 3
+
+[profile.dev.package.digest]
+opt-level = 3
+
+[profile.dev.package.block-buffer]
+opt-level = 3
+
+[profile.dev.package.generic-array]
+opt-level = 3
+
 
 # Until https://github.com/dylanhart/ulid-rs/pull/56 gets released
 [patch.crates-io.ulid]

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                UPDATE oauth2_sessions\n                SET finished_at = $2\n                WHERE oauth2_session_id = $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b700dc3f7d0f86f4904725d8357e34b7e457f857ed37c467c314142877fd5367"
+}

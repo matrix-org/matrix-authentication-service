@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                    DELETE FROM oauth2_refresh_tokens\n                    WHERE oauth2_session_id IN (\n                        SELECT oauth2_session_id\n                        FROM oauth2_sessions\n                        WHERE oauth2_client_id = $1\n                    )\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5b697dd7834d33ec55972d3ba43d25fe794bc0b69c5938275711faa7a80b811f"
+}

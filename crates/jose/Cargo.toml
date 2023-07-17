@@ -19,18 +19,18 @@ p384 = { version = "0.13.0", features = ["ecdsa"] }
 rand = "0.8.5"
 rsa = "0.9.2"
 schemars = "0.8.12"
-sec1 = "0.7.2"
-serde = { version = "1.0.166", features = ["derive"] }
-serde_json = "1.0.100"
+sec1 = "0.7.3"
+serde = { version = "1.0.171", features = ["derive"] }
+serde_json = "1.0.103"
 serde_with = { version = "3.0.0", features = ["base64"] }
 sha2 = { version = "0.10.7", features = ["oid"] }
 signature = "2.1.0"
-thiserror = "1.0.41"
+thiserror = "1.0.43"
 tracing = "0.1.37"
 url = { version = "2.4.0", features = ["serde"] }
 
 mas-iana = { path = "../iana" }
 
 [dev-dependencies]
-insta = { version = "1.30.0" }
+insta = { version = "1.31.0" }
 rand_chacha = "0.3.1"

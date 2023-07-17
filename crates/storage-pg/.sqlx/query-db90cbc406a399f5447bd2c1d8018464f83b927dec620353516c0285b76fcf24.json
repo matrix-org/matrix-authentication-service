@@ -1,0 +1,118 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                SELECT oauth2_client_id\n                     , encrypted_client_secret\n                     , ARRAY(\n                           SELECT redirect_uri\n                           FROM oauth2_client_redirect_uris r\n                           WHERE r.oauth2_client_id = c.oauth2_client_id\n                       ) AS \"redirect_uris!\"\n                     , grant_type_authorization_code\n                     , grant_type_refresh_token\n                     , client_name\n                     , logo_uri\n                     , client_uri\n                     , policy_uri\n                     , tos_uri\n                     , jwks_uri\n                     , jwks\n                     , id_token_signed_response_alg\n                     , userinfo_signed_response_alg\n                     , token_endpoint_auth_method\n                     , token_endpoint_auth_signing_alg\n                     , initiate_login_uri\n                FROM oauth2_clients c\n\n                WHERE oauth2_client_id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "oauth2_client_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "encrypted_client_secret",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "redirect_uris!",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 3,
+        "name": "grant_type_authorization_code",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "grant_type_refresh_token",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "client_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "logo_uri",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "client_uri",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "policy_uri",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "tos_uri",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "jwks_uri",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "jwks",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 12,
+        "name": "id_token_signed_response_alg",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 13,
+        "name": "userinfo_signed_response_alg",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 14,
+        "name": "token_endpoint_auth_method",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 15,
+        "name": "token_endpoint_auth_signing_alg",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 16,
+        "name": "initiate_login_uri",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      null,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "db90cbc406a399f5447bd2c1d8018464f83b927dec620353516c0285b76fcf24"
+}
