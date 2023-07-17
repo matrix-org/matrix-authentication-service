@@ -48,7 +48,7 @@
     "@storybook/react": "^7.0.27",
     "@storybook/react-vite": "^7.0.27",
     "@types/node": "^20.4.2",
-    "@types/react": "^18.2.14",
+    "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",
     "@types/react-test-renderer": "^18.0.0",
     "@vitejs/plugin-react": "^4.0.3",
