@@ -55,6 +55,9 @@ jobs:
           RUSTC_BOOTSTRAP: "1"
         run: cargo doc -Zrustdoc-map --workspace --lib --no-deps
 
+      - name: Remove the rustdoc lock file
+        run: rm -f target/doc/.lock
+
       - name: Build storybook
         working-directory: ./frontend
         run: npx storybook build -o ../target/book/storybook
