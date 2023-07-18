@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{convert::TryInto, marker::PhantomData, ops::Add, time::Duration};
+use std::{convert::TryInto, marker::PhantomData, ops::Add, sync::Arc, time::Duration};
 
 use apalis_core::{
     error::JobStreamError,
@@ -24,6 +24,7 @@ use apalis_core::{
 };
 use async_stream::try_stream;
 use chrono::{DateTime, Utc};
+use event_listener::Event;
 use futures_lite::{Stream, StreamExt};
 use serde::{de::DeserializeOwned, Serialize};
 use sqlx::{postgres::PgListener, PgPool, Pool, Postgres, Row};
@@ -33,17 +34,14 @@ use super::SqlJobRequest;
 
 pub struct StorageFactory {
     pool: PgPool,
-    sender: tokio::sync::watch::Sender<()>,
-    receiver: tokio::sync::watch::Receiver<()>,
+    event: Arc<Event>,
 }
 
 impl StorageFactory {
     pub fn new(pool: Pool<Postgres>) -> Self {
-        let (sender, receiver) = tokio::sync::watch::channel(());
         StorageFactory {
             pool,
-            sender,
-            receiver,
+            event: Arc::new(Event::new()),
         }
     }
 
@@ -54,8 +52,8 @@ impl StorageFactory {
         let handle = tokio::spawn(async move {
             loop {
                 let notification = listener.recv().await.expect("Failed to poll notification");
-                self.sender.send(()).expect("Failed to send notification");
-                tracing::debug!(?notification, "Received notification");
+                self.event.notify(usize::MAX);
+                tracing::debug!(?notification, "Broadcast notification");
             }
         });
 
@@ -65,7 +63,7 @@ impl StorageFactory {
     pub fn build<T>(&self) -> Storage<T> {
         Storage {
             pool: self.pool.clone(),
-            notifier: self.receiver.clone(),
+            event: self.event.clone(),
             job_type: PhantomData,
         }
     }
@@ -75,7 +73,7 @@ impl StorageFactory {
 #[derive(Debug)]
 pub struct Storage<T> {
     pool: PgPool,
-    notifier: tokio::sync::watch::Receiver<()>,
+    event: Arc<Event>,
     job_type: PhantomData<T>,
 }
 
@@ -83,7 +81,7 @@ impl<T> Clone for Storage<T> {
     fn clone(&self) -> Self {
         Storage {
             pool: self.pool.clone(),
-            notifier: self.notifier.clone(),
+            event: self.event.clone(),
             job_type: PhantomData,
         }
     }
@@ -97,24 +95,21 @@ impl<T: DeserializeOwned + Send + Unpin + Job> Storage<T> {
         buffer_size: usize,
     ) -> impl Stream<Item = Result<JobRequest<T>, JobStreamError>> {
         let pool = self.pool.clone();
-        let mut notifier = self.notifier.clone();
         let sleeper = apalis_core::utils::timer::TokioTimer;
         let worker_id = worker_id.clone();
+        let event = self.event.clone();
         try_stream! {
             loop {
                 // Wait for a notification or a timeout
+                let listener = event.listen();
                 let interval = sleeper.sleep(interval);
-                let res = tokio::select! {
-                    biased; changed = notifier.changed() => changed.map_err(|e| JobStreamError::BrokenPipe(Box::from(e))),
-                    _ = interval => Ok(()),
-                };
-                res?;
+                futures_lite::future::race(interval, listener).await;
 
                 let tx = pool.clone();
                 let job_type = T::NAME;
                 let fetch_query = "SELECT * FROM apalis.get_jobs($1, $2, $3);";
                 let jobs: Vec<SqlJobRequest<T>> = sqlx::query_as(fetch_query)
-                    .bind(worker_id.to_string())
+                    .bind(worker_id.name())
                     .bind(job_type)
                     // https://docs.rs/sqlx/latest/sqlx/postgres/types/index.html
                     .bind(i32::try_from(buffer_size).map_err(|e| JobStreamError::BrokenPipe(Box::from(e)))?)
@@ -141,7 +136,7 @@ impl<T: DeserializeOwned + Send + Unpin + Job> Storage<T> {
                 ON CONFLICT (id) DO 
                    UPDATE SET last_seen = EXCLUDED.last_seen";
         sqlx::query(query)
-            .bind(worker_id.to_string())
+            .bind(worker_id.name())
             .bind(worker_type)
             .bind(storage_name)
             .bind(std::any::type_name::<Service>())
@@ -272,7 +267,7 @@ where
                 "UPDATE apalis.jobs SET status = 'Killed', done_at = now() WHERE id = $1 AND lock_by = $2";
         sqlx::query(query)
             .bind(job_id.to_string())
-            .bind(worker_id.to_string())
+            .bind(worker_id.name())
             .execute(&mut *conn)
             .await
             .map_err(|e| StorageError::Database(Box::from(e)))?;
@@ -292,7 +287,7 @@ where
                 "UPDATE apalis.jobs SET status = 'Pending', done_at = NULL, lock_by = NULL WHERE id = $1 AND lock_by = $2";
         sqlx::query(query)
             .bind(job_id.to_string())
-            .bind(worker_id.to_string())
+            .bind(worker_id.name())
             .execute(&mut *conn)
             .await
             .map_err(|e| StorageError::Database(Box::from(e)))?;
@@ -327,7 +322,7 @@ where
                 "UPDATE apalis.jobs SET status = 'Done', done_at = now() WHERE id = $1 AND lock_by = $2";
         sqlx::query(query)
             .bind(job_id.to_string())
-            .bind(worker_id.to_string())
+            .bind(worker_id.name())
             .execute(&pool)
             .await
             .map_err(|e| StorageError::Database(Box::from(e)))?;

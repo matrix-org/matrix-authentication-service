@@ -105,7 +105,9 @@ pub(crate) fn register(
         .layer(state.inject())
         .layer(trace_layer())
         .layer(metrics_layer())
-        .with_storage(storage)
+        .with_storage_config(storage, |c| {
+            c.fetch_interval(std::time::Duration::from_secs(1))
+        })
         .build_fn(verify_email);
     monitor.register(worker)
 }

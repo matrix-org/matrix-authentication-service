@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::time::Duration;
+
 use anyhow::Context;
 use apalis_core::{
     builder::{WorkerBuilder, WorkerFactoryFn},
@@ -167,7 +169,7 @@ pub(crate) fn register(
         .layer(state.inject())
         .layer(trace_layer())
         .layer(metrics_layer())
-        .with_storage(storage)
+        .with_storage_config(storage, |c| c.fetch_interval(Duration::from_secs(1)))
         .build_fn(provision_user);
 
     let storage = storage_factory.build();
@@ -176,7 +178,7 @@ pub(crate) fn register(
         .layer(state.inject())
         .layer(trace_layer())
         .layer(metrics_layer())
-        .with_storage(storage)
+        .with_storage_config(storage, |c| c.fetch_interval(Duration::from_secs(1)))
         .build_fn(provision_device);
 
     let storage = storage_factory.build();
@@ -185,7 +187,7 @@ pub(crate) fn register(
         .layer(state.inject())
         .layer(trace_layer())
         .layer(metrics_layer())
-        .with_storage(storage)
+        .with_storage_config(storage, |c| c.fetch_interval(Duration::from_secs(1)))
         .build_fn(delete_device);
 
     monitor
