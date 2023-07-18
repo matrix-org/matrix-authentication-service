@@ -65,15 +65,23 @@ impl AppState {
         let usage = meter
             .i64_observable_up_down_counter("db.connections.usage")
             .with_description("The number of connections that are currently in `state` described by the state attribute.")
-            .with_unit(Unit::new("connection"))
+            .with_unit(Unit::new("{connection}"))
+            .init();
+
+        let max = meter
+            .i64_observable_up_down_counter("db.connections.max")
+            .with_description("The maximum number of open connections allowed.")
+            .with_unit(Unit::new("{connection}"))
             .init();
 
         // Observe the number of active and idle connections in the pool
         meter.register_callback(move |cx| {
             let idle = u32::try_from(pool.num_idle()).unwrap_or(u32::MAX);
             let used = pool.size() - idle;
+            let max_conn = pool.options().get_max_connections();
             usage.observe(cx, i64::from(idle), &[KeyValue::new("state", "idle")]);
             usage.observe(cx, i64::from(used), &[KeyValue::new("state", "used")]);
+            max.observe(cx, i64::from(max_conn), &[]);
         })?;
 
         // Track the connection acquisition time
