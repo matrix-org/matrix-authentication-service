@@ -17,13 +17,14 @@ use chrono::{DateTime, Utc};
 use mas_data_model::{Authentication, BrowserSession, Password, UpstreamOAuthLink, User};
 use mas_storage::{user::BrowserSessionRepository, Clock, Page, Pagination};
 use rand::RngCore;
+use sea_query::{Expr, IntoColumnRef, PostgresQueryBuilder};
 use sqlx::{PgConnection, QueryBuilder};
 use ulid::Ulid;
 use uuid::Uuid;
 
 use crate::{
-    pagination::QueryBuilderExt, tracing::ExecuteExt, DatabaseError, DatabaseInconsistencyError,
-    LookupResultExt,
+    pagination::QueryBuilderExt, sea_query_sqlx::map_values, tracing::ExecuteExt, DatabaseError,
+    DatabaseInconsistencyError, LookupResultExt,
 };
 
 /// An implementation of [`BrowserSessionRepository`] for a PostgreSQL
@@ -41,6 +42,7 @@ impl<'c> PgBrowserSessionRepository<'c> {
 }
 
 #[derive(sqlx::FromRow)]
+#[sea_query::enum_def]
 struct SessionLookup {
     user_session_id: Uuid,
     user_session_created_at: DateTime<Utc>,
@@ -50,6 +52,31 @@ struct SessionLookup {
     user_primary_user_email_id: Option<Uuid>,
     last_authentication_id: Option<Uuid>,
     last_authd_at: Option<DateTime<Utc>>,
+}
+
+#[derive(sea_query::Iden)]
+enum UserSessions {
+    Table,
+    UserSessionId,
+    CreatedAt,
+    FinishedAt,
+    UserId,
+}
+
+#[derive(sea_query::Iden)]
+enum Users {
+    Table,
+    UserId,
+    Username,
+    PrimaryUserEmailId,
+}
+
+#[derive(sea_query::Iden)]
+enum SessionAuthentication {
+    Table,
+    UserSessionAuthenticationId,
+    UserSessionId,
+    CreatedAt,
 }
 
 impl TryFrom<SessionLookup> for BrowserSession {
@@ -214,46 +241,78 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
     }
 
     #[tracing::instrument(
-        name = "db.browser_session.list_active_paginated",
+        name = "db.browser_session.list",
         skip_all,
         fields(
             db.statement,
-            %user.id,
         ),
         err,
     )]
-    async fn list_active_paginated(
+    async fn list(
         &mut self,
-        user: &User,
+        filter: mas_storage::user::BrowserSessionFilter<'_>,
         pagination: Pagination,
     ) -> Result<Page<BrowserSession>, Self::Error> {
-        // TODO: ordering of last authentication is wrong
-        let mut query = QueryBuilder::new(
-            r#"
-                SELECT DISTINCT ON (s.user_session_id)
-                    s.user_session_id,
-                    s.created_at                     AS "user_session_created_at",
-                    s.finished_at                    AS "user_session_finished_at",
-                    u.user_id,
-                    u.username                       AS "user_username",
-                    u.primary_user_email_id          AS "user_primary_user_email_id",
-                    a.user_session_authentication_id AS "last_authentication_id",
-                    a.created_at                     AS "last_authd_at"
-                FROM user_sessions s
-                INNER JOIN users u
-                    USING (user_id)
-                LEFT JOIN user_session_authentications a
-                    USING (user_session_id)
-            "#,
-        );
+        let (sql, values) = sea_query::Query::select()
+            .expr_as(
+                Expr::col((UserSessions::Table, UserSessions::UserSessionId)),
+                SessionLookupIden::UserSessionId,
+            )
+            .expr_as(
+                Expr::col((UserSessions::Table, UserSessions::CreatedAt)),
+                SessionLookupIden::UserSessionCreatedAt,
+            )
+            .expr_as(
+                Expr::col((UserSessions::Table, UserSessions::FinishedAt)),
+                SessionLookupIden::UserSessionFinishedAt,
+            )
+            .expr_as(
+                Expr::col((Users::Table, Users::UserId)),
+                SessionLookupIden::UserId,
+            )
+            .expr_as(
+                Expr::col((Users::Table, Users::Username)),
+                SessionLookupIden::UserUsername,
+            )
+            .expr_as(
+                Expr::col((Users::Table, Users::PrimaryUserEmailId)),
+                SessionLookupIden::UserPrimaryUserEmailId,
+            )
+            .expr_as(
+                Expr::value(None::<Uuid>),
+                SessionLookupIden::LastAuthenticationId,
+            )
+            .expr_as(
+                Expr::value(None::<DateTime<Utc>>),
+                SessionLookupIden::LastAuthdAt,
+            )
+            .from(UserSessions::Table)
+            .inner_join(
+                Users::Table,
+                Expr::col((UserSessions::Table, UserSessions::UserId))
+                    .equals((Users::Table, Users::UserId)),
+            )
+            .and_where_option(
+                filter
+                    .user()
+                    .map(|user| Expr::col((Users::Table, Users::UserId)).eq(Uuid::from(user.id))),
+            )
+            .and_where_option(filter.state().map(|state| {
+                if state.is_active() {
+                    Expr::col((UserSessions::Table, UserSessions::FinishedAt)).is_null()
+                } else {
+                    Expr::col((UserSessions::Table, UserSessions::FinishedAt)).is_not_null()
+                }
+            }))
+            .generate_pagination(
+                (UserSessions::Table, UserSessions::UserSessionId).into_column_ref(),
+                pagination,
+            )
+            .build(PostgresQueryBuilder);
 
-        query
-            .push(" WHERE s.finished_at IS NULL AND s.user_id = ")
-            .push_bind(Uuid::from(user.id))
-            .generate_pagination("s.user_session_id", pagination);
+        let arguments = map_values(values);
 
-        let edges: Vec<SessionLookup> = query
-            .build_query_as()
+        let edges: Vec<SessionLookup> = sqlx::query_as_with(&sql, arguments)
             .traced()
             .fetch_all(&mut *self.conn)
             .await?;
@@ -261,32 +320,8 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
         let page = pagination
             .process(edges)
             .try_map(BrowserSession::try_from)?;
+
         Ok(page)
-    }
-
-    #[tracing::instrument(
-        name = "db.browser_session.count_active",
-        skip_all,
-        fields(
-            db.statement,
-            %user.id,
-        ),
-        err,
-    )]
-    async fn count_active(&mut self, user: &User) -> Result<usize, Self::Error> {
-        let res = sqlx::query_scalar!(
-            r#"
-                SELECT COUNT(*) as "count!"
-                FROM user_sessions s
-                WHERE s.user_id = $1 AND s.finished_at IS NULL
-            "#,
-            Uuid::from(user.id),
-        )
-        .traced()
-        .fetch_one(&mut *self.conn)
-        .await?;
-
-        res.try_into().map_err(DatabaseError::to_invalid_operation)
     }
 
     #[tracing::instrument(

@@ -19,6 +19,70 @@ use ulid::Ulid;
 
 use crate::{pagination::Page, repository_impl, Clock, Pagination};
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum BrowserSessionState {
+    Active,
+    Finished,
+}
+
+impl BrowserSessionState {
+    pub fn is_active(self) -> bool {
+        matches!(self, Self::Active)
+    }
+
+    pub fn is_finished(self) -> bool {
+        matches!(self, Self::Finished)
+    }
+}
+
+/// Filter parameters for listing browser sessions
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub struct BrowserSessionFilter<'a> {
+    user: Option<&'a User>,
+    state: Option<BrowserSessionState>,
+}
+
+impl<'a> BrowserSessionFilter<'a> {
+    /// Create a new [`BrowserSessionFilter`] with default values
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Set the user who owns the browser sessions
+    #[must_use]
+    pub fn for_user(mut self, user: &'a User) -> Self {
+        self.user = Some(user);
+        self
+    }
+
+    /// Get the user filter
+    #[must_use]
+    pub fn user(&self) -> Option<&User> {
+        self.user
+    }
+
+    /// Only return active browser sessions
+    #[must_use]
+    pub fn active_only(mut self) -> Self {
+        self.state = Some(BrowserSessionState::Active);
+        self
+    }
+
+    /// Only return finished browser sessions
+    #[must_use]
+    pub fn finished_only(mut self) -> Self {
+        self.state = Some(BrowserSessionState::Finished);
+        self
+    }
+
+    /// Get the state filter
+    #[must_use]
+    pub fn state(&self) -> Option<BrowserSessionState> {
+        self.state
+    }
+}
+
 /// A [`BrowserSessionRepository`] helps interacting with [`BrowserSession`]
 /// saved in the storage backend
 #[async_trait]
@@ -77,32 +141,21 @@ pub trait BrowserSessionRepository: Send + Sync {
         user_session: BrowserSession,
     ) -> Result<BrowserSession, Self::Error>;
 
-    /// List active [`BrowserSession`] for a [`User`] with the given pagination
+    /// List [`BrowserSession`] with the given filter and pagination
     ///
     /// # Parameters
     ///
-    /// * `user`: The user to list the sessions for
+    /// * `filter`: The filter to apply
     /// * `pagination`: The pagination parameters
     ///
     /// # Errors
     ///
     /// Returns [`Self::Error`] if the underlying repository fails
-    async fn list_active_paginated(
+    async fn list(
         &mut self,
-        user: &User,
+        filter: BrowserSessionFilter<'_>,
         pagination: Pagination,
     ) -> Result<Page<BrowserSession>, Self::Error>;
-
-    /// Count active [`BrowserSession`] for a [`User`]
-    ///
-    /// # Parameters
-    ///
-    /// * `user`: The user to count the sessions for
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Self::Error`] if the underlying repository fails
-    async fn count_active(&mut self, user: &User) -> Result<usize, Self::Error>;
 
     /// Authenticate a [`BrowserSession`] with the given [`Password`]
     ///
@@ -163,12 +216,12 @@ repository_impl!(BrowserSessionRepository:
         clock: &dyn Clock,
         user_session: BrowserSession,
     ) -> Result<BrowserSession, Self::Error>;
-    async fn list_active_paginated(
+
+    async fn list(
         &mut self,
-        user: &User,
+        filter: BrowserSessionFilter<'_>,
         pagination: Pagination,
     ) -> Result<Page<BrowserSession>, Self::Error>;
-    async fn count_active(&mut self, user: &User) -> Result<usize, Self::Error>;
 
     async fn authenticate_with_password(
         &mut self,

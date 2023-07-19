@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use async_graphql::{Description, Object, ID};
+use async_graphql::{Description, Enum, Object, ID};
 use chrono::{DateTime, Utc};
 
 use super::{NodeType, User};
@@ -20,6 +20,16 @@ use super::{NodeType, User};
 /// A browser session represents a logged in user in a browser.
 #[derive(Description)]
 pub struct BrowserSession(pub mas_data_model::BrowserSession);
+
+/// The state of a browser session.
+#[derive(Enum, Copy, Clone, Eq, PartialEq)]
+pub enum BrowserSessionState {
+    /// The session is active.
+    Active,
+
+    /// The session is no longer active.
+    Finished,
+}
 
 impl From<mas_data_model::BrowserSession> for BrowserSession {
     fn from(v: mas_data_model::BrowserSession) -> Self {

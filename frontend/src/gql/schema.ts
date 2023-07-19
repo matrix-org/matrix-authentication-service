@@ -1970,6 +1970,13 @@ export default {
                   name: "Any",
                 },
               },
+              {
+                name: "state",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
             ],
           },
           {
