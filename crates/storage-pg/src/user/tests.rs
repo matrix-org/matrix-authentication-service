@@ -15,7 +15,10 @@
 use chrono::Duration;
 use mas_storage::{
     clock::MockClock,
-    user::{BrowserSessionRepository, UserEmailRepository, UserPasswordRepository, UserRepository},
+    user::{
+        BrowserSessionFilter, BrowserSessionRepository, UserEmailRepository,
+        UserPasswordRepository, UserRepository,
+    },
     Pagination, Repository, RepositoryAccess,
 };
 use rand::SeedableRng;
@@ -360,7 +363,11 @@ async fn test_user_session(pool: PgPool) {
         .await
         .unwrap();
 
-    assert_eq!(repo.browser_session().count_active(&user).await.unwrap(), 0);
+    let filter = BrowserSessionFilter::default()
+        .for_user(&user)
+        .active_only();
+
+    assert_eq!(repo.browser_session().count(filter).await.unwrap(), 0);
 
     let session = repo
         .browser_session()
@@ -370,12 +377,12 @@ async fn test_user_session(pool: PgPool) {
     assert_eq!(session.user.id, user.id);
     assert!(session.finished_at.is_none());
 
-    assert_eq!(repo.browser_session().count_active(&user).await.unwrap(), 1);
+    assert_eq!(repo.browser_session().count(filter).await.unwrap(), 1);
 
     // The session should be in the list of active sessions
     let session_list = repo
         .browser_session()
-        .list_active_paginated(&user, Pagination::first(10))
+        .list(filter, Pagination::first(10))
         .await
         .unwrap();
     assert!(!session_list.has_next_page);
@@ -400,12 +407,12 @@ async fn test_user_session(pool: PgPool) {
         .unwrap();
 
     // The active session counter is back to 0
-    assert_eq!(repo.browser_session().count_active(&user).await.unwrap(), 0);
+    assert_eq!(repo.browser_session().count(filter).await.unwrap(), 0);
 
     // The session should not be in the list of active sessions anymore
     let session_list = repo
         .browser_session()
-        .list_active_paginated(&user, Pagination::first(10))
+        .list(filter, Pagination::first(10))
         .await
         .unwrap();
     assert!(!session_list.has_next_page);

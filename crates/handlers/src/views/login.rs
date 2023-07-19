@@ -250,9 +250,8 @@ async fn login(
         .map_err(|_| FormError::Internal)?;
 
     // And mark it as authenticated by the password
-    let user_session = repo
-        .browser_session()
-        .authenticate_with_password(&mut rng, clock, user_session, &user_password)
+    repo.browser_session()
+        .authenticate_with_password(&mut rng, clock, &user_session, &user_password)
         .await
         .map_err(|_| FormError::Internal)?;
 

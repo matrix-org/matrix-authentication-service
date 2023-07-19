@@ -147,9 +147,8 @@ pub(crate) async fn post(
     };
 
     // Mark the session as authenticated by the password
-    let session = repo
-        .browser_session()
-        .authenticate_with_password(&mut rng, &clock, session, &user_password)
+    repo.browser_session()
+        .authenticate_with_password(&mut rng, &clock, &session, &user_password)
         .await?;
 
     let cookie_jar = cookie_jar.set_session(&session);

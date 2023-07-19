@@ -18,7 +18,7 @@ use mas_data_model::{Authentication, BrowserSession, Password, UpstreamOAuthLink
 use mas_storage::{user::BrowserSessionRepository, Clock, Page, Pagination};
 use rand::RngCore;
 use sea_query::{Expr, IntoColumnRef, PostgresQueryBuilder};
-use sqlx::{PgConnection, QueryBuilder};
+use sqlx::PgConnection;
 use ulid::Ulid;
 use uuid::Uuid;
 
@@ -50,8 +50,6 @@ struct SessionLookup {
     user_id: Uuid,
     user_username: String,
     user_primary_user_email_id: Option<Uuid>,
-    last_authentication_id: Option<Uuid>,
-    last_authd_at: Option<DateTime<Utc>>,
 }
 
 #[derive(sea_query::Iden)]
@@ -71,14 +69,6 @@ enum Users {
     PrimaryUserEmailId,
 }
 
-#[derive(sea_query::Iden)]
-enum SessionAuthentication {
-    Table,
-    UserSessionAuthenticationId,
-    UserSessionId,
-    CreatedAt,
-}
-
 impl TryFrom<SessionLookup> for BrowserSession {
     type Error = DatabaseInconsistencyError;
 
@@ -91,25 +81,11 @@ impl TryFrom<SessionLookup> for BrowserSession {
             primary_user_email_id: value.user_primary_user_email_id.map(Into::into),
         };
 
-        let last_authentication = match (value.last_authentication_id, value.last_authd_at) {
-            (Some(id), Some(created_at)) => Some(Authentication {
-                id: id.into(),
-                created_at,
-            }),
-            (None, None) => None,
-            _ => {
-                return Err(DatabaseInconsistencyError::on(
-                    "user_session_authentications",
-                ))
-            }
-        };
-
         Ok(BrowserSession {
             id: value.user_session_id.into(),
             user,
             created_at: value.user_session_created_at,
             finished_at: value.user_session_finished_at,
-            last_authentication,
         })
     }
 }
@@ -132,21 +108,15 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
             SessionLookup,
             r#"
                 SELECT s.user_session_id
-                     , s.created_at                     AS "user_session_created_at"
-                     , s.finished_at                     AS "user_session_finished_at"
+                     , s.created_at            AS "user_session_created_at"
+                     , s.finished_at           AS "user_session_finished_at"
                      , u.user_id
-                     , u.username                       AS "user_username"
-                     , u.primary_user_email_id          AS "user_primary_user_email_id"
-                     , a.user_session_authentication_id AS "last_authentication_id?"
-                     , a.created_at                     AS "last_authd_at?"
+                     , u.username              AS "user_username"
+                     , u.primary_user_email_id AS "user_primary_user_email_id"
                 FROM user_sessions s
                 INNER JOIN users u
                     USING (user_id)
-                LEFT JOIN user_session_authentications a
-                    USING (user_session_id)
                 WHERE s.user_session_id = $1
-                ORDER BY a.created_at DESC
-                LIMIT 1
             "#,
             Uuid::from(id),
         )
@@ -199,7 +169,6 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
             user: user.clone(),
             created_at,
             finished_at: None,
-            last_authentication: None,
         };
 
         Ok(session)
@@ -278,14 +247,6 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
                 Expr::col((Users::Table, Users::PrimaryUserEmailId)),
                 SessionLookupIden::UserPrimaryUserEmailId,
             )
-            .expr_as(
-                Expr::value(None::<Uuid>),
-                SessionLookupIden::LastAuthenticationId,
-            )
-            .expr_as(
-                Expr::value(None::<DateTime<Utc>>),
-                SessionLookupIden::LastAuthdAt,
-            )
             .from(UserSessions::Table)
             .inner_join(
                 Users::Table,
@@ -325,6 +286,45 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
     }
 
     #[tracing::instrument(
+        name = "db.browser_session.count",
+        skip_all,
+        fields(
+            db.statement,
+        ),
+        err,
+    )]
+    async fn count(
+        &mut self,
+        filter: mas_storage::user::BrowserSessionFilter<'_>,
+    ) -> Result<usize, Self::Error> {
+        let (sql, values) = sea_query::Query::select()
+            .expr(Expr::col((UserSessions::Table, UserSessions::UserSessionId)).count())
+            .from(UserSessions::Table)
+            .and_where_option(filter.user().map(|user| {
+                Expr::col((UserSessions::Table, UserSessions::UserId)).eq(Uuid::from(user.id))
+            }))
+            .and_where_option(filter.state().map(|state| {
+                if state.is_active() {
+                    Expr::col((UserSessions::Table, UserSessions::FinishedAt)).is_null()
+                } else {
+                    Expr::col((UserSessions::Table, UserSessions::FinishedAt)).is_not_null()
+                }
+            }))
+            .build(PostgresQueryBuilder);
+
+        let arguments = map_values(values);
+
+        let count: i64 = sqlx::query_scalar_with(&sql, arguments)
+            .traced()
+            .fetch_one(&mut *self.conn)
+            .await?;
+
+        count
+            .try_into()
+            .map_err(DatabaseError::to_invalid_operation)
+    }
+
+    #[tracing::instrument(
         name = "db.browser_session.authenticate_with_password",
         skip_all,
         fields(
@@ -339,9 +339,9 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
         &mut self,
         rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
-        mut user_session: BrowserSession,
+        user_session: &BrowserSession,
         user_password: &Password,
-    ) -> Result<BrowserSession, Self::Error> {
+    ) -> Result<Authentication, Self::Error> {
         let _user_password = user_password;
         let created_at = clock.now();
         let id = Ulid::from_datetime_with_source(created_at.into(), rng);
@@ -364,9 +364,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
         .execute(&mut *self.conn)
         .await?;
 
-        user_session.last_authentication = Some(Authentication { id, created_at });
-
-        Ok(user_session)
+        Ok(Authentication { id, created_at })
     }
 
     #[tracing::instrument(
@@ -384,9 +382,9 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
         &mut self,
         rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
-        mut user_session: BrowserSession,
+        user_session: &BrowserSession,
         upstream_oauth_link: &UpstreamOAuthLink,
-    ) -> Result<BrowserSession, Self::Error> {
+    ) -> Result<Authentication, Self::Error> {
         let _upstream_oauth_link = upstream_oauth_link;
         let created_at = clock.now();
         let id = Ulid::from_datetime_with_source(created_at.into(), rng);
@@ -409,8 +407,38 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
         .execute(&mut *self.conn)
         .await?;
 
-        user_session.last_authentication = Some(Authentication { id, created_at });
+        Ok(Authentication { id, created_at })
+    }
 
-        Ok(user_session)
+    #[tracing::instrument(
+        name = "db.browser_session.get_last_authentication",
+        skip_all,
+        fields(
+            db.statement,
+            %user_session.id,
+        ),
+        err,
+    )]
+    async fn get_last_authentication(
+        &mut self,
+        user_session: &BrowserSession,
+    ) -> Result<Option<Authentication>, Self::Error> {
+        let authentication = sqlx::query_as!(
+            Authentication,
+            r#"
+                SELECT user_session_authentication_id AS id
+                     , created_at
+                FROM user_session_authentications
+                WHERE user_session_id = $1
+                ORDER BY created_at DESC
+                LIMIT 1
+            "#,
+            Uuid::from(user_session.id),
+        )
+        .traced()
+        .fetch_optional(&mut *self.conn)
+        .await?;
+
+        Ok(authentication)
     }
 }

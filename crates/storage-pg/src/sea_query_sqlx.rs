@@ -25,9 +25,9 @@ pub(crate) fn map_values(values: sea_query::Values) -> sqlx::postgres::PgArgumen
             Value::SmallInt(i) => arguments.add(i),
             Value::Int(i) => arguments.add(i),
             Value::BigInt(i) => arguments.add(i),
-            Value::TinyUnsigned(u) => arguments.add(u.map(|u| u as i16)),
-            Value::SmallUnsigned(u) => arguments.add(u.map(|u| u as i32)),
-            Value::Unsigned(u) => arguments.add(u.map(|u| u as i64)),
+            Value::TinyUnsigned(u) => arguments.add(u.map(i16::from)),
+            Value::SmallUnsigned(u) => arguments.add(u.map(i32::from)),
+            Value::Unsigned(u) => arguments.add(u.map(i64::from)),
             Value::BigUnsigned(u) => arguments.add(u.map(|u| i64::try_from(u).unwrap_or(i64::MAX))),
             Value::Float(f) => arguments.add(f),
             Value::Double(d) => arguments.add(d),
@@ -41,6 +41,9 @@ pub(crate) fn map_values(values: sea_query::Values) -> sqlx::postgres::PgArgumen
             Value::ChronoDateTimeLocal(dt) => arguments.add(dt.as_deref()),
             Value::ChronoDateTimeWithTimeZone(dt) => arguments.add(dt.as_deref()),
             Value::Uuid(u) => arguments.add(u.as_deref()),
+
+            // This depends on the features enabled for sea-query, so let's keep the wildcard
+            #[allow(unreachable_patterns)]
             _ => unimplemented!(),
         }
     }

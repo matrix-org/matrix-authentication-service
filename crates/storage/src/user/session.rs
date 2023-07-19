@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use async_trait::async_trait;
-use mas_data_model::{BrowserSession, Password, UpstreamOAuthLink, User};
+use mas_data_model::{Authentication, BrowserSession, Password, UpstreamOAuthLink, User};
 use rand_core::RngCore;
 use ulid::Ulid;
 
@@ -157,9 +157,18 @@ pub trait BrowserSessionRepository: Send + Sync {
         pagination: Pagination,
     ) -> Result<Page<BrowserSession>, Self::Error>;
 
-    /// Authenticate a [`BrowserSession`] with the given [`Password`]
+    /// Count the number of [`BrowserSession`] with the given filter
     ///
-    /// Returns the updated [`BrowserSession`]
+    /// # Parameters
+    ///
+    /// * `filter`: The filter to apply
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn count(&mut self, filter: BrowserSessionFilter<'_>) -> Result<usize, Self::Error>;
+
+    /// Authenticate a [`BrowserSession`] with the given [`Password`]
     ///
     /// # Parameters
     ///
@@ -175,13 +184,11 @@ pub trait BrowserSessionRepository: Send + Sync {
         &mut self,
         rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
-        user_session: BrowserSession,
+        user_session: &BrowserSession,
         user_password: &Password,
-    ) -> Result<BrowserSession, Self::Error>;
+    ) -> Result<Authentication, Self::Error>;
 
     /// Authenticate a [`BrowserSession`] with the given [`UpstreamOAuthLink`]
-    ///
-    /// Returns the updated [`BrowserSession`]
     ///
     /// # Parameters
     ///
@@ -198,9 +205,23 @@ pub trait BrowserSessionRepository: Send + Sync {
         &mut self,
         rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
-        user_session: BrowserSession,
+        user_session: &BrowserSession,
         upstream_oauth_link: &UpstreamOAuthLink,
-    ) -> Result<BrowserSession, Self::Error>;
+    ) -> Result<Authentication, Self::Error>;
+
+    /// Get the last successful authentication for a [`BrowserSession`]
+    ///
+    /// # Params
+    ///
+    /// * `user_session`: The session for which to get the last authentication
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn get_last_authentication(
+        &mut self,
+        user_session: &BrowserSession,
+    ) -> Result<Option<Authentication>, Self::Error>;
 }
 
 repository_impl!(BrowserSessionRepository:
@@ -223,19 +244,26 @@ repository_impl!(BrowserSessionRepository:
         pagination: Pagination,
     ) -> Result<Page<BrowserSession>, Self::Error>;
 
+    async fn count(&mut self, filter: BrowserSessionFilter<'_>) -> Result<usize, Self::Error>;
+
     async fn authenticate_with_password(
         &mut self,
         rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
-        user_session: BrowserSession,
+        user_session: &BrowserSession,
         user_password: &Password,
-    ) -> Result<BrowserSession, Self::Error>;
+    ) -> Result<Authentication, Self::Error>;
 
     async fn authenticate_with_upstream(
         &mut self,
         rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
-        user_session: BrowserSession,
+        user_session: &BrowserSession,
         upstream_oauth_link: &UpstreamOAuthLink,
-    ) -> Result<BrowserSession, Self::Error>;
+    ) -> Result<Authentication, Self::Error>;
+
+    async fn get_last_authentication(
+        &mut self,
+        user_session: &BrowserSession,
+    ) -> Result<Option<Authentication>, Self::Error>;
 );

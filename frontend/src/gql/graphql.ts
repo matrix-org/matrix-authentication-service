@@ -106,6 +106,8 @@ export type BrowserSessionConnection = {
   nodes: Array<BrowserSession>;
   /** Information to aid in pagination. */
   pageInfo: PageInfo;
+  /** Identifies the total count of items in the connection. */
+  totalCount: Scalars["Int"]["output"];
 };
 
 /** An edge in a connection. */
@@ -879,6 +881,7 @@ export type BrowserSessionListQuery = {
     id: string;
     browserSessions: {
       __typename?: "BrowserSessionConnection";
+      totalCount: number;
       edges: Array<{
         __typename?: "BrowserSessionEdge";
         cursor: string;
@@ -1815,6 +1818,10 @@ export const BrowserSessionListDocument = {
                   selectionSet: {
                     kind: "SelectionSet",
                     selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "totalCount" },
+                      },
                       {
                         kind: "Field",
                         name: { kind: "Name", value: "edges" },
