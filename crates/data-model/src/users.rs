@@ -60,22 +60,12 @@ pub struct BrowserSession {
     pub user: User,
     pub created_at: DateTime<Utc>,
     pub finished_at: Option<DateTime<Utc>>,
-    pub last_authentication: Option<Authentication>,
 }
 
 impl BrowserSession {
     #[must_use]
     pub fn active(&self) -> bool {
         self.finished_at.is_none()
-    }
-
-    #[must_use]
-    pub fn was_authenticated_after(&self, after: DateTime<Utc>) -> bool {
-        if let Some(auth) = &self.last_authentication {
-            auth.created_at > after
-        } else {
-            false
-        }
     }
 }
 
@@ -89,7 +79,6 @@ impl BrowserSession {
                 user,
                 created_at: now,
                 finished_at: None,
-                last_authentication: None,
             })
             .collect()
     }

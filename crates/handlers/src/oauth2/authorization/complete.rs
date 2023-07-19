@@ -27,7 +27,8 @@ use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route, UrlBuilder};
 use mas_storage::{
     oauth2::{OAuth2AuthorizationGrantRepository, OAuth2ClientRepository, OAuth2SessionRepository},
-    BoxClock, BoxRepository, BoxRng,
+    user::BrowserSessionRepository,
+    BoxClock, BoxRepository, BoxRng, RepositoryAccess,
 };
 use mas_templates::Templates;
 use oauth2_types::requests::AuthorizationResponse;
@@ -194,10 +195,16 @@ pub(crate) async fn complete(
     }
 
     // Check if the authentication is fresh enough
-    if !browser_session.was_authenticated_after(grant.max_auth_time()) {
+    let authentication = repo
+        .browser_session()
+        .get_last_authentication(&browser_session)
+        .await?;
+    let authentication = authentication.filter(|auth| auth.created_at > grant.max_auth_time());
+
+    let Some(valid_authentication) = authentication else {
         repo.save().await?;
         return Err(GrantCompletionError::RequiresReauth);
-    }
+    };
 
     // Run through the policy
     let mut policy = policy_factory.instantiate().await?;
@@ -257,6 +264,7 @@ pub(crate) async fn complete(
             &grant,
             &browser_session,
             None,
+            Some(&valid_authentication),
         )?);
     }
 

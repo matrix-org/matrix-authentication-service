@@ -16,7 +16,8 @@ use std::collections::HashMap;
 
 use chrono::Duration;
 use mas_data_model::{
-    AccessToken, AuthorizationGrant, BrowserSession, Client, RefreshToken, Session, TokenType,
+    AccessToken, Authentication, AuthorizationGrant, BrowserSession, Client, RefreshToken, Session,
+    TokenType,
 };
 use mas_iana::jose::JsonWebSignatureAlg;
 use mas_jose::{
@@ -60,6 +61,7 @@ pub(crate) fn generate_id_token(
     grant: &AuthorizationGrant,
     browser_session: &BrowserSession,
     access_token: Option<&AccessToken>,
+    last_authentication: Option<&Authentication>,
 ) -> Result<String, IdTokenSignatureError> {
     let mut claims = HashMap::new();
     let now = clock.now();
@@ -73,7 +75,7 @@ pub(crate) fn generate_id_token(
         claims::NONCE.insert(&mut claims, nonce.clone())?;
     }
 
-    if let Some(ref last_authentication) = browser_session.last_authentication {
+    if let Some(last_authentication) = last_authentication {
         claims::AUTH_TIME.insert(&mut claims, last_authentication.created_at)?;
     }
 
@@ -113,7 +115,7 @@ pub(crate) async fn generate_token_pair<R: RepositoryAccess>(
 
     let access_token = repo
         .oauth2_access_token()
-        .add(rng, clock, session, access_token_str.clone(), ttl)
+        .add(rng, clock, session, access_token_str, ttl)
         .await?;
 
     let refresh_token = repo

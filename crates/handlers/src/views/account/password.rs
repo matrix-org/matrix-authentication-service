@@ -150,9 +150,8 @@ pub(crate) async fn post(
         )
         .await?;
 
-    let session = repo
-        .browser_session()
-        .authenticate_with_password(&mut rng, &clock, session, &user_password)
+    repo.browser_session()
+        .authenticate_with_password(&mut rng, &clock, &session, &user_password)
         .await?;
 
     let reply = render(&mut rng, &clock, templates.clone(), session, cookie_jar).await?;

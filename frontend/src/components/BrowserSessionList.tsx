@@ -50,6 +50,8 @@ const QUERY = graphql(/* GraphQL */ `
         before: $before
         state: ACTIVE
       ) {
+        totalCount
+
         edges {
           cursor
           node {
@@ -129,6 +131,7 @@ const BrowserSessionList: React.FC<{ userId: string }> = ({ userId }) => {
       <PaginationControls
         onPrev={prevPage ? (): void => paginate(prevPage) : null}
         onNext={nextPage ? (): void => paginate(nextPage) : null}
+        count={browserSessions.totalCount}
         disabled={pending}
       />
       {browserSessions.edges.map((n) => (

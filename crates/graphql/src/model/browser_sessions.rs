@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use async_graphql::{Description, Enum, Object, ID};
+use async_graphql::{Context, Description, Enum, Object, ID};
 use chrono::{DateTime, Utc};
+use mas_storage::{user::BrowserSessionRepository, RepositoryAccess};
 
 use super::{NodeType, User};
+use crate::state::ContextExt;
 
 /// A browser session represents a logged in user in a browser.
 #[derive(Description)]
@@ -50,8 +52,21 @@ impl BrowserSession {
     }
 
     /// The most recent authentication of this session.
-    async fn last_authentication(&self) -> Option<Authentication> {
-        self.0.last_authentication.clone().map(Authentication)
+    async fn last_authentication(
+        &self,
+        ctx: &Context<'_>,
+    ) -> Result<Option<Authentication>, async_graphql::Error> {
+        let state = ctx.state();
+        let mut repo = state.repository().await?;
+
+        let last_authentication = repo
+            .browser_session()
+            .get_last_authentication(&self.0)
+            .await?;
+
+        repo.cancel().await?;
+
+        Ok(last_authentication.map(Authentication))
     }
 
     /// When the object was created.

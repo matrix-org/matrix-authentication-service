@@ -198,7 +198,7 @@ impl User {
         before: Option<String>,
         #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
         #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
-    ) -> Result<Connection<Cursor, BrowserSession>, async_graphql::Error> {
+    ) -> Result<Connection<Cursor, BrowserSession, PreloadedTotalCount>, async_graphql::Error> {
         let state = ctx.state();
         let mut repo = state.repository().await?;
 
@@ -225,9 +225,20 @@ impl User {
 
                 let page = repo.browser_session().list(filter, pagination).await?;
 
+                // Preload the total count if requested
+                let count = if ctx.look_ahead().field("totalCount").exists() {
+                    Some(repo.browser_session().count(filter).await?)
+                } else {
+                    None
+                };
+
                 repo.cancel().await?;
 
-                let mut connection = Connection::new(page.has_previous_page, page.has_next_page);
+                let mut connection = Connection::with_additional_fields(
+                    page.has_previous_page,
+                    page.has_next_page,
+                    PreloadedTotalCount(count),
+                );
                 connection.edges.extend(page.edges.into_iter().map(|u| {
                     Edge::new(
                         OpaqueCursor(NodeCursor(NodeType::BrowserSession, u.id)),
@@ -397,6 +408,17 @@ impl User {
             },
         )
         .await
+    }
+}
+
+pub struct PreloadedTotalCount(Option<usize>);
+
+#[Object]
+impl PreloadedTotalCount {
+    /// Identifies the total count of items in the connection.
+    async fn total_count(&self) -> Result<usize, async_graphql::Error> {
+        self.0
+            .ok_or_else(|| async_graphql::Error::new("total count not preloaded"))
     }
 }
 

@@ -302,6 +302,11 @@ async fn authorization_code_grant(
         .await?
         .ok_or(RouteError::NoSuchBrowserSession)?;
 
+    let last_authentication = repo
+        .browser_session()
+        .get_last_authentication(&browser_session)
+        .await?;
+
     let ttl = Duration::minutes(5);
     let (access_token, refresh_token) =
         generate_token_pair(&mut rng, clock, &mut repo, &session, ttl).await?;
@@ -316,6 +321,7 @@ async fn authorization_code_grant(
             &authz_grant,
             &browser_session,
             Some(&access_token),
+            last_authentication.as_ref(),
         )?)
     } else {
         None

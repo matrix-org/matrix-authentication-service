@@ -214,9 +214,8 @@ pub(crate) async fn get(
                 .consume(&clock, upstream_session)
                 .await?;
 
-            let session = repo
-                .browser_session()
-                .authenticate_with_upstream(&mut rng, &clock, session, &link)
+            repo.browser_session()
+                .authenticate_with_upstream(&mut rng, &clock, &session, &link)
                 .await?;
 
             cookie_jar = cookie_jar.set_session(&session);
@@ -509,9 +508,8 @@ pub(crate) async fn post(
         .consume(&clock, upstream_session)
         .await?;
 
-    let session = repo
-        .browser_session()
-        .authenticate_with_upstream(&mut rng, &clock, session, &link)
+    repo.browser_session()
+        .authenticate_with_upstream(&mut rng, &clock, &session, &link)
         .await?;
 
     let cookie_jar = sessions_cookie

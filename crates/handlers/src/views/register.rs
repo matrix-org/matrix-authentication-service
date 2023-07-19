@@ -209,9 +209,8 @@ pub(crate) async fn post(
 
     let session = repo.browser_session().add(&mut rng, &clock, &user).await?;
 
-    let session = repo
-        .browser_session()
-        .authenticate_with_password(&mut rng, &clock, session, &user_password)
+    repo.browser_session()
+        .authenticate_with_password(&mut rng, &clock, &session, &user_password)
         .await?;
 
     repo.job()

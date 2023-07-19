@@ -102,6 +102,10 @@ type BrowserSessionConnection {
   A list of nodes.
   """
   nodes: [BrowserSession!]!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
 }
 
 """
