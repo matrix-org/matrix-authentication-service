@@ -119,6 +119,20 @@ type BrowserSessionEdge {
 }
 
 """
+The state of a browser session.
+"""
+enum BrowserSessionState {
+  """
+  The session is active.
+  """
+  ACTIVE
+  """
+  The session is no longer active.
+  """
+  FINISHED
+}
+
+"""
 A compat session represents a client session which used the legacy Matrix
 login API.
 """
@@ -871,6 +885,7 @@ type User implements Node {
   Get the list of active browser sessions, chronologically sorted
   """
   browserSessions(
+    state: BrowserSessionState
     after: String
     before: String
     first: Int

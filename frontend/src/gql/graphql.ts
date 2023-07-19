@@ -117,6 +117,14 @@ export type BrowserSessionEdge = {
   node: BrowserSession;
 };
 
+/** The state of a browser session. */
+export enum BrowserSessionState {
+  /** The session is active. */
+  Active = "ACTIVE",
+  /** The session is no longer active. */
+  Finished = "FINISHED",
+}
+
 /**
  * A compat session represents a client session which used the legacy Matrix
  * login API.
@@ -670,6 +678,7 @@ export type UserBrowserSessionsArgs = {
   before?: InputMaybe<Scalars["String"]["input"]>;
   first?: InputMaybe<Scalars["Int"]["input"]>;
   last?: InputMaybe<Scalars["Int"]["input"]>;
+  state?: InputMaybe<BrowserSessionState>;
 };
 
 /** A user is an individual's account. */
@@ -1796,6 +1805,11 @@ export const BrowserSessionListDocument = {
                         kind: "Variable",
                         name: { kind: "Name", value: "before" },
                       },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "state" },
+                      value: { kind: "EnumValue", value: "ACTIVE" },
                     },
                   ],
                   selectionSet: {

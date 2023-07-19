@@ -21,7 +21,7 @@ use mas_storage::{
     compat::CompatSsoLoginRepository,
     oauth2::OAuth2SessionRepository,
     upstream_oauth2::UpstreamOAuthLinkRepository,
-    user::{BrowserSessionRepository, UserEmailRepository},
+    user::{BrowserSessionFilter, BrowserSessionRepository, UserEmailRepository},
     Pagination, RepositoryAccess,
 };
 
@@ -30,7 +30,7 @@ use super::{
     UpstreamOAuth2Link,
 };
 use crate::{
-    model::{matrix::MatrixUser, CompatSession},
+    model::{browser_sessions::BrowserSessionState, matrix::MatrixUser, CompatSession},
     state::ContextExt,
 };
 
@@ -189,6 +189,9 @@ impl User {
         &self,
         ctx: &Context<'_>,
 
+        #[graphql(name = "state", desc = "List only sessions in the given state.")]
+        state_param: Option<BrowserSessionState>,
+
         #[graphql(desc = "Returns the elements in the list that come after the cursor.")]
         after: Option<String>,
         #[graphql(desc = "Returns the elements in the list that come before the cursor.")]
@@ -213,10 +216,14 @@ impl User {
                     .transpose()?;
                 let pagination = Pagination::try_new(before_id, after_id, first, last)?;
 
-                let page = repo
-                    .browser_session()
-                    .list_active_paginated(&self.0, pagination)
-                    .await?;
+                let filter = BrowserSessionFilter::new().for_user(&self.0);
+                let filter = match state_param {
+                    Some(BrowserSessionState::Active) => filter.active_only(),
+                    Some(BrowserSessionState::Finished) => filter.finished_only(),
+                    None => filter,
+                };
+
+                let page = repo.browser_session().list(filter, pagination).await?;
 
                 repo.cancel().await?;
 

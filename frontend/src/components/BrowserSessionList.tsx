@@ -48,6 +48,7 @@ const QUERY = graphql(/* GraphQL */ `
         after: $after
         last: $last
         before: $before
+        state: ACTIVE
       ) {
         edges {
           cursor
