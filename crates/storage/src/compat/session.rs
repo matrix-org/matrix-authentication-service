@@ -19,6 +19,115 @@ use ulid::Ulid;
 
 use crate::{repository_impl, Clock, Page, Pagination};
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CompatSessionState {
+    Active,
+    Finished,
+}
+
+impl CompatSessionState {
+    /// Returns [`true`] if we're looking for active sessions
+    #[must_use]
+    pub fn is_active(self) -> bool {
+        matches!(self, Self::Active)
+    }
+
+    /// Returns [`true`] if we're looking for finished sessions
+    #[must_use]
+    pub fn is_finished(self) -> bool {
+        matches!(self, Self::Finished)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CompatSessionType {
+    SsoLogin,
+    Unknown,
+}
+
+impl CompatSessionType {
+    /// Returns [`true`] if we're looking for SSO logins
+    #[must_use]
+    pub fn is_sso_login(self) -> bool {
+        matches!(self, Self::SsoLogin)
+    }
+
+    /// Returns [`true`] if we're looking for unknown sessions
+    #[must_use]
+    pub fn is_unknown(self) -> bool {
+        matches!(self, Self::Unknown)
+    }
+}
+
+/// Filter parameters for listing browser sessions
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub struct CompatSessionFilter<'a> {
+    user: Option<&'a User>,
+    state: Option<CompatSessionState>,
+    auth_type: Option<CompatSessionType>,
+}
+
+impl<'a> CompatSessionFilter<'a> {
+    /// Create a new [`CompatSessionFilter`] with default values
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Set the user who owns the compatibility sessions
+    #[must_use]
+    pub fn for_user(mut self, user: &'a User) -> Self {
+        self.user = Some(user);
+        self
+    }
+
+    /// Get the user filter
+    #[must_use]
+    pub fn user(&self) -> Option<&User> {
+        self.user
+    }
+
+    /// Only return active compatibility sessions
+    #[must_use]
+    pub fn active_only(mut self) -> Self {
+        self.state = Some(CompatSessionState::Active);
+        self
+    }
+
+    /// Only return finished compatibility sessions
+    #[must_use]
+    pub fn finished_only(mut self) -> Self {
+        self.state = Some(CompatSessionState::Finished);
+        self
+    }
+
+    /// Get the state filter
+    #[must_use]
+    pub fn state(&self) -> Option<CompatSessionState> {
+        self.state
+    }
+
+    /// Only return SSO login compatibility sessions
+    #[must_use]
+    pub fn sso_login_only(mut self) -> Self {
+        self.auth_type = Some(CompatSessionType::SsoLogin);
+        self
+    }
+
+    /// Only return unknown compatibility sessions
+    #[must_use]
+    pub fn unknown_only(mut self) -> Self {
+        self.auth_type = Some(CompatSessionType::Unknown);
+        self
+    }
+
+    /// Get the auth type filter
+    #[must_use]
+    pub fn auth_type(&self) -> Option<CompatSessionType> {
+        self.auth_type
+    }
+}
+
 /// A [`CompatSessionRepository`] helps interacting with
 /// [`CompatSessionRepository`] saved in the storage backend
 #[async_trait]
@@ -81,23 +190,34 @@ pub trait CompatSessionRepository: Send + Sync {
         compat_session: CompatSession,
     ) -> Result<CompatSession, Self::Error>;
 
-    /// Get a paginated list of compat sessions for a user
+    /// List [`CompatSession`] with the given filter and pagination
     ///
     /// Returns a page of compat sessions, with the associated SSO logins if any
     ///
     /// # Parameters
     ///
-    /// * `user`: The user to get the compat sessions for
+    /// * `filter`: The filter to apply
     /// * `pagination`: The pagination parameters
     ///
     /// # Errors
     ///
     /// Returns [`Self::Error`] if the underlying repository fails
-    async fn list_paginated(
+    async fn list(
         &mut self,
-        user: &User,
+        filter: CompatSessionFilter<'_>,
         pagination: Pagination,
     ) -> Result<Page<(CompatSession, Option<CompatSsoLogin>)>, Self::Error>;
+
+    /// Count the number of [`CompatSession`] with the given filter
+    ///
+    /// # Parameters
+    ///
+    /// * `filter`: The filter to apply
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn count(&mut self, filter: CompatSessionFilter<'_>) -> Result<usize, Self::Error>;
 }
 
 repository_impl!(CompatSessionRepository:
@@ -118,9 +238,11 @@ repository_impl!(CompatSessionRepository:
         compat_session: CompatSession,
     ) -> Result<CompatSession, Self::Error>;
 
-    async fn list_paginated(
+    async fn list(
         &mut self,
-        user: &User,
+        filter: CompatSessionFilter<'_>,
         pagination: Pagination,
     ) -> Result<Page<(CompatSession, Option<CompatSsoLogin>)>, Self::Error>;
+
+    async fn count(&mut self, filter: CompatSessionFilter<'_>) -> Result<usize, Self::Error>;
 );

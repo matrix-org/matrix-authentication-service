@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use anyhow::Context as _;
-use async_graphql::{Context, Description, Object, ID};
+use async_graphql::{Context, Description, Enum, Object, ID};
 use chrono::{DateTime, Utc};
 use mas_storage::{compat::CompatSessionRepository, user::UserRepository};
 use url::Url;
@@ -28,6 +28,26 @@ pub struct CompatSession(
     pub mas_data_model::CompatSession,
     pub Option<mas_data_model::CompatSsoLogin>,
 );
+
+/// The state of a compatibility session.
+#[derive(Enum, Copy, Clone, Eq, PartialEq)]
+pub enum CompatSessionState {
+    /// The session is active.
+    Active,
+
+    /// The session is no longer active.
+    Finished,
+}
+
+/// The type of a compatibility session.
+#[derive(Enum, Copy, Clone, Eq, PartialEq)]
+pub enum CompatSessionType {
+    /// The session was created by a SSO login.
+    SsoLogin,
+
+    /// The session was created by an unknown method.
+    Unknown,
+}
 
 #[Object(use_type_description)]
 impl CompatSession {

@@ -156,6 +156,8 @@ export type CompatSessionConnection = {
   nodes: Array<CompatSession>;
   /** Information to aid in pagination. */
   pageInfo: PageInfo;
+  /** Identifies the total count of items in the connection. */
+  totalCount: Scalars["Int"]["output"];
 };
 
 /** An edge in a connection. */
@@ -166,6 +168,22 @@ export type CompatSessionEdge = {
   /** The item at the end of the edge */
   node: CompatSession;
 };
+
+/** The state of a compatibility session. */
+export enum CompatSessionState {
+  /** The session is active. */
+  Active = "ACTIVE",
+  /** The session is no longer active. */
+  Finished = "FINISHED",
+}
+
+/** The type of a compatibility session. */
+export enum CompatSessionType {
+  /** The session was created by a SSO login. */
+  SsoLogin = "SSO_LOGIN",
+  /** The session was created by an unknown method. */
+  Unknown = "UNKNOWN",
+}
 
 /**
  * A compat SSO login represents a login done through the legacy Matrix login
@@ -689,6 +707,8 @@ export type UserCompatSessionsArgs = {
   before?: InputMaybe<Scalars["String"]["input"]>;
   first?: InputMaybe<Scalars["Int"]["input"]>;
   last?: InputMaybe<Scalars["Int"]["input"]>;
+  state?: InputMaybe<CompatSessionState>;
+  type?: InputMaybe<CompatSessionType>;
 };
 
 /** A user is an individual's account. */
