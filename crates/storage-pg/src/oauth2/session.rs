@@ -24,7 +24,6 @@ use uuid::Uuid;
 
 use crate::{
     pagination::QueryBuilderExt, tracing::ExecuteExt, DatabaseError, DatabaseInconsistencyError,
-    LookupResultExt,
 };
 
 /// An implementation of [`OAuth2SessionRepository`] for a PostgreSQL connection
@@ -109,9 +108,8 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
             Uuid::from(id),
         )
         .traced()
-        .fetch_one(&mut *self.conn)
-        .await
-        .to_option()?;
+        .fetch_optional(&mut *self.conn)
+        .await?;
 
         let Some(session) = res else { return Ok(None) };
 

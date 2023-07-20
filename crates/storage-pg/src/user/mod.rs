@@ -24,7 +24,7 @@ use sqlx::PgConnection;
 use ulid::Ulid;
 use uuid::Uuid;
 
-use crate::{tracing::ExecuteExt, DatabaseError, LookupResultExt};
+use crate::{tracing::ExecuteExt, DatabaseError};
 
 mod email;
 mod password;
@@ -99,9 +99,8 @@ impl<'c> UserRepository for PgUserRepository<'c> {
             Uuid::from(id),
         )
         .traced()
-        .fetch_one(&mut *self.conn)
-        .await
-        .to_option()?;
+        .fetch_optional(&mut *self.conn)
+        .await?;
 
         let Some(res) = res else { return Ok(None) };
 
@@ -131,9 +130,8 @@ impl<'c> UserRepository for PgUserRepository<'c> {
             username,
         )
         .traced()
-        .fetch_one(&mut *self.conn)
-        .await
-        .to_option()?;
+        .fetch_optional(&mut *self.conn)
+        .await?;
 
         let Some(res) = res else { return Ok(None) };
 

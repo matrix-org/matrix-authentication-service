@@ -26,7 +26,6 @@ use uuid::Uuid;
 
 use crate::{
     pagination::QueryBuilderExt, tracing::ExecuteExt, DatabaseError, DatabaseInconsistencyError,
-    LookupResultExt,
 };
 
 /// An implementation of [`UpstreamOAuthProviderRepository`] for a PostgreSQL
@@ -130,9 +129,8 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
             Uuid::from(id),
         )
         .traced()
-        .fetch_one(&mut *self.conn)
-        .await
-        .to_option()?;
+        .fetch_optional(&mut *self.conn)
+        .await?;
 
         let res = res
             .map(UpstreamOAuthProvider::try_from)

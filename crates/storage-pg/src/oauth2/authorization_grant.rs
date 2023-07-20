@@ -28,7 +28,7 @@ use ulid::Ulid;
 use url::Url;
 use uuid::Uuid;
 
-use crate::{tracing::ExecuteExt, DatabaseError, DatabaseInconsistencyError, LookupResultExt};
+use crate::{tracing::ExecuteExt, DatabaseError, DatabaseInconsistencyError};
 
 /// An implementation of [`OAuth2AuthorizationGrantRepository`] for a PostgreSQL
 /// connection
@@ -340,9 +340,8 @@ impl<'c> OAuth2AuthorizationGrantRepository for PgOAuth2AuthorizationGrantReposi
             "#,
             Uuid::from(id),
         )
-        .fetch_one(&mut *self.conn)
-        .await
-        .to_option()?;
+        .fetch_optional(&mut *self.conn)
+        .await?;
 
         let Some(res) = res else { return Ok(None) };
 
@@ -391,9 +390,8 @@ impl<'c> OAuth2AuthorizationGrantRepository for PgOAuth2AuthorizationGrantReposi
             code,
         )
         .traced()
-        .fetch_one(&mut *self.conn)
-        .await
-        .to_option()?;
+        .fetch_optional(&mut *self.conn)
+        .await?;
 
         let Some(res) = res else { return Ok(None) };
 
