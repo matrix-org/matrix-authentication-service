@@ -32,6 +32,11 @@ docker run --rm -v `pwd`/config.yaml:/config.yaml \
 
 Note that with Docker, the config file must be mounted inside the container with `-v/--volume`.
 
+Update the database URI in `config.yaml` to your database,
+e.g. `postgresql://postgres:postgres@localhost/postgres`
+
+See also the next paragraph for a [minimum configuration ](#minimal-configuration)
+
 ## Minimal configuration
 
 Here is a minimal configuration needed to have the server running.
@@ -97,14 +102,32 @@ Controls the web server.
 
 ```yaml
 http:
-  # On what address and port the server should listen to
-  address: 0.0.0.0:8080
-
-  # Path from which to serve static files
-  web_root: /var/www/static
-
+  listeners:
+  - name: web
+    resources:
+    - name: discovery
+    - name: human
+    - name: oauth
+    - name: compat
+    - name: graphql
+      playground: true
+    - name: assets
+      # Path from which to serve static files
+      path: ./frontend/dist/
+    binds:
+    # On what address and port the server should listen to
+    - address: '[::]:8080'
+    proxy_protocol: false
+  - name: internal
+    resources:
+    - name: health
+    binds:
+    - host: localhost
+      port: 8081
+    proxy_protocol: false
   # Public URL base used when building absolute public URLs
-  public_base: http://localhost:8080
+  public_base: http://[::]:8080/
+  issuer: http://[::]:8080/
 ```
 
 ### `database`
