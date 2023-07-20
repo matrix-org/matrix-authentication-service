@@ -23,8 +23,11 @@ use ulid::Ulid;
 use uuid::Uuid;
 
 use crate::{
-    pagination::QueryBuilderExt, sea_query_sqlx::map_values, tracing::ExecuteExt, DatabaseError,
-    DatabaseInconsistencyError, LookupResultExt,
+    iden::{UserSessions, Users},
+    pagination::QueryBuilderExt,
+    sea_query_sqlx::map_values,
+    tracing::ExecuteExt,
+    DatabaseError, DatabaseInconsistencyError,
 };
 
 /// An implementation of [`BrowserSessionRepository`] for a PostgreSQL
@@ -50,23 +53,6 @@ struct SessionLookup {
     user_id: Uuid,
     user_username: String,
     user_primary_user_email_id: Option<Uuid>,
-}
-
-#[derive(sea_query::Iden)]
-enum UserSessions {
-    Table,
-    UserSessionId,
-    CreatedAt,
-    FinishedAt,
-    UserId,
-}
-
-#[derive(sea_query::Iden)]
-enum Users {
-    Table,
-    UserId,
-    Username,
-    PrimaryUserEmailId,
 }
 
 impl TryFrom<SessionLookup> for BrowserSession {

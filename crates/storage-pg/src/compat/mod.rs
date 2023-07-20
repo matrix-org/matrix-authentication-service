@@ -32,7 +32,8 @@ mod tests {
     use mas_storage::{
         clock::MockClock,
         compat::{
-            CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository,
+            CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionFilter,
+            CompatSessionRepository,
         },
         user::UserRepository,
         Clock, Pagination, Repository, RepositoryAccess,
@@ -57,6 +58,30 @@ mod tests {
             .await
             .unwrap();
 
+        let all = CompatSessionFilter::new().for_user(&user);
+        let active = all.active_only();
+        let finished = all.finished_only();
+        let pagination = Pagination::first(10);
+
+        assert_eq!(repo.compat_session().count(all).await.unwrap(), 0);
+        assert_eq!(repo.compat_session().count(active).await.unwrap(), 0);
+        assert_eq!(repo.compat_session().count(finished).await.unwrap(), 0);
+
+        let full_list = repo.compat_session().list(all, pagination).await.unwrap();
+        assert!(full_list.edges.is_empty());
+        let active_list = repo
+            .compat_session()
+            .list(active, pagination)
+            .await
+            .unwrap();
+        assert!(active_list.edges.is_empty());
+        let finished_list = repo
+            .compat_session()
+            .list(finished, pagination)
+            .await
+            .unwrap();
+        assert!(finished_list.edges.is_empty());
+
         // Start a compat session for that user
         let device = Device::generate(&mut rng);
         let device_str = device.as_str().to_owned();
@@ -69,6 +94,27 @@ mod tests {
         assert_eq!(session.device.as_str(), device_str);
         assert!(session.is_valid());
         assert!(!session.is_finished());
+
+        assert_eq!(repo.compat_session().count(all).await.unwrap(), 1);
+        assert_eq!(repo.compat_session().count(active).await.unwrap(), 1);
+        assert_eq!(repo.compat_session().count(finished).await.unwrap(), 0);
+
+        let full_list = repo.compat_session().list(all, pagination).await.unwrap();
+        assert_eq!(full_list.edges.len(), 1);
+        assert_eq!(full_list.edges[0].0.id, session.id);
+        let active_list = repo
+            .compat_session()
+            .list(active, pagination)
+            .await
+            .unwrap();
+        assert_eq!(active_list.edges.len(), 1);
+        assert_eq!(active_list.edges[0].0.id, session.id);
+        let finished_list = repo
+            .compat_session()
+            .list(finished, pagination)
+            .await
+            .unwrap();
+        assert!(finished_list.edges.is_empty());
 
         // Lookup the session and check it didn't change
         let session_lookup = repo
@@ -88,6 +134,27 @@ mod tests {
         assert!(!session.is_valid());
         assert!(session.is_finished());
 
+        assert_eq!(repo.compat_session().count(all).await.unwrap(), 1);
+        assert_eq!(repo.compat_session().count(active).await.unwrap(), 0);
+        assert_eq!(repo.compat_session().count(finished).await.unwrap(), 1);
+
+        let full_list = repo.compat_session().list(all, pagination).await.unwrap();
+        assert_eq!(full_list.edges.len(), 1);
+        assert_eq!(full_list.edges[0].0.id, session.id);
+        let active_list = repo
+            .compat_session()
+            .list(active, pagination)
+            .await
+            .unwrap();
+        assert!(active_list.edges.is_empty());
+        let finished_list = repo
+            .compat_session()
+            .list(finished, pagination)
+            .await
+            .unwrap();
+        assert_eq!(finished_list.edges.len(), 1);
+        assert_eq!(finished_list.edges[0].0.id, session.id);
+
         // Reload the session and check again
         let session_lookup = repo
             .compat_session()
@@ -97,6 +164,93 @@ mod tests {
             .expect("compat session not found");
         assert!(!session_lookup.is_valid());
         assert!(session_lookup.is_finished());
+
+        // Now add another session, with an SSO login this time
+        let unknown_session = session;
+        // Start a new SSO login
+        let login = repo
+            .compat_sso_login()
+            .add(
+                &mut rng,
+                &clock,
+                "login-token".to_owned(),
+                "https://example.com/callback".parse().unwrap(),
+            )
+            .await
+            .unwrap();
+        assert!(login.is_pending());
+
+        // Start a compat session for that user
+        let device = Device::generate(&mut rng);
+        let sso_login_session = repo
+            .compat_session()
+            .add(&mut rng, &clock, &user, device, false)
+            .await
+            .unwrap();
+
+        // Associate the login with the session
+        let login = repo
+            .compat_sso_login()
+            .fulfill(&clock, login, &sso_login_session)
+            .await
+            .unwrap();
+        assert!(login.is_fulfilled());
+
+        // Now query the session list with both the unknown and SSO login session type
+        // filter
+        let all = CompatSessionFilter::new().for_user(&user);
+        let sso_login = all.sso_login_only();
+        let unknown = all.unknown_only();
+        assert_eq!(repo.compat_session().count(all).await.unwrap(), 2);
+        assert_eq!(repo.compat_session().count(sso_login).await.unwrap(), 1);
+        assert_eq!(repo.compat_session().count(unknown).await.unwrap(), 1);
+
+        let list = repo
+            .compat_session()
+            .list(sso_login, pagination)
+            .await
+            .unwrap();
+        assert_eq!(list.edges.len(), 1);
+        assert_eq!(list.edges[0].0.id, sso_login_session.id);
+        let list = repo
+            .compat_session()
+            .list(unknown, pagination)
+            .await
+            .unwrap();
+        assert_eq!(list.edges.len(), 1);
+        assert_eq!(list.edges[0].0.id, unknown_session.id);
+
+        // Check that combining the two filters works
+        // At this point, there is one active SSO login session and one finished unknown
+        // session
+        assert_eq!(
+            repo.compat_session()
+                .count(all.sso_login_only().active_only())
+                .await
+                .unwrap(),
+            1
+        );
+        assert_eq!(
+            repo.compat_session()
+                .count(all.sso_login_only().finished_only())
+                .await
+                .unwrap(),
+            0
+        );
+        assert_eq!(
+            repo.compat_session()
+                .count(all.unknown_only().active_only())
+                .await
+                .unwrap(),
+            0
+        );
+        assert_eq!(
+            repo.compat_session()
+                .count(all.unknown_only().finished_only())
+                .await
+                .unwrap(),
+            1
+        );
     }
 
     #[sqlx::test(migrator = "crate::MIGRATOR")]

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//! A [`sea_query::Values`] to [`sqlx::Arguments`] mapper
+
 use sea_query::Value;
 use sqlx::Arguments;
 

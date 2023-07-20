@@ -17,16 +17,23 @@ use chrono::{DateTime, Utc};
 use mas_data_model::{
     CompatSession, CompatSessionState, CompatSsoLogin, CompatSsoLoginState, Device, User,
 };
-use mas_storage::{compat::CompatSessionRepository, Clock, Page, Pagination};
+use mas_storage::{
+    compat::{CompatSessionFilter, CompatSessionRepository},
+    Clock, Page, Pagination,
+};
 use rand::RngCore;
-use sqlx::{PgConnection, QueryBuilder};
+use sea_query::{enum_def, Expr, IntoColumnRef, PostgresQueryBuilder, Query};
+use sqlx::PgConnection;
 use ulid::Ulid;
 use url::Url;
 use uuid::Uuid;
 
 use crate::{
-    pagination::QueryBuilderExt, tracing::ExecuteExt, DatabaseError, DatabaseInconsistencyError,
-    LookupResultExt,
+    iden::{CompatSessions, CompatSsoLogins},
+    pagination::QueryBuilderExt,
+    sea_query_sqlx::map_values,
+    tracing::ExecuteExt,
+    DatabaseError, DatabaseInconsistencyError,
 };
 
 /// An implementation of [`CompatSessionRepository`] for a PostgreSQL connection
@@ -82,6 +89,7 @@ impl TryFrom<CompatSessionLookup> for CompatSession {
 }
 
 #[derive(sqlx::FromRow)]
+#[enum_def]
 struct CompatSessionAndSsoLoginLookup {
     compat_session_id: Uuid,
     device_id: String,
@@ -303,51 +311,162 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
     }
 
     #[tracing::instrument(
-        name = "db.compat_session.list_paginated",
+        name = "db.compat_session.list",
         skip_all,
         fields(
             db.statement,
-            %user.id,
         ),
         err,
     )]
-    async fn list_paginated(
+    async fn list(
         &mut self,
-        user: &User,
+        filter: CompatSessionFilter<'_>,
         pagination: Pagination,
     ) -> Result<Page<(CompatSession, Option<CompatSsoLogin>)>, Self::Error> {
-        let mut query = QueryBuilder::new(
-            r#"
-                SELECT cs.compat_session_id
-                     , cs.device_id
-                     , cs.user_id
-                     , cs.created_at
-                     , cs.finished_at
-                     , cs.is_synapse_admin
-                     , cl.compat_sso_login_id
-                     , cl.login_token as compat_sso_login_token
-                     , cl.redirect_uri as compat_sso_login_redirect_uri
-                     , cl.created_at as compat_sso_login_created_at
-                     , cl.fulfilled_at as compat_sso_login_fulfilled_at
-                     , cl.exchanged_at as compat_sso_login_exchanged_at
+        let (sql, values) = sea_query::Query::select()
+            .expr_as(
+                Expr::col((CompatSessions::Table, CompatSessions::CompatSessionId)),
+                CompatSessionAndSsoLoginLookupIden::CompatSessionId,
+            )
+            .expr_as(
+                Expr::col((CompatSessions::Table, CompatSessions::DeviceId)),
+                CompatSessionAndSsoLoginLookupIden::DeviceId,
+            )
+            .expr_as(
+                Expr::col((CompatSessions::Table, CompatSessions::UserId)),
+                CompatSessionAndSsoLoginLookupIden::UserId,
+            )
+            .expr_as(
+                Expr::col((CompatSessions::Table, CompatSessions::CreatedAt)),
+                CompatSessionAndSsoLoginLookupIden::CreatedAt,
+            )
+            .expr_as(
+                Expr::col((CompatSessions::Table, CompatSessions::FinishedAt)),
+                CompatSessionAndSsoLoginLookupIden::FinishedAt,
+            )
+            .expr_as(
+                Expr::col((CompatSessions::Table, CompatSessions::IsSynapseAdmin)),
+                CompatSessionAndSsoLoginLookupIden::IsSynapseAdmin,
+            )
+            .expr_as(
+                Expr::col((CompatSsoLogins::Table, CompatSsoLogins::CompatSsoLoginId)),
+                CompatSessionAndSsoLoginLookupIden::CompatSsoLoginId,
+            )
+            .expr_as(
+                Expr::col((CompatSsoLogins::Table, CompatSsoLogins::LoginToken)),
+                CompatSessionAndSsoLoginLookupIden::CompatSsoLoginToken,
+            )
+            .expr_as(
+                Expr::col((CompatSsoLogins::Table, CompatSsoLogins::RedirectUri)),
+                CompatSessionAndSsoLoginLookupIden::CompatSsoLoginRedirectUri,
+            )
+            .expr_as(
+                Expr::col((CompatSsoLogins::Table, CompatSsoLogins::CreatedAt)),
+                CompatSessionAndSsoLoginLookupIden::CompatSsoLoginCreatedAt,
+            )
+            .expr_as(
+                Expr::col((CompatSsoLogins::Table, CompatSsoLogins::FulfilledAt)),
+                CompatSessionAndSsoLoginLookupIden::CompatSsoLoginFulfilledAt,
+            )
+            .expr_as(
+                Expr::col((CompatSsoLogins::Table, CompatSsoLogins::ExchangedAt)),
+                CompatSessionAndSsoLoginLookupIden::CompatSsoLoginExchangedAt,
+            )
+            .from(CompatSessions::Table)
+            .left_join(
+                CompatSsoLogins::Table,
+                Expr::col((CompatSessions::Table, CompatSessions::CompatSessionId))
+                    .equals((CompatSsoLogins::Table, CompatSsoLogins::CompatSessionId)),
+            )
+            .and_where_option(filter.user().map(|user| {
+                Expr::col((CompatSessions::Table, CompatSessions::UserId)).eq(Uuid::from(user.id))
+            }))
+            .and_where_option(filter.state().map(|state| {
+                if state.is_active() {
+                    Expr::col((CompatSessions::Table, CompatSessions::FinishedAt)).is_null()
+                } else {
+                    Expr::col((CompatSessions::Table, CompatSessions::FinishedAt)).is_not_null()
+                }
+            }))
+            .and_where_option(filter.auth_type().map(|auth_type| {
+                if auth_type.is_sso_login() {
+                    Expr::col((CompatSsoLogins::Table, CompatSsoLogins::CompatSsoLoginId))
+                        .is_not_null()
+                } else {
+                    Expr::col((CompatSsoLogins::Table, CompatSsoLogins::CompatSsoLoginId)).is_null()
+                }
+            }))
+            .generate_pagination(
+                (CompatSessions::Table, CompatSessions::CompatSessionId).into_column_ref(),
+                pagination,
+            )
+            .build(PostgresQueryBuilder);
 
-                FROM compat_sessions cs
-                LEFT JOIN compat_sso_logins cl USING (compat_session_id)
-            "#,
-        );
+        let arguments = map_values(values);
 
-        query
-            .push(" WHERE cs.user_id = ")
-            .push_bind(Uuid::from(user.id))
-            .generate_pagination("cs.compat_session_id", pagination);
-
-        let edges: Vec<CompatSessionAndSsoLoginLookup> = query
-            .build_query_as()
+        let edges: Vec<CompatSessionAndSsoLoginLookup> = sqlx::query_as_with(&sql, arguments)
             .traced()
             .fetch_all(&mut *self.conn)
             .await?;
 
         let page = pagination.process(edges).try_map(TryFrom::try_from)?;
+
         Ok(page)
+    }
+
+    #[tracing::instrument(
+        name = "db.compat_session.count",
+        skip_all,
+        fields(
+            db.statement,
+        ),
+        err,
+    )]
+    async fn count(&mut self, filter: CompatSessionFilter<'_>) -> Result<usize, Self::Error> {
+        let (sql, values) = sea_query::Query::select()
+            .expr(Expr::col((CompatSessions::Table, CompatSessions::CompatSessionId)).count())
+            .from(CompatSessions::Table)
+            .and_where_option(filter.user().map(|user| {
+                Expr::col((CompatSessions::Table, CompatSessions::UserId)).eq(Uuid::from(user.id))
+            }))
+            .and_where_option(filter.state().map(|state| {
+                if state.is_active() {
+                    Expr::col((CompatSessions::Table, CompatSessions::FinishedAt)).is_null()
+                } else {
+                    Expr::col((CompatSessions::Table, CompatSessions::FinishedAt)).is_not_null()
+                }
+            }))
+            .and_where_option(filter.auth_type().map(|auth_type| {
+                // Check if it is an SSO login by checking if there is a SSO login for the
+                // session.
+                let exists = Expr::exists(
+                    Query::select()
+                        .expr(Expr::val(1))
+                        .from(CompatSsoLogins::Table)
+                        .and_where(
+                            Expr::col((CompatSsoLogins::Table, CompatSsoLogins::CompatSessionId))
+                                .equals((CompatSessions::Table, CompatSessions::CompatSessionId)),
+                        )
+                        .take(),
+                );
+
+                if auth_type.is_sso_login() {
+                    exists
+                } else {
+                    exists.not()
+                }
+            }))
+            .build(PostgresQueryBuilder);
+
+        let arguments = map_values(values);
+
+        let count: i64 = sqlx::query_scalar_with(&sql, arguments)
+            .traced()
+            .fetch_one(&mut *self.conn)
+            .await?;
+
+        count
+            .try_into()
+            .map_err(DatabaseError::to_invalid_operation)
     }
 }

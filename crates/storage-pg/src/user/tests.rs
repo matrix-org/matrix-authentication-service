@@ -363,11 +363,13 @@ async fn test_user_session(pool: PgPool) {
         .await
         .unwrap();
 
-    let filter = BrowserSessionFilter::default()
-        .for_user(&user)
-        .active_only();
+    let all = BrowserSessionFilter::default().for_user(&user);
+    let active = all.active_only();
+    let finished = all.finished_only();
 
-    assert_eq!(repo.browser_session().count(filter).await.unwrap(), 0);
+    assert_eq!(repo.browser_session().count(all).await.unwrap(), 0);
+    assert_eq!(repo.browser_session().count(active).await.unwrap(), 0);
+    assert_eq!(repo.browser_session().count(finished).await.unwrap(), 0);
 
     let session = repo
         .browser_session()
@@ -377,12 +379,14 @@ async fn test_user_session(pool: PgPool) {
     assert_eq!(session.user.id, user.id);
     assert!(session.finished_at.is_none());
 
-    assert_eq!(repo.browser_session().count(filter).await.unwrap(), 1);
+    assert_eq!(repo.browser_session().count(all).await.unwrap(), 1);
+    assert_eq!(repo.browser_session().count(active).await.unwrap(), 1);
+    assert_eq!(repo.browser_session().count(finished).await.unwrap(), 0);
 
     // The session should be in the list of active sessions
     let session_list = repo
         .browser_session()
-        .list(filter, Pagination::first(10))
+        .list(active, Pagination::first(10))
         .await
         .unwrap();
     assert!(!session_list.has_next_page);
@@ -406,13 +410,15 @@ async fn test_user_session(pool: PgPool) {
         .await
         .unwrap();
 
-    // The active session counter is back to 0
-    assert_eq!(repo.browser_session().count(filter).await.unwrap(), 0);
+    // The active session counter should be 0, and the finished one should be 1
+    assert_eq!(repo.browser_session().count(all).await.unwrap(), 1);
+    assert_eq!(repo.browser_session().count(active).await.unwrap(), 0);
+    assert_eq!(repo.browser_session().count(finished).await.unwrap(), 1);
 
     // The session should not be in the list of active sessions anymore
     let session_list = repo
         .browser_session()
-        .list(filter, Pagination::first(10))
+        .list(active, Pagination::first(10))
         .await
         .unwrap();
     assert!(!session_list.has_next_page);

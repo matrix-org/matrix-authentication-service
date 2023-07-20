@@ -20,6 +20,8 @@ mod session;
 mod sso_login;
 
 pub use self::{
-    access_token::CompatAccessTokenRepository, refresh_token::CompatRefreshTokenRepository,
-    session::CompatSessionRepository, sso_login::CompatSsoLoginRepository,
+    access_token::CompatAccessTokenRepository,
+    refresh_token::CompatRefreshTokenRepository,
+    session::{CompatSessionFilter, CompatSessionRepository},
+    sso_login::CompatSsoLoginRepository,
 };

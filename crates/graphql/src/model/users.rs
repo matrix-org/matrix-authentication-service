@@ -18,7 +18,7 @@ use async_graphql::{
 };
 use chrono::{DateTime, Utc};
 use mas_storage::{
-    compat::CompatSsoLoginRepository,
+    compat::{CompatSessionFilter, CompatSsoLoginRepository},
     oauth2::OAuth2SessionRepository,
     upstream_oauth2::UpstreamOAuthLinkRepository,
     user::{BrowserSessionFilter, BrowserSessionRepository, UserEmailRepository},
@@ -30,7 +30,12 @@ use super::{
     UpstreamOAuth2Link,
 };
 use crate::{
-    model::{browser_sessions::BrowserSessionState, matrix::MatrixUser, CompatSession},
+    model::{
+        browser_sessions::BrowserSessionState,
+        compat_sessions::{CompatSessionState, CompatSessionType},
+        matrix::MatrixUser,
+        CompatSession,
+    },
     state::ContextExt,
 };
 
@@ -133,9 +138,16 @@ impl User {
     }
 
     /// Get the list of compatibility sessions, chronologically sorted
+    #[allow(clippy::too_many_arguments)]
     async fn compat_sessions(
         &self,
         ctx: &Context<'_>,
+
+        #[graphql(name = "state", desc = "List only sessions with the given state.")]
+        state_param: Option<CompatSessionState>,
+
+        #[graphql(name = "type", desc = "List only sessions with the given type.")]
+        type_param: Option<CompatSessionType>,
 
         #[graphql(desc = "Returns the elements in the list that come after the cursor.")]
         after: Option<String>,
@@ -143,7 +155,7 @@ impl User {
         before: Option<String>,
         #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
         #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
-    ) -> Result<Connection<Cursor, CompatSession>, async_graphql::Error> {
+    ) -> Result<Connection<Cursor, CompatSession, PreloadedTotalCount>, async_graphql::Error> {
         let state = ctx.state();
         let mut repo = state.repository().await?;
 
@@ -161,14 +173,35 @@ impl User {
                     .transpose()?;
                 let pagination = Pagination::try_new(before_id, after_id, first, last)?;
 
-                let page = repo
-                    .compat_session()
-                    .list_paginated(&self.0, pagination)
-                    .await?;
+                // Build the query filter
+                let filter = CompatSessionFilter::new().for_user(&self.0);
+                let filter = match state_param {
+                    Some(CompatSessionState::Active) => filter.active_only(),
+                    Some(CompatSessionState::Finished) => filter.finished_only(),
+                    None => filter,
+                };
+                let filter = match type_param {
+                    Some(CompatSessionType::SsoLogin) => filter.sso_login_only(),
+                    Some(CompatSessionType::Unknown) => filter.unknown_only(),
+                    None => filter,
+                };
+
+                let page = repo.compat_session().list(filter, pagination).await?;
+
+                // Preload the total count if requested
+                let count = if ctx.look_ahead().field("totalCount").exists() {
+                    Some(repo.compat_session().count(filter).await?)
+                } else {
+                    None
+                };
 
                 repo.cancel().await?;
 
-                let mut connection = Connection::new(page.has_previous_page, page.has_next_page);
+                let mut connection = Connection::with_additional_fields(
+                    page.has_previous_page,
+                    page.has_next_page,
+                    PreloadedTotalCount(count),
+                );
                 connection
                     .edges
                     .extend(page.edges.into_iter().map(|(session, sso_login)| {

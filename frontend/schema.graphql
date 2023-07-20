@@ -180,6 +180,10 @@ type CompatSessionConnection {
   A list of nodes.
   """
   nodes: [CompatSession!]!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
 }
 
 """
@@ -194,6 +198,34 @@ type CompatSessionEdge {
   A cursor for use in pagination
   """
   cursor: String!
+}
+
+"""
+The state of a compatibility session.
+"""
+enum CompatSessionState {
+  """
+  The session is active.
+  """
+  ACTIVE
+  """
+  The session is no longer active.
+  """
+  FINISHED
+}
+
+"""
+The type of a compatibility session.
+"""
+enum CompatSessionType {
+  """
+  The session was created by a SSO login.
+  """
+  SSO_LOGIN
+  """
+  The session was created by an unknown method.
+  """
+  UNKNOWN
 }
 
 """
@@ -880,6 +912,8 @@ type User implements Node {
   Get the list of compatibility sessions, chronologically sorted
   """
   compatSessions(
+    state: CompatSessionState
+    type: CompatSessionType
     after: String
     before: String
     first: Int
