@@ -7,6 +7,7 @@
 # Usage
 
 - [Installation](./usage/installation.md)
+  - [Systemd](./usage/installation/systemd.md)
 - [Configuration](./usage/configuration.md)
 - [Using the service](./usage/usage.md)
 - [Command line tool](./usage/cli/README.md)
