@@ -1,4 +1,5 @@
 # Setup Matrix Authentication Service with Systemd
+
 This is a setup for managing matrix-authentication-service with a user
 contributed systemd unit file. It provides a `matrix-authentication-service`
 systemd unit file that should be tailored to accommodate your installation
@@ -6,8 +7,9 @@ in accordance with the installation instructions provided in
 [installation instructions](../installation.md).
 
 ## Setup
+
 1. Under the service section, ensure the `User` variable matches which user
-you installed matrix-authentication-service under and wish to run it as. 
+you installed matrix-authentication-service under and wish to run it as.
 1. Under the service section, ensure the `WorkingDirectory` variable matches
 where you have installed matrix-authentication-service.
 1. Under the service section, ensure the `ExecStart` variable matches the
