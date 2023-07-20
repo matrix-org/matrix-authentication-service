@@ -24,7 +24,6 @@ use uuid::Uuid;
 
 use crate::{
     pagination::QueryBuilderExt, tracing::ExecuteExt, DatabaseError, DatabaseInconsistencyError,
-    LookupResultExt,
 };
 
 /// An implementation of [`UserEmailRepository`] for a PostgreSQL connection
@@ -122,9 +121,8 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
             Uuid::from(id),
         )
         .traced()
-        .fetch_one(&mut *self.conn)
-        .await
-        .to_option()?;
+        .fetch_optional(&mut *self.conn)
+        .await?;
 
         let Some(user_email) = res else {
             return Ok(None);
@@ -160,9 +158,8 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
             email,
         )
         .traced()
-        .fetch_one(&mut *self.conn)
-        .await
-        .to_option()?;
+        .fetch_optional(&mut *self.conn)
+        .await?;
 
         let Some(user_email) = res else {
             return Ok(None);
@@ -509,9 +506,8 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
             Uuid::from(user_email.id),
         )
         .traced()
-        .fetch_one(&mut *self.conn)
-        .await
-        .to_option()?;
+        .fetch_optional(&mut *self.conn)
+        .await?;
 
         let Some(res) = res else { return Ok(None) };
 

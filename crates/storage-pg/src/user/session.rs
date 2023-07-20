@@ -121,9 +121,8 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
             Uuid::from(id),
         )
         .traced()
-        .fetch_one(&mut *self.conn)
-        .await
-        .to_option()?;
+        .fetch_optional(&mut *self.conn)
+        .await?;
 
         let Some(res) = res else { return Ok(None) };
 

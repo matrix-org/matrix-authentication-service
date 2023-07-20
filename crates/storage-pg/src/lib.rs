@@ -178,36 +178,6 @@
 
 use sqlx::migrate::Migrator;
 
-/// An extension trait for [`Result`] which adds a [`to_option`] method, useful
-/// for handling "not found" errors from [`sqlx`]
-///
-/// [`to_option`]: LookupResultExt::to_option
-pub trait LookupResultExt {
-    /// The output type
-    type Output;
-
-    /// Transform a [`Result`] from a sqlx query to transform "not found" errors
-    /// into [`None`]
-    ///
-    /// # Errors
-    ///
-    /// Returns the original error if the error was not a
-    /// [`sqlx::Error::RowNotFound`] error
-    fn to_option(self) -> Result<Option<Self::Output>, sqlx::Error>;
-}
-
-impl<T> LookupResultExt for Result<T, sqlx::Error> {
-    type Output = T;
-
-    fn to_option(self) -> Result<Option<Self::Output>, sqlx::Error> {
-        match self {
-            Ok(v) => Ok(Some(v)),
-            Err(sqlx::Error::RowNotFound) => Ok(None),
-            Err(e) => Err(e),
-        }
-    }
-}
-
 pub mod compat;
 pub mod job;
 pub mod oauth2;
@@ -215,6 +185,7 @@ pub mod upstream_oauth2;
 pub mod user;
 
 mod errors;
+pub(crate) mod iden;
 pub(crate) mod pagination;
 pub(crate) mod repository;
 mod sea_query_sqlx;

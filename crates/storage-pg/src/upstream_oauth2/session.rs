@@ -24,7 +24,7 @@ use sqlx::PgConnection;
 use ulid::Ulid;
 use uuid::Uuid;
 
-use crate::{tracing::ExecuteExt, DatabaseError, DatabaseInconsistencyError, LookupResultExt};
+use crate::{tracing::ExecuteExt, DatabaseError, DatabaseInconsistencyError};
 
 /// An implementation of [`UpstreamOAuthSessionRepository`] for a PostgreSQL
 /// connection
@@ -136,9 +136,8 @@ impl<'c> UpstreamOAuthSessionRepository for PgUpstreamOAuthSessionRepository<'c>
             Uuid::from(id),
         )
         .traced()
-        .fetch_one(&mut *self.conn)
-        .await
-        .to_option()?;
+        .fetch_optional(&mut *self.conn)
+        .await?;
 
         let Some(res) = res else { return Ok(None) };
 

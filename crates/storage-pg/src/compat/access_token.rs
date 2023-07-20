@@ -21,7 +21,7 @@ use sqlx::PgConnection;
 use ulid::Ulid;
 use uuid::Uuid;
 
-use crate::{tracing::ExecuteExt, DatabaseError, LookupResultExt};
+use crate::{tracing::ExecuteExt, DatabaseError};
 
 /// An implementation of [`CompatAccessTokenRepository`] for a PostgreSQL
 /// connection
@@ -87,9 +87,8 @@ impl<'c> CompatAccessTokenRepository for PgCompatAccessTokenRepository<'c> {
             Uuid::from(id),
         )
         .traced()
-        .fetch_one(&mut *self.conn)
-        .await
-        .to_option()?;
+        .fetch_optional(&mut *self.conn)
+        .await?;
 
         let Some(res) = res else { return Ok(None) };
 
@@ -124,9 +123,8 @@ impl<'c> CompatAccessTokenRepository for PgCompatAccessTokenRepository<'c> {
             access_token,
         )
         .traced()
-        .fetch_one(&mut *self.conn)
-        .await
-        .to_option()?;
+        .fetch_optional(&mut *self.conn)
+        .await?;
 
         let Some(res) = res else { return Ok(None) };
 

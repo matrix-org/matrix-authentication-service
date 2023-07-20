@@ -21,7 +21,7 @@ use sqlx::{PgConnection, QueryBuilder};
 use ulid::Ulid;
 use uuid::Uuid;
 
-use crate::{pagination::QueryBuilderExt, tracing::ExecuteExt, DatabaseError, LookupResultExt};
+use crate::{pagination::QueryBuilderExt, tracing::ExecuteExt, DatabaseError};
 
 /// An implementation of [`UpstreamOAuthLinkRepository`] for a PostgreSQL
 /// connection
@@ -87,9 +87,8 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
             Uuid::from(id),
         )
         .traced()
-        .fetch_one(&mut *self.conn)
-        .await
-        .to_option()?
+        .fetch_optional(&mut *self.conn)
+        .await?
         .map(Into::into);
 
         Ok(res)
@@ -129,9 +128,8 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
             subject,
         )
         .traced()
-        .fetch_one(&mut *self.conn)
-        .await
-        .to_option()?
+        .fetch_optional(&mut *self.conn)
+        .await?
         .map(Into::into);
 
         Ok(res)
