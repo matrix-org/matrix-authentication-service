@@ -21,7 +21,7 @@ use mas_storage::{
 };
 use oauth2_types::scope::Scope;
 use rand::RngCore;
-use sea_query::{enum_def, Expr, IntoColumnRef, PostgresQueryBuilder, Query};
+use sea_query::{enum_def, Expr, PostgresQueryBuilder, Query};
 use sqlx::PgConnection;
 use ulid::Ulid;
 use uuid::Uuid;
@@ -288,7 +288,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
                 }
             }))
             .generate_pagination(
-                (OAuth2Sessions::Table, OAuth2Sessions::OAuth2SessionId).into_column_ref(),
+                (OAuth2Sessions::Table, OAuth2Sessions::OAuth2SessionId),
                 pagination,
             )
             .build(PostgresQueryBuilder);

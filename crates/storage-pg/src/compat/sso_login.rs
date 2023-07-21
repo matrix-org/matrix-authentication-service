@@ -20,7 +20,7 @@ use mas_storage::{
     Clock, Page, Pagination,
 };
 use rand::RngCore;
-use sea_query::{enum_def, Expr, IntoColumnRef, PostgresQueryBuilder, Query};
+use sea_query::{enum_def, Expr, PostgresQueryBuilder, Query};
 use sqlx::PgConnection;
 use ulid::Ulid;
 use url::Url;
@@ -377,7 +377,7 @@ impl<'c> CompatSsoLoginRepository for PgCompatSsoLoginRepository<'c> {
                 }
             }))
             .generate_pagination(
-                (CompatSsoLogins::Table, CompatSsoLogins::CompatSsoLoginId).into_column_ref(),
+                (CompatSsoLogins::Table, CompatSsoLogins::CompatSsoLoginId),
                 pagination,
             )
             .build(PostgresQueryBuilder);

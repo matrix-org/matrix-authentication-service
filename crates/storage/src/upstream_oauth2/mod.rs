@@ -20,7 +20,7 @@ mod provider;
 mod session;
 
 pub use self::{
-    link::UpstreamOAuthLinkRepository,
+    link::{UpstreamOAuthLinkFilter, UpstreamOAuthLinkRepository},
     provider::{UpstreamOAuthProviderFilter, UpstreamOAuthProviderRepository},
     session::UpstreamOAuthSessionRepository,
 };
