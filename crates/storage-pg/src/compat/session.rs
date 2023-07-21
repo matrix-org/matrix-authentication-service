@@ -323,7 +323,7 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
         filter: CompatSessionFilter<'_>,
         pagination: Pagination,
     ) -> Result<Page<(CompatSession, Option<CompatSsoLogin>)>, Self::Error> {
-        let (sql, values) = sea_query::Query::select()
+        let (sql, values) = Query::select()
             .expr_as(
                 Expr::col((CompatSessions::Table, CompatSessions::CompatSessionId)),
                 CompatSessionAndSsoLoginLookupIden::CompatSessionId,
@@ -441,7 +441,7 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
                 // session.
                 let exists = Expr::exists(
                     Query::select()
-                        .expr(Expr::val(1))
+                        .expr(Expr::cust("1"))
                         .from(CompatSsoLogins::Table)
                         .and_where(
                             Expr::col((CompatSsoLogins::Table, CompatSsoLogins::CompatSessionId))
