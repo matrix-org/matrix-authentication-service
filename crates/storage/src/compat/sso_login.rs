@@ -20,6 +20,88 @@ use url::Url;
 
 use crate::{pagination::Page, repository_impl, Clock, Pagination};
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CompatSsoLoginState {
+    Pending,
+    Fulfilled,
+    Exchanged,
+}
+
+impl CompatSsoLoginState {
+    /// Returns [`true`] if we're looking for pending SSO logins
+    #[must_use]
+    pub fn is_pending(self) -> bool {
+        matches!(self, Self::Pending)
+    }
+
+    /// Returns [`true`] if we're looking for fulfilled SSO logins
+    #[must_use]
+    pub fn is_fulfilled(self) -> bool {
+        matches!(self, Self::Fulfilled)
+    }
+
+    /// Returns [`true`] if we're looking for exchanged SSO logins
+    #[must_use]
+    pub fn is_exchanged(self) -> bool {
+        matches!(self, Self::Exchanged)
+    }
+}
+
+/// Filter parameters for listing compat SSO logins
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub struct CompatSsoLoginFilter<'a> {
+    user: Option<&'a User>,
+    state: Option<CompatSsoLoginState>,
+}
+
+impl<'a> CompatSsoLoginFilter<'a> {
+    /// Create a new empty filter
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Set the user who owns the SSO logins sessions
+    #[must_use]
+    pub fn for_user(mut self, user: &'a User) -> Self {
+        self.user = Some(user);
+        self
+    }
+
+    /// Get the user filter
+    #[must_use]
+    pub fn user(&self) -> Option<&User> {
+        self.user
+    }
+
+    /// Only return pending SSO logins
+    #[must_use]
+    pub fn pending_only(mut self) -> Self {
+        self.state = Some(CompatSsoLoginState::Pending);
+        self
+    }
+
+    /// Only return fulfilled SSO logins
+    #[must_use]
+    pub fn fulfilled_only(mut self) -> Self {
+        self.state = Some(CompatSsoLoginState::Fulfilled);
+        self
+    }
+
+    /// Only return exchanged SSO logins
+    #[must_use]
+    pub fn exchanged_only(mut self) -> Self {
+        self.state = Some(CompatSsoLoginState::Exchanged);
+        self
+    }
+
+    /// Get the state filter
+    #[must_use]
+    pub fn state(&self) -> Option<CompatSsoLoginState> {
+        self.state
+    }
+}
+
 /// A [`CompatSsoLoginRepository`] helps interacting with
 /// [`CompatSsoLoginRepository`] saved in the storage backend
 #[async_trait]
@@ -117,21 +199,34 @@ pub trait CompatSsoLoginRepository: Send + Sync {
         compat_sso_login: CompatSsoLogin,
     ) -> Result<CompatSsoLogin, Self::Error>;
 
-    /// Get a paginated list of compat SSO logins for a user
+    /// List [`CompatSsoLogin`] with the given filter and pagination
+    ///
+    /// Returns a page of compat SSO logins
     ///
     /// # Parameters
     ///
-    /// * `user`: The user to get the compat SSO logins for
+    /// * `filter`: The filter to apply
     /// * `pagination`: The pagination parameters
     ///
     /// # Errors
     ///
     /// Returns [`Self::Error`] if the underlying repository fails
-    async fn list_paginated(
+    async fn list(
         &mut self,
-        user: &User,
+        filter: CompatSsoLoginFilter<'_>,
         pagination: Pagination,
     ) -> Result<Page<CompatSsoLogin>, Self::Error>;
+
+    /// Count the number of [`CompatSsoLogin`] with the given filter
+    ///
+    /// # Parameters
+    ///
+    /// * `filter`: The filter to apply
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn count(&mut self, filter: CompatSsoLoginFilter<'_>) -> Result<usize, Self::Error>;
 }
 
 repository_impl!(CompatSsoLoginRepository:
@@ -163,9 +258,11 @@ repository_impl!(CompatSsoLoginRepository:
         compat_sso_login: CompatSsoLogin,
     ) -> Result<CompatSsoLogin, Self::Error>;
 
-    async fn list_paginated(
+    async fn list(
         &mut self,
-        user: &User,
+        filter: CompatSsoLoginFilter<'_>,
         pagination: Pagination,
     ) -> Result<Page<CompatSsoLogin>, Self::Error>;
+
+    async fn count(&mut self, filter: CompatSsoLoginFilter<'_>) -> Result<usize, Self::Error>;
 );

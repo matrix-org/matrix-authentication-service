@@ -59,7 +59,7 @@ impl CompatSessionType {
     }
 }
 
-/// Filter parameters for listing browser sessions
+/// Filter parameters for listing compatibility sessions
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub struct CompatSessionFilter<'a> {
     user: Option<&'a User>,

@@ -216,6 +216,8 @@ export type CompatSsoLoginConnection = {
   nodes: Array<CompatSsoLogin>;
   /** Information to aid in pagination. */
   pageInfo: PageInfo;
+  /** Identifies the total count of items in the connection. */
+  totalCount: Scalars["Int"]["output"];
 };
 
 /** An edge in a connection. */

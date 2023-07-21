@@ -14,16 +14,24 @@
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use mas_data_model::{CompatSession, CompatSsoLogin, CompatSsoLoginState, User};
-use mas_storage::{compat::CompatSsoLoginRepository, Clock, Page, Pagination};
+use mas_data_model::{CompatSession, CompatSsoLogin, CompatSsoLoginState};
+use mas_storage::{
+    compat::{CompatSsoLoginFilter, CompatSsoLoginRepository},
+    Clock, Page, Pagination,
+};
 use rand::RngCore;
-use sqlx::{PgConnection, QueryBuilder};
+use sea_query::{enum_def, Expr, IntoColumnRef, PostgresQueryBuilder, Query};
+use sqlx::PgConnection;
 use ulid::Ulid;
 use url::Url;
 use uuid::Uuid;
 
 use crate::{
-    pagination::QueryBuilderExt, tracing::ExecuteExt, DatabaseError, DatabaseInconsistencyError,
+    iden::{CompatSessions, CompatSsoLogins},
+    pagination::QueryBuilderExt,
+    sea_query_sqlx::map_values,
+    tracing::ExecuteExt,
+    DatabaseError, DatabaseInconsistencyError,
 };
 
 /// An implementation of [`CompatSsoLoginRepository`] for a PostgreSQL
@@ -41,6 +49,7 @@ impl<'c> PgCompatSsoLoginRepository<'c> {
 }
 
 #[derive(sqlx::FromRow)]
+#[enum_def]
 struct CompatSsoLoginLookup {
     compat_sso_login_id: Uuid,
     login_token: String,
@@ -295,49 +304,149 @@ impl<'c> CompatSsoLoginRepository for PgCompatSsoLoginRepository<'c> {
     }
 
     #[tracing::instrument(
-        name = "db.compat_sso_login.list_paginated",
+        name = "db.compat_sso_login.list",
         skip_all,
         fields(
             db.statement,
-            %user.id,
-            %user.username,
         ),
         err
     )]
-    async fn list_paginated(
+    async fn list(
         &mut self,
-        user: &User,
+        filter: CompatSsoLoginFilter<'_>,
         pagination: Pagination,
     ) -> Result<Page<CompatSsoLogin>, Self::Error> {
-        let mut query = QueryBuilder::new(
-            r#"
-                SELECT cl.compat_sso_login_id
-                     , cl.login_token
-                     , cl.redirect_uri
-                     , cl.created_at
-                     , cl.fulfilled_at
-                     , cl.exchanged_at
-                     , cl.compat_session_id
+        let (sql, values) = Query::select()
+            .expr_as(
+                Expr::col((CompatSsoLogins::Table, CompatSsoLogins::CompatSsoLoginId)),
+                CompatSsoLoginLookupIden::CompatSsoLoginId,
+            )
+            .expr_as(
+                Expr::col((CompatSsoLogins::Table, CompatSsoLogins::CompatSessionId)),
+                CompatSsoLoginLookupIden::CompatSessionId,
+            )
+            .expr_as(
+                Expr::col((CompatSsoLogins::Table, CompatSsoLogins::LoginToken)),
+                CompatSsoLoginLookupIden::LoginToken,
+            )
+            .expr_as(
+                Expr::col((CompatSsoLogins::Table, CompatSsoLogins::RedirectUri)),
+                CompatSsoLoginLookupIden::RedirectUri,
+            )
+            .expr_as(
+                Expr::col((CompatSsoLogins::Table, CompatSsoLogins::CreatedAt)),
+                CompatSsoLoginLookupIden::CreatedAt,
+            )
+            .expr_as(
+                Expr::col((CompatSsoLogins::Table, CompatSsoLogins::FulfilledAt)),
+                CompatSsoLoginLookupIden::FulfilledAt,
+            )
+            .expr_as(
+                Expr::col((CompatSsoLogins::Table, CompatSsoLogins::ExchangedAt)),
+                CompatSsoLoginLookupIden::ExchangedAt,
+            )
+            .from(CompatSsoLogins::Table)
+            .and_where_option(filter.user().map(|user| {
+                Expr::exists(
+                    Query::select()
+                        .expr(Expr::cust("1"))
+                        .from(CompatSessions::Table)
+                        .and_where(
+                            Expr::col((CompatSessions::Table, CompatSessions::UserId))
+                                .eq(Uuid::from(user.id)),
+                        )
+                        .and_where(
+                            Expr::col((CompatSsoLogins::Table, CompatSsoLogins::CompatSessionId))
+                                .equals((CompatSessions::Table, CompatSessions::CompatSessionId)),
+                        )
+                        .take(),
+                )
+            }))
+            .and_where_option(filter.state().map(|state| {
+                if state.is_exchanged() {
+                    Expr::col((CompatSsoLogins::Table, CompatSsoLogins::ExchangedAt)).is_not_null()
+                } else if state.is_fulfilled() {
+                    Expr::col((CompatSsoLogins::Table, CompatSsoLogins::FulfilledAt))
+                        .is_not_null()
+                        .and(
+                            Expr::col((CompatSsoLogins::Table, CompatSsoLogins::ExchangedAt))
+                                .is_null(),
+                        )
+                } else {
+                    Expr::col((CompatSsoLogins::Table, CompatSsoLogins::FulfilledAt)).is_null()
+                }
+            }))
+            .generate_pagination(
+                (CompatSsoLogins::Table, CompatSsoLogins::CompatSsoLoginId).into_column_ref(),
+                pagination,
+            )
+            .build(PostgresQueryBuilder);
 
-                FROM compat_sso_logins cl
-                INNER JOIN compat_sessions cs USING (compat_session_id)
-            "#,
-        );
+        let arguments = map_values(values);
 
-        query
-            .push(" WHERE cs.user_id = ")
-            .push_bind(Uuid::from(user.id))
-            .generate_pagination("cl.compat_sso_login_id", pagination);
-
-        let edges: Vec<CompatSsoLoginLookup> = query
-            .build_query_as()
+        let edges: Vec<CompatSsoLoginLookup> = sqlx::query_as_with(&sql, arguments)
             .traced()
             .fetch_all(&mut *self.conn)
             .await?;
 
-        let page = pagination
-            .process(edges)
-            .try_map(CompatSsoLogin::try_from)?;
+        let page = pagination.process(edges).try_map(TryFrom::try_from)?;
+
         Ok(page)
+    }
+
+    #[tracing::instrument(
+        name = "db.compat_sso_login.count",
+        skip_all,
+        fields(
+            db.statement,
+        ),
+        err
+    )]
+    async fn count(&mut self, filter: CompatSsoLoginFilter<'_>) -> Result<usize, Self::Error> {
+        let (sql, values) = Query::select()
+            .expr(Expr::col((CompatSsoLogins::Table, CompatSsoLogins::CompatSsoLoginId)).count())
+            .from(CompatSsoLogins::Table)
+            .and_where_option(filter.user().map(|user| {
+                Expr::exists(
+                    Query::select()
+                        .expr(Expr::cust("1"))
+                        .from(CompatSessions::Table)
+                        .and_where(
+                            Expr::col((CompatSessions::Table, CompatSessions::UserId))
+                                .eq(Uuid::from(user.id)),
+                        )
+                        .and_where(
+                            Expr::col((CompatSsoLogins::Table, CompatSsoLogins::CompatSessionId))
+                                .equals((CompatSessions::Table, CompatSessions::CompatSessionId)),
+                        )
+                        .take(),
+                )
+            }))
+            .and_where_option(filter.state().map(|state| {
+                if state.is_exchanged() {
+                    Expr::col((CompatSsoLogins::Table, CompatSsoLogins::ExchangedAt)).is_not_null()
+                } else if state.is_fulfilled() {
+                    Expr::col((CompatSsoLogins::Table, CompatSsoLogins::FulfilledAt))
+                        .is_not_null()
+                        .and(
+                            Expr::col((CompatSsoLogins::Table, CompatSsoLogins::ExchangedAt))
+                                .is_null(),
+                        )
+                } else {
+                    Expr::col((CompatSsoLogins::Table, CompatSsoLogins::FulfilledAt)).is_null()
+                }
+            }))
+            .build(PostgresQueryBuilder);
+
+        let arguments = map_values(values);
+
+        let count: i64 = sqlx::query_scalar_with(&sql, arguments)
+            .traced()
+            .fetch_one(&mut *self.conn)
+            .await?;
+
+        count
+            .try_into()
+            .map_err(DatabaseError::to_invalid_operation)
     }
 }

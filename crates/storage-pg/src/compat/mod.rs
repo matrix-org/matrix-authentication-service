@@ -33,7 +33,7 @@ mod tests {
         clock::MockClock,
         compat::{
             CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionFilter,
-            CompatSessionRepository,
+            CompatSessionRepository, CompatSsoLoginFilter,
         },
         user::UserRepository,
         Clock, Pagination, Repository, RepositoryAccess,
@@ -494,6 +494,19 @@ mod tests {
         let login = repo.compat_sso_login().lookup(Ulid::nil()).await.unwrap();
         assert_eq!(login, None);
 
+        let all = CompatSsoLoginFilter::new();
+        let for_user = all.for_user(&user);
+        let pending = all.pending_only();
+        let fulfilled = all.fulfilled_only();
+        let exchanged = all.exchanged_only();
+
+        // Check the initial counts
+        assert_eq!(repo.compat_sso_login().count(all).await.unwrap(), 0);
+        assert_eq!(repo.compat_sso_login().count(for_user).await.unwrap(), 0);
+        assert_eq!(repo.compat_sso_login().count(pending).await.unwrap(), 0);
+        assert_eq!(repo.compat_sso_login().count(fulfilled).await.unwrap(), 0);
+        assert_eq!(repo.compat_sso_login().count(exchanged).await.unwrap(), 0);
+
         // Lookup an unknown login token
         let login = repo
             .compat_sso_login()
@@ -514,6 +527,13 @@ mod tests {
             .await
             .unwrap();
         assert!(login.is_pending());
+
+        // Check the counts
+        assert_eq!(repo.compat_sso_login().count(all).await.unwrap(), 1);
+        assert_eq!(repo.compat_sso_login().count(for_user).await.unwrap(), 0);
+        assert_eq!(repo.compat_sso_login().count(pending).await.unwrap(), 1);
+        assert_eq!(repo.compat_sso_login().count(fulfilled).await.unwrap(), 0);
+        assert_eq!(repo.compat_sso_login().count(exchanged).await.unwrap(), 0);
 
         // Lookup the login by ID
         let login_lookup = repo
@@ -557,6 +577,13 @@ mod tests {
             .unwrap();
         assert!(login.is_fulfilled());
 
+        // Check the counts
+        assert_eq!(repo.compat_sso_login().count(all).await.unwrap(), 1);
+        assert_eq!(repo.compat_sso_login().count(for_user).await.unwrap(), 1);
+        assert_eq!(repo.compat_sso_login().count(pending).await.unwrap(), 0);
+        assert_eq!(repo.compat_sso_login().count(fulfilled).await.unwrap(), 1);
+        assert_eq!(repo.compat_sso_login().count(exchanged).await.unwrap(), 0);
+
         // Fulfilling again should not work
         // Note: It should also not poison the SQL transaction
         let res = repo
@@ -572,6 +599,13 @@ mod tests {
             .await
             .unwrap();
         assert!(login.is_exchanged());
+
+        // Check the counts
+        assert_eq!(repo.compat_sso_login().count(all).await.unwrap(), 1);
+        assert_eq!(repo.compat_sso_login().count(for_user).await.unwrap(), 1);
+        assert_eq!(repo.compat_sso_login().count(pending).await.unwrap(), 0);
+        assert_eq!(repo.compat_sso_login().count(fulfilled).await.unwrap(), 0);
+        assert_eq!(repo.compat_sso_login().count(exchanged).await.unwrap(), 1);
 
         // Exchange again should not work
         // Note: It should also not poison the SQL transaction
@@ -589,13 +623,47 @@ mod tests {
             .await;
         assert!(res.is_err());
 
+        let pagination = Pagination::first(10);
+
+        // List all logins
+        let logins = repo.compat_sso_login().list(all, pagination).await.unwrap();
+        assert!(!logins.has_next_page);
+        assert_eq!(logins.edges, &[login.clone()]);
+
         // List the logins for the user
         let logins = repo
             .compat_sso_login()
-            .list_paginated(&user, Pagination::first(10))
+            .list(for_user, pagination)
             .await
             .unwrap();
         assert!(!logins.has_next_page);
-        assert_eq!(logins.edges, vec![login]);
+        assert_eq!(logins.edges, &[login.clone()]);
+
+        // List only the pending logins for the user
+        let logins = repo
+            .compat_sso_login()
+            .list(for_user.pending_only(), pagination)
+            .await
+            .unwrap();
+        assert!(!logins.has_next_page);
+        assert!(logins.edges.is_empty());
+
+        // List only the fulfilled logins for the user
+        let logins = repo
+            .compat_sso_login()
+            .list(for_user.fulfilled_only(), pagination)
+            .await
+            .unwrap();
+        assert!(!logins.has_next_page);
+        assert!(logins.edges.is_empty());
+
+        // List only the exchanged logins for the user
+        let logins = repo
+            .compat_sso_login()
+            .list(for_user.exchanged_only(), pagination)
+            .await
+            .unwrap();
+        assert!(!logins.has_next_page);
+        assert_eq!(logins.edges, &[login]);
     }
 }
