@@ -937,6 +937,7 @@ type User implements Node {
   Get the list of emails, chronologically sorted
   """
   emails(
+    state: UserEmailState
     after: String
     before: String
     first: Int
@@ -1016,6 +1017,20 @@ type UserEmailEdge {
   A cursor for use in pagination
   """
   cursor: String!
+}
+
+"""
+The state of a compatibility session.
+"""
+enum UserEmailState {
+  """
+  The email address is pending confirmation.
+  """
+  PENDING
+  """
+  The email address has been confirmed.
+  """
+  CONFIRMED
 }
 
 """

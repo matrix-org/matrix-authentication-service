@@ -32,6 +32,16 @@ pub enum Users {
 }
 
 #[derive(sea_query::Iden)]
+pub enum UserEmails {
+    Table,
+    UserEmailId,
+    UserId,
+    Email,
+    CreatedAt,
+    ConfirmedAt,
+}
+
+#[derive(sea_query::Iden)]
 pub enum CompatSessions {
     Table,
     CompatSessionId,

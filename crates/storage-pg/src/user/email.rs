@@ -15,15 +15,20 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mas_data_model::{User, UserEmail, UserEmailVerification, UserEmailVerificationState};
-use mas_storage::{user::UserEmailRepository, Clock, Page, Pagination};
+use mas_storage::{
+    user::{UserEmailFilter, UserEmailRepository},
+    Clock, Page, Pagination,
+};
 use rand::RngCore;
-use sqlx::{PgConnection, QueryBuilder};
+use sea_query::{enum_def, Expr, IntoColumnRef, PostgresQueryBuilder, Query};
+use sqlx::PgConnection;
 use tracing::{info_span, Instrument};
 use ulid::Ulid;
 use uuid::Uuid;
 
 use crate::{
-    pagination::QueryBuilderExt, tracing::ExecuteExt, DatabaseError, DatabaseInconsistencyError,
+    iden::UserEmails, pagination::QueryBuilderExt, sea_query_sqlx::map_values, tracing::ExecuteExt,
+    DatabaseError, DatabaseInconsistencyError,
 };
 
 /// An implementation of [`UserEmailRepository`] for a PostgreSQL connection
@@ -40,6 +45,7 @@ impl<'c> PgUserEmailRepository<'c> {
 }
 
 #[derive(Debug, Clone, sqlx::FromRow)]
+#[enum_def]
 struct UserEmailLookup {
     user_email_id: Uuid,
     user_id: Uuid,
@@ -225,42 +231,65 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
     }
 
     #[tracing::instrument(
-        name = "db.user_email.list_paginated",
+        name = "db.user_email.list",
         skip_all,
         fields(
             db.statement,
-            %user.id,
         ),
         err,
     )]
-    async fn list_paginated(
+    async fn list(
         &mut self,
-        user: &User,
+        filter: UserEmailFilter<'_>,
         pagination: Pagination,
     ) -> Result<Page<UserEmail>, DatabaseError> {
-        let mut query = QueryBuilder::new(
-            r#"
-                SELECT user_email_id
-                     , user_id
-                     , email
-                     , created_at
-                     , confirmed_at
-                FROM user_emails
-            "#,
-        );
+        let (sql, values) = Query::select()
+            .expr_as(
+                Expr::col((UserEmails::Table, UserEmails::UserEmailId)),
+                UserEmailLookupIden::UserEmailId,
+            )
+            .expr_as(
+                Expr::col((UserEmails::Table, UserEmails::UserId)),
+                UserEmailLookupIden::UserId,
+            )
+            .expr_as(
+                Expr::col((UserEmails::Table, UserEmails::Email)),
+                UserEmailLookupIden::Email,
+            )
+            .expr_as(
+                Expr::col((UserEmails::Table, UserEmails::CreatedAt)),
+                UserEmailLookupIden::CreatedAt,
+            )
+            .expr_as(
+                Expr::col((UserEmails::Table, UserEmails::ConfirmedAt)),
+                UserEmailLookupIden::ConfirmedAt,
+            )
+            .from(UserEmails::Table)
+            .and_where_option(filter.user().map(|user| {
+                Expr::col((UserEmails::Table, UserEmails::UserId)).eq(Uuid::from(user.id))
+            }))
+            .and_where_option(filter.state().map(|state| {
+                if state.is_verified() {
+                    Expr::col((UserEmails::Table, UserEmails::ConfirmedAt)).is_not_null()
+                } else {
+                    Expr::col((UserEmails::Table, UserEmails::ConfirmedAt)).is_null()
+                }
+            }))
+            .generate_pagination(
+                (UserEmails::Table, UserEmails::UserEmailId).into_column_ref(),
+                pagination,
+            )
+            .build(PostgresQueryBuilder);
 
-        query
-            .push(" WHERE user_id = ")
-            .push_bind(Uuid::from(user.id))
-            .generate_pagination("user_email_id", pagination);
+        let arguments = map_values(values);
 
-        let edges: Vec<UserEmailLookup> = query
-            .build_query_as()
+        let edges: Vec<UserEmailLookup> = sqlx::query_as_with(&sql, arguments)
             .traced()
             .fetch_all(&mut *self.conn)
             .await?;
 
         let page = pagination.process(edges).map(UserEmail::from);
+
         Ok(page)
     }
 
@@ -269,28 +298,35 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
         skip_all,
         fields(
             db.statement,
-            %user.id,
         ),
         err,
     )]
-    async fn count(&mut self, user: &User) -> Result<usize, Self::Error> {
-        let res = sqlx::query_scalar!(
-            r#"
-                SELECT COUNT(*)
-                FROM user_emails
-                WHERE user_id = $1
-            "#,
-            Uuid::from(user.id),
-        )
-        .traced()
-        .fetch_one(&mut *self.conn)
-        .await?;
+    async fn count(&mut self, filter: UserEmailFilter<'_>) -> Result<usize, Self::Error> {
+        let (sql, values) = Query::select()
+            .expr(Expr::col((UserEmails::Table, UserEmails::UserEmailId)).count())
+            .from(UserEmails::Table)
+            .and_where_option(filter.user().map(|user| {
+                Expr::col((UserEmails::Table, UserEmails::UserId)).eq(Uuid::from(user.id))
+            }))
+            .and_where_option(filter.state().map(|state| {
+                if state.is_verified() {
+                    Expr::col((UserEmails::Table, UserEmails::ConfirmedAt)).is_not_null()
+                } else {
+                    Expr::col((UserEmails::Table, UserEmails::ConfirmedAt)).is_null()
+                }
+            }))
+            .build(PostgresQueryBuilder);
 
-        let res = res.unwrap_or_default();
+        let arguments = map_values(values);
 
-        Ok(res
+        let count: i64 = sqlx::query_scalar_with(&sql, arguments)
+            .traced()
+            .fetch_one(&mut *self.conn)
+            .await?;
+
+        count
             .try_into()
-            .map_err(DatabaseError::to_invalid_operation)?)
+            .map_err(DatabaseError::to_invalid_operation)
     }
 
     #[tracing::instrument(

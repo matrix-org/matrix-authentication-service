@@ -26,7 +26,7 @@ mod password;
 mod session;
 
 pub use self::{
-    email::UserEmailRepository,
+    email::{UserEmailFilter, UserEmailRepository},
     password::UserPasswordRepository,
     session::{BrowserSessionFilter, BrowserSessionRepository},
 };

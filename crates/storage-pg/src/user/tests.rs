@@ -16,7 +16,7 @@ use chrono::Duration;
 use mas_storage::{
     clock::MockClock,
     user::{
-        BrowserSessionFilter, BrowserSessionRepository, UserEmailRepository,
+        BrowserSessionFilter, BrowserSessionRepository, UserEmailFilter, UserEmailRepository,
         UserPasswordRepository, UserRepository,
     },
     Pagination, Repository, RepositoryAccess,
@@ -98,7 +98,14 @@ async fn test_user_email_repo(pool: PgPool) {
         .unwrap()
         .is_none());
 
-    assert_eq!(repo.user_email().count(&user).await.unwrap(), 0);
+    let all = UserEmailFilter::new().for_user(&user);
+    let pending = all.pending_only();
+    let verified = all.verified_only();
+
+    // Check the counts
+    assert_eq!(repo.user_email().count(all).await.unwrap(), 0);
+    assert_eq!(repo.user_email().count(pending).await.unwrap(), 0);
+    assert_eq!(repo.user_email().count(verified).await.unwrap(), 0);
 
     let user_email = repo
         .user_email()
@@ -110,7 +117,10 @@ async fn test_user_email_repo(pool: PgPool) {
     assert_eq!(user_email.email, EMAIL);
     assert!(user_email.confirmed_at.is_none());
 
-    assert_eq!(repo.user_email().count(&user).await.unwrap(), 1);
+    // Check the counts
+    assert_eq!(repo.user_email().count(all).await.unwrap(), 1);
+    assert_eq!(repo.user_email().count(pending).await.unwrap(), 1);
+    assert_eq!(repo.user_email().count(verified).await.unwrap(), 0);
 
     assert!(repo
         .user_email()
@@ -181,6 +191,11 @@ async fn test_user_email_repo(pool: PgPool) {
         .await
         .unwrap();
 
+    // Check the counts
+    assert_eq!(repo.user_email().count(all).await.unwrap(), 1);
+    assert_eq!(repo.user_email().count(pending).await.unwrap(), 0);
+    assert_eq!(repo.user_email().count(verified).await.unwrap(), 1);
+
     // Reload the user_email
     let user_email = repo
         .user_email()
@@ -236,16 +251,35 @@ async fn test_user_email_repo(pool: PgPool) {
     // Listing the user emails should work
     let emails = repo
         .user_email()
-        .list_paginated(&user, Pagination::first(10))
+        .list(all, Pagination::first(10))
         .await
         .unwrap();
     assert!(!emails.has_next_page);
     assert_eq!(emails.edges.len(), 1);
     assert_eq!(emails.edges[0], user_email);
 
+    let emails = repo
+        .user_email()
+        .list(verified, Pagination::first(10))
+        .await
+        .unwrap();
+    assert!(!emails.has_next_page);
+    assert_eq!(emails.edges.len(), 1);
+    assert_eq!(emails.edges[0], user_email);
+
+    let emails = repo
+        .user_email()
+        .list(pending, Pagination::first(10))
+        .await
+        .unwrap();
+    assert!(!emails.has_next_page);
+    assert!(emails.edges.is_empty());
+
     // Deleting the user email should work
     repo.user_email().remove(user_email).await.unwrap();
-    assert_eq!(repo.user_email().count(&user).await.unwrap(), 0);
+    assert_eq!(repo.user_email().count(all).await.unwrap(), 0);
+    assert_eq!(repo.user_email().count(pending).await.unwrap(), 0);
+    assert_eq!(repo.user_email().count(verified).await.unwrap(), 0);
 
     // Reload the user
     let user = repo

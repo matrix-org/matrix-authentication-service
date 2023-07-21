@@ -727,6 +727,7 @@ export type UserEmailsArgs = {
   before?: InputMaybe<Scalars["String"]["input"]>;
   first?: InputMaybe<Scalars["Int"]["input"]>;
   last?: InputMaybe<Scalars["Int"]["input"]>;
+  state?: InputMaybe<UserEmailState>;
 };
 
 /** A user is an individual's account. */
@@ -782,6 +783,14 @@ export type UserEmailEdge = {
   /** The item at the end of the edge */
   node: UserEmail;
 };
+
+/** The state of a compatibility session. */
+export enum UserEmailState {
+  /** The email address has been confirmed. */
+  Confirmed = "CONFIRMED",
+  /** The email address is pending confirmation. */
+  Pending = "PENDING",
+}
 
 /** The input for the `verifyEmail` mutation */
 export type VerifyEmailInput = {

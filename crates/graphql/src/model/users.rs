@@ -14,14 +14,14 @@
 
 use async_graphql::{
     connection::{query, Connection, Edge, OpaqueCursor},
-    Context, Description, Object, ID,
+    Context, Description, Enum, Object, ID,
 };
 use chrono::{DateTime, Utc};
 use mas_storage::{
     compat::{CompatSessionFilter, CompatSsoLoginFilter, CompatSsoLoginRepository},
     oauth2::OAuth2SessionRepository,
     upstream_oauth2::UpstreamOAuthLinkRepository,
-    user::{BrowserSessionFilter, BrowserSessionRepository, UserEmailRepository},
+    user::{BrowserSessionFilter, BrowserSessionRepository, UserEmailFilter, UserEmailRepository},
     Pagination, RepositoryAccess,
 };
 
@@ -300,13 +300,16 @@ impl User {
         &self,
         ctx: &Context<'_>,
 
+        #[graphql(name = "state", desc = "List only emails in the given state.")]
+        state_param: Option<UserEmailState>,
+
         #[graphql(desc = "Returns the elements in the list that come after the cursor.")]
         after: Option<String>,
         #[graphql(desc = "Returns the elements in the list that come before the cursor.")]
         before: Option<String>,
         #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
         #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
-    ) -> Result<Connection<Cursor, UserEmail, UserEmailsPagination>, async_graphql::Error> {
+    ) -> Result<Connection<Cursor, UserEmail, PreloadedTotalCount>, async_graphql::Error> {
         let state = ctx.state();
         let mut repo = state.repository().await?;
 
@@ -324,17 +327,29 @@ impl User {
                     .transpose()?;
                 let pagination = Pagination::try_new(before_id, after_id, first, last)?;
 
-                let page = repo
-                    .user_email()
-                    .list_paginated(&self.0, pagination)
-                    .await?;
+                let filter = UserEmailFilter::new().for_user(&self.0);
+
+                let filter = match state_param {
+                    Some(UserEmailState::Pending) => filter.pending_only(),
+                    Some(UserEmailState::Confirmed) => filter.verified_only(),
+                    None => filter,
+                };
+
+                let page = repo.user_email().list(filter, pagination).await?;
+
+                // Preload the total count if requested
+                let count = if ctx.look_ahead().field("totalCount").exists() {
+                    Some(repo.user_email().count(filter).await?)
+                } else {
+                    None
+                };
 
                 repo.cancel().await?;
 
                 let mut connection = Connection::with_additional_fields(
                     page.has_previous_page,
                     page.has_next_page,
-                    UserEmailsPagination(self.0.clone()),
+                    PreloadedTotalCount(count),
                 );
                 connection.edges.extend(page.edges.into_iter().map(|u| {
                     Edge::new(
@@ -493,16 +508,12 @@ impl UserEmail {
     }
 }
 
-pub struct UserEmailsPagination(mas_data_model::User);
+/// The state of a compatibility session.
+#[derive(Enum, Copy, Clone, Eq, PartialEq)]
+pub enum UserEmailState {
+    /// The email address is pending confirmation.
+    Pending,
 
-#[Object]
-impl UserEmailsPagination {
-    /// Identifies the total count of items in the connection.
-    async fn total_count(&self, ctx: &Context<'_>) -> Result<usize, async_graphql::Error> {
-        let state = ctx.state();
-        let mut repo = state.repository().await?;
-        let count = repo.user_email().count(&self.0).await?;
-        repo.cancel().await?;
-        Ok(count)
-    }
+    /// The email address has been confirmed.
+    Confirmed,
 }
