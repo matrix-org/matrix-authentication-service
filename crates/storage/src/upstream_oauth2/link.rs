@@ -19,6 +19,52 @@ use ulid::Ulid;
 
 use crate::{pagination::Page, repository_impl, Clock, Pagination};
 
+/// Filter parameters for listing upstream OAuth links
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub struct UpstreamOAuthLinkFilter<'a> {
+    // XXX: we might also want to filter for links without a user linked to them
+    user: Option<&'a User>,
+    provider: Option<&'a UpstreamOAuthProvider>,
+}
+
+impl<'a> UpstreamOAuthLinkFilter<'a> {
+    /// Create a new [`UpstreamOAuthLinkFilter`] with default values
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Set the user who owns the upstream OAuth links
+    #[must_use]
+    pub fn for_user(mut self, user: &'a User) -> Self {
+        self.user = Some(user);
+        self
+    }
+
+    /// Get the user filter
+    ///
+    /// Returns [`None`] if no filter was set
+    #[must_use]
+    pub fn user(&self) -> Option<&User> {
+        self.user
+    }
+
+    /// Set the upstream OAuth provider for which to list links
+    #[must_use]
+    pub fn for_provider(mut self, provider: &'a UpstreamOAuthProvider) -> Self {
+        self.provider = Some(provider);
+        self
+    }
+
+    /// Get the upstream OAuth provider filter
+    ///
+    /// Returns [`None`] if no filter was set
+    #[must_use]
+    pub fn provider(&self) -> Option<&UpstreamOAuthProvider> {
+        self.provider
+    }
+}
+
 /// An [`UpstreamOAuthLinkRepository`] helps interacting with
 /// [`UpstreamOAuthLink`] with the storage backend
 #[async_trait]
@@ -109,11 +155,42 @@ pub trait UpstreamOAuthLinkRepository: Send + Sync {
     /// # Errors
     ///
     /// Returns [`Self::Error`] if the underlying repository fails
+    #[deprecated(note = "Use `list` instead")]
     async fn list_paginated(
         &mut self,
         user: &User,
         pagination: Pagination,
+    ) -> Result<Page<UpstreamOAuthLink>, Self::Error> {
+        self.list(UpstreamOAuthLinkFilter::new().for_user(user), pagination)
+            .await
+    }
+
+    /// List [`UpstreamOAuthLink`] with the given filter and pagination
+    ///
+    /// # Parameters
+    ///
+    /// * `filter`: The filter to apply
+    /// * `pagination`: The pagination parameters
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn list(
+        &mut self,
+        filter: UpstreamOAuthLinkFilter<'_>,
+        pagination: Pagination,
     ) -> Result<Page<UpstreamOAuthLink>, Self::Error>;
+
+    /// Count the number of [`UpstreamOAuthLink`] with the given filter
+    ///
+    /// # Parameters
+    ///
+    /// * `filter`: The filter to apply
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn count(&mut self, filter: UpstreamOAuthLinkFilter<'_>) -> Result<usize, Self::Error>;
 }
 
 repository_impl!(UpstreamOAuthLinkRepository:
@@ -139,9 +216,11 @@ repository_impl!(UpstreamOAuthLinkRepository:
         user: &User,
     ) -> Result<(), Self::Error>;
 
-    async fn list_paginated(
+    async fn list(
         &mut self,
-        user: &User,
+        filter: UpstreamOAuthLinkFilter<'_>,
         pagination: Pagination,
     ) -> Result<Page<UpstreamOAuthLink>, Self::Error>;
+
+    async fn count(&mut self, filter: UpstreamOAuthLinkFilter<'_>) -> Result<usize, Self::Error>;
 );

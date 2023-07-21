@@ -20,7 +20,7 @@ use mas_storage::{
     Clock, Page, Pagination,
 };
 use rand::RngCore;
-use sea_query::{enum_def, Expr, IntoColumnRef, PostgresQueryBuilder, Query};
+use sea_query::{enum_def, Expr, PostgresQueryBuilder, Query};
 use sqlx::PgConnection;
 use tracing::{info_span, Instrument};
 use ulid::Ulid;
@@ -275,10 +275,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
                     Expr::col((UserEmails::Table, UserEmails::ConfirmedAt)).is_null()
                 }
             }))
-            .generate_pagination(
-                (UserEmails::Table, UserEmails::UserEmailId).into_column_ref(),
-                pagination,
-            )
+            .generate_pagination((UserEmails::Table, UserEmails::UserEmailId), pagination)
             .build(PostgresQueryBuilder);
 
         let arguments = map_values(values);

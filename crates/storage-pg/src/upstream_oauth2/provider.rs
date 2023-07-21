@@ -22,7 +22,7 @@ use mas_storage::{
 };
 use oauth2_types::scope::Scope;
 use rand::RngCore;
-use sea_query::{enum_def, Expr, IntoColumnRef, PostgresQueryBuilder, Query};
+use sea_query::{enum_def, Expr, PostgresQueryBuilder, Query};
 use sqlx::{types::Json, PgConnection};
 use tracing::{info_span, Instrument};
 use ulid::Ulid;
@@ -439,8 +439,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
                 (
                     UpstreamOAuthProviders::Table,
                     UpstreamOAuthProviders::UpstreamOAuthProviderId,
-                )
-                    .into_column_ref(),
+                ),
                 pagination,
             )
             .build(PostgresQueryBuilder);

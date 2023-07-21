@@ -31,7 +31,7 @@ mod tests {
     use mas_storage::{
         clock::MockClock,
         upstream_oauth2::{
-            UpstreamOAuthLinkRepository, UpstreamOAuthProviderFilter,
+            UpstreamOAuthLinkFilter, UpstreamOAuthLinkRepository, UpstreamOAuthProviderFilter,
             UpstreamOAuthProviderRepository, UpstreamOAuthSessionRepository,
         },
         user::UserRepository,
@@ -177,9 +177,14 @@ mod tests {
             .await
             .unwrap();
 
+        // XXX: we should also try other combinations of the filter
+        let filter = UpstreamOAuthLinkFilter::new()
+            .for_user(&user)
+            .for_provider(&provider);
+
         let links = repo
             .upstream_oauth_link()
-            .list_paginated(&user, Pagination::first(10))
+            .list(filter, Pagination::first(10))
             .await
             .unwrap();
         assert!(!links.has_previous_page);
@@ -187,6 +192,8 @@ mod tests {
         assert_eq!(links.edges.len(), 1);
         assert_eq!(links.edges[0].id, link.id);
         assert_eq!(links.edges[0].user_id, Some(user.id));
+
+        assert_eq!(repo.upstream_oauth_link().count(filter).await.unwrap(), 1);
 
         // Try deleting the provider
         repo.upstream_oauth_provider()

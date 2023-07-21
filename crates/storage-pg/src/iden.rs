@@ -93,3 +93,16 @@ pub enum UpstreamOAuthProviders {
     CreatedAt,
     ClaimsImports,
 }
+
+#[derive(sea_query::Iden)]
+#[iden = "upstream_oauth_links"]
+pub enum UpstreamOAuthLinks {
+    Table,
+    #[iden = "upstream_oauth_link_id"]
+    UpstreamOAuthLinkId,
+    #[iden = "upstream_oauth_provider_id"]
+    UpstreamOAuthProviderId,
+    UserId,
+    Subject,
+    CreatedAt,
+}

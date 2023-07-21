@@ -15,13 +15,20 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mas_data_model::{UpstreamOAuthLink, UpstreamOAuthProvider, User};
-use mas_storage::{upstream_oauth2::UpstreamOAuthLinkRepository, Clock, Page, Pagination};
+use mas_storage::{
+    upstream_oauth2::{UpstreamOAuthLinkFilter, UpstreamOAuthLinkRepository},
+    Clock, Page, Pagination,
+};
 use rand::RngCore;
-use sqlx::{PgConnection, QueryBuilder};
+use sea_query::{enum_def, Expr, PostgresQueryBuilder, Query};
+use sqlx::PgConnection;
 use ulid::Ulid;
 use uuid::Uuid;
 
-use crate::{pagination::QueryBuilderExt, tracing::ExecuteExt, DatabaseError};
+use crate::{
+    iden::UpstreamOAuthLinks, pagination::QueryBuilderExt, sea_query_sqlx::map_values,
+    tracing::ExecuteExt, DatabaseError,
+};
 
 /// An implementation of [`UpstreamOAuthLinkRepository`] for a PostgreSQL
 /// connection
@@ -38,6 +45,7 @@ impl<'c> PgUpstreamOAuthLinkRepository<'c> {
 }
 
 #[derive(sqlx::FromRow)]
+#[enum_def]
 struct LinkLookup {
     upstream_oauth_link_id: Uuid,
     upstream_oauth_provider_id: Uuid,
@@ -221,44 +229,118 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
     }
 
     #[tracing::instrument(
-        name = "db.upstream_oauth_link.list_paginated",
+        name = "db.upstream_oauth_link.list",
         skip_all,
         fields(
             db.statement,
-            %user.id,
-            %user.username,
         ),
-        err
+        err,
     )]
-    async fn list_paginated(
+    async fn list(
         &mut self,
-        user: &User,
+        filter: UpstreamOAuthLinkFilter<'_>,
         pagination: Pagination,
-    ) -> Result<Page<UpstreamOAuthLink>, Self::Error> {
-        let mut query = QueryBuilder::new(
-            r#"
-                SELECT
-                    upstream_oauth_link_id,
-                    upstream_oauth_provider_id,
-                    user_id,
-                    subject,
-                    created_at
-                FROM upstream_oauth_links
-            "#,
-        );
+    ) -> Result<Page<UpstreamOAuthLink>, DatabaseError> {
+        let (sql, values) = Query::select()
+            .expr_as(
+                Expr::col((
+                    UpstreamOAuthLinks::Table,
+                    UpstreamOAuthLinks::UpstreamOAuthLinkId,
+                )),
+                LinkLookupIden::UpstreamOauthLinkId,
+            )
+            .expr_as(
+                Expr::col((
+                    UpstreamOAuthLinks::Table,
+                    UpstreamOAuthLinks::UpstreamOAuthProviderId,
+                )),
+                LinkLookupIden::UpstreamOauthProviderId,
+            )
+            .expr_as(
+                Expr::col((UpstreamOAuthLinks::Table, UpstreamOAuthLinks::UserId)),
+                LinkLookupIden::UserId,
+            )
+            .expr_as(
+                Expr::col((UpstreamOAuthLinks::Table, UpstreamOAuthLinks::Subject)),
+                LinkLookupIden::Subject,
+            )
+            .expr_as(
+                Expr::col((UpstreamOAuthLinks::Table, UpstreamOAuthLinks::CreatedAt)),
+                LinkLookupIden::CreatedAt,
+            )
+            .from(UpstreamOAuthLinks::Table)
+            .and_where_option(filter.user().map(|user| {
+                Expr::col((UpstreamOAuthLinks::Table, UpstreamOAuthLinks::UserId))
+                    .eq(Uuid::from(user.id))
+            }))
+            .and_where_option(filter.provider().map(|provider| {
+                Expr::col((
+                    UpstreamOAuthLinks::Table,
+                    UpstreamOAuthLinks::UpstreamOAuthProviderId,
+                ))
+                .eq(Uuid::from(provider.id))
+            }))
+            .generate_pagination(
+                (
+                    UpstreamOAuthLinks::Table,
+                    UpstreamOAuthLinks::UpstreamOAuthLinkId,
+                ),
+                pagination,
+            )
+            .build(PostgresQueryBuilder);
 
-        query
-            .push(" WHERE user_id = ")
-            .push_bind(Uuid::from(user.id))
-            .generate_pagination("upstream_oauth_link_id", pagination);
+        let arguments = map_values(values);
 
-        let edges: Vec<LinkLookup> = query
-            .build_query_as()
+        let edges: Vec<LinkLookup> = sqlx::query_as_with(&sql, arguments)
             .traced()
             .fetch_all(&mut *self.conn)
             .await?;
 
         let page = pagination.process(edges).map(UpstreamOAuthLink::from);
+
         Ok(page)
+    }
+
+    #[tracing::instrument(
+        name = "db.upstream_oauth_link.count",
+        skip_all,
+        fields(
+            db.statement,
+        ),
+        err,
+    )]
+    async fn count(&mut self, filter: UpstreamOAuthLinkFilter<'_>) -> Result<usize, Self::Error> {
+        let (sql, values) = Query::select()
+            .expr(
+                Expr::col((
+                    UpstreamOAuthLinks::Table,
+                    UpstreamOAuthLinks::UpstreamOAuthLinkId,
+                ))
+                .count(),
+            )
+            .from(UpstreamOAuthLinks::Table)
+            .and_where_option(filter.user().map(|user| {
+                Expr::col((UpstreamOAuthLinks::Table, UpstreamOAuthLinks::UserId))
+                    .eq(Uuid::from(user.id))
+            }))
+            .and_where_option(filter.provider().map(|provider| {
+                Expr::col((
+                    UpstreamOAuthLinks::Table,
+                    UpstreamOAuthLinks::UpstreamOAuthProviderId,
+                ))
+                .eq(Uuid::from(provider.id))
+            }))
+            .build(PostgresQueryBuilder);
+
+        let arguments = map_values(values);
+
+        let count: i64 = sqlx::query_scalar_with(&sql, arguments)
+            .traced()
+            .fetch_one(&mut *self.conn)
+            .await?;
+
+        count
+            .try_into()
+            .map_err(DatabaseError::to_invalid_operation)
     }
 }

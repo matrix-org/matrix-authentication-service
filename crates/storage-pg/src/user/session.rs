@@ -17,7 +17,7 @@ use chrono::{DateTime, Utc};
 use mas_data_model::{Authentication, BrowserSession, Password, UpstreamOAuthLink, User};
 use mas_storage::{user::BrowserSessionRepository, Clock, Page, Pagination};
 use rand::RngCore;
-use sea_query::{Expr, IntoColumnRef, PostgresQueryBuilder};
+use sea_query::{Expr, PostgresQueryBuilder};
 use sqlx::PgConnection;
 use ulid::Ulid;
 use uuid::Uuid;
@@ -251,7 +251,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
                 }
             }))
             .generate_pagination(
-                (UserSessions::Table, UserSessions::UserSessionId).into_column_ref(),
+                (UserSessions::Table, UserSessions::UserSessionId),
                 pagination,
             )
             .build(PostgresQueryBuilder);
