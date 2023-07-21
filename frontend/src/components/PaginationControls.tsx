@@ -37,7 +37,9 @@ const PaginationControls: React.FC<Props> = ({
       >
         Previous
       </Button>
-      <div className="text-center">{count && <>Total: {count}</>}</div>
+      <div className="text-center">
+        {count !== undefined ? <>Total: {count}</> : null}
+      </div>
       <Button
         kind="secondary"
         size="sm"

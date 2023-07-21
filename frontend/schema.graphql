@@ -832,6 +832,10 @@ type UpstreamOAuth2LinkConnection {
   A list of nodes.
   """
   nodes: [UpstreamOAuth2Link!]!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
 }
 
 """

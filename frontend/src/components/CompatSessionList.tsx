@@ -56,6 +56,7 @@ const QUERY = graphql(/* GraphQL */ `
           }
         }
 
+        totalCount
         pageInfo {
           hasNextPage
           hasPreviousPage
@@ -123,6 +124,7 @@ const CompatSessionList: React.FC<{ userId: string }> = ({ userId }) => {
       <PaginationControls
         onPrev={prevPage ? (): void => paginate(prevPage) : null}
         onNext={nextPage ? (): void => paginate(nextPage) : null}
+        count={compatSessionList.totalCount}
         disabled={pending}
       />
       {compatSessionList.edges.map((n) => (

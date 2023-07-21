@@ -57,6 +57,7 @@ const QUERY = graphql(/* GraphQL */ `
           }
         }
 
+        totalCount
         pageInfo {
           hasNextPage
           hasPreviousPage
@@ -128,6 +129,7 @@ const OAuth2SessionList: React.FC<Props> = ({ userId }) => {
       <PaginationControls
         onPrev={prevPage ? (): void => paginate(prevPage) : null}
         onNext={nextPage ? (): void => paginate(nextPage) : null}
+        count={oauth2Sessions.totalCount}
         disabled={pending}
       />
       {oauth2Sessions.edges.map((n) => (
