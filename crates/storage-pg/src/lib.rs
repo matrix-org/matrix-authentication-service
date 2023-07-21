@@ -31,7 +31,7 @@
 //! # use ulid::Ulid;
 //! # use rand::RngCore;
 //! # use mas_storage::Clock;
-//! # use mas_storage_pg::{DatabaseError, ExecuteExt, LookupResultExt};
+//! # use mas_storage_pg::{DatabaseError, ExecuteExt};
 //! # use sqlx::PgConnection;
 //! # use uuid::Uuid;
 //! #
@@ -103,9 +103,8 @@
 //!         )
 //!         .bind(Uuid::from(id))
 //!         .traced()
-//!         .fetch_one(&mut *self.conn)
-//!         .await
-//!         .to_option()?;
+//!         .fetch_optional(&mut *self.conn)
+//!         .await?;
 //!
 //!         let Some(res) = res else { return Ok(None) };
 //!
@@ -160,7 +159,7 @@
 //!    the span.
 //!  - The IDs are stored as [`Uuid`] in PostgreSQL, so conversions are required
 //!  - "Not found" errors are handled by returning `Ok(None)` instead of an
-//!    error. The [`LookupResultExt::to_option`] method helps to do that.
+//!    error.
 //!
 //! [`Ulid`]: ulid::Ulid
 //! [`Uuid`]: uuid::Uuid
