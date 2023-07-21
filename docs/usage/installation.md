@@ -2,7 +2,7 @@
 
 ## Requirements
 
- - A PostgreSQL database
+ - A PostgreSQL 13+ database
  - Either:
    - A [Rust and Cargo toolchain](https://www.rust-lang.org/learn/get-started) (recommended for development),
    - [Node.js and npm](https://nodejs.org/) and
