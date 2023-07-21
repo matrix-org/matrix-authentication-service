@@ -16,16 +16,21 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mas_data_model::{UpstreamOAuthProvider, UpstreamOAuthProviderClaimsImports};
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
-use mas_storage::{upstream_oauth2::UpstreamOAuthProviderRepository, Clock, Page, Pagination};
+use mas_storage::{
+    upstream_oauth2::{UpstreamOAuthProviderFilter, UpstreamOAuthProviderRepository},
+    Clock, Page, Pagination,
+};
 use oauth2_types::scope::Scope;
 use rand::RngCore;
-use sqlx::{types::Json, PgConnection, QueryBuilder};
+use sea_query::{enum_def, Expr, IntoColumnRef, PostgresQueryBuilder, Query};
+use sqlx::{types::Json, PgConnection};
 use tracing::{info_span, Instrument};
 use ulid::Ulid;
 use uuid::Uuid;
 
 use crate::{
-    pagination::QueryBuilderExt, tracing::ExecuteExt, DatabaseError, DatabaseInconsistencyError,
+    iden::UpstreamOAuthProviders, pagination::QueryBuilderExt, sea_query_sqlx::map_values,
+    tracing::ExecuteExt, DatabaseError, DatabaseInconsistencyError,
 };
 
 /// An implementation of [`UpstreamOAuthProviderRepository`] for a PostgreSQL
@@ -43,6 +48,7 @@ impl<'c> PgUpstreamOAuthProviderRepository<'c> {
 }
 
 #[derive(sqlx::FromRow)]
+#[enum_def]
 struct ProviderLookup {
     upstream_oauth_provider_id: Uuid,
     issuer: String,
@@ -210,6 +216,72 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
     }
 
     #[tracing::instrument(
+        name = "db.upstream_oauth_provider.delete_by_id",
+        skip_all,
+        fields(
+            db.statement,
+            upstream_oauth_provider.id = %id,
+        ),
+        err,
+    )]
+    async fn delete_by_id(&mut self, id: Ulid) -> Result<(), Self::Error> {
+        // Delete the authorization sessions first, as they have a foreign key
+        // constraint on the links and the providers.
+        {
+            let span = info_span!(
+                "db.oauth2_client.delete_by_id.authorization_sessions",
+                upstream_oauth_provider.id = %id,
+                db.statement = tracing::field::Empty,
+            );
+            sqlx::query!(
+                r#"
+                    DELETE FROM upstream_oauth_authorization_sessions
+                    WHERE upstream_oauth_provider_id = $1
+                "#,
+                Uuid::from(id),
+            )
+            .record(&span)
+            .execute(&mut *self.conn)
+            .instrument(span)
+            .await?;
+        }
+
+        // Delete the links next, as they have a foreign key constraint on the
+        // providers.
+        {
+            let span = info_span!(
+                "db.oauth2_client.delete_by_id.links",
+                upstream_oauth_provider.id = %id,
+                db.statement = tracing::field::Empty,
+            );
+            sqlx::query!(
+                r#"
+                    DELETE FROM upstream_oauth_links
+                    WHERE upstream_oauth_provider_id = $1
+                "#,
+                Uuid::from(id),
+            )
+            .record(&span)
+            .execute(&mut *self.conn)
+            .instrument(span)
+            .await?;
+        }
+
+        let res = sqlx::query!(
+            r#"
+                DELETE FROM upstream_oauth_providers
+                WHERE upstream_oauth_provider_id = $1
+            "#,
+            Uuid::from(id),
+        )
+        .traced()
+        .execute(&mut *self.conn)
+        .await?;
+
+        DatabaseError::ensure_affected_rows(&res, 1)
+    }
+
+    #[tracing::instrument(
         name = "db.upstream_oauth_provider.add",
         skip_all,
         fields(
@@ -288,110 +360,139 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
     }
 
     #[tracing::instrument(
-        name = "db.upstream_oauth_provider.delete_by_id",
-        skip_all,
-        fields(
-            db.statement,
-            upstream_oauth_provider.id = %id,
-        ),
-        err,
-    )]
-    async fn delete_by_id(&mut self, id: Ulid) -> Result<(), Self::Error> {
-        // Delete the authorization sessions first, as they have a foreign key
-        // constraint on the links and the providers.
-        {
-            let span = info_span!(
-                "db.oauth2_client.delete_by_id.authorization_sessions",
-                upstream_oauth_provider.id = %id,
-                db.statement = tracing::field::Empty,
-            );
-            sqlx::query!(
-                r#"
-                    DELETE FROM upstream_oauth_authorization_sessions
-                    WHERE upstream_oauth_provider_id = $1
-                "#,
-                Uuid::from(id),
-            )
-            .record(&span)
-            .execute(&mut *self.conn)
-            .instrument(span)
-            .await?;
-        }
-
-        // Delete the links next, as they have a foreign key constraint on the
-        // providers.
-        {
-            let span = info_span!(
-                "db.oauth2_client.delete_by_id.links",
-                upstream_oauth_provider.id = %id,
-                db.statement = tracing::field::Empty,
-            );
-            sqlx::query!(
-                r#"
-                    DELETE FROM upstream_oauth_links
-                    WHERE upstream_oauth_provider_id = $1
-                "#,
-                Uuid::from(id),
-            )
-            .record(&span)
-            .execute(&mut *self.conn)
-            .instrument(span)
-            .await?;
-        }
-
-        let res = sqlx::query!(
-            r#"
-                DELETE FROM upstream_oauth_providers
-                WHERE upstream_oauth_provider_id = $1
-            "#,
-            Uuid::from(id),
-        )
-        .traced()
-        .execute(&mut *self.conn)
-        .await?;
-
-        DatabaseError::ensure_affected_rows(&res, 1)
-    }
-
-    #[tracing::instrument(
-        name = "db.upstream_oauth_provider.list_paginated",
+        name = "db.upstream_oauth_provider.list",
         skip_all,
         fields(
             db.statement,
         ),
         err,
     )]
-    async fn list_paginated(
+    async fn list(
         &mut self,
+        _filter: UpstreamOAuthProviderFilter<'_>,
         pagination: Pagination,
     ) -> Result<Page<UpstreamOAuthProvider>, Self::Error> {
-        let mut query = QueryBuilder::new(
-            r#"
-                SELECT
-                    upstream_oauth_provider_id,
-                    issuer,
-                    scope,
-                    client_id,
-                    encrypted_client_secret,
-                    token_endpoint_signing_alg,
-                    token_endpoint_auth_method,
-                    created_at,
-                    claims_imports
-                FROM upstream_oauth_providers
-                WHERE 1 = 1
-            "#,
-        );
+        // XXX: the filter is currently ignored, as it does not have any fields
+        let (sql, values) = Query::select()
+            .expr_as(
+                Expr::col((
+                    UpstreamOAuthProviders::Table,
+                    UpstreamOAuthProviders::UpstreamOAuthProviderId,
+                )),
+                ProviderLookupIden::UpstreamOauthProviderId,
+            )
+            .expr_as(
+                Expr::col((
+                    UpstreamOAuthProviders::Table,
+                    UpstreamOAuthProviders::Issuer,
+                )),
+                ProviderLookupIden::Issuer,
+            )
+            .expr_as(
+                Expr::col((UpstreamOAuthProviders::Table, UpstreamOAuthProviders::Scope)),
+                ProviderLookupIden::Scope,
+            )
+            .expr_as(
+                Expr::col((
+                    UpstreamOAuthProviders::Table,
+                    UpstreamOAuthProviders::ClientId,
+                )),
+                ProviderLookupIden::ClientId,
+            )
+            .expr_as(
+                Expr::col((
+                    UpstreamOAuthProviders::Table,
+                    UpstreamOAuthProviders::EncryptedClientSecret,
+                )),
+                ProviderLookupIden::EncryptedClientSecret,
+            )
+            .expr_as(
+                Expr::col((
+                    UpstreamOAuthProviders::Table,
+                    UpstreamOAuthProviders::TokenEndpointSigningAlg,
+                )),
+                ProviderLookupIden::TokenEndpointSigningAlg,
+            )
+            .expr_as(
+                Expr::col((
+                    UpstreamOAuthProviders::Table,
+                    UpstreamOAuthProviders::TokenEndpointAuthMethod,
+                )),
+                ProviderLookupIden::TokenEndpointAuthMethod,
+            )
+            .expr_as(
+                Expr::col((
+                    UpstreamOAuthProviders::Table,
+                    UpstreamOAuthProviders::CreatedAt,
+                )),
+                ProviderLookupIden::CreatedAt,
+            )
+            .expr_as(
+                Expr::col((
+                    UpstreamOAuthProviders::Table,
+                    UpstreamOAuthProviders::ClaimsImports,
+                )),
+                ProviderLookupIden::ClaimsImports,
+            )
+            .from(UpstreamOAuthProviders::Table)
+            .generate_pagination(
+                (
+                    UpstreamOAuthProviders::Table,
+                    UpstreamOAuthProviders::UpstreamOAuthProviderId,
+                )
+                    .into_column_ref(),
+                pagination,
+            )
+            .build(PostgresQueryBuilder);
 
-        query.generate_pagination("upstream_oauth_provider_id", pagination);
+        let arguments = map_values(values);
 
-        let edges: Vec<ProviderLookup> = query
-            .build_query_as()
+        let edges: Vec<ProviderLookup> = sqlx::query_as_with(&sql, arguments)
             .traced()
             .fetch_all(&mut *self.conn)
             .await?;
 
-        let page = pagination.process(edges).try_map(TryInto::try_into)?;
-        Ok(page)
+        let page = pagination
+            .process(edges)
+            .try_map(UpstreamOAuthProvider::try_from)?;
+
+        return Ok(page);
+    }
+
+    #[tracing::instrument(
+        name = "db.upstream_oauth_provider.count",
+        skip_all,
+        fields(
+            db.statement,
+        ),
+        err,
+    )]
+    async fn count(
+        &mut self,
+        _filter: UpstreamOAuthProviderFilter<'_>,
+    ) -> Result<usize, Self::Error> {
+        // XXX: the filter is currently ignored, as it does not have any fields
+        let (sql, values) = Query::select()
+            .expr(
+                Expr::col((
+                    UpstreamOAuthProviders::Table,
+                    UpstreamOAuthProviders::UpstreamOAuthProviderId,
+                ))
+                .count(),
+            )
+            .from(UpstreamOAuthProviders::Table)
+            .build(PostgresQueryBuilder);
+
+        let arguments = map_values(values);
+
+        let count: i64 = sqlx::query_scalar_with(&sql, arguments)
+            .traced()
+            .fetch_one(&mut *self.conn)
+            .await?;
+
+        count
+            .try_into()
+            .map_err(DatabaseError::to_invalid_operation)
     }
 
     #[tracing::instrument(

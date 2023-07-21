@@ -1938,6 +1938,17 @@ export default {
             },
             args: [],
           },
+          {
+            name: "totalCount",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
         ],
         interfaces: [],
       },

@@ -26,19 +26,14 @@ use mas_storage::{
 };
 
 use super::{
-    compat_sessions::CompatSsoLogin, BrowserSession, Cursor, NodeCursor, NodeType, OAuth2Session,
-    UpstreamOAuth2Link,
+    browser_sessions::BrowserSessionState,
+    compat_sessions::{CompatSessionState, CompatSessionType, CompatSsoLogin},
+    matrix::MatrixUser,
+    oauth::OAuth2SessionState,
+    BrowserSession, CompatSession, Cursor, NodeCursor, NodeType, OAuth2Session,
+    PreloadedTotalCount, UpstreamOAuth2Link,
 };
-use crate::{
-    model::{
-        browser_sessions::BrowserSessionState,
-        compat_sessions::{CompatSessionState, CompatSessionType},
-        matrix::MatrixUser,
-        oauth::OAuth2SessionState,
-        CompatSession,
-    },
-    state::ContextExt,
-};
+use crate::state::ContextExt;
 
 #[derive(Description)]
 /// A user is an individual's account.
@@ -508,17 +503,6 @@ impl User {
             },
         )
         .await
-    }
-}
-
-pub struct PreloadedTotalCount(Option<usize>);
-
-#[Object]
-impl PreloadedTotalCount {
-    /// Identifies the total count of items in the connection.
-    async fn total_count(&self) -> Result<usize, async_graphql::Error> {
-        self.0
-            .ok_or_else(|| async_graphql::Error::new("total count not preloaded"))
     }
 }
 

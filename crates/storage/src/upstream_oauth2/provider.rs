@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::marker::PhantomData;
+
 use async_trait::async_trait;
 use mas_data_model::{UpstreamOAuthProvider, UpstreamOAuthProviderClaimsImports};
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
@@ -20,6 +22,20 @@ use rand_core::RngCore;
 use ulid::Ulid;
 
 use crate::{pagination::Page, repository_impl, Clock, Pagination};
+
+/// Filter parameters for listing upstream OAuth 2.0 providers
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub struct UpstreamOAuthProviderFilter<'a> {
+    _lifetime: PhantomData<&'a ()>,
+}
+
+impl<'a> UpstreamOAuthProviderFilter<'a> {
+    /// Create a new [`UpstreamOAuthProviderFilter`] with default values
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
 
 /// An [`UpstreamOAuthProviderRepository`] helps interacting with
 /// [`UpstreamOAuthProvider`] saved in the storage backend
@@ -137,19 +153,35 @@ pub trait UpstreamOAuthProviderRepository: Send + Sync {
         claims_imports: UpstreamOAuthProviderClaimsImports,
     ) -> Result<UpstreamOAuthProvider, Self::Error>;
 
-    /// Get a paginated list of upstream OAuth providers
+    /// List [`UpstreamOAuthProvider`] with the given filter and pagination
     ///
     /// # Parameters
     ///
+    /// * `filter`: The filter to apply
     /// * `pagination`: The pagination parameters
     ///
     /// # Errors
     ///
     /// Returns [`Self::Error`] if the underlying repository fails
-    async fn list_paginated(
+    async fn list(
         &mut self,
+        filter: UpstreamOAuthProviderFilter<'_>,
         pagination: Pagination,
     ) -> Result<Page<UpstreamOAuthProvider>, Self::Error>;
+
+    /// Count the number of [`UpstreamOAuthProvider`] with the given filter
+    ///
+    /// # Parameters
+    ///
+    /// * `filter`: The filter to apply
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn count(
+        &mut self,
+        filter: UpstreamOAuthProviderFilter<'_>,
+    ) -> Result<usize, Self::Error>;
 
     /// Get all upstream OAuth providers
     ///
@@ -192,10 +224,16 @@ repository_impl!(UpstreamOAuthProviderRepository:
 
     async fn delete_by_id(&mut self, id: Ulid) -> Result<(), Self::Error>;
 
-    async fn list_paginated(
+    async fn list(
         &mut self,
+        filter: UpstreamOAuthProviderFilter<'_>,
         pagination: Pagination
     ) -> Result<Page<UpstreamOAuthProvider>, Self::Error>;
+
+    async fn count(
+        &mut self,
+        filter: UpstreamOAuthProviderFilter<'_>
+    ) -> Result<usize, Self::Error>;
 
     async fn all(&mut self) -> Result<Vec<UpstreamOAuthProvider>, Self::Error>;
 );

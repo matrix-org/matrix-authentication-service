@@ -31,8 +31,8 @@ mod tests {
     use mas_storage::{
         clock::MockClock,
         upstream_oauth2::{
-            UpstreamOAuthLinkRepository, UpstreamOAuthProviderRepository,
-            UpstreamOAuthSessionRepository,
+            UpstreamOAuthLinkRepository, UpstreamOAuthProviderFilter,
+            UpstreamOAuthProviderRepository, UpstreamOAuthSessionRepository,
         },
         user::UserRepository,
         Pagination, RepositoryAccess,
@@ -208,6 +208,14 @@ mod tests {
         let clock = MockClock::default();
         let mut repo = PgRepository::from_pool(&pool).await.unwrap();
 
+        let filter = UpstreamOAuthProviderFilter::new();
+
+        // Count the number of providers before we start
+        assert_eq!(
+            repo.upstream_oauth_provider().count(filter).await.unwrap(),
+            0
+        );
+
         let mut ids = Vec::with_capacity(20);
         // Create 20 providers
         for idx in 0..20 {
@@ -231,10 +239,16 @@ mod tests {
             clock.advance(Duration::seconds(10));
         }
 
+        // Now we have 20 providers
+        assert_eq!(
+            repo.upstream_oauth_provider().count(filter).await.unwrap(),
+            20
+        );
+
         // Lookup the first 10 items
         let page = repo
             .upstream_oauth_provider()
-            .list_paginated(Pagination::first(10))
+            .list(filter, Pagination::first(10))
             .await
             .unwrap();
 
@@ -246,7 +260,7 @@ mod tests {
         // Lookup the next 10 items
         let page = repo
             .upstream_oauth_provider()
-            .list_paginated(Pagination::first(10).after(ids[9]))
+            .list(filter, Pagination::first(10).after(ids[9]))
             .await
             .unwrap();
 
@@ -258,7 +272,7 @@ mod tests {
         // Lookup the last 10 items
         let page = repo
             .upstream_oauth_provider()
-            .list_paginated(Pagination::last(10))
+            .list(filter, Pagination::last(10))
             .await
             .unwrap();
 
@@ -270,7 +284,7 @@ mod tests {
         // Lookup the previous 10 items
         let page = repo
             .upstream_oauth_provider()
-            .list_paginated(Pagination::last(10).before(ids[10]))
+            .list(filter, Pagination::last(10).before(ids[10]))
             .await
             .unwrap();
 
@@ -282,7 +296,7 @@ mod tests {
         // Lookup 10 items between two IDs
         let page = repo
             .upstream_oauth_provider()
-            .list_paginated(Pagination::first(10).after(ids[5]).before(ids[8]))
+            .list(filter, Pagination::first(10).after(ids[5]).before(ids[8]))
             .await
             .unwrap();
 

@@ -16,10 +16,13 @@ use async_graphql::{
     connection::{query, Connection, Edge, OpaqueCursor},
     Context, Object, ID,
 };
-use mas_storage::Pagination;
+use mas_storage::{upstream_oauth2::UpstreamOAuthProviderFilter, Pagination, RepositoryAccess};
 
 use crate::{
-    model::{Cursor, NodeCursor, NodeType, UpstreamOAuth2Link, UpstreamOAuth2Provider},
+    model::{
+        Cursor, NodeCursor, NodeType, PreloadedTotalCount, UpstreamOAuth2Link,
+        UpstreamOAuth2Provider,
+    },
     state::ContextExt,
 };
 
@@ -78,7 +81,8 @@ impl UpstreamOAuthQuery {
         before: Option<String>,
         #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
         #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
-    ) -> Result<Connection<Cursor, UpstreamOAuth2Provider>, async_graphql::Error> {
+    ) -> Result<Connection<Cursor, UpstreamOAuth2Provider, PreloadedTotalCount>, async_graphql::Error>
+    {
         let state = ctx.state();
         let mut repo = state.repository().await?;
 
@@ -100,14 +104,27 @@ impl UpstreamOAuthQuery {
                     .transpose()?;
                 let pagination = Pagination::try_new(before_id, after_id, first, last)?;
 
+                let filter = UpstreamOAuthProviderFilter::new();
+
                 let page = repo
                     .upstream_oauth_provider()
-                    .list_paginated(pagination)
+                    .list(filter, pagination)
                     .await?;
+
+                // Preload the total count if requested
+                let count = if ctx.look_ahead().field("totalCount").exists() {
+                    Some(repo.upstream_oauth_provider().count(filter).await?)
+                } else {
+                    None
+                };
 
                 repo.cancel().await?;
 
-                let mut connection = Connection::new(page.has_previous_page, page.has_next_page);
+                let mut connection = Connection::with_additional_fields(
+                    page.has_previous_page,
+                    page.has_next_page,
+                    PreloadedTotalCount(count),
+                );
                 connection.edges.extend(page.edges.into_iter().map(|p| {
                     Edge::new(
                         OpaqueCursor(NodeCursor(NodeType::UpstreamOAuth2Provider, p.id)),

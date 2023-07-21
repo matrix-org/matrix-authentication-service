@@ -880,6 +880,10 @@ type UpstreamOAuth2ProviderConnection {
   A list of nodes.
   """
   nodes: [UpstreamOAuth2Provider!]!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
 }
 
 """

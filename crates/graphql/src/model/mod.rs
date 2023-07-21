@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use async_graphql::Interface;
+use async_graphql::{Interface, Object};
 use chrono::{DateTime, Utc};
 
 mod browser_sessions;
@@ -51,4 +51,15 @@ pub enum CreationEvent {
     UpstreamOAuth2Provider(Box<UpstreamOAuth2Provider>),
     UpstreamOAuth2Link(Box<UpstreamOAuth2Link>),
     OAuth2Session(Box<OAuth2Session>),
+}
+
+pub struct PreloadedTotalCount(pub Option<usize>);
+
+#[Object]
+impl PreloadedTotalCount {
+    /// Identifies the total count of items in the connection.
+    async fn total_count(&self) -> Result<usize, async_graphql::Error> {
+        self.0
+            .ok_or_else(|| async_graphql::Error::new("total count not preloaded"))
+    }
 }
