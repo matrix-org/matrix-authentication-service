@@ -636,6 +636,8 @@ export type UpstreamOAuth2LinkConnection = {
   nodes: Array<UpstreamOAuth2Link>;
   /** Information to aid in pagination. */
   pageInfo: PageInfo;
+  /** Identifies the total count of items in the connection. */
+  totalCount: Scalars["Int"]["output"];
 };
 
 /** An edge in a connection. */
@@ -1000,6 +1002,7 @@ export type CompatSessionListQuery = {
     id: string;
     compatSessions: {
       __typename?: "CompatSessionConnection";
+      totalCount: number;
       edges: Array<{
         __typename?: "CompatSessionEdge";
         node: { __typename?: "CompatSession"; id: string } & {
@@ -1068,6 +1071,7 @@ export type OAuth2SessionListQueryQuery = {
     id: string;
     oauth2Sessions: {
       __typename?: "Oauth2SessionConnection";
+      totalCount: number;
       edges: Array<{
         __typename?: "Oauth2SessionEdge";
         cursor: string;
@@ -2176,6 +2180,10 @@ export const CompatSessionListDocument = {
                       },
                       {
                         kind: "Field",
+                        name: { kind: "Name", value: "totalCount" },
+                      },
+                      {
+                        kind: "Field",
                         name: { kind: "Name", value: "pageInfo" },
                         selectionSet: {
                           kind: "SelectionSet",
@@ -2501,6 +2509,10 @@ export const OAuth2SessionListQueryDocument = {
                             },
                           ],
                         },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "totalCount" },
                       },
                       {
                         kind: "Field",
