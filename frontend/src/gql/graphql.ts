@@ -668,6 +668,8 @@ export type UpstreamOAuth2ProviderConnection = {
   nodes: Array<UpstreamOAuth2Provider>;
   /** Information to aid in pagination. */
   pageInfo: PageInfo;
+  /** Identifies the total count of items in the connection. */
+  totalCount: Scalars["Int"]["output"];
 };
 
 /** An edge in a connection. */

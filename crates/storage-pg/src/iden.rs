@@ -77,3 +77,19 @@ pub enum OAuth2Sessions {
     CreatedAt,
     FinishedAt,
 }
+
+#[derive(sea_query::Iden)]
+#[iden = "upstream_oauth_providers"]
+pub enum UpstreamOAuthProviders {
+    Table,
+    #[iden = "upstream_oauth_provider_id"]
+    UpstreamOAuthProviderId,
+    Issuer,
+    Scope,
+    ClientId,
+    EncryptedClientSecret,
+    TokenEndpointSigningAlg,
+    TokenEndpointAuthMethod,
+    CreatedAt,
+    ClaimsImports,
+}
