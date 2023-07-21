@@ -2,7 +2,8 @@
 
 ## Running
 
-Once the configuration is done, one should run the database migrations by running
+Once the configuration is done, one should run the database migrations
+(database schema upgrade, also for setup) by running
 
 ```sh
 mas-cli database migrate
