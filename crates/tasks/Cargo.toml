@@ -10,7 +10,7 @@ anyhow = "1.0.72"
 apalis-core = { version = "0.4.2", features = ["extensions", "tokio-comp", "storage"] }
 apalis-cron = "0.4.2"
 async-stream = "0.3.5"
-async-trait = "0.1.71"
+async-trait = "0.1.72"
 chrono = "0.4.26"
 event-listener = "2.5.3"
 futures-lite = "1.13.0"
