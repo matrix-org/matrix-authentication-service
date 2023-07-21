@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use anyhow::Context as _;
-use async_graphql::{Context, Description, Object, ID};
+use async_graphql::{Context, Description, Enum, Object, ID};
 use chrono::{DateTime, Utc};
 use mas_data_model::SessionState;
 use mas_storage::{oauth2::OAuth2ClientRepository, user::BrowserSessionRepository};
@@ -23,6 +23,16 @@ use url::Url;
 
 use super::{BrowserSession, NodeType, User};
 use crate::state::ContextExt;
+
+/// The state of an OAuth 2.0 session.
+#[derive(Enum, Copy, Clone, Eq, PartialEq)]
+pub enum OAuth2SessionState {
+    /// The session is active.
+    Active,
+
+    /// The session is no longer active.
+    Finished,
+}
 
 /// An OAuth 2.0 session represents a client session which used the OAuth APIs
 /// to login.

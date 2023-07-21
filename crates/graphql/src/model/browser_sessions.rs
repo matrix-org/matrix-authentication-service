@@ -19,10 +19,6 @@ use mas_storage::{user::BrowserSessionRepository, RepositoryAccess};
 use super::{NodeType, User};
 use crate::state::ContextExt;
 
-/// A browser session represents a logged in user in a browser.
-#[derive(Description)]
-pub struct BrowserSession(pub mas_data_model::BrowserSession);
-
 /// The state of a browser session.
 #[derive(Enum, Copy, Clone, Eq, PartialEq)]
 pub enum BrowserSessionState {
@@ -32,6 +28,10 @@ pub enum BrowserSessionState {
     /// The session is no longer active.
     Finished,
 }
+
+/// A browser session represents a logged in user in a browser.
+#[derive(Description)]
+pub struct BrowserSession(pub mas_data_model::BrowserSession);
 
 impl From<mas_data_model::BrowserSession> for BrowserSession {
     fn from(v: mas_data_model::BrowserSession) -> Self {

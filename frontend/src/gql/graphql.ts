@@ -425,6 +425,8 @@ export type Oauth2SessionConnection = {
   nodes: Array<Oauth2Session>;
   /** Information to aid in pagination. */
   pageInfo: PageInfo;
+  /** Identifies the total count of items in the connection. */
+  totalCount: Scalars["Int"]["output"];
 };
 
 /** An edge in a connection. */
@@ -435,6 +437,14 @@ export type Oauth2SessionEdge = {
   /** The item at the end of the edge */
   node: Oauth2Session;
 };
+
+/** The state of an OAuth 2.0 session. */
+export enum Oauth2SessionState {
+  /** The session is active. */
+  Active = "ACTIVE",
+  /** The session is no longer active. */
+  Finished = "FINISHED",
+}
 
 /** Information about pagination in a connection */
 export type PageInfo = {
@@ -734,8 +744,10 @@ export type UserEmailsArgs = {
 export type UserOauth2SessionsArgs = {
   after?: InputMaybe<Scalars["String"]["input"]>;
   before?: InputMaybe<Scalars["String"]["input"]>;
+  client?: InputMaybe<Scalars["ID"]["input"]>;
   first?: InputMaybe<Scalars["Int"]["input"]>;
   last?: InputMaybe<Scalars["Int"]["input"]>;
+  state?: InputMaybe<Oauth2SessionState>;
 };
 
 /** A user is an individual's account. */

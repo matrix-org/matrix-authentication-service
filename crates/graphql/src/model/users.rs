@@ -19,7 +19,7 @@ use async_graphql::{
 use chrono::{DateTime, Utc};
 use mas_storage::{
     compat::{CompatSessionFilter, CompatSsoLoginFilter, CompatSsoLoginRepository},
-    oauth2::OAuth2SessionRepository,
+    oauth2::{OAuth2SessionFilter, OAuth2SessionRepository},
     upstream_oauth2::UpstreamOAuthLinkRepository,
     user::{BrowserSessionFilter, BrowserSessionRepository, UserEmailFilter, UserEmailRepository},
     Pagination, RepositoryAccess,
@@ -34,6 +34,7 @@ use crate::{
         browser_sessions::BrowserSessionState,
         compat_sessions::{CompatSessionState, CompatSessionType},
         matrix::MatrixUser,
+        oauth::OAuth2SessionState,
         CompatSession,
     },
     state::ContextExt,
@@ -365,9 +366,15 @@ impl User {
     }
 
     /// Get the list of OAuth 2.0 sessions, chronologically sorted
+    #[allow(clippy::too_many_arguments)]
     async fn oauth2_sessions(
         &self,
         ctx: &Context<'_>,
+
+        #[graphql(name = "state", desc = "List only sessions in the given state.")]
+        state_param: Option<OAuth2SessionState>,
+
+        #[graphql(desc = "List only sessions for the given client.")] client: Option<ID>,
 
         #[graphql(desc = "Returns the elements in the list that come after the cursor.")]
         after: Option<String>,
@@ -375,7 +382,7 @@ impl User {
         before: Option<String>,
         #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
         #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
-    ) -> Result<Connection<Cursor, OAuth2Session>, async_graphql::Error> {
+    ) -> Result<Connection<Cursor, OAuth2Session, PreloadedTotalCount>, async_graphql::Error> {
         let state = ctx.state();
         let mut repo = state.repository().await?;
 
@@ -393,14 +400,49 @@ impl User {
                     .transpose()?;
                 let pagination = Pagination::try_new(before_id, after_id, first, last)?;
 
-                let page = repo
-                    .oauth2_session()
-                    .list_paginated(&self.0, pagination)
-                    .await?;
+                let client = if let Some(id) = client {
+                    // Load the client if we're filtering by it
+                    let id = NodeType::OAuth2Client.extract_ulid(&id)?;
+                    let client = repo
+                        .oauth2_client()
+                        .lookup(id)
+                        .await?
+                        .ok_or(async_graphql::Error::new("Unknown client ID"))?;
+
+                    Some(client)
+                } else {
+                    None
+                };
+
+                let filter = OAuth2SessionFilter::new().for_user(&self.0);
+
+                let filter = match state_param {
+                    Some(OAuth2SessionState::Active) => filter.active_only(),
+                    Some(OAuth2SessionState::Finished) => filter.finished_only(),
+                    None => filter,
+                };
+
+                let filter = match client.as_ref() {
+                    Some(client) => filter.for_client(client),
+                    None => filter,
+                };
+
+                let page = repo.oauth2_session().list(filter, pagination).await?;
+
+                let count = if ctx.look_ahead().field("totalCount").exists() {
+                    Some(repo.oauth2_session().count(filter).await?)
+                } else {
+                    None
+                };
 
                 repo.cancel().await?;
 
-                let mut connection = Connection::new(page.has_previous_page, page.has_next_page);
+                let mut connection = Connection::with_additional_fields(
+                    page.has_previous_page,
+                    page.has_next_page,
+                    PreloadedTotalCount(count),
+                );
+
                 connection.edges.extend(page.edges.into_iter().map(|s| {
                     Edge::new(
                         OpaqueCursor(NodeCursor(NodeType::OAuth2Session, s.id)),

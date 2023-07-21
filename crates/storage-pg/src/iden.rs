@@ -63,3 +63,17 @@ pub enum CompatSsoLogins {
     FulfilledAt,
     ExchangedAt,
 }
+
+#[derive(sea_query::Iden)]
+#[iden = "oauth2_sessions"]
+pub enum OAuth2Sessions {
+    Table,
+    #[iden = "oauth2_session_id"]
+    OAuth2SessionId,
+    UserSessionId,
+    #[iden = "oauth2_client_id"]
+    OAuth2ClientId,
+    Scope,
+    CreatedAt,
+    FinishedAt,
+}

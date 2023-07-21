@@ -1247,6 +1247,17 @@ export default {
             },
             args: [],
           },
+          {
+            name: "totalCount",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
         ],
         interfaces: [],
       },
@@ -2205,6 +2216,13 @@ export default {
                 },
               },
               {
+                name: "client",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
                 name: "first",
                 type: {
                   kind: "SCALAR",
@@ -2213,6 +2231,13 @@ export default {
               },
               {
                 name: "last",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "state",
                 type: {
                   kind: "SCALAR",
                   name: "Any",
