@@ -16,9 +16,9 @@
   },
   "dependencies": {
     "@emotion/react": "^11.11.1",
-    "@urql/core": "^4.0.11",
+    "@urql/core": "^4.1.0",
     "@urql/devtools": "^2.0.3",
-    "@urql/exchange-graphcache": "^6.1.4",
+    "@urql/exchange-graphcache": "^6.2.0",
     "@urql/exchange-refocus": "^1.0.2",
     "@urql/exchange-request-policy": "^1.0.2",
     "@vector-im/compound-web": "https://github.com/vector-im/compound-web.git#0097cd20d33fe1c7862cfc1e6f530255bffd6279",
