@@ -19,6 +19,76 @@ use ulid::Ulid;
 
 use crate::{pagination::Page, repository_impl, Clock, Pagination};
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum UserEmailState {
+    Pending,
+    Verified,
+}
+
+impl UserEmailState {
+    /// Returns true if the filter should only return non-verified emails
+    pub fn is_pending(self) -> bool {
+        matches!(self, Self::Pending)
+    }
+
+    /// Returns true if the filter should only return verified emails
+    pub fn is_verified(self) -> bool {
+        matches!(self, Self::Verified)
+    }
+}
+
+/// Filter parameters for listing user emails
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub struct UserEmailFilter<'a> {
+    user: Option<&'a User>,
+    state: Option<UserEmailState>,
+}
+
+impl<'a> UserEmailFilter<'a> {
+    /// Create a new [`UserEmailFilter`] with default values
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Filter for emails of a specific user
+    #[must_use]
+    pub fn for_user(mut self, user: &'a User) -> Self {
+        self.user = Some(user);
+        self
+    }
+
+    /// Get the user filter
+    ///
+    /// Returns [`None`] if no user filter is set
+    #[must_use]
+    pub fn user(&self) -> Option<&User> {
+        self.user
+    }
+
+    /// Filter for emails that are verified
+    #[must_use]
+    pub fn verified_only(mut self) -> Self {
+        self.state = Some(UserEmailState::Verified);
+        self
+    }
+
+    /// Filter for emails that are not verified
+    #[must_use]
+    pub fn pending_only(mut self) -> Self {
+        self.state = Some(UserEmailState::Pending);
+        self
+    }
+
+    /// Get the state filter
+    ///
+    /// Returns [`None`] if no state filter is set
+    #[must_use]
+    pub fn state(&self) -> Option<UserEmailState> {
+        self.state
+    }
+}
+
 /// A [`UserEmailRepository`] helps interacting with [`UserEmail`] saved in the
 /// storage backend
 #[async_trait]
@@ -77,32 +147,32 @@ pub trait UserEmailRepository: Send + Sync {
     /// Returns [`Self::Error`] if the underlying repository fails
     async fn all(&mut self, user: &User) -> Result<Vec<UserEmail>, Self::Error>;
 
-    /// List [`UserEmail`] of a [`User`] with the given pagination
+    /// List [`UserEmail`] with the given filter and pagination
     ///
     /// # Parameters
     ///
-    /// * `user`: The [`User`] for whom to lookup the [`UserEmail`]
+    /// * `filter`: The filter parameters
     /// * `pagination`: The pagination parameters
     ///
     /// # Errors
     ///
     /// Returns [`Self::Error`] if the underlying repository fails
-    async fn list_paginated(
+    async fn list(
         &mut self,
-        user: &User,
+        filter: UserEmailFilter<'_>,
         pagination: Pagination,
     ) -> Result<Page<UserEmail>, Self::Error>;
 
-    /// Count the [`UserEmail`] of a [`User`]
+    /// Count the [`UserEmail`] with the given filter
     ///
     /// # Parameters
     ///
-    /// * `user`: The [`User`] for whom to count the [`UserEmail`]
+    /// * `filter`: The filter parameters
     ///
     /// # Errors
     ///
     /// Returns [`Self::Error`] if the underlying repository fails
-    async fn count(&mut self, user: &User) -> Result<usize, Self::Error>;
+    async fn count(&mut self, filter: UserEmailFilter<'_>) -> Result<usize, Self::Error>;
 
     /// Create a new [`UserEmail`] for a [`User`]
     ///
@@ -235,12 +305,12 @@ repository_impl!(UserEmailRepository:
     async fn get_primary(&mut self, user: &User) -> Result<Option<UserEmail>, Self::Error>;
 
     async fn all(&mut self, user: &User) -> Result<Vec<UserEmail>, Self::Error>;
-    async fn list_paginated(
+    async fn list(
         &mut self,
-        user: &User,
+        filter: UserEmailFilter<'_>,
         pagination: Pagination,
     ) -> Result<Page<UserEmail>, Self::Error>;
-    async fn count(&mut self, user: &User) -> Result<usize, Self::Error>;
+    async fn count(&mut self, filter: UserEmailFilter<'_>) -> Result<usize, Self::Error>;
 
     async fn add(
         &mut self,
