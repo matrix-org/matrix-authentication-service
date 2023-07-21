@@ -553,6 +553,10 @@ type Oauth2SessionConnection {
   A list of nodes.
   """
   nodes: [Oauth2Session!]!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
 }
 
 """
@@ -567,6 +571,20 @@ type Oauth2SessionEdge {
   A cursor for use in pagination
   """
   cursor: String!
+}
+
+"""
+The state of an OAuth 2.0 session.
+"""
+enum Oauth2SessionState {
+  """
+  The session is active.
+  """
+  ACTIVE
+  """
+  The session is no longer active.
+  """
+  FINISHED
 }
 
 """
@@ -947,6 +965,8 @@ type User implements Node {
   Get the list of OAuth 2.0 sessions, chronologically sorted
   """
   oauth2Sessions(
+    state: Oauth2SessionState
+    client: ID
     after: String
     before: String
     first: Int

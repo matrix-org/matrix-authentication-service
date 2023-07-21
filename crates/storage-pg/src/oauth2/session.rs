@@ -14,16 +14,24 @@
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use mas_data_model::{BrowserSession, Client, Session, SessionState, User};
-use mas_storage::{oauth2::OAuth2SessionRepository, Clock, Page, Pagination};
+use mas_data_model::{BrowserSession, Client, Session, SessionState};
+use mas_storage::{
+    oauth2::{OAuth2SessionFilter, OAuth2SessionRepository},
+    Clock, Page, Pagination,
+};
 use oauth2_types::scope::Scope;
 use rand::RngCore;
-use sqlx::{PgConnection, QueryBuilder};
+use sea_query::{enum_def, Expr, IntoColumnRef, PostgresQueryBuilder, Query};
+use sqlx::PgConnection;
 use ulid::Ulid;
 use uuid::Uuid;
 
 use crate::{
-    pagination::QueryBuilderExt, tracing::ExecuteExt, DatabaseError, DatabaseInconsistencyError,
+    iden::{OAuth2Sessions, UserSessions},
+    pagination::QueryBuilderExt,
+    sea_query_sqlx::map_values,
+    tracing::ExecuteExt,
+    DatabaseError, DatabaseInconsistencyError,
 };
 
 /// An implementation of [`OAuth2SessionRepository`] for a PostgreSQL connection
@@ -40,6 +48,7 @@ impl<'c> PgOAuth2SessionRepository<'c> {
 }
 
 #[derive(sqlx::FromRow)]
+#[enum_def]
 struct OAuthSessionLookup {
     oauth2_session_id: Uuid,
     user_session_id: Uuid,
@@ -211,45 +220,143 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
     }
 
     #[tracing::instrument(
-        name = "db.oauth2_session.list_paginated",
+        name = "db.oauth2_session.list",
         skip_all,
         fields(
             db.statement,
-            %user.id,
-            %user.username,
         ),
         err,
     )]
-    async fn list_paginated(
+    async fn list(
         &mut self,
-        user: &User,
+        filter: OAuth2SessionFilter<'_>,
         pagination: Pagination,
     ) -> Result<Page<Session>, Self::Error> {
-        let mut query = QueryBuilder::new(
-            r#"
-                SELECT oauth2_session_id
-                     , user_session_id
-                     , oauth2_client_id
-                     , scope
-                     , os.created_at
-                     , os.finished_at
-                FROM oauth2_sessions os
-                INNER JOIN user_sessions USING (user_session_id)
-            "#,
-        );
+        let (sql, values) = Query::select()
+            .expr_as(
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::OAuth2SessionId)),
+                OAuthSessionLookupIden::Oauth2SessionId,
+            )
+            .expr_as(
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::UserSessionId)),
+                OAuthSessionLookupIden::UserSessionId,
+            )
+            .expr_as(
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::OAuth2ClientId)),
+                OAuthSessionLookupIden::Oauth2ClientId,
+            )
+            .expr_as(
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::Scope)),
+                OAuthSessionLookupIden::Scope,
+            )
+            .expr_as(
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::CreatedAt)),
+                OAuthSessionLookupIden::CreatedAt,
+            )
+            .expr_as(
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::FinishedAt)),
+                OAuthSessionLookupIden::FinishedAt,
+            )
+            .from(OAuth2Sessions::Table)
+            .and_where_option(filter.user().map(|user| {
+                // Check for user ownership by querying the user_sessions table
+                // The query plan is the same as if we were joining the tables instead
+                Expr::exists(
+                    Query::select()
+                        .expr(Expr::cust("1"))
+                        .from(UserSessions::Table)
+                        .and_where(
+                            Expr::col((UserSessions::Table, UserSessions::UserId))
+                                .eq(Uuid::from(user.id)),
+                        )
+                        .and_where(
+                            Expr::col((UserSessions::Table, UserSessions::UserSessionId))
+                                .equals((OAuth2Sessions::Table, OAuth2Sessions::UserSessionId)),
+                        )
+                        .take(),
+                )
+            }))
+            .and_where_option(filter.client().map(|client| {
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::OAuth2ClientId))
+                    .eq(Uuid::from(client.id))
+            }))
+            .and_where_option(filter.state().map(|state| {
+                if state.is_active() {
+                    Expr::col((OAuth2Sessions::Table, OAuth2Sessions::FinishedAt)).is_null()
+                } else {
+                    Expr::col((OAuth2Sessions::Table, OAuth2Sessions::FinishedAt)).is_not_null()
+                }
+            }))
+            .generate_pagination(
+                (OAuth2Sessions::Table, OAuth2Sessions::OAuth2SessionId).into_column_ref(),
+                pagination,
+            )
+            .build(PostgresQueryBuilder);
 
-        query
-            .push(" WHERE user_id = ")
-            .push_bind(Uuid::from(user.id))
-            .generate_pagination("oauth2_session_id", pagination);
+        let arguments = map_values(values);
 
-        let edges: Vec<OAuthSessionLookup> = query
-            .build_query_as()
+        let edges: Vec<OAuthSessionLookup> = sqlx::query_as_with(&sql, arguments)
             .traced()
             .fetch_all(&mut *self.conn)
             .await?;
 
         let page = pagination.process(edges).try_map(Session::try_from)?;
+
         Ok(page)
+    }
+
+    #[tracing::instrument(
+        name = "db.oauth2_session.count",
+        skip_all,
+        fields(
+            db.statement,
+        ),
+        err,
+    )]
+    async fn count(&mut self, filter: OAuth2SessionFilter<'_>) -> Result<usize, Self::Error> {
+        let (sql, values) = Query::select()
+            .expr(Expr::col((OAuth2Sessions::Table, OAuth2Sessions::OAuth2SessionId)).count())
+            .from(OAuth2Sessions::Table)
+            .and_where_option(filter.user().map(|user| {
+                // Check for user ownership by querying the user_sessions table
+                // The query plan is the same as if we were joining the tables instead
+                Expr::exists(
+                    Query::select()
+                        .expr(Expr::cust("1"))
+                        .from(UserSessions::Table)
+                        .and_where(
+                            Expr::col((UserSessions::Table, UserSessions::UserId))
+                                .eq(Uuid::from(user.id)),
+                        )
+                        .and_where(
+                            Expr::col((UserSessions::Table, UserSessions::UserSessionId))
+                                .equals((OAuth2Sessions::Table, OAuth2Sessions::UserSessionId)),
+                        )
+                        .take(),
+                )
+            }))
+            .and_where_option(filter.client().map(|client| {
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::OAuth2ClientId))
+                    .eq(Uuid::from(client.id))
+            }))
+            .and_where_option(filter.state().map(|state| {
+                if state.is_active() {
+                    Expr::col((OAuth2Sessions::Table, OAuth2Sessions::FinishedAt)).is_null()
+                } else {
+                    Expr::col((OAuth2Sessions::Table, OAuth2Sessions::FinishedAt)).is_not_null()
+                }
+            }))
+            .build(PostgresQueryBuilder);
+
+        let arguments = map_values(values);
+
+        let count: i64 = sqlx::query_scalar_with(&sql, arguments)
+            .traced()
+            .fetch_one(&mut *self.conn)
+            .await?;
+
+        count
+            .try_into()
+            .map_err(DatabaseError::to_invalid_operation)
     }
 }

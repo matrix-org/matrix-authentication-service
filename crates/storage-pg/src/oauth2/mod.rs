@@ -31,7 +31,11 @@ pub use self::{
 mod tests {
     use chrono::Duration;
     use mas_data_model::AuthorizationCode;
-    use mas_storage::{clock::MockClock, Clock, Pagination, Repository};
+    use mas_storage::{
+        clock::MockClock,
+        oauth2::{OAuth2SessionFilter, OAuth2SessionRepository},
+        Clock, Pagination, Repository,
+    };
     use oauth2_types::{
         requests::{GrantType, ResponseMode},
         scope::{Scope, OPENID},
@@ -364,14 +368,279 @@ mod tests {
         assert!(session.is_valid());
         let session = repo.oauth2_session().finish(&clock, session).await.unwrap();
         assert!(!session.is_valid());
+    }
 
-        // The session should appear in the paginated list of sessions for the user
-        let sessions = repo
-            .oauth2_session()
-            .list_paginated(&user, Pagination::first(10))
+    /// Test the [`OAuth2SessionRepository::list`] and
+    /// [`OAuth2SessionRepository::count`] methods.
+    #[sqlx::test(migrator = "crate::MIGRATOR")]
+    async fn test_list_sessions(pool: PgPool) {
+        let mut rng = ChaChaRng::seed_from_u64(42);
+        let clock = MockClock::default();
+        let mut repo = PgRepository::from_pool(&pool).await.unwrap().boxed();
+
+        // Create two users and their corresponding browser sessions
+        let user1 = repo
+            .user()
+            .add(&mut rng, &clock, "alice".to_owned())
             .await
             .unwrap();
-        assert!(!sessions.has_next_page);
-        assert_eq!(sessions.edges, vec![session]);
+        let user1_session = repo
+            .browser_session()
+            .add(&mut rng, &clock, &user1)
+            .await
+            .unwrap();
+
+        let user2 = repo
+            .user()
+            .add(&mut rng, &clock, "bob".to_owned())
+            .await
+            .unwrap();
+        let user2_session = repo
+            .browser_session()
+            .add(&mut rng, &clock, &user2)
+            .await
+            .unwrap();
+
+        // Create two clients
+        let client1 = repo
+            .oauth2_client()
+            .add(
+                &mut rng,
+                &clock,
+                vec!["https://first.example.com/redirect".parse().unwrap()],
+                None,
+                vec![GrantType::AuthorizationCode],
+                Vec::new(), // TODO: contacts are not yet saved
+                // vec!["contact@first.example.com".to_owned()],
+                Some("First client".to_owned()),
+                Some("https://first.example.com/logo.png".parse().unwrap()),
+                Some("https://first.example.com/".parse().unwrap()),
+                Some("https://first.example.com/policy".parse().unwrap()),
+                Some("https://first.example.com/tos".parse().unwrap()),
+                Some("https://first.example.com/jwks.json".parse().unwrap()),
+                None,
+                None,
+                None,
+                None,
+                None,
+                Some("https://first.example.com/login".parse().unwrap()),
+            )
+            .await
+            .unwrap();
+        let client2 = repo
+            .oauth2_client()
+            .add(
+                &mut rng,
+                &clock,
+                vec!["https://second.example.com/redirect".parse().unwrap()],
+                None,
+                vec![GrantType::AuthorizationCode],
+                Vec::new(), // TODO: contacts are not yet saved
+                // vec!["contact@second.example.com".to_owned()],
+                Some("Second client".to_owned()),
+                Some("https://second.example.com/logo.png".parse().unwrap()),
+                Some("https://second.example.com/".parse().unwrap()),
+                Some("https://second.example.com/policy".parse().unwrap()),
+                Some("https://second.example.com/tos".parse().unwrap()),
+                Some("https://second.example.com/jwks.json".parse().unwrap()),
+                None,
+                None,
+                None,
+                None,
+                None,
+                Some("https://second.example.com/login".parse().unwrap()),
+            )
+            .await
+            .unwrap();
+
+        let scope = Scope::from_iter([OPENID]);
+
+        // Create two sessions for each user, one with each client
+        // We're moving the clock forward by 1 minute between each session to ensure
+        // we're getting consistent ordering in lists.
+        let session11 = repo
+            .oauth2_session()
+            .add(&mut rng, &clock, &client1, &user1_session, scope.clone())
+            .await
+            .unwrap();
+        clock.advance(Duration::minutes(1));
+
+        let session12 = repo
+            .oauth2_session()
+            .add(&mut rng, &clock, &client1, &user2_session, scope.clone())
+            .await
+            .unwrap();
+        clock.advance(Duration::minutes(1));
+
+        let session21 = repo
+            .oauth2_session()
+            .add(&mut rng, &clock, &client2, &user1_session, scope.clone())
+            .await
+            .unwrap();
+        clock.advance(Duration::minutes(1));
+
+        let session22 = repo
+            .oauth2_session()
+            .add(&mut rng, &clock, &client2, &user2_session, scope.clone())
+            .await
+            .unwrap();
+        clock.advance(Duration::minutes(1));
+
+        // We're also finishing two of the sessions
+        let session11 = repo
+            .oauth2_session()
+            .finish(&clock, session11)
+            .await
+            .unwrap();
+        let session22 = repo
+            .oauth2_session()
+            .finish(&clock, session22)
+            .await
+            .unwrap();
+
+        let pagination = Pagination::first(10);
+
+        // First, list all the sessions
+        let filter = OAuth2SessionFilter::new();
+        let list = repo
+            .oauth2_session()
+            .list(filter, pagination)
+            .await
+            .unwrap();
+        assert!(!list.has_next_page);
+        assert_eq!(list.edges.len(), 4);
+        assert_eq!(list.edges[0], session11);
+        assert_eq!(list.edges[1], session12);
+        assert_eq!(list.edges[2], session21);
+        assert_eq!(list.edges[3], session22);
+
+        assert_eq!(repo.oauth2_session().count(filter).await.unwrap(), 4);
+
+        // Now filter for only one user
+        let filter = OAuth2SessionFilter::new().for_user(&user1);
+        let list = repo
+            .oauth2_session()
+            .list(filter, pagination)
+            .await
+            .unwrap();
+        assert!(!list.has_next_page);
+        assert_eq!(list.edges.len(), 2);
+        assert_eq!(list.edges[0], session11);
+        assert_eq!(list.edges[1], session21);
+
+        assert_eq!(repo.oauth2_session().count(filter).await.unwrap(), 2);
+
+        // Filter for only one client
+        let filter = OAuth2SessionFilter::new().for_client(&client1);
+        let list = repo
+            .oauth2_session()
+            .list(filter, pagination)
+            .await
+            .unwrap();
+        assert!(!list.has_next_page);
+        assert_eq!(list.edges.len(), 2);
+        assert_eq!(list.edges[0], session11);
+        assert_eq!(list.edges[1], session12);
+
+        assert_eq!(repo.oauth2_session().count(filter).await.unwrap(), 2);
+
+        // Filter for both a user and a client
+        let filter = OAuth2SessionFilter::new()
+            .for_user(&user2)
+            .for_client(&client2);
+        let list = repo
+            .oauth2_session()
+            .list(filter, pagination)
+            .await
+            .unwrap();
+        assert!(!list.has_next_page);
+        assert_eq!(list.edges.len(), 1);
+        assert_eq!(list.edges[0], session22);
+
+        assert_eq!(repo.oauth2_session().count(filter).await.unwrap(), 1);
+
+        // Filter for active sessions
+        let filter = OAuth2SessionFilter::new().active_only();
+        let list = repo
+            .oauth2_session()
+            .list(filter, pagination)
+            .await
+            .unwrap();
+        assert!(!list.has_next_page);
+        assert_eq!(list.edges.len(), 2);
+        assert_eq!(list.edges[0], session12);
+        assert_eq!(list.edges[1], session21);
+
+        assert_eq!(repo.oauth2_session().count(filter).await.unwrap(), 2);
+
+        // Filter for finished sessions
+        let filter = OAuth2SessionFilter::new().finished_only();
+        let list = repo
+            .oauth2_session()
+            .list(filter, pagination)
+            .await
+            .unwrap();
+        assert!(!list.has_next_page);
+        assert_eq!(list.edges.len(), 2);
+        assert_eq!(list.edges[0], session11);
+        assert_eq!(list.edges[1], session22);
+
+        assert_eq!(repo.oauth2_session().count(filter).await.unwrap(), 2);
+
+        // Combine the finished filter with the user filter
+        let filter = OAuth2SessionFilter::new().finished_only().for_user(&user2);
+        let list = repo
+            .oauth2_session()
+            .list(filter, pagination)
+            .await
+            .unwrap();
+        assert!(!list.has_next_page);
+        assert_eq!(list.edges.len(), 1);
+        assert_eq!(list.edges[0], session22);
+
+        assert_eq!(repo.oauth2_session().count(filter).await.unwrap(), 1);
+
+        // Combine the finished filter with the client filter
+        let filter = OAuth2SessionFilter::new()
+            .finished_only()
+            .for_client(&client2);
+        let list = repo
+            .oauth2_session()
+            .list(filter, pagination)
+            .await
+            .unwrap();
+        assert!(!list.has_next_page);
+        assert_eq!(list.edges.len(), 1);
+        assert_eq!(list.edges[0], session22);
+
+        assert_eq!(repo.oauth2_session().count(filter).await.unwrap(), 1);
+
+        // Combine the active filter with the user filter
+        let filter = OAuth2SessionFilter::new().active_only().for_user(&user2);
+        let list = repo
+            .oauth2_session()
+            .list(filter, pagination)
+            .await
+            .unwrap();
+        assert!(!list.has_next_page);
+        assert_eq!(list.edges.len(), 1);
+        assert_eq!(list.edges[0], session12);
+
+        assert_eq!(repo.oauth2_session().count(filter).await.unwrap(), 1);
+
+        // Combine the active filter with the client filter
+        let filter = OAuth2SessionFilter::new()
+            .active_only()
+            .for_client(&client2);
+        let list = repo
+            .oauth2_session()
+            .list(filter, pagination)
+            .await
+            .unwrap();
+        assert!(!list.has_next_page);
+        assert_eq!(list.edges.len(), 1);
+        assert_eq!(list.edges[0], session21);
+
+        assert_eq!(repo.oauth2_session().count(filter).await.unwrap(), 1);
     }
 }

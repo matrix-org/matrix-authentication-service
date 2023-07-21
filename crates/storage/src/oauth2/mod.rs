@@ -22,6 +22,8 @@ mod session;
 
 pub use self::{
     access_token::OAuth2AccessTokenRepository,
-    authorization_grant::OAuth2AuthorizationGrantRepository, client::OAuth2ClientRepository,
-    refresh_token::OAuth2RefreshTokenRepository, session::OAuth2SessionRepository,
+    authorization_grant::OAuth2AuthorizationGrantRepository,
+    client::OAuth2ClientRepository,
+    refresh_token::OAuth2RefreshTokenRepository,
+    session::{OAuth2SessionFilter, OAuth2SessionRepository},
 };
