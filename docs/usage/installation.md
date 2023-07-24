@@ -4,8 +4,8 @@
 
  - A PostgreSQL 13+ database
  - Either:
-   - A [Rust and Cargo toolchain](https://www.rust-lang.org/learn/get-started) (recommended for development),
-   - [Node.js and npm](https://nodejs.org/) and
+   - A [Rust toolchain with Cargo](https://www.rust-lang.org/learn/get-started) (recommended for development),
+   - [Node.js 18 or later with npm](https://nodejs.org/) and
    - [Open Policy Agent](https://www.openpolicyagent.org/docs/latest/#1-download-opa)
  - **or** [Docker](https://www.docker.com/get-started) (or a compatible container runtime)
 
