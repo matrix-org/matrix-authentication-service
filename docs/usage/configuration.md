@@ -35,7 +35,7 @@ Note that with Docker, the config file must be mounted inside the container with
 Update the database URI in `config.yaml` to your database,
 e.g. `postgresql://postgres:postgres@localhost/postgres`
 
-See also the next paragraph for a [minimum configuration ](#minimal-configuration)
+See also the next section for a [minimal configuration](#minimal-configuration)
 
 ## Minimal configuration
 
