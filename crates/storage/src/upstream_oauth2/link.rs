@@ -145,26 +145,6 @@ pub trait UpstreamOAuthLinkRepository: Send + Sync {
         user: &User,
     ) -> Result<(), Self::Error>;
 
-    /// Get a paginated list of upstream OAuth links on a user
-    ///
-    /// # Parameters
-    ///
-    /// * `user`: The user for which to get the upstream OAuth links
-    /// * `pagination`: The pagination parameters
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Self::Error`] if the underlying repository fails
-    #[deprecated(note = "Use `list` instead")]
-    async fn list_paginated(
-        &mut self,
-        user: &User,
-        pagination: Pagination,
-    ) -> Result<Page<UpstreamOAuthLink>, Self::Error> {
-        self.list(UpstreamOAuthLinkFilter::new().for_user(user), pagination)
-            .await
-    }
-
     /// List [`UpstreamOAuthLink`] with the given filter and pagination
     ///
     /// # Parameters
