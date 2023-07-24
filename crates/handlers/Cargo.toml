@@ -15,7 +15,7 @@ tracing = "0.1.37"
 opentelemetry = "0.19.0"
 
 # Error management
-thiserror = "1.0.43"
+thiserror = "1.0.44"
 anyhow = "1.0.72"
 sentry = { version = "0.31.5", default-features = false }
 
