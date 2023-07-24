@@ -20,7 +20,7 @@ once_cell = "1.18.0"
 opentelemetry = "0.19.0"
 rustls = { version = "0.21.5", optional = true }
 rustls-native-certs = { version = "0.6.3", optional = true }
-serde = "1.0.174"
+serde = "1.0.175"
 serde_json = "1.0.103"
 serde_urlencoded = "0.7.1"
 thiserror = "1.0.43"
@@ -36,7 +36,7 @@ mas-tower = { path = "../tower" }
 
 [dev-dependencies]
 anyhow = "1.0.72"
-serde = { version = "1.0.174", features = ["derive"] }
+serde = { version = "1.0.175", features = ["derive"] }
 tokio = { version = "1.29.1", features = ["macros", "rt"] }
 tower = { version = "0.4.13", features = ["util"] }
 
