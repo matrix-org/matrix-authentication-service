@@ -47,7 +47,7 @@ jobs:
 
       - name: Build policies
         working-directory: ./policies
-        run: make build
+        run: make
 
       - name: Collect the artifacts
         run: |
@@ -90,7 +90,13 @@ jobs:
         run: pip3 install ziglang==0.9.1 cargo-zigbuild==0.16.12
 
       - name: Build the binary
-        run: cargo zigbuild --release --target=${{ matrix.arch }}-unknown-linux-musl -p mas-cli
+        run: >
+          cargo zigbuild 
+            --release 
+            --target=${{ matrix.arch }}-unknown-linux-musl
+            --no-default-features 
+            --features dist
+            -p mas-cli
 
       - name: Download the artifacts
         uses: actions/download-artifact@v3.1.2

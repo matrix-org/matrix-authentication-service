@@ -45,7 +45,7 @@ fn http_address_example_4() -> &'static str {
     "0.0.0.0:8080"
 }
 
-#[cfg(not(feature = "docker"))]
+#[cfg(not(any(feature = "docker", feature = "dist")))]
 fn http_listener_assets_path_default() -> Utf8PathBuf {
     "./frontend/dist/".into()
 }
@@ -53,6 +53,11 @@ fn http_listener_assets_path_default() -> Utf8PathBuf {
 #[cfg(feature = "docker")]
 fn http_listener_assets_path_default() -> Utf8PathBuf {
     "/usr/local/share/mas-cli/assets/".into()
+}
+
+#[cfg(feature = "dist")]
+fn http_listener_assets_path_default() -> Utf8PathBuf {
+    "./share/assets/".into()
 }
 
 /// Kind of socket

@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize};
 
 use super::ConfigurationSection;
 
-#[cfg(not(feature = "docker"))]
+#[cfg(not(any(feature = "docker", feature = "dist")))]
 fn default_path() -> Utf8PathBuf {
     "./templates/".into()
 }
@@ -30,7 +30,12 @@ fn default_path() -> Utf8PathBuf {
     "/usr/local/share/mas-cli/templates/".into()
 }
 
-#[cfg(not(feature = "docker"))]
+#[cfg(feature = "dist")]
+fn default_path() -> Utf8PathBuf {
+    "./share/templates/".into()
+}
+
+#[cfg(not(any(feature = "docker", feature = "dist")))]
 fn default_assets_path() -> Utf8PathBuf {
     "./frontend/dist/manifest.json".into()
 }
@@ -38,6 +43,11 @@ fn default_assets_path() -> Utf8PathBuf {
 #[cfg(feature = "docker")]
 fn default_assets_path() -> Utf8PathBuf {
     "/usr/local/share/mas-cli/manifest.json".into()
+}
+
+#[cfg(feature = "dist")]
+fn default_assets_path() -> Utf8PathBuf {
+    "./share/manifest.json".into()
 }
 
 /// Configuration related to templates
