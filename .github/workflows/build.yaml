@@ -86,6 +86,11 @@ jobs:
           rustup default stable
           rustup target add ${{ matrix.arch }}-unknown-linux-musl
 
+      - name: Setup Rust build cache
+        uses: Swatinem/rust-cache@v2.5.1
+        with:
+          shared-key: ${{ matrix.arch }}-linux
+
       - name: Install zig and cargo-zigbuild
         run: pip3 install ziglang==0.9.1 cargo-zigbuild==0.16.12
 
@@ -118,3 +123,69 @@ jobs:
         with:
           name: ${{ matrix.arch }}-linux
           path: mas-cli-${{ matrix.arch }}-linux.tar.gz
+
+
+  build-macos:
+    name: Build for macOS ${{ matrix.arch }}
+    runs-on: ubuntu-22.04
+    env:
+      SDKROOT: /opt/MacOSX11.3.sdk
+
+    needs:
+      - build-assets
+
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86_64, aarch64]
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v3.5.3
+
+      - name: Install Rust toolchain
+        run: |
+          rustup toolchain install stable
+          rustup default stable
+          rustup target add ${{ matrix.arch }}-apple-darwin
+
+      - name: Setup Rust build cache
+        uses: Swatinem/rust-cache@v2.5.1
+        with:
+          shared-key: ${{ matrix.arch }}-macos
+
+      - name: Install zig and cargo-zigbuild
+        run: pip3 install ziglang==0.9.1 cargo-zigbuild==0.16.12
+
+      - name: Download the macOS SDK
+        run: curl -L "https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX11.3.sdk.tar.xz" | tar -J -x -C /opt
+
+      - name: Build the binary
+        run: >
+          cargo zigbuild 
+            --release 
+            --target=${{ matrix.arch }}-apple-darwin
+            --no-default-features 
+            --features dist
+            -p mas-cli
+
+      - name: Download the artifacts
+        uses: actions/download-artifact@v3.1.2
+        with:
+          name: artifacts
+          path: share/
+
+      - name: Create the archive
+        run: |
+          mkdir dist/
+          mv share/ dist/
+          mv target/${{ matrix.arch }}-apple-darwin/release/mas-cli dist/
+          mv LICENSE dist/
+          chmod -R u=rwX,go=rX dist/
+          tar -czvf mas-cli-${{ matrix.arch }}-macos.tar.gz --owner=0 --group=0 -C dist/ .
+
+      - name: Upload the binary as artifact
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: ${{ matrix.arch }}-macos
+          path: mas-cli-${{ matrix.arch }}-macos.tar.gz
