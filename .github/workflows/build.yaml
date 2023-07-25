@@ -95,12 +95,12 @@ jobs:
         run: pip3 install ziglang==0.9.1 cargo-zigbuild==0.16.12
 
       - name: Build the binary
-        run: >
-          cargo zigbuild 
-            --release 
-            --target=${{ matrix.arch }}-unknown-linux-musl
-            --no-default-features 
-            --features dist
+        run: |
+          cargo zigbuild \
+            --release \
+            --target=${{ matrix.arch }}-unknown-linux-musl \
+            --no-default-features \
+            --features dist \
             -p mas-cli
 
       - name: Download the artifacts
@@ -161,12 +161,12 @@ jobs:
         run: curl -L "https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX11.3.sdk.tar.xz" | tar -J -x -C /opt
 
       - name: Build the binary
-        run: >
-          cargo zigbuild 
-            --release 
-            --target=${{ matrix.arch }}-apple-darwin
-            --no-default-features 
-            --features dist
+        run: |
+          cargo zigbuild \
+            --release \
+            --target=${{ matrix.arch }}-apple-darwin \
+            --no-default-features \
+            --features dist \
             -p mas-cli
 
       - name: Download the artifacts
