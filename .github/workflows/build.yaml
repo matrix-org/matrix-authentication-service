@@ -1,0 +1,114 @@
+name: Build
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+
+jobs:
+  build-assets:
+    name: Build assets
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v3.5.3
+
+      - name: Setup OPA
+        uses: open-policy-agent/setup-opa@v2.1.0
+        with:
+          version: 0.54.0
+
+      - name: Install Node
+        uses: actions/setup-node@v3.7.0
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Node dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: Build policies
+        working-directory: ./policies
+        run: make build
+
+      - name: Collect the artifacts
+        run: |
+          mkdir share/
+          mv policies/policy.wasm share/policy.wasm
+          mv frontend/dist/manifest.json share/manifest.json
+          mv frontend/dist/ share/assets
+          mv templates/ share/templates
+
+      - name: Upload the artifacts
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: artifacts
+          path: share/
+
+
+  build-linux:
+    name: Build for Linux ${{ matrix.arch }}
+    runs-on: ubuntu-22.04
+
+    needs:
+      - build-assets
+
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86_64, aarch64]
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v3.5.3
+
+      - name: Install Rust toolchain
+        run: |
+          rustup toolchain install stable
+          rustup default stable
+          rustup target add ${{ matrix.arch }}-unknown-linux-musl
+
+      - name: Install zig and cargo-zigbuild
+        run: pip3 install ziglang==0.9.1 cargo-zigbuild==0.16.12
+
+      - name: Build the binary
+        run: cargo zigbuild --release --target=${{ matrix.arch }}-unknown-linux-musl -p mas-cli
+
+      - name: Download the artifacts
+        uses: actions/download-artifact@v3.1.2
+        with:
+          name: artifacts
+          path: share/
+
+      - name: Create the archive
+        run: |
+          mkdir dist/
+          mv share/ dist/
+          mv target/${{ matrix.arch }}-unknown-linux-musl/release/mas-cli dist/
+          mv LICENSE dist/
+          chmod -R u=rwX,go=rX dist/
+          tar -czvf mas-cli-${{ matrix.arch }}-linux.tar.gz --owner=0 --group=0 -C dist/ .
+
+      - name: Upload the binary as artifact
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: ${{ matrix.arch }}-linux
+          path: mas-cli-${{ matrix.arch }}-linux.tar.gz
