@@ -24,6 +24,9 @@
 
 //! Application configuration logic
 
+#[cfg(all(feature = "docker", feature = "dist"))]
+compile_error!("Only one of the `docker` and `dist` features can be enabled at once");
+
 pub(crate) mod schema;
 mod sections;
 pub(crate) mod util;

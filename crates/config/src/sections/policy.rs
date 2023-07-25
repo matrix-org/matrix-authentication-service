@@ -21,7 +21,7 @@ use serde_with::serde_as;
 
 use super::ConfigurationSection;
 
-#[cfg(not(feature = "docker"))]
+#[cfg(not(any(feature = "docker", feature = "dist")))]
 fn default_policy_path() -> Utf8PathBuf {
     "./policies/policy.wasm".into()
 }
@@ -29,6 +29,11 @@ fn default_policy_path() -> Utf8PathBuf {
 #[cfg(feature = "docker")]
 fn default_policy_path() -> Utf8PathBuf {
     "/usr/local/share/mas-cli/policy.wasm".into()
+}
+
+#[cfg(feature = "dist")]
+fn default_policy_path() -> Utf8PathBuf {
+    "./share/policy.wasm".into()
 }
 
 fn default_client_registration_endpoint() -> String {

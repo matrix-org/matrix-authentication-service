@@ -70,6 +70,9 @@ indoc = "2.0.3"
 [features]
 default = ["jaeger", "zipkin", "webpki-roots", "policy-cache"]
 
+# Features used for the prebuilt binaries
+dist = ["otlp", "jaeger", "zipkin", "prometheus", "policy-cache", "native-roots", "mas-config/dist"]
+
 # Features used in the Docker image
 docker = ["otlp", "jaeger", "zipkin", "prometheus", "native-roots", "mas-config/docker"]
 

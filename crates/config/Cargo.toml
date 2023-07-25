@@ -37,6 +37,7 @@ mas-iana = { path = "../iana" }
 
 [features]
 docker = []
+dist = []
 
 [[bin]]
 name = "schema"
