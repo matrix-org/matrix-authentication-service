@@ -155,7 +155,11 @@ jobs:
           shared-key: ${{ matrix.arch }}-macos
 
       - name: Install zig and cargo-zigbuild
-        run: pip3 install ziglang==0.9.1 cargo-zigbuild==0.16.12
+        # XXX: note how the ziglang version is not the same as the Dockerfile and the Linux build
+        # This is because there is an issue with zig 0.10.x when building the `psm` crate for Linux, but it works fine for macOS
+        # The reason we're not on 0.9.x for the macOS build is because there is an issue for linking the final binary with 0.9.x
+        # This should all be fixed once zig 0.11.x is released in a few weeks
+        run: pip3 install ziglang==0.10.1.post1 cargo-zigbuild==0.16.12
 
       - name: Download the macOS SDK
         run: curl -L "https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX11.3.sdk.tar.xz" | tar -J -x -C /opt
