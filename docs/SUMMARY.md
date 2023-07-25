@@ -4,10 +4,20 @@
 
 - [About this documentation](./README.md)
 
+# Setup
+
+- [Introduction](./setup/README.md)
+- [Installation](./setup/installation.md)
+- [General configuration](./setup/general.md)
+- [Database setup](./setup/database.md)
+- [Homeserver configuration](./setup/homeserver.md)
+- [Configuring a reverse proxy](./setup/reverse-proxy.md)
+- [Email configuration](./setup/email.md)
+- [Running the service](./setup/running.md)
+
 # Usage
 
-- [Installation](./usage/installation.md)
-- [Configuration](./usage/configuration.md)
+- [Configuration file reference](./usage/configuration.md)
 - [Using the service](./usage/usage.md)
 - [Command line tool](./usage/cli/README.md)
     - [`config`](./usage/cli/config.md)
@@ -20,5 +30,3 @@
 
 - [Architecture](./development/architecture.md)
 - [Database](./development/database.md)
-- [Routing with `axum`]()
-- [Templates]()

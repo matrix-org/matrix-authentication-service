@@ -35,7 +35,7 @@ docker run --rm \
 
 ## Registering, logging in and out
 
-Through the interface, users are able to create an account by clicking the `Register` button on the top right (or going to [`/register`](http://localhost:8080/register).
+Through the interface, users are able to create an account by clicking the `Register` button on the top right (or going to [`/register`](http://localhost:8080/register)).
 They can then end their session by clicking the `Sign out` button and sign back in.
 
 ## Playing around with the playground
@@ -48,10 +48,17 @@ Add the following section to the server configuration file `config.yaml`:
 
 ```yaml
 clients:
-  - client_id: oidc-playground
+  # The client ID must be a valid ULID
+  - client_id: 000000000000OIDCPLAYGROUND
     client_secret: verysecret
     redirect_uris:
       - "https://openidconnect.net/callback"
+```
+
+Sync the configuration with the database:
+
+```sh
+mas-cli config sync
 ```
 
 ### Step 2: Change the playground configuration
@@ -61,7 +68,7 @@ clients:
  - Server template: *Custom*
  - Paste the discovery document URL found on the service homepage (e.g. `http://localhost:8080/.well-known/openid-configuration`)
  - Click "Use discovery document" ; it should fill out the authorization, token and token keys endpoints
- - Set the OIDC Client ID to `oidc-playground` and the Client Secret to `verysecret` (must match the ones in the configuration)
+ - Set the OIDC Client ID to `000000000000OIDCPLAYGROUND` and the Client Secret to `verysecret` (must match the ones in the configuration)
  - Click "Save"
 
 ### Step 3: Run the OpenID Connect flow
