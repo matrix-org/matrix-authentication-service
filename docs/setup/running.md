@@ -21,4 +21,31 @@ Other than the binary, the service needs a few files to run:
 
 Be sure to check the [installation instructions](./installation.md) for more information on how to get these files, and make sure the configuration file is updated accordingly.
 
-TODO: systemd service, docker, etc.
+## Configure the HTTP server
+
+The service can be configured to have multiple HTTP listeners, serving different resources.
+See the [`http.listeners`](../usage/configuration.md#http) configuration section for more information.
+
+The service needs to be aware of the public URL it is served on, regardless of the HTTP listeners configuration.
+This is done using the [`http.public_base`](../usage/configuration.md#http) configuration option.
+By default, the OIDC issuer advertised by the `/.well-known/openid-configuration` endpoint will be the same as the `public_base` URL, but can be configured to be different.
+
+## Tweak the remaining configuration
+
+A few configuration sections might still require some tweaking, including:
+
+ - [`telemetry`](../usage/configuration.md#telemetry): to setup metrics, tracing and Sentry crash reporting
+ - [`email`](../usage/configuration.md#email): to setup email sending
+ - [`password`](../usage/configuration.md#password): to enable/disable password authentication
+ - [`upstream_oauth`](../usage/configuration.md#upstream-oauth): to configure upstream OAuth providers
+
+
+## Run the service
+
+Once the configuration is done, the service can be started with the [`mas-cli server`](../usage/cli/server.md) command:
+
+```sh
+mas-cli server
+```
+
+It is advised to run the service as a non-root user, using a tool like [`systemd`](https://www.freedesktop.org/wiki/Software/systemd/) to manage the service lifecycle.

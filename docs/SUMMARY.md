@@ -12,7 +12,6 @@
 - [Database setup](./setup/database.md)
 - [Homeserver configuration](./setup/homeserver.md)
 - [Configuring a reverse proxy](./setup/reverse-proxy.md)
-- [Email configuration](./setup/email.md)
 - [Running the service](./setup/running.md)
 
 # Usage
