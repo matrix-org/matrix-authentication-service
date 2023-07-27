@@ -42,28 +42,8 @@ jobs:
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install Node dependencies
-        working-directory: ./frontend
-        run: npm ci
-
       - name: Build the documentation
-        run: mdbook build
-
-      - name: Build rustdoc
-        env:
-          # This is required to be able to use the unstable `-Zrustdoc-map` flag
-          RUSTC_BOOTSTRAP: "1"
-        run: cargo doc -Zrustdoc-map --workspace --lib --no-deps
-
-      - name: Remove the rustdoc lock file
-        run: rm -f target/doc/.lock
-
-      - name: Build storybook
-        working-directory: ./frontend
-        run: npx storybook build -o ../target/book/storybook
-
-      - name: Move the Rust documentation within the mdBook
-        run: mv target/doc target/book/rustdoc
+        run: sh misc/build-docs.sh
 
       - name: Fix permissions
         run: |
