@@ -54,8 +54,6 @@ jobs:
         uses: actions/setup-node@v3.7.0
         with:
           node-version: 18
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
 
       - name: Install Node dependencies
         working-directory: ./frontend
@@ -81,8 +79,6 @@ jobs:
         uses: actions/setup-node@v3.7.0
         with:
           node-version: 18
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
 
       - name: Install Node dependencies
         working-directory: ./frontend
@@ -132,13 +128,13 @@ jobs:
 
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2.5.1
+        with:
+          save-if: "${{ github.event_name != 'pull_request' }}"
 
       - name: Install Node
         uses: actions/setup-node@v3.7.0
         with:
           node-version: 18
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
 
       - name: Install Node dependencies
         working-directory: ./frontend
@@ -193,6 +189,8 @@ jobs:
 
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2.5.1
+        with:
+          save-if: "${{ github.event_name != 'pull_request' }}"
 
       - name: Run clippy
         run: |
@@ -200,20 +198,12 @@ jobs:
 
 
   test:
-    name: Run test suite with Rust ${{ matrix.toolchain }}
+    name: Run test suite with Rust stable
     needs: [rustfmt, opa-lint]
     runs-on: ubuntu-latest
 
     permissions:
       contents: read
-
-    strategy:
-      fail-fast: false # Continue other jobs if one fails to help filling the cache
-      matrix:
-        toolchain:
-          - stable
-          - beta
-          - nightly
 
     services:
       postgres:
@@ -236,15 +226,13 @@ jobs:
 
       - name: Install toolchain
         run: |
-          rustup toolchain install ${{ matrix.toolchain }}
-          rustup default ${{ matrix.toolchain }}
+          rustup toolchain install stable
+          rustup default stable
 
       - name: Install Node
         uses: actions/setup-node@v3.7.0
         with:
           node-version: 18
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
 
       - name: Install Node dependencies
         working-directory: ./frontend
@@ -265,6 +253,8 @@ jobs:
 
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2.5.1
+        with:
+          save-if: "${{ github.event_name != 'pull_request' }}"
 
       - name: Test
         id: test
@@ -273,14 +263,6 @@ jobs:
           SQLX_OFFLINE: '1'
         run: |
           cargo test --workspace
-
-        # Ignore errors on the nightly toolchain
-        continue-on-error: "${{ matrix.toolchain == 'nightly' }}"
-
-      - name: Emit error annotation on failures
-        if: steps.test.outcome == 'failure'
-        run: |
-          echo "::error ::Test suite failed on ${{ matrix.toolchain }} toolchain"
 
 
   build-image:
