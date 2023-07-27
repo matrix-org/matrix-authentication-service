@@ -21,7 +21,8 @@
     "@urql/exchange-graphcache": "^6.2.0",
     "@urql/exchange-refocus": "^1.0.2",
     "@urql/exchange-request-policy": "^1.0.2",
-    "@vector-im/compound-web": "https://github.com/vector-im/compound-web.git#0097cd20d33fe1c7862cfc1e6f530255bffd6279",
+    "@vector-im/compound-web": "file:./vendor/vector-im-compound-web-f0d4eaf.tgz",
+    "@vector-im/compound-design-tokens": "file:./vendor/vector-im-compound-design-tokens-aa55111.tgz",
     "date-fns": "^2.30.0",
     "graphql": "^16.7.1",
     "jotai": "^2.2.1",
@@ -74,5 +75,8 @@
     "vite-plugin-manifest-sri": "^0.1.0",
     "vite-plugin-svgr": "^3.2.0",
     "vitest": "^0.33.0"
+  },
+  "overrides": {
+      "@vector-im/compound-design-tokens": "$@vector-im/compound-design-tokens"
   }
 }
