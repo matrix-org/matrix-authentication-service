@@ -29,6 +29,8 @@ jobs:
 
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2.5.1
+        with:
+          save-if: "${{ github.event_name != 'pull_request' }}"
 
       - name: Setup mdBook
         uses: peaceiris/actions-mdbook@v1.2.0
@@ -39,8 +41,6 @@ jobs:
         uses: actions/setup-node@v3.7.0
         with:
           node-version: 18
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
 
       - name: Build the documentation
         run: sh misc/build-docs.sh
