@@ -17,7 +17,7 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 
-use std::sync::Arc;
+use std::{io::IsTerminal, sync::Arc};
 
 use anyhow::Context;
 use clap::Parser;
@@ -55,10 +55,12 @@ async fn try_main() -> anyhow::Result<()> {
 
     // Setup logging
     // This writes logs to stderr
-    let (log_writer, _guard) = tracing_appender::non_blocking(std::io::stderr());
+    let output = std::io::stderr();
+    let with_ansi = output.is_terminal();
+    let (log_writer, _guard) = tracing_appender::non_blocking(output);
     let fmt_layer = tracing_subscriber::fmt::layer()
         .with_writer(log_writer)
-        .with_ansi(atty::is(atty::Stream::Stderr));
+        .with_ansi(with_ansi);
     let filter_layer = EnvFilter::try_from_default_env()
         .or_else(|_| EnvFilter::try_new("info"))
         .context("could not setup logging filter")?;

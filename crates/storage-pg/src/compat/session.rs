@@ -23,6 +23,7 @@ use mas_storage::{
 };
 use rand::RngCore;
 use sea_query::{enum_def, Expr, PostgresQueryBuilder, Query};
+use sea_query_binder::SqlxBinder;
 use sqlx::PgConnection;
 use ulid::Ulid;
 use url::Url;
@@ -31,7 +32,6 @@ use uuid::Uuid;
 use crate::{
     iden::{CompatSessions, CompatSsoLogins},
     pagination::QueryBuilderExt,
-    sea_query_sqlx::map_values,
     tracing::ExecuteExt,
     DatabaseError, DatabaseInconsistencyError,
 };
@@ -323,7 +323,7 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
         filter: CompatSessionFilter<'_>,
         pagination: Pagination,
     ) -> Result<Page<(CompatSession, Option<CompatSsoLogin>)>, Self::Error> {
-        let (sql, values) = Query::select()
+        let (sql, arguments) = Query::select()
             .expr_as(
                 Expr::col((CompatSessions::Table, CompatSessions::CompatSessionId)),
                 CompatSessionAndSsoLoginLookupIden::CompatSessionId,
@@ -400,9 +400,7 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
                 (CompatSessions::Table, CompatSessions::CompatSessionId),
                 pagination,
             )
-            .build(PostgresQueryBuilder);
-
-        let arguments = map_values(values);
+            .build_sqlx(PostgresQueryBuilder);
 
         let edges: Vec<CompatSessionAndSsoLoginLookup> = sqlx::query_as_with(&sql, arguments)
             .traced()
@@ -423,7 +421,7 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
         err,
     )]
     async fn count(&mut self, filter: CompatSessionFilter<'_>) -> Result<usize, Self::Error> {
-        let (sql, values) = sea_query::Query::select()
+        let (sql, arguments) = sea_query::Query::select()
             .expr(Expr::col((CompatSessions::Table, CompatSessions::CompatSessionId)).count())
             .from(CompatSessions::Table)
             .and_where_option(filter.user().map(|user| {
@@ -456,9 +454,7 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
                     exists.not()
                 }
             }))
-            .build(PostgresQueryBuilder);
-
-        let arguments = map_values(values);
+            .build_sqlx(PostgresQueryBuilder);
 
         let count: i64 = sqlx::query_scalar_with(&sql, arguments)
             .traced()

@@ -7,8 +7,8 @@ license = "Apache-2.0"
 
 [dependencies]
 http = "0.2.9"
-serde = "1.0.174"
-serde_json = "1.0.103"
+serde = "1.0.176"
+serde_json = "1.0.104"
 language-tags = { version = "0.3.2", features = ["serde"] }
 url = { version = "2.4.0", features = ["serde"] }
 parse-display = "0.8.2"
@@ -17,7 +17,7 @@ serde_with = { version = "3.1.0", features = ["chrono"] }
 chrono = "0.4.26"
 sha2 = "0.10.7"
 data-encoding = "2.4.0"
-thiserror = "1.0.43"
+thiserror = "1.0.44"
 
 mas-iana = { path = "../iana" }
 mas-jose = { path = "../jose" }

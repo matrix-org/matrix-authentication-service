@@ -187,7 +187,6 @@ mod errors;
 pub(crate) mod iden;
 pub(crate) mod pagination;
 pub(crate) mod repository;
-mod sea_query_sqlx;
 pub(crate) mod tracing;
 
 pub(crate) use self::errors::DatabaseInconsistencyError;

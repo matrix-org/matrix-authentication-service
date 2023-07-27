@@ -23,14 +23,15 @@ use mas_storage::{
 use oauth2_types::scope::Scope;
 use rand::RngCore;
 use sea_query::{enum_def, Expr, PostgresQueryBuilder, Query};
+use sea_query_binder::SqlxBinder;
 use sqlx::{types::Json, PgConnection};
 use tracing::{info_span, Instrument};
 use ulid::Ulid;
 use uuid::Uuid;
 
 use crate::{
-    iden::UpstreamOAuthProviders, pagination::QueryBuilderExt, sea_query_sqlx::map_values,
-    tracing::ExecuteExt, DatabaseError, DatabaseInconsistencyError,
+    iden::UpstreamOAuthProviders, pagination::QueryBuilderExt, tracing::ExecuteExt, DatabaseError,
+    DatabaseInconsistencyError,
 };
 
 /// An implementation of [`UpstreamOAuthProviderRepository`] for a PostgreSQL
@@ -373,7 +374,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
         pagination: Pagination,
     ) -> Result<Page<UpstreamOAuthProvider>, Self::Error> {
         // XXX: the filter is currently ignored, as it does not have any fields
-        let (sql, values) = Query::select()
+        let (sql, arguments) = Query::select()
             .expr_as(
                 Expr::col((
                     UpstreamOAuthProviders::Table,
@@ -442,9 +443,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
                 ),
                 pagination,
             )
-            .build(PostgresQueryBuilder);
-
-        let arguments = map_values(values);
+            .build_sqlx(PostgresQueryBuilder);
 
         let edges: Vec<ProviderLookup> = sqlx::query_as_with(&sql, arguments)
             .traced()
@@ -471,7 +470,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
         _filter: UpstreamOAuthProviderFilter<'_>,
     ) -> Result<usize, Self::Error> {
         // XXX: the filter is currently ignored, as it does not have any fields
-        let (sql, values) = Query::select()
+        let (sql, arguments) = Query::select()
             .expr(
                 Expr::col((
                     UpstreamOAuthProviders::Table,
@@ -480,9 +479,7 @@ impl<'c> UpstreamOAuthProviderRepository for PgUpstreamOAuthProviderRepository<'
                 .count(),
             )
             .from(UpstreamOAuthProviders::Table)
-            .build(PostgresQueryBuilder);
-
-        let arguments = map_values(values);
+            .build_sqlx(PostgresQueryBuilder);
 
         let count: i64 = sqlx::query_scalar_with(&sql, arguments)
             .traced()

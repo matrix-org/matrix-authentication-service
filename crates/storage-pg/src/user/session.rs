@@ -18,6 +18,7 @@ use mas_data_model::{Authentication, BrowserSession, Password, UpstreamOAuthLink
 use mas_storage::{user::BrowserSessionRepository, Clock, Page, Pagination};
 use rand::RngCore;
 use sea_query::{Expr, PostgresQueryBuilder};
+use sea_query_binder::SqlxBinder;
 use sqlx::PgConnection;
 use ulid::Ulid;
 use uuid::Uuid;
@@ -25,7 +26,6 @@ use uuid::Uuid;
 use crate::{
     iden::{UserSessions, Users},
     pagination::QueryBuilderExt,
-    sea_query_sqlx::map_values,
     tracing::ExecuteExt,
     DatabaseError, DatabaseInconsistencyError,
 };
@@ -207,7 +207,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
         filter: mas_storage::user::BrowserSessionFilter<'_>,
         pagination: Pagination,
     ) -> Result<Page<BrowserSession>, Self::Error> {
-        let (sql, values) = sea_query::Query::select()
+        let (sql, arguments) = sea_query::Query::select()
             .expr_as(
                 Expr::col((UserSessions::Table, UserSessions::UserSessionId)),
                 SessionLookupIden::UserSessionId,
@@ -254,9 +254,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
                 (UserSessions::Table, UserSessions::UserSessionId),
                 pagination,
             )
-            .build(PostgresQueryBuilder);
-
-        let arguments = map_values(values);
+            .build_sqlx(PostgresQueryBuilder);
 
         let edges: Vec<SessionLookup> = sqlx::query_as_with(&sql, arguments)
             .traced()
@@ -282,7 +280,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
         &mut self,
         filter: mas_storage::user::BrowserSessionFilter<'_>,
     ) -> Result<usize, Self::Error> {
-        let (sql, values) = sea_query::Query::select()
+        let (sql, arguments) = sea_query::Query::select()
             .expr(Expr::col((UserSessions::Table, UserSessions::UserSessionId)).count())
             .from(UserSessions::Table)
             .and_where_option(filter.user().map(|user| {
@@ -295,9 +293,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
                     Expr::col((UserSessions::Table, UserSessions::FinishedAt)).is_not_null()
                 }
             }))
-            .build(PostgresQueryBuilder);
-
-        let arguments = map_values(values);
+            .build_sqlx(PostgresQueryBuilder);
 
         let count: i64 = sqlx::query_scalar_with(&sql, arguments)
             .traced()
