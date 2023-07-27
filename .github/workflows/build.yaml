@@ -34,8 +34,6 @@ jobs:
         uses: actions/setup-node@v3.7.0
         with:
           node-version: 18
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
 
       - name: Install Node dependencies
         working-directory: ./frontend
@@ -90,6 +88,7 @@ jobs:
         uses: Swatinem/rust-cache@v2.5.1
         with:
           shared-key: ${{ matrix.arch }}-linux
+          save-if: "${{ github.event_name != 'pull_request' }}"
 
       - name: Install zig and cargo-zigbuild
         run: pip3 install ziglang==0.9.1 cargo-zigbuild==0.16.12
@@ -153,6 +152,7 @@ jobs:
         uses: Swatinem/rust-cache@v2.5.1
         with:
           shared-key: ${{ matrix.arch }}-macos
+          save-if: "${{ github.event_name != 'pull_request' }}"
 
       - name: Install zig and cargo-zigbuild
         # XXX: note how the ziglang version is not the same as the Dockerfile and the Linux build
