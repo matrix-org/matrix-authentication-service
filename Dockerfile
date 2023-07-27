@@ -29,6 +29,7 @@ FROM --platform=${BUILDPLATFORM} docker.io/library/node:${NODEJS_VERSION}-${DEBI
 WORKDIR /app/frontend
 
 COPY ./frontend/package.json ./frontend/package-lock.json /app/frontend/
+COPY ./frontend/vendor /app/frontend/vendor
 # Network access: to fetch dependencies
 RUN --network=default \
   npm ci
