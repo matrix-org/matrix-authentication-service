@@ -22,6 +22,7 @@ use mas_storage::{
 use oauth2_types::scope::Scope;
 use rand::RngCore;
 use sea_query::{enum_def, Expr, PostgresQueryBuilder, Query};
+use sea_query_binder::SqlxBinder;
 use sqlx::PgConnection;
 use ulid::Ulid;
 use uuid::Uuid;
@@ -29,7 +30,6 @@ use uuid::Uuid;
 use crate::{
     iden::{OAuth2Sessions, UserSessions},
     pagination::QueryBuilderExt,
-    sea_query_sqlx::map_values,
     tracing::ExecuteExt,
     DatabaseError, DatabaseInconsistencyError,
 };
@@ -232,7 +232,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
         filter: OAuth2SessionFilter<'_>,
         pagination: Pagination,
     ) -> Result<Page<Session>, Self::Error> {
-        let (sql, values) = Query::select()
+        let (sql, arguments) = Query::select()
             .expr_as(
                 Expr::col((OAuth2Sessions::Table, OAuth2Sessions::OAuth2SessionId)),
                 OAuthSessionLookupIden::Oauth2SessionId,
@@ -291,9 +291,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
                 (OAuth2Sessions::Table, OAuth2Sessions::OAuth2SessionId),
                 pagination,
             )
-            .build(PostgresQueryBuilder);
-
-        let arguments = map_values(values);
+            .build_sqlx(PostgresQueryBuilder);
 
         let edges: Vec<OAuthSessionLookup> = sqlx::query_as_with(&sql, arguments)
             .traced()
@@ -314,7 +312,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
         err,
     )]
     async fn count(&mut self, filter: OAuth2SessionFilter<'_>) -> Result<usize, Self::Error> {
-        let (sql, values) = Query::select()
+        let (sql, arguments) = Query::select()
             .expr(Expr::col((OAuth2Sessions::Table, OAuth2Sessions::OAuth2SessionId)).count())
             .from(OAuth2Sessions::Table)
             .and_where_option(filter.user().map(|user| {
@@ -346,9 +344,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
                     Expr::col((OAuth2Sessions::Table, OAuth2Sessions::FinishedAt)).is_not_null()
                 }
             }))
-            .build(PostgresQueryBuilder);
-
-        let arguments = map_values(values);
+            .build_sqlx(PostgresQueryBuilder);
 
         let count: i64 = sqlx::query_scalar_with(&sql, arguments)
             .traced()

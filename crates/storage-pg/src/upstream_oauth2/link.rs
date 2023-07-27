@@ -21,13 +21,13 @@ use mas_storage::{
 };
 use rand::RngCore;
 use sea_query::{enum_def, Expr, PostgresQueryBuilder, Query};
+use sea_query_binder::SqlxBinder;
 use sqlx::PgConnection;
 use ulid::Ulid;
 use uuid::Uuid;
 
 use crate::{
-    iden::UpstreamOAuthLinks, pagination::QueryBuilderExt, sea_query_sqlx::map_values,
-    tracing::ExecuteExt, DatabaseError,
+    iden::UpstreamOAuthLinks, pagination::QueryBuilderExt, tracing::ExecuteExt, DatabaseError,
 };
 
 /// An implementation of [`UpstreamOAuthLinkRepository`] for a PostgreSQL
@@ -241,7 +241,7 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
         filter: UpstreamOAuthLinkFilter<'_>,
         pagination: Pagination,
     ) -> Result<Page<UpstreamOAuthLink>, DatabaseError> {
-        let (sql, values) = Query::select()
+        let (sql, arguments) = Query::select()
             .expr_as(
                 Expr::col((
                     UpstreamOAuthLinks::Table,
@@ -287,9 +287,7 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
                 ),
                 pagination,
             )
-            .build(PostgresQueryBuilder);
-
-        let arguments = map_values(values);
+            .build_sqlx(PostgresQueryBuilder);
 
         let edges: Vec<LinkLookup> = sqlx::query_as_with(&sql, arguments)
             .traced()
@@ -310,7 +308,7 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
         err,
     )]
     async fn count(&mut self, filter: UpstreamOAuthLinkFilter<'_>) -> Result<usize, Self::Error> {
-        let (sql, values) = Query::select()
+        let (sql, arguments) = Query::select()
             .expr(
                 Expr::col((
                     UpstreamOAuthLinks::Table,
@@ -330,9 +328,7 @@ impl<'c> UpstreamOAuthLinkRepository for PgUpstreamOAuthLinkRepository<'c> {
                 ))
                 .eq(Uuid::from(provider.id))
             }))
-            .build(PostgresQueryBuilder);
-
-        let arguments = map_values(values);
+            .build_sqlx(PostgresQueryBuilder);
 
         let count: i64 = sqlx::query_scalar_with(&sql, arguments)
             .traced()

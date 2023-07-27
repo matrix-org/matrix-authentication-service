@@ -10,7 +10,7 @@ tokio = { version = "1.29.1", features = ["fs", "rt"] }
 tracing = "0.1.37"
 async-trait = "0.1.72"
 
-thiserror = "1.0.43"
+thiserror = "1.0.44"
 anyhow = "1.0.72"
 
 camino = { version = "1.1.6", features = ["serde1"] }
@@ -20,9 +20,9 @@ schemars = { version = "0.8.12", features = ["url", "chrono"] }
 ulid = { version = "1.0.0", features = ["serde"] }
 url = { version = "2.4.0", features = ["serde"] }
 
-serde = { version = "1.0.174", features = ["derive"] }
+serde = { version = "1.0.176", features = ["derive"] }
 serde_with = { version = "3.1.0", features = ["hex", "chrono"] }
-serde_json = "1.0.103"
+serde_json = "1.0.104"
 
 pem-rfc7468 = "0.7.0"
 rustls-pemfile = "1.0.3"

@@ -21,14 +21,15 @@ use mas_storage::{
 };
 use rand::RngCore;
 use sea_query::{enum_def, Expr, PostgresQueryBuilder, Query};
+use sea_query_binder::SqlxBinder;
 use sqlx::PgConnection;
 use tracing::{info_span, Instrument};
 use ulid::Ulid;
 use uuid::Uuid;
 
 use crate::{
-    iden::UserEmails, pagination::QueryBuilderExt, sea_query_sqlx::map_values, tracing::ExecuteExt,
-    DatabaseError, DatabaseInconsistencyError,
+    iden::UserEmails, pagination::QueryBuilderExt, tracing::ExecuteExt, DatabaseError,
+    DatabaseInconsistencyError,
 };
 
 /// An implementation of [`UserEmailRepository`] for a PostgreSQL connection
@@ -243,7 +244,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
         filter: UserEmailFilter<'_>,
         pagination: Pagination,
     ) -> Result<Page<UserEmail>, DatabaseError> {
-        let (sql, values) = Query::select()
+        let (sql, arguments) = Query::select()
             .expr_as(
                 Expr::col((UserEmails::Table, UserEmails::UserEmailId)),
                 UserEmailLookupIden::UserEmailId,
@@ -276,9 +277,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
                 }
             }))
             .generate_pagination((UserEmails::Table, UserEmails::UserEmailId), pagination)
-            .build(PostgresQueryBuilder);
-
-        let arguments = map_values(values);
+            .build_sqlx(PostgresQueryBuilder);
 
         let edges: Vec<UserEmailLookup> = sqlx::query_as_with(&sql, arguments)
             .traced()
@@ -299,7 +298,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
         err,
     )]
     async fn count(&mut self, filter: UserEmailFilter<'_>) -> Result<usize, Self::Error> {
-        let (sql, values) = Query::select()
+        let (sql, arguments) = Query::select()
             .expr(Expr::col((UserEmails::Table, UserEmails::UserEmailId)).count())
             .from(UserEmails::Table)
             .and_where_option(filter.user().map(|user| {
@@ -312,9 +311,7 @@ impl<'c> UserEmailRepository for PgUserEmailRepository<'c> {
                     Expr::col((UserEmails::Table, UserEmails::ConfirmedAt)).is_null()
                 }
             }))
-            .build(PostgresQueryBuilder);
-
-        let arguments = map_values(values);
+            .build_sqlx(PostgresQueryBuilder);
 
         let count: i64 = sqlx::query_scalar_with(&sql, arguments)
             .traced()
