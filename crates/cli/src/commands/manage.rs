@@ -69,6 +69,18 @@ enum Subcommand {
         #[arg(long)]
         dry_run: bool,
     },
+
+    /// Lock a user
+    LockUser {
+        /// User to lock
+        username: String,
+    },
+
+    /// Unlock a user
+    UnlockUser {
+        /// User to unlock
+        username: String,
+    },
 }
 
 impl Options {
@@ -327,6 +339,46 @@ impl Options {
                 } else {
                     repo.save().await?;
                 }
+
+                Ok(())
+            }
+
+            SC::LockUser { username } => {
+                let _span = info_span!("cli.manage.lock_user", user.username = username).entered();
+                let config: DatabaseConfig = root.load_config()?;
+                let pool = database_from_config(&config).await?;
+                let mut repo = PgRepository::from_pool(&pool).await?.boxed();
+
+                let user = repo
+                    .user()
+                    .find_by_username(&username)
+                    .await?
+                    .context("User not found")?;
+
+                info!(%user.id, "Locking user");
+
+                repo.user().lock(&clock, user).await?;
+                repo.save().await?;
+
+                Ok(())
+            }
+
+            SC::UnlockUser { username } => {
+                let _span = info_span!("cli.manage.lock_user", user.username = username).entered();
+                let config: DatabaseConfig = root.load_config()?;
+                let pool = database_from_config(&config).await?;
+                let mut repo = PgRepository::from_pool(&pool).await?.boxed();
+
+                let user = repo
+                    .user()
+                    .find_by_username(&username)
+                    .await?
+                    .context("User not found")?;
+
+                info!(%user.id, "Unlocking user");
+
+                repo.user().unlock(user).await?;
+                repo.save().await?;
 
                 Ok(())
             }

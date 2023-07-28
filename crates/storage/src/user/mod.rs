@@ -96,6 +96,33 @@ pub trait UserRepository: Send + Sync {
     ///
     /// Returns [`Self::Error`] if the underlying repository fails
     async fn exists(&mut self, username: &str) -> Result<bool, Self::Error>;
+
+    /// Lock a [`User`]
+    ///
+    /// Returns the locked [`User`]
+    ///
+    /// # Parameters
+    ///
+    /// * `clock`: The clock used to generate timestamps
+    /// * `user`: The [`User`] to lock
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn lock(&mut self, clock: &dyn Clock, user: User) -> Result<User, Self::Error>;
+
+    /// Unlock a [`User`]
+    ///
+    /// Returns the unlocked [`User`]
+    ///
+    /// # Parameters
+    ///
+    /// * `user`: The [`User`] to unlock
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn unlock(&mut self, user: User) -> Result<User, Self::Error>;
 }
 
 repository_impl!(UserRepository:
@@ -108,4 +135,6 @@ repository_impl!(UserRepository:
         username: String,
     ) -> Result<User, Self::Error>;
     async fn exists(&mut self, username: &str) -> Result<bool, Self::Error>;
+    async fn lock(&mut self, clock: &dyn Clock, user: User) -> Result<User, Self::Error>;
+    async fn unlock(&mut self, user: User) -> Result<User, Self::Error>;
 );

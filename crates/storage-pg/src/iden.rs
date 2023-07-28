@@ -29,6 +29,8 @@ pub enum Users {
     UserId,
     Username,
     PrimaryUserEmailId,
+    CreatedAt,
+    LockedAt,
 }
 
 #[derive(sea_query::Iden)]

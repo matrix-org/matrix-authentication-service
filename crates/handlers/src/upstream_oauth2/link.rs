@@ -23,7 +23,7 @@ use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     SessionInfoExt,
 };
-use mas_data_model::UpstreamOAuthProviderImportPreference;
+use mas_data_model::{UpstreamOAuthProviderImportPreference, User};
 use mas_jose::jwt::Jwt;
 use mas_keystore::Encrypter;
 use mas_storage::{
@@ -239,6 +239,8 @@ pub(crate) async fn get(
                 .user()
                 .lookup(user_id)
                 .await?
+                // XXX: is that right?
+                .filter(User::is_valid)
                 .ok_or(RouteError::UserNotFound)?;
 
             let ctx = UpstreamExistingLinkContext::new(user)
@@ -263,6 +265,7 @@ pub(crate) async fn get(
                 .user()
                 .lookup(user_id)
                 .await?
+                .filter(mas_data_model::User::is_valid)
                 .ok_or(RouteError::UserNotFound)?;
 
             let ctx = UpstreamExistingLinkContext::new(user).with_csrf(csrf_token.form_value());
@@ -390,6 +393,7 @@ pub(crate) async fn post(
                 .user()
                 .lookup(user_id)
                 .await?
+                .filter(mas_data_model::User::is_valid)
                 .ok_or(RouteError::UserNotFound)?;
 
             repo.browser_session().add(&mut rng, &clock, &user).await?
