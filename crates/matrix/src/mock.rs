@@ -122,6 +122,20 @@ impl crate::HomeserverConnection for HomeserverConnection {
 
         Ok(())
     }
+
+    async fn set_displayname(&self, mxid: &str, displayname: &str) -> Result<(), Self::Error> {
+        let mut users = self.users.write().await;
+        let user = users.get_mut(mxid).context("User not found")?;
+        user.displayname = Some(displayname.to_owned());
+        Ok(())
+    }
+
+    async fn unset_displayname(&self, mxid: &str) -> Result<(), Self::Error> {
+        let mut users = self.users.write().await;
+        let user = users.get_mut(mxid).context("User not found")?;
+        user.displayname = None;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -150,9 +164,21 @@ mod tests {
         let inserted = conn.provision_user(&request).await.unwrap();
         assert!(inserted);
 
-        let user = conn.query_user("@test:example.org").await.unwrap();
+        let user = conn.query_user(mxid).await.unwrap();
         assert_eq!(user.displayname, Some("Test User".into()));
         assert_eq!(user.avatar_url, Some("mxc://example.org/1234567890".into()));
+
+        // Set the displayname again
+        assert!(conn.set_displayname(mxid, "John").await.is_ok());
+
+        let user = conn.query_user(mxid).await.unwrap();
+        assert_eq!(user.displayname, Some("John".into()));
+
+        // Unset the displayname
+        assert!(conn.unset_displayname(mxid).await.is_ok());
+
+        let user = conn.query_user(mxid).await.unwrap();
+        assert_eq!(user.displayname, None);
 
         // Deleting a non-existent device should not fail
         assert!(conn.delete_device(mxid, device).await.is_ok());

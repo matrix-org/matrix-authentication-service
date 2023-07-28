@@ -95,7 +95,10 @@ impl ProvisionRequest {
     /// # Parameters
     ///
     /// * `callback` - The callback to call.
-    pub fn on_displayname(&self, callback: impl FnOnce(Option<&str>)) -> &Self {
+    pub fn on_displayname<F>(&self, callback: F) -> &Self
+    where
+        F: FnOnce(Option<&str>),
+    {
         match &self.displayname {
             FieldAction::Unset => callback(None),
             FieldAction::Set(displayname) => callback(Some(displayname)),
@@ -128,7 +131,10 @@ impl ProvisionRequest {
     /// # Parameters
     ///
     /// * `callback` - The callback to call.
-    pub fn on_avatar_url(&self, callback: impl FnOnce(Option<&str>)) -> &Self {
+    pub fn on_avatar_url<F>(&self, callback: F) -> &Self
+    where
+        F: FnOnce(Option<&str>),
+    {
         match &self.avatar_url {
             FieldAction::Unset => callback(None),
             FieldAction::Set(avatar_url) => callback(Some(avatar_url)),
@@ -161,7 +167,10 @@ impl ProvisionRequest {
     /// # Parameters
     ///
     /// * `callback` - The callback to call.
-    pub fn on_emails(&self, callback: impl FnOnce(Option<&[String]>)) -> &Self {
+    pub fn on_emails<F>(&self, callback: F) -> &Self
+    where
+        F: FnOnce(Option<&[String]>),
+    {
         match &self.emails {
             FieldAction::Unset => callback(None),
             FieldAction::Set(emails) => callback(Some(emails)),
@@ -252,6 +261,31 @@ pub trait HomeserverConnection: Send + Sync {
     /// Returns an error if the homeserver is unreachable or the user could not
     /// be deleted.
     async fn delete_user(&self, mxid: &str, erase: bool) -> Result<(), Self::Error>;
+
+    /// Set the displayname of a user on the homeserver.
+    ///
+    /// # Parameters
+    ///
+    /// * `mxid` - The Matrix ID of the user to set the displayname for.
+    /// * `displayname` - The displayname to set.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the homeserver is unreachable or the displayname
+    /// could not be set.
+    async fn set_displayname(&self, mxid: &str, displayname: &str) -> Result<(), Self::Error>;
+
+    /// Unset the displayname of a user on the homeserver.
+    ///
+    /// # Parameters
+    ///
+    /// * `mxid` - The Matrix ID of the user to unset the displayname for.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the homeserver is unreachable or the displayname
+    /// could not be unset.
+    async fn unset_displayname(&self, mxid: &str) -> Result<(), Self::Error>;
 }
 
 #[async_trait::async_trait]
@@ -280,5 +314,13 @@ impl<T: HomeserverConnection + Send + Sync + ?Sized> HomeserverConnection for &T
 
     async fn delete_user(&self, mxid: &str, erase: bool) -> Result<(), Self::Error> {
         (**self).delete_user(mxid, erase).await
+    }
+
+    async fn set_displayname(&self, mxid: &str, displayname: &str) -> Result<(), Self::Error> {
+        (**self).set_displayname(mxid, displayname).await
+    }
+
+    async fn unset_displayname(&self, mxid: &str) -> Result<(), Self::Error> {
+        (**self).unset_displayname(mxid).await
     }
 }

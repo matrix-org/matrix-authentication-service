@@ -907,6 +907,29 @@ export default {
             ],
           },
           {
+            name: "setDisplayName",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "SetDisplayNamePayload",
+                ofType: null,
+              },
+            },
+            args: [
+              {
+                name: "input",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
+          },
+          {
             name: "setPrimaryEmail",
             type: {
               kind: "NON_NULL",
@@ -1638,6 +1661,33 @@ export default {
                 name: "User",
                 ofType: null,
               },
+            },
+            args: [],
+          },
+        ],
+        interfaces: [],
+      },
+      {
+        kind: "OBJECT",
+        name: "SetDisplayNamePayload",
+        fields: [
+          {
+            name: "status",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+          {
+            name: "user",
+            type: {
+              kind: "OBJECT",
+              name: "User",
+              ofType: null,
             },
             args: [],
           },

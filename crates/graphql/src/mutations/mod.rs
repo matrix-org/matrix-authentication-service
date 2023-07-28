@@ -14,6 +14,7 @@
 
 mod browser_session;
 mod compat_session;
+mod matrix;
 mod oauth2_session;
 mod user_email;
 
@@ -26,6 +27,7 @@ pub struct Mutation(
     oauth2_session::OAuth2SessionMutations,
     compat_session::CompatSessionMutations,
     browser_session::BrowserSessionMutations,
+    matrix::MatrixMutations,
 );
 
 impl Mutation {
