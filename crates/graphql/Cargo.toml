@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [dependencies]
 anyhow = "1.0.72"
-async-graphql = { version = "5.0.10", features = ["chrono", "url"] }
+async-graphql = { version = "6.0.0", features = ["chrono", "url"] }
 async-trait = "0.1.72"
 chrono = "0.4.26"
 lettre = { version = "0.10.4", default-features = false  }
