@@ -161,10 +161,11 @@ impl<'c> UserRepository for PgUserRepository<'c> {
         let id = Ulid::from_datetime_with_source(created_at.into(), rng);
         tracing::Span::current().record("user.id", tracing::field::display(id));
 
-        sqlx::query!(
+        let res = sqlx::query!(
             r#"
                 INSERT INTO users (user_id, username, created_at)
                 VALUES ($1, $2, $3)
+                ON CONFLICT (username) DO NOTHING
             "#,
             Uuid::from(id),
             username,
@@ -173,6 +174,10 @@ impl<'c> UserRepository for PgUserRepository<'c> {
         .traced()
         .execute(&mut *self.conn)
         .await?;
+
+        // If the user already exists, want to return an error but not poison the
+        // transaction
+        DatabaseError::ensure_affected_rows(&res, 1)?;
 
         Ok(User {
             id,
