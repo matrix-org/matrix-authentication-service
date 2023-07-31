@@ -50,7 +50,7 @@ zeroize = "1.6.0"
 # Various data types and utilities
 camino = "1.1.6"
 chrono = { version = "0.4.26", features = ["serde"] }
-time = "0.3.23"
+time = "0.3.24"
 url = { version = "2.4.0", features = ["serde"] }
 mime = "0.3.17"
 rand = "0.8.5"
