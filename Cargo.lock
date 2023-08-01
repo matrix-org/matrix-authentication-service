@@ -3362,9 +3362,11 @@ dependencies = [
 name = "mas-matrix"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "async-trait",
  "http",
  "serde",
+ "tokio",
  "url",
 ]
 

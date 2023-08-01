@@ -16,6 +16,10 @@
 #![deny(clippy::all, clippy::str_to_string, rustdoc::broken_intra_doc_links)]
 #![warn(clippy::pedantic)]
 
+mod mock;
+
+pub use self::mock::MockHomeserverConnection;
+
 #[derive(Debug)]
 pub struct MatrixUser {
     pub displayname: Option<String>,
@@ -40,10 +44,10 @@ pub struct ProvisionRequest {
 
 impl ProvisionRequest {
     #[must_use]
-    pub fn new(mxid: String, sub: String) -> Self {
+    pub fn new(mxid: impl Into<String>, sub: impl Into<String>) -> Self {
         Self {
-            mxid,
-            sub,
+            mxid: mxid.into(),
+            sub: sub.into(),
             displayname: FieldAction::DoNothing,
             avatar_url: FieldAction::DoNothing,
             emails: FieldAction::DoNothing,
