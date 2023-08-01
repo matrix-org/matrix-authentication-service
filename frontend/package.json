@@ -16,13 +16,14 @@
   },
   "dependencies": {
     "@emotion/react": "^11.11.1",
+    "@fontsource/inter": "^5.0.5",
     "@urql/core": "^4.1.0",
     "@urql/devtools": "^2.0.3",
     "@urql/exchange-graphcache": "^6.3.1",
     "@urql/exchange-refocus": "^1.0.2",
     "@urql/exchange-request-policy": "^1.0.2",
-    "@vector-im/compound-web": "file:./vendor/vector-im-compound-web-f0d4eaf.tgz",
-    "@vector-im/compound-design-tokens": "file:./vendor/vector-im-compound-design-tokens-aa55111.tgz",
+    "@vector-im/compound-design-tokens": "^0.0.3",
+    "@vector-im/compound-web": "^0.2.1",
     "date-fns": "^2.30.0",
     "graphql": "^16.7.1",
     "jotai": "^2.2.2",
@@ -75,8 +76,5 @@
     "vite-plugin-manifest-sri": "^0.1.0",
     "vite-plugin-svgr": "^3.2.0",
     "vitest": "^0.33.0"
-  },
-  "overrides": {
-      "@vector-im/compound-design-tokens": "$@vector-im/compound-design-tokens"
   }
 }

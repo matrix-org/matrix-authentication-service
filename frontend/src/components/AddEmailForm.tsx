@@ -15,7 +15,7 @@
 import { Control, Field, Root, Submit } from "@vector-im/compound-web";
 import { atom, useAtom } from "jotai";
 import { atomWithMutation } from "jotai-urql";
-import { useTransition } from "react";
+import { useRef, useTransition } from "react";
 
 import { graphql } from "../gql";
 
@@ -44,8 +44,7 @@ const AddEmailForm: React.FC<{ userId: string; onAdd?: () => void }> = ({
   userId,
   onAdd,
 }) => {
-  // TODO: there is a problem with refs in compound
-  //const formRef = useRef<HTMLFormElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const [addEmailResult, addEmail] = useAtom(addUserEmailAtom);
   const [pending, startTransition] = useTransition();
 
@@ -65,7 +64,7 @@ const AddEmailForm: React.FC<{ userId: string; onAdd?: () => void }> = ({
         onAdd?.();
 
         // Reset the form
-        //formRef.current?.reset();
+        formRef.current?.reset();
       });
     });
   };
@@ -97,7 +96,7 @@ const AddEmailForm: React.FC<{ userId: string; onAdd?: () => void }> = ({
         </div>
       )}
 
-      <Root className="flex" onSubmit={handleSubmit}>
+      <Root ref={formRef} className="flex" onSubmit={handleSubmit}>
         <Field name="email" className="flex-1 mr-2">
           <Control disabled={pending} type="email" inputMode="email" />
         </Field>
