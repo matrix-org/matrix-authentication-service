@@ -24,7 +24,7 @@ import {
 import { atom, useAtom, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
-import { useTransition } from "react";
+import { useRef, useTransition } from "react";
 
 import { FragmentType, graphql, useFragment } from "../gql";
 
@@ -175,8 +175,7 @@ const UserEmail: React.FC<{
   );
   const setPrimaryEmail = useSetAtom(setPrimaryEmailFamily(data.id));
   const removeEmail = useSetAtom(removeEmailFamily(data.id));
-  // TODO: compound doesn't forward the refs properly
-  // const fieldRef = useRef<HTMLInputElement>(null);
+  const fieldRef = useRef<HTMLInputElement>(null);
 
   const onFormSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
@@ -199,7 +198,7 @@ const UserEmail: React.FC<{
   const onResendClick = (): void => {
     startTransition(() => {
       resendVerificationEmail().then(() => {
-        // TODO: fieldRef.current?.focus();
+        fieldRef.current?.focus();
       });
     });
   };
@@ -249,7 +248,7 @@ const UserEmail: React.FC<{
           <Field name="code" className="col-span-2">
             <Label>Code</Label>
             <Control
-              // ref={fieldRef}
+              ref={fieldRef}
               placeholder="xxxxxx"
               type="text"
               inputMode="numeric"

@@ -27,6 +27,7 @@ export default defineConfig((env) => ({
   build: {
     manifest: true,
     assetsDir: "",
+    assetsInlineLimit: 0,
     sourcemap: true,
     modulePreload: false,
 
