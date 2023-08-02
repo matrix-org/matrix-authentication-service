@@ -53,12 +53,12 @@ export const globalTypes: ArgTypes = {
 const ThemeSwitcher: React.FC<{ theme?: "light" | "dark" }> = ({ theme }) => {
   useLayoutEffect(() => {
     if (theme === "dark") {
-      document.documentElement.classList.add("dark");
+      document.documentElement.classList.add("cpd-theme-dark");
     } else {
-      document.documentElement.classList.remove("dark");
+      document.documentElement.classList.remove("cpd-theme-dark");
     }
 
-    return () => document.documentElement.classList.remove("dark");
+    return () => document.documentElement.classList.remove("cpd-theme-dark");
   }, [theme]);
 
   return null;
