@@ -17,7 +17,7 @@
   "dependencies": {
     "@emotion/react": "^11.11.1",
     "@fontsource/inter": "^5.0.5",
-    "@urql/core": "^4.1.0",
+    "@urql/core": "^4.1.1",
     "@urql/devtools": "^2.0.3",
     "@urql/exchange-graphcache": "^6.3.1",
     "@urql/exchange-refocus": "^1.0.2",
