@@ -12,15 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// <reference types="vitest" />
 import { resolve } from "path";
 
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
 import compression from "vite-plugin-compression";
 import codegen from "vite-plugin-graphql-codegen";
 import manifestSRI from "vite-plugin-manifest-sri";
 import svgr from "vite-plugin-svgr";
+import { defineConfig } from "vitest/config";
 
 export default defineConfig((env) => ({
   base: "./",
@@ -115,10 +114,11 @@ export default defineConfig((env) => ({
   },
   test: {
     coverage: {
-      provider: "c8",
+      provider: "v8",
       src: ["./src/"],
       exclude: ["**/gql/**", "**/*.d.ts", "**/*.stories.*"],
       all: true,
+      reporter: ["text", "html", "lcov"],
     },
   },
 }));
