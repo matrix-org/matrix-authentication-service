@@ -12,12 +12,12 @@ thiserror = "1.0.44"
 headers = "0.3.8"
 
 aws-sdk-sesv2 = { version = "0.28.0", default-features = false }
-aws-config = { version = "0.55.3", default-features = false }
-aws-smithy-client = { version = "0.55.3", default-features = false, features = ["client-hyper"] }
-aws-smithy-async = { version = "0.55.3", default-features = false, features = ["rt-tokio"] }
-aws-smithy-http = { version = "0.55.3", default-features = false }
-aws-smithy-http-tower = { version = "0.55.3", default-features = false }
-aws-types = "0.55.3"
+aws-config = { version = "0.56.0", default-features = false }
+aws-smithy-client = { version = "0.56.0", default-features = false, features = ["client-hyper"] }
+aws-smithy-async = { version = "0.56.0", default-features = false, features = ["rt-tokio"] }
+aws-smithy-http = { version = "0.56.0", default-features = false }
+aws-smithy-http-tower = { version = "0.56.0", default-features = false }
+aws-types = "0.56.0"
 
 mas-templates = { path = "../templates" }
 mas-http = { path = "../http", features = ["aws-sdk", "client"] }
