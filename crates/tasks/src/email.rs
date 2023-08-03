@@ -13,25 +13,14 @@
 // limitations under the License.
 
 use anyhow::Context;
-use apalis_core::{
-    builder::{WorkerBuilder, WorkerFactoryFn},
-    context::JobContext,
-    executor::TokioExecutor,
-    job::Job,
-    monitor::Monitor,
-    storage::builder::WithStorage,
-};
+use apalis_core::{context::JobContext, executor::TokioExecutor, monitor::Monitor};
 use chrono::Duration;
 use mas_email::{Address, EmailVerificationContext, Mailbox};
 use mas_storage::job::{JobWithSpanContext, VerifyEmailJob};
 use rand::{distributions::Uniform, Rng};
 use tracing::info;
 
-use crate::{
-    storage::PostgresStorageFactory,
-    utils::{metrics_layer, trace_layer},
-    JobContextExt, State,
-};
+use crate::{storage::PostgresStorageFactory, JobContextExt, State};
 
 #[tracing::instrument(
     name = "job.verify_email",
@@ -99,16 +88,8 @@ pub(crate) fn register(
     state: &State,
     storage_factory: &PostgresStorageFactory,
 ) -> Monitor<TokioExecutor> {
-    let storage = storage_factory.build();
-    let worker_name = format!("{job}-{suffix}", job = VerifyEmailJob::NAME);
-    let worker = WorkerBuilder::new(worker_name)
-        .layer(state.inject())
-        .layer(trace_layer())
-        .layer(metrics_layer())
-        .with_storage_config(storage, |c| {
-            c.fetch_interval(std::time::Duration::from_secs(1))
-        })
-        .build_fn(verify_email);
+    let verify_email_worker =
+        crate::build!(VerifyEmailJob => verify_email, suffix, state, storage_factory);
 
-    monitor.register(worker)
+    monitor.register(verify_email_worker)
 }

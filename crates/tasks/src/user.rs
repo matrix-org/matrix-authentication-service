@@ -12,29 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::time::Duration;
-
 use anyhow::Context;
-use apalis_core::{
-    builder::{WorkerBuilder, WorkerFactoryFn},
-    context::JobContext,
-    executor::TokioExecutor,
-    job::Job,
-    monitor::Monitor,
-    storage::builder::WithStorage,
-};
+use apalis_core::{context::JobContext, executor::TokioExecutor, monitor::Monitor};
 use mas_storage::{
-    job::{DeactivateUserJob, DeleteDeviceJob, JobWithSpanContext},
+    job::{DeactivateUserJob, JobWithSpanContext},
     user::UserRepository,
     RepositoryAccess,
 };
 use tracing::info;
 
-use crate::{
-    storage::PostgresStorageFactory,
-    utils::{metrics_layer, trace_layer},
-    JobContextExt, State,
-};
+use crate::{storage::PostgresStorageFactory, JobContextExt, State};
 
 /// Job to deactivate a user, both locally and on the Matrix homeserver.
 #[tracing::instrument(
@@ -83,14 +70,8 @@ pub(crate) fn register(
     state: &State,
     storage_factory: &PostgresStorageFactory,
 ) -> Monitor<TokioExecutor> {
-    let storage = storage_factory.build();
-    let worker_name = format!("{job}-{suffix}", job = DeleteDeviceJob::NAME);
-    let deactivate_user_worker = WorkerBuilder::new(worker_name)
-        .layer(state.inject())
-        .layer(trace_layer())
-        .layer(metrics_layer())
-        .with_storage_config(storage, |c| c.fetch_interval(Duration::from_secs(1)))
-        .build_fn(deactivate_user);
+    let deactivate_user_worker =
+        crate::build!(DeactivateUserJob => deactivate_user, suffix, state, storage_factory);
 
     monitor.register(deactivate_user_worker)
 }

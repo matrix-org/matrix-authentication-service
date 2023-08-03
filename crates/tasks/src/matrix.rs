@@ -12,17 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::time::Duration;
-
 use anyhow::Context;
-use apalis_core::{
-    builder::{WorkerBuilder, WorkerFactoryFn},
-    context::JobContext,
-    executor::TokioExecutor,
-    job::Job,
-    monitor::Monitor,
-    storage::builder::WithStorage,
-};
+use apalis_core::{context::JobContext, executor::TokioExecutor, monitor::Monitor};
 use mas_matrix::ProvisionRequest;
 use mas_storage::{
     job::{DeleteDeviceJob, JobWithSpanContext, ProvisionDeviceJob, ProvisionUserJob},
@@ -31,11 +22,7 @@ use mas_storage::{
 };
 use tracing::info;
 
-use crate::{
-    storage::PostgresStorageFactory,
-    utils::{metrics_layer, trace_layer},
-    JobContextExt, State,
-};
+use crate::{storage::PostgresStorageFactory, JobContextExt, State};
 
 /// Job to provision a user on the Matrix homeserver.
 /// This works by doing a PUT request to the /_synapse/admin/v2/users/{user_id}
@@ -163,32 +150,12 @@ pub(crate) fn register(
     state: &State,
     storage_factory: &PostgresStorageFactory,
 ) -> Monitor<TokioExecutor> {
-    let storage = storage_factory.build();
-    let worker_name = format!("{job}-{suffix}", job = ProvisionUserJob::NAME);
-    let provision_user_worker = WorkerBuilder::new(worker_name)
-        .layer(state.inject())
-        .layer(trace_layer())
-        .layer(metrics_layer())
-        .with_storage_config(storage, |c| c.fetch_interval(Duration::from_secs(1)))
-        .build_fn(provision_user);
-
-    let storage = storage_factory.build();
-    let worker_name = format!("{job}-{suffix}", job = ProvisionDeviceJob::NAME);
-    let provision_device_worker = WorkerBuilder::new(worker_name)
-        .layer(state.inject())
-        .layer(trace_layer())
-        .layer(metrics_layer())
-        .with_storage_config(storage, |c| c.fetch_interval(Duration::from_secs(1)))
-        .build_fn(provision_device);
-
-    let storage = storage_factory.build();
-    let worker_name = format!("{job}-{suffix}", job = DeleteDeviceJob::NAME);
-    let delete_device_worker = WorkerBuilder::new(worker_name)
-        .layer(state.inject())
-        .layer(trace_layer())
-        .layer(metrics_layer())
-        .with_storage_config(storage, |c| c.fetch_interval(Duration::from_secs(1)))
-        .build_fn(delete_device);
+    let provision_user_worker =
+        crate::build!(ProvisionUserJob => provision_user, suffix, state, storage_factory);
+    let provision_device_worker =
+        crate::build!(ProvisionDeviceJob => provision_device, suffix, state, storage_factory);
+    let delete_device_worker =
+        crate::build!(DeleteDeviceJob => delete_device, suffix, state, storage_factory);
 
     monitor
         .register(provision_user_worker)
