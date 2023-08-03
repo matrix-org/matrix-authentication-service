@@ -73,6 +73,15 @@ pub struct JobWithSpanContext<T> {
     payload: T,
 }
 
+impl<J> From<J> for JobWithSpanContext<J> {
+    fn from(payload: J) -> Self {
+        Self {
+            span_context: None,
+            payload,
+        }
+    }
+}
+
 impl<J: Job> Job for JobWithSpanContext<J> {
     const NAME: &'static str = J::NAME;
 }
@@ -369,6 +378,47 @@ mod jobs {
     impl Job for DeleteDeviceJob {
         const NAME: &'static str = "delete-device";
     }
+
+    /// A job to deactivate and lock a user
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct DeactivateUserJob {
+        user_id: Ulid,
+        hs_erase: bool,
+    }
+
+    impl DeactivateUserJob {
+        /// Create a new job to deactivate and lock a user
+        ///
+        /// # Parameters
+        ///
+        /// * `user` - The user to deactivate
+        /// * `hs_erase` - Whether to erase the user from the homeserver
+        #[must_use]
+        pub fn new(user: &User, hs_erase: bool) -> Self {
+            Self {
+                user_id: user.id,
+                hs_erase,
+            }
+        }
+
+        /// The ID of the user to deactivate
+        #[must_use]
+        pub fn user_id(&self) -> Ulid {
+            self.user_id
+        }
+
+        /// Whether to erase the user from the homeserver
+        #[must_use]
+        pub fn hs_erase(&self) -> bool {
+            self.hs_erase
+        }
+    }
+
+    impl Job for DeactivateUserJob {
+        const NAME: &'static str = "deactivate-user";
+    }
 }
 
-pub use self::jobs::{DeleteDeviceJob, ProvisionDeviceJob, ProvisionUserJob, VerifyEmailJob};
+pub use self::jobs::{
+    DeactivateUserJob, DeleteDeviceJob, ProvisionDeviceJob, ProvisionUserJob, VerifyEmailJob,
+};

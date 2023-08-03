@@ -33,6 +33,7 @@ mod database;
 mod email;
 mod matrix;
 mod storage;
+mod user;
 mod utils;
 
 #[derive(Clone)]
@@ -128,6 +129,7 @@ pub async fn init(
     let monitor = self::database::register(name, monitor, &state);
     let monitor = self::email::register(name, monitor, &state, &factory);
     let monitor = self::matrix::register(name, monitor, &state, &factory);
+    let monitor = self::user::register(name, monitor, &state, &factory);
     // TODO: we might want to grab the join handle here
     factory.listen().await?;
     debug!(?monitor, "workers registered");

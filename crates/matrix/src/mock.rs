@@ -109,6 +109,19 @@ impl HomeserverConnection for MockHomeserverConnection {
         user.devices.remove(device_id);
         Ok(())
     }
+
+    async fn delete_user(&self, mxid: &str, erase: bool) -> Result<(), Self::Error> {
+        let mut users = self.users.write().await;
+        let user = users.get_mut(mxid).context("User not found")?;
+        user.devices.clear();
+        user.emails = None;
+        if erase {
+            user.avatar_url = None;
+            user.displayname = None;
+        }
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]

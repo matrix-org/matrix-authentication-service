@@ -124,6 +124,11 @@ struct SynapseDevice {
     device_id: String,
 }
 
+#[derive(Serialize)]
+struct SynapseDeactivateUserRequest {
+    erase: bool,
+}
+
 #[async_trait::async_trait]
 impl HomeserverConnection for SynapseConnection {
     type Error = anyhow::Error;
@@ -132,6 +137,15 @@ impl HomeserverConnection for SynapseConnection {
         &self.homeserver
     }
 
+    #[tracing::instrument(
+        name = "homeserver.query_user",
+        skip_all,
+        fields(
+            matrix.homeserver = self.homeserver,
+            matrix.mxid = mxid,
+        ),
+        err(Display),
+    )]
     async fn query_user(&self, mxid: &str) -> Result<MatrixUser, Self::Error> {
         let mut client = self
             .http_client_factory
@@ -158,6 +172,16 @@ impl HomeserverConnection for SynapseConnection {
         })
     }
 
+    #[tracing::instrument(
+        name = "homeserver.provision_user",
+        skip_all,
+        fields(
+            matrix.homeserver = self.homeserver,
+            matrix.mxid = request.mxid(),
+            user.id = request.sub(),
+        ),
+        err(Display),
+    )]
     async fn provision_user(&self, request: &ProvisionRequest) -> Result<bool, Self::Error> {
         let mut body = SynapseUser {
             external_ids: Some(vec![ExternalID {
@@ -213,6 +237,16 @@ impl HomeserverConnection for SynapseConnection {
         }
     }
 
+    #[tracing::instrument(
+        name = "homeserver.create_device",
+        skip_all,
+        fields(
+            matrix.homeserver = self.homeserver,
+            matrix.mxid = mxid,
+            matrix.device_id = device_id,
+        ),
+        err(Display),
+    )]
     async fn create_device(&self, mxid: &str, device_id: &str) -> Result<(), Self::Error> {
         let mut client = self
             .http_client_factory
@@ -236,6 +270,16 @@ impl HomeserverConnection for SynapseConnection {
         Ok(())
     }
 
+    #[tracing::instrument(
+        name = "homeserver.delete_device",
+        skip_all,
+        fields(
+            matrix.homeserver = self.homeserver,
+            matrix.mxid = mxid,
+            matrix.device_id = device_id,
+        ),
+        err(Display),
+    )]
     async fn delete_device(&self, mxid: &str, device_id: &str) -> Result<(), Self::Error> {
         let mut client = self.http_client_factory.client().await?;
 
@@ -249,6 +293,37 @@ impl HomeserverConnection for SynapseConnection {
 
         if response.status() != StatusCode::OK {
             return Err(anyhow::anyhow!("Failed to delete device in Synapse"));
+        }
+
+        Ok(())
+    }
+
+    #[tracing::instrument(
+        name = "homeserver.delete_user",
+        skip_all,
+        fields(
+            matrix.homeserver = self.homeserver,
+            matrix.mxid = mxid,
+            erase = erase,
+        ),
+        err(Display),
+    )]
+    async fn delete_user(&self, mxid: &str, erase: bool) -> Result<(), Self::Error> {
+        let mut client = self
+            .http_client_factory
+            .client()
+            .await?
+            .request_bytes_to_body()
+            .json_request();
+
+        let request = self
+            .post(&format!("_synapse/admin/v1/deactivate/{mxid}"))
+            .body(SynapseDeactivateUserRequest { erase })?;
+
+        let response = client.ready().await?.call(request).await?;
+
+        if response.status() != StatusCode::OK {
+            return Err(anyhow::anyhow!("Failed to delete user in Synapse"));
         }
 
         Ok(())

@@ -3382,6 +3382,7 @@ dependencies = [
  "mas-matrix",
  "serde",
  "tower",
+ "tracing",
  "url",
 ]
 
