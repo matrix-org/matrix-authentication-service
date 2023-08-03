@@ -170,9 +170,9 @@ checksum = "3b13c32d80ecc7ab747b80c3784bce54ee8a7a0cc4fbda9bf4cda2cf6fe90854"
 
 [[package]]
 name = "apalis-core"
-version = "0.4.3"
+version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "00c1754ab2177e028672e3a4aed42103656a7af676152d9533f5f5f8d2f8157d"
+checksum = "31d1c09ff98efe3e8e02161b457c8d3ea75620915ccd1882e503d5d768166512"
 dependencies = [
  "async-stream",
  "async-trait",
