@@ -109,5 +109,6 @@ pub(crate) fn register(
             c.fetch_interval(std::time::Duration::from_secs(1))
         })
         .build_fn(verify_email);
+
     monitor.register(worker)
 }
