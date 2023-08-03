@@ -18,7 +18,7 @@
 
 mod mock;
 
-pub use self::mock::MockHomeserverConnection;
+pub use self::mock::HomeserverConnection as MockHomeserverConnection;
 
 #[derive(Debug)]
 pub struct MatrixUser {

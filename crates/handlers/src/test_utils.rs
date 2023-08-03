@@ -23,7 +23,7 @@ use headers::{Authorization, ContentType, HeaderMapExt, HeaderName};
 use hyper::{header::CONTENT_TYPE, Request, Response, StatusCode};
 use mas_axum_utils::http_client_factory::HttpClientFactory;
 use mas_keystore::{Encrypter, JsonWebKey, JsonWebKeySet, Keystore, PrivateKey};
-use mas_matrix::{HomeserverConnection, MatrixUser, MockHomeserverConnection, ProvisionRequest};
+use mas_matrix::MockHomeserverConnection;
 use mas_policy::PolicyFactory;
 use mas_router::{SimpleRoute, UrlBuilder};
 use mas_storage::{clock::MockClock, BoxClock, BoxRepository, BoxRng, Repository};

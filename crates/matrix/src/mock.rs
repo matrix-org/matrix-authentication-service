@@ -18,7 +18,7 @@ use anyhow::Context;
 use async_trait::async_trait;
 use tokio::sync::RwLock;
 
-use crate::{HomeserverConnection, MatrixUser, ProvisionRequest};
+use crate::{MatrixUser, ProvisionRequest};
 
 struct MockUser {
     sub: String,
@@ -28,15 +28,15 @@ struct MockUser {
     emails: Option<Vec<String>>,
 }
 
-/// A Mock implementation of a [`HomeserverConnection`], which never fails and
+/// A mock implementation of a [`HomeserverConnection`], which never fails and
 /// doesn't do anything.
-pub struct MockHomeserverConnection {
+pub struct HomeserverConnection {
     homeserver: String,
     users: RwLock<HashMap<String, MockUser>>,
 }
 
-impl MockHomeserverConnection {
-    /// Create a new [`MockHomeserverConnection`].
+impl HomeserverConnection {
+    /// Create a new mock connection.
     pub fn new<H>(homeserver: H) -> Self
     where
         H: Into<String>,
@@ -49,7 +49,7 @@ impl MockHomeserverConnection {
 }
 
 #[async_trait]
-impl HomeserverConnection for MockHomeserverConnection {
+impl crate::HomeserverConnection for HomeserverConnection {
     type Error = anyhow::Error;
 
     fn homeserver(&self) -> &str {
@@ -127,10 +127,11 @@ impl HomeserverConnection for MockHomeserverConnection {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::HomeserverConnection as _;
 
     #[tokio::test]
     async fn test_mock_connection() {
-        let conn = MockHomeserverConnection::new("example.org");
+        let conn = HomeserverConnection::new("example.org");
 
         let mxid = "@test:example.org";
         let device = "test";
