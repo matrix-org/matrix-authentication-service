@@ -18,14 +18,32 @@ use mas_tower::{
     make_span_fn, DurationRecorderLayer, FnWrapper, IdentityLayer, InFlightCounterLayer,
     TraceLayer, KV,
 };
-use opentelemetry::{Key, KeyValue};
+use opentelemetry::{trace::SpanContext, Key, KeyValue};
 use tracing::info_span;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 const JOB_NAME: Key = Key::from_static_str("job.name");
 const JOB_STATUS: Key = Key::from_static_str("job.status");
 
-fn make_span_for_job_request<J>(req: &JobRequest<JobWithSpanContext<J>>) -> tracing::Span
+/// Represents a job that can may have a span context attached to it.
+pub trait TracedJob: Job {
+    /// Returns the span context for this job, if any.
+    ///
+    /// The default implementation returns `None`.
+    fn span_context(&self) -> Option<SpanContext> {
+        None
+    }
+}
+
+/// Implements [`TracedJob`] for any job with the [`JobWithSpanContext`]
+/// wrapper.
+impl<J: Job> TracedJob for JobWithSpanContext<J> {
+    fn span_context(&self) -> Option<SpanContext> {
+        JobWithSpanContext::span_context(self)
+    }
+}
+
+fn make_span_for_job_request<J: TracedJob>(req: &JobRequest<J>) -> tracing::Span
 where
     J: Job,
 {
@@ -45,18 +63,15 @@ where
     span
 }
 
-type TraceLayerForJob<J> = TraceLayer<
-    FnWrapper<fn(&JobRequest<JobWithSpanContext<J>>) -> tracing::Span>,
-    KV<&'static str>,
-    KV<&'static str>,
->;
+type TraceLayerForJob<J> =
+    TraceLayer<FnWrapper<fn(&JobRequest<J>) -> tracing::Span>, KV<&'static str>, KV<&'static str>>;
 
 pub(crate) fn trace_layer<J>() -> TraceLayerForJob<J>
 where
-    J: Job,
+    J: TracedJob,
 {
     TraceLayer::new(make_span_fn(
-        make_span_for_job_request::<J> as fn(&JobRequest<JobWithSpanContext<J>>) -> tracing::Span,
+        make_span_for_job_request::<J> as fn(&JobRequest<J>) -> tracing::Span,
     ))
     .on_response(KV("otel.status_code", "OK"))
     .on_error(KV("otel.status_code", "ERROR"))

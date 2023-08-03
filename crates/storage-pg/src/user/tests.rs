@@ -63,11 +63,37 @@ async fn test_user_repo(pool: PgPool) {
     assert!(repo.user().lookup(user.id).await.unwrap().is_some());
 
     // Adding a second time should give a conflict
+    // It should not poison the transaction though
     assert!(repo
         .user()
         .add(&mut rng, &clock, USERNAME.to_owned())
         .await
         .is_err());
+
+    // Try locking a user
+    assert!(user.is_valid());
+    let user = repo.user().lock(&clock, user).await.unwrap();
+    assert!(!user.is_valid());
+
+    // Check that the property is retrieved on lookup
+    let user = repo.user().lookup(user.id).await.unwrap().unwrap();
+    assert!(!user.is_valid());
+
+    // Locking a second time should not fail
+    let user = repo.user().lock(&clock, user).await.unwrap();
+    assert!(!user.is_valid());
+
+    // Try unlocking a user
+    let user = repo.user().unlock(user).await.unwrap();
+    assert!(user.is_valid());
+
+    // Check that the property is retrieved on lookup
+    let user = repo.user().lookup(user.id).await.unwrap().unwrap();
+    assert!(user.is_valid());
+
+    // Unlocking a second time should not fail
+    let user = repo.user().unlock(user).await.unwrap();
+    assert!(user.is_valid());
 
     repo.save().await.unwrap();
 }

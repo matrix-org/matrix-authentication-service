@@ -6,7 +6,9 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
+anyhow = "1.0.71"
 serde = { version = "1.0.180", features = ["derive"] }
 async-trait = "0.1.72"
 http = "0.2.9"
+tokio = { version = "1.28.2", features = ["sync", "macros", "rt"] }
 url = "2.4.0"

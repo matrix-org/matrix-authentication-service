@@ -31,6 +31,7 @@ use mas_storage::{
     Repository, RepositoryAccess, RepositoryTransaction,
 };
 use sqlx::{PgPool, Postgres, Transaction};
+use tracing::Instrument;
 
 use crate::{
     compat::{
@@ -78,11 +79,21 @@ impl RepositoryTransaction for PgRepository {
     type Error = DatabaseError;
 
     fn save(self: Box<Self>) -> BoxFuture<'static, Result<(), Self::Error>> {
-        self.txn.commit().map_err(DatabaseError::from).boxed()
+        let span = tracing::info_span!("db.save");
+        self.txn
+            .commit()
+            .map_err(DatabaseError::from)
+            .instrument(span)
+            .boxed()
     }
 
     fn cancel(self: Box<Self>) -> BoxFuture<'static, Result<(), Self::Error>> {
-        self.txn.rollback().map_err(DatabaseError::from).boxed()
+        let span = tracing::info_span!("db.cancel");
+        self.txn
+            .rollback()
+            .map_err(DatabaseError::from)
+            .instrument(span)
+            .boxed()
     }
 }
 

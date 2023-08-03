@@ -25,6 +25,16 @@ pub struct User {
     pub username: String,
     pub sub: String,
     pub primary_user_email_id: Option<Ulid>,
+    pub created_at: DateTime<Utc>,
+    pub locked_at: Option<DateTime<Utc>>,
+}
+
+impl User {
+    /// Returns `true` unless the user is locked.
+    #[must_use]
+    pub fn is_valid(&self) -> bool {
+        self.locked_at.is_none()
+    }
 }
 
 impl User {
@@ -35,6 +45,8 @@ impl User {
             username: "john".to_owned(),
             sub: "123-456".to_owned(),
             primary_user_email_id: None,
+            created_at: now,
+            locked_at: None,
         }]
     }
 }
@@ -65,7 +77,7 @@ pub struct BrowserSession {
 impl BrowserSession {
     #[must_use]
     pub fn active(&self) -> bool {
-        self.finished_at.is_none()
+        self.finished_at.is_none() && self.user.is_valid()
     }
 }
 

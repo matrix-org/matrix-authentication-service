@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n                SELECT user_id\n                     , username\n                     , primary_user_email_id\n                     , created_at\n                FROM users\n                WHERE username = $1\n            ",
+  "query": "\n                SELECT user_id\n                     , username\n                     , primary_user_email_id\n                     , created_at\n                     , locked_at\n                FROM users\n                WHERE username = $1\n            ",
   "describe": {
     "columns": [
       {
@@ -22,6 +22,11 @@
         "ordinal": 3,
         "name": "created_at",
         "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "locked_at",
+        "type_info": "Timestamptz"
       }
     ],
     "parameters": {
@@ -33,8 +38,9 @@
       false,
       false,
       true,
-      false
+      false,
+      true
     ]
   },
-  "hash": "836fb7567d84057fa7f1edaab834c21a158a5762fe220b6bfacd6576be6c613c"
+  "hash": "bfa5eaeaa5b4574bb083c86711eb4599f6374c96bb4a6827d400acb22fb0fd39"
 }

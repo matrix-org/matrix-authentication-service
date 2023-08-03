@@ -55,9 +55,8 @@ struct UserLookup {
     user_id: Uuid,
     username: String,
     primary_user_email_id: Option<Uuid>,
-
-    #[allow(dead_code)]
     created_at: DateTime<Utc>,
+    locked_at: Option<DateTime<Utc>>,
 }
 
 impl From<UserLookup> for User {
@@ -68,6 +67,8 @@ impl From<UserLookup> for User {
             username: value.username,
             sub: id.to_string(),
             primary_user_email_id: value.primary_user_email_id.map(Into::into),
+            created_at: value.created_at,
+            locked_at: value.locked_at,
         }
     }
 }
@@ -93,6 +94,7 @@ impl<'c> UserRepository for PgUserRepository<'c> {
                      , username
                      , primary_user_email_id
                      , created_at
+                     , locked_at
                 FROM users
                 WHERE user_id = $1
             "#,
@@ -124,6 +126,7 @@ impl<'c> UserRepository for PgUserRepository<'c> {
                      , username
                      , primary_user_email_id
                      , created_at
+                     , locked_at
                 FROM users
                 WHERE username = $1
             "#,
@@ -158,10 +161,11 @@ impl<'c> UserRepository for PgUserRepository<'c> {
         let id = Ulid::from_datetime_with_source(created_at.into(), rng);
         tracing::Span::current().record("user.id", tracing::field::display(id));
 
-        sqlx::query!(
+        let res = sqlx::query!(
             r#"
                 INSERT INTO users (user_id, username, created_at)
                 VALUES ($1, $2, $3)
+                ON CONFLICT (username) DO NOTHING
             "#,
             Uuid::from(id),
             username,
@@ -171,11 +175,17 @@ impl<'c> UserRepository for PgUserRepository<'c> {
         .execute(&mut *self.conn)
         .await?;
 
+        // If the user already exists, want to return an error but not poison the
+        // transaction
+        DatabaseError::ensure_affected_rows(&res, 1)?;
+
         Ok(User {
             id,
             username,
             sub: id.to_string(),
             primary_user_email_id: None,
+            created_at,
+            locked_at: None,
         })
     }
 
@@ -202,5 +212,73 @@ impl<'c> UserRepository for PgUserRepository<'c> {
         .await?;
 
         Ok(exists)
+    }
+
+    #[tracing::instrument(
+        name = "db.user.lock",
+        skip_all,
+        fields(
+            db.statement,
+            %user.id,
+        ),
+        err,
+    )]
+    async fn lock(&mut self, clock: &dyn Clock, mut user: User) -> Result<User, Self::Error> {
+        if user.locked_at.is_some() {
+            return Ok(user);
+        }
+
+        let locked_at = clock.now();
+        let res = sqlx::query!(
+            r#"
+                UPDATE users
+                SET locked_at = $1
+                WHERE user_id = $2
+            "#,
+            locked_at,
+            Uuid::from(user.id),
+        )
+        .traced()
+        .execute(&mut *self.conn)
+        .await?;
+
+        DatabaseError::ensure_affected_rows(&res, 1)?;
+
+        user.locked_at = Some(locked_at);
+
+        Ok(user)
+    }
+
+    #[tracing::instrument(
+        name = "db.user.unlock",
+        skip_all,
+        fields(
+            db.statement,
+            %user.id,
+        ),
+        err,
+    )]
+    async fn unlock(&mut self, mut user: User) -> Result<User, Self::Error> {
+        if user.locked_at.is_none() {
+            return Ok(user);
+        }
+
+        let res = sqlx::query!(
+            r#"
+                UPDATE users
+                SET locked_at = NULL
+                WHERE user_id = $1
+            "#,
+            Uuid::from(user.id),
+        )
+        .traced()
+        .execute(&mut *self.conn)
+        .await?;
+
+        DatabaseError::ensure_affected_rows(&res, 1)?;
+
+        user.locked_at = None;
+
+        Ok(user)
     }
 }

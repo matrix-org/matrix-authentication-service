@@ -188,6 +188,7 @@ pub(crate) async fn post(
                 .browser_session()
                 .lookup(session.user_session_id)
                 .await?
+                .filter(|b| b.user.is_valid())
                 // XXX: is that the right error to bubble up?
                 .ok_or(RouteError::UnknownToken)?;
 
@@ -227,6 +228,7 @@ pub(crate) async fn post(
                 .browser_session()
                 .lookup(session.user_session_id)
                 .await?
+                .filter(|b| b.user.is_valid())
                 // XXX: is that the right error to bubble up?
                 .ok_or(RouteError::UnknownToken)?;
 
@@ -265,6 +267,7 @@ pub(crate) async fn post(
                 .user()
                 .lookup(session.user_id)
                 .await?
+                .filter(mas_data_model::User::is_valid)
                 // XXX: is that the right error to bubble up?
                 .ok_or(RouteError::UnknownToken)?;
 
@@ -311,6 +314,7 @@ pub(crate) async fn post(
                 .user()
                 .lookup(session.user_id)
                 .await?
+                .filter(mas_data_model::User::is_valid)
                 // XXX: is that the right error to bubble up?
                 .ok_or(RouteError::UnknownToken)?;
 

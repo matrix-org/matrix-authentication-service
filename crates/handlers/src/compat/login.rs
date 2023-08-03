@@ -335,6 +335,7 @@ async fn token_login(
         .user()
         .lookup(session.user_id)
         .await?
+        .filter(mas_data_model::User::is_valid)
         .ok_or(RouteError::UserNotFound)?;
 
     repo.compat_sso_login().exchange(clock, login).await?;
@@ -355,6 +356,7 @@ async fn user_password_login(
         .user()
         .find_by_username(&username)
         .await?
+        .filter(mas_data_model::User::is_valid)
         .ok_or(RouteError::UserNotFound)?;
 
     // Lookup its password

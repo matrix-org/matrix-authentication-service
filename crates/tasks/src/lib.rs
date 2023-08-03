@@ -33,6 +33,7 @@ mod database;
 mod email;
 mod matrix;
 mod storage;
+mod user;
 mod utils;
 
 #[derive(Clone)]
@@ -106,6 +107,32 @@ impl JobContextExt for apalis_core::context::JobContext {
     }
 }
 
+/// Helper macro to build a storage-backed worker.
+macro_rules! build {
+    ($job:ty => $fn:ident, $suffix:expr, $state:expr, $factory:expr) => {{
+        let storage = $factory.build();
+        let worker_name = format!(
+            "{job}-{suffix}",
+            job = <$job as ::apalis_core::job::Job>::NAME,
+            suffix = $suffix
+        );
+
+        let builder = ::apalis_core::builder::WorkerBuilder::new(worker_name)
+            .layer($state.inject())
+            .layer(crate::utils::trace_layer())
+            .layer(crate::utils::metrics_layer());
+
+        let builder = ::apalis_core::storage::builder::WithStorage::with_storage_config(
+            builder,
+            storage,
+            |c| c.fetch_interval(std::time::Duration::from_secs(1)),
+        );
+        ::apalis_core::builder::WorkerFactory::build(builder, ::apalis_core::job_fn::job_fn($fn))
+    }};
+}
+
+pub(crate) use build;
+
 /// Initialise the workers.
 ///
 /// # Errors
@@ -128,6 +155,7 @@ pub async fn init(
     let monitor = self::database::register(name, monitor, &state);
     let monitor = self::email::register(name, monitor, &state, &factory);
     let monitor = self::matrix::register(name, monitor, &state, &factory);
+    let monitor = self::user::register(name, monitor, &state, &factory);
     // TODO: we might want to grab the join handle here
     factory.listen().await?;
     debug!(?monitor, "workers registered");

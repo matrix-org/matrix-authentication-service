@@ -18,14 +18,14 @@ use mas_config::{DatabaseConfig, PasswordsConfig};
 use mas_data_model::{Device, TokenType};
 use mas_storage::{
     compat::{CompatAccessTokenRepository, CompatSessionRepository},
-    job::{DeleteDeviceJob, JobRepositoryExt, ProvisionUserJob},
+    job::{DeactivateUserJob, DeleteDeviceJob, JobRepositoryExt, ProvisionUserJob},
     user::{UserEmailRepository, UserPasswordRepository, UserRepository},
     Repository, RepositoryAccess, SystemClock,
 };
 use mas_storage_pg::PgRepository;
 use rand::SeedableRng;
 use sqlx::types::Uuid;
-use tracing::{info, info_span};
+use tracing::{info, info_span, warn};
 
 use crate::util::{database_from_config, password_manager_from_config};
 
@@ -68,6 +68,22 @@ enum Subcommand {
         /// Do a dry run
         #[arg(long)]
         dry_run: bool,
+    },
+
+    /// Lock a user
+    LockUser {
+        /// User to lock
+        username: String,
+
+        /// Whether to deactivate the user
+        #[arg(long)]
+        deactivate: bool,
+    },
+
+    /// Unlock a user
+    UnlockUser {
+        /// User to unlock
+        username: String,
     },
 }
 
@@ -327,6 +343,59 @@ impl Options {
                 } else {
                     repo.save().await?;
                 }
+
+                Ok(())
+            }
+
+            SC::LockUser {
+                username,
+                deactivate,
+            } => {
+                let _span = info_span!("cli.manage.lock_user", user.username = username).entered();
+                let config: DatabaseConfig = root.load_config()?;
+                let pool = database_from_config(&config).await?;
+                let mut repo = PgRepository::from_pool(&pool).await?.boxed();
+
+                let user = repo
+                    .user()
+                    .find_by_username(&username)
+                    .await?
+                    .context("User not found")?;
+
+                info!(%user.id, "Locking user");
+
+                // Even though the deactivation job will lock the user, we lock it here in case
+                // the worker is not running, as we don't have a good way to run a job
+                // synchronously yet.
+                let user = repo.user().lock(&clock, user).await?;
+
+                if deactivate {
+                    warn!(%user.id, "Scheduling user deactivation");
+                    repo.job()
+                        .schedule_job(DeactivateUserJob::new(&user, false))
+                        .await?;
+                }
+                repo.save().await?;
+
+                Ok(())
+            }
+
+            SC::UnlockUser { username } => {
+                let _span = info_span!("cli.manage.lock_user", user.username = username).entered();
+                let config: DatabaseConfig = root.load_config()?;
+                let pool = database_from_config(&config).await?;
+                let mut repo = PgRepository::from_pool(&pool).await?.boxed();
+
+                let user = repo
+                    .user()
+                    .find_by_username(&username)
+                    .await?
+                    .context("User not found")?;
+
+                info!(%user.id, "Unlocking user");
+
+                repo.user().unlock(user).await?;
+                repo.save().await?;
 
                 Ok(())
             }

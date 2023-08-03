@@ -202,6 +202,7 @@ async fn login(
         .find_by_username(username)
         .await
         .map_err(|_e| FormError::Internal)?
+        .filter(mas_data_model::User::is_valid)
         .ok_or(FormError::InvalidCredentials)?;
 
     // And its password
