@@ -119,9 +119,14 @@ struct SynapseUser {
     external_ids: Option<Vec<ExternalID>>,
 }
 
-#[derive(Serialize, Deserialize)]
-struct SynapseDevice {
-    device_id: String,
+#[derive(Serialize)]
+struct SynapseDevice<'a> {
+    device_id: &'a str,
+}
+
+#[derive(Serialize)]
+struct SetDisplayNameRequest<'a> {
+    displayname: &'a str,
 }
 
 #[derive(Serialize)]
@@ -257,9 +262,7 @@ impl HomeserverConnection for SynapseConnection {
 
         let request = self
             .post(&format!("_synapse/admin/v2/users/{mxid}/devices"))
-            .body(SynapseDevice {
-                device_id: device_id.to_owned(),
-            })?;
+            .body(SynapseDevice { device_id })?;
 
         let response = client.ready().await?.call(request).await?;
 
@@ -327,5 +330,49 @@ impl HomeserverConnection for SynapseConnection {
         }
 
         Ok(())
+    }
+
+    #[tracing::instrument(
+        name = "homeserver.set_displayname",
+        skip_all,
+        fields(
+            matrix.homeserver = self.homeserver,
+            matrix.mxid = mxid,
+            matrix.displayname = displayname,
+        ),
+        err(Display),
+    )]
+    async fn set_displayname(&self, mxid: &str, displayname: &str) -> Result<(), Self::Error> {
+        let mut client = self
+            .http_client_factory
+            .client()
+            .await?
+            .request_bytes_to_body()
+            .json_request();
+
+        let request = self
+            .put(&format!("_matrix/client/v3/profile/{mxid}/displayname"))
+            .body(SetDisplayNameRequest { displayname })?;
+
+        let response = client.ready().await?.call(request).await?;
+
+        if response.status() != StatusCode::OK {
+            return Err(anyhow::anyhow!("Failed to set displayname in Synapse"));
+        }
+
+        Ok(())
+    }
+
+    #[tracing::instrument(
+        name = "homeserver.unset_displayname",
+        skip_all,
+        fields(
+            matrix.homeserver = self.homeserver,
+            matrix.mxid = mxid,
+        ),
+        err(Display),
+    )]
+    async fn unset_displayname(&self, mxid: &str) -> Result<(), Self::Error> {
+        self.set_displayname(mxid, "").await
     }
 }

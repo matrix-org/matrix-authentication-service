@@ -323,6 +323,8 @@ export type Mutation = {
   removeEmail: RemoveEmailPayload;
   /** Send a verification code for an email address */
   sendVerificationEmail: SendVerificationEmailPayload;
+  /** Set the display name of a user */
+  setDisplayName: SetDisplayNamePayload;
   /** Set an email address as primary */
   setPrimaryEmail: SetPrimaryEmailPayload;
   /** Submit a verification code for an email address */
@@ -357,6 +359,11 @@ export type MutationRemoveEmailArgs = {
 /** The mutations root of the GraphQL interface. */
 export type MutationSendVerificationEmailArgs = {
   input: SendVerificationEmailInput;
+};
+
+/** The mutations root of the GraphQL interface. */
+export type MutationSetDisplayNameArgs = {
+  input: SetDisplayNameInput;
 };
 
 /** The mutations root of the GraphQL interface. */
@@ -587,6 +594,31 @@ export enum SendVerificationEmailStatus {
   AlreadyVerified = "ALREADY_VERIFIED",
   /** The verification email was sent */
   Sent = "SENT",
+}
+
+/** The input for the `addEmail` mutation */
+export type SetDisplayNameInput = {
+  /** The display name to set. If `None`, the display name will be removed. */
+  displayName?: InputMaybe<Scalars["String"]["input"]>;
+  /** The ID of the user to add the email address to */
+  userId: Scalars["ID"]["input"];
+};
+
+/** The payload of the `setDisplayName` mutation */
+export type SetDisplayNamePayload = {
+  __typename?: "SetDisplayNamePayload";
+  /** Status of the operation */
+  status: SetDisplayNameStatus;
+  /** The user that was updated */
+  user?: Maybe<User>;
+};
+
+/** The status of the `setDisplayName` mutation */
+export enum SetDisplayNameStatus {
+  /** The display name is invalid */
+  Invalid = "INVALID",
+  /** The display name was set */
+  Set = "SET",
 }
 
 /** The input for the `setPrimaryEmail` mutation */

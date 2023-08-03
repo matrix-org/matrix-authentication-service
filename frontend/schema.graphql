@@ -459,6 +459,10 @@ type Mutation {
   endOauth2Session(input: EndOAuth2SessionInput!): EndOAuth2SessionPayload!
   endCompatSession(input: EndCompatSessionInput!): EndCompatSessionPayload!
   endBrowserSession(input: EndBrowserSessionInput!): EndBrowserSessionPayload!
+  """
+  Set the display name of a user
+  """
+  setDisplayName(input: SetDisplayNameInput!): SetDisplayNamePayload!
 }
 
 """
@@ -755,6 +759,48 @@ enum SendVerificationEmailStatus {
   The email address is already verified
   """
   ALREADY_VERIFIED
+}
+
+"""
+The input for the `addEmail` mutation
+"""
+input SetDisplayNameInput {
+  """
+  The ID of the user to add the email address to
+  """
+  userId: ID!
+  """
+  The display name to set. If `None`, the display name will be removed.
+  """
+  displayName: String
+}
+
+"""
+The payload of the `setDisplayName` mutation
+"""
+type SetDisplayNamePayload {
+  """
+  Status of the operation
+  """
+  status: SetDisplayNameStatus!
+  """
+  The user that was updated
+  """
+  user: User
+}
+
+"""
+The status of the `setDisplayName` mutation
+"""
+enum SetDisplayNameStatus {
+  """
+  The display name was set
+  """
+  SET
+  """
+  The display name is invalid
+  """
+  INVALID
 }
 
 """
