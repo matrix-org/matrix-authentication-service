@@ -14,7 +14,7 @@
 
 use std::time::Duration;
 
-use anyhow::{bail, Context as _};
+use anyhow::Context as _;
 use hyper::{header::CONTENT_TYPE, Body, Response};
 use mas_config::{
     JaegerExporterProtocolConfig, MetricsExporterConfig, Propagator, TelemetryConfig,
@@ -32,26 +32,21 @@ use opentelemetry::{
     },
     Context,
 };
-#[cfg(feature = "jaeger")]
 use opentelemetry_jaeger::Propagator as JaegerPropagator;
-#[cfg(feature = "prometheus")]
 use opentelemetry_prometheus::PrometheusExporter;
 use opentelemetry_semantic_conventions as semcov;
-#[cfg(feature = "zipkin")]
 use opentelemetry_zipkin::{B3Encoding, Propagator as ZipkinPropagator};
 use tokio::sync::OnceCell;
 use url::Url;
 
 static METRICS_BASIC_CONTROLLER: OnceCell<BasicController> = OnceCell::const_new();
-
-#[cfg(feature = "prometheus")]
 static PROMETHEUS_EXPORTER: OnceCell<PrometheusExporter> = OnceCell::const_new();
 
 pub async fn setup(
     config: &TelemetryConfig,
 ) -> anyhow::Result<(Option<Tracer>, Option<BasicController>)> {
     global::set_error_handler(|e| tracing::error!("{}", e))?;
-    let propagator = propagator(&config.tracing.propagators)?;
+    let propagator = propagator(&config.tracing.propagators);
 
     // The CORS filter needs to know what headers it should whitelist for
     // CORS-protected requests.
@@ -79,40 +74,23 @@ pub fn shutdown() {
     }
 }
 
-fn match_propagator(
-    propagator: Propagator,
-) -> anyhow::Result<Box<dyn TextMapPropagator + Send + Sync>> {
+fn match_propagator(propagator: Propagator) -> Box<dyn TextMapPropagator + Send + Sync> {
+    use Propagator as P;
     match propagator {
-        Propagator::TraceContext => Ok(Box::new(TraceContextPropagator::new())),
-        Propagator::Baggage => Ok(Box::new(BaggagePropagator::new())),
-
-        #[cfg(feature = "jaeger")]
-        Propagator::Jaeger => Ok(Box::new(JaegerPropagator::new())),
-
-        #[cfg(feature = "zipkin")]
-        Propagator::B3 => Ok(Box::new(ZipkinPropagator::with_encoding(
-            B3Encoding::SingleHeader,
-        ))),
-
-        #[cfg(feature = "zipkin")]
-        Propagator::B3Multi => Ok(Box::new(ZipkinPropagator::with_encoding(
-            B3Encoding::MultipleHeader,
-        ))),
-
-        p => bail!(
-            "The service was compiled without support for the {p:?} propagator, but config uses it.",
-        ),
+        P::TraceContext => Box::new(TraceContextPropagator::new()),
+        P::Baggage => Box::new(BaggagePropagator::new()),
+        P::Jaeger => Box::new(JaegerPropagator::new()),
+        P::B3 => Box::new(ZipkinPropagator::with_encoding(B3Encoding::SingleHeader)),
+        P::B3Multi => Box::new(ZipkinPropagator::with_encoding(B3Encoding::MultipleHeader)),
     }
 }
 
-fn propagator(propagators: &[Propagator]) -> anyhow::Result<impl TextMapPropagator> {
-    let propagators: Result<Vec<_>, _> =
-        propagators.iter().cloned().map(match_propagator).collect();
+fn propagator(propagators: &[Propagator]) -> impl TextMapPropagator {
+    let propagators = propagators.iter().copied().map(match_propagator).collect();
 
-    Ok(TextMapCompositePropagator::new(propagators?))
+    TextMapCompositePropagator::new(propagators)
 }
 
-#[cfg(any(feature = "zipkin", feature = "jaeger"))]
 async fn http_client() -> anyhow::Result<impl opentelemetry_http::HttpClient + 'static> {
     let client = mas_http::make_untraced_client()
         .await
@@ -129,7 +107,6 @@ fn stdout_tracer() -> Tracer {
         .install_simple()
 }
 
-#[cfg(feature = "otlp")]
 fn otlp_tracer(endpoint: Option<&Url>) -> anyhow::Result<Tracer> {
     use opentelemetry_otlp::WithExportConfig;
 
@@ -148,19 +125,6 @@ fn otlp_tracer(endpoint: Option<&Url>) -> anyhow::Result<Tracer> {
     Ok(tracer)
 }
 
-#[cfg(not(feature = "otlp"))]
-#[allow(unused_variables)]
-fn otlp_tracer(endpoint: Option<&Url>) -> anyhow::Result<Tracer> {
-    anyhow::bail!("The service was compiled without OTLP exporter support, but config exports traces via OTLP.")
-}
-
-#[cfg(not(feature = "jaeger"))]
-#[allow(unused_variables)]
-fn jaeger_agent_tracer(host: &str, port: u16) -> anyhow::Result<Tracer> {
-    anyhow::bail!("The service was compiled without Jaeger exporter support, but config exports traces via Jaeger.")
-}
-
-#[cfg(feature = "jaeger")]
 fn jaeger_agent_tracer(host: &str, port: u16) -> anyhow::Result<Tracer> {
     let pipeline = opentelemetry_jaeger::new_agent_pipeline()
         .with_service_name(env!("CARGO_PKG_NAME"))
@@ -174,17 +138,6 @@ fn jaeger_agent_tracer(host: &str, port: u16) -> anyhow::Result<Tracer> {
     Ok(tracer)
 }
 
-#[cfg(not(feature = "jaeger"))]
-#[allow(unused_variables, clippy::unused_async)]
-async fn jaeger_collector_tracer(
-    endpoint: &str,
-    username: Option<&str>,
-    password: Option<&str>,
-) -> anyhow::Result<Tracer> {
-    anyhow::bail!("The service was compiled without Jaeger exporter support, but config exports traces via Jaeger.")
-}
-
-#[cfg(feature = "jaeger")]
 async fn jaeger_collector_tracer(
     endpoint: &str,
     username: Option<&str>,
@@ -212,13 +165,6 @@ async fn jaeger_collector_tracer(
     Ok(tracer)
 }
 
-#[cfg(not(feature = "zipkin"))]
-#[allow(unused_variables, clippy::unused_async)]
-async fn zipkin_tracer(collector_endpoint: &Option<Url>) -> anyhow::Result<Tracer> {
-    anyhow::bail!("The service was compiled without Jaeger exporter support, but config exports traces via Jaeger.")
-}
-
-#[cfg(feature = "zipkin")]
 async fn zipkin_tracer(collector_endpoint: &Option<Url>) -> anyhow::Result<Tracer> {
     let http_client = http_client().await?;
 
@@ -260,7 +206,6 @@ async fn tracer(config: &TracingExporterConfig) -> anyhow::Result<Option<Tracer>
     Ok(Some(tracer))
 }
 
-#[cfg(feature = "otlp")]
 fn otlp_meter(endpoint: Option<&url::Url>) -> anyhow::Result<BasicController> {
     use opentelemetry_otlp::WithExportConfig;
 
@@ -283,12 +228,6 @@ fn otlp_meter(endpoint: Option<&url::Url>) -> anyhow::Result<BasicController> {
     Ok(controller)
 }
 
-#[cfg(not(feature = "otlp"))]
-#[allow(unused_variables)]
-fn otlp_meter(endpoint: Option<&url::Url>) -> anyhow::Result<BasicController> {
-    anyhow::bail!("The service was compiled without OTLP exporter support, but config exports metrics via OTLP.")
-}
-
 fn stdout_meter() -> anyhow::Result<BasicController> {
     let exporter = sdk::export::metrics::stdout().build()?;
     let controller = sdk::metrics::controllers::basic(sdk::metrics::processors::factory(
@@ -306,26 +245,6 @@ fn stdout_meter() -> anyhow::Result<BasicController> {
     Ok(controller)
 }
 
-#[cfg(not(feature = "prometheus"))]
-pub fn prometheus_service<T>() -> tower::util::ServiceFn<
-    impl FnMut(T) -> std::future::Ready<Result<Response<Body>, std::convert::Infallible>> + Clone,
-> {
-    tracing::warn!("Prometheus exporter was not enabled at compilation time, but the Prometheus resource was mounted on a listener");
-
-    tower::service_fn(move |_req| {
-        let response = Response::builder()
-            .status(500)
-            .header(CONTENT_TYPE, "text/plain")
-            .body(Body::from(
-                "Prometheus exporter was not enabled at compilation time",
-            ))
-            .unwrap();
-
-        std::future::ready(Ok(response))
-    })
-}
-
-#[cfg(feature = "prometheus")]
 pub fn prometheus_service<T>() -> tower::util::ServiceFn<
     impl FnMut(T) -> std::future::Ready<Result<Response<Body>, std::convert::Infallible>> + Clone,
 > {
@@ -361,12 +280,6 @@ pub fn prometheus_service<T>() -> tower::util::ServiceFn<
     })
 }
 
-#[cfg(not(feature = "prometheus"))]
-fn prometheus_meter() -> anyhow::Result<BasicController> {
-    anyhow::bail!("The service was compiled without Prometheus exporter support, but config exports metrics via Prometheus.")
-}
-
-#[cfg(feature = "prometheus")]
 fn prometheus_meter() -> anyhow::Result<BasicController> {
     let controller = sdk::metrics::controllers::basic(sdk::metrics::processors::factory(
         // All histogram metrics are in milliseconds. Each bucket is ~2x the previous one.

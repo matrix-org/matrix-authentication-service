@@ -25,9 +25,8 @@ use url::Url;
 use super::ConfigurationSection;
 
 /// Propagation format for incoming and outgoing requests
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, JsonSchema)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, JsonSchema)]
 #[serde(rename_all = "lowercase")]
-#[non_exhaustive]
 pub enum Propagator {
     /// Propagate according to the W3C Trace Context specification
     TraceContext,
