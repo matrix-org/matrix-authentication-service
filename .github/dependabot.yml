@@ -10,6 +10,7 @@ updates:
           - "aws-*"
       opentelemetry:
         patterns:
+          - "opentelemetry"
           - "opentelemetry-*"
           - "tracing-opentelemetry"
       sentry:
@@ -53,6 +54,10 @@ updates:
         patterns:
           - "jotai"
           - "jotai-*"
+      eslint:
+        patterns:
+          - "eslint"
+          - "eslint-*"
       urql:
         patterns:
           - "@urql/*"
