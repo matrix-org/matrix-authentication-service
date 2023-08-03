@@ -114,7 +114,7 @@ impl NodeType {
 
 /// An object with an ID.
 #[derive(Interface)]
-#[graphql(field(name = "id", desc = "ID of the object.", type = "ID"))]
+#[graphql(field(name = "id", desc = "ID of the object.", ty = "ID"))]
 pub enum Node {
     Anonymous(Box<Anonymous>),
     Authentication(Box<Authentication>),

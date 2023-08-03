@@ -41,7 +41,7 @@ pub use self::{
 #[graphql(field(
     name = "created_at",
     desc = "When the object was created.",
-    type = "DateTime<Utc>"
+    ty = "DateTime<Utc>"
 ))]
 pub enum CreationEvent {
     Authentication(Box<Authentication>),
