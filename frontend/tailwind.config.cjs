@@ -42,6 +42,11 @@ module.exports = {
       "black-950": "#21262C",
       ice: "#F4F9FD",
     },
+    fontWeight: {
+      semibold: "var(--cpd-font-weight-semibold)",
+      medium: "var(--cpd-font-weight-medium)",
+      regular: "var(--cpd-font-weight-regular)",
+    },
   },
   variants: {
     extend: {},
