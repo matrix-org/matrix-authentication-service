@@ -82,7 +82,7 @@ const CompatSession: React.FC<{
   };
 
   return (
-    <Block className="p-4 bg-grey-25 dark:bg-grey-450 rounded-lg">
+    <Block>
       <Body>
         Started: <DateTime datetime={data.createdAt} />
       </Body>

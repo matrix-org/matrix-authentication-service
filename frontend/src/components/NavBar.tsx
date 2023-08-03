@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const NavBar: React.FC<{
-  className: string;
-  children: React.ReactNode;
-}> = ({ className, children }) => (
-  <nav className={className}>
-    <ul className="flex flex-row gap-4 justify-center">{children}</ul>
+import styles from "./NavBar.module.css";
+
+const NavBar: React.FC<React.PropsWithChildren<{}>> = ({ children }) => (
+  <nav>
+    <ul className={styles.navBarItems}>{children}</ul>
   </nav>
 );
 

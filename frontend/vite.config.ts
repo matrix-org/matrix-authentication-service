@@ -23,6 +23,13 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig((env) => ({
   base: "./",
+
+  css: {
+    modules: {
+      localsConvention: "camelCaseOnly",
+    },
+  },
+
   build: {
     manifest: true,
     assetsDir: "",
@@ -37,6 +44,7 @@ export default defineConfig((env) => ({
       ],
     },
   },
+
   plugins: [
     codegen(),
 
@@ -104,6 +112,7 @@ export default defineConfig((env) => ({
       ext: ".zz",
     }),
   ],
+
   server: {
     base: "/account/",
     proxy: {
@@ -112,6 +121,7 @@ export default defineConfig((env) => ({
         "http://127.0.0.1:8080",
     },
   },
+
   test: {
     coverage: {
       provider: "v8",

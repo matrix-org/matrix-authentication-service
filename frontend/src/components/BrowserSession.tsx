@@ -22,7 +22,7 @@ import { useTransition } from "react";
 import { currentBrowserSessionIdAtom, currentUserIdAtom } from "../atoms";
 import { FragmentType, graphql, useFragment } from "../gql";
 
-import Block from "./Block";
+import styles from "./BrowserSession.module.css";
 import DateTime from "./DateTime";
 
 const FRAGMENT = graphql(/* GraphQL */ `
@@ -92,8 +92,8 @@ const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
   };
 
   return (
-    <Block className="flex items-center">
-      <IconWebBrowser className="mr-4 session-icon" />
+    <div className="flex items-center">
+      <IconWebBrowser className={styles.sessionIcon} />
       <div className="flex-1">
         <Body size="md" weight="medium">
           {isCurrent ? (
@@ -118,7 +118,7 @@ const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
       >
         Sign out
       </Button>
-    </Block>
+    </div>
   );
 };
 

@@ -12,15 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import styles from "./Block.module.css";
+
 type Props = {
-  children: React.ReactNode;
   highlight?: boolean;
-  className?: string;
 };
 
-const Block: React.FC<Props> = ({ children, highlight, className }) => {
+const Block: React.FC<React.PropsWithChildren<Props>> = ({
+  children,
+  highlight,
+}) => {
   return (
-    <div className={className} data-active={highlight}>
+    <div className={styles.block} data-active={highlight}>
       {children}
     </div>
   );

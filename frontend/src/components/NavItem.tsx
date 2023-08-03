@@ -12,41 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Link as CpdLink } from "@vector-im/compound-web";
 import { useAtomValue } from "jotai";
 
 import { Link, Route, routeAtom } from "../Router";
 
-type NavItemProps = {
-  children: React.ReactNode;
-} & ({ route: Route; href?: never } | { route?: never; href: string });
+import styles from "./NavItem.module.css";
 
-function isRoute(route: Route | undefined): route is Route {
-  return !!route?.type;
-}
-
-function isHref(href: string | undefined): href is string {
-  return typeof href === "string";
-}
-
-const NavItem: React.FC<NavItemProps> = ({ route, href, children }) => {
+const NavItem: React.FC<React.PropsWithChildren<{ route: Route }>> = ({
+  route,
+  children,
+}) => {
   const currentRoute = useAtomValue(routeAtom);
   return (
-    <li className="m-1 mr-0">
-      {isRoute(route) && (
-        <Link
-          route={route}
-          className={currentRoute.type === route.type ? "active" : ""}
-        >
-          {children}
-        </Link>
-      )}
-      {isHref(href) && (
-        <a href={href} target="_blank" rel="noopenner noreferrer">
-          {children}
-        </a>
-      )}
+    <li>
+      <Link
+        className={styles.navItem}
+        route={route}
+        aria-current={currentRoute.type === route.type ? "page" : undefined}
+      >
+        {children}
+      </Link>
     </li>
   );
 };
+
+export const ExternalLink: React.FC<
+  React.PropsWithChildren<{ href: string }>
+> = ({ href, children }) => (
+  <li>
+    <CpdLink href={href}>{children}</CpdLink>
+  </li>
+);
 
 export default NavItem;

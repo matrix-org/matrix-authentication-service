@@ -12,24 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import styles from "./Layout.module.css";
 import NavBar from "./NavBar";
-import NavItem from "./NavItem";
+import NavItem, { ExternalLink } from "./NavItem";
+
+const Separator: React.FC = () => <hr className={styles.separator} />;
 
 const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   return (
-    <>
-      <NavBar className="nav-bar container">
+    <div className={styles.container}>
+      <NavBar>
         <NavItem route={{ type: "home" }}>Sessions</NavItem>
         <NavItem route={{ type: "account" }}>Emails</NavItem>
       </NavBar>
 
-      <hr className="my-2" />
+      <Separator />
 
-      <main className="container">{children}</main>
+      <main>{children}</main>
 
-      <hr className="my-2" />
+      <Separator />
 
-      <footer className="text-center">
+      <footer className={styles.footer}>
         <a href="https://matrix.org" target="_blank" rel="noreferrer noopener">
           <img
             className="inline my-2"
@@ -40,19 +43,19 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
           />
         </a>
 
-        <NavBar className="nav-bar container">
-          <NavItem href="https://matrix.org/legal/copyright-notice">
+        <NavBar>
+          <ExternalLink href="https://matrix.org/legal/copyright-notice">
             Info
-          </NavItem>
-          <NavItem href="https://matrix.org/legal/privacy-notice">
+          </ExternalLink>
+          <ExternalLink href="https://matrix.org/legal/privacy-notice">
             Privacy
-          </NavItem>
-          <NavItem href="https://matrix.org/legal/terms-and-conditions">
+          </ExternalLink>
+          <ExternalLink href="https://matrix.org/legal/terms-and-conditions">
             Terms & Conditions
-          </NavItem>
+          </ExternalLink>
         </NavBar>
       </footer>
-    </>
+    </div>
   );
 };
 

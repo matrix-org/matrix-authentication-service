@@ -12,14 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-type Props = {
-  children: React.ReactNode;
-};
+import styles from "./BlockList.module.css";
 
-const BlockList: React.FC<Props> = ({ children }) => {
-  return (
-    <div className="grid grid-cols-1 gap-4 group content-start">{children}</div>
-  );
+const BlockList: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
+  return <div className={styles.blockList}>{children}</div>;
 };
 
 export default BlockList;
