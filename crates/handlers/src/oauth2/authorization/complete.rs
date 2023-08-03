@@ -16,23 +16,24 @@ use std::sync::Arc;
 
 use axum::{
     extract::{Path, State},
-    response::{IntoResponse, Response},
+    response::{Html, IntoResponse, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
 use hyper::StatusCode;
-use mas_axum_utils::SessionInfoExt;
+use mas_axum_utils::{csrf::CsrfExt, SessionInfoExt};
 use mas_data_model::{AuthorizationGrant, BrowserSession, Client, Device};
 use mas_keystore::{Encrypter, Keystore};
-use mas_policy::PolicyFactory;
+use mas_policy::{EvaluationResult, PolicyFactory};
 use mas_router::{PostAuthAction, Route, UrlBuilder};
 use mas_storage::{
     oauth2::{OAuth2AuthorizationGrantRepository, OAuth2ClientRepository, OAuth2SessionRepository},
     user::BrowserSessionRepository,
-    BoxClock, BoxRepository, BoxRng, RepositoryAccess,
+    BoxClock, BoxRepository, BoxRng, Clock, RepositoryAccess,
 };
-use mas_templates::Templates;
+use mas_templates::{PolicyViolationContext, TemplateContext, Templates};
 use oauth2_types::requests::AuthorizationResponse;
 use thiserror::Error;
+use tracing::warn;
 use ulid::Ulid;
 
 use super::callback::CallbackDestination;
@@ -74,6 +75,7 @@ impl IntoResponse for RouteError {
 }
 
 impl_from_error_for_route!(mas_storage::RepositoryError);
+impl_from_error_for_route!(mas_templates::TemplateError);
 impl_from_error_for_route!(mas_policy::LoadError);
 impl_from_error_for_route!(mas_policy::InstanciateError);
 impl_from_error_for_route!(mas_policy::EvaluationError);
@@ -87,7 +89,7 @@ impl_from_error_for_route!(super::callback::CallbackDestinationError);
     err,
 )]
 pub(crate) async fn get(
-    rng: BoxRng,
+    mut rng: BoxRng,
     clock: BoxClock,
     State(policy_factory): State<Arc<PolicyFactory>>,
     State(templates): State<Templates>,
@@ -123,15 +125,15 @@ pub(crate) async fn get(
         .ok_or(RouteError::NoSuchClient)?;
 
     match complete(
-        rng,
-        clock,
+        &mut rng,
+        &clock,
         repo,
         key_store,
         &policy_factory,
         url_builder,
         grant,
-        client,
-        session,
+        &client,
+        &session,
     )
     .await
     {
@@ -144,9 +146,21 @@ pub(crate) async fn get(
             mas_router::Reauth::and_then(continue_grant).go(),
         )
             .into_response()),
-        Err(GrantCompletionError::RequiresConsent | GrantCompletionError::PolicyViolation) => {
+        Err(GrantCompletionError::RequiresConsent) => {
             let next = mas_router::Consent(grant_id);
             Ok((cookie_jar, next.go()).into_response())
+        }
+        Err(GrantCompletionError::PolicyViolation(grant, res)) => {
+            warn!(violation = ?res, "Authorization grant for client {} denied by policy", client.id);
+
+            let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
+            let ctx = PolicyViolationContext::new(grant, client)
+                .with_session(session)
+                .with_csrf(csrf_token.form_value());
+
+            let content = templates.render_policy_violation(&ctx).await?;
+
+            Ok((cookie_jar, Html(content)).into_response())
         }
         Err(GrantCompletionError::NotPending) => Err(RouteError::NotPending),
         Err(GrantCompletionError::Internal(e)) => Err(RouteError::Internal(e)),
@@ -168,7 +182,7 @@ pub enum GrantCompletionError {
     RequiresConsent,
 
     #[error("denied by the policy")]
-    PolicyViolation,
+    PolicyViolation(AuthorizationGrant, EvaluationResult),
 }
 
 impl_from_error_for_route!(GrantCompletionError: mas_storage::RepositoryError);
@@ -179,15 +193,15 @@ impl_from_error_for_route!(GrantCompletionError: mas_policy::EvaluationError);
 impl_from_error_for_route!(GrantCompletionError: super::super::IdTokenSignatureError);
 
 pub(crate) async fn complete(
-    mut rng: BoxRng,
-    clock: BoxClock,
+    rng: &mut (impl rand::RngCore + rand::CryptoRng + Send),
+    clock: &impl Clock,
     mut repo: BoxRepository,
     key_store: Keystore,
     policy_factory: &PolicyFactory,
     url_builder: UrlBuilder,
     grant: AuthorizationGrant,
-    client: Client,
-    browser_session: BrowserSession,
+    client: &Client,
+    browser_session: &BrowserSession,
 ) -> Result<AuthorizationResponse, GrantCompletionError> {
     // Verify that the grant is in a pending stage
     if !grant.stage.is_pending() {
@@ -197,7 +211,7 @@ pub(crate) async fn complete(
     // Check if the authentication is fresh enough
     let authentication = repo
         .browser_session()
-        .get_last_authentication(&browser_session)
+        .get_last_authentication(browser_session)
         .await?;
     let authentication = authentication.filter(|auth| auth.created_at > grant.max_auth_time());
 
@@ -209,16 +223,16 @@ pub(crate) async fn complete(
     // Run through the policy
     let mut policy = policy_factory.instantiate().await?;
     let res = policy
-        .evaluate_authorization_grant(&grant, &client, &browser_session.user)
+        .evaluate_authorization_grant(&grant, client, &browser_session.user)
         .await?;
 
     if !res.valid() {
-        return Err(GrantCompletionError::PolicyViolation);
+        return Err(GrantCompletionError::PolicyViolation(grant, res));
     }
 
     let current_consent = repo
         .oauth2_client()
-        .get_consent_for_user(&client, &browser_session.user)
+        .get_consent_for_user(client, &browser_session.user)
         .await?;
 
     let lacks_consent = grant
@@ -236,18 +250,12 @@ pub(crate) async fn complete(
     // All good, let's start the session
     let session = repo
         .oauth2_session()
-        .add(
-            &mut rng,
-            &clock,
-            &client,
-            &browser_session,
-            grant.scope.clone(),
-        )
+        .add(rng, clock, client, browser_session, grant.scope.clone())
         .await?;
 
     let grant = repo
         .oauth2_authorization_grant()
-        .fulfill(&clock, &session, grant)
+        .fulfill(clock, &session, grant)
         .await?;
 
     // Yep! Let's complete the auth now
@@ -256,13 +264,13 @@ pub(crate) async fn complete(
     // Did they request an ID token?
     if grant.response_type_id_token {
         params.id_token = Some(generate_id_token(
-            &mut rng,
-            &clock,
+            rng,
+            clock,
             &url_builder,
             &key_store,
-            &client,
+            client,
             &grant,
-            &browser_session,
+            browser_session,
             None,
             Some(&valid_authentication),
         )?);

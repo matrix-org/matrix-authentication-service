@@ -16,11 +16,11 @@ use std::sync::Arc;
 
 use axum::{
     extract::{Form, State},
-    response::{IntoResponse, Response},
+    response::{Html, IntoResponse, Response},
 };
 use axum_extra::extract::PrivateCookieJar;
 use hyper::StatusCode;
-use mas_axum_utils::SessionInfoExt;
+use mas_axum_utils::{csrf::CsrfExt, SessionInfoExt};
 use mas_data_model::{AuthorizationCode, Pkce};
 use mas_keystore::{Encrypter, Keystore};
 use mas_policy::PolicyFactory;
@@ -29,7 +29,7 @@ use mas_storage::{
     oauth2::{OAuth2AuthorizationGrantRepository, OAuth2ClientRepository},
     BoxClock, BoxRepository, BoxRng,
 };
-use mas_templates::Templates;
+use mas_templates::{PolicyViolationContext, TemplateContext, Templates};
 use oauth2_types::{
     errors::{ClientError, ClientErrorCode},
     pkce,
@@ -39,6 +39,7 @@ use oauth2_types::{
 use rand::{distributions::Alphanumeric, Rng};
 use serde::Deserialize;
 use thiserror::Error;
+use tracing::warn;
 
 use self::{callback::CallbackDestination, complete::GrantCompletionError};
 use crate::impl_from_error_for_route;
@@ -91,6 +92,7 @@ impl IntoResponse for RouteError {
 }
 
 impl_from_error_for_route!(mas_storage::RepositoryError);
+impl_from_error_for_route!(mas_templates::TemplateError);
 impl_from_error_for_route!(self::callback::CallbackDestinationError);
 impl_from_error_for_route!(mas_policy::LoadError);
 impl_from_error_for_route!(mas_policy::InstanciateError);
@@ -170,6 +172,7 @@ pub(crate) async fn get(
 
     // Get the session info from the cookie
     let (session_info, cookie_jar) = cookie_jar.session_info();
+    let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
 
     // One day, we will have try blocks
     let res: Result<Response, RouteError> = ({
@@ -340,15 +343,15 @@ pub(crate) async fn get(
                 Some(user_session) if prompt.contains(&Prompt::None) => {
                     // With prompt=none, we should get back to the client immediately
                     match self::complete::complete(
-                        rng,
-                        clock,
+                        &mut rng,
+                        &clock,
                         repo,
                         key_store,
                         &policy_factory,
                         url_builder,
                         grant,
-                        client,
-                        user_session,
+                        &client,
+                        &user_session,
                     )
                     .await
                     {
@@ -369,7 +372,7 @@ pub(crate) async fn get(
                                 )
                                 .await?
                         }
-                        Err(GrantCompletionError::PolicyViolation) => {
+                        Err(GrantCompletionError::PolicyViolation(_grant, _res)) => {
                             callback_destination
                                 .go(&templates, ClientError::from(ClientErrorCode::AccessDenied))
                                 .await?
@@ -387,28 +390,31 @@ pub(crate) async fn get(
                     let grant_id = grant.id;
                     // Else, we show the relevant reauth/consent page if necessary
                     match self::complete::complete(
-                        rng,
-                        clock,
+                        &mut rng,
+                        &clock,
                         repo,
                         key_store,
                         &policy_factory,
                         url_builder,
                         grant,
-                        client,
-                        user_session,
+                        &client,
+                        &user_session,
                     )
                     .await
                     {
                         Ok(params) => callback_destination.go(&templates, params).await?,
-                        Err(
-                            GrantCompletionError::RequiresConsent
-                            | GrantCompletionError::PolicyViolation,
-                        ) => {
-                            // We're redirecting to the consent URI in both 'consent required' and
-                            // 'policy violation' cases, because we reevaluate the policy on this
-                            // page, and show the error accordingly
-                            // XXX: is this the right approach?
+                        Err(GrantCompletionError::RequiresConsent) => {
                             mas_router::Consent(grant_id).go().into_response()
+                        }
+                        Err(GrantCompletionError::PolicyViolation(grant, res)) => {
+                            warn!(violation = ?res, "Authorization grant for client {} denied by policy", client.id);
+
+                            let ctx = PolicyViolationContext::new(grant, client)
+                                .with_session(user_session)
+                                .with_csrf(csrf_token.form_value());
+
+                            let content = templates.render_policy_violation(&ctx).await?;
+                            Html(content).into_response()
                         }
                         Err(GrantCompletionError::RequiresReauth) => {
                             mas_router::Reauth::and_then(continue_grant)
