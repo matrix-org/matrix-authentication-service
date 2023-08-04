@@ -90,7 +90,7 @@ const primaryEmailIdFamily = atomFamily((userId: string) => {
     },
     (get, set) => {
       set(primaryEmailResultFamily(userId));
-    }
+    },
   );
 
   return primaryEmailIdAtom;
@@ -118,7 +118,7 @@ const pageInfoFamily = atomFamily((userId: string) => {
 const paginationFamily = atomFamily((userId: string) => {
   const paginationAtom = atomWithPagination(
     currentPaginationAtom,
-    pageInfoFamily(userId)
+    pageInfoFamily(userId),
   );
   return paginationAtom;
 });
@@ -131,7 +131,7 @@ const UserEmailList: React.FC<{
   const setPagination = useSetAtom(currentPaginationAtom);
   const [prevPage, nextPage] = useAtomValue(paginationFamily(userId));
   const [primaryEmailId, refreshPrimaryEmailId] = useAtom(
-    primaryEmailIdFamily(userId)
+    primaryEmailIdFamily(userId),
   );
   // XXX: we may not want to directly use that atom here, but rather have a local state
   const latestAddedEmail = useAtomValue(latestAddedEmailAtom);

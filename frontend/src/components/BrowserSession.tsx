@@ -54,7 +54,7 @@ const endSessionFamily = atomFamily((id: string) => {
   // A proxy atom which pre-sets the id variable in the mutation
   const endSessionAtom = atom(
     (get) => get(endSession),
-    (get, set) => set(endSession, { id })
+    (get, set) => set(endSession, { id }),
   );
 
   return endSessionAtom;

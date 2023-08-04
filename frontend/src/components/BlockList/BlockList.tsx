@@ -12,21 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import styles from "./Block.module.css";
+import cx from "classnames";
 
-type Props = {
-  highlight?: boolean;
+import styles from "./BlockList.module.css";
+
+type Props = React.PropsWithChildren<{
+  className?: string;
+}>;
+
+const BlockList: React.FC<Props> = ({ className, children }) => {
+  return <div className={cx(styles.blockList, className)}>{children}</div>;
 };
 
-const Block: React.FC<React.PropsWithChildren<Props>> = ({
-  children,
-  highlight,
-}) => {
-  return (
-    <div className={styles.block} data-active={highlight}>
-      {children}
-    </div>
-  );
-};
-
-export default Block;
+export default BlockList;

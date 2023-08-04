@@ -62,7 +62,7 @@ const endCompatSessionFamily = atomFamily((id: string) => {
   // A proxy atom which pre-sets the id variable in the mutation
   const endCompatSessionAtom = atom(
     (get) => get(endCompatSession),
-    (get, set) => set(endCompatSession, { id })
+    (get, set) => set(endCompatSession, { id }),
   );
 
   return endCompatSessionAtom;

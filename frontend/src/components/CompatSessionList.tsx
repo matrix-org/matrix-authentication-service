@@ -78,7 +78,7 @@ const compatSessionListFamily = atomFamily((userId: string) => {
 
   const compatSessionList = mapQueryAtom(
     compatSessionListQuery,
-    (data) => data.user?.compatSessions || null
+    (data) => data.user?.compatSessions || null,
   );
 
   return compatSessionList;
@@ -96,7 +96,7 @@ const pageInfoFamily = atomFamily((userId: string) => {
 const paginationFamily = atomFamily((userId: string) => {
   const paginationAtom = atomWithPagination(
     currentPaginationAtom,
-    pageInfoFamily(userId)
+    pageInfoFamily(userId),
   );
   return paginationAtom;
 });

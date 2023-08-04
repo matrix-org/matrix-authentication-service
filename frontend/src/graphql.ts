@@ -52,7 +52,7 @@ const cache = cacheExchange({
         result: { removeEmail?: RemoveEmailPayload },
         args: MutationRemoveEmailArgs,
         cache,
-        _info
+        _info,
       ) => {
         // Invalidate the email entity
         cache.invalidate({

@@ -77,31 +77,35 @@ const routeToPath = (route: Route): string =>
     .map((part) => encodeURIComponent(part))
     .join("/");
 
+export const appConfigAtom = atom(window.APP_CONFIG);
+
 const pathToRoute = (path: string): Route => {
   const segments = path.split("/").map(decodeURIComponent);
   return segmentsToRoute(segments);
 };
 
-const locationToRoute = (location: Location): Route => {
-  if (
-    !location.pathname ||
-    !location.pathname.startsWith(window.APP_CONFIG.root)
-  ) {
-    throw new Error("Invalid location");
+const locationToRoute = (root: string, location: Location): Route => {
+  if (!location.pathname || !location.pathname.startsWith(root)) {
+    throw new Error(`Invalid location ${location.pathname}`);
   }
 
-  const path = location.pathname.slice(window.APP_CONFIG.root.length);
+  const path = location.pathname.slice(root.length);
   return pathToRoute(path);
 };
 
-const locationAtom = atomWithLocation();
+export const locationAtom = atomWithLocation();
 export const routeAtom = atom(
-  (get) => locationToRoute(get(locationAtom)),
-  (_get, set, value: Route) => {
+  (get) => {
+    const location = get(locationAtom);
+    const config = get(appConfigAtom);
+    return locationToRoute(config.root, location);
+  },
+  (get, set, value: Route) => {
+    const appConfig = get(appConfigAtom);
     set(locationAtom, {
-      pathname: window.APP_CONFIG.root + routeToPath(value),
+      pathname: appConfig.root + routeToPath(value),
     });
-  }
+  },
 );
 
 const Home = lazy(() => import("./pages/Home"));

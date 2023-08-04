@@ -37,7 +37,7 @@ export type GqlAtom<T> = WritableAtom<
  */
 export const mapQueryAtom = <Data, Variables extends AnyVariables, NewData>(
   queryAtom: AtomWithQuery<Data, Variables>,
-  mapper: (data: Data) => NewData
+  mapper: (data: Data) => NewData,
 ): GqlAtom<NewData> => {
   return atom(
     async (get): Promise<GqlResult<NewData>> => {
@@ -55,7 +55,7 @@ export const mapQueryAtom = <Data, Variables extends AnyVariables, NewData>(
 
     (_get, set, context) => {
       set(queryAtom, context);
-    }
+    },
   );
 };
 
@@ -90,7 +90,7 @@ export const currentUserIdAtom: GqlAtom<string | null> = mapQueryAtom(
       return data.viewer.id;
     }
     return null;
-  }
+  },
 );
 
 const CURRENT_VIEWER_SESSION_QUERY = graphql(/* GraphQL */ `
@@ -119,5 +119,5 @@ export const currentBrowserSessionIdAtom: GqlAtom<string | null> = mapQueryAtom(
       return data.viewerSession.id;
     }
     return null;
-  }
+  },
 );
