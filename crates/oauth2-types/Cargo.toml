@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [dependencies]
 http = "0.2.9"
-serde = "1.0.180"
+serde = "1.0.181"
 serde_json = "1.0.104"
 language-tags = { version = "0.3.2", features = ["serde"] }
 url = { version = "2.4.0", features = ["serde"] }
