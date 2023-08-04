@@ -47,7 +47,7 @@ const browserSessionFamily = atomFamily((id: string) => {
 
   const browserSessionAtom = mapQueryAtom(
     browserSessionQueryAtom,
-    (data) => data?.browserSession
+    (data) => data?.browserSession,
   );
 
   return browserSessionAtom;

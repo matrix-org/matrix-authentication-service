@@ -34,14 +34,14 @@ export type Pagination = ForwardPagination | BackwardPagination;
 
 // Check if the pagination is forward pagination.
 export const isForwardPagination = (
-  pagination: Pagination
+  pagination: Pagination,
 ): pagination is ForwardPagination => {
   return pagination.hasOwnProperty("first");
 };
 
 // Check if the pagination is backward pagination.
 export const isBackwardPagination = (
-  pagination: Pagination
+  pagination: Pagination,
 ): pagination is BackwardPagination => {
   return pagination.hasOwnProperty("last");
 };
@@ -81,7 +81,7 @@ export const atomForCurrentPagination = (): WritableAtom<
       } else {
         set(dataAtom, action);
       }
-    }
+    },
   );
 
   currentPaginationAtom.onMount = (setAtom): void => {
@@ -95,11 +95,11 @@ export const atomForCurrentPagination = (): WritableAtom<
 // next pagination objects, given the current pagination and the page info.
 export const atomWithPagination = (
   currentPaginationAtom: Atom<Pagination>,
-  pageInfoAtom: Atom<Promise<PageInfo | null>>
+  pageInfoAtom: Atom<Promise<PageInfo | null>>,
 ): Atom<Promise<[BackwardPagination | null, ForwardPagination | null]>> => {
   const paginationAtom = atom(
     async (
-      get
+      get,
     ): Promise<[BackwardPagination | null, ForwardPagination | null]> => {
       const currentPagination = get(currentPaginationAtom);
       const pageInfo = await get(pageInfoAtom);
@@ -127,7 +127,7 @@ export const atomWithPagination = (
       }
 
       return [previousPagination, nextPagination];
-    }
+    },
   );
 
   return paginationAtom;

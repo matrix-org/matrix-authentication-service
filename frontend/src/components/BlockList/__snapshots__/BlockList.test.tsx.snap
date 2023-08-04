@@ -1,0 +1,30 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`BlockList > passes down the className prop 1`] = `
+<div
+  className="_blockList_f8cc7f foo"
+/>
+`;
+
+exports[`BlockList > render <BlockList /> with children 1`] = `
+<div
+  className="_blockList_f8cc7f"
+>
+  <div
+    className="_block_17898c"
+  >
+    Block 1
+  </div>
+  <div
+    className="_block_17898c"
+  >
+    Block 2
+  </div>
+</div>
+`;
+
+exports[`BlockList > render an empty <BlockList /> 1`] = `
+<div
+  className="_blockList_f8cc7f"
+/>
+`;

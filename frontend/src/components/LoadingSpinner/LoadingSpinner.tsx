@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import styles from "./LoadingSpinner.module.css";
+
 const LoadingSpinner: React.FC = () => (
   <div role="status">
     <svg
-      className="inline mr-2 w-16 h-16 animate-spin fill-accent"
+      className={styles.loadingSpinnerInner}
       viewBox="0 0 100 101"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"

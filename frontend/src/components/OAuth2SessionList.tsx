@@ -79,7 +79,7 @@ const oauth2SessionListFamily = atomFamily((userId: string) => {
 
   const oauth2SessionList = mapQueryAtom(
     oauth2SessionListQuery,
-    (data) => data.user?.oauth2Sessions || null
+    (data) => data.user?.oauth2Sessions || null,
   );
 
   return oauth2SessionList;
@@ -97,7 +97,7 @@ const pageInfoFamily = atomFamily((userId: string) => {
 const paginationFamily = atomFamily((userId: string) => {
   const paginationAtom = atomWithPagination(
     currentPaginationAtom,
-    pageInfoFamily(userId)
+    pageInfoFamily(userId),
   );
   return paginationAtom;
 });

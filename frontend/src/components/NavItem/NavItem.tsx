@@ -15,7 +15,7 @@
 import { Link as CpdLink } from "@vector-im/compound-web";
 import { useAtomValue } from "jotai";
 
-import { Link, Route, routeAtom } from "../Router";
+import { Link, Route, routeAtom } from "../../Router";
 
 import styles from "./NavItem.module.css";
 

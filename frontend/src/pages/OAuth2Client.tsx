@@ -44,7 +44,7 @@ const oauth2ClientFamily = atomFamily((id: string) => {
 
   const oauth2ClientAtom = mapQueryAtom(
     oauth2ClientQueryAtom,
-    (data) => data?.oauth2Client
+    (data) => data?.oauth2Client,
   );
 
   return oauth2ClientAtom;

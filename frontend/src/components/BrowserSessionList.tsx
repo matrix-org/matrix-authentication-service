@@ -81,7 +81,7 @@ const browserSessionListFamily = atomFamily((userId: string) => {
 
   const browserSessionList = mapQueryAtom(
     browserSessionListQuery,
-    (data) => data.user?.browserSessions || null
+    (data) => data.user?.browserSessions || null,
   );
 
   return browserSessionList;
@@ -98,7 +98,7 @@ const pageInfoFamily = atomFamily((userId: string) => {
 const paginationFamily = atomFamily((userId: string) => {
   const paginationAtom = atomWithPagination(
     currentPaginationAtom,
-    pageInfoFamily(userId)
+    pageInfoFamily(userId),
   );
 
   return paginationAtom;

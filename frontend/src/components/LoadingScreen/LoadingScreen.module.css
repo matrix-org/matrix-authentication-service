@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-.block-list {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--cpd-space-4x);
-    align-content: flex-start;
+.loading-screen {
+    display: flex;
+    min-height: 100vh;
+    justify-content: center;
+    align-items: center;
 }

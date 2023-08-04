@@ -12,12 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import LoadingSpinner from "./LoadingSpinner";
+import { create } from "react-test-renderer";
+import { describe, expect, it } from "vitest";
 
-const LoadingScreen: React.FC = () => (
-  <main className="min-h-screen flex justify-center items-center">
-    <LoadingSpinner />
-  </main>
-);
+import LoadingScreen from "./LoadingScreen";
 
-export default LoadingScreen;
+describe("LoadingScreen", () => {
+  it("render <LoadingScreen />", () => {
+    const component = create(<LoadingScreen />);
+    const tree = component.toJSON();
+    expect(tree).toMatchSnapshot();
+  });
+});

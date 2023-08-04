@@ -116,7 +116,7 @@ const verifyEmailFamily = atomFamily((id: string) => {
   // A proxy atom which pre-sets the id variable in the mutation
   const verifyEmailAtom = atom(
     (get) => get(verifyEmail),
-    (get, set, code: string) => set(verifyEmail, { id, code })
+    (get, set, code: string) => set(verifyEmail, { id, code }),
   );
 
   return verifyEmailAtom;
@@ -124,13 +124,13 @@ const verifyEmailFamily = atomFamily((id: string) => {
 
 const resendVerificationEmailFamily = atomFamily((id: string) => {
   const resendVerificationEmail = atomWithMutation(
-    RESEND_VERIFICATION_EMAIL_MUTATION
+    RESEND_VERIFICATION_EMAIL_MUTATION,
   );
 
   // A proxy atom which pre-sets the id variable in the mutation
   const resendVerificationEmailAtom = atom(
     (get) => get(resendVerificationEmail),
-    (get, set) => set(resendVerificationEmail, { id })
+    (get, set) => set(resendVerificationEmail, { id }),
   );
 
   return resendVerificationEmailAtom;
@@ -142,7 +142,7 @@ const removeEmailFamily = atomFamily((id: string) => {
   // A proxy atom which pre-sets the id variable in the mutation
   const removeEmailAtom = atom(
     (get) => get(removeEmail),
-    (get, set) => set(removeEmail, { id })
+    (get, set) => set(removeEmail, { id }),
   );
 
   return removeEmailAtom;
@@ -154,7 +154,7 @@ const setPrimaryEmailFamily = atomFamily((id: string) => {
   // A proxy atom which pre-sets the id variable in the mutation
   const setPrimaryEmailAtom = atom(
     (get) => get(setPrimaryEmail),
-    (get, set) => set(setPrimaryEmail, { id })
+    (get, set) => set(setPrimaryEmail, { id }),
   );
 
   return setPrimaryEmailAtom;
@@ -171,7 +171,7 @@ const UserEmail: React.FC<{
   const data = useFragment(FRAGMENT, email);
   const [verifyEmailResult, verifyEmail] = useAtom(verifyEmailFamily(data.id));
   const [resendVerificationEmailResult, resendVerificationEmail] = useAtom(
-    resendVerificationEmailFamily(data.id)
+    resendVerificationEmailFamily(data.id),
   );
   const setPrimaryEmail = useSetAtom(setPrimaryEmailFamily(data.id));
   const removeEmail = useSetAtom(removeEmailFamily(data.id));

@@ -1,4 +1,4 @@
-// Copyright 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,18 +13,13 @@
 // limitations under the License.
 
 import type { Meta, StoryObj } from "@storybook/react";
+import { H1, H5, Body } from "@vector-im/compound-web";
 
 import Block from "./Block";
-import { Title, Subtitle, Body } from "./Typography";
 
 const meta = {
   title: "UI/Block",
   component: Block,
-  subcomponents: {
-    Title,
-    Subtitle,
-    Body,
-  } as Record<string, React.ComponentType<unknown>>,
   tags: ["autodocs"],
 } satisfies Meta<typeof Block>;
 
@@ -34,8 +29,8 @@ type Story = StoryObj<typeof Block>;
 export const Basic: Story = {
   render: (args) => (
     <Block {...args}>
-      <Title>Title</Title>
-      <Subtitle>Subtitle</Subtitle>
+      <H1>Title</H1>
+      <H5>Subtitle</H5>
       <Body justified>
         Lorem ipsum dolor sit amet, officia excepteur ex fugiat reprehenderit
         enim labore culpa sint ad nisi Lorem pariatur mollit ex esse
