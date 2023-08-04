@@ -17,17 +17,17 @@ import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
 import { useTransition } from "react";
 
+import { routeAtom } from "../Router";
 import { graphql } from "../gql";
 import { PageInfo } from "../gql/graphql";
 import {
   atomForCurrentPagination,
   atomWithPagination,
   FIRST_PAGE,
-  LAST_PAGE,
   Pagination,
 } from "../pagination";
 
-import AddEmailForm, { latestAddedEmailAtom } from "./AddEmailForm";
+import AddEmailForm from "./AddEmailForm";
 import BlockList from "./BlockList";
 import PaginationControls from "./PaginationControls";
 import UserEmail from "./UserEmail";
@@ -129,12 +129,11 @@ const UserEmailList: React.FC<{
   const [pending, startTransition] = useTransition();
   const [result, refreshList] = useAtom(emailPageResultFamily(userId));
   const setPagination = useSetAtom(currentPaginationAtom);
+  const setRoute = useSetAtom(routeAtom);
   const [prevPage, nextPage] = useAtomValue(paginationFamily(userId));
   const [primaryEmailId, refreshPrimaryEmailId] = useAtom(
     primaryEmailIdFamily(userId),
   );
-  // XXX: we may not want to directly use that atom here, but rather have a local state
-  const latestAddedEmail = useAtomValue(latestAddedEmailAtom);
 
   const paginate = (pagination: Pagination): void => {
     startTransition(() => {
@@ -150,12 +149,9 @@ const UserEmailList: React.FC<{
     });
   };
 
-  // When adding an email, we want to refresh the list and go to the last page
-  const onAdd = (): void => {
-    startTransition(() => {
-      setPagination(LAST_PAGE);
-      refreshList();
-    });
+  // When adding an email, we want to go to the email verification form
+  const onAdd = (id: string): void => {
+    setRoute({ type: "verify-email", id });
   };
 
   return (
@@ -173,7 +169,6 @@ const UserEmailList: React.FC<{
           isPrimary={primaryEmailId === edge.node.id}
           onSetPrimary={refreshPrimaryEmailId}
           onRemove={onRemove}
-          highlight={latestAddedEmail === edge.node.id}
         />
       ))}
       <AddEmailForm userId={userId} onAdd={onAdd} />

@@ -28,6 +28,7 @@ type HomeRoute = { type: "home" };
 type AccountRoute = { type: "account" };
 type OAuth2ClientRoute = { type: "client"; id: string };
 type BrowserSessionRoute = { type: "session"; id: string };
+type VerifyEmailRoute = { type: "verify-email"; id: string };
 type UnknownRoute = { type: "unknown"; segments: string[] };
 
 export type Route =
@@ -35,6 +36,7 @@ export type Route =
   | AccountRoute
   | OAuth2ClientRoute
   | BrowserSessionRoute
+  | VerifyEmailRoute
   | UnknownRoute;
 
 const routeToSegments = (route: Route): string[] => {
@@ -47,6 +49,8 @@ const routeToSegments = (route: Route): string[] => {
       return ["client", route.id];
     case "session":
       return ["session", route.id];
+    case "verify-email":
+      return ["verify-email", route.id];
     case "unknown":
       return route.segments;
   }
@@ -67,6 +71,10 @@ const segmentsToRoute = (segments: string[]): Route => {
 
   if (segments.length === 2 && segments[0] === "session") {
     return { type: "session", id: segments[1] };
+  }
+
+  if (segments.length === 2 && segments[0] === "verify-email") {
+    return { type: "verify-email", id: segments[1] };
   }
 
   return { type: "unknown", segments };
@@ -112,6 +120,7 @@ const Home = lazy(() => import("./pages/Home"));
 const Account = lazy(() => import("./pages/Account"));
 const OAuth2Client = lazy(() => import("./pages/OAuth2Client"));
 const BrowserSession = lazy(() => import("./pages/BrowserSession"));
+const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
 
 const InnerRouter: React.FC = () => {
   const route = useAtomValue(routeAtom);
@@ -125,6 +134,8 @@ const InnerRouter: React.FC = () => {
       return <OAuth2Client id={route.id} />;
     case "session":
       return <BrowserSession id={route.id} />;
+    case "verify-email":
+      return <VerifyEmail id={route.id} />;
     case "unknown":
       return <>Unknown route {JSON.stringify(route.segments)}</>;
   }
@@ -154,14 +165,10 @@ export const Link: React.FC<
     <a
       href={path}
       onClick={(e: React.MouseEvent): void => {
-        // Local links should be handled by the internal routers
-        // external links do not require a transition
-        if (!path.startsWith("http")) {
-          e.preventDefault();
-          startTransition(() => {
-            setRoute(route);
-          });
-        }
+        e.preventDefault();
+        startTransition(() => {
+          setRoute(route);
+        });
       }}
       {...props}
     >

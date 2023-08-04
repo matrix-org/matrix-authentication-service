@@ -1,0 +1,81 @@
+/* Copyright 2023 The Matrix.org Foundation C.I.C.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.user-email {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--cpd-space-2x);
+}
+
+.user-email-line {
+    display: flex;
+    align-self: stretch;
+    gap: var(--cpd-space-2x);
+}
+
+.user-email-field {
+    border: 1px solid var(--cpd-color-border-interactive-primary);
+    background: var(--cpd-color-bg-canvas-default);
+    border-radius: 0.5rem;
+    padding: var(--cpd-space-3x) var(--cpd-space-4x);
+    box-sizing: border-box;
+    flex: 1;
+}
+
+.user-email-delete {
+    box-sizing: border-box;
+    height: var(--cpd-space-12x);
+    width: var(--cpd-space-12x);
+    border-radius: 50%;
+    color: var(--cpd-color-icon-critical-primary);
+    padding: var(--cpd-space-2x);
+}
+
+.user-email-delete:hover:not([disabled]) {
+    background-color: var(--cpd-color-red-300);
+}
+
+.user-email-delete[disabled] {
+    color: var(--cpd-color-icon-disabled);
+}
+
+.user-email-delete-icon {
+    display: block;
+    height: var(--cpd-space-8x);
+    width: var(--cpd-space-8x);
+}
+
+.user-email-unverified {
+    color: var(--cpd-color-text-critical-primary);
+}
+
+.link {
+    display: inline-block;
+    text-decoration: underline;
+    color: var(--cpd-color-text-primary);
+    font-weight: var(--cpd-font-weight-medium);
+    border-radius: var(--cpd-radius-pill-effect);
+    padding-inline: 0.25rem;
+}
+
+.link:hover {
+    background: var(--cpd-color-gray-300);
+}
+
+.link:active {
+    color: var(--cpd-color-text-on-solid-primary);
+}
+
