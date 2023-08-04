@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { Control, Field, Root, Submit } from "@vector-im/compound-web";
-import { atom, useAtom } from "jotai";
+import { useAtom } from "jotai";
 import { atomWithMutation } from "jotai-urql";
 import { useRef, useTransition } from "react";
 
@@ -35,15 +35,10 @@ const ADD_EMAIL_MUTATION = graphql(/* GraphQL */ `
 
 const addUserEmailAtom = atomWithMutation(ADD_EMAIL_MUTATION);
 
-export const latestAddedEmailAtom = atom(async (get) => {
-  const result = await get(addUserEmailAtom);
-  return result.data?.addEmail.email?.id ?? null;
-});
-
-const AddEmailForm: React.FC<{ userId: string; onAdd?: () => void }> = ({
-  userId,
-  onAdd,
-}) => {
+const AddEmailForm: React.FC<{
+  userId: string;
+  onAdd?: (id: string) => void;
+}> = ({ userId, onAdd }) => {
   const formRef = useRef<HTMLFormElement>(null);
   const [addEmailResult, addEmail] = useAtom(addUserEmailAtom);
   const [pending, startTransition] = useTransition();
@@ -60,8 +55,12 @@ const AddEmailForm: React.FC<{ userId: string; onAdd?: () => void }> = ({
           return;
         }
 
+        if (!result.data?.addEmail.email?.id) {
+          throw new Error("Unexpected response from server");
+        }
+
         // Call the onAdd callback if provided
-        onAdd?.();
+        onAdd?.(result.data?.addEmail.email?.id);
 
         // Reset the form
         formRef.current?.reset();

@@ -1128,54 +1128,8 @@ export type UserEmail_EmailFragment = {
   __typename?: "UserEmail";
   id: string;
   email: string;
-  createdAt: any;
   confirmedAt?: any | null;
 } & { " $fragmentName"?: "UserEmail_EmailFragment" };
-
-export type VerifyEmailMutationVariables = Exact<{
-  id: Scalars["ID"]["input"];
-  code: Scalars["String"]["input"];
-}>;
-
-export type VerifyEmailMutation = {
-  __typename?: "Mutation";
-  verifyEmail: {
-    __typename?: "VerifyEmailPayload";
-    status: VerifyEmailStatus;
-    user?: {
-      __typename?: "User";
-      id: string;
-      primaryEmail?: { __typename?: "UserEmail"; id: string } | null;
-    } | null;
-    email?:
-      | ({ __typename?: "UserEmail"; id: string } & {
-          " $fragmentRefs"?: {
-            UserEmail_EmailFragment: UserEmail_EmailFragment;
-          };
-        })
-      | null;
-  };
-};
-
-export type ResendVerificationEmailMutationVariables = Exact<{
-  id: Scalars["ID"]["input"];
-}>;
-
-export type ResendVerificationEmailMutation = {
-  __typename?: "Mutation";
-  sendVerificationEmail: {
-    __typename?: "SendVerificationEmailPayload";
-    status: SendVerificationEmailStatus;
-    user: {
-      __typename?: "User";
-      id: string;
-      primaryEmail?: { __typename?: "UserEmail"; id: string } | null;
-    };
-    email: { __typename?: "UserEmail"; id: string } & {
-      " $fragmentRefs"?: { UserEmail_EmailFragment: UserEmail_EmailFragment };
-    };
-  };
-};
 
 export type RemoveEmailMutationVariables = Exact<{
   id: Scalars["ID"]["input"];
@@ -1274,6 +1228,57 @@ export type UserGreetingQuery = {
   } | null;
 };
 
+export type UserEmail_VerifyEmailFragment = {
+  __typename?: "UserEmail";
+  id: string;
+  email: string;
+} & { " $fragmentName"?: "UserEmail_VerifyEmailFragment" };
+
+export type VerifyEmailMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+  code: Scalars["String"]["input"];
+}>;
+
+export type VerifyEmailMutation = {
+  __typename?: "Mutation";
+  verifyEmail: {
+    __typename?: "VerifyEmailPayload";
+    status: VerifyEmailStatus;
+    user?: {
+      __typename?: "User";
+      id: string;
+      primaryEmail?: { __typename?: "UserEmail"; id: string } | null;
+    } | null;
+    email?:
+      | ({ __typename?: "UserEmail"; id: string } & {
+          " $fragmentRefs"?: {
+            UserEmail_EmailFragment: UserEmail_EmailFragment;
+          };
+        })
+      | null;
+  };
+};
+
+export type ResendVerificationEmailMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type ResendVerificationEmailMutation = {
+  __typename?: "Mutation";
+  sendVerificationEmail: {
+    __typename?: "SendVerificationEmailPayload";
+    status: SendVerificationEmailStatus;
+    user: {
+      __typename?: "User";
+      id: string;
+      primaryEmail?: { __typename?: "UserEmail"; id: string } | null;
+    };
+    email: { __typename?: "UserEmail"; id: string } & {
+      " $fragmentRefs"?: { UserEmail_EmailFragment: UserEmail_EmailFragment };
+    };
+  };
+};
+
 export type BrowserSessionQueryQueryVariables = Exact<{
   id: Scalars["ID"]["input"];
 }>;
@@ -1309,6 +1314,21 @@ export type OAuth2ClientQueryQuery = {
     policyUri?: any | null;
     redirectUris: Array<any>;
   } | null;
+};
+
+export type VerifyEmailQueryQueryVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type VerifyEmailQueryQuery = {
+  __typename?: "Query";
+  userEmail?:
+    | ({ __typename?: "UserEmail" } & {
+        " $fragmentRefs"?: {
+          UserEmail_VerifyEmailFragment: UserEmail_VerifyEmailFragment;
+        };
+      })
+    | null;
 };
 
 export const BrowserSession_SessionFragmentDoc = {
@@ -1463,13 +1483,32 @@ export const UserEmail_EmailFragmentDoc = {
         selections: [
           { kind: "Field", name: { kind: "Name", value: "id" } },
           { kind: "Field", name: { kind: "Name", value: "email" } },
-          { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "confirmedAt" } },
         ],
       },
     },
   ],
 } as unknown as DocumentNode<UserEmail_EmailFragment, unknown>;
+export const UserEmail_VerifyEmailFragmentDoc = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "UserEmail_verifyEmail" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "UserEmail" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          { kind: "Field", name: { kind: "Name", value: "email" } },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<UserEmail_VerifyEmailFragment, unknown>;
 export const CurrentViewerQueryDocument = {
   kind: "Document",
   definitions: [
@@ -1681,7 +1720,6 @@ export const AddEmailDocument = {
         selections: [
           { kind: "Field", name: { kind: "Name", value: "id" } },
           { kind: "Field", name: { kind: "Name", value: "email" } },
-          { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "confirmedAt" } },
         ],
       },
@@ -2615,244 +2653,6 @@ export const OAuth2SessionListQueryDocument = {
   OAuth2SessionListQueryQuery,
   OAuth2SessionListQueryQueryVariables
 >;
-export const VerifyEmailDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "mutation",
-      name: { kind: "Name", value: "VerifyEmail" },
-      variableDefinitions: [
-        {
-          kind: "VariableDefinition",
-          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
-          },
-        },
-        {
-          kind: "VariableDefinition",
-          variable: { kind: "Variable", name: { kind: "Name", value: "code" } },
-          type: {
-            kind: "NonNullType",
-            type: {
-              kind: "NamedType",
-              name: { kind: "Name", value: "String" },
-            },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "verifyEmail" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "input" },
-                value: {
-                  kind: "ObjectValue",
-                  fields: [
-                    {
-                      kind: "ObjectField",
-                      name: { kind: "Name", value: "userEmailId" },
-                      value: {
-                        kind: "Variable",
-                        name: { kind: "Name", value: "id" },
-                      },
-                    },
-                    {
-                      kind: "ObjectField",
-                      name: { kind: "Name", value: "code" },
-                      value: {
-                        kind: "Variable",
-                        name: { kind: "Name", value: "code" },
-                      },
-                    },
-                  ],
-                },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "status" } },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "user" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "id" } },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "primaryEmail" },
-                        selectionSet: {
-                          kind: "SelectionSet",
-                          selections: [
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "id" },
-                            },
-                          ],
-                        },
-                      },
-                    ],
-                  },
-                },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "email" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "id" } },
-                      {
-                        kind: "FragmentSpread",
-                        name: { kind: "Name", value: "UserEmail_email" },
-                      },
-                    ],
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
-    {
-      kind: "FragmentDefinition",
-      name: { kind: "Name", value: "UserEmail_email" },
-      typeCondition: {
-        kind: "NamedType",
-        name: { kind: "Name", value: "UserEmail" },
-      },
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          { kind: "Field", name: { kind: "Name", value: "id" } },
-          { kind: "Field", name: { kind: "Name", value: "email" } },
-          { kind: "Field", name: { kind: "Name", value: "createdAt" } },
-          { kind: "Field", name: { kind: "Name", value: "confirmedAt" } },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<VerifyEmailMutation, VerifyEmailMutationVariables>;
-export const ResendVerificationEmailDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "mutation",
-      name: { kind: "Name", value: "ResendVerificationEmail" },
-      variableDefinitions: [
-        {
-          kind: "VariableDefinition",
-          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "sendVerificationEmail" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "input" },
-                value: {
-                  kind: "ObjectValue",
-                  fields: [
-                    {
-                      kind: "ObjectField",
-                      name: { kind: "Name", value: "userEmailId" },
-                      value: {
-                        kind: "Variable",
-                        name: { kind: "Name", value: "id" },
-                      },
-                    },
-                  ],
-                },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "status" } },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "user" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "id" } },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "primaryEmail" },
-                        selectionSet: {
-                          kind: "SelectionSet",
-                          selections: [
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "id" },
-                            },
-                          ],
-                        },
-                      },
-                    ],
-                  },
-                },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "email" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "id" } },
-                      {
-                        kind: "FragmentSpread",
-                        name: { kind: "Name", value: "UserEmail_email" },
-                      },
-                    ],
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
-    {
-      kind: "FragmentDefinition",
-      name: { kind: "Name", value: "UserEmail_email" },
-      typeCondition: {
-        kind: "NamedType",
-        name: { kind: "Name", value: "UserEmail" },
-      },
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          { kind: "Field", name: { kind: "Name", value: "id" } },
-          { kind: "Field", name: { kind: "Name", value: "email" } },
-          { kind: "Field", name: { kind: "Name", value: "createdAt" } },
-          { kind: "Field", name: { kind: "Name", value: "confirmedAt" } },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<
-  ResendVerificationEmailMutation,
-  ResendVerificationEmailMutationVariables
->;
 export const RemoveEmailDocument = {
   kind: "Document",
   definitions: [
@@ -3189,7 +2989,6 @@ export const UserEmailListQueryDocument = {
         selections: [
           { kind: "Field", name: { kind: "Name", value: "id" } },
           { kind: "Field", name: { kind: "Name", value: "email" } },
-          { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "confirmedAt" } },
         ],
       },
@@ -3323,6 +3122,242 @@ export const UserGreetingDocument = {
     },
   ],
 } as unknown as DocumentNode<UserGreetingQuery, UserGreetingQueryVariables>;
+export const VerifyEmailDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "VerifyEmail" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "code" } },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "verifyEmail" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: {
+                  kind: "ObjectValue",
+                  fields: [
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "userEmailId" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "id" },
+                      },
+                    },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "code" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "code" },
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "status" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "user" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "primaryEmail" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "id" },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "email" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                      {
+                        kind: "FragmentSpread",
+                        name: { kind: "Name", value: "UserEmail_email" },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "UserEmail_email" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "UserEmail" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          { kind: "Field", name: { kind: "Name", value: "email" } },
+          { kind: "Field", name: { kind: "Name", value: "confirmedAt" } },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<VerifyEmailMutation, VerifyEmailMutationVariables>;
+export const ResendVerificationEmailDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "ResendVerificationEmail" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "sendVerificationEmail" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: {
+                  kind: "ObjectValue",
+                  fields: [
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "userEmailId" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "id" },
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "status" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "user" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "primaryEmail" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "id" },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "email" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                      {
+                        kind: "FragmentSpread",
+                        name: { kind: "Name", value: "UserEmail_email" },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "UserEmail_email" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "UserEmail" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          { kind: "Field", name: { kind: "Name", value: "email" } },
+          { kind: "Field", name: { kind: "Name", value: "confirmedAt" } },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  ResendVerificationEmailMutation,
+  ResendVerificationEmailMutationVariables
+>;
 export const BrowserSessionQueryDocument = {
   kind: "Document",
   definitions: [
@@ -3456,4 +3491,70 @@ export const OAuth2ClientQueryDocument = {
 } as unknown as DocumentNode<
   OAuth2ClientQueryQuery,
   OAuth2ClientQueryQueryVariables
+>;
+export const VerifyEmailQueryDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "VerifyEmailQuery" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "userEmail" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "id" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                {
+                  kind: "FragmentSpread",
+                  name: { kind: "Name", value: "UserEmail_verifyEmail" },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "UserEmail_verifyEmail" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "UserEmail" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          { kind: "Field", name: { kind: "Name", value: "email" } },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  VerifyEmailQueryQuery,
+  VerifyEmailQueryQueryVariables
 >;
