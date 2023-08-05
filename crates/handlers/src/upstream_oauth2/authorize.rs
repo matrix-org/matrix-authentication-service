@@ -89,7 +89,6 @@ pub(crate) async fn get(
     let data = AuthorizationRequestData {
         client_id: &provider.client_id,
         scope: &provider.scope,
-        prompt: None,
         redirect_uri: &redirect_uri,
         code_challenge_methods_supported: metadata.code_challenge_methods_supported.as_deref(),
     };
@@ -98,6 +97,7 @@ pub(crate) async fn get(
     let (url, data) = mas_oidc_client::requests::authorization_code::build_authorization_url(
         metadata.authorization_endpoint().clone(),
         data,
+        None,
         &mut rng,
     )?;
 
