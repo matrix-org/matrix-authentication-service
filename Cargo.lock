@@ -3414,6 +3414,7 @@ dependencies = [
  "http-body",
  "hyper",
  "hyper-rustls",
+ "language-tags",
  "mas-http",
  "mas-iana",
  "mas-jose",

@@ -124,6 +124,7 @@ pub struct ClientMetadataSerdeHelper {
     introspection_signed_response_alg: Option<JsonWebSignatureAlg>,
     introspection_encrypted_response_alg: Option<JsonWebEncryptionAlg>,
     introspection_encrypted_response_enc: Option<JsonWebEncryptionEnc>,
+    post_logout_redirect_uris: Option<Vec<Url>>,
     #[serde(flatten)]
     extra: ClientMetadataLocalizedFields,
 }
@@ -168,6 +169,7 @@ impl From<VerifiedClientMetadata> for ClientMetadataSerdeHelper {
                     introspection_signed_response_alg,
                     introspection_encrypted_response_alg,
                     introspection_encrypted_response_enc,
+                    post_logout_redirect_uris,
                 },
         } = metadata;
 
@@ -202,6 +204,7 @@ impl From<VerifiedClientMetadata> for ClientMetadataSerdeHelper {
             introspection_signed_response_alg,
             introspection_encrypted_response_alg,
             introspection_encrypted_response_enc,
+            post_logout_redirect_uris,
             extra: ClientMetadataLocalizedFields {
                 client_name,
                 logo_uri,
@@ -246,6 +249,7 @@ impl From<ClientMetadataSerdeHelper> for ClientMetadata {
             introspection_signed_response_alg,
             introspection_encrypted_response_alg,
             introspection_encrypted_response_enc,
+            post_logout_redirect_uris,
             extra:
                 ClientMetadataLocalizedFields {
                     client_name,
@@ -292,6 +296,7 @@ impl From<ClientMetadataSerdeHelper> for ClientMetadata {
             introspection_signed_response_alg,
             introspection_encrypted_response_alg,
             introspection_encrypted_response_enc,
+            post_logout_redirect_uris,
         }
     }
 }
