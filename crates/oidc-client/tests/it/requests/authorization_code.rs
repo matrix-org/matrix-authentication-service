@@ -64,8 +64,8 @@ fn pass_authorization_url() {
             code_challenge_methods_supported: Some(&[PkceCodeChallengeMethod::S256]),
             scope: &[ScopeToken::Openid].into_iter().collect(),
             redirect_uri: &redirect_uri,
-            prompt: None,
         },
+        None,
         &mut rng,
     )
     .unwrap();
@@ -135,8 +135,8 @@ async fn pass_pushed_authorization_request() {
             code_challenge_methods_supported: Some(&[PkceCodeChallengeMethod::S256]),
             scope: &[ScopeToken::Openid].into_iter().collect(),
             redirect_uri: &redirect_uri,
-            prompt: None,
         },
+        None,
         now(),
         &mut rng,
     )
@@ -187,8 +187,8 @@ async fn fail_pushed_authorization_request_404() {
             code_challenge_methods_supported: Some(&[PkceCodeChallengeMethod::S256]),
             scope: &[ScopeToken::Openid].into_iter().collect(),
             redirect_uri: &redirect_uri,
-            prompt: None,
         },
+        None,
         now(),
         &mut rng,
     )
