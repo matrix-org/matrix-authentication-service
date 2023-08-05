@@ -77,7 +77,7 @@ async fn pass_register_client_none() {
         .mount(&mock_server)
         .await;
 
-    let response = register_client(&http_service, &registration_endpoint, client_metadata)
+    let response = register_client(&http_service, &registration_endpoint, client_metadata, None)
         .await
         .unwrap();
 
@@ -108,7 +108,7 @@ async fn pass_register_client_client_secret_basic() {
         .mount(&mock_server)
         .await;
 
-    let response = register_client(&http_service, &registration_endpoint, client_metadata)
+    let response = register_client(&http_service, &registration_endpoint, client_metadata, None)
         .await
         .unwrap();
 
@@ -139,7 +139,7 @@ async fn pass_register_client_client_secret_post() {
         .mount(&mock_server)
         .await;
 
-    let response = register_client(&http_service, &registration_endpoint, client_metadata)
+    let response = register_client(&http_service, &registration_endpoint, client_metadata, None)
         .await
         .unwrap();
 
@@ -171,7 +171,7 @@ async fn pass_register_client_client_secret_jwt() {
         .mount(&mock_server)
         .await;
 
-    let response = register_client(&http_service, &registration_endpoint, client_metadata)
+    let response = register_client(&http_service, &registration_endpoint, client_metadata, None)
         .await
         .unwrap();
 
@@ -208,7 +208,7 @@ async fn pass_register_client_private_key_jwt() {
         .mount(&mock_server)
         .await;
 
-    let response = register_client(&http_service, &registration_endpoint, client_metadata)
+    let response = register_client(&http_service, &registration_endpoint, client_metadata, None)
         .await
         .unwrap();
 
@@ -222,7 +222,7 @@ async fn fail_register_client_404() {
     let client_metadata = client_metadata(OAuthClientAuthenticationMethod::None);
     let registration_endpoint = issuer.join("register").unwrap();
 
-    let error = register_client(&http_service, &registration_endpoint, client_metadata)
+    let error = register_client(&http_service, &registration_endpoint, client_metadata, None)
         .await
         .unwrap_err();
 
@@ -251,7 +251,7 @@ async fn fail_register_client_missing_secret() {
         .mount(&mock_server)
         .await;
 
-    let error = register_client(&http_service, &registration_endpoint, client_metadata)
+    let error = register_client(&http_service, &registration_endpoint, client_metadata, None)
         .await
         .unwrap_err();
 
