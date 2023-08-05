@@ -215,6 +215,18 @@ pub struct ClientMetadata {
     /// [JWK]: https://www.rfc-editor.org/rfc/rfc7517.html
     pub jwks: Option<PublicJsonWebKeySet>,
 
+    /// A unique identifier string assigned by the client developer or software
+    /// publisher used by registration endpoints to identify the client software
+    /// to be dynamically registered.
+    ///
+    /// It should remain the same for all instances and versions of the client
+    /// software.
+    pub software_id: Option<String>,
+
+    /// A version identifier string for the client software identified by
+    /// `software_id`.
+    pub software_version: Option<String>,
+
     /// URL to be used in calculating pseudonymous identifiers by the OpenID
     /// Connect provider when [pairwise subject identifiers] are used.
     ///
