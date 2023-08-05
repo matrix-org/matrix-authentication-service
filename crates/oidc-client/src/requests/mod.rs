@@ -22,5 +22,6 @@ pub mod jose;
 pub mod refresh_token;
 pub mod registration;
 pub mod revocation;
+pub mod rp_initiated_logout;
 pub mod token;
 pub mod userinfo;

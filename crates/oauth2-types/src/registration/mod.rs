@@ -418,6 +418,12 @@ pub struct ClientMetadata {
     /// [JWE]: http://tools.ietf.org/html/draft-ietf-jose-json-web-encryption
     /// [introspection endpoint]: https://www.rfc-editor.org/info/rfc7662
     pub introspection_encrypted_response_enc: Option<JsonWebEncryptionEnc>,
+
+    /// `post_logout_redirect_uri` values that are pre-registered by the client
+    /// for use at the provider's [RP-Initiated Logout endpoint].
+    ///
+    /// [RP-Initiated Logout endpoint]: https://openid.net/specs/openid-connect-rpinitiated-1_0.html
+    pub post_logout_redirect_uris: Option<Vec<Url>>,
 }
 
 impl ClientMetadata {
