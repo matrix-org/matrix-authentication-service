@@ -56,10 +56,10 @@ pub enum ScopeToken {
     /// Endpoint even when the end-user is not present (not logged in).
     OfflineAccess,
 
-    /// `urn:matrix:org.matrix.msc2967.client:api:*`
+    /// `urn:matrix:org.matrix.msc2967.client:api:{token}`
     ///
-    /// Requests access to the Matrix Client API.
-    MatrixApi,
+    /// Requests access to the Matrix Client-Server API.
+    MatrixApi(MatrixApiScopeToken),
 
     /// `urn:matrix:org.matrix.msc2967.client:device:{device_id}`
     ///
@@ -108,7 +108,9 @@ impl fmt::Display for ScopeToken {
             ScopeToken::Address => write!(f, "address"),
             ScopeToken::Phone => write!(f, "phone"),
             ScopeToken::OfflineAccess => write!(f, "offline_access"),
-            ScopeToken::MatrixApi => write!(f, "urn:matrix:org.matrix.msc2967.client:api:*"),
+            ScopeToken::MatrixApi(scope) => {
+                write!(f, "urn:matrix:org.matrix.msc2967.client:api:{scope}")
+            }
             ScopeToken::MatrixDevice(s) => {
                 write!(f, "urn:matrix:org.matrix.msc2967.client:device:{}", s.0)
             }
@@ -126,9 +128,15 @@ impl From<StrScopeToken> for ScopeToken {
             "address" => Self::Address,
             "phone" => Self::Phone,
             "offline_access" => Self::OfflineAccess,
-            "urn:matrix:org.matrix.msc2967.client:api:*" => Self::MatrixApi,
             s => {
-                if let Some(device_id) =
+                if let Some(matrix_scope) =
+                    s.strip_prefix("urn:matrix:org.matrix.msc2967.client:api:")
+                {
+                    Self::MatrixApi(
+                        MatrixApiScopeToken::from_str(matrix_scope)
+                            .expect("If the whole string is a valid scope, a substring is too"),
+                    )
+                } else if let Some(device_id) =
                     s.strip_prefix("urn:matrix:org.matrix.msc2967.client:device:")
                 {
                     Self::MatrixDevice(PrivString(device_id.to_owned()))
@@ -184,6 +192,51 @@ impl FromIterator<ScopeToken> for Scope {
     }
 }
 
+/// Tokens to define the scope of an access to the Matrix Client-Server API.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum MatrixApiScopeToken {
+    /// `*`
+    ///
+    /// Access the full Client-Server API.
+    Full,
+
+    /// `guest`
+    ///
+    /// Access the Client-Server API as a guest.
+    Guest,
+
+    /// Another scope token.
+    ///
+    /// To access it's value use this type's `Display` implementation.
+    Custom(PrivString),
+}
+
+impl fmt::Display for MatrixApiScopeToken {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Full => write!(f, "*"),
+            Self::Guest => write!(f, "guest"),
+            Self::Custom(s) => f.write_str(&s.0),
+        }
+    }
+}
+
+impl FromStr for MatrixApiScopeToken {
+    type Err = InvalidScope;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // Check that it's a valid scope string.
+        StrScopeToken::from_str(s)?;
+
+        let t = match s {
+            "*" => Self::Full,
+            "guest" => Self::Guest,
+            _ => Self::Custom(PrivString(s.to_owned())),
+        };
+        Ok(t)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use assert_matches::assert_matches;
@@ -218,7 +271,7 @@ mod tests {
         let mut scope: Scope = [ScopeToken::Profile].into_iter().collect();
         assert_eq!(scope.to_string(), "profile");
 
-        scope.insert_token(ScopeToken::MatrixApi);
+        scope.insert_token(ScopeToken::MatrixApi(MatrixApiScopeToken::Full));
         assert_eq!(
             scope.to_string(),
             "profile urn:matrix:org.matrix.msc2967.client:api:*"
