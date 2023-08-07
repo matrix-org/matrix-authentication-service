@@ -100,7 +100,7 @@ async fn try_main() -> anyhow::Result<()> {
     });
 
     // Setup OpenTelemetry tracing and metrics
-    let (tracer, _meter) = telemetry::setup(&telemetry_config)
+    let tracer = telemetry::setup(&telemetry_config)
         .await
         .context("failed to setup OpenTelemetry")?;
 

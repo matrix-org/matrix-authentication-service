@@ -54,7 +54,8 @@ where
 
         // Poll the inner future, with the span entered. This is effectively what
         // [`tracing::Instrumented`] does.
-        let result = ready!(this.span.in_scope(|| this.inner.poll(cx)));
+        let _guard = this.span.enter();
+        let result = ready!(this.inner.poll(cx));
 
         match &result {
             Ok(response) => {
