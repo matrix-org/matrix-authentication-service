@@ -13,7 +13,6 @@
 // limitations under the License.
 
 use std::{
-    borrow::Cow,
     future::ready,
     net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, TcpListener, ToSocketAddrs},
     os::unix::net::UnixListener,
@@ -27,7 +26,7 @@ use axum::{
     Extension, Router,
 };
 use hyper::{
-    header::{HeaderValue, CACHE_CONTROL},
+    header::{HeaderValue, CACHE_CONTROL, USER_AGENT},
     Method, Request, Response, StatusCode, Version,
 };
 use listenfd::ListenFd;
@@ -40,10 +39,11 @@ use mas_tower::{
     make_span_fn, metrics_attributes_fn, DurationRecorderLayer, InFlightCounterLayer, TraceLayer,
     KV,
 };
-use opentelemetry::{Key, KeyValue};
+use opentelemetry::{trace::TraceContextExt, Key, KeyValue};
 use opentelemetry_http::HeaderExtractor;
 use opentelemetry_semantic_conventions::trace::{
-    HTTP_METHOD, HTTP_ROUTE, HTTP_SCHEME, HTTP_STATUS_CODE,
+    HTTP_REQUEST_METHOD, HTTP_RESPONSE_STATUS_CODE, HTTP_ROUTE, NETWORK_PROTOCOL_NAME,
+    NETWORK_PROTOCOL_VERSION, URL_SCHEME,
 };
 use rustls::ServerConfig;
 use sentry_tower::{NewSentryLayer, SentryHttpLayer};
@@ -52,35 +52,33 @@ use tower_http::{services::ServeDir, set_header::SetResponseHeaderLayer};
 use tracing::{warn, Span};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
-const NET_PROTOCOL_NAME: Key = Key::from_static_str("net.protocol.name");
-const NET_PROTOCOL_VERSION: Key = Key::from_static_str("net.protocol.version");
 const MAS_LISTENER_NAME: Key = Key::from_static_str("mas.listener.name");
 
 #[inline]
-fn otel_http_method<B>(request: &Request<B>) -> Cow<'static, str> {
+fn otel_http_method<B>(request: &Request<B>) -> &'static str {
     match request.method() {
-        &Method::OPTIONS => "OPTIONS".into(),
-        &Method::GET => "GET".into(),
-        &Method::POST => "POST".into(),
-        &Method::PUT => "PUT".into(),
-        &Method::DELETE => "DELETE".into(),
-        &Method::HEAD => "HEAD".into(),
-        &Method::TRACE => "TRACE".into(),
-        &Method::CONNECT => "CONNECT".into(),
-        &Method::PATCH => "PATCH".into(),
-        other => other.to_string().into(),
+        &Method::OPTIONS => "OPTIONS",
+        &Method::GET => "GET",
+        &Method::POST => "POST",
+        &Method::PUT => "PUT",
+        &Method::DELETE => "DELETE",
+        &Method::HEAD => "HEAD",
+        &Method::TRACE => "TRACE",
+        &Method::CONNECT => "CONNECT",
+        &Method::PATCH => "PATCH",
+        _other => "_OTHER",
     }
 }
 
 #[inline]
-fn otel_net_protocol_version<B>(request: &Request<B>) -> Cow<'static, str> {
+fn otel_net_protocol_version<B>(request: &Request<B>) -> &'static str {
     match request.version() {
-        Version::HTTP_09 => "0.9".into(),
-        Version::HTTP_10 => "1.0".into(),
-        Version::HTTP_11 => "1.1".into(),
-        Version::HTTP_2 => "2.0".into(),
-        Version::HTTP_3 => "3.0".into(),
-        other => format!("{other:?}").into(),
+        Version::HTTP_09 => "0.9",
+        Version::HTTP_10 => "1.0",
+        Version::HTTP_11 => "1.1",
+        Version::HTTP_2 => "2.0",
+        Version::HTTP_3 => "3.0",
+        _other => "_OTHER",
     }
 }
 
@@ -91,11 +89,7 @@ fn otel_http_route<B>(request: &Request<B>) -> Option<&str> {
         .map(MatchedPath::as_str)
 }
 
-fn otel_http_target<B>(request: &Request<B>) -> &str {
-    request.uri().path_and_query().map_or("", |p| p.as_str())
-}
-
-fn otel_http_scheme<B>(request: &Request<B>) -> &'static str {
+fn otel_url_scheme<B>(request: &Request<B>) -> &'static str {
     // XXX: maybe we should panic if the connection info was not injected in the
     // request extensions
     request
@@ -117,7 +111,7 @@ fn make_http_span<B>(req: &Request<B>) -> Span {
     let span_name = if let Some(route) = route.as_ref() {
         format!("{method} {route}")
     } else {
-        format!("{method}")
+        method.to_owned()
     };
 
     let span = tracing::info_span!(
@@ -125,17 +119,30 @@ fn make_http_span<B>(req: &Request<B>) -> Span {
         "otel.kind" = "server",
         "otel.name" = span_name,
         "otel.status_code" = tracing::field::Empty,
-        "net.protocol.name" = "http",
-        "net.protocol.version" = otel_net_protocol_version(req).as_ref(),
-        "http.scheme" = otel_http_scheme(req),
-        "http.method" = method.as_ref(),
+        "network.protocol.name" = "http",
+        "network.protocol.version" = otel_net_protocol_version(req),
+        "http.method" = method,
         "http.route" = tracing::field::Empty,
-        "http.target" = otel_http_target(req),
-        "http.status_code" = tracing::field::Empty,
+        "http.response.status_code" = tracing::field::Empty,
+        "url.path" = req.uri().path(),
+        "url.query" = tracing::field::Empty,
+        "url.scheme" = otel_url_scheme(req),
+        "user_agent.original" = tracing::field::Empty,
     );
 
     if let Some(route) = route.as_ref() {
         span.record("http.route", route);
+    }
+
+    if let Some(query) = req.uri().query() {
+        span.record("url.query", query);
+    }
+
+    if let Some(user_agent) = req.headers().get(USER_AGENT) {
+        span.record(
+            "user_agent.original",
+            user_agent.to_str().unwrap_or("INVALID"),
+        );
     }
 
     // Extract the parent span context from the request headers
@@ -144,23 +151,28 @@ fn make_http_span<B>(req: &Request<B>) -> Span {
         let context = opentelemetry::Context::new();
         propagator.extract_with_context(&context, &extractor)
     });
-    span.set_parent(parent_context);
+
+    if parent_context.span().span_context().is_remote() {
+        // For now, set_parent is broken, so in the meantime we're using add_link
+        // instead
+        span.add_link(parent_context.span().span_context().clone());
+    }
 
     span
 }
 
 fn on_http_request_labels<B>(request: &Request<B>) -> Vec<KeyValue> {
     vec![
-        NET_PROTOCOL_NAME.string("http"),
-        NET_PROTOCOL_VERSION.string(otel_net_protocol_version(request)),
-        HTTP_METHOD.string(otel_http_method(request)),
-        HTTP_SCHEME.string(otel_http_scheme(request).as_ref()),
+        NETWORK_PROTOCOL_NAME.string("http"),
+        NETWORK_PROTOCOL_VERSION.string(otel_net_protocol_version(request)),
+        HTTP_REQUEST_METHOD.string(otel_http_method(request)),
         HTTP_ROUTE.string(otel_http_route(request).unwrap_or("FALLBACK").to_owned()),
+        URL_SCHEME.string(otel_url_scheme(request).as_ref()),
     ]
 }
 
 fn on_http_response_labels<B>(res: &Response<B>) -> Vec<KeyValue> {
-    vec![HTTP_STATUS_CODE.i64(res.status().as_u16().into())]
+    vec![HTTP_RESPONSE_STATUS_CODE.i64(res.status().as_u16().into())]
 }
 
 pub fn build_router<B>(
@@ -259,7 +271,7 @@ where
             ))
             .on_response_fn(|span: &Span, response: &Response<_>| {
                 let status_code = response.status().as_u16();
-                span.record("http.status_code", status_code);
+                span.record("http.response.status_code", status_code);
                 span.record("otel.status_code", "OK");
             }),
         )

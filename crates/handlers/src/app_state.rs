@@ -29,7 +29,7 @@ use mas_storage_pg::PgRepository;
 use mas_templates::Templates;
 use opentelemetry::{
     metrics::{Histogram, MetricsError, Unit},
-    Context, KeyValue,
+    KeyValue,
 };
 use rand::SeedableRng;
 use sqlx::PgPool;
@@ -60,7 +60,12 @@ impl AppState {
     /// Returns an error if the metrics could not be initialized.
     pub fn init_metrics(&mut self) -> Result<(), MetricsError> {
         // XXX: do we want to put that somewhere else?
-        let meter = opentelemetry::global::meter("mas-handlers");
+        let meter = opentelemetry::global::meter_with_version(
+            env!("CARGO_PKG_NAME"),
+            Some(env!("CARGO_PKG_VERSION")),
+            Some(opentelemetry_semantic_conventions::SCHEMA_URL),
+            None,
+        );
         let pool = self.pool.clone();
         let usage = meter
             .i64_observable_up_down_counter("db.connections.usage")
@@ -75,13 +80,13 @@ impl AppState {
             .init();
 
         // Observe the number of active and idle connections in the pool
-        meter.register_callback(move |cx| {
+        meter.register_callback(&[usage.as_any(), max.as_any()], move |observer| {
             let idle = u32::try_from(pool.num_idle()).unwrap_or(u32::MAX);
             let used = pool.size() - idle;
             let max_conn = pool.options().get_max_connections();
-            usage.observe(cx, i64::from(idle), &[KeyValue::new("state", "idle")]);
-            usage.observe(cx, i64::from(used), &[KeyValue::new("state", "used")]);
-            max.observe(cx, i64::from(max_conn), &[]);
+            observer.observe_i64(&usage, i64::from(idle), &[KeyValue::new("state", "idle")]);
+            observer.observe_i64(&usage, i64::from(used), &[KeyValue::new("state", "used")]);
+            observer.observe_i64(&max, i64::from(max_conn), &[]);
         })?;
 
         // Track the connection acquisition time
@@ -212,7 +217,7 @@ impl FromRequestParts<AppState> for BoxRepository {
         let duration_ms = duration.as_millis().try_into().unwrap_or(u64::MAX);
 
         if let Some(histogram) = &state.conn_acquisition_histogram {
-            histogram.record(&Context::new(), duration_ms, &[]);
+            histogram.record(duration_ms, &[]);
         }
 
         Ok(repo

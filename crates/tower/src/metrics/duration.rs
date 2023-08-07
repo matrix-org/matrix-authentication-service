@@ -14,7 +14,7 @@
 
 use std::future::Future;
 
-use opentelemetry::{metrics::Histogram, Context, KeyValue};
+use opentelemetry::{metrics::Histogram, KeyValue};
 use pin_project_lite::pin_project;
 use tokio::time::Instant;
 use tower::{Layer, Service};
@@ -195,8 +195,7 @@ where
             }
         }
 
-        this.histogram
-            .record(&Context::new(), duration_ms, &attributes);
+        this.histogram.record(duration_ms, &attributes);
         std::task::Poll::Ready(result)
     }
 }
