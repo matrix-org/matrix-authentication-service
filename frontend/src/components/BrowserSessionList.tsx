@@ -12,17 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { atom, useAtomValue, useSetAtom } from "jotai";
+import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
 import { useTransition } from "react";
 
 import { currentBrowserSessionIdAtom, mapQueryAtom } from "../atoms";
 import { graphql } from "../gql";
-import { PageInfo } from "../gql/graphql";
+import { BrowserSessionState, PageInfo } from "../gql/graphql";
 import {
   atomForCurrentPagination,
   atomWithPagination,
+  FIRST_PAGE,
   Pagination,
 } from "../pagination";
 import { isErr, isOk, unwrapErr, unwrapOk } from "../result";
@@ -36,6 +37,7 @@ import { Title } from "./Typography";
 const QUERY = graphql(/* GraphQL */ `
   query BrowserSessionList(
     $userId: ID!
+    $state: BrowserSessionState
     $first: Int
     $after: String
     $last: Int
@@ -48,7 +50,7 @@ const QUERY = graphql(/* GraphQL */ `
         after: $after
         last: $last
         before: $before
-        state: ACTIVE
+        state: $state
       ) {
         totalCount
 
@@ -71,12 +73,17 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
+const filterAtom = atom<BrowserSessionState | null>(BrowserSessionState.Active);
 const currentPaginationAtom = atomForCurrentPagination();
 
 const browserSessionListFamily = atomFamily((userId: string) => {
   const browserSessionListQuery = atomWithQuery({
     query: QUERY,
-    getVariables: (get) => ({ userId, ...get(currentPaginationAtom) }),
+    getVariables: (get) => ({
+      userId,
+      state: get(filterAtom),
+      ...get(currentPaginationAtom),
+    }),
   });
 
   const browserSessionList = mapQueryAtom(
@@ -110,6 +117,7 @@ const BrowserSessionList: React.FC<{ userId: string }> = ({ userId }) => {
   const result = useAtomValue(browserSessionListFamily(userId));
   const setPagination = useSetAtom(currentPaginationAtom);
   const [prevPage, nextPage] = useAtomValue(paginationFamily(userId));
+  const [filter, setFilter] = useAtom(filterAtom);
 
   if (isErr(currentSessionIdResult))
     return <GraphQLError error={unwrapErr(currentSessionIdResult)} />;
@@ -125,6 +133,17 @@ const BrowserSessionList: React.FC<{ userId: string }> = ({ userId }) => {
     });
   };
 
+  const toggleFilter = (): void => {
+    startTransition(() => {
+      setPagination(FIRST_PAGE);
+      setFilter(
+        filter === BrowserSessionState.Active
+          ? null
+          : BrowserSessionState.Active,
+      );
+    });
+  };
+
   return (
     <BlockList>
       <Title>List of browser sessions:</Title>
@@ -134,6 +153,14 @@ const BrowserSessionList: React.FC<{ userId: string }> = ({ userId }) => {
         count={browserSessions.totalCount}
         disabled={pending}
       />
+      <label>
+        <input
+          type="checkbox"
+          checked={filter === BrowserSessionState.Active}
+          onChange={toggleFilter}
+        />{" "}
+        Active only
+      </label>
       {browserSessions.edges.map((n) => (
         <BrowserSession
           key={n.cursor}

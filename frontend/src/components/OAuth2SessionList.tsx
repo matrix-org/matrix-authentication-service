@@ -12,17 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useAtomValue, atom, useSetAtom } from "jotai";
+import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
 import { useTransition } from "react";
 
 import { mapQueryAtom } from "../atoms";
 import { graphql } from "../gql";
-import { PageInfo } from "../gql/graphql";
+import { Oauth2SessionState, PageInfo } from "../gql/graphql";
 import {
   atomForCurrentPagination,
   atomWithPagination,
+  FIRST_PAGE,
   Pagination,
 } from "../pagination";
 import { isErr, isOk, unwrapErr, unwrapOk } from "../result";
@@ -36,6 +37,7 @@ import { Title } from "./Typography";
 const QUERY = graphql(/* GraphQL */ `
   query OAuth2SessionListQuery(
     $userId: ID!
+    $state: Oauth2SessionState
     $first: Int
     $after: String
     $last: Int
@@ -44,6 +46,7 @@ const QUERY = graphql(/* GraphQL */ `
     user(id: $userId) {
       id
       oauth2Sessions(
+        state: $state
         first: $first
         after: $after
         last: $last
@@ -70,11 +73,16 @@ const QUERY = graphql(/* GraphQL */ `
 `);
 
 const currentPaginationAtom = atomForCurrentPagination();
+const filterAtom = atom<Oauth2SessionState | null>(Oauth2SessionState.Active);
 
 const oauth2SessionListFamily = atomFamily((userId: string) => {
   const oauth2SessionListQuery = atomWithQuery({
     query: QUERY,
-    getVariables: (get) => ({ userId, ...get(currentPaginationAtom) }),
+    getVariables: (get) => ({
+      userId,
+      state: get(filterAtom),
+      ...get(currentPaginationAtom),
+    }),
   });
 
   const oauth2SessionList = mapQueryAtom(
@@ -111,6 +119,7 @@ const OAuth2SessionList: React.FC<Props> = ({ userId }) => {
   const result = useAtomValue(oauth2SessionListFamily(userId));
   const setPagination = useSetAtom(currentPaginationAtom);
   const [prevPage, nextPage] = useAtomValue(paginationFamily(userId));
+  const [filter, setFilter] = useAtom(filterAtom);
 
   if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
   const oauth2Sessions = unwrapOk(result);
@@ -123,9 +132,26 @@ const OAuth2SessionList: React.FC<Props> = ({ userId }) => {
     });
   };
 
+  const toggleFilter = (): void => {
+    startTransition(() => {
+      setPagination(FIRST_PAGE);
+      setFilter(
+        filter === Oauth2SessionState.Active ? null : Oauth2SessionState.Active,
+      );
+    });
+  };
+
   return (
     <BlockList>
       <Title>List of OAuth 2.0 sessions:</Title>
+      <label>
+        <input
+          type="checkbox"
+          checked={filter === Oauth2SessionState.Active}
+          onChange={toggleFilter}
+        />{" "}
+        Active only
+      </label>
       <PaginationControls
         onPrev={prevPage ? (): void => paginate(prevPage) : null}
         onNext={nextPage ? (): void => paginate(nextPage) : null}
