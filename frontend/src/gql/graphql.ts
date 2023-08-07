@@ -947,6 +947,7 @@ export type EndBrowserSessionMutation = {
 
 export type BrowserSessionListQueryVariables = Exact<{
   userId: Scalars["ID"]["input"];
+  state?: InputMaybe<BrowserSessionState>;
   first?: InputMaybe<Scalars["Int"]["input"]>;
   after?: InputMaybe<Scalars["String"]["input"]>;
   last?: InputMaybe<Scalars["Int"]["input"]>;
@@ -1021,6 +1022,7 @@ export type EndCompatSessionMutation = {
 
 export type CompatSessionListQueryVariables = Exact<{
   userId: Scalars["ID"]["input"];
+  state?: InputMaybe<CompatSessionState>;
   first?: InputMaybe<Scalars["Int"]["input"]>;
   after?: InputMaybe<Scalars["String"]["input"]>;
   last?: InputMaybe<Scalars["Int"]["input"]>;
@@ -1090,6 +1092,7 @@ export type EndOAuth2SessionMutation = {
 
 export type OAuth2SessionListQueryQueryVariables = Exact<{
   userId: Scalars["ID"]["input"];
+  state?: InputMaybe<Oauth2SessionState>;
   first?: InputMaybe<Scalars["Int"]["input"]>;
   after?: InputMaybe<Scalars["String"]["input"]>;
   last?: InputMaybe<Scalars["Int"]["input"]>;
@@ -1846,6 +1849,17 @@ export const BrowserSessionListDocument = {
           kind: "VariableDefinition",
           variable: {
             kind: "Variable",
+            name: { kind: "Name", value: "state" },
+          },
+          type: {
+            kind: "NamedType",
+            name: { kind: "Name", value: "BrowserSessionState" },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
             name: { kind: "Name", value: "first" },
           },
           type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
@@ -1931,7 +1945,10 @@ export const BrowserSessionListDocument = {
                     {
                       kind: "Argument",
                       name: { kind: "Name", value: "state" },
-                      value: { kind: "EnumValue", value: "ACTIVE" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "state" },
+                      },
                     },
                   ],
                   selectionSet: {
@@ -2133,6 +2150,17 @@ export const CompatSessionListDocument = {
           kind: "VariableDefinition",
           variable: {
             kind: "Variable",
+            name: { kind: "Name", value: "state" },
+          },
+          type: {
+            kind: "NamedType",
+            name: { kind: "Name", value: "CompatSessionState" },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
             name: { kind: "Name", value: "first" },
           },
           type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
@@ -2213,6 +2241,14 @@ export const CompatSessionListDocument = {
                       value: {
                         kind: "Variable",
                         name: { kind: "Name", value: "before" },
+                      },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "state" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "state" },
                       },
                     },
                   ],
@@ -2461,6 +2497,17 @@ export const OAuth2SessionListQueryDocument = {
           kind: "VariableDefinition",
           variable: {
             kind: "Variable",
+            name: { kind: "Name", value: "state" },
+          },
+          type: {
+            kind: "NamedType",
+            name: { kind: "Name", value: "Oauth2SessionState" },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
             name: { kind: "Name", value: "first" },
           },
           type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
@@ -2511,6 +2558,14 @@ export const OAuth2SessionListQueryDocument = {
                   kind: "Field",
                   name: { kind: "Name", value: "oauth2Sessions" },
                   arguments: [
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "state" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "state" },
+                      },
+                    },
                     {
                       kind: "Argument",
                       name: { kind: "Name", value: "first" },

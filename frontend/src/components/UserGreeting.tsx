@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Heading, Body } from "@vector-im/compound-web";
+import { Heading, Body, Avatar } from "@vector-im/compound-web";
 import { useAtomValue } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
@@ -45,12 +45,18 @@ const UserGreeting: React.FC<{ userId: string }> = ({ userId }) => {
   const result = useAtomValue(userGreetingFamily(userId));
 
   if (result.data?.user) {
+    const user = result.data.user;
     return (
       <header className="text-center">
+        <Avatar
+          size="var(--cpd-space-24x)"
+          id={user.matrix.mxid}
+          name={user.matrix.displayName || user.matrix.mxid}
+        />
         <Heading size="xl" weight="semibold">
-          {result.data.user.matrix.displayName || result.data.user.username}
+          {user.matrix.displayName || user.username}
         </Heading>
-        <Body size="lg">{result.data.user.matrix.mxid}</Body>
+        <Body size="lg">{user.matrix.mxid}</Body>
       </header>
     );
   }

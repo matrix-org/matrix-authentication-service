@@ -12,17 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { atom, useSetAtom, useAtomValue } from "jotai";
+import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
 import { useTransition } from "react";
 
 import { mapQueryAtom } from "../atoms";
 import { graphql } from "../gql";
-import { PageInfo } from "../gql/graphql";
+import { CompatSessionState, PageInfo } from "../gql/graphql";
 import {
   atomForCurrentPagination,
   atomWithPagination,
+  FIRST_PAGE,
   Pagination,
 } from "../pagination";
 import { isErr, isOk, unwrapErr, unwrapOk } from "../result";
@@ -36,6 +37,7 @@ import { Title } from "./Typography";
 const QUERY = graphql(/* GraphQL */ `
   query CompatSessionList(
     $userId: ID!
+    $state: CompatSessionState
     $first: Int
     $after: String
     $last: Int
@@ -48,6 +50,7 @@ const QUERY = graphql(/* GraphQL */ `
         after: $after
         last: $last
         before: $before
+        state: $state
       ) {
         edges {
           node {
@@ -69,11 +72,16 @@ const QUERY = graphql(/* GraphQL */ `
 `);
 
 const currentPaginationAtom = atomForCurrentPagination();
+const filterAtom = atom<CompatSessionState | null>(CompatSessionState.Active);
 
 const compatSessionListFamily = atomFamily((userId: string) => {
   const compatSessionListQuery = atomWithQuery({
     query: QUERY,
-    getVariables: (get) => ({ userId, ...get(currentPaginationAtom) }),
+    getVariables: (get) => ({
+      userId,
+      state: get(filterAtom),
+      ...get(currentPaginationAtom),
+    }),
   });
 
   const compatSessionList = mapQueryAtom(
@@ -106,6 +114,7 @@ const CompatSessionList: React.FC<{ userId: string }> = ({ userId }) => {
   const result = useAtomValue(compatSessionListFamily(userId));
   const setPagination = useSetAtom(currentPaginationAtom);
   const [prevPage, nextPage] = useAtomValue(paginationFamily(userId));
+  const [filter, setFilter] = useAtom(filterAtom);
 
   if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
   const compatSessionList = unwrapOk(result);
@@ -118,9 +127,26 @@ const CompatSessionList: React.FC<{ userId: string }> = ({ userId }) => {
     });
   };
 
+  const toggleFilter = (): void => {
+    startTransition(() => {
+      setPagination(FIRST_PAGE);
+      setFilter(
+        filter === CompatSessionState.Active ? null : CompatSessionState.Active,
+      );
+    });
+  };
+
   return (
     <BlockList>
       <Title>List of compatibility sessions:</Title>
+      <label>
+        <input
+          type="checkbox"
+          checked={filter === CompatSessionState.Active}
+          onChange={toggleFilter}
+        />{" "}
+        Active only
+      </label>
       <PaginationControls
         onPrev={prevPage ? (): void => paginate(prevPage) : null}
         onNext={nextPage ? (): void => paginate(nextPage) : null}
