@@ -27,6 +27,7 @@ limitations under the License.
     <meta charset="utf-8">
     <title>{% block title %}matrix-authentication-service{% endblock title %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    {{ include_asset(path='style.css') | indent(prefix="    ") | safe }}
     {{ include_asset(path='src/templates.css') | indent(prefix="    ") | safe }}
   </head>
   <body class="bg-white text-black-900 dark:bg-black-800 dark:text-white flex flex-col min-h-screen">

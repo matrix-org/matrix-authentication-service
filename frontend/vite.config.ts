@@ -37,6 +37,7 @@ export default defineConfig((env) => ({
     sourcemap: true,
     modulePreload: false,
     // We don't handle CSS code splitting well yet, so we disable it for now
+    // This means we have to load all the CSS through the `style.css` virtual entrypoint
     cssCodeSplit: false,
 
     rollupOptions: {
