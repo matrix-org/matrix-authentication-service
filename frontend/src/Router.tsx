@@ -149,13 +149,21 @@ const Router: React.FC = () => (
   </Layout>
 );
 
+// Filter out clicks with modifiers or that have been prevented
+const shouldHandleClick = (e: React.MouseEvent): boolean =>
+  !e.defaultPrevented &&
+  e.button === 0 &&
+  !(e.metaKey || e.altKey || e.ctrlKey || e.shiftKey);
+
 export const Link: React.FC<
   {
     route: Route;
     children: React.ReactNode;
   } & React.HTMLProps<HTMLAnchorElement>
 > = ({ route, children, ...props }) => {
+  const config = useAtomValue(appConfigAtom);
   const path = routeToPath(route);
+  const fullUrl = config.root + path;
   const setRoute = useSetAtom(routeAtom);
 
   // TODO: we should probably have more user control over this
@@ -163,8 +171,13 @@ export const Link: React.FC<
 
   return (
     <a
-      href={path}
+      href={fullUrl}
       onClick={(e: React.MouseEvent): void => {
+        // Only handle left clicks without modifiers
+        if (!shouldHandleClick(e)) {
+          return;
+        }
+
         e.preventDefault();
         startTransition(() => {
           setRoute(route);
