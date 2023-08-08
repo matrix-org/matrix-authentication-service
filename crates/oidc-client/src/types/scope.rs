@@ -253,7 +253,46 @@ mod tests {
         assert_matches!(scope, ScopeToken::MatrixDevice(_));
         assert_eq!(scope.matrix_device_id(), Some("ABCDEFGHIJKL"));
 
+        let scope = ScopeToken::from_str("urn:matrix:org.matrix.msc2967.client:api:*").unwrap();
+        assert_eq!(scope, ScopeToken::MatrixApi(MatrixApiScopeToken::Full));
+
+        let scope = ScopeToken::from_str("urn:matrix:org.matrix.msc2967.client:api:guest").unwrap();
+        assert_eq!(scope, ScopeToken::MatrixApi(MatrixApiScopeToken::Guest));
+
+        let scope =
+            ScopeToken::from_str("urn:matrix:org.matrix.msc2967.client:api:my.custom.scope")
+                .unwrap();
+        let api_scope = assert_matches!(scope, ScopeToken::MatrixApi(s) => s);
+        assert_matches!(api_scope, MatrixApiScopeToken::Custom(_));
+        assert_eq!(api_scope.to_string(), "my.custom.scope");
+
         assert_eq!(ScopeToken::from_str("invalid\\scope"), Err(InvalidScope));
+        assert_eq!(
+            MatrixApiScopeToken::from_str("invalid\\scope"),
+            Err(InvalidScope)
+        );
+    }
+
+    #[test]
+    fn display_scope_token() {
+        let scope = ScopeToken::MatrixApi(MatrixApiScopeToken::Full);
+        assert_eq!(
+            scope.to_string(),
+            "urn:matrix:org.matrix.msc2967.client:api:*"
+        );
+
+        let scope = ScopeToken::MatrixApi(MatrixApiScopeToken::Guest);
+        assert_eq!(
+            scope.to_string(),
+            "urn:matrix:org.matrix.msc2967.client:api:guest"
+        );
+
+        let api_scope = MatrixApiScopeToken::from_str("my.custom.scope").unwrap();
+        let scope = ScopeToken::MatrixApi(api_scope);
+        assert_eq!(
+            scope.to_string(),
+            "urn:matrix:org.matrix.msc2967.client:api:my.custom.scope"
+        );
     }
 
     #[test]
