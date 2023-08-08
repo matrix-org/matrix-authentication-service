@@ -106,7 +106,8 @@ pub struct AuthorizationRequestData {
 }
 
 impl AuthorizationRequestData {
-    /// Constructs a new `AuthorizationRequestData` with all the required fields.
+    /// Constructs a new `AuthorizationRequestData` with all the required
+    /// fields.
     #[must_use]
     pub fn new(client_id: String, scope: Scope, redirect_uri: Url) -> Self {
         Self {
