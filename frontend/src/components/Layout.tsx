@@ -12,25 +12,41 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Link } from "@vector-im/compound-web";
+import { useAtomValue } from "jotai";
+
+import { currentUserIdAtom } from "../atoms";
+import { isErr, unwrapErr, unwrapOk } from "../result";
+
+import GraphQLError from "./GraphQLError";
 import styles from "./Layout.module.css";
 import NavBar from "./NavBar";
-import NavItem, { ExternalLink } from "./NavItem";
-
-const Separator: React.FC = () => <hr className={styles.separator} />;
+import NavItem from "./NavItem";
+import NotLoggedIn from "./NotLoggedIn";
+import UserGreeting from "./UserGreeting";
 
 const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+  const result = useAtomValue(currentUserIdAtom);
+  if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
+
+  const userId = unwrapOk(result);
+  if (userId === null)
+    return (
+      <div className={styles.container}>
+        <NotLoggedIn />
+      </div>
+    );
+
   return (
     <div className={styles.container}>
+      <UserGreeting userId={userId} />
+
       <NavBar>
         <NavItem route={{ type: "home" }}>Sessions</NavItem>
         <NavItem route={{ type: "account" }}>Emails</NavItem>
       </NavBar>
 
-      <Separator />
-
       <main>{children}</main>
-
-      <Separator />
 
       <footer className={styles.footer}>
         <a href="https://matrix.org" target="_blank" rel="noreferrer noopener">
@@ -43,17 +59,15 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
           />
         </a>
 
-        <NavBar>
-          <ExternalLink href="https://matrix.org/legal/copyright-notice">
-            Info
-          </ExternalLink>
-          <ExternalLink href="https://matrix.org/legal/privacy-notice">
-            Privacy
-          </ExternalLink>
-          <ExternalLink href="https://matrix.org/legal/terms-and-conditions">
-            Terms & Conditions
-          </ExternalLink>
-        </NavBar>
+        <nav className={styles.footerLinks}>
+          <ul>
+            <Link href="https://matrix.org/legal/copyright-notice">Info</Link>
+            <Link href="https://matrix.org/legal/privacy-notice">Privacy</Link>
+            <Link href="https://matrix.org/legal/terms-and-conditions">
+              Terms & Conditions
+            </Link>
+          </ul>
+        </nav>
       </footer>
     </div>
   );

@@ -18,13 +18,11 @@ import { currentUserIdAtom } from "../atoms";
 import GraphQLError from "../components/GraphQLError";
 import NotLoggedIn from "../components/NotLoggedIn";
 import UserEmailList from "../components/UserEmailList";
-import UserGreeting from "../components/UserGreeting";
 import { isErr, unwrapErr, unwrapOk } from "../result";
 
 const UserAccount: React.FC<{ id: string }> = ({ id }) => {
   return (
     <div className="grid grid-cols-1 gap-4">
-      <UserGreeting userId={id} />
       <UserEmailList userId={id} />
     </div>
   );

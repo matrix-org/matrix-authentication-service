@@ -1,7 +1,10 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`NavItem > render an active <NavItem /> 1`] = `
-<li>
+<li
+  className="_navTab_8603fc"
+  data-current={true}
+>
   <a
     aria-current="page"
     className="_navItem_8603fc"
@@ -14,7 +17,9 @@ exports[`NavItem > render an active <NavItem /> 1`] = `
 `;
 
 exports[`NavItem > render an inactive <NavItem /> 1`] = `
-<li>
+<li
+  className="_navTab_8603fc"
+>
   <a
     className="_navItem_8603fc"
     href=""
@@ -26,7 +31,9 @@ exports[`NavItem > render an inactive <NavItem /> 1`] = `
 `;
 
 exports[`NavItem > renders a different route 1`] = `
-<li>
+<li
+  className="_navTab_8603fc"
+>
   <a
     className="_navItem_8603fc"
     href="account"

@@ -19,13 +19,19 @@
 }
 
 .footer {
+    margin-top: var(--cpd-space-6x);
+    padding: var(--cpd-space-6x) 0;
+    border-top: 1px solid var(--cpd-color-border-interactive-secondary);
     text-align: center;
 }
 
-.separator {
-    border: 0;
-    height: 1px;
-    background: var(--cpd-color-border-interactive-secondary);
+.footer-links {
     margin: var(--cpd-space-4x) 0;
-}
 
+    & > ul {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        gap: var(--cpd-space-2x);
+    }
+}
