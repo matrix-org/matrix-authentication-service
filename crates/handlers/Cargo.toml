@@ -37,7 +37,7 @@ sqlx = { version = "0.7.1", features = ["runtime-tokio-rustls", "postgres"] }
 
 # Various structure (de)serialization
 serde = { version = "1.0.183", features = ["derive"] }
-serde_with = { version = "3.1.0", features = ["hex", "chrono"] }
+serde_with = { version = "3.2.0", features = ["hex", "chrono"] }
 serde_json = "1.0.104"
 serde_urlencoded = "0.7.1"
 
