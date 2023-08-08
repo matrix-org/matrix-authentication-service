@@ -88,7 +88,6 @@ pub struct LogoutData {
 ///
 /// [`VerifiedClientMetadata`]: oauth2_types::registration::VerifiedClientMetadata
 /// [`ClientErrorCode`]: oauth2_types::errors::ClientErrorCode
-#[allow(clippy::too_many_lines)]
 pub fn build_end_session_url(
     mut end_session_endpoint: Url,
     logout_data: LogoutData,
