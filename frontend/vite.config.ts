@@ -36,6 +36,8 @@ export default defineConfig((env) => ({
     assetsInlineLimit: 0,
     sourcemap: true,
     modulePreload: false,
+    // We don't handle CSS code splitting well yet, so we disable it for now
+    cssCodeSplit: false,
 
     rollupOptions: {
       input: [
