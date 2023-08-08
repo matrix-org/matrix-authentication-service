@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [dependencies]
 async-trait = "0.1.72"
-axum = { version = "0.6.19", features = ["headers"] }
+axum = { version = "0.6.20", features = ["headers"] }
 axum-extra = { version = "0.7.7", features = ["cookie-private"] }
 chrono = "0.4.26"
 data-encoding = "2.4.0"
