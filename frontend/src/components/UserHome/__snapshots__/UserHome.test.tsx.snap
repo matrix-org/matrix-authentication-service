@@ -1,5 +1,125 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`UserHome > render a <UserHome /> with additional emails 1`] = `
+[
+  <div
+    className="_userEmail_e2a518"
+  >
+    <p
+      style={
+        {
+          "font": "var(--cpd-font-body-md-regular)",
+          "letterSpacing": "var(--cpd-font-letter-spacing-body-md)",
+        }
+      }
+    >
+      Primary email
+    </p>
+    <div
+      className="_userEmailLine_e2a518"
+    >
+      <div
+        className="_userEmailField_e2a518"
+      >
+        hello@example.com
+      </div>
+      <button
+        className="_userEmailDelete_e2a518"
+        disabled={true}
+        onClick={[Function]}
+        title="Remove email address"
+      >
+        <svg
+          className="_userEmailDeleteIcon_e2a518"
+          fill="currentColor"
+          height="1em"
+          viewBox="0 0 24 24"
+          width="1em"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M7 21c-.55 0-1.02-.196-1.412-.587A1.926 1.926 0 0 1 5 19V6a.968.968 0 0 1-.713-.287A.968.968 0 0 1 4 5c0-.283.096-.52.287-.713A.968.968 0 0 1 5 4h4a.97.97 0 0 1 .287-.712A.968.968 0 0 1 10 3h4a.97.97 0 0 1 .713.288A.968.968 0 0 1 15 4h4a.97.97 0 0 1 .712.287c.192.192.288.43.288.713s-.096.52-.288.713A.968.968 0 0 1 19 6v13c0 .55-.196 1.02-.587 1.413A1.926 1.926 0 0 1 17 21H7Zm2-5c0 .283.096.52.287.712.192.192.43.288.713.288s.52-.096.713-.288A.968.968 0 0 0 11 16V9a.967.967 0 0 0-.287-.713A.968.968 0 0 0 10 8a.968.968 0 0 0-.713.287A.968.968 0 0 0 9 9v7Zm4 0c0 .283.096.52.287.712.192.192.43.288.713.288s.52-.096.713-.288A.968.968 0 0 0 15 16V9a.967.967 0 0 0-.287-.713A.968.968 0 0 0 14 8a.968.968 0 0 0-.713.287A.967.967 0 0 0 13 9v7Z"
+            fill="currentColor"
+          />
+        </svg>
+      </button>
+    </div>
+  </div>,
+  <p
+    style={
+      {
+        "font": "var(--cpd-font-body-md-regular)",
+        "letterSpacing": "var(--cpd-font-letter-spacing-body-md)",
+      }
+    }
+  >
+    3
+     additional emails.
+     
+    <a
+      href="/emails"
+      onClick={[Function]}
+    >
+      View all
+    </a>
+  </p>,
+  <p
+    style={
+      {
+        "font": "var(--cpd-font-body-md-regular)",
+        "letterSpacing": "var(--cpd-font-letter-spacing-body-md)",
+      }
+    }
+  >
+    0
+     active browser session(s).
+     
+    <a
+      href="/sessions"
+      onClick={[Function]}
+    >
+      View all
+    </a>
+  </p>,
+  <p
+    style={
+      {
+        "font": "var(--cpd-font-body-md-regular)",
+        "letterSpacing": "var(--cpd-font-letter-spacing-body-md)",
+      }
+    }
+  >
+    0
+     active OAuth2 session(s).
+     
+    <a
+      href="/oauth2-sessions"
+      onClick={[Function]}
+    >
+      View all
+    </a>
+  </p>,
+  <p
+    style={
+      {
+        "font": "var(--cpd-font-body-md-regular)",
+        "letterSpacing": "var(--cpd-font-letter-spacing-body-md)",
+      }
+    }
+  >
+    0
+     active compatibility layer session(s).
+     
+    <a
+      href="/compat-sessions"
+      onClick={[Function]}
+    >
+      View all
+    </a>
+  </p>,
+]
+`;
+
 exports[`UserHome > render a <UserHome /> with an unverified email 1`] = `
 [
   <div
@@ -186,108 +306,6 @@ exports[`UserHome > render a <UserHome /> without primary email 1`] = `
         No primary email adress
       </p>
       <p />
-    </div>
-  </div>,
-  <p
-    style={
-      {
-        "font": "var(--cpd-font-body-md-regular)",
-        "letterSpacing": "var(--cpd-font-letter-spacing-body-md)",
-      }
-    }
-  >
-    0
-     active browser session(s).
-     
-    <a
-      href="/sessions"
-      onClick={[Function]}
-    >
-      View all
-    </a>
-  </p>,
-  <p
-    style={
-      {
-        "font": "var(--cpd-font-body-md-regular)",
-        "letterSpacing": "var(--cpd-font-letter-spacing-body-md)",
-      }
-    }
-  >
-    0
-     active OAuth2 session(s).
-     
-    <a
-      href="/oauth2-sessions"
-      onClick={[Function]}
-    >
-      View all
-    </a>
-  </p>,
-  <p
-    style={
-      {
-        "font": "var(--cpd-font-body-md-regular)",
-        "letterSpacing": "var(--cpd-font-letter-spacing-body-md)",
-      }
-    }
-  >
-    0
-     active compatibility layer session(s).
-     
-    <a
-      href="/compat-sessions"
-      onClick={[Function]}
-    >
-      View all
-    </a>
-  </p>,
-]
-`;
-
-exports[`UserHome > render an active <NavItem /> 1`] = `
-[
-  <div
-    className="_userEmail_e2a518"
-  >
-    <p
-      style={
-        {
-          "font": "var(--cpd-font-body-md-regular)",
-          "letterSpacing": "var(--cpd-font-letter-spacing-body-md)",
-        }
-      }
-    >
-      Primary email
-    </p>
-    <div
-      className="_userEmailLine_e2a518"
-    >
-      <div
-        className="_userEmailField_e2a518"
-      >
-        hello@example.com
-      </div>
-      <button
-        className="_userEmailDelete_e2a518"
-        disabled={true}
-        onClick={[Function]}
-        title="Remove email address"
-      >
-        <svg
-          className="_userEmailDeleteIcon_e2a518"
-          fill="currentColor"
-          height="1em"
-          viewBox="0 0 24 24"
-          width="1em"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M7 21c-.55 0-1.02-.196-1.412-.587A1.926 1.926 0 0 1 5 19V6a.968.968 0 0 1-.713-.287A.968.968 0 0 1 4 5c0-.283.096-.52.287-.713A.968.968 0 0 1 5 4h4a.97.97 0 0 1 .287-.712A.968.968 0 0 1 10 3h4a.97.97 0 0 1 .713.288A.968.968 0 0 1 15 4h4a.97.97 0 0 1 .712.287c.192.192.288.43.288.713s-.096.52-.288.713A.968.968 0 0 1 19 6v13c0 .55-.196 1.02-.587 1.413A1.926 1.926 0 0 1 17 21H7Zm2-5c0 .283.096.52.287.712.192.192.43.288.713.288s.52-.096.713-.288A.968.968 0 0 0 11 16V9a.967.967 0 0 0-.287-.713A.968.968 0 0 0 10 8a.968.968 0 0 0-.713.287A.968.968 0 0 0 9 9v7Zm4 0c0 .283.096.52.287.712.192.192.43.288.713.288s.52-.096.713-.288A.968.968 0 0 0 15 16V9a.967.967 0 0 0-.287-.713A.968.968 0 0 0 14 8a.968.968 0 0 0-.713.287A.967.967 0 0 0 13 9v7Z"
-            fill="currentColor"
-          />
-        </svg>
-      </button>
     </div>
   </div>,
   <p

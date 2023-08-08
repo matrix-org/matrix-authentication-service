@@ -77,7 +77,7 @@ const UserHome: React.FC<{
 
       {data.confirmedEmails.totalCount > 1 && (
         <Body>
-          {data.confirmedEmails.totalCount} additional emails.{" "}
+          {data.confirmedEmails.totalCount - 1} additional emails.{" "}
           <Link route={{ type: "email-list" }}>View all</Link>
         </Body>
       )}

@@ -18,7 +18,7 @@ import { describe, expect, it } from "vitest";
 import { makeFragmentData } from "../../gql";
 import { FRAGMENT as EMAIL_FRAGMENT } from "../UserEmail";
 
-import UserHome, { FRAGMENT } from "./UserHome";
+import UserHome, { FRAGMENT } from "./";
 
 describe("UserHome", () => {
   it("render an simple <UserHome />", () => {
@@ -52,6 +52,46 @@ describe("UserHome", () => {
         },
         confirmedEmails: {
           totalCount: 1,
+        },
+      },
+      FRAGMENT,
+    );
+    const component = create(<UserHome user={user} />);
+    const tree = component.toJSON();
+    expect(tree).toMatchSnapshot();
+  });
+
+  it("render a <UserHome /> with additional emails", () => {
+    const primaryEmail = makeFragmentData(
+      {
+        id: "email:123",
+        email: "hello@example.com",
+        confirmedAt: new Date(),
+      },
+      EMAIL_FRAGMENT,
+    );
+
+    const user = makeFragmentData(
+      {
+        id: "user:123",
+        primaryEmail: {
+          id: "email:123",
+          ...primaryEmail,
+        },
+        compatSessions: {
+          totalCount: 0,
+        },
+        browserSessions: {
+          totalCount: 0,
+        },
+        oauth2Sessions: {
+          totalCount: 0,
+        },
+        unverifiedEmails: {
+          totalCount: 0,
+        },
+        confirmedEmails: {
+          totalCount: 4,
         },
       },
       FRAGMENT,
