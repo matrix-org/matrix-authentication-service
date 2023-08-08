@@ -10,7 +10,7 @@ apalis-core = "0.4.4"
 anyhow = "1.0.72"
 axum = "0.6.20"
 camino = "1.1.6"
-clap = { version = "4.3.19", features = ["derive"] }
+clap = { version = "4.3.21", features = ["derive"] }
 dotenv = "0.15.0"
 httpdate = "1.0.2"
 hyper = { version = "0.14.27", features = ["full"] }
