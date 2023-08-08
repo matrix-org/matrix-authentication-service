@@ -21,11 +21,7 @@ import UserEmailList from "../components/UserEmailList";
 import { isErr, unwrapErr, unwrapOk } from "../result";
 
 const UserAccount: React.FC<{ id: string }> = ({ id }) => {
-  return (
-    <div className="grid grid-cols-1 gap-4">
-      <UserEmailList userId={id} />
-    </div>
-  );
+  return <UserEmailList userId={id} />;
 };
 
 const CurrentUserAccount: React.FC = () => {
