@@ -59,13 +59,12 @@ fn pass_authorization_url() {
 
     let (url, validation_data) = build_authorization_url(
         authorization_endpoint,
-        AuthorizationRequestData {
-            client_id: CLIENT_ID,
-            code_challenge_methods_supported: Some(&[PkceCodeChallengeMethod::S256]),
-            scope: &[ScopeToken::Openid].into_iter().collect(),
-            redirect_uri: &redirect_uri,
-        },
-        None,
+        AuthorizationRequestData::new(
+            CLIENT_ID.to_owned(),
+            [ScopeToken::Openid].into_iter().collect(),
+            redirect_uri,
+        ),
+        Some(&[PkceCodeChallengeMethod::S256]),
         &mut rng,
     )
     .unwrap();
@@ -130,13 +129,12 @@ async fn pass_pushed_authorization_request() {
         client_credentials,
         &par_endpoint,
         authorization_endpoint,
-        AuthorizationRequestData {
-            client_id: CLIENT_ID,
-            code_challenge_methods_supported: Some(&[PkceCodeChallengeMethod::S256]),
-            scope: &[ScopeToken::Openid].into_iter().collect(),
-            redirect_uri: &redirect_uri,
-        },
-        None,
+        AuthorizationRequestData::new(
+            CLIENT_ID.to_owned(),
+            [ScopeToken::Openid].into_iter().collect(),
+            redirect_uri,
+        ),
+        Some(&[PkceCodeChallengeMethod::S256]),
         now(),
         &mut rng,
     )
@@ -182,13 +180,12 @@ async fn fail_pushed_authorization_request_404() {
         client_credentials,
         &par_endpoint,
         authorization_endpoint,
-        AuthorizationRequestData {
-            client_id: CLIENT_ID,
-            code_challenge_methods_supported: Some(&[PkceCodeChallengeMethod::S256]),
-            scope: &[ScopeToken::Openid].into_iter().collect(),
-            redirect_uri: &redirect_uri,
-        },
-        None,
+        AuthorizationRequestData::new(
+            CLIENT_ID.to_owned(),
+            [ScopeToken::Openid].into_iter().collect(),
+            redirect_uri,
+        ),
+        Some(&[PkceCodeChallengeMethod::S256]),
         now(),
         &mut rng,
     )
