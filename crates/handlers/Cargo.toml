@@ -23,7 +23,7 @@ sentry = { version = "0.31.5", default-features = false }
 hyper = { version = "0.14.27", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.4.3", features = ["cors"] }
-axum = "0.6.19"
+axum = "0.6.20"
 axum-macros = "0.3.8"
 axum-extra = { version = "0.7.7", features = ["cookie-private"] }
 
