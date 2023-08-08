@@ -13,9 +13,16 @@
  * limitations under the License.
  */
 
+.nav-bar {
+    border-bottom: var(--cpd-border-width-1) solid var(--cpd-color-gray-400);
+    margin: var(--cpd-space-6x) 0;
+    padding: 0 var(--cpd-space-10x);
+}
+
 .nav-bar-items {
     display: flex;
     flex-direction: row;
-    justify-content: center;
-    gap: var(--cpd-space-4x);
+    justify-content: flex-start;
+    align-items: center;
+    gap: var(--cpd-space-3x);
 }

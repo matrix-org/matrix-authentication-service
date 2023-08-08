@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Link as CpdLink } from "@vector-im/compound-web";
+import classNames from "classnames";
 import { useAtomValue } from "jotai";
 
 import { Link, Route, routeAtom } from "../../Router";
@@ -24,12 +24,13 @@ const NavItem: React.FC<React.PropsWithChildren<{ route: Route }>> = ({
   children,
 }) => {
   const currentRoute = useAtomValue(routeAtom);
+  const active = currentRoute.type === route.type;
   return (
-    <li>
+    <li className={styles.navTab} data-current={active ? true : undefined}>
       <Link
         className={styles.navItem}
         route={route}
-        aria-current={currentRoute.type === route.type ? "page" : undefined}
+        aria-current={active ? "page" : undefined}
       >
         {children}
       </Link>
@@ -40,8 +41,14 @@ const NavItem: React.FC<React.PropsWithChildren<{ route: Route }>> = ({
 export const ExternalLink: React.FC<
   React.PropsWithChildren<{ href: string }>
 > = ({ href, children }) => (
-  <li>
-    <CpdLink href={href}>{children}</CpdLink>
+  <li className={styles.navTab}>
+    <a
+      rel="noreferrer noopener"
+      className={classNames(styles.navItem, styles.externalLink)}
+      href={href}
+    >
+      {children}
+    </a>
   </li>
 );
 

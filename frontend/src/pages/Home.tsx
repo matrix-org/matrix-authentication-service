@@ -20,7 +20,6 @@ import CompatSessionList from "../components/CompatSessionList";
 import GraphQLError from "../components/GraphQLError";
 import NotLoggedIn from "../components/NotLoggedIn";
 import OAuth2SessionList from "../components/OAuth2SessionList";
-import UserGreeting from "../components/UserGreeting";
 import { isErr, unwrapErr, unwrapOk } from "../result";
 
 const Home: React.FC = () => {
@@ -32,7 +31,6 @@ const Home: React.FC = () => {
 
   return (
     <>
-      <UserGreeting userId={currentUserId} />
       <div className="mt-4 grid gap-8">
         <OAuth2SessionList userId={currentUserId} />
         <CompatSessionList userId={currentUserId} />
