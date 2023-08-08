@@ -20,4 +20,5 @@ mod jose;
 mod refresh_token;
 mod registration;
 mod revocation;
+mod rp_initiated_logout;
 mod userinfo;
