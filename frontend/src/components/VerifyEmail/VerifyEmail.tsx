@@ -127,7 +127,7 @@ const VerifyEmail: React.FC<{
         e.currentTarget?.reset();
 
         if (result.data?.verifyEmail.status === "VERIFIED") {
-          setRoute({ type: "account" });
+          setRoute({ type: "email-list" });
         } else {
           fieldRef.current?.focus();
           fieldRef.current?.select();

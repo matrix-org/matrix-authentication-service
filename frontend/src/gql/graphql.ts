@@ -1231,6 +1231,30 @@ export type UserGreetingQuery = {
   } | null;
 };
 
+export type UserHome_UserFragment = {
+  __typename?: "User";
+  id: string;
+  primaryEmail?:
+    | ({ __typename?: "UserEmail"; id: string } & {
+        " $fragmentRefs"?: { UserEmail_EmailFragment: UserEmail_EmailFragment };
+      })
+    | null;
+  confirmedEmails: { __typename?: "UserEmailConnection"; totalCount: number };
+  unverifiedEmails: { __typename?: "UserEmailConnection"; totalCount: number };
+  browserSessions: {
+    __typename?: "BrowserSessionConnection";
+    totalCount: number;
+  };
+  oauth2Sessions: {
+    __typename?: "Oauth2SessionConnection";
+    totalCount: number;
+  };
+  compatSessions: {
+    __typename?: "CompatSessionConnection";
+    totalCount: number;
+  };
+} & { " $fragmentName"?: "UserHome_UserFragment" };
+
 export type UserEmail_VerifyEmailFragment = {
   __typename?: "UserEmail";
   id: string;
@@ -1299,6 +1323,17 @@ export type BrowserSessionQueryQuery = {
     } | null;
     user: { __typename?: "User"; id: string; username: string };
   } | null;
+};
+
+export type HomeQueryQueryVariables = Exact<{ [key: string]: never }>;
+
+export type HomeQueryQuery = {
+  __typename?: "Query";
+  viewer:
+    | { __typename: "Anonymous" }
+    | ({ __typename: "User"; id: string } & {
+        " $fragmentRefs"?: { UserHome_UserFragment: UserHome_UserFragment };
+      });
 };
 
 export type OAuth2ClientQueryQueryVariables = Exact<{
@@ -1492,6 +1527,167 @@ export const UserEmail_EmailFragmentDoc = {
     },
   ],
 } as unknown as DocumentNode<UserEmail_EmailFragment, unknown>;
+export const UserHome_UserFragmentDoc = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "UserHome_user" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "User" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "primaryEmail" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                {
+                  kind: "FragmentSpread",
+                  name: { kind: "Name", value: "UserEmail_email" },
+                },
+              ],
+            },
+          },
+          {
+            kind: "Field",
+            alias: { kind: "Name", value: "confirmedEmails" },
+            name: { kind: "Name", value: "emails" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: { kind: "IntValue", value: "0" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "state" },
+                value: { kind: "EnumValue", value: "CONFIRMED" },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+              ],
+            },
+          },
+          {
+            kind: "Field",
+            alias: { kind: "Name", value: "unverifiedEmails" },
+            name: { kind: "Name", value: "emails" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: { kind: "IntValue", value: "0" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "state" },
+                value: { kind: "EnumValue", value: "PENDING" },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+              ],
+            },
+          },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "browserSessions" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: { kind: "IntValue", value: "0" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "state" },
+                value: { kind: "EnumValue", value: "ACTIVE" },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+              ],
+            },
+          },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "oauth2Sessions" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: { kind: "IntValue", value: "0" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "state" },
+                value: { kind: "EnumValue", value: "ACTIVE" },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+              ],
+            },
+          },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "compatSessions" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: { kind: "IntValue", value: "0" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "state" },
+                value: { kind: "EnumValue", value: "ACTIVE" },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "UserEmail_email" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "UserEmail" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          { kind: "Field", name: { kind: "Name", value: "email" } },
+          { kind: "Field", name: { kind: "Name", value: "confirmedAt" } },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<UserHome_UserFragment, unknown>;
 export const UserEmail_VerifyEmailFragmentDoc = {
   kind: "Document",
   definitions: [
@@ -3490,6 +3686,204 @@ export const BrowserSessionQueryDocument = {
   BrowserSessionQueryQuery,
   BrowserSessionQueryQueryVariables
 >;
+export const HomeQueryDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "HomeQuery" },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "viewer" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "__typename" } },
+                {
+                  kind: "InlineFragment",
+                  typeCondition: {
+                    kind: "NamedType",
+                    name: { kind: "Name", value: "User" },
+                  },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                      {
+                        kind: "FragmentSpread",
+                        name: { kind: "Name", value: "UserHome_user" },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "UserEmail_email" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "UserEmail" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          { kind: "Field", name: { kind: "Name", value: "email" } },
+          { kind: "Field", name: { kind: "Name", value: "confirmedAt" } },
+        ],
+      },
+    },
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "UserHome_user" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "User" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "primaryEmail" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                {
+                  kind: "FragmentSpread",
+                  name: { kind: "Name", value: "UserEmail_email" },
+                },
+              ],
+            },
+          },
+          {
+            kind: "Field",
+            alias: { kind: "Name", value: "confirmedEmails" },
+            name: { kind: "Name", value: "emails" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: { kind: "IntValue", value: "0" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "state" },
+                value: { kind: "EnumValue", value: "CONFIRMED" },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+              ],
+            },
+          },
+          {
+            kind: "Field",
+            alias: { kind: "Name", value: "unverifiedEmails" },
+            name: { kind: "Name", value: "emails" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: { kind: "IntValue", value: "0" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "state" },
+                value: { kind: "EnumValue", value: "PENDING" },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+              ],
+            },
+          },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "browserSessions" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: { kind: "IntValue", value: "0" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "state" },
+                value: { kind: "EnumValue", value: "ACTIVE" },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+              ],
+            },
+          },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "oauth2Sessions" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: { kind: "IntValue", value: "0" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "state" },
+                value: { kind: "EnumValue", value: "ACTIVE" },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+              ],
+            },
+          },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "compatSessions" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: { kind: "IntValue", value: "0" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "state" },
+                value: { kind: "EnumValue", value: "ACTIVE" },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<HomeQueryQuery, HomeQueryQueryVariables>;
 export const OAuth2ClientQueryDocument = {
   kind: "Document",
   definitions: [

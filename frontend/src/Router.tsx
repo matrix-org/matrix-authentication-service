@@ -1,4 +1,4 @@
-// Copyright 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2022, 2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,17 +25,23 @@ type Location = {
 };
 
 type HomeRoute = { type: "home" };
-type AccountRoute = { type: "account" };
+type EmailListRoute = { type: "email-list" };
 type OAuth2ClientRoute = { type: "client"; id: string };
+type OAuth2SessionList = { type: "oauth2-session-list" };
 type BrowserSessionRoute = { type: "session"; id: string };
+type BrowserSessionListRoute = { type: "browser-session-list" };
+type CompatSessionListRoute = { type: "compat-session-list" };
 type VerifyEmailRoute = { type: "verify-email"; id: string };
 type UnknownRoute = { type: "unknown"; segments: string[] };
 
 export type Route =
   | HomeRoute
-  | AccountRoute
+  | EmailListRoute
   | OAuth2ClientRoute
+  | OAuth2SessionList
   | BrowserSessionRoute
+  | BrowserSessionListRoute
+  | CompatSessionListRoute
   | VerifyEmailRoute
   | UnknownRoute;
 
@@ -43,38 +49,82 @@ const routeToSegments = (route: Route): string[] => {
   switch (route.type) {
     case "home":
       return [];
-    case "account":
-      return ["account"];
-    case "client":
-      return ["client", route.id];
-    case "session":
-      return ["session", route.id];
+    case "email-list":
+      return ["emails"];
     case "verify-email":
-      return ["verify-email", route.id];
+      return ["emails", route.id, "verify"];
+    case "client":
+      return ["clients", route.id];
+    case "browser-session-list":
+      return ["sessions"];
+    case "session":
+      return ["sessions", route.id];
+    case "oauth2-session-list":
+      return ["oauth2-sessions"];
+    case "compat-session-list":
+      return ["compat-sessions"];
     case "unknown":
       return route.segments;
   }
 };
 
+const P = Symbol();
+type PatternItem = string | typeof P;
+
+// Returns true if the segments match the pattern, where P is a parameter
+const segmentMatches = (
+  segments: string[],
+  ...pattern: PatternItem[]
+): boolean => {
+  // Quick check to see if the lengths match
+  if (segments.length !== pattern.length) return false;
+
+  // Check each segment
+  for (let i = 0; i < segments.length; i++) {
+    // If the pattern is P, then it's a parameter and we can skip it
+    if (pattern[i] === P) continue;
+    // Otherwise, check that the segment matches the pattern
+    if (segments[i] !== pattern[i]) return false;
+  }
+
+  return true;
+};
+
 const segmentsToRoute = (segments: string[]): Route => {
+  const matches = (...pattern: PatternItem[]): boolean =>
+    segmentMatches(segments, ...pattern);
+
+  // Special case for the home page
   if (segments.length === 0 || (segments.length === 1 && segments[0] === "")) {
     return { type: "home" };
   }
 
-  if (segments.length === 1 && segments[0] === "account") {
-    return { type: "account" };
+  if (matches("emails")) {
+    return { type: "email-list" };
   }
 
-  if (segments.length === 2 && segments[0] === "client") {
+  if (matches("sessions")) {
+    return { type: "browser-session-list" };
+  }
+
+  if (matches("oauth2-sessions")) {
+    return { type: "oauth2-session-list" };
+  }
+
+  if (matches("compat-sessions")) {
+    return { type: "compat-session-list" };
+  }
+
+  if (matches("emails", P, "verify")) {
+    return { type: "verify-email", id: segments[1] };
+  }
+
+  if (matches("clients", P)) {
     return { type: "client", id: segments[1] };
   }
 
-  if (segments.length === 2 && segments[0] === "session") {
+  if (matches("sessions", P)) {
     return { type: "session", id: segments[1] };
-  }
-
-  if (segments.length === 2 && segments[0] === "verify-email") {
-    return { type: "verify-email", id: segments[1] };
   }
 
   return { type: "unknown", segments };
@@ -117,9 +167,12 @@ export const routeAtom = atom(
 );
 
 const Home = lazy(() => import("./pages/Home"));
-const Account = lazy(() => import("./pages/Account"));
+const EmailList = lazy(() => import("./pages/EmailList"));
 const OAuth2Client = lazy(() => import("./pages/OAuth2Client"));
 const BrowserSession = lazy(() => import("./pages/BrowserSession"));
+const BrowserSessionList = lazy(() => import("./pages/BrowserSessionList"));
+const CompatSessionList = lazy(() => import("./pages/CompatSessionList"));
+const OAuth2SessionList = lazy(() => import("./pages/OAuth2SessionList"));
 const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
 
 const InnerRouter: React.FC = () => {
@@ -128,8 +181,14 @@ const InnerRouter: React.FC = () => {
   switch (route.type) {
     case "home":
       return <Home />;
-    case "account":
-      return <Account />;
+    case "email-list":
+      return <EmailList />;
+    case "oauth2-session-list":
+      return <OAuth2SessionList />;
+    case "browser-session-list":
+      return <BrowserSessionList />;
+    case "compat-session-list":
+      return <CompatSessionList />;
     case "client":
       return <OAuth2Client id={route.id} />;
     case "session":
@@ -158,7 +217,6 @@ const shouldHandleClick = (e: React.MouseEvent): boolean =>
 export const Link: React.FC<
   {
     route: Route;
-    children: React.ReactNode;
   } & React.HTMLProps<HTMLAnchorElement>
 > = ({ route, children, ...props }) => {
   const config = useAtomValue(appConfigAtom);
