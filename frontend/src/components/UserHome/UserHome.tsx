@@ -19,7 +19,7 @@ import { Link } from "../../Router";
 import { FragmentType, graphql, useFragment } from "../../gql";
 import UserEmail from "../UserEmail";
 
-const FRAGMENT = graphql(/* GraphQL */ `
+export const FRAGMENT = graphql(/* GraphQL */ `
   fragment UserHome_user on User {
     id
 
