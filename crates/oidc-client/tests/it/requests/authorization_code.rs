@@ -14,6 +14,7 @@
 
 use std::{
     collections::HashMap,
+    num::NonZeroU32,
     sync::{Arc, Mutex},
 };
 
@@ -36,7 +37,7 @@ use mas_oidc_client::{
     },
     types::scope::{ScopeExt, ScopeToken},
 };
-use oauth2_types::requests::{AccessTokenResponse, PushedAuthorizationResponse};
+use oauth2_types::requests::{AccessTokenResponse, Display, Prompt, PushedAuthorizationResponse};
 use rand::SeedableRng;
 use tokio::sync::oneshot;
 use url::Url;
@@ -82,11 +83,67 @@ fn pass_authorization_url() {
     assert_eq!(query_pairs.get("response_type").unwrap(), "code");
     assert_eq!(query_pairs.get("client_id").unwrap(), CLIENT_ID);
     assert_eq!(query_pairs.get("redirect_uri").unwrap(), REDIRECT_URI);
+    assert_eq!(query_pairs.get("display"), None);
+    assert_eq!(query_pairs.get("prompt"), None);
+    assert_eq!(query_pairs.get("max_age"), None);
+    assert_eq!(query_pairs.get("ui_locales"), None);
+    assert_eq!(query_pairs.get("id_token_hint"), None);
+    assert_eq!(query_pairs.get("login_hint"), None);
+    assert_eq!(query_pairs.get("acr_values"), None);
     assert_eq!(*query_pairs.get("state").unwrap(), validation_data.state);
     assert_eq!(query_pairs.get("nonce").unwrap(), "ox0PigY5l9xl5uTL");
     let code_challenge = query_pairs.get("code_challenge").unwrap();
     assert!(code_challenge.len() >= 43);
     assert_eq!(query_pairs.get("code_challenge_method").unwrap(), "S256");
+}
+
+#[test]
+fn pass_full_authorization_url() {
+    let issuer = Url::parse("http://localhost/").unwrap();
+    let authorization_endpoint = issuer.join("authorize").unwrap();
+    let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(42);
+
+    let authorization_data = AuthorizationRequestData::new(
+        CLIENT_ID.to_owned(),
+        [ScopeToken::Openid].into_iter().collect(),
+        Url::parse(REDIRECT_URI).unwrap(),
+    )
+    .with_display(Display::Touch)
+    .with_prompt(vec![Prompt::Create])
+    .with_max_age(NonZeroU32::new(86400).unwrap())
+    .with_ui_locales(vec!["de".parse().unwrap()])
+    .with_id_token_hint("fake.id.token".to_owned())
+    .with_login_hint("mxid:@user:localhost".to_owned())
+    .with_acr_values(["custom".to_owned()].into());
+
+    let (url, validation_data) =
+        build_authorization_url(authorization_endpoint, authorization_data, None, &mut rng)
+            .unwrap();
+
+    assert_eq!(validation_data.state, "OrJ8xbWovSpJUTKz");
+    assert_eq!(validation_data.code_challenge_verifier, None);
+
+    assert_eq!(url.path(), "/authorize");
+
+    let query_pairs = url.query_pairs().collect::<HashMap<_, _>>();
+    assert_eq!(query_pairs.get("scope").unwrap(), "openid");
+    assert_eq!(query_pairs.get("response_type").unwrap(), "code");
+    assert_eq!(query_pairs.get("client_id").unwrap(), CLIENT_ID);
+    assert_eq!(query_pairs.get("redirect_uri").unwrap(), REDIRECT_URI);
+    assert_eq!(query_pairs.get("display").unwrap(), "touch");
+    assert_eq!(query_pairs.get("prompt").unwrap(), "create");
+    assert_eq!(query_pairs.get("max_age").unwrap(), "86400");
+    assert_eq!(query_pairs.get("ui_locales").unwrap(), "de");
+    assert_eq!(query_pairs.get("id_token_hint").unwrap(), "fake.id.token");
+    assert_eq!(
+        query_pairs.get("login_hint").unwrap(),
+        "mxid:@user:localhost"
+    );
+    assert_eq!(query_pairs.get("acr_values").unwrap(), "custom");
+    assert_eq!(*query_pairs.get("state").unwrap(), validation_data.state);
+    assert_eq!(query_pairs.get("nonce").unwrap(), "ox0PigY5l9xl5uTL");
+    assert_eq!(query_pairs.get("code_challenge"), None);
+    assert_eq!(query_pairs.get("code_challenge_method"), None);
 }
 
 #[tokio::test]
