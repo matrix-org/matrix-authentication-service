@@ -30,7 +30,7 @@ const meta = {
       <WithHomePage>
         <NavBar {...props}>
           <NavItem route={{ type: "home" }}>Home</NavItem>
-          <NavItem route={{ type: "account" }}>Account</NavItem>
+          <NavItem route={{ type: "email-list" }}>Emails</NavItem>
           <ExternalLink href="https://example.com">External</ExternalLink>
         </NavBar>
       </WithHomePage>

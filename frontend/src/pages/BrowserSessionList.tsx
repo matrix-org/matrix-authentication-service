@@ -1,4 +1,4 @@
-// Copyright 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,48 +13,21 @@
 // limitations under the License.
 
 import { useAtomValue } from "jotai";
-import { atomWithQuery } from "jotai-urql";
 
-import { mapQueryAtom } from "../atoms";
+import { currentUserIdAtom } from "../atoms";
+import List from "../components/BrowserSessionList";
 import GraphQLError from "../components/GraphQLError";
 import NotLoggedIn from "../components/NotLoggedIn";
-import UserHome from "../components/UserHome";
-import { graphql } from "../gql";
 import { isErr, unwrapErr, unwrapOk } from "../result";
 
-const QUERY = graphql(/* GraphQL */ `
-  query HomeQuery {
-    viewer {
-      __typename
-
-      ... on User {
-        id
-        ...UserHome_user
-      }
-    }
-  }
-`);
-
-const homeQueryAtom = atomWithQuery({
-  query: QUERY,
-});
-
-const homeAtom = mapQueryAtom(homeQueryAtom, (data) => {
-  if (data.viewer?.__typename === "User") {
-    return data.viewer;
-  }
-
-  return null;
-});
-
-const Home: React.FC = () => {
-  const result = useAtomValue(homeAtom);
+const BrowserSessionList: React.FC = () => {
+  const result = useAtomValue(currentUserIdAtom);
   if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
 
-  const data = unwrapOk(result);
-  if (data === null) return <NotLoggedIn />;
+  const userId = unwrapOk(result);
+  if (userId === null) return <NotLoggedIn />;
 
-  return <UserHome user={data} />;
+  return <List userId={userId} />;
 };
 
-export default Home;
+export default BrowserSessionList;

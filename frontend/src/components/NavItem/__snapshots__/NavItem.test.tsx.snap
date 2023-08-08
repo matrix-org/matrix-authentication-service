@@ -8,7 +8,7 @@ exports[`NavItem > render an active <NavItem /> 1`] = `
   <a
     aria-current="page"
     className="_navItem_8603fc"
-    href=""
+    href="/"
     onClick={[Function]}
   >
     Active
@@ -22,7 +22,7 @@ exports[`NavItem > render an inactive <NavItem /> 1`] = `
 >
   <a
     className="_navItem_8603fc"
-    href=""
+    href="/"
     onClick={[Function]}
   >
     Inactive
@@ -36,10 +36,10 @@ exports[`NavItem > renders a different route 1`] = `
 >
   <a
     className="_navItem_8603fc"
-    href="account"
+    href="/emails"
     onClick={[Function]}
   >
-    Account
+    Emails
   </a>
 </li>
 `;

@@ -53,7 +53,7 @@ export const Active: Story = {
 
 export const Inactive: Story = {
   args: {
-    route: { type: "account" },
-    children: "Account",
+    route: { type: "email-list" },
+    children: "Emails",
   },
 };
