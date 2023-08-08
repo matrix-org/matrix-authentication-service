@@ -330,6 +330,10 @@ where
             get(self::compat::login_sso_redirect::get),
         )
         .route(
+            mas_router::CompatLoginSsoRedirectSlash::route(),
+            get(self::compat::login_sso_redirect::get),
+        )
+        .route(
             mas_router::CompatLoginSsoComplete::route(),
             get(self::compat::login_sso_complete::get).post(self::compat::login_sso_complete::post),
         )
