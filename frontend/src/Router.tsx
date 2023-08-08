@@ -135,7 +135,9 @@ const routeToPath = (route: Route): string =>
     .map((part) => encodeURIComponent(part))
     .join("/");
 
-export const appConfigAtom = atom(window.APP_CONFIG);
+export const appConfigAtom = atom<AppConfig>(
+  typeof window !== "undefined" ? window.APP_CONFIG : { root: "/" },
+);
 
 const pathToRoute = (path: string): Route => {
   const segments = path.split("/").map(decodeURIComponent);
