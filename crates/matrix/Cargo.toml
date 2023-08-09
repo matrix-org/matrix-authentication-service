@@ -10,5 +10,5 @@ anyhow = "1.0.71"
 serde = { version = "1.0.183", features = ["derive"] }
 async-trait = "0.1.72"
 http = "0.2.9"
-tokio = { version = "1.28.2", features = ["sync", "macros", "rt"] }
+tokio = { version = "1.30.0", features = ["sync", "macros", "rt"] }
 url = "2.4.0"
