@@ -14,7 +14,8 @@
 
 //! Contexts used in templates
 
-use chrono::Utc;
+use chrono::{DateTime, Utc};
+use http::{Method, Uri, Version};
 use mas_data_model::{
     AuthorizationGrant, BrowserSession, Client, CompatSsoLogin, CompatSsoLoginState,
     UpstreamOAuthLink, UpstreamOAuthProvider, User, UserEmail, UserEmailVerification,
@@ -1007,5 +1008,42 @@ impl ErrorContext {
     #[must_use]
     pub fn details(&self) -> Option<&str> {
         self.details.as_deref()
+    }
+}
+
+/// Context used by the not found (`404.html`) template
+#[derive(Serialize)]
+pub struct NotFoundContext {
+    method: String,
+    version: String,
+    uri: String,
+}
+
+impl NotFoundContext {
+    /// Constructs a context for the not found page
+    #[must_use]
+    pub fn new(method: &Method, version: Version, uri: &Uri) -> Self {
+        Self {
+            method: method.to_string(),
+            version: format!("{version:?}"),
+            uri: uri.to_string(),
+        }
+    }
+}
+
+impl TemplateContext for NotFoundContext {
+    fn sample(_now: DateTime<Utc>, _rng: &mut impl Rng) -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        vec![
+            Self::new(&Method::GET, Version::HTTP_11, &"/".parse().unwrap()),
+            Self::new(&Method::POST, Version::HTTP_2, &"/foo/bar".parse().unwrap()),
+            Self::new(
+                &Method::PUT,
+                Version::HTTP_10,
+                &"/foo?bar=baz".parse().unwrap(),
+            ),
+        ]
     }
 }

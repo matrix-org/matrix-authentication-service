@@ -49,7 +49,7 @@ pub use self::{
     context::{
         AppContext, CompatSsoContext, ConsentContext, EmailAddContext, EmailVerificationContext,
         EmailVerificationPageContext, EmptyContext, ErrorContext, FormPostContext, IndexContext,
-        LoginContext, LoginFormField, PolicyViolationContext, PostAuthContext,
+        LoginContext, LoginFormField, NotFoundContext, PolicyViolationContext, PostAuthContext,
         PostAuthContextInner, ReauthContext, ReauthFormField, RegisterContext, RegisterFormField,
         TemplateContext, UpstreamExistingLinkContext, UpstreamRegister, UpstreamSuggestLink,
         WithCsrf, WithOptionalSession, WithSession,
@@ -222,6 +222,9 @@ pub enum TemplateError {
 }
 
 register_templates! {
+    /// Render the not found fallback page
+    pub fn render_not_found(NotFoundContext) { "pages/404.html" }
+
     /// Render the frontend app
     pub fn render_app(AppContext) { "app.html" }
 
@@ -294,6 +297,7 @@ impl Templates {
         now: chrono::DateTime<chrono::Utc>,
         rng: &mut impl Rng,
     ) -> anyhow::Result<()> {
+        check::render_not_found(self, now, rng).await?;
         check::render_app(self, now, rng).await?;
         check::render_login(self, now, rng).await?;
         check::render_register(self, now, rng).await?;
