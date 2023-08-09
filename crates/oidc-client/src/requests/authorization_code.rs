@@ -75,6 +75,12 @@ pub struct AuthorizationRequestData {
     /// It must be one of the redirect URIs provided during registration.
     pub redirect_uri: Url,
 
+    /// The PKCE methods supported by the issuer.
+    ///
+    /// This field should be cloned from the provider metadata. If it is not
+    /// set, this security measure will not be used.
+    pub code_challenge_methods_supported: Option<Vec<PkceCodeChallengeMethod>>,
+
     /// How the Authorization Server should display the authentication and
     /// consent user interface pages to the End-User.
     pub display: Option<Display>,
@@ -114,6 +120,7 @@ impl AuthorizationRequestData {
             client_id,
             scope,
             redirect_uri,
+            code_challenge_methods_supported: None,
             display: None,
             prompt: None,
             max_age: None,
@@ -122,6 +129,17 @@ impl AuthorizationRequestData {
             login_hint: None,
             acr_values: None,
         }
+    }
+
+    /// Set the `code_challenge_methods_supported` field of this
+    /// `AuthorizationRequestData`.
+    #[must_use]
+    pub fn with_code_challenge_methods_supported(
+        mut self,
+        code_challenge_methods_supported: Vec<PkceCodeChallengeMethod>,
+    ) -> Self {
+        self.code_challenge_methods_supported = Some(code_challenge_methods_supported);
+        self
     }
 
     /// Set the `display` field of this `AuthorizationRequestData`.
@@ -203,13 +221,13 @@ struct FullAuthorizationRequest {
 /// Build the authorization request.
 fn build_authorization_request(
     authorization_data: AuthorizationRequestData,
-    code_challenge_methods_supported: Option<&[PkceCodeChallengeMethod]>,
     rng: &mut impl Rng,
 ) -> Result<(FullAuthorizationRequest, AuthorizationValidationData), AuthorizationError> {
     let AuthorizationRequestData {
         client_id,
         mut scope,
         redirect_uri,
+        code_challenge_methods_supported,
         display,
         prompt,
         max_age,
@@ -289,9 +307,6 @@ fn build_authorization_request(
 /// * `authorization_data` - The data necessary to build the authorization
 ///   request.
 ///
-/// * `code_challenge_methods_supported` - The PKCE methods supported by the
-///   issuer, from its metadata.
-///
 /// * `rng` - A random number generator.
 ///
 /// # Returns
@@ -317,7 +332,6 @@ fn build_authorization_request(
 pub fn build_authorization_url(
     authorization_endpoint: Url,
     authorization_data: AuthorizationRequestData,
-    code_challenge_methods_supported: Option<&[PkceCodeChallengeMethod]>,
     rng: &mut impl Rng,
 ) -> Result<(Url, AuthorizationValidationData), AuthorizationError> {
     tracing::debug!(
@@ -326,7 +340,7 @@ pub fn build_authorization_url(
     );
 
     let (authorization_request, validation_data) =
-        build_authorization_request(authorization_data, code_challenge_methods_supported, rng)?;
+        build_authorization_request(authorization_data, rng)?;
 
     let authorization_query = serde_urlencoded::to_string(authorization_request)?;
 
@@ -365,9 +379,6 @@ pub fn build_authorization_url(
 /// * `authorization_data` - The data necessary to build the authorization
 ///   request.
 ///
-/// * `code_challenge_methods_supported` - The PKCE methods supported by the
-///   issuer, from its metadata.
-///
 /// * `now` - The current time.
 ///
 /// * `rng` - A random number generator.
@@ -392,7 +403,6 @@ pub fn build_authorization_url(
 ///
 /// [Pushed Authorization Request]: https://oauth.net/2/pushed-authorization-requests/
 /// [`ClientErrorCode`]: oauth2_types::errors::ClientErrorCode
-#[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip_all, fields(par_endpoint))]
 pub async fn build_par_authorization_url(
     http_service: &HttpService,
@@ -400,7 +410,6 @@ pub async fn build_par_authorization_url(
     par_endpoint: &Url,
     authorization_endpoint: Url,
     authorization_data: AuthorizationRequestData,
-    code_challenge_methods_supported: Option<&[PkceCodeChallengeMethod]>,
     now: DateTime<Utc>,
     rng: &mut impl Rng,
 ) -> Result<(Url, AuthorizationValidationData), AuthorizationError> {
@@ -412,7 +421,7 @@ pub async fn build_par_authorization_url(
     let client_id = client_credentials.client_id().to_owned();
 
     let (authorization_request, validation_data) =
-        build_authorization_request(authorization_data, code_challenge_methods_supported, rng)?;
+        build_authorization_request(authorization_data, rng)?;
 
     let par_request = http::Request::post(par_endpoint.as_str())
         .header(CONTENT_TYPE, mime::APPLICATION_WWW_FORM_URLENCODED.as_ref())
