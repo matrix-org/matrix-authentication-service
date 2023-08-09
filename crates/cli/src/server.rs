@@ -235,6 +235,8 @@ where
         }
     }
 
+    router = router.fallback(mas_handlers::fallback);
+
     router
         .layer(
             InFlightCounterLayer::new("http.server.active_requests").on_request((
