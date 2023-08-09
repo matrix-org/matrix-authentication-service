@@ -64,8 +64,8 @@ fn pass_authorization_url() {
             CLIENT_ID.to_owned(),
             [ScopeToken::Openid].into_iter().collect(),
             redirect_uri,
-        ),
-        Some(&[PkceCodeChallengeMethod::S256]),
+        )
+        .with_code_challenge_methods_supported(vec![PkceCodeChallengeMethod::S256]),
         &mut rng,
     )
     .unwrap();
@@ -117,8 +117,7 @@ fn pass_full_authorization_url() {
     .with_acr_values(["custom".to_owned()].into());
 
     let (url, validation_data) =
-        build_authorization_url(authorization_endpoint, authorization_data, None, &mut rng)
-            .unwrap();
+        build_authorization_url(authorization_endpoint, authorization_data, &mut rng).unwrap();
 
     assert_eq!(validation_data.state, "OrJ8xbWovSpJUTKz");
     assert_eq!(validation_data.code_challenge_verifier, None);
@@ -190,8 +189,8 @@ async fn pass_pushed_authorization_request() {
             CLIENT_ID.to_owned(),
             [ScopeToken::Openid].into_iter().collect(),
             redirect_uri,
-        ),
-        Some(&[PkceCodeChallengeMethod::S256]),
+        )
+        .with_code_challenge_methods_supported(vec![PkceCodeChallengeMethod::S256]),
         now(),
         &mut rng,
     )
@@ -241,8 +240,8 @@ async fn fail_pushed_authorization_request_404() {
             CLIENT_ID.to_owned(),
             [ScopeToken::Openid].into_iter().collect(),
             redirect_uri,
-        ),
-        Some(&[PkceCodeChallengeMethod::S256]),
+        )
+        .with_code_challenge_methods_supported(vec![PkceCodeChallengeMethod::S256]),
         now(),
         &mut rng,
     )
