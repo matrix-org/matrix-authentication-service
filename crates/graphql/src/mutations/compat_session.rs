@@ -84,8 +84,6 @@ impl CompatSessionMutations {
         let compat_session_id = NodeType::CompatSession.extract_ulid(&input.compat_session_id)?;
         let requester = ctx.requester();
 
-        let user = requester.user().context("Unauthorized")?;
-
         let mut repo = state.repository().await?;
         let clock = state.clock();
 
@@ -94,13 +92,19 @@ impl CompatSessionMutations {
             return Ok(EndCompatSessionPayload::NotFound);
         };
 
-        if session.user_id != user.id {
-            return Err(async_graphql::Error::new("Unauthorized"));
+        if !requester.is_owner_or_admin(&session) {
+            return Ok(EndCompatSessionPayload::NotFound);
         }
+
+        let user = repo
+            .user()
+            .lookup(session.user_id)
+            .await?
+            .context("Could not load user")?;
 
         // Schedule a job to delete the device.
         repo.job()
-            .schedule_job(DeleteDeviceJob::new(user, &session.device))
+            .schedule_job(DeleteDeviceJob::new(&user, &session.device))
             .await?;
 
         let session = repo.compat_session().finish(&clock, session).await?;

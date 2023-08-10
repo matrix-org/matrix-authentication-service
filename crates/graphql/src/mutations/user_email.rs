@@ -23,6 +23,7 @@ use mas_storage::{
 use crate::{
     model::{NodeType, User, UserEmail},
     state::ContextExt,
+    UserId,
 };
 
 #[derive(Default)]
@@ -361,13 +362,17 @@ impl UserEmailMutations {
         let id = NodeType::User.extract_ulid(&input.user_id)?;
         let requester = ctx.requester();
 
-        let user = requester.user().context("Unauthorized")?;
-
-        if user.id != id {
+        if !requester.is_owner_or_admin(&UserId(id)) {
             return Err(async_graphql::Error::new("Unauthorized"));
         }
 
         let mut repo = state.repository().await?;
+
+        let user = repo
+            .user()
+            .lookup(id)
+            .await?
+            .context("Failed to load user")?;
 
         // XXX: this logic should be extracted somewhere else, since most of it is
         // duplicated in mas_handlers
@@ -378,7 +383,7 @@ impl UserEmailMutations {
         }
 
         // Find an existing email address
-        let existing_user_email = repo.user_email().find(user, &input.email).await?;
+        let existing_user_email = repo.user_email().find(&user, &input.email).await?;
         let (added, user_email) = if let Some(user_email) = existing_user_email {
             (false, user_email)
         } else {
@@ -387,7 +392,7 @@ impl UserEmailMutations {
 
             let user_email = repo
                 .user_email()
-                .add(&mut rng, &clock, user, input.email)
+                .add(&mut rng, &clock, &user, input.email)
                 .await?;
 
             (true, user_email)
@@ -419,7 +424,6 @@ impl UserEmailMutations {
         let state = ctx.state();
         let user_email_id = NodeType::UserEmail.extract_ulid(&input.user_email_id)?;
         let requester = ctx.requester();
-        let user = requester.user().context("Unauthorized")?;
 
         let mut repo = state.repository().await?;
 
@@ -429,8 +433,8 @@ impl UserEmailMutations {
             .await?
             .context("User email not found")?;
 
-        if user_email.user_id != user.id {
-            return Err(async_graphql::Error::new("Unauthorized"));
+        if !requester.is_owner_or_admin(&user_email) {
+            return Err(async_graphql::Error::new("User email not found"));
         }
 
         // Schedule a job to verify the email address if needed
@@ -461,8 +465,6 @@ impl UserEmailMutations {
         let user_email_id = NodeType::UserEmail.extract_ulid(&input.user_email_id)?;
         let requester = ctx.requester();
 
-        let user = requester.user().context("Unauthorized")?;
-
         let clock = state.clock();
         let mut repo = state.repository().await?;
 
@@ -472,8 +474,8 @@ impl UserEmailMutations {
             .await?
             .context("User email not found")?;
 
-        if user_email.user_id != user.id {
-            return Err(async_graphql::Error::new("Unauthorized"));
+        if !requester.is_owner_or_admin(&user_email) {
+            return Err(async_graphql::Error::new("User email not found"));
         }
 
         if user_email.confirmed_at.is_some() {
@@ -500,6 +502,12 @@ impl UserEmailMutations {
             .consume_verification_code(&clock, verification)
             .await?;
 
+        let user = repo
+            .user()
+            .lookup(user_email.user_id)
+            .await?
+            .context("Failed to load user")?;
+
         // XXX: is this the right place to do this?
         if user.primary_user_email_id.is_none() {
             repo.user_email().set_as_primary(&user_email).await?;
@@ -510,7 +518,9 @@ impl UserEmailMutations {
             .mark_as_verified(&clock, user_email)
             .await?;
 
-        repo.job().schedule_job(ProvisionUserJob::new(user)).await?;
+        repo.job()
+            .schedule_job(ProvisionUserJob::new(&user))
+            .await?;
 
         repo.save().await?;
 
@@ -527,8 +537,6 @@ impl UserEmailMutations {
         let user_email_id = NodeType::UserEmail.extract_ulid(&input.user_email_id)?;
         let requester = ctx.requester();
 
-        let user = requester.user().context("Unauthorized")?;
-
         let mut repo = state.repository().await?;
 
         let user_email = repo.user_email().lookup(user_email_id).await?;
@@ -536,9 +544,15 @@ impl UserEmailMutations {
             return Ok(RemoveEmailPayload::NotFound);
         };
 
-        if user_email.user_id != user.id {
-            return Err(async_graphql::Error::new("Unauthorized"));
+        if !requester.is_owner_or_admin(&user_email) {
+            return Ok(RemoveEmailPayload::NotFound);
         }
+
+        let user = repo
+            .user()
+            .lookup(user_email.user_id)
+            .await?
+            .context("Failed to load user")?;
 
         if user.primary_user_email_id == Some(user_email.id) {
             // Prevent removing the primary email address
@@ -546,6 +560,11 @@ impl UserEmailMutations {
         }
 
         repo.user_email().remove(user_email.clone()).await?;
+
+        // Schedule a job to update the user
+        repo.job()
+            .schedule_job(ProvisionUserJob::new(&user))
+            .await?;
 
         repo.save().await?;
 
@@ -562,8 +581,6 @@ impl UserEmailMutations {
         let user_email_id = NodeType::UserEmail.extract_ulid(&input.user_email_id)?;
         let requester = ctx.requester();
 
-        let user = requester.user().context("Unauthorized")?;
-
         let mut repo = state.repository().await?;
 
         let user_email = repo.user_email().lookup(user_email_id).await?;
@@ -571,7 +588,7 @@ impl UserEmailMutations {
             return Ok(SetPrimaryEmailPayload::NotFound);
         };
 
-        if user_email.user_id != user.id {
+        if !requester.is_owner_or_admin(&user_email) {
             return Err(async_graphql::Error::new("Unauthorized"));
         }
 
@@ -581,10 +598,15 @@ impl UserEmailMutations {
 
         repo.user_email().set_as_primary(&user_email).await?;
 
+        // The user primary email should already be up to date
+        let user = repo
+            .user()
+            .lookup(user_email.user_id)
+            .await?
+            .context("Failed to load user")?;
+
         repo.save().await?;
 
-        let mut user = user.clone();
-        user.primary_user_email_id = Some(user_email.id);
         Ok(SetPrimaryEmailPayload::Set(user))
     }
 }

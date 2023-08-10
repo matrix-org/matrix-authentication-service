@@ -26,7 +26,6 @@
     clippy::unused_async
 )]
 
-use anyhow::Context;
 use async_graphql::EmptySubscription;
 use mas_data_model::{BrowserSession, Session, User};
 use ulid::Ulid;
