@@ -88,6 +88,13 @@ impl BaseQuery {
 
         if current_user.id == id {
             Ok(Some(User(current_user.clone())))
+        } else if requester.is_admin() {
+            // An admin can fetch any user, not just themselves
+            let state = ctx.state();
+            let mut repo = state.repository().await?;
+            let user = repo.user().lookup(id).await?;
+            repo.cancel().await?;
+            Ok(user.map(User))
         } else {
             Ok(None)
         }
@@ -113,7 +120,7 @@ impl BaseQuery {
         repo.cancel().await?;
 
         let ret = browser_session.and_then(|browser_session| {
-            if browser_session.user.id == current_user.id {
+            if browser_session.user.id == current_user.id || requester.is_admin() {
                 Some(BrowserSession(browser_session))
             } else {
                 None
@@ -142,7 +149,7 @@ impl BaseQuery {
             .user_email()
             .lookup(id)
             .await?
-            .filter(|e| e.user_id == current_user.id);
+            .filter(|e| e.user_id == current_user.id || requester.is_admin());
 
         repo.cancel().await?;
 
