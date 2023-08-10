@@ -49,7 +49,8 @@ impl UpstreamOAuthQuery {
         let link = repo.upstream_oauth_link().lookup(id).await?;
 
         // Ensure that the link belongs to the current user
-        let link = link.filter(|link| link.user_id == Some(current_user.id));
+        let link =
+            link.filter(|link| link.user_id == Some(current_user.id) || requester.is_admin());
 
         Ok(link.map(UpstreamOAuth2Link::new))
     }

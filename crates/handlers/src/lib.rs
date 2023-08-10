@@ -103,6 +103,7 @@ where
     S: Clone + Send + Sync + 'static,
     mas_graphql::Schema: FromRef<S>,
     BoxRepository: FromRequestParts<S>,
+    BoxClock: FromRequestParts<S>,
     Encrypter: FromRef<S>,
 {
     let mut router = Router::new().route(

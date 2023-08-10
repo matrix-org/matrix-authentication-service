@@ -26,8 +26,10 @@
     clippy::unused_async
 )]
 
+use anyhow::Context;
 use async_graphql::EmptySubscription;
-use mas_data_model::{BrowserSession, User};
+use mas_data_model::{BrowserSession, Session, User};
+use ulid::Ulid;
 
 mod model;
 mod mutations;
@@ -60,18 +62,51 @@ pub enum Requester {
 
     /// The requester is a browser session, stored in a cookie.
     BrowserSession(BrowserSession),
+
+    /// The requester is a OAuth2 session, with an access token.
+    OAuth2Session(Session, User),
 }
 
 impl Requester {
     fn browser_session(&self) -> Option<&BrowserSession> {
         match self {
             Self::BrowserSession(session) => Some(session),
-            Self::Anonymous => None,
+            Self::OAuth2Session(_, _) | Self::Anonymous => None,
         }
     }
 
     fn user(&self) -> Option<&User> {
-        self.browser_session().map(|session| &session.user)
+        match self {
+            Self::BrowserSession(session) => Some(&session.user),
+            Self::OAuth2Session(_session, user) => Some(user),
+            Self::Anonymous => None,
+        }
+    }
+
+    fn ensure_owner_or_admin(&self, user_id: Ulid) -> Result<(), async_graphql::Error> {
+        // If the requester is an admin, they can do anything.
+        if self.is_admin() {
+            return Ok(());
+        }
+
+        // Else check that they are the owner.
+        let user = self.user().context("Unauthorized")?;
+        if user.id == user_id {
+            Ok(())
+        } else {
+            Err(async_graphql::Error::new("Unauthorized"))
+        }
+    }
+
+    fn is_admin(&self) -> bool {
+        match self {
+            Self::OAuth2Session(session, _user) => {
+                // TODO: is this the right scope?
+                // This has to be in sync with the policy
+                session.scope.contains("urn:mas:admin")
+            }
+            Self::BrowserSession(_) | Self::Anonymous => false,
+        }
     }
 }
 

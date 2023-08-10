@@ -15,7 +15,17 @@ allowed_scope("openid") = true
 
 allowed_scope("email") = true
 
+# This grants access to Synapse's admin API endpoints
 allowed_scope("urn:synapse:admin:*") {
+	some user in data.admin_users
+	input.user.username == user
+}
+
+# This grants access to the /graphql API endpoint
+allowed_scope("urn:mas:graphql:*") = true
+
+# This makes it possible to query and do anything in the GraphQL API as an admin
+allowed_scope("urn:mas:admin") {
 	some user in data.admin_users
 	input.user.username == user
 }
