@@ -2601,6 +2601,10 @@ export default {
             kind: "OBJECT",
             name: "BrowserSession",
           },
+          {
+            kind: "OBJECT",
+            name: "Oauth2Session",
+          },
         ],
       },
       {
