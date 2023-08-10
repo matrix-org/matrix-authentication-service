@@ -17,6 +17,7 @@ use async_graphql::{Context, MergedObject, Object, ID};
 use crate::{
     model::{Anonymous, BrowserSession, Node, NodeType, OAuth2Client, User, UserEmail},
     state::ContextExt,
+    UserId,
 };
 
 mod upstream_oauth;
@@ -80,24 +81,21 @@ impl BaseQuery {
     /// Fetch a user by its ID.
     async fn user(&self, ctx: &Context<'_>, id: ID) -> Result<Option<User>, async_graphql::Error> {
         let id = NodeType::User.extract_ulid(&id)?;
+
         let requester = ctx.requester();
-
-        let Some(current_user) = requester.user() else {
+        if !requester.is_owner_or_admin(&UserId(id)) {
             return Ok(None);
-        };
-
-        if current_user.id == id {
-            Ok(Some(User(current_user.clone())))
-        } else if requester.is_admin() {
-            // An admin can fetch any user, not just themselves
-            let state = ctx.state();
-            let mut repo = state.repository().await?;
-            let user = repo.user().lookup(id).await?;
-            repo.cancel().await?;
-            Ok(user.map(User))
-        } else {
-            Ok(None)
         }
+
+        // We could avoid the database lookup if the requester is the user we're looking
+        // for but that would make the code more complex and we're not very
+        // concerned about performance yet
+        let state = ctx.state();
+        let mut repo = state.repository().await?;
+        let user = repo.user().lookup(id).await?;
+        repo.cancel().await?;
+
+        Ok(user.map(User))
     }
 
     /// Fetch a browser session by its ID.
@@ -110,24 +108,19 @@ impl BaseQuery {
         let id = NodeType::BrowserSession.extract_ulid(&id)?;
         let requester = ctx.requester();
 
-        let Some(current_user) = requester.user() else {
-            return Ok(None);
-        };
         let mut repo = state.repository().await?;
-
         let browser_session = repo.browser_session().lookup(id).await?;
-
         repo.cancel().await?;
 
-        let ret = browser_session.and_then(|browser_session| {
-            if browser_session.user.id == current_user.id || requester.is_admin() {
-                Some(BrowserSession(browser_session))
-            } else {
-                None
-            }
-        });
+        let Some(browser_session) = browser_session else {
+            return Ok(None);
+        };
 
-        Ok(ret)
+        if !requester.is_owner_or_admin(&browser_session) {
+            return Ok(None);
+        }
+
+        Ok(Some(BrowserSession(browser_session)))
     }
 
     /// Fetch a user email by its ID.
@@ -140,20 +133,19 @@ impl BaseQuery {
         let id = NodeType::UserEmail.extract_ulid(&id)?;
         let requester = ctx.requester();
 
-        let Some(current_user) = requester.user() else {
-            return Ok(None);
-        };
         let mut repo = state.repository().await?;
-
-        let user_email = repo
-            .user_email()
-            .lookup(id)
-            .await?
-            .filter(|e| e.user_id == current_user.id || requester.is_admin());
-
+        let user_email = repo.user_email().lookup(id).await?;
         repo.cancel().await?;
 
-        Ok(user_email.map(UserEmail))
+        let Some(user_email) = user_email else {
+            return Ok(None);
+        };
+
+        if !requester.is_owner_or_admin(&user_email) {
+            return Ok(None);
+        }
+
+        Ok(Some(UserEmail(user_email)))
     }
 
     /// Fetches an object given its ID.
