@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use anyhow::Context as _;
 use async_graphql::{Context, Enum, InputObject, Object, ID};
 use mas_storage::RepositoryAccess;
 
@@ -80,18 +79,17 @@ impl BrowserSessionMutations {
             NodeType::BrowserSession.extract_ulid(&input.browser_session_id)?;
         let requester = ctx.requester();
 
-        let user = requester.user().context("Unauthorized")?;
-
         let mut repo = state.repository().await?;
         let clock = state.clock();
 
         let session = repo.browser_session().lookup(browser_session_id).await?;
+
         let Some(session) = session else {
             return Ok(EndBrowserSessionPayload::NotFound);
         };
 
-        if session.user.id != user.id {
-            return Err(async_graphql::Error::new("Unauthorized"));
+        if !requester.is_owner_or_admin(&session) {
+            return Ok(EndBrowserSessionPayload::NotFound);
         }
 
         let session = repo.browser_session().finish(&clock, session).await?;

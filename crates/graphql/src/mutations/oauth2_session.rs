@@ -84,8 +84,6 @@ impl OAuth2SessionMutations {
         let oauth2_session_id = NodeType::OAuth2Session.extract_ulid(&input.oauth2_session_id)?;
         let requester = ctx.requester();
 
-        let user = requester.user().context("Unauthorized")?;
-
         let mut repo = state.repository().await?;
         let clock = state.clock();
 
@@ -94,14 +92,15 @@ impl OAuth2SessionMutations {
             return Ok(EndOAuth2SessionPayload::NotFound);
         };
 
+        // XXX: again, the user_id should be directly stored in the session.
         let user_session = repo
             .browser_session()
             .lookup(session.user_session_id)
             .await?
-            .context("Browser session not found")?;
+            .context("Could not load user session")?;
 
-        if user_session.user.id != user.id {
-            return Err(async_graphql::Error::new("Unauthorized"));
+        if !requester.is_owner_or_admin(&user_session) {
+            return Ok(EndOAuth2SessionPayload::NotFound);
         }
 
         // Scan the scopes of the session to find if there is any device that should be
