@@ -6,12 +6,7 @@ exports[`UserHome > render a <UserHome /> with additional emails 1`] = `
     className="_userEmail_e2a518"
   >
     <p
-      style={
-        {
-          "font": "var(--cpd-font-body-md-regular)",
-          "letterSpacing": "var(--cpd-font-letter-spacing-body-md)",
-        }
-      }
+      className="_font-body-md-regular_1g2sj_65"
     >
       Primary email
     </p>
@@ -46,12 +41,7 @@ exports[`UserHome > render a <UserHome /> with additional emails 1`] = `
     </div>
   </div>,
   <p
-    style={
-      {
-        "font": "var(--cpd-font-body-md-regular)",
-        "letterSpacing": "var(--cpd-font-letter-spacing-body-md)",
-      }
-    }
+    className="_font-body-md-regular_1g2sj_65"
   >
     3
      additional emails.
@@ -64,12 +54,7 @@ exports[`UserHome > render a <UserHome /> with additional emails 1`] = `
     </a>
   </p>,
   <p
-    style={
-      {
-        "font": "var(--cpd-font-body-md-regular)",
-        "letterSpacing": "var(--cpd-font-letter-spacing-body-md)",
-      }
-    }
+    className="_font-body-md-regular_1g2sj_65"
   >
     0
      active browser session(s).
@@ -82,12 +67,7 @@ exports[`UserHome > render a <UserHome /> with additional emails 1`] = `
     </a>
   </p>,
   <p
-    style={
-      {
-        "font": "var(--cpd-font-body-md-regular)",
-        "letterSpacing": "var(--cpd-font-letter-spacing-body-md)",
-      }
-    }
+    className="_font-body-md-regular_1g2sj_65"
   >
     0
      active OAuth2 session(s).
@@ -100,12 +80,7 @@ exports[`UserHome > render a <UserHome /> with additional emails 1`] = `
     </a>
   </p>,
   <p
-    style={
-      {
-        "font": "var(--cpd-font-body-md-regular)",
-        "letterSpacing": "var(--cpd-font-letter-spacing-body-md)",
-      }
-    }
+    className="_font-body-md-regular_1g2sj_65"
   >
     0
      active compatibility layer session(s).
@@ -181,12 +156,7 @@ exports[`UserHome > render a <UserHome /> with an unverified email 1`] = `
     className="_userEmail_e2a518"
   >
     <p
-      style={
-        {
-          "font": "var(--cpd-font-body-md-regular)",
-          "letterSpacing": "var(--cpd-font-letter-spacing-body-md)",
-        }
-      }
+      className="_font-body-md-regular_1g2sj_65"
     >
       Primary email
     </p>
@@ -221,12 +191,7 @@ exports[`UserHome > render a <UserHome /> with an unverified email 1`] = `
     </div>
   </div>,
   <p
-    style={
-      {
-        "font": "var(--cpd-font-body-md-regular)",
-        "letterSpacing": "var(--cpd-font-letter-spacing-body-md)",
-      }
-    }
+    className="_font-body-md-regular_1g2sj_65"
   >
     0
      active browser session(s).
@@ -239,12 +204,7 @@ exports[`UserHome > render a <UserHome /> with an unverified email 1`] = `
     </a>
   </p>,
   <p
-    style={
-      {
-        "font": "var(--cpd-font-body-md-regular)",
-        "letterSpacing": "var(--cpd-font-letter-spacing-body-md)",
-      }
-    }
+    className="_font-body-md-regular_1g2sj_65"
   >
     0
      active OAuth2 session(s).
@@ -257,12 +217,7 @@ exports[`UserHome > render a <UserHome /> with an unverified email 1`] = `
     </a>
   </p>,
   <p
-    style={
-      {
-        "font": "var(--cpd-font-body-md-regular)",
-        "letterSpacing": "var(--cpd-font-letter-spacing-body-md)",
-      }
-    }
+    className="_font-body-md-regular_1g2sj_65"
   >
     0
      active compatibility layer session(s).
@@ -309,12 +264,7 @@ exports[`UserHome > render a <UserHome /> without primary email 1`] = `
     </div>
   </div>,
   <p
-    style={
-      {
-        "font": "var(--cpd-font-body-md-regular)",
-        "letterSpacing": "var(--cpd-font-letter-spacing-body-md)",
-      }
-    }
+    className="_font-body-md-regular_1g2sj_65"
   >
     0
      active browser session(s).
@@ -327,12 +277,7 @@ exports[`UserHome > render a <UserHome /> without primary email 1`] = `
     </a>
   </p>,
   <p
-    style={
-      {
-        "font": "var(--cpd-font-body-md-regular)",
-        "letterSpacing": "var(--cpd-font-letter-spacing-body-md)",
-      }
-    }
+    className="_font-body-md-regular_1g2sj_65"
   >
     0
      active OAuth2 session(s).
@@ -345,12 +290,7 @@ exports[`UserHome > render a <UserHome /> without primary email 1`] = `
     </a>
   </p>,
   <p
-    style={
-      {
-        "font": "var(--cpd-font-body-md-regular)",
-        "letterSpacing": "var(--cpd-font-letter-spacing-body-md)",
-      }
-    }
+    className="_font-body-md-regular_1g2sj_65"
   >
     0
      active compatibility layer session(s).
@@ -371,12 +311,7 @@ exports[`UserHome > render an simple <UserHome /> 1`] = `
     className="_userEmail_e2a518"
   >
     <p
-      style={
-        {
-          "font": "var(--cpd-font-body-md-regular)",
-          "letterSpacing": "var(--cpd-font-letter-spacing-body-md)",
-        }
-      }
+      className="_font-body-md-regular_1g2sj_65"
     >
       Primary email
     </p>
@@ -411,12 +346,7 @@ exports[`UserHome > render an simple <UserHome /> 1`] = `
     </div>
   </div>,
   <p
-    style={
-      {
-        "font": "var(--cpd-font-body-md-regular)",
-        "letterSpacing": "var(--cpd-font-letter-spacing-body-md)",
-      }
-    }
+    className="_font-body-md-regular_1g2sj_65"
   >
     0
      active browser session(s).
@@ -429,12 +359,7 @@ exports[`UserHome > render an simple <UserHome /> 1`] = `
     </a>
   </p>,
   <p
-    style={
-      {
-        "font": "var(--cpd-font-body-md-regular)",
-        "letterSpacing": "var(--cpd-font-letter-spacing-body-md)",
-      }
-    }
+    className="_font-body-md-regular_1g2sj_65"
   >
     0
      active OAuth2 session(s).
@@ -447,12 +372,7 @@ exports[`UserHome > render an simple <UserHome /> 1`] = `
     </a>
   </p>,
   <p
-    style={
-      {
-        "font": "var(--cpd-font-body-md-regular)",
-        "letterSpacing": "var(--cpd-font-letter-spacing-body-md)",
-      }
-    }
+    className="_font-body-md-regular_1g2sj_65"
   >
     0
      active compatibility layer session(s).
