@@ -5,6 +5,8 @@ on:
     branches: [ main ]
     tags:
       - 'v*'
+    paths-ignore: 
+      - 'tools/**'  
 
   # Only run for pull requests if relevant files were changed
   pull_request:
@@ -13,6 +15,7 @@ on:
       - Dockerfile
       - docker-bake.hcl
       - .github/workflows/build.yaml
+      - 'tools/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

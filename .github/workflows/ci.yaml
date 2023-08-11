@@ -5,8 +5,12 @@ on:
     branches: [ main ]
     tags:
       - 'v*'
+    paths-ignore: 
+      - 'tools/**'
   pull_request:
     branches: [ main ]
+    paths-ignore: 
+      - 'tools/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
