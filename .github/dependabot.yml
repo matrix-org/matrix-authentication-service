@@ -68,3 +68,8 @@ updates:
       graphql-codegen:
         patterns:
           - "@graphql-codegen/*"
+
+  - package-ecosystem: "npm"
+    directory: "/tools/syn2mas/"
+    schedule:
+      interval: "weekly"
