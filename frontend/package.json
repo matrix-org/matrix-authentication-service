@@ -45,7 +45,7 @@
     "@storybook/addon-docs": "^7.2.2",
     "@storybook/addon-essentials": "^7.2.2",
     "@storybook/addon-measure": "^7.2.1",
-    "@storybook/addon-outline": "^7.2.1",
+    "@storybook/addon-outline": "^7.2.3",
     "@storybook/addon-toolbars": "^7.2.1",
     "@storybook/addon-viewport": "^7.2.1",
     "@storybook/react": "^7.2.2",
