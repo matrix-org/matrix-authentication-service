@@ -48,7 +48,7 @@ async fn main() -> anyhow::Result<()> {
 async fn try_main() -> anyhow::Result<()> {
     // Load environment variables from .env files
     // We keep the path to log it afterwards
-    let dotenv_path: Result<Option<_>, _> = dotenv::dotenv()
+    let dotenv_path: Result<Option<_>, _> = dotenvy::dotenv()
         .map(Some)
         // Display the error if it is something other than the .env file not existing
         .or_else(|e| if e.not_found() { Ok(None) } else { Err(e) });

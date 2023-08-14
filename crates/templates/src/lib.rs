@@ -100,12 +100,6 @@ pub enum TemplateLoadingError {
 }
 
 impl Templates {
-    /// Directories to watch
-    #[must_use]
-    pub fn watch_root(&self) -> &Utf8Path {
-        &self.path
-    }
-
     /// Load the templates from the given config
     #[tracing::instrument(
         name = "templates.load",

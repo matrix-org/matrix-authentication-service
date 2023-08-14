@@ -109,6 +109,21 @@ jobs:
       - name: Check style
         run: cargo fmt --all -- --check
 
+
+  cargo-deny:
+    name: Run `cargo deny` checks
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v3.5.3
+
+      - name: Run `cargo-deny`
+        uses: EmbarkStudios/cargo-deny-action@v1.5.4
+
   
   check-schema:
     name: Check schema
@@ -376,6 +391,7 @@ jobs:
       - frontend-lint
       - frontend-test
       - rustfmt
+      - cargo-deny
       - clippy
       - check-schema
       - test

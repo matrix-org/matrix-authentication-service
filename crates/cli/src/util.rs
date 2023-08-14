@@ -179,60 +179,27 @@ pub async fn database_from_config(config: &DatabaseConfig) -> Result<PgPool, any
         .context("could not connect to the database")
 }
 
-/// Watch for changes in the templates folders
-pub async fn watch_templates(templates: &Templates) -> anyhow::Result<()> {
-    use watchman_client::{prelude::*, SubscriptionData};
-
-    let client = Connector::new()
-        .connect()
-        .await
-        .context("could not connect to watchman")?;
-
-    let templates = templates.clone();
-
-    // Find which root we're supposed to watch
-    let root = templates.watch_root();
-
-    // Create a subscription on the root
-    let resolved = client
-        .resolve_root(CanonicalPath::canonicalize(root)?)
-        .await?;
-
-    // Only look for *.txt, *.html and *.subject files
-    let request = SubscribeRequest {
-        expression: Some(Expr::Suffix(vec![
-            "txt".into(),
-            "html".into(),
-            "subject".into(),
-        ])),
-        ..SubscribeRequest::default()
-    };
-
-    let (mut subscription, _) = client.subscribe::<NameOnly>(&resolved, request).await?;
-
-    tokio::spawn(async move {
-        loop {
-            let event = match subscription.next().await {
-                Ok(event) => event,
-                Err(error) => {
-                    error!(%error, "Stopped watching templates because of an error in the watchman subscription");
+/// Reload templates on SIGHUP
+pub fn register_sighup(templates: &Templates) -> anyhow::Result<()> {
+    #[cfg(unix)]
+    {
+        let mut signal = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::hangup())?;
+        let templates = templates.clone();
+        tokio::spawn(async move {
+            loop {
+                if signal.recv().await.is_none() {
+                    // No more signals will be received, breaking
                     break;
-                }
-            };
+                };
 
-            if let SubscriptionData::FilesChanged(QueryResult {
-                files: Some(files), ..
-            }) = event
-            {
-                let files: Vec<_> = files.into_iter().map(|f| f.name.into_inner()).collect();
-                info!(?files, "Files changed, reloading templates");
+                info!("SIGHUP received, reloading templates");
 
                 templates.clone().reload().await.unwrap_or_else(|err| {
                     error!(?err, "Error while reloading templates");
                 });
             }
-        }
-    });
+        });
+    }
 
     Ok(())
 }

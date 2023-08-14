@@ -1,0 +1,99 @@
+targets = [
+    { triple = "x86_64-unknown-linux-gnu" },
+    { triple = "aarch64-unknown-linux-gnu" },
+    { triple = "x86_64-apple-darwin" },
+    { triple = "aarch64-apple-darwin" },
+]
+
+[advisories]
+db-path = "~/.cargo/advisory-db"
+db-urls = ["https://github.com/rustsec/advisory-db"]
+vulnerability = "deny"
+unmaintained = "warn"
+yanked = "warn"
+notice = "warn"
+ignore = [
+    # `wasmtime` depends on `mach`
+    # PR to migrate to `mach2`: https://github.com/bytecodealliance/wasmtime/pull/6164
+    "RUSTSEC-2020-0168",
+]
+
+[licenses]
+# Deny unlicensed crates and those with a copyleft license
+unlicensed = "deny"
+copyleft = "deny"
+default = "deny"
+
+# By default, allow all licenses that are OSI or FSF approved
+allow-osi-fsf-free = "both"
+allow = [
+    "MPL-2.0",
+    "0BSD", # Used by `quoted_printable`
+    "OpenSSL", # Used by `ring`
+    "Unicode-DFS-2016", # Used by `unicode-ident`
+]
+deny = []
+
+# Ring's license is a bit complicated, so we need to specify it manually
+[[licenses.clarify]]
+name = "ring"
+version = "*"
+expression = "MIT AND ISC AND OpenSSL"
+license-files = [
+    { path = "LICENSE", hash = 0xbd0eed23 }
+]
+
+[bans]
+# List of crates to deny
+deny = [
+    # We should never depend on openssl
+    { name = "openssl" },
+    { name = "openssl-sys" },
+    { name = "native-tls" },
+]
+
+# We try to avoid duplicating crates and track exceptions here
+multiple-versions = "warn"
+
+skip = [
+    { name = "webpki-roots" }, # We, lettre and sqlx have different versions :(
+    { name = "rustls-webpki" },
+    { name = "syn", version = "1.0.109" }, # There are a few crates still depdending on the 1.x
+    { name = "spin", version = "0.5.2" }, # lazy_static and ring depends on the old version
+    { name = "socket2", version = "0.4.9" }, # hyper depends on the old version
+    { name = "regex-syntax", version = "0.6.29" }, # tracing-subscriber[env-filter] -> matchers depends on the old version
+    { name = "regex-automata", version = "0.1.10" }, # ^
+    { name = "ordered-float", version = "2.10.0" }, # opentelemetry-jaeger -> thrift depends on the old version
+    { name = "rustix", version = "0.37.23" }, # wasmtime depends on the old version
+    { name = "object", version = "0.30.4" }, # wasmtime depends on the old version
+    { name = "memoffset", version = "0.8.0" }, # wasmtime depends on the old version
+    { name = "addr2line", version = "0.19.0" }, # wasmtime depends on the old version
+    { name = "itertools", version = "0.10.5" }, # wasmtime & others depends on the old version
+    { name = "idna", version = "0.3.0" }, # lettre depends on an old version
+    { name = "hashbrown" }, # Too many versions :(
+]
+
+skip-tree = [
+    # Let's ignore wiremock for now, we want to get rid of it
+    { name = "wiremock", depth = 3 },
+    { name = "rustix", version = "0.37.23", depth = 2 }, # wasmtime depends on the old version
+    { name = "darling", version = "0.14.4", depth = 2 }, # sea-query-attr depends on an old version
+]
+
+# We should never enable the (default) `oldtime` feature of `chrono`
+[[bans.features]]
+name = "chrono"
+deny = ["oldtime"]
+
+[sources]
+unknown-registry = "warn"
+unknown-git = "warn"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = [
+    # We depend on an unrelease version
+    "https://github.com/dylanhart/ulid-rs",
+]
+
+[sources.allow-org]
+# Allow our own crates
+github = ["matrix-org"]

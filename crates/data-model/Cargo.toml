@@ -6,7 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-chrono = "0.4.26"
+chrono.workspace = true
 thiserror = "1.0.44"
 serde = "1.0.183"
 url = { version = "2.4.0", features = ["serde"] }
