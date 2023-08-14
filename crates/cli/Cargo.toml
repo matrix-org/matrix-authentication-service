@@ -11,7 +11,7 @@ axum = "0.6.20"
 camino = "1.1.6"
 clap = { version = "4.3.21", features = ["derive"] }
 dotenvy = "0.15.7"
-httpdate = "1.0.2"
+httpdate = "1.0.3"
 hyper = { version = "0.14.27", features = ["full"] }
 itertools = "0.11.0"
 listenfd = "1.0.1"
