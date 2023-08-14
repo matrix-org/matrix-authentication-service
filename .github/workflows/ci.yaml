@@ -142,7 +142,7 @@ jobs:
           rustup default stable
 
       - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2.6.0
+        uses: Swatinem/rust-cache@v2.6.1
         with:
           save-if: "${{ github.event_name != 'pull_request' }}"
 
@@ -203,7 +203,7 @@ jobs:
         run: make
 
       - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2.6.0
+        uses: Swatinem/rust-cache@v2.6.1
         with:
           save-if: "${{ github.event_name != 'pull_request' }}"
 
@@ -267,7 +267,7 @@ jobs:
         run: make
 
       - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2.6.0
+        uses: Swatinem/rust-cache@v2.6.1
         with:
           save-if: "${{ github.event_name != 'pull_request' }}"
 
