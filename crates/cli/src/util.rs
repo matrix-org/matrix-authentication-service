@@ -55,7 +55,7 @@ pub async fn password_manager_from_config(
     PasswordManager::new(schemes)
 }
 
-pub async fn mailer_from_config(
+pub fn mailer_from_config(
     config: &EmailConfig,
     templates: &Templates,
 ) -> Result<Mailer, anyhow::Error> {
@@ -83,7 +83,8 @@ pub async fn mailer_from_config(
                 .context("failed to build SMTP transport")?
         }
         EmailTransportConfig::Sendmail { command } => MailTransport::sendmail(command),
-        EmailTransportConfig::AwsSes => MailTransport::aws_ses().await?,
+        #[allow(deprecated)]
+        EmailTransportConfig::AwsSes => anyhow::bail!("AWS SESv2 backend has been removed"),
     };
 
     Ok(Mailer::new(templates.clone(), transport, from, reply_to))

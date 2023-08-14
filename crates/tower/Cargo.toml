@@ -6,9 +6,8 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-aws-smithy-http = { version = "0.55.3", optional = true }
-http = "0.2.9"
-tracing = "0.1.37"
+http.workspace = true
+tracing.workspace = true
 tracing-opentelemetry = "0.20.0"
 tower = "0.4.13"
 tokio = { version = "1.30.0", features = ["time"] }
@@ -16,6 +15,3 @@ opentelemetry = { version = "0.20.0", features = ["metrics"] }
 opentelemetry-http = "0.9.0"
 opentelemetry-semantic-conventions = "0.12.0"
 pin-project-lite = "0.2.12"
-
-[features]
-aws-sdk = ["dep:aws-smithy-http"]
