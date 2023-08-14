@@ -33,5 +33,5 @@ pub use mas_templates::EmailVerificationContext;
 
 pub use self::{
     mailer::Mailer,
-    transport::{aws_ses::Transport as AwsSesTransport, SmtpMode, Transport as MailTransport},
+    transport::{SmtpMode, Transport as MailTransport},
 };

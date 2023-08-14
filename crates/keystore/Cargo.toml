@@ -18,11 +18,11 @@ p384 = { version = "0.13.0", features = ["std"] }
 pem-rfc7468 = { version = "0.7.0", features = ["std"] }
 pkcs1 = { version = "0.7.5", features = ["std"] }
 pkcs8 = { version = "0.10.2", features = ["std", "pkcs5", "encryption"] }
-rand = "0.8.5"
+rand.workspace = true
 rsa = { version = "0.9.2", features = ["std", "pem"] }
 sec1 = { version = "0.7.3", features = ["std"] }
 spki = { version = "0.7.2", features = ["std"] }
-thiserror = "1.0.44"
+thiserror.workspace = true
 generic-array = "0.14.7"
 chacha20poly1305 = { version = "0.10.1", features = ["std"] }
 base64ct = "1.6.0"

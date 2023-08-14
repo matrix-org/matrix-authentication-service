@@ -89,7 +89,7 @@ impl Options {
         let templates = templates_from_config(&config.templates, &url_builder).await?;
 
         if !self.no_worker {
-            let mailer = mailer_from_config(&config.email, &templates).await?;
+            let mailer = mailer_from_config(&config.email, &templates)?;
             mailer.test_connection().await?;
 
             #[allow(clippy::disallowed_methods)]

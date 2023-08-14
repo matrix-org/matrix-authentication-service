@@ -25,10 +25,7 @@ use lettre::{
     },
     AsyncTransport, Tokio1Executor,
 };
-use mas_http::ClientInitError;
 use thiserror::Error;
-
-pub mod aws_ses;
 
 /// Encryption mode to use
 #[derive(Debug, Clone, Copy)]
@@ -51,7 +48,6 @@ enum TransportInner {
     Blackhole,
     Smtp(AsyncSmtpTransport<Tokio1Executor>),
     Sendmail(AsyncSendmailTransport<Tokio1Executor>),
-    AwsSes(aws_ses::Transport),
 }
 
 impl Transport {
@@ -101,16 +97,6 @@ impl Transport {
             AsyncSendmailTransport::new_with_command(command),
         ))
     }
-
-    /// Construct a AWS SES transport
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the HTTP client failed to initialize
-    pub async fn aws_ses() -> Result<Self, ClientInitError> {
-        let transport = aws_ses::Transport::from_env().await?;
-        Ok(Self::new(TransportInner::AwsSes(transport)))
-    }
 }
 
 impl Transport {
@@ -125,8 +111,7 @@ impl Transport {
             TransportInner::Smtp(t) => {
                 t.test_connection().await?;
             }
-            TransportInner::Blackhole | TransportInner::Sendmail(_) | TransportInner::AwsSes(_) => {
-            }
+            TransportInner::Blackhole | TransportInner::Sendmail(_) => {}
         }
 
         Ok(())
@@ -144,7 +129,6 @@ impl Default for TransportInner {
 pub enum Error {
     Smtp(#[from] lettre::transport::smtp::Error),
     Sendmail(#[from] lettre::transport::sendmail::Error),
-    AwsSes(#[from] self::aws_ses::Error),
 }
 
 #[async_trait]
@@ -163,9 +147,6 @@ impl AsyncTransport for Transport {
                 t.send_raw(envelope, email).await?;
             }
             TransportInner::Sendmail(t) => {
-                t.send_raw(envelope, email).await?;
-            }
-            TransportInner::AwsSes(t) => {
                 t.send_raw(envelope, email).await?;
             }
         };

@@ -36,15 +36,6 @@ impl<B> AsInjector for Request<B> {
     }
 }
 
-#[cfg(feature = "aws-sdk")]
-impl AsInjector for aws_smithy_http::operation::Request {
-    type Injector<'a> = HeaderInjector<'a> where Self: 'a;
-
-    fn as_injector(&mut self) -> Self::Injector<'_> {
-        HeaderInjector(self.http_mut().headers_mut())
-    }
-}
-
 /// A [`Layer`] that adds a trace context to the request.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct TraceContextLayer {

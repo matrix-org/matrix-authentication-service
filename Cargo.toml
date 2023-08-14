@@ -4,43 +4,59 @@ members = ["crates/*"]
 
 [workspace.dependencies]
 
+# High-level error handling
+[workspace.dependencies.anyhow]
+version = "1.0.72"
+
+# Time utilities
 [workspace.dependencies.chrono]
 version = "0.4.26"
 default-features = false
 features = ["serde", "clock"]
 
-[profile.dev.package.num-bigint-dig]
-opt-level = 3
+# HTTP request/response
+[workspace.dependencies.http]
+version = "0.2.9"
 
-[profile.dev.package.sqlx-macros]
-opt-level = 3
+# Random values
+[workspace.dependencies.rand]
+version = "0.8.5"
 
-[profile.dev.package.cranelift-codegen]
-opt-level = 3
+# Serialization and deserialization
+[workspace.dependencies.serde]
+version = "1.0.183"
+features = ["derive"] # Most of the time, if we need serde, we need derive
 
-[profile.dev.package.regalloc2]
-opt-level = 3
+# JSON serialization and deserialization
+[workspace.dependencies.serde_json]
+version = "1.0.104"
 
-[profile.dev.package.argon2]
-opt-level = 3
+# Custom error types
+[workspace.dependencies.thiserror]
+version = "1.0.44"
 
-[profile.dev.package.pbkdf2]
-opt-level = 3
+# Logging and tracing
+[workspace.dependencies.tracing]
+version = "0.1.37"
 
-[profile.dev.package.bcrypt]
-opt-level = 3
+# URL manipulation
+[workspace.dependencies.url]
+version = "2.4.0"
+features = ["serde"]
 
-[profile.dev.package.sha2]
-opt-level = 3
-
-[profile.dev.package.digest]
-opt-level = 3
-
-[profile.dev.package.block-buffer]
-opt-level = 3
-
-[profile.dev.package.generic-array]
-opt-level = 3
+# A few profile opt-level tweaks to make the test suite run faster
+[profile.dev.package]
+num-bigint-dig.opt-level = 3
+sqlx-macros.opt-level = 3
+cranelift-codegen.opt-level = 3
+regalloc2.opt-level = 3
+argon2.opt-level = 3
+pbkdf2.opt-level = 3
+bcrypt.opt-level = 3
+sha2.opt-level = 3
+digest.opt-level = 3
+block-buffer.opt-level = 3
+generic-array.opt-level = 3
 
 
 # Until https://github.com/dylanhart/ulid-rs/pull/56 gets released

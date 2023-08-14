@@ -7,12 +7,12 @@ license = "Apache-2.0"
 
 [dependencies]
 chrono.workspace = true
-thiserror = "1.0.44"
-serde = "1.0.183"
-url = { version = "2.4.0", features = ["serde"] }
+thiserror.workspace = true
+serde.workspace = true
+url.workspace = true
 crc = "3.0.1"
 ulid = { version = "1.0.0", features = ["serde"] }
-rand = "0.8.5"
+rand.workspace = true
 rand_chacha = "0.3.1"
 
 mas-iana = { path = "../iana" }
