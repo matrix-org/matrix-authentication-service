@@ -32,7 +32,7 @@ use tracing::{info, info_span, warn, Instrument};
 
 use crate::util::{
     database_from_config, mailer_from_config, password_manager_from_config,
-    policy_factory_from_config, templates_from_config, watch_templates,
+    policy_factory_from_config, register_sighup, templates_from_config,
 };
 
 #[derive(Parser, Debug, Default)]
@@ -44,10 +44,6 @@ pub(super) struct Options {
     /// Do not start the task worker
     #[arg(long)]
     no_worker: bool,
-
-    /// Watch for changes for templates on the filesystem
-    #[arg(short, long)]
-    watch: bool,
 }
 
 impl Options {
@@ -134,10 +130,8 @@ impl Options {
         // Explicitly the config to properly zeroize secret keys
         drop(config);
 
-        // Watch for changes in templates if the --watch flag is present
-        if self.watch {
-            watch_templates(&templates).await?;
-        }
+        // Listen for SIGHUP
+        register_sighup(&templates)?;
 
         let graphql_schema = mas_handlers::graphql_schema(&pool, conn);
 

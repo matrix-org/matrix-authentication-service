@@ -50,7 +50,7 @@ zeroize = "1.6.0"
 
 # Various data types and utilities
 camino = "1.1.6"
-chrono = { version = "0.4.26", features = ["serde"] }
+chrono.workspace = true
 time = "0.3.25"
 url = { version = "2.4.0", features = ["serde"] }
 mime = "0.3.17"

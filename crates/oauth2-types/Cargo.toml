@@ -14,7 +14,7 @@ url = { version = "2.4.0", features = ["serde"] }
 parse-display = "0.8.2"
 indoc = "2.0.3"
 serde_with = { version = "3.2.0", features = ["chrono"] }
-chrono = "0.4.26"
+chrono.workspace = true
 sha2 = "0.10.7"
 data-encoding = "2.4.0"
 thiserror = "1.0.44"

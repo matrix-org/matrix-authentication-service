@@ -1,9 +1,9 @@
 [package]
 name = "mas-tasks"
 version = "0.1.0"
-authors = ["quentin gliech <quenting@element.io>"]
+authors = ["Quentin Gliech <quenting@element.io>"]
 edition = "2021"
-license = "apache-2.0"
+license = "Apache-2.0"
 
 [dependencies]
 anyhow = "1.0.72"
@@ -11,7 +11,7 @@ apalis-core = { version = "0.4.4", features = ["extensions", "tokio-comp", "stor
 apalis-cron = "0.4.4"
 async-stream = "0.3.5"
 async-trait = "0.1.72"
-chrono = "0.4.26"
+chrono.workspace = true
 event-listener = "2.5.3"
 futures-lite = "1.13.0"
 rand = "0.8.5"

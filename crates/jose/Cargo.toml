@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [dependencies]
 base64ct = { version = "1.6.0", features = ["std"] }
-chrono = { version = "0.4.26", features = ["serde"] }
+chrono.workspace = true
 digest = "0.10.7"
 ecdsa = { version = "0.16.8", features = ["signing", "verifying"] }
 elliptic-curve = "0.13.5"

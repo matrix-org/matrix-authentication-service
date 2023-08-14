@@ -9,7 +9,7 @@ license = "Apache-2.0"
 async-trait = "0.1.72"
 axum = { version = "0.6.20", features = ["headers"] }
 axum-extra = { version = "0.7.7", features = ["cookie-private"] }
-chrono = "0.4.26"
+chrono.workspace = true
 data-encoding = "2.4.0"
 futures-util = "0.3.28"
 headers = "0.3.8"

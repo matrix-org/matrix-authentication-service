@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [dependencies]
 async-trait = "0.1.72"
-chrono = "0.4.26"
+chrono.workspace = true
 thiserror = "1.0.44"
 futures-util = "0.3.28"
 
