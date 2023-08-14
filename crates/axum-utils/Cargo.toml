@@ -23,7 +23,7 @@ serde_with = "3.2.0"
 serde_urlencoded = "0.7.1"
 serde_json.workspace = true
 thiserror.workspace = true
-tokio = "1.30.0"
+tokio = "1.31.0"
 tower = { version = "0.4.13", features = ["util"] }
 tracing.workspace = true
 url.workspace = true
