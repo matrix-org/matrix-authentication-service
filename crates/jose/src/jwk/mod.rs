@@ -20,14 +20,13 @@ use mas_iana::jose::{
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use serde_with::{
-    base64::{Base64, Standard, UrlSafe},
-    formats::{Padded, Unpadded},
-    serde_as, skip_serializing_none,
-};
+use serde_with::skip_serializing_none;
 use url::Url;
 
-use crate::constraints::{Constrainable, Constraint, ConstraintSet};
+use crate::{
+    base64::{Base64, Base64UrlNoPad},
+    constraints::{Constrainable, Constraint, ConstraintSet},
+};
 
 pub(crate) mod private_parameters;
 pub(crate) mod public_parameters;
@@ -60,7 +59,6 @@ impl JwkEcCurve for k256::Secp256k1 {
     const CRV: JsonWebKeyEcEllipticCurve = JsonWebKeyEcEllipticCurve::Secp256K1;
 }
 
-#[serde_as]
 #[skip_serializing_none]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct JsonWebKey<P> {
@@ -85,18 +83,15 @@ pub struct JsonWebKey<P> {
 
     #[schemars(with = "Vec<String>")]
     #[serde(default)]
-    #[serde_as(as = "Option<Vec<Base64<Standard, Padded>>>")]
-    x5c: Option<Vec<Vec<u8>>>,
+    x5c: Option<Vec<Base64>>,
 
     #[schemars(with = "Option<String>")]
     #[serde(default)]
-    #[serde_as(as = "Option<Base64<UrlSafe, Unpadded>>")]
-    x5t: Option<Vec<u8>>,
+    x5t: Option<Base64UrlNoPad>,
 
     #[schemars(with = "Option<String>")]
     #[serde(default, rename = "x5t#S256")]
-    #[serde_as(as = "Option<Base64<UrlSafe, Unpadded>>")]
-    x5t_s256: Option<Vec<u8>>,
+    x5t_s256: Option<Base64UrlNoPad>,
 }
 
 pub type PublicJsonWebKey = JsonWebKey<self::public_parameters::JsonWebKeyPublicParameters>;
