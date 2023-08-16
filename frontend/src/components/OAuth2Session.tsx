@@ -24,6 +24,7 @@ import { FragmentType, graphql, useFragment } from "../gql";
 import Block from "./Block";
 import DateTime from "./DateTime";
 import Typography, { Body, Bold, Code } from "./Typography";
+import Session from "./Session/Session";
 
 const FRAGMENT = graphql(/* GraphQL */ `
   fragment OAuth2Session_session on Oauth2Session {
@@ -99,53 +100,59 @@ const OAuth2Session: React.FC<Props> = ({ session }) => {
   };
 
   return (
-    <Block>
-      <Typography variant="body" bold>
-        <Link
-          route={{ type: "client", id: data.client.id }}
-          className="text-links hover:text-links/75"
-        >
-          Client ID: <Code>{data.client.clientId}</Code>
-        </Link>
-      </Typography>
-      {data.client.clientName && (
-        <Body>
-          Client name: <Bold>{data.client.clientName}</Bold>
-        </Body>
-      )}
-      <Typography variant="caption">
-        Started <DateTime datetime={data.createdAt} />
-      </Typography>
-      {data.finishedAt && (
-        <p className="text-alert font-semibold">
-          Finished <DateTime datetime={data.finishedAt} />
-        </p>
-      )}
-      <hr className="my-2 border-t-2 border-grey-300" />
-      <div>
-        <Typography variant="body" bold>
-          Access:
-        </Typography>
-        <ul className="list-disc list-inside">
-          {data.scope.split(" ").map((scope) => (
-            <li key={scope}>
-              <Scope scope={scope} />
-            </li>
-          ))}
-        </ul>
-      </div>
-      {!data.finishedAt && (
-        <Button
-          kind="destructive"
-          size="sm"
-          className="mt-2"
-          onClick={onSessionEnd}
-          disabled={pending}
-        >
-          End session
-        </Button>
-      )}
-    </Block>
+    <Session
+      id={data.id}
+      createdAt={data.createdAt}
+      finishedAt={data.finishedAt}
+      clientName={data.client.clientName}
+    />
+    // <Block>
+    //   <Typography variant="body" bold>
+    //     <Link
+    //       route={{ type: "client", id: data.client.id }}
+    //       className="text-links hover:text-links/75"
+    //     >
+    //       Client ID: <Code>{data.client.clientId}</Code>
+    //     </Link>
+    //   </Typography>
+    //   {data.client.clientName && (
+    //     <Body>
+    //       Client name: <Bold>{data.client.clientName}</Bold>
+    //     </Body>
+    //   )}
+    //   <Typography variant="caption">
+    //     Started <DateTime datetime={data.createdAt} />
+    //   </Typography>
+    //   {data.finishedAt && (
+    //     <p className="text-alert font-semibold">
+    //       Finished <DateTime datetime={data.finishedAt} />
+    //     </p>
+    //   )}
+    //   <hr className="my-2 border-t-2 border-grey-300" />
+    //   <div>
+    //     <Typography variant="body" bold>
+    //       Access:
+    //     </Typography>
+    //     <ul className="list-disc list-inside">
+    //       {data.scope.split(" ").map((scope) => (
+    //         <li key={scope}>
+    //           <Scope scope={scope} />
+    //         </li>
+    //       ))}
+    //     </ul>
+    //   </div>
+    //   {!data.finishedAt && (
+    //     <Button
+    //       kind="destructive"
+    //       size="sm"
+    //       className="mt-2"
+    //       onClick={onSessionEnd}
+    //       disabled={pending}
+    //     >
+    //       End session
+    //     </Button>
+    //   )}
+    // </Block>
   );
 };
 

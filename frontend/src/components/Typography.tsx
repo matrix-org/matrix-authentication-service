@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { createElement, Children } from "react";
+import { createElement, Children, HTMLAttributes } from "react";
 
 type Variant = "headline" | "title" | "subtitle" | "body" | "caption" | "micro";
 
-type Props = {
+type Props = HTMLAttributes<Element> & {
   children: React.ReactNode;
   className?: string;
   variant: Variant;
@@ -48,12 +48,13 @@ const Typography: React.FC<Props> = ({
   bold,
   justified,
   className: extraClassName,
+  ...rest
 }) => {
   const element = elementMap[variant];
   const boldClass = bold ? "font-semibold" : "";
   const justifiedClass = justified ? "text-justify" : "";
   const className = `text-black dark:text-white ${boldClass} ${justifiedClass} ${classMap[variant]} ${extraClassName}`;
-  return createElement(element, { className }, ...Children.toArray(children));
+  return createElement(element, { className, ...rest }, ...Children.toArray(children));
 };
 
 type SimpleProps = { children: React.ReactNode };
