@@ -24,7 +24,7 @@ const SessionMetadata: React.FC<React.ComponentProps<typeof Body>> = (props) => 
 
 export type SessionProps = {
     id: string;
-    name: string;
+    name?: string;
     createdAt: number;
     finishedAt?: number;
     clientName?: string;
@@ -46,7 +46,7 @@ const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
             Finished <DateTime datetime={finishedAt} />
         </SessionMetadata>
       )}
-      { clientName && <SessionMetadata>
+      { !!clientName && <SessionMetadata>
         Client: <SessionMetadata weight="semibold" as="span">{ clientName }</SessionMetadata>
       </SessionMetadata>}
       { !!children && <div className={styles.sessionActions}>
