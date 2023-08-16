@@ -17,11 +17,12 @@ import React from "react";
 
 import Block from "../Block";
 import DateTime from "../DateTime";
-import Typography, { Body, Bold, Code } from "../Typography";
+import { Bold } from "../Typography";
+import { H1, H5, H6, Body } from "@vector-im/compound-web";
 
 import styles from "./Session.module.css";
 
-const SessionMetadata: React.FC<React.PropsWithChildren<{ bold?: boolean}>> = (props) => <Typography { ...props } variant="caption" className={styles.sessionMetadata}/>
+const SessionMetadata: React.FC<React.ComponentProps<typeof Body>> = (props) => <Body { ...props } size="sm" className={styles.sessionMetadata}/>
 
 export type SessionProps = {
     id: string;
@@ -30,29 +31,30 @@ export type SessionProps = {
     finishedAt?: number;
     clientName?: string;
 }
-const Session: React.FC<SessionProps> = ({
-  id, name, createdAt, finishedAt, clientName,
+const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
+  id, name, createdAt, finishedAt, clientName, children
 }) => {
   return (
     <Block>
-      <Typography variant="subtitle" bold className={styles.sessionName} title={id}>
+      <H6 variant="body" bold className={styles.sessionName} title={id}>
         { name || id }
-      </Typography>
+      </H6>
       
-      <SessionMetadata bold>
+      <SessionMetadata weight="semibold">
         Signed in <DateTime datetime={createdAt} />
       </SessionMetadata>
       {!!finishedAt && (
-        // <p className="text-alert font-semibold">
-        //   Finished <DateTime datetime={finishedAt} />
-        // </p>
-        <SessionMetadata bold data-finished={true}>
+        <SessionMetadata weight="semibold" data-finished={true}>
             Finished <DateTime datetime={finishedAt} />
         </SessionMetadata>
       )}
       { clientName && <SessionMetadata>
-        Client: <Bold>{ clientName }</Bold>
+        Client: <SessionMetadata weight="semibold" as="span">{ clientName }</SessionMetadata>
       </SessionMetadata>}
+      { !!children && <div className={styles.sessionActions}>
+          {children}
+      </div>
+}
     </Block>
   );
 };

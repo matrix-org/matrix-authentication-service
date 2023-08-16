@@ -25,6 +25,7 @@ import Block from "./Block";
 import DateTime from "./DateTime";
 import Typography, { Body, Bold, Code } from "./Typography";
 import Session from "./Session/Session";
+import LoadingSpinner from "./LoadingSpinner/LoadingSpinner";
 
 const FRAGMENT = graphql(/* GraphQL */ `
   fragment OAuth2Session_session on Oauth2Session {
@@ -93,6 +94,8 @@ const OAuth2Session: React.FC<Props> = ({ session }) => {
   const data = useFragment(FRAGMENT, session);
   const endSession = useSetAtom(endSessionFamily(data.id));
 
+  // @TODO(kerrya) make this wait for session refresh properly
+  // https://github.com/matrix-org/matrix-authentication-service/issues/1533
   const onSessionEnd = (): void => {
     startTransition(() => {
       endSession();
@@ -105,7 +108,20 @@ const OAuth2Session: React.FC<Props> = ({ session }) => {
       createdAt={data.createdAt}
       finishedAt={data.finishedAt}
       clientName={data.client.clientName}
-    />
+    >
+      {!data.finishedAt && (
+        <Button
+          kind="destructive"
+          size="sm"
+          onClick={onSessionEnd}
+          disabled={pending}
+        >
+          {/* @TODO(kerrya) put this back after pending state works properly */}
+          {/* { pending && <LoadingSpinner />} */}
+          End session
+        </Button>
+      )}
+    </Session>
     // <Block>
     //   <Typography variant="body" bold>
     //     <Link

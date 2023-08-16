@@ -21,10 +21,16 @@
 }
 
 .session-metadata {
-    /* TODO(kerrya) make Typography more flexible for text colour */
-    color: var(--cpd-color-text-secondary) !important;
+    color: var(--cpd-color-text-secondary);
 
     &[data-finished] {
-        color: var(--cpd-color-text-critical-primary) !important;
+        color: var(--cpd-color-text-critical-primary);
     }
+}
+
+.session-actions {
+    margin-top: var(--cpd-space-1x);
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
 }
