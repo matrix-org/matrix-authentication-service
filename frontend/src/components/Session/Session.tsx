@@ -12,13 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import classNames from "classnames";
 import React from "react";
 
 import Block from "../Block";
 import DateTime from "../DateTime";
-import { Bold } from "../Typography";
-import { H1, H5, H6, Body } from "@vector-im/compound-web";
+import { H6, Body } from "@vector-im/compound-web";
 
 import styles from "./Session.module.css";
 
@@ -36,7 +34,7 @@ const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
 }) => {
   return (
     <Block>
-      <H6 variant="body" bold className={styles.sessionName} title={id}>
+      <H6 className={styles.sessionName} title={id}>
         { name || id }
       </H6>
       

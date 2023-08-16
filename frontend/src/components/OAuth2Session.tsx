@@ -26,6 +26,7 @@ import DateTime from "./DateTime";
 import Typography, { Body, Bold, Code } from "./Typography";
 import Session from "./Session/Session";
 import LoadingSpinner from "./LoadingSpinner/LoadingSpinner";
+import { getDeviceIdFromScope } from "../utils/deviceIdFromScope";
 
 const FRAGMENT = graphql(/* GraphQL */ `
   fragment OAuth2Session_session on Oauth2Session {
@@ -41,6 +42,19 @@ const FRAGMENT = graphql(/* GraphQL */ `
     }
   }
 `);
+
+type Oauth2SessionType = {
+  id: string;
+  scope: string;
+  createdAt: number;
+  finishedAt?: number;
+  client: {
+    id: string;
+    clientId: string;
+    clientName: string;
+    clientUri: string;
+  }
+}
 
 const END_SESSION_MUTATION = graphql(/* GraphQL */ `
   mutation EndOAuth2Session($id: ID!) {
@@ -91,7 +105,7 @@ const Scope: React.FC<{ scope: string }> = ({ scope }) => {
 
 const OAuth2Session: React.FC<Props> = ({ session }) => {
   const [pending, startTransition] = useTransition();
-  const data = useFragment(FRAGMENT, session);
+  const data = useFragment<Oauth2SessionType>(FRAGMENT, session);
   const endSession = useSetAtom(endSessionFamily(data.id));
 
   // @TODO(kerrya) make this wait for session refresh properly
@@ -102,9 +116,12 @@ const OAuth2Session: React.FC<Props> = ({ session }) => {
     });
   };
 
+  const sessionName = getDeviceIdFromScope(data.scope);
+
   return (
     <Session
       id={data.id}
+      name={sessionName}
       createdAt={data.createdAt}
       finishedAt={data.finishedAt}
       clientName={data.client.clientName}
