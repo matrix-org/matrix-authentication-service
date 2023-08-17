@@ -10,5 +10,5 @@ anyhow.workspace = true
 serde.workspace = true
 async-trait = "0.1.72"
 http.workspace = true
-tokio = { version = "1.30.0", features = ["sync", "macros", "rt"] }
+tokio = { version = "1.32.0", features = ["sync", "macros", "rt"] }
 url.workspace = true
