@@ -17,7 +17,7 @@ exports[`<Session /> > renders a finished session 1`] = `
     <time
       dateTime="2023-06-29T15:35:17+12:00"
     >
-      Thu, 29 Jun 2023, 15:35
+      Thu, 29 Jun 2023, 04:35
     </time>
   </p>
   <p
@@ -28,7 +28,7 @@ exports[`<Session /> > renders a finished session 1`] = `
     <time
       dateTime="2023-06-29T15:35:19+12:00"
     >
-      Thu, 29 Jun 2023, 15:35
+      Thu, 29 Jun 2023, 04:35
     </time>
   </p>
 </div>
@@ -51,7 +51,7 @@ exports[`<Session /> > renders an active session 1`] = `
     <time
       dateTime="2023-06-29T15:35:17+12:00"
     >
-      Thu, 29 Jun 2023, 15:35
+      Thu, 29 Jun 2023, 04:35
     </time>
   </p>
 </div>
@@ -74,7 +74,7 @@ exports[`<Session /> > uses client name when truthy 1`] = `
     <time
       dateTime="2023-06-29T15:35:17+12:00"
     >
-      Thu, 29 Jun 2023, 15:35
+      Thu, 29 Jun 2023, 04:35
     </time>
   </p>
   <p
@@ -85,7 +85,7 @@ exports[`<Session /> > uses client name when truthy 1`] = `
     <time
       dateTime="2023-06-29T15:35:19+12:00"
     >
-      Thu, 29 Jun 2023, 15:35
+      Thu, 29 Jun 2023, 04:35
     </time>
   </p>
   <p
@@ -119,7 +119,7 @@ exports[`<Session /> > uses session name when truthy 1`] = `
     <time
       dateTime="2023-06-29T15:35:17+12:00"
     >
-      Thu, 29 Jun 2023, 15:35
+      Thu, 29 Jun 2023, 04:35
     </time>
   </p>
   <p
@@ -130,7 +130,7 @@ exports[`<Session /> > uses session name when truthy 1`] = `
     <time
       dateTime="2023-06-29T15:35:19+12:00"
     >
-      Thu, 29 Jun 2023, 15:35
+      Thu, 29 Jun 2023, 04:35
     </time>
   </p>
 </div>

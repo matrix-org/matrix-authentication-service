@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { create } from "react-test-renderer";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, beforeAll, it, vi } from "vitest";
 
 import Session from "./Session";
 
@@ -29,6 +29,22 @@ describe("<Session />", () => {
   };
 
   const finishedAt = "2023-06-29T03:35:19.451292+00:00";
+
+  beforeAll(() => {
+    // try to make these tests produce stable formatted dates whereever they are run
+    const DateTimeFormat = Intl.DateTimeFormat;
+    const defaultLocale = "en-GB";
+    const defaultTimezone = "Europe/London";
+    vi.spyOn(global.Intl, "DateTimeFormat").mockImplementation(
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore allow some ugly mocking
+      (locale: string, options: Record<string, unknown>) =>
+        new DateTimeFormat(locale || defaultLocale, {
+          ...options,
+          timeZone: defaultTimezone,
+        }),
+    );
+  });
 
   it("renders an active session", () => {
     const component = create(<Session {...defaultProps} />);
