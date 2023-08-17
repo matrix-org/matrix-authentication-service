@@ -29,7 +29,7 @@ export type SessionProps = {
     finishedAt?: number;
     clientName?: string;
 }
-const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
+export const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
   id, name, createdAt, finishedAt, clientName, children
 }) => {
   return (
@@ -56,5 +56,3 @@ const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
     </Block>
   );
 };
-
-export default Session;

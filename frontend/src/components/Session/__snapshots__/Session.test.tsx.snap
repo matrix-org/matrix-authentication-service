@@ -101,40 +101,6 @@ exports[`<Session /> > uses client name when truthy 1`] = `
 </div>
 `;
 
-exports[`<Session /> > uses session name when present 1`] = `
-<div
-  className="_block_17898c"
->
-  <h1
-    className="_font-body-md-semibold_1g2sj_69 _sessionName_634806"
-    title="session-id"
-  >
-    test session name
-  </h1>
-  <p
-    className="_font-body-sm-semibold_1g2sj_49 _sessionMetadata_634806"
-  >
-    Signed in 
-    <time
-      dateTime="2022-09-03T11:37:06+12:00"
-    >
-      Sat, 3 Sept 2022, 11:37
-    </time>
-  </p>
-  <p
-    className="_font-body-sm-semibold_1g2sj_49 _sessionMetadata_634806"
-    data-finished={true}
-  >
-    Finished 
-    <time
-      dateTime="2023-08-16T16:57:06+12:00"
-    >
-      now
-    </time>
-  </p>
-</div>
-`;
-
 exports[`<Session /> > uses session name when truthy 1`] = `
 <div
   className="_block_17898c"

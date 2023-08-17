@@ -20,7 +20,7 @@ const now = 1692161826865;
 vi.useFakeTimers();
 vi.setSystemTime(now);
 
-import Session from "./Session";
+import {Session} from "./Session";
 
 describe("<Session />", () => {
   const defaultProps = {

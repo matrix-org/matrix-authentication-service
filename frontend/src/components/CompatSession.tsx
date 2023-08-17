@@ -20,9 +20,8 @@ import { useTransition } from "react";
 
 import { FragmentType, graphql, useFragment } from "../gql";
 
-import Block from "./Block";
-import DateTime from "./DateTime";
-import { Body, Bold, Code } from "./Typography";
+import { Body, Bold } from "./Typography";
+import {Session} from "./Session";
 
 const LOGIN_FRAGMENT = graphql(/* GraphQL */ `
   fragment CompatSession_sso_login on CompatSsoLogin {
@@ -82,45 +81,24 @@ const CompatSession: React.FC<{
   };
 
   return (
-    <Block>
-      <Body>
-        Started: <DateTime datetime={data.createdAt} />
-      </Body>
-      {data.finishedAt ? (
-        <div className="text-alert font-semibold">
-          Finished: <DateTime datetime={data.finishedAt} />
-        </div>
-      ) : null}
-      <Body>
-        Device ID: <Code>{data.deviceId}</Code>
-      </Body>
-      {data.ssoLogin && <CompatSsoLogin login={data.ssoLogin} />}
-      {data.finishedAt ? null : (
-        <Button
-          className="mt-2"
-          size="sm"
-          disabled={pending}
-          onClick={onSessionEnd}
-          kind="destructive"
-        >
-          End session
-        </Button>
-      )}
-    </Block>
-  );
-};
-
-const CompatSsoLogin: React.FC<{
-  login: FragmentType<typeof LOGIN_FRAGMENT>;
-}> = ({ login }) => {
-  const data = useFragment(LOGIN_FRAGMENT, login);
-
-  return (
-    <>
-      <Body>
-        Redirect URI: <Bold>{data.redirectUri}</Bold>
-      </Body>
-    </>
+  <Session
+  id={data.id}
+  name={data.deviceId}
+  createdAt={data.createdAt}
+  finishedAt={data.finishedAt}
+  clientName={data.ssoLogin.redirectUri}
+  >
+  {!data.finishedAt && (
+    <Button
+      kind="destructive"
+      size="sm"
+      onClick={onSessionEnd}
+      disabled={pending}
+    >
+      End session
+    </Button>
+  )}
+  </Session>
   );
 };
 
