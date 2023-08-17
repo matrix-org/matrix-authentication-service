@@ -33,7 +33,7 @@ version = "1.0.104"
 
 # Custom error types
 [workspace.dependencies.thiserror]
-version = "1.0.44"
+version = "1.0.47"
 
 # Logging and tracing
 [workspace.dependencies.tracing]
