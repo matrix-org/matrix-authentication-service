@@ -78,8 +78,8 @@ export async function advisor(argv?: string[]): Promise<void> {
   if (synapseConfig.enable_registration_captcha) {
     error("Synapse config has registration CAPTCHA enabled which isn't supported by MAS: https://github.com/matrix-org/matrix-authentication-service/issues/138");
   }
-  if (synapseConfig.user_consent?.require_at_registration) {
-    warn("Synapse config has user_consent.require_at_registration enabled which will need to be disabled after migration");
+  if (synapseConfig.user_consent) {
+    warn("Synapse config has user_consent configured which will need to be disabled after migration");
   }
 
   const usersWithoutEmailAddress = await count(synapse.count("*").from<SUser>("users").leftOuterJoin<SUserThreePid>("user_threepids", "users.name", "user_threepids.user_id").whereNull("user_threepids.user_id"));
