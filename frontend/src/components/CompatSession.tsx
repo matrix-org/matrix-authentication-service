@@ -21,7 +21,7 @@ import { useTransition } from "react";
 import { FragmentType, graphql, useFragment } from "../gql";
 
 import { Body, Bold } from "./Typography";
-import {Session} from "./Session";
+import { Session } from "./Session";
 
 const LOGIN_FRAGMENT = graphql(/* GraphQL */ `
   fragment CompatSession_sso_login on CompatSsoLogin {
@@ -81,24 +81,24 @@ const CompatSession: React.FC<{
   };
 
   return (
-  <Session
-  id={data.id}
-  name={data.deviceId}
-  createdAt={data.createdAt}
-  finishedAt={data.finishedAt}
-  clientName={data.ssoLogin.redirectUri}
-  >
-  {!data.finishedAt && (
-    <Button
-      kind="destructive"
-      size="sm"
-      onClick={onSessionEnd}
-      disabled={pending}
+    <Session
+      id={data.id}
+      name={data.deviceId}
+      createdAt={data.createdAt}
+      finishedAt={data.finishedAt}
+      clientName={data.ssoLogin.redirectUri}
     >
-      End session
-    </Button>
-  )}
-  </Session>
+      {!data.finishedAt && (
+        <Button
+          kind="destructive"
+          size="sm"
+          onClick={onSessionEnd}
+          disabled={pending}
+        >
+          End session
+        </Button>
+      )}
+    </Session>
   );
 };
 

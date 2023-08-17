@@ -19,10 +19,9 @@ import { atomWithMutation } from "jotai-urql";
 import { useTransition } from "react";
 
 import { FragmentType, graphql, useFragment } from "../gql";
-
-import {Session} from "./Session/Session";
-// import LoadingSpinner from "./LoadingSpinner/LoadingSpinner";
 import { getDeviceIdFromScope } from "../utils/deviceIdFromScope";
+// import LoadingSpinner from "./LoadingSpinner/LoadingSpinner";
+import { Session } from "./Session/Session";
 
 const FRAGMENT = graphql(/* GraphQL */ `
   fragment OAuth2Session_session on Oauth2Session {
