@@ -22,6 +22,6 @@ const DEVICE_PREFIX = "urn:matrix:org.matrix.msc2967.client:device:";
  * @returns deviceId, or undefined when not a device scope
  */
 export const getDeviceIdFromScope = (scope: string): string | undefined => {
-    const [, deviceId] = scope.split(DEVICE_PREFIX);
-    return deviceId;
-}
+  const [, deviceId] = scope.split(DEVICE_PREFIX);
+  return deviceId;
+};

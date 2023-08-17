@@ -15,38 +15,42 @@
 import { create } from "react-test-renderer";
 import { describe, expect, it, vi } from "vitest";
 
+import Session from "./Session";
+
 const now = 1692161826865;
 
 vi.useFakeTimers();
 vi.setSystemTime(now);
 
-import {Session} from "./Session";
-
 describe("<Session />", () => {
   const defaultProps = {
-    id: 'session-id',
+    id: "session-id",
     createdAt: 1662161826165,
   };
 
   it("renders an active session", () => {
-    const component = create(<Session {...defaultProps } />);
+    const component = create(<Session {...defaultProps} />);
     expect(component.toJSON()).toMatchSnapshot();
   });
 
   it("renders a finished session", () => {
-    const component = create(<Session {...defaultProps } finishedAt={now} />);
+    const component = create(<Session {...defaultProps} finishedAt={now} />);
     expect(component.toJSON()).toMatchSnapshot();
   });
 
   it("uses session name when truthy", () => {
     const name = "test session name";
-    const component = create(<Session {...defaultProps } finishedAt={now} name={name} />);
+    const component = create(
+      <Session {...defaultProps} finishedAt={now} name={name} />,
+    );
     expect(component.toJSON()).toMatchSnapshot();
   });
 
   it("uses client name when truthy", () => {
     const clientName = "Element";
-    const component = create(<Session {...defaultProps } finishedAt={now} clientName={clientName} />);
+    const component = create(
+      <Session {...defaultProps} finishedAt={now} clientName={clientName} />,
+    );
     expect(component.toJSON()).toMatchSnapshot();
   });
 });

@@ -20,6 +20,7 @@ import { useTransition } from "react";
 
 import { FragmentType, graphql, useFragment } from "../gql";
 import { getDeviceIdFromScope } from "../utils/deviceIdFromScope";
+
 // import LoadingSpinner from "./LoadingSpinner/LoadingSpinner";
 import { Session } from "./Session/Session";
 
@@ -48,8 +49,8 @@ type Oauth2SessionType = {
     clientId: string;
     clientName: string;
     clientUri: string;
-  }
-}
+  };
+};
 
 const END_SESSION_MUTATION = graphql(/* GraphQL */ `
   mutation EndOAuth2Session($id: ID!) {

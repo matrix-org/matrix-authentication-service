@@ -20,9 +20,9 @@ import { useTransition } from "react";
 
 import { FragmentType, graphql, useFragment } from "../gql";
 
-import { Body, Bold } from "./Typography";
 import { Session } from "./Session";
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const LOGIN_FRAGMENT = graphql(/* GraphQL */ `
   fragment CompatSession_sso_login on CompatSsoLogin {
     id
