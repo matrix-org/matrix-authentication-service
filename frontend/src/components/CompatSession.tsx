@@ -43,6 +43,17 @@ const FRAGMENT = graphql(/* GraphQL */ `
   }
 `);
 
+type CompatSessionType = {
+  id: string;
+  deviceId: string;
+  createdAt: string;
+  finishedAt: string | null;
+  ssoLogin: {
+    id: string;
+    redirectUri: string;
+  };
+};
+
 const END_SESSION_MUTATION = graphql(/* GraphQL */ `
   mutation EndCompatSession($id: ID!) {
     endCompatSession(input: { compatSessionId: $id }) {
@@ -71,7 +82,7 @@ const CompatSession: React.FC<{
   session: FragmentType<typeof FRAGMENT>;
 }> = ({ session }) => {
   const [pending, startTransition] = useTransition();
-  const data = useFragment(FRAGMENT, session);
+  const data = useFragment(FRAGMENT, session) as CompatSessionType;
   const endCompatSession = useSetAtom(endCompatSessionFamily(data.id));
 
   const onSessionEnd = (): void => {
@@ -85,7 +96,7 @@ const CompatSession: React.FC<{
       id={data.id}
       name={data.deviceId}
       createdAt={data.createdAt}
-      finishedAt={data.finishedAt}
+      finishedAt={data.finishedAt || undefined}
       clientName={data.ssoLogin.redirectUri}
     >
       {!data.finishedAt && (

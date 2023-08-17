@@ -15,9 +15,9 @@ exports[`<Session /> > renders a finished session 1`] = `
   >
     Signed in 
     <time
-      dateTime="2022-09-03T11:37:06+12:00"
+      dateTime="2023-06-29T15:35:17+12:00"
     >
-      Sat, 3 Sept 2022, 11:37
+      Thu, 29 Jun 2023, 15:35
     </time>
   </p>
   <p
@@ -26,9 +26,9 @@ exports[`<Session /> > renders a finished session 1`] = `
   >
     Finished 
     <time
-      dateTime="2023-08-16T16:57:06+12:00"
+      dateTime="2023-06-29T15:35:19+12:00"
     >
-      now
+      Thu, 29 Jun 2023, 15:35
     </time>
   </p>
 </div>
@@ -49,9 +49,9 @@ exports[`<Session /> > renders an active session 1`] = `
   >
     Signed in 
     <time
-      dateTime="2022-09-03T11:37:06+12:00"
+      dateTime="2023-06-29T15:35:17+12:00"
     >
-      Sat, 3 Sept 2022, 11:37
+      Thu, 29 Jun 2023, 15:35
     </time>
   </p>
 </div>
@@ -72,9 +72,9 @@ exports[`<Session /> > uses client name when truthy 1`] = `
   >
     Signed in 
     <time
-      dateTime="2022-09-03T11:37:06+12:00"
+      dateTime="2023-06-29T15:35:17+12:00"
     >
-      Sat, 3 Sept 2022, 11:37
+      Thu, 29 Jun 2023, 15:35
     </time>
   </p>
   <p
@@ -83,9 +83,9 @@ exports[`<Session /> > uses client name when truthy 1`] = `
   >
     Finished 
     <time
-      dateTime="2023-08-16T16:57:06+12:00"
+      dateTime="2023-06-29T15:35:19+12:00"
     >
-      now
+      Thu, 29 Jun 2023, 15:35
     </time>
   </p>
   <p
@@ -117,9 +117,9 @@ exports[`<Session /> > uses session name when truthy 1`] = `
   >
     Signed in 
     <time
-      dateTime="2022-09-03T11:37:06+12:00"
+      dateTime="2023-06-29T15:35:17+12:00"
     >
-      Sat, 3 Sept 2022, 11:37
+      Thu, 29 Jun 2023, 15:35
     </time>
   </p>
   <p
@@ -128,9 +128,9 @@ exports[`<Session /> > uses session name when truthy 1`] = `
   >
     Finished 
     <time
-      dateTime="2023-08-16T16:57:06+12:00"
+      dateTime="2023-06-29T15:35:19+12:00"
     >
-      now
+      Thu, 29 Jun 2023, 15:35
     </time>
   </p>
 </div>

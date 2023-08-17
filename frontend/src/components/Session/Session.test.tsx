@@ -25,8 +25,10 @@ vi.setSystemTime(now);
 describe("<Session />", () => {
   const defaultProps = {
     id: "session-id",
-    createdAt: 1662161826165,
+    createdAt: "2023-06-29T03:35:17.451292+00:00",
   };
+
+  const finishedAt = "2023-06-29T03:35:19.451292+00:00";
 
   it("renders an active session", () => {
     const component = create(<Session {...defaultProps} />);
@@ -34,14 +36,16 @@ describe("<Session />", () => {
   });
 
   it("renders a finished session", () => {
-    const component = create(<Session {...defaultProps} finishedAt={now} />);
+    const component = create(
+      <Session {...defaultProps} finishedAt={finishedAt} />,
+    );
     expect(component.toJSON()).toMatchSnapshot();
   });
 
   it("uses session name when truthy", () => {
     const name = "test session name";
     const component = create(
-      <Session {...defaultProps} finishedAt={now} name={name} />,
+      <Session {...defaultProps} finishedAt={finishedAt} name={name} />,
     );
     expect(component.toJSON()).toMatchSnapshot();
   });
@@ -49,7 +53,11 @@ describe("<Session />", () => {
   it("uses client name when truthy", () => {
     const clientName = "Element";
     const component = create(
-      <Session {...defaultProps} finishedAt={now} clientName={clientName} />,
+      <Session
+        {...defaultProps}
+        finishedAt={finishedAt}
+        clientName={clientName}
+      />,
     );
     expect(component.toJSON()).toMatchSnapshot();
   });

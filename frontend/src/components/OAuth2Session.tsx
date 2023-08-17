@@ -22,7 +22,7 @@ import { FragmentType, graphql, useFragment } from "../gql";
 import { getDeviceIdFromScope } from "../utils/deviceIdFromScope";
 
 // import LoadingSpinner from "./LoadingSpinner/LoadingSpinner";
-import { Session } from "./Session/Session";
+import { Session } from "./Session";
 
 const FRAGMENT = graphql(/* GraphQL */ `
   fragment OAuth2Session_session on Oauth2Session {
@@ -42,8 +42,8 @@ const FRAGMENT = graphql(/* GraphQL */ `
 type Oauth2SessionType = {
   id: string;
   scope: string;
-  createdAt: number;
-  finishedAt?: number;
+  createdAt: string;
+  finishedAt: string | null;
   client: {
     id: string;
     clientId: string;
@@ -82,7 +82,7 @@ type Props = {
 
 const OAuth2Session: React.FC<Props> = ({ session }) => {
   const [pending, startTransition] = useTransition();
-  const data = useFragment<Oauth2SessionType>(FRAGMENT, session);
+  const data = useFragment(FRAGMENT, session) as Oauth2SessionType;
   const endSession = useSetAtom(endSessionFamily(data.id));
 
   // @TODO(kerrya) make this wait for session refresh properly
@@ -100,7 +100,7 @@ const OAuth2Session: React.FC<Props> = ({ session }) => {
       id={data.id}
       name={sessionName}
       createdAt={data.createdAt}
-      finishedAt={data.finishedAt}
+      finishedAt={data.finishedAt || undefined}
       clientName={data.client.clientName}
     >
       {!data.finishedAt && (
