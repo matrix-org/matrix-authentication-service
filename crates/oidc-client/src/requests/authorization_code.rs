@@ -16,9 +16,12 @@
 //!
 //! [Authorization Code flow]: https://openid.net/specs/openid-connect-core-1_0.html#CodeFlowAuth
 
+use std::{collections::HashSet, num::NonZeroU32};
+
 use base64ct::{Base64UrlUnpadded, Encoding};
 use chrono::{DateTime, Utc};
 use http::header::CONTENT_TYPE;
+use language_tags::LanguageTag;
 use mas_http::{CatchHttpCodesLayer, FormUrlencodedRequestLayer, JsonResponseLayer};
 use mas_iana::oauth::{OAuthAuthorizationEndpointResponseType, PkceCodeChallengeMethod};
 use mas_jose::claims::{self, TokenHash};
@@ -27,7 +30,7 @@ use oauth2_types::{
     prelude::CodeChallengeMethodExt,
     requests::{
         AccessTokenRequest, AccessTokenResponse, AuthorizationCodeGrant, AuthorizationRequest,
-        Prompt, PushedAuthorizationResponse,
+        Display, Prompt, PushedAuthorizationResponse,
     },
     scope::Scope,
 };
@@ -56,27 +59,137 @@ use crate::{
 };
 
 /// The data necessary to build an authorization request.
-#[derive(Debug, Clone, Copy)]
-pub struct AuthorizationRequestData<'a> {
+#[derive(Debug, Clone)]
+pub struct AuthorizationRequestData {
     /// The ID obtained when registering the client.
-    pub client_id: &'a str,
-
-    /// The PKCE methods supported by the issuer, from its metadata.
-    pub code_challenge_methods_supported: Option<&'a [PkceCodeChallengeMethod]>,
+    pub client_id: String,
 
     /// The scope to authorize.
     ///
     /// If the OpenID Connect scope token (`openid`) is not included, it will be
     /// added.
-    pub scope: &'a Scope,
+    pub scope: Scope,
 
     /// The URI to redirect the end-user to after the authorization.
     ///
     /// It must be one of the redirect URIs provided during registration.
-    pub redirect_uri: &'a Url,
+    pub redirect_uri: Url,
 
-    /// Optional hints for the action to be performed.
-    pub prompt: Option<&'a [Prompt]>,
+    /// The PKCE methods supported by the issuer.
+    ///
+    /// This field should be cloned from the provider metadata. If it is not
+    /// set, this security measure will not be used.
+    pub code_challenge_methods_supported: Option<Vec<PkceCodeChallengeMethod>>,
+
+    /// How the Authorization Server should display the authentication and
+    /// consent user interface pages to the End-User.
+    pub display: Option<Display>,
+
+    /// Whether the Authorization Server should prompt the End-User for
+    /// reauthentication and consent.
+    ///
+    /// If [`Prompt::None`] is used, it must be the only value.
+    pub prompt: Option<Vec<Prompt>>,
+
+    /// The allowable elapsed time in seconds since the last time the End-User
+    /// was actively authenticated by the OpenID Provider.
+    pub max_age: Option<NonZeroU32>,
+
+    /// End-User's preferred languages and scripts for the user interface.
+    pub ui_locales: Option<Vec<LanguageTag>>,
+
+    /// ID Token previously issued by the Authorization Server being passed as a
+    /// hint about the End-User's current or past authenticated session with the
+    /// Client.
+    pub id_token_hint: Option<String>,
+
+    /// Hint to the Authorization Server about the login identifier the End-User
+    /// might use to log in.
+    pub login_hint: Option<String>,
+
+    /// Requested Authentication Context Class Reference values.
+    pub acr_values: Option<HashSet<String>>,
+}
+
+impl AuthorizationRequestData {
+    /// Constructs a new `AuthorizationRequestData` with all the required
+    /// fields.
+    #[must_use]
+    pub fn new(client_id: String, scope: Scope, redirect_uri: Url) -> Self {
+        Self {
+            client_id,
+            scope,
+            redirect_uri,
+            code_challenge_methods_supported: None,
+            display: None,
+            prompt: None,
+            max_age: None,
+            ui_locales: None,
+            id_token_hint: None,
+            login_hint: None,
+            acr_values: None,
+        }
+    }
+
+    /// Set the `code_challenge_methods_supported` field of this
+    /// `AuthorizationRequestData`.
+    #[must_use]
+    pub fn with_code_challenge_methods_supported(
+        mut self,
+        code_challenge_methods_supported: Vec<PkceCodeChallengeMethod>,
+    ) -> Self {
+        self.code_challenge_methods_supported = Some(code_challenge_methods_supported);
+        self
+    }
+
+    /// Set the `display` field of this `AuthorizationRequestData`.
+    #[must_use]
+    pub fn with_display(mut self, display: Display) -> Self {
+        self.display = Some(display);
+        self
+    }
+
+    /// Set the `prompt` field of this `AuthorizationRequestData`.
+    #[must_use]
+    pub fn with_prompt(mut self, prompt: Vec<Prompt>) -> Self {
+        self.prompt = Some(prompt);
+        self
+    }
+
+    /// Set the `max_age` field of this `AuthorizationRequestData`.
+    #[must_use]
+    pub fn with_max_age(mut self, max_age: NonZeroU32) -> Self {
+        self.max_age = Some(max_age);
+        self
+    }
+
+    /// Set the `ui_locales` field of this `AuthorizationRequestData`.
+    #[must_use]
+    pub fn with_ui_locales(mut self, ui_locales: Vec<LanguageTag>) -> Self {
+        self.ui_locales = Some(ui_locales);
+        self
+    }
+
+    /// Set the `id_token_hint` field of this `AuthorizationRequestData`.
+    #[must_use]
+    pub fn with_id_token_hint(mut self, id_token_hint: String) -> Self {
+        self.id_token_hint = Some(id_token_hint);
+        self
+    }
+
+    /// Set the `login_hint` field of this `AuthorizationRequestData`.
+    #[must_use]
+    pub fn with_login_hint(mut self, login_hint: String) -> Self {
+        self.login_hint = Some(login_hint);
+        self
+    }
+
+    /// Set the `acr_values` field of this `AuthorizationRequestData`.
+    #[must_use]
+    pub fn with_acr_values(mut self, acr_values: HashSet<String>) -> Self {
+        self.acr_values = Some(acr_values);
+        self
+    }
 }
 
 /// The data necessary to validate a response from the Token endpoint in the
@@ -107,17 +220,22 @@ struct FullAuthorizationRequest {
 
 /// Build the authorization request.
 fn build_authorization_request(
-    authorization_data: AuthorizationRequestData<'_>,
+    authorization_data: AuthorizationRequestData,
     rng: &mut impl Rng,
 ) -> Result<(FullAuthorizationRequest, AuthorizationValidationData), AuthorizationError> {
     let AuthorizationRequestData {
         client_id,
-        code_challenge_methods_supported,
-        scope,
+        mut scope,
         redirect_uri,
+        code_challenge_methods_supported,
+        display,
         prompt,
+        max_age,
+        ui_locales,
+        id_token_hint,
+        login_hint,
+        acr_values,
     } = authorization_data;
-    let mut scope = scope.clone();
 
     // Generate a random CSRF "state" token and a nonce.
     let state = Alphanumeric.sample_string(rng, 16);
@@ -150,19 +268,19 @@ fn build_authorization_request(
     let auth_request = FullAuthorizationRequest {
         inner: AuthorizationRequest {
             response_type: OAuthAuthorizationEndpointResponseType::Code.into(),
-            client_id: client_id.to_owned(),
+            client_id,
             redirect_uri: Some(redirect_uri.clone()),
             scope,
             state: Some(state.clone()),
             response_mode: None,
             nonce: Some(nonce.clone()),
-            display: None,
-            prompt: prompt.map(ToOwned::to_owned),
-            max_age: None,
-            ui_locales: None,
-            id_token_hint: None,
-            login_hint: None,
-            acr_values: None,
+            display,
+            prompt,
+            max_age,
+            ui_locales,
+            id_token_hint,
+            login_hint,
+            acr_values,
             request: None,
             request_uri: None,
             registration: None,
@@ -173,7 +291,7 @@ fn build_authorization_request(
     let auth_data = AuthorizationValidationData {
         state,
         nonce,
-        redirect_uri: redirect_uri.clone(),
+        redirect_uri,
         code_challenge_verifier,
     };
 
@@ -213,7 +331,7 @@ fn build_authorization_request(
 #[allow(clippy::too_many_lines)]
 pub fn build_authorization_url(
     authorization_endpoint: Url,
-    authorization_data: AuthorizationRequestData<'_>,
+    authorization_data: AuthorizationRequestData,
     rng: &mut impl Rng,
 ) -> Result<(Url, AuthorizationValidationData), AuthorizationError> {
     tracing::debug!(
@@ -285,14 +403,13 @@ pub fn build_authorization_url(
 ///
 /// [Pushed Authorization Request]: https://oauth.net/2/pushed-authorization-requests/
 /// [`ClientErrorCode`]: oauth2_types::errors::ClientErrorCode
-#[allow(clippy::too_many_lines)]
 #[tracing::instrument(skip_all, fields(par_endpoint))]
 pub async fn build_par_authorization_url(
     http_service: &HttpService,
     client_credentials: ClientCredentials,
     par_endpoint: &Url,
     authorization_endpoint: Url,
-    authorization_data: AuthorizationRequestData<'_>,
+    authorization_data: AuthorizationRequestData,
     now: DateTime<Utc>,
     rng: &mut impl Rng,
 ) -> Result<(Url, AuthorizationValidationData), AuthorizationError> {

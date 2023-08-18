@@ -1165,7 +1165,7 @@ union Viewer = User | Anonymous
 """
 Represents the current viewer's session
 """
-union ViewerSession = BrowserSession | Anonymous
+union ViewerSession = BrowserSession | Oauth2Session | Anonymous
 
 schema {
   query: Query

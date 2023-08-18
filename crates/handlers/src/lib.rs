@@ -34,21 +34,26 @@ use std::{convert::Infallible, sync::Arc, time::Duration};
 
 use axum::{
     body::{Bytes, HttpBody},
-    extract::{FromRef, FromRequestParts},
+    extract::{FromRef, FromRequestParts, OriginalUri, State},
+    http::Method,
     response::{Html, IntoResponse},
     routing::{get, on, post, MethodFilter},
     Router,
 };
 use headers::HeaderName;
-use hyper::header::{
-    ACCEPT, ACCEPT_LANGUAGE, AUTHORIZATION, CONTENT_LANGUAGE, CONTENT_LENGTH, CONTENT_TYPE,
+use hyper::{
+    header::{
+        ACCEPT, ACCEPT_LANGUAGE, AUTHORIZATION, CONTENT_LANGUAGE, CONTENT_LENGTH, CONTENT_TYPE,
+    },
+    StatusCode, Version,
 };
+use mas_axum_utils::FancyError;
 use mas_http::CorsLayerExt;
 use mas_keystore::{Encrypter, Keystore};
 use mas_policy::PolicyFactory;
 use mas_router::{Route, UrlBuilder};
 use mas_storage::{BoxClock, BoxRepository, BoxRng};
-use mas_templates::{ErrorContext, Templates};
+use mas_templates::{ErrorContext, NotFoundContext, Templates};
 use passwords::PasswordManager;
 use sqlx::PgPool;
 use tower::util::AndThenLayer;
@@ -103,6 +108,7 @@ where
     S: Clone + Send + Sync + 'static,
     mas_graphql::Schema: FromRef<S>,
     BoxRepository: FromRequestParts<S>,
+    BoxClock: FromRequestParts<S>,
     Encrypter: FromRef<S>,
 {
     let mut router = Router::new().route(
@@ -367,4 +373,23 @@ where
                 Ok::<_, Infallible>(response)
             },
         ))
+}
+
+/// The fallback handler for all routes that don't match anything else.
+///
+/// # Errors
+///
+/// Returns an error if the template rendering fails.
+pub async fn fallback(
+    State(templates): State<Templates>,
+    OriginalUri(uri): OriginalUri,
+    method: Method,
+    version: Version,
+) -> Result<impl IntoResponse, FancyError> {
+    let ctx = NotFoundContext::new(&method, version, &uri);
+    // XXX: this should look at the Accept header and return JSON if requested
+
+    let res = templates.render_not_found(&ctx).await?;
+
+    Ok((StatusCode::NOT_FOUND, Html(res)))
 }

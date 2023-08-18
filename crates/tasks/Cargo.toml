@@ -1,32 +1,32 @@
 [package]
 name = "mas-tasks"
 version = "0.1.0"
-authors = ["quentin gliech <quenting@element.io>"]
+authors = ["Quentin Gliech <quenting@element.io>"]
 edition = "2021"
-license = "apache-2.0"
+license = "Apache-2.0"
 
 [dependencies]
-anyhow = "1.0.72"
+anyhow.workspace = true
 apalis-core = { version = "0.4.4", features = ["extensions", "tokio-comp", "storage"] }
 apalis-cron = "0.4.4"
 async-stream = "0.3.5"
 async-trait = "0.1.72"
-chrono = "0.4.26"
+chrono.workspace = true
 event-listener = "2.5.3"
 futures-lite = "1.13.0"
-rand = "0.8.5"
+rand.workspace = true
 rand_chacha = "0.3.1"
 sqlx = { version = "0.7.1", features = ["runtime-tokio-rustls", "postgres"] }
-thiserror = "1.0.44"
-tokio = { version = "1.29.1", features = ["rt"] }
+thiserror.workspace = true
+tokio = { version = "1.30.0", features = ["rt"] }
 tower = "0.4.13"
-tracing = "0.1.37"
-tracing-opentelemetry = "0.19.0"
-opentelemetry = "0.19.0"
+tracing.workspace = true
+tracing-opentelemetry = "0.20.0"
+opentelemetry = "0.20.0"
 ulid = "1.0.0"
-url = "2.4.0"
-serde = { version = "1.0.183", features = ["derive"] }
-serde_json = "1.0.104"
+url.workspace = true
+serde.workspace = true
+serde_json.workspace = true
 
 mas-data-model = { path = "../data-model" }
 mas-email = { path = "../email" }

@@ -27,6 +27,7 @@ fn meter() -> opentelemetry::metrics::Meter {
     opentelemetry::global::meter_with_version(
         env!("CARGO_PKG_NAME"),
         Some(env!("CARGO_PKG_VERSION")),
+        Some(opentelemetry_semantic_conventions::SCHEMA_URL),
         None,
     )
 }

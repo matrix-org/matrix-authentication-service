@@ -42,5 +42,7 @@ pub async fn get(
 
     let content = templates.render_index(&ctx).await?;
 
+    tracing::info!("rendered index page");
+
     Ok((cookie_jar, Html(content)))
 }

@@ -4,6 +4,9 @@ user := {"username": "john"}
 
 test_standard_scopes {
 	allow with input.user as user
+		with input.authorization_grant as {"scope": ""}
+
+	allow with input.user as user
 		with input.authorization_grant as {"scope": "openid"}
 
 	allow with input.user as user
@@ -60,4 +63,17 @@ test_synapse_admin_scopes {
 	not allow with input.user as user
 		with data.admin_users as []
 		with input.authorization_grant as {"scope": "urn:synapse:admin:*"}
+}
+
+test_mas_scopes {
+	allow with input.user as user
+		with input.authorization_grant as {"scope": "urn:mas:graphql:*"}
+
+	allow with input.user as user
+		with data.admin_users as ["john"]
+		with input.authorization_grant as {"scope": "urn:mas:admin"}
+
+	not allow with input.user as user
+		with data.admin_users as []
+		with input.authorization_grant as {"scope": "urn:mas:admin"}
 }

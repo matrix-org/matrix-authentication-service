@@ -27,7 +27,8 @@
 )]
 
 use async_graphql::EmptySubscription;
-use mas_data_model::{BrowserSession, User};
+use mas_data_model::{BrowserSession, Session, User};
+use ulid::Ulid;
 
 mod model;
 mod mutations;
@@ -60,18 +61,98 @@ pub enum Requester {
 
     /// The requester is a browser session, stored in a cookie.
     BrowserSession(BrowserSession),
+
+    /// The requester is a OAuth2 session, with an access token.
+    OAuth2Session(Session, User),
+}
+
+trait OwnerId {
+    fn owner_id(&self) -> Option<Ulid>;
+}
+
+impl OwnerId for User {
+    fn owner_id(&self) -> Option<Ulid> {
+        Some(self.id)
+    }
+}
+
+impl OwnerId for BrowserSession {
+    fn owner_id(&self) -> Option<Ulid> {
+        Some(self.user.id)
+    }
+}
+
+impl OwnerId for mas_data_model::UserEmail {
+    fn owner_id(&self) -> Option<Ulid> {
+        Some(self.user_id)
+    }
+}
+
+impl OwnerId for mas_data_model::CompatSession {
+    fn owner_id(&self) -> Option<Ulid> {
+        Some(self.user_id)
+    }
+}
+
+impl OwnerId for mas_data_model::UpstreamOAuthLink {
+    fn owner_id(&self) -> Option<Ulid> {
+        self.user_id
+    }
+}
+
+/// A dumb wrapper around a `Ulid` to implement `OwnerId` for it.
+pub struct UserId(Ulid);
+
+impl OwnerId for UserId {
+    fn owner_id(&self) -> Option<Ulid> {
+        Some(self.0)
+    }
 }
 
 impl Requester {
     fn browser_session(&self) -> Option<&BrowserSession> {
         match self {
             Self::BrowserSession(session) => Some(session),
-            Self::Anonymous => None,
+            Self::OAuth2Session(_, _) | Self::Anonymous => None,
         }
     }
 
     fn user(&self) -> Option<&User> {
-        self.browser_session().map(|session| &session.user)
+        match self {
+            Self::BrowserSession(session) => Some(&session.user),
+            Self::OAuth2Session(_session, user) => Some(user),
+            Self::Anonymous => None,
+        }
+    }
+
+    /// Returns true if the requester can access the resource.
+    fn is_owner_or_admin(&self, resource: &impl OwnerId) -> bool {
+        // If the requester is an admin, they can do anything.
+        if self.is_admin() {
+            return true;
+        }
+
+        // Otherwise, they must be the owner of the resource.
+        let Some(owner_id) = resource.owner_id() else {
+            return false;
+        };
+
+        let Some(user) = self.user() else {
+            return false;
+        };
+
+        user.id == owner_id
+    }
+
+    fn is_admin(&self) -> bool {
+        match self {
+            Self::OAuth2Session(session, _user) => {
+                // TODO: is this the right scope?
+                // This has to be in sync with the policy
+                session.scope.contains("urn:mas:admin")
+            }
+            Self::BrowserSession(_) | Self::Anonymous => false,
+        }
     }
 }
 

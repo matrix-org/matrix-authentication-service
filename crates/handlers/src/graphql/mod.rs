@@ -1,4 +1,4 @@
-// Copyright 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2022, 2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,23 +21,31 @@ use async_graphql::{
 use axum::{
     async_trait,
     extract::{BodyStream, RawQuery, State},
-    response::{Html, IntoResponse},
+    http::StatusCode,
+    response::{Html, IntoResponse, Response},
     Json, TypedHeader,
 };
 use axum_extra::extract::PrivateCookieJar;
 use futures_util::TryStreamExt;
-use headers::{ContentType, HeaderValue};
+use headers::{authorization::Bearer, Authorization, ContentType, HeaderValue};
 use hyper::header::CACHE_CONTROL;
-use mas_axum_utils::{FancyError, SessionInfoExt};
+use mas_axum_utils::{FancyError, SessionInfo, SessionInfoExt};
 use mas_graphql::{Requester, Schema};
 use mas_keystore::Encrypter;
 use mas_matrix::HomeserverConnection;
-use mas_storage::{BoxClock, BoxRepository, BoxRng, Repository, RepositoryError, SystemClock};
+use mas_storage::{
+    BoxClock, BoxRepository, BoxRng, Clock, Repository, RepositoryError, SystemClock,
+};
 use mas_storage_pg::PgRepository;
 use rand::{thread_rng, SeedableRng};
 use rand_chacha::ChaChaRng;
 use sqlx::PgPool;
 use tracing::{info_span, Instrument};
+
+use crate::impl_from_error_for_route;
+
+#[cfg(test)]
+mod tests;
 
 struct GraphQLState {
     pool: PgPool,
@@ -107,17 +115,129 @@ fn span_for_graphql_request(request: &async_graphql::Request) -> tracing::Span {
     span
 }
 
+#[derive(thiserror::Error, Debug)]
+pub enum RouteError {
+    #[error(transparent)]
+    Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
+
+    #[error("Loading of some database objects failed")]
+    LoadFailed,
+
+    #[error("Invalid access token")]
+    InvalidToken,
+
+    #[error("Missing scope")]
+    MissingScope,
+
+    #[error(transparent)]
+    ParseRequest(#[from] async_graphql::ParseRequestError),
+}
+
+impl_from_error_for_route!(mas_storage::RepositoryError);
+
+impl IntoResponse for RouteError {
+    fn into_response(self) -> Response {
+        sentry::capture_error(&self);
+
+        match self {
+            e @ (Self::Internal(_) | Self::LoadFailed) => {
+                let error = async_graphql::Error::new_with_source(e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!({"errors": [error]})),
+                )
+                    .into_response()
+            }
+
+            Self::InvalidToken => {
+                let error = async_graphql::Error::new("Invalid token");
+                (
+                    StatusCode::UNAUTHORIZED,
+                    Json(serde_json::json!({"errors": [error]})),
+                )
+                    .into_response()
+            }
+
+            Self::MissingScope => {
+                let error = async_graphql::Error::new("Missing urn:mas:graphql:* scope");
+                (
+                    StatusCode::UNAUTHORIZED,
+                    Json(serde_json::json!({"errors": [error]})),
+                )
+                    .into_response()
+            }
+
+            Self::ParseRequest(e) => {
+                let error = async_graphql::Error::new_with_source(e);
+                (
+                    StatusCode::BAD_REQUEST,
+                    Json(serde_json::json!({"errors": [error]})),
+                )
+                    .into_response()
+            }
+        }
+    }
+}
+
+async fn get_requester(
+    clock: &impl Clock,
+    mut repo: BoxRepository,
+    session_info: SessionInfo,
+    token: Option<&str>,
+) -> Result<Requester, RouteError> {
+    let requester = if let Some(token) = token {
+        let token = repo
+            .oauth2_access_token()
+            .find_by_token(token)
+            .await?
+            .ok_or(RouteError::InvalidToken)?;
+
+        let session = repo
+            .oauth2_session()
+            .lookup(token.session_id)
+            .await?
+            .ok_or(RouteError::LoadFailed)?;
+
+        // XXX: The user_id should really be directly on the OAuth session
+        let browser_session = repo
+            .browser_session()
+            .lookup(session.user_session_id)
+            .await?
+            .ok_or(RouteError::LoadFailed)?;
+
+        let user = browser_session.user;
+
+        if !token.is_valid(clock.now()) || !session.is_valid() || !user.is_valid() {
+            return Err(RouteError::InvalidToken);
+        }
+
+        if !session.scope.contains("urn:mas:graphql:*") {
+            return Err(RouteError::MissingScope);
+        }
+
+        Requester::OAuth2Session(session, user)
+    } else {
+        let maybe_session = session_info.load_session(&mut repo).await?;
+        Requester::from(maybe_session)
+    };
+    repo.cancel().await?;
+    Ok(requester)
+}
+
 pub async fn post(
     State(schema): State<Schema>,
-    mut repo: BoxRepository,
+    clock: BoxClock,
+    repo: BoxRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
     content_type: Option<TypedHeader<ContentType>>,
+    authorization: Option<TypedHeader<Authorization<Bearer>>>,
     body: BodyStream,
-) -> Result<impl IntoResponse, FancyError> {
+) -> Result<impl IntoResponse, RouteError> {
+    let token = authorization
+        .as_ref()
+        .map(|TypedHeader(Authorization(bearer))| bearer.token());
     let (session_info, _cookie_jar) = cookie_jar.session_info();
-    let maybe_session = session_info.load_session(&mut repo).await?;
-    let requester = Requester::from(maybe_session);
-    repo.cancel().await?;
+    let requester = get_requester(&clock, repo, session_info, token).await?;
 
     let content_type = content_type.map(|TypedHeader(h)| h.to_string());
 
@@ -146,14 +266,17 @@ pub async fn post(
 
 pub async fn get(
     State(schema): State<Schema>,
-    mut repo: BoxRepository,
+    clock: BoxClock,
+    repo: BoxRepository,
     cookie_jar: PrivateCookieJar<Encrypter>,
+    authorization: Option<TypedHeader<Authorization<Bearer>>>,
     RawQuery(query): RawQuery,
 ) -> Result<impl IntoResponse, FancyError> {
+    let token = authorization
+        .as_ref()
+        .map(|TypedHeader(Authorization(bearer))| bearer.token());
     let (session_info, _cookie_jar) = cookie_jar.session_info();
-    let maybe_session = session_info.load_session(&mut repo).await?;
-    let requester = Requester::from(maybe_session);
-    repo.cancel().await?;
+    let requester = get_requester(&clock, repo, session_info, token).await?;
 
     let request =
         async_graphql::http::parse_query_string(&query.unwrap_or_default())?.data(requester);

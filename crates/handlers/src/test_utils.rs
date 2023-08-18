@@ -12,18 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{convert::Infallible, sync::Arc};
+use std::{
+    convert::Infallible,
+    sync::{Arc, Mutex},
+};
 
 use axum::{
     async_trait,
-    body::HttpBody,
+    body::{Bytes, HttpBody},
     extract::{FromRef, FromRequestParts},
 };
 use headers::{Authorization, ContentType, HeaderMapExt, HeaderName};
 use hyper::{header::CONTENT_TYPE, Request, Response, StatusCode};
 use mas_axum_utils::http_client_factory::HttpClientFactory;
 use mas_keystore::{Encrypter, JsonWebKey, JsonWebKeySet, Keystore, PrivateKey};
-use mas_matrix::MockHomeserverConnection;
+use mas_matrix::{HomeserverConnection, MockHomeserverConnection};
 use mas_policy::PolicyFactory;
 use mas_router::{SimpleRoute, UrlBuilder};
 use mas_storage::{clock::MockClock, BoxClock, BoxRepository, BoxRng, Repository};
@@ -33,12 +36,10 @@ use rand::SeedableRng;
 use rand_chacha::ChaChaRng;
 use serde::{de::DeserializeOwned, Serialize};
 use sqlx::PgPool;
-use tokio::sync::Mutex;
 use tower::{Service, ServiceExt};
 
 use crate::{
     app_state::RepositoryError,
-    graphql_schema,
     passwords::{Hasher, PasswordManager},
     MatrixHomeserver,
 };
@@ -115,12 +116,20 @@ impl TestState {
 
         let policy_factory = Arc::new(policy_factory);
 
-        let graphql_schema = graphql_schema(&pool, homeserver_connection);
-
         let http_client_factory = HttpClientFactory::new(10);
 
         let clock = Arc::new(MockClock::default());
         let rng = Arc::new(Mutex::new(ChaChaRng::seed_from_u64(42)));
+
+        let graphql_state = TestGraphQLState {
+            pool: pool.clone(),
+            homeserver_connection,
+            rng: Arc::clone(&rng),
+            clock: Arc::clone(&clock),
+        };
+        let state: mas_graphql::BoxState = Box::new(graphql_state);
+
+        let graphql_schema = mas_graphql::schema_builder().data(state).finish();
 
         Ok(Self {
             pool,
@@ -141,6 +150,8 @@ impl TestState {
     pub async fn request<B>(&self, request: Request<B>) -> Response<String>
     where
         B: HttpBody + Send + 'static,
+        <B as HttpBody>::Data: Into<Bytes>,
+        <B as HttpBody>::Error: std::error::Error + Send + Sync,
         B::Error: std::error::Error + Send + Sync,
         B::Data: Send,
     {
@@ -149,6 +160,7 @@ impl TestState {
             .merge(crate::api_router())
             .merge(crate::compat_router())
             .merge(crate::human_router(self.templates.clone()))
+            .merge(crate::graphql_router(false))
             .with_state(self.clone());
 
         // Both unwrap are on Infallible, so this is safe
@@ -208,6 +220,40 @@ impl TestState {
             StatusCode::UNAUTHORIZED => false,
             _ => panic!("Unexpected status code: {}", response.status()),
         }
+    }
+}
+
+struct TestGraphQLState {
+    pool: PgPool,
+    homeserver_connection: MockHomeserverConnection,
+    clock: Arc<MockClock>,
+    rng: Arc<Mutex<ChaChaRng>>,
+}
+
+#[async_trait]
+impl mas_graphql::State for TestGraphQLState {
+    async fn repository(&self) -> Result<BoxRepository, mas_storage::RepositoryError> {
+        let repo = PgRepository::from_pool(&self.pool)
+            .await
+            .map_err(mas_storage::RepositoryError::from_error)?;
+
+        Ok(repo
+            .map_err(mas_storage::RepositoryError::from_error)
+            .boxed())
+    }
+
+    fn homeserver_connection(&self) -> &dyn HomeserverConnection<Error = anyhow::Error> {
+        &self.homeserver_connection
+    }
+
+    fn clock(&self) -> BoxClock {
+        Box::new(self.clock.clone())
+    }
+
+    fn rng(&self) -> BoxRng {
+        let mut parent_rng = self.rng.lock().expect("Failed to lock RNG");
+        let rng = ChaChaRng::from_rng(&mut *parent_rng).expect("Failed to seed RNG");
+        Box::new(rng)
     }
 }
 
@@ -291,7 +337,7 @@ impl FromRequestParts<TestState> for BoxRng {
         _parts: &mut axum::http::request::Parts,
         state: &TestState,
     ) -> Result<Self, Self::Rejection> {
-        let mut parent_rng = state.rng.lock().await;
+        let mut parent_rng = state.rng.lock().expect("Failed to lock RNG");
         let rng = ChaChaRng::from_rng(&mut *parent_rng).expect("Failed to seed RNG");
         Ok(Box::new(rng))
     }

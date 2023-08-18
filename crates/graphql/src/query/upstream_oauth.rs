@@ -41,17 +41,19 @@ impl UpstreamOAuthQuery {
         let id = NodeType::UpstreamOAuth2Link.extract_ulid(&id)?;
         let requester = ctx.requester();
 
-        let Some(current_user) = requester.user() else {
+        let mut repo = state.repository().await?;
+        let link = repo.upstream_oauth_link().lookup(id).await?;
+        repo.cancel().await?;
+
+        let Some(link) = link else {
             return Ok(None);
         };
-        let mut repo = state.repository().await?;
 
-        let link = repo.upstream_oauth_link().lookup(id).await?;
+        if !requester.is_owner_or_admin(&link) {
+            return Ok(None);
+        }
 
-        // Ensure that the link belongs to the current user
-        let link = link.filter(|link| link.user_id == Some(current_user.id));
-
-        Ok(link.map(UpstreamOAuth2Link::new))
+        Ok(Some(UpstreamOAuth2Link::new(link)))
     }
 
     /// Fetch an upstream OAuth 2.0 provider by its ID.
@@ -67,7 +69,11 @@ impl UpstreamOAuthQuery {
         let provider = repo.upstream_oauth_provider().lookup(id).await?;
         repo.cancel().await?;
 
-        Ok(provider.map(UpstreamOAuth2Provider::new))
+        let Some(provider) = provider else {
+            return Ok(None);
+        };
+
+        Ok(Some(UpstreamOAuth2Provider::new(provider)))
     }
 
     /// Get a list of upstream OAuth 2.0 providers.

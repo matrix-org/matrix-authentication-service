@@ -18,6 +18,7 @@ use async_graphql::{Context, Description, Enum, InputObject, Object, ID};
 use crate::{
     model::{NodeType, User},
     state::ContextExt,
+    UserId,
 };
 
 #[derive(Default)]
@@ -82,11 +83,17 @@ impl MatrixMutations {
         let id = NodeType::User.extract_ulid(&input.user_id)?;
         let requester = ctx.requester();
 
-        let user = requester.user().context("Unauthorized")?;
-
-        if user.id != id {
+        if !requester.is_owner_or_admin(&UserId(id)) {
             return Err(async_graphql::Error::new("Unauthorized"));
         }
+
+        let mut repo = state.repository().await?;
+        let user = repo
+            .user()
+            .lookup(id)
+            .await?
+            .context("Failed to lookup user")?;
+        repo.cancel().await?;
 
         let conn = state.homeserver_connection();
         let mxid = conn.mxid(&user.username);

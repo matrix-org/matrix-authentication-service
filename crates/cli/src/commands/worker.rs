@@ -46,7 +46,7 @@ impl Options {
         // Load and compile the templates
         let templates = templates_from_config(&config.templates, &url_builder).await?;
 
-        let mailer = mailer_from_config(&config.email, &templates).await?;
+        let mailer = mailer_from_config(&config.email, &templates)?;
         mailer.test_connection().await?;
 
         let http_client_factory = HttpClientFactory::new(50);

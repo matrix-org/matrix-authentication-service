@@ -873,7 +873,7 @@ export enum VerifyEmailStatus {
 export type Viewer = Anonymous | User;
 
 /** Represents the current viewer's session */
-export type ViewerSession = Anonymous | BrowserSession;
+export type ViewerSession = Anonymous | BrowserSession | Oauth2Session;
 
 export type CurrentViewerQueryQueryVariables = Exact<{ [key: string]: never }>;
 
@@ -892,7 +892,8 @@ export type CurrentViewerSessionQueryQuery = {
   __typename?: "Query";
   viewerSession:
     | { __typename: "Anonymous"; id: string }
-    | { __typename: "BrowserSession"; id: string };
+    | { __typename: "BrowserSession"; id: string }
+    | { __typename: "Oauth2Session" };
 };
 
 export type AddEmailMutationVariables = Exact<{

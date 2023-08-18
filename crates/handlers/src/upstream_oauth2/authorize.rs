@@ -86,13 +86,15 @@ pub(crate) async fn get(
 
     let redirect_uri = url_builder.upstream_oauth_callback(provider.id);
 
-    let data = AuthorizationRequestData {
-        client_id: &provider.client_id,
-        scope: &provider.scope,
-        prompt: None,
-        redirect_uri: &redirect_uri,
-        code_challenge_methods_supported: metadata.code_challenge_methods_supported.as_deref(),
-    };
+    let mut data = AuthorizationRequestData::new(
+        provider.client_id.clone(),
+        provider.scope.clone(),
+        redirect_uri,
+    );
+
+    if let Some(methods) = metadata.code_challenge_methods_supported.clone() {
+        data = data.with_code_challenge_methods_supported(methods);
+    }
 
     // Build an authorization request for it
     let (url, data) = mas_oidc_client::requests::authorization_code::build_authorization_url(

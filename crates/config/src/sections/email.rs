@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![allow(deprecated)]
+
 use std::num::NonZeroU16;
 
 use async_trait::async_trait;
@@ -78,6 +80,7 @@ pub enum EmailTransportConfig {
     },
 
     /// Send emails via the AWS SESv2 API
+    #[deprecated(note = "The AWS SESv2 backend has be removed.")]
     AwsSes,
 }
 

@@ -655,6 +655,7 @@
         },
         {
           "description": "Send emails via the AWS SESv2 API",
+          "deprecated": true,
           "type": "object",
           "required": [
             "transport"

@@ -16,7 +16,7 @@ use std::future::Future;
 
 use opentelemetry::{
     metrics::{Unit, UpDownCounter},
-    Context, KeyValue,
+    KeyValue,
 };
 use pin_project_lite::pin_project;
 use tower::{Layer, Service};
@@ -98,7 +98,7 @@ struct InFlightGuard {
 
 impl InFlightGuard {
     fn new(counter: UpDownCounter<i64>, attributes: Vec<KeyValue>) -> Self {
-        counter.add(&Context::new(), 1, &attributes);
+        counter.add(1, &attributes);
 
         Self {
             counter,
@@ -109,7 +109,7 @@ impl InFlightGuard {
 
 impl Drop for InFlightGuard {
     fn drop(&mut self) {
-        self.counter.add(&Context::new(), -1, &self.attributes);
+        self.counter.add(-1, &self.attributes);
     }
 }
 
