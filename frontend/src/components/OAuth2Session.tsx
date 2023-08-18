@@ -24,7 +24,7 @@ import { getDeviceIdFromScope } from "../utils/deviceIdFromScope";
 // import LoadingSpinner from "./LoadingSpinner/LoadingSpinner";
 import { Session } from "./Session";
 
-const FRAGMENT = graphql(/* GraphQL */ `
+export const OAUTH2_SESSION_FRAGMENT = graphql(/* GraphQL */ `
   fragment OAuth2Session_session on Oauth2Session {
     id
     scope
@@ -77,12 +77,15 @@ const endSessionFamily = atomFamily((id: string) => {
 });
 
 type Props = {
-  session: FragmentType<typeof FRAGMENT>;
+  session: FragmentType<typeof OAUTH2_SESSION_FRAGMENT>;
 };
 
 const OAuth2Session: React.FC<Props> = ({ session }) => {
   const [pending, startTransition] = useTransition();
-  const data = useFragment(FRAGMENT, session) as Oauth2SessionType;
+  const data = useFragment(
+    OAUTH2_SESSION_FRAGMENT,
+    session,
+  ) as Oauth2SessionType;
   const endSession = useSetAtom(endSessionFamily(data.id));
 
   // @TODO(kerrya) make this wait for session refresh properly

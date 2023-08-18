@@ -30,7 +30,7 @@ const LOGIN_FRAGMENT = graphql(/* GraphQL */ `
   }
 `);
 
-const FRAGMENT = graphql(/* GraphQL */ `
+export const COMPAT_SESSION_FRAGMENT = graphql(/* GraphQL */ `
   fragment CompatSession_session on CompatSession {
     id
     createdAt
@@ -79,10 +79,13 @@ const endCompatSessionFamily = atomFamily((id: string) => {
 });
 
 const CompatSession: React.FC<{
-  session: FragmentType<typeof FRAGMENT>;
+  session: FragmentType<typeof COMPAT_SESSION_FRAGMENT>;
 }> = ({ session }) => {
   const [pending, startTransition] = useTransition();
-  const data = useFragment(FRAGMENT, session) as CompatSessionType;
+  const data = useFragment(
+    COMPAT_SESSION_FRAGMENT,
+    session,
+  ) as CompatSessionType;
   const endCompatSession = useSetAtom(endCompatSessionFamily(data.id));
 
   const onSessionEnd = (): void => {
