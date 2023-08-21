@@ -28,6 +28,13 @@ createdb --owner=mas_user mas
 
 The above will create a user called `mas_user` with a password of your choice, and a database called `mas` owned by the `mas_user` user.
 
+Finally, the [`pgcrypto`](https://www.postgresql.org/docs/current/pgcrypto.html) extension must be enabled in the `mas` database.
+
+```
+psql -U mas_user mas
+CREATE EXTENSION pgcrypto;
+```
+
 ## Service configuration
 
 Once the database is created, the service needs to be configured to connect to it.
