@@ -53,6 +53,9 @@ module.exports = {
             alphabetize: { order: "asc" },
           },
         ],
+        // override enzyme deprecation from matrix-eslint
+        // as it causes errors
+        "deprecate/import": "off",
       },
       settings: {
         "import/resolver": {

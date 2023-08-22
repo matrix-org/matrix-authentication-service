@@ -16,6 +16,5 @@
 .block-list {
     display: flex;
     flex-direction: column;
-    gap: var(--cpd-space-4x);
     align-content: flex-start;
 }

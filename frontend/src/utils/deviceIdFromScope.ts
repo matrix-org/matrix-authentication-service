@@ -13,12 +13,15 @@
  * limitations under the License.
  */
 
-.block {
-    color: var(--cpd-color-text-primary);
-    padding: var(--cpd-space-5x) 0;
-    border-bottom: 1px solid var(--cpd-color-border-interactive-secondary);
+const DEVICE_PREFIX = "urn:matrix:org.matrix.msc2967.client:device:";
 
-    &:last-child {
-        border-bottom: none;
-    }
-}
+/**
+ * Device scopes are suffixed with the deviceId
+ * Isolate the suffix so we can display it
+ * @param scope the full scope of the session
+ * @returns deviceId, or undefined when not a device scope
+ */
+export const getDeviceIdFromScope = (scope: string): string | undefined => {
+  const [, deviceId] = scope.split(DEVICE_PREFIX);
+  return deviceId;
+};
