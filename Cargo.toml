@@ -6,7 +6,7 @@ members = ["crates/*"]
 
 # High-level error handling
 [workspace.dependencies.anyhow]
-version = "1.0.72"
+version = "1.0.75"
 
 # Time utilities
 [workspace.dependencies.chrono]
