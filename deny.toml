@@ -65,9 +65,6 @@ skip = [
     { name = "regex-automata", version = "0.1.10" }, # ^
     { name = "ordered-float", version = "2.10.0" }, # opentelemetry-jaeger -> thrift depends on the old version
     { name = "rustix", version = "0.37.23" }, # wasmtime depends on the old version
-    { name = "object", version = "0.30.4" }, # wasmtime depends on the old version
-    { name = "memoffset", version = "0.8.0" }, # wasmtime depends on the old version
-    { name = "addr2line", version = "0.19.0" }, # wasmtime depends on the old version
     { name = "itertools", version = "0.10.5" }, # wasmtime & others depends on the old version
     { name = "idna", version = "0.3.0" }, # lettre depends on an old version
     { name = "hashbrown" }, # Too many versions :(

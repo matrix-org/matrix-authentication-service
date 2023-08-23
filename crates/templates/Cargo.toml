@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [dependencies]
 tracing.workspace = true
-tokio = { version = "1.30.0", features = ["macros", "rt", "fs"] }
+tokio = { version = "1.32.0", features = ["macros", "rt", "fs"] }
 
 anyhow.workspace = true
 thiserror.workspace = true

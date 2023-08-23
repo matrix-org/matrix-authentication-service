@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [dependencies]
 # Async runtime
-tokio = { version = "1.30.0", features = ["macros"] }
+tokio = { version = "1.32.0", features = ["macros"] }
 futures-util = "0.3.28"
 
 # Logging and tracing
@@ -28,7 +28,7 @@ axum = "0.6.20"
 axum-macros = "0.3.8"
 axum-extra = { version = "0.7.7", features = ["cookie-private"] }
 
-async-graphql = { version = "6.0.1", features = ["tracing", "apollo_tracing"] }
+async-graphql = { version = "6.0.4", features = ["tracing", "apollo_tracing"] }
 
 # Emails
 lettre = { version = "0.10.4", default-features = false, features = ["builder"] }
@@ -38,7 +38,7 @@ sqlx = { version = "0.7.1", features = ["runtime-tokio-rustls", "postgres"] }
 
 # Various structure (de)serialization
 serde.workspace = true
-serde_with = { version = "3.2.0", features = ["hex", "chrono"] }
+serde_with = { version = "3.3.0", features = ["hex", "chrono"] }
 serde_json.workspace = true
 serde_urlencoded = "0.7.1"
 

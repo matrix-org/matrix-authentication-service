@@ -12,7 +12,7 @@ http-body = "0.4.5"
 hyper = { version = "0.14.27", features = ["server", "http1", "http2", "tcp"] }
 pin-project-lite = "0.2.12"
 thiserror.workspace = true
-tokio = { version = "1.30.0", features = ["net", "rt", "macros", "signal", "time"] }
+tokio = { version = "1.32.0", features = ["net", "rt", "macros", "signal", "time"] }
 tokio-rustls = "0.24.1"
 tower-http = { version = "0.4.3", features = ["add-extension"] }
 tower-service = "0.3.2"
@@ -22,8 +22,8 @@ libc = "0.2.147"
 [dev-dependencies]
 anyhow.workspace = true
 rustls-pemfile = "1.0.3"
-tokio = { version = "1.30.0", features = ["net", "rt", "macros", "signal", "time", "rt-multi-thread"] }
-tokio-test = "0.4.2"
+tokio = { version = "1.32.0", features = ["net", "rt", "macros", "signal", "time", "rt-multi-thread"] }
+tokio-test = "0.4.3"
 tracing-subscriber = "0.3.17"
 
 [[example]]
