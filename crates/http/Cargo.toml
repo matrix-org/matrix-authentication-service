@@ -27,7 +27,6 @@ tower = { version = "0.4.13", features = [] }
 tower-http = { version = "0.4.3", features = ["cors"] }
 tracing.workspace = true
 tracing-opentelemetry = "0.20.0"
-webpki = { version = "0.22.0", optional = true }
 webpki-roots = { version = "0.25.2", optional = true }
 
 mas-tower = { path = "../tower" }
@@ -46,7 +45,6 @@ client = [
   "hyper/tcp",
   "dep:hyper-rustls",
   "dep:tokio",
-  "dep:webpki",
   "tower/limit",
   "tower-http/timeout",
   "tower-http/follow-redirect",
