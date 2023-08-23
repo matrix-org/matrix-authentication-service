@@ -6,7 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-async-trait = "0.1.72"
+async-trait = "0.1.73"
 tracing.workspace = true
 thiserror.workspace = true
 headers = "0.3.8"

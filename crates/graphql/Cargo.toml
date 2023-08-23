@@ -8,7 +8,7 @@ license = "Apache-2.0"
 [dependencies]
 anyhow.workspace = true
 async-graphql = { version = "6.0.4", features = ["chrono", "url"] }
-async-trait = "0.1.72"
+async-trait = "0.1.73"
 chrono.workspace = true
 lettre = { version = "0.10.4", default-features = false  }
 serde.workspace = true
