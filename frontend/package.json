@@ -67,7 +67,7 @@
     "eslint-plugin-prettier": "^5.0.0",
     "happy-dom": "^10.9.0",
     "postcss": "^8.4.27",
-    "prettier": "3.0.1",
+    "prettier": "3.0.2",
     "react-test-renderer": "^18.2.0",
     "rimraf": "^5.0.1",
     "storybook": "^7.3.2",
