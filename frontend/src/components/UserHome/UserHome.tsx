@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Alert, Body } from "@vector-im/compound-web";
+import { Alert, Body, H3, H6 } from "@vector-im/compound-web";
 import { useState } from "react";
 
 import { Link } from "../../Router";
 import { FragmentType, graphql, useFragment } from "../../gql";
+import Block from "../Block/Block";
 
 export const FRAGMENT = graphql(/* GraphQL */ `
   fragment UserHome_user on User {
@@ -59,6 +60,10 @@ const UserHome: React.FC<{
     setDismiss(true);
   };
 
+  // allow this until we get i18n
+  const pluraliseSession = (count: number): string =>
+    count === 1 ? "session" : "sessions";
+
   return (
     <>
       {data.unverifiedEmails.totalCount > 0 && !dismiss && (
@@ -67,18 +72,39 @@ const UserHome: React.FC<{
           address(es). <Link route={{ type: "profile" }}>Check</Link>
         </Alert>
       )}
-      <Body>
-        {data.browserSessions.totalCount} active browser session(s).{" "}
-        <Link route={{ type: "browser-session-list" }}>View all</Link>
-      </Body>
-      <Body>
-        {data.oauth2Sessions.totalCount} active OAuth2 session(s).{" "}
-        <Link route={{ type: "oauth2-session-list" }}>View all</Link>
-      </Body>
-      <Body>
-        {data.compatSessions.totalCount} active compatibility layer session(s).{" "}
-        <Link route={{ type: "compat-session-list" }}>View all</Link>
-      </Body>
+      <section className="m-4 flex flex-col gap-2">
+        <H3>Where you're signed in</H3>
+        <Block className="flex flex-row justify-between align-center gap-1">
+          <div className="flex flex-col">
+            <H6>Browser</H6>
+            <Body>
+              {data.browserSessions.totalCount} active{" "}
+              {pluraliseSession(data.browserSessions.totalCount)}
+            </Body>
+          </div>
+          <Link route={{ type: "browser-session-list" }}>View all</Link>
+        </Block>
+        <Block className="flex flex-row justify-between align-center gap-1">
+          <div className="flex flex-col">
+            <H6>New apps</H6>
+            <Body>
+              {data.oauth2Sessions.totalCount} active{" "}
+              {pluraliseSession(data.oauth2Sessions.totalCount)}
+            </Body>
+          </div>
+          <Link route={{ type: "oauth2-session-list" }}>View all</Link>
+        </Block>
+        <Block className="flex flex-row justify-between align-center gap-1">
+          <div className="flex flex-col">
+            <H6>Regular apps</H6>
+            <Body>
+              {data.compatSessions.totalCount} active{" "}
+              {pluraliseSession(data.compatSessions.totalCount)}
+            </Body>
+          </div>
+          <Link route={{ type: "compat-session-list" }}>View all</Link>
+        </Block>
+      </section>
     </>
   );
 };

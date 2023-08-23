@@ -1,47 +1,96 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`UserHome > render a <UserHome /> with additional emails 1`] = `
-[
-  <p
-    className="_font-body-md-regular_1g2sj_65"
+<section
+  className="m-4 flex flex-col gap-2"
+>
+  <h3
+    className="_font-heading-md-semibold_1g2sj_129"
   >
-    0
-     active browser session(s).
-     
+    Where you're signed in
+  </h3>
+  <div
+    className="_block_17898c flex flex-row justify-between align-center gap-1"
+  >
+    <div
+      className="flex flex-col"
+    >
+      <h1
+        className="_font-body-md-semibold_1g2sj_69"
+      >
+        Browser
+      </h1>
+      <p
+        className="_font-body-md-regular_1g2sj_65"
+      >
+        0
+         
+        active 
+        sessions
+      </p>
+    </div>
     <a
       href="/sessions"
       onClick={[Function]}
     >
       View all
     </a>
-  </p>,
-  <p
-    className="_font-body-md-regular_1g2sj_65"
+  </div>
+  <div
+    className="_block_17898c flex flex-row justify-between align-center gap-1"
   >
-    0
-     active OAuth2 session(s).
-     
+    <div
+      className="flex flex-col"
+    >
+      <h1
+        className="_font-body-md-semibold_1g2sj_69"
+      >
+        New apps
+      </h1>
+      <p
+        className="_font-body-md-regular_1g2sj_65"
+      >
+        0
+         
+        active 
+        sessions
+      </p>
+    </div>
     <a
       href="/oauth2-sessions"
       onClick={[Function]}
     >
       View all
     </a>
-  </p>,
-  <p
-    className="_font-body-md-regular_1g2sj_65"
+  </div>
+  <div
+    className="_block_17898c flex flex-row justify-between align-center gap-1"
   >
-    0
-     active compatibility layer session(s).
-     
+    <div
+      className="flex flex-col"
+    >
+      <h1
+        className="_font-body-md-semibold_1g2sj_69"
+      >
+        Regular apps
+      </h1>
+      <p
+        className="_font-body-md-regular_1g2sj_65"
+      >
+        0
+         
+        active 
+        sessions
+      </p>
+    </div>
     <a
       href="/compat-sessions"
       onClick={[Function]}
     >
       View all
     </a>
-  </p>,
-]
+  </div>
+</section>
 `;
 
 exports[`UserHome > render a <UserHome /> with an unverified email 1`] = `
@@ -101,132 +150,281 @@ exports[`UserHome > render a <UserHome /> with an unverified email 1`] = `
       />
     </svg>
   </div>,
-  <p
-    className="_font-body-md-regular_1g2sj_65"
+  <section
+    className="m-4 flex flex-col gap-2"
   >
-    0
-     active browser session(s).
-     
-    <a
-      href="/sessions"
-      onClick={[Function]}
+    <h3
+      className="_font-heading-md-semibold_1g2sj_129"
     >
-      View all
-    </a>
-  </p>,
-  <p
-    className="_font-body-md-regular_1g2sj_65"
-  >
-    0
-     active OAuth2 session(s).
-     
-    <a
-      href="/oauth2-sessions"
-      onClick={[Function]}
+      Where you're signed in
+    </h3>
+    <div
+      className="_block_17898c flex flex-row justify-between align-center gap-1"
     >
-      View all
-    </a>
-  </p>,
-  <p
-    className="_font-body-md-regular_1g2sj_65"
-  >
-    0
-     active compatibility layer session(s).
-     
-    <a
-      href="/compat-sessions"
-      onClick={[Function]}
+      <div
+        className="flex flex-col"
+      >
+        <h1
+          className="_font-body-md-semibold_1g2sj_69"
+        >
+          Browser
+        </h1>
+        <p
+          className="_font-body-md-regular_1g2sj_65"
+        >
+          0
+           
+          active 
+          sessions
+        </p>
+      </div>
+      <a
+        href="/sessions"
+        onClick={[Function]}
+      >
+        View all
+      </a>
+    </div>
+    <div
+      className="_block_17898c flex flex-row justify-between align-center gap-1"
     >
-      View all
-    </a>
-  </p>,
+      <div
+        className="flex flex-col"
+      >
+        <h1
+          className="_font-body-md-semibold_1g2sj_69"
+        >
+          New apps
+        </h1>
+        <p
+          className="_font-body-md-regular_1g2sj_65"
+        >
+          0
+           
+          active 
+          sessions
+        </p>
+      </div>
+      <a
+        href="/oauth2-sessions"
+        onClick={[Function]}
+      >
+        View all
+      </a>
+    </div>
+    <div
+      className="_block_17898c flex flex-row justify-between align-center gap-1"
+    >
+      <div
+        className="flex flex-col"
+      >
+        <h1
+          className="_font-body-md-semibold_1g2sj_69"
+        >
+          Regular apps
+        </h1>
+        <p
+          className="_font-body-md-regular_1g2sj_65"
+        >
+          0
+           
+          active 
+          sessions
+        </p>
+      </div>
+      <a
+        href="/compat-sessions"
+        onClick={[Function]}
+      >
+        View all
+      </a>
+    </div>
+  </section>,
 ]
 `;
 
 exports[`UserHome > render a <UserHome /> without primary email 1`] = `
-[
-  <p
-    className="_font-body-md-regular_1g2sj_65"
+<section
+  className="m-4 flex flex-col gap-2"
+>
+  <h3
+    className="_font-heading-md-semibold_1g2sj_129"
   >
-    0
-     active browser session(s).
-     
+    Where you're signed in
+  </h3>
+  <div
+    className="_block_17898c flex flex-row justify-between align-center gap-1"
+  >
+    <div
+      className="flex flex-col"
+    >
+      <h1
+        className="_font-body-md-semibold_1g2sj_69"
+      >
+        Browser
+      </h1>
+      <p
+        className="_font-body-md-regular_1g2sj_65"
+      >
+        0
+         
+        active 
+        sessions
+      </p>
+    </div>
     <a
       href="/sessions"
       onClick={[Function]}
     >
       View all
     </a>
-  </p>,
-  <p
-    className="_font-body-md-regular_1g2sj_65"
+  </div>
+  <div
+    className="_block_17898c flex flex-row justify-between align-center gap-1"
   >
-    0
-     active OAuth2 session(s).
-     
+    <div
+      className="flex flex-col"
+    >
+      <h1
+        className="_font-body-md-semibold_1g2sj_69"
+      >
+        New apps
+      </h1>
+      <p
+        className="_font-body-md-regular_1g2sj_65"
+      >
+        0
+         
+        active 
+        sessions
+      </p>
+    </div>
     <a
       href="/oauth2-sessions"
       onClick={[Function]}
     >
       View all
     </a>
-  </p>,
-  <p
-    className="_font-body-md-regular_1g2sj_65"
+  </div>
+  <div
+    className="_block_17898c flex flex-row justify-between align-center gap-1"
   >
-    0
-     active compatibility layer session(s).
-     
+    <div
+      className="flex flex-col"
+    >
+      <h1
+        className="_font-body-md-semibold_1g2sj_69"
+      >
+        Regular apps
+      </h1>
+      <p
+        className="_font-body-md-regular_1g2sj_65"
+      >
+        0
+         
+        active 
+        sessions
+      </p>
+    </div>
     <a
       href="/compat-sessions"
       onClick={[Function]}
     >
       View all
     </a>
-  </p>,
-]
+  </div>
+</section>
 `;
 
 exports[`UserHome > render an simple <UserHome /> 1`] = `
-[
-  <p
-    className="_font-body-md-regular_1g2sj_65"
+<section
+  className="m-4 flex flex-col gap-2"
+>
+  <h3
+    className="_font-heading-md-semibold_1g2sj_129"
   >
-    0
-     active browser session(s).
-     
+    Where you're signed in
+  </h3>
+  <div
+    className="_block_17898c flex flex-row justify-between align-center gap-1"
+  >
+    <div
+      className="flex flex-col"
+    >
+      <h1
+        className="_font-body-md-semibold_1g2sj_69"
+      >
+        Browser
+      </h1>
+      <p
+        className="_font-body-md-regular_1g2sj_65"
+      >
+        0
+         
+        active 
+        sessions
+      </p>
+    </div>
     <a
       href="/sessions"
       onClick={[Function]}
     >
       View all
     </a>
-  </p>,
-  <p
-    className="_font-body-md-regular_1g2sj_65"
+  </div>
+  <div
+    className="_block_17898c flex flex-row justify-between align-center gap-1"
   >
-    0
-     active OAuth2 session(s).
-     
+    <div
+      className="flex flex-col"
+    >
+      <h1
+        className="_font-body-md-semibold_1g2sj_69"
+      >
+        New apps
+      </h1>
+      <p
+        className="_font-body-md-regular_1g2sj_65"
+      >
+        0
+         
+        active 
+        sessions
+      </p>
+    </div>
     <a
       href="/oauth2-sessions"
       onClick={[Function]}
     >
       View all
     </a>
-  </p>,
-  <p
-    className="_font-body-md-regular_1g2sj_65"
+  </div>
+  <div
+    className="_block_17898c flex flex-row justify-between align-center gap-1"
   >
-    0
-     active compatibility layer session(s).
-     
+    <div
+      className="flex flex-col"
+    >
+      <h1
+        className="_font-body-md-semibold_1g2sj_69"
+      >
+        Regular apps
+      </h1>
+      <p
+        className="_font-body-md-regular_1g2sj_65"
+      >
+        0
+         
+        active 
+        sessions
+      </p>
+    </div>
     <a
       href="/compat-sessions"
       onClick={[Function]}
     >
       View all
     </a>
-  </p>,
-]
+  </div>
+</section>
 `;
