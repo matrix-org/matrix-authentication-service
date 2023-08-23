@@ -17,7 +17,6 @@ import { useState } from "react";
 
 import { Link } from "../../Router";
 import { FragmentType, graphql, useFragment } from "../../gql";
-import UserEmail from "../UserEmail";
 
 export const FRAGMENT = graphql(/* GraphQL */ `
   fragment UserHome_user on User {
@@ -68,20 +67,6 @@ const UserHome: React.FC<{
           address(es). <Link route={{ type: "profile" }}>Check</Link>
         </Alert>
       )}
-
-      {data.primaryEmail ? (
-        <UserEmail email={data.primaryEmail} isPrimary />
-      ) : (
-        <Alert type="critical" title="No primary email adress" />
-      )}
-
-      {data.confirmedEmails.totalCount > 1 && (
-        <Body>
-          {data.confirmedEmails.totalCount - 1} additional emails.{" "}
-          <Link route={{ type: "profile" }}>View all</Link>
-        </Body>
-      )}
-
       <Body>
         {data.browserSessions.totalCount} active browser session(s).{" "}
         <Link route={{ type: "browser-session-list" }}>View all</Link>
