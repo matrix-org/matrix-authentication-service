@@ -65,7 +65,7 @@ const UserHome: React.FC<{
       {data.unverifiedEmails.totalCount > 0 && !dismiss && (
         <Alert type="critical" title="Unverified email" onClose={doDismiss}>
           You have {data.unverifiedEmails.totalCount} unverified email
-          address(es). <Link route={{ type: "email-list" }}>Check</Link>
+          address(es). <Link route={{ type: "profile" }}>Check</Link>
         </Alert>
       )}
 
@@ -78,7 +78,7 @@ const UserHome: React.FC<{
       {data.confirmedEmails.totalCount > 1 && (
         <Body>
           {data.confirmedEmails.totalCount - 1} additional emails.{" "}
-          <Link route={{ type: "email-list" }}>View all</Link>
+          <Link route={{ type: "profile" }}>View all</Link>
         </Body>
       )}
 

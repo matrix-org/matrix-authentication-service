@@ -47,7 +47,7 @@ exports[`UserHome > render a <UserHome /> with additional emails 1`] = `
      additional emails.
      
     <a
-      href="/emails"
+      href="/profile"
       onClick={[Function]}
     >
       View all
@@ -128,7 +128,7 @@ exports[`UserHome > render a <UserHome /> with an unverified email 1`] = `
         1
          unverified email address(es). 
         <a
-          href="/emails"
+          href="/profile"
           onClick={[Function]}
         >
           Check

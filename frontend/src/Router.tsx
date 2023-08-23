@@ -25,7 +25,7 @@ type Location = {
 };
 
 type HomeRoute = { type: "home" };
-type EmailListRoute = { type: "email-list" };
+type ProfileRoute = { type: "profile" };
 type OAuth2ClientRoute = { type: "client"; id: string };
 type OAuth2SessionList = { type: "oauth2-session-list" };
 type BrowserSessionRoute = { type: "session"; id: string };
@@ -36,7 +36,7 @@ type UnknownRoute = { type: "unknown"; segments: string[] };
 
 export type Route =
   | HomeRoute
-  | EmailListRoute
+  | ProfileRoute
   | OAuth2ClientRoute
   | OAuth2SessionList
   | BrowserSessionRoute
@@ -49,8 +49,8 @@ const routeToSegments = (route: Route): string[] => {
   switch (route.type) {
     case "home":
       return [];
-    case "email-list":
-      return ["emails"];
+    case "profile":
+      return ["profile"];
     case "verify-email":
       return ["emails", route.id, "verify"];
     case "client":
@@ -99,8 +99,12 @@ const segmentsToRoute = (segments: string[]): Route => {
     return { type: "home" };
   }
 
+  // legacy support for /emails
   if (matches("emails")) {
-    return { type: "email-list" };
+    return { type: "profile" };
+  }
+  if (matches("profile")) {
+    return { type: "profile" };
   }
 
   if (matches("sessions")) {
@@ -169,7 +173,7 @@ export const routeAtom = atom(
 );
 
 const Home = lazy(() => import("./pages/Home"));
-const EmailList = lazy(() => import("./pages/EmailList"));
+const Profile = lazy(() => import("./pages/Profile"));
 const OAuth2Client = lazy(() => import("./pages/OAuth2Client"));
 const BrowserSession = lazy(() => import("./pages/BrowserSession"));
 const BrowserSessionList = lazy(() => import("./pages/BrowserSessionList"));
@@ -183,8 +187,9 @@ const InnerRouter: React.FC = () => {
   switch (route.type) {
     case "home":
       return <Home />;
-    case "email-list":
-      return <EmailList />;
+    // legacy
+    case "profile":
+      return <Profile />;
     case "oauth2-session-list":
       return <OAuth2SessionList />;
     case "browser-session-list":

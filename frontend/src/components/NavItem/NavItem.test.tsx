@@ -77,7 +77,7 @@ describe("NavItem", () => {
   it("renders a different route", () => {
     const component = create(
       <WithLocation path="/">
-        <NavItem route={{ type: "email-list" }}>Emails</NavItem>
+        <NavItem route={{ type: "profile" }}>Emails</NavItem>
       </WithLocation>,
     );
     const tree = component.toJSON();
