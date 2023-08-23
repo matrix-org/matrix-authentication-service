@@ -193,4 +193,13 @@ pub(crate) use self::errors::DatabaseInconsistencyError;
 pub use self::{errors::DatabaseError, repository::PgRepository, tracing::ExecuteExt};
 
 /// Embedded migrations, allowing them to run on startup
-pub static MIGRATOR: Migrator = sqlx::migrate!();
+pub static MIGRATOR: Migrator = {
+    // XXX: The macro does not let us ignore missing migrations, so we have to do it
+    // like this. See https://github.com/launchbadge/sqlx/issues/1788
+    let mut m = sqlx::migrate!();
+
+    // We manually removed some migrations because they made us depend on the
+    // `pgcrypto` extension. See: https://github.com/matrix-org/matrix-authentication-service/issues/1557
+    m.ignore_missing = true;
+    m
+};
