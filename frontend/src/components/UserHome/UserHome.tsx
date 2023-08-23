@@ -64,6 +64,11 @@ const UserHome: React.FC<{
   const pluraliseSession = (count: number): string =>
     count === 1 ? "session" : "sessions";
 
+  // user friendly description of sessions is:
+  // browser -> browser
+  // oauth2 sessions -> New apps
+  // compatibility sessions -> Regular apps
+
   return (
     <>
       {data.unverifiedEmails.totalCount > 0 && !dismiss && (

@@ -24,8 +24,8 @@ exports[`UserHome > render a <UserHome /> with additional emails 1`] = `
         className="_font-body-md-regular_1g2sj_65"
       >
         0
+         active
          
-        active 
         sessions
       </p>
     </div>
@@ -51,8 +51,8 @@ exports[`UserHome > render a <UserHome /> with additional emails 1`] = `
         className="_font-body-md-regular_1g2sj_65"
       >
         0
+         active
          
-        active 
         sessions
       </p>
     </div>
@@ -78,8 +78,8 @@ exports[`UserHome > render a <UserHome /> with additional emails 1`] = `
         className="_font-body-md-regular_1g2sj_65"
       >
         0
+         active
          
-        active 
         sessions
       </p>
     </div>
@@ -173,8 +173,8 @@ exports[`UserHome > render a <UserHome /> with an unverified email 1`] = `
           className="_font-body-md-regular_1g2sj_65"
         >
           0
+           active
            
-          active 
           sessions
         </p>
       </div>
@@ -200,8 +200,8 @@ exports[`UserHome > render a <UserHome /> with an unverified email 1`] = `
           className="_font-body-md-regular_1g2sj_65"
         >
           0
+           active
            
-          active 
           sessions
         </p>
       </div>
@@ -227,8 +227,8 @@ exports[`UserHome > render a <UserHome /> with an unverified email 1`] = `
           className="_font-body-md-regular_1g2sj_65"
         >
           0
+           active
            
-          active 
           sessions
         </p>
       </div>
@@ -267,8 +267,8 @@ exports[`UserHome > render a <UserHome /> without primary email 1`] = `
         className="_font-body-md-regular_1g2sj_65"
       >
         0
+         active
          
-        active 
         sessions
       </p>
     </div>
@@ -294,8 +294,8 @@ exports[`UserHome > render a <UserHome /> without primary email 1`] = `
         className="_font-body-md-regular_1g2sj_65"
       >
         0
+         active
          
-        active 
         sessions
       </p>
     </div>
@@ -321,8 +321,8 @@ exports[`UserHome > render a <UserHome /> without primary email 1`] = `
         className="_font-body-md-regular_1g2sj_65"
       >
         0
+         active
          
-        active 
         sessions
       </p>
     </div>
@@ -360,8 +360,8 @@ exports[`UserHome > render an simple <UserHome /> 1`] = `
         className="_font-body-md-regular_1g2sj_65"
       >
         0
+         active
          
-        active 
         sessions
       </p>
     </div>
@@ -387,8 +387,8 @@ exports[`UserHome > render an simple <UserHome /> 1`] = `
         className="_font-body-md-regular_1g2sj_65"
       >
         0
+         active
          
-        active 
         sessions
       </p>
     </div>
@@ -414,8 +414,8 @@ exports[`UserHome > render an simple <UserHome /> 1`] = `
         className="_font-body-md-regular_1g2sj_65"
       >
         0
+         active
          
-        active 
         sessions
       </p>
     </div>
