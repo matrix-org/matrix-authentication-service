@@ -40,9 +40,13 @@ limitations under the License.
                   {% for scope in grant.scope | split(pat=" ") %}
                     {% if scope == "openid" %}
                       <li>See your profile info and contact details</li>
-                    {% elif scope is matching("^urn:matrix:org.matrix.msc2967.client:device:") %}
+                    {% elif scope == "urn:matrix:org.matrix.msc2967.client:api:*" %}
                       <li>View your existing messages and data</li>
                       <li>Send new messages on your behalf</li>
+                    {% elif scope == "urn:synapse:admin:*" %}
+                      <li>Administer the Synapse homeserver</li>
+                    {% elif scope is matching("^urn:matrix:org.matrix.msc2967.client:device:") %}
+                      {# <li>{{ scope }}</li> #}
                     {% else %}
                       <li>{{ scope }}</li>
                     {% endif %}
