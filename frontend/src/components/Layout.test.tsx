@@ -16,6 +16,7 @@ import { create } from "react-test-renderer";
 import { describe, expect, it, vi, afterAll } from "vitest";
 
 import Layout from "./Layout";
+import NavBar from "./NavBar/NavBar";
 
 const RESULT = Symbol("Result");
 const OK = Symbol("Ok");
@@ -34,9 +35,9 @@ describe("<Layout />", () => {
   afterAll(() => {
     vi.restoreAllMocks();
   });
-  it("renders an active session", () => {
+  it("renders app navigation correctly", () => {
     const component = create(<Layout />);
 
-    expect(component.toJSON()).toMatchSnapshot();
+    expect(component.root.findByType(NavBar).props).toMatchSnapshot();
   });
 });

@@ -4,12 +4,12 @@ exports[`<Session /> > renders a finished session 1`] = `
 <div
   className="_block_17898c"
 >
-  <h6
+  <h1
     className="_font-body-md-semibold_1g2sj_69 _sessionName_634806"
     title="session-id"
   >
     session-id
-  </h6>
+  </h1>
   <p
     className="_font-body-sm-semibold_1g2sj_49 _sessionMetadata_634806"
   >
@@ -34,12 +34,12 @@ exports[`<Session /> > renders an active session 1`] = `
 <div
   className="_block_17898c"
 >
-  <h6
+  <h1
     className="_font-body-md-semibold_1g2sj_69 _sessionName_634806"
     title="session-id"
   >
     session-id
-  </h6>
+  </h1>
   <p
     className="_font-body-sm-semibold_1g2sj_49 _sessionMetadata_634806"
   >
@@ -55,12 +55,12 @@ exports[`<Session /> > uses client name when truthy 1`] = `
 <div
   className="_block_17898c"
 >
-  <h6
+  <h1
     className="_font-body-md-semibold_1g2sj_69 _sessionName_634806"
     title="session-id"
   >
     session-id
-  </h6>
+  </h1>
   <p
     className="_font-body-sm-semibold_1g2sj_49 _sessionMetadata_634806"
   >
@@ -96,12 +96,12 @@ exports[`<Session /> > uses session name when truthy 1`] = `
 <div
   className="_block_17898c"
 >
-  <h6
+  <h1
     className="_font-body-md-semibold_1g2sj_69 _sessionName_634806"
     title="session-id"
   >
     test session name
-  </h6>
+  </h1>
   <p
     className="_font-body-sm-semibold_1g2sj_49 _sessionMetadata_634806"
   >
