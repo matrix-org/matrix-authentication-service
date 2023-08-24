@@ -16,7 +16,7 @@ env:
 jobs:
   build-assets:
     name: Build assets
-    runs-on: ubuntu-latest
+    runs-on: non-dind
 
     permissions:
       contents: read
@@ -64,7 +64,7 @@ jobs:
 
   build-linux:
     name: Build for Linux ${{ matrix.arch }}
-    runs-on: ubuntu-22.04
+    runs-on: non-dind
 
     needs:
       - build-assets
@@ -126,7 +126,7 @@ jobs:
 
   build-macos:
     name: Build for macOS ${{ matrix.arch }}
-    runs-on: ubuntu-22.04
+    runs-on: non-dind
     env:
       SDKROOT: /opt/MacOSX11.3.sdk
 
