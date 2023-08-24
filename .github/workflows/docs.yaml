@@ -18,6 +18,7 @@ jobs:
   build:
     name: Build the documentation
     runs-on: non-dind
+    container: ubuntu
     steps:
       - name: Checkout the code
         uses: actions/checkout@v3.5.3
@@ -59,6 +60,7 @@ jobs:
   deploy:
     name: Deploy the documentation on GitHub Pages
     runs-on: non-dind
+    container: ubuntu
     needs: build
     if: github.ref == 'refs/heads/main'
 

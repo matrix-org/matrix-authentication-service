@@ -18,6 +18,7 @@ jobs:
   opa-lint:
     name: Lint and test OPA policies
     runs-on: non-dind
+    container: ubuntu
 
     permissions:
       contents: read
@@ -42,6 +43,7 @@ jobs:
   frontend-lint:
     name: Check frontend style
     runs-on: non-dind
+    container: ubuntu
 
     permissions:
       contents: read
@@ -67,6 +69,7 @@ jobs:
   frontend-test:
     name: Run the frontend test suite
     runs-on: non-dind
+    container: ubuntu
 
     permissions:
       contents: read
@@ -92,6 +95,7 @@ jobs:
   rustfmt:
     name: Check Rust style
     runs-on: non-dind
+    container: ubuntu
 
     permissions:
       contents: read
@@ -113,6 +117,7 @@ jobs:
   cargo-deny:
     name: Run `cargo deny` checks
     runs-on: non-dind
+    container: ubuntu
 
     permissions:
       contents: read
@@ -128,6 +133,7 @@ jobs:
   check-schema:
     name: Check schema
     runs-on: non-dind
+    container: ubuntu
 
     permissions:
       contents: read
@@ -179,6 +185,7 @@ jobs:
     name: Run Clippy
     needs: [rustfmt, opa-lint]
     runs-on: non-dind
+    container: ubuntu
 
     permissions:
       contents: read
@@ -216,6 +223,7 @@ jobs:
     name: Run test suite with Rust stable
     needs: [rustfmt, opa-lint]
     runs-on: non-dind
+    container: ubuntu
 
     permissions:
       contents: read
@@ -284,6 +292,7 @@ jobs:
     name: Build and push Docker image
     needs: [rustfmt, opa-lint]
     runs-on: non-dind
+    container: ubuntu
     env:
       IMAGE: ghcr.io/matrix-org/matrix-authentication-service
 
@@ -397,6 +406,7 @@ jobs:
       - test
       - build-image
     runs-on: non-dind
+    container: ubuntu
 
     steps:
       - uses: matrix-org/done-action@v2

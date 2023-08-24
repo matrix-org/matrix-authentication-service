@@ -18,6 +18,7 @@ jobs:
   opa:
     name: Run OPA test suite with coverage
     runs-on: non-dind
+    container: ubuntu
 
     permissions:
       contents: read
@@ -44,6 +45,7 @@ jobs:
   frontend:
     name: Run frontend test suite with coverage
     runs-on: non-dind
+    container: ubuntu
 
     permissions:
       contents: read
@@ -74,6 +76,7 @@ jobs:
   rust:
     name: Run Rust test suite with coverage
     runs-on: non-dind
+    container: ubuntu
 
     permissions:
       contents: read
