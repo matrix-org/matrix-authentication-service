@@ -18,15 +18,13 @@ jobs:
   build:
     name: Build the documentation
     runs-on: non-dind
-    container: ubuntu
+    container: docker.io/library/buildpack-deps:bookworm
     steps:
       - name: Checkout the code
         uses: actions/checkout@v3.5.3
 
       - name: Install Rust toolchain
-        run: |
-          rustup toolchain install stable
-          rustup default stable
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2.6.2
@@ -60,7 +58,7 @@ jobs:
   deploy:
     name: Deploy the documentation on GitHub Pages
     runs-on: non-dind
-    container: ubuntu
+    container: docker.io/library/buildpack-deps:bookworm
     needs: build
     if: github.ref == 'refs/heads/main'
 

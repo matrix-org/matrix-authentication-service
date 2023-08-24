@@ -18,7 +18,7 @@ jobs:
   opa-lint:
     name: Lint and test OPA policies
     runs-on: non-dind
-    container: ubuntu
+    container: docker.io/library/buildpack-deps:bookworm
 
     permissions:
       contents: read
@@ -43,7 +43,7 @@ jobs:
   frontend-lint:
     name: Check frontend style
     runs-on: non-dind
-    container: ubuntu
+    container: docker.io/library/buildpack-deps:bookworm
 
     permissions:
       contents: read
@@ -69,7 +69,7 @@ jobs:
   frontend-test:
     name: Run the frontend test suite
     runs-on: non-dind
-    container: ubuntu
+    container: docker.io/library/buildpack-deps:bookworm
 
     permissions:
       contents: read
@@ -95,7 +95,7 @@ jobs:
   rustfmt:
     name: Check Rust style
     runs-on: non-dind
-    container: ubuntu
+    container: docker.io/library/buildpack-deps:bookworm
 
     permissions:
       contents: read
@@ -104,11 +104,10 @@ jobs:
       - name: Checkout the code
         uses: actions/checkout@v3.5.3
 
-      - name: Install toolchain
-        run: |
-          rustup toolchain install nightly
-          rustup default nightly
-          rustup component add rustfmt
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt
 
       - name: Check style
         run: cargo fmt --all -- --check
@@ -117,7 +116,7 @@ jobs:
   cargo-deny:
     name: Run `cargo deny` checks
     runs-on: non-dind
-    container: ubuntu
+    container: docker.io/library/buildpack-deps:bookworm
 
     permissions:
       contents: read
@@ -133,7 +132,7 @@ jobs:
   check-schema:
     name: Check schema
     runs-on: non-dind
-    container: ubuntu
+    container: docker.io/library/buildpack-deps:bookworm
 
     permissions:
       contents: read
@@ -143,9 +142,7 @@ jobs:
         uses: actions/checkout@v3.5.3
 
       - name: Install Rust toolchain
-        run: |
-          rustup toolchain install stable
-          rustup default stable
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2.6.2
@@ -185,7 +182,7 @@ jobs:
     name: Run Clippy
     needs: [rustfmt, opa-lint]
     runs-on: non-dind
-    container: ubuntu
+    container: docker.io/library/buildpack-deps:bookworm
 
     permissions:
       contents: read
@@ -194,11 +191,10 @@ jobs:
       - name: Checkout the code
         uses: actions/checkout@v3.5.3
 
-      - name: Install toolchain
-        run: |
-          rustup toolchain install 1.71.0
-          rustup default 1.71.0
-          rustup component add clippy
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@1.71.1
+        with:
+          components: clippy
 
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.1.0
@@ -223,7 +219,7 @@ jobs:
     name: Run test suite with Rust stable
     needs: [rustfmt, opa-lint]
     runs-on: non-dind
-    container: ubuntu
+    container: docker.io/library/buildpack-deps:bookworm
 
     permissions:
       contents: read
@@ -247,10 +243,8 @@ jobs:
       - name: Checkout the code
         uses: actions/checkout@v3.5.3
 
-      - name: Install toolchain
-        run: |
-          rustup toolchain install stable
-          rustup default stable
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Install Node
         uses: actions/setup-node@v3.8.1
@@ -292,7 +286,7 @@ jobs:
     name: Build and push Docker image
     needs: [rustfmt, opa-lint]
     runs-on: non-dind
-    container: ubuntu
+    container: docker.io/library/buildpack-deps:bookworm
     env:
       IMAGE: ghcr.io/matrix-org/matrix-authentication-service
 
@@ -406,7 +400,7 @@ jobs:
       - test
       - build-image
     runs-on: non-dind
-    container: ubuntu
+    container: docker.io/library/buildpack-deps:bookworm
 
     steps:
       - uses: matrix-org/done-action@v2

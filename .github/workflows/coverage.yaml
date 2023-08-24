@@ -18,7 +18,7 @@ jobs:
   opa:
     name: Run OPA test suite with coverage
     runs-on: non-dind
-    container: ubuntu
+    container: docker.io/library/buildpack-deps:bookworm
 
     permissions:
       contents: read
@@ -45,7 +45,7 @@ jobs:
   frontend:
     name: Run frontend test suite with coverage
     runs-on: non-dind
-    container: ubuntu
+    container: docker.io/library/buildpack-deps:bookworm
 
     permissions:
       contents: read
@@ -76,7 +76,7 @@ jobs:
   rust:
     name: Run Rust test suite with coverage
     runs-on: non-dind
-    container: ubuntu
+    container: docker.io/library/buildpack-deps:bookworm
 
     permissions:
       contents: read
@@ -100,11 +100,10 @@ jobs:
       - name: Checkout the code
         uses: actions/checkout@v3.5.3
 
-      - name: Install toolchain
-        run: |
-          rustup toolchain install stable
-          rustup default stable
-          rustup component add llvm-tools-preview
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
 
       - name: Install Node
         uses: actions/setup-node@v3.8.1
