@@ -1,0 +1,89 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`<OAuth2Session /> > renders a finished session 1`] = `
+<div
+  className="_block_17898c"
+>
+  <h6
+    className="_font-body-md-semibold_1g2sj_69 _sessionName_634806"
+    title="session-id"
+  >
+    abcd1234
+  </h6>
+  <p
+    className="_font-body-sm-semibold_1g2sj_49 _sessionMetadata_634806"
+  >
+    Signed in 
+    <code>
+      2023-06-29T03:35:17.451292+00:00
+    </code>
+  </p>
+  <p
+    className="_font-body-sm-semibold_1g2sj_49 _sessionMetadata_634806"
+    data-finished={true}
+  >
+    Finished 
+    <code>
+      2023-06-29T03:35:19.451292+00:00
+    </code>
+  </p>
+  <p
+    className="_font-body-sm-regular_1g2sj_45 _sessionMetadata_634806"
+  >
+    Client:
+     
+    <span
+      className="_font-body-sm-semibold_1g2sj_49 _sessionMetadata_634806"
+    >
+      Element
+    </span>
+  </p>
+</div>
+`;
+
+exports[`<OAuth2Session /> > renders an active session 1`] = `
+<div
+  className="_block_17898c"
+>
+  <h6
+    className="_font-body-md-semibold_1g2sj_69 _sessionName_634806"
+    title="session-id"
+  >
+    abcd1234
+  </h6>
+  <p
+    className="_font-body-sm-semibold_1g2sj_49 _sessionMetadata_634806"
+  >
+    Signed in 
+    <code>
+      2023-06-29T03:35:17.451292+00:00
+    </code>
+  </p>
+  <p
+    className="_font-body-sm-regular_1g2sj_45 _sessionMetadata_634806"
+  >
+    Client:
+     
+    <span
+      className="_font-body-sm-semibold_1g2sj_49 _sessionMetadata_634806"
+    >
+      Element
+    </span>
+  </p>
+  <div
+    className="_sessionActions_634806"
+  >
+    <button
+      className="_button_lls7s_17"
+      data-kind="destructive"
+      data-size="sm"
+      disabled={false}
+      onClick={[Function]}
+      role="button"
+      tabIndex={0}
+    >
+      End session
+    </button>
+  </div>
+</div>
+`;

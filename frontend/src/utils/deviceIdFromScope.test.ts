@@ -13,12 +13,19 @@
  * limitations under the License.
  */
 
-.block {
-    color: var(--cpd-color-text-primary);
-    padding: var(--cpd-space-5x) 0;
-    border-bottom: 1px solid var(--cpd-color-border-interactive-secondary);
+import { describe, it, expect } from "vitest";
 
-    &:last-child {
-        border-bottom: none;
-    }
-}
+import { getDeviceIdFromScope } from "./deviceIdFromScope";
+
+describe("getDeviceIdFromScope()", () => {
+  it("returns deviceid when device is part of scope", () => {
+    const scope =
+      "openid urn:matrix:org.matrix.msc2967.client:api:* urn:matrix:org.matrix.msc2967.client:device:abcd1234";
+    expect(getDeviceIdFromScope(scope)).toEqual("abcd1234");
+  });
+
+  it("returns undefined when device not part of scope", () => {
+    const scope = "openid some:other:scope ";
+    expect(getDeviceIdFromScope(scope)).toBeUndefined();
+  });
+});

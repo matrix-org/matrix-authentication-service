@@ -6,7 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-async-trait = "0.1.72"
+async-trait = "0.1.73"
 sqlx = { version = "0.7.1", features = ["runtime-tokio-rustls", "postgres", "migrate", "chrono", "json", "uuid"] }
 sea-query = { version = "0.30.0", features = ["derive", "attr", "with-uuid", "with-chrono"] }
 sea-query-binder = { version = "0.5.0", features = ["sqlx-postgres", "with-uuid", "with-chrono"] }

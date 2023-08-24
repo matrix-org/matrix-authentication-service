@@ -13,12 +13,24 @@
  * limitations under the License.
  */
 
-.block {
-    color: var(--cpd-color-text-primary);
-    padding: var(--cpd-space-5x) 0;
-    border-bottom: 1px solid var(--cpd-color-border-interactive-secondary);
+.session-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: var(--cpd-space-2x);
+    margin-bottom: var(--cpd-space-1x);
+}
 
-    &:last-child {
-        border-bottom: none;
+.session-metadata {
+    color: var(--cpd-color-text-secondary);
+
+    &[data-finished] {
+        color: var(--cpd-color-text-critical-primary);
     }
+}
+
+.session-actions {
+    margin-top: var(--cpd-space-1x);
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
 }
