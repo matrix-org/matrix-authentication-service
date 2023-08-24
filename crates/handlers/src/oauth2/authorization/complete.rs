@@ -18,11 +18,10 @@ use axum::{
     extract::{Path, State},
     response::{Html, IntoResponse, Response},
 };
-use axum_extra::extract::PrivateCookieJar;
 use hyper::StatusCode;
-use mas_axum_utils::{csrf::CsrfExt, SessionInfoExt};
+use mas_axum_utils::{cookies::CookieJar, csrf::CsrfExt, SessionInfoExt};
 use mas_data_model::{AuthorizationGrant, BrowserSession, Client, Device};
-use mas_keystore::{Encrypter, Keystore};
+use mas_keystore::Keystore;
 use mas_policy::{EvaluationResult, PolicyFactory};
 use mas_router::{PostAuthAction, Route, UrlBuilder};
 use mas_storage::{
@@ -96,7 +95,7 @@ pub(crate) async fn get(
     State(url_builder): State<UrlBuilder>,
     State(key_store): State<Keystore>,
     mut repo: BoxRepository,
-    cookie_jar: PrivateCookieJar<Encrypter>,
+    cookie_jar: CookieJar,
     Path(grant_id): Path<Ulid>,
 ) -> Result<Response, RouteError> {
     let (session_info, cookie_jar) = cookie_jar.session_info();

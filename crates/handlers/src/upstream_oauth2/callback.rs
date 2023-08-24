@@ -16,9 +16,8 @@ use axum::{
     extract::{Path, Query, State},
     response::IntoResponse,
 };
-use axum_extra::extract::PrivateCookieJar;
 use hyper::StatusCode;
-use mas_axum_utils::http_client_factory::HttpClientFactory;
+use mas_axum_utils::{cookies::CookieJar, http_client_factory::HttpClientFactory};
 use mas_jose::claims::ClaimError;
 use mas_keystore::{Encrypter, Keystore};
 use mas_oidc_client::requests::{
@@ -133,7 +132,7 @@ pub(crate) async fn get(
     State(url_builder): State<UrlBuilder>,
     State(encrypter): State<Encrypter>,
     State(keystore): State<Keystore>,
-    cookie_jar: PrivateCookieJar<Encrypter>,
+    cookie_jar: CookieJar,
     Path(provider_id): Path<Ulid>,
     Query(params): Query<QueryParams>,
 ) -> Result<impl IntoResponse, RouteError> {

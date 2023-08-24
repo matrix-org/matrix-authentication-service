@@ -18,13 +18,12 @@ use axum::{
     http::StatusCode,
     response::{Html, IntoResponse, Response},
 };
-use axum_extra::extract::PrivateCookieJar;
 use mas_axum_utils::{
+    cookies::CookieJar,
     csrf::{CsrfExt, ProtectedForm},
     FancyError, SessionInfoExt,
 };
 use mas_data_model::BrowserSession;
-use mas_keystore::Encrypter;
 use mas_router::Route;
 use mas_storage::{
     user::{BrowserSessionRepository, UserPasswordRepository},
@@ -51,7 +50,7 @@ pub(crate) async fn get(
     State(templates): State<Templates>,
     State(password_manager): State<PasswordManager>,
     mut repo: BoxRepository,
-    cookie_jar: PrivateCookieJar<Encrypter>,
+    cookie_jar: CookieJar,
 ) -> Result<Response, FancyError> {
     // If the password manager is disabled, we can go back to the account page.
     if !password_manager.is_enabled() {
@@ -75,7 +74,7 @@ async fn render(
     clock: &impl Clock,
     templates: Templates,
     session: BrowserSession,
-    cookie_jar: PrivateCookieJar<Encrypter>,
+    cookie_jar: CookieJar,
 ) -> Result<Response, FancyError> {
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(clock, rng);
 
@@ -95,7 +94,7 @@ pub(crate) async fn post(
     State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
     mut repo: BoxRepository,
-    cookie_jar: PrivateCookieJar<Encrypter>,
+    cookie_jar: CookieJar,
     Form(form): Form<ProtectedForm<ChangeForm>>,
 ) -> Result<Response, FancyError> {
     if !password_manager.is_enabled() {

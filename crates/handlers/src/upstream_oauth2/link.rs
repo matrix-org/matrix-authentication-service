@@ -17,15 +17,14 @@ use axum::{
     response::{Html, IntoResponse},
     Form,
 };
-use axum_extra::extract::PrivateCookieJar;
 use hyper::StatusCode;
 use mas_axum_utils::{
+    cookies::CookieJar,
     csrf::{CsrfExt, ProtectedForm},
     SessionInfoExt,
 };
 use mas_data_model::{UpstreamOAuthProviderImportPreference, User};
 use mas_jose::jwt::Jwt;
-use mas_keystore::Encrypter;
 use mas_storage::{
     job::{JobRepositoryExt, ProvisionUserJob},
     upstream_oauth2::{UpstreamOAuthLinkRepository, UpstreamOAuthSessionRepository},
@@ -170,7 +169,7 @@ pub(crate) async fn get(
     clock: BoxClock,
     mut repo: BoxRepository,
     State(templates): State<Templates>,
-    cookie_jar: PrivateCookieJar<Encrypter>,
+    cookie_jar: CookieJar,
     Path(link_id): Path<Ulid>,
 ) -> Result<impl IntoResponse, RouteError> {
     let sessions_cookie = UpstreamSessionsCookie::load(&cookie_jar);
@@ -350,7 +349,7 @@ pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
     mut repo: BoxRepository,
-    cookie_jar: PrivateCookieJar<Encrypter>,
+    cookie_jar: CookieJar,
     Path(link_id): Path<Ulid>,
     Form(form): Form<ProtectedForm<FormData>>,
 ) -> Result<impl IntoResponse, RouteError> {

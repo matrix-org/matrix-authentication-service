@@ -24,7 +24,7 @@ use axum::{
 };
 use headers::{Authorization, ContentType, HeaderMapExt, HeaderName};
 use hyper::{header::CONTENT_TYPE, Request, Response, StatusCode};
-use mas_axum_utils::http_client_factory::HttpClientFactory;
+use mas_axum_utils::{cookies::CookieManager, http_client_factory::HttpClientFactory};
 use mas_keystore::{Encrypter, JsonWebKey, JsonWebKeySet, Keystore, PrivateKey};
 use mas_matrix::{HomeserverConnection, MockHomeserverConnection};
 use mas_policy::PolicyFactory;
@@ -59,6 +59,7 @@ pub(crate) struct TestState {
     pub pool: PgPool,
     pub templates: Templates,
     pub key_store: Keystore,
+    pub cookie_manager: CookieManager,
     pub encrypter: Encrypter,
     pub url_builder: UrlBuilder,
     pub homeserver: MatrixHomeserver,
@@ -95,6 +96,8 @@ impl TestState {
         let key_store = Keystore::new(jwks);
 
         let encrypter = Encrypter::new(&[0x42; 32]);
+        let cookie_manager =
+            CookieManager::derive_from("https://example.com".parse()?, &[0x42; 32]);
 
         let password_manager = PasswordManager::new([(1, Hasher::argon2id(None))])?;
 
@@ -135,6 +138,7 @@ impl TestState {
             pool,
             templates,
             key_store,
+            cookie_manager,
             encrypter,
             url_builder,
             homeserver,
@@ -314,6 +318,12 @@ impl FromRef<TestState> for HttpClientFactory {
 impl FromRef<TestState> for PasswordManager {
     fn from_ref(input: &TestState) -> Self {
         input.password_manager.clone()
+    }
+}
+
+impl FromRef<TestState> for CookieManager {
+    fn from_ref(input: &TestState) -> Self {
+        input.cookie_manager.clone()
     }
 }
 

@@ -13,12 +13,11 @@
 // limitations under the License.
 
 use axum::{extract::Form, response::IntoResponse};
-use axum_extra::extract::PrivateCookieJar;
 use mas_axum_utils::{
+    cookies::CookieJar,
     csrf::{CsrfExt, ProtectedForm},
     FancyError, SessionInfoExt,
 };
-use mas_keystore::Encrypter;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{user::BrowserSessionRepository, BoxClock, BoxRepository};
 
@@ -26,7 +25,7 @@ use mas_storage::{user::BrowserSessionRepository, BoxClock, BoxRepository};
 pub(crate) async fn post(
     clock: BoxClock,
     mut repo: BoxRepository,
-    cookie_jar: PrivateCookieJar<Encrypter>,
+    cookie_jar: CookieJar,
     Form(form): Form<ProtectedForm<Option<PostAuthAction>>>,
 ) -> Result<impl IntoResponse, FancyError> {
     let form = cookie_jar.verify_form(&clock, form)?;

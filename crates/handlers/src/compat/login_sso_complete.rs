@@ -20,14 +20,13 @@ use axum::{
     extract::{Form, Path, Query, State},
     response::{Html, IntoResponse, Redirect, Response},
 };
-use axum_extra::extract::PrivateCookieJar;
 use chrono::Duration;
 use mas_axum_utils::{
+    cookies::CookieJar,
     csrf::{CsrfExt, ProtectedForm},
     FancyError, SessionInfoExt,
 };
 use mas_data_model::Device;
-use mas_keystore::Encrypter;
 use mas_router::{CompatLoginSsoAction, PostAuthAction, Route};
 use mas_storage::{
     compat::{CompatSessionRepository, CompatSsoLoginRepository},
@@ -63,7 +62,7 @@ pub async fn get(
     clock: BoxClock,
     mut repo: BoxRepository,
     State(templates): State<Templates>,
-    cookie_jar: PrivateCookieJar<Encrypter>,
+    cookie_jar: CookieJar,
     Path(id): Path<Ulid>,
     Query(params): Query<Params>,
 ) -> Result<Response, FancyError> {
@@ -129,7 +128,7 @@ pub async fn post(
     clock: BoxClock,
     mut repo: BoxRepository,
     State(templates): State<Templates>,
-    cookie_jar: PrivateCookieJar<Encrypter>,
+    cookie_jar: CookieJar,
     Path(id): Path<Ulid>,
     Query(params): Query<Params>,
     Form(form): Form<ProtectedForm<()>>,

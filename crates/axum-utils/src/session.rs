@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum_extra::extract::cookie::{Cookie, PrivateCookieJar};
 use mas_data_model::BrowserSession;
 use mas_storage::{user::BrowserSessionRepository, RepositoryAccess};
 use serde::{Deserialize, Serialize};
 use ulid::Ulid;
 
-use crate::CookieExt;
+use crate::cookies::CookieJar;
 
 /// An encrypted cookie to save the session ID
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -79,26 +78,22 @@ pub trait SessionInfoExt {
     }
 }
 
-impl<K> SessionInfoExt for PrivateCookieJar<K> {
+impl SessionInfoExt for CookieJar {
     fn session_info(self) -> (SessionInfo, Self) {
-        let jar = self;
-        let mut cookie = jar
-            .get("session")
-            .unwrap_or_else(|| Cookie::new("session", ""));
-        cookie.set_path("/");
-        cookie.set_http_only(true);
-        let session_info = cookie.decode().unwrap_or_default();
+        let info = match self.load("session") {
+            Ok(Some(s)) => s,
+            Ok(None) => SessionInfo::default(),
+            Err(e) => {
+                tracing::error!("failed to load session cookie: {}", e);
+                SessionInfo::default()
+            }
+        };
 
-        let cookie = cookie.encode(&session_info);
-        let jar = jar.add(cookie);
-        (session_info, jar)
+        let jar = self.update_session_info(&info);
+        (info, jar)
     }
 
     fn update_session_info(self, info: &SessionInfo) -> Self {
-        let mut cookie = Cookie::new("session", "");
-        cookie.set_path("/");
-        cookie.set_http_only(true);
-        let cookie = cookie.encode(&info);
-        self.add(cookie)
+        self.save("session", info, true)
     }
 }

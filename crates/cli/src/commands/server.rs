@@ -18,7 +18,7 @@ use anyhow::Context;
 use clap::Parser;
 use itertools::Itertools;
 use mas_config::AppConfig;
-use mas_handlers::{AppState, HttpClientFactory, MatrixHomeserver};
+use mas_handlers::{AppState, CookieManager, HttpClientFactory, MatrixHomeserver};
 use mas_listener::{server::Server, shutdown::ShutdownStream};
 use mas_matrix_synapse::SynapseConnection;
 use mas_router::UrlBuilder;
@@ -52,6 +52,11 @@ impl Options {
         let span = info_span!("cli.run.init").entered();
         let config: AppConfig = root.load_config()?;
 
+        // XXX: there should be a generic config verification step
+        if config.http.public_base.path() != "/" {
+            anyhow::bail!("The http.public_base path is not set to /, this is not supported");
+        }
+
         // Connect to the database
         info!("Connecting to the database");
         let pool = database_from_config(&config.database).await?;
@@ -73,6 +78,8 @@ impl Options {
             .context("could not import keys from config")?;
 
         let encrypter = config.secrets.encrypter();
+        let cookie_manager =
+            CookieManager::derive_from(config.http.public_base.clone(), &config.secrets.encryption);
 
         // Load and compile the WASM policies (and fallback to the default embedded one)
         info!("Loading and compiling the policy module");
@@ -140,6 +147,7 @@ impl Options {
                 pool,
                 templates,
                 key_store,
+                cookie_manager,
                 encrypter,
                 url_builder,
                 homeserver,

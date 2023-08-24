@@ -18,14 +18,13 @@ use axum::{
     extract::{Form, Path, State},
     response::{Html, IntoResponse, Response},
 };
-use axum_extra::extract::PrivateCookieJar;
 use hyper::StatusCode;
 use mas_axum_utils::{
+    cookies::CookieJar,
     csrf::{CsrfExt, ProtectedForm},
     SessionInfoExt,
 };
 use mas_data_model::{AuthorizationGrantStage, Device};
-use mas_keystore::Encrypter;
 use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{
@@ -84,7 +83,7 @@ pub(crate) async fn get(
     State(policy_factory): State<Arc<PolicyFactory>>,
     State(templates): State<Templates>,
     mut repo: BoxRepository,
-    cookie_jar: PrivateCookieJar<Encrypter>,
+    cookie_jar: CookieJar,
     Path(grant_id): Path<Ulid>,
 ) -> Result<Response, RouteError> {
     let (session_info, cookie_jar) = cookie_jar.session_info();
@@ -149,7 +148,7 @@ pub(crate) async fn post(
     clock: BoxClock,
     State(policy_factory): State<Arc<PolicyFactory>>,
     mut repo: BoxRepository,
-    cookie_jar: PrivateCookieJar<Encrypter>,
+    cookie_jar: CookieJar,
     Path(grant_id): Path<Ulid>,
     Form(form): Form<ProtectedForm<()>>,
 ) -> Result<Response, RouteError> {
