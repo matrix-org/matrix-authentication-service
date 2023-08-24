@@ -4,12 +4,12 @@ exports[`<CompatSession /> > renders a finished session 1`] = `
 <div
   className="_block_17898c"
 >
-  <h1
+  <h6
     className="_font-body-md-semibold_1g2sj_69 _sessionName_634806"
     title="session-id"
   >
     abcd1234
-  </h1>
+  </h6>
   <p
     className="_font-body-sm-semibold_1g2sj_49 _sessionMetadata_634806"
   >
@@ -45,12 +45,12 @@ exports[`<CompatSession /> > renders an active session 1`] = `
 <div
   className="_block_17898c"
 >
-  <h1
+  <h6
     className="_font-body-md-semibold_1g2sj_69 _sessionName_634806"
     title="session-id"
   >
     abcd1234
-  </h1>
+  </h6>
   <p
     className="_font-body-sm-semibold_1g2sj_49 _sessionMetadata_634806"
   >

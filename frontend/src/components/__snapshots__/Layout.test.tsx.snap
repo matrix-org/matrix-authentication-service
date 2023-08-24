@@ -1,30 +1,5 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`<Layout /> > renders an active session 1`] = `
-{
-  "children": [
-    <NavItem
-      route={
-        {
-          "type": "home",
-        }
-      }
-    >
-      Home
-    </NavItem>,
-    <NavItem
-      route={
-        {
-          "type": "profile",
-        }
-      }
-    >
-      Profile
-    </NavItem>,
-  ],
-}
-`;
-
 exports[`<Layout /> > renders app navigation correctly 1`] = `
 {
   "children": [
