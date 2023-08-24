@@ -14,16 +14,11 @@
 
 use mas_iana::jose::JsonWebSignatureAlg;
 use serde::{Deserialize, Serialize};
-use serde_with::{
-    base64::{Base64, Standard, UrlSafe},
-    formats::{Padded, Unpadded},
-    serde_as, skip_serializing_none,
-};
+use serde_with::skip_serializing_none;
 use url::Url;
 
-use crate::jwk::PublicJsonWebKey;
+use crate::{base64::Base64UrlNoPad, jwk::PublicJsonWebKey, Base64};
 
-#[serde_as]
 #[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct JsonWebSignatureHeader {
@@ -42,16 +37,13 @@ pub struct JsonWebSignatureHeader {
     x5u: Option<Url>,
 
     #[serde(default)]
-    #[serde_as(as = "Option<Vec<Base64<Standard, Padded>>>")]
-    x5c: Option<Vec<Vec<u8>>>,
+    x5c: Option<Vec<Base64>>,
 
     #[serde(default)]
-    #[serde_as(as = "Option<Base64<UrlSafe, Unpadded>>")]
-    x5t: Option<Vec<u8>>,
+    x5t: Option<Base64UrlNoPad>,
 
     #[serde(default, rename = "x5t#S256")]
-    #[serde_as(as = "Option<Base64<UrlSafe, Unpadded>>")]
-    x5t_s256: Option<Vec<u8>>,
+    x5t_s256: Option<Base64UrlNoPad>,
 
     #[serde(default)]
     typ: Option<String>,

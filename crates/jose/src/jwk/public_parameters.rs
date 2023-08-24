@@ -17,15 +17,10 @@ use mas_iana::jose::{
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use serde_with::{
-    base64::{Base64, UrlSafe},
-    formats::Unpadded,
-    serde_as,
-};
 
 use super::ParametersInfo;
+use crate::base64::Base64UrlNoPad;
 
-#[serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kty")]
 pub enum JsonWebKeyPublicParameters {
@@ -83,16 +78,13 @@ impl ParametersInfo for JsonWebKeyPublicParameters {
     }
 }
 
-#[serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct RsaPublicParameters {
     #[schemars(with = "String")]
-    #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-    n: Vec<u8>,
+    n: Base64UrlNoPad,
 
     #[schemars(with = "String")]
-    #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-    e: Vec<u8>,
+    e: Base64UrlNoPad,
 }
 
 impl ParametersInfo for RsaPublicParameters {
@@ -113,27 +105,24 @@ impl ParametersInfo for RsaPublicParameters {
 }
 
 impl RsaPublicParameters {
-    pub const fn new(n: Vec<u8>, e: Vec<u8>) -> Self {
+    pub const fn new(n: Base64UrlNoPad, e: Base64UrlNoPad) -> Self {
         Self { n, e }
     }
 }
 
-#[serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct EcPublicParameters {
     pub(crate) crv: JsonWebKeyEcEllipticCurve,
 
     #[schemars(with = "String")]
-    #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-    x: Vec<u8>,
+    x: Base64UrlNoPad,
 
     #[schemars(with = "String")]
-    #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-    y: Vec<u8>,
+    y: Base64UrlNoPad,
 }
 
 impl EcPublicParameters {
-    pub const fn new(crv: JsonWebKeyEcEllipticCurve, x: Vec<u8>, y: Vec<u8>) -> Self {
+    pub const fn new(crv: JsonWebKeyEcEllipticCurve, x: Base64UrlNoPad, y: Base64UrlNoPad) -> Self {
         Self { crv, x, y }
     }
 }
@@ -154,14 +143,12 @@ impl ParametersInfo for EcPublicParameters {
     }
 }
 
-#[serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct OkpPublicParameters {
     crv: JsonWebKeyOkpEllipticCurve,
 
     #[schemars(with = "String")]
-    #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-    x: Vec<u8>,
+    x: Base64UrlNoPad,
 }
 
 impl ParametersInfo for OkpPublicParameters {
@@ -175,7 +162,7 @@ impl ParametersInfo for OkpPublicParameters {
 }
 
 impl OkpPublicParameters {
-    pub const fn new(crv: JsonWebKeyOkpEllipticCurve, x: Vec<u8>) -> Self {
+    pub const fn new(crv: JsonWebKeyOkpEllipticCurve, x: Base64UrlNoPad) -> Self {
         Self { crv, x }
     }
 }
@@ -184,6 +171,7 @@ mod rsa_impls {
     use rsa::{traits::PublicKeyParts, BigUint, RsaPublicKey};
 
     use super::{JsonWebKeyPublicParameters, RsaPublicParameters};
+    use crate::base64::Base64UrlNoPad;
 
     impl From<RsaPublicKey> for JsonWebKeyPublicParameters {
         fn from(key: RsaPublicKey) -> Self {
@@ -206,8 +194,8 @@ mod rsa_impls {
     impl From<&RsaPublicKey> for RsaPublicParameters {
         fn from(key: &RsaPublicKey) -> Self {
             Self {
-                n: key.n().to_bytes_be(),
-                e: key.e().to_bytes_be(),
+                n: Base64UrlNoPad::new(key.n().to_bytes_be()),
+                e: Base64UrlNoPad::new(key.e().to_bytes_be()),
             }
         }
     }
@@ -222,8 +210,8 @@ mod rsa_impls {
     impl TryFrom<&RsaPublicParameters> for RsaPublicKey {
         type Error = rsa::errors::Error;
         fn try_from(value: &RsaPublicParameters) -> Result<Self, Self::Error> {
-            let n = BigUint::from_bytes_be(&value.n);
-            let e = BigUint::from_bytes_be(&value.e);
+            let n = BigUint::from_bytes_be(value.n.as_bytes());
+            let e = BigUint::from_bytes_be(value.e.as_bytes());
             let key = RsaPublicKey::new(n, e)?;
             Ok(key)
         }
@@ -239,6 +227,7 @@ mod ec_impls {
     };
 
     use super::{super::JwkEcCurve, EcPublicParameters, JsonWebKeyPublicParameters};
+    use crate::base64::Base64UrlNoPad;
 
     impl<C> TryFrom<&EcPublicParameters> for PublicKey<C>
     where
@@ -250,10 +239,12 @@ mod ec_impls {
         fn try_from(value: &EcPublicParameters) -> Result<Self, Self::Error> {
             let x = value
                 .x
+                .as_bytes()
                 .get(..C::FieldBytesSize::USIZE)
                 .ok_or(elliptic_curve::Error)?;
             let y = value
                 .y
+                .as_bytes()
                 .get(..C::FieldBytesSize::USIZE)
                 .ok_or(elliptic_curve::Error)?;
 
@@ -311,8 +302,8 @@ mod ec_impls {
             };
             EcPublicParameters {
                 crv: C::CRV,
-                x: x.to_vec(),
-                y: y.to_vec(),
+                x: Base64UrlNoPad::new(x.to_vec()),
+                y: Base64UrlNoPad::new(y.to_vec()),
             }
         }
     }

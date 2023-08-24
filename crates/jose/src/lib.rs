@@ -17,8 +17,11 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::missing_errors_doc, clippy::module_name_repetitions)]
 
+mod base64;
 pub mod claims;
 pub mod constraints;
 pub mod jwa;
 pub mod jwk;
 pub mod jwt;
+
+pub use self::base64::Base64;
