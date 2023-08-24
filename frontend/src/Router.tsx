@@ -99,10 +99,6 @@ const segmentsToRoute = (segments: string[]): Route => {
     return { type: "home" };
   }
 
-  // legacy support for /emails
-  if (matches("emails")) {
-    return { type: "profile" };
-  }
   if (matches("profile")) {
     return { type: "profile" };
   }
@@ -187,7 +183,6 @@ const InnerRouter: React.FC = () => {
   switch (route.type) {
     case "home":
       return <Home />;
-    // legacy
     case "profile":
       return <Profile />;
     case "oauth2-session-list":
