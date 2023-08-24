@@ -16,9 +16,7 @@ use axum::{
     extract::State,
     response::{Html, IntoResponse},
 };
-use axum_extra::extract::PrivateCookieJar;
-use mas_axum_utils::{csrf::CsrfExt, FancyError, SessionInfoExt};
-use mas_keystore::Encrypter;
+use mas_axum_utils::{cookies::CookieJar, csrf::CsrfExt, FancyError, SessionInfoExt};
 use mas_router::UrlBuilder;
 use mas_storage::{BoxClock, BoxRepository, BoxRng};
 use mas_templates::{IndexContext, TemplateContext, Templates};
@@ -30,7 +28,7 @@ pub async fn get(
     State(templates): State<Templates>,
     State(url_builder): State<UrlBuilder>,
     mut repo: BoxRepository,
-    cookie_jar: PrivateCookieJar<Encrypter>,
+    cookie_jar: CookieJar,
 ) -> Result<impl IntoResponse, FancyError> {
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();

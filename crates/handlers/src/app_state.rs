@@ -20,7 +20,7 @@ use axum::{
     response::IntoResponse,
 };
 use hyper::StatusCode;
-use mas_axum_utils::http_client_factory::HttpClientFactory;
+use mas_axum_utils::{cookies::CookieManager, http_client_factory::HttpClientFactory};
 use mas_keystore::{Encrypter, Keystore};
 use mas_policy::PolicyFactory;
 use mas_router::UrlBuilder;
@@ -42,6 +42,7 @@ pub struct AppState {
     pub pool: PgPool,
     pub templates: Templates,
     pub key_store: Keystore,
+    pub cookie_manager: CookieManager,
     pub encrypter: Encrypter,
     pub url_builder: UrlBuilder,
     pub homeserver: MatrixHomeserver,
@@ -158,6 +159,12 @@ impl FromRef<AppState> for HttpClientFactory {
 impl FromRef<AppState> for PasswordManager {
     fn from_ref(input: &AppState) -> Self {
         input.password_manager.clone()
+    }
+}
+
+impl FromRef<AppState> for CookieManager {
+    fn from_ref(input: &AppState) -> Self {
+        input.cookie_manager.clone()
     }
 }
 

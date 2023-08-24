@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum_extra::extract::cookie::{Cookie, PrivateCookieJar};
 use chrono::{DateTime, Duration, Utc};
 use data_encoding::{DecodeError, BASE64URL_NOPAD};
 use mas_storage::Clock;
@@ -21,7 +20,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, TimestampSeconds};
 use thiserror::Error;
 
-use crate::{cookies::CookieDecodeError, CookieExt};
+use crate::cookies::{CookieDecodeError, CookieJar};
 
 /// Failed to validate CSRF token
 #[derive(Debug, Error)]
@@ -118,36 +117,41 @@ pub trait CsrfExt {
         C: Clock;
 }
 
-impl<K> CsrfExt for PrivateCookieJar<K> {
+impl CsrfExt for CookieJar {
     fn csrf_token<C, R>(self, clock: &C, rng: R) -> (CsrfToken, Self)
     where
         R: RngCore,
         C: Clock,
     {
-        let jar = self;
-        let mut cookie = jar.get("csrf").unwrap_or_else(|| Cookie::new("csrf", ""));
-        cookie.set_path("/");
-        cookie.set_http_only(true);
-
         let now = clock.now();
-        let new_token = cookie
-            .decode()
-            .ok()
-            .and_then(|token: CsrfToken| token.verify_expiration(now).ok())
-            .unwrap_or_else(|| CsrfToken::generate(now, rng, Duration::hours(1)))
-            .refresh(now, Duration::hours(1));
+        let maybe_token = match self.load::<CsrfToken>("csrf") {
+            Ok(Some(token)) => {
+                let token = token.verify_expiration(now);
 
-        let cookie = cookie.encode(&new_token);
-        let jar = jar.add(cookie);
-        (new_token, jar)
+                // If the token is expired, just ignore it
+                token.ok()
+            }
+            Ok(None) => None,
+            Err(e) => {
+                tracing::warn!("Failed to decode CSRF cookie: {}", e);
+                None
+            }
+        };
+
+        let token = maybe_token.map_or_else(
+            || CsrfToken::generate(now, rng, Duration::hours(1)),
+            |token| token.refresh(now, Duration::hours(1)),
+        );
+
+        let jar = self.save("csrf", &token, false);
+        (token, jar)
     }
 
     fn verify_form<C, T>(&self, clock: &C, form: ProtectedForm<T>) -> Result<T, CsrfError>
     where
         C: Clock,
     {
-        let cookie = self.get("csrf").ok_or(CsrfError::Missing)?;
-        let token: CsrfToken = cookie.decode()?;
+        let token: CsrfToken = self.load("csrf")?.ok_or(CsrfError::Missing)?;
         let token = token.verify_expiration(clock.now())?;
         token.verify_form_value(&form.csrf)?;
         Ok(form.inner)

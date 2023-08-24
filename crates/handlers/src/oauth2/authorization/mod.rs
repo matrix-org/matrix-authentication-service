@@ -18,11 +18,10 @@ use axum::{
     extract::{Form, State},
     response::{Html, IntoResponse, Response},
 };
-use axum_extra::extract::PrivateCookieJar;
 use hyper::StatusCode;
-use mas_axum_utils::{csrf::CsrfExt, SessionInfoExt};
+use mas_axum_utils::{cookies::CookieJar, csrf::CsrfExt, SessionInfoExt};
 use mas_data_model::{AuthorizationCode, Pkce};
-use mas_keystore::{Encrypter, Keystore};
+use mas_keystore::Keystore;
 use mas_policy::PolicyFactory;
 use mas_router::{PostAuthAction, Route, UrlBuilder};
 use mas_storage::{
@@ -146,7 +145,7 @@ pub(crate) async fn get(
     State(key_store): State<Keystore>,
     State(url_builder): State<UrlBuilder>,
     mut repo: BoxRepository,
-    cookie_jar: PrivateCookieJar<Encrypter>,
+    cookie_jar: CookieJar,
     Form(params): Form<Params>,
 ) -> Result<Response, RouteError> {
     // First, figure out what client it is

@@ -73,7 +73,7 @@ pub struct SecretsConfig {
         example = "example_secret"
     )]
     #[serde_as(as = "serde_with::hex::Hex")]
-    encryption: [u8; 32],
+    pub encryption: [u8; 32],
 
     /// List of private keys to use for signing and encrypting payloads
     #[serde(default)]

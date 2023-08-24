@@ -17,21 +17,13 @@ use std::sync::Arc;
 use aead::Aead;
 use base64ct::{Base64, Encoding};
 use chacha20poly1305::{ChaCha20Poly1305, KeyInit};
-use cookie::Key;
 use generic_array::GenericArray;
 use thiserror::Error;
 
 /// Helps encrypting and decrypting data
 #[derive(Clone)]
 pub struct Encrypter {
-    cookie_key: Arc<Key>,
     aead: Arc<ChaCha20Poly1305>,
-}
-
-impl From<Encrypter> for Key {
-    fn from(e: Encrypter) -> Self {
-        e.cookie_key.as_ref().clone()
-    }
 }
 
 #[derive(Debug, Error)]
@@ -46,12 +38,10 @@ impl Encrypter {
     /// Creates an [`Encrypter`] out of an encryption key
     #[must_use]
     pub fn new(key: &[u8; 32]) -> Self {
-        let cookie_key = Key::derive_from(&key[..]);
-        let cookie_key = Arc::new(cookie_key);
         let key = GenericArray::from_slice(key);
         let aead = ChaCha20Poly1305::new(key);
         let aead = Arc::new(aead);
-        Self { cookie_key, aead }
+        Self { aead }
     }
 
     /// Encrypt a payload

@@ -17,13 +17,12 @@ use axum::{
     extract::{Form, Query, State},
     response::{Html, IntoResponse, Response},
 };
-use axum_extra::extract::PrivateCookieJar;
 use hyper::StatusCode;
 use mas_axum_utils::{
+    cookies::CookieJar,
     csrf::{CsrfExt, ProtectedForm},
     FancyError, SessionInfoExt,
 };
-use mas_keystore::Encrypter;
 use mas_router::Route;
 use mas_storage::{
     user::{BrowserSessionRepository, UserPasswordRepository},
@@ -49,7 +48,7 @@ pub(crate) async fn get(
     State(templates): State<Templates>,
     mut repo: BoxRepository,
     Query(query): Query<OptionalPostAuthAction>,
-    cookie_jar: PrivateCookieJar<Encrypter>,
+    cookie_jar: CookieJar,
 ) -> Result<Response, FancyError> {
     if !password_manager.is_enabled() {
         // XXX: do something better here
@@ -89,7 +88,7 @@ pub(crate) async fn post(
     State(password_manager): State<PasswordManager>,
     mut repo: BoxRepository,
     Query(query): Query<OptionalPostAuthAction>,
-    cookie_jar: PrivateCookieJar<Encrypter>,
+    cookie_jar: CookieJar,
     Form(form): Form<ProtectedForm<ReauthForm>>,
 ) -> Result<Response, FancyError> {
     if !password_manager.is_enabled() {
