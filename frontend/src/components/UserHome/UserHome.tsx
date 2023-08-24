@@ -77,6 +77,7 @@ const UserHome: React.FC<{
           address(es). <Link route={{ type: "profile" }}>Check</Link>
         </Alert>
       )}
+      {/* This is a short term solution, so I won't bother extracting these blocks into components */}
       <section className="m-4 flex flex-col gap-2">
         <H3>Where you're signed in</H3>
         <Block className="flex flex-row justify-between align-center gap-1">
