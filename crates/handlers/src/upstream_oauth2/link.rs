@@ -33,8 +33,7 @@ use mas_storage::{
     BoxClock, BoxRepository, BoxRng, RepositoryAccess,
 };
 use mas_templates::{
-    EmptyContext, TemplateContext, Templates, UpstreamExistingLinkContext, UpstreamRegister,
-    UpstreamSuggestLink,
+    TemplateContext, Templates, UpstreamExistingLinkContext, UpstreamRegister, UpstreamSuggestLink,
 };
 use serde::Deserialize;
 use thiserror::Error;
@@ -158,7 +157,6 @@ pub(crate) enum FormData {
         import_display_name: Option<String>,
     },
     Link,
-    Login,
 }
 
 #[tracing::instrument(
@@ -176,9 +174,13 @@ pub(crate) async fn get(
     Path(link_id): Path<Ulid>,
 ) -> Result<impl IntoResponse, RouteError> {
     let sessions_cookie = UpstreamSessionsCookie::load(&cookie_jar);
-    let (session_id, _post_auth_action) = sessions_cookie
+    let (session_id, post_auth_action) = sessions_cookie
         .lookup_link(link_id)
         .map_err(|_| RouteError::MissingCookie)?;
+
+    let post_auth_action = OptionalPostAuthAction {
+        post_auth_action: post_auth_action.cloned(),
+    };
 
     let link = repo
         .upstream_oauth_link()
@@ -206,7 +208,7 @@ pub(crate) async fn get(
     let (csrf_token, mut cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
     let maybe_user_session = user_session_info.load_session(&mut repo).await?;
 
-    let render = match (maybe_user_session, link.user_id) {
+    let response = match (maybe_user_session, link.user_id) {
         (Some(session), Some(user_id)) if session.user.id == user_id => {
             // Session already linked, and link matches the currently logged
             // user. Mark the session as consumed and renew the authentication.
@@ -222,13 +224,7 @@ pub(crate) async fn get(
 
             repo.save().await?;
 
-            let ctx = EmptyContext
-                .with_session(session)
-                .with_csrf(csrf_token.form_value());
-
-            templates
-                .render_upstream_oauth2_already_linked(&ctx)
-                .await?
+            post_auth_action.go_next().into_response()
         }
 
         (Some(user_session), Some(user_id)) => {
@@ -247,7 +243,7 @@ pub(crate) async fn get(
                 .with_session(user_session)
                 .with_csrf(csrf_token.form_value());
 
-            templates.render_upstream_oauth2_link_mismatch(&ctx).await?
+            Html(templates.render_upstream_oauth2_link_mismatch(&ctx).await?).into_response()
         }
 
         (Some(user_session), None) => {
@@ -256,7 +252,7 @@ pub(crate) async fn get(
                 .with_session(user_session)
                 .with_csrf(csrf_token.form_value());
 
-            templates.render_upstream_oauth2_suggest_link(&ctx).await?
+            Html(templates.render_upstream_oauth2_suggest_link(&ctx).await?).into_response()
         }
 
         (None, Some(user_id)) => {
@@ -268,9 +264,24 @@ pub(crate) async fn get(
                 .filter(mas_data_model::User::is_valid)
                 .ok_or(RouteError::UserNotFound)?;
 
-            let ctx = UpstreamExistingLinkContext::new(user).with_csrf(csrf_token.form_value());
+            let session = repo.browser_session().add(&mut rng, &clock, &user).await?;
 
-            templates.render_upstream_oauth2_do_login(&ctx).await?
+            repo.upstream_oauth_session()
+                .consume(&clock, upstream_session)
+                .await?;
+
+            repo.browser_session()
+                .authenticate_with_upstream(&mut rng, &clock, &session, &link)
+                .await?;
+
+            cookie_jar = sessions_cookie
+                .consume_link(link_id)?
+                .save(cookie_jar, &clock);
+            cookie_jar = cookie_jar.set_session(&session);
+
+            repo.save().await?;
+
+            post_auth_action.go_next().into_response()
         }
 
         (None, None) => {
@@ -322,11 +333,11 @@ pub(crate) async fn get(
 
             let ctx = ctx.with_csrf(csrf_token.form_value());
 
-            templates.render_upstream_oauth2_do_register(&ctx).await?
+            Html(templates.render_upstream_oauth2_do_register(&ctx).await?).into_response()
         }
     };
 
-    Ok((cookie_jar, Html(render)))
+    Ok((cookie_jar, response))
 }
 
 #[tracing::instrument(
@@ -386,17 +397,6 @@ pub(crate) async fn post(
                 .await?;
 
             session
-        }
-
-        (None, Some(user_id), FormData::Login) => {
-            let user = repo
-                .user()
-                .lookup(user_id)
-                .await?
-                .filter(mas_data_model::User::is_valid)
-                .ok_or(RouteError::UserNotFound)?;
-
-            repo.browser_session().add(&mut rng, &clock, &user).await?
         }
 
         (
