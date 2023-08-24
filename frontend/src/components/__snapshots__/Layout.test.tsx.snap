@@ -1,0 +1,87 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`<Layout /> > renders an active session 1`] = `
+<div
+  className="_container_f3788b"
+>
+  Failed to load user
+  <nav
+    className="_navBar_214497"
+  >
+    <ul
+      className="_navBarItems_214497"
+    >
+      <li
+        className="_navTab_8603fc"
+      >
+        <a
+          className="_navItem_8603fc"
+          href="undefined"
+          onClick={[Function]}
+        >
+          Home
+        </a>
+      </li>
+      <li
+        className="_navTab_8603fc"
+      >
+        <a
+          className="_navItem_8603fc"
+          href="undefinedprofile"
+          onClick={[Function]}
+        >
+          Profile
+        </a>
+      </li>
+    </ul>
+  </nav>
+  <main />
+  <footer
+    className="_footer_f3788b"
+  >
+    <a
+      href="https://matrix.org"
+      rel="noreferrer noopener"
+      target="_blank"
+    >
+      <img
+        alt="Matrix.org"
+        className="inline my-2"
+        height={32}
+        src="https://matrix.org/images/matrix-logo.svg"
+        width={75}
+      />
+    </a>
+    <nav
+      className="_footerLinks_f3788b"
+    >
+      <ul>
+        <a
+          className="_link_eqn56_17"
+          data-kind="primary"
+          href="https://matrix.org/legal/copyright-notice"
+          rel="noreferrer noopener"
+        >
+          Info
+        </a>
+        <a
+          className="_link_eqn56_17"
+          data-kind="primary"
+          href="https://matrix.org/legal/privacy-notice"
+          rel="noreferrer noopener"
+        >
+          Privacy
+        </a>
+        <a
+          className="_link_eqn56_17"
+          data-kind="primary"
+          href="https://matrix.org/legal/terms-and-conditions"
+          rel="noreferrer noopener"
+        >
+          Terms & Conditions
+        </a>
+      </ul>
+    </nav>
+  </footer>
+</div>
+`;
