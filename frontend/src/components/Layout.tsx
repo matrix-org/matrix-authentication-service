@@ -50,16 +50,6 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
       <main>{children}</main>
 
       <footer className={styles.footer}>
-        <a href="https://matrix.org" target="_blank" rel="noreferrer noopener">
-          <img
-            className="inline my-2"
-            height={32}
-            width={75}
-            src="https://matrix.org/images/matrix-logo.svg"
-            alt="Matrix.org"
-          />
-        </a>
-
         <nav className={styles.footerLinks}>
           <ul>
             <Link href="https://matrix.org/legal/copyright-notice">Info</Link>

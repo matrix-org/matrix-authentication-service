@@ -7,13 +7,13 @@ license = "Apache-2.0"
 
 [dependencies]
 anyhow.workspace = true
-async-graphql = { version = "6.0.1", features = ["chrono", "url"] }
-async-trait = "0.1.72"
+async-graphql = { version = "6.0.4", features = ["chrono", "url"] }
+async-trait = "0.1.73"
 chrono.workspace = true
 lettre = { version = "0.10.4", default-features = false  }
 serde.workspace = true
 thiserror.workspace = true
-tokio = { version = "1.30.0", features = ["sync"] }
+tokio = { version = "1.32.0", features = ["sync"] }
 tracing.workspace = true
 tower = { version = "0.4.13", features = ["util"] }
 ulid = "1.0.0"

@@ -18,7 +18,7 @@ use async_trait::async_trait;
 use mas_storage::job::{JobId, JobRepository, JobSubmission};
 use sqlx::PgConnection;
 
-use crate::{errors::DatabaseInconsistencyError, DatabaseError, ExecuteExt};
+use crate::{DatabaseError, ExecuteExt};
 
 /// An implementation of [`JobRepository`] for a PostgreSQL connection.
 pub struct PgJobRepository<'c> {
@@ -43,7 +43,7 @@ impl<'c> JobRepository for PgJobRepository<'c> {
         fields(
             db.statement,
             job.id,
-            job.name,
+            job.name = submission.name(),
         ),
         err,
     )]
@@ -51,25 +51,24 @@ impl<'c> JobRepository for PgJobRepository<'c> {
         &mut self,
         submission: JobSubmission,
     ) -> Result<JobId, Self::Error> {
-        // XXX: The apalis.push_job function is not unique, so we have to specify all
-        // the arguments
-        let res = sqlx::query_scalar!(
+        // XXX: This does not use the clock nor the rng
+        let id = JobId::new();
+        tracing::Span::current().record("job.id", tracing::field::display(&id));
+
+        let res = sqlx::query!(
             r#"
-                SELECT id as "id!"
-                FROM apalis.push_job($1::text, $2::json, 'Pending', now(), 25)
+                INSERT INTO apalis.jobs (job, id, job_type)
+                VALUES ($1::json, $2::text, $3::text)
             "#,
-            submission.name(),
             submission.payload(),
+            id.to_string(),
+            submission.name(),
         )
         .traced()
-        .fetch_one(&mut *self.conn)
+        .execute(&mut *self.conn)
         .await?;
 
-        let id = res
-            .parse()
-            .map_err(|source| DatabaseInconsistencyError::on("apalis.push_job").source(source))?;
-
-        tracing::Span::current().record("job.id", tracing::field::display(&id));
+        DatabaseError::ensure_affected_rows(&res, 1)?;
 
         Ok(id)
     }

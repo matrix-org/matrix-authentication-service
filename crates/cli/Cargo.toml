@@ -9,9 +9,9 @@ license = "Apache-2.0"
 anyhow.workspace = true
 axum = "0.6.20"
 camino = "1.1.6"
-clap = { version = "4.3.21", features = ["derive"] }
+clap = { version = "4.3.24", features = ["derive"] }
 dotenvy = "0.15.7"
-httpdate = "1.0.2"
+httpdate = "1.0.3"
 hyper = { version = "0.14.27", features = ["full"] }
 itertools = "0.11.0"
 listenfd = "1.0.1"
@@ -21,7 +21,7 @@ rustls = "0.21.6"
 serde_json.workspace = true
 serde_yaml = "0.9.25"
 sqlx = { version = "0.7.1", features = ["runtime-tokio-rustls", "postgres"] }
-tokio = { version = "1.30.0", features = ["full"] }
+tokio = { version = "1.32.0", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.4.3", features = ["fs"] }
 url.workspace = true

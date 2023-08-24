@@ -7,13 +7,13 @@ license = "Apache-2.0"
 
 [dependencies]
 anyhow.workspace = true
-async-trait = "0.1.72"
+async-trait = "0.1.73"
 camino = "1.1.6"
 convert_case = "0.6.0"
 csv = "1.2.2"
 futures-util = "0.3.28"
 hyper = { version = "0.14.27", features = ["tcp", "client", "http1"] }
 serde.workspace = true
-tokio = { version = "1.30.0", features = ["macros", "rt-multi-thread", "fs", "io-util"] }
+tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread", "fs", "io-util"] }
 tracing.workspace = true
 tracing-subscriber = "0.3.17"
