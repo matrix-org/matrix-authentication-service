@@ -74,6 +74,6 @@ describe("<Layout />", () => {
     );
 
     expect(await component.findByText("Profile")).toMatchSnapshot();
-    expect(await component.findByText("Home")).toMatchSnapshot();
+    expect(await component.findByText("Sessions")).toMatchSnapshot();
   });
 });

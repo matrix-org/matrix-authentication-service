@@ -18,6 +18,7 @@ import { useState } from "react";
 import { Link } from "../../Router";
 import { FragmentType, graphql, useFragment } from "../../gql";
 import Block from "../Block/Block";
+import UserEmail from "../UserEmail";
 
 export const FRAGMENT = graphql(/* GraphQL */ `
   fragment UserHome_user on User {
@@ -76,6 +77,11 @@ const UserHome: React.FC<{
           You have {data.unverifiedEmails.totalCount} unverified email
           address(es). <Link route={{ type: "profile" }}>Check</Link>
         </Alert>
+      )}
+      {data.primaryEmail ? (
+        <UserEmail email={data.primaryEmail} isPrimary />
+      ) : (
+        <Alert type="critical" title="No primary email adress" />
       )}
       {/* This is a short term solution, so I won't bother extracting these blocks into components */}
       <section className="m-4 flex flex-col gap-2">

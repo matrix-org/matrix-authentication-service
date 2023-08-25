@@ -15,6 +15,6 @@ exports[`<Layout /> > renders app navigation correctly 2`] = `
   class="_navItem_8603fc"
   href="/"
 >
-  Home
+  Sessions
 </a>
 `;
