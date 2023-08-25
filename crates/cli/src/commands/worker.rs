@@ -23,7 +23,7 @@ use rand::{
 };
 use tracing::{info, info_span};
 
-use crate::util::{database_from_config, mailer_from_config, templates_from_config};
+use crate::util::{database_pool_from_config, mailer_from_config, templates_from_config};
 
 #[derive(Parser, Debug, Default)]
 pub(super) struct Options {}
@@ -35,7 +35,7 @@ impl Options {
 
         // Connect to the database
         info!("Connecting to the database");
-        let pool = database_from_config(&config.database).await?;
+        let pool = database_pool_from_config(&config.database).await?;
 
         let url_builder = UrlBuilder::new(
             config.http.public_base.clone(),

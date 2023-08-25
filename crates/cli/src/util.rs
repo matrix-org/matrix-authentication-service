@@ -26,7 +26,7 @@ use mas_router::UrlBuilder;
 use mas_templates::{TemplateLoadingError, Templates};
 use sqlx::{
     postgres::{PgConnectOptions, PgPoolOptions},
-    ConnectOptions, PgPool,
+    ConnectOptions, PgConnection, PgPool,
 };
 use tracing::{error, info, log::LevelFilter};
 
@@ -120,8 +120,9 @@ pub async fn templates_from_config(
     .await
 }
 
-#[tracing::instrument(name = "db.connect", skip_all, err(Debug))]
-pub async fn database_from_config(config: &DatabaseConfig) -> Result<PgPool, anyhow::Error> {
+fn database_connect_options_from_config(
+    config: &DatabaseConfig,
+) -> Result<PgConnectOptions, anyhow::Error> {
     let options = match &config.options {
         DatabaseConnectConfig::Uri { uri } => uri
             .parse()
@@ -169,6 +170,13 @@ pub async fn database_from_config(config: &DatabaseConfig) -> Result<PgPool, any
         .log_statements(LevelFilter::Debug)
         .log_slow_statements(LevelFilter::Warn, Duration::from_millis(100));
 
+    Ok(options)
+}
+
+/// Create a database connection pool from the configuration
+#[tracing::instrument(name = "db.connect", skip_all, err(Debug))]
+pub async fn database_pool_from_config(config: &DatabaseConfig) -> Result<PgPool, anyhow::Error> {
+    let options = database_connect_options_from_config(config)?;
     PgPoolOptions::new()
         .max_connections(config.max_connections.into())
         .min_connections(config.min_connections)
@@ -176,6 +184,17 @@ pub async fn database_from_config(config: &DatabaseConfig) -> Result<PgPool, any
         .idle_timeout(config.idle_timeout)
         .max_lifetime(config.max_lifetime)
         .connect_with(options)
+        .await
+        .context("could not connect to the database")
+}
+
+/// Create a single database connection from the configuration
+#[tracing::instrument(name = "db.connect", skip_all, err(Debug))]
+pub async fn database_connection_from_config(
+    config: &DatabaseConfig,
+) -> Result<PgConnection, anyhow::Error> {
+    database_connect_options_from_config(config)?
+        .connect()
         .await
         .context("could not connect to the database")
 }
