@@ -23,7 +23,7 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v3.5.3
+        uses: actions/checkout@v3.6.0
 
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.1.0
@@ -76,7 +76,7 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v3.5.3
+        uses: actions/checkout@v3.6.0
 
       - name: Install Rust toolchain
         run: |
@@ -140,7 +140,7 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v3.5.3
+        uses: actions/checkout@v3.6.0
 
       - name: Install Rust toolchain
         run: |

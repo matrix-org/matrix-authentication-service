@@ -14,7 +14,8 @@
 
 use std::{
     convert::Infallible,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, RwLock},
+    task::{Context, Poll},
 };
 
 use axum::{
@@ -22,9 +23,14 @@ use axum::{
     body::{Bytes, HttpBody},
     extract::{FromRef, FromRequestParts},
 };
-use headers::{Authorization, ContentType, HeaderMapExt, HeaderName};
-use hyper::{header::CONTENT_TYPE, Request, Response, StatusCode};
-use mas_axum_utils::http_client_factory::HttpClientFactory;
+use cookie_store::{CookieStore, RawCookie};
+use futures_util::future::BoxFuture;
+use headers::{Authorization, ContentType, HeaderMapExt, HeaderName, HeaderValue};
+use hyper::{
+    header::{CONTENT_TYPE, COOKIE, SET_COOKIE},
+    Request, Response, StatusCode,
+};
+use mas_axum_utils::{cookies::CookieManager, http_client_factory::HttpClientFactory};
 use mas_keystore::{Encrypter, JsonWebKey, JsonWebKeySet, Keystore, PrivateKey};
 use mas_matrix::{HomeserverConnection, MockHomeserverConnection};
 use mas_policy::PolicyFactory;
@@ -36,7 +42,8 @@ use rand::SeedableRng;
 use rand_chacha::ChaChaRng;
 use serde::{de::DeserializeOwned, Serialize};
 use sqlx::PgPool;
-use tower::{Service, ServiceExt};
+use tower::{Layer, Service, ServiceExt};
+use url::Url;
 
 use crate::{
     app_state::RepositoryError,
@@ -59,6 +66,7 @@ pub(crate) struct TestState {
     pub pool: PgPool,
     pub templates: Templates,
     pub key_store: Keystore,
+    pub cookie_manager: CookieManager,
     pub encrypter: Encrypter,
     pub url_builder: UrlBuilder,
     pub homeserver: MatrixHomeserver,
@@ -95,6 +103,8 @@ impl TestState {
         let key_store = Keystore::new(jwks);
 
         let encrypter = Encrypter::new(&[0x42; 32]);
+        let cookie_manager =
+            CookieManager::derive_from("https://example.com".parse()?, &[0x42; 32]);
 
         let password_manager = PasswordManager::new([(1, Hasher::argon2id(None))])?;
 
@@ -135,6 +145,7 @@ impl TestState {
             pool,
             templates,
             key_store,
+            cookie_manager,
             encrypter,
             url_builder,
             homeserver,
@@ -317,6 +328,12 @@ impl FromRef<TestState> for PasswordManager {
     }
 }
 
+impl FromRef<TestState> for CookieManager {
+    fn from_ref(input: &TestState) -> Self {
+        input.cookie_manager.clone()
+    }
+}
+
 #[async_trait]
 impl FromRequestParts<TestState> for BoxClock {
     type Rejection = Infallible;
@@ -471,5 +488,102 @@ impl ResponseExt for Response<String> {
     fn json<T: DeserializeOwned>(&self) -> T {
         self.assert_header_value(CONTENT_TYPE, "application/json");
         serde_json::from_str(self.body()).expect("JSON deserialization failed")
+    }
+}
+
+/// A helper for storing and retrieving cookies in tests.
+#[derive(Clone, Debug, Default)]
+pub struct CookieHelper {
+    store: Arc<RwLock<CookieStore>>,
+}
+
+impl CookieHelper {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Inject the cookies from the store into the request.
+    pub fn with_cookies<B>(&self, mut request: Request<B>) -> Request<B> {
+        let url = Url::options()
+            .base_url(Some(&"https://example.com/".parse().unwrap()))
+            .parse(&request.uri().to_string())
+            .expect("Failed to parse URL");
+
+        let store = self.store.read().unwrap();
+        let value = store
+            .get_request_values(&url)
+            .map(|(name, value)| format!("{name}={value}"))
+            .collect::<Vec<_>>()
+            .join("; ");
+
+        request.headers_mut().insert(
+            COOKIE,
+            HeaderValue::from_str(&value).expect("Invalid cookie value"),
+        );
+        request
+    }
+
+    /// Save the cookies from the response into the store.
+    pub fn save_cookies<B>(&self, response: &Response<B>) {
+        let url = "https://example.com/".parse().unwrap();
+        let mut store = self.store.write().unwrap();
+        store.store_response_cookies(
+            response
+                .headers()
+                .get_all(SET_COOKIE)
+                .iter()
+                .map(|set_cookie| {
+                    RawCookie::parse(
+                        set_cookie
+                            .to_str()
+                            .expect("Invalid set-cookie header")
+                            .to_owned(),
+                    )
+                    .expect("Invalid set-cookie header")
+                }),
+            &url,
+        );
+    }
+}
+
+impl<S> Layer<S> for CookieHelper {
+    type Service = CookieStoreService<S>;
+
+    fn layer(&self, inner: S) -> Self::Service {
+        CookieStoreService {
+            helper: self.clone(),
+            inner,
+        }
+    }
+}
+
+/// A middleware that stores and retrieves cookies.
+pub struct CookieStoreService<S> {
+    helper: CookieHelper,
+    inner: S,
+}
+
+impl<S, ReqBody, ResBody> Service<Request<ReqBody>> for CookieStoreService<S>
+where
+    S: Service<Request<ReqBody>, Response = Response<ResBody>> + Send,
+    S::Future: Send + 'static,
+{
+    type Response = S::Response;
+    type Error = S::Error;
+    type Future = BoxFuture<'static, Result<S::Response, S::Error>>;
+
+    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.inner.poll_ready(cx)
+    }
+
+    fn call(&mut self, request: Request<ReqBody>) -> Self::Future {
+        let req = self.helper.with_cookies(request);
+        let inner = self.inner.call(req);
+        let helper = self.helper.clone();
+        Box::pin(async move {
+            let response: Response<_> = inner.await?;
+            helper.save_cookies(&response);
+            Ok(response)
+        })
     }
 }

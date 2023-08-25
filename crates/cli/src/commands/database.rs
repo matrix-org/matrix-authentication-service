@@ -18,7 +18,7 @@ use mas_config::DatabaseConfig;
 use mas_storage_pg::MIGRATOR;
 use tracing::{info_span, Instrument};
 
-use crate::util::database_from_config;
+use crate::util::database_connection_from_config;
 
 #[derive(Parser, Debug)]
 pub(super) struct Options {
@@ -36,11 +36,11 @@ impl Options {
     pub async fn run(self, root: &super::Options) -> anyhow::Result<()> {
         let _span = info_span!("cli.database.migrate").entered();
         let config: DatabaseConfig = root.load_config()?;
-        let pool = database_from_config(&config).await?;
+        let mut conn = database_connection_from_config(&config).await?;
 
         // Run pending migrations
         MIGRATOR
-            .run(&pool)
+            .run(&mut conn)
             .instrument(info_span!("db.migrate"))
             .await
             .context("could not run migrations")?;

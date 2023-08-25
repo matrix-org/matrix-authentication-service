@@ -16,9 +16,7 @@ use axum::{
     extract::State,
     response::{Html, IntoResponse},
 };
-use axum_extra::extract::PrivateCookieJar;
-use mas_axum_utils::{FancyError, SessionInfoExt};
-use mas_keystore::Encrypter;
+use mas_axum_utils::{cookies::CookieJar, FancyError, SessionInfoExt};
 use mas_router::{PostAuthAction, Route};
 use mas_storage::BoxRepository;
 use mas_templates::{AppContext, Templates};
@@ -27,7 +25,7 @@ use mas_templates::{AppContext, Templates};
 pub async fn get(
     State(templates): State<Templates>,
     mut repo: BoxRepository,
-    cookie_jar: PrivateCookieJar<Encrypter>,
+    cookie_jar: CookieJar,
 ) -> Result<impl IntoResponse, FancyError> {
     let (session_info, cookie_jar) = cookie_jar.session_info();
     let session = session_info.load_session(&mut repo).await?;

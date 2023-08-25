@@ -17,12 +17,11 @@ use axum::{
     extract::{Form, Path, Query, State},
     response::{Html, IntoResponse, Response},
 };
-use axum_extra::extract::PrivateCookieJar;
 use mas_axum_utils::{
+    cookies::CookieJar,
     csrf::{CsrfExt, ProtectedForm},
     FancyError, SessionInfoExt,
 };
-use mas_keystore::Encrypter;
 use mas_router::Route;
 use mas_storage::{
     job::{JobRepositoryExt, ProvisionUserJob},
@@ -53,7 +52,7 @@ pub(crate) async fn get(
     mut repo: BoxRepository,
     Query(query): Query<OptionalPostAuthAction>,
     Path(id): Path<Ulid>,
-    cookie_jar: PrivateCookieJar<Encrypter>,
+    cookie_jar: CookieJar,
 ) -> Result<Response, FancyError> {
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
@@ -96,7 +95,7 @@ pub(crate) async fn get(
 pub(crate) async fn post(
     clock: BoxClock,
     mut repo: BoxRepository,
-    cookie_jar: PrivateCookieJar<Encrypter>,
+    cookie_jar: CookieJar,
     Query(query): Query<OptionalPostAuthAction>,
     Path(id): Path<Ulid>,
     Form(form): Form<ProtectedForm<CodeForm>>,

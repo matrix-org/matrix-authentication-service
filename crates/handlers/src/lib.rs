@@ -47,7 +47,7 @@ use hyper::{
     },
     StatusCode, Version,
 };
-use mas_axum_utils::FancyError;
+use mas_axum_utils::{cookies::CookieJar, FancyError};
 use mas_http::CorsLayerExt;
 use mas_keystore::{Encrypter, Keystore};
 use mas_policy::PolicyFactory;
@@ -87,7 +87,7 @@ macro_rules! impl_from_error_for_route {
     };
 }
 
-pub use mas_axum_utils::http_client_factory::HttpClientFactory;
+pub use mas_axum_utils::{cookies::CookieManager, http_client_factory::HttpClientFactory};
 
 pub use self::{app_state::AppState, compat::MatrixHomeserver, graphql::schema as graphql_schema};
 
@@ -110,6 +110,7 @@ where
     BoxRepository: FromRequestParts<S>,
     BoxClock: FromRequestParts<S>,
     Encrypter: FromRef<S>,
+    CookieJar: FromRequestParts<S>,
 {
     let mut router = Router::new().route(
         "/graphql",
@@ -267,6 +268,7 @@ where
     UrlBuilder: FromRef<S>,
     Arc<PolicyFactory>: FromRef<S>,
     BoxRepository: FromRequestParts<S>,
+    CookieJar: FromRequestParts<S>,
     Encrypter: FromRef<S>,
     Templates: FromRef<S>,
     Keystore: FromRef<S>,

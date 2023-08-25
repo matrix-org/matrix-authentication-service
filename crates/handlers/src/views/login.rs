@@ -16,14 +16,13 @@ use axum::{
     extract::{Form, Query, State},
     response::{Html, IntoResponse, Response},
 };
-use axum_extra::extract::PrivateCookieJar;
 use hyper::StatusCode;
 use mas_axum_utils::{
+    cookies::CookieJar,
     csrf::{CsrfExt, CsrfToken, ProtectedForm},
     FancyError, SessionInfoExt,
 };
 use mas_data_model::BrowserSession;
-use mas_keystore::Encrypter;
 use mas_router::{Route, UpstreamOAuth2Authorize};
 use mas_storage::{
     upstream_oauth2::UpstreamOAuthProviderRepository,
@@ -58,7 +57,7 @@ pub(crate) async fn get(
     State(templates): State<Templates>,
     mut repo: BoxRepository,
     Query(query): Query<OptionalPostAuthAction>,
-    cookie_jar: PrivateCookieJar<Encrypter>,
+    cookie_jar: CookieJar,
 ) -> Result<Response, FancyError> {
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
@@ -109,7 +108,7 @@ pub(crate) async fn post(
     State(templates): State<Templates>,
     mut repo: BoxRepository,
     Query(query): Query<OptionalPostAuthAction>,
-    cookie_jar: PrivateCookieJar<Encrypter>,
+    cookie_jar: CookieJar,
     Form(form): Form<ProtectedForm<LoginForm>>,
 ) -> Result<Response, FancyError> {
     if !password_manager.is_enabled() {
@@ -291,10 +290,11 @@ mod test {
     use mas_templates::escape_html;
     use oauth2_types::scope::OPENID;
     use sqlx::PgPool;
+    use zeroize::Zeroizing;
 
     use crate::{
         passwords::PasswordManager,
-        test_utils::{init_tracing, RequestBuilderExt, ResponseExt, TestState},
+        test_utils::{init_tracing, CookieHelper, RequestBuilderExt, ResponseExt, TestState},
     };
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
@@ -375,5 +375,68 @@ mod test {
         assert!(response
             .body()
             .contains(&escape_html(&second_provider_login.relative_url())));
+    }
+
+    #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+    async fn test_password_login(pool: PgPool) {
+        init_tracing();
+        let state = TestState::from_pool(pool).await.unwrap();
+        let mut rng = state.rng();
+        let cookies = CookieHelper::new();
+
+        // Provision a user with a password
+        let mut repo = state.repository().await.unwrap();
+        let user = repo
+            .user()
+            .add(&mut rng, &state.clock, "john".to_owned())
+            .await
+            .unwrap();
+        let (version, hash) = state
+            .password_manager
+            .hash(&mut rng, Zeroizing::new("hunter2".as_bytes().to_vec()))
+            .await
+            .unwrap();
+        repo.user_password()
+            .add(&mut rng, &state.clock, &user, version, hash, None)
+            .await
+            .unwrap();
+        repo.save().await.unwrap();
+
+        // Render the login page to get a CSRF token
+        let request = Request::get("/login").empty();
+        let request = cookies.with_cookies(request);
+        let response = state.request(request).await;
+        cookies.save_cookies(&response);
+        response.assert_status(StatusCode::OK);
+        response.assert_header_value(CONTENT_TYPE, "text/html; charset=utf-8");
+        // Extract the CSRF token from the response body
+        let csrf_token = response
+            .body()
+            .split("name=\"csrf\" value=\"")
+            .nth(1)
+            .unwrap()
+            .split('\"')
+            .next()
+            .unwrap();
+
+        // Submit the login form
+        let request = Request::post("/login").form(serde_json::json!({
+            "csrf": csrf_token,
+            "username": "john",
+            "password": "hunter2",
+        }));
+        let request = cookies.with_cookies(request);
+        let response = state.request(request).await;
+        cookies.save_cookies(&response);
+        response.assert_status(StatusCode::SEE_OTHER);
+
+        // Now if we get to the home page, we should see the user's username
+        let request = Request::get("/").empty();
+        let request = cookies.with_cookies(request);
+        let response = state.request(request).await;
+        cookies.save_cookies(&response);
+        response.assert_status(StatusCode::OK);
+        response.assert_header_value(CONTENT_TYPE, "text/html; charset=utf-8");
+        assert!(response.body().contains("john"));
     }
 }

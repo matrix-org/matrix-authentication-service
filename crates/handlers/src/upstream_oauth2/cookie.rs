@@ -14,14 +14,12 @@
 
 // TODO: move that to a standalone cookie manager
 
-use axum_extra::extract::{cookie::Cookie, PrivateCookieJar};
 use chrono::{DateTime, Duration, NaiveDateTime, Utc};
-use mas_axum_utils::CookieExt;
+use mas_axum_utils::cookies::CookieJar;
 use mas_router::PostAuthAction;
 use mas_storage::Clock;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use time::OffsetDateTime;
 use ulid::Ulid;
 
 /// Name of the cookie
@@ -62,30 +60,24 @@ pub struct UpstreamSessionNotFound;
 
 impl UpstreamSessions {
     /// Load the upstreams sessions cookie
-    pub fn load<K>(cookie_jar: &PrivateCookieJar<K>) -> Self {
-        cookie_jar
-            .get(COOKIE_NAME)
-            .and_then(|c| c.decode().ok())
-            .unwrap_or_default()
+    pub fn load(cookie_jar: &CookieJar) -> Self {
+        match cookie_jar.load(COOKIE_NAME) {
+            Ok(Some(sessions)) => sessions,
+            Ok(None) => Self::default(),
+            Err(e) => {
+                tracing::warn!("Invalid upstream sessions cookie: {}", e);
+                Self::default()
+            }
+        }
     }
 
     /// Save the upstreams sessions to the cookie jar
-    pub fn save<K, C>(self, cookie_jar: PrivateCookieJar<K>, clock: &C) -> PrivateCookieJar<K>
+    pub fn save<C>(self, cookie_jar: CookieJar, clock: &C) -> CookieJar
     where
         C: Clock,
     {
-        let now = clock.now();
-        let this = self.expire(now);
-        let mut cookie = Cookie::named(COOKIE_NAME).encode(&this);
-        cookie.set_path("/");
-        cookie.set_http_only(true);
-
-        let expiration = now + Duration::seconds(SESSION_MAX_TIME_SECS);
-        let expiration = OffsetDateTime::from_unix_timestamp(expiration.timestamp())
-            .expect("invalid unix timestamp");
-        cookie.set_expires(expiration);
-
-        cookie_jar.add(cookie)
+        let this = self.expire(clock.now());
+        cookie_jar.save(COOKIE_NAME, &this, false)
     }
 
     fn expire(mut self, now: DateTime<Utc>) -> Self {

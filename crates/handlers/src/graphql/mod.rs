@@ -25,13 +25,11 @@ use axum::{
     response::{Html, IntoResponse, Response},
     Json, TypedHeader,
 };
-use axum_extra::extract::PrivateCookieJar;
 use futures_util::TryStreamExt;
 use headers::{authorization::Bearer, Authorization, ContentType, HeaderValue};
 use hyper::header::CACHE_CONTROL;
-use mas_axum_utils::{FancyError, SessionInfo, SessionInfoExt};
+use mas_axum_utils::{cookies::CookieJar, FancyError, SessionInfo, SessionInfoExt};
 use mas_graphql::{Requester, Schema};
-use mas_keystore::Encrypter;
 use mas_matrix::HomeserverConnection;
 use mas_storage::{
     BoxClock, BoxRepository, BoxRng, Clock, Repository, RepositoryError, SystemClock,
@@ -228,7 +226,7 @@ pub async fn post(
     State(schema): State<Schema>,
     clock: BoxClock,
     repo: BoxRepository,
-    cookie_jar: PrivateCookieJar<Encrypter>,
+    cookie_jar: CookieJar,
     content_type: Option<TypedHeader<ContentType>>,
     authorization: Option<TypedHeader<Authorization<Bearer>>>,
     body: BodyStream,
@@ -268,7 +266,7 @@ pub async fn get(
     State(schema): State<Schema>,
     clock: BoxClock,
     repo: BoxRepository,
-    cookie_jar: PrivateCookieJar<Encrypter>,
+    cookie_jar: CookieJar,
     authorization: Option<TypedHeader<Authorization<Bearer>>>,
     RawQuery(query): RawQuery,
 ) -> Result<impl IntoResponse, FancyError> {
