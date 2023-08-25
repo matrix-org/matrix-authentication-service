@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::ops::{Deref, DerefMut};
+
 use futures_util::{future::BoxFuture, FutureExt, TryFutureExt};
 use mas_storage::{
     compat::{
@@ -30,7 +32,7 @@ use mas_storage::{
     user::{BrowserSessionRepository, UserEmailRepository, UserPasswordRepository, UserRepository},
     Repository, RepositoryAccess, RepositoryTransaction,
 };
-use sqlx::{PgPool, Postgres, Transaction};
+use sqlx::{PgConnection, PgPool, Postgres, Transaction};
 use tracing::Instrument;
 
 use crate::{
@@ -56,8 +58,8 @@ use crate::{
 
 /// An implementation of the [`Repository`] trait backed by a PostgreSQL
 /// transaction.
-pub struct PgRepository {
-    txn: Transaction<'static, Postgres>,
+pub struct PgRepository<C = Transaction<'static, Postgres>> {
+    conn: C,
 }
 
 impl PgRepository {
@@ -69,7 +71,46 @@ impl PgRepository {
     /// Returns a [`DatabaseError`] if the transaction could not be started.
     pub async fn from_pool(pool: &PgPool) -> Result<Self, DatabaseError> {
         let txn = pool.begin().await?;
-        Ok(PgRepository { txn })
+        Ok(Self::from_conn(txn))
+    }
+}
+
+impl<C> PgRepository<C> {
+    /// Create a new [`PgRepository`] from an existing PostgreSQL connection
+    /// with a transaction
+    pub fn from_conn(conn: C) -> Self {
+        PgRepository { conn }
+    }
+
+    /// Consume this [`PgRepository`], returning the underlying connection.
+    pub fn into_inner(self) -> C {
+        self.conn
+    }
+}
+
+impl<C> AsRef<C> for PgRepository<C> {
+    fn as_ref(&self) -> &C {
+        &self.conn
+    }
+}
+
+impl<C> AsMut<C> for PgRepository<C> {
+    fn as_mut(&mut self) -> &mut C {
+        &mut self.conn
+    }
+}
+
+impl<C> Deref for PgRepository<C> {
+    type Target = C;
+
+    fn deref(&self) -> &Self::Target {
+        &self.conn
+    }
+}
+
+impl<C> DerefMut for PgRepository<C> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.conn
     }
 }
 
@@ -80,7 +121,7 @@ impl RepositoryTransaction for PgRepository {
 
     fn save(self: Box<Self>) -> BoxFuture<'static, Result<(), Self::Error>> {
         let span = tracing::info_span!("db.save");
-        self.txn
+        self.conn
             .commit()
             .map_err(DatabaseError::from)
             .instrument(span)
@@ -89,7 +130,7 @@ impl RepositoryTransaction for PgRepository {
 
     fn cancel(self: Box<Self>) -> BoxFuture<'static, Result<(), Self::Error>> {
         let span = tracing::info_span!("db.cancel");
-        self.txn
+        self.conn
             .rollback()
             .map_err(DatabaseError::from)
             .instrument(span)
@@ -97,102 +138,107 @@ impl RepositoryTransaction for PgRepository {
     }
 }
 
-impl RepositoryAccess for PgRepository {
+impl<C> RepositoryAccess for PgRepository<C>
+where
+    C: AsMut<PgConnection> + Send,
+{
     type Error = DatabaseError;
 
     fn upstream_oauth_link<'c>(
         &'c mut self,
     ) -> Box<dyn UpstreamOAuthLinkRepository<Error = Self::Error> + 'c> {
-        Box::new(PgUpstreamOAuthLinkRepository::new(&mut self.txn))
+        Box::new(PgUpstreamOAuthLinkRepository::new(self.conn.as_mut()))
     }
 
     fn upstream_oauth_provider<'c>(
         &'c mut self,
     ) -> Box<dyn UpstreamOAuthProviderRepository<Error = Self::Error> + 'c> {
-        Box::new(PgUpstreamOAuthProviderRepository::new(&mut self.txn))
+        Box::new(PgUpstreamOAuthProviderRepository::new(self.conn.as_mut()))
     }
 
     fn upstream_oauth_session<'c>(
         &'c mut self,
     ) -> Box<dyn UpstreamOAuthSessionRepository<Error = Self::Error> + 'c> {
-        Box::new(PgUpstreamOAuthSessionRepository::new(&mut self.txn))
+        Box::new(PgUpstreamOAuthSessionRepository::new(self.conn.as_mut()))
     }
 
     fn user<'c>(&'c mut self) -> Box<dyn UserRepository<Error = Self::Error> + 'c> {
-        Box::new(PgUserRepository::new(&mut self.txn))
+        Box::new(PgUserRepository::new(self.conn.as_mut()))
     }
 
     fn user_email<'c>(&'c mut self) -> Box<dyn UserEmailRepository<Error = Self::Error> + 'c> {
-        Box::new(PgUserEmailRepository::new(&mut self.txn))
+        Box::new(PgUserEmailRepository::new(self.conn.as_mut()))
     }
 
     fn user_password<'c>(
         &'c mut self,
     ) -> Box<dyn UserPasswordRepository<Error = Self::Error> + 'c> {
-        Box::new(PgUserPasswordRepository::new(&mut self.txn))
+        Box::new(PgUserPasswordRepository::new(self.conn.as_mut()))
     }
 
     fn browser_session<'c>(
         &'c mut self,
     ) -> Box<dyn BrowserSessionRepository<Error = Self::Error> + 'c> {
-        Box::new(PgBrowserSessionRepository::new(&mut self.txn))
+        Box::new(PgBrowserSessionRepository::new(self.conn.as_mut()))
     }
 
     fn oauth2_client<'c>(
         &'c mut self,
     ) -> Box<dyn OAuth2ClientRepository<Error = Self::Error> + 'c> {
-        Box::new(PgOAuth2ClientRepository::new(&mut self.txn))
+        Box::new(PgOAuth2ClientRepository::new(self.conn.as_mut()))
     }
 
     fn oauth2_authorization_grant<'c>(
         &'c mut self,
     ) -> Box<dyn OAuth2AuthorizationGrantRepository<Error = Self::Error> + 'c> {
-        Box::new(PgOAuth2AuthorizationGrantRepository::new(&mut self.txn))
+        Box::new(PgOAuth2AuthorizationGrantRepository::new(
+            self.conn.as_mut(),
+        ))
     }
 
     fn oauth2_session<'c>(
         &'c mut self,
     ) -> Box<dyn OAuth2SessionRepository<Error = Self::Error> + 'c> {
-        Box::new(PgOAuth2SessionRepository::new(&mut self.txn))
+        Box::new(PgOAuth2SessionRepository::new(self.conn.as_mut()))
     }
 
     fn oauth2_access_token<'c>(
         &'c mut self,
     ) -> Box<dyn OAuth2AccessTokenRepository<Error = Self::Error> + 'c> {
-        Box::new(PgOAuth2AccessTokenRepository::new(&mut self.txn))
+        Box::new(PgOAuth2AccessTokenRepository::new(self.conn.as_mut()))
     }
 
     fn oauth2_refresh_token<'c>(
         &'c mut self,
     ) -> Box<dyn OAuth2RefreshTokenRepository<Error = Self::Error> + 'c> {
-        Box::new(PgOAuth2RefreshTokenRepository::new(&mut self.txn))
+        Box::new(PgOAuth2RefreshTokenRepository::new(self.conn.as_mut()))
     }
 
     fn compat_session<'c>(
         &'c mut self,
     ) -> Box<dyn CompatSessionRepository<Error = Self::Error> + 'c> {
-        Box::new(PgCompatSessionRepository::new(&mut self.txn))
+        Box::new(PgCompatSessionRepository::new(self.conn.as_mut()))
     }
 
     fn compat_sso_login<'c>(
         &'c mut self,
     ) -> Box<dyn CompatSsoLoginRepository<Error = Self::Error> + 'c> {
-        Box::new(PgCompatSsoLoginRepository::new(&mut self.txn))
+        Box::new(PgCompatSsoLoginRepository::new(self.conn.as_mut()))
     }
 
     fn compat_access_token<'c>(
         &'c mut self,
     ) -> Box<dyn CompatAccessTokenRepository<Error = Self::Error> + 'c> {
-        Box::new(PgCompatAccessTokenRepository::new(&mut self.txn))
+        Box::new(PgCompatAccessTokenRepository::new(self.conn.as_mut()))
     }
 
     fn compat_refresh_token<'c>(
         &'c mut self,
     ) -> Box<dyn CompatRefreshTokenRepository<Error = Self::Error> + 'c> {
-        Box::new(PgCompatRefreshTokenRepository::new(&mut self.txn))
+        Box::new(PgCompatRefreshTokenRepository::new(self.conn.as_mut()))
     }
 
     fn job<'c>(&'c mut self) -> Box<dyn JobRepository<Error = Self::Error> + 'c> {
-        Box::new(PgJobRepository::new(&mut self.txn))
+        Box::new(PgJobRepository::new(self.conn.as_mut()))
     }
 }

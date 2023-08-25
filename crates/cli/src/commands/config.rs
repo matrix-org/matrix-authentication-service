@@ -17,13 +17,14 @@ use std::collections::HashSet;
 use clap::Parser;
 use mas_config::{ConfigurationSection, RootConfig, SyncConfig};
 use mas_storage::{
-    upstream_oauth2::UpstreamOAuthProviderRepository, Repository, RepositoryAccess, SystemClock,
+    upstream_oauth2::UpstreamOAuthProviderRepository, RepositoryAccess, SystemClock,
 };
 use mas_storage_pg::PgRepository;
 use rand::SeedableRng;
+use sqlx::{postgres::PgAdvisoryLock, Acquire};
 use tracing::{info, info_span, warn};
 
-use crate::util::database_from_config;
+use crate::util::database_connection_from_config;
 
 fn map_import_preference(
     config: &mas_config::UpstreamOAuth2ImportPreference,
@@ -144,8 +145,18 @@ async fn sync(root: &super::Options, prune: bool, dry_run: bool) -> anyhow::Resu
 
     let config: SyncConfig = root.load_config()?;
     let encrypter = config.secrets.encrypter();
-    let pool = database_from_config(&config.database).await?;
-    let mut repo = PgRepository::from_pool(&pool).await?.boxed();
+    // Grab a connection to the database
+    let mut conn = database_connection_from_config(&config.database).await?;
+    // Start a transaction
+    let txn = conn.begin().await?;
+
+    // Grab a lock within the transaction
+    tracing::info!("Acquiring config lock");
+    let lock = PgAdvisoryLock::new("MAS config sync");
+    let lock = lock.acquire(txn).await?;
+
+    // Create a repository from the connection with the lock
+    let mut repo = PgRepository::from_conn(lock);
 
     tracing::info!(
         prune,
@@ -284,11 +295,14 @@ async fn sync(root: &super::Options, prune: bool, dry_run: bool) -> anyhow::Resu
         }
     }
 
+    // Get the lock and release it to commit the transaction
+    let lock = repo.into_inner();
+    let txn = lock.release_now().await?;
     if dry_run {
         info!("Dry run, rolling back changes");
-        repo.cancel().await?;
+        txn.rollback().await?;
     } else {
-        repo.save().await?;
+        txn.commit().await?;
     }
     Ok(())
 }

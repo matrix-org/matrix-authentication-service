@@ -31,7 +31,7 @@ use tokio::signal::unix::SignalKind;
 use tracing::{info, info_span, warn, Instrument};
 
 use crate::util::{
-    database_from_config, mailer_from_config, password_manager_from_config,
+    database_pool_from_config, mailer_from_config, password_manager_from_config,
     policy_factory_from_config, register_sighup, templates_from_config,
 };
 
@@ -59,7 +59,7 @@ impl Options {
 
         // Connect to the database
         info!("Connecting to the database");
-        let pool = database_from_config(&config.database).await?;
+        let pool = database_pool_from_config(&config.database).await?;
 
         if self.migrate {
             info!("Running pending migrations");
