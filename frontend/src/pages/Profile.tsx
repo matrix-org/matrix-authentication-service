@@ -20,7 +20,7 @@ import NotLoggedIn from "../components/NotLoggedIn";
 import UserEmailList from "../components/UserEmailList";
 import { isErr, unwrapErr, unwrapOk } from "../result";
 
-const EmailList: React.FC = () => {
+const Profile: React.FC = () => {
   const result = useAtomValue(currentUserIdAtom);
   if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
 
@@ -30,4 +30,4 @@ const EmailList: React.FC = () => {
   return <UserEmailList userId={userId} />;
 };
 
-export default EmailList;
+export default Profile;

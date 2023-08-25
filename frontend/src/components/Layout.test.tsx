@@ -14,14 +14,16 @@
 
 // @vitest-environment happy-dom
 
+import { render } from "@testing-library/react";
 import { Provider } from "jotai";
 import { useHydrateAtoms } from "jotai/utils";
-import { create } from "react-test-renderer";
-import { beforeEach, describe, expect, it } from "vitest";
+import { Suspense } from "react";
+import { describe, expect, it, vi, afterAll, beforeEach } from "vitest";
 
-import { appConfigAtom, locationAtom } from "../../Router";
+import { appConfigAtom, locationAtom } from "../Router";
+import { currentUserIdAtom, GqlResult } from "../atoms";
 
-import NavItem from "./NavItem";
+import Layout from "./Layout";
 
 beforeEach(async () => {
   // For some reason, the locationAtom gets updated with `about:black` on render,
@@ -48,39 +50,30 @@ const WithLocation: React.FC<React.PropsWithChildren<{ path: string }>> = ({
 }) => {
   return (
     <Provider>
-      <HydrateLocation path={path}>{children}</HydrateLocation>
+      <Suspense>
+        <HydrateLocation path={path}>{children}</HydrateLocation>
+      </Suspense>
     </Provider>
   );
 };
 
-describe("NavItem", () => {
-  it("render an active <NavItem />", () => {
-    const component = create(
-      <WithLocation path="/">
-        <NavItem route={{ type: "home" }}>Active</NavItem>
-      </WithLocation>,
+describe("<Layout />", () => {
+  beforeEach(() => {
+    vi.spyOn(currentUserIdAtom, "read").mockResolvedValue(
+      "abc123" as unknown as GqlResult<string | null>,
     );
-    const tree = component.toJSON();
-    expect(tree).toMatchSnapshot();
   });
-
-  it("render an inactive <NavItem />", () => {
-    const component = create(
+  afterAll(() => {
+    vi.restoreAllMocks();
+  });
+  it("renders app navigation correctly", async () => {
+    const component = render(
       <WithLocation path="/account">
-        <NavItem route={{ type: "home" }}>Inactive</NavItem>
+        <Layout />
       </WithLocation>,
     );
-    const tree = component.toJSON();
-    expect(tree).toMatchSnapshot();
-  });
 
-  it("renders a different route", () => {
-    const component = create(
-      <WithLocation path="/">
-        <NavItem route={{ type: "profile" }}>Emails</NavItem>
-      </WithLocation>,
-    );
-    const tree = component.toJSON();
-    expect(tree).toMatchSnapshot();
+    expect(await component.findByText("Profile")).toMatchSnapshot();
+    expect(await component.findByText("Home")).toMatchSnapshot();
   });
 });

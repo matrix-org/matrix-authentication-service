@@ -43,7 +43,7 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
 
       <NavBar>
         <NavItem route={{ type: "home" }}>Home</NavItem>
-        <NavItem route={{ type: "email-list" }}>Emails</NavItem>
+        <NavItem route={{ type: "profile" }}>Profile</NavItem>
       </NavBar>
 
       <main>{children}</main>
