@@ -123,17 +123,6 @@ export const Empty: Story = {
   },
 };
 
-export const NoPrimaryEmail: Story = {
-  args: {
-    primaryEmail: null,
-    unverifiedEmails: 0,
-    confirmedEmails: 0,
-    oauth2Sessions: 0,
-    compatSessions: 0,
-    browserSessions: 0,
-  },
-};
-
 export const UnverifiedEmails: Story = {
   args: {
     primaryEmail: "hello@example.com",

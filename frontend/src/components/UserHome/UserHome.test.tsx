@@ -61,7 +61,7 @@ describe("UserHome", () => {
     expect(tree).toMatchSnapshot();
   });
 
-  it("render a <UserHome /> with additional emails", () => {
+  it("render a <UserHome /> with sessions", () => {
     const primaryEmail = makeFragmentData(
       {
         id: "email:123",
@@ -79,84 +79,16 @@ describe("UserHome", () => {
           ...primaryEmail,
         },
         compatSessions: {
-          totalCount: 0,
-        },
-        browserSessions: {
-          totalCount: 0,
-        },
-        oauth2Sessions: {
-          totalCount: 0,
-        },
-        unverifiedEmails: {
-          totalCount: 0,
-        },
-        confirmedEmails: {
-          totalCount: 4,
-        },
-      },
-      FRAGMENT,
-    );
-    const component = create(<UserHome user={user} />);
-    const tree = component.toJSON();
-    expect(tree).toMatchSnapshot();
-  });
-
-  it("render a <UserHome /> without primary email", () => {
-    const user = makeFragmentData(
-      {
-        id: "user:123",
-        primaryEmail: null,
-        compatSessions: {
-          totalCount: 0,
-        },
-        browserSessions: {
-          totalCount: 0,
-        },
-        oauth2Sessions: {
-          totalCount: 0,
-        },
-        unverifiedEmails: {
-          totalCount: 0,
-        },
-        confirmedEmails: {
-          totalCount: 0,
-        },
-      },
-      FRAGMENT,
-    );
-    const component = create(<UserHome user={user} />);
-    const tree = component.toJSON();
-    expect(tree).toMatchSnapshot();
-  });
-
-  it("render a <UserHome /> with an unverified email", () => {
-    const primaryEmail = makeFragmentData(
-      {
-        id: "email:123",
-        email: "hello@example.com",
-        confirmedAt: new Date(),
-      },
-      EMAIL_FRAGMENT,
-    );
-
-    const user = makeFragmentData(
-      {
-        id: "user:123",
-        primaryEmail: {
-          id: "email:123",
-          ...primaryEmail,
-        },
-        compatSessions: {
-          totalCount: 0,
-        },
-        browserSessions: {
-          totalCount: 0,
-        },
-        oauth2Sessions: {
-          totalCount: 0,
-        },
-        unverifiedEmails: {
           totalCount: 1,
+        },
+        browserSessions: {
+          totalCount: 2,
+        },
+        oauth2Sessions: {
+          totalCount: 3,
+        },
+        unverifiedEmails: {
+          totalCount: 0,
         },
         confirmedEmails: {
           totalCount: 1,

@@ -118,8 +118,7 @@ const CompatSessionList: React.FC<{ userId: string }> = ({ userId }) => {
 
   if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
   const compatSessionList = unwrapOk(result);
-  if (compatSessionList === null)
-    return <>Failed to load list of compatibility sessions.</>;
+  if (compatSessionList === null) return <>Failed to load sessions.</>;
 
   const paginate = (pagination: Pagination): void => {
     startTransition(() => {
@@ -138,7 +137,7 @@ const CompatSessionList: React.FC<{ userId: string }> = ({ userId }) => {
 
   return (
     <BlockList>
-      <Title>List of compatibility sessions:</Title>
+      <Title>Regular apps</Title>
       <label>
         <input
           type="checkbox"

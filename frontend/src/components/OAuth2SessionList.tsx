@@ -123,8 +123,7 @@ const OAuth2SessionList: React.FC<Props> = ({ userId }) => {
 
   if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
   const oauth2Sessions = unwrapOk(result);
-  if (oauth2Sessions === null)
-    return <>Failed to load OAuth 2.0 session list</>;
+  if (oauth2Sessions === null) return <>Failed to load sessions.</>;
 
   const paginate = (pagination: Pagination): void => {
     startTransition(() => {
@@ -143,7 +142,7 @@ const OAuth2SessionList: React.FC<Props> = ({ userId }) => {
 
   return (
     <BlockList>
-      <Title>List of OAuth 2.0 sessions:</Title>
+      <Title>New apps:</Title>
       <label>
         <input
           type="checkbox"

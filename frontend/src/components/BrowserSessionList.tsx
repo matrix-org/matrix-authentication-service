@@ -146,7 +146,7 @@ const BrowserSessionList: React.FC<{ userId: string }> = ({ userId }) => {
 
   return (
     <BlockList>
-      <Title>List of browser sessions:</Title>
+      <Title>Browser:</Title>
       <PaginationControls
         onPrev={prevPage ? (): void => paginate(prevPage) : null}
         onNext={nextPage ? (): void => paginate(nextPage) : null}
