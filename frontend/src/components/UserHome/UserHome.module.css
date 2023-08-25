@@ -13,6 +13,13 @@
  * limitations under the License.
  */
 
+.session-list {
+    margin-top: var(--cpd-space-4x);
+    display: flex;
+    flex-direction: column;
+    gap: var(--cpd-space-2x);
+}
+
 .session-list-block {
     display: flex;
     flex-direction: row;

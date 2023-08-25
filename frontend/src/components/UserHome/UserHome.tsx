@@ -18,7 +18,8 @@ import { useState } from "react";
 import { Link } from "../../Router";
 import { FragmentType, graphql, useFragment } from "../../gql";
 import Block from "../Block/Block";
-import UserEmail from "../UserEmail";
+
+import styles from "./UserHome.module.css";
 
 export const FRAGMENT = graphql(/* GraphQL */ `
   fragment UserHome_user on User {
@@ -78,16 +79,11 @@ const UserHome: React.FC<{
           address(es). <Link route={{ type: "profile" }}>Check</Link>
         </Alert>
       )}
-      {data.primaryEmail ? (
-        <UserEmail email={data.primaryEmail} isPrimary />
-      ) : (
-        <Alert type="critical" title="No primary email adress" />
-      )}
       {/* This is a short term solution, so I won't bother extracting these blocks into components */}
-      <section className="m-4 flex flex-col gap-2">
+      <section className={styles.sessionList}>
         <H3>Where you're signed in</H3>
-        <Block className="flex flex-row justify-between align-center gap-1">
-          <div className="flex flex-col">
+        <Block className={styles.sessionListBlock}>
+          <div className={styles.sessionListBlockInfo}>
             <H6>Browser</H6>
             <Body>
               {data.browserSessions.totalCount} active{" "}
@@ -96,8 +92,8 @@ const UserHome: React.FC<{
           </div>
           <Link route={{ type: "browser-session-list" }}>View all</Link>
         </Block>
-        <Block className="flex flex-row justify-between align-center gap-1">
-          <div className="flex flex-col">
+        <Block className={styles.sessionListBlock}>
+          <div className={styles.sessionListBlockInfo}>
             <H6>New apps</H6>
             <Body>
               {data.oauth2Sessions.totalCount} active{" "}
@@ -106,8 +102,8 @@ const UserHome: React.FC<{
           </div>
           <Link route={{ type: "oauth2-session-list" }}>View all</Link>
         </Block>
-        <Block className="flex flex-row justify-between align-center gap-1">
-          <div className="flex flex-col">
+        <Block className={styles.sessionListBlock}>
+          <div className={styles.sessionListBlockInfo}>
             <H6>Regular apps</H6>
             <Body>
               {data.compatSessions.totalCount} active{" "}

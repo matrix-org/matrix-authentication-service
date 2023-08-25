@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Alert } from "@vector-im/compound-web";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
@@ -135,11 +136,13 @@ const UserEmailList: React.FC<{
     primaryEmailIdFamily(userId),
   );
 
+  console.log('hhh', { result, primaryEmailId})
+
   const paginate = (pagination: Pagination): void => {
     startTransition(() => {
       setPagination(pagination);
     });
-  };
+  };Text
 
   // When removing an email, we want to refresh the list and go back to the first page
   const onRemove = (): void => {
@@ -154,6 +157,8 @@ const UserEmailList: React.FC<{
     setRoute({ type: "verify-email", id });
   };
 
+  const showNoPrimaryEmailAlert = !!result && !primaryEmailId;
+
   return (
     <BlockList>
       <PaginationControls
@@ -162,6 +167,9 @@ const UserEmailList: React.FC<{
         onNext={nextPage ? (): void => paginate(nextPage) : null}
         disabled={pending}
       />
+      {showNoPrimaryEmailAlert && (
+        <Alert type="critical" title="No primary email address" />
+      )}
       {result.data?.user?.emails?.edges?.map((edge) => (
         <UserEmail
           email={edge.node}
