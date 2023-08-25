@@ -90,7 +90,7 @@ const segmentMatches = (
   return true;
 };
 
-const segmentsToRoute = (segments: string[]): Route => {
+export const segmentsToRoute = (segments: string[]): Route => {
   const matches = (...pattern: PatternItem[]): boolean =>
     segmentMatches(segments, ...pattern);
 

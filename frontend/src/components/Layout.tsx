@@ -27,7 +27,6 @@ import UserGreeting from "./UserGreeting";
 
 const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const result = useAtomValue(currentUserIdAtom);
-
   if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
 
   const userId = unwrapOk(result);
