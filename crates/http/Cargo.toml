@@ -22,19 +22,18 @@ serde.workspace = true
 serde_json.workspace = true
 serde_urlencoded = "0.7.1"
 thiserror.workspace = true
-tokio = { version = "1.30.0", features = ["sync", "parking_lot"], optional = true }
+tokio = { version = "1.32.0", features = ["sync", "parking_lot"], optional = true }
 tower = { version = "0.4.13", features = [] }
 tower-http = { version = "0.4.3", features = ["cors"] }
 tracing.workspace = true
 tracing-opentelemetry = "0.20.0"
-webpki = { version = "0.22.0", optional = true }
 webpki-roots = { version = "0.25.2", optional = true }
 
 mas-tower = { path = "../tower" }
 
 [dev-dependencies]
 anyhow.workspace = true
-tokio = { version = "1.30.0", features = ["macros", "rt"] }
+tokio = { version = "1.32.0", features = ["macros", "rt"] }
 tower = { version = "0.4.13", features = ["util"] }
 
 [features]
@@ -46,7 +45,6 @@ client = [
   "hyper/tcp",
   "dep:hyper-rustls",
   "dep:tokio",
-  "dep:webpki",
   "tower/limit",
   "tower-http/timeout",
   "tower-http/follow-redirect",

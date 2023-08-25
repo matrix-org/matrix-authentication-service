@@ -15,6 +15,14 @@ Although it is possible to generate these secrets manually, it is strongly recom
 mas-cli config generate > config.yaml
 ```
 
+If you're using the docker container, the command `mas-cli` can be invoked with `docker run`:
+
+```sh
+docker run ghcr.io/matrix-org/matrix-authentication-service:main config generate > config.yaml
+```
+
+This applies to all of the `mas-cli` commands in this document.
+
 **Note:** The generated configuration file is very extensive, and contains the default values for all the configuration options.
 This will be made easier to read in the future, but in the meantime, it is recommended to strip untouched options from the configuration file.
 

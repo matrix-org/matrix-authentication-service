@@ -6,7 +6,7 @@ members = ["crates/*"]
 
 # High-level error handling
 [workspace.dependencies.anyhow]
-version = "1.0.72"
+version = "1.0.75"
 
 # Time utilities
 [workspace.dependencies.chrono]
@@ -24,16 +24,16 @@ version = "0.8.5"
 
 # Serialization and deserialization
 [workspace.dependencies.serde]
-version = "1.0.183"
+version = "1.0.185"
 features = ["derive"] # Most of the time, if we need serde, we need derive
 
 # JSON serialization and deserialization
 [workspace.dependencies.serde_json]
-version = "1.0.104"
+version = "1.0.105"
 
 # Custom error types
 [workspace.dependencies.thiserror]
-version = "1.0.44"
+version = "1.0.47"
 
 # Logging and tracing
 [workspace.dependencies.tracing]

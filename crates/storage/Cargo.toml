@@ -6,7 +6,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-async-trait = "0.1.72"
+async-trait = "0.1.73"
 chrono.workspace = true
 thiserror.workspace = true
 futures-util = "0.3.28"

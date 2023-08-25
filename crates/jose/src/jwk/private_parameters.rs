@@ -17,16 +17,11 @@ use mas_iana::jose::{
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use serde_with::{
-    base64::{Base64, UrlSafe},
-    formats::Unpadded,
-    serde_as,
-};
 use thiserror::Error;
 
 use super::{public_parameters::JsonWebKeyPublicParameters, ParametersInfo};
+use crate::base64::Base64UrlNoPad;
 
-#[serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "kty")]
 pub enum JsonWebKeyPrivateParameters {
@@ -114,13 +109,11 @@ impl TryFrom<JsonWebKeyPrivateParameters> for JsonWebKeyPublicParameters {
     }
 }
 
-#[serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct OctPrivateParameters {
     /// Key Value
     #[schemars(with = "String")]
-    #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-    k: Vec<u8>,
+    k: Base64UrlNoPad,
 }
 
 impl ParametersInfo for OctPrivateParameters {
@@ -137,48 +130,39 @@ impl ParametersInfo for OctPrivateParameters {
     }
 }
 
-#[serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct RsaPrivateParameters {
     /// Modulus
     #[schemars(with = "String")]
-    #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-    n: Vec<u8>,
+    n: Base64UrlNoPad,
 
     /// Exponent
     #[schemars(with = "String")]
-    #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-    e: Vec<u8>,
+    e: Base64UrlNoPad,
 
     /// Private Exponent
     #[schemars(with = "String")]
-    #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-    d: Vec<u8>,
+    d: Base64UrlNoPad,
 
     /// First Prime Factor
     #[schemars(with = "String")]
-    #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-    p: Vec<u8>,
+    p: Base64UrlNoPad,
 
     /// Second Prime Factor
     #[schemars(with = "String")]
-    #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-    q: Vec<u8>,
+    q: Base64UrlNoPad,
 
     /// First Factor CRT Exponent
     #[schemars(with = "String")]
-    #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-    dp: Vec<u8>,
+    dp: Base64UrlNoPad,
 
     /// Second Factor CRT Exponent
     #[schemars(with = "String")]
-    #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-    dq: Vec<u8>,
+    dq: Base64UrlNoPad,
 
     /// First CRT Coefficient
     #[schemars(with = "String")]
-    #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-    qi: Vec<u8>,
+    qi: Base64UrlNoPad,
 
     /// Other Primes Info
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -208,23 +192,19 @@ impl From<RsaPrivateParameters> for super::public_parameters::RsaPublicParameter
     }
 }
 
-#[serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 struct RsaOtherPrimeInfo {
     /// Prime Factor
     #[schemars(with = "String")]
-    #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-    r: Vec<u8>,
+    r: Base64UrlNoPad,
 
     /// Factor CRT Exponent
     #[schemars(with = "String")]
-    #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-    d: Vec<u8>,
+    d: Base64UrlNoPad,
 
     /// Factor CRT Coefficient
     #[schemars(with = "String")]
-    #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-    t: Vec<u8>,
+    t: Base64UrlNoPad,
 }
 
 mod rsa_impls {
@@ -244,14 +224,14 @@ mod rsa_impls {
 
         #[allow(clippy::many_single_char_names)]
         fn try_from(value: &RsaPrivateParameters) -> Result<Self, Self::Error> {
-            let n = BigUint::from_bytes_be(&value.n);
-            let e = BigUint::from_bytes_be(&value.e);
-            let d = BigUint::from_bytes_be(&value.d);
+            let n = BigUint::from_bytes_be(value.n.as_bytes());
+            let e = BigUint::from_bytes_be(value.e.as_bytes());
+            let d = BigUint::from_bytes_be(value.d.as_bytes());
 
             let primes = [&value.p, &value.q]
                 .into_iter()
                 .chain(value.oth.iter().flatten().map(|o| &o.r))
-                .map(|i| BigUint::from_bytes_be(i))
+                .map(|i| BigUint::from_bytes_be(i.as_bytes()))
                 .collect();
 
             let key = RsaPrivateKey::from_components(n, e, d, primes)?;
@@ -263,22 +243,18 @@ mod rsa_impls {
     }
 }
 
-#[serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct EcPrivateParameters {
     pub(crate) crv: JsonWebKeyEcEllipticCurve,
 
     #[schemars(with = "String")]
-    #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-    x: Vec<u8>,
+    x: Base64UrlNoPad,
 
     #[schemars(with = "String")]
-    #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-    y: Vec<u8>,
+    y: Base64UrlNoPad,
 
     #[schemars(with = "String")]
-    #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-    d: Vec<u8>,
+    d: Base64UrlNoPad,
 }
 
 impl ParametersInfo for EcPrivateParameters {
@@ -310,6 +286,7 @@ mod ec_impls {
     };
 
     use super::{super::JwkEcCurve, EcPrivateParameters};
+    use crate::base64::Base64UrlNoPad;
 
     impl<C> TryFrom<EcPrivateParameters> for SecretKey<C>
     where
@@ -328,7 +305,7 @@ mod ec_impls {
         type Error = elliptic_curve::Error;
 
         fn try_from(value: &EcPrivateParameters) -> Result<Self, Self::Error> {
-            SecretKey::from_slice(&value.d)
+            SecretKey::from_slice(value.d.as_bytes())
         }
     }
 
@@ -357,22 +334,20 @@ mod ec_impls {
             let d = key.to_bytes();
             EcPrivateParameters {
                 crv: C::CRV,
-                x: x.to_vec(),
-                y: y.to_vec(),
-                d: d.to_vec(),
+                x: Base64UrlNoPad::new(x.to_vec()),
+                y: Base64UrlNoPad::new(y.to_vec()),
+                d: Base64UrlNoPad::new(d.to_vec()),
             }
         }
     }
 }
 
-#[serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct OkpPrivateParameters {
     crv: JsonWebKeyOkpEllipticCurve,
 
     #[schemars(with = "String")]
-    #[serde_as(as = "Base64<UrlSafe, Unpadded>")]
-    x: Vec<u8>,
+    x: Base64UrlNoPad,
 }
 
 impl ParametersInfo for OkpPrivateParameters {

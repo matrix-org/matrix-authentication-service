@@ -22,7 +22,7 @@ schemars = "0.8.12"
 sec1 = "0.7.3"
 serde.workspace = true
 serde_json.workspace = true
-serde_with = { version = "3.2.0", features = ["base64"] }
+serde_with = "3.3.0"
 sha2 = { version = "0.10.7", features = ["oid"] }
 signature = "2.1.0"
 thiserror.workspace = true
