@@ -136,13 +136,14 @@ const UserEmailList: React.FC<{
     primaryEmailIdFamily(userId),
   );
 
-  console.log('hhh', { result, primaryEmailId})
+  console.log("hhh", { result, primaryEmailId });
 
   const paginate = (pagination: Pagination): void => {
     startTransition(() => {
       setPagination(pagination);
     });
-  };Text
+  };
+  Text;
 
   // When removing an email, we want to refresh the list and go back to the first page
   const onRemove = (): void => {

@@ -1,6 +1,99 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`UserHome > render a <UserHome /> without primary email 1`] = `
+exports[`UserHome > render a <UserHome /> with additional emails 1`] = `
+<section
+  className="_sessionList_5d2854"
+>
+  <h3
+    className="_font-heading-md-semibold_1g2sj_129"
+  >
+    Where you're signed in
+  </h3>
+  <div
+    className="_block_17898c _sessionListBlock_5d2854"
+  >
+    <div
+      className="_sessionListBlockInfo_5d2854"
+    >
+      <h6
+        className="_font-body-md-semibold_1g2sj_69"
+      >
+        Browser
+      </h6>
+      <p
+        className="_font-body-md-regular_1g2sj_65"
+      >
+        0
+         active
+         
+        sessions
+      </p>
+    </div>
+    <a
+      href="/sessions"
+      onClick={[Function]}
+    >
+      View all
+    </a>
+  </div>
+  <div
+    className="_block_17898c _sessionListBlock_5d2854"
+  >
+    <div
+      className="_sessionListBlockInfo_5d2854"
+    >
+      <h6
+        className="_font-body-md-semibold_1g2sj_69"
+      >
+        New apps
+      </h6>
+      <p
+        className="_font-body-md-regular_1g2sj_65"
+      >
+        0
+         active
+         
+        sessions
+      </p>
+    </div>
+    <a
+      href="/oauth2-sessions"
+      onClick={[Function]}
+    >
+      View all
+    </a>
+  </div>
+  <div
+    className="_block_17898c _sessionListBlock_5d2854"
+  >
+    <div
+      className="_sessionListBlockInfo_5d2854"
+    >
+      <h6
+        className="_font-body-md-semibold_1g2sj_69"
+      >
+        Regular apps
+      </h6>
+      <p
+        className="_font-body-md-regular_1g2sj_65"
+      >
+        0
+         active
+         
+        sessions
+      </p>
+    </div>
+    <a
+      href="/compat-sessions"
+      onClick={[Function]}
+    >
+      View all
+    </a>
+  </div>
+</section>
+`;
+
+exports[`UserHome > render a <UserHome /> with an unverified email 1`] = `
 [
   <div
     className="_alert_fxw8y_19"
@@ -26,13 +119,39 @@ exports[`UserHome > render a <UserHome /> without primary email 1`] = `
       <p
         className="_title_fxw8y_48"
       >
-        No primary email adress
+        Unverified email
       </p>
-      <p />
+      <p>
+        You have 
+        1
+         unverified email address(es). 
+        <a
+          href="/profile"
+          onClick={[Function]}
+        >
+          Check
+        </a>
+      </p>
     </div>
+    <svg
+      aria-label="Close"
+      className="_close_fxw8y_68"
+      fill="currentColor"
+      height={16}
+      onClick={[Function]}
+      role="button"
+      viewBox="0 0 24 24"
+      width={16}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="m12 13.4-4.9 4.9a.948.948 0 0 1-.7.275.948.948 0 0 1-.7-.275.948.948 0 0 1-.275-.7.95.95 0 0 1 .275-.7l4.9-4.9-4.9-4.9a.948.948 0 0 1-.275-.7.95.95 0 0 1 .275-.7.948.948 0 0 1 .7-.275.95.95 0 0 1 .7.275l4.9 4.9 4.9-4.9a.948.948 0 0 1 .7-.275.95.95 0 0 1 .7.275.948.948 0 0 1 .275.7.948.948 0 0 1-.275.7L13.4 12l4.9 4.9a.948.948 0 0 1 .275.7.948.948 0 0 1-.275.7.948.948 0 0 1-.7.275.948.948 0 0 1-.7-.275L12 13.4Z"
+        fill="currentColor"
+      />
+    </svg>
   </div>,
   <section
-    className="m-4 flex flex-col gap-2"
+    className="_sessionList_5d2854"
   >
     <h3
       className="_font-heading-md-semibold_1g2sj_129"
@@ -40,10 +159,10 @@ exports[`UserHome > render a <UserHome /> without primary email 1`] = `
       Where you're signed in
     </h3>
     <div
-      className="_block_17898c flex flex-row justify-between align-center gap-1"
+      className="_block_17898c _sessionListBlock_5d2854"
     >
       <div
-        className="flex flex-col"
+        className="_sessionListBlockInfo_5d2854"
       >
         <h6
           className="_font-body-md-semibold_1g2sj_69"
@@ -67,10 +186,10 @@ exports[`UserHome > render a <UserHome /> without primary email 1`] = `
       </a>
     </div>
     <div
-      className="_block_17898c flex flex-row justify-between align-center gap-1"
+      className="_block_17898c _sessionListBlock_5d2854"
     >
       <div
-        className="flex flex-col"
+        className="_sessionListBlockInfo_5d2854"
       >
         <h6
           className="_font-body-md-semibold_1g2sj_69"
@@ -94,10 +213,10 @@ exports[`UserHome > render a <UserHome /> without primary email 1`] = `
       </a>
     </div>
     <div
-      className="_block_17898c flex flex-row justify-between align-center gap-1"
+      className="_block_17898c _sessionListBlock_5d2854"
     >
       <div
-        className="flex flex-col"
+        className="_sessionListBlockInfo_5d2854"
       >
         <h6
           className="_font-body-md-semibold_1g2sj_69"
@@ -122,4 +241,283 @@ exports[`UserHome > render a <UserHome /> without primary email 1`] = `
     </div>
   </section>,
 ]
+`;
+
+exports[`UserHome > render a <UserHome /> with sessions 1`] = `
+<section
+  className="_sessionList_5d2854"
+>
+  <h3
+    className="_font-heading-md-semibold_1g2sj_129"
+  >
+    Where you're signed in
+  </h3>
+  <div
+    className="_block_17898c _sessionListBlock_5d2854"
+  >
+    <div
+      className="_sessionListBlockInfo_5d2854"
+    >
+      <h6
+        className="_font-body-md-semibold_1g2sj_69"
+      >
+        Browser
+      </h6>
+      <p
+        className="_font-body-md-regular_1g2sj_65"
+      >
+        2
+         active
+         
+        sessions
+      </p>
+    </div>
+    <a
+      href="/sessions"
+      onClick={[Function]}
+    >
+      View all
+    </a>
+  </div>
+  <div
+    className="_block_17898c _sessionListBlock_5d2854"
+  >
+    <div
+      className="_sessionListBlockInfo_5d2854"
+    >
+      <h6
+        className="_font-body-md-semibold_1g2sj_69"
+      >
+        New apps
+      </h6>
+      <p
+        className="_font-body-md-regular_1g2sj_65"
+      >
+        3
+         active
+         
+        sessions
+      </p>
+    </div>
+    <a
+      href="/oauth2-sessions"
+      onClick={[Function]}
+    >
+      View all
+    </a>
+  </div>
+  <div
+    className="_block_17898c _sessionListBlock_5d2854"
+  >
+    <div
+      className="_sessionListBlockInfo_5d2854"
+    >
+      <h6
+        className="_font-body-md-semibold_1g2sj_69"
+      >
+        Regular apps
+      </h6>
+      <p
+        className="_font-body-md-regular_1g2sj_65"
+      >
+        1
+         active
+         
+        session
+      </p>
+    </div>
+    <a
+      href="/compat-sessions"
+      onClick={[Function]}
+    >
+      View all
+    </a>
+  </div>
+</section>
+`;
+
+exports[`UserHome > render a <UserHome /> without primary email 1`] = `
+<section
+  className="_sessionList_5d2854"
+>
+  <h3
+    className="_font-heading-md-semibold_1g2sj_129"
+  >
+    Where you're signed in
+  </h3>
+  <div
+    className="_block_17898c _sessionListBlock_5d2854"
+  >
+    <div
+      className="_sessionListBlockInfo_5d2854"
+    >
+      <h6
+        className="_font-body-md-semibold_1g2sj_69"
+      >
+        Browser
+      </h6>
+      <p
+        className="_font-body-md-regular_1g2sj_65"
+      >
+        0
+         active
+         
+        sessions
+      </p>
+    </div>
+    <a
+      href="/sessions"
+      onClick={[Function]}
+    >
+      View all
+    </a>
+  </div>
+  <div
+    className="_block_17898c _sessionListBlock_5d2854"
+  >
+    <div
+      className="_sessionListBlockInfo_5d2854"
+    >
+      <h6
+        className="_font-body-md-semibold_1g2sj_69"
+      >
+        New apps
+      </h6>
+      <p
+        className="_font-body-md-regular_1g2sj_65"
+      >
+        0
+         active
+         
+        sessions
+      </p>
+    </div>
+    <a
+      href="/oauth2-sessions"
+      onClick={[Function]}
+    >
+      View all
+    </a>
+  </div>
+  <div
+    className="_block_17898c _sessionListBlock_5d2854"
+  >
+    <div
+      className="_sessionListBlockInfo_5d2854"
+    >
+      <h6
+        className="_font-body-md-semibold_1g2sj_69"
+      >
+        Regular apps
+      </h6>
+      <p
+        className="_font-body-md-regular_1g2sj_65"
+      >
+        0
+         active
+         
+        sessions
+      </p>
+    </div>
+    <a
+      href="/compat-sessions"
+      onClick={[Function]}
+    >
+      View all
+    </a>
+  </div>
+</section>
+`;
+
+exports[`UserHome > render an simple <UserHome /> 1`] = `
+<section
+  className="_sessionList_5d2854"
+>
+  <h3
+    className="_font-heading-md-semibold_1g2sj_129"
+  >
+    Where you're signed in
+  </h3>
+  <div
+    className="_block_17898c _sessionListBlock_5d2854"
+  >
+    <div
+      className="_sessionListBlockInfo_5d2854"
+    >
+      <h6
+        className="_font-body-md-semibold_1g2sj_69"
+      >
+        Browser
+      </h6>
+      <p
+        className="_font-body-md-regular_1g2sj_65"
+      >
+        0
+         active
+         
+        sessions
+      </p>
+    </div>
+    <a
+      href="/sessions"
+      onClick={[Function]}
+    >
+      View all
+    </a>
+  </div>
+  <div
+    className="_block_17898c _sessionListBlock_5d2854"
+  >
+    <div
+      className="_sessionListBlockInfo_5d2854"
+    >
+      <h6
+        className="_font-body-md-semibold_1g2sj_69"
+      >
+        New apps
+      </h6>
+      <p
+        className="_font-body-md-regular_1g2sj_65"
+      >
+        0
+         active
+         
+        sessions
+      </p>
+    </div>
+    <a
+      href="/oauth2-sessions"
+      onClick={[Function]}
+    >
+      View all
+    </a>
+  </div>
+  <div
+    className="_block_17898c _sessionListBlock_5d2854"
+  >
+    <div
+      className="_sessionListBlockInfo_5d2854"
+    >
+      <h6
+        className="_font-body-md-semibold_1g2sj_69"
+      >
+        Regular apps
+      </h6>
+      <p
+        className="_font-body-md-regular_1g2sj_65"
+      >
+        0
+         active
+         
+        sessions
+      </p>
+    </div>
+    <a
+      href="/compat-sessions"
+      onClick={[Function]}
+    >
+      View all
+    </a>
+  </div>
+</section>
 `;
