@@ -18,20 +18,20 @@ import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
 import { useTransition } from "react";
 
-import { routeAtom } from "../Router";
-import { graphql } from "../gql";
-import { PageInfo } from "../gql/graphql";
+import { routeAtom } from "../../Router";
+import { graphql } from "../../gql";
+import { PageInfo } from "../../gql/graphql";
 import {
   atomForCurrentPagination,
   atomWithPagination,
   FIRST_PAGE,
   Pagination,
-} from "../pagination";
+} from "../../pagination";
+import BlockList from "../BlockList";
+import PaginationControls from "../PaginationControls";
+import UserEmail from "../UserEmail";
 
 import AddEmailForm from "./AddEmailForm";
-import BlockList from "./BlockList";
-import PaginationControls from "./PaginationControls";
-import UserEmail from "./UserEmail";
 
 const QUERY = graphql(/* GraphQL */ `
   query UserEmailListQuery(

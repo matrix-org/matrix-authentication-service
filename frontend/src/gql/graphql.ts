@@ -896,26 +896,6 @@ export type CurrentViewerSessionQueryQuery = {
     | { __typename: "Oauth2Session" };
 };
 
-export type AddEmailMutationVariables = Exact<{
-  userId: Scalars["ID"]["input"];
-  email: Scalars["String"]["input"];
-}>;
-
-export type AddEmailMutation = {
-  __typename?: "Mutation";
-  addEmail: {
-    __typename?: "AddEmailPayload";
-    status: AddEmailStatus;
-    email?:
-      | ({ __typename?: "UserEmail"; id: string } & {
-          " $fragmentRefs"?: {
-            UserEmail_EmailFragment: UserEmail_EmailFragment;
-          };
-        })
-      | null;
-  };
-};
-
 export type BrowserSession_SessionFragment = {
   __typename?: "BrowserSession";
   id: string;
@@ -1165,6 +1145,68 @@ export type SetPrimaryEmailMutation = {
   };
 };
 
+export type UserGreetingQueryVariables = Exact<{
+  userId: Scalars["ID"]["input"];
+}>;
+
+export type UserGreetingQuery = {
+  __typename?: "Query";
+  user?: {
+    __typename?: "User";
+    id: string;
+    username: string;
+    matrix: {
+      __typename?: "MatrixUser";
+      mxid: string;
+      displayName?: string | null;
+    };
+  } | null;
+};
+
+export type UserHome_UserFragment = {
+  __typename?: "User";
+  id: string;
+  primaryEmail?:
+    | ({ __typename?: "UserEmail"; id: string } & {
+        " $fragmentRefs"?: { UserEmail_EmailFragment: UserEmail_EmailFragment };
+      })
+    | null;
+  confirmedEmails: { __typename?: "UserEmailConnection"; totalCount: number };
+  unverifiedEmails: { __typename?: "UserEmailConnection"; totalCount: number };
+  browserSessions: {
+    __typename?: "BrowserSessionConnection";
+    totalCount: number;
+  };
+  oauth2Sessions: {
+    __typename?: "Oauth2SessionConnection";
+    totalCount: number;
+  };
+  compatSessions: {
+    __typename?: "CompatSessionConnection";
+    totalCount: number;
+  };
+} & { " $fragmentName"?: "UserHome_UserFragment" };
+
+export type AddEmailMutationVariables = Exact<{
+  userId: Scalars["ID"]["input"];
+  email: Scalars["String"]["input"];
+}>;
+
+export type AddEmailMutation = {
+  __typename?: "Mutation";
+  addEmail: {
+    __typename?: "AddEmailPayload";
+    status: AddEmailStatus;
+    email?:
+      | ({ __typename?: "UserEmail"; id: string } & {
+          " $fragmentRefs"?: {
+            UserEmail_EmailFragment: UserEmail_EmailFragment;
+          };
+        })
+      | null;
+  };
+};
+
 export type UserEmailListQueryQueryVariables = Exact<{
   userId: Scalars["ID"]["input"];
   first?: InputMaybe<Scalars["Int"]["input"]>;
@@ -1213,48 +1255,6 @@ export type UserPrimaryEmailQuery = {
     primaryEmail?: { __typename?: "UserEmail"; id: string } | null;
   } | null;
 };
-
-export type UserGreetingQueryVariables = Exact<{
-  userId: Scalars["ID"]["input"];
-}>;
-
-export type UserGreetingQuery = {
-  __typename?: "Query";
-  user?: {
-    __typename?: "User";
-    id: string;
-    username: string;
-    matrix: {
-      __typename?: "MatrixUser";
-      mxid: string;
-      displayName?: string | null;
-    };
-  } | null;
-};
-
-export type UserHome_UserFragment = {
-  __typename?: "User";
-  id: string;
-  primaryEmail?:
-    | ({ __typename?: "UserEmail"; id: string } & {
-        " $fragmentRefs"?: { UserEmail_EmailFragment: UserEmail_EmailFragment };
-      })
-    | null;
-  confirmedEmails: { __typename?: "UserEmailConnection"; totalCount: number };
-  unverifiedEmails: { __typename?: "UserEmailConnection"; totalCount: number };
-  browserSessions: {
-    __typename?: "BrowserSessionConnection";
-    totalCount: number;
-  };
-  oauth2Sessions: {
-    __typename?: "Oauth2SessionConnection";
-    totalCount: number;
-  };
-  compatSessions: {
-    __typename?: "CompatSessionConnection";
-    totalCount: number;
-  };
-} & { " $fragmentName"?: "UserHome_UserFragment" };
 
 export type UserEmail_VerifyEmailFragment = {
   __typename?: "UserEmail";
@@ -1817,115 +1817,6 @@ export const CurrentViewerSessionQueryDocument = {
   CurrentViewerSessionQueryQuery,
   CurrentViewerSessionQueryQueryVariables
 >;
-export const AddEmailDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "mutation",
-      name: { kind: "Name", value: "AddEmail" },
-      variableDefinitions: [
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "userId" },
-          },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
-          },
-        },
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "email" },
-          },
-          type: {
-            kind: "NonNullType",
-            type: {
-              kind: "NamedType",
-              name: { kind: "Name", value: "String" },
-            },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "addEmail" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "input" },
-                value: {
-                  kind: "ObjectValue",
-                  fields: [
-                    {
-                      kind: "ObjectField",
-                      name: { kind: "Name", value: "userId" },
-                      value: {
-                        kind: "Variable",
-                        name: { kind: "Name", value: "userId" },
-                      },
-                    },
-                    {
-                      kind: "ObjectField",
-                      name: { kind: "Name", value: "email" },
-                      value: {
-                        kind: "Variable",
-                        name: { kind: "Name", value: "email" },
-                      },
-                    },
-                  ],
-                },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "status" } },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "email" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "id" } },
-                      {
-                        kind: "FragmentSpread",
-                        name: { kind: "Name", value: "UserEmail_email" },
-                      },
-                    ],
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
-    {
-      kind: "FragmentDefinition",
-      name: { kind: "Name", value: "UserEmail_email" },
-      typeCondition: {
-        kind: "NamedType",
-        name: { kind: "Name", value: "UserEmail" },
-      },
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          { kind: "Field", name: { kind: "Name", value: "id" } },
-          { kind: "Field", name: { kind: "Name", value: "email" } },
-          { kind: "Field", name: { kind: "Name", value: "confirmedAt" } },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<AddEmailMutation, AddEmailMutationVariables>;
 export const EndBrowserSessionDocument = {
   kind: "Document",
   definitions: [
@@ -3049,6 +2940,178 @@ export const SetPrimaryEmailDocument = {
   SetPrimaryEmailMutation,
   SetPrimaryEmailMutationVariables
 >;
+export const UserGreetingDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "UserGreeting" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "userId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "user" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "userId" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "username" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "matrix" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "mxid" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "displayName" },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<UserGreetingQuery, UserGreetingQueryVariables>;
+export const AddEmailDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "AddEmail" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "userId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "email" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "addEmail" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: {
+                  kind: "ObjectValue",
+                  fields: [
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "userId" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "userId" },
+                      },
+                    },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "email" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "email" },
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "status" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "email" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                      {
+                        kind: "FragmentSpread",
+                        name: { kind: "Name", value: "UserEmail_email" },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "UserEmail_email" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "UserEmail" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          { kind: "Field", name: { kind: "Name", value: "email" } },
+          { kind: "Field", name: { kind: "Name", value: "confirmedAt" } },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<AddEmailMutation, AddEmailMutationVariables>;
 export const UserEmailListQueryDocument = {
   kind: "Document",
   definitions: [
@@ -3311,69 +3374,6 @@ export const UserPrimaryEmailDocument = {
   UserPrimaryEmailQuery,
   UserPrimaryEmailQueryVariables
 >;
-export const UserGreetingDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "query",
-      name: { kind: "Name", value: "UserGreeting" },
-      variableDefinitions: [
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "userId" },
-          },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "user" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "id" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "userId" },
-                },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "id" } },
-                { kind: "Field", name: { kind: "Name", value: "username" } },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "matrix" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "mxid" } },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "displayName" },
-                      },
-                    ],
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<UserGreetingQuery, UserGreetingQueryVariables>;
 export const VerifyEmailDocument = {
   kind: "Document",
   definitions: [

@@ -24,7 +24,7 @@ import { useAtom } from "jotai";
 import { atomWithMutation } from "jotai-urql";
 import { useRef, useTransition } from "react";
 
-import { graphql } from "../gql";
+import { graphql } from "../../gql";
 
 const ADD_EMAIL_MUTATION = graphql(/* GraphQL */ `
   mutation AddEmail($userId: ID!, $email: String!) {
