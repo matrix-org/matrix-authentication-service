@@ -13,7 +13,9 @@
 // limitations under the License.
 
 use async_trait::async_trait;
-use mas_data_model::{Authentication, BrowserSession, Password, UpstreamOAuthLink, User};
+use mas_data_model::{
+    Authentication, BrowserSession, Password, UpstreamOAuthAuthorizationSession, User,
+};
 use rand_core::RngCore;
 use ulid::Ulid;
 
@@ -188,14 +190,15 @@ pub trait BrowserSessionRepository: Send + Sync {
         user_password: &Password,
     ) -> Result<Authentication, Self::Error>;
 
-    /// Authenticate a [`BrowserSession`] with the given [`UpstreamOAuthLink`]
+    /// Authenticate a [`BrowserSession`] with the given
+    /// [`UpstreamOAuthAuthorizationSession`]
     ///
     /// # Parameters
     ///
     /// * `rng`: The random number generator to use
     /// * `clock`: The clock used to generate timestamps
     /// * `user_session`: The session to authenticate
-    /// * `upstream_oauth_link`: The upstream OAuth link which was used to
+    /// * `upstream_oauth_session`: The upstream OAuth session which was used to
     ///   authenticate
     ///
     /// # Errors
@@ -206,7 +209,7 @@ pub trait BrowserSessionRepository: Send + Sync {
         rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
         user_session: &BrowserSession,
-        upstream_oauth_link: &UpstreamOAuthLink,
+        upstream_oauth_session: &UpstreamOAuthAuthorizationSession,
     ) -> Result<Authentication, Self::Error>;
 
     /// Get the last successful authentication for a [`BrowserSession`]
@@ -259,7 +262,7 @@ repository_impl!(BrowserSessionRepository:
         rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
         user_session: &BrowserSession,
-        upstream_oauth_link: &UpstreamOAuthLink,
+        upstream_oauth_session: &UpstreamOAuthAuthorizationSession,
     ) -> Result<Authentication, Self::Error>;
 
     async fn get_last_authentication(
