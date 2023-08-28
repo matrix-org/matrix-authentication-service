@@ -27,6 +27,7 @@ use mas_iana::{
 use mas_jose::jwk::PublicJsonWebKeySet;
 use mas_storage::{oauth2::OAuth2ClientRepository, Clock};
 use oauth2_types::{
+    oidc::ApplicationType,
     requests::GrantType,
     scope::{Scope, ScopeToken},
 };
@@ -57,11 +58,12 @@ impl<'c> PgOAuth2ClientRepository<'c> {
 struct OAuth2ClientLookup {
     oauth2_client_id: Uuid,
     encrypted_client_secret: Option<String>,
+    application_type: Option<String>,
     redirect_uris: Vec<String>,
     // response_types: Vec<String>,
     grant_type_authorization_code: bool,
     grant_type_refresh_token: bool,
-    // contacts: Vec<String>,
+    contacts: Vec<String>,
     client_name: Option<String>,
     logo_uri: Option<String>,
     client_uri: Option<String>,
@@ -91,6 +93,17 @@ impl TryInto<Client> for OAuth2ClientLookup {
                 .row(id)
                 .source(e)
         })?;
+
+        let application_type = self
+            .application_type
+            .map(|s| s.parse())
+            .transpose()
+            .map_err(|e| {
+                DatabaseInconsistencyError::on("oauth2_clients")
+                    .column("application_type")
+                    .row(id)
+                    .source(e)
+            })?;
 
         let response_types = vec![
             OAuthAuthorizationEndpointResponseType::Code,
@@ -237,11 +250,11 @@ impl TryInto<Client> for OAuth2ClientLookup {
             id,
             client_id: id.to_string(),
             encrypted_client_secret: self.encrypted_client_secret,
+            application_type,
             redirect_uris,
             response_types,
             grant_types,
-            // contacts: self.contacts,
-            contacts: vec![],
+            contacts: self.contacts,
             client_name: self.client_name,
             logo_uri,
             client_uri,
@@ -276,13 +289,11 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
             r#"
                 SELECT oauth2_client_id
                      , encrypted_client_secret
-                     , ARRAY(
-                           SELECT redirect_uri
-                           FROM oauth2_client_redirect_uris r
-                           WHERE r.oauth2_client_id = c.oauth2_client_id
-                       ) AS "redirect_uris!"
+                     , application_type
+                     , redirect_uris
                      , grant_type_authorization_code
                      , grant_type_refresh_token
+                     , contacts
                      , client_name
                      , logo_uri
                      , client_uri
@@ -328,13 +339,11 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
             r#"
                 SELECT oauth2_client_id
                      , encrypted_client_secret
-                     , ARRAY(
-                           SELECT redirect_uri
-                           FROM oauth2_client_redirect_uris r
-                           WHERE r.oauth2_client_id = c.oauth2_client_id
-                       ) AS "redirect_uris!"
+                     , application_type
+                     , redirect_uris
                      , grant_type_authorization_code
                      , grant_type_refresh_token
+                     , contacts
                      , client_name
                      , logo_uri
                      , client_uri
@@ -379,10 +388,11 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
     #[allow(clippy::too_many_lines)]
     async fn add(
         &mut self,
-        mut rng: &mut (dyn RngCore + Send),
+        rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
         redirect_uris: Vec<Url>,
         encrypted_client_secret: Option<String>,
+        application_type: Option<ApplicationType>,
         grant_types: Vec<GrantType>,
         contacts: Vec<String>,
         client_name: Option<String>,
@@ -408,11 +418,15 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
             .transpose()
             .map_err(DatabaseError::to_invalid_operation)?;
 
+        let redirect_uris_array = redirect_uris.iter().map(Url::to_string).collect::<Vec<_>>();
+
         sqlx::query!(
             r#"
                 INSERT INTO oauth2_clients
                     ( oauth2_client_id
                     , encrypted_client_secret
+                    , application_type
+                    , redirect_uris
                     , grant_type_authorization_code
                     , grant_type_refresh_token
                     , client_name
@@ -430,10 +444,12 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
                     , is_static
                     )
                 VALUES
-                    ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, FALSE)
+                    ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, FALSE)
             "#,
             Uuid::from(id),
             encrypted_client_secret,
+            application_type.map(|a| a.to_string()),
+            &redirect_uris_array,
             grant_types.contains(&GrantType::AuthorizationCode),
             grant_types.contains(&GrantType::RefreshToken),
             client_name,
@@ -459,40 +475,6 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
         .execute(&mut *self.conn)
         .await?;
 
-        {
-            let span = info_span!(
-                "db.oauth2_client.add.redirect_uris",
-                db.statement = tracing::field::Empty,
-                client.id = %id,
-            );
-
-            let (uri_ids, redirect_uris): (Vec<Uuid>, Vec<String>) = redirect_uris
-                .iter()
-                .map(|uri| {
-                    (
-                        Uuid::from(Ulid::from_datetime_with_source(now.into(), &mut rng)),
-                        uri.as_str().to_owned(),
-                    )
-                })
-                .unzip();
-
-            sqlx::query!(
-                r#"
-                    INSERT INTO oauth2_client_redirect_uris
-                        (oauth2_client_redirect_uri_id, oauth2_client_id, redirect_uri)
-                    SELECT id, $2, redirect_uri
-                    FROM UNNEST($1::uuid[], $3::text[]) r(id, redirect_uri)
-                "#,
-                &uri_ids,
-                Uuid::from(id),
-                &redirect_uris,
-            )
-            .record(&span)
-            .execute(&mut *self.conn)
-            .instrument(span)
-            .await?;
-        }
-
         let jwks = match (jwks, jwks_uri) {
             (None, None) => None,
             (Some(jwks), None) => Some(JwksOrJwksUri::Jwks(jwks)),
@@ -504,6 +486,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
             id,
             client_id: id.to_string(),
             encrypted_client_secret,
+            application_type,
             redirect_uris,
             response_types: vec![
                 OAuthAuthorizationEndpointResponseType::Code,
@@ -537,8 +520,6 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
     )]
     async fn upsert_static(
         &mut self,
-        rng: &mut (dyn RngCore + Send),
-        clock: &dyn Clock,
         client_id: Ulid,
         client_auth_method: OAuthClientAuthenticationMethod,
         encrypted_client_secret: Option<String>,
@@ -553,12 +534,14 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
             .map_err(DatabaseError::to_invalid_operation)?;
 
         let client_auth_method = client_auth_method.to_string();
+        let redirect_uris_array = redirect_uris.iter().map(Url::to_string).collect::<Vec<_>>();
 
         sqlx::query!(
             r#"
                 INSERT INTO oauth2_clients
                     ( oauth2_client_id
                     , encrypted_client_secret
+                    , redirect_uris
                     , grant_type_authorization_code
                     , grant_type_refresh_token
                     , token_endpoint_auth_method
@@ -567,7 +550,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
                     , is_static
                     )
                 VALUES
-                    ($1, $2, $3, $4, $5, $6, $7, TRUE)
+                    ($1, $2, $3, $4, $5, $6, $7, $8, TRUE)
                 ON CONFLICT (oauth2_client_id)
                 DO
                     UPDATE SET encrypted_client_secret = EXCLUDED.encrypted_client_secret
@@ -580,6 +563,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
             "#,
             Uuid::from(client_id),
             encrypted_client_secret,
+            &redirect_uris_array,
             true,
             true,
             client_auth_method,
@@ -589,41 +573,6 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
         .traced()
         .execute(&mut *self.conn)
         .await?;
-
-        {
-            let span = info_span!(
-                "db.oauth2_client.upsert_static.redirect_uris",
-                client.id = %client_id,
-                db.statement = tracing::field::Empty,
-            );
-
-            let now = clock.now();
-            let (ids, redirect_uris): (Vec<Uuid>, Vec<String>) = redirect_uris
-                .iter()
-                .map(|uri| {
-                    (
-                        Uuid::from(Ulid::from_datetime_with_source(now.into(), &mut *rng)),
-                        uri.as_str().to_owned(),
-                    )
-                })
-                .unzip();
-
-            sqlx::query!(
-                r#"
-                    INSERT INTO oauth2_client_redirect_uris
-                        (oauth2_client_redirect_uri_id, oauth2_client_id, redirect_uri)
-                    SELECT id, $2, redirect_uri
-                    FROM UNNEST($1::uuid[], $3::text[]) r(id, redirect_uri)
-                "#,
-                &ids,
-                Uuid::from(client_id),
-                &redirect_uris,
-            )
-            .record(&span)
-            .execute(&mut *self.conn)
-            .instrument(span)
-            .await?;
-        }
 
         let jwks = match (jwks, jwks_uri) {
             (None, None) => None,
@@ -636,6 +585,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
             id: client_id,
             client_id: client_id.to_string(),
             encrypted_client_secret,
+            application_type: None,
             redirect_uris,
             response_types: vec![
                 OAuthAuthorizationEndpointResponseType::Code,
@@ -672,13 +622,11 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
             r#"
                 SELECT oauth2_client_id
                      , encrypted_client_secret
-                     , ARRAY(
-                           SELECT redirect_uri
-                           FROM oauth2_client_redirect_uris r
-                           WHERE r.oauth2_client_id = c.oauth2_client_id
-                       ) AS "redirect_uris!"
+                     , application_type
+                     , redirect_uris
                      , grant_type_authorization_code
                      , grant_type_refresh_token
+                     , contacts
                      , client_name
                      , logo_uri
                      , client_uri
@@ -901,26 +849,6 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
             sqlx::query!(
                 r#"
                     DELETE FROM oauth2_sessions
-                    WHERE oauth2_client_id = $1
-                "#,
-                Uuid::from(id),
-            )
-            .record(&span)
-            .execute(&mut *self.conn)
-            .instrument(span)
-            .await?;
-        }
-
-        // Delete the redirect URIs
-        {
-            let span = info_span!(
-                "db.oauth2_client.delete_by_id.redirect_uris",
-                db.statement = tracing::field::Empty,
-            );
-
-            sqlx::query!(
-                r#"
-                    DELETE FROM oauth2_client_redirect_uris
                     WHERE oauth2_client_id = $1
                 "#,
                 Uuid::from(id),

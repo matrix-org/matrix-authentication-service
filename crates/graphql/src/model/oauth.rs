@@ -17,7 +17,7 @@ use async_graphql::{Context, Description, Enum, Object, ID};
 use chrono::{DateTime, Utc};
 use mas_data_model::SessionState;
 use mas_storage::{oauth2::OAuth2ClientRepository, user::BrowserSessionRepository};
-use oauth2_types::scope::Scope;
+use oauth2_types::{oidc::ApplicationType, scope::Scope};
 use ulid::Ulid;
 use url::Url;
 
@@ -110,6 +110,16 @@ impl OAuth2Session {
     }
 }
 
+/// The application type advertised by the client.
+#[derive(Enum, Copy, Clone, Eq, PartialEq)]
+pub enum OAuth2ApplicationType {
+    /// Client is a web application.
+    Web,
+
+    /// Client is a native application.
+    Native,
+}
+
 /// An OAuth 2.0 client
 #[derive(Description)]
 pub struct OAuth2Client(pub mas_data_model::Client);
@@ -149,6 +159,19 @@ impl OAuth2Client {
     /// List of redirect URIs used for authorization grants by the client.
     pub async fn redirect_uris(&self) -> &[Url] {
         &self.0.redirect_uris
+    }
+
+    /// List of contacts advertised by the client.
+    pub async fn contacts(&self) -> &[String] {
+        &self.0.contacts
+    }
+
+    /// The application type advertised by the client.
+    pub async fn application_type(&self) -> Option<OAuth2ApplicationType> {
+        match self.0.application_type? {
+            ApplicationType::Web => Some(OAuth2ApplicationType::Web),
+            ApplicationType::Native => Some(OAuth2ApplicationType::Native),
+        }
     }
 }
 

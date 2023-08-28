@@ -382,15 +382,27 @@ export type Node = {
   id: Scalars["ID"]["output"];
 };
 
+/** The application type advertised by the client. */
+export enum Oauth2ApplicationType {
+  /** Client is a native application. */
+  Native = "NATIVE",
+  /** Client is a web application. */
+  Web = "WEB",
+}
+
 /** An OAuth 2.0 client */
 export type Oauth2Client = Node & {
   __typename?: "Oauth2Client";
+  /** The application type advertised by the client. */
+  applicationType?: Maybe<Oauth2ApplicationType>;
   /** OAuth 2.0 client ID */
   clientId: Scalars["String"]["output"];
   /** Client name advertised by the client. */
   clientName?: Maybe<Scalars["String"]["output"]>;
   /** Client URI advertised by the client. */
   clientUri?: Maybe<Scalars["Url"]["output"]>;
+  /** List of contacts advertised by the client. */
+  contacts: Array<Scalars["String"]["output"]>;
   /** ID of the object. */
   id: Scalars["ID"]["output"];
   /** Privacy policy URI advertised by the client. */

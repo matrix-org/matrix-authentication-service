@@ -140,7 +140,6 @@ impl Options {
 #[tracing::instrument(name = "cli.config.sync", skip(root), err(Debug))]
 async fn sync(root: &super::Options, prune: bool, dry_run: bool) -> anyhow::Result<()> {
     // XXX: we should disallow SeedableRng::from_entropy
-    let mut rng = rand_chacha::ChaChaRng::from_entropy();
     let clock = SystemClock::default();
 
     let config: SyncConfig = root.load_config()?;
@@ -282,8 +281,6 @@ async fn sync(root: &super::Options, prune: bool, dry_run: bool) -> anyhow::Resu
 
             repo.oauth2_client()
                 .upsert_static(
-                    &mut rng,
-                    &clock,
                     client.client_id,
                     client_auth_method,
                     encrypted_client_secret,
