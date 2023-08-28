@@ -65,7 +65,7 @@ mod graphql;
 mod health;
 mod oauth2;
 pub mod passwords;
-mod upstream_oauth2;
+pub mod upstream_oauth2;
 mod views;
 
 #[cfg(test)]
@@ -90,6 +90,7 @@ macro_rules! impl_from_error_for_route {
 pub use mas_axum_utils::{cookies::CookieManager, http_client_factory::HttpClientFactory};
 
 pub use self::{app_state::AppState, compat::MatrixHomeserver, graphql::schema as graphql_schema};
+pub use crate::upstream_oauth2::cache::MetadataCache;
 
 pub fn healthcheck_router<S, B>() -> Router<S, B>
 where
@@ -274,6 +275,7 @@ where
     Keystore: FromRef<S>,
     HttpClientFactory: FromRef<S>,
     PasswordManager: FromRef<S>,
+    MetadataCache: FromRef<S>,
     BoxClock: FromRequestParts<S>,
     BoxRng: FromRequestParts<S>,
 {

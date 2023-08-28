@@ -35,7 +35,7 @@ use rand::SeedableRng;
 use sqlx::PgPool;
 use thiserror::Error;
 
-use crate::{passwords::PasswordManager, MatrixHomeserver};
+use crate::{passwords::PasswordManager, upstream_oauth2::cache::MetadataCache, MatrixHomeserver};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -50,6 +50,7 @@ pub struct AppState {
     pub graphql_schema: mas_graphql::Schema,
     pub http_client_factory: HttpClientFactory,
     pub password_manager: PasswordManager,
+    pub metadata_cache: MetadataCache,
     pub conn_acquisition_histogram: Option<Histogram<u64>>,
 }
 
@@ -99,6 +100,37 @@ impl AppState {
         self.conn_acquisition_histogram = Some(histogram);
 
         Ok(())
+    }
+
+    /// Init the metadata cache.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the metadata cache could not be initialized.
+    pub async fn init_metadata_cache(&self) {
+        // XXX: this panics because the error is annoying to propagate
+        let conn = self
+            .pool
+            .acquire()
+            .await
+            .expect("Failed to acquire a database connection");
+
+        let mut repo = PgRepository::from_conn(conn);
+
+        let http_service = self
+            .http_client_factory
+            .http_service()
+            .await
+            .expect("Failed to create the HTTP service");
+
+        self.metadata_cache
+            .warm_up_and_run(
+                http_service,
+                std::time::Duration::from_secs(60 * 15),
+                &mut repo,
+            )
+            .await
+            .expect("Failed to warm up the metadata cache");
     }
 }
 
@@ -165,6 +197,12 @@ impl FromRef<AppState> for PasswordManager {
 impl FromRef<AppState> for CookieManager {
     fn from_ref(input: &AppState) -> Self {
         input.cookie_manager.clone()
+    }
+}
+
+impl FromRef<AppState> for MetadataCache {
+    fn from_ref(input: &AppState) -> Self {
+        input.metadata_cache.clone()
     }
 }
 
