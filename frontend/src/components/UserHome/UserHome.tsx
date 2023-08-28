@@ -18,6 +18,7 @@ import { useState } from "react";
 import { Link } from "../../Router";
 import { FragmentType, graphql, useFragment } from "../../gql";
 import Block from "../Block/Block";
+import BlockList from "../BlockList/BlockList";
 
 import styles from "./UserHome.module.css";
 
@@ -72,7 +73,7 @@ const UserHome: React.FC<{
   // compatibility sessions -> Regular apps
 
   return (
-    <>
+    <BlockList>
       {data.unverifiedEmails.totalCount > 0 && !dismiss && (
         <Alert type="critical" title="Unverified email" onClose={doDismiss}>
           You have {data.unverifiedEmails.totalCount} unverified email
@@ -80,40 +81,39 @@ const UserHome: React.FC<{
         </Alert>
       )}
       {/* This is a short term solution, so I won't bother extracting these blocks into components */}
-      <section className={styles.sessionList}>
-        <H3>Where you're signed in</H3>
-        <Block className={styles.sessionListBlock}>
-          <div className={styles.sessionListBlockInfo}>
-            <H6>Browser</H6>
-            <Body>
-              {data.browserSessions.totalCount} active{" "}
-              {pluraliseSession(data.browserSessions.totalCount)}
-            </Body>
-          </div>
-          <Link route={{ type: "browser-session-list" }}>View all</Link>
-        </Block>
-        <Block className={styles.sessionListBlock}>
-          <div className={styles.sessionListBlockInfo}>
-            <H6>New apps</H6>
-            <Body>
-              {data.oauth2Sessions.totalCount} active{" "}
-              {pluraliseSession(data.oauth2Sessions.totalCount)}
-            </Body>
-          </div>
-          <Link route={{ type: "oauth2-session-list" }}>View all</Link>
-        </Block>
-        <Block className={styles.sessionListBlock}>
-          <div className={styles.sessionListBlockInfo}>
-            <H6>Regular apps</H6>
-            <Body>
-              {data.compatSessions.totalCount} active{" "}
-              {pluraliseSession(data.compatSessions.totalCount)}
-            </Body>
-          </div>
-          <Link route={{ type: "compat-session-list" }}>View all</Link>
-        </Block>
-      </section>
-    </>
+
+      <H3>Where you're signed in</H3>
+      <Block className={styles.sessionListBlock}>
+        <div className={styles.sessionListBlockInfo}>
+          <H6>Browser</H6>
+          <Body>
+            {data.browserSessions.totalCount} active{" "}
+            {pluraliseSession(data.browserSessions.totalCount)}
+          </Body>
+        </div>
+        <Link route={{ type: "browser-session-list" }}>View all</Link>
+      </Block>
+      <Block className={styles.sessionListBlock}>
+        <div className={styles.sessionListBlockInfo}>
+          <H6>New apps</H6>
+          <Body>
+            {data.oauth2Sessions.totalCount} active{" "}
+            {pluraliseSession(data.oauth2Sessions.totalCount)}
+          </Body>
+        </div>
+        <Link route={{ type: "oauth2-session-list" }}>View all</Link>
+      </Block>
+      <Block className={styles.sessionListBlock}>
+        <div className={styles.sessionListBlockInfo}>
+          <H6>Regular apps</H6>
+          <Body>
+            {data.compatSessions.totalCount} active{" "}
+            {pluraliseSession(data.compatSessions.totalCount)}
+          </Body>
+        </div>
+        <Link route={{ type: "compat-session-list" }}>View all</Link>
+      </Block>
+    </BlockList>
   );
 };
 

@@ -1,8 +1,8 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`UserHome > render a <UserHome /> with sessions 1`] = `
-<section
-  className="_sessionList_5d2854"
+<div
+  className="_blockList_f8cc7f"
 >
   <h3
     className="_font-heading-md-semibold_1g2sj_129"
@@ -90,12 +90,12 @@ exports[`UserHome > render a <UserHome /> with sessions 1`] = `
       View all
     </a>
   </div>
-</section>
+</div>
 `;
 
 exports[`UserHome > render an simple <UserHome /> 1`] = `
-<section
-  className="_sessionList_5d2854"
+<div
+  className="_blockList_f8cc7f"
 >
   <h3
     className="_font-heading-md-semibold_1g2sj_129"
@@ -183,5 +183,5 @@ exports[`UserHome > render an simple <UserHome /> 1`] = `
       View all
     </a>
   </div>
-</section>
+</div>
 `;

@@ -15,7 +15,7 @@
 
 .block {
     color: var(--cpd-color-text-primary);
-    padding: var(--cpd-space-5x) 0;
+    padding-bottom: var(--cpd-space-5x);
     border-bottom: 1px solid var(--cpd-color-border-interactive-secondary);
 
     &:last-child {

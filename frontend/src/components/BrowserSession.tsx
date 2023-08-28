@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import IconWebBrowser from "@vector-im/compound-design-tokens/icons/web-browser.svg";
-import { Body, Button } from "@vector-im/compound-web";
+import { Button } from "@vector-im/compound-web";
 import { atom, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
@@ -22,8 +21,7 @@ import { useTransition } from "react";
 import { currentBrowserSessionIdAtom, currentUserIdAtom } from "../atoms";
 import { FragmentType, graphql, useFragment } from "../gql";
 
-import styles from "./BrowserSession.module.css";
-import DateTime from "./DateTime";
+import Session from "./Session/Session";
 
 const FRAGMENT = graphql(/* GraphQL */ `
   fragment BrowserSession_session on BrowserSession {
@@ -91,34 +89,19 @@ const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
     });
   };
 
-  return (
-    <div className="flex items-center">
-      <IconWebBrowser className={styles.sessionIcon} />
-      <div className="flex-1">
-        <Body size="md" weight="medium">
-          {isCurrent ? (
-            <>
-              <strong>Current</strong> browser session
-            </>
-          ) : (
-            <>Browser Session</>
-          )}
-        </Body>
-        <Body size="sm" className="text-secondary">
-          Signed in <DateTime datetime={createdAt} />
-        </Body>
-      </div>
+  const sessionName = isCurrent ? "Current browser session" : "Browser session";
 
+  return (
+    <Session id={data.id} name={sessionName} createdAt={createdAt}>
       <Button
         kind="destructive"
         size="sm"
-        className="mt-2"
         onClick={onSessionEnd}
         disabled={pending}
       >
         Sign out
       </Button>
-    </div>
+    </Session>
   );
 };
 
