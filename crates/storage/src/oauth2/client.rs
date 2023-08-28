@@ -18,7 +18,7 @@ use async_trait::async_trait;
 use mas_data_model::{Client, User};
 use mas_iana::{jose::JsonWebSignatureAlg, oauth::OAuthClientAuthenticationMethod};
 use mas_jose::jwk::PublicJsonWebKeySet;
-use oauth2_types::{requests::GrantType, scope::Scope};
+use oauth2_types::{oidc::ApplicationType, requests::GrantType, scope::Scope};
 use rand_core::RngCore;
 use ulid::Ulid;
 use url::Url;
@@ -80,6 +80,7 @@ pub trait OAuth2ClientRepository: Send + Sync {
     /// * `clock`: The clock used to generate timestamps
     /// * `redirect_uris`: The list of redirect URIs used by this client
     /// * `encrypted_client_secret`: The encrypted client secret, if any
+    /// * `application_type`: The application type of this client
     /// * `grant_types`: The list of grant types this client can use
     /// * `contacts`: The list of contacts for this client
     /// * `client_name`: The human-readable name of this client, if given
@@ -110,6 +111,7 @@ pub trait OAuth2ClientRepository: Send + Sync {
         clock: &dyn Clock,
         redirect_uris: Vec<Url>,
         encrypted_client_secret: Option<String>,
+        application_type: Option<ApplicationType>,
         grant_types: Vec<GrantType>,
         contacts: Vec<String>,
         client_name: Option<String>,
@@ -132,8 +134,6 @@ pub trait OAuth2ClientRepository: Send + Sync {
     ///
     /// # Parameters
     ///
-    /// * `rng`: The random number generator to use
-    /// * `clock`: The clock used to generate timestamps
     /// * `client_id`: The client ID
     /// * `client_auth_method`: The authentication method this client uses
     /// * `encrypted_client_secret`: The encrypted client secret, if any
@@ -147,8 +147,6 @@ pub trait OAuth2ClientRepository: Send + Sync {
     #[allow(clippy::too_many_arguments)]
     async fn upsert_static(
         &mut self,
-        rng: &mut (dyn RngCore + Send),
-        clock: &dyn Clock,
         client_id: Ulid,
         client_auth_method: OAuthClientAuthenticationMethod,
         encrypted_client_secret: Option<String>,
@@ -244,6 +242,7 @@ repository_impl!(OAuth2ClientRepository:
         clock: &dyn Clock,
         redirect_uris: Vec<Url>,
         encrypted_client_secret: Option<String>,
+        application_type: Option<ApplicationType>,
         grant_types: Vec<GrantType>,
         contacts: Vec<String>,
         client_name: Option<String>,
@@ -262,8 +261,6 @@ repository_impl!(OAuth2ClientRepository:
 
     async fn upsert_static(
         &mut self,
-        rng: &mut (dyn RngCore + Send),
-        clock: &dyn Clock,
         client_id: Ulid,
         client_auth_method: OAuthClientAuthenticationMethod,
         encrypted_client_secret: Option<String>,

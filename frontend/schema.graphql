@@ -476,6 +476,20 @@ interface Node {
 }
 
 """
+The application type advertised by the client.
+"""
+enum Oauth2ApplicationType {
+  """
+  Client is a web application.
+  """
+  WEB
+  """
+  Client is a native application.
+  """
+  NATIVE
+}
+
+"""
 An OAuth 2.0 client
 """
 type Oauth2Client implements Node {
@@ -507,6 +521,14 @@ type Oauth2Client implements Node {
   List of redirect URIs used for authorization grants by the client.
   """
   redirectUris: [Url!]!
+  """
+  List of contacts advertised by the client.
+  """
+  contacts: [String!]!
+  """
+  The application type advertised by the client.
+  """
+  applicationType: Oauth2ApplicationType
 }
 
 """

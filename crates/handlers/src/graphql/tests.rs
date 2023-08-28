@@ -33,6 +33,7 @@ async fn create_test_client(state: &TestState) -> Client {
             &state.clock,
             vec![],
             None,
+            None,
             vec![],
             vec![],
             None,

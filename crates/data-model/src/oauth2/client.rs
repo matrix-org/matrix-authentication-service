@@ -18,7 +18,7 @@ use mas_iana::{
     oauth::{OAuthAuthorizationEndpointResponseType, OAuthClientAuthenticationMethod},
 };
 use mas_jose::jwk::PublicJsonWebKeySet;
-use oauth2_types::requests::GrantType;
+use oauth2_types::{oidc::ApplicationType, requests::GrantType};
 use rand::RngCore;
 use serde::Serialize;
 use thiserror::Error;
@@ -43,6 +43,8 @@ pub struct Client {
     pub client_id: String,
 
     pub encrypted_client_secret: Option<String>,
+
+    pub application_type: Option<ApplicationType>,
 
     /// Array of Redirection URI values used by the Client
     pub redirect_uris: Vec<Url>,
@@ -130,6 +132,7 @@ impl Client {
                 id: Ulid::from_datetime_with_source(now.into(), rng),
                 client_id: "client1".to_owned(),
                 encrypted_client_secret: None,
+                application_type: Some(ApplicationType::Web),
                 redirect_uris: vec![
                     Url::parse("https://client1.example.com/redirect").unwrap(),
                     Url::parse("https://client1.example.com/redirect2").unwrap(),
@@ -156,6 +159,7 @@ impl Client {
                 id: Ulid::from_datetime_with_source(now.into(), rng),
                 client_id: "client2".to_owned(),
                 encrypted_client_secret: None,
+                application_type: Some(ApplicationType::Native),
                 redirect_uris: vec![Url::parse("https://client2.example.com/redirect").unwrap()],
                 response_types: vec![OAuthAuthorizationEndpointResponseType::Code],
                 grant_types: vec![GrantType::AuthorizationCode, GrantType::RefreshToken],
