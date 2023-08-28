@@ -108,6 +108,13 @@ pub struct CookieJar {
 }
 
 impl CookieJar {
+    /// Save the given payload in a cookie
+    ///
+    /// If `permanent` is true, the cookie will be valid for 10 years
+    ///
+    /// # Panics
+    ///
+    /// Panics if the payload cannot be serialized
     #[must_use]
     pub fn save<T: Serialize>(mut self, key: &str, payload: &T, permanent: bool) -> Self {
         let serialized =

@@ -29,7 +29,7 @@ jobs:
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.1.0
         with:
-          version: 0.54.0
+          version: 0.55.0
 
       - name: Lint policies
         working-directory: ./policies
@@ -196,7 +196,7 @@ jobs:
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.1.0
         with:
-          version: 0.54.0
+          version: 0.55.0
 
       - name: Compile OPA policies
         working-directory: ./policies
@@ -260,7 +260,7 @@ jobs:
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.1.0
         with:
-          version: 0.54.0
+          version: 0.55.0
 
       - name: Compile OPA policies
         working-directory: ./policies
@@ -326,7 +326,7 @@ jobs:
         uses: sigstore/cosign-installer@v3.1.1
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2.9.1
+        uses: docker/setup-buildx-action@v2.10.0
         with:
           config-inline: |
             [registry."docker.io"]

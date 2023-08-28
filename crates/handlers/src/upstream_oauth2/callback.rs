@@ -37,7 +37,7 @@ use thiserror::Error;
 use ulid::Ulid;
 
 use super::{client_credentials_for_provider, UpstreamSessionsCookie};
-use crate::impl_from_error_for_route;
+use crate::{impl_from_error_for_route, upstream_oauth2::cache::MetadataCache};
 
 #[derive(Deserialize)]
 pub struct QueryParams {
@@ -128,6 +128,7 @@ pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
     State(http_client_factory): State<HttpClientFactory>,
+    State(metadata_cache): State<MetadataCache>,
     mut repo: BoxRepository,
     State(url_builder): State<UrlBuilder>,
     State(encrypter): State<Encrypter>,
@@ -185,10 +186,8 @@ pub(crate) async fn get(
 
     let http_service = http_client_factory.http_service().await?;
 
-    // XXX: we shouldn't discover on-the-fly
     // Discover the provider
-    let metadata =
-        mas_oidc_client::requests::discovery::discover(&http_service, &provider.issuer).await?;
+    let metadata = metadata_cache.get(&http_service, &provider.issuer).await?;
 
     // Fetch the JWKS
     let jwks =

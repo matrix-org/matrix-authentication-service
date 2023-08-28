@@ -317,7 +317,7 @@ impl fmt::Debug for AuthorizationRequest {
             .field("request", &self.request)
             .field("request_uri", &self.request_uri)
             .field("registration", &self.registration)
-            .finish()
+            .finish_non_exhaustive()
     }
 }
 
@@ -422,7 +422,7 @@ impl fmt::Debug for DeviceAuthorizationResponse {
             .field("verification_uri", &self.verification_uri)
             .field("expires_in", &self.expires_in)
             .field("interval", &self.interval)
-            .finish()
+            .finish_non_exhaustive()
     }
 }
 

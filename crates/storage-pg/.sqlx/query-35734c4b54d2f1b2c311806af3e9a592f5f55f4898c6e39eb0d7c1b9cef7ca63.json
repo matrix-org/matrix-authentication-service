@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n                SELECT oauth2_client_id\n                     , encrypted_client_secret\n                     , ARRAY(\n                           SELECT redirect_uri\n                           FROM oauth2_client_redirect_uris r\n                           WHERE r.oauth2_client_id = c.oauth2_client_id\n                       ) AS \"redirect_uris!\"\n                     , grant_type_authorization_code\n                     , grant_type_refresh_token\n                     , client_name\n                     , logo_uri\n                     , client_uri\n                     , policy_uri\n                     , tos_uri\n                     , jwks_uri\n                     , jwks\n                     , id_token_signed_response_alg\n                     , userinfo_signed_response_alg\n                     , token_endpoint_auth_method\n                     , token_endpoint_auth_signing_alg\n                     , initiate_login_uri\n                FROM oauth2_clients c\n\n                WHERE oauth2_client_id = $1\n            ",
+  "query": "\n                SELECT oauth2_client_id\n                     , encrypted_client_secret\n                     , application_type\n                     , redirect_uris\n                     , grant_type_authorization_code\n                     , grant_type_refresh_token\n                     , contacts\n                     , client_name\n                     , logo_uri\n                     , client_uri\n                     , policy_uri\n                     , tos_uri\n                     , jwks_uri\n                     , jwks\n                     , id_token_signed_response_alg\n                     , userinfo_signed_response_alg\n                     , token_endpoint_auth_method\n                     , token_endpoint_auth_signing_alg\n                     , initiate_login_uri\n                FROM oauth2_clients c\n\n                WHERE oauth2_client_id = ANY($1::uuid[])\n            ",
   "describe": {
     "columns": [
       {
@@ -15,89 +15,101 @@
       },
       {
         "ordinal": 2,
-        "name": "redirect_uris!",
-        "type_info": "TextArray"
+        "name": "application_type",
+        "type_info": "Text"
       },
       {
         "ordinal": 3,
+        "name": "redirect_uris",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 4,
         "name": "grant_type_authorization_code",
         "type_info": "Bool"
       },
       {
-        "ordinal": 4,
+        "ordinal": 5,
         "name": "grant_type_refresh_token",
         "type_info": "Bool"
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
+        "name": "contacts",
+        "type_info": "TextArray"
+      },
+      {
+        "ordinal": 7,
         "name": "client_name",
         "type_info": "Text"
       },
       {
-        "ordinal": 6,
+        "ordinal": 8,
         "name": "logo_uri",
         "type_info": "Text"
       },
       {
-        "ordinal": 7,
+        "ordinal": 9,
         "name": "client_uri",
         "type_info": "Text"
       },
       {
-        "ordinal": 8,
+        "ordinal": 10,
         "name": "policy_uri",
         "type_info": "Text"
       },
       {
-        "ordinal": 9,
+        "ordinal": 11,
         "name": "tos_uri",
         "type_info": "Text"
       },
       {
-        "ordinal": 10,
+        "ordinal": 12,
         "name": "jwks_uri",
         "type_info": "Text"
       },
       {
-        "ordinal": 11,
+        "ordinal": 13,
         "name": "jwks",
         "type_info": "Jsonb"
       },
       {
-        "ordinal": 12,
+        "ordinal": 14,
         "name": "id_token_signed_response_alg",
         "type_info": "Text"
       },
       {
-        "ordinal": 13,
+        "ordinal": 15,
         "name": "userinfo_signed_response_alg",
         "type_info": "Text"
       },
       {
-        "ordinal": 14,
+        "ordinal": 16,
         "name": "token_endpoint_auth_method",
         "type_info": "Text"
       },
       {
-        "ordinal": 15,
+        "ordinal": 17,
         "name": "token_endpoint_auth_signing_alg",
         "type_info": "Text"
       },
       {
-        "ordinal": 16,
+        "ordinal": 18,
         "name": "initiate_login_uri",
         "type_info": "Text"
       }
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "UuidArray"
       ]
     },
     "nullable": [
       false,
       true,
-      null,
+      true,
+      false,
+      false,
       false,
       false,
       true,
@@ -114,5 +126,5 @@
       true
     ]
   },
-  "hash": "db90cbc406a399f5447bd2c1d8018464f83b927dec620353516c0285b76fcf24"
+  "hash": "35734c4b54d2f1b2c311806af3e9a592f5f55f4898c6e39eb0d7c1b9cef7ca63"
 }

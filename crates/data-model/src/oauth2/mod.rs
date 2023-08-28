@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub(self) mod authorization_grant;
-pub(self) mod client;
-pub(self) mod session;
+mod authorization_grant;
+mod client;
+mod session;
 
 pub use self::{
     authorization_grant::{AuthorizationCode, AuthorizationGrant, AuthorizationGrantStage, Pkce},

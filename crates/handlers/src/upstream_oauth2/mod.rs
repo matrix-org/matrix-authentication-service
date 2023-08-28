@@ -22,6 +22,7 @@ use thiserror::Error;
 use url::Url;
 
 pub(crate) mod authorize;
+pub(crate) mod cache;
 pub(crate) mod callback;
 mod cookie;
 pub(crate) mod link;
