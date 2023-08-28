@@ -300,7 +300,7 @@ impl Options {
                         continue;
                     }
 
-                    for scope in oauth2_session.scope.iter() {
+                    for scope in &*oauth2_session.scope {
                         if let Some(device) = Device::from_scope_token(scope) {
                             // Schedule a job to delete the device.
                             repo.job()

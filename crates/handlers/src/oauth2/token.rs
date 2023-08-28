@@ -337,7 +337,7 @@ async fn authorization_code_grant(
     }
 
     // Look for device to provision
-    for scope in session.scope.iter() {
+    for scope in &*session.scope {
         if let Some(device) = Device::from_scope_token(scope) {
             // Note that we're not waiting for the job to finish, we just schedule it. We
             // might get in a situation where the provisioning job is not finished when the

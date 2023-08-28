@@ -80,6 +80,10 @@ impl<T> MaybeTlsStream<T> {
 
     /// Gather informations about the TLS connection. Returns `None` if the
     /// stream is not a TLS stream.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the TLS handshake is not done yet, which should never happen
     pub fn tls_info(&self) -> Option<TlsStreamInfo> {
         let conn = self.get_tls_connection()?;
 
