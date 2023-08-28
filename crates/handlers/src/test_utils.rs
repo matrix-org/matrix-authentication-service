@@ -48,6 +48,7 @@ use url::Url;
 use crate::{
     app_state::RepositoryError,
     passwords::{Hasher, PasswordManager},
+    upstream_oauth2::cache::MetadataCache,
     MatrixHomeserver,
 };
 
@@ -67,6 +68,7 @@ pub(crate) struct TestState {
     pub templates: Templates,
     pub key_store: Keystore,
     pub cookie_manager: CookieManager,
+    pub metadata_cache: MetadataCache,
     pub encrypter: Encrypter,
     pub url_builder: UrlBuilder,
     pub homeserver: MatrixHomeserver,
@@ -105,6 +107,8 @@ impl TestState {
         let encrypter = Encrypter::new(&[0x42; 32]);
         let cookie_manager =
             CookieManager::derive_from("https://example.com".parse()?, &[0x42; 32]);
+
+        let metadata_cache = MetadataCache::new();
 
         let password_manager = PasswordManager::new([(1, Hasher::argon2id(None))])?;
 
@@ -146,6 +150,7 @@ impl TestState {
             templates,
             key_store,
             cookie_manager,
+            metadata_cache,
             encrypter,
             url_builder,
             homeserver,
@@ -331,6 +336,12 @@ impl FromRef<TestState> for PasswordManager {
 impl FromRef<TestState> for CookieManager {
     fn from_ref(input: &TestState) -> Self {
         input.cookie_manager.clone()
+    }
+}
+
+impl FromRef<TestState> for MetadataCache {
+    fn from_ref(input: &TestState) -> Self {
+        input.metadata_cache.clone()
     }
 }
 
