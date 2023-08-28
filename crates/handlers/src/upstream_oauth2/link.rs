@@ -211,12 +211,13 @@ pub(crate) async fn get(
         (Some(session), Some(user_id)) if session.user.id == user_id => {
             // Session already linked, and link matches the currently logged
             // user. Mark the session as consumed and renew the authentication.
-            repo.upstream_oauth_session()
+            let upstream_session = repo
+                .upstream_oauth_session()
                 .consume(&clock, upstream_session)
                 .await?;
 
             repo.browser_session()
-                .authenticate_with_upstream(&mut rng, &clock, &session, &link)
+                .authenticate_with_upstream(&mut rng, &clock, &session, &upstream_session)
                 .await?;
 
             cookie_jar = cookie_jar.set_session(&session);
@@ -265,12 +266,13 @@ pub(crate) async fn get(
 
             let session = repo.browser_session().add(&mut rng, &clock, &user).await?;
 
-            repo.upstream_oauth_session()
+            let upstream_session = repo
+                .upstream_oauth_session()
                 .consume(&clock, upstream_session)
                 .await?;
 
             repo.browser_session()
-                .authenticate_with_upstream(&mut rng, &clock, &session, &link)
+                .authenticate_with_upstream(&mut rng, &clock, &session, &upstream_session)
                 .await?;
 
             cookie_jar = sessions_cookie
@@ -507,12 +509,13 @@ pub(crate) async fn post(
         _ => return Err(RouteError::InvalidFormAction),
     };
 
-    repo.upstream_oauth_session()
+    let upstream_session = repo
+        .upstream_oauth_session()
         .consume(&clock, upstream_session)
         .await?;
 
     repo.browser_session()
-        .authenticate_with_upstream(&mut rng, &clock, &session, &link)
+        .authenticate_with_upstream(&mut rng, &clock, &session, &upstream_session)
         .await?;
 
     let cookie_jar = sessions_cookie
