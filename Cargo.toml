@@ -1,6 +1,7 @@
 [workspace]
 default-members = ["crates/cli"]
 members = ["crates/*"]
+resolver = "2"
 
 [workspace.dependencies]
 
@@ -41,7 +42,7 @@ version = "0.1.37"
 
 # URL manipulation
 [workspace.dependencies.url]
-version = "2.4.0"
+version = "2.4.1"
 features = ["serde"]
 
 # A few profile opt-level tweaks to make the test suite run faster

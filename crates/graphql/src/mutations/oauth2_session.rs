@@ -109,7 +109,7 @@ impl OAuth2SessionMutations {
         // XXX: this might not be the right semantic, but it's the best we
         // can do for now, since we're not explicitly storing devices for OAuth2
         // sessions.
-        for scope in session.scope.iter() {
+        for scope in &*session.scope {
             if let Some(device) = Device::from_scope_token(scope) {
                 // Schedule a job to delete the device.
                 repo.job()

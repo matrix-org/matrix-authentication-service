@@ -73,6 +73,7 @@ mod tests {
                 &clock,
                 vec!["https://example.com/redirect".parse().unwrap()],
                 None,
+                None,
                 vec![GrantType::AuthorizationCode],
                 Vec::new(), // TODO: contacts are not yet saved
                 // vec!["contact@example.com".to_owned()],
@@ -409,6 +410,7 @@ mod tests {
                 &clock,
                 vec!["https://first.example.com/redirect".parse().unwrap()],
                 None,
+                None,
                 vec![GrantType::AuthorizationCode],
                 Vec::new(), // TODO: contacts are not yet saved
                 // vec!["contact@first.example.com".to_owned()],
@@ -433,6 +435,7 @@ mod tests {
                 &mut rng,
                 &clock,
                 vec!["https://second.example.com/redirect".parse().unwrap()],
+                None,
                 None,
                 vec![GrantType::AuthorizationCode],
                 Vec::new(), // TODO: contacts are not yet saved

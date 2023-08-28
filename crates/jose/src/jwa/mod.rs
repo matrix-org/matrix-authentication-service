@@ -17,7 +17,7 @@ use sha2::{Sha256, Sha384, Sha512};
 
 mod asymmetric;
 pub(crate) mod hmac;
-pub(self) mod signature;
+mod signature;
 mod symmetric;
 
 pub use self::{

@@ -61,7 +61,7 @@ impl CorsLayerExt for CorsLayer {
         H: IntoIterator<Item = HeaderName>,
     {
         let base = PROPAGATOR_HEADERS.get().cloned().unwrap_or_default();
-        let headers: Vec<_> = headers.into_iter().chain(base.into_iter()).collect();
+        let headers: Vec<_> = headers.into_iter().chain(base).collect();
         self.allow_headers(headers)
     }
 }

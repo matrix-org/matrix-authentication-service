@@ -64,6 +64,14 @@ pub struct Password {
 pub struct Authentication {
     pub id: Ulid,
     pub created_at: DateTime<Utc>,
+    pub authentication_method: AuthenticationMethod,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub enum AuthenticationMethod {
+    Password { user_password_id: Ulid },
+    UpstreamOAuth2 { upstream_oauth2_session_id: Ulid },
+    Unknown,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]

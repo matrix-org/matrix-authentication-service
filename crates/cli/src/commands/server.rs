@@ -18,7 +18,7 @@ use anyhow::Context;
 use clap::Parser;
 use itertools::Itertools;
 use mas_config::AppConfig;
-use mas_handlers::{AppState, CookieManager, HttpClientFactory, MatrixHomeserver};
+use mas_handlers::{AppState, CookieManager, HttpClientFactory, MatrixHomeserver, MetadataCache};
 use mas_listener::{server::Server, shutdown::ShutdownStream};
 use mas_matrix_synapse::SynapseConnection;
 use mas_router::UrlBuilder;
@@ -127,6 +127,9 @@ impl Options {
         // Maximum 50 outgoing HTTP requests at a time
         let http_client_factory = HttpClientFactory::new(50);
 
+        // The upstream OIDC metadata cache
+        let metadata_cache = MetadataCache::new();
+
         let conn = SynapseConnection::new(
             config.matrix.homeserver.clone(),
             config.matrix.endpoint.clone(),
@@ -147,6 +150,7 @@ impl Options {
                 pool,
                 templates,
                 key_store,
+                metadata_cache,
                 cookie_manager,
                 encrypter,
                 url_builder,
@@ -158,6 +162,8 @@ impl Options {
                 conn_acquisition_histogram: None,
             };
             s.init_metrics()?;
+            // XXX: this might panic
+            s.init_metadata_cache().await;
             s
         };
 

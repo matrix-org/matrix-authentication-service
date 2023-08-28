@@ -1047,6 +1047,14 @@ export default {
         name: "Oauth2Client",
         fields: [
           {
+            name: "applicationType",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
+            },
+            args: [],
+          },
+          {
             name: "clientId",
             type: {
               kind: "NON_NULL",
@@ -1070,6 +1078,23 @@ export default {
             type: {
               kind: "SCALAR",
               name: "Any",
+            },
+            args: [],
+          },
+          {
+            name: "contacts",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "LIST",
+                ofType: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
             },
             args: [],
           },

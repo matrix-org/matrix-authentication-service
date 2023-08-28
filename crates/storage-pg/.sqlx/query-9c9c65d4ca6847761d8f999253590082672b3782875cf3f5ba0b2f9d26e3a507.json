@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                INSERT INTO user_session_authentications\n                    (user_session_authentication_id, user_session_id, created_at, upstream_oauth_authorization_session_id)\n                VALUES ($1, $2, $3, $4)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Timestamptz",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9c9c65d4ca6847761d8f999253590082672b3782875cf3f5ba0b2f9d26e3a507"
+}

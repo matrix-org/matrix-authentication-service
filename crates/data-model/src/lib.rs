@@ -51,7 +51,7 @@ pub use self::{
         UpstreamOAuthProviderImportAction, UpstreamOAuthProviderImportPreference,
     },
     users::{
-        Authentication, BrowserSession, Password, User, UserEmail, UserEmailVerification,
-        UserEmailVerificationState,
+        Authentication, AuthenticationMethod, BrowserSession, Password, User, UserEmail,
+        UserEmailVerification, UserEmailVerificationState,
     },
 };

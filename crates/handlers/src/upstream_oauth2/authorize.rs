@@ -28,7 +28,10 @@ use thiserror::Error;
 use ulid::Ulid;
 
 use super::UpstreamSessionsCookie;
-use crate::{impl_from_error_for_route, views::shared::OptionalPostAuthAction};
+use crate::{
+    impl_from_error_for_route, upstream_oauth2::cache::MetadataCache,
+    views::shared::OptionalPostAuthAction,
+};
 
 #[derive(Debug, Error)]
 pub(crate) enum RouteError {
@@ -64,6 +67,7 @@ pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
     State(http_client_factory): State<HttpClientFactory>,
+    State(metadata_cache): State<MetadataCache>,
     mut repo: BoxRepository,
     State(url_builder): State<UrlBuilder>,
     cookie_jar: CookieJar,
@@ -79,8 +83,7 @@ pub(crate) async fn get(
     let http_service = http_client_factory.http_service().await?;
 
     // First, discover the provider
-    let metadata =
-        mas_oidc_client::requests::discovery::discover(&http_service, &provider.issuer).await?;
+    let metadata = metadata_cache.get(&http_service, &provider.issuer).await?;
 
     let redirect_uri = url_builder.upstream_oauth_callback(provider.id);
 
