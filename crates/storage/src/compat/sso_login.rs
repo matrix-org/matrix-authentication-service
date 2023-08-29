@@ -122,6 +122,22 @@ pub trait CompatSsoLoginRepository: Send + Sync {
     /// Returns [`Self::Error`] if the underlying repository fails
     async fn lookup(&mut self, id: Ulid) -> Result<Option<CompatSsoLogin>, Self::Error>;
 
+    /// Find a compat SSO login by its session
+    ///
+    /// Returns the compat SSO login if it exists, `None` otherwise
+    ///
+    /// # Parameters
+    ///
+    /// * `session`: The session of the compat SSO login to lookup
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn find_for_session(
+        &mut self,
+        session: &CompatSession,
+    ) -> Result<Option<CompatSsoLogin>, Self::Error>;
+
     /// Find a compat SSO login by its login token
     ///
     /// Returns the compat SSO login if found, `None` otherwise
@@ -231,6 +247,11 @@ pub trait CompatSsoLoginRepository: Send + Sync {
 
 repository_impl!(CompatSsoLoginRepository:
     async fn lookup(&mut self, id: Ulid) -> Result<Option<CompatSsoLogin>, Self::Error>;
+
+    async fn find_for_session(
+        &mut self,
+        session: &CompatSession,
+    ) -> Result<Option<CompatSsoLogin>, Self::Error>;
 
     async fn find_by_token(
         &mut self,

@@ -213,7 +213,7 @@ impl User {
                     .extend(page.edges.into_iter().map(|(session, sso_login)| {
                         Edge::new(
                             OpaqueCursor(NodeCursor(NodeType::CompatSession, session.id)),
-                            CompatSession(session, sso_login),
+                            CompatSession::new(session).with_loaded_sso_login(sso_login),
                         )
                     }));
 

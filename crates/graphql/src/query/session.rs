@@ -66,10 +66,8 @@ impl SessionQuery {
         if let Some(compat_session) = compat_session {
             repo.cancel().await?;
 
-            // XXX: we should load the compat SSO login as well
-            return Ok(Some(Session::CompatSession(Box::new(CompatSession(
+            return Ok(Some(Session::CompatSession(Box::new(CompatSession::new(
                 compat_session,
-                None,
             )))));
         }
 
