@@ -18,9 +18,10 @@
 pub enum UserSessions {
     Table,
     UserSessionId,
+    UserId,
     CreatedAt,
     FinishedAt,
-    UserId,
+    UserAgent,
 }
 
 #[derive(sea_query::Iden)]

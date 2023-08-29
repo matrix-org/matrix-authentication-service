@@ -114,6 +114,7 @@ pub trait BrowserSessionRepository: Send + Sync {
     /// * `rng`: The random number generator to use
     /// * `clock`: The clock used to generate timestamps
     /// * `user`: The user to create the session for
+    /// * `user_agent`: If available, the user agent of the browser
     ///
     /// # Errors
     ///
@@ -123,6 +124,7 @@ pub trait BrowserSessionRepository: Send + Sync {
         rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
         user: &User,
+        user_agent: Option<String>,
     ) -> Result<BrowserSession, Self::Error>;
 
     /// Finish a [`BrowserSession`]
@@ -234,6 +236,7 @@ repository_impl!(BrowserSessionRepository:
         rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
         user: &User,
+        user_agent: Option<String>,
     ) -> Result<BrowserSession, Self::Error>;
     async fn finish(
         &mut self,

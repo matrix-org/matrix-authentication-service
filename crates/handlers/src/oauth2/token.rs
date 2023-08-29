@@ -464,7 +464,7 @@ mod tests {
 
         let browser_session = repo
             .browser_session()
-            .add(&mut state.rng(), &state.clock, &user)
+            .add(&mut state.rng(), &state.clock, &user, None)
             .await
             .unwrap();
 
@@ -672,7 +672,7 @@ mod tests {
 
         let browser_session = repo
             .browser_session()
-            .add(&mut state.rng(), &state.clock, &user)
+            .add(&mut state.rng(), &state.clock, &user, None)
             .await
             .unwrap();
 

@@ -433,7 +433,7 @@ async fn test_user_session(pool: PgPool) {
 
     let session = repo
         .browser_session()
-        .add(&mut rng, &clock, &user)
+        .add(&mut rng, &clock, &user, None)
         .await
         .unwrap();
     assert_eq!(session.user.id, user.id);

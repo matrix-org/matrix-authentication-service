@@ -84,7 +84,7 @@ async fn start_oauth_session(
 
     let browser_session = repo
         .browser_session()
-        .add(&mut rng, &state.clock, user)
+        .add(&mut rng, &state.clock, user, None)
         .await
         .unwrap();
 
