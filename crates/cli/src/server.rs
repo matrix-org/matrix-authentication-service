@@ -39,7 +39,7 @@ use mas_tower::{
     make_span_fn, metrics_attributes_fn, DurationRecorderLayer, InFlightCounterLayer, TraceLayer,
     KV,
 };
-use opentelemetry::{trace::TraceContextExt, Key, KeyValue};
+use opentelemetry::{Key, KeyValue};
 use opentelemetry_http::HeaderExtractor;
 use opentelemetry_semantic_conventions::trace::{
     HTTP_REQUEST_METHOD, HTTP_RESPONSE_STATUS_CODE, HTTP_ROUTE, NETWORK_PROTOCOL_NAME,
@@ -152,11 +152,7 @@ fn make_http_span<B>(req: &Request<B>) -> Span {
         propagator.extract_with_context(&context, &extractor)
     });
 
-    if parent_context.span().span_context().is_remote() {
-        // For now, set_parent is broken, so in the meantime we're using add_link
-        // instead
-        span.add_link(parent_context.span().span_context().clone());
-    }
+    span.set_parent(parent_context);
 
     span
 }
