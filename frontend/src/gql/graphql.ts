@@ -505,6 +505,8 @@ export type Query = {
   node?: Maybe<Node>;
   /** Fetch an OAuth 2.0 client by its ID. */
   oauth2Client?: Maybe<Oauth2Client>;
+  /** Lookup a compat or OAuth 2.0 session */
+  session?: Maybe<Session>;
   /** Fetch an upstream OAuth 2.0 link by its ID. */
   upstreamOauth2Link?: Maybe<UpstreamOAuth2Link>;
   /** Fetch an upstream OAuth 2.0 provider by its ID. */
@@ -534,6 +536,12 @@ export type QueryNodeArgs = {
 /** The query root of the GraphQL interface. */
 export type QueryOauth2ClientArgs = {
   id: Scalars["ID"]["input"];
+};
+
+/** The query root of the GraphQL interface. */
+export type QuerySessionArgs = {
+  deviceId: Scalars["String"]["input"];
+  userId: Scalars["ID"]["input"];
 };
 
 /** The query root of the GraphQL interface. */
@@ -615,6 +623,9 @@ export enum SendVerificationEmailStatus {
   /** The verification email was sent */
   Sent = "SENT",
 }
+
+/** A client session, either compat or OAuth 2.0 */
+export type Session = CompatSession | Oauth2Session;
 
 /** The input for the `addEmail` mutation */
 export type SetDisplayNameInput = {

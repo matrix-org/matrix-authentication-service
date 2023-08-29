@@ -20,14 +20,15 @@ use crate::{
     UserId,
 };
 
+mod session;
 mod upstream_oauth;
 mod viewer;
 
-use self::{upstream_oauth::UpstreamOAuthQuery, viewer::ViewerQuery};
+use self::{session::SessionQuery, upstream_oauth::UpstreamOAuthQuery, viewer::ViewerQuery};
 
 /// The query root of the GraphQL interface.
 #[derive(Default, MergedObject)]
-pub struct Query(BaseQuery, UpstreamOAuthQuery, ViewerQuery);
+pub struct Query(BaseQuery, UpstreamOAuthQuery, SessionQuery, ViewerQuery);
 
 impl Query {
     #[must_use]
