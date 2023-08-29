@@ -19,7 +19,7 @@ use mas_storage::{
     oauth2::{OAuth2SessionFilter, OAuth2SessionRepository},
     Clock, Page, Pagination,
 };
-use oauth2_types::scope::Scope;
+use oauth2_types::scope::{Scope, ScopeToken};
 use rand::RngCore;
 use sea_query::{enum_def, Expr, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
@@ -51,10 +51,10 @@ impl<'c> PgOAuth2SessionRepository<'c> {
 #[enum_def]
 struct OAuthSessionLookup {
     oauth2_session_id: Uuid,
-    user_session_id: Uuid,
+    user_id: Uuid,
+    user_session_id: Option<Uuid>,
     oauth2_client_id: Uuid,
-    scope: String,
-    #[allow(dead_code)]
+    scope_list: Vec<String>,
     created_at: DateTime<Utc>,
     finished_at: Option<DateTime<Utc>>,
 }
@@ -64,7 +64,12 @@ impl TryFrom<OAuthSessionLookup> for Session {
 
     fn try_from(value: OAuthSessionLookup) -> Result<Self, Self::Error> {
         let id = Ulid::from(value.oauth2_session_id);
-        let scope = value.scope.parse().map_err(|e| {
+        let scope: Result<Scope, _> = value
+            .scope_list
+            .iter()
+            .map(|s| s.parse::<ScopeToken>())
+            .collect();
+        let scope = scope.map_err(|e| {
             DatabaseInconsistencyError::on("oauth2_sessions")
                 .column("scope")
                 .row(id)
@@ -81,7 +86,8 @@ impl TryFrom<OAuthSessionLookup> for Session {
             state,
             created_at: value.created_at,
             client_id: value.oauth2_client_id.into(),
-            user_session_id: value.user_session_id.into(),
+            user_id: value.user_id.into(),
+            user_session_id: value.user_session_id.map(Ulid::from),
             scope,
         })
     }
@@ -105,9 +111,10 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
             OAuthSessionLookup,
             r#"
                 SELECT oauth2_session_id
+                     , user_id
                      , user_session_id
                      , oauth2_client_id
-                     , scope
+                     , scope_list
                      , created_at
                      , finished_at
                 FROM oauth2_sessions
@@ -150,21 +157,25 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
         let id = Ulid::from_datetime_with_source(created_at.into(), rng);
         tracing::Span::current().record("session.id", tracing::field::display(id));
 
+        let scope_list: Vec<String> = scope.iter().map(|s| s.as_str().to_owned()).collect();
+
         sqlx::query!(
             r#"
                 INSERT INTO oauth2_sessions
                     ( oauth2_session_id
+                    , user_id
                     , user_session_id
                     , oauth2_client_id
-                    , scope
+                    , scope_list
                     , created_at
                     )
-                VALUES ($1, $2, $3, $4, $5)
+                VALUES ($1, $2, $3, $4, $5, $6)
             "#,
             Uuid::from(id),
+            Uuid::from(user_session.user.id),
             Uuid::from(user_session.id),
             Uuid::from(client.id),
-            scope.to_string(),
+            &scope_list,
             created_at,
         )
         .traced()
@@ -175,7 +186,8 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
             id,
             state: SessionState::Valid,
             created_at,
-            user_session_id: user_session.id,
+            user_id: user_session.user.id,
+            user_session_id: Some(user_session.id),
             client_id: client.id,
             scope,
         })
@@ -188,7 +200,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
             db.statement,
             %session.id,
             %session.scope,
-            user_session.id = %session.user_session_id,
+            user.id = %session.user_id,
             client.id = %session.client_id,
         ),
         err,
@@ -238,6 +250,10 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
                 OAuthSessionLookupIden::Oauth2SessionId,
             )
             .expr_as(
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::UserId)),
+                OAuthSessionLookupIden::UserId,
+            )
+            .expr_as(
                 Expr::col((OAuth2Sessions::Table, OAuth2Sessions::UserSessionId)),
                 OAuthSessionLookupIden::UserSessionId,
             )
@@ -246,8 +262,8 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
                 OAuthSessionLookupIden::Oauth2ClientId,
             )
             .expr_as(
-                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::Scope)),
-                OAuthSessionLookupIden::Scope,
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::ScopeList)),
+                OAuthSessionLookupIden::ScopeList,
             )
             .expr_as(
                 Expr::col((OAuth2Sessions::Table, OAuth2Sessions::CreatedAt)),
@@ -259,22 +275,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
             )
             .from(OAuth2Sessions::Table)
             .and_where_option(filter.user().map(|user| {
-                // Check for user ownership by querying the user_sessions table
-                // The query plan is the same as if we were joining the tables instead
-                Expr::exists(
-                    Query::select()
-                        .expr(Expr::cust("1"))
-                        .from(UserSessions::Table)
-                        .and_where(
-                            Expr::col((UserSessions::Table, UserSessions::UserId))
-                                .eq(Uuid::from(user.id)),
-                        )
-                        .and_where(
-                            Expr::col((UserSessions::Table, UserSessions::UserSessionId))
-                                .equals((OAuth2Sessions::Table, OAuth2Sessions::UserSessionId)),
-                        )
-                        .take(),
-                )
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::UserId)).eq(Uuid::from(user.id))
             }))
             .and_where_option(filter.client().map(|client| {
                 Expr::col((OAuth2Sessions::Table, OAuth2Sessions::OAuth2ClientId))

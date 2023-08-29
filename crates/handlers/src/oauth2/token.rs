@@ -296,9 +296,14 @@ async fn authorization_code_grant(
         }
     };
 
+    let Some(user_session_id) = session.user_session_id else {
+        tracing::warn!("No user session associated with this OAuth2 session");
+        return Err(RouteError::InvalidGrant);
+    };
+
     let browser_session = repo
         .browser_session()
-        .lookup(session.user_session_id)
+        .lookup(user_session_id)
         .await?
         .ok_or(RouteError::NoSuchBrowserSession)?;
 

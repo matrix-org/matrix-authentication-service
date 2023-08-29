@@ -575,7 +575,7 @@ type Oauth2Session implements Node & CreationEvent {
   """
   The browser session which started this OAuth 2.0 session.
   """
-  browserSession: BrowserSession!
+  browserSession: BrowserSession
   """
   User authorized for this session.
   """

@@ -427,7 +427,7 @@ export type Oauth2Session = CreationEvent &
   Node & {
     __typename?: "Oauth2Session";
     /** The browser session which started this OAuth 2.0 session. */
-    browserSession: BrowserSession;
+    browserSession?: Maybe<BrowserSession>;
     /** OAuth 2.0 client used by this session. */
     client: Oauth2Client;
     /** When the object was created. */

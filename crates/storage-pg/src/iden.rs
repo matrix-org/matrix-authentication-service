@@ -72,10 +72,11 @@ pub enum OAuth2Sessions {
     Table,
     #[iden = "oauth2_session_id"]
     OAuth2SessionId,
+    UserId,
     UserSessionId,
     #[iden = "oauth2_client_id"]
     OAuth2ClientId,
-    Scope,
+    ScopeList,
     CreatedAt,
     FinishedAt,
 }

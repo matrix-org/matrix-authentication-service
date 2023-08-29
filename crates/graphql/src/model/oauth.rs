@@ -90,31 +90,35 @@ impl OAuth2Session {
     pub async fn browser_session(
         &self,
         ctx: &Context<'_>,
-    ) -> Result<BrowserSession, async_graphql::Error> {
+    ) -> Result<Option<BrowserSession>, async_graphql::Error> {
+        let Some(user_session_id) = self.0.user_session_id else {
+            return Ok(None);
+        };
+
         let state = ctx.state();
         let mut repo = state.repository().await?;
         let browser_session = repo
             .browser_session()
-            .lookup(self.0.user_session_id)
+            .lookup(user_session_id)
             .await?
             .context("Could not load browser session")?;
         repo.cancel().await?;
 
-        Ok(BrowserSession(browser_session))
+        Ok(Some(BrowserSession(browser_session)))
     }
 
     /// User authorized for this session.
     pub async fn user(&self, ctx: &Context<'_>) -> Result<User, async_graphql::Error> {
         let state = ctx.state();
         let mut repo = state.repository().await?;
-        let browser_session = repo
-            .browser_session()
-            .lookup(self.0.user_session_id)
+        let user = repo
+            .user()
+            .lookup(self.0.user_id)
             .await?
-            .context("Could not load browser session")?;
+            .context("Could not load user")?;
         repo.cancel().await?;
 
-        Ok(User(browser_session.user))
+        Ok(User(user))
     }
 }
 

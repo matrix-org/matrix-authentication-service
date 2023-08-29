@@ -23,7 +23,6 @@ use mas_iana::oauth::OAuthTokenTypeHint;
 use mas_keystore::Encrypter;
 use mas_storage::{
     job::{DeleteDeviceJob, JobRepositoryExt},
-    user::BrowserSessionRepository,
     BoxClock, BoxRepository, RepositoryAccess,
 };
 use oauth2_types::{
@@ -200,10 +199,10 @@ pub(crate) async fn post(
         return Err(RouteError::UnauthorizedClient);
     }
 
-    // Fetch the user session
-    let user_session = repo
-        .browser_session()
-        .lookup(session.user_session_id)
+    // Fetch the user
+    let user = repo
+        .user()
+        .lookup(session.user_id)
         .await?
         .ok_or(RouteError::UnknownToken)?;
 
@@ -217,7 +216,7 @@ pub(crate) async fn post(
         if let Some(device) = Device::from_scope_token(scope) {
             // Schedule a job to delete the device.
             repo.job()
-                .schedule_job(DeleteDeviceJob::new(&user_session.user, &device))
+                .schedule_job(DeleteDeviceJob::new(&user, &device))
                 .await?;
         }
     }
