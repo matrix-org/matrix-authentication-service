@@ -1268,6 +1268,24 @@ export type UserPrimaryEmailQuery = {
   } | null;
 };
 
+export type SetDisplayNameMutationVariables = Exact<{
+  userId: Scalars["ID"]["input"];
+  displayName: Scalars["String"]["input"];
+}>;
+
+export type SetDisplayNameMutation = {
+  __typename?: "Mutation";
+  setDisplayName: {
+    __typename?: "SetDisplayNamePayload";
+    status: SetDisplayNameStatus;
+    user?: {
+      __typename?: "User";
+      id: string;
+      matrix: { __typename?: "MatrixUser"; displayName?: string | null };
+    } | null;
+  };
+};
+
 export type UserEmail_VerifyEmailFragment = {
   __typename?: "UserEmail";
   id: string;
@@ -3385,6 +3403,111 @@ export const UserPrimaryEmailDocument = {
 } as unknown as DocumentNode<
   UserPrimaryEmailQuery,
   UserPrimaryEmailQueryVariables
+>;
+export const SetDisplayNameDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "SetDisplayName" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "userId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "displayName" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "setDisplayName" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: {
+                  kind: "ObjectValue",
+                  fields: [
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "userId" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "userId" },
+                      },
+                    },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "displayName" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "displayName" },
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "status" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "user" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "matrix" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "displayName" },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  SetDisplayNameMutation,
+  SetDisplayNameMutationVariables
 >;
 export const VerifyEmailDocument = {
   kind: "Document",

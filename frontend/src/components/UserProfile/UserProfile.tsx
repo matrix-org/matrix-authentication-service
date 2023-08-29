@@ -12,10 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import BlockList from "../BlockList/BlockList";
+
 import UserEmailList from "./UserEmailList";
+import UserName from "./UserName";
 
 const UserProfile: React.FC<{ userId: string }> = ({ userId }) => {
-  return <UserEmailList userId={userId} />;
+  return (
+    <BlockList>
+      <UserName userId={userId} />
+      <UserEmailList userId={userId} />
+    </BlockList>
+  );
 };
 
 export default UserProfile;
