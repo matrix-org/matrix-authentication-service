@@ -27,6 +27,7 @@ const FRAGMENT = graphql(/* GraphQL */ `
   fragment BrowserSession_session on BrowserSession {
     id
     createdAt
+    finishedAt
     lastAuthentication {
       id
       createdAt
@@ -92,15 +93,22 @@ const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
   const sessionName = isCurrent ? "Current browser session" : "Browser session";
 
   return (
-    <Session id={data.id} name={sessionName} createdAt={createdAt}>
-      <Button
-        kind="destructive"
-        size="sm"
-        onClick={onSessionEnd}
-        disabled={pending}
-      >
-        Sign out
-      </Button>
+    <Session
+      id={data.id}
+      name={sessionName}
+      createdAt={createdAt}
+      finishedAt={data.finishedAt}
+    >
+      {!data.finishedAt && (
+        <Button
+          kind="destructive"
+          size="sm"
+          onClick={onSessionEnd}
+          disabled={pending}
+        >
+          Sign out
+        </Button>
+      )}
     </Session>
   );
 };
