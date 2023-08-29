@@ -14,8 +14,8 @@
 
 import styles from "./LoadingSpinner.module.css";
 
-const LoadingSpinner: React.FC = () => (
-  <div role="status">
+const LoadingSpinner: React.FC<{ inline?: boolean }> = ({ inline }) => (
+  <div role="status" className={inline ? styles.inline : undefined}>
     <svg
       className={styles.loadingSpinnerInner}
       viewBox="0 0 100 101"
