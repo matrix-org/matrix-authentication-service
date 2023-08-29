@@ -42,6 +42,7 @@ pub struct OAuth2SessionFilter<'a> {
     user: Option<&'a User>,
     client: Option<&'a Client>,
     state: Option<OAuth2SessionState>,
+    scope: Option<&'a Scope>,
 }
 
 impl<'a> OAuth2SessionFilter<'a> {
@@ -101,6 +102,21 @@ impl<'a> OAuth2SessionFilter<'a> {
     #[must_use]
     pub fn state(&self) -> Option<OAuth2SessionState> {
         self.state
+    }
+
+    /// Only return sessions with the given scope
+    #[must_use]
+    pub fn with_scope(mut self, scope: &'a Scope) -> Self {
+        self.scope = Some(scope);
+        self
+    }
+
+    /// Get the scope filter
+    ///
+    /// Returns [`None`] if no scope filter was set
+    #[must_use]
+    pub fn scope(&self) -> Option<&Scope> {
+        self.scope
     }
 }
 
