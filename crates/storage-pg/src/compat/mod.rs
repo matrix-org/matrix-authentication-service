@@ -129,6 +129,19 @@ mod tests {
         assert!(session_lookup.is_valid());
         assert!(!session_lookup.is_finished());
 
+        // Look up the session by device
+        let session_lookup = repo
+            .compat_session()
+            .find_by_device(&user, &session.device)
+            .await
+            .unwrap()
+            .expect("compat session not found");
+        assert_eq!(session_lookup.id, session.id);
+        assert_eq!(session_lookup.user_id, user.id);
+        assert_eq!(session_lookup.device.as_str(), device_str);
+        assert!(session_lookup.is_valid());
+        assert!(!session_lookup.is_finished());
+
         // Finish the session
         let session = repo.compat_session().finish(&clock, session).await.unwrap();
         assert!(!session.is_valid());

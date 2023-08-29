@@ -148,6 +148,24 @@ pub trait CompatSessionRepository: Send + Sync {
     /// Returns [`Self::Error`] if the underlying repository fails
     async fn lookup(&mut self, id: Ulid) -> Result<Option<CompatSession>, Self::Error>;
 
+    /// Find a compatibility session by its device ID
+    ///
+    /// Returns the compat session if it exists, `None` otherwise
+    ///
+    /// # Parameters
+    ///
+    /// * `user`: The user to lookup the compat session for
+    /// * `device`: The device ID of the compat session to lookup
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn find_by_device(
+        &mut self,
+        user: &User,
+        device: &Device,
+    ) -> Result<Option<CompatSession>, Self::Error>;
+
     /// Start a new compat session
     ///
     /// Returns the newly created compat session
@@ -222,6 +240,12 @@ pub trait CompatSessionRepository: Send + Sync {
 
 repository_impl!(CompatSessionRepository:
     async fn lookup(&mut self, id: Ulid) -> Result<Option<CompatSession>, Self::Error>;
+
+    async fn find_by_device(
+        &mut self,
+        user: &User,
+        device: &Device,
+    ) -> Result<Option<CompatSession>, Self::Error>;
 
     async fn add(
         &mut self,
