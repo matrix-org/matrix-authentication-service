@@ -90,10 +90,14 @@ export type BrowserSession = CreationEvent &
     __typename?: "BrowserSession";
     /** When the object was created. */
     createdAt: Scalars["DateTime"]["output"];
+    /** When the session was finished. */
+    finishedAt?: Maybe<Scalars["DateTime"]["output"]>;
     /** ID of the object. */
     id: Scalars["ID"]["output"];
     /** The most recent authentication of this session. */
     lastAuthentication?: Maybe<Authentication>;
+    /** The state of the session. */
+    state: BrowserSessionState;
     /** The user logged in this session. */
     user: User;
   };
@@ -144,6 +148,8 @@ export type CompatSession = CreationEvent &
     id: Scalars["ID"]["output"];
     /** The associated SSO login, if any. */
     ssoLogin?: Maybe<CompatSsoLogin>;
+    /** The state of the session. */
+    state: CompatSessionState;
     /** The user authorized for this session. */
     user: User;
   };
@@ -432,6 +438,8 @@ export type Oauth2Session = CreationEvent &
     id: Scalars["ID"]["output"];
     /** Scope granted for this session. */
     scope: Scalars["String"]["output"];
+    /** The state of the session. */
+    state: Oauth2SessionState;
     /** User authorized for this session. */
     user: User;
   };

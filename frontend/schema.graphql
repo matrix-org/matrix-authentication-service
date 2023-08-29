@@ -87,6 +87,14 @@ type BrowserSession implements Node & CreationEvent {
   When the object was created.
   """
   createdAt: DateTime!
+  """
+  When the session was finished.
+  """
+  finishedAt: DateTime
+  """
+  The state of the session.
+  """
+  state: BrowserSessionState!
 }
 
 type BrowserSessionConnection {
@@ -165,6 +173,10 @@ type CompatSession implements Node & CreationEvent {
   The associated SSO login, if any.
   """
   ssoLogin: CompatSsoLogin
+  """
+  The state of the session.
+  """
+  state: CompatSessionState!
 }
 
 type CompatSessionConnection {
@@ -556,6 +568,10 @@ type Oauth2Session implements Node & CreationEvent {
   When the session ended.
   """
   finishedAt: DateTime
+  """
+  The state of the session.
+  """
+  state: Oauth2SessionState!
   """
   The browser session which started this OAuth 2.0 session.
   """

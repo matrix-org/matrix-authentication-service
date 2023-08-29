@@ -122,6 +122,14 @@ export default {
             args: [],
           },
           {
+            name: "finishedAt",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
+            },
+            args: [],
+          },
+          {
             name: "id",
             type: {
               kind: "NON_NULL",
@@ -138,6 +146,17 @@ export default {
               kind: "OBJECT",
               name: "Authentication",
               ofType: null,
+            },
+            args: [],
+          },
+          {
+            name: "state",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
             args: [],
           },
@@ -312,6 +331,17 @@ export default {
               kind: "OBJECT",
               name: "CompatSsoLogin",
               ofType: null,
+            },
+            args: [],
+          },
+          {
+            name: "state",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
             args: [],
           },
@@ -1210,6 +1240,17 @@ export default {
           },
           {
             name: "scope",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+          {
+            name: "state",
             type: {
               kind: "NON_NULL",
               ofType: {

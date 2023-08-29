@@ -89,6 +89,14 @@ impl CompatSession {
     pub async fn sso_login(&self) -> Option<CompatSsoLogin> {
         self.1.as_ref().map(|l| CompatSsoLogin(l.clone()))
     }
+
+    /// The state of the session.
+    pub async fn state(&self) -> CompatSessionState {
+        match &self.0.state {
+            mas_data_model::CompatSessionState::Valid => CompatSessionState::Active,
+            mas_data_model::CompatSessionState::Finished { .. } => CompatSessionState::Finished,
+        }
+    }
 }
 
 /// A compat SSO login represents a login done through the legacy Matrix login
