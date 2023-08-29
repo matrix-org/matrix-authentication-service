@@ -148,7 +148,7 @@ const UserName: React.FC<{ userId: string }> = ({ userId }) => {
   const errorMessage = getErrorMessage(setDisplayNameResult);
 
   return (
-    <Root onSubmit={onSubmit} method="POST" className={styles.form}>
+    <Root onSubmit={onSubmit} className={styles.form}>
       <Field name="displayname">
         <Label>Display Name</Label>
         <Control
