@@ -21,13 +21,41 @@ use url::Url;
 use super::{NodeType, User};
 use crate::state::ContextExt;
 
+/// Lazy-loaded reverse reference.
+///
+/// XXX: maybe we want to stick that in a utility module
+#[derive(Clone, Debug, Default)]
+enum ReverseReference<T> {
+    Loaded(T),
+    #[default]
+    Lazy,
+}
+
 /// A compat session represents a client session which used the legacy Matrix
 /// login API.
 #[derive(Description)]
-pub struct CompatSession(
-    pub mas_data_model::CompatSession,
-    pub Option<mas_data_model::CompatSsoLogin>,
-);
+pub struct CompatSession {
+    session: mas_data_model::CompatSession,
+    sso_login: ReverseReference<Option<mas_data_model::CompatSsoLogin>>,
+}
+
+impl CompatSession {
+    pub fn new(session: mas_data_model::CompatSession) -> Self {
+        Self {
+            session,
+            sso_login: ReverseReference::Lazy,
+        }
+    }
+
+    /// Save an eagerly loaded SSO login.
+    pub fn with_loaded_sso_login(
+        mut self,
+        sso_login: Option<mas_data_model::CompatSsoLogin>,
+    ) -> Self {
+        self.sso_login = ReverseReference::Loaded(sso_login);
+        self
+    }
+}
 
 /// The state of a compatibility session.
 #[derive(Enum, Copy, Clone, Eq, PartialEq)]
@@ -53,7 +81,7 @@ pub enum CompatSessionType {
 impl CompatSession {
     /// ID of the object.
     pub async fn id(&self) -> ID {
-        NodeType::CompatSession.id(self.0.id)
+        NodeType::CompatSession.id(self.session.id)
     }
 
     /// The user authorized for this session.
@@ -62,7 +90,7 @@ impl CompatSession {
         let mut repo = state.repository().await?;
         let user = repo
             .user()
-            .lookup(self.0.user_id)
+            .lookup(self.session.user_id)
             .await?
             .context("Could not load user")?;
         repo.cancel().await?;
@@ -72,27 +100,44 @@ impl CompatSession {
 
     /// The Matrix Device ID of this session.
     async fn device_id(&self) -> &str {
-        self.0.device.as_str()
+        self.session.device.as_str()
     }
 
     /// When the object was created.
     pub async fn created_at(&self) -> DateTime<Utc> {
-        self.0.created_at
+        self.session.created_at
     }
 
     /// When the session ended.
     pub async fn finished_at(&self) -> Option<DateTime<Utc>> {
-        self.0.finished_at()
+        self.session.finished_at()
     }
 
     /// The associated SSO login, if any.
-    pub async fn sso_login(&self) -> Option<CompatSsoLogin> {
-        self.1.as_ref().map(|l| CompatSsoLogin(l.clone()))
+    pub async fn sso_login(
+        &self,
+        ctx: &Context<'_>,
+    ) -> Result<Option<CompatSsoLogin>, async_graphql::Error> {
+        if let ReverseReference::Loaded(sso_login) = &self.sso_login {
+            return Ok(sso_login.clone().map(CompatSsoLogin));
+        }
+
+        // We need to load it on the fly
+        let state = ctx.state();
+        let mut repo = state.repository().await?;
+        let sso_login = repo
+            .compat_sso_login()
+            .find_for_session(&self.session)
+            .await
+            .context("Could not load SSO login")?;
+        repo.cancel().await?;
+
+        Ok(sso_login.map(CompatSsoLogin))
     }
 
     /// The state of the session.
     pub async fn state(&self) -> CompatSessionState {
-        match &self.0.state {
+        match &self.session.state {
             mas_data_model::CompatSessionState::Valid => CompatSessionState::Active,
             mas_data_model::CompatSessionState::Finished { .. } => CompatSessionState::Finished,
         }
@@ -150,6 +195,8 @@ impl CompatSsoLogin {
             .context("Could not load compat session")?;
         repo.cancel().await?;
 
-        Ok(Some(CompatSession(session, Some(self.0.clone()))))
+        Ok(Some(
+            CompatSession::new(session).with_loaded_sso_login(Some(self.0.clone())),
+        ))
     }
 }

@@ -138,6 +138,44 @@ impl<'c> CompatSsoLoginRepository for PgCompatSsoLoginRepository<'c> {
     }
 
     #[tracing::instrument(
+        name = "db.compat_sso_login.find_for_session",
+        skip_all,
+        fields(
+            db.statement,
+            %compat_session.id,
+        ),
+        err,
+    )]
+    async fn find_for_session(
+        &mut self,
+        compat_session: &CompatSession,
+    ) -> Result<Option<CompatSsoLogin>, Self::Error> {
+        let res = sqlx::query_as!(
+            CompatSsoLoginLookup,
+            r#"
+                SELECT compat_sso_login_id
+                     , login_token
+                     , redirect_uri
+                     , created_at
+                     , fulfilled_at
+                     , exchanged_at
+                     , compat_session_id
+
+                FROM compat_sso_logins
+                WHERE compat_session_id = $1
+            "#,
+            Uuid::from(compat_session.id),
+        )
+        .traced()
+        .fetch_optional(&mut *self.conn)
+        .await?;
+
+        let Some(res) = res else { return Ok(None) };
+
+        Ok(Some(res.try_into()?))
+    }
+
+    #[tracing::instrument(
         name = "db.compat_sso_login.find_by_token",
         skip_all,
         fields(
