@@ -53,6 +53,7 @@ struct SessionLookup {
     user_session_id: Uuid,
     user_session_created_at: DateTime<Utc>,
     user_session_finished_at: Option<DateTime<Utc>>,
+    user_session_user_agent: Option<String>,
     user_id: Uuid,
     user_username: String,
     user_primary_user_email_id: Option<Uuid>,
@@ -79,6 +80,7 @@ impl TryFrom<SessionLookup> for BrowserSession {
             user,
             created_at: value.user_session_created_at,
             finished_at: value.user_session_finished_at,
+            user_agent: value.user_session_user_agent,
         })
     }
 }
@@ -139,6 +141,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
                 SELECT s.user_session_id
                      , s.created_at            AS "user_session_created_at"
                      , s.finished_at           AS "user_session_finished_at"
+                     , s.user_agent            AS "user_session_user_agent"
                      , u.user_id
                      , u.username              AS "user_username"
                      , u.primary_user_email_id AS "user_primary_user_email_id"
@@ -175,6 +178,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
         rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
         user: &User,
+        user_agent: Option<String>,
     ) -> Result<BrowserSession, Self::Error> {
         let created_at = clock.now();
         let id = Ulid::from_datetime_with_source(created_at.into(), rng);
@@ -182,12 +186,13 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
 
         sqlx::query!(
             r#"
-                INSERT INTO user_sessions (user_session_id, user_id, created_at)
-                VALUES ($1, $2, $3)
+                INSERT INTO user_sessions (user_session_id, user_id, created_at, user_agent)
+                VALUES ($1, $2, $3, $4)
             "#,
             Uuid::from(id),
             Uuid::from(user.id),
             created_at,
+            user_agent,
         )
         .traced()
         .execute(&mut *self.conn)
@@ -199,6 +204,7 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
             user: user.clone(),
             created_at,
             finished_at: None,
+            user_agent,
         };
 
         Ok(session)
@@ -264,6 +270,10 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
             .expr_as(
                 Expr::col((UserSessions::Table, UserSessions::FinishedAt)),
                 SessionLookupIden::UserSessionFinishedAt,
+            )
+            .expr_as(
+                Expr::col((UserSessions::Table, UserSessions::UserAgent)),
+                SessionLookupIden::UserSessionUserAgent,
             )
             .expr_as(
                 Expr::col((Users::Table, Users::UserId)),

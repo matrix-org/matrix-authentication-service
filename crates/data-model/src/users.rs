@@ -80,6 +80,7 @@ pub struct BrowserSession {
     pub user: User,
     pub created_at: DateTime<Utc>,
     pub finished_at: Option<DateTime<Utc>>,
+    pub user_agent: Option<String>,
 }
 
 impl BrowserSession {
@@ -99,6 +100,7 @@ impl BrowserSession {
                 user,
                 created_at: now,
                 finished_at: None,
+                user_agent: Some("Mozilla/5.0".to_owned()),
             })
             .collect()
     }

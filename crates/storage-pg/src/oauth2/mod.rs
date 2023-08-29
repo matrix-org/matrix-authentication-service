@@ -177,7 +177,7 @@ mod tests {
             .unwrap();
         let user_session = repo
             .browser_session()
-            .add(&mut rng, &clock, &user)
+            .add(&mut rng, &clock, &user, None)
             .await
             .unwrap();
 
@@ -387,7 +387,7 @@ mod tests {
             .unwrap();
         let user1_session = repo
             .browser_session()
-            .add(&mut rng, &clock, &user1)
+            .add(&mut rng, &clock, &user1, None)
             .await
             .unwrap();
 
@@ -398,7 +398,7 @@ mod tests {
             .unwrap();
         let user2_session = repo
             .browser_session()
-            .add(&mut rng, &clock, &user2)
+            .add(&mut rng, &clock, &user2, None)
             .await
             .unwrap();
 

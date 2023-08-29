@@ -15,7 +15,9 @@
 use axum::{
     extract::{Form, Query, State},
     response::{Html, IntoResponse, Response},
+    TypedHeader,
 };
+use headers::UserAgent;
 use hyper::StatusCode;
 use mas_axum_utils::{
     cookies::CookieJar,
@@ -109,8 +111,10 @@ pub(crate) async fn post(
     mut repo: BoxRepository,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: CookieJar,
+    user_agent: Option<TypedHeader<UserAgent>>,
     Form(form): Form<ProtectedForm<LoginForm>>,
 ) -> Result<Response, FancyError> {
+    let user_agent = user_agent.map(|ua| ua.as_str().to_owned());
     if !password_manager.is_enabled() {
         // XXX: is it necessary to have better errors here?
         return Ok(StatusCode::METHOD_NOT_ALLOWED.into_response());
@@ -158,6 +162,7 @@ pub(crate) async fn post(
         &clock,
         &form.username,
         &form.password,
+        user_agent,
     )
     .await
     {
@@ -193,6 +198,7 @@ async fn login(
     clock: &impl Clock,
     username: &str,
     password: &str,
+    user_agent: Option<String>,
 ) -> Result<BrowserSession, FormError> {
     // XXX: we're loosing the error context here
     // First, lookup the user
@@ -245,7 +251,7 @@ async fn login(
     // Start a new session
     let user_session = repo
         .browser_session()
-        .add(&mut rng, clock, &user)
+        .add(&mut rng, clock, &user, user_agent)
         .await
         .map_err(|_| FormError::Internal)?;
 

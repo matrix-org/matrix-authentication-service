@@ -15,7 +15,7 @@
 use axum::{
     extract::{Path, State},
     response::{Html, IntoResponse},
-    Form,
+    Form, TypedHeader,
 };
 use hyper::StatusCode;
 use mas_axum_utils::{
@@ -170,8 +170,10 @@ pub(crate) async fn get(
     mut repo: BoxRepository,
     State(templates): State<Templates>,
     cookie_jar: CookieJar,
+    user_agent: Option<TypedHeader<headers::UserAgent>>,
     Path(link_id): Path<Ulid>,
 ) -> Result<impl IntoResponse, RouteError> {
+    let user_agent = user_agent.map(|ua| ua.as_str().to_owned());
     let sessions_cookie = UpstreamSessionsCookie::load(&cookie_jar);
     let (session_id, post_auth_action) = sessions_cookie
         .lookup_link(link_id)
@@ -264,7 +266,10 @@ pub(crate) async fn get(
                 .filter(mas_data_model::User::is_valid)
                 .ok_or(RouteError::UserNotFound)?;
 
-            let session = repo.browser_session().add(&mut rng, &clock, &user).await?;
+            let session = repo
+                .browser_session()
+                .add(&mut rng, &clock, &user, user_agent)
+                .await?;
 
             let upstream_session = repo
                 .upstream_oauth_session()
@@ -352,9 +357,11 @@ pub(crate) async fn post(
     clock: BoxClock,
     mut repo: BoxRepository,
     cookie_jar: CookieJar,
+    user_agent: Option<TypedHeader<headers::UserAgent>>,
     Path(link_id): Path<Ulid>,
     Form(form): Form<ProtectedForm<FormData>>,
 ) -> Result<impl IntoResponse, RouteError> {
+    let user_agent = user_agent.map(|ua| ua.as_str().to_owned());
     let form = cookie_jar.verify_form(&clock, form)?;
 
     let sessions_cookie = UpstreamSessionsCookie::load(&cookie_jar);
@@ -503,7 +510,9 @@ pub(crate) async fn post(
                 .associate_to_user(&link, &user)
                 .await?;
 
-            repo.browser_session().add(&mut rng, &clock, &user).await?
+            repo.browser_session()
+                .add(&mut rng, &clock, &user, user_agent)
+                .await?
         }
 
         _ => return Err(RouteError::InvalidFormAction),

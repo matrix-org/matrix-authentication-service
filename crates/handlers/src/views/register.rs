@@ -17,7 +17,9 @@ use std::{str::FromStr, sync::Arc};
 use axum::{
     extract::{Form, Query, State},
     response::{Html, IntoResponse, Response},
+    TypedHeader,
 };
+use headers::UserAgent;
 use hyper::StatusCode;
 use lettre::Address;
 use mas_axum_utils::{
@@ -104,8 +106,10 @@ pub(crate) async fn post(
     mut repo: BoxRepository,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: CookieJar,
+    user_agent: Option<TypedHeader<UserAgent>>,
     Form(form): Form<ProtectedForm<RegisterForm>>,
 ) -> Result<Response, FancyError> {
+    let user_agent = user_agent.map(|ua| ua.as_str().to_owned());
     if !password_manager.is_enabled() {
         return Ok(StatusCode::METHOD_NOT_ALLOWED.into_response());
     }
@@ -206,7 +210,10 @@ pub(crate) async fn post(
 
     let next = mas_router::AccountVerifyEmail::new(user_email.id).and_maybe(query.post_auth_action);
 
-    let session = repo.browser_session().add(&mut rng, &clock, &user).await?;
+    let session = repo
+        .browser_session()
+        .add(&mut rng, &clock, &user, user_agent)
+        .await?;
 
     repo.browser_session()
         .authenticate_with_password(&mut rng, &clock, &session, &user_password)
