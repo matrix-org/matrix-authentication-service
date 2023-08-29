@@ -222,6 +222,46 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
     }
 
     #[tracing::instrument(
+        name = "db.compat_session.find_by_device",
+        skip_all,
+        fields(
+            db.statement,
+            %user.id,
+            %user.username,
+            compat_session.device.id = device.as_str(),
+        ),
+    )]
+    async fn find_by_device(
+        &mut self,
+        user: &User,
+        device: &Device,
+    ) -> Result<Option<CompatSession>, Self::Error> {
+        let res = sqlx::query_as!(
+            CompatSessionLookup,
+            r#"
+                SELECT compat_session_id
+                     , device_id
+                     , user_id
+                     , created_at
+                     , finished_at
+                     , is_synapse_admin
+                FROM compat_sessions
+                WHERE user_id = $1
+                  AND device_id = $2
+            "#,
+            Uuid::from(user.id),
+            device.as_str(),
+        )
+        .traced()
+        .fetch_optional(&mut *self.conn)
+        .await?;
+
+        let Some(res) = res else { return Ok(None) };
+
+        Ok(Some(res.try_into()?))
+    }
+
+    #[tracing::instrument(
         name = "db.compat_session.add",
         skip_all,
         fields(
