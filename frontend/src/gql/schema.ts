@@ -1505,6 +1505,36 @@ export default {
             ],
           },
           {
+            name: "session",
+            type: {
+              kind: "UNION",
+              name: "Session",
+              ofType: null,
+            },
+            args: [
+              {
+                name: "deviceId",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+              {
+                name: "userId",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
+          },
+          {
             name: "upstreamOauth2Link",
             type: {
               kind: "OBJECT",
@@ -1729,6 +1759,20 @@ export default {
           },
         ],
         interfaces: [],
+      },
+      {
+        kind: "UNION",
+        name: "Session",
+        possibleTypes: [
+          {
+            kind: "OBJECT",
+            name: "CompatSession",
+          },
+          {
+            kind: "OBJECT",
+            name: "Oauth2Session",
+          },
+        ],
       },
       {
         kind: "OBJECT",

@@ -702,6 +702,10 @@ type Query {
     last: Int
   ): UpstreamOAuth2ProviderConnection!
   """
+  Lookup a compat or OAuth 2.0 session
+  """
+  session(userId: ID!, deviceId: String!): Session
+  """
   Get the viewer
   """
   viewer: Viewer!
@@ -798,6 +802,11 @@ enum SendVerificationEmailStatus {
   """
   ALREADY_VERIFIED
 }
+
+"""
+A client session, either compat or OAuth 2.0
+"""
+union Session = CompatSession | Oauth2Session
 
 """
 The input for the `addEmail` mutation
