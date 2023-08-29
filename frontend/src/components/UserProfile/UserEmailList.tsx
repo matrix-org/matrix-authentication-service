@@ -12,26 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Alert } from "@vector-im/compound-web";
+import { Alert, H3 } from "@vector-im/compound-web";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
 import { useTransition } from "react";
 
-import { routeAtom } from "../Router";
-import { graphql } from "../gql";
-import { PageInfo } from "../gql/graphql";
+import { routeAtom } from "../../Router";
+import { graphql } from "../../gql";
+import { PageInfo } from "../../gql/graphql";
 import {
   atomForCurrentPagination,
   atomWithPagination,
   FIRST_PAGE,
   Pagination,
-} from "../pagination";
+} from "../../pagination";
+import BlockList from "../BlockList";
+import PaginationControls from "../PaginationControls";
+import UserEmail from "../UserEmail";
 
 import AddEmailForm from "./AddEmailForm";
-import BlockList from "./BlockList";
-import PaginationControls from "./PaginationControls";
-import UserEmail from "./UserEmail";
 
 const QUERY = graphql(/* GraphQL */ `
   query UserEmailListQuery(
@@ -155,10 +155,11 @@ const UserEmailList: React.FC<{
     setRoute({ type: "verify-email", id });
   };
 
-  const showNoPrimaryEmailAlert = !!result && !primaryEmailId;
+  const showNoPrimaryEmailAlert = !!result?.data && !primaryEmailId;
 
   return (
     <BlockList>
+      <H3>Emails</H3>
       <PaginationControls
         count={result.data?.user?.emails?.totalCount ?? 0}
         onPrev={prevPage ? (): void => paginate(prevPage) : null}

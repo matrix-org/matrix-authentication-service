@@ -32,7 +32,7 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-const userGreetingFamily = atomFamily((userId: string) => {
+export const userGreetingFamily = atomFamily((userId: string) => {
   const userGreeting = atomWithQuery({
     query: QUERY,
     getVariables: () => ({ userId }),

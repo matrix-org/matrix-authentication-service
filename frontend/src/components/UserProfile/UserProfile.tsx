@@ -12,22 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useAtomValue } from "jotai";
+import BlockList from "../BlockList/BlockList";
 
-import { currentUserIdAtom } from "../atoms";
-import GraphQLError from "../components/GraphQLError";
-import NotLoggedIn from "../components/NotLoggedIn";
-import UserProfile from "../components/UserProfile";
-import { isErr, unwrapErr, unwrapOk } from "../result";
+import UserEmailList from "./UserEmailList";
+import UserName from "./UserName";
 
-const Profile: React.FC = () => {
-  const result = useAtomValue(currentUserIdAtom);
-  if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
-
-  const userId = unwrapOk(result);
-  if (userId === null) return <NotLoggedIn />;
-
-  return <UserProfile userId={userId} />;
+const UserProfile: React.FC<{ userId: string }> = ({ userId }) => {
+  return (
+    <BlockList>
+      <UserName userId={userId} />
+      <UserEmailList userId={userId} />
+    </BlockList>
+  );
 };
 
-export default Profile;
+export default UserProfile;
