@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
- .form {
-     display: flex;
-     flex-direction: column;
-     align-items: stretch;
-     gap: var(--cpd-space-2x);
- }
+.form {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--cpd-space-2x);
+}
 
- .save-button {
-     align-self: flex-start;
- }
+.save-button {
+    align-self: flex-start;
+}
