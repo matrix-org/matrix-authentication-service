@@ -29,9 +29,7 @@ use mas_jose::{
 use mas_keystore::Keystore;
 use mas_router::UrlBuilder;
 use mas_storage::{
-    oauth2::OAuth2ClientRepository,
-    user::{BrowserSessionRepository, UserEmailRepository},
-    BoxClock, BoxRepository, BoxRng,
+    oauth2::OAuth2ClientRepository, user::UserEmailRepository, BoxClock, BoxRepository, BoxRng,
 };
 use oauth2_types::scope;
 use serde::Serialize;
@@ -73,8 +71,8 @@ pub enum RouteError {
     #[error("failed to load client")]
     NoSuchClient,
 
-    #[error("failed to load browser session")]
-    NoSuchBrowserSession,
+    #[error("failed to load user")]
+    NoSuchUser,
 }
 
 impl_from_error_for_route!(mas_storage::RepositoryError);
@@ -85,10 +83,7 @@ impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         sentry::capture_error(&self);
         match self {
-            Self::Internal(_)
-            | Self::InvalidSigningKey
-            | Self::NoSuchClient
-            | Self::NoSuchBrowserSession => {
+            Self::Internal(_) | Self::InvalidSigningKey | Self::NoSuchClient | Self::NoSuchUser => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()).into_response()
             }
             Self::AuthorizationVerificationError(_e) => StatusCode::UNAUTHORIZED.into_response(),
@@ -107,13 +102,11 @@ pub async fn get(
 ) -> Result<Response, RouteError> {
     let session = user_authorization.protected(&mut repo, &clock).await?;
 
-    let browser_session = repo
-        .browser_session()
-        .lookup(session.user_session_id)
+    let user = repo
+        .user()
+        .lookup(session.user_id)
         .await?
-        .ok_or(RouteError::NoSuchBrowserSession)?;
-
-    let user = browser_session.user;
+        .ok_or(RouteError::NoSuchUser)?;
 
     let user_email = if session.scope.contains(&scope::EMAIL) {
         repo.user_email().get_primary(&user).await?

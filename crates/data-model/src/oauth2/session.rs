@@ -66,7 +66,8 @@ pub struct Session {
     pub id: Ulid,
     pub state: SessionState,
     pub created_at: DateTime<Utc>,
-    pub user_session_id: Ulid,
+    pub user_id: Ulid,
+    pub user_session_id: Option<Ulid>,
     pub client_id: Ulid,
     pub scope: Scope,
 }
