@@ -940,6 +940,7 @@ export type BrowserSession_SessionFragment = {
   __typename?: "BrowserSession";
   id: string;
   createdAt: any;
+  finishedAt?: any | null;
   lastAuthentication?: {
     __typename?: "Authentication";
     id: string;
@@ -1405,6 +1406,7 @@ export const BrowserSession_SessionFragmentDoc = {
         selections: [
           { kind: "Field", name: { kind: "Name", value: "id" } },
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+          { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
           {
             kind: "Field",
             name: { kind: "Name", value: "lastAuthentication" },
@@ -2024,6 +2026,7 @@ export const EndBrowserSessionDocument = {
         selections: [
           { kind: "Field", name: { kind: "Name", value: "id" } },
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+          { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
           {
             kind: "Field",
             name: { kind: "Name", value: "lastAuthentication" },
@@ -2254,6 +2257,7 @@ export const BrowserSessionListDocument = {
         selections: [
           { kind: "Field", name: { kind: "Name", value: "id" } },
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+          { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
           {
             kind: "Field",
             name: { kind: "Name", value: "lastAuthentication" },
