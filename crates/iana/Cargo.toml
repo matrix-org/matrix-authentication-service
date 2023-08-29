@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [dependencies]
 serde = { workspace = true, optional = true }
-schemars = { version = "0.8.12", default-features = false, optional = true }
+schemars = { version = "0.8.13", default-features = false, optional = true }
 
 [features]
 default = ["serde", "schemars"]
