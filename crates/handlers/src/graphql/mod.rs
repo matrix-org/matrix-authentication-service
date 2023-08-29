@@ -196,14 +196,11 @@ async fn get_requester(
             .await?
             .ok_or(RouteError::LoadFailed)?;
 
-        // XXX: The user_id should really be directly on the OAuth session
-        let browser_session = repo
-            .browser_session()
-            .lookup(session.user_session_id)
+        let user = repo
+            .user()
+            .lookup(session.user_id)
             .await?
             .ok_or(RouteError::LoadFailed)?;
-
-        let user = browser_session.user;
 
         if !token.is_valid(clock.now()) || !session.is_valid() || !user.is_valid() {
             return Err(RouteError::InvalidToken);

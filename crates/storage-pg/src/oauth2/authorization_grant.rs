@@ -406,7 +406,7 @@ impl<'c> OAuth2AuthorizationGrantRepository for PgOAuth2AuthorizationGrantReposi
             %grant.id,
             client.id = %grant.client_id,
             %session.id,
-            user_session.id = %session.user_session_id,
+            user.id = %session.user_id,
         ),
         err,
     )]

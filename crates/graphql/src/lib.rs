@@ -88,6 +88,12 @@ impl OwnerId for mas_data_model::UserEmail {
     }
 }
 
+impl OwnerId for Session {
+    fn owner_id(&self) -> Option<Ulid> {
+        Some(self.user_id)
+    }
+}
+
 impl OwnerId for mas_data_model::CompatSession {
     fn owner_id(&self) -> Option<Ulid> {
         Some(self.user_id)

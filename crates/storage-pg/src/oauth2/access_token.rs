@@ -135,7 +135,7 @@ impl<'c> OAuth2AccessTokenRepository for PgOAuth2AccessTokenRepository<'c> {
         fields(
             db.statement,
             %session.id,
-            user_session.id = %session.user_session_id,
+            user.id = %session.user_id,
             client.id = %session.client_id,
             access_token.id,
         ),

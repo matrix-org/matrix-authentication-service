@@ -18,13 +18,13 @@ use mas_axum_utils::{
     client_authorization::{ClientAuthorization, CredentialsVerificationError},
     http_client_factory::HttpClientFactory,
 };
-use mas_data_model::{TokenFormatError, TokenType};
+use mas_data_model::{TokenFormatError, TokenType, User};
 use mas_iana::oauth::{OAuthClientAuthenticationMethod, OAuthTokenTypeHint};
 use mas_keystore::Encrypter;
 use mas_storage::{
     compat::{CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository},
     oauth2::{OAuth2AccessTokenRepository, OAuth2RefreshTokenRepository, OAuth2SessionRepository},
-    user::{BrowserSessionRepository, UserRepository},
+    user::UserRepository,
     BoxClock, BoxRepository, Clock,
 };
 use oauth2_types::{
@@ -184,11 +184,11 @@ pub(crate) async fn post(
                 // XXX: is that the right error to bubble up?
                 .ok_or(RouteError::UnknownToken)?;
 
-            let browser_session = repo
-                .browser_session()
-                .lookup(session.user_session_id)
+            let user = repo
+                .user()
+                .lookup(session.user_id)
                 .await?
-                .filter(|b| b.user.is_valid())
+                .filter(User::is_valid)
                 // XXX: is that the right error to bubble up?
                 .ok_or(RouteError::UnknownToken)?;
 
@@ -196,12 +196,12 @@ pub(crate) async fn post(
                 active: true,
                 scope: Some(session.scope),
                 client_id: Some(session.client_id.to_string()),
-                username: Some(browser_session.user.username),
+                username: Some(user.username),
                 token_type: Some(OAuthTokenTypeHint::AccessToken),
                 exp: Some(token.expires_at),
                 iat: Some(token.created_at),
                 nbf: Some(token.created_at),
-                sub: Some(browser_session.user.sub),
+                sub: Some(user.sub),
                 aud: None,
                 iss: None,
                 jti: Some(token.jti()),
@@ -224,11 +224,11 @@ pub(crate) async fn post(
                 // XXX: is that the right error to bubble up?
                 .ok_or(RouteError::UnknownToken)?;
 
-            let browser_session = repo
-                .browser_session()
-                .lookup(session.user_session_id)
+            let user = repo
+                .user()
+                .lookup(session.user_id)
                 .await?
-                .filter(|b| b.user.is_valid())
+                .filter(User::is_valid)
                 // XXX: is that the right error to bubble up?
                 .ok_or(RouteError::UnknownToken)?;
 
@@ -236,12 +236,12 @@ pub(crate) async fn post(
                 active: true,
                 scope: Some(session.scope),
                 client_id: Some(session.client_id.to_string()),
-                username: Some(browser_session.user.username),
+                username: Some(user.username),
                 token_type: Some(OAuthTokenTypeHint::RefreshToken),
                 exp: None,
                 iat: Some(token.created_at),
                 nbf: Some(token.created_at),
-                sub: Some(browser_session.user.sub),
+                sub: Some(user.sub),
                 aud: None,
                 iss: None,
                 jti: Some(token.jti()),

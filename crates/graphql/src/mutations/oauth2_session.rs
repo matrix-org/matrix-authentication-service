@@ -92,16 +92,15 @@ impl OAuth2SessionMutations {
             return Ok(EndOAuth2SessionPayload::NotFound);
         };
 
-        // XXX: again, the user_id should be directly stored in the session.
-        let user_session = repo
-            .browser_session()
-            .lookup(session.user_session_id)
-            .await?
-            .context("Could not load user session")?;
-
-        if !requester.is_owner_or_admin(&user_session) {
+        if !requester.is_owner_or_admin(&session) {
             return Ok(EndOAuth2SessionPayload::NotFound);
         }
+
+        let user = repo
+            .user()
+            .lookup(session.user_id)
+            .await?
+            .context("Could not load user")?;
 
         // Scan the scopes of the session to find if there is any device that should be
         // deleted from the Matrix server.
@@ -113,7 +112,7 @@ impl OAuth2SessionMutations {
             if let Some(device) = Device::from_scope_token(scope) {
                 // Schedule a job to delete the device.
                 repo.job()
-                    .schedule_job(DeleteDeviceJob::new(&user_session.user, &device))
+                    .schedule_job(DeleteDeviceJob::new(&user, &device))
                     .await?;
             }
         }

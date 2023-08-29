@@ -1187,12 +1187,9 @@ export default {
           {
             name: "browserSession",
             type: {
-              kind: "NON_NULL",
-              ofType: {
-                kind: "OBJECT",
-                name: "BrowserSession",
-                ofType: null,
-              },
+              kind: "OBJECT",
+              name: "BrowserSession",
+              ofType: null,
             },
             args: [],
           },
