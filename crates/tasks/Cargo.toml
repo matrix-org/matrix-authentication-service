@@ -21,7 +21,7 @@ thiserror.workspace = true
 tokio = { version = "1.32.0", features = ["rt"] }
 tower = "0.4.13"
 tracing.workspace = true
-tracing-opentelemetry = "0.20.0"
+tracing-opentelemetry = "0.21.0"
 opentelemetry = "0.20.0"
 ulid = "1.0.0"
 url.workspace = true
