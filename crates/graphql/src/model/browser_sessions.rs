@@ -73,6 +73,20 @@ impl BrowserSession {
     pub async fn created_at(&self) -> DateTime<Utc> {
         self.0.created_at
     }
+
+    /// When the session was finished.
+    pub async fn finished_at(&self) -> Option<DateTime<Utc>> {
+        self.0.finished_at
+    }
+
+    /// The state of the session.
+    pub async fn state(&self) -> BrowserSessionState {
+        if self.0.finished_at.is_some() {
+            BrowserSessionState::Finished
+        } else {
+            BrowserSessionState::Active
+        }
+    }
 }
 
 /// An authentication records when a user enter their credential in a browser

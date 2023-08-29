@@ -78,6 +78,14 @@ impl OAuth2Session {
         }
     }
 
+    /// The state of the session.
+    pub async fn state(&self) -> OAuth2SessionState {
+        match &self.0.state {
+            SessionState::Valid => OAuth2SessionState::Active,
+            SessionState::Finished { .. } => OAuth2SessionState::Finished,
+        }
+    }
+
     /// The browser session which started this OAuth 2.0 session.
     pub async fn browser_session(
         &self,
