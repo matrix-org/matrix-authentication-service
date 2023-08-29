@@ -1278,7 +1278,7 @@ export type UserPrimaryEmailQuery = {
 
 export type SetDisplayNameMutationVariables = Exact<{
   userId: Scalars["ID"]["input"];
-  displayName: Scalars["String"]["input"];
+  displayName?: InputMaybe<Scalars["String"]["input"]>;
 }>;
 
 export type SetDisplayNameMutation = {
@@ -3437,13 +3437,7 @@ export const SetDisplayNameDocument = {
             kind: "Variable",
             name: { kind: "Name", value: "displayName" },
           },
-          type: {
-            kind: "NonNullType",
-            type: {
-              kind: "NamedType",
-              name: { kind: "Name", value: "String" },
-            },
-          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
         },
       ],
       selectionSet: {

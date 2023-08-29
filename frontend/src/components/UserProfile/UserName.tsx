@@ -20,45 +20,19 @@ import {
   Root,
   Button,
 } from "@vector-im/compound-web";
-import { useAtomValue, useAtom, useSetAtom } from "jotai";
+import { useAtomValue, useAtom, useSetAtom, atom } from "jotai";
 import { atomFamily } from "jotai/utils";
-import { atomWithQuery, atomWithMutation } from "jotai-urql";
-import {
-  useState,
-  useEffect,
-  ChangeEventHandler,
-  FormEventHandler,
-} from "react";
+import { atomWithMutation } from "jotai-urql";
+import { useState, useEffect, useRef } from "react";
 
 import { graphql } from "../../gql";
 import LoadingSpinner from "../LoadingSpinner/LoadingSpinner";
+import { userGreetingFamily } from "../UserGreeting";
 
 import styles from "./UserName.module.css";
 
-const QUERY = graphql(/* GraphQL */ `
-  query UserGreeting($userId: ID!) {
-    user(id: $userId) {
-      id
-      username
-      matrix {
-        mxid
-        displayName
-      }
-    }
-  }
-`);
-
-const userGreetingFamily = atomFamily((userId: string) => {
-  const userGreeting = atomWithQuery({
-    query: QUERY,
-    getVariables: () => ({ userId }),
-  });
-
-  return userGreeting;
-});
-
 const SET_DISPLAYNAME_MUTATION = graphql(/* GraphQL */ `
-  mutation SetDisplayName($userId: ID!, $displayName: String!) {
+  mutation SetDisplayName($userId: ID!, $displayName: String) {
     setDisplayName(input: { userId: $userId, displayName: $displayName }) {
       status
       user {
@@ -71,7 +45,18 @@ const SET_DISPLAYNAME_MUTATION = graphql(/* GraphQL */ `
   }
 `);
 
-const setDisplayNameAtom = atomWithMutation(SET_DISPLAYNAME_MUTATION);
+const setDisplayNameFamily = atomFamily((userId: string) => {
+  const setDisplayName = atomWithMutation(SET_DISPLAYNAME_MUTATION);
+
+  // A proxy atom which pre-sets the id variable in the mutation
+  const setDisplayNameAtom = atom(
+    (get) => get(setDisplayName),
+    (get, set, displayName: string | null) =>
+      set(setDisplayName, { userId, displayName }),
+  );
+
+  return setDisplayNameAtom;
+});
 
 const getErrorMessage = (result: {
   error?: unknown;
@@ -87,49 +72,42 @@ const getErrorMessage = (result: {
 
 const UserName: React.FC<{ userId: string }> = ({ userId }) => {
   const result = useAtomValue(userGreetingFamily(userId));
+  const fieldRef = useRef<HTMLInputElement>(null);
 
-  const [setDisplayNameResult, setDisplayName] = useAtom(setDisplayNameAtom);
+  const [setDisplayNameResult, setDisplayName] = useAtom(
+    setDisplayNameFamily(userId),
+  );
   const [inProgress, setInProgress] = useState(false);
 
   const user = result.data?.user;
   const displayName = user?.matrix.displayName || "";
 
-  const [editingDisplayName, setEditingDisplayName] = useState(displayName);
-
   const userGreeting = useSetAtom(userGreetingFamily(userId));
 
   useEffect(() => {
-    setEditingDisplayName(displayName);
+    if (fieldRef.current) {
+      fieldRef.current.value = displayName;
+    }
   }, [displayName]);
 
-  const onDisplayNameChange: ChangeEventHandler<HTMLInputElement> = (
-    event,
-  ): void => {
-    setEditingDisplayName(event.target.value);
-  };
-
-  const onSubmit: FormEventHandler<HTMLButtonElement | HTMLFormElement> = (
-    event,
-  ) => {
+  const onSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
 
-    let newDisplayName = editingDisplayName;
+    const formData = new FormData(event.currentTarget);
+    let newDisplayName = (formData.get("displayname") as string) || null;
 
     // set null to remove an existing username
-    if (editingDisplayName === "") {
-      newDisplayName = "";
+    if (newDisplayName === "") {
+      newDisplayName = null;
     }
 
     // do nothing if no change
-    if (
-      (!editingDisplayName && !displayName) ||
-      editingDisplayName === displayName
-    ) {
+    if ((!newDisplayName && !displayName) || newDisplayName === displayName) {
       return;
     }
 
     setInProgress(true);
-    setDisplayName({ userId, displayName: newDisplayName }).then((result) => {
+    setDisplayName(newDisplayName).then((result) => {
       if (!result.data) {
         console.error("Failed to set display name", result.error);
       } else if (result.data.setDisplayName.status === "SET") {
@@ -139,7 +117,9 @@ const UserName: React.FC<{ userId: string }> = ({ userId }) => {
         });
       } else if (result.data.setDisplayName.status === "INVALID") {
         // reset to current saved display name
-        setEditingDisplayName(displayName);
+        if (fieldRef.current) {
+          fieldRef.current.value = displayName;
+        }
       }
       setInProgress(false);
     });
@@ -151,12 +131,7 @@ const UserName: React.FC<{ userId: string }> = ({ userId }) => {
     <Root onSubmit={onSubmit} className={styles.form}>
       <Field name="displayname">
         <Label>Display Name</Label>
-        <Control
-          inputMode="text"
-          max={250}
-          value={editingDisplayName}
-          onChange={onDisplayNameChange}
-        />
+        <Control ref={fieldRef} inputMode="text" max={250} />
       </Field>
       {!inProgress && errorMessage && (
         <Alert type="critical" title="Error">
@@ -167,9 +142,9 @@ const UserName: React.FC<{ userId: string }> = ({ userId }) => {
       <Button
         className={styles.saveButton}
         disabled={inProgress}
-        onClick={onSubmit}
         kind="primary"
         size="sm"
+        type="submit"
       >
         {!!inProgress && <LoadingSpinner inline />}Save
       </Button>
