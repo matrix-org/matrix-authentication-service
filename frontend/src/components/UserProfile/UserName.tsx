@@ -149,7 +149,7 @@ const UserName: React.FC<{ userId: string }> = ({ userId }) => {
 
   return (
     <Root onSubmit={onSubmit} method="POST" className={styles.form}>
-      <Field name="displayname" className={styles.input}>
+      <Field name="displayname">
         <Label>Display Name</Label>
         <Control
           inputMode="text"
@@ -164,7 +164,13 @@ const UserName: React.FC<{ userId: string }> = ({ userId }) => {
         </Alert>
       )}
 
-      <Button disabled={inProgress} onClick={onSubmit} kind="primary" size="sm">
+      <Button
+        className={styles.saveButton}
+        disabled={inProgress}
+        onClick={onSubmit}
+        kind="primary"
+        size="sm"
+      >
         {!!inProgress && <LoadingSpinner inline />}Save
       </Button>
     </Root>
