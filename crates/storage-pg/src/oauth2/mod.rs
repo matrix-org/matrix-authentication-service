@@ -38,7 +38,7 @@ mod tests {
     };
     use oauth2_types::{
         requests::{GrantType, ResponseMode},
-        scope::{Scope, OPENID},
+        scope::{Scope, EMAIL, OPENID, PROFILE},
     };
     use rand::SeedableRng;
     use rand_chacha::ChaChaRng;
@@ -456,7 +456,8 @@ mod tests {
             .await
             .unwrap();
 
-        let scope = Scope::from_iter([OPENID]);
+        let scope = Scope::from_iter([OPENID, EMAIL]);
+        let scope2 = Scope::from_iter([OPENID, PROFILE]);
 
         // Create two sessions for each user, one with each client
         // We're moving the clock forward by 1 minute between each session to ensure
@@ -477,14 +478,14 @@ mod tests {
 
         let session21 = repo
             .oauth2_session()
-            .add(&mut rng, &clock, &client2, &user1_session, scope.clone())
+            .add(&mut rng, &clock, &client2, &user1_session, scope2.clone())
             .await
             .unwrap();
         clock.advance(Duration::minutes(1));
 
         let session22 = repo
             .oauth2_session()
-            .add(&mut rng, &clock, &client2, &user2_session, scope.clone())
+            .add(&mut rng, &clock, &client2, &user2_session, scope2.clone())
             .await
             .unwrap();
         clock.advance(Duration::minutes(1));
@@ -644,6 +645,49 @@ mod tests {
         assert_eq!(list.edges.len(), 1);
         assert_eq!(list.edges[0], session21);
 
+        assert_eq!(repo.oauth2_session().count(filter).await.unwrap(), 1);
+
+        // Try the scope filter. We should get all sessions with the "openid" scope
+        let scope = Scope::from_iter([OPENID]);
+        let filter = OAuth2SessionFilter::new().with_scope(&scope);
+        let list = repo
+            .oauth2_session()
+            .list(filter, pagination)
+            .await
+            .unwrap();
+        assert!(!list.has_next_page);
+        assert_eq!(list.edges.len(), 4);
+        assert_eq!(list.edges[0], session11);
+        assert_eq!(list.edges[1], session12);
+        assert_eq!(list.edges[2], session21);
+        assert_eq!(list.edges[3], session22);
+        assert_eq!(repo.oauth2_session().count(filter).await.unwrap(), 4);
+
+        // We should get all sessions with the "openid" and "email" scope
+        let scope = Scope::from_iter([OPENID, EMAIL]);
+        let filter = OAuth2SessionFilter::new().with_scope(&scope);
+        let list = repo
+            .oauth2_session()
+            .list(filter, pagination)
+            .await
+            .unwrap();
+        assert!(!list.has_next_page);
+        assert_eq!(list.edges.len(), 2);
+        assert_eq!(list.edges[0], session11);
+        assert_eq!(list.edges[1], session12);
+        assert_eq!(repo.oauth2_session().count(filter).await.unwrap(), 2);
+
+        // Try combining the scope filter with the user filter
+        let filter = OAuth2SessionFilter::new()
+            .with_scope(&scope)
+            .for_user(&user1);
+        let list = repo
+            .oauth2_session()
+            .list(filter, pagination)
+            .await
+            .unwrap();
+        assert_eq!(list.edges.len(), 1);
+        assert_eq!(list.edges[0], session11);
         assert_eq!(repo.oauth2_session().count(filter).await.unwrap(), 1);
     }
 }

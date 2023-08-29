@@ -21,7 +21,7 @@ use mas_storage::{
 };
 use oauth2_types::scope::{Scope, ScopeToken};
 use rand::RngCore;
-use sea_query::{enum_def, Expr, PostgresQueryBuilder, Query};
+use sea_query::{enum_def, extension::postgres::PgExpr, Expr, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
 use sqlx::PgConnection;
 use ulid::Ulid;
@@ -288,6 +288,10 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
                     Expr::col((OAuth2Sessions::Table, OAuth2Sessions::FinishedAt)).is_not_null()
                 }
             }))
+            .and_where_option(filter.scope().map(|scope| {
+                let scope: Vec<String> = scope.iter().map(|s| s.as_str().to_owned()).collect();
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::ScopeList)).contains(scope)
+            }))
             .generate_pagination(
                 (OAuth2Sessions::Table, OAuth2Sessions::OAuth2SessionId),
                 pagination,
@@ -344,6 +348,10 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
                 } else {
                     Expr::col((OAuth2Sessions::Table, OAuth2Sessions::FinishedAt)).is_not_null()
                 }
+            }))
+            .and_where_option(filter.scope().map(|scope| {
+                let scope: Vec<String> = scope.iter().map(|s| s.as_str().to_owned()).collect();
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::ScopeList)).contains(scope)
             }))
             .build_sqlx(PostgresQueryBuilder);
 
