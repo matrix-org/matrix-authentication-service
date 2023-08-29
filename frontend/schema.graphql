@@ -95,6 +95,10 @@ type BrowserSession implements Node & CreationEvent {
   The state of the session.
   """
   state: BrowserSessionState!
+  """
+  The user-agent string with which the session was created.
+  """
+  userAgent: String
 }
 
 type BrowserSessionConnection {

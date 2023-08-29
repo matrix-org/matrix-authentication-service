@@ -172,6 +172,14 @@ export default {
             },
             args: [],
           },
+          {
+            name: "userAgent",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
+            },
+            args: [],
+          },
         ],
         interfaces: [
           {

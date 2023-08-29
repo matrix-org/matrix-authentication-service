@@ -100,6 +100,8 @@ export type BrowserSession = CreationEvent &
     state: BrowserSessionState;
     /** The user logged in this session. */
     user: User;
+    /** The user-agent string with which the session was created. */
+    userAgent?: Maybe<Scalars["String"]["output"]>;
   };
 
 export type BrowserSessionConnection = {

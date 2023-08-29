@@ -87,6 +87,11 @@ impl BrowserSession {
             BrowserSessionState::Active
         }
     }
+
+    /// The user-agent string with which the session was created.
+    pub async fn user_agent(&self) -> Option<&str> {
+        self.0.user_agent.as_deref()
+    }
 }
 
 /// An authentication records when a user enter their credential in a browser
