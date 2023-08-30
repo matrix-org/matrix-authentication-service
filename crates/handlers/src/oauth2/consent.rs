@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::sync::Arc;
-
 use axum::{
     extract::{Form, Path, State},
     response::{Html, IntoResponse, Response},
@@ -25,7 +23,7 @@ use mas_axum_utils::{
     SessionInfoExt,
 };
 use mas_data_model::{AuthorizationGrantStage, Device};
-use mas_policy::PolicyFactory;
+use mas_policy::Policy;
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{
     oauth2::{OAuth2AuthorizationGrantRepository, OAuth2ClientRepository},
@@ -61,7 +59,6 @@ pub enum RouteError {
 impl_from_error_for_route!(mas_templates::TemplateError);
 impl_from_error_for_route!(mas_storage::RepositoryError);
 impl_from_error_for_route!(mas_policy::LoadError);
-impl_from_error_for_route!(mas_policy::InstantiateError);
 impl_from_error_for_route!(mas_policy::EvaluationError);
 
 impl IntoResponse for RouteError {
@@ -80,8 +77,8 @@ impl IntoResponse for RouteError {
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
-    State(policy_factory): State<Arc<PolicyFactory>>,
     State(templates): State<Templates>,
+    mut policy: Policy,
     mut repo: BoxRepository,
     cookie_jar: CookieJar,
     Path(grant_id): Path<Ulid>,
@@ -109,7 +106,6 @@ pub(crate) async fn get(
     if let Some(session) = maybe_session {
         let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
 
-        let mut policy = policy_factory.instantiate().await?;
         let res = policy
             .evaluate_authorization_grant(&grant, &client, &session.user)
             .await?;
@@ -146,7 +142,7 @@ pub(crate) async fn get(
 pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
-    State(policy_factory): State<Arc<PolicyFactory>>,
+    mut policy: Policy,
     mut repo: BoxRepository,
     cookie_jar: CookieJar,
     Path(grant_id): Path<Ulid>,
@@ -176,7 +172,6 @@ pub(crate) async fn post(
         .await?
         .ok_or(RouteError::NoSuchClient)?;
 
-    let mut policy = policy_factory.instantiate().await?;
     let res = policy
         .evaluate_authorization_grant(&grant, &client, &session.user)
         .await?;

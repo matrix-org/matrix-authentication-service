@@ -22,6 +22,7 @@ url.workspace = true
 oauth2-types = { path = "../oauth2-types" }
 mas-data-model = { path = "../data-model" }
 mas-matrix = { path = "../matrix" }
+mas-policy = { path = "../policy" }
 mas-storage = { path = "../storage" }
 
 [[bin]]

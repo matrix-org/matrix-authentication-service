@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::sync::Arc;
-
 use axum::{
     extract::{Form, State},
     response::{Html, IntoResponse, Response},
@@ -22,7 +20,7 @@ use hyper::StatusCode;
 use mas_axum_utils::{cookies::CookieJar, csrf::CsrfExt, SessionInfoExt};
 use mas_data_model::{AuthorizationCode, Pkce};
 use mas_keystore::Keystore;
-use mas_policy::PolicyFactory;
+use mas_policy::Policy;
 use mas_router::{PostAuthAction, Route, UrlBuilder};
 use mas_storage::{
     oauth2::{OAuth2AuthorizationGrantRepository, OAuth2ClientRepository},
@@ -94,7 +92,6 @@ impl_from_error_for_route!(mas_storage::RepositoryError);
 impl_from_error_for_route!(mas_templates::TemplateError);
 impl_from_error_for_route!(self::callback::CallbackDestinationError);
 impl_from_error_for_route!(mas_policy::LoadError);
-impl_from_error_for_route!(mas_policy::InstantiateError);
 impl_from_error_for_route!(mas_policy::EvaluationError);
 
 #[derive(Deserialize)]
@@ -140,10 +137,10 @@ fn resolve_response_mode(
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
-    State(policy_factory): State<Arc<PolicyFactory>>,
     State(templates): State<Templates>,
     State(key_store): State<Keystore>,
     State(url_builder): State<UrlBuilder>,
+    policy: Policy,
     mut repo: BoxRepository,
     cookie_jar: CookieJar,
     Form(params): Form<Params>,
@@ -346,7 +343,7 @@ pub(crate) async fn get(
                         &clock,
                         repo,
                         key_store,
-                        &policy_factory,
+                        policy,
                         url_builder,
                         grant,
                         &client,
@@ -393,7 +390,7 @@ pub(crate) async fn get(
                         &clock,
                         repo,
                         key_store,
-                        &policy_factory,
+                        policy,
                         url_builder,
                         grant,
                         &client,

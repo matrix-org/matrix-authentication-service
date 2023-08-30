@@ -147,6 +147,8 @@
         "authorization_grant_entrypoint": "authorization_grant/violation",
         "client_registration_entrypoint": "client_registration/violation",
         "data": null,
+        "email_entrypoint": "email/violation",
+        "password_entrypoint": "password/violation",
         "register_entrypoint": "register/violation",
         "wasm_module": "./policies/policy.wasm"
       },
@@ -1348,6 +1350,16 @@
         "data": {
           "description": "Arbitrary data to pass to the policy",
           "default": null
+        },
+        "email_entrypoint": {
+          "description": "Entrypoint to use when adding an email address",
+          "default": "email/violation",
+          "type": "string"
+        },
+        "password_entrypoint": {
+          "description": "Entrypoint to use when changing password",
+          "default": "password/violation",
+          "type": "string"
         },
         "register_entrypoint": {
           "description": "Entrypoint to use when evaluating user registrations",

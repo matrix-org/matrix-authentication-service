@@ -30,7 +30,7 @@
     clippy::let_with_type_underscore,
 )]
 
-use std::{convert::Infallible, sync::Arc, time::Duration};
+use std::{convert::Infallible, time::Duration};
 
 use axum::{
     body::{Bytes, HttpBody},
@@ -50,7 +50,7 @@ use hyper::{
 use mas_axum_utils::{cookies::CookieJar, FancyError};
 use mas_http::CorsLayerExt;
 use mas_keystore::{Encrypter, Keystore};
-use mas_policy::PolicyFactory;
+use mas_policy::Policy;
 use mas_router::{Route, UrlBuilder};
 use mas_storage::{BoxClock, BoxRepository, BoxRng};
 use mas_templates::{ErrorContext, NotFoundContext, Templates};
@@ -166,12 +166,12 @@ where
     S: Clone + Send + Sync + 'static,
     Keystore: FromRef<S>,
     UrlBuilder: FromRef<S>,
-    Arc<PolicyFactory>: FromRef<S>,
     BoxRepository: FromRequestParts<S>,
     Encrypter: FromRef<S>,
     HttpClientFactory: FromRef<S>,
     BoxClock: FromRequestParts<S>,
     BoxRng: FromRequestParts<S>,
+    Policy: FromRequestParts<S>,
 {
     // All those routes are API-like, with a common CORS layer
     Router::new()
@@ -267,7 +267,6 @@ where
     <B as HttpBody>::Error: std::error::Error + Send + Sync,
     S: Clone + Send + Sync + 'static,
     UrlBuilder: FromRef<S>,
-    Arc<PolicyFactory>: FromRef<S>,
     BoxRepository: FromRequestParts<S>,
     CookieJar: FromRequestParts<S>,
     Encrypter: FromRef<S>,
@@ -278,6 +277,7 @@ where
     MetadataCache: FromRef<S>,
     BoxClock: FromRequestParts<S>,
     BoxRng: FromRequestParts<S>,
+    Policy: FromRequestParts<S>,
 {
     Router::new()
         // XXX: hard-coded redirect from /account to /account/

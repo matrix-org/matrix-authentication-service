@@ -24,6 +24,7 @@ use mas_axum_utils::{
     FancyError, SessionInfoExt,
 };
 use mas_data_model::BrowserSession;
+use mas_policy::Policy;
 use mas_router::Route;
 use mas_storage::{
     user::{BrowserSessionRepository, UserPasswordRepository},
@@ -93,6 +94,7 @@ pub(crate) async fn post(
     clock: BoxClock,
     State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
+    mut policy: Policy,
     mut repo: BoxRepository,
     cookie_jar: CookieJar,
     Form(form): Form<ProtectedForm<ChangeForm>>,
@@ -119,6 +121,13 @@ pub(crate) async fn post(
         .await?
         .context("user has no password")?;
 
+    let res = policy.evaluate_password(&form.new_password).await?;
+
+    // TODO: display nice form errors
+    if !res.valid() {
+        return Err(anyhow::anyhow!("Password policy violation: {res}").into());
+    }
+
     let password = Zeroizing::new(form.current_password.into_bytes());
     let new_password = Zeroizing::new(form.new_password.into_bytes());
     let new_password_confirm = Zeroizing::new(form.new_password_confirm.into_bytes());
@@ -133,7 +142,7 @@ pub(crate) async fn post(
 
     // TODO: display nice form errors
     if new_password != new_password_confirm {
-        return Err(anyhow::anyhow!("password mismatch").into());
+        return Err(anyhow::anyhow!("Password mismatch").into());
     }
 
     let (version, hashed_password) = password_manager.hash(&mut rng, new_password).await?;

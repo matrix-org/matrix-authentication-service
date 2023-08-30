@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{str::FromStr, sync::Arc};
+use std::str::FromStr;
 
 use axum::{
     extract::{Form, Query, State},
@@ -27,7 +27,7 @@ use mas_axum_utils::{
     csrf::{CsrfExt, CsrfToken, ProtectedForm},
     FancyError, SessionInfoExt,
 };
-use mas_policy::PolicyFactory;
+use mas_policy::Policy;
 use mas_router::Route;
 use mas_storage::{
     job::{JobRepositoryExt, ProvisionUserJob, VerifyEmailJob},
@@ -101,8 +101,8 @@ pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
     State(password_manager): State<PasswordManager>,
-    State(policy_factory): State<Arc<PolicyFactory>>,
     State(templates): State<Templates>,
+    mut policy: Policy,
     mut repo: BoxRepository,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: CookieJar,
@@ -148,7 +148,6 @@ pub(crate) async fn post(
             state.add_error_on_field(RegisterFormField::PasswordConfirm, FieldError::Unspecified);
         }
 
-        let mut policy = policy_factory.instantiate().await?;
         let res = policy
             .evaluate_register(&form.username, &form.password, &form.email)
             .await?;
