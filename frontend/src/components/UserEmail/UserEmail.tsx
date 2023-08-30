@@ -149,10 +149,7 @@ const UserEmail: React.FC<{
       {!data.confirmedAt && (
         <div>
           <span className={styles.userEmailUnverified}>Unverified</span> |{" "}
-          <Link
-            className={styles.link}
-            route={{ type: "verify-email", id: data.id }}
-          >
+          <Link kind="button" route={{ type: "verify-email", id: data.id }}>
             Retry verification
           </Link>
         </div>
