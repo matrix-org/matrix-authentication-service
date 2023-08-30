@@ -21,10 +21,11 @@ use hyper::StatusCode;
 use mas_axum_utils::{
     cookies::CookieJar,
     csrf::{CsrfExt, ProtectedForm},
-    SessionInfoExt,
+    FancyError, SessionInfoExt,
 };
 use mas_data_model::{UpstreamOAuthProviderImportPreference, User};
 use mas_jose::jwt::Jwt;
+use mas_policy::Policy;
 use mas_storage::{
     job::{JobRepositoryExt, ProvisionUserJob},
     upstream_oauth2::{UpstreamOAuthLinkRepository, UpstreamOAuthSessionRepository},
@@ -32,7 +33,8 @@ use mas_storage::{
     BoxClock, BoxRepository, BoxRng, RepositoryAccess,
 };
 use mas_templates::{
-    TemplateContext, Templates, UpstreamExistingLinkContext, UpstreamRegister, UpstreamSuggestLink,
+    ErrorContext, TemplateContext, Templates, UpstreamExistingLinkContext, UpstreamRegister,
+    UpstreamSuggestLink,
 };
 use serde::Deserialize;
 use thiserror::Error;
@@ -76,6 +78,11 @@ pub(crate) enum RouteError {
     #[error("Missing username")]
     MissingUsername,
 
+    #[error("Policy violation: {violations:?}")]
+    PolicyViolation {
+        violations: Vec<mas_policy::Violation>,
+    },
+
     #[error(transparent)]
     Internal(Box<dyn std::error::Error>),
 }
@@ -84,6 +91,7 @@ impl_from_error_for_route!(mas_templates::TemplateError);
 impl_from_error_for_route!(mas_axum_utils::csrf::CsrfError);
 impl_from_error_for_route!(super::cookie::UpstreamSessionNotFound);
 impl_from_error_for_route!(mas_storage::RepositoryError);
+impl_from_error_for_route!(mas_policy::EvaluationError);
 impl_from_error_for_route!(mas_jose::jwt::JwtDecodeError);
 
 impl IntoResponse for RouteError {
@@ -91,6 +99,16 @@ impl IntoResponse for RouteError {
         sentry::capture_error(&self);
         match self {
             Self::LinkNotFound => (StatusCode::NOT_FOUND, "Link not found").into_response(),
+            Self::PolicyViolation { violations } => {
+                let details = violations.iter().map(|v| v.msg.clone()).collect::<Vec<_>>();
+                let details = details.join("\n");
+                let ctx = ErrorContext::new()
+                    .with_description(
+                        "Account registration denied because of policy violation".to_owned(),
+                    )
+                    .with_details(details);
+                FancyError::new(ctx).into_response()
+            }
             Self::Internal(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
             e => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
         }
@@ -358,6 +376,7 @@ pub(crate) async fn post(
     mut repo: BoxRepository,
     cookie_jar: CookieJar,
     user_agent: Option<TypedHeader<headers::UserAgent>>,
+    mut policy: Policy,
     Path(link_id): Path<Ulid>,
     Form(form): Form<ProtectedForm<FormData>>,
 ) -> Result<impl IntoResponse, RouteError> {
@@ -477,6 +496,16 @@ pub(crate) async fn post(
             )?;
 
             let username = username.ok_or(RouteError::MissingUsername)?;
+
+            // Policy check
+            let res = policy
+                .evaluate_upstream_oauth_register(&username, email.as_deref())
+                .await?;
+            if !res.valid() {
+                return Err(RouteError::PolicyViolation {
+                    violations: res.violations,
+                });
+            }
 
             // Now we can create the user
             let user = repo.user().add(&mut rng, &clock, username).await?;

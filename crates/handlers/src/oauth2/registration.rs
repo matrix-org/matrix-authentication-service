@@ -12,13 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::sync::Arc;
-
 use axum::{extract::State, response::IntoResponse, Json};
 use hyper::StatusCode;
 use mas_iana::oauth::OAuthClientAuthenticationMethod;
 use mas_keystore::Encrypter;
-use mas_policy::{PolicyFactory, Violation};
+use mas_policy::{Policy, Violation};
 use mas_storage::{oauth2::OAuth2ClientRepository, BoxClock, BoxRepository, BoxRng};
 use oauth2_types::{
     errors::{ClientError, ClientErrorCode},
@@ -49,7 +47,6 @@ pub(crate) enum RouteError {
 
 impl_from_error_for_route!(mas_storage::RepositoryError);
 impl_from_error_for_route!(mas_policy::LoadError);
-impl_from_error_for_route!(mas_policy::InstanciateError);
 impl_from_error_for_route!(mas_policy::EvaluationError);
 impl_from_error_for_route!(mas_keystore::aead::Error);
 
@@ -136,7 +133,7 @@ pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
     mut repo: BoxRepository,
-    State(policy_factory): State<Arc<PolicyFactory>>,
+    mut policy: Policy,
     State(encrypter): State<Encrypter>,
     body: Result<Json<ClientMetadata>, axum::extract::rejection::JsonRejection>,
 ) -> Result<impl IntoResponse, RouteError> {
@@ -148,7 +145,6 @@ pub(crate) async fn post(
     // Validate the body
     let metadata = body.validate()?;
 
-    let mut policy = policy_factory.instantiate().await?;
     let res = policy.evaluate_client_registration(&metadata).await?;
     if !res.valid() {
         return Err(RouteError::PolicyDenied(res.violations));

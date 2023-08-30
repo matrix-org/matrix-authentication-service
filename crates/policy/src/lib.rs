@@ -1,4 +1,4 @@
-// Copyright 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2022-2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,13 +17,19 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::missing_errors_doc)]
 
+pub mod model;
+
 use mas_data_model::{AuthorizationGrant, Client, User};
 use oauth2_types::registration::VerifiedClientMetadata;
 use opa_wasm::Runtime;
-use serde::Deserialize;
 use thiserror::Error;
 use tokio::io::{AsyncRead, AsyncReadExt};
 use wasmtime::{Config, Engine, Module, Store};
+
+use self::model::{
+    AuthorizationGrantInput, ClientRegistrationInput, EmailInput, PasswordInput, RegisterInput,
+};
+pub use self::model::{EvaluationResult, Violation};
 
 #[derive(Debug, Error)]
 pub enum LoadError {
@@ -40,7 +46,7 @@ pub enum LoadError {
     Compilation(#[source] anyhow::Error),
 
     #[error("failed to instantiate a test instance")]
-    Instantiate(#[source] InstanciateError),
+    Instantiate(#[source] InstantiateError),
 
     #[cfg(feature = "cache")]
     #[error("could not load wasmtime cache configuration")]
@@ -48,7 +54,7 @@ pub enum LoadError {
 }
 
 #[derive(Debug, Error)]
-pub enum InstanciateError {
+pub enum InstantiateError {
     #[error("failed to create WASM runtime")]
     Runtime(#[source] anyhow::Error),
 
@@ -59,13 +65,33 @@ pub enum InstanciateError {
     LoadData(#[source] anyhow::Error),
 }
 
+/// Holds the entrypoint of each policy
+#[derive(Debug, Clone)]
+pub struct Entrypoints {
+    pub register: String,
+    pub client_registration: String,
+    pub authorization_grant: String,
+    pub email: String,
+    pub password: String,
+}
+
+impl Entrypoints {
+    fn all(&self) -> [&str; 5] {
+        [
+            self.register.as_str(),
+            self.client_registration.as_str(),
+            self.authorization_grant.as_str(),
+            self.email.as_str(),
+            self.password.as_str(),
+        ]
+    }
+}
+
 pub struct PolicyFactory {
     engine: Engine,
     module: Module,
     data: serde_json::Value,
-    register_entrypoint: String,
-    client_registration_entrypoint: String,
-    authorization_grant_endpoint: String,
+    entrypoints: Entrypoints,
 }
 
 impl PolicyFactory {
@@ -73,9 +99,7 @@ impl PolicyFactory {
     pub async fn load(
         mut source: impl AsyncRead + std::marker::Unpin,
         data: serde_json::Value,
-        register_entrypoint: String,
-        client_registration_entrypoint: String,
-        authorization_grant_endpoint: String,
+        entrypoints: Entrypoints,
     ) -> Result<Self, LoadError> {
         let mut config = Config::default();
         config.async_support(true);
@@ -103,9 +127,7 @@ impl PolicyFactory {
             engine,
             module,
             data,
-            register_entrypoint,
-            client_registration_entrypoint,
-            authorization_grant_endpoint,
+            entrypoints,
         };
 
         // Try to instantiate
@@ -118,22 +140,18 @@ impl PolicyFactory {
     }
 
     #[tracing::instrument(name = "policy.instantiate", skip_all, err)]
-    pub async fn instantiate(&self) -> Result<Policy, InstanciateError> {
+    pub async fn instantiate(&self) -> Result<Policy, InstantiateError> {
         let mut store = Store::new(&self.engine, ());
         let runtime = Runtime::new(&mut store, &self.module)
             .await
-            .map_err(InstanciateError::Runtime)?;
+            .map_err(InstantiateError::Runtime)?;
 
         // Check that we have the required entrypoints
-        let entrypoints = runtime.entrypoints();
+        let policy_entrypoints = runtime.entrypoints();
 
-        for e in [
-            self.register_entrypoint.as_str(),
-            self.client_registration_entrypoint.as_str(),
-            self.authorization_grant_endpoint.as_str(),
-        ] {
-            if !entrypoints.contains(e) {
-                return Err(InstanciateError::MissingEntrypoint {
+        for e in self.entrypoints.all() {
+            if !policy_entrypoints.contains(e) {
+                return Err(InstantiateError::MissingEntrypoint {
                     entrypoint: e.to_owned(),
                 });
             }
@@ -142,43 +160,20 @@ impl PolicyFactory {
         let instance = runtime
             .with_data(&mut store, &self.data)
             .await
-            .map_err(InstanciateError::LoadData)?;
+            .map_err(InstantiateError::LoadData)?;
 
         Ok(Policy {
             store,
             instance,
-            register_entrypoint: self.register_entrypoint.clone(),
-            client_registration_entrypoint: self.client_registration_entrypoint.clone(),
-            authorization_grant_endpoint: self.authorization_grant_endpoint.clone(),
+            entrypoints: self.entrypoints.clone(),
         })
-    }
-}
-
-#[derive(Deserialize, Debug)]
-pub struct Violation {
-    pub msg: String,
-    pub field: Option<String>,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct EvaluationResult {
-    #[serde(rename = "result")]
-    pub violations: Vec<Violation>,
-}
-
-impl EvaluationResult {
-    #[must_use]
-    pub fn valid(&self) -> bool {
-        self.violations.is_empty()
     }
 }
 
 pub struct Policy {
     store: Store<()>,
     instance: opa_wasm::Policy<opa_wasm::DefaultContext>,
-    register_entrypoint: String,
-    client_registration_entrypoint: String,
-    authorization_grant_endpoint: String,
+    entrypoints: Entrypoints,
 }
 
 #[derive(Debug, Error)]
@@ -190,10 +185,49 @@ pub enum EvaluationError {
 
 impl Policy {
     #[tracing::instrument(
+        name = "policy.evaluate_email",
+        skip_all,
+        fields(
+            input.email = email,
+        ),
+        err,
+    )]
+    pub async fn evaluate_email(
+        &mut self,
+        email: &str,
+    ) -> Result<EvaluationResult, EvaluationError> {
+        let input = EmailInput { email };
+
+        let [res]: [EvaluationResult; 1] = self
+            .instance
+            .evaluate(&mut self.store, &self.entrypoints.email, &input)
+            .await?;
+
+        Ok(res)
+    }
+
+    #[tracing::instrument(name = "policy.evaluate_password", skip_all, err)]
+    pub async fn evaluate_password(
+        &mut self,
+        password: &str,
+    ) -> Result<EvaluationResult, EvaluationError> {
+        let input = PasswordInput { password };
+
+        let [res]: [EvaluationResult; 1] = self
+            .instance
+            .evaluate(&mut self.store, &self.entrypoints.password, &input)
+            .await?;
+
+        Ok(res)
+    }
+
+    #[tracing::instrument(
         name = "policy.evaluate.register",
         skip_all,
         fields(
-            data.username = username,
+            input.registration_method = "password",
+            input.user.username = username,
+            input.user.email = email,
         ),
         err,
     )]
@@ -203,17 +237,40 @@ impl Policy {
         password: &str,
         email: &str,
     ) -> Result<EvaluationResult, EvaluationError> {
-        let input = serde_json::json!({
-            "user": {
-                "username": username,
-                "password": password,
-                "email": email
-            }
-        });
+        let input = RegisterInput::Password {
+            username,
+            password,
+            email,
+        };
 
         let [res]: [EvaluationResult; 1] = self
             .instance
-            .evaluate(&mut self.store, &self.register_entrypoint, &input)
+            .evaluate(&mut self.store, &self.entrypoints.register, &input)
+            .await?;
+
+        Ok(res)
+    }
+
+    #[tracing::instrument(
+        name = "policy.evaluate.upstream_oauth_register",
+        skip_all,
+        fields(
+            input.registration_method = "password",
+            input.user.username = username,
+            input.user.email = email,
+        ),
+        err,
+    )]
+    pub async fn evaluate_upstream_oauth_register(
+        &mut self,
+        username: &str,
+        email: Option<&str>,
+    ) -> Result<EvaluationResult, EvaluationError> {
+        let input = RegisterInput::UpstreamOAuth2 { username, email };
+
+        let [res]: [EvaluationResult; 1] = self
+            .instance
+            .evaluate(&mut self.store, &self.entrypoints.register, &input)
             .await?;
 
         Ok(res)
@@ -224,16 +281,13 @@ impl Policy {
         &mut self,
         client_metadata: &VerifiedClientMetadata,
     ) -> Result<EvaluationResult, EvaluationError> {
-        let client_metadata = serde_json::to_value(client_metadata)?;
-        let input = serde_json::json!({
-            "client_metadata": client_metadata,
-        });
+        let input = ClientRegistrationInput { client_metadata };
 
         let [res]: [EvaluationResult; 1] = self
             .instance
             .evaluate(
                 &mut self.store,
-                &self.client_registration_entrypoint,
+                &self.entrypoints.client_registration,
                 &input,
             )
             .await?;
@@ -245,9 +299,9 @@ impl Policy {
         name = "policy.evaluate.authorization_grant",
         skip_all,
         fields(
-            data.authorization_grant.id = %authorization_grant.id,
-            data.client.id = %client.id,
-            data.user.id = %user.id,
+            input.authorization_grant.id = %authorization_grant.id,
+            input.client.id = %client.id,
+            input.user.id = %user.id,
         ),
         err,
     )]
@@ -257,17 +311,19 @@ impl Policy {
         client: &Client,
         user: &User,
     ) -> Result<EvaluationResult, EvaluationError> {
-        let authorization_grant = serde_json::to_value(authorization_grant)?;
-        let user = serde_json::to_value(user)?;
-        let input = serde_json::json!({
-            "authorization_grant": authorization_grant,
-            "client": client,
-            "user": user,
-        });
+        let input = AuthorizationGrantInput {
+            user,
+            client,
+            authorization_grant,
+        };
 
         let [res]: [EvaluationResult; 1] = self
             .instance
-            .evaluate(&mut self.store, &self.authorization_grant_endpoint, &input)
+            .evaluate(
+                &mut self.store,
+                &self.entrypoints.authorization_grant,
+                &input,
+            )
             .await?;
 
         Ok(res)
@@ -294,15 +350,15 @@ mod tests {
 
         let file = tokio::fs::File::open(path).await.unwrap();
 
-        let factory = PolicyFactory::load(
-            file,
-            data,
-            "register/violation".to_owned(),
-            "client_registration/violation".to_owned(),
-            "authorization_grant/violation".to_owned(),
-        )
-        .await
-        .unwrap();
+        let entrypoints = Entrypoints {
+            register: "register/violation".to_owned(),
+            client_registration: "client_registration/violation".to_owned(),
+            authorization_grant: "authorization_grant/violation".to_owned(),
+            email: "email/violation".to_owned(),
+            password: "password/violation".to_owned(),
+        };
+
+        let factory = PolicyFactory::load(file, data, entrypoints).await.unwrap();
 
         let mut policy = factory.instantiate().await.unwrap();
 

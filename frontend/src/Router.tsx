@@ -16,6 +16,7 @@ import { atom, useAtomValue, useSetAtom } from "jotai";
 import { atomWithLocation } from "jotai-location";
 import { lazy, Suspense, useTransition } from "react";
 
+import styles from "./Router.module.css";
 import Layout from "./components/Layout";
 import LoadingSpinner from "./components/LoadingSpinner";
 
@@ -219,8 +220,10 @@ const shouldHandleClick = (e: React.MouseEvent): boolean =>
 export const Link: React.FC<
   {
     route: Route;
+    // adds button-like styling to link element
+    kind?: "button";
   } & React.HTMLProps<HTMLAnchorElement>
-> = ({ route, children, ...props }) => {
+> = ({ route, children, kind, className, ...props }) => {
   const config = useAtomValue(appConfigAtom);
   const path = routeToPath(route);
   const fullUrl = config.root + path;
@@ -228,6 +231,11 @@ export const Link: React.FC<
 
   // TODO: we should probably have more user control over this
   const [isPending, startTransition] = useTransition();
+
+  const classNames = [
+    kind === "button" ? styles.linkButton : "",
+    className,
+  ].join("");
 
   return (
     <a
@@ -243,6 +251,7 @@ export const Link: React.FC<
           setRoute(route);
         });
       }}
+      className={classNames}
       {...props}
     >
       {isPending ? "Loading..." : children}

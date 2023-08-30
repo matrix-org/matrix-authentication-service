@@ -30,6 +30,7 @@ const ADD_EMAIL_MUTATION = graphql(/* GraphQL */ `
   mutation AddEmail($userId: ID!, $email: String!) {
     addEmail(input: { userId: $userId, email: $email }) {
       status
+      violations
       email {
         id
         ...UserEmail_email
@@ -79,6 +80,8 @@ const AddEmailForm: React.FC<{
   const status = addEmailResult.data?.addEmail.status ?? null;
   const emailExists = status === "EXISTS";
   const emailInvalid = status === "INVALID";
+  const emailDenied = status === "DENIED";
+  const violations = addEmailResult.data?.addEmail.violations ?? [];
 
   return (
     <>
@@ -92,6 +95,17 @@ const AddEmailForm: React.FC<{
         {emailInvalid && (
           <Alert type="critical" title="Invalid email">
             The entered email is invalid
+          </Alert>
+        )}
+
+        {emailDenied && (
+          <Alert type="critical" title="Email denied by policy">
+            The entered email is not allowed by the server policy.
+            <ul>
+              {violations.map((violation, index) => (
+                <li key={index}>• {violation}</li>
+              ))}
+            </ul>
           </Alert>
         )}
 

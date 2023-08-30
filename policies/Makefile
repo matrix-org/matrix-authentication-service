@@ -1,6 +1,13 @@
 # Set to 1 to run OPA through Docker
 DOCKER := 0
-OPA_DOCKER_IMAGE := docker.io/openpolicyagent/opa:0.55.0
+OPA_DOCKER_IMAGE := docker.io/openpolicyagent/opa:0.55.0-debug
+
+INPUTS := \
+	client_registration.rego \
+	register.rego \
+	authorization_grant.rego \
+	password.rego \
+	email.rego
 
 ifeq ($(DOCKER), 0)
 	OPA := opa
@@ -10,11 +17,13 @@ else
 	OPA_RW := docker run -i -v $(shell pwd):/policies -w /policies --rm $(OPA_DOCKER_IMAGE)
 endif
 
-policy.wasm: client_registration.rego register.rego authorization_grant.rego
+policy.wasm: $(INPUTS)
 	$(OPA_RW) build -t wasm \
 		-e "client_registration/violation" \
 		-e "register/violation" \
 		-e "authorization_grant/violation" \
+		-e "password/violation" \
+		-e "email/violation" \
 		$^
 	tar xzf bundle.tar.gz /policy.wasm
 	$(RM) bundle.tar.gz
@@ -26,7 +35,7 @@ fmt:
 
 .PHONY: test
 test:
-	$(OPA) test -v ./*.rego
+	$(OPA) test --schema ./schema/ -v ./*.rego
 
 .PHONY: coverage
 coverage:
@@ -37,5 +46,5 @@ coverage:
 
 .PHONY: lint
 lint:
-	$(OPA) fmt -d --fail .
-	$(OPA) check --strict .
+	$(OPA) fmt -d --fail ./*.rego util/*.rego
+	$(OPA) check --strict --schema schema/ ./*.rego util/*.rego

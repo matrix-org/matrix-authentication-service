@@ -42,6 +42,20 @@ export default {
             },
             args: [],
           },
+          {
+            name: "violations",
+            type: {
+              kind: "LIST",
+              ofType: {
+                kind: "NON_NULL",
+                ofType: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+            },
+            args: [],
+          },
         ],
         interfaces: [],
       },

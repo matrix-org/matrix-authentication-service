@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RegisterInput",
+  "description": "Input for the user registration policy.",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "email",
+        "password",
+        "registration_method",
+        "username"
+      ],
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        },
+        "registration_method": {
+          "type": "string",
+          "enum": [
+            "password"
+          ]
+        },
+        "username": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "registration_method",
+        "username"
+      ],
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "registration_method": {
+          "type": "string",
+          "enum": [
+            "upstream-oauth2"
+          ]
+        },
+        "username": {
+          "type": "string"
+        }
+      }
+    }
+  ]
+}

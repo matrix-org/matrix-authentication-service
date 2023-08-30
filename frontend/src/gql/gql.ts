@@ -37,17 +37,19 @@ const documents = {
     types.EndOAuth2SessionDocument,
   "\n  query OAuth2SessionListQuery(\n    $userId: ID!\n    $state: Oauth2SessionState\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n      oauth2Sessions(\n        state: $state\n        first: $first\n        after: $after\n        last: $last\n        before: $before\n      ) {\n        edges {\n          cursor\n          node {\n            id\n            ...OAuth2Session_session\n          }\n        }\n\n        totalCount\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n":
     types.OAuth2SessionListQueryDocument,
+  "\n  fragment UnverifiedEmailAlert on User {\n    id\n    unverifiedEmails: emails(first: 0, state: PENDING) {\n      totalCount\n    }\n  }\n":
+    types.UnverifiedEmailAlertFragmentDoc,
   "\n  fragment UserEmail_email on UserEmail {\n    id\n    email\n    confirmedAt\n  }\n":
     types.UserEmail_EmailFragmentDoc,
   "\n  mutation RemoveEmail($id: ID!) {\n    removeEmail(input: { userEmailId: $id }) {\n      status\n\n      user {\n        id\n      }\n    }\n  }\n":
     types.RemoveEmailDocument,
   "\n  mutation SetPrimaryEmail($id: ID!) {\n    setPrimaryEmail(input: { userEmailId: $id }) {\n      status\n      user {\n        id\n        primaryEmail {\n          id\n        }\n      }\n    }\n  }\n":
     types.SetPrimaryEmailDocument,
-  "\n  query UserGreeting($userId: ID!) {\n    user(id: $userId) {\n      id\n      username\n      matrix {\n        mxid\n        displayName\n      }\n    }\n  }\n":
+  "\n  query UserGreeting($userId: ID!) {\n    user(id: $userId) {\n      id\n      username\n      matrix {\n        mxid\n        displayName\n      }\n    }\n    viewer {\n      __typename\n\n      ... on User {\n        id\n        ...UnverifiedEmailAlert\n      }\n    }\n  }\n":
     types.UserGreetingDocument,
-  "\n  fragment UserHome_user on User {\n    id\n\n    primaryEmail {\n      id\n      ...UserEmail_email\n    }\n\n    confirmedEmails: emails(first: 0, state: CONFIRMED) {\n      totalCount\n    }\n\n    unverifiedEmails: emails(first: 0, state: PENDING) {\n      totalCount\n    }\n\n    browserSessions(first: 0, state: ACTIVE) {\n      totalCount\n    }\n\n    oauth2Sessions(first: 0, state: ACTIVE) {\n      totalCount\n    }\n\n    compatSessions(first: 0, state: ACTIVE) {\n      totalCount\n    }\n  }\n":
+  "\n  fragment UserHome_user on User {\n    id\n\n    primaryEmail {\n      id\n      ...UserEmail_email\n    }\n\n    confirmedEmails: emails(first: 0, state: CONFIRMED) {\n      totalCount\n    }\n\n    browserSessions(first: 0, state: ACTIVE) {\n      totalCount\n    }\n\n    oauth2Sessions(first: 0, state: ACTIVE) {\n      totalCount\n    }\n\n    compatSessions(first: 0, state: ACTIVE) {\n      totalCount\n    }\n  }\n":
     types.UserHome_UserFragmentDoc,
-  "\n  mutation AddEmail($userId: ID!, $email: String!) {\n    addEmail(input: { userId: $userId, email: $email }) {\n      status\n      email {\n        id\n        ...UserEmail_email\n      }\n    }\n  }\n":
+  "\n  mutation AddEmail($userId: ID!, $email: String!) {\n    addEmail(input: { userId: $userId, email: $email }) {\n      status\n      violations\n      email {\n        id\n        ...UserEmail_email\n      }\n    }\n  }\n":
     types.AddEmailDocument,
   "\n  query UserEmailListQuery(\n    $userId: ID!\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n\n      emails(first: $first, after: $after, last: $last, before: $before) {\n        edges {\n          cursor\n          node {\n            id\n            ...UserEmail_email\n          }\n        }\n        totalCount\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n":
     types.UserEmailListQueryDocument,
@@ -161,6 +163,12 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
+  source: "\n  fragment UnverifiedEmailAlert on User {\n    id\n    unverifiedEmails: emails(first: 0, state: PENDING) {\n      totalCount\n    }\n  }\n",
+): (typeof documents)["\n  fragment UnverifiedEmailAlert on User {\n    id\n    unverifiedEmails: emails(first: 0, state: PENDING) {\n      totalCount\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
   source: "\n  fragment UserEmail_email on UserEmail {\n    id\n    email\n    confirmedAt\n  }\n",
 ): (typeof documents)["\n  fragment UserEmail_email on UserEmail {\n    id\n    email\n    confirmedAt\n  }\n"];
 /**
@@ -179,20 +187,20 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  query UserGreeting($userId: ID!) {\n    user(id: $userId) {\n      id\n      username\n      matrix {\n        mxid\n        displayName\n      }\n    }\n  }\n",
-): (typeof documents)["\n  query UserGreeting($userId: ID!) {\n    user(id: $userId) {\n      id\n      username\n      matrix {\n        mxid\n        displayName\n      }\n    }\n  }\n"];
+  source: "\n  query UserGreeting($userId: ID!) {\n    user(id: $userId) {\n      id\n      username\n      matrix {\n        mxid\n        displayName\n      }\n    }\n    viewer {\n      __typename\n\n      ... on User {\n        id\n        ...UnverifiedEmailAlert\n      }\n    }\n  }\n",
+): (typeof documents)["\n  query UserGreeting($userId: ID!) {\n    user(id: $userId) {\n      id\n      username\n      matrix {\n        mxid\n        displayName\n      }\n    }\n    viewer {\n      __typename\n\n      ... on User {\n        id\n        ...UnverifiedEmailAlert\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  fragment UserHome_user on User {\n    id\n\n    primaryEmail {\n      id\n      ...UserEmail_email\n    }\n\n    confirmedEmails: emails(first: 0, state: CONFIRMED) {\n      totalCount\n    }\n\n    unverifiedEmails: emails(first: 0, state: PENDING) {\n      totalCount\n    }\n\n    browserSessions(first: 0, state: ACTIVE) {\n      totalCount\n    }\n\n    oauth2Sessions(first: 0, state: ACTIVE) {\n      totalCount\n    }\n\n    compatSessions(first: 0, state: ACTIVE) {\n      totalCount\n    }\n  }\n",
-): (typeof documents)["\n  fragment UserHome_user on User {\n    id\n\n    primaryEmail {\n      id\n      ...UserEmail_email\n    }\n\n    confirmedEmails: emails(first: 0, state: CONFIRMED) {\n      totalCount\n    }\n\n    unverifiedEmails: emails(first: 0, state: PENDING) {\n      totalCount\n    }\n\n    browserSessions(first: 0, state: ACTIVE) {\n      totalCount\n    }\n\n    oauth2Sessions(first: 0, state: ACTIVE) {\n      totalCount\n    }\n\n    compatSessions(first: 0, state: ACTIVE) {\n      totalCount\n    }\n  }\n"];
+  source: "\n  fragment UserHome_user on User {\n    id\n\n    primaryEmail {\n      id\n      ...UserEmail_email\n    }\n\n    confirmedEmails: emails(first: 0, state: CONFIRMED) {\n      totalCount\n    }\n\n    browserSessions(first: 0, state: ACTIVE) {\n      totalCount\n    }\n\n    oauth2Sessions(first: 0, state: ACTIVE) {\n      totalCount\n    }\n\n    compatSessions(first: 0, state: ACTIVE) {\n      totalCount\n    }\n  }\n",
+): (typeof documents)["\n  fragment UserHome_user on User {\n    id\n\n    primaryEmail {\n      id\n      ...UserEmail_email\n    }\n\n    confirmedEmails: emails(first: 0, state: CONFIRMED) {\n      totalCount\n    }\n\n    browserSessions(first: 0, state: ACTIVE) {\n      totalCount\n    }\n\n    oauth2Sessions(first: 0, state: ACTIVE) {\n      totalCount\n    }\n\n    compatSessions(first: 0, state: ACTIVE) {\n      totalCount\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  mutation AddEmail($userId: ID!, $email: String!) {\n    addEmail(input: { userId: $userId, email: $email }) {\n      status\n      email {\n        id\n        ...UserEmail_email\n      }\n    }\n  }\n",
-): (typeof documents)["\n  mutation AddEmail($userId: ID!, $email: String!) {\n    addEmail(input: { userId: $userId, email: $email }) {\n      status\n      email {\n        id\n        ...UserEmail_email\n      }\n    }\n  }\n"];
+  source: "\n  mutation AddEmail($userId: ID!, $email: String!) {\n    addEmail(input: { userId: $userId, email: $email }) {\n      status\n      violations\n      email {\n        id\n        ...UserEmail_email\n      }\n    }\n  }\n",
+): (typeof documents)["\n  mutation AddEmail($userId: ID!, $email: String!) {\n    addEmail(input: { userId: $userId, email: $email }) {\n      status\n      violations\n      email {\n        id\n        ...UserEmail_email\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

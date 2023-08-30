@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ClientRegistrationInput",
+  "description": "Input for the client registration policy.",
+  "type": "object",
+  "required": [
+    "client_metadata"
+  ],
+  "properties": {
+    "client_metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

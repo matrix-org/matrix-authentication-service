@@ -49,6 +49,8 @@ pub enum AddEmailStatus {
     Exists,
     /// The email address is invalid
     Invalid,
+    /// The email address is not allowed by the policy
+    Denied,
 }
 
 /// The payload of the `addEmail` mutation
@@ -57,6 +59,9 @@ enum AddEmailPayload {
     Added(mas_data_model::UserEmail),
     Exists(mas_data_model::UserEmail),
     Invalid,
+    Denied {
+        violations: Vec<mas_policy::Violation>,
+    },
 }
 
 #[Object(use_type_description)]
@@ -67,6 +72,7 @@ impl AddEmailPayload {
             AddEmailPayload::Added(_) => AddEmailStatus::Added,
             AddEmailPayload::Exists(_) => AddEmailStatus::Exists,
             AddEmailPayload::Invalid => AddEmailStatus::Invalid,
+            AddEmailPayload::Denied { .. } => AddEmailStatus::Denied,
         }
     }
 
@@ -76,7 +82,7 @@ impl AddEmailPayload {
             AddEmailPayload::Added(email) | AddEmailPayload::Exists(email) => {
                 Some(UserEmail(email.clone()))
             }
-            AddEmailPayload::Invalid => None,
+            AddEmailPayload::Invalid | AddEmailPayload::Denied { .. } => None,
         }
     }
 
@@ -87,7 +93,7 @@ impl AddEmailPayload {
 
         let user_id = match self {
             AddEmailPayload::Added(email) | AddEmailPayload::Exists(email) => email.user_id,
-            AddEmailPayload::Invalid => return Ok(None),
+            AddEmailPayload::Invalid | AddEmailPayload::Denied { .. } => return Ok(None),
         };
 
         let user = repo
@@ -97,6 +103,16 @@ impl AddEmailPayload {
             .context("User not found")?;
 
         Ok(Some(User(user)))
+    }
+
+    /// The list of policy violations if the email address was denied
+    async fn violations(&self) -> Option<Vec<String>> {
+        let AddEmailPayload::Denied { violations } = self else {
+            return None;
+        };
+
+        let messages = violations.iter().map(|v| v.msg.clone()).collect();
+        Some(messages)
     }
 }
 
@@ -380,6 +396,14 @@ impl UserEmailMutations {
         // Validate the email address
         if input.email.parse::<lettre::Address>().is_err() {
             return Ok(AddEmailPayload::Invalid);
+        }
+
+        let mut policy = state.policy().await?;
+        let res = policy.evaluate_email(&input.email).await?;
+        if !res.valid() {
+            return Ok(AddEmailPayload::Denied {
+                violations: res.violations,
+            });
         }
 
         // Find an existing email address
