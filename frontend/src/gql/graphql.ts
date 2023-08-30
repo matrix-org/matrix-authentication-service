@@ -1146,6 +1146,12 @@ export type OAuth2SessionListQueryQuery = {
   } | null;
 };
 
+export type UnverifiedEmailAlertFragment = {
+  __typename?: "User";
+  id: string;
+  unverifiedEmails: { __typename?: "UserEmailConnection"; totalCount: number };
+} & { " $fragmentName"?: "UnverifiedEmailAlertFragment" };
+
 export type UserEmail_EmailFragment = {
   __typename?: "UserEmail";
   id: string;
@@ -1199,6 +1205,13 @@ export type UserGreetingQuery = {
       displayName?: string | null;
     };
   } | null;
+  viewer:
+    | { __typename: "Anonymous" }
+    | ({ __typename: "User"; id: string } & {
+        " $fragmentRefs"?: {
+          UnverifiedEmailAlertFragment: UnverifiedEmailAlertFragment;
+        };
+      });
 };
 
 export type UserHome_UserFragment = {
@@ -1210,7 +1223,6 @@ export type UserHome_UserFragment = {
       })
     | null;
   confirmedEmails: { __typename?: "UserEmailConnection"; totalCount: number };
-  unverifiedEmails: { __typename?: "UserEmailConnection"; totalCount: number };
   browserSessions: {
     __typename?: "BrowserSessionConnection";
     totalCount: number;
@@ -1565,6 +1577,48 @@ export const OAuth2Session_SessionFragmentDoc = {
     },
   ],
 } as unknown as DocumentNode<OAuth2Session_SessionFragment, unknown>;
+export const UnverifiedEmailAlertFragmentDoc = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "UnverifiedEmailAlert" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "User" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          {
+            kind: "Field",
+            alias: { kind: "Name", value: "unverifiedEmails" },
+            name: { kind: "Name", value: "emails" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: { kind: "IntValue", value: "0" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "state" },
+                value: { kind: "EnumValue", value: "PENDING" },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<UnverifiedEmailAlertFragment, unknown>;
 export const UserEmail_EmailFragmentDoc = {
   kind: "Document",
   definitions: [
@@ -1628,29 +1682,6 @@ export const UserHome_UserFragmentDoc = {
                 kind: "Argument",
                 name: { kind: "Name", value: "state" },
                 value: { kind: "EnumValue", value: "CONFIRMED" },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "totalCount" } },
-              ],
-            },
-          },
-          {
-            kind: "Field",
-            alias: { kind: "Name", value: "unverifiedEmails" },
-            name: { kind: "Name", value: "emails" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "first" },
-                value: { kind: "IntValue", value: "0" },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "state" },
-                value: { kind: "EnumValue", value: "PENDING" },
               },
             ],
             selectionSet: {
@@ -3058,6 +3089,70 @@ export const UserGreetingDocument = {
               ],
             },
           },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "viewer" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "__typename" } },
+                {
+                  kind: "InlineFragment",
+                  typeCondition: {
+                    kind: "NamedType",
+                    name: { kind: "Name", value: "User" },
+                  },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                      {
+                        kind: "FragmentSpread",
+                        name: { kind: "Name", value: "UnverifiedEmailAlert" },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "UnverifiedEmailAlert" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "User" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          {
+            kind: "Field",
+            alias: { kind: "Name", value: "unverifiedEmails" },
+            name: { kind: "Name", value: "emails" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "first" },
+                value: { kind: "IntValue", value: "0" },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "state" },
+                value: { kind: "EnumValue", value: "PENDING" },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "totalCount" } },
+              ],
+            },
+          },
         ],
       },
     },
@@ -3942,29 +4037,6 @@ export const HomeQueryDocument = {
                 kind: "Argument",
                 name: { kind: "Name", value: "state" },
                 value: { kind: "EnumValue", value: "CONFIRMED" },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "totalCount" } },
-              ],
-            },
-          },
-          {
-            kind: "Field",
-            alias: { kind: "Name", value: "unverifiedEmails" },
-            name: { kind: "Name", value: "emails" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "first" },
-                value: { kind: "IntValue", value: "0" },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "state" },
-                value: { kind: "EnumValue", value: "PENDING" },
               },
             ],
             selectionSet: {

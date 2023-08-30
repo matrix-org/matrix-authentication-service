@@ -18,6 +18,11 @@ import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
 
 import { graphql } from "../gql";
+import { FragmentType } from "../gql/fragment-masking";
+
+import UnverifiedEmailAlert, {
+  UNVERIFIED_EMAILS_FRAGMENT,
+} from "./UnverifiedEmailAlert/UnverifiedEmailAlert";
 
 const QUERY = graphql(/* GraphQL */ `
   query UserGreeting($userId: ID!) {
@@ -27,6 +32,14 @@ const QUERY = graphql(/* GraphQL */ `
       matrix {
         mxid
         displayName
+      }
+    }
+    viewer {
+      __typename
+
+      ... on User {
+        id
+        ...UnverifiedEmailAlert
       }
     }
   }
@@ -47,17 +60,26 @@ const UserGreeting: React.FC<{ userId: string }> = ({ userId }) => {
   if (result.data?.user) {
     const user = result.data.user;
     return (
-      <header className="text-center">
-        <Avatar
-          size="var(--cpd-space-24x)"
-          id={user.matrix.mxid}
-          name={user.matrix.displayName || user.matrix.mxid}
+      <>
+        <header className="text-center">
+          <Avatar
+            size="var(--cpd-space-24x)"
+            id={user.matrix.mxid}
+            name={user.matrix.displayName || user.matrix.mxid}
+          />
+          <Heading size="xl" weight="semibold">
+            {user.matrix.displayName || user.username}
+          </Heading>
+          <Body size="lg">{user.matrix.mxid}</Body>
+        </header>
+        <UnverifiedEmailAlert
+          unverifiedEmails={
+            result.data?.viewer as FragmentType<
+              typeof UNVERIFIED_EMAILS_FRAGMENT
+            >
+          }
         />
-        <Heading size="xl" weight="semibold">
-          {user.matrix.displayName || user.username}
-        </Heading>
-        <Body size="lg">{user.matrix.mxid}</Body>
-      </header>
+      </>
     );
   }
 

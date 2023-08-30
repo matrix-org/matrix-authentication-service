@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Alert, Body, H3, H6 } from "@vector-im/compound-web";
-import { useState } from "react";
+import { Body, H3, H6 } from "@vector-im/compound-web";
 
 import { Link } from "../../Router";
 import { FragmentType, graphql, useFragment } from "../../gql";
@@ -35,10 +34,6 @@ export const FRAGMENT = graphql(/* GraphQL */ `
       totalCount
     }
 
-    unverifiedEmails: emails(first: 0, state: PENDING) {
-      totalCount
-    }
-
     browserSessions(first: 0, state: ACTIVE) {
       totalCount
     }
@@ -57,11 +52,6 @@ const UserHome: React.FC<{
   user: FragmentType<typeof FRAGMENT>;
 }> = ({ user }) => {
   const data = useFragment(FRAGMENT, user);
-  const [dismiss, setDismiss] = useState(false);
-
-  const doDismiss = (): void => {
-    setDismiss(true);
-  };
 
   // allow this until we get i18n
   const pluraliseSession = (count: number): string =>
@@ -74,14 +64,7 @@ const UserHome: React.FC<{
 
   return (
     <BlockList>
-      {data.unverifiedEmails.totalCount > 0 && !dismiss && (
-        <Alert type="critical" title="Unverified email" onClose={doDismiss}>
-          You have {data.unverifiedEmails.totalCount} unverified email
-          address(es). <Link route={{ type: "profile" }}>Check</Link>
-        </Alert>
-      )}
       {/* This is a short term solution, so I won't bother extracting these blocks into components */}
-
       <H3>Where you're signed in</H3>
       <Block className={styles.sessionListBlock}>
         <div className={styles.sessionListBlockInfo}>
@@ -91,7 +74,9 @@ const UserHome: React.FC<{
             {pluraliseSession(data.browserSessions.totalCount)}
           </Body>
         </div>
-        <Link route={{ type: "browser-session-list" }}>View all</Link>
+        <Link kind="button" route={{ type: "browser-session-list" }}>
+          View all
+        </Link>
       </Block>
       <Block className={styles.sessionListBlock}>
         <div className={styles.sessionListBlockInfo}>
@@ -101,7 +86,9 @@ const UserHome: React.FC<{
             {pluraliseSession(data.oauth2Sessions.totalCount)}
           </Body>
         </div>
-        <Link route={{ type: "oauth2-session-list" }}>View all</Link>
+        <Link kind="button" route={{ type: "oauth2-session-list" }}>
+          View all
+        </Link>
       </Block>
       <Block className={styles.sessionListBlock}>
         <div className={styles.sessionListBlockInfo}>
@@ -111,7 +98,9 @@ const UserHome: React.FC<{
             {pluraliseSession(data.compatSessions.totalCount)}
           </Body>
         </div>
-        <Link route={{ type: "compat-session-list" }}>View all</Link>
+        <Link kind="button" route={{ type: "compat-session-list" }}>
+          View all
+        </Link>
       </Block>
     </BlockList>
   );
