@@ -26,6 +26,7 @@ pub fn register(tera: &mut Tera, url_builder: UrlBuilder, vite_manifest: ViteMan
     tera.register_tester("empty", self::tester_empty);
     tera.register_filter("to_params", filter_to_params);
     tera.register_filter("safe_get", filter_safe_get);
+    tera.register_filter("simplify_url", filter_simplify_url);
     tera.register_function("add_params_to_url", function_add_params_to_url);
     tera.register_function("merge", function_merge);
     tera.register_function("dict", function_dict);
@@ -75,6 +76,38 @@ pub fn filter_safe_get(value: &Value, args: &HashMap<String, Value>) -> Result<V
         },
         None => Ok(default.clone()),
     }
+}
+
+/// Filter which simplifies a URL to its domain name for HTTP(S) URLs
+fn filter_simplify_url(value: &Value, args: &HashMap<String, Value>) -> Result<Value, tera::Error> {
+    let url = value
+        .as_str()
+        .ok_or_else(|| tera::Error::msg("Invalid input for `simplify_url` filter"))?;
+
+    if !args.is_empty() {
+        return Err(tera::Error::msg("`simplify_url` filter takes no arguments"));
+    }
+
+    // Do nothing if the URL is not valid
+    let Ok(mut url) = Url::from_str(url) else {
+        return Ok(Value::String(url.to_owned()));
+    };
+
+    // Always at least remove the query parameters and fragment
+    url.set_query(None);
+    url.set_fragment(None);
+
+    // Do nothing else for non-HTTPS URLs
+    if url.scheme() != "https" {
+        return Ok(Value::String(url.to_string()));
+    }
+
+    // Only return the domain name
+    let Some(domain) = url.domain() else {
+        return Ok(Value::String(url.to_string()));
+    };
+
+    Ok(Value::String(domain.to_owned()))
 }
 
 enum ParamsWhere {
