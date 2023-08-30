@@ -59,7 +59,7 @@ describe("NavItem", () => {
   it("render an active <NavItem />", () => {
     const component = create(
       <WithLocation path="/">
-        <NavItem route={{ type: "home" }}>Active</NavItem>
+        <NavItem route={{ type: "profile" }}>Active</NavItem>
       </WithLocation>,
     );
     const tree = component.toJSON();
@@ -69,7 +69,7 @@ describe("NavItem", () => {
   it("render an inactive <NavItem />", () => {
     const component = create(
       <WithLocation path="/account">
-        <NavItem route={{ type: "home" }}>Inactive</NavItem>
+        <NavItem route={{ type: "sessions-overview" }}>Inactive</NavItem>
       </WithLocation>,
     );
     const tree = component.toJSON();
@@ -79,7 +79,7 @@ describe("NavItem", () => {
   it("renders a different route", () => {
     const component = create(
       <WithLocation path="/">
-        <NavItem route={{ type: "profile" }}>Emails</NavItem>
+        <NavItem route={{ type: "sessions-overview" }}>Sessions</NavItem>
       </WithLocation>,
     );
     const tree = component.toJSON();

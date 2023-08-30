@@ -46,8 +46,8 @@ type Story = StoryObj<typeof NavItem>;
 
 export const Active: Story = {
   args: {
-    route: { type: "home" },
-    children: "Home",
+    route: { type: "sessions-overview" },
+    children: "Sessions",
   },
 };
 

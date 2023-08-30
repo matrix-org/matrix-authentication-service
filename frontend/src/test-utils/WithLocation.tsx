@@ -37,7 +37,7 @@ const HydrateLocation: React.FC<React.PropsWithChildren<{ path: string }>> = ({
  * ```
  * const component = create(
       <WithLocation path="/">
-        <NavItem route={{ type: "home" }}>Active</NavItem>
+        <NavItem route={{ type: "profile" }}>Active</NavItem>
       </WithLocation>,
     );
  * ```

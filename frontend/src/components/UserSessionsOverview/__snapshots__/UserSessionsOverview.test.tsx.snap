@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`UserHome > render a <UserHome /> with sessions 1`] = `
+exports[`UserSessionsOverview > render a <UserSessionsOverview /> with sessions 1`] = `
 <div
   className="_blockList_f8cc7f"
 >
@@ -10,10 +10,10 @@ exports[`UserHome > render a <UserHome /> with sessions 1`] = `
     Where you're signed in
   </h3>
   <div
-    className="_block_17898c _sessionListBlock_5d2854"
+    className="_block_17898c _sessionListBlock_1c0f31"
   >
     <div
-      className="_sessionListBlockInfo_5d2854"
+      className="_sessionListBlockInfo_1c0f31"
     >
       <h6
         className="_font-body-md-semibold_1g2sj_69"
@@ -38,10 +38,10 @@ exports[`UserHome > render a <UserHome /> with sessions 1`] = `
     </a>
   </div>
   <div
-    className="_block_17898c _sessionListBlock_5d2854"
+    className="_block_17898c _sessionListBlock_1c0f31"
   >
     <div
-      className="_sessionListBlockInfo_5d2854"
+      className="_sessionListBlockInfo_1c0f31"
     >
       <h6
         className="_font-body-md-semibold_1g2sj_69"
@@ -66,10 +66,10 @@ exports[`UserHome > render a <UserHome /> with sessions 1`] = `
     </a>
   </div>
   <div
-    className="_block_17898c _sessionListBlock_5d2854"
+    className="_block_17898c _sessionListBlock_1c0f31"
   >
     <div
-      className="_sessionListBlockInfo_5d2854"
+      className="_sessionListBlockInfo_1c0f31"
     >
       <h6
         className="_font-body-md-semibold_1g2sj_69"
@@ -96,7 +96,7 @@ exports[`UserHome > render a <UserHome /> with sessions 1`] = `
 </div>
 `;
 
-exports[`UserHome > render an simple <UserHome /> 1`] = `
+exports[`UserSessionsOverview > render an simple <UserSessionsOverview /> 1`] = `
 <div
   className="_blockList_f8cc7f"
 >
@@ -106,10 +106,10 @@ exports[`UserHome > render an simple <UserHome /> 1`] = `
     Where you're signed in
   </h3>
   <div
-    className="_block_17898c _sessionListBlock_5d2854"
+    className="_block_17898c _sessionListBlock_1c0f31"
   >
     <div
-      className="_sessionListBlockInfo_5d2854"
+      className="_sessionListBlockInfo_1c0f31"
     >
       <h6
         className="_font-body-md-semibold_1g2sj_69"
@@ -134,10 +134,10 @@ exports[`UserHome > render an simple <UserHome /> 1`] = `
     </a>
   </div>
   <div
-    className="_block_17898c _sessionListBlock_5d2854"
+    className="_block_17898c _sessionListBlock_1c0f31"
   >
     <div
-      className="_sessionListBlockInfo_5d2854"
+      className="_sessionListBlockInfo_1c0f31"
     >
       <h6
         className="_font-body-md-semibold_1g2sj_69"
@@ -162,10 +162,10 @@ exports[`UserHome > render an simple <UserHome /> 1`] = `
     </a>
   </div>
   <div
-    className="_block_17898c _sessionListBlock_5d2854"
+    className="_block_17898c _sessionListBlock_1c0f31"
   >
     <div
-      className="_sessionListBlockInfo_5d2854"
+      className="_sessionListBlockInfo_1c0f31"
     >
       <h6
         className="_font-body-md-semibold_1g2sj_69"

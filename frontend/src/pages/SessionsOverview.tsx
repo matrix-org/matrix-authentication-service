@@ -18,28 +18,28 @@ import { atomWithQuery } from "jotai-urql";
 import { mapQueryAtom } from "../atoms";
 import GraphQLError from "../components/GraphQLError";
 import NotLoggedIn from "../components/NotLoggedIn";
-import UserHome from "../components/UserHome";
+import UserSessionsOverview from "../components/UserSessionsOverview";
 import { graphql } from "../gql";
 import { isErr, unwrapErr, unwrapOk } from "../result";
 
 const QUERY = graphql(/* GraphQL */ `
-  query HomeQuery {
+  query SessionsOverviewQuery {
     viewer {
       __typename
 
       ... on User {
         id
-        ...UserHome_user
+        ...UserSessionsOverview_user
       }
     }
   }
 `);
 
-const homeQueryAtom = atomWithQuery({
+const sessionsOverviewQueryAtom = atomWithQuery({
   query: QUERY,
 });
 
-const homeAtom = mapQueryAtom(homeQueryAtom, (data) => {
+const sessionsOverviewAtom = mapQueryAtom(sessionsOverviewQueryAtom, (data) => {
   if (data.viewer?.__typename === "User") {
     return data.viewer;
   }
@@ -47,14 +47,14 @@ const homeAtom = mapQueryAtom(homeQueryAtom, (data) => {
   return null;
 });
 
-const Home: React.FC = () => {
-  const result = useAtomValue(homeAtom);
+const SessionsOverview: React.FC = () => {
+  const result = useAtomValue(sessionsOverviewAtom);
   if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
 
   const data = unwrapOk(result);
   if (data === null) return <NotLoggedIn />;
 
-  return <UserHome user={data} />;
+  return <UserSessionsOverview user={data} />;
 };
 
-export default Home;
+export default SessionsOverview;

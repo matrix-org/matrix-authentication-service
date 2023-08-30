@@ -19,10 +19,10 @@ import { FragmentType, graphql, useFragment } from "../../gql";
 import Block from "../Block/Block";
 import BlockList from "../BlockList/BlockList";
 
-import styles from "./UserHome.module.css";
+import styles from "./UserSessionsOverview.module.css";
 
 export const FRAGMENT = graphql(/* GraphQL */ `
-  fragment UserHome_user on User {
+  fragment UserSessionsOverview_user on User {
     id
 
     primaryEmail {
@@ -48,7 +48,7 @@ export const FRAGMENT = graphql(/* GraphQL */ `
   }
 `);
 
-const UserHome: React.FC<{
+const UserSessionsOverview: React.FC<{
   user: FragmentType<typeof FRAGMENT>;
 }> = ({ user }) => {
   const data = useFragment(FRAGMENT, user);
@@ -106,4 +106,4 @@ const UserHome: React.FC<{
   );
 };
 
-export default UserHome;
+export default UserSessionsOverview;

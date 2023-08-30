@@ -18,10 +18,10 @@ import { describe, expect, it } from "vitest";
 import { makeFragmentData } from "../../gql";
 import { FRAGMENT as EMAIL_FRAGMENT } from "../UserEmail";
 
-import UserHome, { FRAGMENT } from "./";
+import UserSessionsOverview, { FRAGMENT } from "./";
 
-describe("UserHome", () => {
-  it("render an simple <UserHome />", () => {
+describe("UserSessionsOverview", () => {
+  it("render an simple <UserSessionsOverview />", () => {
     const primaryEmail = makeFragmentData(
       {
         id: "email:123",
@@ -56,12 +56,12 @@ describe("UserHome", () => {
       },
       FRAGMENT,
     );
-    const component = create(<UserHome user={user} />);
+    const component = create(<UserSessionsOverview user={user} />);
     const tree = component.toJSON();
     expect(tree).toMatchSnapshot();
   });
 
-  it("render a <UserHome /> with sessions", () => {
+  it("render a <UserSessionsOverview /> with sessions", () => {
     const primaryEmail = makeFragmentData(
       {
         id: "email:123",
@@ -96,7 +96,7 @@ describe("UserHome", () => {
       },
       FRAGMENT,
     );
-    const component = create(<UserHome user={user} />);
+    const component = create(<UserSessionsOverview user={user} />);
     const tree = component.toJSON();
     expect(tree).toMatchSnapshot();
   });

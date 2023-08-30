@@ -35,7 +35,7 @@ exports[`<UnverifiedEmailAlert /> > renders a warning when there are unverified 
          
         <a
           class="_linkButton_4f14fc"
-          href="/profile"
+          href="/"
         >
           Review and verify
         </a>

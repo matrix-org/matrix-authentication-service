@@ -25,8 +25,8 @@ type Location = {
   searchParams?: URLSearchParams;
 };
 
-type HomeRoute = { type: "home" };
 type ProfileRoute = { type: "profile" };
+type SessionOverviewRoute = { type: "sessions-overview" };
 type OAuth2ClientRoute = { type: "client"; id: string };
 type OAuth2SessionList = { type: "oauth2-session-list" };
 type BrowserSessionRoute = { type: "session"; id: string };
@@ -36,7 +36,7 @@ type VerifyEmailRoute = { type: "verify-email"; id: string };
 type UnknownRoute = { type: "unknown"; segments: string[] };
 
 export type Route =
-  | HomeRoute
+  | SessionOverviewRoute
   | ProfileRoute
   | OAuth2ClientRoute
   | OAuth2SessionList
@@ -48,10 +48,10 @@ export type Route =
 
 const routeToSegments = (route: Route): string[] => {
   switch (route.type) {
-    case "home":
-      return [];
     case "profile":
-      return ["profile"];
+      return [];
+    case "sessions-overview":
+      return ["sessions-overview"];
     case "verify-email":
       return ["emails", route.id, "verify"];
     case "client":
@@ -97,11 +97,11 @@ export const segmentsToRoute = (segments: string[]): Route => {
 
   // Special case for the home page
   if (segments.length === 0 || (segments.length === 1 && segments[0] === "")) {
-    return { type: "home" };
+    return { type: "profile" };
   }
 
-  if (matches("profile")) {
-    return { type: "profile" };
+  if (matches("sessions-overview")) {
+    return { type: "sessions-overview" };
   }
 
   if (matches("sessions")) {
@@ -169,7 +169,7 @@ export const routeAtom = atom(
   },
 );
 
-const Home = lazy(() => import("./pages/Home"));
+const SessionsOverview = lazy(() => import("./pages/SessionsOverview"));
 const Profile = lazy(() => import("./pages/Profile"));
 const OAuth2Client = lazy(() => import("./pages/OAuth2Client"));
 const BrowserSession = lazy(() => import("./pages/BrowserSession"));
@@ -182,10 +182,10 @@ const InnerRouter: React.FC = () => {
   const route = useAtomValue(routeAtom);
 
   switch (route.type) {
-    case "home":
-      return <Home />;
     case "profile":
       return <Profile />;
+    case "sessions-overview":
+      return <SessionsOverview />;
     case "oauth2-session-list":
       return <OAuth2SessionList />;
     case "browser-session-list":

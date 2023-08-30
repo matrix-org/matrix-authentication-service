@@ -20,7 +20,7 @@ import { appConfigAtom, locationAtom } from "../../Router";
 import { makeFragmentData } from "../../gql";
 import { FRAGMENT as EMAIL_FRAGMENT } from "../UserEmail";
 
-import UserHome, { FRAGMENT } from "./UserHome";
+import UserSessionsOverview, { FRAGMENT } from "./UserSessionsOverview";
 
 type Props = {
   primaryEmail: string | null;
@@ -86,14 +86,14 @@ const Template: React.FC<Props> = ({
   return (
     <Provider>
       <WithHomePage>
-        <UserHome user={data} />
+        <UserSessionsOverview user={data} />
       </WithHomePage>
     </Provider>
   );
 };
 
 const meta = {
-  title: "Pages/User Home",
+  title: "Pages/User Sessions Overview",
   component: Template,
   tags: ["autodocs"],
 } satisfies Meta<typeof Template>;
