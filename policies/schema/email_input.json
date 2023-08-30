@@ -1,6 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "EmailInput",
+  "description": "Input for the email add policy.",
   "type": "object",
   "required": [
     "email"

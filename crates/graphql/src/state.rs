@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use mas_matrix::HomeserverConnection;
+use mas_policy::Policy;
 use mas_storage::{BoxClock, BoxRepository, BoxRng, RepositoryError};
 
 use crate::Requester;
@@ -20,6 +21,7 @@ use crate::Requester;
 #[async_trait::async_trait]
 pub trait State {
     async fn repository(&self) -> Result<BoxRepository, RepositoryError>;
+    async fn policy(&self) -> Result<Policy, mas_policy::InstantiateError>;
     fn homeserver_connection(&self) -> &dyn HomeserverConnection<Error = anyhow::Error>;
     fn clock(&self) -> BoxClock;
     fn rng(&self) -> BoxRng;

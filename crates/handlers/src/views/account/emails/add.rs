@@ -21,13 +21,14 @@ use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     FancyError, SessionInfoExt,
 };
+use mas_policy::Policy;
 use mas_router::Route;
 use mas_storage::{
     job::{JobRepositoryExt, VerifyEmailJob},
     user::UserEmailRepository,
     BoxClock, BoxRepository, BoxRng,
 };
-use mas_templates::{EmailAddContext, TemplateContext, Templates};
+use mas_templates::{EmailAddContext, ErrorContext, TemplateContext, Templates};
 use serde::Deserialize;
 
 use crate::views::shared::OptionalPostAuthAction;
@@ -69,6 +70,7 @@ pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
     mut repo: BoxRepository,
+    mut policy: Policy,
     cookie_jar: CookieJar,
     Query(query): Query<OptionalPostAuthAction>,
     Form(form): Form<ProtectedForm<EmailForm>>,
@@ -83,23 +85,56 @@ pub(crate) async fn post(
         return Ok((cookie_jar, login.go()).into_response());
     };
 
-    let user_email = repo
-        .user_email()
-        .add(&mut rng, &clock, &session.user, form.email)
-        .await?;
+    // XXX: we really should show human readable errors on the form here
 
-    let next = mas_router::AccountVerifyEmail::new(user_email.id);
-    let next = if let Some(action) = query.post_auth_action {
-        next.and_then(action)
+    // Validate the email address
+    if form.email.parse::<lettre::Address>().is_err() {
+        return Err(anyhow::anyhow!("Invalid email address").into());
+    }
+
+    // Run the email policy
+    let res = policy.evaluate_email(&form.email).await?;
+    if !res.valid() {
+        return Err(FancyError::new(
+            ErrorContext::new()
+                .with_description(format!("Email address {:?} denied by policy", form.email))
+                .with_details(format!("{res}")),
+        ));
+    }
+
+    // Find an existing email address
+    let existing_user_email = repo.user_email().find(&session.user, &form.email).await?;
+    let user_email = if let Some(user_email) = existing_user_email {
+        user_email
     } else {
-        next
+        let user_email = repo
+            .user_email()
+            .add(&mut rng, &clock, &session.user, form.email)
+            .await?;
+
+        user_email
     };
 
-    repo.job()
-        .schedule_job(VerifyEmailJob::new(&user_email))
-        .await?;
+    // If the email was not confirmed, send a confirmation email & redirect to the
+    // verify page
+    let next = if user_email.confirmed_at.is_none() {
+        repo.job()
+            .schedule_job(VerifyEmailJob::new(&user_email))
+            .await?;
+
+        let next = mas_router::AccountVerifyEmail::new(user_email.id);
+        let next = if let Some(action) = query.post_auth_action {
+            next.and_then(action)
+        } else {
+            next
+        };
+
+        next.go()
+    } else {
+        query.go_next_or_default(&mas_router::Account)
+    };
 
     repo.save().await?;
 
-    Ok((cookie_jar, next.go()).into_response())
+    Ok((cookie_jar, next).into_response())
 }

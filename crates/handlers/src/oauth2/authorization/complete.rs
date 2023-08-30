@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::sync::Arc;
-
 use axum::{
     extract::{Path, State},
     response::{Html, IntoResponse, Response},
@@ -22,7 +20,7 @@ use hyper::StatusCode;
 use mas_axum_utils::{cookies::CookieJar, csrf::CsrfExt, SessionInfoExt};
 use mas_data_model::{AuthorizationGrant, BrowserSession, Client, Device};
 use mas_keystore::Keystore;
-use mas_policy::{EvaluationResult, PolicyFactory};
+use mas_policy::{EvaluationResult, Policy};
 use mas_router::{PostAuthAction, Route, UrlBuilder};
 use mas_storage::{
     oauth2::{OAuth2AuthorizationGrantRepository, OAuth2ClientRepository, OAuth2SessionRepository},
@@ -76,7 +74,6 @@ impl IntoResponse for RouteError {
 impl_from_error_for_route!(mas_storage::RepositoryError);
 impl_from_error_for_route!(mas_templates::TemplateError);
 impl_from_error_for_route!(mas_policy::LoadError);
-impl_from_error_for_route!(mas_policy::InstantiateError);
 impl_from_error_for_route!(mas_policy::EvaluationError);
 impl_from_error_for_route!(super::callback::IntoCallbackDestinationError);
 impl_from_error_for_route!(super::callback::CallbackDestinationError);
@@ -90,10 +87,10 @@ impl_from_error_for_route!(super::callback::CallbackDestinationError);
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
-    State(policy_factory): State<Arc<PolicyFactory>>,
     State(templates): State<Templates>,
     State(url_builder): State<UrlBuilder>,
     State(key_store): State<Keystore>,
+    policy: Policy,
     mut repo: BoxRepository,
     cookie_jar: CookieJar,
     Path(grant_id): Path<Ulid>,
@@ -128,7 +125,7 @@ pub(crate) async fn get(
         &clock,
         repo,
         key_store,
-        &policy_factory,
+        policy,
         url_builder,
         grant,
         &client,
@@ -187,7 +184,6 @@ pub enum GrantCompletionError {
 impl_from_error_for_route!(GrantCompletionError: mas_storage::RepositoryError);
 impl_from_error_for_route!(GrantCompletionError: super::callback::IntoCallbackDestinationError);
 impl_from_error_for_route!(GrantCompletionError: mas_policy::LoadError);
-impl_from_error_for_route!(GrantCompletionError: mas_policy::InstantiateError);
 impl_from_error_for_route!(GrantCompletionError: mas_policy::EvaluationError);
 impl_from_error_for_route!(GrantCompletionError: super::super::IdTokenSignatureError);
 
@@ -196,7 +192,7 @@ pub(crate) async fn complete(
     clock: &impl Clock,
     mut repo: BoxRepository,
     key_store: Keystore,
-    policy_factory: &PolicyFactory,
+    mut policy: Policy,
     url_builder: UrlBuilder,
     grant: AuthorizationGrant,
     client: &Client,
@@ -220,7 +216,6 @@ pub(crate) async fn complete(
     };
 
     // Run through the policy
-    let mut policy = policy_factory.instantiate().await?;
     let res = policy
         .evaluate_authorization_grant(&grant, client, &browser_session.user)
         .await?;

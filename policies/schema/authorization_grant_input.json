@@ -1,6 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "AuthorizationGrantInput",
+  "description": "Input for the authorization grant policy.",
   "type": "object",
   "required": [
     "authorization_grant",

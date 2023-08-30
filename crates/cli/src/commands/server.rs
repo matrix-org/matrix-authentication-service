@@ -143,7 +143,7 @@ impl Options {
         // Listen for SIGHUP
         register_sighup(&templates)?;
 
-        let graphql_schema = mas_handlers::graphql_schema(&pool, conn);
+        let graphql_schema = mas_handlers::graphql_schema(&pool, &policy_factory, conn);
 
         let state = {
             let mut s = AppState {

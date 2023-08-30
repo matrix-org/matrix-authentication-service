@@ -28,6 +28,10 @@ type AddEmailPayload {
   The user to whom the email address was added
   """
   user: User
+  """
+  The list of policy violations if the email address was denied
+  """
+  violations: [String!]
 }
 
 """
@@ -46,6 +50,10 @@ enum AddEmailStatus {
   The email address is invalid
   """
   INVALID
+  """
+  The email address is not allowed by the policy
+  """
+  DENIED
 }
 
 type Anonymous implements Node {

@@ -33,10 +33,10 @@ use hyper::{
 use mas_axum_utils::{cookies::CookieManager, http_client_factory::HttpClientFactory};
 use mas_keystore::{Encrypter, JsonWebKey, JsonWebKeySet, Keystore, PrivateKey};
 use mas_matrix::{HomeserverConnection, MockHomeserverConnection};
-use mas_policy::PolicyFactory;
+use mas_policy::{InstantiateError, Policy, PolicyFactory};
 use mas_router::{SimpleRoute, UrlBuilder};
 use mas_storage::{clock::MockClock, BoxClock, BoxRepository, BoxRng, Repository};
-use mas_storage_pg::PgRepository;
+use mas_storage_pg::{DatabaseError, PgRepository};
 use mas_templates::Templates;
 use rand::SeedableRng;
 use rand_chacha::ChaChaRng;
@@ -46,7 +46,7 @@ use tower::{Layer, Service, ServiceExt};
 use url::Url;
 
 use crate::{
-    app_state::RepositoryError,
+    app_state::ErrorWrapper,
     passwords::{Hasher, PasswordManager},
     upstream_oauth2::cache::MetadataCache,
     MatrixHomeserver,
@@ -138,6 +138,7 @@ impl TestState {
 
         let graphql_state = TestGraphQLState {
             pool: pool.clone(),
+            policy_factory: Arc::clone(&policy_factory),
             homeserver_connection,
             rng: Arc::clone(&rng),
             clock: Arc::clone(&clock),
@@ -202,7 +203,7 @@ impl TestState {
         Response::from_parts(parts, body)
     }
 
-    pub async fn repository(&self) -> Result<BoxRepository, RepositoryError> {
+    pub async fn repository(&self) -> Result<BoxRepository, DatabaseError> {
         let repo = PgRepository::from_pool(&self.pool).await?;
         Ok(repo
             .map_err(mas_storage::RepositoryError::from_error)
@@ -243,6 +244,7 @@ impl TestState {
 struct TestGraphQLState {
     pool: PgPool,
     homeserver_connection: MockHomeserverConnection,
+    policy_factory: Arc<PolicyFactory>,
     clock: Arc<MockClock>,
     rng: Arc<Mutex<ChaChaRng>>,
 }
@@ -257,6 +259,10 @@ impl mas_graphql::State for TestGraphQLState {
         Ok(repo
             .map_err(mas_storage::RepositoryError::from_error)
             .boxed())
+    }
+
+    async fn policy(&self) -> Result<Policy, InstantiateError> {
+        self.policy_factory.instantiate().await
     }
 
     fn homeserver_connection(&self) -> &dyn HomeserverConnection<Error = anyhow::Error> {
@@ -316,12 +322,6 @@ impl FromRef<TestState> for MatrixHomeserver {
     }
 }
 
-impl FromRef<TestState> for Arc<PolicyFactory> {
-    fn from_ref(input: &TestState) -> Self {
-        input.policy_factory.clone()
-    }
-}
-
 impl FromRef<TestState> for HttpClientFactory {
     fn from_ref(input: &TestState) -> Self {
         input.http_client_factory.clone()
@@ -374,7 +374,7 @@ impl FromRequestParts<TestState> for BoxRng {
 
 #[async_trait]
 impl FromRequestParts<TestState> for BoxRepository {
-    type Rejection = RepositoryError;
+    type Rejection = ErrorWrapper<mas_storage_pg::DatabaseError>;
 
     async fn from_request_parts(
         _parts: &mut axum::http::request::Parts,
@@ -384,6 +384,19 @@ impl FromRequestParts<TestState> for BoxRepository {
         Ok(repo
             .map_err(mas_storage::RepositoryError::from_error)
             .boxed())
+    }
+}
+
+#[async_trait]
+impl FromRequestParts<TestState> for Policy {
+    type Rejection = ErrorWrapper<mas_policy::InstantiateError>;
+
+    async fn from_request_parts(
+        _parts: &mut axum::http::request::Parts,
+        state: &TestState,
+    ) -> Result<Self, Self::Rejection> {
+        let policy = state.policy_factory.instantiate().await?;
+        Ok(policy)
     }
 }
 

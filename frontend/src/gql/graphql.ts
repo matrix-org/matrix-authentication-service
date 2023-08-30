@@ -54,12 +54,16 @@ export type AddEmailPayload = {
   status: AddEmailStatus;
   /** The user to whom the email address was added */
   user?: Maybe<User>;
+  /** The list of policy violations if the email address was denied */
+  violations?: Maybe<Array<Scalars["String"]["output"]>>;
 };
 
 /** The status of the `addEmail` mutation */
 export enum AddEmailStatus {
   /** The email address was added */
   Added = "ADDED",
+  /** The email address is not allowed by the policy */
+  Denied = "DENIED",
   /** The email address already exists */
   Exists = "EXISTS",
   /** The email address is invalid */
@@ -1231,6 +1235,7 @@ export type AddEmailMutation = {
   addEmail: {
     __typename?: "AddEmailPayload";
     status: AddEmailStatus;
+    violations?: Array<string> | null;
     email?:
       | ({ __typename?: "UserEmail"; id: string } & {
           " $fragmentRefs"?: {
@@ -3129,6 +3134,7 @@ export const AddEmailDocument = {
               kind: "SelectionSet",
               selections: [
                 { kind: "Field", name: { kind: "Name", value: "status" } },
+                { kind: "Field", name: { kind: "Name", value: "violations" } },
                 {
                   kind: "Field",
                   name: { kind: "Name", value: "email" },

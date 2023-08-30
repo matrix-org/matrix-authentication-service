@@ -16,6 +16,7 @@ use mas_data_model::{AuthorizationGrant, Client, User};
 use oauth2_types::registration::VerifiedClientMetadata;
 use serde::{Deserialize, Serialize};
 
+/// A single violation of a policy.
 #[derive(Deserialize, Debug)]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub struct Violation {
@@ -23,19 +24,37 @@ pub struct Violation {
     pub field: Option<String>,
 }
 
+/// The result of a policy evaluation.
 #[derive(Deserialize, Debug)]
 pub struct EvaluationResult {
     #[serde(rename = "result")]
     pub violations: Vec<Violation>,
 }
 
+impl std::fmt::Display for EvaluationResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut first = true;
+        for violation in &self.violations {
+            if first {
+                first = false;
+            } else {
+                write!(f, ", ")?;
+            }
+            write!(f, "{}", violation.msg)?;
+        }
+        Ok(())
+    }
+}
+
 impl EvaluationResult {
+    /// Returns true if the policy evaluation was successful.
     #[must_use]
     pub fn valid(&self) -> bool {
         self.violations.is_empty()
     }
 }
 
+/// Input for the user registration policy.
 #[derive(Serialize, Debug)]
 #[serde(tag = "registration_method", rename_all = "snake_case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
@@ -47,6 +66,7 @@ pub enum RegisterInput<'a> {
     },
 }
 
+/// Input for the client registration policy.
 #[derive(Serialize, Debug)]
 #[serde(rename_all = "snake_case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
@@ -58,6 +78,7 @@ pub struct ClientRegistrationInput<'a> {
     pub client_metadata: &'a VerifiedClientMetadata,
 }
 
+/// Input for the authorization grant policy.
 #[derive(Serialize, Debug)]
 #[serde(rename_all = "snake_case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
@@ -81,6 +102,7 @@ pub struct AuthorizationGrantInput<'a> {
     pub authorization_grant: &'a AuthorizationGrant,
 }
 
+/// Input for the email add policy.
 #[derive(Serialize, Debug)]
 #[serde(rename_all = "snake_case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
@@ -88,6 +110,7 @@ pub struct EmailInput<'a> {
     pub email: &'a str,
 }
 
+/// Input for the password set policy.
 #[derive(Serialize, Debug)]
 #[serde(rename_all = "snake_case")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]

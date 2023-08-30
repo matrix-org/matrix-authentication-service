@@ -17,12 +17,12 @@ use std::{convert::Infallible, sync::Arc, time::Instant};
 use axum::{
     async_trait,
     extract::{FromRef, FromRequestParts},
-    response::IntoResponse,
+    response::{IntoResponse, Response},
 };
 use hyper::StatusCode;
 use mas_axum_utils::{cookies::CookieManager, http_client_factory::HttpClientFactory};
 use mas_keystore::{Encrypter, Keystore};
-use mas_policy::PolicyFactory;
+use mas_policy::{Policy, PolicyFactory};
 use mas_router::UrlBuilder;
 use mas_storage::{BoxClock, BoxRepository, BoxRng, Repository, SystemClock};
 use mas_storage_pg::PgRepository;
@@ -33,7 +33,6 @@ use opentelemetry::{
 };
 use rand::SeedableRng;
 use sqlx::PgPool;
-use thiserror::Error;
 
 use crate::{passwords::PasswordManager, upstream_oauth2::cache::MetadataCache, MatrixHomeserver};
 
@@ -176,12 +175,6 @@ impl FromRef<AppState> for MatrixHomeserver {
     }
 }
 
-impl FromRef<AppState> for Arc<PolicyFactory> {
-    fn from_ref(input: &AppState) -> Self {
-        input.policy_factory.clone()
-    }
-}
-
 impl FromRef<AppState> for HttpClientFactory {
     fn from_ref(input: &AppState) -> Self {
         input.http_client_factory.clone()
@@ -236,19 +229,41 @@ impl FromRequestParts<AppState> for BoxRng {
     }
 }
 
-#[derive(Debug, Error)]
-#[error(transparent)]
-pub struct RepositoryError(#[from] mas_storage_pg::DatabaseError);
+/// A simple wrapper around an error that implements [`IntoResponse`].
+pub struct ErrorWrapper<T>(T);
 
-impl IntoResponse for RepositoryError {
-    fn into_response(self) -> axum::response::Response {
+impl<T> From<T> for ErrorWrapper<T> {
+    fn from(input: T) -> Self {
+        Self(input)
+    }
+}
+
+impl<T> IntoResponse for ErrorWrapper<T>
+where
+    T: std::error::Error,
+{
+    fn into_response(self) -> Response {
+        // TODO: make this a bit more user friendly
         (StatusCode::INTERNAL_SERVER_ERROR, self.0.to_string()).into_response()
     }
 }
 
 #[async_trait]
+impl FromRequestParts<AppState> for Policy {
+    type Rejection = ErrorWrapper<mas_policy::InstantiateError>;
+
+    async fn from_request_parts(
+        _parts: &mut axum::http::request::Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        let policy = state.policy_factory.instantiate().await?;
+        Ok(policy)
+    }
+}
+
+#[async_trait]
 impl FromRequestParts<AppState> for BoxRepository {
-    type Rejection = RepositoryError;
+    type Rejection = ErrorWrapper<mas_storage_pg::DatabaseError>;
 
     async fn from_request_parts(
         _parts: &mut axum::http::request::Parts,
