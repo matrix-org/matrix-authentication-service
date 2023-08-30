@@ -169,7 +169,7 @@ export const routeAtom = atom(
   },
 );
 
-const Home = lazy(() => import("./pages/Home"));
+const SessionsOverview = lazy(() => import("./pages/SessionsOverview"));
 const Profile = lazy(() => import("./pages/Profile"));
 const OAuth2Client = lazy(() => import("./pages/OAuth2Client"));
 const BrowserSession = lazy(() => import("./pages/BrowserSession"));
@@ -185,7 +185,7 @@ const InnerRouter: React.FC = () => {
     case "profile":
       return <Profile />;
     case "sessions-overview":
-      return <Home />;
+      return <SessionsOverview />;
     case "oauth2-session-list":
       return <OAuth2SessionList />;
     case "browser-session-list":

@@ -65,10 +65,10 @@ const documents = {
     types.ResendVerificationEmailDocument,
   "\n  query BrowserSessionQuery($id: ID!) {\n    browserSession(id: $id) {\n      id\n      createdAt\n      lastAuthentication {\n        id\n        createdAt\n      }\n      user {\n        id\n        username\n      }\n    }\n  }\n":
     types.BrowserSessionQueryDocument,
-  "\n  query HomeQuery {\n    viewer {\n      __typename\n\n      ... on User {\n        id\n        ...UserHome_user\n      }\n    }\n  }\n":
-    types.HomeQueryDocument,
   "\n  query OAuth2ClientQuery($id: ID!) {\n    oauth2Client(id: $id) {\n      id\n      clientId\n      clientName\n      clientUri\n      tosUri\n      policyUri\n      redirectUris\n    }\n  }\n":
     types.OAuth2ClientQueryDocument,
+  "\n  query SessionsOverviewQuery {\n    viewer {\n      __typename\n\n      ... on User {\n        id\n        ...UserHome_user\n      }\n    }\n  }\n":
+    types.SessionsOverviewQueryDocument,
   "\n  query VerifyEmailQuery($id: ID!) {\n    userEmail(id: $id) {\n      ...UserEmail_verifyEmail\n    }\n  }\n":
     types.VerifyEmailQueryDocument,
 };
@@ -247,14 +247,14 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  query HomeQuery {\n    viewer {\n      __typename\n\n      ... on User {\n        id\n        ...UserHome_user\n      }\n    }\n  }\n",
-): (typeof documents)["\n  query HomeQuery {\n    viewer {\n      __typename\n\n      ... on User {\n        id\n        ...UserHome_user\n      }\n    }\n  }\n"];
+  source: "\n  query OAuth2ClientQuery($id: ID!) {\n    oauth2Client(id: $id) {\n      id\n      clientId\n      clientName\n      clientUri\n      tosUri\n      policyUri\n      redirectUris\n    }\n  }\n",
+): (typeof documents)["\n  query OAuth2ClientQuery($id: ID!) {\n    oauth2Client(id: $id) {\n      id\n      clientId\n      clientName\n      clientUri\n      tosUri\n      policyUri\n      redirectUris\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  query OAuth2ClientQuery($id: ID!) {\n    oauth2Client(id: $id) {\n      id\n      clientId\n      clientName\n      clientUri\n      tosUri\n      policyUri\n      redirectUris\n    }\n  }\n",
-): (typeof documents)["\n  query OAuth2ClientQuery($id: ID!) {\n    oauth2Client(id: $id) {\n      id\n      clientId\n      clientName\n      clientUri\n      tosUri\n      policyUri\n      redirectUris\n    }\n  }\n"];
+  source: "\n  query SessionsOverviewQuery {\n    viewer {\n      __typename\n\n      ... on User {\n        id\n        ...UserHome_user\n      }\n    }\n  }\n",
+): (typeof documents)["\n  query SessionsOverviewQuery {\n    viewer {\n      __typename\n\n      ... on User {\n        id\n        ...UserHome_user\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

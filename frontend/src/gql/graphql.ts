@@ -1395,17 +1395,6 @@ export type BrowserSessionQueryQuery = {
   } | null;
 };
 
-export type HomeQueryQueryVariables = Exact<{ [key: string]: never }>;
-
-export type HomeQueryQuery = {
-  __typename?: "Query";
-  viewer:
-    | { __typename: "Anonymous" }
-    | ({ __typename: "User"; id: string } & {
-        " $fragmentRefs"?: { UserHome_UserFragment: UserHome_UserFragment };
-      });
-};
-
 export type OAuth2ClientQueryQueryVariables = Exact<{
   id: Scalars["ID"]["input"];
 }>;
@@ -1422,6 +1411,19 @@ export type OAuth2ClientQueryQuery = {
     policyUri?: any | null;
     redirectUris: Array<any>;
   } | null;
+};
+
+export type SessionsOverviewQueryQueryVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type SessionsOverviewQueryQuery = {
+  __typename?: "Query";
+  viewer:
+    | { __typename: "Anonymous" }
+    | ({ __typename: "User"; id: string } & {
+        " $fragmentRefs"?: { UserHome_UserFragment: UserHome_UserFragment };
+      });
 };
 
 export type VerifyEmailQueryQueryVariables = Exact<{
@@ -3942,13 +3944,70 @@ export const BrowserSessionQueryDocument = {
   BrowserSessionQueryQuery,
   BrowserSessionQueryQueryVariables
 >;
-export const HomeQueryDocument = {
+export const OAuth2ClientQueryDocument = {
   kind: "Document",
   definitions: [
     {
       kind: "OperationDefinition",
       operation: "query",
-      name: { kind: "Name", value: "HomeQuery" },
+      name: { kind: "Name", value: "OAuth2ClientQuery" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "oauth2Client" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "id" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "clientId" } },
+                { kind: "Field", name: { kind: "Name", value: "clientName" } },
+                { kind: "Field", name: { kind: "Name", value: "clientUri" } },
+                { kind: "Field", name: { kind: "Name", value: "tosUri" } },
+                { kind: "Field", name: { kind: "Name", value: "policyUri" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "redirectUris" },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  OAuth2ClientQueryQuery,
+  OAuth2ClientQueryQueryVariables
+>;
+export const SessionsOverviewQueryDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "SessionsOverviewQuery" },
       selectionSet: {
         kind: "SelectionSet",
         selections: [
@@ -4116,63 +4175,9 @@ export const HomeQueryDocument = {
       },
     },
   ],
-} as unknown as DocumentNode<HomeQueryQuery, HomeQueryQueryVariables>;
-export const OAuth2ClientQueryDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "query",
-      name: { kind: "Name", value: "OAuth2ClientQuery" },
-      variableDefinitions: [
-        {
-          kind: "VariableDefinition",
-          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
-          type: {
-            kind: "NonNullType",
-            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "oauth2Client" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "id" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "id" },
-                },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "id" } },
-                { kind: "Field", name: { kind: "Name", value: "clientId" } },
-                { kind: "Field", name: { kind: "Name", value: "clientName" } },
-                { kind: "Field", name: { kind: "Name", value: "clientUri" } },
-                { kind: "Field", name: { kind: "Name", value: "tosUri" } },
-                { kind: "Field", name: { kind: "Name", value: "policyUri" } },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "redirectUris" },
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
 } as unknown as DocumentNode<
-  OAuth2ClientQueryQuery,
-  OAuth2ClientQueryQueryVariables
+  SessionsOverviewQueryQuery,
+  SessionsOverviewQueryQueryVariables
 >;
 export const VerifyEmailQueryDocument = {
   kind: "Document",

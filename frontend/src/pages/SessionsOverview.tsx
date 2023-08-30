@@ -23,7 +23,7 @@ import { graphql } from "../gql";
 import { isErr, unwrapErr, unwrapOk } from "../result";
 
 const QUERY = graphql(/* GraphQL */ `
-  query HomeQuery {
+  query SessionsOverviewQuery {
     viewer {
       __typename
 
@@ -35,11 +35,11 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-const homeQueryAtom = atomWithQuery({
+const sessionsOverviewQueryAtom = atomWithQuery({
   query: QUERY,
 });
 
-const homeAtom = mapQueryAtom(homeQueryAtom, (data) => {
+const sessionsOverviewAtom = mapQueryAtom(sessionsOverviewQueryAtom, (data) => {
   if (data.viewer?.__typename === "User") {
     return data.viewer;
   }
@@ -47,8 +47,8 @@ const homeAtom = mapQueryAtom(homeQueryAtom, (data) => {
   return null;
 });
 
-const Home: React.FC = () => {
-  const result = useAtomValue(homeAtom);
+const SessionsOverview: React.FC = () => {
+  const result = useAtomValue(sessionsOverviewAtom);
   if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
 
   const data = unwrapOk(result);
@@ -57,4 +57,4 @@ const Home: React.FC = () => {
   return <UserHome user={data} />;
 };
 
-export default Home;
+export default SessionsOverview;
