@@ -61,7 +61,7 @@ pub enum RouteError {
 impl_from_error_for_route!(mas_templates::TemplateError);
 impl_from_error_for_route!(mas_storage::RepositoryError);
 impl_from_error_for_route!(mas_policy::LoadError);
-impl_from_error_for_route!(mas_policy::InstanciateError);
+impl_from_error_for_route!(mas_policy::InstantiateError);
 impl_from_error_for_route!(mas_policy::EvaluationError);
 
 impl IntoResponse for RouteError {

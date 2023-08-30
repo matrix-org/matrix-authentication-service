@@ -97,12 +97,18 @@ pub async fn policy_factory_from_config(
         .await
         .context("failed to open OPA WASM policy file")?;
 
+    let entrypoints = mas_policy::Entrypoints {
+        register: config.register_entrypoint.clone(),
+        client_registration: config.client_registration_entrypoint.clone(),
+        authorization_grant: config.authorization_grant_entrypoint.clone(),
+        email: config.email_entrypoint.clone(),
+        password: config.password_entrypoint.clone(),
+    };
+
     PolicyFactory::load(
         policy_file,
         config.data.clone().unwrap_or_default(),
-        config.register_entrypoint.clone(),
-        config.client_registration_entrypoint.clone(),
-        config.authorization_grant_entrypoint.clone(),
+        entrypoints,
     )
     .await
     .context("failed to load the policy")

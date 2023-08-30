@@ -48,6 +48,14 @@ fn default_authorization_grant_endpoint() -> String {
     "authorization_grant/violation".to_owned()
 }
 
+fn default_password_endpoint() -> String {
+    "password/violation".to_owned()
+}
+
+fn default_email_endpoint() -> String {
+    "email/violation".to_owned()
+}
+
 /// Application secrets
 #[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -69,6 +77,14 @@ pub struct PolicyConfig {
     #[serde(default = "default_authorization_grant_endpoint")]
     pub authorization_grant_entrypoint: String,
 
+    /// Entrypoint to use when changing password
+    #[serde(default = "default_password_endpoint")]
+    pub password_entrypoint: String,
+
+    /// Entrypoint to use when adding an email address
+    #[serde(default = "default_email_endpoint")]
+    pub email_entrypoint: String,
+
     /// Arbitrary data to pass to the policy
     #[serde(default)]
     pub data: Option<serde_json::Value>,
@@ -81,6 +97,8 @@ impl Default for PolicyConfig {
             client_registration_entrypoint: default_client_registration_endpoint(),
             register_entrypoint: default_register_endpoint(),
             authorization_grant_entrypoint: default_authorization_grant_endpoint(),
+            password_entrypoint: default_password_endpoint(),
+            email_entrypoint: default_email_endpoint(),
             data: None,
         }
     }
