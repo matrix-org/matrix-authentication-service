@@ -24,6 +24,7 @@ pub struct FancyError {
 }
 
 impl FancyError {
+    #[must_use]
     pub fn new(context: ErrorContext) -> Self {
         Self { context }
     }

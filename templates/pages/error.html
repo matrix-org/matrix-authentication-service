@@ -17,23 +17,25 @@ limitations under the License.
 {% extends "base.html" %}
 
 {% block content %}
-  <section class="hero is-danger">
-    <div class="hero-body">
-      <div class="container">
-        {% if code %}
-        <p class="title">
-          {{ code }}
-        </p>
-        {% endif %}
-        {% if description %}
-        <p class="subtitle">
-          {{ description }}
-        </p>
-        {% endif %}
-        {% if details %}
-        <pre><code>{{ details }}</code></pre>
-        {% endif %}
-      </div>
-    </div>
-  </section>
+<section class="flex-1 flex items-center justify-center">
+  <div class="w-64 flex flex-col gap-2">
+    <h1 class="text-xl font-semibold">Unexpected error</h1>
+    {% if code %}
+    <p class="font-semibold font-mono">
+      {{ code }}
+    </p>
+    {% endif %}
+    {% if description %}
+    <p>
+      {{ description }}
+    </p>
+    {% endif %}
+    {% if details %}
+      <hr />
+      <code>
+        <pre class="font-mono whitespace-pre-wrap break-all">{{ details }}</pre>
+      </code>
+    {% endif %}
+  </div>
+</section>
 {% endblock %}

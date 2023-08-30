@@ -46,5 +46,5 @@ coverage:
 
 .PHONY: lint
 lint:
-	$(OPA) fmt -d --fail .
-	$(OPA) check --strict .
+	$(OPA) fmt -d --fail ./*.rego util/*.rego
+	$(OPA) check --strict --schema schema/ ./*.rego util/*.rego

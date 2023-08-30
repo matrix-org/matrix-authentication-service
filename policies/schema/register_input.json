@@ -28,6 +28,27 @@
           "type": "string"
         }
       }
+    },
+    {
+      "type": "object",
+      "required": [
+        "registration_method",
+        "username"
+      ],
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "registration_method": {
+          "type": "string",
+          "enum": [
+            "upstream-oauth2"
+          ]
+        },
+        "username": {
+          "type": "string"
+        }
+      }
     }
   ]
 }

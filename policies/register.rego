@@ -22,6 +22,18 @@ violation[{"field": "username", "msg": "username too long"}] {
 	count(input.username) >= 15
 }
 
+violation[{"field": "username", "msg": "username contains invalid characters"}] {
+	not regex.match("^[a-z0-9.=_/-]+$", input.username)
+}
+
+violation[{"msg": "unspecified registration method"}] {
+	not input.registration_method
+}
+
+violation[{"msg": "unknown registration method"}] {
+	not input.registration_method in ["password", "upstream-oauth2"]
+}
+
 violation[object.union({"field": "password"}, v)] {
 	# Check if the registration method is password
 	input.registration_method == "password"
@@ -30,9 +42,19 @@ violation[object.union({"field": "password"}, v)] {
 	some v in password_policy.violation
 }
 
+# Check that we supplied an email for password registration
+violation[{"field": "email", "msg": "email required for password-based registration"}] {
+	input.registration_method == "password"
+
+	not input.email
+}
+
 # Check if the email is valid using the email policy
 # and add the email field to the violation object
 violation[object.union({"field": "email"}, v)] {
+	# Check if we have an email set in the input
+	input.email
+
 	# Get the violation object from the email policy
 	some v in email_policy.violation
 }
