@@ -18,18 +18,13 @@ import { segmentsToRoute } from "./Router";
 
 describe("Router", () => {
   describe("segmentsToRoute", () => {
-    it("returns home for route with no segments", () => {
+    it("returns profile for route with no segments", () => {
       const segments: string[] = [];
-      expect(segmentsToRoute(segments)).toEqual({ type: "home" });
+      expect(segmentsToRoute(segments)).toEqual({ type: "profile" });
     });
 
-    it("returns home for route with and empty string segment", () => {
+    it("returns profile for route with and empty string segment", () => {
       const segments: string[] = [""];
-      expect(segmentsToRoute(segments)).toEqual({ type: "home" });
-    });
-
-    it("returns profile for route with profile", () => {
-      const segments: string[] = ["profile"];
       expect(segmentsToRoute(segments)).toEqual({ type: "profile" });
     });
 

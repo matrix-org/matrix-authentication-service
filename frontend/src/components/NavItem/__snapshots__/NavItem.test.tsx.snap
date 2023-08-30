@@ -22,7 +22,7 @@ exports[`NavItem > render an inactive <NavItem /> 1`] = `
 >
   <a
     className="_navItem_8603fc"
-    href="/"
+    href="/sessions-overview"
     onClick={[Function]}
   >
     Inactive
@@ -36,10 +36,10 @@ exports[`NavItem > renders a different route 1`] = `
 >
   <a
     className="_navItem_8603fc"
-    href="/profile"
+    href="/sessions-overview"
     onClick={[Function]}
   >
-    Emails
+    Sessions
   </a>
 </li>
 `;

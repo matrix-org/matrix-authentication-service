@@ -42,8 +42,8 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
       <UserGreeting userId={userId} />
 
       <NavBar>
-        <NavItem route={{ type: "home" }}>Sessions</NavItem>
         <NavItem route={{ type: "profile" }}>Profile</NavItem>
+        <NavItem route={{ type: "sessions-overview" }}>Sessions</NavItem>
       </NavBar>
 
       <main>{children}</main>

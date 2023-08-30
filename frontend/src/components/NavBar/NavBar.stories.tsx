@@ -29,8 +29,8 @@ const meta = {
     <Provider>
       <WithHomePage>
         <NavBar {...props}>
-          <NavItem route={{ type: "home" }}>Home</NavItem>
-          <NavItem route={{ type: "profile" }}>Emails</NavItem>
+          <NavItem route={{ type: "sessions-overview" }}>Sessions</NavItem>
+          <NavItem route={{ type: "profile" }}>Profile</NavItem>
           <ExternalLink href="https://example.com">External</ExternalLink>
         </NavBar>
       </WithHomePage>
