@@ -56,13 +56,22 @@ impl EvaluationResult {
 
 /// Input for the user registration policy.
 #[derive(Serialize, Debug)]
-#[serde(tag = "registration_method", rename_all = "snake_case")]
+#[serde(tag = "registration_method")]
 #[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
 pub enum RegisterInput<'a> {
+    #[serde(rename = "password")]
     Password {
         username: &'a str,
         password: &'a str,
         email: &'a str,
+    },
+
+    #[serde(rename = "upstream-oauth2")]
+    UpstreamOAuth2 {
+        username: &'a str,
+
+        #[serde(skip_serializing_if = "Option::is_none")]
+        email: Option<&'a str>,
     },
 }
 

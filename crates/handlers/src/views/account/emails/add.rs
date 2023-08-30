@@ -107,12 +107,9 @@ pub(crate) async fn post(
     let user_email = if let Some(user_email) = existing_user_email {
         user_email
     } else {
-        let user_email = repo
-            .user_email()
+        repo.user_email()
             .add(&mut rng, &clock, &session.user, form.email)
-            .await?;
-
-        user_email
+            .await?
     };
 
     // If the email was not confirmed, send a confirmation email & redirect to the

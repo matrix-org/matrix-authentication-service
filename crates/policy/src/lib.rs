@@ -251,6 +251,31 @@ impl Policy {
         Ok(res)
     }
 
+    #[tracing::instrument(
+        name = "policy.evaluate.upstream_oauth_register",
+        skip_all,
+        fields(
+            input.registration_method = "password",
+            input.user.username = username,
+            input.user.email = email,
+        ),
+        err,
+    )]
+    pub async fn evaluate_upstream_oauth_register(
+        &mut self,
+        username: &str,
+        email: Option<&str>,
+    ) -> Result<EvaluationResult, EvaluationError> {
+        let input = RegisterInput::UpstreamOAuth2 { username, email };
+
+        let [res]: [EvaluationResult; 1] = self
+            .instance
+            .evaluate(&mut self.store, &self.entrypoints.register, &input)
+            .await?;
+
+        Ok(res)
+    }
+
     #[tracing::instrument(skip(self))]
     pub async fn evaluate_client_registration(
         &mut self,
