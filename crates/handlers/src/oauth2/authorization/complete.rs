@@ -76,7 +76,7 @@ impl IntoResponse for RouteError {
 impl_from_error_for_route!(mas_storage::RepositoryError);
 impl_from_error_for_route!(mas_templates::TemplateError);
 impl_from_error_for_route!(mas_policy::LoadError);
-impl_from_error_for_route!(mas_policy::InstanciateError);
+impl_from_error_for_route!(mas_policy::InstantiateError);
 impl_from_error_for_route!(mas_policy::EvaluationError);
 impl_from_error_for_route!(super::callback::IntoCallbackDestinationError);
 impl_from_error_for_route!(super::callback::CallbackDestinationError);
@@ -187,7 +187,7 @@ pub enum GrantCompletionError {
 impl_from_error_for_route!(GrantCompletionError: mas_storage::RepositoryError);
 impl_from_error_for_route!(GrantCompletionError: super::callback::IntoCallbackDestinationError);
 impl_from_error_for_route!(GrantCompletionError: mas_policy::LoadError);
-impl_from_error_for_route!(GrantCompletionError: mas_policy::InstanciateError);
+impl_from_error_for_route!(GrantCompletionError: mas_policy::InstantiateError);
 impl_from_error_for_route!(GrantCompletionError: mas_policy::EvaluationError);
 impl_from_error_for_route!(GrantCompletionError: super::super::IdTokenSignatureError);
 

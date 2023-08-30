@@ -1,3 +1,6 @@
+# METADATA
+# schemas:
+#   - input: schema["authorization_grant_input"]
 package authorization_grant
 
 import future.keywords.in

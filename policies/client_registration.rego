@@ -1,3 +1,6 @@
+# METADATA
+# schemas:
+#   - input: schema["client_registration_input"]
 package client_registration
 
 import future.keywords.in

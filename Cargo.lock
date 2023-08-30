@@ -3047,6 +3047,7 @@ dependencies = [
  "mas-data-model",
  "oauth2-types",
  "opa-wasm",
+ "schemars",
  "serde",
  "serde_json",
  "thiserror",

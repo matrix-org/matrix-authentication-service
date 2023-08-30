@@ -117,14 +117,15 @@ impl TestState {
         let file =
             tokio::fs::File::open(workspace_root.join("policies").join("policy.wasm")).await?;
 
-        let policy_factory = PolicyFactory::load(
-            file,
-            serde_json::json!({}),
-            "register/violation".to_owned(),
-            "client_registration/violation".to_owned(),
-            "authorization_grant/violation".to_owned(),
-        )
-        .await?;
+        let entrypoints = mas_policy::Entrypoints {
+            register: "register/violation".to_owned(),
+            client_registration: "client_registration/violation".to_owned(),
+            authorization_grant: "authorization_grant/violation".to_owned(),
+            email: "email/violation".to_owned(),
+            password: "password/violation".to_owned(),
+        };
+
+        let policy_factory = PolicyFactory::load(file, serde_json::json!({}), entrypoints).await?;
 
         let homeserver_connection = MockHomeserverConnection::new("example.com");
 
