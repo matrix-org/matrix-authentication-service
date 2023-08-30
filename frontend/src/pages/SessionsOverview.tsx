@@ -18,7 +18,7 @@ import { atomWithQuery } from "jotai-urql";
 import { mapQueryAtom } from "../atoms";
 import GraphQLError from "../components/GraphQLError";
 import NotLoggedIn from "../components/NotLoggedIn";
-import UserHome from "../components/UserHome";
+import UserSessionsOverview from "../components/UserSessionsOverview";
 import { graphql } from "../gql";
 import { isErr, unwrapErr, unwrapOk } from "../result";
 
@@ -29,7 +29,7 @@ const QUERY = graphql(/* GraphQL */ `
 
       ... on User {
         id
-        ...UserHome_user
+        ...UserSessionsOverview_user
       }
     }
   }
@@ -54,7 +54,7 @@ const SessionsOverview: React.FC = () => {
   const data = unwrapOk(result);
   if (data === null) return <NotLoggedIn />;
 
-  return <UserHome user={data} />;
+  return <UserSessionsOverview user={data} />;
 };
 
 export default SessionsOverview;

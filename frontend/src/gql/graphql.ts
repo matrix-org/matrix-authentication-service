@@ -1214,29 +1214,6 @@ export type UserGreetingQuery = {
       });
 };
 
-export type UserHome_UserFragment = {
-  __typename?: "User";
-  id: string;
-  primaryEmail?:
-    | ({ __typename?: "UserEmail"; id: string } & {
-        " $fragmentRefs"?: { UserEmail_EmailFragment: UserEmail_EmailFragment };
-      })
-    | null;
-  confirmedEmails: { __typename?: "UserEmailConnection"; totalCount: number };
-  browserSessions: {
-    __typename?: "BrowserSessionConnection";
-    totalCount: number;
-  };
-  oauth2Sessions: {
-    __typename?: "Oauth2SessionConnection";
-    totalCount: number;
-  };
-  compatSessions: {
-    __typename?: "CompatSessionConnection";
-    totalCount: number;
-  };
-} & { " $fragmentName"?: "UserHome_UserFragment" };
-
 export type AddEmailMutationVariables = Exact<{
   userId: Scalars["ID"]["input"];
   email: Scalars["String"]["input"];
@@ -1324,6 +1301,29 @@ export type SetDisplayNameMutation = {
     } | null;
   };
 };
+
+export type UserSessionsOverview_UserFragment = {
+  __typename?: "User";
+  id: string;
+  primaryEmail?:
+    | ({ __typename?: "UserEmail"; id: string } & {
+        " $fragmentRefs"?: { UserEmail_EmailFragment: UserEmail_EmailFragment };
+      })
+    | null;
+  confirmedEmails: { __typename?: "UserEmailConnection"; totalCount: number };
+  browserSessions: {
+    __typename?: "BrowserSessionConnection";
+    totalCount: number;
+  };
+  oauth2Sessions: {
+    __typename?: "Oauth2SessionConnection";
+    totalCount: number;
+  };
+  compatSessions: {
+    __typename?: "CompatSessionConnection";
+    totalCount: number;
+  };
+} & { " $fragmentName"?: "UserSessionsOverview_UserFragment" };
 
 export type UserEmail_VerifyEmailFragment = {
   __typename?: "UserEmail";
@@ -1422,7 +1422,9 @@ export type SessionsOverviewQueryQuery = {
   viewer:
     | { __typename: "Anonymous" }
     | ({ __typename: "User"; id: string } & {
-        " $fragmentRefs"?: { UserHome_UserFragment: UserHome_UserFragment };
+        " $fragmentRefs"?: {
+          UserSessionsOverview_UserFragment: UserSessionsOverview_UserFragment;
+        };
       });
 };
 
@@ -1642,12 +1644,12 @@ export const UserEmail_EmailFragmentDoc = {
     },
   ],
 } as unknown as DocumentNode<UserEmail_EmailFragment, unknown>;
-export const UserHome_UserFragmentDoc = {
+export const UserSessionsOverview_UserFragmentDoc = {
   kind: "Document",
   definitions: [
     {
       kind: "FragmentDefinition",
-      name: { kind: "Name", value: "UserHome_user" },
+      name: { kind: "Name", value: "UserSessionsOverview_user" },
       typeCondition: {
         kind: "NamedType",
         name: { kind: "Name", value: "User" },
@@ -1779,7 +1781,7 @@ export const UserHome_UserFragmentDoc = {
       },
     },
   ],
-} as unknown as DocumentNode<UserHome_UserFragment, unknown>;
+} as unknown as DocumentNode<UserSessionsOverview_UserFragment, unknown>;
 export const UserEmail_VerifyEmailFragmentDoc = {
   kind: "Document",
   definitions: [
@@ -4030,7 +4032,10 @@ export const SessionsOverviewQueryDocument = {
                       { kind: "Field", name: { kind: "Name", value: "id" } },
                       {
                         kind: "FragmentSpread",
-                        name: { kind: "Name", value: "UserHome_user" },
+                        name: {
+                          kind: "Name",
+                          value: "UserSessionsOverview_user",
+                        },
                       },
                     ],
                   },
@@ -4059,7 +4064,7 @@ export const SessionsOverviewQueryDocument = {
     },
     {
       kind: "FragmentDefinition",
-      name: { kind: "Name", value: "UserHome_user" },
+      name: { kind: "Name", value: "UserSessionsOverview_user" },
       typeCondition: {
         kind: "NamedType",
         name: { kind: "Name", value: "User" },
