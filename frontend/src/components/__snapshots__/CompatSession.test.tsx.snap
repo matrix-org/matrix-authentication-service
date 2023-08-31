@@ -41,7 +41,7 @@ exports[`<CompatSession /> > renders a finished session 1`] = `
     <span
       className="_font-body-sm-semibold_1g2sj_49 _sessionMetadata_634806"
     >
-      https://element.io
+      element.io
     </span>
   </p>
 </div>
@@ -79,7 +79,7 @@ exports[`<CompatSession /> > renders an active session 1`] = `
     <span
       className="_font-body-sm-semibold_1g2sj_49 _sessionMetadata_634806"
     >
-      https://element.io
+      element.io
     </span>
   </p>
   <div

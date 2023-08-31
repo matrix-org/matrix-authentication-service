@@ -18,7 +18,9 @@ use anyhow::Context;
 use clap::Parser;
 use itertools::Itertools;
 use mas_config::AppConfig;
-use mas_handlers::{AppState, CookieManager, HttpClientFactory, MatrixHomeserver, MetadataCache};
+use mas_handlers::{
+    AppState, CookieManager, HttpClientFactory, MatrixHomeserver, MetadataCache, SiteConfig,
+};
 use mas_listener::{server::Server, shutdown::ShutdownStream};
 use mas_matrix_synapse::SynapseConnection;
 use mas_router::UrlBuilder;
@@ -137,6 +139,11 @@ impl Options {
             http_client_factory.clone(),
         );
 
+        let site_config = SiteConfig {
+            access_token_ttl: config.experimental.access_token_ttl,
+            compat_token_ttl: config.experimental.compat_token_ttl,
+        };
+
         // Explicitly the config to properly zeroize secret keys
         drop(config);
 
@@ -159,6 +166,7 @@ impl Options {
                 graphql_schema,
                 http_client_factory,
                 password_manager,
+                site_config,
                 conn_acquisition_histogram: None,
             };
             s.init_metrics()?;

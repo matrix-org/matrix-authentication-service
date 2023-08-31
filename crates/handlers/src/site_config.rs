@@ -1,4 +1,4 @@
-// Copyright 2022, 2023 The Matrix.org Foundation C.I.C.
+// Copyright 2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,17 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod link;
-mod provider;
-mod session;
+use chrono::Duration;
 
-pub use self::{
-    link::UpstreamOAuthLink,
-    provider::{
-        ClaimsImports as UpstreamOAuthProviderClaimsImports,
-        ImportAction as UpstreamOAuthProviderImportAction,
-        ImportPreference as UpstreamOAuthProviderImportPreference,
-        SetEmailVerification as UpsreamOAuthProviderSetEmailVerification, UpstreamOAuthProvider,
-    },
-    session::{UpstreamOAuthAuthorizationSession, UpstreamOAuthAuthorizationSessionState},
-};
+/// Random site configuration we don't now where to put yet.
+#[derive(Debug, Clone)]
+pub struct SiteConfig {
+    pub access_token_ttl: Duration,
+    pub compat_token_ttl: Duration,
+}
+
+impl Default for SiteConfig {
+    fn default() -> Self {
+        Self {
+            access_token_ttl: Duration::minutes(5),
+            compat_token_ttl: Duration::minutes(5),
+        }
+    }
+}

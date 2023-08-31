@@ -18,6 +18,11 @@ parse_uri(url) = obj {
 }
 
 secure_url(x) {
+	x
+	data.client_registration.allow_insecure_uris
+}
+
+secure_url(x) {
 	url := parse_uri(x)
 	url.scheme == "https"
 
@@ -32,6 +37,21 @@ secure_url(x) {
 }
 
 host_matches_client_uri(x) {
+	x
+
+	# Do not check we allow host mismatch
+	data.client_registration.allow_host_mismatch
+}
+
+host_matches_client_uri(x) {
+	x
+
+	# Do not check if the client_uri is missing and we allow that
+	data.client_registration.allow_missing_client_uri
+	not data.client_metadata.client_uri
+}
+
+host_matches_client_uri(x) {
 	client_uri := parse_uri(input.client_metadata.client_uri)
 	uri := parse_uri(x)
 	uri.host == client_uri.host
@@ -43,43 +63,36 @@ violation[{"msg": "missing client_uri"}] {
 }
 
 violation[{"msg": "invalid client_uri"}] {
-	not data.client_registration.allow_insecure_uris
 	not secure_url(input.client_metadata.client_uri)
 }
 
 violation[{"msg": "invalid tos_uri"}] {
 	input.client_metadata.tos_uri
-	not data.client_registration.allow_insecure_uris
 	not secure_url(input.client_metadata.tos_uri)
 }
 
 violation[{"msg": "tos_uri not on the same host as the client_uri"}] {
 	input.client_metadata.tos_uri
-	not data.client_registration.allow_host_mismatch
 	not host_matches_client_uri(input.client_metadata.tos_uri)
 }
 
 violation[{"msg": "invalid policy_uri"}] {
 	input.client_metadata.policy_uri
-	not data.client_registration.allow_insecure_uris
 	not secure_url(input.client_metadata.policy_uri)
 }
 
 violation[{"msg": "policy_uri not on the same host as the client_uri"}] {
 	input.client_metadata.policy_uri
-	not data.client_registration.allow_host_mismatch
 	not host_matches_client_uri(input.client_metadata.policy_uri)
 }
 
 violation[{"msg": "invalid logo_uri"}] {
 	input.client_metadata.logo_uri
-	not data.client_registration.allow_insecure_uris
 	not secure_url(input.client_metadata.logo_uri)
 }
 
 violation[{"msg": "logo_uri not on the same host as the client_uri"}] {
 	input.client_metadata.logo_uri
-	not data.client_registration.allow_host_mismatch
 	not host_matches_client_uri(input.client_metadata.logo_uri)
 }
 
@@ -106,22 +119,6 @@ violation[{"msg": "invalid redirect_uris"}] {
 
 violation[{"msg": "empty redirect_uris"}] {
 	count(input.client_metadata.redirect_uris) == 0
-}
-
-violation[{"msg": "invalid redirect_uri", "redirect_uri": redirect_uri}] {
-	# For 'web' apps, we should verify that redirect_uris are secure
-	input.client_metadata.application_type != "native"
-	some redirect_uri in input.client_metadata.redirect_uris
-	not data.client_registration.allow_host_mismatch
-	not host_matches_client_uri(redirect_uri)
-}
-
-violation[{"msg": "invalid redirect_uri"}] {
-	# For 'web' apps, we should verify that redirect_uris are secure
-	input.client_metadata.application_type != "native"
-	some redirect_uri in input.client_metadata.redirect_uris
-	not data.client_registration.allow_insecure_uris
-	not secure_url(redirect_uri)
 }
 
 # Used to verify that a reverse-dns formatted scheme is a strict subdomain of
@@ -173,11 +170,17 @@ valid_native_redirector(x) {
 	reverse_dns_match(client_uri.host, url.scheme)
 }
 
-violation[{"msg": "invalid redirect_uri"}] {
-	# For 'native' apps, we need to check that the redirect_uri is either
-	# a custom scheme, or localhost
-	# TODO: this might not be right, because of app-associated domains on mobile?
+valid_redirect_uri(uri) {
 	input.client_metadata.application_type == "native"
+	valid_native_redirector(uri)
+}
+
+valid_redirect_uri(uri) {
+	secure_url(uri)
+	host_matches_client_uri(uri)
+}
+
+violation[{"msg": "invalid redirect_uri", "redirect_uri": redirect_uri}] {
 	some redirect_uri in input.client_metadata.redirect_uris
-	not valid_native_redirector(redirect_uri)
+	not valid_redirect_uri(redirect_uri)
 }

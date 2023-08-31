@@ -20,8 +20,8 @@ import { FragmentType, useFragment } from "../../gql";
 import BlockList from "../BlockList/BlockList";
 import {
   COMPAT_SESSION_FRAGMENT,
-  CompatSessionType,
   endCompatSessionFamily,
+  simplifyUrl,
 } from "../CompatSession";
 import DateTime from "../DateTime";
 
@@ -33,10 +33,7 @@ type Props = {
 
 const CompatSessionDetail: React.FC<Props> = ({ session }) => {
   const [pending, startTransition] = useTransition();
-  const data = useFragment(
-    COMPAT_SESSION_FRAGMENT,
-    session,
-  ) as CompatSessionType;
+  const data = useFragment(COMPAT_SESSION_FRAGMENT, session);
   const endSession = useSetAtom(endCompatSessionFamily(data.id));
 
   // @TODO(kerrya) make this wait for session refresh properly
@@ -57,12 +54,17 @@ const CompatSessionDetail: React.FC<Props> = ({ session }) => {
     ...finishedAt,
   ];
 
+  const clientName = data.ssoLogin?.redirectUri
+    ? simplifyUrl(data.ssoLogin.redirectUri)
+    : undefined;
+
   const clientDetails = [
+    { label: "Name", value: clientName },
     {
       label: "Uri",
       value: (
-        <a target="_blank" href={data.ssoLogin.redirectUri}>
-          {data.ssoLogin.redirectUri}
+        <a target="_blank" href={data.ssoLogin?.redirectUri}>
+          {data.ssoLogin?.redirectUri}
         </a>
       ),
     },

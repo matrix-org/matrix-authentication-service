@@ -16,17 +16,6 @@
         "$ref": "#/definitions/ClientConfig"
       }
     },
-    "csrf": {
-      "description": "Configuration related to Cross-Site Request Forgery protections",
-      "default": {
-        "ttl": 3600
-      },
-      "allOf": [
-        {
-          "$ref": "#/definitions/CsrfConfig"
-        }
-      ]
-    },
     "database": {
       "description": "Database connection configuration",
       "default": {
@@ -53,6 +42,18 @@
       "allOf": [
         {
           "$ref": "#/definitions/EmailConfig"
+        }
+      ]
+    },
+    "experimental": {
+      "description": "Experimental configuration options",
+      "default": {
+        "access_token_ttl": 300,
+        "compat_token_ttl": 300
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/ExperimentalConfig"
         }
       ]
     },
@@ -307,7 +308,7 @@
           "default": null,
           "allOf": [
             {
-              "$ref": "#/definitions/ImportPreference"
+              "$ref": "#/definitions/EmailImportPreference"
             }
           ]
         },
@@ -461,20 +462,6 @@
             "type": "string",
             "format": "uri"
           }
-        }
-      }
-    },
-    "CsrfConfig": {
-      "description": "Configuration related to Cross-Site Request Forgery protections",
-      "type": "object",
-      "properties": {
-        "ttl": {
-          "description": "Time-to-live of a CSRF token in seconds",
-          "default": 3600,
-          "type": "integer",
-          "format": "uint64",
-          "maximum": 86400.0,
-          "minimum": 60.0
         }
       }
     },
@@ -687,6 +674,30 @@
         }
       }
     },
+    "EmailImportPreference": {
+      "description": "What should be done with the email claim",
+      "type": "object",
+      "properties": {
+        "action": {
+          "description": "How to handle the claim",
+          "default": "ignore",
+          "allOf": [
+            {
+              "$ref": "#/definitions/ImportAction"
+            }
+          ]
+        },
+        "set_email_verification": {
+          "description": "Should the email address be marked as verified",
+          "default": "import",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SetEmailVerification"
+            }
+          ]
+        }
+      }
+    },
     "EmailSmtpMode": {
       "description": "Encryption mode to use",
       "oneOf": [
@@ -712,6 +723,28 @@
           ]
         }
       ]
+    },
+    "ExperimentalConfig": {
+      "description": "Configuration sections for experimental options\n\nDo not change these options unless you know what you are doing.",
+      "type": "object",
+      "properties": {
+        "access_token_ttl": {
+          "description": "Time-to-live of access tokens in seconds. Defaults to 5 minutes.",
+          "default": 300,
+          "type": "integer",
+          "format": "uint64",
+          "maximum": 86400.0,
+          "minimum": 60.0
+        },
+        "compat_token_ttl": {
+          "description": "Time-to-live of compatibility access tokens in seconds. Defaults to 5 minutes.",
+          "default": 300,
+          "type": "integer",
+          "format": "uint64",
+          "maximum": 86400.0,
+          "minimum": 60.0
+        }
+      }
     },
     "HashingScheme": {
       "description": "A hashing algorithm",
@@ -1751,6 +1784,32 @@
           "format": "uri"
         }
       }
+    },
+    "SetEmailVerification": {
+      "description": "Should the email address be marked as verified",
+      "oneOf": [
+        {
+          "description": "Mark the email address as verified",
+          "type": "string",
+          "enum": [
+            "always"
+          ]
+        },
+        {
+          "description": "Don't mark the email address as verified",
+          "type": "string",
+          "enum": [
+            "never"
+          ]
+        },
+        {
+          "description": "Mark the email address as verified if the upstream provider says it is through the `email_verified` claim",
+          "type": "string",
+          "enum": [
+            "import"
+          ]
+        }
+      ]
     },
     "TelemetryConfig": {
       "description": "Configuration related to sending monitoring data",

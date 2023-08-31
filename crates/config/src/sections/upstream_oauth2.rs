@@ -104,6 +104,34 @@ pub struct ImportPreference {
     pub action: ImportAction,
 }
 
+/// Should the email address be marked as verified
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum SetEmailVerification {
+    /// Mark the email address as verified
+    Always,
+
+    /// Don't mark the email address as verified
+    Never,
+
+    /// Mark the email address as verified if the upstream provider says it is
+    /// through the `email_verified` claim
+    #[default]
+    Import,
+}
+
+/// What should be done with the email claim
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, JsonSchema)]
+pub struct EmailImportPreference {
+    /// How to handle the claim
+    #[serde(default)]
+    pub action: ImportAction,
+
+    /// Should the email address be marked as verified
+    #[serde(default)]
+    pub set_email_verification: SetEmailVerification,
+}
+
 /// How claims should be imported
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default, JsonSchema)]
 pub struct ClaimsImports {
@@ -118,7 +146,7 @@ pub struct ClaimsImports {
     /// Import the email address of the user based on the `email` and
     /// `email_verified` claims
     #[serde(default)]
-    pub email: Option<ImportPreference>,
+    pub email: Option<EmailImportPreference>,
 }
 
 #[skip_serializing_none]

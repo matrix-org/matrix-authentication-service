@@ -47,7 +47,7 @@ use tracing::debug;
 use url::Url;
 
 use super::{generate_id_token, generate_token_pair};
-use crate::impl_from_error_for_route;
+use crate::{impl_from_error_for_route, site_config::SiteConfig};
 
 #[serde_as]
 #[skip_serializing_none]
@@ -161,6 +161,7 @@ pub(crate) async fn post(
     State(key_store): State<Keystore>,
     State(url_builder): State<UrlBuilder>,
     mut repo: BoxRepository,
+    State(site_config): State<SiteConfig>,
     State(encrypter): State<Encrypter>,
     client_authorization: ClientAuthorization<AccessTokenRequest>,
 ) -> Result<impl IntoResponse, RouteError> {
@@ -191,12 +192,13 @@ pub(crate) async fn post(
                 &client,
                 &key_store,
                 &url_builder,
+                &site_config,
                 repo,
             )
             .await?
         }
         AccessTokenRequest::RefreshToken(grant) => {
-            refresh_token_grant(&mut rng, &clock, &grant, &client, repo).await?
+            refresh_token_grant(&mut rng, &clock, &grant, &client, &site_config, repo).await?
         }
         _ => {
             return Err(RouteError::UnsupportedGrantType);
@@ -220,6 +222,7 @@ async fn authorization_code_grant(
     client: &Client,
     key_store: &Keystore,
     url_builder: &UrlBuilder,
+    site_config: &SiteConfig,
     mut repo: BoxRepository,
 ) -> Result<(AccessTokenResponse, BoxRepository), RouteError> {
     let authz_grant = repo
@@ -312,7 +315,7 @@ async fn authorization_code_grant(
         .get_last_authentication(&browser_session)
         .await?;
 
-    let ttl = Duration::minutes(5);
+    let ttl = site_config.access_token_ttl;
     let (access_token, refresh_token) =
         generate_token_pair(&mut rng, clock, &mut repo, &session, ttl).await?;
 
@@ -367,6 +370,7 @@ async fn refresh_token_grant(
     clock: &impl Clock,
     grant: &RefreshTokenGrant,
     client: &Client,
+    site_config: &SiteConfig,
     mut repo: BoxRepository,
 ) -> Result<(AccessTokenResponse, BoxRepository), RouteError> {
     let refresh_token = repo
@@ -390,7 +394,7 @@ async fn refresh_token_grant(
         return Err(RouteError::InvalidGrant);
     }
 
-    let ttl = Duration::minutes(5);
+    let ttl = site_config.access_token_ttl;
     let (new_access_token, new_refresh_token) =
         generate_token_pair(rng, clock, &mut repo, &session, ttl).await?;
 

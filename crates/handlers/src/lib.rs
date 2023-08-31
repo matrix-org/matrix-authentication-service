@@ -68,6 +68,7 @@ pub mod passwords;
 pub mod upstream_oauth2;
 mod views;
 
+mod site_config;
 #[cfg(test)]
 mod test_utils;
 
@@ -89,8 +90,10 @@ macro_rules! impl_from_error_for_route {
 
 pub use mas_axum_utils::{cookies::CookieManager, http_client_factory::HttpClientFactory};
 
-pub use self::{app_state::AppState, compat::MatrixHomeserver, graphql::schema as graphql_schema};
-pub use crate::upstream_oauth2::cache::MetadataCache;
+pub use self::{
+    app_state::AppState, compat::MatrixHomeserver, graphql::schema as graphql_schema,
+    site_config::SiteConfig, upstream_oauth2::cache::MetadataCache,
+};
 
 pub fn healthcheck_router<S, B>() -> Router<S, B>
 where
@@ -169,6 +172,7 @@ where
     BoxRepository: FromRequestParts<S>,
     Encrypter: FromRef<S>,
     HttpClientFactory: FromRef<S>,
+    SiteConfig: FromRef<S>,
     BoxClock: FromRequestParts<S>,
     BoxRng: FromRequestParts<S>,
     Policy: FromRequestParts<S>,
@@ -225,9 +229,10 @@ where
     <B as HttpBody>::Error: std::error::Error + Send + Sync,
     S: Clone + Send + Sync + 'static,
     UrlBuilder: FromRef<S>,
-    BoxRepository: FromRequestParts<S>,
+    SiteConfig: FromRef<S>,
     MatrixHomeserver: FromRef<S>,
     PasswordManager: FromRef<S>,
+    BoxRepository: FromRequestParts<S>,
     BoxClock: FromRequestParts<S>,
     BoxRng: FromRequestParts<S>,
 {

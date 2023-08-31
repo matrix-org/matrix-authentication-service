@@ -1,4 +1,4 @@
-// Copyright 2021, 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,33 +19,45 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-use super::ConfigurationSection;
+use crate::ConfigurationSection;
 
-fn default_ttl() -> Duration {
-    Duration::hours(1)
+fn default_token_ttl() -> Duration {
+    Duration::minutes(5)
 }
 
-/// Configuration related to Cross-Site Request Forgery protections
+/// Configuration sections for experimental options
+///
+/// Do not change these options unless you know what you are doing.
 #[serde_as]
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct CsrfConfig {
-    /// Time-to-live of a CSRF token in seconds
+#[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
+pub struct ExperimentalConfig {
+    /// Time-to-live of access tokens in seconds. Defaults to 5 minutes.
     #[schemars(with = "u64", range(min = 60, max = 86400))]
-    #[serde(default = "default_ttl")]
+    #[serde(default = "default_token_ttl")]
     #[serde_as(as = "serde_with::DurationSeconds<i64>")]
-    pub ttl: Duration,
+    pub access_token_ttl: Duration,
+
+    /// Time-to-live of compatibility access tokens in seconds. Defaults to 5
+    /// minutes.
+    #[schemars(with = "u64", range(min = 60, max = 86400))]
+    #[serde(default = "default_token_ttl")]
+    #[serde_as(as = "serde_with::DurationSeconds<i64>")]
+    pub compat_token_ttl: Duration,
 }
 
-impl Default for CsrfConfig {
+impl Default for ExperimentalConfig {
     fn default() -> Self {
-        Self { ttl: default_ttl() }
+        Self {
+            access_token_ttl: default_token_ttl(),
+            compat_token_ttl: default_token_ttl(),
+        }
     }
 }
 
 #[async_trait]
-impl ConfigurationSection for CsrfConfig {
+impl ConfigurationSection for ExperimentalConfig {
     fn path() -> &'static str {
-        "csrf"
+        "experimental"
     }
 
     async fn generate<R>(_rng: R) -> anyhow::Result<Self>
@@ -57,31 +69,5 @@ impl ConfigurationSection for CsrfConfig {
 
     fn test() -> Self {
         Self::default()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use figment::Jail;
-
-    use super::*;
-
-    #[test]
-    fn load_config() {
-        Jail::expect_with(|jail| {
-            jail.create_file(
-                "config.yaml",
-                r#"
-                    csrf:
-                      ttl: 1800
-                "#,
-            )?;
-
-            let config = CsrfConfig::load_from_file("config.yaml")?;
-
-            assert_eq!(config.ttl, Duration::minutes(30));
-
-            Ok(())
-        });
     }
 }

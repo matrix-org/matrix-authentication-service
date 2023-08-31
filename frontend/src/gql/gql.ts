@@ -23,9 +23,7 @@ const documents = {
     types.EndBrowserSessionDocument,
   "\n  query BrowserSessionList(\n    $userId: ID!\n    $state: BrowserSessionState\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n      browserSessions(\n        first: $first\n        after: $after\n        last: $last\n        before: $before\n        state: $state\n      ) {\n        totalCount\n\n        edges {\n          cursor\n          node {\n            id\n            ...BrowserSession_session\n          }\n        }\n\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n":
     types.BrowserSessionListDocument,
-  "\n  fragment CompatSession_sso_login on CompatSsoLogin {\n    id\n    redirectUri\n  }\n":
-    types.CompatSession_Sso_LoginFragmentDoc,
-  "\n  fragment CompatSession_session on CompatSession {\n    id\n    createdAt\n    deviceId\n    finishedAt\n    ssoLogin {\n      id\n      ...CompatSession_sso_login\n    }\n  }\n":
+  "\n  fragment CompatSession_session on CompatSession {\n    id\n    createdAt\n    deviceId\n    finishedAt\n    ssoLogin {\n      id\n      redirectUri\n    }\n  }\n":
     types.CompatSession_SessionFragmentDoc,
   "\n  mutation EndCompatSession($id: ID!) {\n    endCompatSession(input: { compatSessionId: $id }) {\n      status\n      compatSession {\n        id\n        finishedAt\n      }\n    }\n  }\n":
     types.EndCompatSessionDocument,
@@ -123,14 +121,8 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  fragment CompatSession_sso_login on CompatSsoLogin {\n    id\n    redirectUri\n  }\n",
-): (typeof documents)["\n  fragment CompatSession_sso_login on CompatSsoLogin {\n    id\n    redirectUri\n  }\n"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(
-  source: "\n  fragment CompatSession_session on CompatSession {\n    id\n    createdAt\n    deviceId\n    finishedAt\n    ssoLogin {\n      id\n      ...CompatSession_sso_login\n    }\n  }\n",
-): (typeof documents)["\n  fragment CompatSession_session on CompatSession {\n    id\n    createdAt\n    deviceId\n    finishedAt\n    ssoLogin {\n      id\n      ...CompatSession_sso_login\n    }\n  }\n"];
+  source: "\n  fragment CompatSession_session on CompatSession {\n    id\n    createdAt\n    deviceId\n    finishedAt\n    ssoLogin {\n      id\n      redirectUri\n    }\n  }\n",
+): (typeof documents)["\n  fragment CompatSession_session on CompatSession {\n    id\n    createdAt\n    deviceId\n    finishedAt\n    ssoLogin {\n      id\n      redirectUri\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
