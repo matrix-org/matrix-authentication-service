@@ -65,6 +65,14 @@ describe("Router", () => {
       });
     });
 
+    it("returns session detail route correctly", () => {
+      const segments: string[] = ["session", "device-id"];
+      expect(segmentsToRoute(segments)).toEqual({
+        type: "session",
+        id: "device-id",
+      });
+    });
+
     it("returns unknown for other segments", () => {
       const segments: string[] = ["just", "testing"];
       expect(segmentsToRoute(segments)).toEqual({ type: "unknown", segments });
