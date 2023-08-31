@@ -39,7 +39,7 @@ export const OAUTH2_SESSION_FRAGMENT = graphql(/* GraphQL */ `
   }
 `);
 
-type Oauth2SessionType = {
+export type Oauth2SessionType = {
   id: string;
   scope: string;
   createdAt: string;
@@ -64,7 +64,7 @@ const END_SESSION_MUTATION = graphql(/* GraphQL */ `
   }
 `);
 
-const endSessionFamily = atomFamily((id: string) => {
+export const endSessionFamily = atomFamily((id: string) => {
   const endSession = atomWithMutation(END_SESSION_MUTATION);
 
   // A proxy atom which pre-sets the id variable in the mutation
