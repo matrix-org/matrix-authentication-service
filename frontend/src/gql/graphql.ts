@@ -1001,25 +1001,17 @@ export type BrowserSessionListQuery = {
   } | null;
 };
 
-export type CompatSession_Sso_LoginFragment = {
-  __typename?: "CompatSsoLogin";
-  id: string;
-  redirectUri: any;
-} & { " $fragmentName"?: "CompatSession_Sso_LoginFragment" };
-
 export type CompatSession_SessionFragment = {
   __typename?: "CompatSession";
   id: string;
   createdAt: any;
   deviceId: string;
   finishedAt?: any | null;
-  ssoLogin?:
-    | ({ __typename?: "CompatSsoLogin"; id: string } & {
-        " $fragmentRefs"?: {
-          CompatSession_Sso_LoginFragment: CompatSession_Sso_LoginFragment;
-        };
-      })
-    | null;
+  ssoLogin?: {
+    __typename?: "CompatSsoLogin";
+    id: string;
+    redirectUri: any;
+  } | null;
 } & { " $fragmentName"?: "CompatSession_SessionFragment" };
 
 export type EndCompatSessionMutationVariables = Exact<{
@@ -1496,26 +1488,6 @@ export const BrowserSession_SessionFragmentDoc = {
     },
   ],
 } as unknown as DocumentNode<BrowserSession_SessionFragment, unknown>;
-export const CompatSession_Sso_LoginFragmentDoc = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "FragmentDefinition",
-      name: { kind: "Name", value: "CompatSession_sso_login" },
-      typeCondition: {
-        kind: "NamedType",
-        name: { kind: "Name", value: "CompatSsoLogin" },
-      },
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          { kind: "Field", name: { kind: "Name", value: "id" } },
-          { kind: "Field", name: { kind: "Name", value: "redirectUri" } },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<CompatSession_Sso_LoginFragment, unknown>;
 export const CompatSession_SessionFragmentDoc = {
   kind: "Document",
   definitions: [
@@ -1540,28 +1512,10 @@ export const CompatSession_SessionFragmentDoc = {
               kind: "SelectionSet",
               selections: [
                 { kind: "Field", name: { kind: "Name", value: "id" } },
-                {
-                  kind: "FragmentSpread",
-                  name: { kind: "Name", value: "CompatSession_sso_login" },
-                },
+                { kind: "Field", name: { kind: "Name", value: "redirectUri" } },
               ],
             },
           },
-        ],
-      },
-    },
-    {
-      kind: "FragmentDefinition",
-      name: { kind: "Name", value: "CompatSession_sso_login" },
-      typeCondition: {
-        kind: "NamedType",
-        name: { kind: "Name", value: "CompatSsoLogin" },
-      },
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          { kind: "Field", name: { kind: "Name", value: "id" } },
-          { kind: "Field", name: { kind: "Name", value: "redirectUri" } },
         ],
       },
     },
@@ -2528,21 +2482,6 @@ export const CompatSessionListDocument = {
     },
     {
       kind: "FragmentDefinition",
-      name: { kind: "Name", value: "CompatSession_sso_login" },
-      typeCondition: {
-        kind: "NamedType",
-        name: { kind: "Name", value: "CompatSsoLogin" },
-      },
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          { kind: "Field", name: { kind: "Name", value: "id" } },
-          { kind: "Field", name: { kind: "Name", value: "redirectUri" } },
-        ],
-      },
-    },
-    {
-      kind: "FragmentDefinition",
       name: { kind: "Name", value: "CompatSession_session" },
       typeCondition: {
         kind: "NamedType",
@@ -2562,10 +2501,7 @@ export const CompatSessionListDocument = {
               kind: "SelectionSet",
               selections: [
                 { kind: "Field", name: { kind: "Name", value: "id" } },
-                {
-                  kind: "FragmentSpread",
-                  name: { kind: "Name", value: "CompatSession_sso_login" },
-                },
+                { kind: "Field", name: { kind: "Name", value: "redirectUri" } },
               ],
             },
           },
@@ -2990,21 +2926,6 @@ export const SessionQueryDocument = {
     },
     {
       kind: "FragmentDefinition",
-      name: { kind: "Name", value: "CompatSession_sso_login" },
-      typeCondition: {
-        kind: "NamedType",
-        name: { kind: "Name", value: "CompatSsoLogin" },
-      },
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          { kind: "Field", name: { kind: "Name", value: "id" } },
-          { kind: "Field", name: { kind: "Name", value: "redirectUri" } },
-        ],
-      },
-    },
-    {
-      kind: "FragmentDefinition",
       name: { kind: "Name", value: "CompatSession_session" },
       typeCondition: {
         kind: "NamedType",
@@ -3024,10 +2945,7 @@ export const SessionQueryDocument = {
               kind: "SelectionSet",
               selections: [
                 { kind: "Field", name: { kind: "Name", value: "id" } },
-                {
-                  kind: "FragmentSpread",
-                  name: { kind: "Name", value: "CompatSession_sso_login" },
-                },
+                { kind: "Field", name: { kind: "Name", value: "redirectUri" } },
               ],
             },
           },
