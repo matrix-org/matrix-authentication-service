@@ -272,18 +272,27 @@ test_native_redirect_uri {
 		"contacts": ["contact@example.com"],
 	}
 
-	# We don't allow HTTP URLs other than localhost
-	not allow with input.client_metadata as {
+	# We still allow matching URLs for native apps
+	allow with input.client_metadata as {
 		"application_type": "native",
 		"client_uri": "https://example.com/",
 		"redirect_uris": ["https://example.com/"],
 		"contacts": ["contact@example.com"],
 	}
 
+	# But not insecure
 	not allow with input.client_metadata as {
 		"application_type": "native",
 		"client_uri": "https://example.com/",
 		"redirect_uris": ["http://example.com/"],
+		"contacts": ["contact@example.com"],
+	}
+
+	# And not a mismatch
+	not allow with input.client_metadata as {
+		"application_type": "native",
+		"client_uri": "https://example.com/",
+		"redirect_uris": ["http://bad.com/"],
 		"contacts": ["contact@example.com"],
 	}
 
