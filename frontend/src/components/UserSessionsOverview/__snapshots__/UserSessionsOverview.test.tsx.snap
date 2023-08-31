@@ -31,7 +31,7 @@ exports[`UserSessionsOverview > render a <UserSessionsOverview /> with sessions 
     </div>
     <a
       className="_linkButton_4f14fc"
-      href="/sessions"
+      href="/browser-sessions"
       onClick={[Function]}
     >
       View all
@@ -127,7 +127,7 @@ exports[`UserSessionsOverview > render an simple <UserSessionsOverview /> 1`] = 
     </div>
     <a
       className="_linkButton_4f14fc"
-      href="/sessions"
+      href="/browser-sessions"
       onClick={[Function]}
     >
       View all

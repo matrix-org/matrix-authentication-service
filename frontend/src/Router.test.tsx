@@ -28,8 +28,8 @@ describe("Router", () => {
       expect(segmentsToRoute(segments)).toEqual({ type: "profile" });
     });
 
-    it("returns browser session list for sessions", () => {
-      const segments: string[] = ["sessions"];
+    it("returns browser session list for browser-sessions", () => {
+      const segments: string[] = ["browser-sessions"];
       expect(segmentsToRoute(segments)).toEqual({
         type: "browser-session-list",
       });
@@ -57,10 +57,10 @@ describe("Router", () => {
       });
     });
 
-    it("returns session detail route correctly", () => {
-      const segments: string[] = ["sessions", "session-id"];
+    it("returns browser session detail route correctly", () => {
+      const segments: string[] = ["browser-sessions", "session-id"];
       expect(segmentsToRoute(segments)).toEqual({
-        type: "session",
+        type: "browser-session",
         id: "session-id",
       });
     });
