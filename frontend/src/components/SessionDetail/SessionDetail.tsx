@@ -12,15 +12,71 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Alert, Body } from "@vector-im/compound-web";
+import { useAtomValue } from "jotai";
+import { atomFamily } from "jotai/utils";
+import { atomWithQuery } from "jotai-urql";
+import { useRef } from "react";
+
+import { Link } from "../../Router";
+import { graphql } from "../../gql/gql";
+import CompatSession from "../CompatSession";
+import OAuth2Session from "../OAuth2Session";
+
+const QUERY = graphql(/* GraphQL */ `
+  query SessionQuery($userId: ID!, $deviceId: String!) {
+    session(userId: $userId, deviceId: $deviceId) {
+      __typename
+      ...CompatSession_session
+      ...OAuth2Session_session
+    }
+  }
+`);
+
+const sessionFamily = atomFamily(
+  ({ userId, deviceId }: { userId: string; deviceId: string }) => {
+    const sessionQueryAtom = atomWithQuery({
+      query: QUERY,
+      getVariables: () => ({ userId, deviceId }),
+    });
+
+    return sessionQueryAtom;
+  },
+);
+
 const SessionDetail: React.FC<{
   deviceId: string;
   userId: string;
 }> = ({ deviceId, userId }) => {
+  const props = useRef({ userId, deviceId });
+  const result = useAtomValue(sessionFamily(props.current));
+
+  const session = result.data?.session;
+
+  if (!session) {
+    // TODO put a back button here
+    return (
+      <Alert type="critical" title="Error">
+        <Body>Cannot find session: {deviceId}</Body>
+        <Link kind="button" route={{ type: "sessions-overview" }}>
+          Go back
+        </Link>
+      </Alert>
+    );
+  }
+
+  const sessionType = session.__typename;
+
+  if (sessionType === "Oauth2Session") {
+    return <OAuth2Session session={session} />;
+  } else if (sessionType === "CompatSession") {
+    return <CompatSession session={session} />;
+  }
+
   return (
-    <>
-      <code>deviceId: {deviceId}</code>
-      <code>userId: {userId}</code>
-    </>
+    <Alert title="Error" type="critical">
+      Unexpected session type
+    </Alert>
   );
 };
 
