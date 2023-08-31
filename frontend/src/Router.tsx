@@ -27,6 +27,7 @@ type Location = {
 
 type ProfileRoute = { type: "profile" };
 type SessionOverviewRoute = { type: "sessions-overview" };
+type SessionDetailRoute = { type: "session"; id: string };
 type OAuth2ClientRoute = { type: "client"; id: string };
 type OAuth2SessionList = { type: "oauth2-session-list" };
 type BrowserSessionRoute = { type: "browser-session"; id: string };
@@ -37,6 +38,7 @@ type UnknownRoute = { type: "unknown"; segments: string[] };
 
 export type Route =
   | SessionOverviewRoute
+  | SessionDetailRoute
   | ProfileRoute
   | OAuth2ClientRoute
   | OAuth2SessionList
@@ -52,6 +54,8 @@ const routeToSegments = (route: Route): string[] => {
       return [];
     case "sessions-overview":
       return ["sessions-overview"];
+    case "session":
+      return ["session", route.id];
     case "verify-email":
       return ["emails", route.id, "verify"];
     case "client":
@@ -128,6 +132,10 @@ export const segmentsToRoute = (segments: string[]): Route => {
     return { type: "browser-session", id: segments[1] };
   }
 
+  if (matches("session", P)) {
+    return { type: "session", id: segments[1] };
+  }
+
   return { type: "unknown", segments };
 };
 
@@ -170,6 +178,7 @@ export const routeAtom = atom(
 );
 
 const SessionsOverview = lazy(() => import("./pages/SessionsOverview"));
+const SessionDetail = lazy(() => import("./pages/SessionDetail"));
 const Profile = lazy(() => import("./pages/Profile"));
 const OAuth2Client = lazy(() => import("./pages/OAuth2Client"));
 const BrowserSession = lazy(() => import("./pages/BrowserSession"));
@@ -186,6 +195,8 @@ const InnerRouter: React.FC = () => {
       return <Profile />;
     case "sessions-overview":
       return <SessionsOverview />;
+    case "session":
+      return <SessionDetail deviceId={route.id} />;
     case "oauth2-session-list":
       return <OAuth2SessionList />;
     case "browser-session-list":
