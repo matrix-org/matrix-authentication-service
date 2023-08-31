@@ -12,12 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { useAtomValue } from "jotai";
+
+import { currentUserIdAtom } from "../atoms";
+import GraphQLError from "../components/GraphQLError";
+import NotLoggedIn from "../components/NotLoggedIn";
+import UserSessionDetail from "../components/SessionDetail";
+import { isErr, unwrapErr, unwrapOk } from "../result";
+
 const SessionDetail: React.FC<{ deviceId: string }> = ({ deviceId }) => {
-  return (
-    <pre>
-      <code>Session: {deviceId}</code>
-    </pre>
-  );
+  const result = useAtomValue(currentUserIdAtom);
+  if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
+
+  const userId = unwrapOk(result);
+  if (userId === null) return <NotLoggedIn />;
+
+  return <UserSessionDetail userId={userId} deviceId={deviceId} />;
 };
 
 export default SessionDetail;
