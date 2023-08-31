@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize};
 mod clients;
 mod database;
 mod email;
-mod hack;
+mod experimental;
 mod http;
 mod matrix;
 mod passwords;
@@ -34,7 +34,7 @@ pub use self::{
     clients::{ClientAuthMethodConfig, ClientConfig, ClientsConfig},
     database::{ConnectConfig as DatabaseConnectConfig, DatabaseConfig},
     email::{EmailConfig, EmailSmtpMode, EmailTransportConfig},
-    hack::HackConfig,
+    experimental::ExperimentalConfig,
     http::{
         BindConfig as HttpBindConfig, HttpConfig, ListenerConfig as HttpListenerConfig,
         Resource as HttpResource, TlsConfig as HttpTlsConfig, UnixOrTcp,
@@ -103,9 +103,9 @@ pub struct RootConfig {
     #[serde(default)]
     pub upstream_oauth2: UpstreamOAuth2Config,
 
-    /// Miscellaneous configuration options
+    /// Experimental configuration options
     #[serde(default)]
-    pub hack: HackConfig,
+    pub experimental: ExperimentalConfig,
 }
 
 #[async_trait]
@@ -130,7 +130,7 @@ impl ConfigurationSection for RootConfig {
             matrix: MatrixConfig::generate(&mut rng).await?,
             policy: PolicyConfig::generate(&mut rng).await?,
             upstream_oauth2: UpstreamOAuth2Config::generate(&mut rng).await?,
-            hack: HackConfig::generate(&mut rng).await?,
+            experimental: ExperimentalConfig::generate(&mut rng).await?,
         })
     }
 
@@ -147,7 +147,7 @@ impl ConfigurationSection for RootConfig {
             matrix: MatrixConfig::test(),
             policy: PolicyConfig::test(),
             upstream_oauth2: UpstreamOAuth2Config::test(),
-            hack: HackConfig::test(),
+            experimental: ExperimentalConfig::test(),
         }
     }
 }
@@ -179,7 +179,7 @@ pub struct AppConfig {
     pub policy: PolicyConfig,
 
     #[serde(default)]
-    pub hack: HackConfig,
+    pub experimental: ExperimentalConfig,
 }
 
 #[async_trait]
@@ -201,7 +201,7 @@ impl ConfigurationSection for AppConfig {
             secrets: SecretsConfig::generate(&mut rng).await?,
             matrix: MatrixConfig::generate(&mut rng).await?,
             policy: PolicyConfig::generate(&mut rng).await?,
-            hack: HackConfig::generate(&mut rng).await?,
+            experimental: ExperimentalConfig::generate(&mut rng).await?,
         })
     }
 
@@ -215,7 +215,7 @@ impl ConfigurationSection for AppConfig {
             secrets: SecretsConfig::test(),
             matrix: MatrixConfig::test(),
             policy: PolicyConfig::test(),
-            hack: HackConfig::test(),
+            experimental: ExperimentalConfig::test(),
         }
     }
 }
