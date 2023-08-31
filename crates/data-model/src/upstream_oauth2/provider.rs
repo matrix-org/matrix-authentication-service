@@ -31,6 +31,32 @@ pub struct UpstreamOAuthProvider {
     pub claims_imports: ClaimsImports,
 }
 
+/// Whether to set the email as verified when importing it from the upstream
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum SetEmailVerification {
+    /// Set the email as verified
+    Always,
+
+    /// Never set the email as verified
+    Never,
+
+    /// Set the email as verified if the upstream provider claims it is verified
+    #[default]
+    Import,
+}
+
+impl SetEmailVerification {
+    #[must_use]
+    pub fn should_mark_as_verified(&self, upstream_verified: bool) -> bool {
+        match self {
+            Self::Always => true,
+            Self::Never => false,
+            Self::Import => upstream_verified,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct ClaimsImports {
     #[serde(default)]
@@ -41,6 +67,9 @@ pub struct ClaimsImports {
 
     #[serde(default)]
     pub email: ImportPreference,
+
+    #[serde(default)]
+    pub verify_email: SetEmailVerification,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]

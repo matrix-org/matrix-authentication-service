@@ -21,7 +21,8 @@ pub use self::{
     provider::{
         ClaimsImports as UpstreamOAuthProviderClaimsImports,
         ImportAction as UpstreamOAuthProviderImportAction,
-        ImportPreference as UpstreamOAuthProviderImportPreference, UpstreamOAuthProvider,
+        ImportPreference as UpstreamOAuthProviderImportPreference,
+        SetEmailVerification as UpsreamOAuthProviderSetEmailVerification, UpstreamOAuthProvider,
     },
     session::{UpstreamOAuthAuthorizationSession, UpstreamOAuthAuthorizationSessionState},
 };

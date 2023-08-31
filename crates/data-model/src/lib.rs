@@ -46,9 +46,10 @@ pub use self::{
         AccessToken, AccessTokenState, RefreshToken, RefreshTokenState, TokenFormatError, TokenType,
     },
     upstream_oauth2::{
-        UpstreamOAuthAuthorizationSession, UpstreamOAuthAuthorizationSessionState,
-        UpstreamOAuthLink, UpstreamOAuthProvider, UpstreamOAuthProviderClaimsImports,
-        UpstreamOAuthProviderImportAction, UpstreamOAuthProviderImportPreference,
+        UpsreamOAuthProviderSetEmailVerification, UpstreamOAuthAuthorizationSession,
+        UpstreamOAuthAuthorizationSessionState, UpstreamOAuthLink, UpstreamOAuthProvider,
+        UpstreamOAuthProviderClaimsImports, UpstreamOAuthProviderImportAction,
+        UpstreamOAuthProviderImportPreference,
     },
     users::{
         Authentication, AuthenticationMethod, BrowserSession, Password, User, UserEmail,

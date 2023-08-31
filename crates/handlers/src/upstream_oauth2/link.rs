@@ -527,11 +527,19 @@ pub(crate) async fn post(
                     .add(&mut rng, &clock, &user, email)
                     .await?;
 
-                // Mark the email as verified if the upstream provider says it is.
-                if payload.email_verified {
-                    repo.user_email()
+                // Mark the email as verified according to the policy and whether the provider
+                // claims it is, and make it the primary email.
+                if provider
+                    .claims_imports
+                    .verify_email
+                    .should_mark_as_verified(payload.email_verified)
+                {
+                    let user_email = repo
+                        .user_email()
                         .mark_as_verified(&clock, user_email)
                         .await?;
+
+                    repo.user_email().set_as_primary(&user_email).await?;
                 }
             }
 
