@@ -34,7 +34,10 @@ use opentelemetry::{
 use rand::SeedableRng;
 use sqlx::PgPool;
 
-use crate::{passwords::PasswordManager, upstream_oauth2::cache::MetadataCache, MatrixHomeserver};
+use crate::{
+    passwords::PasswordManager, site_config::SiteConfig, upstream_oauth2::cache::MetadataCache,
+    MatrixHomeserver,
+};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -50,6 +53,7 @@ pub struct AppState {
     pub http_client_factory: HttpClientFactory,
     pub password_manager: PasswordManager,
     pub metadata_cache: MetadataCache,
+    pub site_config: SiteConfig,
     pub conn_acquisition_histogram: Option<Histogram<u64>>,
 }
 
@@ -196,6 +200,12 @@ impl FromRef<AppState> for CookieManager {
 impl FromRef<AppState> for MetadataCache {
     fn from_ref(input: &AppState) -> Self {
         input.metadata_cache.clone()
+    }
+}
+
+impl FromRef<AppState> for SiteConfig {
+    fn from_ref(input: &AppState) -> Self {
+        input.site_config.clone()
     }
 }
 

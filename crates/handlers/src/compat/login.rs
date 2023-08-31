@@ -32,7 +32,7 @@ use thiserror::Error;
 use zeroize::Zeroizing;
 
 use super::{MatrixError, MatrixHomeserver};
-use crate::{impl_from_error_for_route, passwords::PasswordManager};
+use crate::{impl_from_error_for_route, passwords::PasswordManager, site_config::SiteConfig};
 
 #[derive(Debug, Serialize)]
 #[serde(tag = "type")]
@@ -210,6 +210,7 @@ pub(crate) async fn post(
     State(password_manager): State<PasswordManager>,
     mut repo: BoxRepository,
     State(homeserver): State<MatrixHomeserver>,
+    State(site_config): State<SiteConfig>,
     Json(input): Json<RequestBody>,
 ) -> Result<impl IntoResponse, RouteError> {
     let (session, user) = match (password_manager.is_enabled(), input.credentials) {
@@ -242,8 +243,7 @@ pub(crate) async fn post(
 
     // If the client asked for a refreshable token, make it expire
     let expires_in = if input.refresh_token {
-        // TODO: this should be configurable
-        Some(Duration::minutes(5))
+        Some(site_config.compat_token_ttl)
     } else {
         None
     };
