@@ -141,4 +141,8 @@ export async function advisor(argv?: string[]): Promise<void> {
   if (synapseRefreshToken > 0) {
     log.info(`Synapse database contains ${synapseRefreshToken} refresh tokens which will be migrated`);
   }
+
+  if (synapseConfig.enable_3pid_changes === true) {
+    warn("Synapse config has enable_3pid_changes enabled which must to be disabled or removed after migration");
+  }
 }
