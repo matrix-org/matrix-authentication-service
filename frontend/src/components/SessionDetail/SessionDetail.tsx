@@ -16,7 +16,7 @@ import { Alert } from "@vector-im/compound-web";
 import { useAtomValue } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
-import { useRef } from "react";
+import { useMemo } from "react";
 
 import { Link } from "../../Router";
 import { graphql } from "../../gql/gql";
@@ -48,8 +48,11 @@ const SessionDetail: React.FC<{
   deviceId: string;
   userId: string;
 }> = ({ deviceId, userId }) => {
-  const props = useRef({ userId, deviceId });
-  const result = useAtomValue(sessionFamily(props.current));
+  const sessionFamilyAtomWithProps = useMemo(
+    () => sessionFamily({ deviceId, userId }),
+    [deviceId, userId],
+  );
+  const result = useAtomValue(sessionFamilyAtomWithProps);
 
   const session = result.data?.session;
 
