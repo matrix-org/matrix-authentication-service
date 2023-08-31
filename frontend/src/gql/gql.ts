@@ -37,6 +37,8 @@ const documents = {
     types.EndOAuth2SessionDocument,
   "\n  query OAuth2SessionListQuery(\n    $userId: ID!\n    $state: Oauth2SessionState\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n      oauth2Sessions(\n        state: $state\n        first: $first\n        after: $after\n        last: $last\n        before: $before\n      ) {\n        edges {\n          cursor\n          node {\n            id\n            ...OAuth2Session_session\n          }\n        }\n\n        totalCount\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n":
     types.OAuth2SessionListQueryDocument,
+  "\n  query SessionQuery($userId: ID!, $deviceId: String!) {\n    session(userId: $userId, deviceId: $deviceId) {\n      __typename\n      ...CompatSession_session\n      ...OAuth2Session_session\n    }\n  }\n":
+    types.SessionQueryDocument,
   "\n  fragment UnverifiedEmailAlert on User {\n    id\n    unverifiedEmails: emails(first: 0, state: PENDING) {\n      totalCount\n    }\n  }\n":
     types.UnverifiedEmailAlertFragmentDoc,
   "\n  fragment UserEmail_email on UserEmail {\n    id\n    email\n    confirmedAt\n  }\n":
@@ -159,6 +161,12 @@ export function graphql(
 export function graphql(
   source: "\n  query OAuth2SessionListQuery(\n    $userId: ID!\n    $state: Oauth2SessionState\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n      oauth2Sessions(\n        state: $state\n        first: $first\n        after: $after\n        last: $last\n        before: $before\n      ) {\n        edges {\n          cursor\n          node {\n            id\n            ...OAuth2Session_session\n          }\n        }\n\n        totalCount\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n",
 ): (typeof documents)["\n  query OAuth2SessionListQuery(\n    $userId: ID!\n    $state: Oauth2SessionState\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n      oauth2Sessions(\n        state: $state\n        first: $first\n        after: $after\n        last: $last\n        before: $before\n      ) {\n        edges {\n          cursor\n          node {\n            id\n            ...OAuth2Session_session\n          }\n        }\n\n        totalCount\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  query SessionQuery($userId: ID!, $deviceId: String!) {\n    session(userId: $userId, deviceId: $deviceId) {\n      __typename\n      ...CompatSession_session\n      ...OAuth2Session_session\n    }\n  }\n",
+): (typeof documents)["\n  query SessionQuery($userId: ID!, $deviceId: String!) {\n    session(userId: $userId, deviceId: $deviceId) {\n      __typename\n      ...CompatSession_session\n      ...OAuth2Session_session\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
