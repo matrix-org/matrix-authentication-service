@@ -10,6 +10,14 @@ input AddEmailInput {
   The ID of the user to add the email address to
   """
   userId: ID!
+  """
+  Skip the email address verification. Only allowed for admins.
+  """
+  skipVerification: Boolean
+  """
+  Skip the email address policy check. Only allowed for admins.
+  """
+  skipPolicyCheck: Boolean
 }
 
 """
@@ -54,6 +62,48 @@ enum AddEmailStatus {
   The email address is not allowed by the policy
   """
   DENIED
+}
+
+"""
+The input for the `addUser` mutation.
+"""
+input AddUserInput {
+  """
+  The username of the user to add.
+  """
+  username: String!
+}
+
+"""
+The payload for the `addUser` mutation.
+"""
+type AddUserPayload {
+  """
+  Status of the operation
+  """
+  status: AddUserStatus!
+  """
+  The user that was added.
+  """
+  user: User
+}
+
+"""
+The status of the `addUser` mutation.
+"""
+enum AddUserStatus {
+  """
+  The user was added.
+  """
+  ADDED
+  """
+  The user already exists.
+  """
+  EXISTS
+  """
+  The username is invalid.
+  """
+  INVALID
 }
 
 type Anonymous implements Node {
@@ -439,6 +489,48 @@ enum EndOAuth2SessionStatus {
   NOT_FOUND
 }
 
+"""
+The input for the `lockUser` mutation.
+"""
+input LockUserInput {
+  """
+  The ID of the user to lock.
+  """
+  userId: ID!
+  """
+  Permanently lock the user.
+  """
+  deactivate: Boolean
+}
+
+"""
+The payload for the `lockUser` mutation.
+"""
+type LockUserPayload {
+  """
+  Status of the operation
+  """
+  status: LockUserStatus!
+  """
+  The user that was locked.
+  """
+  user: User
+}
+
+"""
+The status of the `lockUser` mutation.
+"""
+enum LockUserStatus {
+  """
+  The user was locked.
+  """
+  LOCKED
+  """
+  The user was not found.
+  """
+  NOT_FOUND
+}
+
 type MatrixUser {
   """
   The Matrix ID of the user.
@@ -480,6 +572,14 @@ type Mutation {
   Set an email address as primary
   """
   setPrimaryEmail(input: SetPrimaryEmailInput!): SetPrimaryEmailPayload!
+  """
+  Add a user. This is only available to administrators.
+  """
+  addUser(input: AddUserInput!): AddUserPayload!
+  """
+  Lock a user. This is only available to administrators.
+  """
+  lockUser(input: LockUserInput!): LockUserPayload!
   endOauth2Session(input: EndOAuth2SessionInput!): EndOAuth2SessionPayload!
   endCompatSession(input: EndCompatSessionInput!): EndCompatSessionPayload!
   endBrowserSession(input: EndBrowserSessionInput!): EndBrowserSessionPayload!
@@ -684,6 +784,10 @@ type Query {
   Fetch a user by its ID.
   """
   user(id: ID!): User
+  """
+  Fetch a user by its username.
+  """
+  userByUsername(username: String!): User
   """
   Fetch a browser session by its ID.
   """
@@ -1026,6 +1130,14 @@ type User implements Node {
   Username chosen by the user.
   """
   username: String!
+  """
+  When the object was created.
+  """
+  createdAt: DateTime!
+  """
+  When the user was locked out.
+  """
+  lockedAt: DateTime
   """
   Access to the user's Matrix account information.
   """

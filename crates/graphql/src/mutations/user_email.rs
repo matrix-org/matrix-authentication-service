@@ -36,8 +36,15 @@ pub struct UserEmailMutations {
 struct AddEmailInput {
     /// The email address to add
     email: String,
+
     /// The ID of the user to add the email address to
     user_id: ID,
+
+    /// Skip the email address verification. Only allowed for admins.
+    skip_verification: Option<bool>,
+
+    /// Skip the email address policy check. Only allowed for admins.
+    skip_policy_check: Option<bool>,
 }
 
 /// The status of the `addEmail` mutation
@@ -382,6 +389,16 @@ impl UserEmailMutations {
             return Err(async_graphql::Error::new("Unauthorized"));
         }
 
+        // Only admins can skip validation
+        if (input.skip_verification.is_some() || input.skip_policy_check.is_some())
+            && !requester.is_admin()
+        {
+            return Err(async_graphql::Error::new("Unauthorized"));
+        }
+
+        let skip_verification = input.skip_verification.unwrap_or(false);
+        let skip_policy_check = input.skip_policy_check.unwrap_or(false);
+
         let mut repo = state.repository().await?;
 
         let user = repo
@@ -398,17 +415,19 @@ impl UserEmailMutations {
             return Ok(AddEmailPayload::Invalid);
         }
 
-        let mut policy = state.policy().await?;
-        let res = policy.evaluate_email(&input.email).await?;
-        if !res.valid() {
-            return Ok(AddEmailPayload::Denied {
-                violations: res.violations,
-            });
+        if !skip_policy_check {
+            let mut policy = state.policy().await?;
+            let res = policy.evaluate_email(&input.email).await?;
+            if !res.valid() {
+                return Ok(AddEmailPayload::Denied {
+                    violations: res.violations,
+                });
+            }
         }
 
         // Find an existing email address
         let existing_user_email = repo.user_email().find(&user, &input.email).await?;
-        let (added, user_email) = if let Some(user_email) = existing_user_email {
+        let (added, mut user_email) = if let Some(user_email) = existing_user_email {
             (false, user_email)
         } else {
             let clock = state.clock();
@@ -424,9 +443,16 @@ impl UserEmailMutations {
 
         // Schedule a job to verify the email address if needed
         if user_email.confirmed_at.is_none() {
-            repo.job()
-                .schedule_job(VerifyEmailJob::new(&user_email))
-                .await?;
+            if skip_verification {
+                user_email = repo
+                    .user_email()
+                    .mark_as_verified(&state.clock(), user_email)
+                    .await?;
+            } else {
+                repo.job()
+                    .schedule_job(VerifyEmailJob::new(&user_email))
+                    .await?;
+            }
         }
 
         repo.save().await?;

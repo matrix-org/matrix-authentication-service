@@ -41,6 +41,10 @@ export type Scalars = {
 export type AddEmailInput = {
   /** The email address to add */
   email: Scalars["String"]["input"];
+  /** Skip the email address policy check. Only allowed for admins. */
+  skipPolicyCheck?: InputMaybe<Scalars["Boolean"]["input"]>;
+  /** Skip the email address verification. Only allowed for admins. */
+  skipVerification?: InputMaybe<Scalars["Boolean"]["input"]>;
   /** The ID of the user to add the email address to */
   userId: Scalars["ID"]["input"];
 };
@@ -67,6 +71,31 @@ export enum AddEmailStatus {
   /** The email address already exists */
   Exists = "EXISTS",
   /** The email address is invalid */
+  Invalid = "INVALID",
+}
+
+/** The input for the `addUser` mutation. */
+export type AddUserInput = {
+  /** The username of the user to add. */
+  username: Scalars["String"]["input"];
+};
+
+/** The payload for the `addUser` mutation. */
+export type AddUserPayload = {
+  __typename?: "AddUserPayload";
+  /** Status of the operation */
+  status: AddUserStatus;
+  /** The user that was added. */
+  user?: Maybe<User>;
+};
+
+/** The status of the `addUser` mutation. */
+export enum AddUserStatus {
+  /** The user was added. */
+  Added = "ADDED",
+  /** The user already exists. */
+  Exists = "EXISTS",
+  /** The username is invalid. */
   Invalid = "INVALID",
 }
 
@@ -313,6 +342,31 @@ export enum EndOAuth2SessionStatus {
   NotFound = "NOT_FOUND",
 }
 
+/** The input for the `lockUser` mutation. */
+export type LockUserInput = {
+  /** Permanently lock the user. */
+  deactivate?: InputMaybe<Scalars["Boolean"]["input"]>;
+  /** The ID of the user to lock. */
+  userId: Scalars["ID"]["input"];
+};
+
+/** The payload for the `lockUser` mutation. */
+export type LockUserPayload = {
+  __typename?: "LockUserPayload";
+  /** Status of the operation */
+  status: LockUserStatus;
+  /** The user that was locked. */
+  user?: Maybe<User>;
+};
+
+/** The status of the `lockUser` mutation. */
+export enum LockUserStatus {
+  /** The user was locked. */
+  Locked = "LOCKED",
+  /** The user was not found. */
+  NotFound = "NOT_FOUND",
+}
+
 export type MatrixUser = {
   __typename?: "MatrixUser";
   /** The avatar URL of the user, if any. */
@@ -328,9 +382,13 @@ export type Mutation = {
   __typename?: "Mutation";
   /** Add an email address to the specified user */
   addEmail: AddEmailPayload;
+  /** Add a user. This is only available to administrators. */
+  addUser: AddUserPayload;
   endBrowserSession: EndBrowserSessionPayload;
   endCompatSession: EndCompatSessionPayload;
   endOauth2Session: EndOAuth2SessionPayload;
+  /** Lock a user. This is only available to administrators. */
+  lockUser: LockUserPayload;
   /** Remove an email address */
   removeEmail: RemoveEmailPayload;
   /** Send a verification code for an email address */
@@ -349,6 +407,11 @@ export type MutationAddEmailArgs = {
 };
 
 /** The mutations root of the GraphQL interface. */
+export type MutationAddUserArgs = {
+  input: AddUserInput;
+};
+
+/** The mutations root of the GraphQL interface. */
 export type MutationEndBrowserSessionArgs = {
   input: EndBrowserSessionInput;
 };
@@ -361,6 +424,11 @@ export type MutationEndCompatSessionArgs = {
 /** The mutations root of the GraphQL interface. */
 export type MutationEndOauth2SessionArgs = {
   input: EndOAuth2SessionInput;
+};
+
+/** The mutations root of the GraphQL interface. */
+export type MutationLockUserArgs = {
+  input: LockUserInput;
 };
 
 /** The mutations root of the GraphQL interface. */
@@ -521,6 +589,8 @@ export type Query = {
   upstreamOauth2Providers: UpstreamOAuth2ProviderConnection;
   /** Fetch a user by its ID. */
   user?: Maybe<User>;
+  /** Fetch a user by its username. */
+  userByUsername?: Maybe<User>;
   /** Fetch a user email by its ID. */
   userEmail?: Maybe<UserEmail>;
   /** Get the viewer */
@@ -571,6 +641,11 @@ export type QueryUpstreamOauth2ProvidersArgs = {
 /** The query root of the GraphQL interface. */
 export type QueryUserArgs = {
   id: Scalars["ID"]["input"];
+};
+
+/** The query root of the GraphQL interface. */
+export type QueryUserByUsernameArgs = {
+  username: Scalars["String"]["input"];
 };
 
 /** The query root of the GraphQL interface. */
@@ -761,10 +836,14 @@ export type User = Node & {
   compatSessions: CompatSessionConnection;
   /** Get the list of compatibility SSO logins, chronologically sorted */
   compatSsoLogins: CompatSsoLoginConnection;
+  /** When the object was created. */
+  createdAt: Scalars["DateTime"]["output"];
   /** Get the list of emails, chronologically sorted */
   emails: UserEmailConnection;
   /** ID of the object. */
   id: Scalars["ID"]["output"];
+  /** When the user was locked out. */
+  lockedAt?: Maybe<Scalars["DateTime"]["output"]>;
   /** Access to the user's Matrix account information. */
   matrix: MatrixUser;
   /** Get the list of OAuth 2.0 sessions, chronologically sorted */

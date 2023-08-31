@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use async_graphql::{Context, MergedObject, Object, ID};
+use mas_storage::user::UserRepository;
 
 use crate::{
     model::{Anonymous, BrowserSession, Node, NodeType, OAuth2Client, User, UserEmail},
@@ -97,6 +98,30 @@ impl BaseQuery {
         repo.cancel().await?;
 
         Ok(user.map(User))
+    }
+
+    /// Fetch a user by its username.
+    async fn user_by_username(
+        &self,
+        ctx: &Context<'_>,
+        username: String,
+    ) -> Result<Option<User>, async_graphql::Error> {
+        let requester = ctx.requester();
+        let state = ctx.state();
+        let mut repo = state.repository().await?;
+
+        let user = repo.user().find_by_username(&username).await?;
+        let Some(user) = user else {
+            // We don't want to leak the existence of a user
+            return Ok(None);
+        };
+
+        // Users can only see themselves, except for admins
+        if !requester.is_owner_or_admin(&user) {
+            return Ok(None);
+        }
+
+        Ok(Some(User(user)))
     }
 
     /// Fetch a browser session by its ID.

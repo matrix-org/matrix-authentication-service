@@ -63,6 +63,16 @@ impl User {
         &self.0.username
     }
 
+    /// When the object was created.
+    pub async fn created_at(&self) -> DateTime<Utc> {
+        self.0.created_at
+    }
+
+    /// When the user was locked out.
+    pub async fn locked_at(&self) -> Option<DateTime<Utc>> {
+        self.0.locked_at
+    }
+
     /// Access to the user's Matrix account information.
     async fn matrix(&self, ctx: &Context<'_>) -> Result<MatrixUser, async_graphql::Error> {
         let state = ctx.state();
