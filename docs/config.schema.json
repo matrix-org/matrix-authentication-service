@@ -307,7 +307,7 @@
           "default": null,
           "allOf": [
             {
-              "$ref": "#/definitions/ImportPreference"
+              "$ref": "#/definitions/EmailImportPreference"
             }
           ]
         },
@@ -684,6 +684,30 @@
           "default": "\"Authentication Service\" <root@localhost>",
           "type": "string",
           "format": "email"
+        }
+      }
+    },
+    "EmailImportPreference": {
+      "description": "What should be done with the email claim",
+      "type": "object",
+      "properties": {
+        "action": {
+          "description": "How to handle the claim",
+          "default": "ignore",
+          "allOf": [
+            {
+              "$ref": "#/definitions/ImportAction"
+            }
+          ]
+        },
+        "set_email_verification": {
+          "description": "Should the email address be marked as verified",
+          "default": "import",
+          "allOf": [
+            {
+              "$ref": "#/definitions/SetEmailVerification"
+            }
+          ]
         }
       }
     },
@@ -1751,6 +1775,32 @@
           "format": "uri"
         }
       }
+    },
+    "SetEmailVerification": {
+      "description": "Should the email address be marked as verified",
+      "oneOf": [
+        {
+          "description": "Mark the email address as verified",
+          "type": "string",
+          "enum": [
+            "always"
+          ]
+        },
+        {
+          "description": "Don't mark the email address as verified",
+          "type": "string",
+          "enum": [
+            "never"
+          ]
+        },
+        {
+          "description": "Mark the email address as verified if the upstream provider says it is through the `email_verified` claim",
+          "type": "string",
+          "enum": [
+            "import"
+          ]
+        }
+      ]
     },
     "TelemetryConfig": {
       "description": "Configuration related to sending monitoring data",

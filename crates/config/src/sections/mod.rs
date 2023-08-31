@@ -49,8 +49,11 @@ pub use self::{
     },
     templates::TemplatesConfig,
     upstream_oauth2::{
-        ClaimsImports as UpstreamOAuth2ClaimsImports, ImportAction as UpstreamOAuth2ImportAction,
-        ImportPreference as UpstreamOAuth2ImportPreference, UpstreamOAuth2Config,
+        ClaimsImports as UpstreamOAuth2ClaimsImports,
+        EmailImportPreference as UpstreamOAuth2EmailImportPreference,
+        ImportAction as UpstreamOAuth2ImportAction,
+        ImportPreference as UpstreamOAuth2ImportPreference,
+        SetEmailVerification as UpstreamOAuth2SetEmailVerification, UpstreamOAuth2Config,
     },
 };
 use crate::util::ConfigurationSection;

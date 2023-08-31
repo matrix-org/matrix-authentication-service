@@ -26,10 +26,10 @@ use tracing::{info, info_span, warn};
 
 use crate::util::database_connection_from_config;
 
-fn map_import_preference(
-    config: &mas_config::UpstreamOAuth2ImportPreference,
-) -> mas_data_model::UpstreamOAuthProviderImportPreference {
-    let action = match &config.action {
+fn map_import_action(
+    config: &mas_config::UpstreamOAuth2ImportAction,
+) -> mas_data_model::UpstreamOAuthProviderImportAction {
+    match config {
         mas_config::UpstreamOAuth2ImportAction::Ignore => {
             mas_data_model::UpstreamOAuthProviderImportAction::Ignore
         }
@@ -42,9 +42,15 @@ fn map_import_preference(
         mas_config::UpstreamOAuth2ImportAction::Require => {
             mas_data_model::UpstreamOAuthProviderImportAction::Require
         }
-    };
+    }
+}
 
-    mas_data_model::UpstreamOAuthProviderImportPreference { action }
+fn map_import_preference(
+    config: &mas_config::UpstreamOAuth2ImportPreference,
+) -> mas_data_model::UpstreamOAuthProviderImportPreference {
+    mas_data_model::UpstreamOAuthProviderImportPreference {
+        action: map_import_action(&config.action),
+    }
 }
 
 fn map_claims_imports(
@@ -64,7 +70,25 @@ fn map_claims_imports(
         email: config
             .email
             .as_ref()
-            .map(map_import_preference)
+            .map(|c| mas_data_model::UpstreamOAuthProviderImportPreference {
+                action: map_import_action(&c.action),
+            })
+            .unwrap_or_default(),
+        // XXX: this is a bit ugly
+        verify_email: config
+            .email
+            .as_ref()
+            .map(|c| match c.set_email_verification {
+                mas_config::UpstreamOAuth2SetEmailVerification::Always => {
+                    mas_data_model::UpsreamOAuthProviderSetEmailVerification::Always
+                }
+                mas_config::UpstreamOAuth2SetEmailVerification::Never => {
+                    mas_data_model::UpsreamOAuthProviderSetEmailVerification::Never
+                }
+                mas_config::UpstreamOAuth2SetEmailVerification::Import => {
+                    mas_data_model::UpsreamOAuthProviderSetEmailVerification::Import
+                }
+            })
             .unwrap_or_default(),
     }
 }
