@@ -43,7 +43,7 @@ export const COMPAT_SESSION_FRAGMENT = graphql(/* GraphQL */ `
   }
 `);
 
-type CompatSessionType = {
+export type CompatSessionType = {
   id: string;
   deviceId: string;
   createdAt: string;
@@ -66,7 +66,7 @@ const END_SESSION_MUTATION = graphql(/* GraphQL */ `
   }
 `);
 
-const endCompatSessionFamily = atomFamily((id: string) => {
+export const endCompatSessionFamily = atomFamily((id: string) => {
   const endCompatSession = atomWithMutation(END_SESSION_MUTATION);
 
   // A proxy atom which pre-sets the id variable in the mutation
