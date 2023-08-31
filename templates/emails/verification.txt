@@ -14,10 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 #}
 
-Hi {{ user.username }},
 
-your email verification code is:
+Hello {{ user.username }},
 
-    {{ verification.code }}
-
-kthxbye
+Your verification code to confirm this email address is: {{ verification.code }}
