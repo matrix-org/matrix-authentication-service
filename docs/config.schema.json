@@ -45,15 +45,15 @@
         }
       ]
     },
-    "hack": {
-      "description": "Miscellaneous configuration options",
+    "experimental": {
+      "description": "Experimental configuration options",
       "default": {
         "access_token_ttl": 300,
         "compat_token_ttl": 300
       },
       "allOf": [
         {
-          "$ref": "#/definitions/HackConfig"
+          "$ref": "#/definitions/ExperimentalConfig"
         }
       ]
     },
@@ -724,12 +724,12 @@
         }
       ]
     },
-    "HackConfig": {
-      "description": "Configuration sections for miscellaneous options",
+    "ExperimentalConfig": {
+      "description": "Configuration sections for experimental options\n\nDo not change these options unless you know what you are doing.",
       "type": "object",
       "properties": {
         "access_token_ttl": {
-          "description": "Time-to-live of access tokens in seconds",
+          "description": "Time-to-live of access tokens in seconds. Defaults to 5 minutes.",
           "default": 300,
           "type": "integer",
           "format": "uint64",
@@ -737,7 +737,7 @@
           "minimum": 60.0
         },
         "compat_token_ttl": {
-          "description": "Time-to-live of compatibility access tokens in seconds",
+          "description": "Time-to-live of compatibility access tokens in seconds. Defaults to 5 minutes.",
           "default": 300,
           "type": "integer",
           "format": "uint64",

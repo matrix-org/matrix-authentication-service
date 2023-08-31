@@ -140,8 +140,8 @@ impl Options {
         );
 
         let site_config = SiteConfig {
-            access_token_ttl: config.hack.access_token_ttl,
-            compat_token_ttl: config.hack.compat_token_ttl,
+            access_token_ttl: config.experimental.access_token_ttl,
+            compat_token_ttl: config.experimental.compat_token_ttl,
         };
 
         // Explicitly the config to properly zeroize secret keys

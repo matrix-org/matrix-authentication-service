@@ -25,24 +25,27 @@ fn default_token_ttl() -> Duration {
     Duration::minutes(5)
 }
 
-/// Configuration sections for miscellaneous options
+/// Configuration sections for experimental options
+///
+/// Do not change these options unless you know what you are doing.
 #[serde_as]
 #[derive(Clone, Debug, Deserialize, JsonSchema, Serialize)]
-pub struct HackConfig {
-    /// Time-to-live of access tokens in seconds
+pub struct ExperimentalConfig {
+    /// Time-to-live of access tokens in seconds. Defaults to 5 minutes.
     #[schemars(with = "u64", range(min = 60, max = 86400))]
     #[serde(default = "default_token_ttl")]
     #[serde_as(as = "serde_with::DurationSeconds<i64>")]
     pub access_token_ttl: Duration,
 
-    /// Time-to-live of compatibility access tokens in seconds
+    /// Time-to-live of compatibility access tokens in seconds. Defaults to 5
+    /// minutes.
     #[schemars(with = "u64", range(min = 60, max = 86400))]
     #[serde(default = "default_token_ttl")]
     #[serde_as(as = "serde_with::DurationSeconds<i64>")]
     pub compat_token_ttl: Duration,
 }
 
-impl Default for HackConfig {
+impl Default for ExperimentalConfig {
     fn default() -> Self {
         Self {
             access_token_ttl: default_token_ttl(),
@@ -52,9 +55,9 @@ impl Default for HackConfig {
 }
 
 #[async_trait]
-impl ConfigurationSection for HackConfig {
+impl ConfigurationSection for ExperimentalConfig {
     fn path() -> &'static str {
-        "hack"
+        "experimental"
     }
 
     async fn generate<R>(_rng: R) -> anyhow::Result<Self>
