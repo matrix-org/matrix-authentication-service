@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import { H6, Body } from "@vector-im/compound-web";
+import { ReactNode } from "react";
 
 import Block from "../Block";
 import DateTime from "../DateTime";
@@ -25,7 +26,7 @@ const SessionMetadata: React.FC<React.ComponentProps<typeof Body>> = (
 
 export type SessionProps = {
   id: string;
-  name?: string;
+  name?: string | ReactNode;
   createdAt: string;
   finishedAt?: string;
   clientName?: string;

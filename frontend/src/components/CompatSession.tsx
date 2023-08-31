@@ -18,6 +18,7 @@ import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
 import { useTransition } from "react";
 
+import { Link } from "../Router";
 import { FragmentType, graphql, useFragment } from "../gql";
 
 import { Session } from "./Session";
@@ -94,10 +95,14 @@ const CompatSession: React.FC<{
     });
   };
 
+  const name = (
+    <Link route={{ type: "session", id: data.deviceId }}>{data.deviceId}</Link>
+  );
+
   return (
     <Session
       id={data.id}
-      name={data.deviceId}
+      name={name}
       createdAt={data.createdAt}
       finishedAt={data.finishedAt || undefined}
       clientName={data.ssoLogin.redirectUri}

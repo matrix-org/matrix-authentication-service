@@ -18,6 +18,7 @@ import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
 import { useTransition } from "react";
 
+import { Link } from "../Router";
 import { FragmentType, graphql, useFragment } from "../gql";
 import { getDeviceIdFromScope } from "../utils/deviceIdFromScope";
 
@@ -96,12 +97,16 @@ const OAuth2Session: React.FC<Props> = ({ session }) => {
     });
   };
 
-  const sessionName = getDeviceIdFromScope(data.scope);
+  const deviceId = getDeviceIdFromScope(data.scope);
+
+  const name = deviceId && (
+    <Link route={{ type: "session", id: deviceId }}>{deviceId}</Link>
+  );
 
   return (
     <Session
       id={data.id}
-      name={sessionName}
+      name={name}
       createdAt={data.createdAt}
       finishedAt={data.finishedAt || undefined}
       clientName={data.client.clientName}
