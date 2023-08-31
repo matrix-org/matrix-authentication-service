@@ -18,6 +18,7 @@ import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
 import { useTransition } from "react";
 
+import { Link } from "../Router";
 import { FragmentType, graphql, useFragment } from "../gql";
 
 import { Session } from "./Session";
@@ -47,7 +48,7 @@ const END_SESSION_MUTATION = graphql(/* GraphQL */ `
   }
 `);
 
-const endCompatSessionFamily = atomFamily((id: string) => {
+export const endCompatSessionFamily = atomFamily((id: string) => {
   const endCompatSession = atomWithMutation(END_SESSION_MUTATION);
 
   // A proxy atom which pre-sets the id variable in the mutation
@@ -59,7 +60,7 @@ const endCompatSessionFamily = atomFamily((id: string) => {
   return endCompatSessionAtom;
 });
 
-const simplifyUrl = (url: string): string => {
+export const simplifyUrl = (url: string): string => {
   let parsed;
   try {
     parsed = new URL(url);
@@ -93,6 +94,10 @@ const CompatSession: React.FC<{
     });
   };
 
+  const sessionName = (
+    <Link route={{ type: "session", id: data.deviceId }}>{data.deviceId}</Link>
+  );
+
   const clientName = data.ssoLogin?.redirectUri
     ? simplifyUrl(data.ssoLogin.redirectUri)
     : undefined;
@@ -100,7 +105,7 @@ const CompatSession: React.FC<{
   return (
     <Session
       id={data.id}
-      name={data.deviceId}
+      name={sessionName}
       createdAt={data.createdAt}
       finishedAt={data.finishedAt || undefined}
       clientName={clientName}

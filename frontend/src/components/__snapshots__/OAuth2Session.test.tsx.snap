@@ -8,7 +8,13 @@ exports[`<OAuth2Session /> > renders a finished session 1`] = `
     className="_font-body-md-semibold_1g2sj_69 _sessionName_634806"
     title="session-id"
   >
-    abcd1234
+    <a
+      className=""
+      href="/session/abcd1234"
+      onClick={[Function]}
+    >
+      abcd1234
+    </a>
   </h6>
   <p
     className="_font-body-sm-semibold_1g2sj_49 _sessionMetadata_634806"
@@ -49,7 +55,13 @@ exports[`<OAuth2Session /> > renders an active session 1`] = `
     className="_font-body-md-semibold_1g2sj_69 _sessionName_634806"
     title="session-id"
   >
-    abcd1234
+    <a
+      className=""
+      href="/session/abcd1234"
+      onClick={[Function]}
+    >
+      abcd1234
+    </a>
   </h6>
   <p
     className="_font-body-sm-semibold_1g2sj_49 _sessionMetadata_634806"

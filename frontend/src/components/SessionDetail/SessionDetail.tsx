@@ -20,8 +20,9 @@ import { useMemo } from "react";
 
 import { Link } from "../../Router";
 import { graphql } from "../../gql/gql";
-import CompatSession from "../CompatSession";
-import OAuth2Session from "../OAuth2Session";
+
+import CompatSessionDetail from "./CompatSessionDetail";
+import OAuth2SessionDetail from "./OAuth2SessionDetail";
 
 const QUERY = graphql(/* GraphQL */ `
   query SessionQuery($userId: ID!, $deviceId: String!) {
@@ -70,9 +71,9 @@ const SessionDetail: React.FC<{
   const sessionType = session.__typename;
 
   if (sessionType === "Oauth2Session") {
-    return <OAuth2Session session={session} />;
+    return <OAuth2SessionDetail session={session} />;
   } else {
-    return <CompatSession session={session} />;
+    return <CompatSessionDetail session={session} />;
   }
 };
 

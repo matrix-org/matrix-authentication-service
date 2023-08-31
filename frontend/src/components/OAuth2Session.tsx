@@ -18,6 +18,7 @@ import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
 import { useTransition } from "react";
 
+import { Link } from "../Router";
 import { FragmentType, graphql, useFragment } from "../gql";
 import { getDeviceIdFromScope } from "../utils/deviceIdFromScope";
 
@@ -39,7 +40,7 @@ export const OAUTH2_SESSION_FRAGMENT = graphql(/* GraphQL */ `
   }
 `);
 
-type Oauth2SessionType = {
+export type Oauth2SessionType = {
   id: string;
   scope: string;
   createdAt: string;
@@ -64,7 +65,7 @@ const END_SESSION_MUTATION = graphql(/* GraphQL */ `
   }
 `);
 
-const endSessionFamily = atomFamily((id: string) => {
+export const endSessionFamily = atomFamily((id: string) => {
   const endSession = atomWithMutation(END_SESSION_MUTATION);
 
   // A proxy atom which pre-sets the id variable in the mutation
@@ -96,12 +97,16 @@ const OAuth2Session: React.FC<Props> = ({ session }) => {
     });
   };
 
-  const sessionName = getDeviceIdFromScope(data.scope);
+  const deviceId = getDeviceIdFromScope(data.scope);
+
+  const name = deviceId && (
+    <Link route={{ type: "session", id: deviceId }}>{deviceId}</Link>
+  );
 
   return (
     <Session
       id={data.id}
-      name={sessionName}
+      name={name}
       createdAt={data.createdAt}
       finishedAt={data.finishedAt || undefined}
       clientName={data.client.clientName}
