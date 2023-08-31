@@ -48,6 +48,7 @@ use url::Url;
 use crate::{
     app_state::ErrorWrapper,
     passwords::{Hasher, PasswordManager},
+    site_config::SiteConfig,
     upstream_oauth2::cache::MetadataCache,
     MatrixHomeserver,
 };
@@ -76,6 +77,7 @@ pub(crate) struct TestState {
     pub graphql_schema: mas_graphql::Schema,
     pub http_client_factory: HttpClientFactory,
     pub password_manager: PasswordManager,
+    pub site_config: SiteConfig,
     pub clock: Arc<MockClock>,
     pub rng: Arc<Mutex<ChaChaRng>>,
 }
@@ -133,6 +135,8 @@ impl TestState {
 
         let http_client_factory = HttpClientFactory::new(10);
 
+        let site_config = SiteConfig::default();
+
         let clock = Arc::new(MockClock::default());
         let rng = Arc::new(Mutex::new(ChaChaRng::seed_from_u64(42)));
 
@@ -160,6 +164,7 @@ impl TestState {
             graphql_schema,
             http_client_factory,
             password_manager,
+            site_config,
             clock,
             rng,
         })
@@ -343,6 +348,12 @@ impl FromRef<TestState> for CookieManager {
 impl FromRef<TestState> for MetadataCache {
     fn from_ref(input: &TestState) -> Self {
         input.metadata_cache.clone()
+    }
+}
+
+impl FromRef<TestState> for SiteConfig {
+    fn from_ref(input: &TestState) -> Self {
+        input.site_config.clone()
     }
 }
 

@@ -18,9 +18,9 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 mod clients;
-mod csrf;
 mod database;
 mod email;
+mod hack;
 mod http;
 mod matrix;
 mod passwords;
@@ -32,9 +32,9 @@ mod upstream_oauth2;
 
 pub use self::{
     clients::{ClientAuthMethodConfig, ClientConfig, ClientsConfig},
-    csrf::CsrfConfig,
     database::{ConnectConfig as DatabaseConnectConfig, DatabaseConfig},
     email::{EmailConfig, EmailSmtpMode, EmailTransportConfig},
+    hack::HackConfig,
     http::{
         BindConfig as HttpBindConfig, HttpConfig, ListenerConfig as HttpListenerConfig,
         Resource as HttpResource, TlsConfig as HttpTlsConfig, UnixOrTcp,
@@ -81,10 +81,6 @@ pub struct RootConfig {
     #[serde(default)]
     pub templates: TemplatesConfig,
 
-    /// Configuration related to Cross-Site Request Forgery protections
-    #[serde(default)]
-    pub csrf: CsrfConfig,
-
     /// Configuration related to sending emails
     #[serde(default)]
     pub email: EmailConfig,
@@ -106,6 +102,10 @@ pub struct RootConfig {
     /// Configuration related to upstream OAuth providers
     #[serde(default)]
     pub upstream_oauth2: UpstreamOAuth2Config,
+
+    /// Miscellaneous configuration options
+    #[serde(default)]
+    pub hack: HackConfig,
 }
 
 #[async_trait]
@@ -124,13 +124,13 @@ impl ConfigurationSection for RootConfig {
             database: DatabaseConfig::generate(&mut rng).await?,
             telemetry: TelemetryConfig::generate(&mut rng).await?,
             templates: TemplatesConfig::generate(&mut rng).await?,
-            csrf: CsrfConfig::generate(&mut rng).await?,
             email: EmailConfig::generate(&mut rng).await?,
             passwords: PasswordsConfig::generate(&mut rng).await?,
             secrets: SecretsConfig::generate(&mut rng).await?,
             matrix: MatrixConfig::generate(&mut rng).await?,
             policy: PolicyConfig::generate(&mut rng).await?,
             upstream_oauth2: UpstreamOAuth2Config::generate(&mut rng).await?,
+            hack: HackConfig::generate(&mut rng).await?,
         })
     }
 
@@ -142,12 +142,12 @@ impl ConfigurationSection for RootConfig {
             telemetry: TelemetryConfig::test(),
             templates: TemplatesConfig::test(),
             passwords: PasswordsConfig::test(),
-            csrf: CsrfConfig::test(),
             email: EmailConfig::test(),
             secrets: SecretsConfig::test(),
             matrix: MatrixConfig::test(),
             policy: PolicyConfig::test(),
             upstream_oauth2: UpstreamOAuth2Config::test(),
+            hack: HackConfig::test(),
         }
     }
 }
@@ -166,9 +166,6 @@ pub struct AppConfig {
     pub templates: TemplatesConfig,
 
     #[serde(default)]
-    pub csrf: CsrfConfig,
-
-    #[serde(default)]
     pub email: EmailConfig,
 
     pub secrets: SecretsConfig,
@@ -180,6 +177,9 @@ pub struct AppConfig {
 
     #[serde(default)]
     pub policy: PolicyConfig,
+
+    #[serde(default)]
+    pub hack: HackConfig,
 }
 
 #[async_trait]
@@ -196,12 +196,12 @@ impl ConfigurationSection for AppConfig {
             http: HttpConfig::generate(&mut rng).await?,
             database: DatabaseConfig::generate(&mut rng).await?,
             templates: TemplatesConfig::generate(&mut rng).await?,
-            csrf: CsrfConfig::generate(&mut rng).await?,
             email: EmailConfig::generate(&mut rng).await?,
             passwords: PasswordsConfig::generate(&mut rng).await?,
             secrets: SecretsConfig::generate(&mut rng).await?,
             matrix: MatrixConfig::generate(&mut rng).await?,
             policy: PolicyConfig::generate(&mut rng).await?,
+            hack: HackConfig::generate(&mut rng).await?,
         })
     }
 
@@ -211,11 +211,11 @@ impl ConfigurationSection for AppConfig {
             database: DatabaseConfig::test(),
             templates: TemplatesConfig::test(),
             passwords: PasswordsConfig::test(),
-            csrf: CsrfConfig::test(),
             email: EmailConfig::test(),
             secrets: SecretsConfig::test(),
             matrix: MatrixConfig::test(),
             policy: PolicyConfig::test(),
+            hack: HackConfig::test(),
         }
     }
 }

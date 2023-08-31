@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use axum::{response::IntoResponse, Json};
+use axum::{extract::State, response::IntoResponse, Json};
 use chrono::Duration;
 use hyper::StatusCode;
 use mas_data_model::{TokenFormatError, TokenType};
@@ -25,7 +25,7 @@ use serde_with::{serde_as, DurationMilliSeconds};
 use thiserror::Error;
 
 use super::MatrixError;
-use crate::impl_from_error_for_route;
+use crate::{impl_from_error_for_route, site_config::SiteConfig};
 
 #[derive(Debug, Deserialize)]
 pub struct RequestBody {
@@ -91,6 +91,7 @@ pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
     mut repo: BoxRepository,
+    State(site_config): State<SiteConfig>,
     Json(input): Json<RequestBody>,
 ) -> Result<impl IntoResponse, RouteError> {
     let token_type = TokenType::check(&input.refresh_token)?;
@@ -128,7 +129,7 @@ pub(crate) async fn post(
     let new_refresh_token_str = TokenType::CompatRefreshToken.generate(&mut rng);
     let new_access_token_str = TokenType::CompatAccessToken.generate(&mut rng);
 
-    let expires_in = Duration::minutes(5);
+    let expires_in = site_config.compat_token_ttl;
     let new_access_token = repo
         .compat_access_token()
         .add(

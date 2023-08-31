@@ -16,17 +16,6 @@
         "$ref": "#/definitions/ClientConfig"
       }
     },
-    "csrf": {
-      "description": "Configuration related to Cross-Site Request Forgery protections",
-      "default": {
-        "ttl": 3600
-      },
-      "allOf": [
-        {
-          "$ref": "#/definitions/CsrfConfig"
-        }
-      ]
-    },
     "database": {
       "description": "Database connection configuration",
       "default": {
@@ -53,6 +42,18 @@
       "allOf": [
         {
           "$ref": "#/definitions/EmailConfig"
+        }
+      ]
+    },
+    "hack": {
+      "description": "Miscellaneous configuration options",
+      "default": {
+        "access_token_ttl": 300,
+        "compat_token_ttl": 300
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/HackConfig"
         }
       ]
     },
@@ -464,20 +465,6 @@
         }
       }
     },
-    "CsrfConfig": {
-      "description": "Configuration related to Cross-Site Request Forgery protections",
-      "type": "object",
-      "properties": {
-        "ttl": {
-          "description": "Time-to-live of a CSRF token in seconds",
-          "default": 3600,
-          "type": "integer",
-          "format": "uint64",
-          "maximum": 86400.0,
-          "minimum": 60.0
-        }
-      }
-    },
     "DatabaseConfig": {
       "description": "Database connection configuration",
       "type": "object",
@@ -736,6 +723,28 @@
           ]
         }
       ]
+    },
+    "HackConfig": {
+      "description": "Configuration sections for miscellaneous options",
+      "type": "object",
+      "properties": {
+        "access_token_ttl": {
+          "description": "Time-to-live of access tokens in seconds",
+          "default": 300,
+          "type": "integer",
+          "format": "uint64",
+          "maximum": 86400.0,
+          "minimum": 60.0
+        },
+        "compat_token_ttl": {
+          "description": "Time-to-live of compatibility access tokens in seconds",
+          "default": 300,
+          "type": "integer",
+          "format": "uint64",
+          "maximum": 86400.0,
+          "minimum": 60.0
+        }
+      }
     },
     "HashingScheme": {
       "description": "A hashing algorithm",
