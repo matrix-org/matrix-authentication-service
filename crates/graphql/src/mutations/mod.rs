@@ -16,6 +16,7 @@ mod browser_session;
 mod compat_session;
 mod matrix;
 mod oauth2_session;
+mod user;
 mod user_email;
 
 use async_graphql::MergedObject;
@@ -24,6 +25,7 @@ use async_graphql::MergedObject;
 #[derive(Default, MergedObject)]
 pub struct Mutation(
     user_email::UserEmailMutations,
+    user::UserMutations,
     oauth2_session::OAuth2SessionMutations,
     compat_session::CompatSessionMutations,
     browser_session::BrowserSessionMutations,

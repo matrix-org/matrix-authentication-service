@@ -61,6 +61,33 @@ export default {
       },
       {
         kind: "OBJECT",
+        name: "AddUserPayload",
+        fields: [
+          {
+            name: "status",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+          {
+            name: "user",
+            type: {
+              kind: "OBJECT",
+              name: "User",
+              ofType: null,
+            },
+            args: [],
+          },
+        ],
+        interfaces: [],
+      },
+      {
+        kind: "OBJECT",
         name: "Anonymous",
         fields: [
           {
@@ -784,6 +811,33 @@ export default {
       },
       {
         kind: "OBJECT",
+        name: "LockUserPayload",
+        fields: [
+          {
+            name: "status",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+          {
+            name: "user",
+            type: {
+              kind: "OBJECT",
+              name: "User",
+              ofType: null,
+            },
+            args: [],
+          },
+        ],
+        interfaces: [],
+      },
+      {
+        kind: "OBJECT",
         name: "MatrixUser",
         fields: [
           {
@@ -827,6 +881,29 @@ export default {
               ofType: {
                 kind: "OBJECT",
                 name: "AddEmailPayload",
+                ofType: null,
+              },
+            },
+            args: [
+              {
+                name: "input",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
+          },
+          {
+            name: "addUser",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "AddUserPayload",
                 ofType: null,
               },
             },
@@ -896,6 +973,29 @@ export default {
               ofType: {
                 kind: "OBJECT",
                 name: "EndOAuth2SessionPayload",
+                ofType: null,
+              },
+            },
+            args: [
+              {
+                name: "input",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
+          },
+          {
+            name: "lockUser",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "LockUserPayload",
                 ofType: null,
               },
             },
@@ -1658,6 +1758,26 @@ export default {
             ],
           },
           {
+            name: "userByUsername",
+            type: {
+              kind: "OBJECT",
+              name: "User",
+              ofType: null,
+            },
+            args: [
+              {
+                name: "username",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
+          },
+          {
             name: "userEmail",
             type: {
               kind: "OBJECT",
@@ -2321,6 +2441,17 @@ export default {
             ],
           },
           {
+            name: "createdAt",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+          {
             name: "emails",
             type: {
               kind: "NON_NULL",
@@ -2376,6 +2507,14 @@ export default {
                 kind: "SCALAR",
                 name: "Any",
               },
+            },
+            args: [],
+          },
+          {
+            name: "lockedAt",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
             },
             args: [],
           },
