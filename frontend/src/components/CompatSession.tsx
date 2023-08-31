@@ -22,14 +22,6 @@ import { FragmentType, graphql, useFragment } from "../gql";
 
 import { Session } from "./Session";
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const LOGIN_FRAGMENT = graphql(/* GraphQL */ `
-  fragment CompatSession_sso_login on CompatSsoLogin {
-    id
-    redirectUri
-  }
-`);
-
 export const COMPAT_SESSION_FRAGMENT = graphql(/* GraphQL */ `
   fragment CompatSession_session on CompatSession {
     id
@@ -38,21 +30,10 @@ export const COMPAT_SESSION_FRAGMENT = graphql(/* GraphQL */ `
     finishedAt
     ssoLogin {
       id
-      ...CompatSession_sso_login
+      redirectUri
     }
   }
 `);
-
-type CompatSessionType = {
-  id: string;
-  deviceId: string;
-  createdAt: string;
-  finishedAt: string | null;
-  ssoLogin: {
-    id: string;
-    redirectUri: string;
-  };
-};
 
 const END_SESSION_MUTATION = graphql(/* GraphQL */ `
   mutation EndCompatSession($id: ID!) {
@@ -78,14 +59,32 @@ const endCompatSessionFamily = atomFamily((id: string) => {
   return endCompatSessionAtom;
 });
 
+const simplifyUrl = (url: string): string => {
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch (e) {
+    // Not a valid URL, return the original
+    return url;
+  }
+
+  // Clear out the search params and hash
+  parsed.search = "";
+  parsed.hash = "";
+
+  if (parsed.protocol === "https:") {
+    return parsed.hostname;
+  }
+
+  // Return the simplified URL
+  return parsed.toString();
+};
+
 const CompatSession: React.FC<{
   session: FragmentType<typeof COMPAT_SESSION_FRAGMENT>;
 }> = ({ session }) => {
   const [pending, startTransition] = useTransition();
-  const data = useFragment(
-    COMPAT_SESSION_FRAGMENT,
-    session,
-  ) as CompatSessionType;
+  const data = useFragment(COMPAT_SESSION_FRAGMENT, session);
   const endCompatSession = useSetAtom(endCompatSessionFamily(data.id));
 
   const onSessionEnd = (): void => {
@@ -94,13 +93,17 @@ const CompatSession: React.FC<{
     });
   };
 
+  const clientName = data.ssoLogin?.redirectUri
+    ? simplifyUrl(data.ssoLogin.redirectUri)
+    : undefined;
+
   return (
     <Session
       id={data.id}
       name={data.deviceId}
       createdAt={data.createdAt}
       finishedAt={data.finishedAt || undefined}
-      clientName={data.ssoLogin.redirectUri}
+      clientName={clientName}
     >
       {!data.finishedAt && (
         <Button
