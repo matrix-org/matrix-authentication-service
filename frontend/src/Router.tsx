@@ -29,7 +29,7 @@ type ProfileRoute = { type: "profile" };
 type SessionOverviewRoute = { type: "sessions-overview" };
 type OAuth2ClientRoute = { type: "client"; id: string };
 type OAuth2SessionList = { type: "oauth2-session-list" };
-type BrowserSessionRoute = { type: "session"; id: string };
+type BrowserSessionRoute = { type: "browser-session"; id: string };
 type BrowserSessionListRoute = { type: "browser-session-list" };
 type CompatSessionListRoute = { type: "compat-session-list" };
 type VerifyEmailRoute = { type: "verify-email"; id: string };
@@ -57,9 +57,9 @@ const routeToSegments = (route: Route): string[] => {
     case "client":
       return ["clients", route.id];
     case "browser-session-list":
-      return ["sessions"];
-    case "session":
-      return ["sessions", route.id];
+      return ["browser-sessions"];
+    case "browser-session":
+      return ["browser-sessions", route.id];
     case "oauth2-session-list":
       return ["oauth2-sessions"];
     case "compat-session-list":
@@ -104,7 +104,7 @@ export const segmentsToRoute = (segments: string[]): Route => {
     return { type: "sessions-overview" };
   }
 
-  if (matches("sessions")) {
+  if (matches("browser-sessions")) {
     return { type: "browser-session-list" };
   }
 
@@ -124,8 +124,8 @@ export const segmentsToRoute = (segments: string[]): Route => {
     return { type: "client", id: segments[1] };
   }
 
-  if (matches("sessions", P)) {
-    return { type: "session", id: segments[1] };
+  if (matches("browser-sessions", P)) {
+    return { type: "browser-session", id: segments[1] };
   }
 
   return { type: "unknown", segments };
@@ -194,7 +194,7 @@ const InnerRouter: React.FC = () => {
       return <CompatSessionList />;
     case "client":
       return <OAuth2Client id={route.id} />;
-    case "session":
+    case "browser-session":
       return <BrowserSession id={route.id} />;
     case "verify-email":
       return <VerifyEmail id={route.id} />;
