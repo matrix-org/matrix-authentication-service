@@ -23,7 +23,18 @@ limitations under the License.
         <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-2 flex flex-col">
           <div class="text-center">
             <h1 class="text-lg text-center font-medium">{{ login.redirect_uri | simplify_url }}</h1>
-            <h1>wants to access your Matrix account</h1>
+            <h1>wants to access your account</h1>
+          </div>
+          <div class="flex items-center m-2">
+            <div class="px-4 flex-1">
+              <p>This will allow it to:</p>
+
+              <p class="my-2">
+                {{ scope::list(scopes="openid urn:matrix:org.matrix.msc2967.client:api:*") }}
+              </p>
+
+              <p class="font-bold my-2">Make sure that you trust it.</p>
+            </div>
           </div>
         </div>
 

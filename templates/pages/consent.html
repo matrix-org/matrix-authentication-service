@@ -27,38 +27,18 @@ limitations under the License.
               <img class="w-16 h-16" src="{{ client.logo_uri }}" />
               {% endif %}
             </div>
-            <h1 class="text-lg text-center font-medium"><a target="_blank" href="{{ client.client_uri }}" class="text-accent">{{ client.client_name | default(value=client.client_id) }}</a></h1>
-            <h1>at {{ grant.redirect_uri }}</h1>
-            <h1>wants to access your Matrix account</h1>
+            <h1 class="text-center font-medium"><a target="_blank" href="{{ client.client_uri }}" class="text-accent">{{ client.client_name | default(value=client.client_id) }}</a></h1>
+            <h1>at {{ grant.redirect_uri | simplify_url }}</h1>
+            <h1>wants to access your account</h1>
           </div>
           <div class="flex items-center m-2">
             <div class="px-4 flex-1">
               <p>This will allow <a target="_blank" href="{{ client.client_uri }}" class="text-accent">{{ client.client_name | default(value=client.client_id) }}</a> to:</p>
 
               <p class="my-2">
-                <ul class="list-disc">
-                  {% for scope in grant.scope | split(pat=" ") %}
-                    {% if scope == "openid" %}
-                      <li>See your profile info and contact details</li>
-                    {% elif scope == "urn:mas:graphql:*" %}
-                      <li>Edit your profile and contact details</li>
-                      <li>Manage your devices and sessions</li>
-                    {% elif scope == "urn:matrix:org.matrix.msc2967.client:api:*" %}
-                      <li>View your existing messages and data</li>
-                      <li>Send new messages on your behalf</li>
-                    {% elif scope == "urn:synapse:admin:*" %}
-                      <li>Administer the Synapse homeserver</li>
-                    {% elif scope == "urn:mas:graphql:admin" %}
-                      <li>Administer any user on the MAS authentication server</li>
-                    {% elif scope is matching("^urn:matrix:org.matrix.msc2967.client:device:") %}
-                      {# <li>{{ scope }}</li> #}
-                    {% else %}
-                      <li>{{ scope }}</li>
-                    {% endif %}
-                  {% endfor %}
-                </ul>  
+                {{ scope::list(scopes=grant.scope) }}
               </p>
-              <p class="font-bold my-2">Make sure that you trust {{ client.client_name }}</p>
+              <p class="font-bold my-2">Make sure that you trust {{ client.client_name | default(value=client.client_id) }}.</p>
               <p>
                 You may be sharing sensitive information with this site or app.
                 {% if client.policy_uri or client.tos_uri %}
