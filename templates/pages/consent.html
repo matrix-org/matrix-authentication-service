@@ -38,7 +38,7 @@ limitations under the License.
               <p class="my-2">
                 {{ scope::list(scopes=grant.scope) }}
               </p>
-              <p class="font-bold my-2">Make sure that you trust {{ client.client_name | default(value=client.client_id) }}.</p>
+              <p class="font-semibold my-2">Make sure that you trust {{ client.client_name | default(value=client.client_id) }}.</p>
               <p>
                 You may be sharing sensitive information with this site or app.
                 {% if client.policy_uri or client.tos_uri %}
