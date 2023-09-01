@@ -18,9 +18,7 @@ import { getRouteActionRedirection } from "./actions";
 
 describe("getRouteActionRedirection()", () => {
   it("no redirect when location has no searchParams", () => {
-    expect(
-      getRouteActionRedirection({ pathname: "/account/" }),
-    ).toBeUndefined();
+    expect(getRouteActionRedirection({ pathname: "/account/" })).toBeNull();
   });
 
   it("no redirect when location has empty searchParams", () => {
@@ -29,7 +27,7 @@ describe("getRouteActionRedirection()", () => {
         pathname: "/account/",
         searchParams: new URLSearchParams(),
       }),
-    ).toBeUndefined();
+    ).toBeNull();
   });
 
   it("no redirect when location has an unknown action in search params", () => {
@@ -38,7 +36,7 @@ describe("getRouteActionRedirection()", () => {
         pathname: "/account/",
         searchParams: new URLSearchParams("?action=test"),
       }),
-    ).toBeUndefined();
+    ).toBeNull();
   });
 
   it("redirects to session detail when location has a action=session_end", () => {
