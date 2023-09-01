@@ -20,34 +20,7 @@ import styles from "./Router.module.css";
 import Layout from "./components/Layout";
 import LoadingSpinner from "./components/LoadingSpinner";
 import { getRouteActionRedirection } from "./routing/actions";
-
-type Location = {
-  pathname?: string;
-  searchParams?: URLSearchParams;
-};
-
-type ProfileRoute = { type: "profile" };
-type SessionOverviewRoute = { type: "sessions-overview" };
-type SessionDetailRoute = { type: "session"; id: string };
-type OAuth2ClientRoute = { type: "client"; id: string };
-type OAuth2SessionList = { type: "oauth2-session-list" };
-type BrowserSessionRoute = { type: "browser-session"; id: string };
-type BrowserSessionListRoute = { type: "browser-session-list" };
-type CompatSessionListRoute = { type: "compat-session-list" };
-type VerifyEmailRoute = { type: "verify-email"; id: string };
-type UnknownRoute = { type: "unknown"; segments: string[] };
-
-export type Route =
-  | SessionOverviewRoute
-  | SessionDetailRoute
-  | ProfileRoute
-  | OAuth2ClientRoute
-  | OAuth2SessionList
-  | BrowserSessionRoute
-  | BrowserSessionListRoute
-  | CompatSessionListRoute
-  | VerifyEmailRoute
-  | UnknownRoute;
+import { Location, Route } from "./routing/routes";
 
 const routeToSegments = (route: Route): string[] => {
   switch (route.type) {
@@ -179,6 +152,11 @@ export const routeAtom = atom(
   },
 );
 
+/**
+ * Check for actions in URL query params required a redirect
+ * Get route from path
+ * @returns Route
+ */
 const useRouteWithRedirect = (): Route => {
   const location = useAtomValue(locationAtom);
   const redirect = getRouteActionRedirection(location);

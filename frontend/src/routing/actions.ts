@@ -13,16 +13,15 @@
  * limitations under the License.
  */
 
-import { Route } from "../Router";
+import { Location, Route } from "./routes";
 
-export enum RouteAction {
+enum RouteAction {
   EndSession = "session_end",
 }
-// TODO circular dependency :/
-export const getRouteActionRedirection = (location: {
-  pathname?: string;
-  searchParams?: URLSearchParams;
-}):
+
+export const getRouteActionRedirection = (
+  location: Location,
+):
   | undefined
   | {
       route: Route;
