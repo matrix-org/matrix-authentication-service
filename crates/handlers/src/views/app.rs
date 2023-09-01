@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use axum::{
-    extract::State,
+    extract::{Query, State},
     response::{Html, IntoResponse},
 };
 use mas_axum_utils::{cookies::CookieJar, FancyError, SessionInfoExt};
@@ -24,17 +24,19 @@ use mas_templates::{AppContext, Templates};
 #[tracing::instrument(name = "handlers.views.app.get", skip_all, err)]
 pub async fn get(
     State(templates): State<Templates>,
+    action: Option<Query<mas_router::AccountAction>>,
     mut repo: BoxRepository,
     cookie_jar: CookieJar,
 ) -> Result<impl IntoResponse, FancyError> {
     let (session_info, cookie_jar) = cookie_jar.session_info();
     let session = session_info.load_session(&mut repo).await?;
+    let action = action.map(|Query(a)| a);
 
-    // TODO: keep the full path
+    // TODO: keep the full path, not just the action
     if session.is_none() {
         return Ok((
             cookie_jar,
-            mas_router::Login::and_then(PostAuthAction::ManageAccount).go(),
+            mas_router::Login::and_then(PostAuthAction::manage_account(action)).go(),
         )
             .into_response());
     }

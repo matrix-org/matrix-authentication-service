@@ -32,10 +32,10 @@ export const getRouteActionRedirection = (
 } => {
   // Clone the search params so we can modify them
   const searchParams = new URLSearchParams(location.searchParams?.toString());
-  const action = searchParams?.get("action");
-  const deviceId = searchParams?.get("device_id");
-  searchParams?.delete("action");
-  searchParams?.delete("device_id");
+  const action = searchParams.get("action");
+  const deviceId = searchParams.get("device_id");
+  searchParams.delete("action");
+  searchParams.delete("device_id");
 
   let route: Route;
   switch (action) {
@@ -71,6 +71,6 @@ export const getRouteActionRedirection = (
 
   return {
     route,
-    searchParams: searchParams.toString() ? searchParams : undefined,
+    searchParams,
   };
 };

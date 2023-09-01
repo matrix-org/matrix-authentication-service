@@ -88,7 +88,7 @@ impl OptionalPostAuthAction {
                 PostAuthContextInner::LinkUpstream { provider, link }
             }
 
-            PostAuthAction::ManageAccount => PostAuthContextInner::ManageAccount,
+            PostAuthAction::ManageAccount { .. } => PostAuthContextInner::ManageAccount,
         };
 
         Ok(Some(PostAuthContext {

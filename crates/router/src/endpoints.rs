@@ -20,11 +20,20 @@ pub use crate::traits::*;
 #[derive(Deserialize, Serialize, Clone, Debug)]
 #[serde(rename_all = "snake_case", tag = "next")]
 pub enum PostAuthAction {
-    ContinueAuthorizationGrant { id: Ulid },
-    ContinueCompatSsoLogin { id: Ulid },
+    ContinueAuthorizationGrant {
+        id: Ulid,
+    },
+    ContinueCompatSsoLogin {
+        id: Ulid,
+    },
     ChangePassword,
-    LinkUpstream { id: Ulid },
-    ManageAccount,
+    LinkUpstream {
+        id: Ulid,
+    },
+    ManageAccount {
+        #[serde(flatten)]
+        action: Option<AccountAction>,
+    },
 }
 
 impl PostAuthAction {
@@ -43,13 +52,20 @@ impl PostAuthAction {
         PostAuthAction::LinkUpstream { id }
     }
 
+    pub const fn manage_account(action: Option<AccountAction>) -> Self {
+        PostAuthAction::ManageAccount { action }
+    }
+
     pub fn go_next(&self) -> axum::response::Redirect {
         match self {
             Self::ContinueAuthorizationGrant { id } => ContinueAuthorizationGrant(*id).go(),
             Self::ContinueCompatSsoLogin { id } => CompatLoginSsoComplete::new(*id, None).go(),
             Self::ChangePassword => AccountPassword.go(),
             Self::LinkUpstream { id } => UpstreamOAuth2Link::new(*id).go(),
-            Self::ManageAccount => Account.go(),
+            Self::ManageAccount { action } => Account {
+                action: action.clone(),
+            }
+            .go(),
         }
     }
 }
@@ -406,12 +422,32 @@ impl AccountAddEmail {
     }
 }
 
+/// Actions parameters as defined by MSC2965
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "action")]
+pub enum AccountAction {
+    Profile,
+    SessionsList,
+    SessionView { device_id: String },
+    SessionEnd { device_id: String },
+}
+
 /// `GET /account/`
 #[derive(Default, Debug, Clone)]
-pub struct Account;
+pub struct Account {
+    action: Option<AccountAction>,
+}
 
-impl SimpleRoute for Account {
-    const PATH: &'static str = "/account/";
+impl Route for Account {
+    type Query = AccountAction;
+
+    fn route() -> &'static str {
+        "/account/"
+    }
+
+    fn query(&self) -> Option<&Self::Query> {
+        self.action.as_ref()
+    }
 }
 
 /// `GET /account/*`

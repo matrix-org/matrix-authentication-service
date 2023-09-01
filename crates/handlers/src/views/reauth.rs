@@ -52,7 +52,7 @@ pub(crate) async fn get(
 ) -> Result<Response, FancyError> {
     if !password_manager.is_enabled() {
         // XXX: do something better here
-        return Ok(mas_router::Account.go().into_response());
+        return Ok(mas_router::Account::default().go().into_response());
     }
 
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);

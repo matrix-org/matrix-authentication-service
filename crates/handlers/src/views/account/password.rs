@@ -55,7 +55,7 @@ pub(crate) async fn get(
 ) -> Result<Response, FancyError> {
     // If the password manager is disabled, we can go back to the account page.
     if !password_manager.is_enabled() {
-        return Ok(mas_router::Account.go().into_response());
+        return Ok(mas_router::Account::default().go().into_response());
     }
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
