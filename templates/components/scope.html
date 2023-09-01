@@ -1,0 +1,39 @@
+{#
+Copyright 2023 The Matrix.org Foundation C.I.C.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+#}
+
+{% macro list(scopes) %}
+  <ul class="list-disc">
+    {% for scope in scopes | split(pat=" ") %}
+      {% if scope == "openid" %}
+        <li>See your profile info and contact details</li>
+      {% elif scope == "urn:mas:graphql:*" %}
+        <li>Edit your profile and contact details</li>
+        <li>Manage your devices and sessions</li>
+      {% elif scope == "urn:matrix:org.matrix.msc2967.client:api:*" %}
+        <li>View your existing messages and data</li>
+        <li>Send new messages on your behalf</li>
+      {% elif scope == "urn:synapse:admin:*" %}
+        <li>Administer the Synapse homeserver</li>
+      {% elif scope == "urn:mas:graphql:admin" %}
+        <li>Administer any user on the MAS authentication server</li>
+      {% elif scope is matching("^urn:matrix:org.matrix.msc2967.client:device:") %}
+        {# <li>{{ scope }}</li> #}
+      {% else %}
+        <li>{{ scope }}</li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+{% endmacro %}
