@@ -86,7 +86,7 @@ exports[`<CompatSession /> > renders an active session 1`] = `
     className="_sessionActions_634806"
   >
     <button
-      className="_button_lls7s_17"
+      className="_button_djt0a_17"
       data-kind="destructive"
       data-size="sm"
       disabled={false}
