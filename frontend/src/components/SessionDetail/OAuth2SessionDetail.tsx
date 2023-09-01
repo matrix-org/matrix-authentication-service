@@ -65,8 +65,8 @@ const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
       value: (
         <>
           {scopes.map((scope) => (
-            <p>
-              <code key={scope}>{scope}</code>
+            <p key={scope}>
+              <code>{scope}</code>
             </p>
           ))}
         </>
