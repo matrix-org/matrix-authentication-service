@@ -25,7 +25,6 @@ module.exports = {
       white: "#FFFFFF",
       secondary: "var(--cpd-color-text-secondary)",
       critical: "var(--cpd-color-text-critical-primary)",
-      accent: "#0DBD8B",
       alert: "#FF5B55",
       links: "#0086E6",
       "grey-25": "#F4F6FA",
@@ -37,10 +36,6 @@ module.exports = {
       "grey-300": "#8E99A4",
       "grey-400": "#6F7882",
       "grey-450": "#394049",
-      "black-800": "#15191E",
-      "black-900": "#17191C",
-      "black-950": "#21262C",
-      ice: "#F4F9FD",
     },
     fontWeight: {
       semibold: "var(--cpd-font-weight-semibold)",

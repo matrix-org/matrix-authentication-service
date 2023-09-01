@@ -21,19 +21,12 @@ limitations under the License.
 
   {% set state = form_state.fields[name] | default(value=dict(errors=[], value="")) %}
 
-  {% if state.errors is not empty %}
-    {% set border_color = "border-alert" %}
-    {% set text_color = "text-alert" %}
-  {% else %}
-    {% set border_color = "border-grey-50 dark:border-grey-450" %}
-    {% set text_color = "text-black-800 dark:text-grey-300" %}
-  {% endif %}
-
-  <label class="flex flex-col {{ class }}">
-    <div class="mx-2 -mb-3 -mt-2 leading-5 px-1 z-10 self-start bg-white dark:bg-black-900 border-white border-2 dark:border-black-900 rounded-full text-sm {{ text_color }}">{{ label }}</div>
+  <div class="flex flex-col cpd-field {{ class }}">
+    <div class="cpd-label"{% if state.errors is not empty %} data-invalid{% endif %}>{{ label }}</div>
     <input name="{{ name }}"
-      class="z-0 px-3 py-2 bg-white dark:bg-black-900 rounded-lg {{ border_color }} border-2 focus:border-accent focus:ring-0 focus:outline-0"
-      type="{{ type }}" 
+      class="cpd-control"
+      {% if state.errors is not empty %} data-invalid {% endif %}
+      type="{{ type }}"
       inputmode="{{ inputmode }}"
       {% if required %} required {% endif %}
       {% if disabled %} disabled {% endif %}
@@ -45,7 +38,7 @@ limitations under the License.
     {% if state.errors is not empty %}
       {% for error in state.errors %}
         {% if error.kind != "unspecified" %}
-          <div class="mx-4 text-sm text-alert">
+          <div class="text-sm text-critical">
             {% if error.kind == "required" %}
               This field is required
             {% elif error.kind == "exists" and name == "username" %}
@@ -59,5 +52,5 @@ limitations under the License.
         {% endif %}
       {% endfor %}
     {% endif %}
-  </label>
+  </div>
 {% endmacro input %}

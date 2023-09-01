@@ -20,6 +20,7 @@
 @import "@vector-im/compound-design-tokens/assets/web/css/compound-design-tokens.css";
 @import "@vector-im/compound-web/dist/style.css";
 @import "./styles/cpd-button.css";
+@import "./styles/cpd-form.css";
 @import "./styles/cpd-link.css";
 
 @config "../tailwind.templates.config.cjs";
@@ -35,4 +36,5 @@ body {
     font: var(--cpd-font-body-md-regular);
     background: var(--cpd-color-bg-canvas-default);
     color: var(--cpd-color-text-primary);
+    letter-spacing: var(--cpd-font-letter-spacing-body-md);
 }

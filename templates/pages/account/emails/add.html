@@ -26,7 +26,7 @@ limitations under the License.
 
       {% if form.errors is not empty %}
         {% for error in form.errors %}
-          <div class="text-alert font-medium">
+          <div class="text-critical font-medium">
             {{ errors::form_error_message(error=error) }}
           </div>
         {% endfor %}
