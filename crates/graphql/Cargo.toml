@@ -9,7 +9,7 @@ repository.workspace = true
 
 [dependencies]
 anyhow.workspace = true
-async-graphql = { version = "6.0.4", features = ["chrono", "url"] }
+async-graphql = { version = "6.0.5", features = ["chrono", "url"] }
 async-trait = "0.1.73"
 chrono.workspace = true
 lettre = { version = "0.10.4", default-features = false  }
