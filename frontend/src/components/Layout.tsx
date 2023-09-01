@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Link } from "@vector-im/compound-web";
 import { useAtomValue } from "jotai";
 
 import { currentUserIdAtom } from "../atoms";
