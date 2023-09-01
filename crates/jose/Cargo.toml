@@ -1,9 +1,11 @@
 [package]
 name = "mas-jose"
-version = "0.1.0"
-authors = ["Quentin Gliech <quenting@element.io>"]
-edition = "2021"
-license = "Apache-2.0"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
 
 [dependencies]
 base64ct = { version = "1.6.0", features = ["std"] }
