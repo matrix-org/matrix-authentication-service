@@ -14,16 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 #}
 
-{% macro link(text, class="", uri, mode, params) %}
+{% macro link(text, uri, mode, params, kind="primary") %}
   {% if mode == "form_post" %}
     <form method="post" action="{{ uri }}">
       {% for key, value in params %}
         <input type="hidden" name="{{ key }}" value="{{ value }}" />
       {% endfor %}
-      <button class="{{ class }}" type="submit">{{ text }}</button>
+      <button class="cpd-button" data-kind="{{ kind }}" data-size="lg" type="submit">{{ text }}</button>
     </form>
   {% elif mode == "fragment" or mode == "query" %}
-    <a class="{{ class }}" href="{{ add_params_to_url(uri=uri, mode=mode, params=params) }}">{{ text }}</a>
+    <a class="cpd-button" data-kind="{{ kind }}" data-size="lg" href="{{ add_params_to_url(uri=uri, mode=mode, params=params) }}">{{ text }}</a>
   {% else %}
     {{ throw(message="Invalid mode") }}
   {% endif %}

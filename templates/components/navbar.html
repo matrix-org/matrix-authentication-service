@@ -25,7 +25,7 @@ limitations under the License.
         </div>
 
         {{ button::link(text="My account", href="/account/") }}
-        {{ logout::button(text="Sign out", class=button::outline_class(), csrf_token=csrf_token) }}
+        {{ logout::button(text="Sign out", csrf_token=csrf_token) }}
       {% else %}
         {{ button::link(text="Sign in", href="/login") }}
         {{ button::link_outline(text="Create an account", href="/register") }}

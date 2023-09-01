@@ -47,7 +47,7 @@ limitations under the License.
           <div class="grid grid-cols-2 gap-4">
             {{ back_to_client::link(
               text="Cancel",
-              class=button::outline_error_class(),
+              kind="destructive",
               uri=next.grant.redirect_uri,
               mode=next.grant.response_mode,
               params=dict(error="access_denied", state=next.grant.state)

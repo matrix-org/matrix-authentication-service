@@ -44,7 +44,7 @@ limitations under the License.
       </form>
       <div class="text-center mt-4">
         Not {{ current_session.user.username }}?
-        {{ logout::button(text="Sign out", class=button::text_class(), csrf_token=csrf_token, post_logout_action=action) }}
+        {{ logout::button(text="Sign out", csrf_token=csrf_token, post_logout_action=action, as_link=true) }}
       </div>
     </div>
   </section>

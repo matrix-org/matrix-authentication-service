@@ -28,9 +28,9 @@ limitations under the License.
         const query = window.matchMedia("(prefers-color-scheme: dark)");
         function handleChange(list) {
           if (list.matches) {
-            document.documentElement.classList.add("dark");
+            document.documentElement.classList.add("cpd-theme-dark");
           } else {
-            document.documentElement.classList.remove("dark");
+            document.documentElement.classList.remove("cpd-theme-dark");
           }
         }
 
@@ -38,7 +38,6 @@ limitations under the License.
         handleChange(query);
       })();
     </script>
-    {{ include_asset(path='style.css') | indent(prefix="    ") | safe }}
     {{ include_asset(path='src/main.tsx') | indent(prefix="    ") | safe }}
   </head>
 

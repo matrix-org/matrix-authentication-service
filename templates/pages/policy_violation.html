@@ -25,10 +25,10 @@ limitations under the License.
         <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-2 flex items-center">
           <div class="bg-white rounded w-16 h-16 overflow-hidden mx-auto">
             {% if client.logo_uri %}
-            <img class="w-16 h-16" src="{{ client.logo_uri }}" />
+            <img crossorigin="anonymous" class="w-16 h-16" src="{{ client.logo_uri }}" />
             {% endif %}
           </div>
-          <h1 class="text-lg text-center font-medium flex-1"><a target="_blank" href="{{ client.client_uri }}" class="text-accent">{{ client.client_name | default(value=client.client_id) }}</a></h1>
+          <h1 class="text-lg text-center font-medium flex-1"><a target="_blank" href="{{ client.client_uri }}" class="cpd-link" data-kind="primary">{{ client.client_name | default(value=client.client_id) }}</a></h1>
         </div>
 
         <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-2 flex items-center">
@@ -36,12 +36,12 @@ limitations under the License.
             Logged as <span class="font-semibold">{{ current_session.user.username }}</span>
           </div>
 
-          {{ logout::button(text="Sign out", class=button::plain_error_class(), csrf_token=csrf_token, post_logout_action=action) }}
+          {{ logout::button(text="Sign out", csrf_token=csrf_token, post_logout_action=action) }}
         </div>
 
         {{ back_to_client::link(
           text="Cancel",
-          class=button::outline_error_class(),
+          kind="destructive",
           uri=grant.redirect_uri,
           mode=grant.response_mode,
           params=dict(error="access_denied", state=grant.state)

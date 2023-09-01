@@ -36,9 +36,10 @@ export default defineConfig((env) => ({
     assetsInlineLimit: 0,
     sourcemap: true,
     modulePreload: false,
-    // We don't handle CSS code splitting well yet, so we disable it for now
-    // This means we have to load all the CSS through the `style.css` virtual entrypoint
-    cssCodeSplit: false,
+
+    // We don't exactly handle CSS code splitting well if we're lazy loading components.
+    // We disabled lazy loading for now, but we should fix this at some point.
+    cssCodeSplit: true,
 
     rollupOptions: {
       input: [
