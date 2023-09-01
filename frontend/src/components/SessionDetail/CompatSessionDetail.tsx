@@ -54,28 +54,31 @@ const CompatSessionDetail: React.FC<Props> = ({ session }) => {
     ...finishedAt,
   ];
 
-  const clientName = data.ssoLogin?.redirectUri
-    ? simplifyUrl(data.ssoLogin.redirectUri)
-    : undefined;
+  const clientDetails: { label: string; value: string | JSX.Element }[] = [];
 
-  const clientDetails = [
-    { label: "Name", value: clientName },
-    {
+  if (data.ssoLogin?.redirectUri) {
+    clientDetails.push({
+      label: "Name",
+      value: simplifyUrl(data.ssoLogin.redirectUri),
+    });
+    clientDetails.push({
       label: "Uri",
       value: (
         <a target="_blank" href={data.ssoLogin?.redirectUri}>
           {data.ssoLogin?.redirectUri}
         </a>
       ),
-    },
-  ];
+    });
+  }
 
   return (
     <div>
       <BlockList>
         <H3>{data.deviceId || data.id}</H3>
         <SessionDetails title="Session" details={sessionDetails} />
-        <SessionDetails title="Client" details={clientDetails} />
+        {clientDetails.length > 0 ? (
+          <SessionDetails title="Client" details={clientDetails} />
+        ) : null}
         {!data.finishedAt && (
           <Button
             kind="destructive"
