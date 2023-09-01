@@ -116,10 +116,23 @@ where
     Encrypter: FromRef<S>,
     CookieJar: FromRequestParts<S>,
 {
-    let mut router = Router::new().route(
-        "/graphql",
-        get(self::graphql::get).post(self::graphql::post),
-    );
+    let mut router = Router::new()
+        .route(
+            "/graphql",
+            get(self::graphql::get).post(self::graphql::post),
+        )
+        .layer(
+            CorsLayer::new()
+                .allow_origin(Any)
+                .allow_methods(Any)
+                .allow_otel_headers([
+                    AUTHORIZATION,
+                    ACCEPT,
+                    ACCEPT_LANGUAGE,
+                    CONTENT_LANGUAGE,
+                    CONTENT_TYPE,
+                ]),
+        );
 
     if playground {
         router = router.route("/graphql/playground", get(self::graphql::playground));
