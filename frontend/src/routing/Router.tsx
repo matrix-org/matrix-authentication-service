@@ -13,9 +13,18 @@
 // limitations under the License.
 
 import { useAtom, useAtomValue } from "jotai";
-import { lazy, useEffect } from "react";
+import { useEffect } from "react";
 
 import LoadingSpinner from "../components/LoadingSpinner";
+import BrowserSession from "../pages/BrowserSession";
+import BrowserSessionList from "../pages/BrowserSessionList";
+import CompatSessionList from "../pages/CompatSessionList";
+import OAuth2Client from "../pages/OAuth2Client";
+import OAuth2SessionList from "../pages/OAuth2SessionList";
+import Profile from "../pages/Profile";
+import SessionDetail from "../pages/SessionDetail";
+import SessionsOverview from "../pages/SessionsOverview";
+import VerifyEmail from "../pages/VerifyEmail";
 
 import { getRouteActionRedirection } from "./actions";
 import { locationAtom, routeAtom } from "./atoms";
@@ -41,16 +50,6 @@ const useRouteWithRedirect = (): [Route, boolean] => {
   const redirecting = !!redirect;
   return [route, redirecting];
 };
-
-const SessionsOverview = lazy(() => import("../pages/SessionsOverview"));
-const SessionDetail = lazy(() => import("../pages/SessionDetail"));
-const Profile = lazy(() => import("../pages/Profile"));
-const OAuth2Client = lazy(() => import("../pages/OAuth2Client"));
-const BrowserSession = lazy(() => import("../pages/BrowserSession"));
-const BrowserSessionList = lazy(() => import("../pages/BrowserSessionList"));
-const CompatSessionList = lazy(() => import("../pages/CompatSessionList"));
-const OAuth2SessionList = lazy(() => import("../pages/OAuth2SessionList"));
-const VerifyEmail = lazy(() => import("../pages/VerifyEmail"));
 
 const Router: React.FC = () => {
   const [route, redirecting] = useRouteWithRedirect();

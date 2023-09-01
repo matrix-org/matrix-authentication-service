@@ -27,13 +27,13 @@ limitations under the License.
               <img class="w-16 h-16" src="{{ client.logo_uri }}" />
               {% endif %}
             </div>
-            <h1 class="text-center font-medium"><a target="_blank" href="{{ client.client_uri }}" class="text-accent">{{ client.client_name | default(value=client.client_id) }}</a></h1>
+            <h1 class="text-center font-medium"><a target="_blank" href="{{ client.client_uri }}" class="cpd-link" data-kind="primary">{{ client.client_name | default(value=client.client_id) }}</a></h1>
             <h1>at {{ grant.redirect_uri | simplify_url }}</h1>
             <h1>wants to access your account</h1>
           </div>
           <div class="flex items-center m-2">
             <div class="px-4 flex-1">
-              <p>This will allow <a target="_blank" href="{{ client.client_uri }}" class="text-accent">{{ client.client_name | default(value=client.client_id) }}</a> to:</p>
+              <p>This will allow <a target="_blank" href="{{ client.client_uri }}" class="cpd-link" data-kind="primary">{{ client.client_name | default(value=client.client_id) }}</a> to:</p>
 
               <p class="my-2">
                 {{ scope::list(scopes=grant.scope) }}
@@ -44,13 +44,13 @@ limitations under the License.
                 {% if client.policy_uri or client.tos_uri %}
                   Find out how {{ client.client_name }} will handle your data by reviewing it's
                   {% if client.policy_uri %}
-                    <a target="_blank" href="{{ client.policy_uri }}" class="text-accent">privacy policy</a>{% if not client.tos_uri %}.{% endif %}
+                    <a target="_blank" href="{{ client.policy_uri }}" class="cpd-link" data-kind="primary">privacy policy</a>{% if not client.tos_uri %}.{% endif %}
                   {% endif %}
                   {% if client.policy_uri and client.tos_uri%}
                     and
                   {% endif %}
                   {% if client.tos_uri %}
-                    <a target="_blank" href="{{ client.tos_uri }}" class="text-accent">terms of service</a>.
+                    <a target="_blank" href="{{ client.tos_uri }}" class="cpd-link" data-kind="primary">terms of service</a>.
                   {% endif %}
                 {% endif %}
               </p>
@@ -63,7 +63,7 @@ limitations under the License.
         <div class="grid grid-cols-2 gap-4">
           {{ back_to_client::link(
             text="Cancel",
-            class=button::outline_error_class(),
+            kind="destructive",
             uri=grant.redirect_uri,
             mode=grant.response_mode,
             params=dict(error="access_denied", state=grant.state)
@@ -73,7 +73,7 @@ limitations under the License.
       </form>
       <div class="text-center mt-4">
         Not {{ current_session.user.username }}?
-        {{ logout::button(text="Sign out", class=button::text_class(), csrf_token=csrf_token, post_logout_action=action) }}
+        {{ logout::button(text="Sign out", csrf_token=csrf_token, post_logout_action=action, as_link=true) }}
       </div>
     </div>
   </section>

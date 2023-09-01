@@ -19,9 +19,20 @@
 @import "@fontsource/inter/700.css";
 @import "@vector-im/compound-design-tokens/assets/web/css/compound-design-tokens.css";
 @import "@vector-im/compound-web/dist/style.css";
+@import "./styles/cpd-button.css";
+@import "./styles/cpd-link.css";
 
 @config "../tailwind.templates.config.cjs";
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+    /* XXX: I'm unsure why this is not part of the tokens */
+    --cpd-radius-pill-effect: 9999px;
+
+    font: var(--cpd-font-body-md-regular);
+    background: var(--cpd-color-bg-canvas-default);
+    color: var(--cpd-color-text-primary);
+}

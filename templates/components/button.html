@@ -1,5 +1,5 @@
 {#
-Copyright 2021 The Matrix.org Foundation C.I.C.
+Copyright 2021-2023 The Matrix.org Foundation C.I.C.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,40 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 #}
 
-{% macro common_class() -%}
-  px-4 py-2 border-2 rounded-lg font-medium text-center focus:ring-0 focus:outline-0 focus:border-black dark:focus:border-white
-{%- endmacro %}
-
-{% macro plain_error_class() -%}
-  {{ self::common_class() }} border-alert bg-alert text-white hover:opacity-75
-{%- endmacro %}
-
-{% macro outline_error_class() -%}
-  {{ self::common_class() }} border-alert text-alert hover:bg-alert/10
-{%- endmacro %}
-
-{% macro plain_class() -%}
-  {{ self::common_class() }} border-accent bg-accent text-white hover:opacity-75
-{%- endmacro %}
-
-{% macro outline_class() -%}
-  {{ self::common_class() }} border-accent hover:bg-accent/10 text-accent
-{%- endmacro %}
-
-{% macro text_class() -%}
-  {{ self::common_class() }} border-transparent hover:text-accent/70 text-accent
-{%- endmacro %}
-
 {% macro link(text, href="#", class="") %}
-  <a class="{{ self::plain_class() }} {{ class }}" href="{{ href }}">{{ text }}</a>
+  <a class="cpd-button {{ class }}" data-kind="primary" data-size="lg" href="{{ href }}">{{ text }}</a>
 {% endmacro %}
 
 {% macro link_text(text, href="#", class="") %}
-  <a class="{{ self::text_class() }} {{ class }}" href="{{ href }}">{{ text }}</a>
+  <a class="cpd-link {{ class }}" data-kind="primary" href="{{ href }}">{{ text }}</a>
 {% endmacro %}
 
 {% macro link_outline(text, href="#", class="") %}
-  <a class="{{ self::outline_class() }} {{ class }}" href="{{ href }}">{{ text }}</a>
+  <a class="cpd-button {{ class }}" data-kind="secondary" data-size="lg" href="{{ href }}">{{ text }}</a>
 {% endmacro %}
 
 {% macro button(
@@ -65,7 +41,9 @@ limitations under the License.
     value="{{ value }}"
     type="{{ type }}"
     {% if disabled %}disabled{% endif %}
-    class="{{ self::plain_class() }} {{ class }}"
+    class="cpd-button {{ class }}"
+    data-kind="primary"
+    data-size="lg"
     {% if autocapitalize %}autocapitilize="{{ autocapitilize }}"{% endif %}
     {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
     {% if autocorrect %}autocorrect="{{ autocorrect }}"{% endif %}
@@ -87,7 +65,8 @@ limitations under the License.
     value="{{ value }}"
     type="{{ type }}"
     {% if disabled %}disabled{% endif %}
-    class="{{ self::text_class() }} {{ class }}"
+    data-kind="primary"
+    class="cpd-link {{ class }}"
     {% if autocapitalize %}autocapitilize="{{ autocapitilize }}"{% endif %}
     {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
     {% if autocorrect %}autocorrect="{{ autocorrect }}"{% endif %}
@@ -108,10 +87,12 @@ limitations under the License.
     name="{{ name }}"
     value="{{ value }}"
     type="{{ type }}"
+    class="cpd-button {{ class }}"
+    data-kind="secondary"
+    data-size="lg"
     {% if disabled %}disabled{% endif %}
     {% if autocapitalize %}autocapitilize="{{ autocapitilize }}"{% endif %}
     {% if autocomplete %}autocomplete="{{ autocomplete }}"{% endif %}
     {% if autocorrect %}autocorrect="{{ autocorrect }}"{% endif %}
-    class="{{ self::outline_class() }} {{ class }}"
   >{{ text }}</button>
 {% endmacro %}
