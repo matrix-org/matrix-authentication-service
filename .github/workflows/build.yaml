@@ -3,6 +3,8 @@ name: Build
 on:
   push:
     branches: [ main ]
+    tags:
+      - 'v*'
   pull_request:
     branches: [ main ]
 
@@ -190,3 +192,27 @@ jobs:
         with:
           name: ${{ matrix.arch }}-macos
           path: mas-cli-${{ matrix.arch }}-macos.tar.gz
+
+  release:
+    name: Release
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download the artifacts from the previous job
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+
+      - name: Move the release assets
+        run: |
+          mv ./artifacts/{x86_64,aarch64}-{linux,macos}/* ./
+
+      - name: Prepare a release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            mas-cli-aarch64-linux.tar.gz
+            mas-cli-aarch64-macos.tar.gz
+            mas-cli-x86_64-linux.tar.gz
+            mas-cli-x86_64-macos.tar.gz
+          draft: true
