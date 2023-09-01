@@ -29,10 +29,6 @@ export const getRouteActionRedirection = (
     } => {
   const action = location.searchParams?.get("action");
 
-  if (!action) {
-    return;
-  }
-
   if (action === RouteAction.EndSession) {
     const searchParams = new URLSearchParams(location.searchParams?.toString());
     searchParams.delete("action");
