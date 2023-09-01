@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { atom, useAtomValue, useSetAtom } from "jotai";
+import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { atomWithLocation } from "jotai-location";
 import { lazy, Suspense, useTransition } from "react";
 
 import styles from "./Router.module.css";
 import Layout from "./components/Layout";
 import LoadingSpinner from "./components/LoadingSpinner";
+import { getRouteActionRedirection } from "./routing/actions";
 
 type Location = {
   pathname?: string;
@@ -169,13 +170,26 @@ export const routeAtom = atom(
     const config = get(appConfigAtom);
     return locationToRoute(config.root, location);
   },
-  (get, set, value: Route) => {
+  (get, set, value: Route, searchParams?: URLSearchParams) => {
     const appConfig = get(appConfigAtom);
     set(locationAtom, {
       pathname: appConfig.root + routeToPath(value),
+      searchParams: searchParams,
     });
   },
 );
+
+const useRouteWithRedirect = (): Route => {
+  const location = useAtomValue(locationAtom);
+  const redirect = getRouteActionRedirection(location);
+
+  const [route, setRoute] = useAtom(routeAtom);
+  if (redirect) {
+    setRoute(redirect.route, redirect.searchParams);
+  }
+
+  return route;
+};
 
 const SessionsOverview = lazy(() => import("./pages/SessionsOverview"));
 const SessionDetail = lazy(() => import("./pages/SessionDetail"));
@@ -188,7 +202,7 @@ const OAuth2SessionList = lazy(() => import("./pages/OAuth2SessionList"));
 const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
 
 const InnerRouter: React.FC = () => {
-  const route = useAtomValue(routeAtom);
+  const route = useRouteWithRedirect();
 
   switch (route.type) {
     case "profile":
