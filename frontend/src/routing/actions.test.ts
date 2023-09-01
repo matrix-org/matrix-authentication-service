@@ -66,6 +66,7 @@ describe("getRouteActionRedirection()", () => {
         type: "session",
         id: "test-device-id",
       },
+      searchParams: new URLSearchParams(),
     });
   });
 
@@ -78,6 +79,7 @@ describe("getRouteActionRedirection()", () => {
       route: {
         type: "sessions-overview",
       },
+      searchParams: new URLSearchParams(),
     });
   });
 
@@ -90,6 +92,7 @@ describe("getRouteActionRedirection()", () => {
       route: {
         type: "profile",
       },
+      searchParams: new URLSearchParams(),
     });
   });
 });

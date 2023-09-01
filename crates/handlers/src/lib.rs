@@ -265,6 +265,7 @@ where
         )
 }
 
+#[allow(clippy::too_many_lines)]
 pub fn human_router<S, B>(templates: Templates) -> Router<S, B>
 where
     B: HttpBody + Send + 'static,
