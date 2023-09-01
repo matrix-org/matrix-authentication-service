@@ -128,7 +128,7 @@ pub(crate) async fn post(
 
         next.go()
     } else {
-        query.go_next_or_default(&mas_router::Account)
+        query.go_next_or_default(&mas_router::Account::default())
     };
 
     repo.save().await?;

@@ -15,9 +15,8 @@
 import { Alert } from "@vector-im/compound-web";
 import { useState } from "react";
 
-import { Link } from "../../Router";
-import { FragmentType, useFragment } from "../../gql/fragment-masking";
-import { graphql } from "../../gql/gql";
+import { FragmentType, useFragment, graphql } from "../../gql";
+import { Link } from "../../routing";
 
 import styles from "./UnverifiedEmailAlert.module.css";
 

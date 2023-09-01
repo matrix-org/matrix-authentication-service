@@ -17,9 +17,11 @@ import { DevTools } from "jotai-devtools";
 import { Suspense, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
-import Router from "./Router";
 import { HydrateAtoms } from "./atoms";
+import Layout from "./components/Layout";
 import LoadingScreen from "./components/LoadingScreen";
+import LoadingSpinner from "./components/LoadingSpinner";
+import { Router } from "./routing";
 import "./main.css";
 
 createRoot(document.getElementById("root") as HTMLElement).render(
@@ -28,7 +30,11 @@ createRoot(document.getElementById("root") as HTMLElement).render(
       {import.meta.env.DEV && <DevTools />}
       <HydrateAtoms>
         <Suspense fallback={<LoadingScreen />}>
-          <Router />
+          <Layout>
+            <Suspense fallback={<LoadingSpinner />}>
+              <Router />
+            </Suspense>
+          </Layout>
         </Suspense>
       </HydrateAtoms>
     </Provider>

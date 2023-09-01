@@ -18,8 +18,8 @@ import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
 import { useTransition } from "react";
 
-import { Link } from "../Router";
 import { FragmentType, graphql, useFragment } from "../gql";
+import { Link } from "../routing";
 
 import { Session } from "./Session";
 

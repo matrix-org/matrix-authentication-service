@@ -20,7 +20,7 @@ import { useHydrateAtoms } from "jotai/utils";
 import { create } from "react-test-renderer";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { appConfigAtom, locationAtom } from "../../Router";
+import { appConfigAtom, locationAtom } from "../../routing";
 
 import NavItem from "./NavItem";
 

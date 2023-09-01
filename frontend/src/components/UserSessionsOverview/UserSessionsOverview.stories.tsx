@@ -16,8 +16,8 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { Provider } from "jotai";
 import { useHydrateAtoms } from "jotai/utils";
 
-import { appConfigAtom, locationAtom } from "../../Router";
 import { makeFragmentData } from "../../gql";
+import { appConfigAtom, locationAtom } from "../../routing";
 import { FRAGMENT as EMAIL_FRAGMENT } from "../UserEmail";
 
 import UserSessionsOverview, { FRAGMENT } from "./UserSessionsOverview";

@@ -30,11 +30,11 @@
     clippy::let_with_type_underscore,
 )]
 
-use std::{convert::Infallible, time::Duration};
+use std::{borrow::Cow, convert::Infallible, time::Duration};
 
 use axum::{
     body::{Bytes, HttpBody},
-    extract::{FromRef, FromRequestParts, OriginalUri, State},
+    extract::{FromRef, FromRequestParts, OriginalUri, RawQuery, State},
     http::Method,
     response::{Html, IntoResponse},
     routing::{get, on, post, MethodFilter},
@@ -265,6 +265,7 @@ where
         )
 }
 
+#[allow(clippy::too_many_lines)]
 pub fn human_router<S, B>(templates: Templates) -> Router<S, B>
 where
     B: HttpBody + Send + 'static,
@@ -286,7 +287,19 @@ where
 {
     Router::new()
         // XXX: hard-coded redirect from /account to /account/
-        .route("/account", get(|| async { mas_router::Account.go() }))
+        .route(
+            "/account",
+            get(|RawQuery(query): RawQuery| async {
+                let route = mas_router::Account::route();
+                let destination = if let Some(query) = query {
+                    Cow::Owned(format!("{route}?{query}"))
+                } else {
+                    Cow::Borrowed(route)
+                };
+
+                axum::response::Redirect::to(&destination)
+            }),
+        )
         .route(mas_router::Account::route(), get(self::views::app::get))
         .route(
             mas_router::AccountWildcard::route(),

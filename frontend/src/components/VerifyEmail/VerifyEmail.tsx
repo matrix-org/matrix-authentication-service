@@ -27,8 +27,8 @@ import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
 import { useEffect, useRef, useTransition } from "react";
 
-import { routeAtom } from "../../Router";
 import { FragmentType, graphql, useFragment } from "../../gql";
+import { routeAtom } from "../../routing";
 
 import styles from "./VerifyEmail.module.css";
 
