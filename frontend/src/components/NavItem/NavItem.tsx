@@ -15,8 +15,7 @@
 import classNames from "classnames";
 import { useAtomValue } from "jotai";
 
-import { Link, routeAtom } from "../../Router";
-import { Route } from "../../routing/routes";
+import { routeAtom, Link, Route } from "../../routing";
 
 import styles from "./NavItem.module.css";
 

@@ -16,7 +16,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { Provider } from "jotai";
 import { useHydrateAtoms } from "jotai/utils";
 
-import { appConfigAtom, locationAtom } from "../../Router";
+import { appConfigAtom, locationAtom } from "../../routing";
 import NavItem, { ExternalLink } from "../NavItem";
 
 import NavBar from "./NavBar";

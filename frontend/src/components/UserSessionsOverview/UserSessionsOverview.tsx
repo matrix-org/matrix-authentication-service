@@ -14,10 +14,10 @@
 
 import { Body, H3, H6 } from "@vector-im/compound-web";
 
-import { Link } from "../../Router";
 import { FragmentType, graphql, useFragment } from "../../gql";
-import Block from "../Block/Block";
-import BlockList from "../BlockList/BlockList";
+import { Link } from "../../routing";
+import Block from "../Block";
+import BlockList from "../BlockList";
 
 import styles from "./UserSessionsOverview.module.css";
 

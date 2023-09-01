@@ -20,8 +20,8 @@ import { useHydrateAtoms } from "jotai/utils";
 import { Suspense } from "react";
 import { describe, expect, it, vi, afterAll, beforeEach } from "vitest";
 
-import { appConfigAtom, locationAtom } from "../Router";
 import { currentUserIdAtom, GqlResult } from "../atoms";
+import { appConfigAtom, locationAtom } from "../routing";
 
 import Layout from "./Layout";
 

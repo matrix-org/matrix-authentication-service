@@ -18,7 +18,6 @@ import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
 import { useTransition } from "react";
 
-import { routeAtom } from "../../Router";
 import { graphql } from "../../gql";
 import { PageInfo } from "../../gql/graphql";
 import {
@@ -27,6 +26,7 @@ import {
   FIRST_PAGE,
   Pagination,
 } from "../../pagination";
+import { routeAtom } from "../../routing";
 import BlockList from "../BlockList";
 import PaginationControls from "../PaginationControls";
 import UserEmail from "../UserEmail";

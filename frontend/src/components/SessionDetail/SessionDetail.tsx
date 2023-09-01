@@ -18,8 +18,8 @@ import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
 import { useMemo } from "react";
 
-import { Link } from "../../Router";
-import { graphql } from "../../gql/gql";
+import { graphql } from "../../gql";
+import { Link } from "../../routing";
 
 import CompatSessionDetail from "./CompatSessionDetail";
 import OAuth2SessionDetail from "./OAuth2SessionDetail";

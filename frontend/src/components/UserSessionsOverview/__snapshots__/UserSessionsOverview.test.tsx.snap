@@ -30,7 +30,7 @@ exports[`UserSessionsOverview > render a <UserSessionsOverview /> with sessions 
       </p>
     </div>
     <a
-      className="_linkButton_4f14fc"
+      className="_linkButton_b80ad8"
       href="/browser-sessions"
       onClick={[Function]}
     >
@@ -58,7 +58,7 @@ exports[`UserSessionsOverview > render a <UserSessionsOverview /> with sessions 
       </p>
     </div>
     <a
-      className="_linkButton_4f14fc"
+      className="_linkButton_b80ad8"
       href="/oauth2-sessions"
       onClick={[Function]}
     >
@@ -86,7 +86,7 @@ exports[`UserSessionsOverview > render a <UserSessionsOverview /> with sessions 
       </p>
     </div>
     <a
-      className="_linkButton_4f14fc"
+      className="_linkButton_b80ad8"
       href="/compat-sessions"
       onClick={[Function]}
     >
@@ -126,7 +126,7 @@ exports[`UserSessionsOverview > render an simple <UserSessionsOverview /> 1`] = 
       </p>
     </div>
     <a
-      className="_linkButton_4f14fc"
+      className="_linkButton_b80ad8"
       href="/browser-sessions"
       onClick={[Function]}
     >
@@ -154,7 +154,7 @@ exports[`UserSessionsOverview > render an simple <UserSessionsOverview /> 1`] = 
       </p>
     </div>
     <a
-      className="_linkButton_4f14fc"
+      className="_linkButton_b80ad8"
       href="/oauth2-sessions"
       onClick={[Function]}
     >
@@ -182,7 +182,7 @@ exports[`UserSessionsOverview > render an simple <UserSessionsOverview /> 1`] = 
       </p>
     </div>
     <a
-      className="_linkButton_4f14fc"
+      className="_linkButton_b80ad8"
       href="/compat-sessions"
       onClick={[Function]}
     >

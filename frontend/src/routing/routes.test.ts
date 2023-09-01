@@ -14,9 +14,9 @@
 
 import { describe, it, expect } from "vitest";
 
-import { segmentsToRoute } from "./Router";
+import { segmentsToRoute } from "./routes";
 
-describe("Router", () => {
+describe("routes", () => {
   describe("segmentsToRoute", () => {
     it("returns profile for route with no segments", () => {
       const segments: string[] = [];

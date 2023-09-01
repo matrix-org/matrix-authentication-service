@@ -17,7 +17,7 @@
 import { Provider } from "jotai";
 import { useHydrateAtoms } from "jotai/utils";
 
-import { appConfigAtom, locationAtom } from "../Router";
+import { appConfigAtom, locationAtom } from "../routing";
 
 const HydrateLocation: React.FC<React.PropsWithChildren<{ path: string }>> = ({
   children,
