@@ -15,30 +15,62 @@
 
 import { Location, Route } from "./routes";
 
+// As defined by MSC2965
+// https://github.com/sandhose/matrix-doc/blob/msc/sandhose/oidc-discovery/proposals/2965-oidc-discovery.md#account-management-url-parameters
 enum RouteAction {
   EndSession = "session_end",
+  ViewSession = "session_view",
+  ListSessions = "sessions_list",
+  Profile = "profile",
 }
 
 export const getRouteActionRedirection = (
   location: Location,
-):
-  | undefined
-  | {
-      route: Route;
-      searchParams?: URLSearchParams;
-    } => {
-  const action = location.searchParams?.get("action");
+): null | {
+  route: Route;
+  searchParams?: URLSearchParams;
+} => {
+  // Clone the search params so we can modify them
+  const searchParams = new URLSearchParams(location.searchParams?.toString());
+  const action = searchParams?.get("action");
+  const deviceId = searchParams?.get("device_id");
+  searchParams?.delete("action");
+  searchParams?.delete("device_id");
 
-  if (action === RouteAction.EndSession) {
-    const searchParams = new URLSearchParams(location.searchParams?.toString());
-    searchParams.delete("action");
-    searchParams.delete("device_id");
-    return {
-      route: {
+  let route: Route;
+  switch (action) {
+    case RouteAction.EndSession:
+      route = {
         type: "session",
-        id: location.searchParams?.get("device_id") || "",
-      },
-      searchParams,
-    };
+        id: deviceId || "",
+      };
+      break;
+
+    case RouteAction.ViewSession:
+      route = {
+        type: "session",
+        id: deviceId || "",
+      };
+      break;
+
+    case RouteAction.ListSessions:
+      route = {
+        type: "sessions-overview",
+      };
+      break;
+
+    case RouteAction.Profile:
+      route = {
+        type: "profile",
+      };
+      break;
+
+    default:
+      return null;
   }
+
+  return {
+    route,
+    searchParams: searchParams.toString() ? searchParams : undefined,
+  };
 };

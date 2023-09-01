@@ -18,11 +18,11 @@ import { Suspense, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import { HydrateAtoms } from "./atoms";
+import Layout from "./components/Layout";
 import LoadingScreen from "./components/LoadingScreen";
+import LoadingSpinner from "./components/LoadingSpinner";
 import { Router } from "./routing";
 import "./main.css";
-import LoadingSpinner from "./components/LoadingSpinner";
-import Layout from "./components/Layout";
 
 createRoot(document.getElementById("root") as HTMLElement).render(
   <StrictMode>

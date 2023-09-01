@@ -56,4 +56,42 @@ describe("getRouteActionRedirection()", () => {
       searchParams: new URLSearchParams("?something_else=should-remain"),
     });
   });
+
+  it("redirects to session detail when location has a action=session_view", () => {
+    const searchParams = new URLSearchParams();
+    searchParams.set("action", "session_view");
+    searchParams.set("device_id", "test-device-id");
+    expect(
+      getRouteActionRedirection({ pathname: "/account/", searchParams }),
+    ).toEqual({
+      route: {
+        type: "session",
+        id: "test-device-id",
+      },
+    });
+  });
+
+  it("redirects to sessions overview when location has a action=sessions_list", () => {
+    const searchParams = new URLSearchParams();
+    searchParams.set("action", "sessions_list");
+    expect(
+      getRouteActionRedirection({ pathname: "/account/", searchParams }),
+    ).toEqual({
+      route: {
+        type: "sessions-overview",
+      },
+    });
+  });
+
+  it("redirects to profile when location has a action=profile", () => {
+    const searchParams = new URLSearchParams();
+    searchParams.set("action", "profile");
+    expect(
+      getRouteActionRedirection({ pathname: "/account/", searchParams }),
+    ).toEqual({
+      route: {
+        type: "profile",
+      },
+    });
+  });
 });

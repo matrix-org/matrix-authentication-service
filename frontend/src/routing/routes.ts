@@ -12,21 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-export type Location = {
+export type Location = Readonly<{
   pathname?: string;
   searchParams?: URLSearchParams;
-};
+}>;
 
-type ProfileRoute = { type: "profile" };
-type SessionOverviewRoute = { type: "sessions-overview" };
-type SessionDetailRoute = { type: "session"; id: string };
-type OAuth2ClientRoute = { type: "client"; id: string };
-type OAuth2SessionList = { type: "oauth2-session-list" };
-type BrowserSessionRoute = { type: "browser-session"; id: string };
-type BrowserSessionListRoute = { type: "browser-session-list" };
-type CompatSessionListRoute = { type: "compat-session-list" };
-type VerifyEmailRoute = { type: "verify-email"; id: string };
-type UnknownRoute = { type: "unknown"; segments: string[] };
+export type Segments = Readonly<string[]>;
+
+// Converts a list of segments to a path
+const segmentsToPath = (segments: Segments): string =>
+  segments.map((part) => encodeURIComponent(part)).join("/");
+
+// Converts a path to a list of segments
+const pathToSegments = (path: string): Segments =>
+  path.split("/").map(decodeURIComponent);
+
+type ProfileRoute = Readonly<{ type: "profile" }>;
+type SessionOverviewRoute = Readonly<{ type: "sessions-overview" }>;
+type SessionDetailRoute = Readonly<{ type: "session"; id: string }>;
+type OAuth2ClientRoute = Readonly<{ type: "client"; id: string }>;
+type OAuth2SessionList = Readonly<{ type: "oauth2-session-list" }>;
+type BrowserSessionRoute = Readonly<{ type: "browser-session"; id: string }>;
+type BrowserSessionListRoute = Readonly<{ type: "browser-session-list" }>;
+type CompatSessionListRoute = Readonly<{ type: "compat-session-list" }>;
+type VerifyEmailRoute = Readonly<{ type: "verify-email"; id: string }>;
+type UnknownRoute = Readonly<{ type: "unknown"; segments: Segments }>;
 
 export type Route =
   | SessionOverviewRoute
@@ -39,16 +49,6 @@ export type Route =
   | CompatSessionListRoute
   | VerifyEmailRoute
   | UnknownRoute;
-
-export type Segments = string[];
-
-// Converts a list of segments to a path
-const segmentsToPath = (segments: Segments): string =>
-  segments.map((part) => encodeURIComponent(part)).join("/");
-
-// Converts a path to a list of segments
-const pathToSegments = (path: string): Segments =>
-  path.split("/").map(decodeURIComponent);
 
 // Converts a route to a path
 export const routeToPath = (route: Route): string =>
