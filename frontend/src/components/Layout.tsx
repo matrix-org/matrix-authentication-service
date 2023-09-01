@@ -48,7 +48,8 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
 
       <main>{children}</main>
 
-      <footer className={styles.footer}>
+      {/* TODO: the footer needs to be reworked to show configurable info not hardcoded links: https://github.com/matrix-org/matrix-authentication-service/issues/1675 */}
+      {/* <footer className={styles.footer}>
         <nav className={styles.footerLinks}>
           <ul>
             <Link href="https://matrix.org/legal/copyright-notice">Info</Link>
@@ -58,7 +59,7 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
             </Link>
           </ul>
         </nav>
-      </footer>
+      </footer> */}
     </div>
   );
 };
