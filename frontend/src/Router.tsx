@@ -153,7 +153,7 @@ export const routeAtom = atom(
 );
 
 /**
- * Check for actions in URL query params required a redirect
+ * Check for actions in URL query params requiring a redirect
  * Get route from path
  * @returns Route
  */
