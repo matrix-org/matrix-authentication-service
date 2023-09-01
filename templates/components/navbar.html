@@ -21,7 +21,7 @@ limitations under the License.
     <div class="grid grid-flow-col auto-cols-max gap-4 place-items-center">
       {% if current_session %}
         <div class="text-grey-200 dark:text-grey-250 mx-2">
-          Signed in as <span class="font-bold">{{ current_session.user.username }}</span>.
+          Signed in as <span class="font-semibold">{{ current_session.user.username }}</span>.
         </div>
 
         {{ button::link(text="My account", href="/account/") }}
