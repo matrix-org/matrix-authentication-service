@@ -1,0 +1,82 @@
+/* Copyright 2023 The Matrix.org Foundation C.I.C.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
+ * FIELD: Wrapper around label, control and message
+ */
+
+.cpd-field {
+    display: flex;
+    flex-direction: column;
+}
+
+/**
+ * LABEL
+ */
+
+.cpd-label {
+    font-weight: var(--cpd-font-weight-medium);
+}
+
+.cpd-label[for] {
+    cursor: pointer;
+}
+
+.cpd-label[data-invalid] {
+    color: var(--cpd-color-text-critical-primary);
+}
+
+/* Currently working everywhere but on Firefox (only behind a labs flag)
+https://developer.mozilla.org/en-US/docs/Web/CSS/:has#browser_compatibility */
+.cpd-label:has(~ .cpd-control[disabled]) {
+    color: var(--cpd-color-text-disabled);
+    cursor: not-allowed;
+}
+
+/**
+ * CONTROL
+ */
+
+.cpd-control {
+    border: 1px solid var(--cpd-color-border-interactive-primary);
+    background: var(--cpd-color-bg-canvas-default);
+    border-radius: 0.5rem;
+    padding: var(--cpd-space-3x) var(--cpd-space-4x);
+    box-sizing: border-box;
+}
+
+.cpd-control:hover,
+input:hover ~ .cpd-control {
+    border-color: var(--cpd-color-border-interactive-hovered);
+}
+
+.cpd-control:focus,
+input:focus ~ .cpd-control {
+    outline: 2px solid var(--cpd-color-border-focused);
+    border-color: transparent;
+}
+
+.cpd-control[data-invalid],
+input[data-invalid] ~ .cpd-control {
+    border-color: var(--cpd-color-text-critical-primary);
+}
+
+.cpd-control:disabled,
+input:disabled ~ .cpd-control {
+    background: var(--cpd-color-bg-canvas-disabled);
+    border-color: var(--cpd-color-border-disabled);
+    color: var(--cpd-color-text-disabled);
+    cursor: not-allowed;
+}
