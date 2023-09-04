@@ -65,6 +65,9 @@ pub enum RouteError {
         #[from] AuthorizationVerificationError<mas_storage::RepositoryError>,
     ),
 
+    #[error("session is not allowed to access the userinfo endpoint")]
+    Unauthorized,
+
     #[error("no suitable key found for signing")]
     InvalidSigningKey,
 
@@ -86,7 +89,9 @@ impl IntoResponse for RouteError {
             Self::Internal(_) | Self::InvalidSigningKey | Self::NoSuchClient | Self::NoSuchUser => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()).into_response()
             }
-            Self::AuthorizationVerificationError(_e) => StatusCode::UNAUTHORIZED.into_response(),
+            Self::AuthorizationVerificationError(_) | Self::Unauthorized => {
+                StatusCode::UNAUTHORIZED.into_response()
+            }
         }
     }
 }
@@ -102,9 +107,19 @@ pub async fn get(
 ) -> Result<Response, RouteError> {
     let session = user_authorization.protected(&mut repo, &clock).await?;
 
+    // This endpoint requires the `openid` scope.
+    if !session.scope.contains("openid") {
+        return Err(RouteError::Unauthorized);
+    }
+
+    // Fail if the session is not associated with a user.
+    let Some(user_id) = session.user_id else {
+        return Err(RouteError::Unauthorized);
+    };
+
     let user = repo
         .user()
-        .lookup(session.user_id)
+        .lookup(user_id)
         .await?
         .ok_or(RouteError::NoSuchUser)?;
 

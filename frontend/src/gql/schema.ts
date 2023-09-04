@@ -1382,12 +1382,9 @@ export default {
           {
             name: "user",
             type: {
-              kind: "NON_NULL",
-              ofType: {
-                kind: "OBJECT",
-                name: "User",
-                ofType: null,
-              },
+              kind: "OBJECT",
+              name: "User",
+              ofType: null,
             },
             args: [],
           },

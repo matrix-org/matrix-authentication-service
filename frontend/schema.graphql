@@ -691,7 +691,7 @@ type Oauth2Session implements Node & CreationEvent {
   """
   User authorized for this session.
   """
-  user: User!
+  user: User
 }
 
 type Oauth2SessionConnection {

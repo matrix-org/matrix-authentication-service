@@ -22,7 +22,7 @@ use ulid::Ulid;
 use url::Url;
 
 use super::{BrowserSession, NodeType, User};
-use crate::state::ContextExt;
+use crate::{state::ContextExt, UserId};
 
 /// The state of an OAuth 2.0 session.
 #[derive(Enum, Copy, Clone, Eq, PartialEq)]
@@ -108,17 +108,25 @@ impl OAuth2Session {
     }
 
     /// User authorized for this session.
-    pub async fn user(&self, ctx: &Context<'_>) -> Result<User, async_graphql::Error> {
+    pub async fn user(&self, ctx: &Context<'_>) -> Result<Option<User>, async_graphql::Error> {
         let state = ctx.state();
+        let Some(user_id) = self.0.user_id else {
+            return Ok(None);
+        };
+
+        if !ctx.requester().is_owner_or_admin(&UserId(user_id)) {
+            return Err(async_graphql::Error::new("Unauthorized"));
+        }
+
         let mut repo = state.repository().await?;
         let user = repo
             .user()
-            .lookup(self.0.user_id)
+            .lookup(user_id)
             .await?
             .context("Could not load user")?;
         repo.cancel().await?;
 
-        Ok(User(user))
+        Ok(Some(User(user)))
     }
 }
 

@@ -29,6 +29,7 @@ use futures_util::TryStreamExt;
 use headers::{authorization::Bearer, Authorization, ContentType, HeaderValue};
 use hyper::header::CACHE_CONTROL;
 use mas_axum_utils::{cookies::CookieJar, FancyError, SessionInfo, SessionInfoExt};
+use mas_data_model::User;
 use mas_graphql::{Requester, Schema};
 use mas_matrix::HomeserverConnection;
 use mas_policy::{InstantiateError, Policy, PolicyFactory};
@@ -204,13 +205,22 @@ async fn get_requester(
             .await?
             .ok_or(RouteError::LoadFailed)?;
 
-        let user = repo
-            .user()
-            .lookup(session.user_id)
-            .await?
-            .ok_or(RouteError::LoadFailed)?;
+        // Load the user if there is one
+        let user = if let Some(user_id) = session.user_id {
+            let user = repo
+                .user()
+                .lookup(user_id)
+                .await?
+                .ok_or(RouteError::LoadFailed)?;
+            Some(user)
+        } else {
+            None
+        };
 
-        if !token.is_valid(clock.now()) || !session.is_valid() || !user.is_valid() {
+        // If there is a user for this session, check that it is not locked
+        let user_valid = user.as_ref().map_or(false, User::is_valid);
+
+        if !token.is_valid(clock.now()) || !session.is_valid() || !user_valid {
             return Err(RouteError::InvalidToken);
         }
 
