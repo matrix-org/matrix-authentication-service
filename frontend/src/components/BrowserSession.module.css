@@ -22,3 +22,11 @@
     border-radius: var(--cpd-space-1x);
     margin-right: var(--cpd-space-2x);
 }
+
+.current-session {
+    display: inline-block;
+    padding: 0 var(--cpd-space-2x);
+    border-radius: var(--cpd-space-2x);
+    background-color: var(--cpd-color-text-action-accent);
+    margin-right: var(--cpd-space-1x);
+}

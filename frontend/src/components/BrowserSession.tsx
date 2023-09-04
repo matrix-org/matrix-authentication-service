@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Button } from "@vector-im/compound-web";
+import { Body, Button } from "@vector-im/compound-web";
 import { atom, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
@@ -20,7 +20,12 @@ import { useTransition } from "react";
 
 import { currentBrowserSessionIdAtom, currentUserIdAtom } from "../atoms";
 import { FragmentType, graphql, useFragment } from "../gql";
+import {
+  parseUserAgent,
+  sessionNameFromDeviceInformation,
+} from "../utils/parseUserAgent";
 
+import styles from "./BrowserSession.module.css";
 import Session from "./Session/Session";
 
 const FRAGMENT = graphql(/* GraphQL */ `
@@ -28,6 +33,7 @@ const FRAGMENT = graphql(/* GraphQL */ `
     id
     createdAt
     finishedAt
+    userAgent
     lastAuthentication {
       id
       createdAt
@@ -90,7 +96,24 @@ const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
     });
   };
 
-  const sessionName = isCurrent ? "Current browser session" : "Browser session";
+  const deviceInformation = parseUserAgent(data.userAgent || undefined);
+  const name =
+    sessionNameFromDeviceInformation(deviceInformation) || "Browser session";
+  const sessionName = isCurrent ? (
+    <>
+      <Body
+        as="span"
+        size="sm"
+        className={styles.currentSession}
+        weight="semibold"
+      >
+        Current
+      </Body>
+      {name}
+    </>
+  ) : (
+    name
+  );
 
   return (
     <Session
