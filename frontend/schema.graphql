@@ -812,9 +812,21 @@ type Query {
   Get a list of upstream OAuth 2.0 providers.
   """
   upstreamOauth2Providers(
+    """
+    Returns the elements in the list that come after the cursor.
+    """
     after: String
+    """
+    Returns the elements in the list that come before the cursor.
+    """
     before: String
+    """
+    Returns the first *n* elements from the list.
+    """
     first: Int
+    """
+    Returns the last *n* elements from the list.
+    """
     last: Int
   ): UpstreamOAuth2ProviderConnection!
   """
@@ -1150,60 +1162,150 @@ type User implements Node {
   Get the list of compatibility SSO logins, chronologically sorted
   """
   compatSsoLogins(
+    """
+    Returns the elements in the list that come after the cursor.
+    """
     after: String
+    """
+    Returns the elements in the list that come before the cursor.
+    """
     before: String
+    """
+    Returns the first *n* elements from the list.
+    """
     first: Int
+    """
+    Returns the last *n* elements from the list.
+    """
     last: Int
   ): CompatSsoLoginConnection!
   """
   Get the list of compatibility sessions, chronologically sorted
   """
   compatSessions(
+    """
+    List only sessions with the given state.
+    """
     state: CompatSessionState
+    """
+    List only sessions with the given type.
+    """
     type: CompatSessionType
+    """
+    Returns the elements in the list that come after the cursor.
+    """
     after: String
+    """
+    Returns the elements in the list that come before the cursor.
+    """
     before: String
+    """
+    Returns the first *n* elements from the list.
+    """
     first: Int
+    """
+    Returns the last *n* elements from the list.
+    """
     last: Int
   ): CompatSessionConnection!
   """
   Get the list of active browser sessions, chronologically sorted
   """
   browserSessions(
+    """
+    List only sessions in the given state.
+    """
     state: BrowserSessionState
+    """
+    Returns the elements in the list that come after the cursor.
+    """
     after: String
+    """
+    Returns the elements in the list that come before the cursor.
+    """
     before: String
+    """
+    Returns the first *n* elements from the list.
+    """
     first: Int
+    """
+    Returns the last *n* elements from the list.
+    """
     last: Int
   ): BrowserSessionConnection!
   """
   Get the list of emails, chronologically sorted
   """
   emails(
+    """
+    List only emails in the given state.
+    """
     state: UserEmailState
+    """
+    Returns the elements in the list that come after the cursor.
+    """
     after: String
+    """
+    Returns the elements in the list that come before the cursor.
+    """
     before: String
+    """
+    Returns the first *n* elements from the list.
+    """
     first: Int
+    """
+    Returns the last *n* elements from the list.
+    """
     last: Int
   ): UserEmailConnection!
   """
   Get the list of OAuth 2.0 sessions, chronologically sorted
   """
   oauth2Sessions(
+    """
+    List only sessions in the given state.
+    """
     state: Oauth2SessionState
+    """
+    List only sessions for the given client.
+    """
     client: ID
+    """
+    Returns the elements in the list that come after the cursor.
+    """
     after: String
+    """
+    Returns the elements in the list that come before the cursor.
+    """
     before: String
+    """
+    Returns the first *n* elements from the list.
+    """
     first: Int
+    """
+    Returns the last *n* elements from the list.
+    """
     last: Int
   ): Oauth2SessionConnection!
   """
   Get the list of upstream OAuth 2.0 links
   """
   upstreamOauth2Links(
+    """
+    Returns the elements in the list that come after the cursor.
+    """
     after: String
+    """
+    Returns the elements in the list that come before the cursor.
+    """
     before: String
+    """
+    Returns the first *n* elements from the list.
+    """
     first: Int
+    """
+    Returns the last *n* elements from the list.
+    """
     last: Int
   ): UpstreamOAuth2LinkConnection!
 }
