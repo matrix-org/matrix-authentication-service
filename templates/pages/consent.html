@@ -42,7 +42,7 @@ limitations under the License.
               <p>
                 You may be sharing sensitive information with this site or app.
                 {% if client.policy_uri or client.tos_uri %}
-                  Find out how {{ client.client_name }} will handle your data by reviewing it's
+                  Find out how {{ client.client_name }} will handle your data by reviewing its
                   {% if client.policy_uri %}
                     <a target="_blank" href="{{ client.policy_uri }}" class="cpd-link" data-kind="primary">privacy policy</a>{% if not client.tos_uri %}.{% endif %}
                   {% endif %}
