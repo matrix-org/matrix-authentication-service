@@ -35,7 +35,7 @@ pub struct EndBrowserSessionInput {
 /// The payload of the `endBrowserSession` mutation.
 pub enum EndBrowserSessionPayload {
     NotFound,
-    Ended(mas_data_model::BrowserSession),
+    Ended(Box<mas_data_model::BrowserSession>),
 }
 
 /// The status of the `endBrowserSession` mutation.
@@ -61,7 +61,7 @@ impl EndBrowserSessionPayload {
     /// Returns the ended session.
     async fn browser_session(&self) -> Option<BrowserSession> {
         match self {
-            Self::Ended(session) => Some(BrowserSession(session.clone())),
+            Self::Ended(session) => Some(BrowserSession(*session.clone())),
             Self::NotFound => None,
         }
     }
@@ -96,6 +96,6 @@ impl BrowserSessionMutations {
 
         repo.save().await?;
 
-        Ok(EndBrowserSessionPayload::Ended(session))
+        Ok(EndBrowserSessionPayload::Ended(Box::new(session)))
     }
 }

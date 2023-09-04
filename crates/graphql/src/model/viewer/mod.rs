@@ -39,18 +39,18 @@ impl Viewer {
 /// Represents the current viewer's session
 #[derive(Union)]
 pub enum ViewerSession {
-    BrowserSession(BrowserSession),
-    OAuth2Session(OAuth2Session),
+    BrowserSession(Box<BrowserSession>),
+    OAuth2Session(Box<OAuth2Session>),
     Anonymous(Anonymous),
 }
 
 impl ViewerSession {
     pub fn browser_session(session: mas_data_model::BrowserSession) -> Self {
-        Self::BrowserSession(BrowserSession(session))
+        Self::BrowserSession(Box::new(BrowserSession(session)))
     }
 
     pub fn oauth2_session(session: mas_data_model::Session) -> Self {
-        Self::OAuth2Session(OAuth2Session(session))
+        Self::OAuth2Session(Box::new(OAuth2Session(session)))
     }
 
     pub fn anonymous() -> Self {
