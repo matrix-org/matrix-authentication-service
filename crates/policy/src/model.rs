@@ -107,9 +107,9 @@ pub enum GrantType {
 pub struct AuthorizationGrantInput<'a> {
     #[cfg_attr(
         feature = "jsonschema",
-        schemars(with = "std::collections::HashMap<String, serde_json::Value>")
+        schemars(with = "Option<std::collections::HashMap<String, serde_json::Value>>")
     )]
-    pub user: &'a User,
+    pub user: Option<&'a User>,
 
     #[cfg_attr(
         feature = "jsonschema",

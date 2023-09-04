@@ -16,8 +16,13 @@ use axum::http::Request;
 use chrono::Duration;
 use hyper::StatusCode;
 use mas_data_model::{AccessToken, Client, TokenType, User};
+use mas_router::SimpleRoute;
 use mas_storage::{oauth2::OAuth2ClientRepository, RepositoryAccess};
-use oauth2_types::scope::{Scope, ScopeToken, OPENID};
+use oauth2_types::{
+    registration::ClientRegistrationResponse,
+    requests::AccessTokenResponse,
+    scope::{Scope, ScopeToken, OPENID},
+};
 use sqlx::PgPool;
 
 use crate::test_utils::{init_tracing, RequestBuilderExt, ResponseExt, TestState};
@@ -348,4 +353,107 @@ async fn test_oauth2_admin(pool: PgPool) {
             },
         })
     );
+}
+
+/// Test that we can query the GraphQL endpoint with a token from a
+/// client_credentials grant.
+#[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
+async fn test_oauth2_client_credentials(pool: PgPool) {
+    init_tracing();
+    let state = TestState::from_pool(pool).await.unwrap();
+
+    // Provision a client
+    let request =
+        Request::post(mas_router::OAuth2RegistrationEndpoint::PATH).json(serde_json::json!({
+            "client_uri": "https://example.com/",
+            // XXX: we shouldn't have to specify the redirect URI here, but the policy denies it for now
+            "redirect_uris": ["https://example.com/callback"],
+            "contacts": ["contact@example.com"],
+            "token_endpoint_auth_method": "client_secret_post",
+            "grant_types": ["client_credentials"],
+            "response_types": [],
+        }));
+
+    let response = state.request(request).await;
+    response.assert_status(StatusCode::CREATED);
+
+    let response: ClientRegistrationResponse = response.json();
+    let client_id = response.client_id;
+    let client_secret = response.client_secret.expect("to have a client secret");
+
+    // Call the token endpoint with an empty scope
+    let request = Request::post(mas_router::OAuth2TokenEndpoint::PATH).form(serde_json::json!({
+        "grant_type": "client_credentials",
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "scope": "urn:mas:graphql:*",
+    }));
+
+    let response = state.request(request).await;
+    response.assert_status(StatusCode::OK);
+    let AccessTokenResponse { access_token, .. } = response.json();
+
+    let request = Request::post("/graphql")
+        .bearer(&access_token)
+        .json(serde_json::json!({
+            "query": r#"
+                query {
+                    viewer {
+                        __typename
+                    }
+                    
+                    viewerSession {
+                        __typename
+                    }
+                }
+            "#,
+        }));
+
+    let response = state.request(request).await;
+    response.assert_status(StatusCode::OK);
+    let response: GraphQLResponse = response.json();
+    assert!(response.errors.is_empty());
+    assert_eq!(
+        response.data,
+        serde_json::json!({
+            "viewer": {
+                // There is no user associated with the client credentials grant
+                "__typename": "Anonymous",
+            },
+            "viewerSession": {
+                // But there is a session
+                "__typename": "Oauth2Session",
+            },
+        })
+    );
+
+    // Check that we can't do a query once the token is revoked
+    let request = Request::post(mas_router::OAuth2Revocation::PATH).form(serde_json::json!({
+        "token": access_token,
+        "client_id": client_id,
+        "client_secret": client_secret,
+    }));
+
+    let response = state.request(request).await;
+    response.assert_status(StatusCode::OK);
+
+    // Do the same request again
+    let request = Request::post("/graphql")
+        .bearer(&access_token)
+        .json(serde_json::json!({
+            "query": r#"
+                query {
+                    viewer {
+                        __typename
+                    }
+                    
+                    viewerSession {
+                        __typename
+                    }
+                }
+            "#,
+        }));
+
+    let response = state.request(request).await;
+    response.assert_status(StatusCode::UNAUTHORIZED);
 }
