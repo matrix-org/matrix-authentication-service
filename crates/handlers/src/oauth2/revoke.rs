@@ -302,7 +302,7 @@ mod tests {
 
         let session = repo
             .oauth2_session()
-            .add(
+            .add_from_browser_session(
                 &mut state.rng(),
                 &state.clock,
                 &client,
@@ -369,7 +369,7 @@ mod tests {
         let mut repo = state.repository().await.unwrap();
         let session = repo
             .oauth2_session()
-            .add(
+            .add_from_browser_session(
                 &mut state.rng(),
                 &state.clock,
                 &client,

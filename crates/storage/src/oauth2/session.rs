@@ -140,7 +140,7 @@ pub trait OAuth2SessionRepository: Send + Sync {
     /// Returns [`Self::Error`] if the underlying repository fails
     async fn lookup(&mut self, id: Ulid) -> Result<Option<Session>, Self::Error>;
 
-    /// Create a new [`Session`]
+    /// Create a new [`Session`] out of a [`Client`] and a [`BrowserSession`]
     ///
     /// Returns the newly created [`Session`]
     ///
@@ -156,12 +156,35 @@ pub trait OAuth2SessionRepository: Send + Sync {
     /// # Errors
     ///
     /// Returns [`Self::Error`] if the underlying repository fails
-    async fn add(
+    async fn add_from_browser_session(
         &mut self,
         rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
         client: &Client,
         user_session: &BrowserSession,
+        scope: Scope,
+    ) -> Result<Session, Self::Error>;
+
+    /// Create a new [`Session`] for a [`Client`] using the client credentials
+    /// flow
+    ///
+    /// Returns the newly created [`Session`]
+    ///
+    /// # Parameters
+    ///
+    /// * `rng`: The random number generator to use
+    /// * `clock`: The clock used to generate timestamps
+    /// * `client`: The [`Client`] which created the [`Session`]
+    /// * `scope`: The [`Scope`] of the [`Session`]
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn add_from_client_credentials(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        client: &Client,
         scope: Scope,
     ) -> Result<Session, Self::Error>;
 
@@ -211,12 +234,20 @@ pub trait OAuth2SessionRepository: Send + Sync {
 repository_impl!(OAuth2SessionRepository:
     async fn lookup(&mut self, id: Ulid) -> Result<Option<Session>, Self::Error>;
 
-    async fn add(
+    async fn add_from_browser_session(
         &mut self,
         rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
         client: &Client,
         user_session: &BrowserSession,
+        scope: Scope,
+    ) -> Result<Session, Self::Error>;
+
+    async fn add_from_client_credentials(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        client: &Client,
         scope: Scope,
     ) -> Result<Session, Self::Error>;
 

@@ -90,7 +90,7 @@ async fn start_oauth_session(
 
     let session = repo
         .oauth2_session()
-        .add(&mut rng, &state.clock, client, &browser_session, scope)
+        .add_from_browser_session(&mut rng, &state.clock, client, &browser_session, scope)
         .await
         .unwrap();
 
