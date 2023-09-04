@@ -517,7 +517,7 @@ export type Oauth2Session = CreationEvent &
     /** The state of the session. */
     state: Oauth2SessionState;
     /** User authorized for this session. */
-    user: User;
+    user?: Maybe<User>;
   };
 
 export type Oauth2SessionConnection = {

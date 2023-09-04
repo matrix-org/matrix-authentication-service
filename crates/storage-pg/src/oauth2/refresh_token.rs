@@ -143,7 +143,6 @@ impl<'c> OAuth2RefreshTokenRepository for PgOAuth2RefreshTokenRepository<'c> {
         fields(
             db.statement,
             %session.id,
-            user.id = %session.user_id,
             client.id = %session.client_id,
             refresh_token.id,
         ),

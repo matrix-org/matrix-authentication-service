@@ -63,7 +63,7 @@ pub enum Requester {
     BrowserSession(BrowserSession),
 
     /// The requester is a OAuth2 session, with an access token.
-    OAuth2Session(Session, User),
+    OAuth2Session(Session, Option<User>),
 }
 
 trait OwnerId {
@@ -90,7 +90,7 @@ impl OwnerId for mas_data_model::UserEmail {
 
 impl OwnerId for Session {
     fn owner_id(&self) -> Option<Ulid> {
-        Some(self.user_id)
+        self.user_id
     }
 }
 
@@ -126,7 +126,7 @@ impl Requester {
     fn user(&self) -> Option<&User> {
         match self {
             Self::BrowserSession(session) => Some(&session.user),
-            Self::OAuth2Session(_session, user) => Some(user),
+            Self::OAuth2Session(_session, user) => user.as_ref(),
             Self::Anonymous => None,
         }
     }
