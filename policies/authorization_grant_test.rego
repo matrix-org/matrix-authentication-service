@@ -2,78 +2,116 @@ package authorization_grant
 
 user := {"username": "john"}
 
+client := {"client_id": "client"}
+
 test_standard_scopes {
 	allow with input.user as user
-		with input.authorization_grant as {"scope": ""}
+		with input.client as client
+		with input.scope as ""
 
 	allow with input.user as user
-		with input.authorization_grant as {"scope": "openid"}
+		with input.client as client
+		with input.scope as "openid"
 
 	allow with input.user as user
-		with input.authorization_grant as {"scope": "email"}
+		with input.client as client
+		with input.scope as "email"
 
 	allow with input.user as user
-		with input.authorization_grant as {"scope": "openid email"}
+		with input.client as client
+		with input.scope as "openid email"
 
 	# Not supported yet
 	not allow with input.user as user
-		with input.authorization_grant as {"scope": "phone"}
+		with input.client as client
+		with input.scope as "phone"
 
 	# Not supported yet
 	not allow with input.user as user
-		with input.authorization_grant as {"scope": "profile"}
+		with input.client as client
+		with input.scope as "profile"
 }
 
 test_matrix_scopes {
 	allow with input.user as user
-		with input.authorization_grant as {"scope": "urn:matrix:org.matrix.msc2967.client:api:*"}
+		with input.client as client
+		with input.grant_type as "authorization_code"
+		with input.scope as "urn:matrix:org.matrix.msc2967.client:api:*"
 }
 
 test_device_scopes {
 	allow with input.user as user
-		with input.authorization_grant as {"scope": "urn:matrix:org.matrix.msc2967.client:device:AAbbCCdd01"}
+		with input.client as client
+		with input.grant_type as "authorization_code"
+		with input.scope as "urn:matrix:org.matrix.msc2967.client:device:AAbbCCdd01"
 
 	allow with input.user as user
-		with input.authorization_grant as {"scope": "urn:matrix:org.matrix.msc2967.client:device:AAbbCCdd01-asdasdsa1-2313"}
+		with input.client as client
+		with input.grant_type as "authorization_code"
+		with input.scope as "urn:matrix:org.matrix.msc2967.client:device:AAbbCCdd01-asdasdsa1-2313"
 
 	# Invalid characters
 	not allow with input.user as user
-		with input.authorization_grant as {"scope": "urn:matrix:org.matrix.msc2967.client:device:AABB:CCDDEE"}
+		with input.client as client
+		with input.grant_type as "authorization_code"
+		with input.scope as "urn:matrix:org.matrix.msc2967.client:device:AABB:CCDDEE"
 
 	not allow with input.user as user
-		with input.authorization_grant as {"scope": "urn:matrix:org.matrix.msc2967.client:device:AABB*CCDDEE"}
+		with input.client as client
+		with input.grant_type as "authorization_code"
+		with input.scope as "urn:matrix:org.matrix.msc2967.client:device:AABB*CCDDEE"
 
 	not allow with input.user as user
-		with input.authorization_grant as {"scope": "urn:matrix:org.matrix.msc2967.client:device:AABB!CCDDEE"}
+		with input.client as client
+		with input.grant_type as "authorization_code"
+		with input.scope as "urn:matrix:org.matrix.msc2967.client:device:AABB!CCDDEE"
 
 	# Too short
 	not allow with input.user as user
-		with input.authorization_grant as {"scope": "urn:matrix:org.matrix.msc2967.client:device:abcd"}
+		with input.client as client
+		with input.grant_type as "authorization_code"
+		with input.scope as "urn:matrix:org.matrix.msc2967.client:device:abcd"
 
 	# Multiple device scope
 	not allow with input.user as user
-		with input.authorization_grant as {"scope": "urn:matrix:org.matrix.msc2967.client:device:AAbbCCdd01 urn:matrix:org.matrix.msc2967.client:device:AAbbCCdd02"}
+		with input.client as client
+		with input.grant_type as "authorization_code"
+		with input.scope as "urn:matrix:org.matrix.msc2967.client:device:AAbbCCdd01 urn:matrix:org.matrix.msc2967.client:device:AAbbCCdd02"
+
+	# Not allowed for the client credentials grant
+	not allow with input.client as client
+		with input.grant_type as "client_credentials"
+		with input.scope as "urn:matrix:org.matrix.msc2967.client:device:AAbbCCdd01"
 }
 
 test_synapse_admin_scopes {
 	allow with input.user as user
+		with input.client as client
 		with data.admin_users as ["john"]
-		with input.authorization_grant as {"scope": "urn:synapse:admin:*"}
+		with input.grant_type as "authorization_code"
+		with input.scope as "urn:synapse:admin:*"
 
 	not allow with input.user as user
+		with input.client as client
 		with data.admin_users as []
-		with input.authorization_grant as {"scope": "urn:synapse:admin:*"}
+		with input.grant_type as "authorization_code"
+		with input.scope as "urn:synapse:admin:*"
 }
 
 test_mas_scopes {
 	allow with input.user as user
-		with input.authorization_grant as {"scope": "urn:mas:graphql:*"}
+		with input.client as client
+		with input.scope as "urn:mas:graphql:*"
 
 	allow with input.user as user
+		with input.client as client
 		with data.admin_users as ["john"]
-		with input.authorization_grant as {"scope": "urn:mas:admin"}
+		with input.grant_type as "authorization_code"
+		with input.scope as "urn:mas:admin"
 
 	not allow with input.user as user
+		with input.client as client
 		with data.admin_users as []
-		with input.authorization_grant as {"scope": "urn:mas:admin"}
+		with input.grant_type as "authorization_code"
+		with input.scope as "urn:mas:admin"
 }

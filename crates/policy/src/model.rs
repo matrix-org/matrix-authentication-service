@@ -12,8 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use mas_data_model::{AuthorizationGrant, Client, User};
-use oauth2_types::registration::VerifiedClientMetadata;
+//! Input and output types for policy evaluation.
+//!
+//! This is useful to generate JSON schemas for each input type, which can then
+//! be type-checked by Open Policy Agent.
+
+use mas_data_model::{Client, User};
+use oauth2_types::{registration::VerifiedClientMetadata, scope::Scope};
 use serde::{Deserialize, Serialize};
 
 /// A single violation of a policy.
@@ -87,6 +92,14 @@ pub struct ClientRegistrationInput<'a> {
     pub client_metadata: &'a VerifiedClientMetadata,
 }
 
+#[derive(Serialize, Debug)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(feature = "jsonschema", derive(schemars::JsonSchema))]
+pub enum GrantType {
+    AuthorizationCode,
+    ClientCredentials,
+}
+
 /// Input for the authorization grant policy.
 #[derive(Serialize, Debug)]
 #[serde(rename_all = "snake_case")]
@@ -104,11 +117,10 @@ pub struct AuthorizationGrantInput<'a> {
     )]
     pub client: &'a Client,
 
-    #[cfg_attr(
-        feature = "jsonschema",
-        schemars(with = "std::collections::HashMap<String, serde_json::Value>")
-    )]
-    pub authorization_grant: &'a AuthorizationGrant,
+    #[cfg_attr(feature = "jsonschema", schemars(with = "String"))]
+    pub scope: &'a Scope,
+
+    pub grant_type: GrantType,
 }
 
 /// Input for the email add policy.

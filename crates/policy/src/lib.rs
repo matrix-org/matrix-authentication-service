@@ -20,7 +20,7 @@
 pub mod model;
 
 use mas_data_model::{AuthorizationGrant, Client, User};
-use oauth2_types::registration::VerifiedClientMetadata;
+use oauth2_types::{registration::VerifiedClientMetadata, scope::Scope};
 use opa_wasm::Runtime;
 use thiserror::Error;
 use tokio::io::{AsyncRead, AsyncReadExt};
@@ -30,6 +30,7 @@ use self::model::{
     AuthorizationGrantInput, ClientRegistrationInput, EmailInput, PasswordInput, RegisterInput,
 };
 pub use self::model::{EvaluationResult, Violation};
+use crate::model::GrantType;
 
 #[derive(Debug, Error)]
 pub enum LoadError {
@@ -300,6 +301,7 @@ impl Policy {
         skip_all,
         fields(
             input.authorization_grant.id = %authorization_grant.id,
+            input.scope = %authorization_grant.scope,
             input.client.id = %client.id,
             input.user.id = %user.id,
         ),
@@ -314,7 +316,43 @@ impl Policy {
         let input = AuthorizationGrantInput {
             user,
             client,
-            authorization_grant,
+            scope: &authorization_grant.scope,
+            grant_type: GrantType::AuthorizationCode,
+        };
+
+        let [res]: [EvaluationResult; 1] = self
+            .instance
+            .evaluate(
+                &mut self.store,
+                &self.entrypoints.authorization_grant,
+                &input,
+            )
+            .await?;
+
+        Ok(res)
+    }
+
+    #[tracing::instrument(
+        name = "policy.evaluate.client_credentials_grant",
+        skip_all,
+        fields(
+            input.scope = %scope,
+            input.client.id = %client.id,
+            input.user.id = %user.id,
+        ),
+        err,
+    )]
+    pub async fn evaluate_client_credentials_grant(
+        &mut self,
+        scope: &Scope,
+        client: &Client,
+        user: &User,
+    ) -> Result<EvaluationResult, EvaluationError> {
+        let input = AuthorizationGrantInput {
+            user,
+            client,
+            scope,
+            grant_type: GrantType::ClientCredentials,
         };
 
         let [res]: [EvaluationResult; 1] = self
