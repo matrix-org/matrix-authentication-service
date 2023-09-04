@@ -211,7 +211,7 @@ mod tests {
         // Create an OAuth session
         let session = repo
             .oauth2_session()
-            .add(
+            .add_from_browser_session(
                 &mut rng,
                 &clock,
                 &client,
@@ -464,28 +464,28 @@ mod tests {
         // we're getting consistent ordering in lists.
         let session11 = repo
             .oauth2_session()
-            .add(&mut rng, &clock, &client1, &user1_session, scope.clone())
+            .add_from_browser_session(&mut rng, &clock, &client1, &user1_session, scope.clone())
             .await
             .unwrap();
         clock.advance(Duration::minutes(1));
 
         let session12 = repo
             .oauth2_session()
-            .add(&mut rng, &clock, &client1, &user2_session, scope.clone())
+            .add_from_browser_session(&mut rng, &clock, &client1, &user2_session, scope.clone())
             .await
             .unwrap();
         clock.advance(Duration::minutes(1));
 
         let session21 = repo
             .oauth2_session()
-            .add(&mut rng, &clock, &client2, &user1_session, scope2.clone())
+            .add_from_browser_session(&mut rng, &clock, &client2, &user1_session, scope2.clone())
             .await
             .unwrap();
         clock.advance(Duration::minutes(1));
 
         let session22 = repo
             .oauth2_session()
-            .add(&mut rng, &clock, &client2, &user2_session, scope2.clone())
+            .add_from_browser_session(&mut rng, &clock, &client2, &user2_session, scope2.clone())
             .await
             .unwrap();
         clock.advance(Duration::minutes(1));

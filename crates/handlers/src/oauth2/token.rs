@@ -506,7 +506,7 @@ mod tests {
 
         let session = repo
             .oauth2_session()
-            .add(
+            .add_from_browser_session(
                 &mut state.rng(),
                 &state.clock,
                 &client,
@@ -606,7 +606,7 @@ mod tests {
 
         let session = repo
             .oauth2_session()
-            .add(
+            .add_from_browser_session(
                 &mut state.rng(),
                 &state.clock,
                 &client,
@@ -691,7 +691,7 @@ mod tests {
         // Get a token pair
         let session = repo
             .oauth2_session()
-            .add(
+            .add_from_browser_session(
                 &mut state.rng(),
                 &state.clock,
                 &client,
