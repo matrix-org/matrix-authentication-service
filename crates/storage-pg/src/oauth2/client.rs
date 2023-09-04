@@ -63,6 +63,7 @@ struct OAuth2ClientLookup {
     // response_types: Vec<String>,
     grant_type_authorization_code: bool,
     grant_type_refresh_token: bool,
+    grant_type_client_credentials: bool,
     contacts: Vec<String>,
     client_name: Option<String>,
     logo_uri: Option<String>,
@@ -125,6 +126,9 @@ impl TryInto<Client> for OAuth2ClientLookup {
         }
         if self.grant_type_refresh_token {
             grant_types.push(GrantType::RefreshToken);
+        }
+        if self.grant_type_client_credentials {
+            grant_types.push(GrantType::ClientCredentials);
         }
 
         let logo_uri = self.logo_uri.map(|s| s.parse()).transpose().map_err(|e| {
@@ -293,6 +297,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
                      , redirect_uris
                      , grant_type_authorization_code
                      , grant_type_refresh_token
+                     , grant_type_client_credentials
                      , contacts
                      , client_name
                      , logo_uri
@@ -343,6 +348,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
                      , redirect_uris
                      , grant_type_authorization_code
                      , grant_type_refresh_token
+                     , grant_type_client_credentials
                      , contacts
                      , client_name
                      , logo_uri
@@ -429,6 +435,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
                     , redirect_uris
                     , grant_type_authorization_code
                     , grant_type_refresh_token
+                    , grant_type_client_credentials
                     , client_name
                     , logo_uri
                     , client_uri
@@ -444,7 +451,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
                     , is_static
                     )
                 VALUES
-                    ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, FALSE)
+                    ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, FALSE)
             "#,
             Uuid::from(id),
             encrypted_client_secret,
@@ -452,6 +459,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
             &redirect_uris_array,
             grant_types.contains(&GrantType::AuthorizationCode),
             grant_types.contains(&GrantType::RefreshToken),
+            grant_types.contains(&GrantType::ClientCredentials),
             client_name,
             logo_uri.as_ref().map(Url::as_str),
             client_uri.as_ref().map(Url::as_str),
@@ -544,18 +552,20 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
                     , redirect_uris
                     , grant_type_authorization_code
                     , grant_type_refresh_token
+                    , grant_type_client_credentials
                     , token_endpoint_auth_method
                     , jwks
                     , jwks_uri
                     , is_static
                     )
                 VALUES
-                    ($1, $2, $3, $4, $5, $6, $7, $8, TRUE)
+                    ($1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE)
                 ON CONFLICT (oauth2_client_id)
                 DO
                     UPDATE SET encrypted_client_secret = EXCLUDED.encrypted_client_secret
                              , grant_type_authorization_code = EXCLUDED.grant_type_authorization_code
                              , grant_type_refresh_token = EXCLUDED.grant_type_refresh_token
+                             , grant_type_client_credentials = EXCLUDED.grant_type_client_credentials
                              , token_endpoint_auth_method = EXCLUDED.token_endpoint_auth_method
                              , jwks = EXCLUDED.jwks
                              , jwks_uri = EXCLUDED.jwks_uri
@@ -564,6 +574,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
             Uuid::from(client_id),
             encrypted_client_secret,
             &redirect_uris_array,
+            true,
             true,
             true,
             client_auth_method,
@@ -592,7 +603,11 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
                 OAuthAuthorizationEndpointResponseType::IdToken,
                 OAuthAuthorizationEndpointResponseType::None,
             ],
-            grant_types: Vec::new(),
+            grant_types: vec![
+                GrantType::AuthorizationCode,
+                GrantType::RefreshToken,
+                GrantType::ClientCredentials,
+            ],
             contacts: Vec::new(),
             client_name: None,
             logo_uri: None,
@@ -626,6 +641,7 @@ impl<'c> OAuth2ClientRepository for PgOAuth2ClientRepository<'c> {
                      , redirect_uris
                      , grant_type_authorization_code
                      , grant_type_refresh_token
+                     , grant_type_client_credentials
                      , contacts
                      , client_name
                      , logo_uri

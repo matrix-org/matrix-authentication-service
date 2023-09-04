@@ -574,7 +574,7 @@ pub enum AccessTokenRequest {
     DeviceCode(DeviceCodeGrant),
 
     /// An unsupported request.
-    #[serde(skip, other)]
+    #[serde(skip_serializing, other)]
     Unsupported,
 }
 

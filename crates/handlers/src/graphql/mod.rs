@@ -218,7 +218,7 @@ async fn get_requester(
         };
 
         // If there is a user for this session, check that it is not locked
-        let user_valid = user.as_ref().map_or(false, User::is_valid);
+        let user_valid = user.as_ref().map_or(true, User::is_valid);
 
         if !token.is_valid(clock.now()) || !session.is_valid() || !user_valid {
             return Err(RouteError::InvalidToken);

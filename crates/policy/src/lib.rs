@@ -314,7 +314,7 @@ impl Policy {
         user: &User,
     ) -> Result<EvaluationResult, EvaluationError> {
         let input = AuthorizationGrantInput {
-            user,
+            user: Some(user),
             client,
             scope: &authorization_grant.scope,
             grant_type: GrantType::AuthorizationCode,
@@ -338,7 +338,6 @@ impl Policy {
         fields(
             input.scope = %scope,
             input.client.id = %client.id,
-            input.user.id = %user.id,
         ),
         err,
     )]
@@ -346,10 +345,9 @@ impl Policy {
         &mut self,
         scope: &Scope,
         client: &Client,
-        user: &User,
     ) -> Result<EvaluationResult, EvaluationError> {
         let input = AuthorizationGrantInput {
-            user,
+            user: None,
             client,
             scope,
             grant_type: GrantType::ClientCredentials,
