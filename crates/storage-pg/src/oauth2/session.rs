@@ -51,7 +51,7 @@ impl<'c> PgOAuth2SessionRepository<'c> {
 #[enum_def]
 struct OAuthSessionLookup {
     oauth2_session_id: Uuid,
-    user_id: Uuid,
+    user_id: Option<Uuid>,
     user_session_id: Option<Uuid>,
     oauth2_client_id: Uuid,
     scope_list: Vec<String>,
@@ -86,7 +86,7 @@ impl TryFrom<OAuthSessionLookup> for Session {
             state,
             created_at: value.created_at,
             client_id: value.oauth2_client_id.into(),
-            user_id: Some(value.user_id.into()),
+            user_id: value.user_id.map(Ulid::from),
             user_session_id: value.user_session_id.map(Ulid::from),
             scope,
         })
