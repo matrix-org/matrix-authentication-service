@@ -77,7 +77,7 @@
     },
     "back_to_homepage": "Go back to the homepage",
     "@back_to_homepage": {
-      "context": "pages/404.html:25:64-89"
+      "context": "pages/404.html:25:37-62"
     },
     "change_password": {
       "change": "Change password",

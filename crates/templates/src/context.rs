@@ -23,7 +23,7 @@ use mas_data_model::{
     UpstreamOAuthLink, UpstreamOAuthProvider, User, UserEmail, UserEmailVerification,
 };
 use mas_i18n::DataLocale;
-use mas_router::{PostAuthAction, Route};
+use mas_router::{Account, GraphQL, PostAuthAction, Route, UrlBuilder};
 use rand::Rng;
 use serde::{ser::SerializeStruct, Deserialize, Serialize};
 use ulid::Ulid;
@@ -276,30 +276,29 @@ impl TemplateContext for IndexContext {
 
 /// Config used by the frontend app
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AppConfig {
     root: String,
-}
-
-impl Default for AppConfig {
-    fn default() -> Self {
-        Self {
-            root: "/account/".into(),
-        }
-    }
+    graphql_endpoint: String,
 }
 
 /// Context used by the `app.html` template
-#[derive(Serialize, Default)]
+#[derive(Serialize)]
 pub struct AppContext {
     app_config: AppConfig,
 }
 
 impl AppContext {
-    /// Constructs the context for the app page with the given app root
+    /// Constructs the context given the [`UrlBuilder`]
     #[must_use]
-    pub fn with_app_root(root: String) -> Self {
+    pub fn from_url_builder(url_builder: &UrlBuilder) -> Self {
+        let root = url_builder.relative_url_for(&Account::default());
+        let graphql_endpoint = url_builder.relative_url_for(&GraphQL);
         Self {
-            app_config: AppConfig { root },
+            app_config: AppConfig {
+                root,
+                graphql_endpoint,
+            },
         }
     }
 }
@@ -309,7 +308,8 @@ impl TemplateContext for AppContext {
     where
         Self: Sized,
     {
-        vec![Self::default()]
+        let url_builder = UrlBuilder::new("https://example.com/".parse().unwrap(), None, None);
+        vec![Self::from_url_builder(&url_builder)]
     }
 }
 
@@ -935,7 +935,7 @@ impl UpstreamRegister {
 
     fn for_link_id(id: Ulid) -> Self {
         let login_link = mas_router::Login::and_link_upstream(id)
-            .relative_url()
+            .path_and_query()
             .into();
 
         Self {

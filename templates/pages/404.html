@@ -22,7 +22,7 @@ limitations under the License.
         <h1 class="text-xl font-semibold">{{ _("mas.not_found.heading") }}</h1>
         <p>{{ _("mas.not_found.description") }}</p>
         <div>
-            <a class="cpd-link" data-kind="primary" href="/">{{ _("mas.back_to_homepage") }}</a>
+            {{ button.link_text(text=_("mas.back_to_homepage"), href="/") }}
         </div>
 
         <hr />

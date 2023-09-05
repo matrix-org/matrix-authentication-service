@@ -25,7 +25,7 @@ use mas_axum_utils::{
 };
 use mas_data_model::{AuthorizationGrantStage, Device};
 use mas_policy::Policy;
-use mas_router::{PostAuthAction, Route};
+use mas_router::{PostAuthAction, UrlBuilder};
 use mas_storage::{
     oauth2::{OAuth2AuthorizationGrantRepository, OAuth2ClientRepository},
     BoxClock, BoxRepository, BoxRng,
@@ -84,6 +84,7 @@ pub(crate) async fn get(
     clock: BoxClock,
     PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
+    State(url_builder): State<UrlBuilder>,
     mut policy: Policy,
     mut repo: BoxRepository,
     activity_tracker: BoundActivityTracker,
@@ -142,7 +143,7 @@ pub(crate) async fn get(
         }
     } else {
         let login = mas_router::Login::and_continue_grant(grant_id);
-        Ok((cookie_jar, login.go()).into_response())
+        Ok((cookie_jar, url_builder.redirect(&login)).into_response())
     }
 }
 
@@ -159,6 +160,7 @@ pub(crate) async fn post(
     mut repo: BoxRepository,
     activity_tracker: BoundActivityTracker,
     cookie_jar: CookieJar,
+    State(url_builder): State<UrlBuilder>,
     Path(grant_id): Path<Ulid>,
     Form(form): Form<ProtectedForm<()>>,
 ) -> Result<Response, RouteError> {
@@ -177,7 +179,7 @@ pub(crate) async fn post(
 
     let Some(session) = maybe_session else {
         let login = mas_router::Login::and_then(next);
-        return Ok((cookie_jar, login.go()).into_response());
+        return Ok((cookie_jar, url_builder.redirect(&login)).into_response());
     };
 
     activity_tracker
@@ -222,5 +224,5 @@ pub(crate) async fn post(
 
     repo.save().await?;
 
-    Ok((cookie_jar, next.go_next()).into_response())
+    Ok((cookie_jar, next.go_next(&url_builder)).into_response())
 }

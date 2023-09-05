@@ -38,7 +38,7 @@ const HydrateLocation: React.FC<React.PropsWithChildren<{ path: string }>> = ({
   path,
 }) => {
   useHydrateAtoms([
-    [appConfigAtom, { root: "/" }],
+    [appConfigAtom, { root: "/", graphqlEndpoint: "/graphql" }],
     [locationAtom, { pathname: path }],
   ]);
   return <>{children}</>;

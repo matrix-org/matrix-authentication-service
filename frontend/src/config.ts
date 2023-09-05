@@ -12,10 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-type AppConfig = {
+export type AppConfig = {
   root: string;
+  graphqlEndpoint: string;
 };
 
-interface Window {
-  APP_CONFIG: AppConfig;
+interface IWindow {
+  APP_CONFIG?: AppConfig;
 }
+
+const config: AppConfig = (typeof window !== "undefined" &&
+  (window as IWindow).APP_CONFIG) || { root: "/", graphqlEndpoint: "/graphql" };
+
+export default config;

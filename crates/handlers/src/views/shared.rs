@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use anyhow::Context;
-use mas_router::{PostAuthAction, Route};
+use mas_router::{PostAuthAction, Route, UrlBuilder};
 use mas_storage::{
     compat::CompatSsoLoginRepository,
     oauth2::OAuth2AuthorizationGrantRepository,
@@ -30,14 +30,19 @@ pub(crate) struct OptionalPostAuthAction {
 }
 
 impl OptionalPostAuthAction {
-    pub fn go_next_or_default<T: Route>(&self, default: &T) -> axum::response::Redirect {
-        self.post_auth_action
-            .as_ref()
-            .map_or_else(|| default.go(), mas_router::PostAuthAction::go_next)
+    pub fn go_next_or_default<T: Route>(
+        &self,
+        url_builder: &UrlBuilder,
+        default: &T,
+    ) -> axum::response::Redirect {
+        self.post_auth_action.as_ref().map_or_else(
+            || url_builder.redirect(default),
+            |action| action.go_next(url_builder),
+        )
     }
 
-    pub fn go_next(&self) -> axum::response::Redirect {
-        self.go_next_or_default(&mas_router::Index)
+    pub fn go_next(&self, url_builder: &UrlBuilder) -> axum::response::Redirect {
+        self.go_next_or_default(url_builder, &mas_router::Index)
     }
 
     pub async fn load_context<'a>(

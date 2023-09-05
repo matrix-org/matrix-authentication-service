@@ -22,7 +22,7 @@ use mas_axum_utils::{
     FancyError, SessionInfoExt,
 };
 use mas_policy::Policy;
-use mas_router::Route;
+use mas_router::UrlBuilder;
 use mas_storage::{
     job::{JobRepositoryExt, VerifyEmailJob},
     user::UserEmailRepository,
@@ -44,6 +44,7 @@ pub(crate) async fn get(
     clock: BoxClock,
     PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
+    State(url_builder): State<UrlBuilder>,
     activity_tracker: BoundActivityTracker,
     mut repo: BoxRepository,
     cookie_jar: CookieJar,
@@ -55,7 +56,7 @@ pub(crate) async fn get(
 
     let Some(session) = maybe_session else {
         let login = mas_router::Login::default();
-        return Ok((cookie_jar, login.go()).into_response());
+        return Ok((cookie_jar, url_builder.redirect(&login)).into_response());
     };
 
     activity_tracker
@@ -80,6 +81,7 @@ pub(crate) async fn post(
     PreferredLanguage(locale): PreferredLanguage,
     mut policy: Policy,
     cookie_jar: CookieJar,
+    State(url_builder): State<UrlBuilder>,
     activity_tracker: BoundActivityTracker,
     Query(query): Query<OptionalPostAuthAction>,
     Form(form): Form<ProtectedForm<EmailForm>>,
@@ -91,7 +93,7 @@ pub(crate) async fn post(
 
     let Some(session) = maybe_session else {
         let login = mas_router::Login::default();
-        return Ok((cookie_jar, login.go()).into_response());
+        return Ok((cookie_jar, url_builder.redirect(&login)).into_response());
     };
 
     // XXX: we really should show human readable errors on the form here
@@ -135,9 +137,9 @@ pub(crate) async fn post(
             next
         };
 
-        next.go()
+        url_builder.redirect(&next)
     } else {
-        query.go_next_or_default(&mas_router::Account::default())
+        query.go_next_or_default(&url_builder, &mas_router::Account::default())
     };
 
     repo.save().await?;

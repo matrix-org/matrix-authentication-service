@@ -26,7 +26,7 @@ use mas_axum_utils::{
 use mas_data_model::BrowserSession;
 use mas_i18n::DataLocale;
 use mas_policy::Policy;
-use mas_router::Route;
+use mas_router::UrlBuilder;
 use mas_storage::{
     user::{BrowserSessionRepository, UserPasswordRepository},
     BoxClock, BoxRepository, BoxRng, Clock,
@@ -53,12 +53,15 @@ pub(crate) async fn get(
     State(templates): State<Templates>,
     State(password_manager): State<PasswordManager>,
     activity_tracker: BoundActivityTracker,
+    State(url_builder): State<UrlBuilder>,
     mut repo: BoxRepository,
     cookie_jar: CookieJar,
 ) -> Result<Response, FancyError> {
     // If the password manager is disabled, we can go back to the account page.
     if !password_manager.is_enabled() {
-        return Ok(mas_router::Account::default().go().into_response());
+        return Ok(url_builder
+            .redirect(&mas_router::Account::default())
+            .into_response());
     }
 
     let (session_info, cookie_jar) = cookie_jar.session_info();
@@ -73,7 +76,7 @@ pub(crate) async fn get(
         render(&mut rng, &clock, locale, templates, session, cookie_jar).await
     } else {
         let login = mas_router::Login::and_then(mas_router::PostAuthAction::ChangePassword);
-        Ok((cookie_jar, login.go()).into_response())
+        Ok((cookie_jar, url_builder.redirect(&login)).into_response())
     }
 }
 
@@ -105,6 +108,7 @@ pub(crate) async fn post(
     State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
     activity_tracker: BoundActivityTracker,
+    State(url_builder): State<UrlBuilder>,
     mut policy: Policy,
     mut repo: BoxRepository,
     cookie_jar: CookieJar,
@@ -123,7 +127,7 @@ pub(crate) async fn post(
 
     let Some(session) = maybe_session else {
         let login = mas_router::Login::and_then(mas_router::PostAuthAction::ChangePassword);
-        return Ok((cookie_jar, login.go()).into_response());
+        return Ok((cookie_jar, url_builder.redirect(&login)).into_response());
     };
 
     let user_password = repo

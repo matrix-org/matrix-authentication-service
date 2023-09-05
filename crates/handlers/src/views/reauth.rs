@@ -23,7 +23,7 @@ use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     FancyError, SessionInfoExt,
 };
-use mas_router::Route;
+use mas_router::UrlBuilder;
 use mas_storage::{
     user::{BrowserSessionRepository, UserPasswordRepository},
     BoxClock, BoxRepository, BoxRng,
@@ -47,6 +47,7 @@ pub(crate) async fn get(
     PreferredLanguage(locale): PreferredLanguage,
     State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
+    State(url_builder): State<UrlBuilder>,
     activity_tracker: BoundActivityTracker,
     mut repo: BoxRepository,
     Query(query): Query<OptionalPostAuthAction>,
@@ -54,7 +55,9 @@ pub(crate) async fn get(
 ) -> Result<Response, FancyError> {
     if !password_manager.is_enabled() {
         // XXX: do something better here
-        return Ok(mas_router::Account::default().go().into_response());
+        return Ok(url_builder
+            .redirect(&mas_router::Account::default())
+            .into_response());
     }
 
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
@@ -66,7 +69,7 @@ pub(crate) async fn get(
         // If there is no session, redirect to the login screen, keeping the
         // PostAuthAction
         let login = mas_router::Login::from(query.post_auth_action);
-        return Ok((cookie_jar, login.go()).into_response());
+        return Ok((cookie_jar, url_builder.redirect(&login)).into_response());
     };
 
     activity_tracker
@@ -95,6 +98,7 @@ pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
     State(password_manager): State<PasswordManager>,
+    State(url_builder): State<UrlBuilder>,
     mut repo: BoxRepository,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: CookieJar,
@@ -115,7 +119,7 @@ pub(crate) async fn post(
         // If there is no session, redirect to the login screen, keeping the
         // PostAuthAction
         let login = mas_router::Login::from(query.post_auth_action);
-        return Ok((cookie_jar, login.go()).into_response());
+        return Ok((cookie_jar, url_builder.redirect(&login)).into_response());
     };
 
     // Load the user password
@@ -162,6 +166,6 @@ pub(crate) async fn post(
     let cookie_jar = cookie_jar.set_session(&session);
     repo.save().await?;
 
-    let reply = query.go_next();
+    let reply = query.go_next(&url_builder);
     Ok((cookie_jar, reply).into_response())
 }

@@ -14,8 +14,6 @@
 
 //! Utility to build URLs
 
-use std::borrow::Cow;
-
 use ulid::Ulid;
 use url::Url;
 
@@ -24,32 +22,91 @@ use crate::traits::Route;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct UrlBuilder {
     http_base: Url,
-    assets_base: Cow<'static, str>,
+    prefix: String,
+    assets_base: String,
     issuer: Url,
 }
 
 impl UrlBuilder {
-    fn url_for<U>(&self, destination: &U) -> Url
+    fn absolute_url_for<U>(&self, destination: &U) -> Url
     where
         U: Route,
     {
         destination.absolute_url(&self.http_base)
     }
 
+    /// Create a relative URL for a route, prefixed with the base URL
+    #[must_use]
+    pub fn relative_url_for<U>(&self, destination: &U) -> String
+    where
+        U: Route,
+    {
+        format!(
+            "{prefix}{destination}",
+            prefix = self.prefix,
+            destination = destination.path_and_query()
+        )
+    }
+
+    /// The prefix added to all relative URLs
+    #[must_use]
+    pub fn prefix(&self) -> Option<&str> {
+        if self.prefix.is_empty() {
+            None
+        } else {
+            Some(&self.prefix)
+        }
+    }
+
+    /// Create a (relative) redirect response to a route
+    pub fn redirect<U>(&self, destination: &U) -> axum::response::Redirect
+    where
+        U: Route,
+    {
+        let uri = self.relative_url_for(destination);
+        axum::response::Redirect::to(&uri)
+    }
+
+    /// Create an absolute redirect response to a route
     pub fn absolute_redirect<U>(&self, destination: &U) -> axum::response::Redirect
     where
         U: Route,
     {
-        destination.go_absolute(&self.http_base)
+        let uri = self.absolute_url_for(destination);
+        axum::response::Redirect::to(uri.as_str())
     }
 
     /// Create a new [`UrlBuilder`] from a base URL
+    ///
+    /// # Panics
+    ///
+    /// Panics if the base URL contains a fragment, a query, credentials or
+    /// isn't HTTP/HTTPS;
     #[must_use]
     pub fn new(base: Url, issuer: Option<Url>, assets_base: Option<String>) -> Self {
+        assert!(
+            base.scheme() == "http" || base.scheme() == "https",
+            "base URL must be HTTP/HTTPS"
+        );
+        assert_eq!(base.query(), None, "base URL must not contain a query");
+        assert_eq!(
+            base.fragment(),
+            None,
+            "base URL must not contain a fragment"
+        );
+        assert_eq!(base.username(), "", "base URL must not contain credentials");
+        assert_eq!(
+            base.password(),
+            None,
+            "base URL must not contain credentials"
+        );
+
         let issuer = issuer.unwrap_or_else(|| base.clone());
-        let assets_base = assets_base.map_or(Cow::Borrowed("/assets/"), Cow::Owned);
+        let prefix = base.path().trim_end_matches('/').to_owned();
+        let assets_base = assets_base.unwrap_or_else(|| format!("{prefix}/assets/"));
         Self {
             http_base: base,
+            prefix,
             assets_base,
             issuer,
         }
@@ -70,49 +127,49 @@ impl UrlBuilder {
     /// OAuth 2.0 authorization endpoint
     #[must_use]
     pub fn oauth_authorization_endpoint(&self) -> Url {
-        self.url_for(&crate::endpoints::OAuth2AuthorizationEndpoint)
+        self.absolute_url_for(&crate::endpoints::OAuth2AuthorizationEndpoint)
     }
 
     /// OAuth 2.0 token endpoint
     #[must_use]
     pub fn oauth_token_endpoint(&self) -> Url {
-        self.url_for(&crate::endpoints::OAuth2TokenEndpoint)
+        self.absolute_url_for(&crate::endpoints::OAuth2TokenEndpoint)
     }
 
     /// OAuth 2.0 introspection endpoint
     #[must_use]
     pub fn oauth_introspection_endpoint(&self) -> Url {
-        self.url_for(&crate::endpoints::OAuth2Introspection)
+        self.absolute_url_for(&crate::endpoints::OAuth2Introspection)
     }
 
     /// OAuth 2.0 revocation endpoint
     #[must_use]
     pub fn oauth_revocation_endpoint(&self) -> Url {
-        self.url_for(&crate::endpoints::OAuth2Revocation)
+        self.absolute_url_for(&crate::endpoints::OAuth2Revocation)
     }
 
     /// OAuth 2.0 client registration endpoint
     #[must_use]
     pub fn oauth_registration_endpoint(&self) -> Url {
-        self.url_for(&crate::endpoints::OAuth2RegistrationEndpoint)
+        self.absolute_url_for(&crate::endpoints::OAuth2RegistrationEndpoint)
     }
 
     // OIDC userinfo endpoint
     #[must_use]
     pub fn oidc_userinfo_endpoint(&self) -> Url {
-        self.url_for(&crate::endpoints::OidcUserinfo)
+        self.absolute_url_for(&crate::endpoints::OidcUserinfo)
     }
 
     /// JWKS URI
     #[must_use]
     pub fn jwks_uri(&self) -> Url {
-        self.url_for(&crate::endpoints::OAuth2Keys)
+        self.absolute_url_for(&crate::endpoints::OAuth2Keys)
     }
 
     /// Static asset
     #[must_use]
     pub fn static_asset(&self, path: String) -> Url {
-        self.url_for(&crate::endpoints::StaticAsset::new(path))
+        self.absolute_url_for(&crate::endpoints::StaticAsset::new(path))
     }
 
     /// Static asset base
@@ -124,18 +181,83 @@ impl UrlBuilder {
     /// GraphQL endpoint
     #[must_use]
     pub fn graphql_endpoint(&self) -> Url {
-        self.url_for(&crate::endpoints::GraphQL)
+        self.absolute_url_for(&crate::endpoints::GraphQL)
     }
 
     /// Upstream redirect URI
     #[must_use]
     pub fn upstream_oauth_callback(&self, id: Ulid) -> Url {
-        self.url_for(&crate::endpoints::UpstreamOAuth2Callback::new(id))
+        self.absolute_url_for(&crate::endpoints::UpstreamOAuth2Callback::new(id))
     }
 
     /// Upstream authorize URI
     #[must_use]
     pub fn upstream_oauth_authorize(&self, id: Ulid) -> Url {
-        self.url_for(&crate::endpoints::UpstreamOAuth2Authorize::new(id))
+        self.absolute_url_for(&crate::endpoints::UpstreamOAuth2Authorize::new(id))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    #[should_panic]
+    fn test_invalid_base_url_scheme() {
+        let _ = super::UrlBuilder::new(url::Url::parse("file:///tmp/").unwrap(), None, None);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_invalid_base_url_query() {
+        let _ = super::UrlBuilder::new(
+            url::Url::parse("https://example.com/?foo=bar").unwrap(),
+            None,
+            None,
+        );
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_invalid_base_url_fragment() {
+        let _ = super::UrlBuilder::new(
+            url::Url::parse("https://example.com/#foo").unwrap(),
+            None,
+            None,
+        );
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_invalid_base_url_credentials() {
+        let _ = super::UrlBuilder::new(
+            url::Url::parse("https://foo@example.com/").unwrap(),
+            None,
+            None,
+        );
+    }
+
+    #[test]
+    fn test_url_prefix() {
+        let builder = super::UrlBuilder::new(
+            url::Url::parse("https://example.com/foo/").unwrap(),
+            None,
+            None,
+        );
+        assert_eq!(builder.prefix, "/foo");
+
+        let builder =
+            super::UrlBuilder::new(url::Url::parse("https://example.com/").unwrap(), None, None);
+        assert_eq!(builder.prefix, "");
+    }
+
+    #[test]
+    fn test_absolute_uri_prefix() {
+        let builder = super::UrlBuilder::new(
+            url::Url::parse("https://example.com/foo/").unwrap(),
+            None,
+            None,
+        );
+
+        let uri = builder.absolute_url_for(&crate::endpoints::OAuth2AuthorizationEndpoint);
+        assert_eq!(uri.as_str(), "https://example.com/foo/authorize");
     }
 }

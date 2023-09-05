@@ -22,7 +22,7 @@ use mas_axum_utils::{
     csrf::{CsrfExt, ProtectedForm},
     FancyError, SessionInfoExt,
 };
-use mas_router::Route;
+use mas_router::UrlBuilder;
 use mas_storage::{
     job::{JobRepositoryExt, ProvisionUserJob},
     user::UserEmailRepository,
@@ -50,6 +50,7 @@ pub(crate) async fn get(
     clock: BoxClock,
     PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
+    State(url_builder): State<UrlBuilder>,
     activity_tracker: BoundActivityTracker,
     mut repo: BoxRepository,
     Query(query): Query<OptionalPostAuthAction>,
@@ -63,7 +64,7 @@ pub(crate) async fn get(
 
     let Some(session) = maybe_session else {
         let login = mas_router::Login::default();
-        return Ok((cookie_jar, login.go()).into_response());
+        return Ok((cookie_jar, url_builder.redirect(&login)).into_response());
     };
 
     activity_tracker
@@ -79,7 +80,7 @@ pub(crate) async fn get(
 
     if user_email.confirmed_at.is_some() {
         // This email was already verified, skip
-        let destination = query.go_next_or_default(&mas_router::Account::default());
+        let destination = query.go_next_or_default(&url_builder, &mas_router::Account::default());
         return Ok((cookie_jar, destination).into_response());
     }
 
@@ -103,6 +104,7 @@ pub(crate) async fn post(
     clock: BoxClock,
     mut repo: BoxRepository,
     cookie_jar: CookieJar,
+    State(url_builder): State<UrlBuilder>,
     activity_tracker: BoundActivityTracker,
     Query(query): Query<OptionalPostAuthAction>,
     Path(id): Path<Ulid>,
@@ -115,7 +117,7 @@ pub(crate) async fn post(
 
     let Some(session) = maybe_session else {
         let login = mas_router::Login::default();
-        return Ok((cookie_jar, login.go()).into_response());
+        return Ok((cookie_jar, url_builder.redirect(&login)).into_response());
     };
 
     let user_email = repo
@@ -157,6 +159,6 @@ pub(crate) async fn post(
         .record_browser_session(&clock, &session)
         .await;
 
-    let destination = query.go_next_or_default(&mas_router::Account::default());
+    let destination = query.go_next_or_default(&url_builder, &mas_router::Account::default());
     Ok((cookie_jar, destination).into_response())
 }
