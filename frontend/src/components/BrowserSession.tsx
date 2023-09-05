@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Body, Button } from "@vector-im/compound-web";
+import { Button } from "@vector-im/compound-web";
 import { atom, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
@@ -25,7 +25,6 @@ import {
   sessionNameFromDeviceInformation,
 } from "../utils/parseUserAgent";
 
-import styles from "./BrowserSession.module.css";
 import Session from "./Session/Session";
 
 const FRAGMENT = graphql(/* GraphQL */ `
@@ -97,23 +96,8 @@ const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
   };
 
   const deviceInformation = parseUserAgent(data.userAgent || undefined);
-  const name =
+  const sessionName =
     sessionNameFromDeviceInformation(deviceInformation) || "Browser session";
-  const sessionName = isCurrent ? (
-    <>
-      <Body
-        as="span"
-        size="sm"
-        className={styles.currentSession}
-        weight="semibold"
-      >
-        Current
-      </Body>
-      {name}
-    </>
-  ) : (
-    name
-  );
 
   return (
     <Session
@@ -121,6 +105,7 @@ const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
       name={sessionName}
       createdAt={createdAt}
       finishedAt={data.finishedAt}
+      isCurrent={isCurrent}
     >
       {!data.finishedAt && (
         <Button
