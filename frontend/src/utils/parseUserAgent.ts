@@ -26,10 +26,13 @@ export type DeviceInformation = {
   deviceType: DeviceType;
   // eg Google Pixel 6
   deviceModel?: string;
+  deviceModelVersion?: string;
   // eg Android 11
   deviceOperatingSystem?: string;
+  deviceOperatingSystemVersion?: string;
   // eg Firefox 1.1.0
   client?: string;
+  clientVersion?: string;
 };
 
 // Element/1.8.21 (iPhone XS Max; iOS 15.2; Scale/3.00)
@@ -84,11 +87,6 @@ const checkForCustomValues = (userAgent: string): CustomValues => {
   return { customDeviceModel, customDeviceOS };
 };
 
-const concatenateNameAndVersion = (
-  name?: string,
-  version?: string,
-): string | undefined => name && [name, version].filter(Boolean).join(" ");
-
 export const parseUserAgent = (userAgent?: string): DeviceInformation => {
   if (!userAgent) {
     return {
@@ -108,12 +106,14 @@ export const parseUserAgent = (userAgent?: string): DeviceInformation => {
   // ignore OS version in browser based sessions
   const shouldIgnoreOSVersion =
     deviceType === DeviceType.Web || deviceType === DeviceType.Desktop;
-  const deviceOperatingSystem = concatenateNameAndVersion(
-    operatingSystem.name,
-    shouldIgnoreOSVersion ? undefined : operatingSystem.version,
-  );
-  const deviceModel = concatenateNameAndVersion(device.vendor, device.model);
-  const client = concatenateNameAndVersion(browser.name, browser.version);
+  const deviceOperatingSystem = operatingSystem.name;
+  const deviceOperatingSystemVersion = shouldIgnoreOSVersion
+    ? undefined
+    : operatingSystem.version;
+  const deviceModel = device.vendor;
+  const deviceModelVersion = device.model;
+  const client = browser.name;
+  const clientVersion = browser.version;
 
   // only try to parse custom model and OS when device type is known
   const { customDeviceModel, customDeviceOS } =
@@ -124,8 +124,11 @@ export const parseUserAgent = (userAgent?: string): DeviceInformation => {
   return {
     deviceType,
     deviceModel: deviceModel || customDeviceModel,
+    deviceModelVersion,
     deviceOperatingSystem: deviceOperatingSystem || customDeviceOS,
+    deviceOperatingSystemVersion,
     client,
+    clientVersion,
   };
 };
 
@@ -134,8 +137,9 @@ export const sessionNameFromDeviceInformation = ({
   deviceOperatingSystem,
   client,
 }: DeviceInformation): string | undefined => {
-  const device = [deviceModel, deviceOperatingSystem].filter(Boolean).join(" ");
-  const description = [client, device].filter(Boolean).join(" on ");
+  const description = [client, deviceOperatingSystem || deviceModel]
+    .filter(Boolean)
+    .join(" on ");
 
   return description;
 };

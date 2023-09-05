@@ -26,14 +26,19 @@ import {
 const makeDeviceExtendedInfo = (
   deviceType: DeviceType,
   deviceModel?: string,
+  deviceModelVersion?: string,
   deviceOperatingSystem?: string,
+  deviceOperatingSystemVersion?: string,
   clientName?: string,
   clientVersion?: string,
 ): DeviceInformation => ({
   deviceType,
   deviceModel,
+  deviceModelVersion,
   deviceOperatingSystem,
-  client: clientName && [clientName, clientVersion].filter(Boolean).join(" "),
+  deviceOperatingSystemVersion,
+  client: clientName,
+  clientVersion,
 });
 
 /* eslint-disable max-len */
@@ -50,25 +55,49 @@ const ANDROID_UA = [
 ];
 
 const ANDROID_EXPECTED_RESULT = [
-  makeDeviceExtendedInfo(DeviceType.Mobile, "Xiaomi Mi 9T", "Android 11"),
   makeDeviceExtendedInfo(
     DeviceType.Mobile,
-    "Samsung SM-G960F",
-    "Android 6.0.1",
+    "Xiaomi Mi 9T",
+    undefined,
+    "Android",
+    "11",
   ),
-  makeDeviceExtendedInfo(DeviceType.Mobile, "LG Nexus 5", "Android 7.0"),
-  makeDeviceExtendedInfo(DeviceType.Mobile, "Google (Nexus) 5", "Android 7.0"),
+  makeDeviceExtendedInfo(
+    DeviceType.Mobile,
+    "Samsung",
+    "SM-G960F",
+    "Android",
+    "6.0.1",
+  ),
+  makeDeviceExtendedInfo(DeviceType.Mobile, "LG", "Nexus 5", "Android", "7.0"),
+  makeDeviceExtendedInfo(
+    DeviceType.Mobile,
+    "Google (Nexus) 5",
+    undefined,
+    "Android",
+    "7.0",
+  ),
   makeDeviceExtendedInfo(
     DeviceType.Mobile,
     "Google (Nexus) (5)",
-    "Android 7.0",
+    undefined,
+    "Android",
+    "7.0",
   ),
   makeDeviceExtendedInfo(
     DeviceType.Mobile,
-    "Samsung SM-A510F",
-    "Android 6.0.1",
+    "Samsung",
+    "SM-A510F",
+    "Android",
+    "6.0.1",
   ),
-  makeDeviceExtendedInfo(DeviceType.Mobile, "Samsung SM-G610M", "Android 7.0"),
+  makeDeviceExtendedInfo(
+    DeviceType.Mobile,
+    "Samsung",
+    "SM-G610M",
+    "Android",
+    "7.0",
+  ),
 ];
 
 const IOS_UA = [
@@ -78,12 +107,23 @@ const IOS_UA = [
   "Element/1.8.21 (iPad Pro (12.9-inch) (3rd generation); iOS 15.2; Scale/3.00)",
 ];
 const IOS_EXPECTED_RESULT = [
-  makeDeviceExtendedInfo(DeviceType.Mobile, "Apple iPhone", "iOS 15.2"),
-  makeDeviceExtendedInfo(DeviceType.Mobile, "Apple iPhone XS Max", "iOS 15.2"),
-  makeDeviceExtendedInfo(DeviceType.Mobile, "iPad Pro (11-inch)", "iOS 15.2"),
+  makeDeviceExtendedInfo(DeviceType.Mobile, "Apple", "iPhone", "iOS 15.2"),
+  makeDeviceExtendedInfo(
+    DeviceType.Mobile,
+    "Apple",
+    "iPhone XS Max",
+    "iOS 15.2",
+  ),
+  makeDeviceExtendedInfo(
+    DeviceType.Mobile,
+    "iPad Pro (11-inch)",
+    undefined,
+    "iOS 15.2",
+  ),
   makeDeviceExtendedInfo(
     DeviceType.Mobile,
     "iPad Pro (12.9-inch) (3rd generation)",
+    undefined,
     "iOS 15.2",
   ),
 ];
@@ -95,15 +135,19 @@ const DESKTOP_UA = [
 const DESKTOP_EXPECTED_RESULT = [
   makeDeviceExtendedInfo(
     DeviceType.Desktop,
-    "Apple Macintosh",
+    "Apple",
+    "Macintosh",
     "Mac OS",
+    undefined,
     "Electron",
     "20.1.1",
   ),
   makeDeviceExtendedInfo(
     DeviceType.Desktop,
     undefined,
+    undefined,
     "Windows",
+    undefined,
     "Electron",
     "20.1.1",
   ),
@@ -125,65 +169,83 @@ const WEB_UA = [
 const WEB_EXPECTED_RESULT = [
   makeDeviceExtendedInfo(
     DeviceType.Web,
-    "Apple Macintosh",
+    "Apple",
+    "Macintosh",
     "Mac OS",
+    undefined,
     "Chrome",
     "104.0.5112.102",
   ),
   makeDeviceExtendedInfo(
     DeviceType.Web,
     undefined,
+    undefined,
     "Windows",
+    undefined,
     "Chrome",
     "104.0.5112.102",
   ),
   makeDeviceExtendedInfo(
     DeviceType.Web,
-    "Apple Macintosh",
+    "Apple",
+    "Macintosh",
     "Mac OS",
+    undefined,
     "Firefox",
     "39.0",
   ),
   makeDeviceExtendedInfo(
     DeviceType.Web,
-    "Apple Macintosh",
+    "Apple",
+    "Macintosh",
     "Mac OS",
+    undefined,
     "Safari",
     "8.0.3",
   ),
   makeDeviceExtendedInfo(
     DeviceType.Web,
     undefined,
+    undefined,
     "Windows",
+    undefined,
     "Firefox",
     "40.0",
   ),
   makeDeviceExtendedInfo(
     DeviceType.Web,
     undefined,
+    undefined,
     "Windows",
+    undefined,
     "Edge",
     "12.246",
   ),
   // using mobile browser
   makeDeviceExtendedInfo(
     DeviceType.Web,
-    "Apple iPad",
+    "Apple",
+    "iPad",
     "iOS",
+    undefined,
     "Mobile Safari",
     "8.0",
   ),
   makeDeviceExtendedInfo(
     DeviceType.Web,
-    "Apple iPhone",
+    "Apple",
+    "iPhone",
     "iOS",
+    undefined,
     "Mobile Safari",
     "8.0",
   ),
   makeDeviceExtendedInfo(
     DeviceType.Web,
-    "Samsung SM-G973U",
+    "Samsung",
+    "SM-G973U",
     "Android",
+    undefined,
     "Chrome",
     "69.0.3497.100",
   ),
@@ -201,7 +263,8 @@ const MISC_UA = [
 const MISC_EXPECTED_RESULT = [
   makeDeviceExtendedInfo(
     DeviceType.Unknown,
-    "Apple Apple TV",
+    "Apple",
+    "Apple TV",
     undefined,
     undefined,
     undefined,
@@ -275,7 +338,8 @@ describe("parseUserAgent()", () => {
 
 describe("sessionNameFromDeviceInformation", () => {
   const deviceInfo = {
-    client: "Chrome 115.0.0.0",
+    client: "Chrome",
+    clientVersion: "123",
     deviceModel: "Apple Macintosh",
     deviceOperatingSystem: "Mac OS",
     deviceType: DeviceType.Web,
@@ -283,26 +347,27 @@ describe("sessionNameFromDeviceInformation", () => {
 
   it("should concatenate device info", () => {
     expect(sessionNameFromDeviceInformation(deviceInfo)).toEqual(
-      "Chrome 115.0.0.0 on Apple Macintosh Mac OS",
+      "Chrome on Mac OS",
     );
   });
 
-  it("should exclude device model when falsy", () => {
-    expect(
-      sessionNameFromDeviceInformation({
-        ...deviceInfo,
-        deviceModel: undefined,
-      }),
-    ).toEqual("Chrome 115.0.0.0 on Mac OS");
-  });
-
-  it("should exclude device OS when falsy", () => {
+  it("should use device model when deviceOS is falsy", () => {
     expect(
       sessionNameFromDeviceInformation({
         ...deviceInfo,
         deviceOperatingSystem: undefined,
       }),
-    ).toEqual("Chrome 115.0.0.0 on Apple Macintosh");
+    ).toEqual("Chrome on Apple Macintosh");
+  });
+
+  it("should exclude device model and OS when both are falsy", () => {
+    expect(
+      sessionNameFromDeviceInformation({
+        ...deviceInfo,
+        deviceOperatingSystem: undefined,
+        deviceModel: undefined,
+      }),
+    ).toEqual("Chrome");
   });
 
   it("should exclude client when falsy", () => {
@@ -311,7 +376,7 @@ describe("sessionNameFromDeviceInformation", () => {
         ...deviceInfo,
         client: undefined,
       }),
-    ).toEqual("Apple Macintosh Mac OS");
+    ).toEqual("Mac OS");
   });
 
   it("should return an empty string when no info", () => {
