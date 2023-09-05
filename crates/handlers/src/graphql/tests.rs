@@ -25,7 +25,10 @@ use oauth2_types::{
 };
 use sqlx::PgPool;
 
-use crate::test_utils::{init_tracing, RequestBuilderExt, ResponseExt, TestState};
+use crate::{
+    test_utils,
+    test_utils::{init_tracing, RequestBuilderExt, ResponseExt, TestState},
+};
 
 async fn create_test_client(state: &TestState) -> Client {
     let mut repo = state.repository().await.unwrap();
@@ -378,7 +381,7 @@ async fn test_oauth2_client_credentials(pool: PgPool) {
     let client_id = response.client_id;
     let client_secret = response.client_secret.expect("to have a client secret");
 
-    // Call the token endpoint with an empty scope
+    // Call the token endpoint with the graphql scope
     let request = Request::post(mas_router::OAuth2TokenEndpoint::PATH).form(serde_json::json!({
         "grant_type": "client_credentials",
         "client_id": client_id,
@@ -424,6 +427,28 @@ async fn test_oauth2_client_credentials(pool: PgPool) {
         })
     );
 
+    // We shouldn't be able to call the addUser mutation
+    let request = Request::post("/graphql")
+        .bearer(&access_token)
+        .json(serde_json::json!({
+            "query": r#"
+                mutation {
+                    addUser(input: {username: "alice"}) {
+                        user {
+                            id
+                            username
+                        }
+                    }
+                }
+            "#,
+        }));
+    let response = state.request(request).await;
+    response.assert_status(StatusCode::OK);
+    let response: GraphQLResponse = response.json();
+    // There should be an error
+    assert_eq!(response.errors.len(), 1);
+    assert!(response.data.is_null());
+
     // Check that we can't do a query once the token is revoked
     let request = Request::post(mas_router::OAuth2Revocation::PATH).form(serde_json::json!({
         "token": access_token,
@@ -453,4 +478,56 @@ async fn test_oauth2_client_credentials(pool: PgPool) {
 
     let response = state.request(request).await;
     response.assert_status(StatusCode::UNAUTHORIZED);
+
+    // Now make the client admin and try again
+    let state = {
+        let mut state = state;
+        state.policy_factory = test_utils::policy_factory(serde_json::json!({
+            "admin_clients": [client_id],
+        }))
+        .await
+        .unwrap();
+        state
+    };
+
+    // Ask for a token again, with the admin scope
+    let request = Request::post(mas_router::OAuth2TokenEndpoint::PATH).form(serde_json::json!({
+        "grant_type": "client_credentials",
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "scope": "urn:mas:graphql:* urn:mas:admin",
+    }));
+
+    let response = state.request(request).await;
+    response.assert_status(StatusCode::OK);
+    let AccessTokenResponse { access_token, .. } = response.json();
+
+    // We should now be able to call the addUser mutation
+    let request = Request::post("/graphql")
+        .bearer(&access_token)
+        .json(serde_json::json!({
+            "query": r#"
+                mutation {
+                    addUser(input: {username: "alice"}) {
+                        user {
+                            username
+                        }
+                    }
+                }
+            "#,
+        }));
+    let response = state.request(request).await;
+    response.assert_status(StatusCode::OK);
+    let response: GraphQLResponse = response.json();
+    assert!(response.errors.is_empty());
+    assert_eq!(
+        response.data,
+        serde_json::json!({
+            "addUser": {
+                "user": {
+                    "username": "alice"
+                }
+            }
+        })
+    );
 }
