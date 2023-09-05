@@ -27,7 +27,7 @@ use mas_axum_utils::{
     FancyError, SessionInfoExt,
 };
 use mas_data_model::Device;
-use mas_router::{CompatLoginSsoAction, PostAuthAction, Route};
+use mas_router::{CompatLoginSsoAction, PostAuthAction, UrlBuilder};
 use mas_storage::{
     compat::{CompatSessionRepository, CompatSsoLoginRepository},
     job::{JobRepositoryExt, ProvisionDeviceJob},
@@ -65,6 +65,7 @@ pub async fn get(
     clock: BoxClock,
     mut repo: BoxRepository,
     State(templates): State<Templates>,
+    State(url_builder): State<UrlBuilder>,
     cookie_jar: CookieJar,
     Path(id): Path<Ulid>,
     Query(params): Query<Params>,
@@ -78,10 +79,10 @@ pub async fn get(
         // If there is no session, redirect to the login or register screen
         let url = match params.action {
             Some(CompatLoginSsoAction::Register) => {
-                mas_router::Register::and_continue_compat_sso_login(id).go()
+                url_builder.redirect(&mas_router::Register::and_continue_compat_sso_login(id))
             }
             Some(CompatLoginSsoAction::Login) | None => {
-                mas_router::Login::and_continue_compat_sso_login(id).go()
+                url_builder.redirect(&mas_router::Login::and_continue_compat_sso_login(id))
             }
         };
 
@@ -92,7 +93,7 @@ pub async fn get(
     if session.user.primary_user_email_id.is_none() {
         let destination = mas_router::AccountAddEmail::default()
             .and_then(PostAuthAction::continue_compat_sso_login(id));
-        return Ok((cookie_jar, destination.go()).into_response());
+        return Ok((cookie_jar, url_builder.redirect(&destination)).into_response());
     }
 
     let login = repo
@@ -134,6 +135,7 @@ pub async fn post(
     mut repo: BoxRepository,
     PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
+    State(url_builder): State<UrlBuilder>,
     cookie_jar: CookieJar,
     Path(id): Path<Ulid>,
     Query(params): Query<Params>,
@@ -148,10 +150,10 @@ pub async fn post(
         // If there is no session, redirect to the login or register screen
         let url = match params.action {
             Some(CompatLoginSsoAction::Register) => {
-                mas_router::Register::and_continue_compat_sso_login(id).go()
+                url_builder.redirect(&mas_router::Register::and_continue_compat_sso_login(id))
             }
             Some(CompatLoginSsoAction::Login) | None => {
-                mas_router::Login::and_continue_compat_sso_login(id).go()
+                url_builder.redirect(&mas_router::Login::and_continue_compat_sso_login(id))
             }
         };
 
@@ -162,7 +164,7 @@ pub async fn post(
     if session.user.primary_user_email_id.is_none() {
         let destination = mas_router::AccountAddEmail::default()
             .and_then(PostAuthAction::continue_compat_sso_login(id));
-        return Ok((cookie_jar, destination.go()).into_response());
+        return Ok((cookie_jar, url_builder.redirect(&destination)).into_response());
     }
 
     let login = repo

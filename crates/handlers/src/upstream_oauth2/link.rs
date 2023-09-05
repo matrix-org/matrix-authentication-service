@@ -27,6 +27,7 @@ use mas_axum_utils::{
 use mas_data_model::{UpstreamOAuthProviderImportPreference, User};
 use mas_jose::jwt::Jwt;
 use mas_policy::Policy;
+use mas_router::UrlBuilder;
 use mas_storage::{
     job::{JobRepositoryExt, ProvisionUserJob},
     upstream_oauth2::{UpstreamOAuthLinkRepository, UpstreamOAuthSessionRepository},
@@ -191,6 +192,7 @@ pub(crate) async fn get(
     mut repo: BoxRepository,
     PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
+    State(url_builder): State<UrlBuilder>,
     cookie_jar: CookieJar,
     user_agent: Option<TypedHeader<headers::UserAgent>>,
     Path(link_id): Path<Ulid>,
@@ -248,7 +250,7 @@ pub(crate) async fn get(
 
             repo.save().await?;
 
-            post_auth_action.go_next().into_response()
+            post_auth_action.go_next(&url_builder).into_response()
         }
 
         (Some(user_session), Some(user_id)) => {
@@ -311,7 +313,7 @@ pub(crate) async fn get(
 
             repo.save().await?;
 
-            post_auth_action.go_next().into_response()
+            post_auth_action.go_next(&url_builder).into_response()
         }
 
         (None, None) => {
@@ -383,6 +385,7 @@ pub(crate) async fn post(
     cookie_jar: CookieJar,
     user_agent: Option<TypedHeader<headers::UserAgent>>,
     mut policy: Policy,
+    State(url_builder): State<UrlBuilder>,
     Path(link_id): Path<Ulid>,
     Form(form): Form<ProtectedForm<FormData>>,
 ) -> Result<impl IntoResponse, RouteError> {
@@ -577,5 +580,5 @@ pub(crate) async fn post(
 
     repo.save().await?;
 
-    Ok((cookie_jar, post_auth_action.go_next()))
+    Ok((cookie_jar, post_auth_action.go_next(&url_builder)))
 }

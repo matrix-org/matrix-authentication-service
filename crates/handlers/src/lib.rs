@@ -30,7 +30,7 @@
     clippy::let_with_type_underscore,
 )]
 
-use std::{borrow::Cow, convert::Infallible, time::Duration};
+use std::{convert::Infallible, time::Duration};
 
 use axum::{
     body::{Bytes, HttpBody},
@@ -276,6 +276,18 @@ where
             mas_router::CompatRefresh::route(),
             post(self::compat::refresh::post),
         )
+        .route(
+            mas_router::CompatLoginSsoRedirect::route(),
+            get(self::compat::login_sso_redirect::get),
+        )
+        .route(
+            mas_router::CompatLoginSsoRedirectIdp::route(),
+            get(self::compat::login_sso_redirect::get),
+        )
+        .route(
+            mas_router::CompatLoginSsoRedirectSlash::route(),
+            get(self::compat::login_sso_redirect::get),
+        )
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
@@ -318,16 +330,19 @@ where
         // XXX: hard-coded redirect from /account to /account/
         .route(
             "/account",
-            get(|RawQuery(query): RawQuery| async {
-                let route = mas_router::Account::route();
-                let destination = if let Some(query) = query {
-                    Cow::Owned(format!("{route}?{query}"))
-                } else {
-                    Cow::Borrowed(route)
-                };
+            get(
+                |State(url_builder): State<UrlBuilder>, RawQuery(query): RawQuery| async move {
+                    let prefix = url_builder.prefix().unwrap_or_default();
+                    let route = mas_router::Account::route();
+                    let destination = if let Some(query) = query {
+                        format!("{prefix}{route}?{query}")
+                    } else {
+                        format!("{prefix}{route}")
+                    };
 
-                axum::response::Redirect::to(&destination)
-            }),
+                    axum::response::Redirect::to(&destination)
+                },
+            ),
         )
         .route(mas_router::Account::route(), get(self::views::app::get))
         .route(
@@ -336,7 +351,9 @@ where
         )
         .route(
             mas_router::ChangePasswordDiscovery::route(),
-            get(|| async { mas_router::AccountPassword.go() }),
+            get(|State(url_builder): State<UrlBuilder>| async move {
+                url_builder.redirect(&mas_router::AccountPassword)
+            }),
         )
         .route(mas_router::Index::route(), get(self::views::index::get))
         .route(
@@ -377,18 +394,6 @@ where
         .route(
             mas_router::Consent::route(),
             get(self::oauth2::consent::get).post(self::oauth2::consent::post),
-        )
-        .route(
-            mas_router::CompatLoginSsoRedirect::route(),
-            get(self::compat::login_sso_redirect::get),
-        )
-        .route(
-            mas_router::CompatLoginSsoRedirectIdp::route(),
-            get(self::compat::login_sso_redirect::get),
-        )
-        .route(
-            mas_router::CompatLoginSsoRedirectSlash::route(),
-            get(self::compat::login_sso_redirect::get),
         )
         .route(
             mas_router::CompatLoginSsoComplete::route(),

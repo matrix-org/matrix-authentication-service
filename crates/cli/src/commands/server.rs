@@ -57,11 +57,6 @@ impl Options {
         let span = info_span!("cli.run.init").entered();
         let config: AppConfig = root.load_config()?;
 
-        // XXX: there should be a generic config verification step
-        if config.http.public_base.path() != "/" {
-            anyhow::bail!("The http.public_base path is not set to /, this is not supported");
-        }
-
         // Connect to the database
         info!("Connecting to the database");
         let pool = database_pool_from_config(&config.database).await?;
@@ -201,19 +196,22 @@ impl Options {
                 let router = crate::server::build_router(
                     state.clone(),
                     &config.resources,
+                    config.prefix.as_deref(),
                     config.name.as_deref(),
                 );
 
+
                 // Display some informations about where we'll be serving connections
                 let proto = if config.tls.is_some() { "https" } else { "http" };
+                let prefix = config.prefix.unwrap_or_default();
                 let addresses= listeners
                     .iter()
                     .map(|listener| {
                         if let Ok(addr) = listener.local_addr() {
-                            format!("{proto}://{addr:?}")
+                            format!("{proto}://{addr:?}{prefix}")
                         } else {
                             warn!("Could not get local address for listener, something might be wrong!");
-                            format!("{proto}://???")
+                            format!("{proto}://???{prefix}")
                         }
                     })
                     .join(", ");

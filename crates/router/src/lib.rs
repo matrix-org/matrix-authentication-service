@@ -38,12 +38,12 @@ mod tests {
     #[test]
     fn test_relative_urls() {
         assert_eq!(
-            OidcConfiguration.relative_url(),
+            OidcConfiguration.path_and_query(),
             Cow::Borrowed("/.well-known/openid-configuration")
         );
-        assert_eq!(Index.relative_url(), Cow::Borrowed("/"));
+        assert_eq!(Index.path_and_query(), Cow::Borrowed("/"));
         assert_eq!(
-            Login::and_continue_grant(Ulid::nil()).relative_url(),
+            Login::and_continue_grant(Ulid::nil()).path_and_query(),
             Cow::Borrowed("/login?kind=continue_authorization_grant&id=00000000000000000000000000")
         );
     }

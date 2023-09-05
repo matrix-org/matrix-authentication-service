@@ -1278,6 +1278,10 @@
           "description": "A unique name for this listener which will be shown in traces and in metrics labels",
           "type": "string"
         },
+        "prefix": {
+          "description": "HTTP prefix to mount the resources on",
+          "type": "string"
+        },
         "proxy_protocol": {
           "description": "Accept HAProxy's Proxy Protocol V1",
           "default": false,

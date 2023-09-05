@@ -52,7 +52,7 @@ pub fn register(
     env.add_global(
         "include_asset",
         Value::from_object(IncludeAsset {
-            url_builder,
+            url_builder: url_builder.clone(),
             vite_manifest,
         }),
     );
@@ -60,6 +60,19 @@ pub fn register(
         "translator",
         Value::from_object(TranslatorFunc { translator }),
     );
+    env.add_filter("prefix_url", move |url: &str| -> String {
+        if !url.starts_with('/') {
+            // Let's assume it's not an internal URL and return it as-is
+            return url.to_owned();
+        }
+
+        let Some(prefix) = url_builder.prefix() else {
+            // If there is no prefix to add, return the URL as-is
+            return url.to_owned();
+        };
+
+        format!("{prefix}{url}")
+    });
 }
 
 fn tester_empty(seq: &dyn SeqObject) -> bool {

@@ -26,7 +26,7 @@ use mas_axum_utils::{
 };
 use mas_data_model::BrowserSession;
 use mas_i18n::DataLocale;
-use mas_router::{Route, UpstreamOAuth2Authorize};
+use mas_router::{UpstreamOAuth2Authorize, UrlBuilder};
 use mas_storage::{
     upstream_oauth2::UpstreamOAuthProviderRepository,
     user::{BrowserSessionRepository, UserPasswordRepository, UserRepository},
@@ -59,6 +59,7 @@ pub(crate) async fn get(
     PreferredLanguage(locale): PreferredLanguage,
     State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
+    State(url_builder): State<UrlBuilder>,
     mut repo: BoxRepository,
     activity_tracker: BoundActivityTracker,
     Query(query): Query<OptionalPostAuthAction>,
@@ -74,7 +75,7 @@ pub(crate) async fn get(
             .record_browser_session(&clock, &session)
             .await;
 
-        let reply = query.go_next();
+        let reply = query.go_next(&url_builder);
         return Ok((cookie_jar, reply).into_response());
     };
 
@@ -91,7 +92,7 @@ pub(crate) async fn get(
             destination = destination.and_then(action);
         };
 
-        return Ok((cookie_jar, destination.go()).into_response());
+        return Ok((cookie_jar, url_builder.redirect(&destination)).into_response());
     };
 
     let content = render(
@@ -117,6 +118,7 @@ pub(crate) async fn post(
     PreferredLanguage(locale): PreferredLanguage,
     State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
+    State(url_builder): State<UrlBuilder>,
     mut repo: BoxRepository,
     activity_tracker: BoundActivityTracker,
     Query(query): Query<OptionalPostAuthAction>,
@@ -185,7 +187,7 @@ pub(crate) async fn post(
                 .await;
 
             let cookie_jar = cookie_jar.set_session(&session_info);
-            let reply = query.go_next();
+            let reply = query.go_next(&url_builder);
             Ok((cookie_jar, reply).into_response())
         }
         Err(e) => {
@@ -360,7 +362,7 @@ mod test {
 
         let response = state.request(Request::get("/login").empty()).await;
         response.assert_status(StatusCode::SEE_OTHER);
-        response.assert_header_value(LOCATION, &first_provider_login.relative_url());
+        response.assert_header_value(LOCATION, &first_provider_login.path_and_query());
 
         // Adding a second provider should show a login page with both providers
         let mut repo = state.repository().await.unwrap();
@@ -391,13 +393,13 @@ mod test {
             .contains(&escape_html(&first_provider.issuer)));
         assert!(response
             .body()
-            .contains(&escape_html(&first_provider_login.relative_url())));
+            .contains(&escape_html(&first_provider_login.path_and_query())));
         assert!(response
             .body()
             .contains(&escape_html(&second_provider.issuer)));
         assert!(response
             .body()
-            .contains(&escape_html(&second_provider_login.relative_url())));
+            .contains(&escape_html(&second_provider_login.path_and_query())));
     }
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]

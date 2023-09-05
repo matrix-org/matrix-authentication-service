@@ -21,7 +21,7 @@ use mas_axum_utils::{cookies::CookieJar, csrf::CsrfExt, sentry::SentryEventID, S
 use mas_data_model::{AuthorizationGrant, BrowserSession, Client, Device};
 use mas_keystore::Keystore;
 use mas_policy::{EvaluationResult, Policy};
-use mas_router::{PostAuthAction, Route, UrlBuilder};
+use mas_router::{PostAuthAction, UrlBuilder};
 use mas_storage::{
     oauth2::{OAuth2AuthorizationGrantRepository, OAuth2ClientRepository, OAuth2SessionRepository},
     user::BrowserSessionRepository,
@@ -117,7 +117,11 @@ pub(crate) async fn get(
     let Some(session) = maybe_session else {
         // If there is no session, redirect to the login screen, redirecting here after
         // logout
-        return Ok((cookie_jar, mas_router::Login::and_then(continue_grant).go()).into_response());
+        return Ok((
+            cookie_jar,
+            url_builder.redirect(&mas_router::Login::and_then(continue_grant)),
+        )
+            .into_response());
     };
 
     activity_tracker
@@ -137,7 +141,7 @@ pub(crate) async fn get(
         repo,
         key_store,
         policy,
-        url_builder,
+        &url_builder,
         grant,
         &client,
         &session,
@@ -150,12 +154,12 @@ pub(crate) async fn get(
         }
         Err(GrantCompletionError::RequiresReauth) => Ok((
             cookie_jar,
-            mas_router::Reauth::and_then(continue_grant).go(),
+            url_builder.redirect(&mas_router::Reauth::and_then(continue_grant)),
         )
             .into_response()),
         Err(GrantCompletionError::RequiresConsent) => {
             let next = mas_router::Consent(grant_id);
-            Ok((cookie_jar, next.go()).into_response())
+            Ok((cookie_jar, url_builder.redirect(&next)).into_response())
         }
         Err(GrantCompletionError::PolicyViolation(grant, res)) => {
             warn!(violation = ?res, "Authorization grant for client {} denied by policy", client.id);
@@ -206,7 +210,7 @@ pub(crate) async fn complete(
     mut repo: BoxRepository,
     key_store: Keystore,
     mut policy: Policy,
-    url_builder: UrlBuilder,
+    url_builder: &UrlBuilder,
     grant: AuthorizationGrant,
     client: &Client,
     browser_session: &BrowserSession,
@@ -273,7 +277,7 @@ pub(crate) async fn complete(
         params.id_token = Some(generate_id_token(
             rng,
             clock,
-            &url_builder,
+            url_builder,
             &key_store,
             client,
             &grant,

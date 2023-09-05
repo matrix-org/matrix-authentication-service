@@ -25,7 +25,7 @@ use mas_keystore::{Encrypter, Keystore};
 use mas_oidc_client::requests::{
     authorization_code::AuthorizationValidationData, jose::JwtVerificationData,
 };
-use mas_router::{Route, UrlBuilder};
+use mas_router::UrlBuilder;
 use mas_storage::{
     upstream_oauth2::{
         UpstreamOAuthLinkRepository, UpstreamOAuthProviderRepository,
@@ -268,6 +268,6 @@ pub(crate) async fn get(
 
     Ok((
         cookie_jar,
-        mas_router::UpstreamOAuth2Link::new(link.id).go(),
+        url_builder.redirect(&mas_router::UpstreamOAuth2Link::new(link.id)),
     ))
 }

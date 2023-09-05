@@ -15,11 +15,11 @@
 import { atom } from "jotai";
 import { atomWithLocation } from "jotai-location";
 
+import appConfig, { AppConfig } from "../config";
+
 import { Location, pathToRoute, Route, routeToPath } from "./routes";
 
-export const appConfigAtom = atom<AppConfig>(
-  typeof window !== "undefined" ? window.APP_CONFIG : { root: "/" },
-);
+export const appConfigAtom = atom<AppConfig>(appConfig);
 
 const locationToRoute = (root: string, location: Location): Route => {
   if (!location.pathname || !location.pathname.startsWith(root)) {

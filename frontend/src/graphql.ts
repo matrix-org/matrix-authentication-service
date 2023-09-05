@@ -18,6 +18,7 @@ import { cacheExchange } from "@urql/exchange-graphcache";
 import { refocusExchange } from "@urql/exchange-refocus";
 import { requestPolicyExchange } from "@urql/exchange-request-policy";
 
+import appConfig from "./config";
 import type {
   MutationAddEmailArgs,
   MutationRemoveEmailArgs,
@@ -130,7 +131,7 @@ const exchanges = [
 ];
 
 export const client = createClient({
-  url: "/graphql",
+  url: appConfig.graphqlEndpoint,
   // Add the devtools exchange in development
   exchanges: import.meta.env.DEV ? [devtoolsExchange, ...exchanges] : exchanges,
 });

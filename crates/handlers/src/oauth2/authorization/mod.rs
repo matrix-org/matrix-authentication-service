@@ -21,7 +21,7 @@ use mas_axum_utils::{cookies::CookieJar, csrf::CsrfExt, sentry::SentryEventID, S
 use mas_data_model::{AuthorizationCode, Pkce};
 use mas_keystore::Keystore;
 use mas_policy::Policy;
-use mas_router::{PostAuthAction, Route, UrlBuilder};
+use mas_router::{PostAuthAction, UrlBuilder};
 use mas_storage::{
     oauth2::{OAuth2AuthorizationGrantRepository, OAuth2ClientRepository},
     BoxClock, BoxRepository, BoxRng,
@@ -313,16 +313,14 @@ pub(crate) async fn get(
                     // Client asked for a registration, show the registration prompt
                     repo.save().await?;
 
-                    mas_router::Register::and_then(continue_grant)
-                        .go()
+                    url_builder.redirect(&mas_router::Register::and_then(continue_grant))
                         .into_response()
                 }
                 None => {
                     // Other cases where we don't have a session, ask for a login
                     repo.save().await?;
 
-                    mas_router::Login::and_then(continue_grant)
-                        .go()
+                    url_builder.redirect(&mas_router::Login::and_then(continue_grant))
                         .into_response()
                 }
 
@@ -336,8 +334,7 @@ pub(crate) async fn get(
 
                     activity_tracker.record_browser_session(&clock, &session).await;
 
-                    mas_router::Reauth::and_then(continue_grant)
-                        .go()
+                    url_builder.redirect(&mas_router::Reauth::and_then(continue_grant))
                         .into_response()
                 }
 
@@ -353,7 +350,7 @@ pub(crate) async fn get(
                         repo,
                         key_store,
                         policy,
-                        url_builder,
+                        &url_builder,
                         grant,
                         &client,
                         &user_session,
@@ -403,7 +400,7 @@ pub(crate) async fn get(
                         repo,
                         key_store,
                         policy,
-                        url_builder,
+                        &url_builder,
                         grant,
                         &client,
                         &user_session,
@@ -412,7 +409,7 @@ pub(crate) async fn get(
                     {
                         Ok(params) => callback_destination.go(&templates, params).await?,
                         Err(GrantCompletionError::RequiresConsent) => {
-                            mas_router::Consent(grant_id).go().into_response()
+                            url_builder.redirect(&mas_router::Consent(grant_id)).into_response()
                         }
                         Err(GrantCompletionError::PolicyViolation(grant, res)) => {
                             warn!(violation = ?res, "Authorization grant for client {} denied by policy", client.id);
@@ -426,8 +423,7 @@ pub(crate) async fn get(
                             Html(content).into_response()
                         }
                         Err(GrantCompletionError::RequiresReauth) => {
-                            mas_router::Reauth::and_then(continue_grant)
-                                .go()
+                            url_builder.redirect(&mas_router::Reauth::and_then(continue_grant))
                                 .into_response()
                         }
                         Err(GrantCompletionError::Internal(e)) => {
