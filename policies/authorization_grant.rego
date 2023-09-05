@@ -20,6 +20,7 @@ allowed_scope("email") = true
 
 # This grants access to Synapse's admin API endpoints
 allowed_scope("urn:synapse:admin:*") {
+	# Synapse doesn't support user-less tokens yet, so access to the admin API can only be used with an authorization_code grant as the user is present
 	input.grant_type == "authorization_code"
 	some user in data.admin_users
 	input.user.username == user
