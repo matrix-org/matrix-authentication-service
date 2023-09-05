@@ -2,6 +2,7 @@ package client_registration
 
 test_valid {
 	allow with input.client_metadata as {
+		"grant_types": ["authorization_code"],
 		"client_uri": "https://example.com/",
 		"redirect_uris": ["https://example.com/callback"],
 		"contacts": ["contact@example.com"],
@@ -10,12 +11,12 @@ test_valid {
 
 test_missing_client_uri {
 	not allow with input.client_metadata as {
-		"redirect_uris": ["https://example.com/callback"],
+		"grant_types": [],
 		"contacts": ["contact@example.com"],
 	}
 
 	allow with input.client_metadata as {
-		"redirect_uris": ["https://example.com/callback"],
+		"grant_types": [],
 		"contacts": ["contact@example.com"],
 	}
 		with data.client_registration.allow_missing_client_uri as true
@@ -23,50 +24,50 @@ test_missing_client_uri {
 
 test_insecure_client_uri {
 	not allow with input.client_metadata as {
+		"grant_types": [],
 		"client_uri": "http://example.com/",
-		"redirect_uris": ["https://example.com/callback"],
 		"contacts": ["contact@example.com"],
 	}
 }
 
 test_tos_uri {
 	allow with input.client_metadata as {
+		"grant_types": [],
 		"client_uri": "https://example.com/",
 		"tos_uri": "https://example.com/tos",
-		"redirect_uris": ["https://example.com/callback"],
 		"contacts": ["contact@example.com"],
 	}
 
 	# Insecure
 	not allow with input.client_metadata as {
+		"grant_types": [],
 		"client_uri": "https://example.com/",
 		"tos_uri": "http://example.com/tos",
-		"redirect_uris": ["https://example.com/callback"],
 		"contacts": ["contact@example.com"],
 	}
 
 	# Insecure, but allowed by the config
 	allow with input.client_metadata as {
+		"grant_types": [],
 		"client_uri": "https://example.com/",
 		"tos_uri": "http://example.com/tos",
-		"redirect_uris": ["https://example.com/callback"],
 		"contacts": ["contact@example.com"],
 	}
 		with data.client_registration.allow_insecure_uris as true
 
 	# Host mistmatch
 	not allow with input.client_metadata as {
+		"grant_types": [],
 		"client_uri": "https://example.com/",
 		"tos_uri": "https://example.org/tos",
-		"redirect_uris": ["https://example.com/callback"],
 		"contacts": ["contact@example.com"],
 	}
 
 	# Host mistmatch, but allowed by the config
 	allow with input.client_metadata as {
+		"grant_types": [],
 		"client_uri": "https://example.com/",
 		"tos_uri": "https://example.org/tos",
-		"redirect_uris": ["https://example.com/callback"],
 		"contacts": ["contact@example.com"],
 	}
 		with data.client_registration.allow_host_mismatch as true
@@ -74,42 +75,42 @@ test_tos_uri {
 
 test_logo_uri {
 	allow with input.client_metadata as {
+		"grant_types": [],
 		"client_uri": "https://example.com/",
 		"logo_uri": "https://example.com/logo.png",
-		"redirect_uris": ["https://example.com/callback"],
 		"contacts": ["contact@example.com"],
 	}
 
 	# Insecure
 	not allow with input.client_metadata as {
+		"grant_types": [],
 		"client_uri": "https://example.com/",
 		"logo_uri": "http://example.com/logo.png",
-		"redirect_uris": ["https://example.com/callback"],
 		"contacts": ["contact@example.com"],
 	}
 
 	# Insecure, but allowed by the config
 	allow with input.client_metadata as {
+		"grant_types": [],
 		"client_uri": "https://example.com/",
 		"logo_uri": "http://example.com/logo.png",
-		"redirect_uris": ["https://example.com/callback"],
 		"contacts": ["contact@example.com"],
 	}
 		with data.client_registration.allow_insecure_uris as true
 
 	# Host mistmatch
 	not allow with input.client_metadata as {
+		"grant_types": [],
 		"client_uri": "https://example.com/",
 		"logo_uri": "https://example.org/logo.png",
-		"redirect_uris": ["https://example.com/callback"],
 		"contacts": ["contact@example.com"],
 	}
 
 	# Host mistmatch, but allowed by the config
 	allow with input.client_metadata as {
+		"grant_types": [],
 		"client_uri": "https://example.com/",
 		"logo_uri": "https://example.org/logo.png",
-		"redirect_uris": ["https://example.com/callback"],
 		"contacts": ["contact@example.com"],
 	}
 		with data.client_registration.allow_host_mismatch as true
@@ -117,42 +118,42 @@ test_logo_uri {
 
 test_policy_uri {
 	allow with input.client_metadata as {
+		"grant_types": [],
 		"client_uri": "https://example.com/",
 		"policy_uri": "https://example.com/policy",
-		"redirect_uris": ["https://example.com/callback"],
 		"contacts": ["contact@example.com"],
 	}
 
 	# Insecure
 	not allow with input.client_metadata as {
+		"grant_types": [],
 		"client_uri": "https://example.com/",
 		"policy_uri": "http://example.com/policy",
-		"redirect_uris": ["https://example.com/callback"],
 		"contacts": ["contact@example.com"],
 	}
 
 	# Insecure, but allowed by the config
 	allow with input.client_metadata as {
+		"grant_types": [],
 		"client_uri": "https://example.com/",
 		"policy_uri": "http://example.com/policy",
-		"redirect_uris": ["https://example.com/callback"],
 		"contacts": ["contact@example.com"],
 	}
 		with data.client_registration.allow_insecure_uris as true
 
 	# Host mistmatch
 	not allow with input.client_metadata as {
+		"grant_types": [],
 		"client_uri": "https://example.com/",
 		"policy_uri": "https://example.org/policy",
-		"redirect_uris": ["https://example.com/callback"],
 		"contacts": ["contact@example.com"],
 	}
 
 	# Host mistmatch, but allowed by the config
 	allow with input.client_metadata as {
+		"grant_types": [],
 		"client_uri": "https://example.com/",
 		"policy_uri": "https://example.org/policy",
-		"redirect_uris": ["https://example.com/callback"],
 		"contacts": ["contact@example.com"],
 	}
 		with data.client_registration.allow_host_mismatch as true
@@ -176,6 +177,27 @@ test_redirect_uris {
 	not allow with input.client_metadata as {
 		"client_uri": "https://example.com/",
 		"redirect_uris": [],
+		"contacts": ["contact@example.com"],
+	}
+
+	# Not required for the client_credentials grant
+	allow with input.client_metadata as {
+		"grant_types": ["client_credentials"],
+		"client_uri": "https://example.com/",
+		"contacts": ["contact@example.com"],
+	}
+
+	# Required for the authorization_code grant
+	not allow with input.client_metadata as {
+		"grant_types": ["client_credentials", "refresh_token", "authorization_code"],
+		"client_uri": "https://example.com/",
+		"contacts": ["contact@example.com"],
+	}
+
+	# Required for the implicit grant
+	not allow with input.client_metadata as {
+		"grant_types": ["client_credentials", "implicit"],
+		"client_uri": "https://example.com/",
 		"contacts": ["contact@example.com"],
 	}
 }
@@ -330,28 +352,52 @@ test_reverse_dns_match {
 test_contacts {
 	# Missing contacts
 	not allow with input.client_metadata as {
+		"grant_types": [],
 		"client_uri": "https://example.com/",
-		"redirect_uris": ["https://example.com/callback"],
 	}
 
 	# Missing contacts, but allowed by config
 	allow with input.client_metadata as {
+		"grant_types": [],
 		"client_uri": "https://example.com/",
-		"redirect_uris": ["https://example.com/callback"],
 	}
 		with data.client_registration.allow_missing_contacts as true
 
 	# contacts is not an array
 	not allow with input.client_metadata as {
+		"grant_types": [],
 		"client_uri": "https://example.com/",
-		"redirect_uris": ["https://example.com/callback"],
 		"contacts": "contact@example.com",
 	}
 
 	# Empty contacts
 	not allow with input.client_metadata as {
+		"grant_types": [],
 		"client_uri": "https://example.com/",
-		"redirect_uris": ["https://example.com/callback"],
 		"contacts": [],
+	}
+}
+
+test_client_credentials_grant {
+	# Allowed for confidential clients
+	allow with input.client_metadata as {
+		"grant_types": ["client_credentials"],
+		"token_endpoint_auth_method": "client_secret_basic",
+		"client_uri": "https://example.com/",
+		"contacts": ["contact@example.com"],
+	}
+	allow with input.client_metadata as {
+		"grant_types": ["client_credentials"],
+		# If omitted, defaults to "client_secret_basic"
+		"client_uri": "https://example.com/",
+		"contacts": ["contact@example.com"],
+	}
+
+	# Disallowed for public clients
+	not allow with input.client_metadata as {
+		"grant_types": ["client_credentials"],
+		"token_endpoint_auth_method": "none",
+		"client_uri": "https://example.com/",
+		"contacts": ["contact@example.com"],
 	}
 }

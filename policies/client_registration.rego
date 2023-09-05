@@ -109,7 +109,37 @@ violation[{"msg": "empty contacts"}] {
 	count(input.client_metadata.contacts) == 0
 }
 
+# If the grant_types is missing, we assume it is authorization_code
+uses_grant_type("authorization_code") {
+	not input.client_metadata.grant_types
+}
+
+# Else, we check that the grant_types contains the given grant_type
+uses_grant_type(grant_type) {
+	some gt in input.client_metadata.grant_types
+	gt == grant_type
+}
+
+# Consider a client public if the authentication method is none
+is_public_client {
+	input.client_metadata.token_endpoint_auth_method == "none"
+}
+
+requires_redirect_uris {
+	uses_grant_type("authorization_code")
+}
+
+requires_redirect_uris {
+	uses_grant_type("implicit")
+}
+
+violation[{"msg": "client_credentials grant_type requires some form of client authentication"}] {
+	uses_grant_type("client_credentials")
+	is_public_client
+}
+
 violation[{"msg": "missing redirect_uris"}] {
+	requires_redirect_uris
 	not input.client_metadata.redirect_uris
 }
 
@@ -118,6 +148,7 @@ violation[{"msg": "invalid redirect_uris"}] {
 }
 
 violation[{"msg": "empty redirect_uris"}] {
+	requires_redirect_uris
 	count(input.client_metadata.redirect_uris) == 0
 }
 

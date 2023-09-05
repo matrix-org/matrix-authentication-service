@@ -392,10 +392,6 @@ mod tests {
         let request = Request::post(OAuth2RegistrationEndpoint::PATH).json(json!({
             "contacts": ["hello@introspecting.com"],
             "client_uri": "https://introspecting.com/",
-            // XXX: even though we don't use the authorization_code flow, we need to specify at
-            // least one redirect_uri
-            "redirect_uris": ["https://introspecting.com/"],
-            "response_types": [],
             "grant_types": [],
             "token_endpoint_auth_method": "client_secret_basic",
         }));
@@ -558,10 +554,6 @@ mod tests {
         let request = Request::post(OAuth2RegistrationEndpoint::PATH).json(json!({
             "contacts": ["hello@introspecting.com"],
             "client_uri": "https://introspecting.com/",
-            // XXX: even though we don't use the authorization_code flow, we need to specify at
-            // least one redirect_uri
-            "redirect_uris": ["https://introspecting.com/"],
-            "response_types": [],
             "grant_types": [],
             "token_endpoint_auth_method": "client_secret_basic",
         }));

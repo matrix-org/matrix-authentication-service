@@ -366,12 +366,9 @@ async fn test_oauth2_client_credentials(pool: PgPool) {
     let request =
         Request::post(mas_router::OAuth2RegistrationEndpoint::PATH).json(serde_json::json!({
             "client_uri": "https://example.com/",
-            // XXX: we shouldn't have to specify the redirect URI here, but the policy denies it for now
-            "redirect_uris": ["https://example.com/callback"],
             "contacts": ["contact@example.com"],
             "token_endpoint_auth_method": "client_secret_post",
             "grant_types": ["client_credentials"],
-            "response_types": [],
         }));
 
     let response = state.request(request).await;
