@@ -449,23 +449,31 @@ impl ClientMetadata {
     /// [OpenID Connect Dynamic Client Registration Spec 1.0]: https://openid.net/specs/openid-connect-registration-1_0.html#ClientMetadata
     #[allow(clippy::too_many_lines)]
     pub fn validate(self) -> Result<VerifiedClientMetadata, ClientMetadataVerificationError> {
+        let grant_types = self.grant_types();
+        let has_implicit = grant_types.contains(&GrantType::Implicit);
+        let has_authorization_code = grant_types.contains(&GrantType::AuthorizationCode);
+        let has_both = has_implicit && has_authorization_code;
+
         if let Some(uris) = &self.redirect_uris {
             if let Some(uri) = uris.iter().find(|uri| uri.fragment().is_some()) {
                 return Err(ClientMetadataVerificationError::RedirectUriWithFragment(
                     uri.clone(),
                 ));
             }
-        } else {
+        } else if has_authorization_code || has_implicit {
+            // Required for authorization code and implicit flows
             return Err(ClientMetadataVerificationError::MissingRedirectUris);
         }
 
-        let response_types = self.response_types();
-        let grant_types = self.grant_types();
-        let has_implicit = grant_types.contains(&GrantType::Implicit);
-        let has_authorization_code = grant_types.contains(&GrantType::AuthorizationCode);
-        let has_both = has_implicit && has_authorization_code;
+        let response_type_code = [OAuthAuthorizationEndpointResponseType::Code.into()];
+        let response_types = match &self.response_types {
+            Some(types) => &types[..],
+            // Default to code only if the client uses the authorization code or implicit flow
+            None if has_authorization_code || has_implicit => &response_type_code[..],
+            None => &[],
+        };
 
-        for response_type in &response_types {
+        for response_type in response_types {
             let has_code = response_type.has_code();
             let has_id_token = response_type.has_id_token();
             let has_token = response_type.has_token();
@@ -578,7 +586,7 @@ impl ClientMetadata {
         self.response_types.clone().unwrap_or_else(|| {
             DEFAULT_RESPONSE_TYPES
                 .into_iter()
-                .filter_map(|t| ResponseType::try_from(t).ok())
+                .map(ResponseType::from)
                 .collect()
         })
     }
@@ -813,7 +821,7 @@ impl VerifiedClientMetadata {
     pub fn redirect_uris(&self) -> &[Url] {
         match &self.redirect_uris {
             Some(v) => v,
-            None => unreachable!(),
+            None => &[],
         }
     }
 }
