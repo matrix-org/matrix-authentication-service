@@ -265,7 +265,7 @@ mod tests {
                 "contacts": ["contact@example.com"],
                 "token_endpoint_auth_method": "client_secret_post",
                 "response_types": ["code"],
-                "grant_types": ["authorization_code"],
+                "grant_types": ["authorization_code", "refresh_token"],
             }));
 
         let response = state.request(request).await;

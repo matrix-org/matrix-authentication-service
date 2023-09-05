@@ -257,6 +257,11 @@ async fn authorization_code_grant(
     site_config: &SiteConfig,
     mut repo: BoxRepository,
 ) -> Result<(AccessTokenResponse, BoxRepository), RouteError> {
+    // Check that the client is allowed to use this grant type
+    if !client.grant_types.contains(&GrantType::AuthorizationCode) {
+        return Err(RouteError::UnauthorizedClient);
+    }
+
     let authz_grant = repo
         .oauth2_authorization_grant()
         .find_by_code(&grant.code)
@@ -405,6 +410,11 @@ async fn refresh_token_grant(
     site_config: &SiteConfig,
     mut repo: BoxRepository,
 ) -> Result<(AccessTokenResponse, BoxRepository), RouteError> {
+    // Check that the client is allowed to use this grant type
+    if !client.grant_types.contains(&GrantType::RefreshToken) {
+        return Err(RouteError::UnauthorizedClient);
+    }
+
     let refresh_token = repo
         .oauth2_refresh_token()
         .find_by_token(&grant.refresh_token)
@@ -740,7 +750,7 @@ mod tests {
                 "contacts": ["contact@example.com"],
                 "token_endpoint_auth_method": "none",
                 "response_types": ["code"],
-                "grant_types": ["authorization_code"],
+                "grant_types": ["authorization_code", "refresh_token"],
             }));
 
         let response = state.request(request).await;
@@ -859,12 +869,9 @@ mod tests {
         let request =
             Request::post(mas_router::OAuth2RegistrationEndpoint::PATH).json(serde_json::json!({
                 "client_uri": "https://example.com/",
-                // XXX: we shouldn't have to specify the redirect URI here, but the policy denies it for now
-                "redirect_uris": ["https://example.com/callback"],
                 "contacts": ["contact@example.com"],
                 "token_endpoint_auth_method": "client_secret_post",
                 "grant_types": ["client_credentials"],
-                "response_types": [],
             }));
 
         let response = state.request(request).await;
