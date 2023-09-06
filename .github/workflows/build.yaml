@@ -59,7 +59,7 @@ jobs:
           mv templates/ share/templates
 
       - name: Upload the artifacts
-        uses: actions/upload-artifact@v3.1.2
+        uses: actions/upload-artifact@v3.1.3
         with:
           name: artifacts
           path: share/
@@ -121,7 +121,7 @@ jobs:
           tar -czvf mas-cli-${{ matrix.arch }}-linux.tar.gz --owner=0 --group=0 -C dist/ .
 
       - name: Upload the binary as artifact
-        uses: actions/upload-artifact@v3.1.2
+        uses: actions/upload-artifact@v3.1.3
         with:
           name: ${{ matrix.arch }}-linux
           path: mas-cli-${{ matrix.arch }}-linux.tar.gz
@@ -188,7 +188,7 @@ jobs:
           tar -czvf mas-cli-${{ matrix.arch }}-macos.tar.gz --owner=0 --group=0 -C dist/ .
 
       - name: Upload the binary as artifact
-        uses: actions/upload-artifact@v3.1.2
+        uses: actions/upload-artifact@v3.1.3
         with:
           name: ${{ matrix.arch }}-macos
           path: mas-cli-${{ matrix.arch }}-macos.tar.gz
