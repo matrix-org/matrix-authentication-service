@@ -158,6 +158,11 @@ impl OAuth2Client {
         self.0.client_uri.as_ref()
     }
 
+    /// Logo URI advertised by the client.
+    pub async fn logo_uri(&self) -> Option<&Url> {
+        self.0.logo_uri.as_ref()
+    }
+
     /// Terms of services URI advertised by the client.
     pub async fn tos_uri(&self) -> Option<&Url> {
         self.0.tos_uri.as_ref()

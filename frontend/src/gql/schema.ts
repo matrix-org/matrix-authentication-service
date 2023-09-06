@@ -1262,6 +1262,14 @@ export default {
             args: [],
           },
           {
+            name: "logoUri",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
+            },
+            args: [],
+          },
+          {
             name: "policyUri",
             type: {
               kind: "SCALAR",

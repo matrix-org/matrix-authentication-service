@@ -634,6 +634,10 @@ type Oauth2Client implements Node {
   """
   clientUri: Url
   """
+  Logo URI advertised by the client.
+  """
+  logoUri: Url
+  """
   Terms of services URI advertised by the client.
   """
   tosUri: Url
