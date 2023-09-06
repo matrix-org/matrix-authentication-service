@@ -20,7 +20,7 @@
     "@types/ua-parser-js": "^0.7.37",
     "@urql/core": "^4.1.2",
     "@urql/devtools": "^2.0.3",
-    "@urql/exchange-graphcache": "^6.3.2",
+    "@urql/exchange-graphcache": "^6.3.3",
     "@urql/exchange-refocus": "^1.0.2",
     "@urql/exchange-request-policy": "^1.0.2",
     "@vector-im/compound-design-tokens": "^0.0.3",
