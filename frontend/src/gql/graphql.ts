@@ -1017,6 +1017,7 @@ export type BrowserSession_SessionFragment = {
   id: string;
   createdAt: any;
   finishedAt?: any | null;
+  userAgent?: string | null;
   lastAuthentication?: {
     __typename?: "Authentication";
     id: string;
@@ -1551,6 +1552,7 @@ export const BrowserSession_SessionFragmentDoc = {
           { kind: "Field", name: { kind: "Name", value: "id" } },
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
+          { kind: "Field", name: { kind: "Name", value: "userAgent" } },
           {
             kind: "Field",
             name: { kind: "Name", value: "lastAuthentication" },
@@ -2043,6 +2045,7 @@ export const EndBrowserSessionDocument = {
           { kind: "Field", name: { kind: "Name", value: "id" } },
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
+          { kind: "Field", name: { kind: "Name", value: "userAgent" } },
           {
             kind: "Field",
             name: { kind: "Name", value: "lastAuthentication" },
@@ -2274,6 +2277,7 @@ export const BrowserSessionListDocument = {
           { kind: "Field", name: { kind: "Name", value: "id" } },
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
+          { kind: "Field", name: { kind: "Name", value: "userAgent" } },
           {
             kind: "Field",
             name: { kind: "Name", value: "lastAuthentication" },

@@ -30,6 +30,7 @@ export type SessionProps = {
   createdAt: string;
   finishedAt?: string;
   clientName?: string;
+  isCurrent?: boolean;
 };
 const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
   id,
@@ -37,10 +38,21 @@ const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
   createdAt,
   finishedAt,
   clientName,
+  isCurrent,
   children,
 }) => {
   return (
     <Block>
+      {isCurrent && (
+        <Body
+          as="span"
+          size="sm"
+          className={styles.currentSessionBadge}
+          weight="semibold"
+        >
+          Current
+        </Body>
+      )}
       <H6 className={styles.sessionName} title={id}>
         {name || id}
       </H6>

@@ -20,6 +20,10 @@ import { useTransition } from "react";
 
 import { currentBrowserSessionIdAtom, currentUserIdAtom } from "../atoms";
 import { FragmentType, graphql, useFragment } from "../gql";
+import {
+  parseUserAgent,
+  sessionNameFromDeviceInformation,
+} from "../utils/parseUserAgent";
 
 import Session from "./Session/Session";
 
@@ -28,6 +32,7 @@ const FRAGMENT = graphql(/* GraphQL */ `
     id
     createdAt
     finishedAt
+    userAgent
     lastAuthentication {
       id
       createdAt
@@ -90,7 +95,9 @@ const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
     });
   };
 
-  const sessionName = isCurrent ? "Current browser session" : "Browser session";
+  const deviceInformation = parseUserAgent(data.userAgent || undefined);
+  const sessionName =
+    sessionNameFromDeviceInformation(deviceInformation) || "Browser session";
 
   return (
     <Session
@@ -98,6 +105,7 @@ const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
       name={sessionName}
       createdAt={createdAt}
       finishedAt={data.finishedAt}
+      isCurrent={isCurrent}
     >
       {!data.finishedAt && (
         <Button
