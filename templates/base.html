@@ -20,6 +20,7 @@ limitations under the License.
 {% import "components/logout.html" as logout %}
 {% import "components/navbar.html" as navbar %}
 {% import "components/errors.html" as errors %}
+{% import "components/icon.html" as icon %}
 {% import "components/scope.html" as scope %}
 
 <!DOCTYPE html>
@@ -28,7 +29,7 @@ limitations under the License.
     <meta charset="utf-8">
     <title>{% block title %}matrix-authentication-service{% endblock title %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    {{ include_asset(path='src/templates.css') | indent(prefix="    ") | safe }}
+    {{ include_asset(path='src/templates.css', preload=true) | indent(prefix="    ") | safe }}
   </head>
   <body class="flex flex-col min-h-screen">
     {% block content %}{% endblock content %}
