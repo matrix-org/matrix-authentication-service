@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { H6, Body } from "@vector-im/compound-web";
+import { H6, Body, Badge } from "@vector-im/compound-web";
 import { ReactNode } from "react";
 
 import Block from "../Block";
@@ -43,16 +43,7 @@ const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
 }) => {
   return (
     <Block>
-      {isCurrent && (
-        <Body
-          as="span"
-          size="sm"
-          className={styles.currentSessionBadge}
-          weight="semibold"
-        >
-          Current
-        </Body>
-      )}
+      {isCurrent && <Badge kind="success">Current</Badge>}
       <H6 className={styles.sessionName} title={id}>
         {name || id}
       </H6>

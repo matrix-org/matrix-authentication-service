@@ -5,7 +5,7 @@ exports[`<CompatSession /> > renders a finished session 1`] = `
   className="_block_17898c"
 >
   <h6
-    className="_font-body-md-semibold_1g2sj_69 _sessionName_634806"
+    className="_font-body-md-semibold_1jx6b_64 _sessionName_634806"
     title="session-id"
   >
     <a
@@ -17,7 +17,7 @@ exports[`<CompatSession /> > renders a finished session 1`] = `
     </a>
   </h6>
   <p
-    className="_font-body-sm-semibold_1g2sj_49 _sessionMetadata_634806"
+    className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
   >
     Signed in 
     <code>
@@ -25,7 +25,7 @@ exports[`<CompatSession /> > renders a finished session 1`] = `
     </code>
   </p>
   <p
-    className="_font-body-sm-semibold_1g2sj_49 _sessionMetadata_634806"
+    className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
     data-finished={true}
   >
     Finished 
@@ -34,12 +34,12 @@ exports[`<CompatSession /> > renders a finished session 1`] = `
     </code>
   </p>
   <p
-    className="_font-body-sm-regular_1g2sj_45 _sessionMetadata_634806"
+    className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
   >
     Client:
      
     <span
-      className="_font-body-sm-semibold_1g2sj_49 _sessionMetadata_634806"
+      className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
     >
       element.io
     </span>
@@ -52,7 +52,7 @@ exports[`<CompatSession /> > renders an active session 1`] = `
   className="_block_17898c"
 >
   <h6
-    className="_font-body-md-semibold_1g2sj_69 _sessionName_634806"
+    className="_font-body-md-semibold_1jx6b_64 _sessionName_634806"
     title="session-id"
   >
     <a
@@ -64,7 +64,7 @@ exports[`<CompatSession /> > renders an active session 1`] = `
     </a>
   </h6>
   <p
-    className="_font-body-sm-semibold_1g2sj_49 _sessionMetadata_634806"
+    className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
   >
     Signed in 
     <code>
@@ -72,12 +72,12 @@ exports[`<CompatSession /> > renders an active session 1`] = `
     </code>
   </p>
   <p
-    className="_font-body-sm-regular_1g2sj_45 _sessionMetadata_634806"
+    className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
   >
     Client:
      
     <span
-      className="_font-body-sm-semibold_1g2sj_49 _sessionMetadata_634806"
+      className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
     >
       element.io
     </span>
@@ -86,7 +86,7 @@ exports[`<CompatSession /> > renders an active session 1`] = `
     className="_sessionActions_634806"
   >
     <button
-      className="_button_djt0a_17"
+      className="_button_1raud_17"
       data-kind="destructive"
       data-size="sm"
       disabled={false}
