@@ -12,9 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { H3, Button } from "@vector-im/compound-web";
+import { H3 } from "@vector-im/compound-web";
 import { useSetAtom } from "jotai";
-import { useTransition } from "react";
 
 import { FragmentType, useFragment } from "../../gql";
 import BlockList from "../BlockList/BlockList";
@@ -24,6 +23,7 @@ import {
   simplifyUrl,
 } from "../CompatSession";
 import DateTime from "../DateTime";
+import EndSessionButton from "../Session/EndSessionButton";
 
 import SessionDetails from "./SessionDetails";
 
@@ -32,16 +32,11 @@ type Props = {
 };
 
 const CompatSessionDetail: React.FC<Props> = ({ session }) => {
-  const [pending, startTransition] = useTransition();
   const data = useFragment(COMPAT_SESSION_FRAGMENT, session);
   const endSession = useSetAtom(endCompatSessionFamily(data.id));
 
-  // @TODO(kerrya) make this wait for session refresh properly
-  // https://github.com/matrix-org/matrix-authentication-service/issues/1533
-  const onSessionEnd = (): void => {
-    startTransition(() => {
-      endSession();
-    });
+  const onSessionEnd = async (): Promise<void> => {
+    await endSession();
   };
 
   const finishedAt = data.finishedAt
@@ -79,18 +74,7 @@ const CompatSessionDetail: React.FC<Props> = ({ session }) => {
         {clientDetails.length > 0 ? (
           <SessionDetails title="Client" details={clientDetails} />
         ) : null}
-        {!data.finishedAt && (
-          <Button
-            kind="destructive"
-            size="sm"
-            onClick={onSessionEnd}
-            disabled={pending}
-          >
-            {/* @TODO(kerrya) put this back after pending state works properly */}
-            {/* { pending && <LoadingSpinner />} */}
-            End session
-          </Button>
-        )}
+        {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
       </BlockList>
     </div>
   );

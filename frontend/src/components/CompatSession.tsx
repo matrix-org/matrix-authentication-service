@@ -12,16 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Button } from "@vector-im/compound-web";
 import { atom, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
-import { useTransition } from "react";
 
 import { FragmentType, graphql, useFragment } from "../gql";
 import { Link } from "../routing";
 
 import { Session } from "./Session";
+import EndSessionButton from "./Session/EndSessionButton";
 
 export const COMPAT_SESSION_FRAGMENT = graphql(/* GraphQL */ `
   fragment CompatSession_session on CompatSession {
@@ -84,14 +83,11 @@ export const simplifyUrl = (url: string): string => {
 const CompatSession: React.FC<{
   session: FragmentType<typeof COMPAT_SESSION_FRAGMENT>;
 }> = ({ session }) => {
-  const [pending, startTransition] = useTransition();
   const data = useFragment(COMPAT_SESSION_FRAGMENT, session);
   const endCompatSession = useSetAtom(endCompatSessionFamily(data.id));
 
-  const onSessionEnd = (): void => {
-    startTransition(() => {
-      endCompatSession();
-    });
+  const onSessionEnd = async (): Promise<void> => {
+    await endCompatSession();
   };
 
   const sessionName = (
@@ -110,16 +106,7 @@ const CompatSession: React.FC<{
       finishedAt={data.finishedAt || undefined}
       clientName={clientName}
     >
-      {!data.finishedAt && (
-        <Button
-          kind="destructive"
-          size="sm"
-          onClick={onSessionEnd}
-          disabled={pending}
-        >
-          End session
-        </Button>
-      )}
+      {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
     </Session>
   );
 };

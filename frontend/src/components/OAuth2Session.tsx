@@ -12,18 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Button } from "@vector-im/compound-web";
 import { atom, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
-import { useTransition } from "react";
 
 import { FragmentType, graphql, useFragment } from "../gql";
 import { Link } from "../routing";
 import { getDeviceIdFromScope } from "../utils/deviceIdFromScope";
 
-// import LoadingSpinner from "./LoadingSpinner/LoadingSpinner";
 import { Session } from "./Session";
+import EndSessionButton from "./Session/EndSessionButton";
 
 export const OAUTH2_SESSION_FRAGMENT = graphql(/* GraphQL */ `
   fragment OAuth2Session_session on Oauth2Session {
@@ -82,19 +80,14 @@ type Props = {
 };
 
 const OAuth2Session: React.FC<Props> = ({ session }) => {
-  const [pending, startTransition] = useTransition();
   const data = useFragment(
     OAUTH2_SESSION_FRAGMENT,
     session,
   ) as Oauth2SessionType;
   const endSession = useSetAtom(endSessionFamily(data.id));
 
-  // @TODO(kerrya) make this wait for session refresh properly
-  // https://github.com/matrix-org/matrix-authentication-service/issues/1533
-  const onSessionEnd = (): void => {
-    startTransition(() => {
-      endSession();
-    });
+  const onSessionEnd = async (): Promise<void> => {
+    await endSession();
   };
 
   const deviceId = getDeviceIdFromScope(data.scope);
@@ -111,18 +104,7 @@ const OAuth2Session: React.FC<Props> = ({ session }) => {
       finishedAt={data.finishedAt || undefined}
       clientName={data.client.clientName}
     >
-      {!data.finishedAt && (
-        <Button
-          kind="destructive"
-          size="sm"
-          onClick={onSessionEnd}
-          disabled={pending}
-        >
-          {/* @TODO(kerrya) put this back after pending state works properly */}
-          {/* { pending && <LoadingSpinner />} */}
-          End session
-        </Button>
-      )}
+      {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
     </Session>
   );
 };
