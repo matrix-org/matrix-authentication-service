@@ -184,24 +184,32 @@ pub(crate) async fn post(
                 // XXX: is that the right error to bubble up?
                 .ok_or(RouteError::UnknownToken)?;
 
-            let user = repo
-                .user()
-                .lookup(session.user_id)
-                .await?
-                .filter(User::is_valid)
-                // XXX: is that the right error to bubble up?
-                .ok_or(RouteError::UnknownToken)?;
+            // The session might not have a user on it (for Client Credentials grants for
+            // example), so we're optionally fetching the user
+            let (sub, username) = if let Some(user_id) = session.user_id {
+                let user = repo
+                    .user()
+                    .lookup(user_id)
+                    .await?
+                    // Fail if the user is not valid (e.g. locked)
+                    .filter(User::is_valid)
+                    .ok_or(RouteError::UnknownToken)?;
+
+                (Some(user.sub), Some(user.username))
+            } else {
+                (None, None)
+            };
 
             IntrospectionResponse {
                 active: true,
                 scope: Some(session.scope),
                 client_id: Some(session.client_id.to_string()),
-                username: Some(user.username),
+                username,
                 token_type: Some(OAuthTokenTypeHint::AccessToken),
                 exp: Some(token.expires_at),
                 iat: Some(token.created_at),
                 nbf: Some(token.created_at),
-                sub: Some(user.sub),
+                sub,
                 aud: None,
                 iss: None,
                 jti: Some(token.jti()),
@@ -224,24 +232,32 @@ pub(crate) async fn post(
                 // XXX: is that the right error to bubble up?
                 .ok_or(RouteError::UnknownToken)?;
 
-            let user = repo
-                .user()
-                .lookup(session.user_id)
-                .await?
-                .filter(User::is_valid)
-                // XXX: is that the right error to bubble up?
-                .ok_or(RouteError::UnknownToken)?;
+            // The session might not have a user on it (for Client Credentials grants for
+            // example), so we're optionally fetching the user
+            let (sub, username) = if let Some(user_id) = session.user_id {
+                let user = repo
+                    .user()
+                    .lookup(user_id)
+                    .await?
+                    // Fail if the user is not valid (e.g. locked)
+                    .filter(User::is_valid)
+                    .ok_or(RouteError::UnknownToken)?;
+
+                (Some(user.sub), Some(user.username))
+            } else {
+                (None, None)
+            };
 
             IntrospectionResponse {
                 active: true,
                 scope: Some(session.scope),
                 client_id: Some(session.client_id.to_string()),
-                username: Some(user.username),
+                username,
                 token_type: Some(OAuthTokenTypeHint::RefreshToken),
                 exp: None,
                 iat: Some(token.created_at),
                 nbf: Some(token.created_at),
-                sub: Some(user.sub),
+                sub,
                 aud: None,
                 iss: None,
                 jti: Some(token.jti()),
@@ -376,10 +392,6 @@ mod tests {
         let request = Request::post(OAuth2RegistrationEndpoint::PATH).json(json!({
             "contacts": ["hello@introspecting.com"],
             "client_uri": "https://introspecting.com/",
-            // XXX: even though we don't use the authorization_code flow, we need to specify at
-            // least one redirect_uri
-            "redirect_uris": ["https://introspecting.com/"],
-            "response_types": [],
             "grant_types": [],
             "token_endpoint_auth_method": "client_secret_basic",
         }));
@@ -427,7 +439,7 @@ mod tests {
 
         let session = repo
             .oauth2_session()
-            .add(
+            .add_from_browser_session(
                 &mut state.rng(),
                 &state.clock,
                 &client,
@@ -542,10 +554,6 @@ mod tests {
         let request = Request::post(OAuth2RegistrationEndpoint::PATH).json(json!({
             "contacts": ["hello@introspecting.com"],
             "client_uri": "https://introspecting.com/",
-            // XXX: even though we don't use the authorization_code flow, we need to specify at
-            // least one redirect_uri
-            "redirect_uris": ["https://introspecting.com/"],
-            "response_types": [],
             "grant_types": [],
             "token_endpoint_auth_method": "client_secret_basic",
         }));

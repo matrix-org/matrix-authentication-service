@@ -634,6 +634,10 @@ type Oauth2Client implements Node {
   """
   clientUri: Url
   """
+  Logo URI advertised by the client.
+  """
+  logoUri: Url
+  """
   Terms of services URI advertised by the client.
   """
   tosUri: Url
@@ -691,7 +695,7 @@ type Oauth2Session implements Node & CreationEvent {
   """
   User authorized for this session.
   """
-  user: User!
+  user: User
 }
 
 type Oauth2SessionConnection {

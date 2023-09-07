@@ -14,7 +14,10 @@
 
 //! Additional functions, tests and filters used in templates
 
-use std::{collections::HashMap, str::FromStr};
+use std::{
+    collections::{BTreeSet, HashMap},
+    str::FromStr,
+};
 
 use camino::Utf8Path;
 use mas_router::UrlBuilder;
@@ -196,6 +199,12 @@ impl tera::Function for IncludeAsset {
         let path = args.get("path").ok_or(tera::Error::msg(
             "Function `include_asset` was missing parameter `path`",
         ))?;
+
+        let preload = args
+            .get("preload")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
+
         let path: &Utf8Path = path
             .as_str()
             .ok_or_else(|| {
@@ -212,12 +221,16 @@ impl tera::Function for IncludeAsset {
             )
         })?;
 
-        let preloads = self.vite_manifest.preload_for(path).map_err(|e| {
-            tera::Error::chain(
-                "Invalid assets manifest while calling function `include_asset`",
-                e.to_string(),
-            )
-        })?;
+        let preloads = if preload {
+            self.vite_manifest.preload_for(path).map_err(|e| {
+                tera::Error::chain(
+                    "Invalid assets manifest while calling function `include_asset`",
+                    e.to_string(),
+                )
+            })?
+        } else {
+            BTreeSet::new()
+        };
 
         let tags: Vec<String> = preloads
             .iter()

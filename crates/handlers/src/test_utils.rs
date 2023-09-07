@@ -63,6 +63,28 @@ pub(crate) fn init_tracing() {
         .try_init();
 }
 
+pub(crate) async fn policy_factory(
+    data: serde_json::Value,
+) -> Result<Arc<PolicyFactory>, anyhow::Error> {
+    let workspace_root = camino::Utf8Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..");
+
+    let file = tokio::fs::File::open(workspace_root.join("policies").join("policy.wasm")).await?;
+
+    let entrypoints = mas_policy::Entrypoints {
+        register: "register/violation".to_owned(),
+        client_registration: "client_registration/violation".to_owned(),
+        authorization_grant: "authorization_grant/violation".to_owned(),
+        email: "email/violation".to_owned(),
+        password: "password/violation".to_owned(),
+    };
+
+    let policy_factory = PolicyFactory::load(file, data, entrypoints).await?;
+    let policy_factory = Arc::new(policy_factory);
+    Ok(policy_factory)
+}
+
 #[derive(Clone)]
 pub(crate) struct TestState {
     pub pool: PgPool,
@@ -116,22 +138,9 @@ impl TestState {
 
         let homeserver = MatrixHomeserver::new("example.com".to_owned());
 
-        let file =
-            tokio::fs::File::open(workspace_root.join("policies").join("policy.wasm")).await?;
-
-        let entrypoints = mas_policy::Entrypoints {
-            register: "register/violation".to_owned(),
-            client_registration: "client_registration/violation".to_owned(),
-            authorization_grant: "authorization_grant/violation".to_owned(),
-            email: "email/violation".to_owned(),
-            password: "password/violation".to_owned(),
-        };
-
-        let policy_factory = PolicyFactory::load(file, serde_json::json!({}), entrypoints).await?;
+        let policy_factory = policy_factory(serde_json::json!({})).await?;
 
         let homeserver_connection = MockHomeserverConnection::new("example.com");
-
-        let policy_factory = Arc::new(policy_factory);
 
         let http_client_factory = HttpClientFactory::new(10);
 

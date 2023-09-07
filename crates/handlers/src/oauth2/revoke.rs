@@ -199,25 +199,29 @@ pub(crate) async fn post(
         return Err(RouteError::UnauthorizedClient);
     }
 
-    // Fetch the user
-    let user = repo
-        .user()
-        .lookup(session.user_id)
-        .await?
-        .ok_or(RouteError::UnknownToken)?;
+    // If the session is associated with a user, make sure we schedule a device
+    // deletion job for all the devices associated with the session.
+    if let Some(user_id) = session.user_id {
+        // Fetch the user
+        let user = repo
+            .user()
+            .lookup(user_id)
+            .await?
+            .ok_or(RouteError::UnknownToken)?;
 
-    // Scan the scopes of the session to find if there is any device that should be
-    // deleted from the Matrix server.
-    // TODO: this should be moved in a higher level "end oauth session" method.
-    // XXX: this might not be the right semantic, but it's the best we
-    // can do for now, since we're not explicitly storing devices for OAuth2
-    // sessions.
-    for scope in &*session.scope {
-        if let Some(device) = Device::from_scope_token(scope) {
-            // Schedule a job to delete the device.
-            repo.job()
-                .schedule_job(DeleteDeviceJob::new(&user, &device))
-                .await?;
+        // Scan the scopes of the session to find if there is any device that should be
+        // deleted from the Matrix server.
+        // TODO: this should be moved in a higher level "end oauth session" method.
+        // XXX: this might not be the right semantic, but it's the best we
+        // can do for now, since we're not explicitly storing devices for OAuth2
+        // sessions.
+        for scope in &*session.scope {
+            if let Some(device) = Device::from_scope_token(scope) {
+                // Schedule a job to delete the device.
+                repo.job()
+                    .schedule_job(DeleteDeviceJob::new(&user, &device))
+                    .await?;
+            }
         }
     }
 
@@ -261,7 +265,7 @@ mod tests {
                 "contacts": ["contact@example.com"],
                 "token_endpoint_auth_method": "client_secret_post",
                 "response_types": ["code"],
-                "grant_types": ["authorization_code"],
+                "grant_types": ["authorization_code", "refresh_token"],
             }));
 
         let response = state.request(request).await;
@@ -298,7 +302,7 @@ mod tests {
 
         let session = repo
             .oauth2_session()
-            .add(
+            .add_from_browser_session(
                 &mut state.rng(),
                 &state.clock,
                 &client,
@@ -365,7 +369,7 @@ mod tests {
         let mut repo = state.repository().await.unwrap();
         let session = repo
             .oauth2_session()
-            .add(
+            .add_from_browser_session(
                 &mut state.rng(),
                 &state.clock,
                 &client,

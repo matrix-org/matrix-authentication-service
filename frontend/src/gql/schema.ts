@@ -1262,6 +1262,14 @@ export default {
             args: [],
           },
           {
+            name: "logoUri",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
+            },
+            args: [],
+          },
+          {
             name: "policyUri",
             type: {
               kind: "SCALAR",
@@ -1382,12 +1390,9 @@ export default {
           {
             name: "user",
             type: {
-              kind: "NON_NULL",
-              ofType: {
-                kind: "OBJECT",
-                name: "User",
-                ofType: null,
-              },
+              kind: "OBJECT",
+              name: "User",
+              ofType: null,
             },
             args: [],
           },

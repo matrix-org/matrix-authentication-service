@@ -38,7 +38,7 @@ limitations under the License.
         handleChange(query);
       })();
     </script>
-    {{ include_asset(path='src/main.tsx') | indent(prefix="    ") | safe }}
+    {{ include_asset(path='src/main.tsx', preload=true) | indent(prefix="    ") | safe }}
   </head>
 
   <body>

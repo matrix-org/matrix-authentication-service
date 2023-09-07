@@ -485,6 +485,8 @@ export type Oauth2Client = Node & {
   contacts: Array<Scalars["String"]["output"]>;
   /** ID of the object. */
   id: Scalars["ID"]["output"];
+  /** Logo URI advertised by the client. */
+  logoUri?: Maybe<Scalars["Url"]["output"]>;
   /** Privacy policy URI advertised by the client. */
   policyUri?: Maybe<Scalars["Url"]["output"]>;
   /** List of redirect URIs used for authorization grants by the client. */
@@ -515,7 +517,7 @@ export type Oauth2Session = CreationEvent &
     /** The state of the session. */
     state: Oauth2SessionState;
     /** User authorized for this session. */
-    user: User;
+    user?: Maybe<User>;
   };
 
 export type Oauth2SessionConnection = {

@@ -4,22 +4,33 @@
   "description": "Input for the authorization grant policy.",
   "type": "object",
   "required": [
-    "authorization_grant",
     "client",
-    "user"
+    "grant_type",
+    "scope"
   ],
   "properties": {
-    "authorization_grant": {
-      "type": "object",
-      "additionalProperties": true
-    },
     "client": {
       "type": "object",
       "additionalProperties": true
     },
+    "grant_type": {
+      "$ref": "#/definitions/GrantType"
+    },
+    "scope": {
+      "type": "string"
+    },
     "user": {
       "type": "object",
       "additionalProperties": true
+    }
+  },
+  "definitions": {
+    "GrantType": {
+      "type": "string",
+      "enum": [
+        "authorization_code",
+        "client_credentials"
+      ]
     }
   }
 }

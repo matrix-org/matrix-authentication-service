@@ -51,7 +51,7 @@ impl<'c> PgOAuth2SessionRepository<'c> {
 #[enum_def]
 struct OAuthSessionLookup {
     oauth2_session_id: Uuid,
-    user_id: Uuid,
+    user_id: Option<Uuid>,
     user_session_id: Option<Uuid>,
     oauth2_client_id: Uuid,
     scope_list: Vec<String>,
@@ -86,7 +86,7 @@ impl TryFrom<OAuthSessionLookup> for Session {
             state,
             created_at: value.created_at,
             client_id: value.oauth2_client_id.into(),
-            user_id: value.user_id.into(),
+            user_id: value.user_id.map(Ulid::from),
             user_session_id: value.user_session_id.map(Ulid::from),
             scope,
         })
@@ -133,7 +133,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
     }
 
     #[tracing::instrument(
-        name = "db.oauth2_session.add",
+        name = "db.oauth2_session.add_from_browser_session",
         skip_all,
         fields(
             db.statement,
@@ -145,7 +145,7 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
         ),
         err,
     )]
-    async fn add(
+    async fn add_from_browser_session(
         &mut self,
         rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
@@ -186,8 +186,62 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
             id,
             state: SessionState::Valid,
             created_at,
-            user_id: user_session.user.id,
+            user_id: Some(user_session.user.id),
             user_session_id: Some(user_session.id),
+            client_id: client.id,
+            scope,
+        })
+    }
+
+    #[tracing::instrument(
+        name = "db.oauth2_session.add_from_client_credentials",
+        skip_all,
+        fields(
+            db.statement,
+            %client.id,
+            session.id,
+            session.scope = %scope,
+        ),
+        err,
+    )]
+    async fn add_from_client_credentials(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        client: &Client,
+        scope: Scope,
+    ) -> Result<Session, Self::Error> {
+        let created_at = clock.now();
+        let id = Ulid::from_datetime_with_source(created_at.into(), rng);
+        tracing::Span::current().record("session.id", tracing::field::display(id));
+
+        let scope_list: Vec<String> = scope.iter().map(|s| s.as_str().to_owned()).collect();
+
+        sqlx::query!(
+            r#"
+                INSERT INTO oauth2_sessions
+                    ( oauth2_session_id
+                    , oauth2_client_id
+                    , scope_list
+                    , created_at
+                    )
+                VALUES ($1, $2, $3, $4)
+            "#,
+            Uuid::from(id),
+            Uuid::from(client.id),
+            &scope_list,
+            created_at,
+        )
+        .traced()
+        .execute(&mut *self.conn)
+        .await?;
+
+        Ok(Session {
+            id,
+            state: SessionState::Valid,
+            created_at,
+            user_id: None,
+            user_session_id: None,
             client_id: client.id,
             scope,
         })
@@ -200,7 +254,6 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
             db.statement,
             %session.id,
             %session.scope,
-            user.id = %session.user_id,
             client.id = %session.client_id,
         ),
         err,

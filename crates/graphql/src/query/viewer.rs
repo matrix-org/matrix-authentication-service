@@ -31,8 +31,8 @@ impl ViewerQuery {
 
         match requester {
             Requester::BrowserSession(session) => Viewer::user(session.user.clone()),
-            Requester::OAuth2Session(_session, user) => Viewer::user(user.clone()),
-            Requester::Anonymous => Viewer::anonymous(),
+            Requester::OAuth2Session(_session, Some(user)) => Viewer::user(user.clone()),
+            Requester::OAuth2Session(_, None) | Requester::Anonymous => Viewer::anonymous(),
         }
     }
 

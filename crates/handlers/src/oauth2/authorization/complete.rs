@@ -244,7 +244,7 @@ pub(crate) async fn complete(
     // All good, let's start the session
     let session = repo
         .oauth2_session()
-        .add(rng, clock, client, browser_session, grant.scope.clone())
+        .add_from_browser_session(rng, clock, client, browser_session, grant.scope.clone())
         .await?;
 
     let grant = repo

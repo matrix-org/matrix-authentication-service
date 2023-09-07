@@ -17,61 +17,59 @@ limitations under the License.
 {% extends "base.html" %}
 
 {% block content %}
+  {% set client_name = client.client_name | default(value=client.client_id) %}
   <section class="flex items-center justify-center flex-1">
-    <div class="w-96 m-2">
-      <form method="POST" class="grid grid-cols-1 gap-6">
-        <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-2 flex flex-col">
-          <div class="text-center">
-            <div class="bg-white rounded w-16 h-16 overflow-hidden mx-auto">
-              {% if client.logo_uri %}
-              <img class="w-16 h-16" src="{{ client.logo_uri }}" />
-              {% endif %}
-            </div>
-            <h1 class="text-center font-medium"><a target="_blank" href="{{ client.client_uri }}" class="cpd-link" data-kind="primary">{{ client.client_name | default(value=client.client_id) }}</a></h1>
-            <h1>at {{ grant.redirect_uri | simplify_url }}</h1>
-            <h1>wants to access your account</h1>
+    <div class="w-96 mx-2 my-8 flex flex-col gap-6">
+      <div class="flex flex-col gap-2 text-center">
+        {% if client.logo_uri %}
+          <div class="consent-client-icon image">
+            <img src="{{ client.logo_uri }}" />
           </div>
-          <div class="flex items-center m-2">
-            <div class="px-4 flex-1">
-              <p>This will allow <a target="_blank" href="{{ client.client_uri }}" class="cpd-link" data-kind="primary">{{ client.client_name | default(value=client.client_id) }}</a> to:</p>
-
-              <p class="my-2">
-                {{ scope::list(scopes=grant.scope) }}
-              </p>
-              <p class="font-semibold my-2">Make sure that you trust {{ client.client_name | default(value=client.client_id) }}.</p>
-              <p>
-                You may be sharing sensitive information with this site or app.
-                {% if client.policy_uri or client.tos_uri %}
-                  Find out how {{ client.client_name }} will handle your data by reviewing it's
-                  {% if client.policy_uri %}
-                    <a target="_blank" href="{{ client.policy_uri }}" class="cpd-link" data-kind="primary">privacy policy</a>{% if not client.tos_uri %}.{% endif %}
-                  {% endif %}
-                  {% if client.policy_uri and client.tos_uri%}
-                    and
-                  {% endif %}
-                  {% if client.tos_uri %}
-                    <a target="_blank" href="{{ client.tos_uri }}" class="cpd-link" data-kind="primary">terms of service</a>.
-                  {% endif %}
-                {% endif %}
-              </p>
-              </div>
+        {% else %}
+          <div class="consent-client-icon generic">
+            {{ icon::web_browser() }}
           </div>
-        </div>
+        {% endif %}
 
+        <h1 class="cpd-text-primary cpd-text-heading-xl-semibold"><a target="_blank" href="{{ client.client_uri }}">{{ client_name }}</a></h1>
+        <p class="cpd-text-secondary cpd-text-body-lg-regular"><span class="whitespace-nowrap">at {{ grant.redirect_uri | simplify_url }}</span> wants to access your account. This will allow <span class="whitespace-nowrap">{{ client_name }}</span> to:</p>
+      </div>
+
+      <div class="consent-scope-list">
+        {{ scope::list(scopes=grant.scope) }}
+      </div>
+
+      <div class="my-2 text-center cpd-text-body-md-regular">
+        <span class="font-semibold">Make sure that you trust <span class="whitespace-nowrap">{{ client_name }}</span>.</span>
+        You may be sharing sensitive information with this site or app.
+        {% if client.policy_uri or client.tos_uri %}
+          Find out how {{ client_name }} will handle your data by reviewing its
+          {% if client.policy_uri %}
+            <a target="_blank" href="{{ client.policy_uri }}" class="cpd-link" data-kind="primary">privacy policy</a>{% if not client.tos_uri %}.{% endif %}
+          {% endif %}
+          {% if client.policy_uri and client.tos_uri%}
+            and
+          {% endif %}
+          {% if client.tos_uri %}
+            <a target="_blank" href="{{ client.tos_uri }}" class="cpd-link" data-kind="primary">terms of service</a>.
+          {% endif %}
+        {% endif %}
+      </div>
+
+      <form method="POST" class="flex flex-col">
         <input type="hidden" name="csrf" value="{{ csrf_token }}" />
-
-        <div class="grid grid-cols-2 gap-4">
-          {{ back_to_client::link(
-            text="Cancel",
-            kind="destructive",
-            uri=grant.redirect_uri,
-            mode=grant.response_mode,
-            params=dict(error="access_denied", state=grant.state)
-          ) }}
-          {{ button::button(text="Allow") }}
-        </div>
+        {{ button::button(text="Continue") }}
       </form>
-      <div class="text-center mt-4">
+
+      {{ back_to_client::link(
+        text="Cancel",
+        kind="tertiary",
+        uri=grant.redirect_uri,
+        mode=grant.response_mode,
+        params=dict(error="access_denied", state=grant.state)
+      ) }}
+
+      <div class="text-center">
         Not {{ current_session.user.username }}?
         {{ logout::button(text="Sign out", csrf_token=csrf_token, post_logout_action=action, as_link=true) }}
       </div>
