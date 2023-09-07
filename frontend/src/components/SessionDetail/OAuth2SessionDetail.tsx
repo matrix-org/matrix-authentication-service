@@ -12,9 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { H3, Button } from "@vector-im/compound-web";
+import { H3 } from "@vector-im/compound-web";
 import { useSetAtom } from "jotai";
-import { useTransition } from "react";
 
 import { FragmentType, useFragment } from "../../gql";
 import { getDeviceIdFromScope } from "../../utils/deviceIdFromScope";
@@ -25,6 +24,7 @@ import {
   Oauth2SessionType,
   endSessionFamily,
 } from "../OAuth2Session";
+import EndSessionButton from "../Session/EndSessionButton";
 
 import SessionDetails from "./SessionDetails";
 
@@ -33,19 +33,14 @@ type Props = {
 };
 
 const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
-  const [pending, startTransition] = useTransition();
   const data = useFragment(
     OAUTH2_SESSION_FRAGMENT,
     session,
   ) as Oauth2SessionType;
   const endSession = useSetAtom(endSessionFamily(data.id));
 
-  // @TODO(kerrya) make this wait for session refresh properly
-  // https://github.com/matrix-org/matrix-authentication-service/issues/1533
-  const onSessionEnd = (): void => {
-    startTransition(() => {
-      endSession();
-    });
+  const onSessionEnd = async (): Promise<void> => {
+    await endSession();
   };
 
   const deviceId = getDeviceIdFromScope(data.scope);
@@ -93,18 +88,7 @@ const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
         <H3>{deviceId || data.id}</H3>
         <SessionDetails title="Session" details={sessionDetails} />
         <SessionDetails title="Client" details={clientDetails} />
-        {!data.finishedAt && (
-          <Button
-            kind="destructive"
-            size="sm"
-            onClick={onSessionEnd}
-            disabled={pending}
-          >
-            {/* @TODO(kerrya) put this back after pending state works properly */}
-            {/* { pending && <LoadingSpinner />} */}
-            End session
-          </Button>
-        )}
+        {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
       </BlockList>
     </div>
   );

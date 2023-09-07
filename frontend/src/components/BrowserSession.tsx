@@ -12,11 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Button } from "@vector-im/compound-web";
 import { atom, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
-import { useTransition } from "react";
 
 import { currentBrowserSessionIdAtom, currentUserIdAtom } from "../atoms";
 import { FragmentType, graphql, useFragment } from "../gql";
@@ -25,6 +23,7 @@ import {
   sessionNameFromDeviceInformation,
 } from "../utils/parseUserAgent";
 
+import EndSessionButton from "./Session/EndSessionButton";
 import Session from "./Session/Session";
 
 const FRAGMENT = graphql(/* GraphQL */ `
@@ -71,7 +70,6 @@ type Props = {
 
 const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
   const data = useFragment(FRAGMENT, session);
-  const [pending, startTransition] = useTransition();
   const endSession = useSetAtom(endSessionFamily(data.id));
 
   // Pull those atoms to reset them when the current session is ended
@@ -80,19 +78,16 @@ const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
 
   const createdAt = data.createdAt;
 
-  const onSessionEnd = (): void => {
-    startTransition(() => {
-      endSession().then(() => {
-        if (isCurrent) {
-          currentBrowserSessionId({
-            requestPolicy: "network-only",
-          });
-          currentUserId({
-            requestPolicy: "network-only",
-          });
-        }
+  const onSessionEnd = async (): Promise<void> => {
+    await endSession();
+    if (isCurrent) {
+      currentBrowserSessionId({
+        requestPolicy: "network-only",
       });
-    });
+      currentUserId({
+        requestPolicy: "network-only",
+      });
+    }
   };
 
   const deviceInformation = parseUserAgent(data.userAgent || undefined);
@@ -107,16 +102,7 @@ const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
       finishedAt={data.finishedAt}
       isCurrent={isCurrent}
     >
-      {!data.finishedAt && (
-        <Button
-          kind="destructive"
-          size="sm"
-          onClick={onSessionEnd}
-          disabled={pending}
-        >
-          Sign out
-        </Button>
-      )}
+      {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
     </Session>
   );
 };
