@@ -12,22 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Avatar } from "@vector-im/compound-web";
 import { CSSProperties } from "react";
 
 import styles from "./ClientAvatar.module.css";
 
+/**
+ * Render a client logo avatar when logoUri is truthy
+ * Otherwise return null
+ */
 const ClientAvatar: React.FC<{
   name: string;
   logoUri?: string;
-  /**
-   * Render a fallback avatar using client name when truthy
-   * Otherwise return null when no logoUri
-   */
-  withFallback?: boolean;
   size: string;
-}> = ({ name, logoUri, withFallback, size }) => {
+}> = ({ name, logoUri, size }) => {
   // compound's lazy loading for avatars does not allow CORS requests
+  // so use our own avatar styled img
   if (logoUri) {
     return (
       <img
@@ -41,9 +40,6 @@ const ClientAvatar: React.FC<{
         }
       />
     );
-  }
-  if (withFallback) {
-    return <Avatar size={size} id={name} name={name} src={logoUri} />;
   }
   return null;
 };
