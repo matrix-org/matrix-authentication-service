@@ -681,6 +681,44 @@ export default {
         interfaces: [],
       },
       {
+        kind: "OBJECT",
+        name: "CreateOAuth2SessionPayload",
+        fields: [
+          {
+            name: "accessToken",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+          {
+            name: "oauth2Session",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "Oauth2Session",
+                ofType: null,
+              },
+            },
+            args: [],
+          },
+          {
+            name: "refreshToken",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
+            },
+            args: [],
+          },
+        ],
+        interfaces: [],
+      },
+      {
         kind: "INTERFACE",
         name: "CreationEvent",
         fields: [
@@ -904,6 +942,29 @@ export default {
               ofType: {
                 kind: "OBJECT",
                 name: "AddUserPayload",
+                ofType: null,
+              },
+            },
+            args: [
+              {
+                name: "input",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
+          },
+          {
+            name: "createOauth2Session",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "CreateOAuth2SessionPayload",
                 ofType: null,
               },
             },

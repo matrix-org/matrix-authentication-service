@@ -368,6 +368,42 @@ type CompatSsoLoginEdge {
 }
 
 """
+The input of the `createOauth2Session` mutation.
+"""
+input CreateOAuth2SessionInput {
+  """
+  The scope of the session
+  """
+  scope: String!
+  """
+  The ID of the user for which to create the session
+  """
+  userId: ID!
+  """
+  Whether the session should issue a never-expiring access token
+  """
+  permanent: Boolean
+}
+
+"""
+The payload of the `createOauth2Session` mutation.
+"""
+type CreateOAuth2SessionPayload {
+  """
+  Access token for this session
+  """
+  accessToken: String!
+  """
+  Refresh token for this session, if it is not a permanent session
+  """
+  refreshToken: String
+  """
+  The OAuth 2.0 session which was just created
+  """
+  oauth2Session: Oauth2Session!
+}
+
+"""
 An object with a creation date.
 """
 interface CreationEvent {
@@ -580,6 +616,14 @@ type Mutation {
   Lock a user. This is only available to administrators.
   """
   lockUser(input: LockUserInput!): LockUserPayload!
+  """
+  Create a new arbitrary OAuth 2.0 Session.
+
+  Only available for administrators.
+  """
+  createOauth2Session(
+    input: CreateOAuth2SessionInput!
+  ): CreateOAuth2SessionPayload!
   endOauth2Session(input: EndOAuth2SessionInput!): EndOAuth2SessionPayload!
   endCompatSession(input: EndCompatSessionInput!): EndCompatSessionPayload!
   endBrowserSession(input: EndBrowserSessionInput!): EndBrowserSessionPayload!
