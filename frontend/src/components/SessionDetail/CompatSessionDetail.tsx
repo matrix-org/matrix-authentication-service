@@ -23,6 +23,7 @@ import {
   simplifyUrl,
 } from "../CompatSession";
 import DateTime from "../DateTime";
+import ExternalLink from "../ExternalLink/ExternalLink";
 import EndSessionButton from "../Session/EndSessionButton";
 
 import SessionDetails from "./SessionDetails";
@@ -59,9 +60,9 @@ const CompatSessionDetail: React.FC<Props> = ({ session }) => {
     clientDetails.push({
       label: "Uri",
       value: (
-        <a target="_blank" href={data.ssoLogin?.redirectUri}>
+        <ExternalLink target="_blank" href={data.ssoLogin?.redirectUri}>
           {data.ssoLogin?.redirectUri}
-        </a>
+        </ExternalLink>
       ),
     });
   }

@@ -17,6 +17,7 @@ import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
 
 import { mapQueryAtom } from "../atoms";
+import OAuth2ClientDetail from "../components/Client/OAuth2ClientDetail";
 import GraphQLError from "../components/GraphQLError";
 import NotFound from "../components/NotFound";
 import { graphql } from "../gql";
@@ -25,14 +26,7 @@ import { isErr, unwrapErr, unwrapOk } from "../result";
 const QUERY = graphql(/* GraphQL */ `
   query OAuth2ClientQuery($id: ID!) {
     oauth2Client(id: $id) {
-      id
-      clientId
-      clientName
-      clientUri
-      tosUri
-      policyUri
-      redirectUris
-      logoUri
+      ...OAuth2Client_detail
     }
   }
 `);
@@ -56,13 +50,9 @@ const OAuth2Client: React.FC<{ id: string }> = ({ id }) => {
   if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
 
   const oauth2Client = unwrapOk(result);
-  if (oauth2Client === null) return <NotFound />;
+  if (!oauth2Client) return <NotFound />;
 
-  return (
-    <pre>
-      <code>{JSON.stringify(oauth2Client, null, 2)}</code>
-    </pre>
-  );
+  return <OAuth2ClientDetail client={oauth2Client} />;
 };
 
 export default OAuth2Client;
