@@ -16,6 +16,7 @@ import { H3 } from "@vector-im/compound-web";
 import { useSetAtom } from "jotai";
 
 import { FragmentType, useFragment } from "../../gql";
+import { Link } from "../../routing";
 import { getDeviceIdFromScope } from "../../utils/deviceIdFromScope";
 import BlockList from "../BlockList/BlockList";
 import DateTime from "../DateTime";
@@ -70,6 +71,9 @@ const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
     },
   ];
 
+  const clientTitle = (
+    <Link route={{ type: "client", id: data.client.id }}>Client</Link>
+  );
   const clientDetails = [
     {
       label: "Name",
@@ -100,7 +104,7 @@ const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
       <BlockList>
         <H3>{deviceId || data.id}</H3>
         <SessionDetails title="Session" details={sessionDetails} />
-        <SessionDetails title="Client" details={clientDetails} />
+        <SessionDetails title={clientTitle} details={clientDetails} />
         {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
       </BlockList>
     </div>

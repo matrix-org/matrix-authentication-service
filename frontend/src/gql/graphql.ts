@@ -1083,6 +1083,18 @@ export type BrowserSessionListQuery = {
   } | null;
 };
 
+export type OAuth2Client_DetailFragment = {
+  __typename?: "Oauth2Client";
+  id: string;
+  clientId: string;
+  clientName?: string | null;
+  clientUri?: any | null;
+  logoUri?: any | null;
+  tosUri?: any | null;
+  policyUri?: any | null;
+  redirectUris: Array<any>;
+} & { " $fragmentName"?: "OAuth2Client_DetailFragment" };
+
 export type CompatSession_SessionFragment = {
   __typename?: "CompatSession";
   id: string;
@@ -1497,17 +1509,13 @@ export type OAuth2ClientQueryQueryVariables = Exact<{
 
 export type OAuth2ClientQueryQuery = {
   __typename?: "Query";
-  oauth2Client?: {
-    __typename?: "Oauth2Client";
-    id: string;
-    clientId: string;
-    clientName?: string | null;
-    clientUri?: any | null;
-    tosUri?: any | null;
-    policyUri?: any | null;
-    redirectUris: Array<any>;
-    logoUri?: any | null;
-  } | null;
+  oauth2Client?:
+    | ({ __typename?: "Oauth2Client" } & {
+        " $fragmentRefs"?: {
+          OAuth2Client_DetailFragment: OAuth2Client_DetailFragment;
+        };
+      })
+    | null;
 };
 
 export type SessionsOverviewQueryQueryVariables = Exact<{
@@ -1573,6 +1581,32 @@ export const BrowserSession_SessionFragmentDoc = {
     },
   ],
 } as unknown as DocumentNode<BrowserSession_SessionFragment, unknown>;
+export const OAuth2Client_DetailFragmentDoc = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "OAuth2Client_detail" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "Oauth2Client" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          { kind: "Field", name: { kind: "Name", value: "clientId" } },
+          { kind: "Field", name: { kind: "Name", value: "clientName" } },
+          { kind: "Field", name: { kind: "Name", value: "clientUri" } },
+          { kind: "Field", name: { kind: "Name", value: "logoUri" } },
+          { kind: "Field", name: { kind: "Name", value: "tosUri" } },
+          { kind: "Field", name: { kind: "Name", value: "policyUri" } },
+          { kind: "Field", name: { kind: "Name", value: "redirectUris" } },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<OAuth2Client_DetailFragment, unknown>;
 export const CompatSession_SessionFragmentDoc = {
   kind: "Document",
   definitions: [
@@ -4166,20 +4200,34 @@ export const OAuth2ClientQueryDocument = {
             selectionSet: {
               kind: "SelectionSet",
               selections: [
-                { kind: "Field", name: { kind: "Name", value: "id" } },
-                { kind: "Field", name: { kind: "Name", value: "clientId" } },
-                { kind: "Field", name: { kind: "Name", value: "clientName" } },
-                { kind: "Field", name: { kind: "Name", value: "clientUri" } },
-                { kind: "Field", name: { kind: "Name", value: "tosUri" } },
-                { kind: "Field", name: { kind: "Name", value: "policyUri" } },
                 {
-                  kind: "Field",
-                  name: { kind: "Name", value: "redirectUris" },
+                  kind: "FragmentSpread",
+                  name: { kind: "Name", value: "OAuth2Client_detail" },
                 },
-                { kind: "Field", name: { kind: "Name", value: "logoUri" } },
               ],
             },
           },
+        ],
+      },
+    },
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "OAuth2Client_detail" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "Oauth2Client" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          { kind: "Field", name: { kind: "Name", value: "clientId" } },
+          { kind: "Field", name: { kind: "Name", value: "clientName" } },
+          { kind: "Field", name: { kind: "Name", value: "clientUri" } },
+          { kind: "Field", name: { kind: "Name", value: "logoUri" } },
+          { kind: "Field", name: { kind: "Name", value: "tosUri" } },
+          { kind: "Field", name: { kind: "Name", value: "policyUri" } },
+          { kind: "Field", name: { kind: "Name", value: "redirectUris" } },
         ],
       },
     },

@@ -21,7 +21,7 @@ import styles from "./SessionDetails.module.css";
 
 type Detail = { label: string; value: string | ReactNode };
 type Props = {
-  title: string;
+  title: string | ReactNode;
   details: Detail[];
 };
 
