@@ -172,6 +172,13 @@ jobs:
             --features dist \
             -p mas-cli
 
+      - name: Create CACHEDIR.TAG files
+        # This is a workaround for `cargo-zigbuild` not creating the CACHEDIR.TAG files
+        # https://github.com/rust-cross/cargo-zigbuild/issues/165
+        run: |
+          touch target/CACHEDIR.TAG
+          touch target/${{ matrix.arch }}-apple-darwin/CACHEDIR.TAG
+
       - name: Download the artifacts
         uses: actions/download-artifact@v3.0.2
         with:
