@@ -14,7 +14,7 @@
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use mas_data_model::{BrowserSession, Client, Session, SessionState};
+use mas_data_model::{BrowserSession, Client, Session, SessionState, User};
 use mas_storage::{
     oauth2::{OAuth2SessionFilter, OAuth2SessionRepository},
     Clock, Page, Pagination,
@@ -133,24 +133,23 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
     }
 
     #[tracing::instrument(
-        name = "db.oauth2_session.add_from_browser_session",
+        name = "db.oauth2_session.add",
         skip_all,
         fields(
             db.statement,
-            %user_session.id,
-            user.id = %user_session.user.id,
             %client.id,
             session.id,
             session.scope = %scope,
         ),
         err,
     )]
-    async fn add_from_browser_session(
+    async fn add(
         &mut self,
         rng: &mut (dyn RngCore + Send),
         clock: &dyn Clock,
         client: &Client,
-        user_session: &BrowserSession,
+        user: Option<&User>,
+        user_session: Option<&BrowserSession>,
         scope: Scope,
     ) -> Result<Session, Self::Error> {
         let created_at = clock.now();
@@ -172,8 +171,8 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
                 VALUES ($1, $2, $3, $4, $5, $6)
             "#,
             Uuid::from(id),
-            Uuid::from(user_session.user.id),
-            Uuid::from(user_session.id),
+            user.map(|u| Uuid::from(u.id)),
+            user_session.map(|s| Uuid::from(s.id)),
             Uuid::from(client.id),
             &scope_list,
             created_at,
@@ -186,62 +185,8 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
             id,
             state: SessionState::Valid,
             created_at,
-            user_id: Some(user_session.user.id),
-            user_session_id: Some(user_session.id),
-            client_id: client.id,
-            scope,
-        })
-    }
-
-    #[tracing::instrument(
-        name = "db.oauth2_session.add_from_client_credentials",
-        skip_all,
-        fields(
-            db.statement,
-            %client.id,
-            session.id,
-            session.scope = %scope,
-        ),
-        err,
-    )]
-    async fn add_from_client_credentials(
-        &mut self,
-        rng: &mut (dyn RngCore + Send),
-        clock: &dyn Clock,
-        client: &Client,
-        scope: Scope,
-    ) -> Result<Session, Self::Error> {
-        let created_at = clock.now();
-        let id = Ulid::from_datetime_with_source(created_at.into(), rng);
-        tracing::Span::current().record("session.id", tracing::field::display(id));
-
-        let scope_list: Vec<String> = scope.iter().map(|s| s.as_str().to_owned()).collect();
-
-        sqlx::query!(
-            r#"
-                INSERT INTO oauth2_sessions
-                    ( oauth2_session_id
-                    , oauth2_client_id
-                    , scope_list
-                    , created_at
-                    )
-                VALUES ($1, $2, $3, $4)
-            "#,
-            Uuid::from(id),
-            Uuid::from(client.id),
-            &scope_list,
-            created_at,
-        )
-        .traced()
-        .execute(&mut *self.conn)
-        .await?;
-
-        Ok(Session {
-            id,
-            state: SessionState::Valid,
-            created_at,
-            user_id: None,
-            user_session_id: None,
+            user_id: user.map(|u| u.id),
+            user_session_id: user_session.map(|s| s.id),
             client_id: client.id,
             scope,
         })

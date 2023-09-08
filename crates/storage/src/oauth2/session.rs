@@ -140,6 +140,33 @@ pub trait OAuth2SessionRepository: Send + Sync {
     /// Returns [`Self::Error`] if the underlying repository fails
     async fn lookup(&mut self, id: Ulid) -> Result<Option<Session>, Self::Error>;
 
+    /// Create a new [`Session`] with the given parameters
+    ///
+    /// Returns the newly created [`Session`]
+    ///
+    /// # Parameters
+    ///
+    /// * `rng`: The random number generator to use
+    /// * `clock`: The clock used to generate timestamps
+    /// * `client`: The [`Client`] which created the [`Session`]
+    /// * `user`: The [`User`] for which the session should be created, if any
+    /// * `user_session`: The [`BrowserSession`] of the user which completed the
+    ///   authorization, if any
+    /// * `scope`: The [`Scope`] of the [`Session`]
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn add(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        client: &Client,
+        user: Option<&User>,
+        user_session: Option<&BrowserSession>,
+        scope: Scope,
+    ) -> Result<Session, Self::Error>;
+
     /// Create a new [`Session`] out of a [`Client`] and a [`BrowserSession`]
     ///
     /// Returns the newly created [`Session`]
@@ -163,7 +190,17 @@ pub trait OAuth2SessionRepository: Send + Sync {
         client: &Client,
         user_session: &BrowserSession,
         scope: Scope,
-    ) -> Result<Session, Self::Error>;
+    ) -> Result<Session, Self::Error> {
+        self.add(
+            rng,
+            clock,
+            client,
+            Some(&user_session.user),
+            Some(user_session),
+            scope,
+        )
+        .await
+    }
 
     /// Create a new [`Session`] for a [`Client`] using the client credentials
     /// flow
@@ -186,7 +223,9 @@ pub trait OAuth2SessionRepository: Send + Sync {
         clock: &dyn Clock,
         client: &Client,
         scope: Scope,
-    ) -> Result<Session, Self::Error>;
+    ) -> Result<Session, Self::Error> {
+        self.add(rng, clock, client, None, None, scope).await
+    }
 
     /// Mark a [`Session`] as finished
     ///
@@ -233,6 +272,16 @@ pub trait OAuth2SessionRepository: Send + Sync {
 
 repository_impl!(OAuth2SessionRepository:
     async fn lookup(&mut self, id: Ulid) -> Result<Option<Session>, Self::Error>;
+
+    async fn add(
+        &mut self,
+        rng: &mut (dyn RngCore + Send),
+        clock: &dyn Clock,
+        client: &Client,
+        user: Option<&User>,
+        user_session: Option<&BrowserSession>,
+        scope: Scope,
+    ) -> Result<Session, Self::Error>;
 
     async fn add_from_browser_session(
         &mut self,
