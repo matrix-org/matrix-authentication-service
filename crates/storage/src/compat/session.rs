@@ -132,7 +132,7 @@ impl<'a> CompatSessionFilter<'a> {
 }
 
 /// A [`CompatSessionRepository`] helps interacting with
-/// [`CompatSessionRepository`] saved in the storage backend
+/// [`CompatSession`] saved in the storage backend
 #[async_trait]
 pub trait CompatSessionRepository: Send + Sync {
     /// The error type returned by the repository

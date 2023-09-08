@@ -177,6 +177,7 @@
 
 use sqlx::migrate::Migrator;
 
+pub mod app_session;
 pub mod compat;
 pub mod job;
 pub mod oauth2;
