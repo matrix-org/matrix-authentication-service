@@ -48,6 +48,7 @@ use serde::Serialize;
 use serde_with::{serde_as, skip_serializing_none};
 use thiserror::Error;
 use tracing::debug;
+use ulid::Ulid;
 use url::Url;
 
 use super::{generate_id_token, generate_token_pair};
@@ -95,6 +96,18 @@ pub(crate) enum RouteError {
 
     #[error("invalid grant")]
     InvalidGrant,
+
+    #[error("refresh token not found")]
+    RefreshTokenNotFound,
+
+    #[error("refresh token {0} is invalid")]
+    RefreshTokenInvalid(Ulid),
+
+    #[error("session {0} is invalid")]
+    SessionInvalid(Ulid),
+
+    #[error("client id mismatch: expected {expected}, got {actual}")]
+    ClientIDMismatch { expected: Ulid, actual: Ulid },
 
     #[error("policy denied the request")]
     DeniedByPolicy(Vec<mas_policy::Violation>),
@@ -152,7 +165,12 @@ impl IntoResponse for RouteError {
                     ),
                 ),
             ),
-            Self::InvalidGrant | Self::GrantNotFound => (
+            Self::InvalidGrant
+            | Self::RefreshTokenNotFound
+            | Self::RefreshTokenInvalid(_)
+            | Self::SessionInvalid(_)
+            | Self::ClientIDMismatch { .. }
+            | Self::GrantNotFound => (
                 StatusCode::BAD_REQUEST,
                 Json(ClientError::from(ClientErrorCode::InvalidGrant)),
             ),
@@ -422,7 +440,7 @@ async fn refresh_token_grant(
         .oauth2_refresh_token()
         .find_by_token(&grant.refresh_token)
         .await?
-        .ok_or(RouteError::InvalidGrant)?;
+        .ok_or(RouteError::RefreshTokenNotFound)?;
 
     let session = repo
         .oauth2_session()
@@ -430,13 +448,20 @@ async fn refresh_token_grant(
         .await?
         .ok_or(RouteError::NoSuchOAuthSession)?;
 
-    if !refresh_token.is_valid() || !session.is_valid() {
-        return Err(RouteError::InvalidGrant);
+    if !refresh_token.is_valid() {
+        return Err(RouteError::RefreshTokenInvalid(refresh_token.id));
+    }
+
+    if !session.is_valid() {
+        return Err(RouteError::SessionInvalid(session.id));
     }
 
     if client.id != session.client_id {
         // As per https://datatracker.ietf.org/doc/html/rfc6749#section-5.2
-        return Err(RouteError::InvalidGrant);
+        return Err(RouteError::ClientIDMismatch {
+            expected: session.client_id,
+            actual: client.id,
+        });
     }
 
     let ttl = site_config.access_token_ttl;
