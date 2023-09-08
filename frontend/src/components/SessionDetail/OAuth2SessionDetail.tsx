@@ -24,6 +24,7 @@ import {
   Oauth2SessionType,
   endSessionFamily,
 } from "../OAuth2Session";
+import ClientAvatar from "../Session/ClientAvatar";
 import EndSessionButton from "../Session/EndSessionButton";
 
 import SessionDetails from "./SessionDetails";
@@ -70,7 +71,19 @@ const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
   ];
 
   const clientDetails = [
-    { label: "Name", value: data.client.clientName },
+    {
+      label: "Name",
+      value: (
+        <>
+          <ClientAvatar
+            name={data.client.clientName}
+            logoUri={data.client.logoUri || undefined}
+            size="var(--cpd-space-4x)"
+          />
+          {data.client.clientName}
+        </>
+      ),
+    },
     { label: "ID", value: <code>{data.client.clientId}</code> },
     {
       label: "Uri",

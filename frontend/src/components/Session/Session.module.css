@@ -21,6 +21,10 @@
 }
 
 .session-metadata {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--cpd-space-1x);
     color: var(--cpd-color-text-secondary);
 
     &[data-finished] {

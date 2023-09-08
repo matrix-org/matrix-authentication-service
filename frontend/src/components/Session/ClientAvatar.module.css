@@ -13,28 +13,11 @@
  * limitations under the License.
  */
 
-.list {
-    display: flex;
-    flex-direction: column;
-    margin-top: var(--cpd-space-1x);
-    gap: var(--cpd-space-1x);
-}
-
-.detail-row {
-    display: flex;
-    flex-direction: row;
-    gap: var(--cpd-space-4x);
-}
-
-.detail-label {
-    flex: 0 0 20%;
-    color: var(--cpd-color-text-secondary);
-}
-
-.detail-value {
-    overflow-wrap: anywhere;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: var(--cpd-space-1x);
+.avatar {
+    object-fit: cover;
+    overflow: hidden;
+    aspect-ratio: 1 / 1;
+    width: var(--mas-avatar-size);
+    border-radius: 50%;
+    display: inline-block;
 }
