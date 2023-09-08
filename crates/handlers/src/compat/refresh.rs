@@ -15,6 +15,7 @@
 use axum::{extract::State, response::IntoResponse, Json};
 use chrono::Duration;
 use hyper::StatusCode;
+use mas_axum_utils::sentry::SentryEventID;
 use mas_data_model::{TokenFormatError, TokenType};
 use mas_storage::{
     compat::{CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository},
@@ -52,8 +53,8 @@ pub enum RouteError {
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
-        sentry::capture_error(&self);
-        match self {
+        let event_id = sentry::capture_error(&self);
+        let response = match self {
             Self::Internal(_) | Self::UnknownSession => MatrixError {
                 errcode: "M_UNKNOWN",
                 error: "Internal error",
@@ -64,8 +65,9 @@ impl IntoResponse for RouteError {
                 error: "Invalid refresh token",
                 status: StatusCode::UNAUTHORIZED,
             },
-        }
-        .into_response()
+        };
+
+        (SentryEventID::from(event_id), response).into_response()
     }
 }
 

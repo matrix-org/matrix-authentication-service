@@ -17,7 +17,7 @@ use axum::{
     response::{Html, IntoResponse, Response},
 };
 use hyper::StatusCode;
-use mas_axum_utils::{cookies::CookieJar, csrf::CsrfExt, SessionInfoExt};
+use mas_axum_utils::{cookies::CookieJar, csrf::CsrfExt, sentry::SentryEventID, SessionInfoExt};
 use mas_data_model::{AuthorizationCode, Pkce};
 use mas_keystore::Keystore;
 use mas_policy::Policy;
@@ -64,9 +64,9 @@ pub enum RouteError {
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
-        sentry::capture_error(&self);
+        let event_id = sentry::capture_error(&self);
         // TODO: better error pages
-        match self {
+        let response = match self {
             RouteError::Internal(e) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
             }
@@ -84,7 +84,9 @@ impl IntoResponse for RouteError {
                 format!("Invalid redirect URI ({e})"),
             )
                 .into_response(),
-        }
+        };
+
+        (SentryEventID::from(event_id), response).into_response()
     }
 }
 

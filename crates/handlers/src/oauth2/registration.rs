@@ -14,6 +14,7 @@
 
 use axum::{extract::State, response::IntoResponse, Json};
 use hyper::StatusCode;
+use mas_axum_utils::sentry::SentryEventID;
 use mas_iana::oauth::OAuthClientAuthenticationMethod;
 use mas_keystore::Encrypter;
 use mas_policy::{Policy, Violation};
@@ -52,8 +53,8 @@ impl_from_error_for_route!(mas_keystore::aead::Error);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
-        sentry::capture_error(&self);
-        match self {
+        let event_id = sentry::capture_error(&self);
+        let response = match self {
             Self::Internal(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ClientError::from(ClientErrorCode::ServerError)),
@@ -124,7 +125,9 @@ impl IntoResponse for RouteError {
                 )
                     .into_response()
             }
-        }
+        };
+
+        (SentryEventID::from(event_id), response).into_response()
     }
 }
 

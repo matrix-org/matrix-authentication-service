@@ -17,6 +17,7 @@ use hyper::StatusCode;
 use mas_axum_utils::{
     client_authorization::{ClientAuthorization, CredentialsVerificationError},
     http_client_factory::HttpClientFactory,
+    sentry::SentryEventID,
 };
 use mas_data_model::{TokenFormatError, TokenType, User};
 use mas_iana::oauth::{OAuthClientAuthenticationMethod, OAuthTokenTypeHint};
@@ -59,8 +60,8 @@ pub enum RouteError {
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
-        sentry::capture_error(&self);
-        match self {
+        let event_id = sentry::capture_error(&self);
+        let response = match self {
             Self::Internal(e) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(
@@ -92,7 +93,9 @@ impl IntoResponse for RouteError {
                 Json(ClientError::from(ClientErrorCode::InvalidRequest)),
             )
                 .into_response(),
-        }
+        };
+
+        (SentryEventID::from(event_id), response).into_response()
     }
 }
 
