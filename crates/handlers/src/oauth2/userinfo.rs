@@ -20,6 +20,7 @@ use axum::{
 use hyper::StatusCode;
 use mas_axum_utils::{
     jwt::JwtResponse,
+    sentry::SentryEventID,
     user_authorization::{AuthorizationVerificationError, UserAuthorization},
 };
 use mas_jose::{
@@ -84,15 +85,17 @@ impl_from_error_for_route!(mas_jose::jwt::JwtSignatureError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
-        sentry::capture_error(&self);
-        match self {
+        let event_id = sentry::capture_error(&self);
+        let response = match self {
             Self::Internal(_) | Self::InvalidSigningKey | Self::NoSuchClient | Self::NoSuchUser => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()).into_response()
             }
             Self::AuthorizationVerificationError(_) | Self::Unauthorized => {
                 StatusCode::UNAUTHORIZED.into_response()
             }
-        }
+        };
+
+        (SentryEventID::from(event_id), response).into_response()
     }
 }
 

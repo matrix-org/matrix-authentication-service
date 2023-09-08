@@ -17,7 +17,9 @@ use axum::{
     response::{IntoResponse, Redirect},
 };
 use hyper::StatusCode;
-use mas_axum_utils::{cookies::CookieJar, http_client_factory::HttpClientFactory};
+use mas_axum_utils::{
+    cookies::CookieJar, http_client_factory::HttpClientFactory, sentry::SentryEventID,
+};
 use mas_oidc_client::requests::authorization_code::AuthorizationRequestData;
 use mas_router::UrlBuilder;
 use mas_storage::{
@@ -49,11 +51,13 @@ impl_from_error_for_route!(mas_storage::RepositoryError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
-        sentry::capture_error(&self);
-        match self {
+        let event_id = sentry::capture_error(&self);
+        let response = match self {
             Self::ProviderNotFound => (StatusCode::NOT_FOUND, "Provider not found").into_response(),
             Self::Internal(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
-        }
+        };
+
+        (SentryEventID::from(event_id), response).into_response()
     }
 }
 

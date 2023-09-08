@@ -15,6 +15,7 @@
 use axum::{extract::State, response::IntoResponse, Json};
 use chrono::Duration;
 use hyper::StatusCode;
+use mas_axum_utils::sentry::SentryEventID;
 use mas_data_model::{CompatSession, CompatSsoLoginState, Device, TokenType, User};
 use mas_storage::{
     compat::{
@@ -169,8 +170,8 @@ impl_from_error_for_route!(mas_storage::RepositoryError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
-        sentry::capture_error(&self);
-        match self {
+        let event_id = sentry::capture_error(&self);
+        let response = match self {
             Self::Internal(_) | Self::SessionNotFound => MatrixError {
                 errcode: "M_UNKNOWN",
                 error: "Internal server error",
@@ -198,8 +199,9 @@ impl IntoResponse for RouteError {
                 error: "Invalid login token",
                 status: StatusCode::FORBIDDEN,
             },
-        }
-        .into_response()
+        };
+
+        (SentryEventID::from(event_id), response).into_response()
     }
 }
 

@@ -18,6 +18,7 @@ use axum::{
     response::IntoResponse,
 };
 use hyper::StatusCode;
+use mas_axum_utils::sentry::SentryEventID;
 use mas_router::{CompatLoginSsoAction, CompatLoginSsoComplete, UrlBuilder};
 use mas_storage::{compat::CompatSsoLoginRepository, BoxClock, BoxRepository, BoxRng};
 use rand::distributions::{Alphanumeric, DistString};
@@ -51,8 +52,13 @@ impl_from_error_for_route!(mas_storage::RepositoryError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
-        sentry::capture_error(&self);
-        (StatusCode::INTERNAL_SERVER_ERROR, format!("{self}")).into_response()
+        let event_id = sentry::capture_error(&self);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            SentryEventID::from(event_id),
+            format!("{self}"),
+        )
+            .into_response()
     }
 }
 

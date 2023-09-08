@@ -21,6 +21,7 @@ use hyper::StatusCode;
 use mas_axum_utils::{
     cookies::CookieJar,
     csrf::{CsrfExt, ProtectedForm},
+    sentry::SentryEventID,
     FancyError, SessionInfoExt,
 };
 use mas_data_model::{UpstreamOAuthProviderImportPreference, User};
@@ -96,8 +97,8 @@ impl_from_error_for_route!(mas_jose::jwt::JwtDecodeError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
-        sentry::capture_error(&self);
-        match self {
+        let event_id = sentry::capture_error(&self);
+        let response = match self {
             Self::LinkNotFound => (StatusCode::NOT_FOUND, "Link not found").into_response(),
             Self::PolicyViolation { violations } => {
                 let details = violations.iter().map(|v| v.msg.clone()).collect::<Vec<_>>();
@@ -111,7 +112,9 @@ impl IntoResponse for RouteError {
             }
             Self::Internal(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
             e => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
-        }
+        };
+
+        (SentryEventID::from(event_id), response).into_response()
     }
 }
 

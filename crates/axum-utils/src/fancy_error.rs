@@ -19,6 +19,8 @@ use axum::{
 };
 use mas_templates::ErrorContext;
 
+use crate::sentry::SentryEventID;
+
 pub struct FancyError {
     context: ErrorContext,
 }
@@ -59,9 +61,10 @@ impl<E: std::fmt::Debug + std::fmt::Display> From<E> for FancyError {
 impl IntoResponse for FancyError {
     fn into_response(self) -> Response {
         let error = format!("{:?}", self.context);
-        sentry::capture_message(&error, sentry::Level::Error);
+        let event_id = sentry::capture_message(&error, sentry::Level::Error);
         (
             StatusCode::INTERNAL_SERVER_ERROR,
+            SentryEventID::from(event_id),
             Extension(self.context),
             error,
         )

@@ -28,7 +28,9 @@ use axum::{
 use futures_util::TryStreamExt;
 use headers::{authorization::Bearer, Authorization, ContentType, HeaderValue};
 use hyper::header::CACHE_CONTROL;
-use mas_axum_utils::{cookies::CookieJar, FancyError, SessionInfo, SessionInfoExt};
+use mas_axum_utils::{
+    cookies::CookieJar, sentry::SentryEventID, FancyError, SessionInfo, SessionInfoExt,
+};
 use mas_data_model::User;
 use mas_graphql::{Requester, Schema};
 use mas_matrix::HomeserverConnection;
@@ -144,9 +146,9 @@ impl_from_error_for_route!(mas_storage::RepositoryError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> Response {
-        sentry::capture_error(&self);
+        let event_id = sentry::capture_error(&self);
 
-        match self {
+        let response = match self {
             e @ (Self::Internal(_) | Self::LoadFailed) => {
                 let error = async_graphql::Error::new_with_source(e);
                 (
@@ -182,7 +184,9 @@ impl IntoResponse for RouteError {
                 )
                     .into_response()
             }
-        }
+        };
+
+        (SentryEventID::from(event_id), response).into_response()
     }
 }
 

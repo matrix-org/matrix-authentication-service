@@ -17,7 +17,7 @@ use axum::{
     response::{Html, IntoResponse, Response},
 };
 use hyper::StatusCode;
-use mas_axum_utils::{cookies::CookieJar, csrf::CsrfExt, SessionInfoExt};
+use mas_axum_utils::{cookies::CookieJar, csrf::CsrfExt, sentry::SentryEventID, SessionInfoExt};
 use mas_data_model::{AuthorizationGrant, BrowserSession, Client, Device};
 use mas_keystore::Keystore;
 use mas_policy::{EvaluationResult, Policy};
@@ -53,9 +53,9 @@ pub enum RouteError {
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
-        sentry::capture_error(&self);
+        let event = sentry::capture_error(&self);
         // TODO: better error pages
-        match self {
+        let response = match self {
             RouteError::NotFound => {
                 (StatusCode::NOT_FOUND, "authorization grant was not found").into_response()
             }
@@ -67,7 +67,9 @@ impl IntoResponse for RouteError {
             RouteError::Internal(_) | Self::NoSuchClient => {
                 (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()).into_response()
             }
-        }
+        };
+
+        (SentryEventID::from(event), response).into_response()
     }
 }
 

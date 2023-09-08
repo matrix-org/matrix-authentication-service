@@ -20,6 +20,7 @@ use hyper::StatusCode;
 use mas_axum_utils::{
     cookies::CookieJar,
     csrf::{CsrfExt, ProtectedForm},
+    sentry::SentryEventID,
     SessionInfoExt,
 };
 use mas_data_model::{AuthorizationGrantStage, Device};
@@ -63,8 +64,12 @@ impl_from_error_for_route!(mas_policy::EvaluationError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
-        sentry::capture_error(&self);
-        StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        let event_id = sentry::capture_error(&self);
+        (
+            SentryEventID::from(event_id),
+            StatusCode::INTERNAL_SERVER_ERROR,
+        )
+            .into_response()
     }
 }
 

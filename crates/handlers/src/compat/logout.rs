@@ -15,6 +15,7 @@
 use axum::{response::IntoResponse, Json, TypedHeader};
 use headers::{authorization::Bearer, Authorization};
 use hyper::StatusCode;
+use mas_axum_utils::sentry::SentryEventID;
 use mas_data_model::TokenType;
 use mas_storage::{
     compat::{CompatAccessTokenRepository, CompatSessionRepository},
@@ -45,8 +46,8 @@ impl_from_error_for_route!(mas_storage::RepositoryError);
 
 impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
-        sentry::capture_error(&self);
-        match self {
+        let event_id = sentry::capture_error(&self);
+        let response = match self {
             Self::Internal(_) => MatrixError {
                 errcode: "M_UNKNOWN",
                 error: "Internal error",
@@ -62,8 +63,9 @@ impl IntoResponse for RouteError {
                 error: "Invalid access token",
                 status: StatusCode::UNAUTHORIZED,
             },
-        }
-        .into_response()
+        };
+
+        (SentryEventID::from(event_id), response).into_response()
     }
 }
 
