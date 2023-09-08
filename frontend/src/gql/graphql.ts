@@ -1161,6 +1161,7 @@ export type OAuth2Session_SessionFragment = {
     clientId: string;
     clientName?: string | null;
     clientUri?: any | null;
+    logoUri?: any | null;
   };
 } & { " $fragmentName"?: "OAuth2Session_SessionFragment" };
 
@@ -1505,6 +1506,7 @@ export type OAuth2ClientQueryQuery = {
     tosUri?: any | null;
     policyUri?: any | null;
     redirectUris: Array<any>;
+    logoUri?: any | null;
   } | null;
 };
 
@@ -1631,6 +1633,7 @@ export const OAuth2Session_SessionFragmentDoc = {
                 { kind: "Field", name: { kind: "Name", value: "clientId" } },
                 { kind: "Field", name: { kind: "Name", value: "clientName" } },
                 { kind: "Field", name: { kind: "Name", value: "clientUri" } },
+                { kind: "Field", name: { kind: "Name", value: "logoUri" } },
               ],
             },
           },
@@ -2688,6 +2691,7 @@ export const EndOAuth2SessionDocument = {
                 { kind: "Field", name: { kind: "Name", value: "clientId" } },
                 { kind: "Field", name: { kind: "Name", value: "clientName" } },
                 { kind: "Field", name: { kind: "Name", value: "clientUri" } },
+                { kind: "Field", name: { kind: "Name", value: "logoUri" } },
               ],
             },
           },
@@ -2922,6 +2926,7 @@ export const OAuth2SessionListQueryDocument = {
                 { kind: "Field", name: { kind: "Name", value: "clientId" } },
                 { kind: "Field", name: { kind: "Name", value: "clientName" } },
                 { kind: "Field", name: { kind: "Name", value: "clientUri" } },
+                { kind: "Field", name: { kind: "Name", value: "logoUri" } },
               ],
             },
           },
@@ -3061,6 +3066,7 @@ export const SessionQueryDocument = {
                 { kind: "Field", name: { kind: "Name", value: "clientId" } },
                 { kind: "Field", name: { kind: "Name", value: "clientName" } },
                 { kind: "Field", name: { kind: "Name", value: "clientUri" } },
+                { kind: "Field", name: { kind: "Name", value: "logoUri" } },
               ],
             },
           },
@@ -4170,6 +4176,7 @@ export const OAuth2ClientQueryDocument = {
                   kind: "Field",
                   name: { kind: "Name", value: "redirectUris" },
                 },
+                { kind: "Field", name: { kind: "Name", value: "logoUri" } },
               ],
             },
           },

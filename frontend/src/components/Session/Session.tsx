@@ -18,6 +18,7 @@ import { ReactNode } from "react";
 import Block from "../Block";
 import DateTime from "../DateTime";
 
+import ClientAvatar from "./ClientAvatar";
 import styles from "./Session.module.css";
 
 const SessionMetadata: React.FC<React.ComponentProps<typeof Body>> = (
@@ -30,6 +31,7 @@ export type SessionProps = {
   createdAt: string;
   finishedAt?: string;
   clientName?: string;
+  clientLogoUri?: string;
   isCurrent?: boolean;
 };
 const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
@@ -38,6 +40,7 @@ const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
   createdAt,
   finishedAt,
   clientName,
+  clientLogoUri,
   isCurrent,
   children,
 }) => {
@@ -56,7 +59,6 @@ const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
       <H6 className={styles.sessionName} title={id}>
         {name || id}
       </H6>
-
       <SessionMetadata weight="semibold">
         Signed in <DateTime datetime={createdAt} />
       </SessionMetadata>
@@ -67,7 +69,11 @@ const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
       )}
       {!!clientName && (
         <SessionMetadata>
-          Client:{" "}
+          <ClientAvatar
+            size="var(--cpd-space-4x)"
+            name={clientName}
+            logoUri={clientLogoUri}
+          />{" "}
           <SessionMetadata weight="semibold" as="span">
             {clientName}
           </SessionMetadata>

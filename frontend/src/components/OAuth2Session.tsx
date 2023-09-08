@@ -34,6 +34,7 @@ export const OAUTH2_SESSION_FRAGMENT = graphql(/* GraphQL */ `
       clientId
       clientName
       clientUri
+      logoUri
     }
   }
 `);
@@ -48,6 +49,7 @@ export type Oauth2SessionType = {
     clientId: string;
     clientName: string;
     clientUri: string;
+    logoUri: string | null;
   };
 };
 
@@ -103,6 +105,7 @@ const OAuth2Session: React.FC<Props> = ({ session }) => {
       createdAt={data.createdAt}
       finishedAt={data.finishedAt || undefined}
       clientName={data.client.clientName}
+      clientLogoUri={data.client.logoUri || undefined}
     >
       {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
     </Session>

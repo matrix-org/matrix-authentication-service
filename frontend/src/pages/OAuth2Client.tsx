@@ -32,6 +32,7 @@ const QUERY = graphql(/* GraphQL */ `
       tosUri
       policyUri
       redirectUris
+      logoUri
     }
   }
 `);
