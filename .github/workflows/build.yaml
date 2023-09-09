@@ -96,6 +96,14 @@ jobs:
       - name: Install zig and cargo-zigbuild
         run: pip3 install ziglang==0.11.0 cargo-zigbuild==0.17.1
 
+      - name: Force Cargo to create the target directory
+        # Run `cargo clean` with an empty package name to force it to create the target directory
+        # This fails because there is no package with an empty name, but the target directory is created
+        # See https://github.com/rust-lang/cargo/issues/12441
+        # This is needed because `cargo-zigbuild` sometimes (wrongly) creates the target directory
+        # See https://github.com/rust-cross/cargo-zigbuild/issues/165
+        run: cargo clean -p '' --target ${{ matrix.arch }}-unknown-linux-gnu || true
+
       - name: Build the binary
         run: |
           cargo zigbuild \
@@ -163,6 +171,14 @@ jobs:
       - name: Download the macOS SDK
         run: curl -L "https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX11.3.sdk.tar.xz" | tar -J -x -C /opt
 
+      - name: Force Cargo to create the target directory
+        # Run `cargo clean` with an empty package name to force it to create the target directory
+        # This fails because there is no package with an empty name, but the target directory is created
+        # See https://github.com/rust-lang/cargo/issues/12441
+        # This is needed because `cargo-zigbuild` sometimes (wrongly) creates the target directory
+        # See https://github.com/rust-cross/cargo-zigbuild/issues/165
+        run: cargo clean -p '' --target ${{ matrix.arch }}-apple-darwin || true
+
       - name: Build the binary
         run: |
           cargo zigbuild \
@@ -171,13 +187,6 @@ jobs:
             --no-default-features \
             --features dist \
             -p mas-cli
-
-      - name: Create CACHEDIR.TAG files
-        # This is a workaround for `cargo-zigbuild` not creating the CACHEDIR.TAG files
-        # https://github.com/rust-cross/cargo-zigbuild/issues/165
-        run: |
-          touch target/CACHEDIR.TAG
-          touch target/${{ matrix.arch }}-apple-darwin/CACHEDIR.TAG
 
       - name: Download the artifacts
         uses: actions/download-artifact@v3.0.2
