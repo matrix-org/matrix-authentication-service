@@ -17,7 +17,7 @@ env:
 jobs:
   opa:
     name: Run OPA test suite with coverage
-    runs-on: non-dind
+    runs-on: memory-l-storage
     container: docker.io/library/buildpack-deps:bookworm
 
     permissions:
@@ -44,7 +44,7 @@ jobs:
 
   frontend:
     name: Run frontend test suite with coverage
-    runs-on: non-dind
+    runs-on: memory-l-storage
     container: docker.io/library/buildpack-deps:bookworm
 
     permissions:
@@ -75,7 +75,7 @@ jobs:
 
   rust:
     name: Run Rust test suite with coverage
-    runs-on: non-dind
+    runs-on: memory-l-storage
     container: docker.io/library/buildpack-deps:bookworm
 
     permissions:
