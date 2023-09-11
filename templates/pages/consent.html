@@ -32,7 +32,7 @@ limitations under the License.
         {% endif %}
 
         <h1 class="cpd-text-primary cpd-text-heading-xl-semibold"><a target="_blank" href="{{ client.client_uri }}">{{ client_name }}</a></h1>
-        <p class="cpd-text-secondary cpd-text-body-lg-regular">{% if client.redirect_uri is starting_with("http") %}<span class="whitespace-nowrap">at {{ grant.redirect_uri | simplify_url }}</span> {% endif %}wants to access your account. This will allow <span class="whitespace-nowrap">{{ client_name }}</span> to:</p>
+        <p class="cpd-text-secondary cpd-text-body-lg-regular">{% if grant.redirect_uri is starting_with("http") %}<span class="whitespace-nowrap">at {{ grant.redirect_uri | simplify_url }}</span> {% endif %}wants to access your account. This will allow <span class="whitespace-nowrap">{{ client_name }}</span> to:</p>
       </div>
 
       <div class="consent-scope-list">
