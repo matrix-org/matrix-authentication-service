@@ -66,7 +66,8 @@ pub trait OAuth2AccessTokenRepository: Send + Sync {
     /// * `clock`: The clock used to generate timestamps
     /// * `session`: The session the access token is associated with
     /// * `access_token`: The access token to add
-    /// * `expires_after`: The duration after which the access token expires
+    /// * `expires_after`: The duration after which the access token expires. If
+    ///   [`None`] the access token never expires
     ///
     /// # Errors
     ///
@@ -77,7 +78,7 @@ pub trait OAuth2AccessTokenRepository: Send + Sync {
         clock: &dyn Clock,
         session: &Session,
         access_token: String,
-        expires_after: Duration,
+        expires_after: Option<Duration>,
     ) -> Result<AccessToken, Self::Error>;
 
     /// Revoke an access token
@@ -126,7 +127,7 @@ repository_impl!(OAuth2AccessTokenRepository:
         clock: &dyn Clock,
         session: &Session,
         access_token: String,
-        expires_after: Duration,
+        expires_after: Option<Duration>,
     ) -> Result<AccessToken, Self::Error>;
 
     async fn revoke(

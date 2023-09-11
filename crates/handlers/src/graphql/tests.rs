@@ -13,7 +13,6 @@
 // limitations under the License.
 
 use axum::http::Request;
-use chrono::Duration;
 use hyper::StatusCode;
 use mas_data_model::{AccessToken, Client, TokenType, User};
 use mas_router::SimpleRoute;
@@ -106,13 +105,7 @@ async fn start_oauth_session(
 
     let access_token = repo
         .oauth2_access_token()
-        .add(
-            &mut rng,
-            &state.clock,
-            &session,
-            access_token_str,
-            Duration::minutes(5),
-        )
+        .add(&mut rng, &state.clock, &session, access_token_str, None)
         .await
         .unwrap();
 

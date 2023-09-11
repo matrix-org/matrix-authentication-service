@@ -177,10 +177,9 @@ impl OAuth2SessionMutations {
         }
 
         let ttl = if permanent {
-            // XXX: that's lazy
-            Duration::days(365 * 50)
+            None
         } else {
-            Duration::minutes(5)
+            Some(Duration::minutes(5))
         };
         let access_token = repo
             .oauth2_access_token()
