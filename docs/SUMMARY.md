@@ -13,7 +13,7 @@
 - [Homeserver configuration](./setup/homeserver.md)
 - [Configuring a reverse proxy](./setup/reverse-proxy.md)
 - [Running the service](./setup/running.md)
-
+- [Migrating an existing homeserver](./setup/migration.md)
 # Usage
 
 - [Configuration file reference](./usage/configuration.md)
