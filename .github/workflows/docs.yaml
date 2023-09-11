@@ -17,7 +17,7 @@ env:
 jobs:
   build:
     name: Build the documentation
-    runs-on: non-dind
+    runs-on: memory-l-storage
     container: docker.io/library/buildpack-deps:bookworm
     steps:
       - name: Checkout the code
@@ -57,7 +57,7 @@ jobs:
 
   deploy:
     name: Deploy the documentation on GitHub Pages
-    runs-on: non-dind
+    runs-on: memory-l-storage
     container: docker.io/library/buildpack-deps:bookworm
     needs: build
     if: github.ref == 'refs/heads/main'

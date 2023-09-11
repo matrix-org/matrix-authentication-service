@@ -17,7 +17,7 @@ env:
 jobs:
   opa-lint:
     name: Lint and test OPA policies
-    runs-on: non-dind
+    runs-on: memory-l-storage
     container: docker.io/library/buildpack-deps:bookworm
 
     permissions:
@@ -42,7 +42,7 @@ jobs:
 
   frontend-lint:
     name: Check frontend style
-    runs-on: non-dind
+    runs-on: memory-l-storage
     container: docker.io/library/buildpack-deps:bookworm
 
     permissions:
@@ -68,7 +68,7 @@ jobs:
 
   frontend-test:
     name: Run the frontend test suite
-    runs-on: non-dind
+    runs-on: memory-l-storage
     container: docker.io/library/buildpack-deps:bookworm
 
     permissions:
@@ -94,7 +94,7 @@ jobs:
 
   rustfmt:
     name: Check Rust style
-    runs-on: non-dind
+    runs-on: memory-l-storage
     container: docker.io/library/buildpack-deps:bookworm
 
     permissions:
@@ -115,7 +115,7 @@ jobs:
 
   cargo-deny:
     name: Run `cargo deny` checks
-    runs-on: non-dind
+    runs-on: memory-l-storage
     container: docker.io/library/buildpack-deps:bookworm
 
     permissions:
@@ -128,10 +128,10 @@ jobs:
       - name: Run `cargo-deny`
         uses: EmbarkStudios/cargo-deny-action@v1.5.4
 
-  
+
   check-schema:
     name: Check schema
-    runs-on: non-dind
+    runs-on: memory-l-storage
     container: docker.io/library/buildpack-deps:bookworm
 
     permissions:
@@ -165,7 +165,7 @@ jobs:
         run: |
           if ! [[ -z $(git status -s) ]]; then
             echo "::error title=Workspace is not clean::Please run 'sh ./misc/update.sh' and commit the changes"
-          
+
             (
               echo '## Diff after running `sh ./misc/update.sh`:'
               echo
@@ -173,7 +173,7 @@ jobs:
               git diff
               echo '```'
             ) >> $GITHUB_STEP_SUMMARY
-          
+
             exit 1
           fi
 
@@ -181,7 +181,7 @@ jobs:
   clippy:
     name: Run Clippy
     needs: [rustfmt, opa-lint]
-    runs-on: non-dind
+    runs-on: memory-l-storage
     container: docker.io/library/buildpack-deps:bookworm
 
     permissions:
@@ -218,7 +218,7 @@ jobs:
   test:
     name: Run test suite with Rust stable
     needs: [rustfmt, opa-lint]
-    runs-on: non-dind
+    runs-on: memory-l-storage
     container: docker.io/library/buildpack-deps:bookworm
 
     permissions:
@@ -285,7 +285,7 @@ jobs:
   build-image:
     name: Build and push Docker image
     needs: [rustfmt, opa-lint]
-    runs-on: non-dind
+    runs-on: memory-l-storage
     container: docker.io/library/buildpack-deps:bookworm
     env:
       IMAGE: ghcr.io/matrix-org/matrix-authentication-service
@@ -399,7 +399,7 @@ jobs:
       - check-schema
       - test
       - build-image
-    runs-on: non-dind
+    runs-on: memory-l-storage
     container: docker.io/library/buildpack-deps:bookworm
 
     steps:
