@@ -19,14 +19,6 @@ use ulid::Ulid;
 
 use crate::InvalidTransitionError;
 
-trait T {
-    type State;
-}
-
-impl T for Session {
-    type State = SessionState;
-}
-
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 pub enum SessionState {
     #[default]
@@ -53,6 +45,17 @@ impl SessionState {
         matches!(self, Self::Finished { .. })
     }
 
+    /// Transitions the session state to [`Finished`].
+    ///
+    /// # Parameters
+    ///
+    /// * `finished_at` - The time at which the session was finished.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the session state is already [`Finished`].
+    ///
+    /// [`Finished`]: SessionState::Finished
     pub fn finish(self, finished_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
         match self {
             Self::Valid => Ok(Self::Finished { finished_at }),
@@ -81,6 +84,15 @@ impl std::ops::Deref for Session {
 }
 
 impl Session {
+    /// Marks the session as finished.
+    ///
+    /// # Parameters
+    ///
+    /// * `finished_at` - The time at which the session was finished.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the session is already finished.
     pub fn finish(mut self, finished_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
         self.state = self.state.finish(finished_at)?;
         Ok(self)

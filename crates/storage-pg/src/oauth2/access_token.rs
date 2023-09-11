@@ -59,7 +59,7 @@ impl From<OAuth2AccessTokenLookup> for AccessToken {
             session_id: value.oauth2_session_id.into(),
             access_token: value.access_token,
             created_at: value.created_at,
-            expires_at: value.expires_at,
+            expires_at: Some(value.expires_at),
         }
     }
 }
@@ -177,7 +177,7 @@ impl<'c> OAuth2AccessTokenRepository for PgOAuth2AccessTokenRepository<'c> {
             access_token,
             session_id: session.id,
             created_at,
-            expires_at,
+            expires_at: Some(expires_at),
         })
     }
 

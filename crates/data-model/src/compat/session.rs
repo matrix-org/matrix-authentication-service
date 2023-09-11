@@ -29,7 +29,7 @@ pub enum CompatSessionState {
 }
 
 impl CompatSessionState {
-    /// Returns `true` if the compta session state is [`Valid`].
+    /// Returns `true` if the compat session state is [`Valid`].
     ///
     /// [`Valid`]: CompatSessionState::Valid
     #[must_use]
@@ -37,7 +37,7 @@ impl CompatSessionState {
         matches!(self, Self::Valid)
     }
 
-    /// Returns `true` if the compta session state is [`Finished`].
+    /// Returns `true` if the compat session state is [`Finished`].
     ///
     /// [`Finished`]: CompatSessionState::Finished
     #[must_use]
@@ -45,6 +45,17 @@ impl CompatSessionState {
         matches!(self, Self::Finished { .. })
     }
 
+    /// Transitions the session state to [`Finished`].
+    ///
+    /// # Parameters
+    ///
+    /// * `finished_at` - The time at which the session was finished.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the session state is already [`Finished`].
+    ///
+    /// [`Finished`]: CompatSessionState::Finished
     pub fn finish(self, finished_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
         match self {
             Self::Valid => Ok(Self::Finished { finished_at }),
@@ -80,6 +91,15 @@ impl std::ops::Deref for CompatSession {
 }
 
 impl CompatSession {
+    /// Marks the session as finished.
+    ///
+    /// # Parameters
+    ///
+    /// * `finished_at` - The time at which the session was finished.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the session is already finished.
     pub fn finish(mut self, finished_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
         self.state = self.state.finish(finished_at)?;
         Ok(self)
