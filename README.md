@@ -1,7 +1,8 @@
 # OAuth2.0 + OpenID Provider for Matrix Homeservers
 
-This is an attempt to implement an OAuth 2.0 and OpenID Connect authentication server for Matrix, following [MSC2964](https://github.com/matrix-org/matrix-doc/pull/2964).
-Don't expect too much here for now, this is very much a work in progress.
+MAS (Matrix Authentication Service) is an OAuth 2.0 and OpenID Provider server for Matrix.
+
+It has been created to support the migration of Matrix to an OpenID Connect based architecture as per [MSC3861](https://github.com/matrix-org/matrix-doc/pull/3861).
 
 See the [Documentation](https://matrix-org.github.io/matrix-authentication-service/index.html) for information on installation and use.
 
