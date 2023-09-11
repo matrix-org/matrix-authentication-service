@@ -187,7 +187,9 @@ impl OAuth2SessionMutations {
             .add(&mut rng, &clock, &session, access_token, ttl)
             .await?;
 
-        let refresh_token = if !permanent {
+        let refresh_token = if permanent {
+            None
+        } else {
             let refresh_token = TokenType::RefreshToken.generate(&mut rng);
 
             let refresh_token = repo
@@ -196,8 +198,6 @@ impl OAuth2SessionMutations {
                 .await?;
 
             Some(refresh_token)
-        } else {
-            None
         };
 
         Ok(CreateOAuth2SessionPayload {
