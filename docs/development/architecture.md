@@ -3,6 +3,18 @@
 The service is meant to be easily embeddable, with only a dependency to a database.
 It is also meant to stay lightweight in terms of resource usage and easily scalable horizontally.
 
+## Scope and goals
+
+The Matrix Authentication Service has been created to support the migration of Matrix to an OpenID Connect (OIDC) based architecture as per [MSC3861](https://github.com/matrix-org/matrix-spec-proposals/pull/3861).
+
+It is not intended to be a general purpose Identity Provider (IdP) and instead focuses on the specific needs of Matrix.
+
+Furthermore, it is only intended that it would speak OIDC for authentication and not other protocols. Instead, of you want to connect to an upstream SAML, CAS or LDAP backend then you need to pair MAS with a separate service (such as [Dex](https://dexidp.io) or [Keycloak](https://www.keycloak.org)) which does that translation for you.
+
+Whilst it only supports use with Synapse today, we hope that other homeservers will become supported in future.
+
+If you need some other feature that MAS doesn't support (such as TOTP or WebAuthn), then you should consider pairing MAS with another IdP that does support the features you need.
+
 ## Workspace and crate split
 
 The whole repository is a [Cargo Workspace](https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html) that includes multiple crates under the `/crates` directory.
