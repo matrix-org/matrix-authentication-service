@@ -18,6 +18,7 @@ import { atomWithMutation } from "jotai-urql";
 
 import { currentBrowserSessionIdAtom, currentUserIdAtom } from "../atoms";
 import { FragmentType, graphql, useFragment } from "../gql";
+import Link from "../routing/Link";
 import {
   parseUserAgent,
   sessionNameFromDeviceInformation,
@@ -94,10 +95,13 @@ const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
   const sessionName =
     sessionNameFromDeviceInformation(deviceInformation) || "Browser session";
 
+  const name = (
+    <Link route={{ type: "browser-session", id: data.id }}>{sessionName}</Link>
+  );
   return (
     <Session
       id={data.id}
-      name={sessionName}
+      name={name}
       createdAt={createdAt}
       finishedAt={data.finishedAt}
       isCurrent={isCurrent}
