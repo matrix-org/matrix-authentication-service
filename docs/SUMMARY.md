@@ -27,5 +27,6 @@
 
 # Development
 
+- [Contributing](./development/contributing.md)
 - [Architecture](./development/architecture.md)
 - [Database](./development/database.md)
