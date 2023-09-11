@@ -1484,23 +1484,33 @@ export type ResendVerificationEmailMutation = {
   };
 };
 
+export type BrowserSession_DetailFragment = {
+  __typename?: "BrowserSession";
+  id: string;
+  createdAt: any;
+  finishedAt?: any | null;
+  userAgent?: string | null;
+  lastAuthentication?: {
+    __typename?: "Authentication";
+    id: string;
+    createdAt: any;
+  } | null;
+  user: { __typename?: "User"; id: string; username: string };
+} & { " $fragmentName"?: "BrowserSession_DetailFragment" };
+
 export type BrowserSessionQueryQueryVariables = Exact<{
   id: Scalars["ID"]["input"];
 }>;
 
 export type BrowserSessionQueryQuery = {
   __typename?: "Query";
-  browserSession?: {
-    __typename?: "BrowserSession";
-    id: string;
-    createdAt: any;
-    lastAuthentication?: {
-      __typename?: "Authentication";
-      id: string;
-      createdAt: any;
-    } | null;
-    user: { __typename?: "User"; id: string; username: string };
-  } | null;
+  browserSession?:
+    | ({ __typename?: "BrowserSession"; id: string } & {
+        " $fragmentRefs"?: {
+          BrowserSession_DetailFragment: BrowserSession_DetailFragment;
+        };
+      })
+    | null;
 };
 
 export type OAuth2ClientQueryQueryVariables = Exact<{
@@ -1897,6 +1907,50 @@ export const UserEmail_VerifyEmailFragmentDoc = {
     },
   ],
 } as unknown as DocumentNode<UserEmail_VerifyEmailFragment, unknown>;
+export const BrowserSession_DetailFragmentDoc = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "BrowserSession_detail" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "BrowserSession" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+          { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
+          { kind: "Field", name: { kind: "Name", value: "userAgent" } },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "lastAuthentication" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+              ],
+            },
+          },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "user" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "username" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<BrowserSession_DetailFragment, unknown>;
 export const CurrentViewerQueryDocument = {
   kind: "Document",
   definitions: [
@@ -4124,35 +4178,49 @@ export const BrowserSessionQueryDocument = {
               kind: "SelectionSet",
               selections: [
                 { kind: "Field", name: { kind: "Name", value: "id" } },
+                {
+                  kind: "FragmentSpread",
+                  name: { kind: "Name", value: "BrowserSession_detail" },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "BrowserSession_detail" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "BrowserSession" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+          { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
+          { kind: "Field", name: { kind: "Name", value: "userAgent" } },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "lastAuthentication" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
                 { kind: "Field", name: { kind: "Name", value: "createdAt" } },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "lastAuthentication" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "id" } },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "createdAt" },
-                      },
-                    ],
-                  },
-                },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "user" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "id" } },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "username" },
-                      },
-                    ],
-                  },
-                },
+              ],
+            },
+          },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "user" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "username" } },
               ],
             },
           },

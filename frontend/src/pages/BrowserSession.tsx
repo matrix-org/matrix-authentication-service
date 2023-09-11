@@ -19,22 +19,32 @@ import { atomWithQuery } from "jotai-urql";
 import { mapQueryAtom } from "../atoms";
 import GraphQLError from "../components/GraphQLError";
 import NotFound from "../components/NotFound";
+import BrowserSessionDetail from "../components/SessionDetail/BrowserSessionDetail";
 import { graphql } from "../gql";
 import { isErr, unwrapErr, unwrapOk } from "../result";
+
+export const BROWSER_SESSION_DETAIL_FRAGMENT = graphql(/* GraphQL */ `
+  fragment BrowserSession_detail on BrowserSession {
+    id
+    createdAt
+    finishedAt
+    userAgent
+    lastAuthentication {
+      id
+      createdAt
+    }
+    user {
+      id
+      username
+    }
+  }
+`);
 
 const QUERY = graphql(/* GraphQL */ `
   query BrowserSessionQuery($id: ID!) {
     browserSession(id: $id) {
       id
-      createdAt
-      lastAuthentication {
-        id
-        createdAt
-      }
-      user {
-        id
-        username
-      }
+      ...BrowserSession_detail
     }
   }
 `);
@@ -58,13 +68,9 @@ const BrowserSession: React.FC<{ id: string }> = ({ id }) => {
   if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
 
   const browserSession = unwrapOk(result);
-  if (browserSession === null) return <NotFound />;
+  if (!browserSession) return <NotFound />;
 
-  return (
-    <pre>
-      <code>{JSON.stringify(browserSession, null, 2)}</code>
-    </pre>
-  );
+  return <BrowserSessionDetail session={browserSession} />;
 };
 
 export default BrowserSession;
