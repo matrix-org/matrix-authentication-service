@@ -7,3 +7,24 @@ It has been created to support the migration of Matrix to an OpenID Connect (OID
 See the [Documentation](https://matrix-org.github.io/matrix-authentication-service/index.html) for information on installation and use.
 
 You can learn more about Matrix and OIDC at [areweoidcyet.com](https://areweoidcyet.com/).
+
+## Features
+
+- Supported homeservers
+  - ✅ Synapse
+- Authentication methods:
+  - ✅ OIDC
+  - 🚧 Local password
+- Migration support
+  - ✅ Compatibility layer for legacy Matrix authentication
+  - 🚧 Advisor on migration readiness
+  - 🚧 Import users from Synapse
+  - 🚧 Import of external subject IDs from upstream identity providers
+
+## Upstream Identity Providers
+
+MAS is known to work with the following upstream IdPs via OIDC:
+
+- Keycloak
+- Dex
+- Google
