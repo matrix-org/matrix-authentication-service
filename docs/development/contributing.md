@@ -44,3 +44,7 @@ To get MAS running locally from source you will need:
 - Run the database migrations via `cargo run -- database migrate`
 - Run the server via `cargo run -- server -c config.yaml`
 - Go to <http://localhost:8080/>
+
+# 5. Learn about MAS
+
+You can learn about the [architecture](architecture.md) and [database](database.md) of MAS here.
