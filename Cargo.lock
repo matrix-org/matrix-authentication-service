@@ -249,7 +249,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "81953c529336010edd6d8e358f886d9581267795c61b19475b71314bffa46d35"
 dependencies = [
  "concurrent-queue",
- "event-listener",
+ "event-listener 2.5.3",
  "futures-core",
 ]
 
@@ -386,7 +386,7 @@ version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "287272293e9d8c41773cec55e365490fe034813a2f172f502d6ddcf75b2f582b"
 dependencies = [
- "event-listener",
+ "event-listener 2.5.3",
 ]
 
 [[package]]
@@ -400,7 +400,7 @@ dependencies = [
  "autocfg",
  "blocking",
  "cfg-if",
- "event-listener",
+ "event-listener 2.5.3",
  "futures-lite",
  "rustix 0.37.23",
  "signal-hook",
@@ -1567,6 +1567,17 @@ name = "event-listener"
 version = "2.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
+
+[[package]]
+name = "event-listener"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "29e56284f00d94c1bc7fd3c77027b4623c88c1f53d8d2394c6199f2921dea325"
+dependencies = [
+ "concurrent-queue",
+ "parking",
+ "pin-project-lite",
+]
 
 [[package]]
 name = "fallible-iterator"
@@ -3135,7 +3146,7 @@ dependencies = [
  "async-stream",
  "async-trait",
  "chrono",
- "event-listener",
+ "event-listener 3.0.0",
  "futures-lite",
  "mas-data-model",
  "mas-email",
@@ -5116,7 +5127,7 @@ dependencies = [
  "crossbeam-queue",
  "dotenvy",
  "either",
- "event-listener",
+ "event-listener 2.5.3",
  "futures-channel",
  "futures-core",
  "futures-intrusive",
