@@ -31,7 +31,6 @@ import { useCurrentBrowserSessionId } from "../utils/session/useCurrentBrowserSe
 
 import BlockList from "./BlockList";
 import BrowserSession from "./BrowserSession";
-import GraphQLError from "./GraphQLError";
 import PaginationControls from "./PaginationControls";
 import { Title } from "./Typography";
 
@@ -113,17 +112,14 @@ const paginationFamily = atomFamily((userId: string) => {
 });
 
 const BrowserSessionList: React.FC<{ userId: string }> = ({ userId }) => {
-  const { currentBrowserSessionId, currentBrowserSessionIdError } =
-    useCurrentBrowserSessionId();
+  const currentBrowserSessionId = useCurrentBrowserSessionId();
   const [pending, startTransition] = useTransition();
   const result = useAtomValue(browserSessionListFamily(userId));
   const setPagination = useSetAtom(currentPaginationAtom);
   const [prevPage, nextPage] = useAtomValue(paginationFamily(userId));
   const [filter, setFilter] = useAtom(filterAtom);
 
-  if (currentBrowserSessionIdError)
-    return <GraphQLError error={currentBrowserSessionIdError} />;
-  if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
+  if (isErr(result)) throw unwrapErr(result);
 
   const browserSessions = unwrapOk(result);
   if (browserSessions === null) return <>Failed to load browser sessions</>;

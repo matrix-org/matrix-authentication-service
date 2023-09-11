@@ -30,7 +30,6 @@ import { isErr, isOk, unwrapErr, unwrapOk } from "../result";
 
 import BlockList from "./BlockList";
 import CompatSession from "./CompatSession";
-import GraphQLError from "./GraphQLError";
 import PaginationControls from "./PaginationControls";
 import { Title } from "./Typography";
 
@@ -116,7 +115,8 @@ const CompatSessionList: React.FC<{ userId: string }> = ({ userId }) => {
   const [prevPage, nextPage] = useAtomValue(paginationFamily(userId));
   const [filter, setFilter] = useAtom(filterAtom);
 
-  if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
+  if (isErr(result)) throw unwrapErr(result);
+
   const compatSessionList = unwrapOk(result);
   if (compatSessionList === null) return <>Failed to load sessions.</>;
 
