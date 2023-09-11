@@ -270,7 +270,7 @@ mod tests {
                 &clock,
                 &session,
                 "aabbcc".to_owned(),
-                Duration::minutes(5),
+                Some(Duration::minutes(5)),
             )
             .await
             .unwrap();

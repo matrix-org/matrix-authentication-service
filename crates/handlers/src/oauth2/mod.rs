@@ -115,7 +115,7 @@ pub(crate) async fn generate_token_pair<R: RepositoryAccess>(
 
     let access_token = repo
         .oauth2_access_token()
-        .add(rng, clock, session, access_token_str, ttl)
+        .add(rng, clock, session, access_token_str, Some(ttl))
         .await?;
 
     let refresh_token = repo
