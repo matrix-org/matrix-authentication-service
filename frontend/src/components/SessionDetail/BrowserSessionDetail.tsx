@@ -53,7 +53,7 @@ const BrowserSessionDetail: React.FC<Props> = ({ session }) => {
     ? [{ label: "Finished", value: <DateTime datetime={data.finishedAt} /> }]
     : [];
 
-  const latestAuthentication = data.lastAuthentication
+  const lastAuthentication = data.lastAuthentication
     ? [
         {
           label: "Last Authentication",
@@ -68,7 +68,7 @@ const BrowserSessionDetail: React.FC<Props> = ({ session }) => {
     { label: "User Name", value: <code>{data.user.username}</code> },
     { label: "Signed in", value: <DateTime datetime={data.createdAt} /> },
     ...finishedAt,
-    ...latestAuthentication,
+    ...lastAuthentication,
   ];
 
   return (
