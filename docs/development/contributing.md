@@ -13,7 +13,13 @@ To get MAS running locally from source you will need:
 - [Install Rust and Cargo](https://www.rust-lang.org/learn/get-started)
 - [Install Node.js and npm](https://nodejs.org/)
 - [Install Open Policy Agent](https://www.openpolicyagent.org/docs/latest/#1-download-opa)
+
+# 3. Get the source
+
 - Clone this repository
+
+# 4. Build and run MAS
+
 - Build the frontend
   ```sh
   cd frontend
