@@ -209,7 +209,7 @@ pub(crate) async fn post(
                 client_id: Some(session.client_id.to_string()),
                 username,
                 token_type: Some(OAuthTokenTypeHint::AccessToken),
-                exp: Some(token.expires_at),
+                exp: token.expires_at,
                 iat: Some(token.created_at),
                 nbf: Some(token.created_at),
                 sub,

@@ -529,7 +529,7 @@ async fn client_credentials_grant(
 
     let access_token = repo
         .oauth2_access_token()
-        .add(rng, clock, &session, access_token_str, ttl)
+        .add(rng, clock, &session, access_token_str, Some(ttl))
         .await?;
 
     let mut params = AccessTokenResponse::new(access_token.access_token).with_expires_in(ttl);

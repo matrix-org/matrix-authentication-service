@@ -131,6 +131,13 @@ impl Requester {
         }
     }
 
+    fn oauth2_session(&self) -> Option<&Session> {
+        match self {
+            Self::OAuth2Session(session, _) => Some(session),
+            Self::BrowserSession(_) | Self::Anonymous => None,
+        }
+    }
+
     /// Returns true if the requester can access the resource.
     fn is_owner_or_admin(&self, resource: &impl OwnerId) -> bool {
         // If the requester is an admin, they can do anything.

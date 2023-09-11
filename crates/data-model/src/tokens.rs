@@ -62,7 +62,7 @@ pub struct AccessToken {
     pub session_id: Ulid,
     pub access_token: String,
     pub created_at: DateTime<Utc>,
-    pub expires_at: DateTime<Utc>,
+    pub expires_at: Option<DateTime<Utc>>,
 }
 
 impl AccessToken {
@@ -71,11 +71,40 @@ impl AccessToken {
         self.id.to_string()
     }
 
+    /// Whether the access token is valid, i.e. not revoked and not expired
+    ///
+    /// # Parameters
+    ///
+    /// * `now` - The current time
     #[must_use]
     pub fn is_valid(&self, now: DateTime<Utc>) -> bool {
-        self.state.is_valid() && self.expires_at > now
+        self.state.is_valid() && !self.is_expired(now)
     }
 
+    /// Whether the access token is expired
+    ///
+    /// Always returns `false` if the access token does not have an expiry time.
+    ///
+    /// # Parameters
+    ///
+    /// * `now` - The current time
+    #[must_use]
+    pub fn is_expired(&self, now: DateTime<Utc>) -> bool {
+        match self.expires_at {
+            Some(expires_at) => expires_at < now,
+            None => false,
+        }
+    }
+
+    /// Mark the access token as revoked
+    ///
+    /// # Parameters
+    ///
+    /// * `revoked_at` - The time at which the access token was revoked
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the access token is already revoked
     pub fn revoke(mut self, revoked_at: DateTime<Utc>) -> Result<Self, InvalidTransitionError> {
         self.state = self.state.revoke(revoked_at)?;
         Ok(self)

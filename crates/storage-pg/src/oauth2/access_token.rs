@@ -42,7 +42,7 @@ struct OAuth2AccessTokenLookup {
     oauth2_session_id: Uuid,
     access_token: String,
     created_at: DateTime<Utc>,
-    expires_at: DateTime<Utc>,
+    expires_at: Option<DateTime<Utc>>,
     revoked_at: Option<DateTime<Utc>>,
 }
 
@@ -146,10 +146,10 @@ impl<'c> OAuth2AccessTokenRepository for PgOAuth2AccessTokenRepository<'c> {
         clock: &dyn Clock,
         session: &Session,
         access_token: String,
-        expires_after: Duration,
+        expires_after: Option<Duration>,
     ) -> Result<AccessToken, Self::Error> {
         let created_at = clock.now();
-        let expires_at = created_at + expires_after;
+        let expires_at = expires_after.map(|d| created_at + d);
         let id = Ulid::from_datetime_with_source(created_at.into(), rng);
 
         tracing::Span::current().record("access_token.id", tracing::field::display(id));

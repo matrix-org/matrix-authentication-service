@@ -270,6 +270,27 @@ export type CompatSsoLoginEdge = {
   node: CompatSsoLogin;
 };
 
+/** The input of the `createOauth2Session` mutation. */
+export type CreateOAuth2SessionInput = {
+  /** Whether the session should issue a never-expiring access token */
+  permanent?: InputMaybe<Scalars["Boolean"]["input"]>;
+  /** The scope of the session */
+  scope: Scalars["String"]["input"];
+  /** The ID of the user for which to create the session */
+  userId: Scalars["ID"]["input"];
+};
+
+/** The payload of the `createOauth2Session` mutation. */
+export type CreateOAuth2SessionPayload = {
+  __typename?: "CreateOAuth2SessionPayload";
+  /** Access token for this session */
+  accessToken: Scalars["String"]["output"];
+  /** The OAuth 2.0 session which was just created */
+  oauth2Session: Oauth2Session;
+  /** Refresh token for this session, if it is not a permanent session */
+  refreshToken?: Maybe<Scalars["String"]["output"]>;
+};
+
 /** An object with a creation date. */
 export type CreationEvent = {
   /** When the object was created. */
@@ -384,6 +405,12 @@ export type Mutation = {
   addEmail: AddEmailPayload;
   /** Add a user. This is only available to administrators. */
   addUser: AddUserPayload;
+  /**
+   * Create a new arbitrary OAuth 2.0 Session.
+   *
+   * Only available for administrators.
+   */
+  createOauth2Session: CreateOAuth2SessionPayload;
   endBrowserSession: EndBrowserSessionPayload;
   endCompatSession: EndCompatSessionPayload;
   endOauth2Session: EndOAuth2SessionPayload;
@@ -409,6 +436,11 @@ export type MutationAddEmailArgs = {
 /** The mutations root of the GraphQL interface. */
 export type MutationAddUserArgs = {
   input: AddUserInput;
+};
+
+/** The mutations root of the GraphQL interface. */
+export type MutationCreateOauth2SessionArgs = {
+  input: CreateOAuth2SessionInput;
 };
 
 /** The mutations root of the GraphQL interface. */

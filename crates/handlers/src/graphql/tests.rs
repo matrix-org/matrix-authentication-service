@@ -13,7 +13,6 @@
 // limitations under the License.
 
 use axum::http::Request;
-use chrono::Duration;
 use hyper::StatusCode;
 use mas_data_model::{AccessToken, Client, TokenType, User};
 use mas_router::SimpleRoute;
@@ -106,13 +105,7 @@ async fn start_oauth_session(
 
     let access_token = repo
         .oauth2_access_token()
-        .add(
-            &mut rng,
-            &state.clock,
-            &session,
-            access_token_str,
-            Duration::minutes(5),
-        )
+        .add(&mut rng, &state.clock, &session, access_token_str, None)
         .await
         .unwrap();
 
@@ -510,6 +503,7 @@ async fn test_oauth2_client_credentials(pool: PgPool) {
                 mutation {
                     addUser(input: {username: "alice"}) {
                         user {
+                            id
                             username
                         }
                     }
@@ -519,15 +513,42 @@ async fn test_oauth2_client_credentials(pool: PgPool) {
     let response = state.request(request).await;
     response.assert_status(StatusCode::OK);
     let response: GraphQLResponse = response.json();
-    assert!(response.errors.is_empty());
+    assert!(response.errors.is_empty(), "{:?}", response.errors);
+    let user_id = &response.data["addUser"]["user"]["id"];
+
     assert_eq!(
         response.data,
         serde_json::json!({
             "addUser": {
                 "user": {
+                    "id": user_id,
                     "username": "alice"
                 }
             }
         })
     );
+
+    // We should now be able to create an arbitrary access token for the user
+    let request = Request::post("/graphql")
+        .bearer(&access_token)
+        .json(serde_json::json!({
+            "query": r#"
+                mutation CreateSession($userId: String!, $scope: String!) {
+                    createOauth2Session(input: {userId: $userId, permanent: true, scope: $scope}) {
+                        accessToken
+                        refreshToken
+                    }
+                }
+            "#,
+            "variables": {
+                "userId": user_id,
+                "scope": "urn:matrix:org.matrix.msc2967.client:device:AABBCCDDEE urn:matrix:org.matrix.msc2967.client:api:* urn:synapse:admin:*"
+            },
+        }));
+    let response = state.request(request).await;
+    response.assert_status(StatusCode::OK);
+    let response: GraphQLResponse = response.json();
+    assert!(response.errors.is_empty(), "{:?}", response.errors);
+    assert!(response.data["createOauth2Session"]["refreshToken"].is_null());
+    assert!(response.data["createOauth2Session"]["accessToken"].is_string());
 }
