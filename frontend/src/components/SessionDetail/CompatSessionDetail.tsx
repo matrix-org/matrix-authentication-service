@@ -41,7 +41,7 @@ const CompatSessionDetail: React.FC<Props> = ({ session }) => {
   };
 
   const finishedAt = data.finishedAt
-    ? [{ label: "Finished", value: <DateTime datetime={data.createdAt} /> }]
+    ? [{ label: "Finished", value: <DateTime datetime={data.finishedAt} /> }]
     : [];
   const sessionDetails = [
     { label: "ID", value: <code>{data.id}</code> },
