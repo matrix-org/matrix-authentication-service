@@ -17,6 +17,7 @@ import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
 
 import { mapQueryAtom } from "../atoms";
+import ErrorBoundary from "../components/ErrorBoundary";
 import GraphQLError from "../components/GraphQLError";
 import NotFound from "../components/NotFound";
 import BrowserSessionDetail from "../components/SessionDetail/BrowserSessionDetail";
@@ -70,7 +71,11 @@ const BrowserSession: React.FC<{ id: string }> = ({ id }) => {
   const browserSession = unwrapOk(result);
   if (!browserSession) return <NotFound />;
 
-  return <BrowserSessionDetail session={browserSession} />;
+  return (
+    <ErrorBoundary>
+      <BrowserSessionDetail session={browserSession} />
+    </ErrorBoundary>
+  );
 };
 
 export default BrowserSession;
