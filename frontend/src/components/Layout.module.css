@@ -16,6 +16,7 @@
 .container {
     width: 378px;
     margin: var(--cpd-space-10x) auto var(--cpd-space-6x) auto;
+    padding-bottom: var(--cpd-space-10x)
 }
 
 .footer {
