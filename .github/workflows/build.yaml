@@ -88,7 +88,7 @@ jobs:
           rustup target add ${{ matrix.arch }}-unknown-linux-musl
 
       - name: Setup Rust build cache
-        uses: Swatinem/rust-cache@v2.6.2
+        uses: Swatinem/rust-cache@v2.7.0
         with:
           shared-key: ${{ matrix.arch }}-linux
           save-if: "${{ github.event_name != 'pull_request' }}"
@@ -160,7 +160,7 @@ jobs:
           rustup target add ${{ matrix.arch }}-apple-darwin
 
       - name: Setup Rust build cache
-        uses: Swatinem/rust-cache@v2.6.2
+        uses: Swatinem/rust-cache@v2.7.0
         with:
           shared-key: ${{ matrix.arch }}-macos
           save-if: "${{ github.event_name != 'pull_request' }}"
