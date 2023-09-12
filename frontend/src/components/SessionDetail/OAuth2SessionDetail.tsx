@@ -20,11 +20,7 @@ import { Link } from "../../routing";
 import { getDeviceIdFromScope } from "../../utils/deviceIdFromScope";
 import BlockList from "../BlockList/BlockList";
 import DateTime from "../DateTime";
-import {
-  OAUTH2_SESSION_FRAGMENT,
-  Oauth2SessionType,
-  endSessionFamily,
-} from "../OAuth2Session";
+import { OAUTH2_SESSION_FRAGMENT, endSessionFamily } from "../OAuth2Session";
 import ClientAvatar from "../Session/ClientAvatar";
 import EndSessionButton from "../Session/EndSessionButton";
 
@@ -35,10 +31,7 @@ type Props = {
 };
 
 const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
-  const data = useFragment(
-    OAUTH2_SESSION_FRAGMENT,
-    session,
-  ) as Oauth2SessionType;
+  const data = useFragment(OAUTH2_SESSION_FRAGMENT, session);
   const endSession = useSetAtom(endSessionFamily(data.id));
 
   const onSessionEnd = async (): Promise<void> => {
@@ -80,7 +73,7 @@ const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
       value: (
         <>
           <ClientAvatar
-            name={data.client.clientName}
+            name={data.client.clientName || data.client.clientId}
             logoUri={data.client.logoUri || undefined}
             size="var(--cpd-space-4x)"
           />

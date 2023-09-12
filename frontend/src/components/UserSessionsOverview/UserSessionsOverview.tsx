@@ -19,6 +19,7 @@ import { Link } from "../../routing";
 import Block from "../Block";
 import BlockList from "../BlockList";
 
+import CombinedSessionsList from "./CombinedSessionsList";
 import styles from "./UserSessionsOverview.module.css";
 
 export const FRAGMENT = graphql(/* GraphQL */ `
@@ -64,6 +65,7 @@ const UserSessionsOverview: React.FC<{
 
   return (
     <BlockList>
+      <CombinedSessionsList userId={data.id} />
       {/* This is a short term solution, so I won't bother extracting these blocks into components */}
       <H3>Where you're signed in</H3>
       <Block className={styles.sessionListBlock}>

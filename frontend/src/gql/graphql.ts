@@ -1047,7 +1047,7 @@ export type CurrentViewerSessionQueryQuery = {
 };
 
 export type BrowserSession_SessionFragment = {
-  __typename?: "BrowserSession";
+  __typename: "BrowserSession";
   id: string;
   createdAt: any;
   finishedAt?: any | null;
@@ -1128,7 +1128,7 @@ export type OAuth2Client_DetailFragment = {
 } & { " $fragmentName"?: "OAuth2Client_DetailFragment" };
 
 export type CompatSession_SessionFragment = {
-  __typename?: "CompatSession";
+  __typename: "CompatSession";
   id: string;
   createdAt: any;
   deviceId: string;
@@ -1194,7 +1194,7 @@ export type CompatSessionListQuery = {
 };
 
 export type OAuth2Session_SessionFragment = {
-  __typename?: "Oauth2Session";
+  __typename: "Oauth2Session";
   id: string;
   scope: string;
   createdAt: any;
@@ -1442,6 +1442,60 @@ export type SetDisplayNameMutation = {
   };
 };
 
+export type BrowserSessionList2QueryVariables = Exact<{
+  userId: Scalars["ID"]["input"];
+  state?: InputMaybe<BrowserSessionState>;
+  compatState?: InputMaybe<CompatSessionState>;
+  oauthState?: InputMaybe<Oauth2SessionState>;
+}>;
+
+export type BrowserSessionList2Query = {
+  __typename?: "Query";
+  user?: {
+    __typename?: "User";
+    id: string;
+    browserSessions: {
+      __typename?: "BrowserSessionConnection";
+      totalCount: number;
+      edges: Array<{
+        __typename?: "BrowserSessionEdge";
+        cursor: string;
+        node: { __typename?: "BrowserSession"; id: string } & {
+          " $fragmentRefs"?: {
+            BrowserSession_SessionFragment: BrowserSession_SessionFragment;
+          };
+        };
+      }>;
+    };
+    compatSessions: {
+      __typename?: "CompatSessionConnection";
+      totalCount: number;
+      edges: Array<{
+        __typename?: "CompatSessionEdge";
+        cursor: string;
+        node: { __typename?: "CompatSession"; id: string } & {
+          " $fragmentRefs"?: {
+            CompatSession_SessionFragment: CompatSession_SessionFragment;
+          };
+        };
+      }>;
+    };
+    oauth2Sessions: {
+      __typename?: "Oauth2SessionConnection";
+      totalCount: number;
+      edges: Array<{
+        __typename?: "Oauth2SessionEdge";
+        cursor: string;
+        node: { __typename?: "Oauth2Session"; id: string } & {
+          " $fragmentRefs"?: {
+            OAuth2Session_SessionFragment: OAuth2Session_SessionFragment;
+          };
+        };
+      }>;
+    };
+  } | null;
+};
+
 export type UserSessionsOverview_UserFragment = {
   __typename?: "User";
   id: string;
@@ -1603,6 +1657,7 @@ export const BrowserSession_SessionFragmentDoc = {
       selectionSet: {
         kind: "SelectionSet",
         selections: [
+          { kind: "Field", name: { kind: "Name", value: "__typename" } },
           { kind: "Field", name: { kind: "Name", value: "id" } },
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
@@ -1662,6 +1717,7 @@ export const CompatSession_SessionFragmentDoc = {
       selectionSet: {
         kind: "SelectionSet",
         selections: [
+          { kind: "Field", name: { kind: "Name", value: "__typename" } },
           { kind: "Field", name: { kind: "Name", value: "id" } },
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "deviceId" } },
@@ -1695,6 +1751,7 @@ export const OAuth2Session_SessionFragmentDoc = {
       selectionSet: {
         kind: "SelectionSet",
         selections: [
+          { kind: "Field", name: { kind: "Name", value: "__typename" } },
           { kind: "Field", name: { kind: "Name", value: "id" } },
           { kind: "Field", name: { kind: "Name", value: "scope" } },
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
@@ -2167,6 +2224,7 @@ export const EndBrowserSessionDocument = {
       selectionSet: {
         kind: "SelectionSet",
         selections: [
+          { kind: "Field", name: { kind: "Name", value: "__typename" } },
           { kind: "Field", name: { kind: "Name", value: "id" } },
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
@@ -2399,6 +2457,7 @@ export const BrowserSessionListDocument = {
       selectionSet: {
         kind: "SelectionSet",
         selections: [
+          { kind: "Field", name: { kind: "Name", value: "__typename" } },
           { kind: "Field", name: { kind: "Name", value: "id" } },
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
@@ -2698,6 +2757,7 @@ export const CompatSessionListDocument = {
       selectionSet: {
         kind: "SelectionSet",
         selections: [
+          { kind: "Field", name: { kind: "Name", value: "__typename" } },
           { kind: "Field", name: { kind: "Name", value: "id" } },
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "deviceId" } },
@@ -2797,6 +2857,7 @@ export const EndOAuth2SessionDocument = {
       selectionSet: {
         kind: "SelectionSet",
         selections: [
+          { kind: "Field", name: { kind: "Name", value: "__typename" } },
           { kind: "Field", name: { kind: "Name", value: "id" } },
           { kind: "Field", name: { kind: "Name", value: "scope" } },
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
@@ -3032,6 +3093,7 @@ export const OAuth2SessionListQueryDocument = {
       selectionSet: {
         kind: "SelectionSet",
         selections: [
+          { kind: "Field", name: { kind: "Name", value: "__typename" } },
           { kind: "Field", name: { kind: "Name", value: "id" } },
           { kind: "Field", name: { kind: "Name", value: "scope" } },
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
@@ -3144,6 +3206,7 @@ export const SessionQueryDocument = {
       selectionSet: {
         kind: "SelectionSet",
         selections: [
+          { kind: "Field", name: { kind: "Name", value: "__typename" } },
           { kind: "Field", name: { kind: "Name", value: "id" } },
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "deviceId" } },
@@ -3172,6 +3235,7 @@ export const SessionQueryDocument = {
       selectionSet: {
         kind: "SelectionSet",
         selections: [
+          { kind: "Field", name: { kind: "Name", value: "__typename" } },
           { kind: "Field", name: { kind: "Name", value: "id" } },
           { kind: "Field", name: { kind: "Name", value: "scope" } },
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
@@ -3936,6 +4000,363 @@ export const SetDisplayNameDocument = {
 } as unknown as DocumentNode<
   SetDisplayNameMutation,
   SetDisplayNameMutationVariables
+>;
+export const BrowserSessionList2Document = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "BrowserSessionList2" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "userId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "state" },
+          },
+          type: {
+            kind: "NamedType",
+            name: { kind: "Name", value: "BrowserSessionState" },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "compatState" },
+          },
+          type: {
+            kind: "NamedType",
+            name: { kind: "Name", value: "CompatSessionState" },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "oauthState" },
+          },
+          type: {
+            kind: "NamedType",
+            name: { kind: "Name", value: "Oauth2SessionState" },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "user" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "userId" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "browserSessions" },
+                  arguments: [
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "first" },
+                      value: { kind: "IntValue", value: "6" },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "state" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "state" },
+                      },
+                    },
+                  ],
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "totalCount" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "edges" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "cursor" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "node" },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [
+                                  {
+                                    kind: "Field",
+                                    name: { kind: "Name", value: "id" },
+                                  },
+                                  {
+                                    kind: "FragmentSpread",
+                                    name: {
+                                      kind: "Name",
+                                      value: "BrowserSession_session",
+                                    },
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "compatSessions" },
+                  arguments: [
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "first" },
+                      value: { kind: "IntValue", value: "6" },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "state" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "compatState" },
+                      },
+                    },
+                  ],
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "totalCount" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "edges" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "cursor" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "node" },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [
+                                  {
+                                    kind: "Field",
+                                    name: { kind: "Name", value: "id" },
+                                  },
+                                  {
+                                    kind: "FragmentSpread",
+                                    name: {
+                                      kind: "Name",
+                                      value: "CompatSession_session",
+                                    },
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "oauth2Sessions" },
+                  arguments: [
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "state" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "oauthState" },
+                      },
+                    },
+                    {
+                      kind: "Argument",
+                      name: { kind: "Name", value: "first" },
+                      value: { kind: "IntValue", value: "6" },
+                    },
+                  ],
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "edges" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "cursor" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "node" },
+                              selectionSet: {
+                                kind: "SelectionSet",
+                                selections: [
+                                  {
+                                    kind: "Field",
+                                    name: { kind: "Name", value: "id" },
+                                  },
+                                  {
+                                    kind: "FragmentSpread",
+                                    name: {
+                                      kind: "Name",
+                                      value: "OAuth2Session_session",
+                                    },
+                                  },
+                                ],
+                              },
+                            },
+                          ],
+                        },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "totalCount" },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "BrowserSession_session" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "BrowserSession" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "__typename" } },
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+          { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
+          { kind: "Field", name: { kind: "Name", value: "userAgent" } },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "lastAuthentication" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "CompatSession_session" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "CompatSession" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "__typename" } },
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+          { kind: "Field", name: { kind: "Name", value: "deviceId" } },
+          { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "ssoLogin" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "redirectUri" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "OAuth2Session_session" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "Oauth2Session" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "__typename" } },
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          { kind: "Field", name: { kind: "Name", value: "scope" } },
+          { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+          { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "client" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "clientId" } },
+                { kind: "Field", name: { kind: "Name", value: "clientName" } },
+                { kind: "Field", name: { kind: "Name", value: "clientUri" } },
+                { kind: "Field", name: { kind: "Name", value: "logoUri" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  BrowserSessionList2Query,
+  BrowserSessionList2QueryVariables
 >;
 export const VerifyEmailDocument = {
   kind: "Document",

@@ -25,6 +25,7 @@ import EndSessionButton from "./Session/EndSessionButton";
 
 export const OAUTH2_SESSION_FRAGMENT = graphql(/* GraphQL */ `
   fragment OAuth2Session_session on Oauth2Session {
+    __typename
     id
     scope
     createdAt
@@ -38,20 +39,6 @@ export const OAUTH2_SESSION_FRAGMENT = graphql(/* GraphQL */ `
     }
   }
 `);
-
-export type Oauth2SessionType = {
-  id: string;
-  scope: string;
-  createdAt: string;
-  finishedAt: string | null;
-  client: {
-    id: string;
-    clientId: string;
-    clientName: string;
-    clientUri: string;
-    logoUri: string | null;
-  };
-};
 
 const END_SESSION_MUTATION = graphql(/* GraphQL */ `
   mutation EndOAuth2Session($id: ID!) {
@@ -82,10 +69,7 @@ type Props = {
 };
 
 const OAuth2Session: React.FC<Props> = ({ session }) => {
-  const data = useFragment(
-    OAUTH2_SESSION_FRAGMENT,
-    session,
-  ) as Oauth2SessionType;
+  const data = useFragment(OAUTH2_SESSION_FRAGMENT, session);
   const endSession = useSetAtom(endSessionFamily(data.id));
 
   const onSessionEnd = async (): Promise<void> => {
@@ -104,7 +88,7 @@ const OAuth2Session: React.FC<Props> = ({ session }) => {
       name={name}
       createdAt={data.createdAt}
       finishedAt={data.finishedAt || undefined}
-      clientName={data.client.clientName}
+      clientName={data.client.clientName || undefined}
       clientLogoUri={data.client.logoUri || undefined}
     >
       {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}

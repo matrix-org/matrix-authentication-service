@@ -24,6 +24,7 @@ import EndSessionButton from "./Session/EndSessionButton";
 
 export const COMPAT_SESSION_FRAGMENT = graphql(/* GraphQL */ `
   fragment CompatSession_session on CompatSession {
+    __typename
     id
     createdAt
     deviceId

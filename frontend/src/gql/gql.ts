@@ -17,7 +17,7 @@ const documents = {
     types.CurrentViewerQueryDocument,
   "\n  query CurrentViewerSessionQuery {\n    viewerSession {\n      __typename\n      ... on BrowserSession {\n        id\n      }\n\n      ... on Anonymous {\n        id\n      }\n    }\n  }\n":
     types.CurrentViewerSessionQueryDocument,
-  "\n  fragment BrowserSession_session on BrowserSession {\n    id\n    createdAt\n    finishedAt\n    userAgent\n    lastAuthentication {\n      id\n      createdAt\n    }\n  }\n":
+  "\n  fragment BrowserSession_session on BrowserSession {\n    __typename\n    id\n    createdAt\n    finishedAt\n    userAgent\n    lastAuthentication {\n      id\n      createdAt\n    }\n  }\n":
     types.BrowserSession_SessionFragmentDoc,
   "\n  mutation EndBrowserSession($id: ID!) {\n    endBrowserSession(input: { browserSessionId: $id }) {\n      status\n      browserSession {\n        id\n        ...BrowserSession_session\n      }\n    }\n  }\n":
     types.EndBrowserSessionDocument,
@@ -25,13 +25,13 @@ const documents = {
     types.BrowserSessionListDocument,
   "\n  fragment OAuth2Client_detail on Oauth2Client {\n    id\n    clientId\n    clientName\n    clientUri\n    logoUri\n    tosUri\n    policyUri\n    redirectUris\n  }\n":
     types.OAuth2Client_DetailFragmentDoc,
-  "\n  fragment CompatSession_session on CompatSession {\n    id\n    createdAt\n    deviceId\n    finishedAt\n    ssoLogin {\n      id\n      redirectUri\n    }\n  }\n":
+  "\n  fragment CompatSession_session on CompatSession {\n    __typename\n    id\n    createdAt\n    deviceId\n    finishedAt\n    ssoLogin {\n      id\n      redirectUri\n    }\n  }\n":
     types.CompatSession_SessionFragmentDoc,
   "\n  mutation EndCompatSession($id: ID!) {\n    endCompatSession(input: { compatSessionId: $id }) {\n      status\n      compatSession {\n        id\n        finishedAt\n      }\n    }\n  }\n":
     types.EndCompatSessionDocument,
   "\n  query CompatSessionList(\n    $userId: ID!\n    $state: CompatSessionState\n    $first: Int\n    $after: String\n    $last: Int\n    $before: String\n  ) {\n    user(id: $userId) {\n      id\n      compatSessions(\n        first: $first\n        after: $after\n        last: $last\n        before: $before\n        state: $state\n      ) {\n        edges {\n          node {\n            id\n            ...CompatSession_session\n          }\n        }\n\n        totalCount\n        pageInfo {\n          hasNextPage\n          hasPreviousPage\n          startCursor\n          endCursor\n        }\n      }\n    }\n  }\n":
     types.CompatSessionListDocument,
-  "\n  fragment OAuth2Session_session on Oauth2Session {\n    id\n    scope\n    createdAt\n    finishedAt\n    client {\n      id\n      clientId\n      clientName\n      clientUri\n      logoUri\n    }\n  }\n":
+  "\n  fragment OAuth2Session_session on Oauth2Session {\n    __typename\n    id\n    scope\n    createdAt\n    finishedAt\n    client {\n      id\n      clientId\n      clientName\n      clientUri\n      logoUri\n    }\n  }\n":
     types.OAuth2Session_SessionFragmentDoc,
   "\n  mutation EndOAuth2Session($id: ID!) {\n    endOauth2Session(input: { oauth2SessionId: $id }) {\n      status\n      oauth2Session {\n        id\n        ...OAuth2Session_session\n      }\n    }\n  }\n":
     types.EndOAuth2SessionDocument,
@@ -57,6 +57,8 @@ const documents = {
     types.UserPrimaryEmailDocument,
   "\n  mutation SetDisplayName($userId: ID!, $displayName: String) {\n    setDisplayName(input: { userId: $userId, displayName: $displayName }) {\n      status\n      user {\n        id\n        matrix {\n          displayName\n        }\n      }\n    }\n  }\n":
     types.SetDisplayNameDocument,
+  "\n  query BrowserSessionList2(\n    $userId: ID!\n    $state: BrowserSessionState\n    $compatState: CompatSessionState\n    $oauthState: Oauth2SessionState\n  ) {\n    user(id: $userId) {\n      id\n      browserSessions(first: 6, state: $state) {\n        totalCount\n\n        edges {\n          cursor\n          node {\n            id\n            ...BrowserSession_session\n          }\n        }\n      }\n      compatSessions(first: 6, state: $compatState) {\n        totalCount\n        edges {\n          cursor\n          node {\n            id\n            ...CompatSession_session\n          }\n        }\n      }\n      oauth2Sessions(state: $oauthState, first: 6) {\n        edges {\n          cursor\n          node {\n            id\n            ...OAuth2Session_session\n          }\n        }\n\n        totalCount\n      }\n    }\n  }\n":
+    types.BrowserSessionList2Document,
   "\n  fragment UserSessionsOverview_user on User {\n    id\n\n    primaryEmail {\n      id\n      ...UserEmail_email\n    }\n\n    confirmedEmails: emails(first: 0, state: CONFIRMED) {\n      totalCount\n    }\n\n    browserSessions(first: 0, state: ACTIVE) {\n      totalCount\n    }\n\n    oauth2Sessions(first: 0, state: ACTIVE) {\n      totalCount\n    }\n\n    compatSessions(first: 0, state: ACTIVE) {\n      totalCount\n    }\n  }\n":
     types.UserSessionsOverview_UserFragmentDoc,
   "\n  fragment UserEmail_verifyEmail on UserEmail {\n    id\n    email\n  }\n":
@@ -107,8 +109,8 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  fragment BrowserSession_session on BrowserSession {\n    id\n    createdAt\n    finishedAt\n    userAgent\n    lastAuthentication {\n      id\n      createdAt\n    }\n  }\n",
-): (typeof documents)["\n  fragment BrowserSession_session on BrowserSession {\n    id\n    createdAt\n    finishedAt\n    userAgent\n    lastAuthentication {\n      id\n      createdAt\n    }\n  }\n"];
+  source: "\n  fragment BrowserSession_session on BrowserSession {\n    __typename\n    id\n    createdAt\n    finishedAt\n    userAgent\n    lastAuthentication {\n      id\n      createdAt\n    }\n  }\n",
+): (typeof documents)["\n  fragment BrowserSession_session on BrowserSession {\n    __typename\n    id\n    createdAt\n    finishedAt\n    userAgent\n    lastAuthentication {\n      id\n      createdAt\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -131,8 +133,8 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  fragment CompatSession_session on CompatSession {\n    id\n    createdAt\n    deviceId\n    finishedAt\n    ssoLogin {\n      id\n      redirectUri\n    }\n  }\n",
-): (typeof documents)["\n  fragment CompatSession_session on CompatSession {\n    id\n    createdAt\n    deviceId\n    finishedAt\n    ssoLogin {\n      id\n      redirectUri\n    }\n  }\n"];
+  source: "\n  fragment CompatSession_session on CompatSession {\n    __typename\n    id\n    createdAt\n    deviceId\n    finishedAt\n    ssoLogin {\n      id\n      redirectUri\n    }\n  }\n",
+): (typeof documents)["\n  fragment CompatSession_session on CompatSession {\n    __typename\n    id\n    createdAt\n    deviceId\n    finishedAt\n    ssoLogin {\n      id\n      redirectUri\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -149,8 +151,8 @@ export function graphql(
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "\n  fragment OAuth2Session_session on Oauth2Session {\n    id\n    scope\n    createdAt\n    finishedAt\n    client {\n      id\n      clientId\n      clientName\n      clientUri\n      logoUri\n    }\n  }\n",
-): (typeof documents)["\n  fragment OAuth2Session_session on Oauth2Session {\n    id\n    scope\n    createdAt\n    finishedAt\n    client {\n      id\n      clientId\n      clientName\n      clientUri\n      logoUri\n    }\n  }\n"];
+  source: "\n  fragment OAuth2Session_session on Oauth2Session {\n    __typename\n    id\n    scope\n    createdAt\n    finishedAt\n    client {\n      id\n      clientId\n      clientName\n      clientUri\n      logoUri\n    }\n  }\n",
+): (typeof documents)["\n  fragment OAuth2Session_session on Oauth2Session {\n    __typename\n    id\n    scope\n    createdAt\n    finishedAt\n    client {\n      id\n      clientId\n      clientName\n      clientUri\n      logoUri\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -223,6 +225,12 @@ export function graphql(
 export function graphql(
   source: "\n  mutation SetDisplayName($userId: ID!, $displayName: String) {\n    setDisplayName(input: { userId: $userId, displayName: $displayName }) {\n      status\n      user {\n        id\n        matrix {\n          displayName\n        }\n      }\n    }\n  }\n",
 ): (typeof documents)["\n  mutation SetDisplayName($userId: ID!, $displayName: String) {\n    setDisplayName(input: { userId: $userId, displayName: $displayName }) {\n      status\n      user {\n        id\n        matrix {\n          displayName\n        }\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: "\n  query BrowserSessionList2(\n    $userId: ID!\n    $state: BrowserSessionState\n    $compatState: CompatSessionState\n    $oauthState: Oauth2SessionState\n  ) {\n    user(id: $userId) {\n      id\n      browserSessions(first: 6, state: $state) {\n        totalCount\n\n        edges {\n          cursor\n          node {\n            id\n            ...BrowserSession_session\n          }\n        }\n      }\n      compatSessions(first: 6, state: $compatState) {\n        totalCount\n        edges {\n          cursor\n          node {\n            id\n            ...CompatSession_session\n          }\n        }\n      }\n      oauth2Sessions(state: $oauthState, first: 6) {\n        edges {\n          cursor\n          node {\n            id\n            ...OAuth2Session_session\n          }\n        }\n\n        totalCount\n      }\n    }\n  }\n",
+): (typeof documents)["\n  query BrowserSessionList2(\n    $userId: ID!\n    $state: BrowserSessionState\n    $compatState: CompatSessionState\n    $oauthState: Oauth2SessionState\n  ) {\n    user(id: $userId) {\n      id\n      browserSessions(first: 6, state: $state) {\n        totalCount\n\n        edges {\n          cursor\n          node {\n            id\n            ...BrowserSession_session\n          }\n        }\n      }\n      compatSessions(first: 6, state: $compatState) {\n        totalCount\n        edges {\n          cursor\n          node {\n            id\n            ...CompatSession_session\n          }\n        }\n      }\n      oauth2Sessions(state: $oauthState, first: 6) {\n        edges {\n          cursor\n          node {\n            id\n            ...OAuth2Session_session\n          }\n        }\n\n        totalCount\n      }\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

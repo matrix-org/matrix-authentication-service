@@ -31,6 +31,7 @@ import Session from "./Session/Session";
 
 export const BROWSER_SESSION_FRAGMENT = graphql(/* GraphQL */ `
   fragment BrowserSession_session on BrowserSession {
+    __typename
     id
     createdAt
     finishedAt
