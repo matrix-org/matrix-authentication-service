@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`<SessionDetails> > renders a compatability session details 1`] = `
+exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
 <div>
   <div
     class="_blockList_f8cc7f"
@@ -135,7 +135,7 @@ exports[`<SessionDetails> > renders a compatability session details 1`] = `
 </div>
 `;
 
-exports[`<SessionDetails> > renders a compatability session without an ssoLogin redirectUri 1`] = `
+exports[`<CompatSessionDetail> > renders a compatability session without an ssoLogin redirectUri 1`] = `
 <div>
   <div
     class="_blockList_f8cc7f"
