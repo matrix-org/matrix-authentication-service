@@ -1,0 +1,106 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`<OAuth2ClientDetail> > renders client details 1`] = `
+<div>
+  <div
+    class="_blockList_f8cc7f"
+  >
+    <header
+      class="_header_477219"
+    >
+      <h3
+        class="_font-heading-md-semibold_1jx6b_121"
+      >
+        Test Client
+      </h3>
+    </header>
+    <div
+      class="_block_17898c"
+    >
+      <h6
+        class="_font-body-md-semibold_1jx6b_64"
+      >
+        Client
+      </h6>
+      <ul
+        class="_list_040867"
+      >
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+          >
+            Name
+          </p>
+          <p
+            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+          >
+            Test Client
+          </p>
+        </li>
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+          >
+            Client ID
+          </p>
+          <p
+            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+          >
+            <code>
+              client-id
+            </code>
+          </p>
+        </li>
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+          >
+            Terms of service
+          </p>
+          <p
+            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+          >
+            <a
+              class="_link_eqn56_17 _externalLink_a97355"
+              data-kind="primary"
+              href="https://client.org/tos"
+              rel="noreferrer noopener"
+              target="_blank"
+            >
+              client.org/tos
+            </a>
+          </p>
+        </li>
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+          >
+            Policy
+          </p>
+          <p
+            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+          >
+            <a
+              class="_link_eqn56_17 _externalLink_a97355"
+              data-kind="primary"
+              href="https://client.org/policy"
+              rel="noreferrer noopener"
+              target="_blank"
+            >
+              client.org/policy
+            </a>
+          </p>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+`;

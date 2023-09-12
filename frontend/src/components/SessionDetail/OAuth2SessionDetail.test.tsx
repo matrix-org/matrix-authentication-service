@@ -18,10 +18,11 @@ import { render, cleanup } from "@testing-library/react";
 import { describe, expect, it, afterEach, vi } from "vitest";
 
 import { makeFragmentData } from "../../gql/fragment-masking";
-import { COMPAT_SESSION_FRAGMENT } from "../CompatSession";
+import { WithLocation } from "../../test-utils/WithLocation";
 import DateTime from "../DateTime";
+import { OAUTH2_SESSION_FRAGMENT } from "../OAuth2Session";
 
-import CompatSessionDetail from "./CompatSessionDetail";
+import OAuth2SessionDetail from "./OAuth2SessionDetail";
 
 // Mock out datetime to avoid timezones/date formatting
 vi.mock("./DateTime", () => {
@@ -31,54 +32,46 @@ vi.mock("./DateTime", () => {
   return { default: MockDateTime };
 });
 
-describe("<CompatSessionDetail>", () => {
+describe("<OAuth2SessionDetail>", () => {
   const baseSession = {
     id: "session-id",
-    deviceId: "abcd1234",
+    scope:
+      "openid urn:matrix:org.matrix.msc2967.client:api:* urn:matrix:org.matrix.msc2967.client:device:abcd1234",
     createdAt: "2023-06-29T03:35:17.451292+00:00",
-    ssoLogin: {
+    client: {
       id: "test-id",
-      redirectUri: "https://element.io",
+      clientId: "test-client-id",
+      clientName: "Element",
+      clientUri: "https://element.io",
     },
   };
   afterEach(cleanup);
 
-  it("renders a compatability session details", () => {
-    const data = makeFragmentData(baseSession, COMPAT_SESSION_FRAGMENT);
+  it("renders session details", () => {
+    const data = makeFragmentData(baseSession, OAUTH2_SESSION_FRAGMENT);
 
-    const { container } = render(<CompatSessionDetail session={data} />);
-
-    expect(container).toMatchSnapshot();
-  });
-
-  it("renders a compatability session without an ssoLogin redirectUri", () => {
-    const data = makeFragmentData(
-      {
-        ...baseSession,
-        ssoLogin: {
-          id: "dfsdjfdk",
-          redirectUri: undefined,
-        },
-      },
-      COMPAT_SESSION_FRAGMENT,
+    const { container } = render(
+      <WithLocation>
+        <OAuth2SessionDetail session={data} />
+      </WithLocation>,
     );
 
-    const { container } = render(<CompatSessionDetail session={data} />);
-
     expect(container).toMatchSnapshot();
   });
 
-  it("renders a finished compatability session details", () => {
+  it("renders a finished session details", () => {
     const data = makeFragmentData(
       {
         ...baseSession,
         finishedAt: "2023-07-29T03:35:17.451292+00:00",
       },
-      COMPAT_SESSION_FRAGMENT,
+      OAUTH2_SESSION_FRAGMENT,
     );
 
     const { getByText, queryByText } = render(
-      <CompatSessionDetail session={data} />,
+      <WithLocation>
+        <OAuth2SessionDetail session={data} />
+      </WithLocation>,
     );
 
     expect(getByText("Finished")).toBeTruthy();
