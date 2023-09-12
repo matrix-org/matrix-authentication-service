@@ -66,44 +66,6 @@ const UserSessionsOverview: React.FC<{
   return (
     <BlockList>
       <CombinedSessionsList userId={data.id} />
-      {/* This is a short term solution, so I won't bother extracting these blocks into components */}
-      <H3>Where you're signed in</H3>
-      <Block className={styles.sessionListBlock}>
-        <div className={styles.sessionListBlockInfo}>
-          <H6>Browser</H6>
-          <Body>
-            {data.browserSessions.totalCount} active{" "}
-            {pluraliseSession(data.browserSessions.totalCount)}
-          </Body>
-        </div>
-        <Link kind="button" route={{ type: "browser-session-list" }}>
-          View all
-        </Link>
-      </Block>
-      <Block className={styles.sessionListBlock}>
-        <div className={styles.sessionListBlockInfo}>
-          <H6>New apps</H6>
-          <Body>
-            {data.oauth2Sessions.totalCount} active{" "}
-            {pluraliseSession(data.oauth2Sessions.totalCount)}
-          </Body>
-        </div>
-        <Link kind="button" route={{ type: "oauth2-session-list" }}>
-          View all
-        </Link>
-      </Block>
-      <Block className={styles.sessionListBlock}>
-        <div className={styles.sessionListBlockInfo}>
-          <H6>Regular apps</H6>
-          <Body>
-            {data.compatSessions.totalCount} active{" "}
-            {pluraliseSession(data.compatSessions.totalCount)}
-          </Body>
-        </div>
-        <Link kind="button" route={{ type: "compat-session-list" }}>
-          View all
-        </Link>
-      </Block>
     </BlockList>
   );
 };

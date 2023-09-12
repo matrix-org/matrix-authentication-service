@@ -1442,14 +1442,14 @@ export type SetDisplayNameMutation = {
   };
 };
 
-export type BrowserSessionList2QueryVariables = Exact<{
+export type BadCombinedSessionListQueryVariables = Exact<{
   userId: Scalars["ID"]["input"];
   state?: InputMaybe<BrowserSessionState>;
   compatState?: InputMaybe<CompatSessionState>;
   oauthState?: InputMaybe<Oauth2SessionState>;
 }>;
 
-export type BrowserSessionList2Query = {
+export type BadCombinedSessionListQuery = {
   __typename?: "Query";
   user?: {
     __typename?: "User";
@@ -4001,13 +4001,13 @@ export const SetDisplayNameDocument = {
   SetDisplayNameMutation,
   SetDisplayNameMutationVariables
 >;
-export const BrowserSessionList2Document = {
+export const BadCombinedSessionListDocument = {
   kind: "Document",
   definitions: [
     {
       kind: "OperationDefinition",
       operation: "query",
-      name: { kind: "Name", value: "BrowserSessionList2" },
+      name: { kind: "Name", value: "BadCombinedSessionList" },
       variableDefinitions: [
         {
           kind: "VariableDefinition",
@@ -4080,7 +4080,7 @@ export const BrowserSessionList2Document = {
                   arguments: [
                     {
                       kind: "Argument",
-                      name: { kind: "Name", value: "first" },
+                      name: { kind: "Name", value: "last" },
                       value: { kind: "IntValue", value: "6" },
                     },
                     {
@@ -4141,7 +4141,7 @@ export const BrowserSessionList2Document = {
                   arguments: [
                     {
                       kind: "Argument",
-                      name: { kind: "Name", value: "first" },
+                      name: { kind: "Name", value: "last" },
                       value: { kind: "IntValue", value: "6" },
                     },
                     {
@@ -4210,7 +4210,7 @@ export const BrowserSessionList2Document = {
                     },
                     {
                       kind: "Argument",
-                      name: { kind: "Name", value: "first" },
+                      name: { kind: "Name", value: "last" },
                       value: { kind: "IntValue", value: "6" },
                     },
                   ],
@@ -4355,8 +4355,8 @@ export const BrowserSessionList2Document = {
     },
   ],
 } as unknown as DocumentNode<
-  BrowserSessionList2Query,
-  BrowserSessionList2QueryVariables
+  BadCombinedSessionListQuery,
+  BadCombinedSessionListQueryVariables
 >;
 export const VerifyEmailDocument = {
   kind: "Document",

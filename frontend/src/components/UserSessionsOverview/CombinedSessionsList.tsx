@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { H3, Body } from "@vector-im/compound-web";
 import { useAtomValue } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
@@ -24,11 +25,12 @@ import {
   Oauth2SessionState,
 } from "../../gql/graphql";
 import { isErr, unwrapErr, unwrapOk } from "../../result";
+import Link from "../../routing/Link";
 import BlockList from "../BlockList";
 import SessionList from "../SessionList/SessionList";
 
 const QUERY = graphql(/* GraphQL */ `
-  query BrowserSessionList2(
+  query BadCombinedSessionList(
     $userId: ID!
     $state: BrowserSessionState
     $compatState: CompatSessionState
@@ -36,7 +38,7 @@ const QUERY = graphql(/* GraphQL */ `
   ) {
     user(id: $userId) {
       id
-      browserSessions(first: 6, state: $state) {
+      browserSessions(last: 6, state: $state) {
         totalCount
 
         edges {
@@ -47,7 +49,7 @@ const QUERY = graphql(/* GraphQL */ `
           }
         }
       }
-      compatSessions(first: 6, state: $compatState) {
+      compatSessions(last: 6, state: $compatState) {
         totalCount
         edges {
           cursor
@@ -57,7 +59,7 @@ const QUERY = graphql(/* GraphQL */ `
           }
         }
       }
-      oauth2Sessions(state: $oauthState, first: 6) {
+      oauth2Sessions(state: $oauthState, last: 6) {
         edges {
           cursor
           node {
@@ -72,8 +74,8 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-const browserSessionListFamily = atomFamily((userId: string) => {
-  const browserSessionListQuery = atomWithQuery({
+const badCombinedSessionListFamily = atomFamily((userId: string) => {
+  const badCombinedSessionListQuery = atomWithQuery({
     query: QUERY,
     getVariables: (get) => ({
       userId,
@@ -83,30 +85,70 @@ const browserSessionListFamily = atomFamily((userId: string) => {
     }),
   });
 
-  const browserSessionList = mapQueryAtom(browserSessionListQuery, (data) => {
-    const browserSessions = data.user?.browserSessions.edges || [];
-    const compatSessions = data.user?.compatSessions.edges || [];
-    const oauth2Sessions = data.user?.oauth2Sessions.edges || [];
-    return [...browserSessions, ...compatSessions, ...oauth2Sessions].sort(
-      (a, b) => (a.node.createdAt > b.node.createdAt ? -1 : 1),
-    );
-  });
+  const badCombinedSessionList = mapQueryAtom(
+    badCombinedSessionListQuery,
+    (data) => {
+      const browserSessions = data.user?.browserSessions || {};
+      const compatSessions = data.user?.compatSessions || {};
+      const oauth2Sessions = data.user?.oauth2Sessions || {};
+      const sessions = [
+        ...(browserSessions.edges || []),
+        ...(compatSessions.edges || []),
+        ...(oauth2Sessions.edges || []),
+      ].sort((a, b) => (a.node.createdAt > b.node.createdAt ? -1 : 1));
 
-  return browserSessionList;
+      const totalCount =
+        browserSessions.totalCount +
+        compatSessions.totalCount +
+        oauth2Sessions.totalCount;
+
+      return {
+        sessions,
+        totalCount,
+        browserSessions,
+        compatSessions,
+        oauth2Sessions,
+      };
+    },
+  );
+
+  return badCombinedSessionList;
 });
 
 const CombinedSessionsList: React.FC<{ userId: string }> = ({ userId }) => {
-  const result = useAtomValue(browserSessionListFamily(userId));
+  const result = useAtomValue(badCombinedSessionListFamily(userId));
 
   if (isErr(result)) throw unwrapErr(result);
 
-  const sessions = unwrapOk(result);
-  if (sessions === null) return <>Failed to load browser sessions</>;
+  const {
+    sessions,
+    totalCount,
+    browserSessions,
+    compatSessions,
+    oauth2Sessions,
+  } = unwrapOk(result);
+  if (!sessions) return <>Failed to load browser sessions</>;
 
-  console.log("hhh", sessions);
+  const subtitle = (
+    <>
+      {`You're signed in to ${totalCount} sessions:`}
+      <Link kind="button" route={{ type: "browser-session-list" }}>
+        {`${browserSessions.totalCount} browsers, `}
+      </Link>
+      <Link kind="button" route={{ type: "compat-session-list" }}>
+        {`${compatSessions.totalCount} regular apps, `}
+      </Link>
+      and
+      <Link kind="button" route={{ type: "oauth2-session-list" }}>
+        {`${oauth2Sessions.totalCount} new apps`}
+      </Link>
+    </>
+  );
 
   return (
     <BlockList>
+      <H3>Where you're signed in</H3>
+      <Body>{subtitle}</Body>
       <SessionList sessionEdges={sessions} />
     </BlockList>
   );
