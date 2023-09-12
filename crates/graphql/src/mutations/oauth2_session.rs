@@ -199,6 +199,8 @@ impl OAuth2SessionMutations {
             Some(refresh_token)
         };
 
+        repo.save().await?;
+
         Ok(CreateOAuth2SessionPayload {
             session,
             access_token: access_token.access_token,
