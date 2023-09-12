@@ -24,7 +24,7 @@ import DateTime from "../DateTime";
 import CompatSessionDetail from "./CompatSessionDetail";
 
 // Mock out datetime to avoid timezones/date formatting
-vi.mock("./DateTime", () => {
+vi.mock("../DateTime", () => {
   const MockDateTime: typeof DateTime = ({ datetime }) => (
     <code>{datetime.toString()}</code>
   );
