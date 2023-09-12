@@ -64,11 +64,9 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
           <p
             class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
           >
-            <time
-              datetime="2023-06-29T15:35:17+12:00"
-            >
-              Thu, 29 Jun 2023, 15:35
-            </time>
+            <code>
+              2023-06-29T03:35:17.451292+00:00
+            </code>
           </p>
         </li>
       </ul>
@@ -199,11 +197,9 @@ exports[`<CompatSessionDetail> > renders a compatability session without an ssoL
           <p
             class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
           >
-            <time
-              datetime="2023-06-29T15:35:17+12:00"
-            >
-              Thu, 29 Jun 2023, 15:35
-            </time>
+            <code>
+              2023-06-29T03:35:17.451292+00:00
+            </code>
           </p>
         </li>
       </ul>

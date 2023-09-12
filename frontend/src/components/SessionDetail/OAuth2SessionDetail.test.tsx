@@ -25,7 +25,7 @@ import { OAUTH2_SESSION_FRAGMENT } from "../OAuth2Session";
 import OAuth2SessionDetail from "./OAuth2SessionDetail";
 
 // Mock out datetime to avoid timezones/date formatting
-vi.mock("./DateTime", () => {
+vi.mock("../DateTime", () => {
   const MockDateTime: typeof DateTime = ({ datetime }) => (
     <code>{datetime.toString()}</code>
   );
