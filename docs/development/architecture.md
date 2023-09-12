@@ -9,7 +9,7 @@ The Matrix Authentication Service has been created to support the migration of M
 
 It is not intended to be a general purpose Identity Provider (IdP) and instead focuses on the specific needs of Matrix.
 
-Furthermore, it is only intended that it would speak OIDC for authentication and not other protocols. Instead, of you want to connect to an upstream SAML, CAS or LDAP backend then you need to pair MAS with a separate service (such as [Dex](https://dexidp.io) or [Keycloak](https://www.keycloak.org)) which does that translation for you.
+Furthermore, it is only intended that it would speak OIDC for authentication and not other protocols. Instead, if you want to connect to an upstream SAML, CAS or LDAP backend then you need to pair MAS with a separate service (such as [Dex](https://dexidp.io) or [Keycloak](https://www.keycloak.org)) which does that translation for you.
 
 Whilst it only supports use with Synapse today, we hope that other homeservers will become supported in future.
 
