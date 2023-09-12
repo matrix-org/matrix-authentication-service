@@ -1,0 +1,39 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`<SelectableSession /> > renders an unselected session 1`] = `
+<div>
+  <div
+    class="_selectableSession_3b8f53"
+  >
+    <div
+      class="_checkbox_mike2_17 _checkbox_3b8f53"
+      data-kind="primary"
+    >
+      <input
+        aria-label="Select session"
+        type="checkbox"
+      />
+      <div
+        class="_checkbox-ui_mike2_37"
+      >
+        <svg
+          aria-hidden="true"
+          fill="none"
+          height="1em"
+          viewBox="0 0 24 24"
+          width="1em"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M9.55003 17.575C9.4167 17.575 9.2917 17.5542 9.17503 17.5125C9.05836 17.4709 8.95003 17.4 8.85003 17.3L4.55003 13C4.3667 12.8167 4.2792 12.5792 4.28753 12.2875C4.29586 11.9959 4.3917 11.7584 4.57503 11.575C4.75836 11.3917 4.9917 11.3 5.27503 11.3C5.55836 11.3 5.7917 11.3917 5.97503 11.575L9.55003 15.15L18.025 6.67502C18.2084 6.49169 18.4459 6.40002 18.7375 6.40002C19.0292 6.40002 19.2667 6.49169 19.45 6.67502C19.6334 6.85836 19.725 7.09586 19.725 7.38752C19.725 7.67919 19.6334 7.91669 19.45 8.10002L10.25 17.3C10.15 17.4 10.0417 17.4709 9.92503 17.5125C9.80836 17.5542 9.68336 17.575 9.55003 17.575Z"
+            fill="currentColor"
+          />
+        </svg>
+      </div>
+    </div>
+    <div>
+      Test child
+    </div>
+  </div>
+</div>
+`;
