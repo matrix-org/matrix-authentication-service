@@ -19,7 +19,7 @@ use mas_axum_utils::{
     http_client_factory::HttpClientFactory,
     sentry::SentryEventID,
 };
-use mas_data_model::{TokenFormatError, TokenType, User};
+use mas_data_model::{TokenFormatError, TokenType};
 use mas_iana::oauth::{OAuthClientAuthenticationMethod, OAuthTokenTypeHint};
 use mas_keystore::Encrypter;
 use mas_storage::{
@@ -39,17 +39,55 @@ use crate::impl_from_error_for_route;
 
 #[derive(Debug, Error)]
 pub enum RouteError {
+    /// An internal error occurred.
     #[error(transparent)]
     Internal(Box<dyn std::error::Error + Send + Sync + 'static>),
 
+    /// The client could not be found.
     #[error("could not find client")]
     ClientNotFound,
 
+    /// The client is not allowed to introspect.
     #[error("client is not allowed to introspect")]
     NotAllowed,
 
-    #[error("unknown token")]
-    UnknownToken,
+    /// The token type is not the one expected.
+    #[error("unexpected token type")]
+    UnexpectedTokenType,
+
+    /// The overall token format is invalid.
+    #[error("invalid token format")]
+    InvalidTokenFormat(#[from] TokenFormatError),
+
+    /// The token could not be found in the database.
+    #[error("unknown {0}")]
+    UnknownToken(TokenType),
+
+    /// The token is not valid.
+    #[error("{0} is not valid")]
+    InvalidToken(TokenType),
+
+    /// The OAuth session is not valid.
+    #[error("invalid oauth session")]
+    InvalidOAuthSession,
+
+    /// The OAuth session could not be found in the database.
+    #[error("unknown oauth session")]
+    CantLoadOAuthSession,
+
+    /// The compat session is not valid.
+    #[error("invalid compat session")]
+    InvalidCompatSession,
+
+    /// The compat session could not be found in the database.
+    #[error("unknown compat session")]
+    CantLoadCompatSession,
+
+    #[error("invalid user")]
+    InvalidUser,
+
+    #[error("unknown user")]
+    CantLoadUser,
 
     #[error("bad request")]
     BadRequest,
@@ -62,7 +100,10 @@ impl IntoResponse for RouteError {
     fn into_response(self) -> axum::response::Response {
         let event_id = sentry::capture_error(&self);
         let response = match self {
-            Self::Internal(e) => (
+            e @ (Self::Internal(_)
+            | Self::CantLoadCompatSession
+            | Self::CantLoadOAuthSession
+            | Self::CantLoadUser) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(
                     ClientError::from(ClientErrorCode::ServerError).with_description(e.to_string()),
@@ -82,7 +123,13 @@ impl IntoResponse for RouteError {
                 ),
             )
                 .into_response(),
-            Self::UnknownToken => Json(INACTIVE).into_response(),
+            Self::UnknownToken(_)
+            | Self::UnexpectedTokenType
+            | Self::InvalidToken(_)
+            | Self::InvalidUser
+            | Self::InvalidCompatSession
+            | Self::InvalidOAuthSession
+            | Self::InvalidTokenFormat(_) => Json(INACTIVE).into_response(),
             Self::NotAllowed => (
                 StatusCode::UNAUTHORIZED,
                 Json(ClientError::from(ClientErrorCode::AccessDenied)),
@@ -100,12 +147,6 @@ impl IntoResponse for RouteError {
 }
 
 impl_from_error_for_route!(mas_storage::RepositoryError);
-
-impl From<TokenFormatError> for RouteError {
-    fn from(_e: TokenFormatError) -> Self {
-        Self::UnknownToken
-    }
-}
 
 const INACTIVE: IntrospectionResponse = IntrospectionResponse {
     active: false,
@@ -166,26 +207,31 @@ pub(crate) async fn post(
     let token_type = TokenType::check(token)?;
     if let Some(hint) = form.token_type_hint {
         if token_type != hint {
-            return Err(RouteError::UnknownToken);
+            return Err(RouteError::UnexpectedTokenType);
         }
     }
 
     let reply = match token_type {
         TokenType::AccessToken => {
-            let token = repo
+            let access_token = repo
                 .oauth2_access_token()
                 .find_by_token(token)
                 .await?
-                .filter(|t| t.is_valid(clock.now()))
-                .ok_or(RouteError::UnknownToken)?;
+                .ok_or(RouteError::UnknownToken(TokenType::AccessToken))?;
+
+            if !access_token.is_valid(clock.now()) {
+                return Err(RouteError::InvalidToken(TokenType::AccessToken));
+            }
 
             let session = repo
                 .oauth2_session()
-                .lookup(token.session_id)
+                .lookup(access_token.session_id)
                 .await?
-                .filter(|s| s.is_valid())
-                // XXX: is that the right error to bubble up?
-                .ok_or(RouteError::UnknownToken)?;
+                .ok_or(RouteError::InvalidOAuthSession)?;
+
+            if !session.is_valid() {
+                return Err(RouteError::InvalidOAuthSession);
+            }
 
             // The session might not have a user on it (for Client Credentials grants for
             // example), so we're optionally fetching the user
@@ -194,9 +240,11 @@ pub(crate) async fn post(
                     .user()
                     .lookup(user_id)
                     .await?
-                    // Fail if the user is not valid (e.g. locked)
-                    .filter(User::is_valid)
-                    .ok_or(RouteError::UnknownToken)?;
+                    .ok_or(RouteError::CantLoadUser)?;
+
+                if !user.is_valid() {
+                    return Err(RouteError::InvalidUser);
+                }
 
                 (Some(user.sub), Some(user.username))
             } else {
@@ -209,31 +257,36 @@ pub(crate) async fn post(
                 client_id: Some(session.client_id.to_string()),
                 username,
                 token_type: Some(OAuthTokenTypeHint::AccessToken),
-                exp: token.expires_at,
-                iat: Some(token.created_at),
-                nbf: Some(token.created_at),
+                exp: access_token.expires_at,
+                iat: Some(access_token.created_at),
+                nbf: Some(access_token.created_at),
                 sub,
                 aud: None,
                 iss: None,
-                jti: Some(token.jti()),
+                jti: Some(access_token.jti()),
             }
         }
 
         TokenType::RefreshToken => {
-            let token = repo
+            let refresh_token = repo
                 .oauth2_refresh_token()
                 .find_by_token(token)
                 .await?
-                .filter(|t| t.is_valid())
-                .ok_or(RouteError::UnknownToken)?;
+                .ok_or(RouteError::UnknownToken(TokenType::RefreshToken))?;
+
+            if !refresh_token.is_valid() {
+                return Err(RouteError::InvalidToken(TokenType::RefreshToken));
+            }
 
             let session = repo
                 .oauth2_session()
-                .lookup(token.session_id)
+                .lookup(refresh_token.session_id)
                 .await?
-                .filter(|s| s.is_valid())
-                // XXX: is that the right error to bubble up?
-                .ok_or(RouteError::UnknownToken)?;
+                .ok_or(RouteError::CantLoadOAuthSession)?;
+
+            if !session.is_valid() {
+                return Err(RouteError::InvalidOAuthSession);
+            }
 
             // The session might not have a user on it (for Client Credentials grants for
             // example), so we're optionally fetching the user
@@ -242,9 +295,11 @@ pub(crate) async fn post(
                     .user()
                     .lookup(user_id)
                     .await?
-                    // Fail if the user is not valid (e.g. locked)
-                    .filter(User::is_valid)
-                    .ok_or(RouteError::UnknownToken)?;
+                    .ok_or(RouteError::CantLoadUser)?;
+
+                if !user.is_valid() {
+                    return Err(RouteError::InvalidUser);
+                }
 
                 (Some(user.sub), Some(user.username))
             } else {
@@ -258,12 +313,12 @@ pub(crate) async fn post(
                 username,
                 token_type: Some(OAuthTokenTypeHint::RefreshToken),
                 exp: None,
-                iat: Some(token.created_at),
-                nbf: Some(token.created_at),
+                iat: Some(refresh_token.created_at),
+                nbf: Some(refresh_token.created_at),
                 sub,
                 aud: None,
                 iss: None,
-                jti: Some(token.jti()),
+                jti: Some(refresh_token.jti()),
             }
         }
 
@@ -272,23 +327,31 @@ pub(crate) async fn post(
                 .compat_access_token()
                 .find_by_token(token)
                 .await?
-                .filter(|t| t.is_valid(clock.now()))
-                .ok_or(RouteError::UnknownToken)?;
+                .ok_or(RouteError::UnknownToken(TokenType::CompatAccessToken))?;
+
+            if !access_token.is_valid(clock.now()) {
+                return Err(RouteError::InvalidToken(TokenType::CompatAccessToken));
+            }
 
             let session = repo
                 .compat_session()
                 .lookup(access_token.session_id)
                 .await?
-                .filter(|s| s.is_valid())
-                .ok_or(RouteError::UnknownToken)?;
+                .ok_or(RouteError::CantLoadCompatSession)?;
+
+            if !session.is_valid() {
+                return Err(RouteError::InvalidCompatSession);
+            }
 
             let user = repo
                 .user()
                 .lookup(session.user_id)
                 .await?
-                .filter(mas_data_model::User::is_valid)
-                // XXX: is that the right error to bubble up?
-                .ok_or(RouteError::UnknownToken)?;
+                .ok_or(RouteError::CantLoadUser)?;
+
+            if !user.is_valid() {
+                return Err(RouteError::InvalidUser)?;
+            }
 
             // Grant the synapse admin scope if the session has the admin flag set.
             let synapse_admin = session.is_synapse_admin.then_some(SYNAPSE_ADMIN_SCOPE);
@@ -319,23 +382,31 @@ pub(crate) async fn post(
                 .compat_refresh_token()
                 .find_by_token(token)
                 .await?
-                .filter(|t| t.is_valid())
-                .ok_or(RouteError::UnknownToken)?;
+                .ok_or(RouteError::UnknownToken(TokenType::CompatRefreshToken))?;
+
+            if !refresh_token.is_valid() {
+                return Err(RouteError::InvalidToken(TokenType::CompatRefreshToken));
+            }
 
             let session = repo
                 .compat_session()
                 .lookup(refresh_token.session_id)
                 .await?
-                .filter(|s| s.is_valid())
-                .ok_or(RouteError::UnknownToken)?;
+                .ok_or(RouteError::CantLoadCompatSession)?;
+
+            if !session.is_valid() {
+                return Err(RouteError::InvalidCompatSession);
+            }
 
             let user = repo
                 .user()
                 .lookup(session.user_id)
                 .await?
-                .filter(mas_data_model::User::is_valid)
-                // XXX: is that the right error to bubble up?
-                .ok_or(RouteError::UnknownToken)?;
+                .ok_or(RouteError::CantLoadUser)?;
+
+            if !user.is_valid() {
+                return Err(RouteError::InvalidUser)?;
+            }
 
             // Grant the synapse admin scope if the session has the admin flag set.
             let synapse_admin = session.is_synapse_admin.then_some(SYNAPSE_ADMIN_SCOPE);
