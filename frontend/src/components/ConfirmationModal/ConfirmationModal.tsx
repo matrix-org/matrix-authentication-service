@@ -12,43 +12,91 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import {
+  Root,
+  Portal,
+  Overlay,
+  Content,
+  Trigger,
+  Title,
+  Description,
+  Action,
+  Cancel,
+} from "@radix-ui/react-alert-dialog";
 import { Button } from "@vector-im/compound-web";
 import classNames from "classnames";
-import { ComponentProps } from "react";
-import Modal from "react-modal";
+import { ReactNode, useState } from "react";
 
 import styles from "./ConfirmationModal.module.css";
 
-type Props = ComponentProps<typeof Modal> & {
-  onConfirm?: () => void;
+type Props = {
+  onConfirm: () => void;
   onDeny?: () => void;
+  title?: ReactNode | string;
+  // element used to trigger opening of modal
+  trigger: ReactNode;
+  className?: string;
 };
+/**
+ * Generic confirmation modal
+ * controls it's own open state
+ * calls onDeny on cancel, esc, or overlay click
+ * calls onConfirm on confirm click
+ */
 const ConfirmationModal: React.FC<React.PropsWithChildren<Props>> = ({
   onConfirm,
   onDeny,
   className,
   children,
-  ...rest
-}) => (
-  <Modal
-    // don't allow closing without confirming if there is no deny handler
-    shouldCloseOnOverlayClick={!!onDeny}
-    onRequestClose={onDeny}
-    {...rest}
-    className={classNames(styles.confirmationModal, className)}
-  >
-    {children}
-    <div className={styles.buttons}>
-      {onDeny && (
-        <Button kind="tertiary" size="sm" onClick={onDeny}>
-          Cancel
-        </Button>
-      )}
-      <Button kind="destructive" size="sm" onClick={onConfirm}>
-        Continue
-      </Button>
-    </div>
-  </Modal>
-);
+  trigger,
+  title,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const onClose = (callback?: () => void) => (): void => {
+    setIsOpen(false);
+    callback?.();
+  };
+
+  // radix's autofocus doesn't work for some reason
+  // maybe https://www.radix-ui.com/primitives/docs/guides/composition#your-component-must-forward-ref
+  // when this is replaced with compound's own/wrapped dialog this should be fixed
+  // until then, focus the cancel button here
+  const onOpenAutoFocus = (e: Event): void => {
+    (e.target as Element)
+      ?.querySelector<HTMLButtonElement>('button[data-kind="tertiary"]')
+      ?.focus();
+  };
+  return (
+    <Root open={isOpen} onOpenChange={setIsOpen}>
+      <Trigger asChild>{trigger}</Trigger>
+      <Portal>
+        <Overlay className={styles.overlay} onClick={onClose(onDeny)} />
+        <Content
+          className={classNames(styles.content, className)}
+          onEscapeKeyDown={onClose(onDeny)}
+          onOpenAutoFocus={onOpenAutoFocus}
+        >
+          <Title>{title}</Title>
+          <Description>{children}</Description>
+          <div className={styles.buttons}>
+            {onDeny && (
+              <Cancel asChild>
+                <Button kind="tertiary" size="sm" onClick={onClose(onDeny)}>
+                  Cancel
+                </Button>
+              </Cancel>
+            )}
+            <Action asChild>
+              <Button kind="destructive" size="sm" onClick={onClose(onConfirm)}>
+                Continue
+              </Button>
+            </Action>
+          </div>
+        </Content>
+      </Portal>
+    </Root>
+  );
+};
 
 export default ConfirmationModal;

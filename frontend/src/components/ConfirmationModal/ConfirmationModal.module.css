@@ -13,21 +13,30 @@
  * limitations under the License.
  */
 
-.confirmation-modal {
-    position: relative;
+.buttons {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    gap: var(--cpd-space-2x);
+}
+
+.overlay {
+    position: fixed;
+    inset: 0;
+    background-color: #666;
+    opacity: 0.4;
+}
+
+.content {
+    position: fixed;
     margin: auto;
     top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     /* less than the magic 378 content width set in Layout */
     width: 300px;
     padding: var(--cpd-space-4x);
     border-radius: var(--cpd-space-2x);
     background-color: var(--cpd-color-bg-canvas-default);
     border: 1px solid var(--cpd-color-border-interactive-primary);
-}
-
-.buttons {
-    display: flex;
-    flex-direction: row;
-    justify-content: flex-end;
-    gap: var(--cpd-space-2x);
 }

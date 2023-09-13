@@ -17,7 +17,7 @@ import { Body } from "@vector-im/compound-web";
 import { atom, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
-import { useTransition, ComponentProps, useState } from "react";
+import { useTransition, ComponentProps } from "react";
 
 import { FragmentType, graphql, useFragment } from "../../gql";
 import { Link } from "../../routing";
@@ -103,32 +103,22 @@ const DeleteButton: React.FC<{ disabled?: boolean; onClick?: () => void }> = ({
 const DeleteButtonWithConfirmation: React.FC<
   ComponentProps<typeof DeleteButton>
 > = ({ onClick, ...rest }) => {
-  const [isConfirming, setIsConfirming] = useState(false);
-  const onRequestConfirmation = onClick
-    ? (): void => {
-        setIsConfirming(true);
-      }
-    : undefined;
-
   const onConfirm = (): void => {
     onClick?.();
-    setIsConfirming(false);
   };
 
-  const onDeny = (): void => setIsConfirming(false);
+  // NOOP function, otherwise we dont render a cancel button
+  const onDeny = (): void => {};
 
   return (
     <>
-      <DeleteButton onClick={onRequestConfirmation} {...rest} />
-      {isConfirming && (
-        <ConfirmationModal
-          isOpen={isConfirming}
-          onDeny={onDeny}
-          onConfirm={onConfirm}
-        >
-          <Body>Are you sure you want to remove this email?</Body>
-        </ConfirmationModal>
-      )}
+      <ConfirmationModal
+        trigger={<DeleteButton {...rest} />}
+        onDeny={onDeny}
+        onConfirm={onConfirm}
+      >
+        <Body>Are you sure you want to remove this email?</Body>
+      </ConfirmationModal>
     </>
   );
 };

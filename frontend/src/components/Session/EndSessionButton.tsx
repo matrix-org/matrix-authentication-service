@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Body, Button } from "@vector-im/compound-web";
+import { Button } from "@vector-im/compound-web";
 import { useState } from "react";
 
 import ConfirmationModal from "../ConfirmationModal/ConfirmationModal";
@@ -26,15 +26,9 @@ const EndSessionButton: React.FC<{ endSession: () => Promise<void> }> = ({
   endSession,
 }) => {
   const [inProgress, setInProgress] = useState(false);
-  const [isConfirming, setIsConfirming] = useState(false);
-
-  const onClick = (): void => {
-    setIsConfirming(true);
-  };
 
   const onConfirm = async (): Promise<void> => {
     setInProgress(true);
-    setIsConfirming(false);
     try {
       await endSession();
     } catch (error) {
@@ -43,27 +37,21 @@ const EndSessionButton: React.FC<{ endSession: () => Promise<void> }> = ({
     setInProgress(false);
   };
 
-  const onDeny = (): void => setIsConfirming(false);
+  // NOOP so we render cancel button
+  const onDeny = (): void => {};
 
   return (
     <>
-      <Button
-        kind="destructive"
-        size="sm"
-        onClick={onClick}
-        disabled={inProgress}
-      >
-        {inProgress && <LoadingSpinner inline />}End session
-      </Button>
-      {isConfirming && (
-        <ConfirmationModal
-          isOpen={isConfirming}
-          onDeny={onDeny}
-          onConfirm={onConfirm}
-        >
-          <Body>Are you sure you want to end this session?</Body>
-        </ConfirmationModal>
-      )}
+      <ConfirmationModal
+        onDeny={onDeny}
+        onConfirm={onConfirm}
+        title="Are you sure you want to end this session?"
+        trigger={
+          <Button kind="destructive" size="sm" disabled={inProgress}>
+            {inProgress && <LoadingSpinner inline />}End session
+          </Button>
+        }
+      />
     </>
   );
 };
