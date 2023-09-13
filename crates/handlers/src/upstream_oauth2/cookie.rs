@@ -14,7 +14,7 @@
 
 // TODO: move that to a standalone cookie manager
 
-use chrono::{DateTime, Duration, NaiveDateTime, Utc};
+use chrono::{DateTime, Duration, NaiveDateTime, TimeZone, Utc};
 use mas_axum_utils::cookies::CookieJar;
 use mas_router::PostAuthAction;
 use mas_storage::Clock;
@@ -45,7 +45,7 @@ impl Payload {
         let Some(when) = NaiveDateTime::from_timestamp_millis(ts) else {
             return true;
         };
-        let when = DateTime::from_utc(when, Utc);
+        let when = Utc.from_utc_datetime(&when);
         let max_age = Duration::seconds(SESSION_MAX_TIME_SECS);
         now - when > max_age
     }
