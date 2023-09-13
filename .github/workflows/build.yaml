@@ -5,8 +5,14 @@ on:
     branches: [ main ]
     tags:
       - 'v*'
+
+  # Only run for pull requests if relevant files were changed
   pull_request:
     branches: [ main ]
+    paths:
+      - Dockerfile
+      - docker-bake.hcl
+      - .github/workflows/build.yaml
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -17,9 +23,10 @@ env:
   CARGO_NET_GIT_FETCH_WITH_CLI: "true"
 
 jobs:
-  build:
+  build-binaries:
     name: Build binaries
-    runs-on: ubuntu-22.04
+    runs-on: memory-l-storage
+    container: docker.io/library/buildpack-deps:bookworm
 
     env:
       SDKROOT: /opt/MacOSX11.3.sdk
@@ -42,13 +49,13 @@ jobs:
           node-version: 18
 
       - name: Install Rust toolchain
-        run: |
-          rustup toolchain install stable
-          rustup target add x86_64-unknown-linux-musl
-          rustup target add aarch64-unknown-linux-musl
-          rustup target add x86_64-apple-darwin
-          rustup target add aarch64-apple-darwin
-          rustup default stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: |
+            x86_64-unknown-linux-musl
+            aarch64-unknown-linux-musl
+            x86_64-apple-darwin
+            aarch64-apple-darwin
 
       - name: Setup Rust build cache
         uses: Swatinem/rust-cache@v2.7.0
@@ -103,36 +110,157 @@ jobs:
         uses: actions/upload-artifact@v3.1.3
         with:
           path: |
-            target/x86_64-unknown-linux-musl/release/mas-cli
-            target/aarch64-unknown-linux-musl/release/mas-cli
-            target/x86_64-apple-darwin/release/mas-cli
-            target/aarch64-apple-darwin/release/mas-cli
+            target/*/release/mas-cli
             frontend/dist/
             policies/policy.wasm
 
-  #release:
-  #  name: Release
-  #  if: startsWith(github.ref, 'refs/tags/')
-  #  runs-on: ubuntu-latest
-  #  needs:
-  #    - build
-  #  steps:
-  #    - name: Download the artifacts from the previous job
-  #      uses: actions/download-artifact@v3
-  #      with:
-  #        path: artifacts
 
-  #    - name: Create the various archives
-  #      run: |
-  #        mkdir -p dist
-  #        mv artifacts/
+  build-image:
+    name: Build and push Docker image
+    runs-on: ubuntu-latest
+    env:
+      IMAGE: ghcr.io/matrix-org/matrix-authentication-service
 
-  #    - name: Prepare a release
-  #      uses: softprops/action-gh-release@v1
-  #      with:
-  #        files: |
-  #          mas-cli-aarch64-linux.tar.gz
-  #          mas-cli-aarch64-macos.tar.gz
-  #          mas-cli-x86_64-linux.tar.gz
-  #          mas-cli-x86_64-macos.tar.gz
-  #        draft: true
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4.0.0
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5.0.0
+        with:
+          images: "${{ env.IMAGE }}"
+          bake-target: docker-metadata-action
+          flavor: |
+            latest=auto
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha
+
+      - name: Docker meta (debug variant)
+        id: meta-debug
+        uses: docker/metadata-action@v5.0.0
+        with:
+          images: "${{ env.IMAGE }}"
+          bake-target: docker-metadata-action-debug
+          flavor: |
+            latest=auto
+            suffix=-debug,onlatest=true
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha
+
+      - name: Setup Cosign
+        uses: sigstore/cosign-installer@v3.1.2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.0.0
+        with:
+          config-inline: |
+            [registry."docker.io"]
+              mirrors = ["mirror.gcr.io"]
+
+      - name: Login to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3.0.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # For pull-requests, only read from the cache, do not try to push to the
+      # cache or the image itself
+      - name: Build
+        uses: docker/bake-action@v4.0.0
+        if: github.event_name == 'pull_request'
+        with:
+          files: |
+            docker-bake.hcl
+            ${{ steps.meta.outputs.bake-file }}
+            ${{ steps.meta-debug.outputs.bake-file }}
+          set: |
+            base.context=https://github.com/${{ github.repository }}.git#${{ github.ref }}
+            base.cache-from=type=registry,ref=${{ env.IMAGE }}:buildcache
+
+      - name: Build and push
+        id: bake
+        uses: docker/bake-action@v4.0.0
+        if: github.event_name != 'pull_request'
+        with:
+          files: |
+            docker-bake.hcl
+            ${{ steps.meta.outputs.bake-file }}
+            ${{ steps.meta-debug.outputs.bake-file }}
+          set: |
+            base.context=https://github.com/${{ github.repository }}.git#${{ github.ref }}
+            base.output=type=image,push=true
+            base.cache-from=type=registry,ref=${{ env.IMAGE }}:buildcache
+            base.cache-to=type=registry,ref=${{ env.IMAGE }}:buildcache,mode=max
+
+      - name: Sign the images with GitHub Actions provided token
+        # Only sign on tags and on commits on main branch
+        if: |
+          github.event_name != 'pull_request'
+          && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
+
+        run: |-
+          cosign sign --yes \
+            "${{ env.IMAGE }}@${{ fromJSON(steps.bake.outputs.metadata).regular['containerimage.digest'] }}" \
+            "${{ env.IMAGE }}@${{ fromJSON(steps.bake.outputs.metadata).debug['containerimage.digest'] }}"
+
+
+  release:
+    name: Release
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    needs:
+      - build-binaries
+      - build-image
+    steps:
+      - name: Download the artifacts from the previous job
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+
+      - name: Prepare the archive directory
+        run: |
+          mkdir -p dist/share/
+          mv artifacts/policies/policy.wasm dist/share/policy.wasm
+          mv artifacts/frontend/dist/manifest.json dist/share/manifest.json
+          mv artifacts/frontend/dist/ dist/share/assets
+          mv templates/ dist/share/templates
+          mv LICENSE dist/LICENSE
+          chmod -R u=rwX,go=rX dist/
+
+      - name: Create the archives
+        run: |
+          for arch in x86_64 aarch64; do
+            mv artifacts/${arch}-unknown-linux-musl/release/mas-cli dist/mas-cli
+            chmod u=rwx,go=rx dist/mas-cli
+            tar -czvf mas-cli-${arch}-linux.tar.gz --owner=0 --group=0 -C dist/ .
+          
+            mv artifacts/${arch}-apple-darwin/release/mas-cli dist/mas-cli
+            chmod u=rwx,go=rx dist/mas-cli
+            tar -czvf mas-cli-${arch}-macos.tar.gz --owner=0 --group=0 -C dist/ .
+          done
+
+      - name: Prepare a release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            mas-cli-aarch64-linux.tar.gz
+            mas-cli-aarch64-macos.tar.gz
+            mas-cli-x86_64-linux.tar.gz
+            mas-cli-x86_64-macos.tar.gz
+          draft: true

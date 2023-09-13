@@ -4,10 +4,6 @@
 # cross-building to aarch64 and x86_64. When cross-compiling, Docker sets two
 # implicit BUILDARG: BUILDPLATFORM being the host platform and TARGETPLATFORM
 # being the platform being built.
-#
-# Docker platform definitions look like this: linux/arm64 and linux/amd64, so
-# there is a small script that translates those platforms to LLVM triples,
-# respectively x86-64-unknown-linux-musl and aarch64-unknown-linux-musl
 
 # The Debian version and version name must be in sync
 ARG DEBIAN_VERSION=11
@@ -20,7 +16,7 @@ ARG NODEJS_VERSION=18.17.1
 ARG OPA_VERSION=0.55.0
 ARG CARGO_AUDITABLE_VERSION=0.6.1
 ARG CARGO_CHEF_VERSION=0.1.62
-ARG CARGO_ZIGBUILD_VERSION=0.17.1
+ARG CARGO_ZIGBUILD_VERSION=0.17.3
 
 ##########################################
 ## Build stage that builds the frontend ##
@@ -100,9 +96,6 @@ RUN --network=default \
     x86_64-unknown-linux-musl \
     aarch64-unknown-linux-musl
 
-# Helper script that transforms docker platforms to LLVM triples
-COPY ./misc/docker-arch-to-rust-target.sh /
-
 # Set the working directory
 WORKDIR /app
 
@@ -120,8 +113,6 @@ RUN --network=none \
 ########################
 FROM --platform=${BUILDPLATFORM} toolchain AS builder
 
-ARG TARGETPLATFORM
-
 # Build dependencies
 COPY --from=planner /app/recipe.json recipe.json
 # Network access: cargo-chef cook fetches the dependencies
@@ -133,7 +124,8 @@ RUN --network=default \
     --recipe-path recipe.json \
     --no-default-features \
     --features docker \
-    --target "$(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")" \
+    --target x86_64-unknown-linux-musl \
+    --target aarch64-unknown-linux-musl \
     --package mas-cli
 
 # Build the rest
@@ -148,11 +140,14 @@ RUN --network=default \
     --bin mas-cli \
     --no-default-features \
     --features docker \
-    --target "$(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")"
+    --target x86_64-unknown-linux-musl \
+    --target aarch64-unknown-linux-musl
 
 # Move the binary to avoid having to guess its name in the next stage
 RUN --network=none \
-  mv "target/$(/docker-arch-to-rust-target.sh "${TARGETPLATFORM}")/release/mas-cli" /usr/local/bin/mas-cli
+  mv "target/x86_64-unknown-linux-musl/release/mas-cli" /usr/local/bin/mas-cli-amd64
+RUN --network=none \
+  mv "target/aarch64-unknown-linux-musl/release/mas-cli" /usr/local/bin/mas-cli-arm64
 
 #######################################
 ## Prepare /usr/local/share/mas-cli/ ##
@@ -168,7 +163,8 @@ COPY ./templates/ /share/templates
 ##################################
 FROM --platform=${TARGETPLATFORM} gcr.io/distroless/static-debian${DEBIAN_VERSION}:debug-nonroot AS debug
 
-COPY --from=builder /usr/local/bin/mas-cli /usr/local/bin/mas-cli
+ARG TARGETARCH
+COPY --from=builder /usr/local/bin/mas-cli-${TARGETARCH} /usr/local/bin/mas-cli
 COPY --from=share /share /usr/local/share/mas-cli
 
 WORKDIR /
@@ -179,7 +175,8 @@ ENTRYPOINT ["/usr/local/bin/mas-cli"]
 ###################
 FROM --platform=${TARGETPLATFORM} gcr.io/distroless/static-debian${DEBIAN_VERSION}:nonroot
 
-COPY --from=builder /usr/local/bin/mas-cli /usr/local/bin/mas-cli
+ARG TARGETARCH
+COPY --from=builder /usr/local/bin/mas-cli-${TARGETARCH} /usr/local/bin/mas-cli
 COPY --from=share /share /usr/local/share/mas-cli
 
 WORKDIR /
