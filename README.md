@@ -1,4 +1,4 @@
-# OAuth2.0 + OpenID Provider for Matrix Homeservers
+# OAuth2.0 + OpenID Connect Provider for Matrix Homeservers
 
 MAS (Matrix Authentication Service) is an OAuth 2.0 and OpenID Provider server for Matrix.
 
