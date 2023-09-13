@@ -160,12 +160,6 @@ const UserEmailList: React.FC<{
   return (
     <BlockList>
       <H3>Emails</H3>
-      <PaginationControls
-        count={result.data?.user?.emails?.totalCount ?? 0}
-        onPrev={prevPage ? (): void => paginate(prevPage) : null}
-        onNext={nextPage ? (): void => paginate(nextPage) : null}
-        disabled={pending}
-      />
       {showNoPrimaryEmailAlert && (
         <Alert type="critical" title="No primary email address" />
       )}
@@ -178,6 +172,14 @@ const UserEmailList: React.FC<{
           onRemove={onRemove}
         />
       ))}
+
+      <PaginationControls
+        autoHide
+        count={result.data?.user?.emails?.totalCount ?? 0}
+        onPrev={prevPage ? (): void => paginate(prevPage) : null}
+        onNext={nextPage ? (): void => paginate(nextPage) : null}
+        disabled={pending}
+      />
       <AddEmailForm userId={userId} onAdd={onAdd} />
     </BlockList>
   );

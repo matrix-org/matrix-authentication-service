@@ -17,6 +17,8 @@ import { Button } from "@vector-im/compound-web";
 type Props = {
   onNext: (() => void) | null;
   onPrev: (() => void) | null;
+  // automatically hide the component when there are no onNext/onPrev
+  autoHide?: boolean;
   count?: number;
   disabled?: boolean;
 };
@@ -24,9 +26,13 @@ type Props = {
 const PaginationControls: React.FC<Props> = ({
   onNext,
   onPrev,
+  autoHide,
   count,
   disabled,
 }) => {
+  if (autoHide && !onNext && !onPrev) {
+    return null;
+  }
   return (
     <div className="grid items-center grid-cols-3 gap-2">
       <Button
