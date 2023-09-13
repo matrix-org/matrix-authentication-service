@@ -23,6 +23,7 @@ import { FragmentType } from "../gql/fragment-masking";
 import UnverifiedEmailAlert, {
   UNVERIFIED_EMAILS_FRAGMENT,
 } from "./UnverifiedEmailAlert/UnverifiedEmailAlert";
+import styles from "./UserGreeting.module.css";
 
 const QUERY = graphql(/* GraphQL */ `
   query UserGreeting($userId: ID!) {
@@ -61,7 +62,7 @@ const UserGreeting: React.FC<{ userId: string }> = ({ userId }) => {
     const user = result.data.user;
     return (
       <>
-        <header className="text-center">
+        <header className={styles.header}>
           <Avatar
             size="var(--cpd-space-24x)"
             id={user.matrix.mxid}
@@ -70,7 +71,9 @@ const UserGreeting: React.FC<{ userId: string }> = ({ userId }) => {
           <Heading size="xl" weight="semibold">
             {user.matrix.displayName || user.username}
           </Heading>
-          <Body size="lg">{user.matrix.mxid}</Body>
+          <Body size="lg" className={styles.mxid}>
+            {user.matrix.mxid}
+          </Body>
         </header>
         <UnverifiedEmailAlert
           unverifiedEmails={
