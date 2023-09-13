@@ -34,6 +34,7 @@
     "jotai-urql": "^0.7.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-modal": "^3.16.1",
     "ua-parser-js": "^1.0.36"
   },
   "devDependencies": {
@@ -48,6 +49,7 @@
     "@types/node": "^20.5.9",
     "@types/react": "^18.2.21",
     "@types/react-dom": "^18.2.7",
+    "@types/react-modal": "^3.16.0",
     "@types/react-test-renderer": "^18.0.1",
     "@vitejs/plugin-react": "^4.0.4",
     "@vitest/coverage-v8": "^0.34.4",
