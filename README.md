@@ -8,12 +8,14 @@ See the [Documentation](https://matrix-org.github.io/matrix-authentication-servi
 
 You can learn more about Matrix and OIDC at [areweoidcyet.com](https://areweoidcyet.com/).
 
+![Delegated OIDC architecture with MAS overview](overview.png)
+
 ## Features
 
 - Supported homeservers
   - ✅ Synapse
 - Authentication methods:
-  - ✅ OIDC
+  - ✅ Upstream OIDC
   - 🚧 Local password
 - Migration support
   - ✅ Compatibility layer for legacy Matrix authentication
