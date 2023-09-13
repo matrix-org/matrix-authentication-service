@@ -1,0 +1,34 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`<ConfirmationModal /> > renders a modal with confirm and deny buttons 1`] = `
+<div
+  aria-modal="true"
+  class="ReactModal__Content _confirmationModal_6bc2cb test"
+  role="dialog"
+  tabindex="-1"
+>
+  Are you sure?
+  <div
+    class="_buttons_6bc2cb"
+  >
+    <button
+      class="_button_1raud_17"
+      data-kind="tertiary"
+      data-size="sm"
+      role="button"
+      tabindex="0"
+    >
+      Cancel
+    </button>
+    <button
+      class="_button_1raud_17"
+      data-kind="destructive"
+      data-size="sm"
+      role="button"
+      tabindex="0"
+    >
+      Continue
+    </button>
+  </div>
+</div>
+`;
