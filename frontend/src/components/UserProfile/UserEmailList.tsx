@@ -172,14 +172,14 @@ const UserEmailList: React.FC<{
           onRemove={onRemove}
         />
       ))}
-      {(prevPage || nextPage) && (
-        <PaginationControls
-          count={result.data?.user?.emails?.totalCount ?? 0}
-          onPrev={prevPage ? (): void => paginate(prevPage) : null}
-          onNext={nextPage ? (): void => paginate(nextPage) : null}
-          disabled={pending}
-        />
-      )}
+
+      <PaginationControls
+        autoHide
+        count={result.data?.user?.emails?.totalCount ?? 0}
+        onPrev={prevPage ? (): void => paginate(prevPage) : null}
+        onNext={nextPage ? (): void => paginate(nextPage) : null}
+        disabled={pending}
+      />
       <AddEmailForm userId={userId} onAdd={onAdd} />
     </BlockList>
   );
