@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Button } from "@vector-im/compound-web";
+import { Body, Button } from "@vector-im/compound-web";
 import { useState } from "react";
 
+import ConfirmationModal from "../ConfirmationModal/ConfirmationModal";
 import LoadingSpinner from "../LoadingSpinner/LoadingSpinner";
 
 /**
@@ -25,8 +26,15 @@ const EndSessionButton: React.FC<{ endSession: () => Promise<void> }> = ({
   endSession,
 }) => {
   const [inProgress, setInProgress] = useState(false);
-  const onClick = async (): Promise<void> => {
+  const [isConfirming, setIsConfirming] = useState(false);
+
+  const onClick = (): void => {
+    setIsConfirming(true);
+  };
+
+  const onConfirm = async (): Promise<void> => {
     setInProgress(true);
+    setIsConfirming(false);
     try {
       await endSession();
     } catch (error) {
@@ -34,15 +42,38 @@ const EndSessionButton: React.FC<{ endSession: () => Promise<void> }> = ({
     }
     setInProgress(false);
   };
+
+  const onDeny = (): void => setIsConfirming(false);
+
   return (
-    <Button
-      kind="destructive"
-      size="sm"
-      onClick={onClick}
-      disabled={inProgress}
-    >
-      {inProgress && <LoadingSpinner inline />}End session
-    </Button>
+    <>
+      <Button
+        kind="destructive"
+        size="sm"
+        onClick={onClick}
+        disabled={inProgress}
+      >
+        {inProgress && <LoadingSpinner inline />}End session
+      </Button>
+      {isConfirming && (
+        <ConfirmationModal
+          isOpen={isConfirming}
+          onRequestClose={onDeny}
+          buttons={
+            <>
+              <Button kind="tertiary" size="sm" onClick={onDeny}>
+                Cancel
+              </Button>
+              <Button kind="destructive" size="sm" onClick={onConfirm}>
+                Continue
+              </Button>
+            </>
+          }
+        >
+          <Body>Are you sure you want to end this session?</Body>
+        </ConfirmationModal>
+      )}
+    </>
   );
 };
 
