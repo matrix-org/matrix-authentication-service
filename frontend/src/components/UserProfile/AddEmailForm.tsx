@@ -113,7 +113,7 @@ const AddEmailForm: React.FC<{
           <Label>Add email</Label>
           <Control disabled={pending} inputMode="email" ref={fieldRef} />
         </Field>
-        <Submit disabled={pending}>Add</Submit>
+        <Submit size="sm" disabled={pending}>Add</Submit>
       </Root>
     </>
   );
