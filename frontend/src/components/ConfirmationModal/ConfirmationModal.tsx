@@ -12,26 +12,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Button } from "@vector-im/compound-web";
 import classNames from "classnames";
-import { ComponentProps, ReactNode } from "react";
+import { ComponentProps } from "react";
 import Modal from "react-modal";
 
 import styles from "./ConfirmationModal.module.css";
 
-type Props = ComponentProps<typeof Modal> & { buttons?: ReactNode };
+type Props = ComponentProps<typeof Modal> & {
+  onConfirm?: () => void;
+  onDeny?: () => void;
+};
 const ConfirmationModal: React.FC<React.PropsWithChildren<Props>> = ({
-  buttons,
+  onConfirm,
+  onDeny,
   className,
   children,
   ...rest
 }) => (
   <Modal
-    shouldCloseOnOverlayClick
+    // don't allow closing without confirming if there is no deny handler
+    shouldCloseOnOverlayClick={!!onDeny}
+    onRequestClose={onDeny}
     {...rest}
     className={classNames(styles.confirmationModal, className)}
   >
     {children}
-    {buttons && <div className={styles.buttons}>{buttons}</div>}
+    <div className={styles.buttons}>
+      {onDeny && (
+        <Button kind="tertiary" size="sm" onClick={onDeny}>
+          Cancel
+        </Button>
+      )}
+      <Button kind="destructive" size="sm" onClick={onConfirm}>
+        Continue
+      </Button>
+    </div>
   </Modal>
 );
 

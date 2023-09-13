@@ -58,17 +58,8 @@ const EndSessionButton: React.FC<{ endSession: () => Promise<void> }> = ({
       {isConfirming && (
         <ConfirmationModal
           isOpen={isConfirming}
-          onRequestClose={onDeny}
-          buttons={
-            <>
-              <Button kind="tertiary" size="sm" onClick={onDeny}>
-                Cancel
-              </Button>
-              <Button kind="destructive" size="sm" onClick={onConfirm}>
-                Continue
-              </Button>
-            </>
-          }
+          onDeny={onDeny}
+          onConfirm={onConfirm}
         >
           <Body>Are you sure you want to end this session?</Body>
         </ConfirmationModal>
