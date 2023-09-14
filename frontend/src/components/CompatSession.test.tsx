@@ -12,10 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// @vitest-environment happy-dom
+
 import { create } from "react-test-renderer";
 import { describe, expect, it, vi } from "vitest";
 
 import { FragmentType } from "../gql/fragment-masking";
+import { WithLocation } from "../test-utils/WithLocation";
 
 import CompatSession, { COMPAT_SESSION_FRAGMENT } from "./CompatSession";
 import DateTime from "./DateTime";
@@ -42,7 +45,11 @@ describe("<CompatSession />", () => {
   const finishedAt = "2023-06-29T03:35:19.451292+00:00";
 
   it("renders an active session", () => {
-    const component = create(<CompatSession session={session} />);
+    const component = create(
+      <WithLocation>
+        <CompatSession session={session} />
+      </WithLocation>,
+    );
     expect(component.toJSON()).toMatchSnapshot();
   });
 
@@ -51,7 +58,11 @@ describe("<CompatSession />", () => {
       ...session,
       finishedAt,
     };
-    const component = create(<CompatSession session={finishedSession} />);
+    const component = create(
+      <WithLocation>
+        <CompatSession session={finishedSession} />
+      </WithLocation>,
+    );
     expect(component.toJSON()).toMatchSnapshot();
   });
 });

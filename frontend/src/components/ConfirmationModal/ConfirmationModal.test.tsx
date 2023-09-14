@@ -22,40 +22,46 @@ import ConfirmationModal from "./ConfirmationModal";
 describe("<ConfirmationModal />", () => {
   afterEach(cleanup);
 
+  const trigger = <button>Open modal</button>;
+
   it("does not render a closed modal", () => {
     const onConfirm = vi.fn();
     const onDeny = vi.fn();
 
     render(
       <ConfirmationModal
-        isOpen={false}
         onConfirm={onConfirm}
         onDeny={onDeny}
         className="test"
-        data-testid="test"
+        trigger={trigger}
+        title="Are you sure?"
       >
-        Are you sure?
+        Some extra information.
       </ConfirmationModal>,
     );
-    expect(screen.queryByRole("dialog")).toBeFalsy();
+    expect(screen.getByText("Open modal")).toBeTruthy();
+    expect(screen.queryByRole("alertdialog")).toBeFalsy();
   });
 
-  it("renders a modal with confirm and deny buttons", () => {
+  it("opens modal on clicking trigger", () => {
     const onConfirm = vi.fn();
     const onDeny = vi.fn();
 
     render(
       <ConfirmationModal
-        isOpen={true}
         onConfirm={onConfirm}
         onDeny={onDeny}
         className="test"
-        data-testid="test"
+        trigger={trigger}
+        title="Are you sure?"
       >
-        Are you sure?
+        Some extra information.
       </ConfirmationModal>,
     );
-    expect(screen.getByRole("dialog")).toMatchSnapshot();
+
+    fireEvent.click(screen.getByText("Open modal"));
+
+    expect(screen.getByRole("alertdialog")).toMatchSnapshot();
   });
 
   it("renders an undeniable modal", () => {
@@ -64,15 +70,17 @@ describe("<ConfirmationModal />", () => {
 
     render(
       <ConfirmationModal
-        isOpen={true}
         onConfirm={onConfirm}
         onDeny={onDeny}
         className="test"
-        data-testid="test"
+        trigger={trigger}
+        title="Are you sure?"
       >
-        Are you sure?
+        Some extra information.
       </ConfirmationModal>,
     );
+
+    fireEvent.click(screen.getByText("Open modal"));
 
     // no cancel button without onDeny
     expect(screen.queryByText("Cancel")).toBeFalsy();
@@ -84,18 +92,23 @@ describe("<ConfirmationModal />", () => {
 
     render(
       <ConfirmationModal
-        isOpen={true}
         onConfirm={onConfirm}
         onDeny={onDeny}
         className="test"
-        data-testid="test"
+        trigger={trigger}
+        title="Are you sure?"
       >
-        Are you sure?
+        Some extra information.
       </ConfirmationModal>,
     );
 
+    fireEvent.click(screen.getByText("Open modal"));
+
     fireEvent.click(screen.getByText("Continue"));
     expect(onConfirm).toHaveBeenCalled();
+
+    // dialog closed
+    expect(screen.queryByRole("alertdialog")).toBeFalsy();
   });
 
   it("calls onDeny on cancel click", () => {
@@ -104,18 +117,23 @@ describe("<ConfirmationModal />", () => {
 
     render(
       <ConfirmationModal
-        isOpen={true}
         onConfirm={onConfirm}
         onDeny={onDeny}
         className="test"
-        data-testid="test"
+        trigger={trigger}
+        title="Are you sure?"
       >
-        Are you sure?
+        Some extra information.
       </ConfirmationModal>,
     );
 
+    fireEvent.click(screen.getByText("Open modal"));
+
     fireEvent.click(screen.getByText("Cancel"));
     expect(onDeny).toHaveBeenCalled();
+
+    // dialog closed
+    expect(screen.queryByRole("alertdialog")).toBeFalsy();
   });
 
   it("calls onDeny on closing modal via Esc", () => {
@@ -124,21 +142,26 @@ describe("<ConfirmationModal />", () => {
 
     render(
       <ConfirmationModal
-        isOpen={true}
         onConfirm={onConfirm}
         onDeny={onDeny}
         className="test"
-        data-testid="test"
+        trigger={trigger}
+        title="Are you sure?"
       >
-        Are you sure?
+        Some extra information.
       </ConfirmationModal>,
     );
 
-    fireEvent.keyDown(screen.getByRole("dialog"), {
+    fireEvent.click(screen.getByText("Open modal"));
+
+    fireEvent.keyDown(screen.getByRole("alertdialog"), {
       key: "Escape",
       code: "Escape",
       keyCode: 27,
     });
     expect(onDeny).toHaveBeenCalled();
+
+    // dialog closed
+    expect(screen.queryByRole("alertdialog")).toBeFalsy();
   });
 });

@@ -63,8 +63,11 @@ const ConfirmationModal: React.FC<React.PropsWithChildren<Props>> = ({
   // when this is replaced with compound's own/wrapped dialog this should be fixed
   // until then, focus the cancel button here
   const onOpenAutoFocus = (e: Event): void => {
+    const focusButtonKind = onDeny ? "tertiary" : "destructive";
     (e.target as Element)
-      ?.querySelector<HTMLButtonElement>('button[data-kind="tertiary"]')
+      ?.querySelector<HTMLButtonElement>(
+        `button[data-kind="${focusButtonKind}"]`,
+      )
       ?.focus();
   };
   return (

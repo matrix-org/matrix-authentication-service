@@ -1,13 +1,26 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`<ConfirmationModal /> > renders a modal with confirm and deny buttons 1`] = `
+exports[`<ConfirmationModal /> > opens modal on clicking trigger 1`] = `
 <div
-  aria-modal="true"
-  class="ReactModal__Content _confirmationModal_6bc2cb test"
-  role="dialog"
+  aria-describedby="radix-:r5:"
+  aria-labelledby="radix-:r4:"
+  class="_content_6bc2cb test"
+  data-state="open"
+  id="radix-:r3:"
+  role="alertdialog"
+  style="pointer-events: auto;"
   tabindex="-1"
 >
-  Are you sure?
+  <h2
+    id="radix-:r4:"
+  >
+    Are you sure?
+  </h2>
+  <p
+    id="radix-:r5:"
+  >
+    Some extra information.
+  </p>
   <div
     class="_buttons_6bc2cb"
   >
@@ -17,6 +30,7 @@ exports[`<ConfirmationModal /> > renders a modal with confirm and deny buttons 1
       data-size="sm"
       role="button"
       tabindex="0"
+      type="button"
     >
       Cancel
     </button>
@@ -26,6 +40,7 @@ exports[`<ConfirmationModal /> > renders a modal with confirm and deny buttons 1
       data-size="sm"
       role="button"
       tabindex="0"
+      type="button"
     >
       Continue
     </button>
