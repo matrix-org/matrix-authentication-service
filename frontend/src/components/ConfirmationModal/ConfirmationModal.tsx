@@ -39,7 +39,7 @@ type Props = {
 };
 /**
  * Generic confirmation modal
- * controls it's own open state
+ * controls its own open state
  * calls onDeny on cancel, esc, or overlay click
  * calls onConfirm on confirm click
  */
@@ -61,7 +61,8 @@ const ConfirmationModal: React.FC<React.PropsWithChildren<Props>> = ({
   // radix's autofocus doesn't work for some reason
   // maybe https://www.radix-ui.com/primitives/docs/guides/composition#your-component-must-forward-ref
   // when this is replaced with compound's own/wrapped dialog this should be fixed
-  // until then, focus the cancel button here
+  // until then, focus the cancel button for a deniable modal
+  // and continue button otherwise
   const onOpenAutoFocus = (e: Event): void => {
     const focusButtonKind = onDeny ? "tertiary" : "destructive";
     (e.target as Element)
