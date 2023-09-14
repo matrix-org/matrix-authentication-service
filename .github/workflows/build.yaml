@@ -114,6 +114,7 @@ jobs:
       - name: Upload the artifacts
         uses: actions/upload-artifact@v3.1.3
         with:
+          name: binaries
           path: |
             target/*/release/mas-cli
             frontend/dist/
@@ -239,6 +240,7 @@ jobs:
       - name: Download the artifacts from the previous job
         uses: actions/download-artifact@v3
         with:
+          name: binaries
           path: artifacts
 
       - name: Prepare the archive directory
