@@ -23,7 +23,7 @@ import {
 import { useAtomValue, useAtom, useSetAtom, atom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, ChangeEventHandler } from "react";
 
 import { graphql } from "../../gql";
 import LoadingSpinner from "../LoadingSpinner/LoadingSpinner";
@@ -72,7 +72,6 @@ const getErrorMessage = (result: {
 
 const UserName: React.FC<{ userId: string }> = ({ userId }) => {
   const result = useAtomValue(userGreetingFamily(userId));
-  const fieldRef = useRef<HTMLInputElement>(null);
 
   const [setDisplayNameResult, setDisplayName] = useAtom(
     setDisplayNameFamily(userId),
@@ -81,20 +80,24 @@ const UserName: React.FC<{ userId: string }> = ({ userId }) => {
 
   const user = result.data?.user;
   const displayName = user?.matrix.displayName || "";
+  const [fieldValue, setFieldValue] = useState(displayName);
 
   const userGreeting = useSetAtom(userGreetingFamily(userId));
 
   useEffect(() => {
-    if (fieldRef.current) {
-      fieldRef.current.value = displayName;
-    }
+    setFieldValue(displayName);
   }, [displayName]);
+
+  const hasChanges = fieldValue !== displayName;
+
+  const onChange: ChangeEventHandler<HTMLInputElement> = (event): void => {
+    setFieldValue(event.target.value);
+  };
 
   const onSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
 
-    const formData = new FormData(event.currentTarget);
-    let newDisplayName = (formData.get("displayname") as string) || null;
+    let newDisplayName = fieldValue || null;
 
     // set null to remove an existing username
     if (newDisplayName === "") {
@@ -117,9 +120,7 @@ const UserName: React.FC<{ userId: string }> = ({ userId }) => {
         });
       } else if (result.data.setDisplayName.status === "INVALID") {
         // reset to current saved display name
-        if (fieldRef.current) {
-          fieldRef.current.value = displayName;
-        }
+        setFieldValue(displayName);
       }
       setInProgress(false);
     });
@@ -131,7 +132,12 @@ const UserName: React.FC<{ userId: string }> = ({ userId }) => {
     <Root onSubmit={onSubmit} className={styles.form}>
       <Field name="displayname">
         <Label>Display Name</Label>
-        <Control ref={fieldRef} inputMode="text" max={250} />
+        <Control
+          value={fieldValue}
+          onChange={onChange}
+          inputMode="text"
+          max={250}
+        />
       </Field>
       {!inProgress && errorMessage && (
         <Alert type="critical" title="Error">
@@ -141,7 +147,7 @@ const UserName: React.FC<{ userId: string }> = ({ userId }) => {
 
       <Button
         className={styles.saveButton}
-        disabled={inProgress}
+        disabled={inProgress || !hasChanges}
         kind="primary"
         size="sm"
         type="submit"
