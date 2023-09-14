@@ -152,10 +152,20 @@ impl UnixOrTcpListener {
         match self {
             Self::Unix(listener) => {
                 let (stream, remote_addr) = listener.accept().await?;
+
+                let socket = socket2::SockRef::from(&stream);
+                socket.set_keepalive(true)?;
+                socket.set_nodelay(true)?;
+
                 Ok((remote_addr.into(), UnixOrTcpConnection::Unix { stream }))
             }
             Self::Tcp(listener) => {
                 let (stream, remote_addr) = listener.accept().await?;
+
+                let socket = socket2::SockRef::from(&stream);
+                socket.set_keepalive(true)?;
+                socket.set_nodelay(true)?;
+
                 Ok((remote_addr.into(), UnixOrTcpConnection::Tcp { stream }))
             }
         }
