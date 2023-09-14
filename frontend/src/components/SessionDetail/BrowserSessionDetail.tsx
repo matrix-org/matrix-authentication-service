@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { H3, Badge } from "@vector-im/compound-web";
+import { Badge } from "@vector-im/compound-web";
 
 import { FragmentType, useFragment } from "../../gql";
 import { BROWSER_SESSION_DETAIL_FRAGMENT } from "../../pages/BrowserSession";
@@ -28,6 +28,7 @@ import EndSessionButton from "../Session/EndSessionButton";
 
 import styles from "./BrowserSessionDetail.module.css";
 import SessionDetails from "./SessionDetails";
+import SessionHeader from "./SessionHeader";
 
 type Props = {
   session: FragmentType<typeof BROWSER_SESSION_DETAIL_FRAGMENT>;
@@ -68,10 +69,12 @@ const BrowserSessionDetail: React.FC<Props> = ({ session }) => {
 
   return (
     <BlockList>
-      <header className={styles.header}>
-        {isCurrent && <Badge kind="success">Current</Badge>}
-        <H3>{sessionName}</H3>
-      </header>
+      {isCurrent && (
+        <Badge className={styles.currentBadge} kind="success">
+          Current
+        </Badge>
+      )}
+      <SessionHeader>{sessionName}</SessionHeader>
       <SessionDetails title="Session" details={sessionDetails} />
       {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
     </BlockList>

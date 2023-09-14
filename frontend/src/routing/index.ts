@@ -18,3 +18,4 @@ export type { Route, Location } from "./routes";
 export { pathToRoute, routeToPath } from "./routes";
 export { getRouteActionRedirection } from "./actions";
 export { routeAtom, locationAtom, appConfigAtom } from "./atoms";
+export { useNavigationLink } from "./useNavigationLink";
