@@ -15,9 +15,11 @@
 import { atom, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
+import { useCallback } from "react";
 
 import { currentBrowserSessionIdAtom, currentUserIdAtom } from "../atoms";
 import { FragmentType, graphql, useFragment } from "../gql";
+import Link from "../routing/Link";
 import {
   parseUserAgent,
   sessionNameFromDeviceInformation,
@@ -26,7 +28,7 @@ import {
 import EndSessionButton from "./Session/EndSessionButton";
 import Session from "./Session/Session";
 
-const FRAGMENT = graphql(/* GraphQL */ `
+export const BROWSER_SESSION_FRAGMENT = graphql(/* GraphQL */ `
   fragment BrowserSession_session on BrowserSession {
     id
     createdAt
@@ -51,7 +53,7 @@ const END_SESSION_MUTATION = graphql(/* GraphQL */ `
   }
 `);
 
-const endSessionFamily = atomFamily((id: string) => {
+export const endBrowserSessionFamily = atomFamily((id: string) => {
   const endSession = atomWithMutation(END_SESSION_MUTATION);
 
   // A proxy atom which pre-sets the id variable in the mutation
@@ -63,22 +65,17 @@ const endSessionFamily = atomFamily((id: string) => {
   return endSessionAtom;
 });
 
-type Props = {
-  session: FragmentType<typeof FRAGMENT>;
-  isCurrent: boolean;
-};
-
-const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
-  const data = useFragment(FRAGMENT, session);
-  const endSession = useSetAtom(endSessionFamily(data.id));
+export const useEndBrowserSession = (
+  sessionId: string,
+  isCurrent: boolean,
+): (() => Promise<void>) => {
+  const endSession = useSetAtom(endBrowserSessionFamily(sessionId));
 
   // Pull those atoms to reset them when the current session is ended
   const currentUserId = useSetAtom(currentUserIdAtom);
   const currentBrowserSessionId = useSetAtom(currentBrowserSessionIdAtom);
 
-  const createdAt = data.createdAt;
-
-  const onSessionEnd = async (): Promise<void> => {
+  const onSessionEnd = useCallback(async (): Promise<void> => {
     await endSession();
     if (isCurrent) {
       currentBrowserSessionId({
@@ -88,16 +85,33 @@ const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
         requestPolicy: "network-only",
       });
     }
-  };
+  }, [isCurrent, endSession, currentBrowserSessionId, currentUserId]);
 
+  return onSessionEnd;
+};
+
+type Props = {
+  session: FragmentType<typeof BROWSER_SESSION_FRAGMENT>;
+  isCurrent: boolean;
+};
+
+const BrowserSession: React.FC<Props> = ({ session, isCurrent }) => {
+  const data = useFragment(BROWSER_SESSION_FRAGMENT, session);
+
+  const onSessionEnd = useEndBrowserSession(data.id, isCurrent);
+
+  const createdAt = data.createdAt;
   const deviceInformation = parseUserAgent(data.userAgent || undefined);
   const sessionName =
     sessionNameFromDeviceInformation(deviceInformation) || "Browser session";
 
+  const name = (
+    <Link route={{ type: "browser-session", id: data.id }}>{sessionName}</Link>
+  );
   return (
     <Session
       id={data.id}
-      name={sessionName}
+      name={name}
       createdAt={createdAt}
       finishedAt={data.finishedAt}
       isCurrent={isCurrent}

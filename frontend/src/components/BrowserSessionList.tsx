@@ -17,7 +17,7 @@ import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
 import { useTransition } from "react";
 
-import { currentBrowserSessionIdAtom, mapQueryAtom } from "../atoms";
+import { mapQueryAtom } from "../atoms";
 import { graphql } from "../gql";
 import { BrowserSessionState, PageInfo } from "../gql/graphql";
 import {
@@ -27,6 +27,7 @@ import {
   Pagination,
 } from "../pagination";
 import { isErr, isOk, unwrapErr, unwrapOk } from "../result";
+import { useCurrentBrowserSessionId } from "../utils/session/useCurrentBrowserSessionId";
 
 import BlockList from "./BlockList";
 import BrowserSession from "./BrowserSession";
@@ -112,20 +113,20 @@ const paginationFamily = atomFamily((userId: string) => {
 });
 
 const BrowserSessionList: React.FC<{ userId: string }> = ({ userId }) => {
-  const currentSessionIdResult = useAtomValue(currentBrowserSessionIdAtom);
+  const { currentBrowserSessionId, currentBrowserSessionIdError } =
+    useCurrentBrowserSessionId();
   const [pending, startTransition] = useTransition();
   const result = useAtomValue(browserSessionListFamily(userId));
   const setPagination = useSetAtom(currentPaginationAtom);
   const [prevPage, nextPage] = useAtomValue(paginationFamily(userId));
   const [filter, setFilter] = useAtom(filterAtom);
 
-  if (isErr(currentSessionIdResult))
-    return <GraphQLError error={unwrapErr(currentSessionIdResult)} />;
+  if (currentBrowserSessionIdError)
+    return <GraphQLError error={currentBrowserSessionIdError} />;
   if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
 
   const browserSessions = unwrapOk(result);
   if (browserSessions === null) return <>Failed to load browser sessions</>;
-  const currentSessionId = unwrapOk(currentSessionIdResult);
 
   const paginate = (pagination: Pagination): void => {
     startTransition(() => {
@@ -165,7 +166,7 @@ const BrowserSessionList: React.FC<{ userId: string }> = ({ userId }) => {
         <BrowserSession
           key={n.cursor}
           session={n.node}
-          isCurrent={n.node.id === currentSessionId}
+          isCurrent={n.node.id === currentBrowserSessionId}
         />
       ))}
     </BlockList>

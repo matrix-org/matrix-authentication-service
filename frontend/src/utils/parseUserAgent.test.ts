@@ -107,12 +107,13 @@ const IOS_UA = [
   "Element/1.8.21 (iPad Pro (12.9-inch) (3rd generation); iOS 15.2; Scale/3.00)",
 ];
 const IOS_EXPECTED_RESULT = [
-  makeDeviceExtendedInfo(DeviceType.Mobile, "Apple", "iPhone", "iOS 15.2"),
+  makeDeviceExtendedInfo(DeviceType.Mobile, "Apple", "iPhone", "iOS", "15.2"),
   makeDeviceExtendedInfo(
     DeviceType.Mobile,
     "Apple",
     "iPhone XS Max",
-    "iOS 15.2",
+    "iOS",
+    "15.2",
   ),
   makeDeviceExtendedInfo(
     DeviceType.Mobile,

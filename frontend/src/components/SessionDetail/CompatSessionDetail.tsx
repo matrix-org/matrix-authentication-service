@@ -41,7 +41,7 @@ const CompatSessionDetail: React.FC<Props> = ({ session }) => {
   };
 
   const finishedAt = data.finishedAt
-    ? [{ label: "Finished", value: <DateTime datetime={data.createdAt} /> }]
+    ? [{ label: "Finished", value: <DateTime datetime={data.finishedAt} /> }]
     : [];
   const sessionDetails = [
     { label: "ID", value: <code>{data.id}</code> },
@@ -68,16 +68,14 @@ const CompatSessionDetail: React.FC<Props> = ({ session }) => {
   }
 
   return (
-    <div>
-      <BlockList>
-        <H3>{data.deviceId || data.id}</H3>
-        <SessionDetails title="Session" details={sessionDetails} />
-        {clientDetails.length > 0 ? (
-          <SessionDetails title="Client" details={clientDetails} />
-        ) : null}
-        {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
-      </BlockList>
-    </div>
+    <BlockList>
+      <H3>{data.deviceId || data.id}</H3>
+      <SessionDetails title="Session" details={sessionDetails} />
+      {clientDetails.length > 0 ? (
+        <SessionDetails title="Client" details={clientDetails} />
+      ) : null}
+      {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
+    </BlockList>
   );
 };
 

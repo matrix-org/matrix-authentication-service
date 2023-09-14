@@ -13,26 +13,9 @@
  * limitations under the License.
  */
 
-.container {
-    width: 378px;
-    margin: var(--cpd-space-10x) auto var(--cpd-space-6x) auto;
-    padding-bottom: var(--cpd-space-10x)
-}
-
-.footer {
-    margin-top: var(--cpd-space-6x);
-    padding: var(--cpd-space-6x) 0;
-    border-top: 1px solid var(--cpd-color-border-interactive-secondary);
-    text-align: center;
-}
-
-.footer-links {
-    margin: var(--cpd-space-4x) 0;
-
-    & > ul {
-        display: flex;
-        flex-direction: row;
-        justify-content: center;
-        gap: var(--cpd-space-2x);
-    }
-}
+ .header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--cpd-space-1x);
+ }
