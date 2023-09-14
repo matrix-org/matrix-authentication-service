@@ -18,6 +18,7 @@ import { render, cleanup } from "@testing-library/react";
 import { describe, expect, it, afterEach, vi } from "vitest";
 
 import { makeFragmentData } from "../../gql/fragment-masking";
+import { WithLocation } from "../../test-utils/WithLocation";
 import { COMPAT_SESSION_FRAGMENT } from "../CompatSession";
 import DateTime from "../DateTime";
 
@@ -46,7 +47,11 @@ describe("<CompatSessionDetail>", () => {
   it("renders a compatability session details", () => {
     const data = makeFragmentData(baseSession, COMPAT_SESSION_FRAGMENT);
 
-    const { container } = render(<CompatSessionDetail session={data} />);
+    const { container } = render(
+      <WithLocation>
+        <CompatSessionDetail session={data} />
+      </WithLocation>,
+    );
 
     expect(container).toMatchSnapshot();
   });
@@ -63,7 +68,11 @@ describe("<CompatSessionDetail>", () => {
       COMPAT_SESSION_FRAGMENT,
     );
 
-    const { container } = render(<CompatSessionDetail session={data} />);
+    const { container } = render(
+      <WithLocation>
+        <CompatSessionDetail session={data} />
+      </WithLocation>,
+    );
 
     expect(container).toMatchSnapshot();
   });
@@ -78,7 +87,9 @@ describe("<CompatSessionDetail>", () => {
     );
 
     const { getByText, queryByText } = render(
-      <CompatSessionDetail session={data} />,
+      <WithLocation>
+        <CompatSessionDetail session={data} />
+      </WithLocation>,
     );
 
     expect(getByText("Finished")).toBeTruthy();

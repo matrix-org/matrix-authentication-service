@@ -5,11 +5,34 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
   <div
     class="_blockList_f8cc7f"
   >
-    <h3
-      class="_font-heading-md-semibold_1jx6b_121"
+    <header
+      class="_header_92353c"
     >
-      abcd1234
-    </h3>
+      <a
+        class="_linkButton_b80ad8"
+        href="/sessions-overview"
+        title="Back to sessions"
+      >
+        <svg
+          class="_backIcon_92353c"
+          fill="none"
+          height="1.5em"
+          viewBox="0 0 24 24"
+          width="1.5em"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M13.3 17.3L8.69999 12.7C8.59999 12.6 8.52915 12.4917 8.48749 12.375C8.44582 12.2584 8.42499 12.1334 8.42499 12C8.42499 11.8667 8.44582 11.7417 8.48749 11.625C8.52915 11.5084 8.59999 11.4 8.69999 11.3L13.3 6.70005C13.4833 6.51672 13.7167 6.42505 14 6.42505C14.2833 6.42505 14.5167 6.51672 14.7 6.70005C14.8833 6.88338 14.975 7.11672 14.975 7.40005C14.975 7.68338 14.8833 7.91672 14.7 8.10005L10.8 12L14.7 15.9C14.8833 16.0834 14.975 16.3167 14.975 16.6C14.975 16.8834 14.8833 17.1167 14.7 17.3C14.5167 17.4834 14.2833 17.575 14 17.575C13.7167 17.575 13.4833 17.4834 13.3 17.3Z"
+            fill="currentColor"
+          />
+        </svg>
+      </a>
+      <h3
+        class="_font-heading-md-semibold_1jx6b_121"
+      >
+        abcd1234
+      </h3>
+    </header>
     <div
       class="_block_17898c"
     >
@@ -138,11 +161,34 @@ exports[`<CompatSessionDetail> > renders a compatability session without an ssoL
   <div
     class="_blockList_f8cc7f"
   >
-    <h3
-      class="_font-heading-md-semibold_1jx6b_121"
+    <header
+      class="_header_92353c"
     >
-      abcd1234
-    </h3>
+      <a
+        class="_linkButton_b80ad8"
+        href="/sessions-overview"
+        title="Back to sessions"
+      >
+        <svg
+          class="_backIcon_92353c"
+          fill="none"
+          height="1.5em"
+          viewBox="0 0 24 24"
+          width="1.5em"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M13.3 17.3L8.69999 12.7C8.59999 12.6 8.52915 12.4917 8.48749 12.375C8.44582 12.2584 8.42499 12.1334 8.42499 12C8.42499 11.8667 8.44582 11.7417 8.48749 11.625C8.52915 11.5084 8.59999 11.4 8.69999 11.3L13.3 6.70005C13.4833 6.51672 13.7167 6.42505 14 6.42505C14.2833 6.42505 14.5167 6.51672 14.7 6.70005C14.8833 6.88338 14.975 7.11672 14.975 7.40005C14.975 7.68338 14.8833 7.91672 14.7 8.10005L10.8 12L14.7 15.9C14.8833 16.0834 14.975 16.3167 14.975 16.6C14.975 16.8834 14.8833 17.1167 14.7 17.3C14.5167 17.4834 14.2833 17.575 14 17.575C13.7167 17.575 13.4833 17.4834 13.3 17.3Z"
+            fill="currentColor"
+          />
+        </svg>
+      </a>
+      <h3
+        class="_font-heading-md-semibold_1jx6b_121"
+      >
+        abcd1234
+      </h3>
+    </header>
     <div
       class="_block_17898c"
     >
