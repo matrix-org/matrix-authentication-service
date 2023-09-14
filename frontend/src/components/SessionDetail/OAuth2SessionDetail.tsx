@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { H3 } from "@vector-im/compound-web";
 import { useSetAtom } from "jotai";
 
 import { FragmentType, useFragment } from "../../gql";
@@ -25,6 +24,7 @@ import ClientAvatar from "../Session/ClientAvatar";
 import EndSessionButton from "../Session/EndSessionButton";
 
 import SessionDetails from "./SessionDetails";
+import SessionHeader from "./SessionHeader";
 
 type Props = {
   session: FragmentType<typeof OAUTH2_SESSION_FRAGMENT>;
@@ -93,14 +93,12 @@ const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
   ];
 
   return (
-    <div>
-      <BlockList>
-        <H3>{deviceId || data.id}</H3>
-        <SessionDetails title="Session" details={sessionDetails} />
-        <SessionDetails title={clientTitle} details={clientDetails} />
-        {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
-      </BlockList>
-    </div>
+    <BlockList>
+      <SessionHeader>{deviceId || data.id}</SessionHeader>
+      <SessionDetails title="Session" details={sessionDetails} />
+      <SessionDetails title={clientTitle} details={clientDetails} />
+      {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
+    </BlockList>
   );
 };
 
