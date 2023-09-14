@@ -26,10 +26,9 @@ import {
   FIRST_PAGE,
   Pagination,
 } from "../pagination";
-import { isErr, isOk, unwrapErr, unwrapOk } from "../result";
+import { isOk, unwrap, unwrapOk } from "../result";
 
 import BlockList from "./BlockList";
-import GraphQLError from "./GraphQLError";
 import OAuth2Session from "./OAuth2Session";
 import PaginationControls from "./PaginationControls";
 import { Title } from "./Typography";
@@ -121,8 +120,7 @@ const OAuth2SessionList: React.FC<Props> = ({ userId }) => {
   const [prevPage, nextPage] = useAtomValue(paginationFamily(userId));
   const [filter, setFilter] = useAtom(filterAtom);
 
-  if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
-  const oauth2Sessions = unwrapOk(result);
+  const oauth2Sessions = unwrap(result);
   if (oauth2Sessions === null) return <>Failed to load sessions.</>;
 
   const paginate = (pagination: Pagination): void => {

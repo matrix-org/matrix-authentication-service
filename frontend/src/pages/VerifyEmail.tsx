@@ -17,6 +17,7 @@ import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
 
 import { mapQueryAtom } from "../atoms";
+import ErrorBoundary from "../components/ErrorBoundary";
 import GraphQLError from "../components/GraphQLError";
 import VerifyEmailComponent from "../components/VerifyEmail";
 import { graphql } from "../gql";
@@ -51,7 +52,11 @@ const VerifyEmail: React.FC<{ id: string }> = ({ id }) => {
   const email = unwrapOk(result);
   if (email == null) return <>Unknown email</>;
 
-  return <VerifyEmailComponent email={email} />;
+  return (
+    <ErrorBoundary>
+      <VerifyEmailComponent email={email} />
+    </ErrorBoundary>
+  );
 };
 
 export default VerifyEmail;

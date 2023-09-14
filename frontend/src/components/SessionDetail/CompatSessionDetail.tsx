@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { H3 } from "@vector-im/compound-web";
 import { useSetAtom } from "jotai";
 
 import { FragmentType, useFragment } from "../../gql";
@@ -27,6 +26,7 @@ import ExternalLink from "../ExternalLink/ExternalLink";
 import EndSessionButton from "../Session/EndSessionButton";
 
 import SessionDetails from "./SessionDetails";
+import SessionHeader from "./SessionHeader";
 
 type Props = {
   session: FragmentType<typeof COMPAT_SESSION_FRAGMENT>;
@@ -69,7 +69,7 @@ const CompatSessionDetail: React.FC<Props> = ({ session }) => {
 
   return (
     <BlockList>
-      <H3>{data.deviceId || data.id}</H3>
+      <SessionHeader>{data.deviceId || data.id}</SessionHeader>
       <SessionDetails title="Session" details={sessionDetails} />
       {clientDetails.length > 0 ? (
         <SessionDetails title="Client" details={clientDetails} />

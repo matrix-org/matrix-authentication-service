@@ -15,6 +15,7 @@
 import { useAtomValue } from "jotai";
 
 import { currentUserIdAtom } from "../atoms";
+import ErrorBoundary from "../components/ErrorBoundary";
 import GraphQLError from "../components/GraphQLError";
 import NotLoggedIn from "../components/NotLoggedIn";
 import UserSessionDetail from "../components/SessionDetail";
@@ -27,7 +28,11 @@ const SessionDetail: React.FC<{ deviceId: string }> = ({ deviceId }) => {
   const userId = unwrapOk(result);
   if (userId === null) return <NotLoggedIn />;
 
-  return <UserSessionDetail userId={userId} deviceId={deviceId} />;
+  return (
+    <ErrorBoundary>
+      <UserSessionDetail userId={userId} deviceId={deviceId} />
+    </ErrorBoundary>
+  );
 };
 
 export default SessionDetail;
