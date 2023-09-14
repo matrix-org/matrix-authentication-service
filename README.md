@@ -1,37 +1,32 @@
-# OAuth 2.0 authentication server for Matrix
+# OAuth2.0 + OpenID Connect Provider for Matrix Homeservers
 
-This is an attempt to implement an OAuth 2.0 and OpenID Connect authentication server for Matrix, following [MSC2964](https://github.com/matrix-org/matrix-doc/pull/2964).
-Don't expect too much here for now, this is very much a work in progress.
+MAS (Matrix Authentication Service) is an OAuth 2.0 and OpenID Provider server for Matrix.
+
+It has been created to support the migration of Matrix to an OpenID Connect (OIDC) based authentication layer as per [MSC3861](https://github.com/matrix-org/matrix-doc/pull/3861).
 
 See the [Documentation](https://matrix-org.github.io/matrix-authentication-service/index.html) for information on installation and use.
 
-## Running
+You can learn more about Matrix and OIDC at [areweoidcyet.com](https://areweoidcyet.com/).
 
-- [Install Rust and Cargo](https://www.rust-lang.org/learn/get-started)
-- [Install Node.js and npm](https://nodejs.org/)
-- [Install Open Policy Agent](https://www.openpolicyagent.org/docs/latest/#1-download-opa)
-- Clone this repository
-- Build the frontend
-  ```sh
-  cd frontend
-  npm ci
-  npm run build
-  cd ..
-  ```
-- Build the Open Policy Agent policies
-  ```sh
-  cd policies
-  make
-  # OR, if you don't have `opa` installed and want to build through the OPA docker image
-  make DOCKER=1
-  cd ..
-  ```
-- Generate the sample config via `cargo run -- config generate > config.yaml`
-- Run a PostgreSQL database locally
-  ```sh
-  docker run -p 5432:5432 -e 'POSTGRES_USER=postgres' -e 'POSTGRES_PASSWORD=postgres' -e 'POSTGRES_DATABASE=postgres' postgres
-  ```
-- Update the database URI in `config.yaml` to `postgresql://postgres:postgres@localhost/postgres`
-- Run the database migrations via `cargo run -- database migrate`
-- Run the server via `cargo run -- server -c config.yaml`
-- Go to <http://localhost:8080/>
+![Delegated OIDC architecture with MAS overview](overview.png)
+
+## Features
+
+- Supported homeservers
+  - ✅ Synapse
+- Authentication methods:
+  - ✅ Upstream OIDC
+  - 🚧 Local password
+- Migration support
+  - ✅ Compatibility layer for legacy Matrix authentication
+  - 🚧 Advisor on migration readiness
+  - 🚧 Import users from Synapse
+  - 🚧 Import of external subject IDs from upstream identity providers
+
+## Upstream Identity Providers
+
+MAS is known to work with the following upstream IdPs via OIDC:
+
+- Keycloak
+- Dex
+- Google

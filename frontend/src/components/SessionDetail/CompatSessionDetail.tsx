@@ -68,16 +68,14 @@ const CompatSessionDetail: React.FC<Props> = ({ session }) => {
   }
 
   return (
-    <div>
-      <BlockList>
-        <H3>{data.deviceId || data.id}</H3>
-        <SessionDetails title="Session" details={sessionDetails} />
-        {clientDetails.length > 0 ? (
-          <SessionDetails title="Client" details={clientDetails} />
-        ) : null}
-        {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
-      </BlockList>
-    </div>
+    <BlockList>
+      <H3>{data.deviceId || data.id}</H3>
+      <SessionDetails title="Session" details={sessionDetails} />
+      {clientDetails.length > 0 ? (
+        <SessionDetails title="Client" details={clientDetails} />
+      ) : null}
+      {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
+    </BlockList>
   );
 };
 

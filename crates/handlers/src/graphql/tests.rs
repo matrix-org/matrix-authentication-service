@@ -16,7 +16,10 @@ use axum::http::Request;
 use hyper::StatusCode;
 use mas_data_model::{AccessToken, Client, TokenType, User};
 use mas_router::SimpleRoute;
-use mas_storage::{oauth2::OAuth2ClientRepository, RepositoryAccess};
+use mas_storage::{
+    oauth2::{OAuth2AccessTokenRepository, OAuth2ClientRepository},
+    RepositoryAccess,
+};
 use oauth2_types::{
     registration::ClientRegistrationResponse,
     requests::AccessTokenResponse,
@@ -551,4 +554,17 @@ async fn test_oauth2_client_credentials(pool: PgPool) {
     assert!(response.errors.is_empty(), "{:?}", response.errors);
     assert!(response.data["createOauth2Session"]["refreshToken"].is_null());
     assert!(response.data["createOauth2Session"]["accessToken"].is_string());
+
+    let token = response.data["createOauth2Session"]["accessToken"]
+        .as_str()
+        .unwrap();
+
+    // We should find this token in the database
+    let mut repo = state.repository().await.unwrap();
+    let token = repo
+        .oauth2_access_token()
+        .find_by_token(token)
+        .await
+        .unwrap();
+    assert!(token.is_some());
 }

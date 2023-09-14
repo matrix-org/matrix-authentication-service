@@ -191,6 +191,17 @@ pub enum TokenType {
     CompatRefreshToken,
 }
 
+impl std::fmt::Display for TokenType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TokenType::AccessToken => write!(f, "access token"),
+            TokenType::RefreshToken => write!(f, "refresh token"),
+            TokenType::CompatAccessToken => write!(f, "compat access token"),
+            TokenType::CompatRefreshToken => write!(f, "compat refresh token"),
+        }
+    }
+}
+
 impl TokenType {
     fn prefix(self) -> &'static str {
         match self {

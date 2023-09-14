@@ -1,0 +1,182 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`<OAuth2SessionDetail> > renders session details 1`] = `
+<div>
+  <div>
+    <div
+      class="_blockList_f8cc7f"
+    >
+      <h3
+        class="_font-heading-md-semibold_1jx6b_121"
+      >
+        abcd1234
+      </h3>
+      <div
+        class="_block_17898c"
+      >
+        <h6
+          class="_font-body-md-semibold_1jx6b_64"
+        >
+          Session
+        </h6>
+        <ul
+          class="_list_040867"
+        >
+          <li
+            class="_detailRow_040867"
+          >
+            <p
+              class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+            >
+              ID
+            </p>
+            <p
+              class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+            >
+              <code>
+                session-id
+              </code>
+            </p>
+          </li>
+          <li
+            class="_detailRow_040867"
+          >
+            <p
+              class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+            >
+              Device ID
+            </p>
+            <p
+              class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+            >
+              <code>
+                abcd1234
+              </code>
+            </p>
+          </li>
+          <li
+            class="_detailRow_040867"
+          >
+            <p
+              class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+            >
+              Signed in
+            </p>
+            <p
+              class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+            >
+              <code>
+                2023-06-29T03:35:17.451292+00:00
+              </code>
+            </p>
+          </li>
+          <li
+            class="_detailRow_040867"
+          >
+            <p
+              class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+            >
+              Scopes
+            </p>
+            <p
+              class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+            >
+              <p>
+                <code>
+                  openid
+                </code>
+              </p>
+              <p>
+                <code>
+                  urn:matrix:org.matrix.msc2967.client:api:*
+                </code>
+              </p>
+              <p>
+                <code>
+                  urn:matrix:org.matrix.msc2967.client:device:abcd1234
+                </code>
+              </p>
+            </p>
+          </li>
+        </ul>
+      </div>
+      <div
+        class="_block_17898c"
+      >
+        <h6
+          class="_font-body-md-semibold_1jx6b_64"
+        >
+          <a
+            class=""
+            href="/clients/test-id"
+          >
+            Client
+          </a>
+        </h6>
+        <ul
+          class="_list_040867"
+        >
+          <li
+            class="_detailRow_040867"
+          >
+            <p
+              class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+            >
+              Name
+            </p>
+            <p
+              class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+            >
+              Element
+            </p>
+          </li>
+          <li
+            class="_detailRow_040867"
+          >
+            <p
+              class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+            >
+              ID
+            </p>
+            <p
+              class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+            >
+              <code>
+                test-client-id
+              </code>
+            </p>
+          </li>
+          <li
+            class="_detailRow_040867"
+          >
+            <p
+              class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+            >
+              Uri
+            </p>
+            <p
+              class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+            >
+              <a
+                href="https://element.io"
+                target="_blank"
+              >
+                https://element.io
+              </a>
+            </p>
+          </li>
+        </ul>
+      </div>
+      <button
+        class="_button_1raud_17"
+        data-kind="destructive"
+        data-size="sm"
+        role="button"
+        tabindex="0"
+      >
+        End session
+      </button>
+    </div>
+  </div>
+</div>
+`;

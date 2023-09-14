@@ -4,7 +4,7 @@ members = ["crates/*"]
 resolver = "2"
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 license = "Apache-2.0"
 authors = ["Quentin Gliech <quenting@element.io>"]
 edition = "2021"
@@ -19,7 +19,7 @@ version = "1.0.75"
 
 # Time utilities
 [workspace.dependencies.chrono]
-version = "0.4.26"
+version = "0.4.30"
 default-features = false
 features = ["serde", "clock"]
 
@@ -38,7 +38,7 @@ features = ["derive"] # Most of the time, if we need serde, we need derive
 
 # JSON serialization and deserialization
 [workspace.dependencies.serde_json]
-version = "1.0.105"
+version = "1.0.106"
 
 # Custom error types
 [workspace.dependencies.thiserror]
