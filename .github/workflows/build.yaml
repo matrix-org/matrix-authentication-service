@@ -119,6 +119,8 @@ jobs:
             target/*/release/mas-cli
             frontend/dist/
             policies/policy.wasm
+            templates/
+            LICENSE
 
 
   build-image:
@@ -249,8 +251,8 @@ jobs:
           mv artifacts/policies/policy.wasm dist/share/policy.wasm
           mv artifacts/frontend/dist/manifest.json dist/share/manifest.json
           mv artifacts/frontend/dist/ dist/share/assets
-          mv templates/ dist/share/templates
-          mv LICENSE dist/LICENSE
+          mv artifacts/templates/ dist/share/templates
+          mv artifacts/LICENSE dist/LICENSE
           chmod -R u=rwX,go=rX dist/
 
       - name: Create the archives
