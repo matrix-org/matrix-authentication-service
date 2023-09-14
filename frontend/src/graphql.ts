@@ -21,7 +21,9 @@ import { requestPolicyExchange } from "@urql/exchange-request-policy";
 import type {
   MutationAddEmailArgs,
   MutationRemoveEmailArgs,
+  MutationVerifyEmailArgs,
   RemoveEmailPayload,
+  VerifyEmailPayload,
 } from "./gql/graphql";
 import schema from "./gql/schema";
 
@@ -62,6 +64,36 @@ const cache = cacheExchange({
 
         // Let's try to figure out the userId to invalidate the emails field on the User object
         const userId = result.removeEmail?.user?.id;
+        if (userId) {
+          const key = cache.keyOfEntity({
+            __typename: "User",
+            id: userId,
+          });
+
+          // Invalidate the emails field on the User object so that it gets refetched
+          cache
+            .inspectFields(key)
+            .filter((field) => field.fieldName === "emails")
+            .forEach((field) => {
+              cache.invalidate(key, field.fieldName, field.arguments);
+            });
+        }
+      },
+
+      verifyEmail: (
+        result: { verifyEmail?: VerifyEmailPayload },
+        args: MutationVerifyEmailArgs,
+        cache,
+        _info,
+      ) => {
+        // Invalidate the email entity
+        cache.invalidate({
+          __typename: "UserEmail",
+          id: args.input.userEmailId,
+        });
+
+        // Let's try to figure out the userId to invalidate the emails field on the User object
+        const userId = result.verifyEmail?.user?.id;
         if (userId) {
           const key = cache.keyOfEntity({
             __typename: "User",
