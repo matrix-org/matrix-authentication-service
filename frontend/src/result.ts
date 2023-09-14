@@ -59,3 +59,14 @@ export const unwrapOk = <T>(result: Ok<T>): T => result[OK];
 
 // Extract the error from an `Err`
 export const unwrapErr = <E>(result: Err<E>): E => result[ERR];
+
+/**
+ * Check result for error and throw unwrapped error
+ * Otherwise return unwrapped Ok result
+ */
+export const unwrap = <T, E>(result: Result<T, E>): T => {
+  if (isErr(result)) {
+    throw unwrapErr(result);
+  }
+  return unwrapOk(result);
+};

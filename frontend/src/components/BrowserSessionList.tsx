@@ -26,7 +26,7 @@ import {
   FIRST_PAGE,
   Pagination,
 } from "../pagination";
-import { isErr, isOk, unwrapErr, unwrapOk } from "../result";
+import { isOk, unwrap, unwrapOk } from "../result";
 import { useCurrentBrowserSessionId } from "../utils/session/useCurrentBrowserSessionId";
 
 import BlockList from "./BlockList";
@@ -119,9 +119,7 @@ const BrowserSessionList: React.FC<{ userId: string }> = ({ userId }) => {
   const [prevPage, nextPage] = useAtomValue(paginationFamily(userId));
   const [filter, setFilter] = useAtom(filterAtom);
 
-  if (isErr(result)) throw unwrapErr(result);
-
-  const browserSessions = unwrapOk(result);
+  const browserSessions = unwrap(result);
   if (browserSessions === null) return <>Failed to load browser sessions</>;
 
   const paginate = (pagination: Pagination): void => {
