@@ -19,7 +19,7 @@ http.workspace = true
 http-body = "0.4.5"
 mime = "0.3.17"
 rand.workspace = true
-sentry = { version = "0.31.6", default-features = false }
+sentry = { version = "0.31.7", default-features = false }
 serde.workspace = true
 serde_with = "3.3.0"
 serde_urlencoded = "0.7.1"
