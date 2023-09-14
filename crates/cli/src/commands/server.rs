@@ -97,6 +97,8 @@ impl Options {
         // Load and compile the templates
         let templates = templates_from_config(&config.templates, &url_builder).await?;
 
+        let http_client_factory = HttpClientFactory::new().await?;
+
         if !self.no_worker {
             let mailer = mailer_from_config(&config.email, &templates)?;
             mailer.test_connection().await?;
@@ -105,15 +107,12 @@ impl Options {
             let mut rng = thread_rng();
             let worker_name = Alphanumeric.sample_string(&mut rng, 10);
 
-            // Maximum 50 outgoing HTTP requests at a time
-            let http_client_factory = HttpClientFactory::new(50);
-
             info!(worker_name, "Starting task worker");
             let conn = SynapseConnection::new(
                 config.matrix.homeserver.clone(),
                 config.matrix.endpoint.clone(),
                 config.matrix.secret.clone(),
-                http_client_factory,
+                http_client_factory.clone(),
             );
             let monitor = mas_tasks::init(&worker_name, &pool, &mailer, conn).await?;
             // TODO: grab the handle
@@ -125,9 +124,6 @@ impl Options {
         let listeners_config = config.http.listeners.clone();
 
         let password_manager = password_manager_from_config(&config.passwords).await?;
-
-        // Maximum 50 outgoing HTTP requests at a time
-        let http_client_factory = HttpClientFactory::new(50);
 
         // The upstream OIDC metadata cache
         let metadata_cache = MetadataCache::new();

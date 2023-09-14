@@ -33,7 +33,7 @@ mod service;
 #[cfg(feature = "client")]
 pub use self::{
     client::{
-        make_traced_client, make_traced_connector, make_untraced_client, ClientInitError,
+        make_traced_client, make_traced_connector, make_untraced_client, Client, ClientInitError,
         TracedClient, TracedConnector, UntracedClient, UntracedConnector,
     },
     layers::client::{ClientLayer, ClientService},

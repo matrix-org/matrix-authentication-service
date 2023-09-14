@@ -142,7 +142,7 @@ impl TestState {
 
         let homeserver_connection = MockHomeserverConnection::new("example.com");
 
-        let http_client_factory = HttpClientFactory::new(10);
+        let http_client_factory = HttpClientFactory::new().await?;
 
         let site_config = SiteConfig::default();
 

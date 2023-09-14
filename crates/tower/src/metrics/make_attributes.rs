@@ -69,6 +69,17 @@ where
     }
 }
 
+impl<V, T, const N: usize> MetricsAttributes<T> for [V; N]
+where
+    V: MetricsAttributes<T> + 'static,
+    T: 'static,
+{
+    type Iter<'a> = Box<dyn Iterator<Item = KeyValue> + 'a>;
+    fn attributes<'a>(&'a self, t: &'a T) -> Self::Iter<'_> {
+        Box::new(self.iter().flat_map(|v| v.attributes(t)))
+    }
+}
+
 impl<V, T> MetricsAttributes<T> for KV<V>
 where
     V: Into<Value> + Clone + 'static,
