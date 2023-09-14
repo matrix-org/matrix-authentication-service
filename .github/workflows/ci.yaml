@@ -144,7 +144,7 @@ jobs:
           rustup default stable
 
       - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2.6.2
+        uses: Swatinem/rust-cache@v2.7.0
         with:
           save-if: "${{ github.event_name != 'pull_request' }}"
 
@@ -205,7 +205,7 @@ jobs:
         run: make
 
       - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2.6.2
+        uses: Swatinem/rust-cache@v2.7.0
         with:
           save-if: "${{ github.event_name != 'pull_request' }}"
 
@@ -269,7 +269,7 @@ jobs:
         run: make
 
       - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2.6.2
+        uses: Swatinem/rust-cache@v2.7.0
         with:
           save-if: "${{ github.event_name != 'pull_request' }}"
 
@@ -300,7 +300,7 @@ jobs:
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v4.6.0
+        uses: docker/metadata-action@v5.0.0
         with:
           images: "${{ env.IMAGE }}"
           bake-target: docker-metadata-action
@@ -315,7 +315,7 @@ jobs:
 
       - name: Docker meta (debug variant)
         id: meta-debug
-        uses: docker/metadata-action@v4.6.0
+        uses: docker/metadata-action@v5.0.0
         with:
           images: "${{ env.IMAGE }}"
           bake-target: docker-metadata-action-debug
@@ -333,7 +333,7 @@ jobs:
         uses: sigstore/cosign-installer@v3.1.2
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2.10.0
+        uses: docker/setup-buildx-action@v3.0.0
         with:
           config-inline: |
             [registry."docker.io"]
@@ -341,7 +341,7 @@ jobs:
 
       - name: Login to GitHub Container Registry
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v2.2.0
+        uses: docker/login-action@v3.0.0
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
@@ -351,7 +351,7 @@ jobs:
       # cache or the image itself
       # We only build for the amd64 platform in pull-requests to speed-up CI
       - name: Build
-        uses: docker/bake-action@v3.1.0
+        uses: docker/bake-action@v4.0.0
         if: github.event_name == 'pull_request'
         with:
           files: |
@@ -365,7 +365,7 @@ jobs:
 
       - name: Build and push
         id: bake
-        uses: docker/bake-action@v3.1.0
+        uses: docker/bake-action@v4.0.0
         if: github.event_name != 'pull_request'
         with:
           files: |
