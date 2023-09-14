@@ -27,7 +27,7 @@ use opentelemetry::{
         self,
         metrics::{
             reader::{DefaultAggregationSelector, DefaultTemporalitySelector},
-            MeterProvider, PeriodicReader,
+            ManualReader, MeterProvider, PeriodicReader,
         },
         propagation::{BaggagePropagator, TextMapCompositePropagator, TraceContextPropagator},
         trace::{Sampler, Tracer, TracerProvider},
@@ -289,19 +289,15 @@ fn prometheus_metric_reader() -> anyhow::Result<PrometheusExporter> {
 }
 
 fn init_meter(config: &MetricsExporterConfig) -> anyhow::Result<()> {
-    let mut meter_provider_builder = MeterProvider::builder();
-    match config {
-        MetricsExporterConfig::None => {}
-        MetricsExporterConfig::Stdout => {
-            meter_provider_builder = meter_provider_builder.with_reader(stdout_metric_reader());
-        }
+    let meter_provider_builder = MeterProvider::builder();
+    let meter_provider_builder = match config {
+        MetricsExporterConfig::None => meter_provider_builder.with_reader(ManualReader::default()),
+        MetricsExporterConfig::Stdout => meter_provider_builder.with_reader(stdout_metric_reader()),
         MetricsExporterConfig::Otlp { endpoint } => {
-            meter_provider_builder =
-                meter_provider_builder.with_reader(otlp_metric_reader(endpoint.as_ref())?);
+            meter_provider_builder.with_reader(otlp_metric_reader(endpoint.as_ref())?)
         }
         MetricsExporterConfig::Prometheus => {
-            meter_provider_builder =
-                meter_provider_builder.with_reader(prometheus_metric_reader()?);
+            meter_provider_builder.with_reader(prometheus_metric_reader()?)
         }
     };
 
