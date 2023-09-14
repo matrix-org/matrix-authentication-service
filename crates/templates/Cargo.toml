@@ -23,7 +23,7 @@ camino = "1.1.6"
 chrono.workspace = true
 url.workspace = true
 http.workspace = true
-ulid = { version = "1.0.0", features = ["serde"] }
+ulid.workspace = true
 rand.workspace = true
 
 oauth2-types = { path = "../oauth2-types" }

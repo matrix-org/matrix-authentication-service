@@ -38,7 +38,7 @@ features = ["derive"] # Most of the time, if we need serde, we need derive
 
 # JSON serialization and deserialization
 [workspace.dependencies.serde_json]
-version = "1.0.106"
+version = "1.0.107"
 
 # Custom error types
 [workspace.dependencies.thiserror]
@@ -51,6 +51,11 @@ version = "0.1.37"
 # URL manipulation
 [workspace.dependencies.url]
 version = "2.4.1"
+features = ["serde"]
+
+# ULID support
+[workspace.dependencies.ulid]
+version = "1.1.0"
 features = ["serde"]
 
 # A few profile opt-level tweaks to make the test suite run faster
@@ -66,9 +71,3 @@ sha2.opt-level = 3
 digest.opt-level = 3
 block-buffer.opt-level = 3
 generic-array.opt-level = 3
-
-
-# Until https://github.com/dylanhart/ulid-rs/pull/56 gets released
-[patch.crates-io.ulid]
-git = "https://github.com/dylanhart/ulid-rs.git"
-rev = "0b9295c2db2114cd87aa19abcc1fc00c16b272db"

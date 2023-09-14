@@ -12,4 +12,4 @@ axum = { version = "0.6.20", default-features = false }
 serde.workspace = true
 serde_urlencoded = "0.7.1"
 url.workspace = true
-ulid = "1.0.0"
+ulid.workspace = true

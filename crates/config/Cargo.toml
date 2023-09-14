@@ -19,7 +19,7 @@ camino = { version = "1.1.6", features = ["serde1"] }
 chrono.workspace = true
 figment = { version = "0.10.10", features = ["env", "yaml", "test"] }
 schemars = { version = "0.8.13", features = ["url", "chrono"] }
-ulid = { version = "1.0.0", features = ["serde"] }
+ulid.workspace = true
 url.workspace = true
 
 serde.workspace = true
