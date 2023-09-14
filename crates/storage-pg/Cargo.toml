@@ -23,7 +23,7 @@ rand.workspace = true
 rand_chacha = "0.3.1"
 url.workspace = true
 uuid = "1.4.1"
-ulid = { version = "1.0.0", features = ["uuid", "serde"] }
+ulid = { workspace = true, features = ["uuid"] }
 
 oauth2-types = { path = "../oauth2-types" }
 mas-storage = { path = "../storage" }

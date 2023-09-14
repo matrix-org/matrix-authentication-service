@@ -13,7 +13,7 @@ thiserror.workspace = true
 serde.workspace = true
 url.workspace = true
 crc = "3.0.1"
-ulid = { version = "1.0.0", features = ["serde"] }
+ulid.workspace = true
 rand.workspace = true
 rand_chacha = "0.3.1"
 

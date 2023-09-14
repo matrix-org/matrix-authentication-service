@@ -11,7 +11,7 @@ repository.workspace = true
 async-trait = "0.1.73"
 tracing.workspace = true
 thiserror.workspace = true
-headers = "0.3.8"
+headers = "0.3.9"
 
 mas-templates = { path = "../templates" }
 
