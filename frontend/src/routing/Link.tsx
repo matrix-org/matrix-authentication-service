@@ -12,18 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { useAtomValue, useSetAtom } from "jotai";
-import { useTransition } from "react";
-
 import styles from "./Link.module.css";
-import { appConfigAtom, routeAtom } from "./atoms";
-import { Route, routeToPath } from "./routes";
-
-// Filter out clicks with modifiers or that have been prevented
-const shouldHandleClick = (e: React.MouseEvent): boolean =>
-  !e.defaultPrevented &&
-  e.button === 0 &&
-  !(e.metaKey || e.altKey || e.ctrlKey || e.shiftKey);
+import { Route } from "./routes";
+import { useNavigationLink } from "./useNavigationLink";
 
 const Link: React.FC<
   {
@@ -32,13 +23,7 @@ const Link: React.FC<
     kind?: "button";
   } & React.HTMLProps<HTMLAnchorElement>
 > = ({ route, children, kind, className, ...props }) => {
-  const config = useAtomValue(appConfigAtom);
-  const path = routeToPath(route);
-  const fullUrl = config.root + path;
-  const setRoute = useSetAtom(routeAtom);
-
-  // TODO: we should probably have more user control over this
-  const [isPending, startTransition] = useTransition();
+  const { onClick, href, pending } = useNavigationLink(route);
 
   const classNames = [
     kind === "button" ? styles.linkButton : "",
@@ -46,23 +31,8 @@ const Link: React.FC<
   ].join("");
 
   return (
-    <a
-      href={fullUrl}
-      onClick={(e: React.MouseEvent): void => {
-        // Only handle left clicks without modifiers
-        if (!shouldHandleClick(e)) {
-          return;
-        }
-
-        e.preventDefault();
-        startTransition(() => {
-          setRoute(route);
-        });
-      }}
-      className={classNames}
-      {...props}
-    >
-      {isPending ? "Loading..." : children}
+    <a href={href} onClick={onClick} className={classNames} {...props}>
+      {pending ? "Loading..." : children}
     </a>
   );
 };
