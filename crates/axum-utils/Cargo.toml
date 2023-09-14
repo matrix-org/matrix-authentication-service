@@ -14,12 +14,12 @@ axum-extra = { version = "0.7.7", features = ["cookie-private", "cookie-key-expa
 chrono.workspace = true
 data-encoding = "2.4.0"
 futures-util = "0.3.28"
-headers = "0.3.8"
+headers = "0.3.9"
 http.workspace = true
 http-body = "0.4.5"
 mime = "0.3.17"
 rand.workspace = true
-sentry = { version = "0.31.6", default-features = false }
+sentry = { version = "0.31.7", default-features = false }
 serde.workspace = true
 serde_with = "3.3.0"
 serde_urlencoded = "0.7.1"
@@ -29,7 +29,7 @@ tokio = "1.32.0"
 tower = { version = "0.4.13", features = ["util"] }
 tracing.workspace = true
 url.workspace = true
-ulid = { version = "1.0.0", features = ["serde"] }
+ulid.workspace = true
 
 mas-data-model = { path = "../data-model" }
 mas-http = { path = "../http", features = ["client"] }

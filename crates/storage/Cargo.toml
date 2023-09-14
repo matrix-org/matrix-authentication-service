@@ -21,7 +21,7 @@ serde_json.workspace = true
 tracing.workspace = true
 tracing-opentelemetry = "0.21.0"
 url.workspace = true
-ulid = "1.0.0"
+ulid.workspace = true
 
 oauth2-types = { path = "../oauth2-types" }
 mas-data-model = { path = "../data-model" }
