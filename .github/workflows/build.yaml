@@ -274,18 +274,24 @@ jobs:
             
             Regular image: 
             
-              - Digest: `${{ env.IMAGE }}@${{ fromJSON(needs.build-image.outputs.metadata).regular['containerimage.digest'] }}`
+              - Digest: 
+                ```
+                ${{ env.IMAGE }}@${{ fromJSON(needs.build-image.outputs.metadata).regular['containerimage.digest'] }}
+                ```
               - Tags:
                 ```
-                ${{ fromJSON(needs.build-image.outputs.metadata).regular['image.name'] }}`
+                ${{ fromJSON(needs.build-image.outputs.metadata).regular['image.name'] }}
                 ```
             
             Debug variant: 
             
-              - Digest: `${{ env.IMAGE }}@${{ fromJSON(needs.build-image.outputs.metadata).debug['containerimage.digest'] }}`
+              - Digest: 
+                ```
+                ${{ env.IMAGE }}@${{ fromJSON(needs.build-image.outputs.metadata).debug['containerimage.digest'] }}
+                ```
               - Tags:
                 ```
-                ${{ fromJSON(needs.build-image.outputs.metadata).debug['image.name'] }}`
+                ${{ fromJSON(needs.build-image.outputs.metadata).debug['image.name'] }}
                 ```
 
           files: |
