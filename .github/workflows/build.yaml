@@ -121,6 +121,9 @@ jobs:
     env:
       IMAGE: ghcr.io/matrix-org/matrix-authentication-service
 
+    outputs:
+      metadata: ${{ steps.bake.output.metadata }}
+
     permissions:
       contents: read
       packages: write
@@ -246,11 +249,11 @@ jobs:
       - name: Create the archives
         run: |
           for arch in x86_64 aarch64; do
-            mv artifacts/${arch}-unknown-linux-musl/release/mas-cli dist/mas-cli
+            mv artifacts/target/${arch}-unknown-linux-musl/release/mas-cli dist/mas-cli
             chmod u=rwx,go=rx dist/mas-cli
             tar -czvf mas-cli-${arch}-linux.tar.gz --owner=0 --group=0 -C dist/ .
           
-            mv artifacts/${arch}-apple-darwin/release/mas-cli dist/mas-cli
+            mv artifacts/target/${arch}-apple-darwin/release/mas-cli dist/mas-cli
             chmod u=rwx,go=rx dist/mas-cli
             tar -czvf mas-cli-${arch}-macos.tar.gz --owner=0 --group=0 -C dist/ .
           done
@@ -258,6 +261,25 @@ jobs:
       - name: Prepare a release
         uses: softprops/action-gh-release@v1
         with:
+          body: |
+            ### Docker image
+            
+            Regular image: 
+            
+              - Digest: `${{ env.IMAGE }}@${{ fromJSON(needs.build-image.outputs.metadata).regular['containerimage.digest'] }}`
+              - Tags:
+                ```
+                ${{ fromJSON(needs.build-image.outputs.metadata).regular['image.name'] }}`
+                ```
+            
+            Debug variant: 
+            
+              - Digest: `${{ env.IMAGE }}@${{ fromJSON(needs.build-image.outputs.metadata).debug['containerimage.digest'] }}`
+              - Tags:
+                ```
+                ${{ fromJSON(needs.build-image.outputs.metadata).debug['image.name'] }}`
+                ```
+
           files: |
             mas-cli-aarch64-linux.tar.gz
             mas-cli-aarch64-macos.tar.gz
