@@ -92,4 +92,87 @@ describe("<UnverifiedEmailAlert />", () => {
     // no more warning
     expect(container).toMatchInlineSnapshot("<div />");
   });
+
+  it("hides warning when count of unverified emails becomes 0", () => {
+    const data = makeFragmentData(
+      {
+        id: "abc123",
+        unverifiedEmails: {
+          totalCount: 2,
+        },
+      },
+      UNVERIFIED_EMAILS_FRAGMENT,
+    );
+
+    const { container, getByText, rerender } = render(
+      <WithLocation>
+        <UnverifiedEmailAlert unverifiedEmails={data} />
+      </WithLocation>,
+    );
+
+    // warning is rendered
+    expect(getByText("Unverified email")).toBeTruthy();
+
+    const newData = makeFragmentData(
+      {
+        id: "abc123",
+        unverifiedEmails: {
+          totalCount: 0,
+        },
+      },
+      UNVERIFIED_EMAILS_FRAGMENT,
+    );
+    rerender(
+      <WithLocation>
+        <UnverifiedEmailAlert unverifiedEmails={newData} />
+      </WithLocation>,
+    );
+
+    // warning removed
+    expect(container).toMatchInlineSnapshot("<div />");
+  });
+
+  it("shows a dismissed warning again when there are new unverified emails", () => {
+    const data = makeFragmentData(
+      {
+        id: "abc123",
+        unverifiedEmails: {
+          totalCount: 2,
+        },
+      },
+      UNVERIFIED_EMAILS_FRAGMENT,
+    );
+
+    const { container, getByText, getByLabelText, rerender } = render(
+      <WithLocation>
+        <UnverifiedEmailAlert unverifiedEmails={data} />
+      </WithLocation>,
+    );
+
+    // warning is rendered
+    expect(getByText("Unverified email")).toBeTruthy();
+
+    fireEvent.click(getByLabelText("Close"));
+
+    // no more warning
+    expect(container).toMatchInlineSnapshot("<div />");
+
+    const newData = makeFragmentData(
+      {
+        id: "abc123",
+        unverifiedEmails: {
+          totalCount: 3,
+        },
+      },
+      UNVERIFIED_EMAILS_FRAGMENT,
+    );
+    rerender(
+      <WithLocation>
+        <UnverifiedEmailAlert unverifiedEmails={newData} />
+      </WithLocation>,
+    );
+
+    // warning is rendered
+    expect(getByText("Unverified email")).toBeTruthy();
+  });
 });
