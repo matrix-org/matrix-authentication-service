@@ -18,7 +18,7 @@ limitations under the License.
   <ul>
     {% for scope in scopes | split(pat=" ") %}
       {% if scope == "openid" %}
-        <li>{{ icon::user() }}<p>See your profile info and contact details</p></li>
+        <li>{{ icon::user_profile() }}<p>See your profile info and contact details</p></li>
       {% elif scope == "urn:mas:graphql:*" %}
         <li>{{ icon::info() }}<p>Edit your profile and contact details</p></li>
         <li>{{ icon::computer() }}<p>Manage your devices and sessions</p></li>
@@ -27,7 +27,7 @@ limitations under the License.
         <li>{{ icon::check_circle() }}<p>Send new messages on your behalf</p></li>
       {% elif scope == "urn:synapse:admin:*" %}
         <li>{{ icon::error() }}<p>Administer the Synapse homeserver</p></li>
-      {% elif scope == "urn:mas:graphql:admin" %}
+      {% elif scope == "urn:mas:admin" %}
         <li>{{ icon::error() }}<p>Administer any user on the MAS authentication server</p></li>
       {% elif scope is matching("^urn:matrix:org.matrix.msc2967.client:device:") %}
         {# We hide this scope #}
