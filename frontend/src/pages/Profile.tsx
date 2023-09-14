@@ -15,6 +15,7 @@
 import { useAtomValue } from "jotai";
 
 import { currentUserIdAtom } from "../atoms";
+import ErrorBoundary from "../components/ErrorBoundary";
 import GraphQLError from "../components/GraphQLError";
 import NotLoggedIn from "../components/NotLoggedIn";
 import UserProfile from "../components/UserProfile";
@@ -27,7 +28,11 @@ const Profile: React.FC = () => {
   const userId = unwrapOk(result);
   if (userId === null) return <NotLoggedIn />;
 
-  return <UserProfile userId={userId} />;
+  return (
+    <ErrorBoundary>
+      <UserProfile userId={userId} />
+    </ErrorBoundary>
+  );
 };
 
 export default Profile;

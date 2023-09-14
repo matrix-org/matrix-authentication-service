@@ -16,6 +16,7 @@ import { useAtomValue } from "jotai";
 import { atomWithQuery } from "jotai-urql";
 
 import { mapQueryAtom } from "../atoms";
+import ErrorBoundary from "../components/ErrorBoundary";
 import GraphQLError from "../components/GraphQLError";
 import NotLoggedIn from "../components/NotLoggedIn";
 import UserSessionsOverview from "../components/UserSessionsOverview";
@@ -54,7 +55,11 @@ const SessionsOverview: React.FC = () => {
   const data = unwrapOk(result);
   if (data === null) return <NotLoggedIn />;
 
-  return <UserSessionsOverview user={data} />;
+  return (
+    <ErrorBoundary>
+      <UserSessionsOverview user={data} />
+    </ErrorBoundary>
+  );
 };
 
 export default SessionsOverview;

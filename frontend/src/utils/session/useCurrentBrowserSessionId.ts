@@ -21,26 +21,19 @@ import { isOk, unwrapOk, unwrapErr, isErr } from "../../result";
 /**
  * Query the current browser session id
  * and unwrap the result
+ * throws error when error result
  */
-export const useCurrentBrowserSessionId = (): {
-  currentBrowserSessionId?: string | null;
-  currentBrowserSessionIdError?: CombinedError;
-} => {
+export const useCurrentBrowserSessionId = (): string | null => {
   const currentSessionIdResult = useAtomValue(currentBrowserSessionIdAtom);
 
-  if (isOk<string | null, unknown>(currentSessionIdResult)) {
-    return {
-      currentBrowserSessionId: unwrapOk<string | null>(currentSessionIdResult),
-    };
-  }
-
   if (isErr(currentSessionIdResult)) {
-    return {
-      currentBrowserSessionIdError: unwrapErr(
-        currentSessionIdResult,
-      ) as CombinedError,
-    };
+    // eslint-disable-next-line no-throw-literal
+    throw unwrapErr<CombinedError>(currentSessionIdResult) as Error;
   }
 
-  return {};
+  if (isOk<string | null, unknown>(currentSessionIdResult)) {
+    return unwrapOk<string | null>(currentSessionIdResult);
+  }
+
+  return null;
 };

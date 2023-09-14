@@ -16,6 +16,7 @@ import { useAtomValue } from "jotai";
 
 import { currentUserIdAtom } from "../atoms";
 import List from "../components/BrowserSessionList";
+import ErrorBoundary from "../components/ErrorBoundary";
 import GraphQLError from "../components/GraphQLError";
 import NotLoggedIn from "../components/NotLoggedIn";
 import { isErr, unwrapErr, unwrapOk } from "../result";
@@ -27,7 +28,11 @@ const BrowserSessionList: React.FC = () => {
   const userId = unwrapOk(result);
   if (userId === null) return <NotLoggedIn />;
 
-  return <List userId={userId} />;
+  return (
+    <ErrorBoundary>
+      <List userId={userId} />
+    </ErrorBoundary>
+  );
 };
 
 export default BrowserSessionList;

@@ -24,7 +24,6 @@ import { useCurrentBrowserSessionId } from "../../utils/session/useCurrentBrowse
 import BlockList from "../BlockList/BlockList";
 import { useEndBrowserSession } from "../BrowserSession";
 import DateTime from "../DateTime";
-import GraphQLError from "../GraphQLError";
 import EndSessionButton from "../Session/EndSessionButton";
 
 import styles from "./BrowserSessionDetail.module.css";
@@ -36,14 +35,10 @@ type Props = {
 
 const BrowserSessionDetail: React.FC<Props> = ({ session }) => {
   const data = useFragment(BROWSER_SESSION_DETAIL_FRAGMENT, session);
-  const { currentBrowserSessionId, currentBrowserSessionIdError } =
-    useCurrentBrowserSessionId();
+  const currentBrowserSessionId = useCurrentBrowserSessionId();
 
   const isCurrent = currentBrowserSessionId === data.id;
   const onSessionEnd = useEndBrowserSession(data.id, isCurrent);
-
-  if (currentBrowserSessionIdError)
-    return <GraphQLError error={currentBrowserSessionIdError} />;
 
   const deviceInformation = parseUserAgent(data.userAgent || undefined);
   const sessionName =
