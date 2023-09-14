@@ -27,7 +27,6 @@ import {
   Pagination,
 } from "../pagination";
 import { isOk, unwrap, unwrapOk } from "../result";
-import { useCurrentBrowserSessionId } from "../utils/session/useCurrentBrowserSessionId";
 
 import BlockList from "./BlockList";
 import BrowserSession from "./BrowserSession";
@@ -112,7 +111,6 @@ const paginationFamily = atomFamily((userId: string) => {
 });
 
 const BrowserSessionList: React.FC<{ userId: string }> = ({ userId }) => {
-  const currentBrowserSessionId = useCurrentBrowserSessionId();
   const [pending, startTransition] = useTransition();
   const result = useAtomValue(browserSessionListFamily(userId));
   const setPagination = useSetAtom(currentPaginationAtom);
@@ -157,11 +155,7 @@ const BrowserSessionList: React.FC<{ userId: string }> = ({ userId }) => {
         Active only
       </label>
       {browserSessions.edges.map((n) => (
-        <BrowserSession
-          key={n.cursor}
-          session={n.node}
-          isCurrent={n.node.id === currentBrowserSessionId}
-        />
+        <BrowserSession key={n.cursor} session={n.node} />
       ))}
     </BlockList>
   );
