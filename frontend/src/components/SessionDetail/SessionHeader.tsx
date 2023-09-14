@@ -12,23 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import IconChevron from "@vector-im/compound-design-tokens/icons/chevron-left.svg";
-import { H3 } from "@vector-im/compound-web";
+import IconArrowLeft from "@vector-im/compound-design-tokens/icons/arrow-left.svg";
+import { H3, IconButton } from "@vector-im/compound-web";
 import { PropsWithChildren } from "react";
 
-import Link from "../../routing/Link";
+import { useNavigationLink } from "../../routing";
+import LoadingSpinner from "../LoadingSpinner";
 
 import styles from "./SessionHeader.module.css";
 
+const BackButton: React.FC = () => {
+  const { onClick, pending } = useNavigationLink({
+    type: "sessions-overview",
+  });
+
+  return (
+    <IconButton type="button" onClick={onClick}>
+      {pending ? <LoadingSpinner /> : <IconArrowLeft />}
+    </IconButton>
+  );
+};
+
 const SessionHeader: React.FC<PropsWithChildren> = ({ children }) => (
   <header className={styles.header}>
-    <Link
-      kind="button"
-      route={{ type: "sessions-overview" }}
-      title="Back to sessions"
-    >
-      <IconChevron height="1.5em" width="1.5em" className={styles.backIcon} />
-    </Link>
+    <BackButton />
     <H3>{children}</H3>
   </header>
 );
