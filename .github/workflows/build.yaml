@@ -21,6 +21,7 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+  IMAGE: ghcr.io/matrix-org/matrix-authentication-service
 
 jobs:
   build-binaries:
@@ -126,11 +127,9 @@ jobs:
   build-image:
     name: Build and push Docker image
     runs-on: ubuntu-latest
-    env:
-      IMAGE: ghcr.io/matrix-org/matrix-authentication-service
 
     outputs:
-      metadata: ${{ steps.bake.output.metadata }}
+      metadata: ${{ steps.bake.outputs.metadata }}
 
     permissions:
       contents: read
