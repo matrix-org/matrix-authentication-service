@@ -14,13 +14,11 @@
 
 use std::convert::Infallible;
 
-use hyper::{
-    client::{
-        connect::dns::{GaiResolver, Name},
-        HttpConnector,
-    },
-    Client,
+use hyper::client::{
+    connect::dns::{GaiResolver, Name},
+    HttpConnector,
 };
+pub use hyper::Client;
 use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
 use mas_tower::{
     DurationRecorderLayer, DurationRecorderService, FnWrapper, InFlightCounterLayer,

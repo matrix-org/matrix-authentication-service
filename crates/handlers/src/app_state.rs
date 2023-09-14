@@ -122,9 +122,7 @@ impl AppState {
 
         let http_service = self
             .http_client_factory
-            .http_service()
-            .await
-            .expect("Failed to create the HTTP service");
+            .http_service("upstream_oauth2.metadata");
 
         self.metadata_cache
             .warm_up_and_run(

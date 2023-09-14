@@ -188,7 +188,7 @@ pub(crate) async fn get(
         CodeOrError::Code { code } => code,
     };
 
-    let http_service = http_client_factory.http_service().await?;
+    let http_service = http_client_factory.http_service("upstream_oauth2.callback");
 
     // Discover the provider
     let metadata = metadata_cache.get(&http_service, &provider.issuer).await?;

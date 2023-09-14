@@ -67,7 +67,7 @@ impl Options {
     #[tracing::instrument(skip_all)]
     pub async fn run(self, root: &super::Options) -> anyhow::Result<()> {
         use Subcommand as SC;
-        let http_client_factory = HttpClientFactory::new(10);
+        let http_client_factory = HttpClientFactory::new().await?;
         match self.subcommand {
             SC::Http {
                 show_headers,
@@ -75,7 +75,7 @@ impl Options {
                 url,
             } => {
                 let _span = info_span!("cli.debug.http").entered();
-                let mut client = http_client_factory.client().await?;
+                let mut client = http_client_factory.client("debug");
                 let request = hyper::Request::builder()
                     .uri(url)
                     .body(hyper::Body::empty())?;
@@ -99,8 +99,7 @@ impl Options {
             } => {
                 let _span = info_span!("cli.debug.http").entered();
                 let mut client = http_client_factory
-                    .client()
-                    .await?
+                    .client("debug")
                     .response_body_to_bytes()
                     .json_response();
                 let request = hyper::Request::builder()

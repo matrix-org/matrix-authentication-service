@@ -40,7 +40,7 @@ impl InFlightCounterLayer {
     pub fn new(name: &'static str) -> Self {
         let counter = crate::meter()
             .i64_up_down_counter(name)
-            .with_unit(Unit::new("ms"))
+            .with_unit(Unit::new("{request}"))
             .with_description("The number of in-flight requests")
             .init();
 

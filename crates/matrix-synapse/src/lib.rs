@@ -154,8 +154,7 @@ impl HomeserverConnection for SynapseConnection {
     async fn query_user(&self, mxid: &str) -> Result<MatrixUser, Self::Error> {
         let mut client = self
             .http_client_factory
-            .client()
-            .await?
+            .client("homeserver.query_user")
             .response_body_to_bytes()
             .json_response();
 
@@ -218,8 +217,7 @@ impl HomeserverConnection for SynapseConnection {
 
         let mut client = self
             .http_client_factory
-            .client()
-            .await?
+            .client("homeserver.provision_user")
             .request_bytes_to_body()
             .json_request();
 
@@ -255,8 +253,7 @@ impl HomeserverConnection for SynapseConnection {
     async fn create_device(&self, mxid: &str, device_id: &str) -> Result<(), Self::Error> {
         let mut client = self
             .http_client_factory
-            .client()
-            .await?
+            .client("homeserver.create_device")
             .request_bytes_to_body()
             .json_request();
 
@@ -284,7 +281,7 @@ impl HomeserverConnection for SynapseConnection {
         err(Display),
     )]
     async fn delete_device(&self, mxid: &str, device_id: &str) -> Result<(), Self::Error> {
-        let mut client = self.http_client_factory.client().await?;
+        let mut client = self.http_client_factory.client("homeserver.delete_device");
 
         let request = self
             .delete(&format!(
@@ -314,8 +311,7 @@ impl HomeserverConnection for SynapseConnection {
     async fn delete_user(&self, mxid: &str, erase: bool) -> Result<(), Self::Error> {
         let mut client = self
             .http_client_factory
-            .client()
-            .await?
+            .client("homeserver.delete_user")
             .request_bytes_to_body()
             .json_request();
 
@@ -345,8 +341,7 @@ impl HomeserverConnection for SynapseConnection {
     async fn set_displayname(&self, mxid: &str, displayname: &str) -> Result<(), Self::Error> {
         let mut client = self
             .http_client_factory
-            .client()
-            .await?
+            .client("homeserver.set_displayname")
             .request_bytes_to_body()
             .json_request();
 
