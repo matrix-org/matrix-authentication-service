@@ -1,0 +1,49 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`<ConfirmationModal /> > opens modal on clicking trigger 1`] = `
+<div
+  aria-describedby="radix-:r5:"
+  aria-labelledby="radix-:r4:"
+  class="_content_6bc2cb test"
+  data-state="open"
+  id="radix-:r3:"
+  role="alertdialog"
+  style="pointer-events: auto;"
+  tabindex="-1"
+>
+  <h2
+    id="radix-:r4:"
+  >
+    Are you sure?
+  </h2>
+  <p
+    id="radix-:r5:"
+  >
+    Some extra information.
+  </p>
+  <div
+    class="_buttons_6bc2cb"
+  >
+    <button
+      class="_button_1raud_17"
+      data-kind="tertiary"
+      data-size="sm"
+      role="button"
+      tabindex="0"
+      type="button"
+    >
+      Cancel
+    </button>
+    <button
+      class="_button_1raud_17"
+      data-kind="destructive"
+      data-size="sm"
+      role="button"
+      tabindex="0"
+      type="button"
+    >
+      Continue
+    </button>
+  </div>
+</div>
+`;

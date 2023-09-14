@@ -12,10 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// @vitest-environment happy-dom
+
 import { create } from "react-test-renderer";
 import { describe, expect, it, vi } from "vitest";
 
 import { FragmentType } from "../gql/fragment-masking";
+import { WithLocation } from "../test-utils/WithLocation";
 
 import DateTime from "./DateTime";
 import OAuth2Session, { OAUTH2_SESSION_FRAGMENT } from "./OAuth2Session";
@@ -47,7 +50,11 @@ describe("<OAuth2Session />", () => {
   const finishedAt = "2023-06-29T03:35:19.451292+00:00";
 
   it("renders an active session", () => {
-    const component = create(<OAuth2Session {...defaultProps} />);
+    const component = create(
+      <WithLocation>
+        <OAuth2Session {...defaultProps} />
+      </WithLocation>,
+    );
     expect(component.toJSON()).toMatchSnapshot();
   });
 
@@ -56,7 +63,11 @@ describe("<OAuth2Session />", () => {
       ...defaultProps.session,
       finishedAt,
     };
-    const component = create(<OAuth2Session session={finishedSession} />);
+    const component = create(
+      <WithLocation>
+        <OAuth2Session session={finishedSession} />
+      </WithLocation>,
+    );
     expect(component.toJSON()).toMatchSnapshot();
   });
 });

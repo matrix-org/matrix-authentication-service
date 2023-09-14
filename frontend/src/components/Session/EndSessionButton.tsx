@@ -15,6 +15,7 @@
 import { Button } from "@vector-im/compound-web";
 import { useState } from "react";
 
+import ConfirmationModal from "../ConfirmationModal/ConfirmationModal";
 import LoadingSpinner from "../LoadingSpinner/LoadingSpinner";
 
 /**
@@ -25,7 +26,8 @@ const EndSessionButton: React.FC<{ endSession: () => Promise<void> }> = ({
   endSession,
 }) => {
   const [inProgress, setInProgress] = useState(false);
-  const onClick = async (): Promise<void> => {
+
+  const onConfirm = async (): Promise<void> => {
     setInProgress(true);
     try {
       await endSession();
@@ -34,15 +36,23 @@ const EndSessionButton: React.FC<{ endSession: () => Promise<void> }> = ({
     }
     setInProgress(false);
   };
+
+  // NOOP so we render cancel button
+  const onDeny = (): void => {};
+
   return (
-    <Button
-      kind="destructive"
-      size="sm"
-      onClick={onClick}
-      disabled={inProgress}
-    >
-      {inProgress && <LoadingSpinner inline />}End session
-    </Button>
+    <>
+      <ConfirmationModal
+        onDeny={onDeny}
+        onConfirm={onConfirm}
+        title="Are you sure you want to end this session?"
+        trigger={
+          <Button kind="destructive" size="sm" disabled={inProgress}>
+            {inProgress && <LoadingSpinner inline />}End session
+          </Button>
+        }
+      />
+    </>
   );
 };
 

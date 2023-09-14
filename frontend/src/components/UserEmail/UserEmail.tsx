@@ -17,10 +17,11 @@ import { Body } from "@vector-im/compound-web";
 import { atom, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
-import { useTransition } from "react";
+import { useTransition, ComponentProps } from "react";
 
 import { FragmentType, graphql, useFragment } from "../../gql";
 import { Link } from "../../routing";
+import ConfirmationModal from "../ConfirmationModal/ConfirmationModal";
 
 import styles from "./UserEmail.module.css";
 
@@ -99,6 +100,29 @@ const DeleteButton: React.FC<{ disabled?: boolean; onClick?: () => void }> = ({
   </button>
 );
 
+const DeleteButtonWithConfirmation: React.FC<
+  ComponentProps<typeof DeleteButton>
+> = ({ onClick, ...rest }) => {
+  const onConfirm = (): void => {
+    onClick?.();
+  };
+
+  // NOOP function, otherwise we dont render a cancel button
+  const onDeny = (): void => {};
+
+  return (
+    <>
+      <ConfirmationModal
+        trigger={<DeleteButton {...rest} />}
+        onDeny={onDeny}
+        onConfirm={onConfirm}
+      >
+        <Body>Are you sure you want to remove this email?</Body>
+      </ConfirmationModal>
+    </>
+  );
+};
+
 const UserEmail: React.FC<{
   email: FragmentType<typeof FRAGMENT>;
   onRemove?: () => void;
@@ -135,7 +159,10 @@ const UserEmail: React.FC<{
 
       <div className={styles.userEmailLine}>
         <div className={styles.userEmailField}>{data.email}</div>
-        <DeleteButton disabled={isPrimary || pending} onClick={onRemoveClick} />
+        <DeleteButtonWithConfirmation
+          disabled={isPrimary || pending}
+          onClick={onRemoveClick}
+        />
       </div>
       {data.confirmedAt && !isPrimary && (
         <button

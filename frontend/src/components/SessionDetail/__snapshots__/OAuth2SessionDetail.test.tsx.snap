@@ -190,11 +190,16 @@ exports[`<OAuth2SessionDetail> > renders session details 1`] = `
       </ul>
     </div>
     <button
+      aria-controls="radix-:r0:"
+      aria-expanded="false"
+      aria-haspopup="dialog"
       class="_button_1raud_17"
       data-kind="destructive"
       data-size="sm"
+      data-state="closed"
       role="button"
       tabindex="0"
+      type="button"
     >
       End session
     </button>
