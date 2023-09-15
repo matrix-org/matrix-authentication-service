@@ -171,8 +171,11 @@ fn host_is_public_suffix(url: &Url) -> bool {
         return false;
     }
 
-    if host.len() < suffix.as_bytes().len() + 2 {
-        // Host is too short to be a valid domain
+    // We want to cover two cases:
+    // - The host is the suffix itself, like `com`
+    // - The host is a dot followed by the suffix, like `.com`
+    if host.len() <= suffix.as_bytes().len() + 1 {
+        // The host only has the suffix in it, so it's a public suffix
         return true;
     }
 
@@ -323,10 +326,14 @@ mod tests {
             host_is_public_suffix(&Url::parse(url).unwrap())
         }
 
+        assert!(url_is_public_suffix("https://.com"));
         assert!(url_is_public_suffix("https://.com."));
         assert!(url_is_public_suffix("https://co.uk"));
         assert!(url_is_public_suffix("https://github.io"));
         assert!(!url_is_public_suffix("https://example.com"));
+        assert!(!url_is_public_suffix("https://example.com."));
+        assert!(!url_is_public_suffix("https://x.com"));
+        assert!(!url_is_public_suffix("https://x.com."));
         assert!(!url_is_public_suffix("https://matrix-org.github.io"));
         assert!(!url_is_public_suffix("http://localhost"));
         assert!(!url_is_public_suffix("org.matrix:/callback"));
