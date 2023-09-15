@@ -16,7 +16,7 @@ schemars = {version = "0.8.13", optional = true }
 thiserror.workspace = true
 tokio = { version = "1.32.0", features = ["io-util", "rt"] }
 tracing.workspace = true
-wasmtime = { version = "12.0.1", default-features = false, features = ["async", "cranelift"] }
+wasmtime = { version = "12.0.2", default-features = false, features = ["async", "cranelift"] }
 
 mas-data-model = { path = "../data-model" }
 oauth2-types = { path = "../oauth2-types" }
