@@ -54,7 +54,7 @@ host_matches_client_uri(x) {
 host_matches_client_uri(x) {
 	client_uri := parse_uri(input.client_metadata.client_uri)
 	uri := parse_uri(x)
-	uri.host == client_uri.host
+	is_subdomain(client_uri.host, uri.host)
 }
 
 violation[{"msg": "missing client_uri"}] {
@@ -168,6 +168,21 @@ reverse_dns_match(host, reverse_dns) {
 
 	# Check that the reverse_dns strictly is a subdomain of the host
 	array.slice(dns_parts, 0, count(host_parts)) == host_parts
+}
+
+# Used to verify that all the various URIs are subdomains of the client_uri
+is_subdomain(host, subdomain) {
+    is_string(host)
+    is_string(subdomain)
+
+    # Split the host
+    host_parts := array.reverse(split(host, "."))
+
+    # Split the subdomain
+    subdomain_parts := array.reverse(split(subdomain, "."))
+
+    # Check that the subdomain strictly is a subdomain of the host
+    array.slice(subdomain_parts, 0, count(host_parts)) == host_parts
 }
 
 valid_native_redirector(x) {

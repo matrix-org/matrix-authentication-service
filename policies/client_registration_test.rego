@@ -63,6 +63,14 @@ test_tos_uri {
 		"contacts": ["contact@example.com"],
 	}
 
+	# TOS on a subdomain of the client_uri host is allowed
+	allow with input.client_metadata as {
+		"grant_types": [],
+		"client_uri": "https://example.com/",
+		"tos_uri": "https://tos.example.com/",
+		"contacts": ["contact@example.com"],
+	}
+
 	# Host mistmatch, but allowed by the config
 	allow with input.client_metadata as {
 		"grant_types": [],
@@ -106,6 +114,14 @@ test_logo_uri {
 		"contacts": ["contact@example.com"],
 	}
 
+	# Logo on a subdomain of the client_uri host is allowed
+	allow with input.client_metadata as {
+		"grant_types": [],
+		"client_uri": "https://example.com/",
+		"logo_uri": "https://static.example.com/logo.png",
+		"contacts": ["contact@example.com"],
+	}
+
 	# Host mistmatch, but allowed by the config
 	allow with input.client_metadata as {
 		"grant_types": [],
@@ -146,6 +162,14 @@ test_policy_uri {
 		"grant_types": [],
 		"client_uri": "https://example.com/",
 		"policy_uri": "https://example.org/policy",
+		"contacts": ["contact@example.com"],
+	}
+
+	# Policy on a subdomain of the client_uri host is allowed
+	allow with input.client_metadata as {
+		"grant_types": [],
+		"client_uri": "https://example.com/",
+		"policy_uri": "https://policy.example.com/",
 		"contacts": ["contact@example.com"],
 	}
 
@@ -243,6 +267,14 @@ test_web_redirect_uri {
 		"contacts": ["contact@example.com"],
 	}
 		with data.client_registration.allow_host_mismatch as true
+
+	# Redirect URI on a subdomain of the client_uri host is allowed
+	allow with input.client_metadata as {
+		"application_type": "web",
+		"client_uri": "https://example.com/",
+		"redirect_uris": ["https://app.example.com/callback"],
+		"contacts": ["contact@example.com"],
+	}
 
 	# No custom scheme allowed
 	not allow with input.client_metadata as {
@@ -400,4 +432,18 @@ test_client_credentials_grant {
 		"client_uri": "https://example.com/",
 		"contacts": ["contact@example.com"],
 	}
+}
+
+test_is_subdomain {
+    is_subdomain("example.com", "example.com")
+    is_subdomain("example.com", "app.example.com")
+    not is_subdomain("example.com", "example.org")
+    not is_subdomain("test.com", "example.com")
+}
+
+test_reverse_dns_match {
+    reverse_dns_match("example.com", "com.example")
+    reverse_dns_match("example.com", "com.example.app")
+    not reverse_dns_match("example.com", "org.example")
+    not reverse_dns_match("test.com", "com.example")
 }
