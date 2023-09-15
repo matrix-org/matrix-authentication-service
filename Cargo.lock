@@ -2844,6 +2844,7 @@ dependencies = [
  "opentelemetry",
  "opentelemetry-semantic-conventions",
  "pbkdf2",
+ "psl",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
  "sentry",
@@ -4166,6 +4167,15 @@ name = "protobuf"
 version = "2.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "106dd99e98437432fed6519dedecfade6a06a73bb7b2a1e019fdd2bee5778d94"
+
+[[package]]
+name = "psl"
+version = "2.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4a1be0afcd844b15cfce18bf8cccf2dfa887a00a6454a9ea135f122b948cee91"
+dependencies = [
+ "psl-types",
+]
 
 [[package]]
 name = "psl-types"
