@@ -2,121 +2,137 @@
 
 exports[`<Session /> > renders a finished session 1`] = `
 <div
-  className="_block_17898c"
+  className="_block_17898c _session_634806"
 >
-  <h6
-    className="_font-body-md-semibold_1jx6b_64 _sessionName_634806"
-    title="session-id"
+  <div
+    className="_container_634806"
   >
-    session-id
-  </h6>
-  <p
-    className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
-  >
-    Signed in 
-    <code>
-      2023-06-29T03:35:17.451292+00:00
-    </code>
-  </p>
-  <p
-    className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
-    data-finished={true}
-  >
-    Finished 
-    <code>
-      2023-06-29T03:35:19.451292+00:00
-    </code>
-  </p>
+    <h6
+      className="_font-body-md-semibold_1jx6b_64 _sessionName_634806"
+      title="session-id"
+    >
+      session-id
+    </h6>
+    <p
+      className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+    >
+      Signed in 
+      <code>
+        2023-06-29T03:35:17.451292+00:00
+      </code>
+    </p>
+    <p
+      className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+      data-finished={true}
+    >
+      Finished 
+      <code>
+        2023-06-29T03:35:19.451292+00:00
+      </code>
+    </p>
+  </div>
 </div>
 `;
 
 exports[`<Session /> > renders an active session 1`] = `
 <div
-  className="_block_17898c"
+  className="_block_17898c _session_634806"
 >
-  <h6
-    className="_font-body-md-semibold_1jx6b_64 _sessionName_634806"
-    title="session-id"
+  <div
+    className="_container_634806"
   >
-    session-id
-  </h6>
-  <p
-    className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
-  >
-    Signed in 
-    <code>
-      2023-06-29T03:35:17.451292+00:00
-    </code>
-  </p>
+    <h6
+      className="_font-body-md-semibold_1jx6b_64 _sessionName_634806"
+      title="session-id"
+    >
+      session-id
+    </h6>
+    <p
+      className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+    >
+      Signed in 
+      <code>
+        2023-06-29T03:35:17.451292+00:00
+      </code>
+    </p>
+  </div>
 </div>
 `;
 
 exports[`<Session /> > uses client name when truthy 1`] = `
 <div
-  className="_block_17898c"
+  className="_block_17898c _session_634806"
 >
-  <h6
-    className="_font-body-md-semibold_1jx6b_64 _sessionName_634806"
-    title="session-id"
+  <div
+    className="_container_634806"
   >
-    session-id
-  </h6>
-  <p
-    className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
-  >
-    Signed in 
-    <code>
-      2023-06-29T03:35:17.451292+00:00
-    </code>
-  </p>
-  <p
-    className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
-    data-finished={true}
-  >
-    Finished 
-    <code>
-      2023-06-29T03:35:19.451292+00:00
-    </code>
-  </p>
-  <p
-    className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
-  >
-     
-    <span
+    <h6
+      className="_font-body-md-semibold_1jx6b_64 _sessionName_634806"
+      title="session-id"
+    >
+      session-id
+    </h6>
+    <p
       className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
     >
-      Element
-    </span>
-  </p>
+      Signed in 
+      <code>
+        2023-06-29T03:35:17.451292+00:00
+      </code>
+    </p>
+    <p
+      className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+      data-finished={true}
+    >
+      Finished 
+      <code>
+        2023-06-29T03:35:19.451292+00:00
+      </code>
+    </p>
+    <p
+      className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
+    >
+       
+      <span
+        className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+      >
+        Element
+      </span>
+    </p>
+  </div>
 </div>
 `;
 
 exports[`<Session /> > uses session name when truthy 1`] = `
 <div
-  className="_block_17898c"
+  className="_block_17898c _session_634806"
 >
-  <h6
-    className="_font-body-md-semibold_1jx6b_64 _sessionName_634806"
-    title="session-id"
+  <div
+    className="_container_634806"
   >
-    test session name
-  </h6>
-  <p
-    className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
-  >
-    Signed in 
-    <code>
-      2023-06-29T03:35:17.451292+00:00
-    </code>
-  </p>
-  <p
-    className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
-    data-finished={true}
-  >
-    Finished 
-    <code>
-      2023-06-29T03:35:19.451292+00:00
-    </code>
-  </p>
+    <h6
+      className="_font-body-md-semibold_1jx6b_64 _sessionName_634806"
+      title="session-id"
+    >
+      test session name
+    </h6>
+    <p
+      className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+    >
+      Signed in 
+      <code>
+        2023-06-29T03:35:17.451292+00:00
+      </code>
+    </p>
+    <p
+      className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+      data-finished={true}
+    >
+      Finished 
+      <code>
+        2023-06-29T03:35:19.451292+00:00
+      </code>
+    </p>
+  </div>
 </div>
 `;
