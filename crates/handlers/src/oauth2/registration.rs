@@ -25,9 +25,11 @@ use oauth2_types::{
         ClientMetadata, ClientMetadataVerificationError, ClientRegistrationResponse, Localized,
     },
 };
+use psl::Psl;
 use rand::distributions::{Alphanumeric, DistString};
 use thiserror::Error;
 use tracing::info;
+use url::Url;
 
 use crate::impl_from_error_for_route;
 
@@ -41,6 +43,9 @@ pub(crate) enum RouteError {
 
     #[error("invalid client metadata")]
     InvalidClientMetadata(#[from] ClientMetadataVerificationError),
+
+    #[error("{0} is a public suffix, not a valid domain")]
+    UrlIsPublicSuffix(&'static str),
 
     #[error("denied by the policy: {0:?}")]
     PolicyDenied(Vec<Violation>),
@@ -102,6 +107,27 @@ impl IntoResponse for RouteError {
             )
                 .into_response(),
 
+            // This error happens if the any of the client's URIs are public suffixes. We return
+            // an `invalid_redirect_uri` error if it's a `redirect_uri`, else we return an
+            // `invalid_client_metadata` error.
+            Self::UrlIsPublicSuffix("redirect_uri") => (
+                StatusCode::BAD_REQUEST,
+                Json(
+                    ClientError::from(ClientErrorCode::InvalidRedirectUri)
+                        .with_description("redirect_uri is not using a valid domain".to_owned()),
+                ),
+            )
+                .into_response(),
+
+            Self::UrlIsPublicSuffix(field) => (
+                StatusCode::BAD_REQUEST,
+                Json(
+                    ClientError::from(ClientErrorCode::InvalidClientMetadata)
+                        .with_description(format!("{field} is not using a valid domain")),
+                ),
+            )
+                .into_response(),
+
             // For policy violations, we return an `invalid_client_metadata` error with the details
             // of the violations in most cases. If a violation includes `redirect_uri` in the
             // message, we return an `invalid_redirect_uri` error instead.
@@ -131,6 +157,33 @@ impl IntoResponse for RouteError {
     }
 }
 
+/// Check if the host of the given URL is a public suffix
+fn host_is_public_suffix(url: &Url) -> bool {
+    let host = url.host_str().unwrap_or_default().as_bytes();
+    let Some(suffix) = psl::List.suffix(host) else {
+        // There is no suffix, which is the case for empty hosts, like with custom
+        // schemes
+        return false;
+    };
+
+    if !suffix.is_known() {
+        // The suffix is not known, so it's not a public suffix
+        return false;
+    }
+
+    if host.len() < suffix.as_bytes().len() + 2 {
+        // Host is too short to be a valid domain
+        return true;
+    }
+
+    false
+}
+
+/// Check if any of the URLs in the given `Localized` field is a public suffix
+fn localised_url_has_public_suffix(url: &Localized<Url>) -> bool {
+    url.iter().any(|(_lang, url)| host_is_public_suffix(url))
+}
+
 #[tracing::instrument(name = "handlers.oauth2.registration.post", skip_all, err)]
 pub(crate) async fn post(
     mut rng: BoxRng,
@@ -147,6 +200,44 @@ pub(crate) async fn post(
 
     // Validate the body
     let metadata = body.validate()?;
+
+    // Some extra validation that is hard to do in OPA and not done by the
+    // `validate` method either
+    if let Some(client_uri) = &metadata.client_uri {
+        if localised_url_has_public_suffix(client_uri) {
+            return Err(RouteError::UrlIsPublicSuffix("client_uri"));
+        }
+    }
+
+    if let Some(logo_uri) = &metadata.logo_uri {
+        if localised_url_has_public_suffix(logo_uri) {
+            return Err(RouteError::UrlIsPublicSuffix("logo_uri"));
+        }
+    }
+
+    if let Some(policy_uri) = &metadata.policy_uri {
+        if localised_url_has_public_suffix(policy_uri) {
+            return Err(RouteError::UrlIsPublicSuffix("policy_uri"));
+        }
+    }
+
+    if let Some(tos_uri) = &metadata.tos_uri {
+        if localised_url_has_public_suffix(tos_uri) {
+            return Err(RouteError::UrlIsPublicSuffix("tos_uri"));
+        }
+    }
+
+    if let Some(initiate_login_uri) = &metadata.initiate_login_uri {
+        if host_is_public_suffix(initiate_login_uri) {
+            return Err(RouteError::UrlIsPublicSuffix("initiate_login_uri"));
+        }
+    }
+
+    for redirect_uri in metadata.redirect_uris() {
+        if host_is_public_suffix(redirect_uri) {
+            return Err(RouteError::UrlIsPublicSuffix("redirect_uri"));
+        }
+    }
 
     let res = policy.evaluate_client_registration(&metadata).await?;
     if !res.valid() {
@@ -219,8 +310,28 @@ mod tests {
         registration::ClientRegistrationResponse,
     };
     use sqlx::PgPool;
+    use url::Url;
 
-    use crate::test_utils::{init_tracing, RequestBuilderExt, ResponseExt, TestState};
+    use crate::{
+        oauth2::registration::host_is_public_suffix,
+        test_utils::{init_tracing, RequestBuilderExt, ResponseExt, TestState},
+    };
+
+    #[test]
+    fn test_public_suffix_list() {
+        fn url_is_public_suffix(url: &str) -> bool {
+            host_is_public_suffix(&Url::parse(url).unwrap())
+        }
+
+        assert!(url_is_public_suffix("https://.com."));
+        assert!(url_is_public_suffix("https://co.uk"));
+        assert!(url_is_public_suffix("https://github.io"));
+        assert!(!url_is_public_suffix("https://example.com"));
+        assert!(!url_is_public_suffix("https://matrix-org.github.io"));
+        assert!(!url_is_public_suffix("http://localhost"));
+        assert!(!url_is_public_suffix("org.matrix:/callback"));
+        assert!(!url_is_public_suffix("http://somerandominternaldomain"));
+    }
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
     async fn test_registration_error(pool: PgPool) {
@@ -276,6 +387,47 @@ mod tests {
         response.assert_status(StatusCode::BAD_REQUEST);
         let response: ClientError = response.json();
         assert_eq!(response.error, ClientErrorCode::InvalidClientMetadata);
+
+        // Using a public suffix
+        let request =
+            Request::post(mas_router::OAuth2RegistrationEndpoint::PATH).json(serde_json::json!({
+                "contacts": ["hello@example.com"],
+                "client_uri": "https://github.io/",
+                "redirect_uris": ["https://github.io/"],
+                "response_types": ["code"],
+                "grant_types": ["authorization_code"],
+                "token_endpoint_auth_method": "client_secret_basic",
+            }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::BAD_REQUEST);
+        let response: ClientError = response.json();
+        assert_eq!(response.error, ClientErrorCode::InvalidClientMetadata);
+        assert_eq!(
+            response.error_description.unwrap(),
+            "client_uri is not using a valid domain"
+        );
+
+        // Using a public suffix in a translated URL
+        let request =
+            Request::post(mas_router::OAuth2RegistrationEndpoint::PATH).json(serde_json::json!({
+                "contacts": ["hello@example.com"],
+                "client_uri": "https://example.com/",
+                "client_uri#fr-FR": "https://github.io/",
+                "redirect_uris": ["https://example.com/"],
+                "response_types": ["code"],
+                "grant_types": ["authorization_code"],
+                "token_endpoint_auth_method": "client_secret_basic",
+            }));
+
+        let response = state.request(request).await;
+        response.assert_status(StatusCode::BAD_REQUEST);
+        let response: ClientError = response.json();
+        assert_eq!(response.error, ClientErrorCode::InvalidClientMetadata);
+        assert_eq!(
+            response.error_description.unwrap(),
+            "client_uri is not using a valid domain"
+        );
     }
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
