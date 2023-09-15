@@ -2,103 +2,111 @@
 
 exports[`<CompatSession /> > renders a finished session 1`] = `
 <div
-  className="_block_17898c"
+  className="_block_17898c _session_634806"
 >
-  <h6
-    className="_font-body-md-semibold_1jx6b_64 _sessionName_634806"
-    title="session-id"
+  <div
+    className="_container_634806"
   >
-    <a
-      className=""
-      href="/session/abcd1234"
-      onClick={[Function]}
+    <h6
+      className="_font-body-md-semibold_1jx6b_64 _sessionName_634806"
+      title="session-id"
     >
-      abcd1234
-    </a>
-  </h6>
-  <p
-    className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
-  >
-    Signed in 
-    <code>
-      2023-06-29T03:35:17.451292+00:00
-    </code>
-  </p>
-  <p
-    className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
-    data-finished={true}
-  >
-    Finished 
-    <code>
-      2023-06-29T03:35:19.451292+00:00
-    </code>
-  </p>
-  <p
-    className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
-  >
-     
-    <span
+      <a
+        className=""
+        href="/session/abcd1234"
+        onClick={[Function]}
+      >
+        abcd1234
+      </a>
+    </h6>
+    <p
       className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
     >
-      element.io
-    </span>
-  </p>
+      Signed in 
+      <code>
+        2023-06-29T03:35:17.451292+00:00
+      </code>
+    </p>
+    <p
+      className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+      data-finished={true}
+    >
+      Finished 
+      <code>
+        2023-06-29T03:35:19.451292+00:00
+      </code>
+    </p>
+    <p
+      className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
+    >
+       
+      <span
+        className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+      >
+        element.io
+      </span>
+    </p>
+  </div>
 </div>
 `;
 
 exports[`<CompatSession /> > renders an active session 1`] = `
 <div
-  className="_block_17898c"
+  className="_block_17898c _session_634806"
 >
-  <h6
-    className="_font-body-md-semibold_1jx6b_64 _sessionName_634806"
-    title="session-id"
+  <div
+    className="_container_634806"
   >
-    <a
-      className=""
-      href="/session/abcd1234"
-      onClick={[Function]}
+    <h6
+      className="_font-body-md-semibold_1jx6b_64 _sessionName_634806"
+      title="session-id"
     >
-      abcd1234
-    </a>
-  </h6>
-  <p
-    className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
-  >
-    Signed in 
-    <code>
-      2023-06-29T03:35:17.451292+00:00
-    </code>
-  </p>
-  <p
-    className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
-  >
-     
-    <span
+      <a
+        className=""
+        href="/session/abcd1234"
+        onClick={[Function]}
+      >
+        abcd1234
+      </a>
+    </h6>
+    <p
       className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
     >
-      element.io
-    </span>
-  </p>
-  <div
-    className="_sessionActions_634806"
-  >
-    <button
-      aria-controls="radix-:r0:"
-      aria-expanded={false}
-      aria-haspopup="dialog"
-      className="_button_1raud_17"
-      data-kind="destructive"
-      data-size="sm"
-      data-state="closed"
-      disabled={false}
-      onClick={[Function]}
-      role="button"
-      tabIndex={0}
-      type="button"
+      Signed in 
+      <code>
+        2023-06-29T03:35:17.451292+00:00
+      </code>
+    </p>
+    <p
+      className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
     >
-      End session
-    </button>
+       
+      <span
+        className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+      >
+        element.io
+      </span>
+    </p>
+    <div
+      className="_sessionActions_634806"
+    >
+      <button
+        aria-controls="radix-:r0:"
+        aria-expanded={false}
+        aria-haspopup="dialog"
+        className="_button_1raud_17"
+        data-kind="destructive"
+        data-size="sm"
+        data-state="closed"
+        disabled={false}
+        onClick={[Function]}
+        role="button"
+        tabIndex={0}
+        type="button"
+      >
+        End session
+      </button>
+    </div>
   </div>
 </div>
 `;
