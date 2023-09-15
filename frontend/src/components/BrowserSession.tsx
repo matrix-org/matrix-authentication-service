@@ -117,6 +117,7 @@ const BrowserSession: React.FC<Props> = ({ session }) => {
       createdAt={createdAt}
       finishedAt={data.finishedAt}
       isCurrent={isCurrent}
+      deviceType={deviceInformation?.deviceType}
     >
       {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
     </Session>
