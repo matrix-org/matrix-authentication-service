@@ -435,15 +435,15 @@ test_client_credentials_grant {
 }
 
 test_is_subdomain {
-    is_subdomain("example.com", "example.com")
-    is_subdomain("example.com", "app.example.com")
-    not is_subdomain("example.com", "example.org")
-    not is_subdomain("test.com", "example.com")
+	is_subdomain("example.com", "example.com")
+	is_subdomain("example.com", "app.example.com")
+	not is_subdomain("example.com", "example.org")
+	not is_subdomain("test.com", "example.com")
 }
 
 test_reverse_dns_match {
-    reverse_dns_match("example.com", "com.example")
-    reverse_dns_match("example.com", "com.example.app")
-    not reverse_dns_match("example.com", "org.example")
-    not reverse_dns_match("test.com", "com.example")
+	reverse_dns_match("example.com", "com.example")
+	reverse_dns_match("example.com", "com.example.app")
+	not reverse_dns_match("example.com", "org.example")
+	not reverse_dns_match("test.com", "com.example")
 }
