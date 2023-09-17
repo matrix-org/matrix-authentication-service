@@ -18,7 +18,7 @@ limitations under the License.
 
 {% block content %}
   <section class="flex items-center justify-center flex-1">
-    <form method="POST" class="grid grid-cols-1 gap-6 w-96 m-2">
+    <form method="POST" class="grid grid-cols-1 gap-6 w-96 my-2 mx-8">
       {% if not password_disabled %}
         {% if next and next.kind == "link_upstream" %}
           <div class="text-center">
