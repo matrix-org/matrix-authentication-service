@@ -25,6 +25,16 @@ use oauth2_types::{
     requests::{Display, GrantType, Prompt, ResponseMode},
     scope,
 };
+use serde::Serialize;
+
+#[derive(Debug, Serialize)]
+struct DiscoveryResponse {
+    #[serde(flatten)]
+    standard: ProviderMetadata,
+
+    #[serde(rename = "org.matrix.matrix-authentication-service.graphql_endpoint")]
+    graphql_endpoint: url::Url,
+}
 
 #[tracing::instrument(name = "handlers.oauth2.discovery.get", skip_all)]
 #[allow(clippy::too_many_lines)]
@@ -122,7 +132,7 @@ pub(crate) async fn get(
 
     let prompt_values_supported = Some(vec![Prompt::None, Prompt::Login, Prompt::Create]);
 
-    let metadata = ProviderMetadata {
+    let standard = ProviderMetadata {
         issuer,
         authorization_endpoint,
         token_endpoint,
@@ -155,7 +165,10 @@ pub(crate) async fn get(
         ..ProviderMetadata::default()
     };
 
-    Json(metadata)
+    Json(DiscoveryResponse {
+        standard,
+        graphql_endpoint: url_builder.graphql_endpoint(),
+    })
 }
 
 #[cfg(test)]

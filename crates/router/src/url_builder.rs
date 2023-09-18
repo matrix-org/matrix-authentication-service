@@ -121,6 +121,12 @@ impl UrlBuilder {
         &self.assets_base
     }
 
+    /// GraphQL endpoint
+    #[must_use]
+    pub fn graphql_endpoint(&self) -> Url {
+        self.url_for(&crate::endpoints::GraphQL)
+    }
+
     /// Upstream redirect URI
     #[must_use]
     pub fn upstream_oauth_callback(&self, id: Ulid) -> Url {

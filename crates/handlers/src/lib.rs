@@ -118,7 +118,7 @@ where
 {
     let mut router = Router::new()
         .route(
-            "/graphql",
+            mas_router::GraphQL::route(),
             get(self::graphql::get).post(self::graphql::post),
         )
         .layer(
@@ -135,7 +135,10 @@ where
         );
 
     if playground {
-        router = router.route("/graphql/playground", get(self::graphql::playground));
+        router = router.route(
+            mas_router::GraphQLPlayground::route(),
+            get(self::graphql::playground),
+        );
     }
 
     router
