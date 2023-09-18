@@ -40,7 +40,7 @@ describe("<UnverifiedEmailAlert />", () => {
 
     const { container } = render(
       <WithLocation>
-        <UnverifiedEmailAlert unverifiedEmails={data} />
+        <UnverifiedEmailAlert user={data} />
       </WithLocation>,
     );
 
@@ -60,7 +60,7 @@ describe("<UnverifiedEmailAlert />", () => {
 
     const { container } = render(
       <WithLocation>
-        <UnverifiedEmailAlert unverifiedEmails={data} />
+        <UnverifiedEmailAlert user={data} />
       </WithLocation>,
     );
 
@@ -80,7 +80,7 @@ describe("<UnverifiedEmailAlert />", () => {
 
     const { container, getByText, getByLabelText } = render(
       <WithLocation>
-        <UnverifiedEmailAlert unverifiedEmails={data} />
+        <UnverifiedEmailAlert user={data} />
       </WithLocation>,
     );
 

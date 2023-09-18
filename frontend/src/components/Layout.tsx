@@ -16,6 +16,7 @@ import { useAtomValue } from "jotai";
 
 import { currentUserIdAtom } from "../atoms";
 import { isErr, unwrapErr, unwrapOk } from "../result";
+import { routeAtom } from "../routing";
 
 import GraphQLError from "./GraphQLError";
 import styles from "./Layout.module.css";
@@ -25,8 +26,12 @@ import NotLoggedIn from "./NotLoggedIn";
 import UserGreeting from "./UserGreeting";
 
 const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+  const route = useAtomValue(routeAtom);
   const result = useAtomValue(currentUserIdAtom);
   if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
+
+  // Hide the nav bar & user greeting on the verify-email page
+  const shouldHideNavBar = route.type === "verify-email";
 
   const userId = unwrapOk(result);
   if (userId === null)
@@ -38,12 +43,16 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
 
   return (
     <div className={styles.container}>
-      <UserGreeting userId={userId} />
+      {shouldHideNavBar ? null : (
+        <>
+          <UserGreeting userId={userId} />
 
-      <NavBar>
-        <NavItem route={{ type: "profile" }}>Profile</NavItem>
-        <NavItem route={{ type: "sessions-overview" }}>Sessions</NavItem>
-      </NavBar>
+          <NavBar>
+            <NavItem route={{ type: "profile" }}>Profile</NavItem>
+            <NavItem route={{ type: "sessions-overview" }}>Sessions</NavItem>
+          </NavBar>
+        </>
+      )}
 
       <main>{children}</main>
 
