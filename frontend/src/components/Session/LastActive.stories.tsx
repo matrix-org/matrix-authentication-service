@@ -53,7 +53,7 @@ export const ActiveNow: Story = {
 
 export const Inactive: Story = {
   args: {
-    // yesterday
+    // 91 days ago
     lastActiveTimestamp: now - 91 * ONE_DAY_MS,
     now,
   },
