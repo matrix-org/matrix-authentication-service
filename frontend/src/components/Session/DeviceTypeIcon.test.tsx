@@ -14,38 +14,33 @@
 
 // @vitest-environment happy-dom
 
+import { composeStory } from "@storybook/react";
 import { render, cleanup } from "@testing-library/react";
 import { describe, it, expect, afterEach } from "vitest";
 
-import { DeviceType } from "../../utils/parseUserAgent";
-
-import DeviceTypeIcon from "./DeviceTypeIcon";
+import Meta, { Unknown, Desktop, Mobile, Web } from "./DeviceTypeIcon.stories";
 
 describe("<DeviceTypeIcon />", () => {
   afterEach(cleanup);
 
   it("renders unknown device type", () => {
-    const { container } = render(
-      <DeviceTypeIcon deviceType={DeviceType.Unknown} />,
-    );
+    const Component = composeStory(Unknown, Meta);
+    const { container } = render(<Component />);
     expect(container).toMatchSnapshot();
   });
   it("renders mobile device type", () => {
-    const { container } = render(
-      <DeviceTypeIcon deviceType={DeviceType.Mobile} />,
-    );
+    const Component = composeStory(Mobile, Meta);
+    const { container } = render(<Component />);
     expect(container).toMatchSnapshot();
   });
   it("renders desktop device type", () => {
-    const { container } = render(
-      <DeviceTypeIcon deviceType={DeviceType.Desktop} />,
-    );
+    const Component = composeStory(Desktop, Meta);
+    const { container } = render(<Component />);
     expect(container).toMatchSnapshot();
   });
   it("renders Web device type", () => {
-    const { container } = render(
-      <DeviceTypeIcon deviceType={DeviceType.Web} />,
-    );
+    const Component = composeStory(Web, Meta);
+    const { container } = render(<Component />);
     expect(container).toMatchSnapshot();
   });
 });
