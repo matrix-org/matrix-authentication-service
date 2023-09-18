@@ -12,6 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-export const setup = (): void => {
-  process.env.TZ = "UTC";
+import { vi } from "vitest";
+
+/**
+ * Mock the locale on Intl.DateTimeFormat
+ * To achieve stable formatted dates across environments
+ * Defaults to `en-GB`
+ */
+export const mockLocale = (defaultLocale = "en-GB"): void => {
+  const { DateTimeFormat } = Intl;
+  vi.spyOn(Intl, "DateTimeFormat").mockImplementation(
+    (
+      locales?: string | string[] | undefined,
+      options?: Intl.DateTimeFormatOptions | undefined,
+    ) => new DateTimeFormat(locales || defaultLocale, options),
+  );
 };

@@ -16,11 +16,14 @@
 
 import { composeStory } from "@storybook/react";
 import { render, cleanup } from "@testing-library/react";
-import { describe, afterEach, expect, it } from "vitest";
+import { describe, afterEach, expect, it, beforeAll } from "vitest";
+
+import { mockLocale } from "../../test-utils/mockLocale";
 
 import Meta, { ActiveNow, Basic, Inactive } from "./LastActive.stories";
 
 describe("<LastActive", () => {
+  beforeAll(() => mockLocale());
   afterEach(cleanup);
 
   it("renders an 'active now' timestamp", () => {

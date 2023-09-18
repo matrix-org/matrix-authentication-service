@@ -15,11 +15,14 @@
 // @vitest-environment happy-dom
 
 import { render, cleanup, fireEvent } from "@testing-library/react";
-import { describe, it, vi, expect, afterEach } from "vitest";
+import { describe, it, vi, expect, afterEach, beforeAll } from "vitest";
+
+import { mockLocale } from "../../test-utils/mockLocale";
 
 import SelectableSession from "./SelectableSession";
 
 describe("<SelectableSession />", () => {
+  beforeAll(() => mockLocale());
   afterEach(cleanup);
 
   it("renders an unselected session", () => {

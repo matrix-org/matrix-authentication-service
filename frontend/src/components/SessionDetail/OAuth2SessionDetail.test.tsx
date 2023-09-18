@@ -15,10 +15,11 @@
 // @vitest-environment happy-dom
 
 import { render, cleanup } from "@testing-library/react";
-import { describe, expect, it, afterEach } from "vitest";
+import { describe, expect, it, afterEach, beforeAll } from "vitest";
 
 import { makeFragmentData } from "../../gql/fragment-masking";
 import { WithLocation } from "../../test-utils/WithLocation";
+import { mockLocale } from "../../test-utils/mockLocale";
 import { OAUTH2_SESSION_FRAGMENT } from "../OAuth2Session";
 
 import OAuth2SessionDetail from "./OAuth2SessionDetail";
@@ -36,6 +37,8 @@ describe("<OAuth2SessionDetail>", () => {
       clientUri: "https://element.io",
     },
   };
+
+  beforeAll(() => mockLocale());
   afterEach(cleanup);
 
   it("renders session details", () => {

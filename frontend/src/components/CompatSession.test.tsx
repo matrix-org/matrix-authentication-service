@@ -15,10 +15,11 @@
 // @vitest-environment happy-dom
 
 import { create } from "react-test-renderer";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, beforeAll } from "vitest";
 
 import { FragmentType } from "../gql/fragment-masking";
 import { WithLocation } from "../test-utils/WithLocation";
+import { mockLocale } from "../test-utils/mockLocale";
 
 import CompatSession, { COMPAT_SESSION_FRAGMENT } from "./CompatSession";
 
@@ -34,6 +35,8 @@ describe("<CompatSession />", () => {
   } as FragmentType<typeof COMPAT_SESSION_FRAGMENT>;
 
   const finishedAt = "2023-06-29T03:35:19.451292+00:00";
+
+  beforeAll(() => mockLocale());
 
   it("renders an active session", () => {
     const component = create(

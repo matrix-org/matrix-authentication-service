@@ -13,7 +13,9 @@
 // limitations under the License.
 
 import { create } from "react-test-renderer";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, beforeAll } from "vitest";
+
+import { mockLocale } from "../../test-utils/mockLocale";
 
 import Session from "./Session";
 
@@ -24,6 +26,8 @@ describe("<Session />", () => {
   };
 
   const finishedAt = "2023-06-29T03:35:19.451292+00:00";
+
+  beforeAll(() => mockLocale());
 
   it("renders an active session", () => {
     const component = create(<Session {...defaultProps} />);
