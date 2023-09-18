@@ -25,7 +25,7 @@ import {
 } from "@radix-ui/react-alert-dialog";
 import { Button } from "@vector-im/compound-web";
 import classNames from "classnames";
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
 
 import styles from "./ConfirmationModal.module.css";
 
@@ -40,7 +40,7 @@ type Props = {
 /**
  * Generic confirmation modal
  * controls its own open state
- * calls onDeny on cancel, esc, or overlay click
+ * calls onDeny on cancel or esc
  * calls onConfirm on confirm click
  */
 const ConfirmationModal: React.FC<React.PropsWithChildren<Props>> = ({
@@ -50,57 +50,41 @@ const ConfirmationModal: React.FC<React.PropsWithChildren<Props>> = ({
   children,
   trigger,
   title,
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const onClose = (callback?: () => void) => (): void => {
-    setIsOpen(false);
-    callback?.();
-  };
-
-  // radix's autofocus doesn't work for some reason
-  // maybe https://www.radix-ui.com/primitives/docs/guides/composition#your-component-must-forward-ref
-  // when this is replaced with compound's own/wrapped dialog this should be fixed
-  // until then, focus the cancel button for a deniable modal
-  // and continue button otherwise
-  const onOpenAutoFocus = (e: Event): void => {
-    const focusButtonKind = onDeny ? "tertiary" : "destructive";
-    (e.target as Element)
-      ?.querySelector<HTMLButtonElement>(
-        `button[data-kind="${focusButtonKind}"]`,
-      )
-      ?.focus();
-  };
-  return (
-    <Root open={isOpen} onOpenChange={setIsOpen}>
-      <Trigger asChild>{trigger}</Trigger>
-      <Portal>
-        <Overlay className={styles.overlay} onClick={onClose(onDeny)} />
-        <Content
-          className={classNames(styles.content, className)}
-          onEscapeKeyDown={onClose(onDeny)}
-          onOpenAutoFocus={onOpenAutoFocus}
-        >
-          <Title>{title}</Title>
-          <Description>{children}</Description>
-          <div className={styles.buttons}>
-            {onDeny && (
-              <Cancel asChild>
-                <Button kind="tertiary" size="sm" onClick={onClose(onDeny)}>
-                  Cancel
-                </Button>
-              </Cancel>
-            )}
-            <Action asChild>
-              <Button kind="destructive" size="sm" onClick={onClose(onConfirm)}>
-                Continue
+}) => (
+  <Root>
+    <Trigger asChild>{trigger}</Trigger>
+    <Portal>
+      <Overlay className={styles.overlay} />
+      <Content
+        className={classNames(styles.content, className)}
+        onEscapeKeyDown={(event): void => {
+          if (onDeny) {
+            onDeny();
+          } else {
+            // if there is no deny callback, we should prevent the escape key from closing the modal
+            event.preventDefault();
+          }
+        }}
+      >
+        <Title>{title}</Title>
+        <Description>{children}</Description>
+        <div className={styles.buttons}>
+          {onDeny && (
+            <Cancel asChild>
+              <Button kind="tertiary" size="sm" onClick={onDeny}>
+                Cancel
               </Button>
-            </Action>
-          </div>
-        </Content>
-      </Portal>
-    </Root>
-  );
-};
+            </Cancel>
+          )}
+          <Action asChild>
+            <Button kind="destructive" size="sm" onClick={onConfirm}>
+              Continue
+            </Button>
+          </Action>
+        </div>
+      </Content>
+    </Portal>
+  </Root>
+);
 
 export default ConfirmationModal;
