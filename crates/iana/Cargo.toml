@@ -9,7 +9,7 @@ repository.workspace = true
 
 [dependencies]
 serde = { workspace = true, optional = true }
-schemars = { version = "0.8.13", default-features = false, optional = true }
+schemars = { version = "0.8.15", default-features = false, optional = true }
 
 [features]
 default = ["serde", "schemars"]
