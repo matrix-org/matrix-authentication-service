@@ -1,0 +1,32 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`<LastActive > renders a default timestamp 1`] = `
+<div>
+  <span
+    title="Sun, 17 Sept 2023, 01:12"
+  >
+    Active Sun, 17 Sept 2023, 01:12
+  </span>
+</div>
+`;
+
+exports[`<LastActive > renders an 'active now' timestamp 1`] = `
+<div>
+  <span
+    class="_active_04756f"
+    title="Mon, 18 Sept 2023, 01:12"
+  >
+    Active now
+  </span>
+</div>
+`;
+
+exports[`<LastActive > renders an inactive timestamp 1`] = `
+<div>
+  <span
+    title="Mon, 19 Jun 2023, 01:12"
+  >
+    Inactive for 90+ days
+  </span>
+</div>
+`;
