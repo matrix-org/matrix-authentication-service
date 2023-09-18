@@ -692,3 +692,17 @@ impl Route for StaticAsset {
         format!("/assets/{}", self.path).into()
     }
 }
+
+/// `GET|POST /graphql`
+pub struct GraphQL;
+
+impl SimpleRoute for GraphQL {
+    const PATH: &'static str = "/graphql";
+}
+
+/// `GET /graphql/playground`
+pub struct GraphQLPlayground;
+
+impl SimpleRoute for GraphQLPlayground {
+    const PATH: &'static str = "/graphql/playground";
+}
