@@ -13,22 +13,23 @@
  * limitations under the License.
  */
 
+.block {
+    display: flex;
+    flex-direction: column;
+    margin-top: var(--cpd-space-10x);
+    gap: var(--cpd-space-10x);
+}
+
 .header {
-    margin: var(--cpd-space-8x) 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--cpd-space-2x);
     text-align: center;
 }
 
-.title {
-    font: var(--cpd-font-heading-xl-semibold);
-    line-height: var(--cpd-font-line-height-regular);
-    color: var(--cpd-color-text-primary);
-}
-
 .tagline {
-    font: var(--cpd-font-body-lg-regular);
-    line-height: var(--cpd-font-line-height-regular);
     color: var(--cpd-color-text-secondary);
-    margin-top: var(--cpd-space-2x);
 }
 
 .icon {
@@ -38,15 +39,10 @@
     background: var(--cpd-color-bg-subtle-secondary);
     padding: var(--cpd-space-2x);
     border-radius: var(--cpd-space-2x);
-    margin: var(--cpd-space-4x) auto;
-}
-
-.email {
-    font: var(--cpd-font-body-lg-semibold);
+    margin-bottom: var(--cpd-space-2x);
 }
 
 .form {
-    margin: var(--cpd-space-8x) 0;
     display: flex;
     flex-direction: column;
     gap: var(--cpd-space-6x);

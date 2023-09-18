@@ -18,11 +18,8 @@ import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
 
 import { graphql } from "../gql";
-import { FragmentType } from "../gql/fragment-masking";
 
-import UnverifiedEmailAlert, {
-  UNVERIFIED_EMAILS_FRAGMENT,
-} from "./UnverifiedEmailAlert/UnverifiedEmailAlert";
+import UnverifiedEmailAlert from "./UnverifiedEmailAlert";
 import styles from "./UserGreeting.module.css";
 
 const QUERY = graphql(/* GraphQL */ `
@@ -34,14 +31,8 @@ const QUERY = graphql(/* GraphQL */ `
         mxid
         displayName
       }
-    }
-    viewer {
-      __typename
 
-      ... on User {
-        id
-        ...UnverifiedEmailAlert
-      }
+      ...UnverifiedEmailAlert
     }
   }
 `);
@@ -75,13 +66,7 @@ const UserGreeting: React.FC<{ userId: string }> = ({ userId }) => {
             {user.matrix.mxid}
           </Body>
         </header>
-        <UnverifiedEmailAlert
-          unverifiedEmails={
-            result.data?.viewer as FragmentType<
-              typeof UNVERIFIED_EMAILS_FRAGMENT
-            >
-          }
-        />
+        <UnverifiedEmailAlert user={user} />
       </>
     );
   }
