@@ -14,12 +14,13 @@
 
 import type { Meta, StoryObj } from "@storybook/react";
 import { Button } from "@vector-im/compound-web";
+import { ReactElement } from "react";
 
 import BlockList from "../BlockList/BlockList";
 
 import Session, { SessionProps } from "./Session";
 
-const Template: React.FC<SessionProps> = (props) => {
+const Template: React.FC<React.PropsWithChildren<SessionProps>> = (props) => {
   return <Session {...props} />;
 };
 
@@ -28,7 +29,7 @@ const meta = {
   component: Template,
   tags: ["autodocs"],
   decorators: [
-    (Story): Element => (
+    (Story): ReactElement => (
       <div style={{ width: "378px" }}>
         <BlockList>
           <Story />
@@ -83,7 +84,7 @@ export const WithChildActions: Story = {
     clientLogoUri: "https://element.io/images/logo-mark-primary.svg",
     children: (
       <>
-        <Button size="sm" onClick={(): void => {}} kind="desctructive">
+        <Button size="sm" onClick={(): void => {}} kind="destructive">
           End session
         </Button>
       </>
