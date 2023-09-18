@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import { Alert } from "@vector-im/compound-web";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { FragmentType, useFragment, graphql } from "../../gql";
 import { Link } from "../../routing";
@@ -36,6 +36,10 @@ const UnverifiedEmailAlert: React.FC<{
   const [dismiss, setDismiss] = useState(false);
 
   const doDismiss = (): void => setDismiss(true);
+
+  useEffect(() => {
+    setDismiss(false);
+  }, [data?.unverifiedEmails?.totalCount]);
 
   if (!data?.unverifiedEmails?.totalCount || dismiss) {
     return null;

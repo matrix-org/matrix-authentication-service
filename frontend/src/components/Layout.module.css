@@ -14,9 +14,10 @@
  */
 
 .container {
-    width: 378px;
-    margin: var(--cpd-space-10x) auto var(--cpd-space-6x) auto;
-    padding-bottom: var(--cpd-space-10x)
+    box-sizing: border-box;
+    max-width: calc(378px + var(--cpd-space-6x) * 2);
+    margin: 0 auto;
+    padding: var(--cpd-space-6x);
 }
 
 .footer {

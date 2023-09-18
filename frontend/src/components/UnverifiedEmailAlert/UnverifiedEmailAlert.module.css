@@ -15,4 +15,8 @@
 
 .alert {
     margin-top: var(--cpd-space-4x);
+    
+    > * {
+        box-sizing: content-box;
+    }
 }
