@@ -13,19 +13,9 @@
 // limitations under the License.
 
 import { create } from "react-test-renderer";
-import { describe, expect, it, vi } from "vitest";
-
-import DateTime from "../DateTime";
+import { describe, expect, it } from "vitest";
 
 import Session from "./Session";
-
-// Mock out datetime to avoid timezones/date formatting
-vi.mock("../DateTime", () => {
-  const MockDateTime: typeof DateTime = ({ datetime }) => (
-    <code>{datetime.toString()}</code>
-  );
-  return { default: MockDateTime };
-});
 
 describe("<Session />", () => {
   const defaultProps = {

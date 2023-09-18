@@ -15,21 +15,12 @@
 // @vitest-environment happy-dom
 
 import { create } from "react-test-renderer";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { FragmentType } from "../gql/fragment-masking";
 import { WithLocation } from "../test-utils/WithLocation";
 
 import CompatSession, { COMPAT_SESSION_FRAGMENT } from "./CompatSession";
-import DateTime from "./DateTime";
-
-// Mock out datetime to avoid timezones/date formatting
-vi.mock("./DateTime", () => {
-  const MockDateTime: typeof DateTime = ({ datetime }) => (
-    <code>{datetime.toString()}</code>
-  );
-  return { default: MockDateTime };
-});
 
 describe("<CompatSession />", () => {
   const session = {
