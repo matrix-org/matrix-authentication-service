@@ -122,11 +122,12 @@ export default defineConfig((env) => ({
     proxy: {
       // Routes mostly extracted from crates/router/src/endpoints.rs
       "^/(|graphql.*|assets.*|\\.well-known.*|oauth2.*|login.*|logout.*|register.*|reauth.*|add-email.*|verify-email.*|change-password.*|consent.*|_matrix.*|complete-compat-sso.*)$":
-        "http://127.0.0.1:8080",
+        "https://auth-oidc.lab.element.dev",
     },
   },
 
   test: {
+    globalSetup: "./vitest.global-setup.ts",
     coverage: {
       provider: "v8",
       src: ["./src/"],
