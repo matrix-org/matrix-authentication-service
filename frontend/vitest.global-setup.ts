@@ -13,4 +13,6 @@
 // limitations under the License.
 export const setup = (): void => {
   process.env.TZ = "UTC";
+  process.env.LANG="en_GB.UTF-8";
+  process.env.LC_ALL="en_GB.UTF-8";
 };
