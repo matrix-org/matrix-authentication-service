@@ -137,10 +137,11 @@ impl Worker {
 
                     record.end_time = date_time.max(record.end_time);
                 }
-                Message::Flush => {
+                Message::Flush(tx) => {
                     self.message_counter.add(1, &[TYPE.string("flush")]);
 
                     self.flush().await;
+                    let _ = tx.send(());
                 }
                 Message::Shutdown(tx) => {
                     self.message_counter.add(1, &[TYPE.string("shutdown")]);

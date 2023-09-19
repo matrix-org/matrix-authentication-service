@@ -52,7 +52,7 @@ enum Message {
         date_time: DateTime<Utc>,
         ip: Option<IpAddr>,
     },
-    Flush,
+    Flush(tokio::sync::oneshot::Sender<()>),
     Shutdown(tokio::sync::oneshot::Sender<()>),
 }
 
@@ -150,10 +150,18 @@ impl ActivityTracker {
 
     /// Manually flush the activity tracker.
     pub async fn flush(&self) {
-        let res = self.channel.send(Message::Flush).await;
+        let (tx, rx) = tokio::sync::oneshot::channel();
+        let res = self.channel.send(Message::Flush(tx)).await;
 
-        if let Err(e) = res {
-            tracing::error!("Failed to flush activity tracker: {}", e);
+        match res {
+            Ok(_) => {
+                if let Err(e) = rx.await {
+                    tracing::error!("Failed to flush activity tracker: {}", e);
+                }
+            }
+            Err(e) => {
+                tracing::error!("Failed to flush activity tracker: {}", e);
+            }
         }
     }
 

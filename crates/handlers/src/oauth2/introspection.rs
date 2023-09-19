@@ -463,6 +463,7 @@ mod tests {
     use mas_data_model::{AccessToken, RefreshToken};
     use mas_iana::oauth::OAuthTokenTypeHint;
     use mas_router::{OAuth2Introspection, OAuth2RegistrationEndpoint, SimpleRoute};
+    use mas_storage::Clock;
     use oauth2_types::{
         registration::ClientRegistrationResponse,
         requests::IntrospectionResponse,
@@ -618,7 +619,20 @@ mod tests {
         let response: IntrospectionResponse = response.json();
         assert!(!response.active); // It shouldn't be active
 
+        // We should have recorded the session last activity
+        state.activity_tracker.flush().await;
+        let mut repo = state.repository().await.unwrap();
+        let session = repo
+            .oauth2_session()
+            .lookup(session.id)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(session.last_active_at, Some(state.clock.now()));
+        repo.cancel().await.unwrap();
+
         // Advance the clock to invalidate the access token
+        let old_now = state.clock.now();
         state.clock.advance(Duration::hours(1));
 
         let request = Request::post(OAuth2Introspection::PATH)
@@ -629,6 +643,18 @@ mod tests {
         let response: IntrospectionResponse = response.json();
         assert!(!response.active); // It shouldn't be active anymore
 
+        // That should not have updated the session last activity
+        state.activity_tracker.flush().await;
+        let mut repo = state.repository().await.unwrap();
+        let session = repo
+            .oauth2_session()
+            .lookup(session.id)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(session.last_active_at, Some(old_now));
+        repo.cancel().await.unwrap();
+
         // But the refresh token should still be valid
         let request = Request::post(OAuth2Introspection::PATH)
             .basic_auth(&introspecting_client_id, &introspecting_client_secret)
@@ -637,6 +663,18 @@ mod tests {
         response.assert_status(StatusCode::OK);
         let response: IntrospectionResponse = response.json();
         assert!(response.active);
+
+        // But this time, we should have updated the session last activity
+        state.activity_tracker.flush().await;
+        let mut repo = state.repository().await.unwrap();
+        let session = repo
+            .oauth2_session()
+            .lookup(session.id)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(session.last_active_at, Some(state.clock.now()));
+        repo.cancel().await.unwrap();
     }
 
     #[sqlx::test(migrator = "mas_storage_pg::MIGRATOR")]
