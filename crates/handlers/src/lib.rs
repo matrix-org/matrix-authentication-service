@@ -68,6 +68,7 @@ pub mod passwords;
 pub mod upstream_oauth2;
 mod views;
 
+mod activity_tracker;
 mod site_config;
 #[cfg(test)]
 mod test_utils;
@@ -91,8 +92,12 @@ macro_rules! impl_from_error_for_route {
 pub use mas_axum_utils::{cookies::CookieManager, http_client_factory::HttpClientFactory};
 
 pub use self::{
-    app_state::AppState, compat::MatrixHomeserver, graphql::schema as graphql_schema,
-    site_config::SiteConfig, upstream_oauth2::cache::MetadataCache,
+    activity_tracker::{ActivityTracker, Bound as BoundActivityTracker},
+    app_state::AppState,
+    compat::MatrixHomeserver,
+    graphql::schema as graphql_schema,
+    site_config::SiteConfig,
+    upstream_oauth2::cache::MetadataCache,
 };
 
 pub fn healthcheck_router<S, B>() -> Router<S, B>
@@ -288,6 +293,7 @@ where
     UrlBuilder: FromRef<S>,
     BoxRepository: FromRequestParts<S>,
     CookieJar: FromRequestParts<S>,
+    BoundActivityTracker: FromRequestParts<S>,
     Encrypter: FromRef<S>,
     Templates: FromRef<S>,
     Keystore: FromRef<S>,

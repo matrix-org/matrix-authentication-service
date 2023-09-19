@@ -36,7 +36,7 @@ use sqlx::PgPool;
 
 use crate::{
     passwords::PasswordManager, site_config::SiteConfig, upstream_oauth2::cache::MetadataCache,
-    MatrixHomeserver,
+    ActivityTracker, BoundActivityTracker, MatrixHomeserver,
 };
 
 #[derive(Clone)]
@@ -54,6 +54,7 @@ pub struct AppState {
     pub password_manager: PasswordManager,
     pub metadata_cache: MetadataCache,
     pub site_config: SiteConfig,
+    pub activity_tracker: ActivityTracker,
     pub conn_acquisition_histogram: Option<Histogram<u64>>,
 }
 
@@ -266,6 +267,32 @@ impl FromRequestParts<AppState> for Policy {
     ) -> Result<Self, Self::Rejection> {
         let policy = state.policy_factory.instantiate().await?;
         Ok(policy)
+    }
+}
+
+#[async_trait]
+impl FromRequestParts<AppState> for ActivityTracker {
+    type Rejection = Infallible;
+
+    async fn from_request_parts(
+        _parts: &mut axum::http::request::Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        Ok(state.activity_tracker.clone())
+    }
+}
+
+#[async_trait]
+impl FromRequestParts<AppState> for BoundActivityTracker {
+    type Rejection = Infallible;
+
+    async fn from_request_parts(
+        _parts: &mut axum::http::request::Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        // TODO: grab the IP address from the request
+        let ip = None;
+        Ok(state.activity_tracker.clone().bind(ip))
     }
 }
 

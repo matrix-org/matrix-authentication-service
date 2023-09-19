@@ -18,14 +18,18 @@ use axum::{
 };
 use mas_axum_utils::{cookies::CookieJar, FancyError, SessionInfoExt};
 use mas_router::{PostAuthAction, Route};
-use mas_storage::BoxRepository;
+use mas_storage::{BoxClock, BoxRepository};
 use mas_templates::{AppContext, Templates};
+
+use crate::BoundActivityTracker;
 
 #[tracing::instrument(name = "handlers.views.app.get", skip_all, err)]
 pub async fn get(
     State(templates): State<Templates>,
+    activity_tracker: BoundActivityTracker,
     action: Option<Query<mas_router::AccountAction>>,
     mut repo: BoxRepository,
+    clock: BoxClock,
     cookie_jar: CookieJar,
 ) -> Result<impl IntoResponse, FancyError> {
     let (session_info, cookie_jar) = cookie_jar.session_info();
@@ -33,13 +37,17 @@ pub async fn get(
     let action = action.map(|Query(a)| a);
 
     // TODO: keep the full path, not just the action
-    if session.is_none() {
+    let Some(session) = session else {
         return Ok((
             cookie_jar,
             mas_router::Login::and_then(PostAuthAction::manage_account(action)).go(),
         )
             .into_response());
-    }
+    };
+
+    activity_tracker
+        .record_browser_session(&clock, &session)
+        .await;
 
     let ctx = AppContext::default();
     let content = templates.render_app(&ctx).await?;
