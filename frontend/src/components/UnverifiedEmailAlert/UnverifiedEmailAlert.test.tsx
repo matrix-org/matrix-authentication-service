@@ -106,7 +106,7 @@ describe("<UnverifiedEmailAlert />", () => {
 
     const { container, getByText, rerender } = render(
       <WithLocation>
-        <UnverifiedEmailAlert unverifiedEmails={data} />
+        <UnverifiedEmailAlert user={data} />
       </WithLocation>,
     );
 
@@ -124,7 +124,7 @@ describe("<UnverifiedEmailAlert />", () => {
     );
     rerender(
       <WithLocation>
-        <UnverifiedEmailAlert unverifiedEmails={newData} />
+        <UnverifiedEmailAlert user={newData} />
       </WithLocation>,
     );
 
@@ -145,7 +145,7 @@ describe("<UnverifiedEmailAlert />", () => {
 
     const { container, getByText, getByLabelText, rerender } = render(
       <WithLocation>
-        <UnverifiedEmailAlert unverifiedEmails={data} />
+        <UnverifiedEmailAlert user={data} />
       </WithLocation>,
     );
 
@@ -168,7 +168,7 @@ describe("<UnverifiedEmailAlert />", () => {
     );
     rerender(
       <WithLocation>
-        <UnverifiedEmailAlert unverifiedEmails={newData} />
+        <UnverifiedEmailAlert user={newData} />
       </WithLocation>,
     );
 
