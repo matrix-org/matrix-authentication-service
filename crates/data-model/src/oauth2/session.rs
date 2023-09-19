@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::net::IpAddr;
 use chrono::{DateTime, Utc};
 use oauth2_types::scope::Scope;
 use serde::Serialize;
@@ -73,6 +74,8 @@ pub struct Session {
     pub user_session_id: Option<Ulid>,
     pub client_id: Ulid,
     pub scope: Scope,
+    pub last_active_at: Option<DateTime<Utc>>,
+    pub last_active_ip: Option<IpAddr>,
 }
 
 impl std::ops::Deref for Session {

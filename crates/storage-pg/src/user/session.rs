@@ -56,6 +56,8 @@ struct SessionLookup {
     user_session_created_at: DateTime<Utc>,
     user_session_finished_at: Option<DateTime<Utc>>,
     user_session_user_agent: Option<String>,
+    user_session_last_active_at: Option<DateTime<Utc>>,
+    user_session_last_active_ip: Option<IpAddr>,
     user_id: Uuid,
     user_username: String,
     user_primary_user_email_id: Option<Uuid>,
@@ -83,6 +85,8 @@ impl TryFrom<SessionLookup> for BrowserSession {
             created_at: value.user_session_created_at,
             finished_at: value.user_session_finished_at,
             user_agent: value.user_session_user_agent,
+            last_active_at: value.user_session_last_active_at,
+            last_active_ip: value.user_session_last_active_ip,
         })
     }
 }
@@ -144,6 +148,8 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
                      , s.created_at            AS "user_session_created_at"
                      , s.finished_at           AS "user_session_finished_at"
                      , s.user_agent            AS "user_session_user_agent"
+                     , s.last_active_at        AS "user_session_last_active_at"
+                     , s.last_active_ip        AS "user_session_last_active_ip: IpAddr"
                      , u.user_id
                      , u.username              AS "user_username"
                      , u.primary_user_email_id AS "user_primary_user_email_id"
@@ -207,6 +213,8 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
             created_at,
             finished_at: None,
             user_agent,
+            last_active_at: None,
+            last_active_ip: None,
         };
 
         Ok(session)
@@ -276,6 +284,14 @@ impl<'c> BrowserSessionRepository for PgBrowserSessionRepository<'c> {
             .expr_as(
                 Expr::col((UserSessions::Table, UserSessions::UserAgent)),
                 SessionLookupIden::UserSessionUserAgent,
+            )
+            .expr_as(
+                Expr::col((UserSessions::Table, UserSessions::LastActiveAt)),
+                SessionLookupIden::UserSessionLastActiveAt,
+            )
+            .expr_as(
+                Expr::col((UserSessions::Table, UserSessions::LastActiveIp)),
+                SessionLookupIden::UserSessionLastActiveIp,
             )
             .expr_as(
                 Expr::col((Users::Table, Users::UserId)),

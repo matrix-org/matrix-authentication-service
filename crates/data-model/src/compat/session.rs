@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::net::IpAddr;
+
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 use ulid::Ulid;
@@ -80,6 +82,8 @@ pub struct CompatSession {
     pub device: Device,
     pub created_at: DateTime<Utc>,
     pub is_synapse_admin: bool,
+    pub last_active_at: Option<DateTime<Utc>>,
+    pub last_active_ip: Option<IpAddr>,
 }
 
 impl std::ops::Deref for CompatSession {

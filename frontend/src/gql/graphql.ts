@@ -127,6 +127,10 @@ export type BrowserSession = CreationEvent &
     finishedAt?: Maybe<Scalars["DateTime"]["output"]>;
     /** ID of the object. */
     id: Scalars["ID"]["output"];
+    /** The last time the session was active. */
+    lastActiveAt?: Maybe<Scalars["DateTime"]["output"]>;
+    /** The last IP address used by the session. */
+    lastActiveIp?: Maybe<Scalars["String"]["output"]>;
     /** The most recent authentication of this session. */
     lastAuthentication?: Maybe<Authentication>;
     /** The state of the session. */
@@ -181,6 +185,10 @@ export type CompatSession = CreationEvent &
     finishedAt?: Maybe<Scalars["DateTime"]["output"]>;
     /** ID of the object. */
     id: Scalars["ID"]["output"];
+    /** The last time the session was active. */
+    lastActiveAt?: Maybe<Scalars["DateTime"]["output"]>;
+    /** The last IP address used by the session. */
+    lastActiveIp?: Maybe<Scalars["String"]["output"]>;
     /** The associated SSO login, if any. */
     ssoLogin?: Maybe<CompatSsoLogin>;
     /** The state of the session. */
@@ -544,6 +552,10 @@ export type Oauth2Session = CreationEvent &
     finishedAt?: Maybe<Scalars["DateTime"]["output"]>;
     /** ID of the object. */
     id: Scalars["ID"]["output"];
+    /** The last time the session was active. */
+    lastActiveAt?: Maybe<Scalars["DateTime"]["output"]>;
+    /** The last IP address used by the session. */
+    lastActiveIp?: Maybe<Scalars["String"]["output"]>;
     /** Scope granted for this session. */
     scope: Scalars["String"]["output"];
     /** The state of the session. */
