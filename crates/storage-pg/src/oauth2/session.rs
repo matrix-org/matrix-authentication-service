@@ -59,6 +59,8 @@ struct OAuthSessionLookup {
     scope_list: Vec<String>,
     created_at: DateTime<Utc>,
     finished_at: Option<DateTime<Utc>>,
+    last_active_at: Option<DateTime<Utc>>,
+    last_active_ip: Option<IpAddr>,
 }
 
 impl TryFrom<OAuthSessionLookup> for Session {
@@ -91,6 +93,8 @@ impl TryFrom<OAuthSessionLookup> for Session {
             user_id: value.user_id.map(Ulid::from),
             user_session_id: value.user_session_id.map(Ulid::from),
             scope,
+            last_active_at: value.last_active_at,
+            last_active_ip: value.last_active_ip,
         })
     }
 }
@@ -119,6 +123,8 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
                      , scope_list
                      , created_at
                      , finished_at
+                     , last_active_at
+                     , last_active_ip as "last_active_ip: IpAddr"
                 FROM oauth2_sessions
 
                 WHERE oauth2_session_id = $1
@@ -191,6 +197,8 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
             user_session_id: user_session.map(|s| s.id),
             client_id: client.id,
             scope,
+            last_active_at: None,
+            last_active_ip: None,
         })
     }
 
@@ -272,6 +280,14 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
             .expr_as(
                 Expr::col((OAuth2Sessions::Table, OAuth2Sessions::FinishedAt)),
                 OAuthSessionLookupIden::FinishedAt,
+            )
+            .expr_as(
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::LastActiveAt)),
+                OAuthSessionLookupIden::LastActiveAt,
+            )
+            .expr_as(
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::LastActiveIp)),
+                OAuthSessionLookupIden::LastActiveIp,
             )
             .from(OAuth2Sessions::Table)
             .and_where_option(filter.user().map(|user| {

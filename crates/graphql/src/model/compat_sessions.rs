@@ -142,6 +142,16 @@ impl CompatSession {
             mas_data_model::CompatSessionState::Finished { .. } => CompatSessionState::Finished,
         }
     }
+
+    /// The last IP address used by the session.
+    pub async fn last_active_ip(&self) -> Option<String> {
+        self.session.last_active_ip.map(|ip| ip.to_string())
+    }
+
+    /// The last time the session was active.
+    pub async fn last_active_at(&self) -> Option<DateTime<Utc>> {
+        self.session.last_active_at
+    }
 }
 
 /// A compat SSO login represents a login done through the legacy Matrix login

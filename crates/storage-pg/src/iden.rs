@@ -22,6 +22,8 @@ pub enum UserSessions {
     CreatedAt,
     FinishedAt,
     UserAgent,
+    LastActiveAt,
+    LastActiveIp,
 }
 
 #[derive(sea_query::Iden)]
@@ -53,6 +55,8 @@ pub enum CompatSessions {
     CreatedAt,
     FinishedAt,
     IsSynapseAdmin,
+    LastActiveAt,
+    LastActiveIp,
 }
 
 #[derive(sea_query::Iden)]
@@ -80,6 +84,8 @@ pub enum OAuth2Sessions {
     ScopeList,
     CreatedAt,
     FinishedAt,
+    LastActiveAt,
+    LastActiveIp,
 }
 
 #[derive(sea_query::Iden)]

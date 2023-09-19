@@ -58,6 +58,8 @@ struct CompatSessionLookup {
     created_at: DateTime<Utc>,
     finished_at: Option<DateTime<Utc>>,
     is_synapse_admin: bool,
+    last_active_at: Option<DateTime<Utc>>,
+    last_active_ip: Option<IpAddr>,
 }
 
 impl TryFrom<CompatSessionLookup> for CompatSession {
@@ -84,6 +86,8 @@ impl TryFrom<CompatSessionLookup> for CompatSession {
             device,
             created_at: value.created_at,
             is_synapse_admin: value.is_synapse_admin,
+            last_active_at: value.last_active_at,
+            last_active_ip: value.last_active_ip,
         };
 
         Ok(session)
@@ -99,6 +103,8 @@ struct CompatSessionAndSsoLoginLookup {
     created_at: DateTime<Utc>,
     finished_at: Option<DateTime<Utc>>,
     is_synapse_admin: bool,
+    last_active_at: Option<DateTime<Utc>>,
+    last_active_ip: Option<IpAddr>,
     compat_sso_login_id: Option<Uuid>,
     compat_sso_login_token: Option<String>,
     compat_sso_login_redirect_uri: Option<String>,
@@ -131,6 +137,8 @@ impl TryFrom<CompatSessionAndSsoLoginLookup> for (CompatSession, Option<CompatSs
             device,
             created_at: value.created_at,
             is_synapse_admin: value.is_synapse_admin,
+            last_active_at: value.last_active_at,
+            last_active_ip: value.last_active_ip,
         };
 
         match (
@@ -209,6 +217,8 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
                      , created_at
                      , finished_at
                      , is_synapse_admin
+                     , last_active_at
+                     , last_active_ip as "last_active_ip: IpAddr"
                 FROM compat_sessions
                 WHERE compat_session_id = $1
             "#,
@@ -247,6 +257,8 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
                      , created_at
                      , finished_at
                      , is_synapse_admin
+                     , last_active_at
+                     , last_active_ip as "last_active_ip: IpAddr"
                 FROM compat_sessions
                 WHERE user_id = $1
                   AND device_id = $2
@@ -309,6 +321,8 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
             device,
             created_at,
             is_synapse_admin,
+            last_active_at: None,
+            last_active_ip: None,
         })
     }
 
@@ -389,6 +403,14 @@ impl<'c> CompatSessionRepository for PgCompatSessionRepository<'c> {
             .expr_as(
                 Expr::col((CompatSessions::Table, CompatSessions::IsSynapseAdmin)),
                 CompatSessionAndSsoLoginLookupIden::IsSynapseAdmin,
+            )
+            .expr_as(
+                Expr::col((CompatSessions::Table, CompatSessions::LastActiveAt)),
+                CompatSessionAndSsoLoginLookupIden::LastActiveAt,
+            )
+            .expr_as(
+                Expr::col((CompatSessions::Table, CompatSessions::LastActiveIp)),
+                CompatSessionAndSsoLoginLookupIden::LastActiveIp,
             )
             .expr_as(
                 Expr::col((CompatSsoLogins::Table, CompatSsoLogins::CompatSsoLoginId)),
