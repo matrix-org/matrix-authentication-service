@@ -26,7 +26,7 @@ use serde_with::{serde_as, DurationMilliSeconds};
 use thiserror::Error;
 
 use super::MatrixError;
-use crate::{impl_from_error_for_route, site_config::SiteConfig};
+use crate::{impl_from_error_for_route, site_config::SiteConfig, BoundActivityTracker};
 
 #[derive(Debug, Deserialize)]
 pub struct RequestBody {
@@ -93,6 +93,7 @@ pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
     mut repo: BoxRepository,
+    activity_tracker: BoundActivityTracker,
     State(site_config): State<SiteConfig>,
     Json(input): Json<RequestBody>,
 ) -> Result<impl IntoResponse, RouteError> {
@@ -121,6 +122,10 @@ pub(crate) async fn post(
     if !session.is_valid() {
         return Err(RouteError::InvalidSession);
     }
+
+    activity_tracker
+        .record_compat_session(&clock, &session)
+        .await;
 
     let access_token = repo
         .compat_access_token()

@@ -35,7 +35,7 @@ use rand::Rng;
 use serde::Deserialize;
 use zeroize::Zeroizing;
 
-use crate::passwords::PasswordManager;
+use crate::{passwords::PasswordManager, BoundActivityTracker};
 
 #[derive(Deserialize)]
 pub struct ChangeForm {
@@ -50,6 +50,7 @@ pub(crate) async fn get(
     clock: BoxClock,
     State(templates): State<Templates>,
     State(password_manager): State<PasswordManager>,
+    activity_tracker: BoundActivityTracker,
     mut repo: BoxRepository,
     cookie_jar: CookieJar,
 ) -> Result<Response, FancyError> {
@@ -63,6 +64,10 @@ pub(crate) async fn get(
     let maybe_session = session_info.load_session(&mut repo).await?;
 
     if let Some(session) = maybe_session {
+        activity_tracker
+            .record_browser_session(&clock, &session)
+            .await;
+
         render(&mut rng, &clock, templates, session, cookie_jar).await
     } else {
         let login = mas_router::Login::and_then(mas_router::PostAuthAction::ChangePassword);
@@ -94,6 +99,7 @@ pub(crate) async fn post(
     clock: BoxClock,
     State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
+    activity_tracker: BoundActivityTracker,
     mut policy: Policy,
     mut repo: BoxRepository,
     cookie_jar: CookieJar,
@@ -161,6 +167,10 @@ pub(crate) async fn post(
     repo.browser_session()
         .authenticate_with_password(&mut rng, &clock, &session, &user_password)
         .await?;
+
+    activity_tracker
+        .record_browser_session(&clock, &session)
+        .await;
 
     let reply = render(&mut rng, &clock, templates.clone(), session, cookie_jar).await?;
 

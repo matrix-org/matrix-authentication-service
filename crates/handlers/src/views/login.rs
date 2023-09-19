@@ -39,7 +39,7 @@ use serde::{Deserialize, Serialize};
 use zeroize::Zeroizing;
 
 use super::shared::OptionalPostAuthAction;
-use crate::passwords::PasswordManager;
+use crate::{passwords::PasswordManager, BoundActivityTracker};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub(crate) struct LoginForm {
@@ -58,6 +58,7 @@ pub(crate) async fn get(
     State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
     mut repo: BoxRepository,
+    activity_tracker: BoundActivityTracker,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: CookieJar,
 ) -> Result<Response, FancyError> {
@@ -66,7 +67,11 @@ pub(crate) async fn get(
 
     let maybe_session = session_info.load_session(&mut repo).await?;
 
-    if maybe_session.is_some() {
+    if let Some(session) = maybe_session {
+        activity_tracker
+            .record_browser_session(&clock, &session)
+            .await;
+
         let reply = query.go_next();
         return Ok((cookie_jar, reply).into_response());
     };
@@ -109,6 +114,7 @@ pub(crate) async fn post(
     State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
     mut repo: BoxRepository,
+    activity_tracker: BoundActivityTracker,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: CookieJar,
     user_agent: Option<TypedHeader<UserAgent>>,
@@ -168,6 +174,10 @@ pub(crate) async fn post(
     {
         Ok(session_info) => {
             repo.save().await?;
+
+            activity_tracker
+                .record_browser_session(&clock, &session_info)
+                .await;
 
             let cookie_jar = cookie_jar.set_session(&session_info);
             let reply = query.go_next();

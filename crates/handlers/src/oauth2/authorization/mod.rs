@@ -39,7 +39,7 @@ use thiserror::Error;
 use tracing::warn;
 
 use self::{callback::CallbackDestination, complete::GrantCompletionError};
-use crate::impl_from_error_for_route;
+use crate::{impl_from_error_for_route, BoundActivityTracker};
 
 mod callback;
 pub mod complete;
@@ -143,6 +143,7 @@ pub(crate) async fn get(
     State(key_store): State<Keystore>,
     State(url_builder): State<UrlBuilder>,
     policy: Policy,
+    activity_tracker: BoundActivityTracker,
     mut repo: BoxRepository,
     cookie_jar: CookieJar,
     Form(params): Form<Params>,
@@ -324,13 +325,15 @@ pub(crate) async fn get(
                         .into_response()
                 }
 
-                // Special case when we already have a sesion but prompt=login|select_account
-                Some(_)
+                // Special case when we already have a session but prompt=login|select_account
+                Some(session)
                     if prompt.contains(&Prompt::Login)
                         || prompt.contains(&Prompt::SelectAccount) =>
                 {
                     // TODO: better pages here
                     repo.save().await?;
+
+                    activity_tracker.record_browser_session(&clock, &session).await;
 
                     mas_router::Reauth::and_then(continue_grant)
                         .go()
@@ -339,10 +342,13 @@ pub(crate) async fn get(
 
                 // Else, we immediately try to complete the authorization grant
                 Some(user_session) if prompt.contains(&Prompt::None) => {
+                    activity_tracker.record_browser_session(&clock, &user_session).await;
+
                     // With prompt=none, we should get back to the client immediately
                     match self::complete::complete(
                         &mut rng,
                         &clock,
+                        &activity_tracker,
                         repo,
                         key_store,
                         policy,
@@ -385,11 +391,14 @@ pub(crate) async fn get(
                     }
                 }
                 Some(user_session) => {
+                    activity_tracker.record_browser_session(&clock, &user_session).await;
+
                     let grant_id = grant.id;
                     // Else, we show the relevant reauth/consent page if necessary
                     match self::complete::complete(
                         &mut rng,
                         &clock,
+                        &activity_tracker,
                         repo,
                         key_store,
                         policy,

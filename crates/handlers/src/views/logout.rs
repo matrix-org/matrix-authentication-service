@@ -21,11 +21,14 @@ use mas_axum_utils::{
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{user::BrowserSessionRepository, BoxClock, BoxRepository};
 
+use crate::BoundActivityTracker;
+
 #[tracing::instrument(name = "handlers.views.logout.post", skip_all, err)]
 pub(crate) async fn post(
     clock: BoxClock,
     mut repo: BoxRepository,
     cookie_jar: CookieJar,
+    activity_tracker: BoundActivityTracker,
     Form(form): Form<ProtectedForm<Option<PostAuthAction>>>,
 ) -> Result<impl IntoResponse, FancyError> {
     let form = cookie_jar.verify_form(&clock, form)?;
@@ -35,6 +38,10 @@ pub(crate) async fn post(
     let maybe_session = session_info.load_session(&mut repo).await?;
 
     if let Some(session) = maybe_session {
+        activity_tracker
+            .record_browser_session(&clock, &session)
+            .await;
+
         repo.browser_session().finish(&clock, session).await?;
         cookie_jar = cookie_jar.update_session_info(&session_info.mark_session_ended());
     }
