@@ -240,7 +240,7 @@ pub trait CompatSessionRepository: Send + Sync {
     /// Returns [`Self::Error`] if the underlying repository fails
     async fn count(&mut self, filter: CompatSessionFilter<'_>) -> Result<usize, Self::Error>;
 
-    /// Record a batch of [`Session`] activity
+    /// Record a batch of [`CompatSession`] activity
     ///
     /// # Parameters
     ///

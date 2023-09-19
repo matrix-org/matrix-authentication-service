@@ -231,7 +231,7 @@ pub trait BrowserSessionRepository: Send + Sync {
         user_session: &BrowserSession,
     ) -> Result<Option<Authentication>, Self::Error>;
 
-    /// Record a batch of [`Session`] activity
+    /// Record a batch of [`BrowserSession`] activity
     ///
     /// # Parameters
     ///
