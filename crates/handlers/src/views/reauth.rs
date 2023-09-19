@@ -33,7 +33,7 @@ use serde::Deserialize;
 use zeroize::Zeroizing;
 
 use super::shared::OptionalPostAuthAction;
-use crate::passwords::PasswordManager;
+use crate::{passwords::PasswordManager, BoundActivityTracker};
 
 #[derive(Deserialize, Debug)]
 pub(crate) struct ReauthForm {
@@ -46,6 +46,7 @@ pub(crate) async fn get(
     clock: BoxClock,
     State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
+    activity_tracker: BoundActivityTracker,
     mut repo: BoxRepository,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: CookieJar,
@@ -66,6 +67,10 @@ pub(crate) async fn get(
         let login = mas_router::Login::from(query.post_auth_action);
         return Ok((cookie_jar, login.go()).into_response());
     };
+
+    activity_tracker
+        .record_browser_session(&clock, &session)
+        .await;
 
     let ctx = ReauthContext::default();
     let next = query.load_context(&mut repo).await?;

@@ -42,7 +42,7 @@ use serde::{Deserialize, Serialize};
 use zeroize::Zeroizing;
 
 use super::shared::OptionalPostAuthAction;
-use crate::passwords::PasswordManager;
+use crate::{passwords::PasswordManager, BoundActivityTracker};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub(crate) struct RegisterForm {
@@ -104,6 +104,7 @@ pub(crate) async fn post(
     State(templates): State<Templates>,
     mut policy: Policy,
     mut repo: BoxRepository,
+    activity_tracker: BoundActivityTracker,
     Query(query): Query<OptionalPostAuthAction>,
     cookie_jar: CookieJar,
     user_agent: Option<TypedHeader<UserAgent>>,
@@ -227,6 +228,10 @@ pub(crate) async fn post(
         .await?;
 
     repo.save().await?;
+
+    activity_tracker
+        .record_browser_session(&clock, &session)
+        .await;
 
     let cookie_jar = cookie_jar.set_session(&session);
     Ok((cookie_jar, next.go()).into_response())

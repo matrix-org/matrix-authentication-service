@@ -31,7 +31,7 @@ use mas_storage::{
 use mas_templates::{EmailAddContext, ErrorContext, TemplateContext, Templates};
 use serde::Deserialize;
 
-use crate::views::shared::OptionalPostAuthAction;
+use crate::{views::shared::OptionalPostAuthAction, BoundActivityTracker};
 
 #[derive(Deserialize, Debug)]
 pub struct EmailForm {
@@ -43,6 +43,7 @@ pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
     State(templates): State<Templates>,
+    activity_tracker: BoundActivityTracker,
     mut repo: BoxRepository,
     cookie_jar: CookieJar,
 ) -> Result<Response, FancyError> {
@@ -55,6 +56,10 @@ pub(crate) async fn get(
         let login = mas_router::Login::default();
         return Ok((cookie_jar, login.go()).into_response());
     };
+
+    activity_tracker
+        .record_browser_session(&clock, &session)
+        .await;
 
     let ctx = EmailAddContext::new()
         .with_session(session)
@@ -72,6 +77,7 @@ pub(crate) async fn post(
     mut repo: BoxRepository,
     mut policy: Policy,
     cookie_jar: CookieJar,
+    activity_tracker: BoundActivityTracker,
     Query(query): Query<OptionalPostAuthAction>,
     Form(form): Form<ProtectedForm<EmailForm>>,
 ) -> Result<Response, FancyError> {
@@ -132,6 +138,10 @@ pub(crate) async fn post(
     };
 
     repo.save().await?;
+
+    activity_tracker
+        .record_browser_session(&clock, &session)
+        .await;
 
     Ok((cookie_jar, next).into_response())
 }

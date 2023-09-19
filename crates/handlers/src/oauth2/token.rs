@@ -52,7 +52,7 @@ use ulid::Ulid;
 use url::Url;
 
 use super::{generate_id_token, generate_token_pair};
-use crate::{impl_from_error_for_route, site_config::SiteConfig};
+use crate::{impl_from_error_for_route, site_config::SiteConfig, BoundActivityTracker};
 
 #[serde_as]
 #[skip_serializing_none]
@@ -200,6 +200,7 @@ pub(crate) async fn post(
     State(http_client_factory): State<HttpClientFactory>,
     State(key_store): State<Keystore>,
     State(url_builder): State<UrlBuilder>,
+    activity_tracker: BoundActivityTracker,
     mut repo: BoxRepository,
     State(site_config): State<SiteConfig>,
     State(encrypter): State<Encrypter>,
@@ -229,6 +230,7 @@ pub(crate) async fn post(
             authorization_code_grant(
                 &mut rng,
                 &clock,
+                &activity_tracker,
                 &grant,
                 &client,
                 &key_store,
@@ -239,12 +241,22 @@ pub(crate) async fn post(
             .await?
         }
         AccessTokenRequest::RefreshToken(grant) => {
-            refresh_token_grant(&mut rng, &clock, &grant, &client, &site_config, repo).await?
+            refresh_token_grant(
+                &mut rng,
+                &clock,
+                &activity_tracker,
+                &grant,
+                &client,
+                &site_config,
+                repo,
+            )
+            .await?
         }
         AccessTokenRequest::ClientCredentials(grant) => {
             client_credentials_grant(
                 &mut rng,
                 &clock,
+                &activity_tracker,
                 &grant,
                 &client,
                 &site_config,
@@ -271,6 +283,7 @@ pub(crate) async fn post(
 async fn authorization_code_grant(
     mut rng: &mut BoxRng,
     clock: &impl Clock,
+    activity_tracker: &BoundActivityTracker,
     grant: &AuthorizationCodeGrant,
     client: &Client,
     key_store: &Keystore,
@@ -420,12 +433,20 @@ async fn authorization_code_grant(
         .exchange(clock, authz_grant)
         .await?;
 
+    // XXX: there is a potential (but unlikely) race here, where the activity for
+    // the session is recorded before the transaction is committed. We would have to
+    // save the repository here to fix that.
+    activity_tracker
+        .record_oauth2_session(clock, &session)
+        .await;
+
     Ok((params, repo))
 }
 
 async fn refresh_token_grant(
     rng: &mut BoxRng,
     clock: &impl Clock,
+    activity_tracker: &BoundActivityTracker,
     grant: &RefreshTokenGrant,
     client: &Client,
     site_config: &SiteConfig,
@@ -464,6 +485,10 @@ async fn refresh_token_grant(
         });
     }
 
+    activity_tracker
+        .record_oauth2_session(clock, &session)
+        .await;
+
     let ttl = site_config.access_token_ttl;
     let (new_access_token, new_refresh_token) =
         generate_token_pair(rng, clock, &mut repo, &session, ttl).await?;
@@ -493,6 +518,7 @@ async fn refresh_token_grant(
 async fn client_credentials_grant(
     rng: &mut BoxRng,
     clock: &impl Clock,
+    activity_tracker: &BoundActivityTracker,
     grant: &ClientCredentialsGrant,
     client: &Client,
     site_config: &SiteConfig,
@@ -533,6 +559,13 @@ async fn client_credentials_grant(
         .await?;
 
     let mut params = AccessTokenResponse::new(access_token.access_token).with_expires_in(ttl);
+
+    // XXX: there is a potential (but unlikely) race here, where the activity for
+    // the session is recorded before the transaction is committed. We would have to
+    // save the repository here to fix that.
+    activity_tracker
+        .record_oauth2_session(clock, &session)
+        .await;
 
     if !session.scope.is_empty() {
         // We only return the scope if it's not empty

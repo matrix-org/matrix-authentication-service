@@ -25,7 +25,7 @@ use mas_storage::{
 use thiserror::Error;
 
 use super::MatrixError;
-use crate::impl_from_error_for_route;
+use crate::{impl_from_error_for_route, BoundActivityTracker};
 
 #[derive(Error, Debug)]
 pub enum RouteError {
@@ -73,6 +73,7 @@ impl IntoResponse for RouteError {
 pub(crate) async fn post(
     clock: BoxClock,
     mut repo: BoxRepository,
+    activity_tracker: BoundActivityTracker,
     maybe_authorization: Option<TypedHeader<Authorization<Bearer>>>,
 ) -> Result<impl IntoResponse, RouteError> {
     let TypedHeader(authorization) = maybe_authorization.ok_or(RouteError::MissingAuthorization)?;
@@ -97,6 +98,10 @@ pub(crate) async fn post(
         .await?
         .filter(|s| s.is_valid())
         .ok_or(RouteError::InvalidAuthorization)?;
+
+    activity_tracker
+        .record_compat_session(&clock, &session)
+        .await;
 
     let user = repo
         .user()

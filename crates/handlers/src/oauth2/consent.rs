@@ -34,7 +34,7 @@ use mas_templates::{ConsentContext, PolicyViolationContext, TemplateContext, Tem
 use thiserror::Error;
 use ulid::Ulid;
 
-use crate::impl_from_error_for_route;
+use crate::{impl_from_error_for_route, BoundActivityTracker};
 
 #[derive(Debug, Error)]
 pub enum RouteError {
@@ -85,6 +85,7 @@ pub(crate) async fn get(
     State(templates): State<Templates>,
     mut policy: Policy,
     mut repo: BoxRepository,
+    activity_tracker: BoundActivityTracker,
     cookie_jar: CookieJar,
     Path(grant_id): Path<Ulid>,
 ) -> Result<Response, RouteError> {
@@ -109,6 +110,10 @@ pub(crate) async fn get(
     }
 
     if let Some(session) = maybe_session {
+        activity_tracker
+            .record_browser_session(&clock, &session)
+            .await;
+
         let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
 
         let res = policy
@@ -149,6 +154,7 @@ pub(crate) async fn post(
     clock: BoxClock,
     mut policy: Policy,
     mut repo: BoxRepository,
+    activity_tracker: BoundActivityTracker,
     cookie_jar: CookieJar,
     Path(grant_id): Path<Ulid>,
     Form(form): Form<ProtectedForm<()>>,
@@ -170,6 +176,10 @@ pub(crate) async fn post(
         let login = mas_router::Login::and_then(next);
         return Ok((cookie_jar, login.go()).into_response());
     };
+
+    activity_tracker
+        .record_browser_session(&clock, &session)
+        .await;
 
     let client = repo
         .oauth2_client()

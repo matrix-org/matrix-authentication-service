@@ -35,7 +35,7 @@ use oauth2_types::{
 };
 use thiserror::Error;
 
-use crate::impl_from_error_for_route;
+use crate::{impl_from_error_for_route, ActivityTracker};
 
 #[derive(Debug, Error)]
 pub enum RouteError {
@@ -177,6 +177,7 @@ pub(crate) async fn post(
     clock: BoxClock,
     State(http_client_factory): State<HttpClientFactory>,
     mut repo: BoxRepository,
+    activity_tracker: ActivityTracker,
     State(encrypter): State<Encrypter>,
     client_authorization: ClientAuthorization<IntrospectionRequest>,
 ) -> Result<impl IntoResponse, RouteError> {
@@ -210,6 +211,9 @@ pub(crate) async fn post(
             return Err(RouteError::UnexpectedTokenType);
         }
     }
+
+    // XXX: we should get the IP from the client introspecting the token
+    let ip = None;
 
     let reply = match token_type {
         TokenType::AccessToken => {
@@ -250,6 +254,10 @@ pub(crate) async fn post(
             } else {
                 (None, None)
             };
+
+            activity_tracker
+                .record_oauth2_session(&clock, &session, ip)
+                .await;
 
             IntrospectionResponse {
                 active: true,
@@ -306,6 +314,10 @@ pub(crate) async fn post(
                 (None, None)
             };
 
+            activity_tracker
+                .record_oauth2_session(&clock, &session, ip)
+                .await;
+
             IntrospectionResponse {
                 active: true,
                 scope: Some(session.scope),
@@ -361,6 +373,10 @@ pub(crate) async fn post(
                 .chain(synapse_admin)
                 .collect();
 
+            activity_tracker
+                .record_compat_session(&clock, &session, ip)
+                .await;
+
             IntrospectionResponse {
                 active: true,
                 scope: Some(scope),
@@ -415,6 +431,10 @@ pub(crate) async fn post(
                 .into_iter()
                 .chain(synapse_admin)
                 .collect();
+
+            activity_tracker
+                .record_compat_session(&clock, &session, ip)
+                .await;
 
             IntrospectionResponse {
                 active: true,
