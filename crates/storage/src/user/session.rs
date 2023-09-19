@@ -12,7 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::net::IpAddr;
+
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use mas_data_model::{
     Authentication, BrowserSession, Password, UpstreamOAuthAuthorizationSession, User,
 };
@@ -227,6 +230,21 @@ pub trait BrowserSessionRepository: Send + Sync {
         &mut self,
         user_session: &BrowserSession,
     ) -> Result<Option<Authentication>, Self::Error>;
+
+    /// Record a batch of [`Session`] activity
+    ///
+    /// # Parameters
+    ///
+    /// * `activity`: A list of tuples containing the session ID, the last
+    ///   activity timestamp and the IP address of the client
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn record_batch_activity(
+        &mut self,
+        activity: Vec<(Ulid, DateTime<Utc>, Option<IpAddr>)>,
+    ) -> Result<(), Self::Error>;
 }
 
 repository_impl!(BrowserSessionRepository:
@@ -272,4 +290,9 @@ repository_impl!(BrowserSessionRepository:
         &mut self,
         user_session: &BrowserSession,
     ) -> Result<Option<Authentication>, Self::Error>;
+
+    async fn record_batch_activity(
+        &mut self,
+        activity: Vec<(Ulid, DateTime<Utc>, Option<IpAddr>)>,
+    ) -> Result<(), Self::Error>;
 );

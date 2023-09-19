@@ -15,7 +15,7 @@
 use std::{collections::HashMap, net::IpAddr};
 
 use chrono::{DateTime, Utc};
-use mas_storage::Repository;
+use mas_storage::{user::BrowserSessionRepository, Repository, RepositoryAccess};
 use opentelemetry::{
     metrics::{Counter, Histogram},
     Key,
@@ -38,6 +38,8 @@ const RESULT: Key = Key::from_static_str("result");
 
 #[derive(Clone, Copy, Debug)]
 struct ActivityRecord {
+    // XXX: We don't actually use the start time for now
+    #[allow(dead_code)]
     start_time: DateTime<Utc>,
     end_time: DateTime<Utc>,
     ip: Option<IpAddr>,
@@ -195,18 +197,47 @@ impl Worker {
     }
 
     /// Fallible part of [`Self::flush`].
+    #[tracing::instrument(name = "activity_tracker.flush", skip(self))]
     async fn try_flush(&mut self) -> Result<(), anyhow::Error> {
         let pending_records = &self.pending_records;
 
-        let repo = mas_storage_pg::PgRepository::from_pool(&self.pool)
+        let mut repo = mas_storage_pg::PgRepository::from_pool(&self.pool)
             .await?
             .boxed();
+
+        let mut browser_sessions = Vec::new();
+        let mut oauth2_sessions = Vec::new();
+        let mut compat_sessions = Vec::new();
+
+        for ((kind, id), record) in pending_records {
+            match kind {
+                SessionKind::Browser => {
+                    browser_sessions.push((*id, record.end_time, record.ip));
+                }
+                SessionKind::OAuth2 => {
+                    oauth2_sessions.push((*id, record.end_time, record.ip));
+                }
+                SessionKind::Compat => {
+                    compat_sessions.push((*id, record.end_time, record.ip));
+                }
+            }
+        }
 
         tracing::info!(
             "Flushing {} activity records to the database",
             pending_records.len()
         );
-        // TODO: actually save the records
+
+        repo.browser_session()
+            .record_batch_activity(browser_sessions)
+            .await?;
+        repo.oauth2_session()
+            .record_batch_activity(oauth2_sessions)
+            .await?;
+        repo.compat_session()
+            .record_batch_activity(compat_sessions)
+            .await?;
+
         repo.save().await?;
         self.pending_records.clear();
 
