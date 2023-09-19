@@ -141,7 +141,9 @@ impl Options {
             compat_token_ttl: config.experimental.compat_token_ttl,
         };
 
-        let activity_tracker = ActivityTracker::new(pool.clone(), Duration::from_secs(60 * 5));
+        // Initialize the activity tracker
+        // Activity is flushed every minute
+        let activity_tracker = ActivityTracker::new(pool.clone(), Duration::from_secs(60));
 
         // Explicitly the config to properly zeroize secret keys
         drop(config);
