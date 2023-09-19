@@ -26,6 +26,26 @@ type Props = {
   now?: Date;
 };
 
+export const formatDate = (datetime: Date): string =>
+  intlFormat(datetime, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    weekday: "short",
+    hour: "numeric",
+    minute: "numeric",
+  });
+
+/**
+ * Formats a datetime
+ * Uses distance when less than an hour ago
+ * Else internationalised `Fri, 21 Jul 2023, 16:14`
+ */
+export const formatReadableDate = (datetime: Date, now: Date): string =>
+  Math.abs(differenceInHours(now, datetime, { roundingMethod: "round" })) > 1
+    ? formatDate(datetime)
+    : intlFormatDistance(datetime, now);
+
 const DateTime: React.FC<Props> = ({
   datetime: datetimeProps,
   now: nowProps,
@@ -34,17 +54,8 @@ const DateTime: React.FC<Props> = ({
   const datetime =
     typeof datetimeProps === "string" ? parseISO(datetimeProps) : datetimeProps;
   const now = nowProps || new Date();
-  const text =
-    Math.abs(differenceInHours(now, datetime, { roundingMethod: "round" })) > 1
-      ? intlFormat(datetime, {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-          weekday: "short",
-          hour: "numeric",
-          minute: "numeric",
-        })
-      : intlFormatDistance(datetime, now);
+  const text = formatReadableDate(datetime, now);
+
   return (
     <time className={className} dateTime={formatISO(datetime)}>
       {text}

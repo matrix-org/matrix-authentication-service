@@ -13,19 +13,11 @@
 // limitations under the License.
 
 import { create } from "react-test-renderer";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, beforeAll } from "vitest";
 
-import DateTime from "../DateTime";
+import { mockLocale } from "../../test-utils/mockLocale";
 
 import Session from "./Session";
-
-// Mock out datetime to avoid timezones/date formatting
-vi.mock("../DateTime", () => {
-  const MockDateTime: typeof DateTime = ({ datetime }) => (
-    <code>{datetime.toString()}</code>
-  );
-  return { default: MockDateTime };
-});
 
 describe("<Session />", () => {
   const defaultProps = {
@@ -34,6 +26,8 @@ describe("<Session />", () => {
   };
 
   const finishedAt = "2023-06-29T03:35:19.451292+00:00";
+
+  beforeAll(() => mockLocale());
 
   it("renders an active session", () => {
     const component = create(<Session {...defaultProps} />);
