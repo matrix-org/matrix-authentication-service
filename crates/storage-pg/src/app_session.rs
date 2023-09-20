@@ -201,6 +201,14 @@ impl<'c> AppSessionRepository for PgAppSessionRepository<'c> {
     type Error = DatabaseError;
 
     #[allow(clippy::too_many_lines)]
+    #[tracing::instrument(
+        name = "db.app_session.list",
+        fields(
+            db.statement,
+        ),
+        skip_all,
+        err,
+    )]
     async fn list(
         &mut self,
         filter: AppSessionFilter<'_>,
@@ -346,6 +354,14 @@ impl<'c> AppSessionRepository for PgAppSessionRepository<'c> {
         Ok(page)
     }
 
+    #[tracing::instrument(
+        name = "db.app_session.count",
+        fields(
+            db.statement,
+        ),
+        skip_all,
+        err,
+    )]
     async fn count(&mut self, filter: AppSessionFilter<'_>) -> Result<usize, Self::Error> {
         let mut oauth2_session_select = Query::select()
             .expr(Expr::cust("1"))
