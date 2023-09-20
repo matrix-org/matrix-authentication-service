@@ -31,7 +31,6 @@ use hyper::{
 };
 use listenfd::ListenFd;
 use mas_config::{HttpBindConfig, HttpResource, HttpTlsConfig, UnixOrTcp};
-use mas_handlers::AppState;
 use mas_listener::{unix_or_tcp::UnixOrTcpListener, ConnectionInfo};
 use mas_router::Route;
 use mas_templates::Templates;
@@ -51,6 +50,8 @@ use tower::Layer;
 use tower_http::{services::ServeDir, set_header::SetResponseHeaderLayer};
 use tracing::{warn, Span};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
+
+use crate::app_state::AppState;
 
 const MAS_LISTENER_NAME: Key = Key::from_static_str("mas.listener.name");
 
