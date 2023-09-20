@@ -67,7 +67,7 @@ exports[`<OAuth2ClientDetail> > renders client details 1`] = `
             class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
           >
             <a
-              class="_link_eqn56_17 _externalLink_a97355"
+              class="_link_1mzip_17 _externalLink_a97355"
               data-kind="primary"
               href="https://client.org/tos"
               rel="noreferrer noopener"
@@ -89,7 +89,7 @@ exports[`<OAuth2ClientDetail> > renders client details 1`] = `
             class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
           >
             <a
-              class="_link_eqn56_17 _externalLink_a97355"
+              class="_link_1mzip_17 _externalLink_a97355"
               data-kind="primary"
               href="https://client.org/policy"
               rel="noreferrer noopener"
