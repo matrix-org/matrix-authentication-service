@@ -30,7 +30,9 @@ use hyper::{
     header::{CONTENT_TYPE, COOKIE, SET_COOKIE},
     Request, Response, StatusCode,
 };
-use mas_axum_utils::{cookies::CookieManager, http_client_factory::HttpClientFactory};
+use mas_axum_utils::{
+    cookies::CookieManager, http_client_factory::HttpClientFactory, ErrorWrapper,
+};
 use mas_keystore::{Encrypter, JsonWebKey, JsonWebKeySet, Keystore, PrivateKey};
 use mas_matrix::{HomeserverConnection, MockHomeserverConnection};
 use mas_policy::{InstantiateError, Policy, PolicyFactory};
@@ -46,7 +48,6 @@ use tower::{Layer, Service, ServiceExt};
 use url::Url;
 
 use crate::{
-    app_state::ErrorWrapper,
     passwords::{Hasher, PasswordManager},
     site_config::SiteConfig,
     upstream_oauth2::cache::MetadataCache,

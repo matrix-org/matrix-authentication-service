@@ -109,7 +109,15 @@
             ]
           }
         ],
-        "public_base": "http://[::]:8080/"
+        "public_base": "http://[::]:8080/",
+        "trusted_proxies": [
+          "192.128.0.0/16",
+          "172.16.0.0/12",
+          "10.0.0.0/10",
+          "127.0.0.1/8",
+          "fd00::/8",
+          "::1/128"
+        ]
       },
       "allOf": [
         {
@@ -838,6 +846,21 @@
           "description": "Public URL base from where the authentication service is reachable",
           "type": "string",
           "format": "uri"
+        },
+        "trusted_proxies": {
+          "description": "List of trusted reverse proxies that can set the `X-Forwarded-For` header",
+          "default": [
+            "192.128.0.0/16",
+            "172.16.0.0/12",
+            "10.0.0.0/10",
+            "127.0.0.1/8",
+            "fd00::/8",
+            "::1/128"
+          ],
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/IpNetwork"
+          }
         }
       }
     },
@@ -888,6 +911,37 @@
           ]
         }
       }
+    },
+    "IpNetwork": {
+      "oneOf": [
+        {
+          "title": "v4",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Ipv4Network"
+            }
+          ]
+        },
+        {
+          "title": "v6",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Ipv6Network"
+            }
+          ]
+        }
+      ],
+      "x-rust-type": "ipnetwork::IpNetwork"
+    },
+    "Ipv4Network": {
+      "type": "string",
+      "pattern": "^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\/(3[0-2]|[0-2]?[0-9])$",
+      "x-rust-type": "ipnetwork::Ipv4Network"
+    },
+    "Ipv6Network": {
+      "type": "string",
+      "pattern": "^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\")[/](12[0-8]|1[0-1][0-9]|[0-9]?[0-9])$",
+      "x-rust-type": "ipnetwork::Ipv6Network"
     },
     "JsonWebKeyEcEllipticCurve": {
       "description": "JSON Web Key EC Elliptic Curve",

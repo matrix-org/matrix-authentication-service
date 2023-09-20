@@ -19,6 +19,7 @@ use std::{borrow::Cow, io::Cursor, ops::Deref};
 use anyhow::bail;
 use async_trait::async_trait;
 use camino::Utf8PathBuf;
+use ipnetwork::IpNetwork;
 use mas_keystore::PrivateKey;
 use rand::Rng;
 use schemars::JsonSchema;
@@ -58,6 +59,17 @@ fn http_listener_assets_path_default() -> Utf8PathBuf {
 #[cfg(feature = "dist")]
 fn http_listener_assets_path_default() -> Utf8PathBuf {
     "./share/assets/".into()
+}
+
+fn default_trusted_proxies() -> Vec<IpNetwork> {
+    vec![
+        IpNetwork::new([192, 128, 0, 0].into(), 16).unwrap(),
+        IpNetwork::new([172, 16, 0, 0].into(), 12).unwrap(),
+        IpNetwork::new([10, 0, 0, 0].into(), 10).unwrap(),
+        IpNetwork::new(std::net::Ipv4Addr::LOCALHOST.into(), 8).unwrap(),
+        IpNetwork::new([0xfd00, 0, 0, 0, 0, 0, 0, 0].into(), 8).unwrap(),
+        IpNetwork::new(std::net::Ipv6Addr::LOCALHOST.into(), 128).unwrap(),
+    ]
 }
 
 /// Kind of socket
@@ -319,6 +331,11 @@ pub struct HttpConfig {
     #[serde(default)]
     pub listeners: Vec<ListenerConfig>,
 
+    /// List of trusted reverse proxies that can set the `X-Forwarded-For`
+    /// header
+    #[serde(default = "default_trusted_proxies")]
+    pub trusted_proxies: Vec<IpNetwork>,
+
     /// Public URL base from where the authentication service is reachable
     pub public_base: Url,
 
@@ -359,6 +376,7 @@ impl Default for HttpConfig {
                     }],
                 },
             ],
+            trusted_proxies: default_trusted_proxies(),
             issuer: Some(default_public_base()),
             public_base: default_public_base(),
         }

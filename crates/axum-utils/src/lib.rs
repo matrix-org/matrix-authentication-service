@@ -25,6 +25,7 @@
 pub mod client_authorization;
 pub mod cookies;
 pub mod csrf;
+pub mod error_wrapper;
 pub mod fancy_error;
 pub mod http_client_factory;
 pub mod jwt;
@@ -35,6 +36,7 @@ pub mod user_authorization;
 pub use axum;
 
 pub use self::{
+    error_wrapper::ErrorWrapper,
     fancy_error::FancyError,
     session::{SessionInfo, SessionInfoExt},
 };
