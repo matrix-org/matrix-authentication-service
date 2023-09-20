@@ -12,22 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::sync::Arc;
+use std::{
+    future::Future,
+    pin::Pin,
+    sync::{atomic::AtomicBool, Arc},
+    task::{Context, Poll},
+    time::Duration,
+};
 
-use futures_util::{Stream, StreamExt};
+use futures_util::{stream::SelectAll, Stream, StreamExt};
 use http_body::Body;
-use hyper::{Request, Response};
+use hyper::{body::HttpBody, server::conn::Connection, Request, Response};
+use pin_project_lite::pin_project;
 use thiserror::Error;
+use tokio::io::{AsyncRead, AsyncWrite};
 use tokio_rustls::rustls::ServerConfig;
 use tower_http::add_extension::AddExtension;
 use tower_service::Service;
 
 use crate::{
-    maybe_tls::{MaybeTlsAcceptor, TlsStreamInfo},
+    maybe_tls::{MaybeTlsAcceptor, MaybeTlsStream, TlsStreamInfo},
     proxy_protocol::{MaybeProxyAcceptor, ProxyAcceptError},
+    rewind::Rewind,
     unix_or_tcp::{SocketAddr, UnixOrTcpConnection, UnixOrTcpListener},
     ConnectionInfo,
 };
+
+/// The timeout for the handshake to complete
+const HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(5);
 
 pub struct Server<S> {
     tls: Option<Arc<ServerConfig>>,
@@ -79,10 +91,10 @@ impl<S> Server<S> {
     where
         S: Service<Request<hyper::Body>, Response = Response<B>> + Clone + Send + 'static,
         S::Future: Send + 'static,
-        S::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
+        S::Error: std::error::Error + Send + Sync + 'static,
         B: Body + Send + 'static,
         B::Data: Send,
-        B::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
+        B::Error: std::error::Error + Send + Sync + 'static,
         SD: Stream + Unpin,
         SD::Item: std::fmt::Display,
     {
@@ -111,8 +123,11 @@ enum AcceptError {
         source: ProxyAcceptError,
     },
 
-    #[error(transparent)]
-    Hyper(#[from] hyper::Error),
+    #[error("connection handshake timed out")]
+    HandshakeTimeout {
+        #[source]
+        source: tokio::time::error::Elapsed,
+    },
 }
 
 impl AcceptError {
@@ -127,110 +142,178 @@ impl AcceptError {
     fn proxy_handshake(source: ProxyAcceptError) -> Self {
         Self::ProxyHandshake { source }
     }
+
+    fn handshake_timeout(source: tokio::time::error::Elapsed) -> Self {
+        Self::HandshakeTimeout { source }
+    }
 }
 
+/// Accept a connection and do the proxy protocol and TLS handshake
+///
+/// Returns an error if the proxy protocol or TLS handshake failed.
+/// Returns the connection, which should be used to spawn a task to serve the
+/// connection.
 async fn accept<S, B>(
     maybe_proxy_acceptor: &MaybeProxyAcceptor,
     maybe_tls_acceptor: &MaybeTlsAcceptor,
     peer_addr: SocketAddr,
     stream: UnixOrTcpConnection,
     service: S,
-) -> Result<(), AcceptError>
+) -> Result<
+    Connection<MaybeTlsStream<Rewind<UnixOrTcpConnection>>, AddExtension<S, ConnectionInfo>>,
+    AcceptError,
+>
 where
     S: Service<Request<hyper::Body>, Response = Response<B>>,
+    S::Error: std::error::Error + Send + Sync + 'static,
     S::Future: Send + 'static,
-    S::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
-    B: Body + Send + 'static,
-    B::Data: Send,
-    B::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
+    B: HttpBody + Send + 'static,
+    B::Data: Send + 'static,
+    B::Error: std::error::Error + Send + Sync + 'static,
 {
-    let (proxy, stream) = maybe_proxy_acceptor
-        .accept(stream)
-        .await
-        .map_err(AcceptError::proxy_handshake)?;
+    // Wrap the connection acceptation logic in a timeout
+    tokio::time::timeout(HANDSHAKE_TIMEOUT, async move {
+        let (proxy, stream) = maybe_proxy_acceptor
+            .accept(stream)
+            .await
+            .map_err(AcceptError::proxy_handshake)?;
 
-    let stream = maybe_tls_acceptor
-        .accept(stream)
-        .await
-        .map_err(AcceptError::tls_handshake)?;
+        let stream = maybe_tls_acceptor
+            .accept(stream)
+            .await
+            .map_err(AcceptError::tls_handshake)?;
 
-    let tls = stream.tls_info();
+        let tls = stream.tls_info();
 
-    // Figure out if it's HTTP/2 based on the negociated ALPN info
-    let is_h2 = tls.as_ref().map_or(false, TlsStreamInfo::is_alpn_h2);
+        // Figure out if it's HTTP/2 based on the negociated ALPN info
+        let is_h2 = tls.as_ref().map_or(false, TlsStreamInfo::is_alpn_h2);
 
-    let info = ConnectionInfo {
-        tls,
-        proxy,
-        net_peer_addr: peer_addr.into_net(),
-    };
+        let info = ConnectionInfo {
+            tls,
+            proxy,
+            net_peer_addr: peer_addr.into_net(),
+        };
 
-    let service = AddExtension::new(service, info);
+        let service = AddExtension::new(service, info);
 
-    if is_h2 {
-        hyper::server::conn::Http::new()
-            .http2_only(true)
-            .serve_connection(stream, service)
-            .with_upgrades()
-            .await?;
-    } else {
-        hyper::server::conn::Http::new()
-            .http1_only(true)
-            .http1_keep_alive(true)
-            .serve_connection(stream, service)
-            .with_upgrades()
-            .await?;
-    };
+        let conn = if is_h2 {
+            hyper::server::conn::Http::new()
+                .http2_only(true)
+                .serve_connection(stream, service)
+        } else {
+            hyper::server::conn::Http::new()
+                .http1_only(true)
+                .http1_keep_alive(true)
+                .serve_connection(stream, service)
+        };
 
-    Ok(())
+        Ok(conn)
+    })
+    .await
+    .map_err(AcceptError::handshake_timeout)?
 }
 
+pin_project! {
+    /// A wrapper around a connection that can be aborted when a shutdown signal is received.
+    ///
+    /// This works by sharing an atomic boolean between all connections, and when a shutdown
+    /// signal is received, the boolean is set to true. The connection will then check the
+    /// boolean before polling the underlying connection, and if it's true, it will start a
+    /// graceful shutdown.
+    struct AbortableConnection<C> {
+        #[pin]
+        connection: C,
+        shutdown_in_progress: Arc<AtomicBool>,
+        did_start_shutdown: bool,
+    }
+}
+
+impl<C> AbortableConnection<C> {
+    fn new(connection: C, shutdown_in_progress: &Arc<AtomicBool>) -> Self {
+        Self {
+            connection,
+            shutdown_in_progress: Arc::clone(shutdown_in_progress),
+            did_start_shutdown: false,
+        }
+    }
+}
+
+impl<T, S, B> Future for AbortableConnection<Connection<T, S>>
+where
+    Connection<T, S>: Future,
+    S: Service<Request<hyper::Body>, Response = Response<B>> + Send + 'static,
+    S::Future: Send + 'static,
+    S::Error: std::error::Error + Send + Sync,
+    B: HttpBody + Send + 'static,
+    B::Data: Send,
+    B::Error: std::error::Error + Send + Sync,
+    T: AsyncRead + AsyncWrite + Unpin,
+{
+    type Output = <Connection<T, S> as Future>::Output;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let mut this = self.project();
+
+        // XXX: This assumes the task will be polled again after the shutdown signal is
+        // received. I *think* that internally `graceful_shutdown` is only
+        // setting a bunch of flags anyway, so I expect it should be fine to not have a
+        // waker here.
+        if !*this.did_start_shutdown
+            && this
+                .shutdown_in_progress
+                .load(std::sync::atomic::Ordering::Relaxed)
+        {
+            *this.did_start_shutdown = true;
+            this.connection.as_mut().graceful_shutdown();
+        }
+
+        this.connection.poll(cx)
+    }
+}
+
+#[allow(clippy::too_many_lines)]
 pub async fn run_servers<S, B, SD>(listeners: impl IntoIterator<Item = Server<S>>, mut shutdown: SD)
 where
     S: Service<Request<hyper::Body>, Response = Response<B>> + Clone + Send + 'static,
     S::Future: Send + 'static,
-    S::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
+    S::Error: std::error::Error + Send + Sync + 'static,
     B: Body + Send + 'static,
     B::Data: Send,
-    B::Error: Into<Box<dyn std::error::Error + Send + Sync>>,
+    B::Error: std::error::Error + Send + Sync + 'static,
     SD: Stream + Unpin,
     SD::Item: std::fmt::Display,
 {
-    let listeners: Vec<_> = listeners
+    // Create a stream of accepted connections out of the listeners
+    let mut accept_stream: SelectAll<_> = listeners
         .into_iter()
         .map(|server| {
             let maybe_proxy_acceptor = MaybeProxyAcceptor::new(server.proxy);
             let maybe_tls_acceptor = MaybeTlsAcceptor::new(server.tls);
-            let service = server.service;
-            let listener = server.listener;
-            (maybe_proxy_acceptor, maybe_tls_acceptor, service, listener)
+            futures_util::stream::poll_fn(move |cx| {
+                let res =
+                    std::task::ready!(server.listener.poll_accept(cx)).map(|(addr, stream)| {
+                        (
+                            maybe_proxy_acceptor,
+                            maybe_tls_acceptor.clone(),
+                            server.service.clone(),
+                            addr,
+                            stream,
+                        )
+                    });
+                Poll::Ready(Some(res))
+            })
         })
         .collect();
 
-    let mut set = tokio::task::JoinSet::new();
+    // A JoinSet which collects connections that are being accepted
+    let mut accept_tasks = tokio::task::JoinSet::new();
+    // A JoinSet which collects connections that are being served
+    let mut connection_tasks = tokio::task::JoinSet::new();
+
+    // A shared atomic boolean to tell all connections to shutdown
+    let shutdown_in_progress = Arc::new(AtomicBool::new(false));
 
     loop {
-        let mut accept_all: futures_util::stream::FuturesUnordered<_> = listeners
-            .iter()
-            .map(
-                |(maybe_proxy_acceptor, maybe_tls_acceptor, service, listener)| async move {
-                    listener
-                        .accept()
-                        .await
-                        .map_err(AcceptError::socket)
-                        .map(|(addr, conn)| {
-                            (
-                                maybe_proxy_acceptor.clone(),
-                                maybe_tls_acceptor.clone(),
-                                service.clone(),
-                                addr,
-                                conn,
-                            )
-                        })
-                },
-            )
-            .collect();
-
         tokio::select! {
             biased;
 
@@ -242,62 +325,101 @@ where
                 break;
             },
 
-            // Poll on the JoinSet, clearing finished task
-            res = set.join_next(), if !set.is_empty() => {
+            // Poll on the JoinSet to collect connections to serve
+            res = accept_tasks.join_next(), if !accept_tasks.is_empty() => {
                 match res {
-                    Some(Ok(Ok(()))) => tracing::trace!("Task was successful"),
-                    Some(Ok(Err(e))) => tracing::error!("{e}"),
+                    Some(Ok(Ok(connection))) => {
+                        tracing::trace!("Accepted connection");
+                        let conn = AbortableConnection::new(connection, &shutdown_in_progress);
+                        connection_tasks.spawn(conn);
+                    },
+                    Some(Ok(Err(e))) => tracing::error!("Connection did not finish handshake: {e}"),
                     Some(Err(e)) => tracing::error!("Join error: {e}"),
                     None => tracing::error!("Join set was polled even though it was empty"),
                 }
             },
 
-            // Then look for connections to accept
-            res = accept_all.next(), if !accept_all.is_empty() => {
-                // SAFETY: We shouldn't reach this branch if the unordered future set is empty
+            // Poll on the JoinSet to collect finished connections
+            res = connection_tasks.join_next(), if !connection_tasks.is_empty() => {
+                match res {
+                    Some(Ok(Ok(()))) => tracing::trace!("Connection finished"),
+                    Some(Ok(Err(e))) => tracing::error!("Error while serving connection: {e}"),
+                    Some(Err(e)) => tracing::error!("Join error: {e}"),
+                    None => tracing::error!("Join set was polled even though it was empty"),
+                }
+            },
+
+            // Look for connections to accept
+            res = accept_stream.next(), if !accept_stream.is_empty() => {
+                // SAFETY: We shouldn't reach this branch if the stream set is empty
                 let Some(res) = res else { unreachable!() };
 
                 // Spawn the connection in the set, so we don't have to wait for the handshake to
                 // accept the next connection. This allows us to keep track of active connections
                 // and waiting on them for a graceful shutdown
-                set.spawn(async move {
-                    let (maybe_proxy_acceptor, maybe_tls_acceptor, service, peer_addr, stream) = res?;
+                accept_tasks.spawn(async move {
+                    let (maybe_proxy_acceptor, maybe_tls_acceptor, service, peer_addr, stream) = res
+                        .map_err(AcceptError::socket)?;
                     accept(&maybe_proxy_acceptor, &maybe_tls_acceptor, peer_addr, stream, service).await
                 });
             },
         };
     }
 
-    if !set.is_empty() {
+    // Tell the active connections to shutdown
+    shutdown_in_progress.store(true, std::sync::atomic::Ordering::Relaxed);
+
+    // Wait for connections to cleanup
+    if !accept_tasks.is_empty() || !connection_tasks.is_empty() {
         tracing::info!(
-            "There are {active} active connections, performing a graceful shutdown. Send the shutdown signal again to force.",
-            active = set.len()
+            "There are {active} active connections ({pending} pending), performing a graceful shutdown. Send the shutdown signal again to force.",
+            active = connection_tasks.len(),
+            pending = accept_tasks.len(),
         );
 
-        loop {
+        while !accept_tasks.is_empty() || !connection_tasks.is_empty() {
             tokio::select! {
                 biased;
 
-                res = set.join_next() => {
+                // Poll on the JoinSet to collect connections to serve
+                res = accept_tasks.join_next(), if !accept_tasks.is_empty() => {
                     match res {
-                        Some(Ok(Ok(()))) => tracing::trace!("Task was successful"),
-                        Some(Ok(Err(e))) => tracing::error!("{e}"),
+                        Some(Ok(Ok(connection))) => {
+                            tracing::trace!("Accepted connection");
+                            let conn = AbortableConnection::new(connection, &shutdown_in_progress);
+                            connection_tasks.spawn(conn);
+                        }
+                        Some(Ok(Err(e))) => tracing::error!("Connection did not finish handshake: {e}"),
                         Some(Err(e)) => tracing::error!("Join error: {e}"),
-                        // No more tasks, going out
-                        None => break,
+                        None => tracing::error!("Join set was polled even though it was empty"),
                     }
                 },
 
+                // Poll on the JoinSet to collect finished connections
+                res = connection_tasks.join_next(), if !connection_tasks.is_empty() => {
+                    match res {
+                        Some(Ok(Ok(()))) => tracing::trace!("Connection finished"),
+                        Some(Ok(Err(e))) => tracing::error!("Error while serving connection: {e}"),
+                        Some(Err(e)) => tracing::error!("Join error: {e}"),
+                        None => tracing::error!("Join set was polled even though it was empty"),
+                    }
+                },
 
+                // Handle when we receive the shutdown signal again
                 res = shutdown.next() => {
                     let why = res.map_or_else(|| String::from("???"), |why| format!("{why}"));
-                    tracing::warn!("Received shutdown signal again ({why}), forcing shutdown ({active} active connections)", active = set.len());
+                    tracing::warn!(
+                        "Received shutdown signal again ({why}), forcing shutdown ({active} active connections, {pending} pending connections)",
+                        active = connection_tasks.len(),
+                        pending = accept_tasks.len(),
+                    );
                     break;
                 },
             }
         }
     }
 
-    set.shutdown().await;
+    accept_tasks.shutdown().await;
+    connection_tasks.shutdown().await;
     tracing::info!("Shutdown complete");
 }

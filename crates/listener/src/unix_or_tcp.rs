@@ -18,7 +18,7 @@
 
 use std::{
     pin::Pin,
-    task::{Context, Poll},
+    task::{ready, Context, Poll},
 };
 
 use tokio::{
@@ -145,6 +145,11 @@ impl UnixOrTcpListener {
 
     /// Accept an incoming connection
     ///
+    /// # Cancel safety
+    ///
+    /// This function is safe to cancel, as both [`UnixListener::accept`] and
+    /// [`TcpListener::accept`] are safe to cancel.
+    ///
     /// # Errors
     ///
     /// Returns an error if the underlying socket couldn't accept the connection
@@ -167,6 +172,48 @@ impl UnixOrTcpListener {
                 socket.set_nodelay(true)?;
 
                 Ok((remote_addr.into(), UnixOrTcpConnection::Tcp { stream }))
+            }
+        }
+    }
+
+    /// Poll for an incoming connection
+    ///
+    /// # Cancel safety
+    ///
+    /// This function is safe to cancel, as both [`UnixListener::poll_accept`]
+    /// and [`TcpListener::poll_accept`] are safe to cancel.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the underlying socket couldn't accept the connection
+    pub fn poll_accept(
+        &self,
+        cx: &mut Context<'_>,
+    ) -> Poll<Result<(SocketAddr, UnixOrTcpConnection), std::io::Error>> {
+        match self {
+            Self::Unix(listener) => {
+                let (stream, remote_addr) = ready!(listener.poll_accept(cx)?);
+
+                let socket = socket2::SockRef::from(&stream);
+                socket.set_keepalive(true)?;
+                socket.set_nodelay(true)?;
+
+                Poll::Ready(Ok((
+                    remote_addr.into(),
+                    UnixOrTcpConnection::Unix { stream },
+                )))
+            }
+            Self::Tcp(listener) => {
+                let (stream, remote_addr) = ready!(listener.poll_accept(cx)?);
+
+                let socket = socket2::SockRef::from(&stream);
+                socket.set_keepalive(true)?;
+                socket.set_nodelay(true)?;
+
+                Poll::Ready(Ok((
+                    remote_addr.into(),
+                    UnixOrTcpConnection::Tcp { stream },
+                )))
             }
         }
     }
