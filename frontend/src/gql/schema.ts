@@ -110,6 +110,116 @@ export default {
         ],
       },
       {
+        kind: "UNION",
+        name: "AppSession",
+        possibleTypes: [
+          {
+            kind: "OBJECT",
+            name: "CompatSession",
+          },
+          {
+            kind: "OBJECT",
+            name: "Oauth2Session",
+          },
+        ],
+      },
+      {
+        kind: "OBJECT",
+        name: "AppSessionConnection",
+        fields: [
+          {
+            name: "edges",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "LIST",
+                ofType: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "OBJECT",
+                    name: "AppSessionEdge",
+                    ofType: null,
+                  },
+                },
+              },
+            },
+            args: [],
+          },
+          {
+            name: "nodes",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "LIST",
+                ofType: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "UNION",
+                    name: "AppSession",
+                    ofType: null,
+                  },
+                },
+              },
+            },
+            args: [],
+          },
+          {
+            name: "pageInfo",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "PageInfo",
+                ofType: null,
+              },
+            },
+            args: [],
+          },
+          {
+            name: "totalCount",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+        ],
+        interfaces: [],
+      },
+      {
+        kind: "OBJECT",
+        name: "AppSessionEdge",
+        fields: [
+          {
+            name: "cursor",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+          {
+            name: "node",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "UNION",
+                name: "AppSession",
+                ofType: null,
+              },
+            },
+            args: [],
+          },
+        ],
+        interfaces: [],
+      },
+      {
         kind: "OBJECT",
         name: "Authentication",
         fields: [
@@ -2410,6 +2520,54 @@ export default {
         kind: "OBJECT",
         name: "User",
         fields: [
+          {
+            name: "appSessions",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "AppSessionConnection",
+                ofType: null,
+              },
+            },
+            args: [
+              {
+                name: "after",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "before",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "first",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "last",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "state",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+            ],
+          },
           {
             name: "browserSessions",
             type: {
