@@ -9,7 +9,7 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
       class="_header_92353c"
     >
       <button
-        class="_icon-button_9uxnz_17"
+        class="_icon-button_1segd_17"
         style="--cpd-icon-button-size: 32px;"
         type="button"
       >
@@ -133,7 +133,7 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
             class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
           >
             <a
-              class="_link_1mzip_17 _externalLink_a97355"
+              class="_link_eqn56_17 _externalLink_a97355"
               data-kind="primary"
               href="https://element.io"
               rel="noreferrer noopener"
@@ -149,7 +149,7 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
       aria-controls="radix-:r0:"
       aria-expanded="false"
       aria-haspopup="dialog"
-      class="_button_1ukgx_17"
+      class="_button_1raud_17"
       data-kind="destructive"
       data-size="sm"
       data-state="closed"
@@ -172,7 +172,7 @@ exports[`<CompatSessionDetail> > renders a compatability session without an ssoL
       class="_header_92353c"
     >
       <button
-        class="_icon-button_9uxnz_17"
+        class="_icon-button_1segd_17"
         style="--cpd-icon-button-size: 32px;"
         type="button"
       >
@@ -263,7 +263,7 @@ exports[`<CompatSessionDetail> > renders a compatability session without an ssoL
       aria-controls="radix-:r3:"
       aria-expanded="false"
       aria-haspopup="dialog"
-      class="_button_1ukgx_17"
+      class="_button_1raud_17"
       data-kind="destructive"
       data-size="sm"
       data-state="closed"
