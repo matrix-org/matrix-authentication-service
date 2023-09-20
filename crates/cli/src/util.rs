@@ -20,7 +20,7 @@ use mas_config::{
     PasswordsConfig, PolicyConfig, TemplatesConfig,
 };
 use mas_email::{MailTransport, Mailer};
-use mas_handlers::passwords::PasswordManager;
+use mas_handlers::{passwords::PasswordManager, ActivityTracker};
 use mas_policy::PolicyFactory;
 use mas_router::UrlBuilder;
 use mas_templates::{TemplateLoadingError, Templates};
@@ -206,11 +206,16 @@ pub async fn database_connection_from_config(
 }
 
 /// Reload templates on SIGHUP
-pub fn register_sighup(templates: &Templates) -> anyhow::Result<()> {
+pub fn register_sighup(
+    templates: &Templates,
+    activity_tracker: &ActivityTracker,
+) -> anyhow::Result<()> {
     #[cfg(unix)]
     {
         let mut signal = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::hangup())?;
         let templates = templates.clone();
+        let activity_tracker = activity_tracker.clone();
+
         tokio::spawn(async move {
             loop {
                 if signal.recv().await.is_none() {
@@ -218,8 +223,9 @@ pub fn register_sighup(templates: &Templates) -> anyhow::Result<()> {
                     break;
                 };
 
-                info!("SIGHUP received, reloading templates");
+                info!("SIGHUP received, reloading templates & flushing activity tracker");
 
+                activity_tracker.flush().await;
                 templates.clone().reload().await.unwrap_or_else(|err| {
                     error!(?err, "Error while reloading templates");
                 });

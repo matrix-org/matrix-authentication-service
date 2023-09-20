@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::net::IpAddr;
+
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use mas_data_model::{BrowserSession, Client, Session, SessionState, User};
@@ -57,6 +59,8 @@ struct OAuthSessionLookup {
     scope_list: Vec<String>,
     created_at: DateTime<Utc>,
     finished_at: Option<DateTime<Utc>>,
+    last_active_at: Option<DateTime<Utc>>,
+    last_active_ip: Option<IpAddr>,
 }
 
 impl TryFrom<OAuthSessionLookup> for Session {
@@ -89,6 +93,8 @@ impl TryFrom<OAuthSessionLookup> for Session {
             user_id: value.user_id.map(Ulid::from),
             user_session_id: value.user_session_id.map(Ulid::from),
             scope,
+            last_active_at: value.last_active_at,
+            last_active_ip: value.last_active_ip,
         })
     }
 }
@@ -117,6 +123,8 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
                      , scope_list
                      , created_at
                      , finished_at
+                     , last_active_at
+                     , last_active_ip as "last_active_ip: IpAddr"
                 FROM oauth2_sessions
 
                 WHERE oauth2_session_id = $1
@@ -189,6 +197,8 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
             user_session_id: user_session.map(|s| s.id),
             client_id: client.id,
             scope,
+            last_active_at: None,
+            last_active_ip: None,
         })
     }
 
@@ -270,6 +280,14 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
             .expr_as(
                 Expr::col((OAuth2Sessions::Table, OAuth2Sessions::FinishedAt)),
                 OAuthSessionLookupIden::FinishedAt,
+            )
+            .expr_as(
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::LastActiveAt)),
+                OAuthSessionLookupIden::LastActiveAt,
+            )
+            .expr_as(
+                Expr::col((OAuth2Sessions::Table, OAuth2Sessions::LastActiveIp)),
+                OAuthSessionLookupIden::LastActiveIp,
             )
             .from(OAuth2Sessions::Table)
             .and_where_option(filter.user().map(|user| {
@@ -361,5 +379,52 @@ impl<'c> OAuth2SessionRepository for PgOAuth2SessionRepository<'c> {
         count
             .try_into()
             .map_err(DatabaseError::to_invalid_operation)
+    }
+
+    #[tracing::instrument(
+        name = "db.oauth2_session.record_batch_activity",
+        skip_all,
+        fields(
+            db.statement,
+        ),
+        err,
+    )]
+    async fn record_batch_activity(
+        &mut self,
+        activity: Vec<(Ulid, DateTime<Utc>, Option<IpAddr>)>,
+    ) -> Result<(), Self::Error> {
+        let mut ids = Vec::with_capacity(activity.len());
+        let mut last_activities = Vec::with_capacity(activity.len());
+        let mut ips = Vec::with_capacity(activity.len());
+
+        for (id, last_activity, ip) in activity {
+            ids.push(Uuid::from(id));
+            last_activities.push(last_activity);
+            ips.push(ip);
+        }
+
+        let res = sqlx::query!(
+            r#"
+                UPDATE oauth2_sessions
+                SET last_active_at = GREATEST(t.last_active_at, oauth2_sessions.last_active_at)
+                  , last_active_ip = COALESCE(t.last_active_ip, oauth2_sessions.last_active_ip)
+                FROM (
+                    SELECT *
+                    FROM UNNEST($1::uuid[], $2::timestamptz[], $3::inet[]) 
+                        AS t(oauth2_session_id, last_active_at, last_active_ip)
+                ) AS t
+                WHERE oauth2_sessions.oauth2_session_id = t.oauth2_session_id
+            "#,
+            &ids,
+            &last_activities,
+            &ips as &[Option<IpAddr>],
+        )
+        .traced()
+        .execute(&mut *self.conn)
+        .await?;
+
+        DatabaseError::ensure_affected_rows(&res, ids.len().try_into().unwrap_or(u64::MAX))?;
+
+        Ok(())
     }
 }

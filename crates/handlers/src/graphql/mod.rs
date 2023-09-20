@@ -44,7 +44,7 @@ use rand_chacha::ChaChaRng;
 use sqlx::PgPool;
 use tracing::{info_span, Instrument};
 
-use crate::impl_from_error_for_route;
+use crate::{impl_from_error_for_route, BoundActivityTracker};
 
 #[cfg(test)]
 mod tests;
@@ -192,6 +192,7 @@ impl IntoResponse for RouteError {
 
 async fn get_requester(
     clock: &impl Clock,
+    activity_tracker: &BoundActivityTracker,
     mut repo: BoxRepository,
     session_info: SessionInfo,
     token: Option<&str>,
@@ -208,6 +209,10 @@ async fn get_requester(
             .lookup(token.session_id)
             .await?
             .ok_or(RouteError::LoadFailed)?;
+
+        activity_tracker
+            .record_oauth2_session(clock, &session)
+            .await;
 
         // Load the user if there is one
         let user = if let Some(user_id) = session.user_id {
@@ -235,6 +240,13 @@ async fn get_requester(
         Requester::OAuth2Session(session, user)
     } else {
         let maybe_session = session_info.load_session(&mut repo).await?;
+
+        if let Some(session) = maybe_session.as_ref() {
+            activity_tracker
+                .record_browser_session(clock, session)
+                .await;
+        }
+
         Requester::from(maybe_session)
     };
     repo.cancel().await?;
@@ -245,6 +257,7 @@ pub async fn post(
     State(schema): State<Schema>,
     clock: BoxClock,
     repo: BoxRepository,
+    activity_tracker: BoundActivityTracker,
     cookie_jar: CookieJar,
     content_type: Option<TypedHeader<ContentType>>,
     authorization: Option<TypedHeader<Authorization<Bearer>>>,
@@ -254,7 +267,7 @@ pub async fn post(
         .as_ref()
         .map(|TypedHeader(Authorization(bearer))| bearer.token());
     let (session_info, _cookie_jar) = cookie_jar.session_info();
-    let requester = get_requester(&clock, repo, session_info, token).await?;
+    let requester = get_requester(&clock, &activity_tracker, repo, session_info, token).await?;
 
     let content_type = content_type.map(|TypedHeader(h)| h.to_string());
 
@@ -285,6 +298,7 @@ pub async fn get(
     State(schema): State<Schema>,
     clock: BoxClock,
     repo: BoxRepository,
+    activity_tracker: BoundActivityTracker,
     cookie_jar: CookieJar,
     authorization: Option<TypedHeader<Authorization<Bearer>>>,
     RawQuery(query): RawQuery,
@@ -293,7 +307,7 @@ pub async fn get(
         .as_ref()
         .map(|TypedHeader(Authorization(bearer))| bearer.token());
     let (session_info, _cookie_jar) = cookie_jar.session_info();
-    let requester = get_requester(&clock, repo, session_info, token).await?;
+    let requester = get_requester(&clock, &activity_tracker, repo, session_info, token).await?;
 
     let request =
         async_graphql::http::parse_query_string(&query.unwrap_or_default())?.data(requester);

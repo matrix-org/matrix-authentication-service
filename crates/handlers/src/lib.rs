@@ -68,6 +68,7 @@ pub mod passwords;
 pub mod upstream_oauth2;
 mod views;
 
+mod activity_tracker;
 mod site_config;
 #[cfg(test)]
 mod test_utils;
@@ -91,8 +92,12 @@ macro_rules! impl_from_error_for_route {
 pub use mas_axum_utils::{cookies::CookieManager, http_client_factory::HttpClientFactory};
 
 pub use self::{
-    app_state::AppState, compat::MatrixHomeserver, graphql::schema as graphql_schema,
-    site_config::SiteConfig, upstream_oauth2::cache::MetadataCache,
+    activity_tracker::{ActivityTracker, Bound as BoundActivityTracker},
+    app_state::AppState,
+    compat::MatrixHomeserver,
+    graphql::schema as graphql_schema,
+    site_config::SiteConfig,
+    upstream_oauth2::cache::MetadataCache,
 };
 
 pub fn healthcheck_router<S, B>() -> Router<S, B>
@@ -111,6 +116,7 @@ where
     <B as HttpBody>::Error: std::error::Error + Send + Sync,
     S: Clone + Send + Sync + 'static,
     mas_graphql::Schema: FromRef<S>,
+    BoundActivityTracker: FromRequestParts<S>,
     BoxRepository: FromRequestParts<S>,
     BoxClock: FromRequestParts<S>,
     Encrypter: FromRef<S>,
@@ -183,6 +189,8 @@ where
     Keystore: FromRef<S>,
     UrlBuilder: FromRef<S>,
     BoxRepository: FromRequestParts<S>,
+    ActivityTracker: FromRequestParts<S>,
+    BoundActivityTracker: FromRequestParts<S>,
     Encrypter: FromRef<S>,
     HttpClientFactory: FromRef<S>,
     SiteConfig: FromRef<S>,
@@ -245,6 +253,7 @@ where
     SiteConfig: FromRef<S>,
     MatrixHomeserver: FromRef<S>,
     PasswordManager: FromRef<S>,
+    BoundActivityTracker: FromRequestParts<S>,
     BoxRepository: FromRequestParts<S>,
     BoxClock: FromRequestParts<S>,
     BoxRng: FromRequestParts<S>,
@@ -288,6 +297,7 @@ where
     UrlBuilder: FromRef<S>,
     BoxRepository: FromRequestParts<S>,
     CookieJar: FromRequestParts<S>,
+    BoundActivityTracker: FromRequestParts<S>,
     Encrypter: FromRef<S>,
     Templates: FromRef<S>,
     Keystore: FromRef<S>,

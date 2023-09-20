@@ -50,7 +50,7 @@ use crate::{
     passwords::{Hasher, PasswordManager},
     site_config::SiteConfig,
     upstream_oauth2::cache::MetadataCache,
-    MatrixHomeserver,
+    ActivityTracker, BoundActivityTracker, MatrixHomeserver,
 };
 
 // This might fail if it's not the first time it's being called, which is fine,
@@ -100,6 +100,7 @@ pub(crate) struct TestState {
     pub http_client_factory: HttpClientFactory,
     pub password_manager: PasswordManager,
     pub site_config: SiteConfig,
+    pub activity_tracker: ActivityTracker,
     pub clock: Arc<MockClock>,
     pub rng: Arc<Mutex<ChaChaRng>>,
 }
@@ -160,6 +161,9 @@ impl TestState {
 
         let graphql_schema = mas_graphql::schema_builder().data(state).finish();
 
+        let activity_tracker =
+            ActivityTracker::new(pool.clone(), std::time::Duration::from_secs(1));
+
         Ok(Self {
             pool,
             templates,
@@ -174,6 +178,7 @@ impl TestState {
             http_client_factory,
             password_manager,
             site_config,
+            activity_tracker,
             clock,
             rng,
         })
@@ -363,6 +368,31 @@ impl FromRef<TestState> for MetadataCache {
 impl FromRef<TestState> for SiteConfig {
     fn from_ref(input: &TestState) -> Self {
         input.site_config.clone()
+    }
+}
+
+#[async_trait]
+impl FromRequestParts<TestState> for ActivityTracker {
+    type Rejection = Infallible;
+
+    async fn from_request_parts(
+        _parts: &mut axum::http::request::Parts,
+        state: &TestState,
+    ) -> Result<Self, Self::Rejection> {
+        Ok(state.activity_tracker.clone())
+    }
+}
+
+#[async_trait]
+impl FromRequestParts<TestState> for BoundActivityTracker {
+    type Rejection = Infallible;
+
+    async fn from_request_parts(
+        _parts: &mut axum::http::request::Parts,
+        state: &TestState,
+    ) -> Result<Self, Self::Rejection> {
+        let ip = None;
+        Ok(state.activity_tracker.clone().bind(ip))
     }
 }
 

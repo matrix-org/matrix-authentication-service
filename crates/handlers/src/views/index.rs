@@ -21,10 +21,13 @@ use mas_router::UrlBuilder;
 use mas_storage::{BoxClock, BoxRepository, BoxRng};
 use mas_templates::{IndexContext, TemplateContext, Templates};
 
+use crate::BoundActivityTracker;
+
 #[tracing::instrument(name = "handlers.views.index.get", skip_all, err)]
 pub async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
+    activity_tracker: BoundActivityTracker,
     State(templates): State<Templates>,
     State(url_builder): State<UrlBuilder>,
     mut repo: BoxRepository,
@@ -33,6 +36,12 @@ pub async fn get(
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
     let session = session_info.load_session(&mut repo).await?;
+
+    if let Some(session) = session.as_ref() {
+        activity_tracker
+            .record_browser_session(&clock, session)
+            .await;
+    }
 
     let ctx = IndexContext::new(url_builder.oidc_discovery())
         .maybe_with_session(session)

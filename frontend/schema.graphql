@@ -157,6 +157,14 @@ type BrowserSession implements Node & CreationEvent {
   The user-agent string with which the session was created.
   """
   userAgent: String
+  """
+  The last IP address used by the session.
+  """
+  lastActiveIp: String
+  """
+  The last time the session was active.
+  """
+  lastActiveAt: DateTime
 }
 
 type BrowserSessionConnection {
@@ -239,6 +247,14 @@ type CompatSession implements Node & CreationEvent {
   The state of the session.
   """
   state: CompatSessionState!
+  """
+  The last IP address used by the session.
+  """
+  lastActiveIp: String
+  """
+  The last time the session was active.
+  """
+  lastActiveAt: DateTime
 }
 
 type CompatSessionConnection {
@@ -740,6 +756,14 @@ type Oauth2Session implements Node & CreationEvent {
   User authorized for this session.
   """
   user: User
+  """
+  The last IP address used by the session.
+  """
+  lastActiveIp: String
+  """
+  The last time the session was active.
+  """
+  lastActiveAt: DateTime
 }
 
 type Oauth2SessionConnection {

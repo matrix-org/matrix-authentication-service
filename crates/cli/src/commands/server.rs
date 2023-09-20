@@ -19,7 +19,8 @@ use clap::Parser;
 use itertools::Itertools;
 use mas_config::AppConfig;
 use mas_handlers::{
-    AppState, CookieManager, HttpClientFactory, MatrixHomeserver, MetadataCache, SiteConfig,
+    ActivityTracker, AppState, CookieManager, HttpClientFactory, MatrixHomeserver, MetadataCache,
+    SiteConfig,
 };
 use mas_listener::{server::Server, shutdown::ShutdownStream};
 use mas_matrix_synapse::SynapseConnection;
@@ -140,11 +141,15 @@ impl Options {
             compat_token_ttl: config.experimental.compat_token_ttl,
         };
 
+        // Initialize the activity tracker
+        // Activity is flushed every minute
+        let activity_tracker = ActivityTracker::new(pool.clone(), Duration::from_secs(60));
+
         // Explicitly the config to properly zeroize secret keys
         drop(config);
 
         // Listen for SIGHUP
-        register_sighup(&templates)?;
+        register_sighup(&templates, &activity_tracker)?;
 
         let graphql_schema = mas_handlers::graphql_schema(&pool, &policy_factory, conn);
 
@@ -163,6 +168,7 @@ impl Options {
                 http_client_factory,
                 password_manager,
                 site_config,
+                activity_tracker,
                 conn_acquisition_histogram: None,
             };
             s.init_metrics()?;
@@ -241,6 +247,8 @@ impl Options {
         span.exit();
 
         mas_listener::server::run_servers(servers, shutdown).await;
+
+        state.activity_tracker.shutdown().await;
 
         Ok(())
     }

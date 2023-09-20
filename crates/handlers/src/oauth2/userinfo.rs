@@ -37,7 +37,7 @@ use serde::Serialize;
 use serde_with::skip_serializing_none;
 use thiserror::Error;
 
-use crate::impl_from_error_for_route;
+use crate::{impl_from_error_for_route, BoundActivityTracker};
 
 #[skip_serializing_none]
 #[derive(Serialize)]
@@ -104,6 +104,7 @@ pub async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
     State(url_builder): State<UrlBuilder>,
+    activity_tracker: BoundActivityTracker,
     mut repo: BoxRepository,
     State(key_store): State<Keystore>,
     user_authorization: UserAuthorization,
@@ -119,6 +120,10 @@ pub async fn get(
     let Some(user_id) = session.user_id else {
         return Err(RouteError::Unauthorized);
     };
+
+    activity_tracker
+        .record_oauth2_session(&clock, &session)
+        .await;
 
     let user = repo
         .user()

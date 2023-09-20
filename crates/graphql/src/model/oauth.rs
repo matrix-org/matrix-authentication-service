@@ -128,6 +128,16 @@ impl OAuth2Session {
 
         Ok(Some(User(user)))
     }
+
+    /// The last IP address used by the session.
+    pub async fn last_active_ip(&self) -> Option<String> {
+        self.0.last_active_ip.map(|ip| ip.to_string())
+    }
+
+    /// The last time the session was active.
+    pub async fn last_active_at(&self) -> Option<DateTime<Utc>> {
+        self.0.last_active_at
+    }
 }
 
 /// The application type advertised by the client.

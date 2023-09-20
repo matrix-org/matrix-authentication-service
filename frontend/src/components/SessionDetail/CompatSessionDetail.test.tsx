@@ -15,22 +15,14 @@
 // @vitest-environment happy-dom
 
 import { render, cleanup } from "@testing-library/react";
-import { describe, expect, it, afterEach, vi } from "vitest";
+import { describe, expect, it, afterEach, beforeAll } from "vitest";
 
 import { makeFragmentData } from "../../gql/fragment-masking";
 import { WithLocation } from "../../test-utils/WithLocation";
+import { mockLocale } from "../../test-utils/mockLocale";
 import { COMPAT_SESSION_FRAGMENT } from "../CompatSession";
-import DateTime from "../DateTime";
 
 import CompatSessionDetail from "./CompatSessionDetail";
-
-// Mock out datetime to avoid timezones/date formatting
-vi.mock("../DateTime", () => {
-  const MockDateTime: typeof DateTime = ({ datetime }) => (
-    <code>{datetime.toString()}</code>
-  );
-  return { default: MockDateTime };
-});
 
 describe("<CompatSessionDetail>", () => {
   const baseSession = {
@@ -42,6 +34,8 @@ describe("<CompatSessionDetail>", () => {
       redirectUri: "https://element.io",
     },
   };
+
+  beforeAll(() => mockLocale());
   afterEach(cleanup);
 
   it("renders a compatability session details", () => {

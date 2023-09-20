@@ -92,6 +92,16 @@ impl BrowserSession {
     pub async fn user_agent(&self) -> Option<&str> {
         self.0.user_agent.as_deref()
     }
+
+    /// The last IP address used by the session.
+    pub async fn last_active_ip(&self) -> Option<String> {
+        self.0.last_active_ip.map(|ip| ip.to_string())
+    }
+
+    /// The last time the session was active.
+    pub async fn last_active_at(&self) -> Option<DateTime<Utc>> {
+        self.0.last_active_at
+    }
 }
 
 /// An authentication records when a user enter their credential in a browser
