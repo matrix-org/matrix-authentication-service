@@ -17,7 +17,7 @@ use tokio::io::AsyncRead;
 use super::{acceptor::ProxyAcceptError, ProxyAcceptor, ProxyProtocolV1Info};
 use crate::rewind::Rewind;
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct MaybeProxyAcceptor {
     acceptor: Option<ProxyAcceptor>,
 }

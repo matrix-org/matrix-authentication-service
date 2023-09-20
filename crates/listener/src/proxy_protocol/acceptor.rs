@@ -19,7 +19,7 @@ use tokio::io::{AsyncRead, AsyncReadExt};
 use super::ProxyProtocolV1Info;
 use crate::rewind::Rewind;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct ProxyAcceptor {
     _private: (),
 }
