@@ -33,6 +33,7 @@ const ClientAvatar: React.FC<{
         className={styles.avatar}
         src={logoUri}
         alt={name}
+        referrerPolicy="no-referrer"
         style={
           {
             "--mas-avatar-size": size,
