@@ -19,7 +19,7 @@ import { useTransition } from "react";
 
 import { mapQueryAtom } from "../atoms";
 import { graphql } from "../gql";
-import { CompatSessionState, PageInfo } from "../gql/graphql";
+import { SessionState, PageInfo } from "../gql/graphql";
 import {
   atomForCurrentPagination,
   atomWithPagination,
@@ -36,7 +36,7 @@ import { Title } from "./Typography";
 const QUERY = graphql(/* GraphQL */ `
   query CompatSessionList(
     $userId: ID!
-    $state: CompatSessionState
+    $state: SessionState
     $first: Int
     $after: String
     $last: Int
@@ -71,7 +71,7 @@ const QUERY = graphql(/* GraphQL */ `
 `);
 
 const currentPaginationAtom = atomForCurrentPagination();
-const filterAtom = atom<CompatSessionState | null>(CompatSessionState.Active);
+const filterAtom = atom<SessionState | null>(SessionState.Active);
 
 const compatSessionListFamily = atomFamily((userId: string) => {
   const compatSessionListQuery = atomWithQuery({
@@ -127,9 +127,7 @@ const CompatSessionList: React.FC<{ userId: string }> = ({ userId }) => {
   const toggleFilter = (): void => {
     startTransition(() => {
       setPagination(FIRST_PAGE);
-      setFilter(
-        filter === CompatSessionState.Active ? null : CompatSessionState.Active,
-      );
+      setFilter(filter === SessionState.Active ? null : SessionState.Active);
     });
   };
 
@@ -139,7 +137,7 @@ const CompatSessionList: React.FC<{ userId: string }> = ({ userId }) => {
       <label>
         <input
           type="checkbox"
-          checked={filter === CompatSessionState.Active}
+          checked={filter === SessionState.Active}
           onChange={toggleFilter}
         />{" "}
         Active only

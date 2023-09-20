@@ -104,6 +104,30 @@ export type Anonymous = Node & {
   id: Scalars["ID"]["output"];
 };
 
+/** A session in an application, either a compatibility or an OAuth 2.0 one */
+export type AppSession = CompatSession | Oauth2Session;
+
+export type AppSessionConnection = {
+  __typename?: "AppSessionConnection";
+  /** A list of edges. */
+  edges: Array<AppSessionEdge>;
+  /** A list of nodes. */
+  nodes: Array<AppSession>;
+  /** Information to aid in pagination. */
+  pageInfo: PageInfo;
+  /** Identifies the total count of items in the connection. */
+  totalCount: Scalars["Int"]["output"];
+};
+
+/** An edge in a connection. */
+export type AppSessionEdge = {
+  __typename?: "AppSessionEdge";
+  /** A cursor for use in pagination */
+  cursor: Scalars["String"]["output"];
+  /** The item at the end of the edge */
+  node: AppSession;
+};
+
 /**
  * An authentication records when a user enter their credential in a browser
  * session.
@@ -134,7 +158,7 @@ export type BrowserSession = CreationEvent &
     /** The most recent authentication of this session. */
     lastAuthentication?: Maybe<Authentication>;
     /** The state of the session. */
-    state: BrowserSessionState;
+    state: SessionState;
     /** The user logged in this session. */
     user: User;
     /** The user-agent string with which the session was created. */
@@ -162,14 +186,6 @@ export type BrowserSessionEdge = {
   node: BrowserSession;
 };
 
-/** The state of a browser session. */
-export enum BrowserSessionState {
-  /** The session is active. */
-  Active = "ACTIVE",
-  /** The session is no longer active. */
-  Finished = "FINISHED",
-}
-
 /**
  * A compat session represents a client session which used the legacy Matrix
  * login API.
@@ -192,7 +208,7 @@ export type CompatSession = CreationEvent &
     /** The associated SSO login, if any. */
     ssoLogin?: Maybe<CompatSsoLogin>;
     /** The state of the session. */
-    state: CompatSessionState;
+    state: SessionState;
     /** The user authorized for this session. */
     user: User;
   };
@@ -217,14 +233,6 @@ export type CompatSessionEdge = {
   /** The item at the end of the edge */
   node: CompatSession;
 };
-
-/** The state of a compatibility session. */
-export enum CompatSessionState {
-  /** The session is active. */
-  Active = "ACTIVE",
-  /** The session is no longer active. */
-  Finished = "FINISHED",
-}
 
 /** The type of a compatibility session. */
 export enum CompatSessionType {
@@ -559,7 +567,7 @@ export type Oauth2Session = CreationEvent &
     /** Scope granted for this session. */
     scope: Scalars["String"]["output"];
     /** The state of the session. */
-    state: Oauth2SessionState;
+    state: SessionState;
     /** User authorized for this session. */
     user?: Maybe<User>;
   };
@@ -584,14 +592,6 @@ export type Oauth2SessionEdge = {
   /** The item at the end of the edge */
   node: Oauth2Session;
 };
-
-/** The state of an OAuth 2.0 session. */
-export enum Oauth2SessionState {
-  /** The session is active. */
-  Active = "ACTIVE",
-  /** The session is no longer active. */
-  Finished = "FINISHED",
-}
 
 /** Information about pagination in a connection */
 export type PageInfo = {
@@ -754,6 +754,14 @@ export enum SendVerificationEmailStatus {
 /** A client session, either compat or OAuth 2.0 */
 export type Session = CompatSession | Oauth2Session;
 
+/** The state of a session */
+export enum SessionState {
+  /** The session is active. */
+  Active = "ACTIVE",
+  /** The session is no longer active. */
+  Finished = "FINISHED",
+}
+
 /** The input for the `addEmail` mutation */
 export type SetDisplayNameInput = {
   /** The display name to set. If `None`, the display name will be removed. */
@@ -876,6 +884,11 @@ export type UpstreamOAuth2ProviderEdge = {
 /** A user is an individual's account. */
 export type User = Node & {
   __typename?: "User";
+  /**
+   * Get the list of both compat and OAuth 2.0 sessions, chronologically
+   * sorted
+   */
+  appSessions: AppSessionConnection;
   /** Get the list of active browser sessions, chronologically sorted */
   browserSessions: BrowserSessionConnection;
   /** Get the list of compatibility sessions, chronologically sorted */
@@ -903,12 +916,21 @@ export type User = Node & {
 };
 
 /** A user is an individual's account. */
+export type UserAppSessionsArgs = {
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  before?: InputMaybe<Scalars["String"]["input"]>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  last?: InputMaybe<Scalars["Int"]["input"]>;
+  state?: InputMaybe<SessionState>;
+};
+
+/** A user is an individual's account. */
 export type UserBrowserSessionsArgs = {
   after?: InputMaybe<Scalars["String"]["input"]>;
   before?: InputMaybe<Scalars["String"]["input"]>;
   first?: InputMaybe<Scalars["Int"]["input"]>;
   last?: InputMaybe<Scalars["Int"]["input"]>;
-  state?: InputMaybe<BrowserSessionState>;
+  state?: InputMaybe<SessionState>;
 };
 
 /** A user is an individual's account. */
@@ -917,7 +939,7 @@ export type UserCompatSessionsArgs = {
   before?: InputMaybe<Scalars["String"]["input"]>;
   first?: InputMaybe<Scalars["Int"]["input"]>;
   last?: InputMaybe<Scalars["Int"]["input"]>;
-  state?: InputMaybe<CompatSessionState>;
+  state?: InputMaybe<SessionState>;
   type?: InputMaybe<CompatSessionType>;
 };
 
@@ -945,7 +967,7 @@ export type UserOauth2SessionsArgs = {
   client?: InputMaybe<Scalars["ID"]["input"]>;
   first?: InputMaybe<Scalars["Int"]["input"]>;
   last?: InputMaybe<Scalars["Int"]["input"]>;
-  state?: InputMaybe<Oauth2SessionState>;
+  state?: InputMaybe<SessionState>;
 };
 
 /** A user is an individual's account. */
@@ -1092,7 +1114,7 @@ export type EndBrowserSessionMutation = {
 
 export type BrowserSessionListQueryVariables = Exact<{
   userId: Scalars["ID"]["input"];
-  state?: InputMaybe<BrowserSessionState>;
+  state?: InputMaybe<SessionState>;
   first?: InputMaybe<Scalars["Int"]["input"]>;
   after?: InputMaybe<Scalars["String"]["input"]>;
   last?: InputMaybe<Scalars["Int"]["input"]>;
@@ -1171,7 +1193,7 @@ export type EndCompatSessionMutation = {
 
 export type CompatSessionListQueryVariables = Exact<{
   userId: Scalars["ID"]["input"];
-  state?: InputMaybe<CompatSessionState>;
+  state?: InputMaybe<SessionState>;
   first?: InputMaybe<Scalars["Int"]["input"]>;
   after?: InputMaybe<Scalars["String"]["input"]>;
   last?: InputMaybe<Scalars["Int"]["input"]>;
@@ -1242,7 +1264,7 @@ export type EndOAuth2SessionMutation = {
 
 export type OAuth2SessionListQueryQueryVariables = Exact<{
   userId: Scalars["ID"]["input"];
-  state?: InputMaybe<Oauth2SessionState>;
+  state?: InputMaybe<SessionState>;
   first?: InputMaybe<Scalars["Int"]["input"]>;
   after?: InputMaybe<Scalars["String"]["input"]>;
   last?: InputMaybe<Scalars["Int"]["input"]>;
@@ -2228,7 +2250,7 @@ export const BrowserSessionListDocument = {
           },
           type: {
             kind: "NamedType",
-            name: { kind: "Name", value: "BrowserSessionState" },
+            name: { kind: "Name", value: "SessionState" },
           },
         },
         {
@@ -2531,7 +2553,7 @@ export const CompatSessionListDocument = {
           },
           type: {
             kind: "NamedType",
-            name: { kind: "Name", value: "CompatSessionState" },
+            name: { kind: "Name", value: "SessionState" },
           },
         },
         {
@@ -2861,7 +2883,7 @@ export const OAuth2SessionListQueryDocument = {
           },
           type: {
             kind: "NamedType",
-            name: { kind: "Name", value: "Oauth2SessionState" },
+            name: { kind: "Name", value: "SessionState" },
           },
         },
         {

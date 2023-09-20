@@ -19,7 +19,7 @@ import { useTransition } from "react";
 
 import { mapQueryAtom } from "../atoms";
 import { graphql } from "../gql";
-import { Oauth2SessionState, PageInfo } from "../gql/graphql";
+import { SessionState, PageInfo } from "../gql/graphql";
 import {
   atomForCurrentPagination,
   atomWithPagination,
@@ -36,7 +36,7 @@ import { Title } from "./Typography";
 const QUERY = graphql(/* GraphQL */ `
   query OAuth2SessionListQuery(
     $userId: ID!
-    $state: Oauth2SessionState
+    $state: SessionState
     $first: Int
     $after: String
     $last: Int
@@ -72,7 +72,7 @@ const QUERY = graphql(/* GraphQL */ `
 `);
 
 const currentPaginationAtom = atomForCurrentPagination();
-const filterAtom = atom<Oauth2SessionState | null>(Oauth2SessionState.Active);
+const filterAtom = atom<SessionState | null>(SessionState.Active);
 
 const oauth2SessionListFamily = atomFamily((userId: string) => {
   const oauth2SessionListQuery = atomWithQuery({
@@ -132,9 +132,7 @@ const OAuth2SessionList: React.FC<Props> = ({ userId }) => {
   const toggleFilter = (): void => {
     startTransition(() => {
       setPagination(FIRST_PAGE);
-      setFilter(
-        filter === Oauth2SessionState.Active ? null : Oauth2SessionState.Active,
-      );
+      setFilter(filter === SessionState.Active ? null : SessionState.Active);
     });
   };
 
@@ -144,7 +142,7 @@ const OAuth2SessionList: React.FC<Props> = ({ userId }) => {
       <label>
         <input
           type="checkbox"
-          checked={filter === Oauth2SessionState.Active}
+          checked={filter === SessionState.Active}
           onChange={toggleFilter}
         />{" "}
         Active only
