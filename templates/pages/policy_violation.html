@@ -25,7 +25,7 @@ limitations under the License.
         <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-2 flex items-center">
           <div class="bg-white rounded w-16 h-16 overflow-hidden mx-auto">
             {% if client.logo_uri %}
-            <img crossorigin="anonymous" class="w-16 h-16" src="{{ client.logo_uri }}" />
+              <img referrerpolicy="no-referrer" class="w-16 h-16" src="{{ client.logo_uri }}" />
             {% endif %}
           </div>
           <h1 class="text-lg text-center font-medium flex-1"><a target="_blank" href="{{ client.client_uri }}" class="cpd-link" data-kind="primary">{{ client.client_name | default(value=client.client_id) }}</a></h1>
