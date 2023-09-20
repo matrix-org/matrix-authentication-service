@@ -19,6 +19,7 @@ import { Link } from "../../routing";
 import Block from "../Block";
 import BlockList from "../BlockList";
 
+import AppSessionsList from "./AppSessionsList";
 import styles from "./UserSessionsOverview.module.css";
 
 export const FRAGMENT = graphql(/* GraphQL */ `
@@ -78,30 +79,24 @@ const UserSessionsOverview: React.FC<{
           View all
         </Link>
       </Block>
-      <Block className={styles.sessionListBlock}>
-        <div className={styles.sessionListBlockInfo}>
-          <H6>New apps</H6>
-          <Body>
-            {data.oauth2Sessions.totalCount} active{" "}
-            {pluraliseSession(data.oauth2Sessions.totalCount)}
-          </Body>
-        </div>
-        <Link kind="button" route={{ type: "oauth2-session-list" }}>
-          View all
-        </Link>
-      </Block>
-      <Block className={styles.sessionListBlock}>
-        <div className={styles.sessionListBlockInfo}>
-          <H6>Regular apps</H6>
+      <div className={styles.sessionListBlockInfo}>
+          <H6>compatSessions</H6>
           <Body>
             {data.compatSessions.totalCount} active{" "}
             {pluraliseSession(data.compatSessions.totalCount)}
           </Body>
         </div>
-        <Link kind="button" route={{ type: "compat-session-list" }}>
+        <div className={styles.sessionListBlockInfo}>
+          <H6>oauth2Sessions</H6>
+          <Body>
+            {data.oauth2Sessions.totalCount} active{" "}
+            {pluraliseSession(data.oauth2Sessions.totalCount)}
+          </Body>
+          <Link kind="button" route={{ type: "oauth2-session-list" }}>
           View all
         </Link>
-      </Block>
+        </div>
+      <AppSessionsList userId={data.id} />
     </BlockList>
   );
 };
