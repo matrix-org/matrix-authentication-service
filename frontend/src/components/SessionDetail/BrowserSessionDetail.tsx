@@ -74,7 +74,9 @@ const BrowserSessionDetail: React.FC<Props> = ({ session }) => {
           Current
         </Badge>
       )}
-      <SessionHeader>{sessionName}</SessionHeader>
+      <SessionHeader backToRoute={{ type: "browser-session-list" }}>
+        {sessionName}
+      </SessionHeader>
       <SessionDetails title="Session" details={sessionDetails} />
       {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
     </BlockList>
