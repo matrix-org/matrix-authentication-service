@@ -92,7 +92,13 @@ const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
 
   return (
     <BlockList>
-      <SessionHeader>{deviceId || data.id}</SessionHeader>
+      <SessionHeader
+        backToRoute={{
+          type: "sessions-overview",
+        }}
+      >
+        {deviceId || data.id}
+      </SessionHeader>
       <SessionDetails title="Session" details={sessionDetails} />
       <SessionDetails title={clientTitle} details={clientDetails} />
       {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}

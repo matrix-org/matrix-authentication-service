@@ -69,7 +69,13 @@ const CompatSessionDetail: React.FC<Props> = ({ session }) => {
 
   return (
     <BlockList>
-      <SessionHeader>{data.deviceId || data.id}</SessionHeader>
+      <SessionHeader
+        backToRoute={{
+          type: "sessions-overview",
+        }}
+      >
+        {data.deviceId || data.id}
+      </SessionHeader>
       <SessionDetails title="Session" details={sessionDetails} />
       {clientDetails.length > 0 ? (
         <SessionDetails title="Client" details={clientDetails} />
