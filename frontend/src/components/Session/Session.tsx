@@ -55,7 +55,7 @@ const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
 }) => {
   return (
     <Block className={styles.session}>
-      {deviceType && <DeviceTypeIcon deviceType={deviceType} />}
+      <DeviceTypeIcon deviceType={deviceType || DeviceType.Unknown} />
       <div className={styles.container}>
         {isCurrent && <Badge kind="success">Current</Badge>}
         <H6 className={styles.sessionName} title={id}>
