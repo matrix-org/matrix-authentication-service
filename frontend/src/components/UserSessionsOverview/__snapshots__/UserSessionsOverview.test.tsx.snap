@@ -1,0 +1,3 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`UserSessionsOverview > render an simple <UserSessionsOverview /> 1`] = `<div />`;
