@@ -31,10 +31,8 @@ type ProfileRoute = Readonly<{ type: "profile" }>;
 type SessionOverviewRoute = Readonly<{ type: "sessions-overview" }>;
 type SessionDetailRoute = Readonly<{ type: "session"; id: string }>;
 type OAuth2ClientRoute = Readonly<{ type: "client"; id: string }>;
-type OAuth2SessionList = Readonly<{ type: "oauth2-session-list" }>;
 type BrowserSessionRoute = Readonly<{ type: "browser-session"; id: string }>;
 type BrowserSessionListRoute = Readonly<{ type: "browser-session-list" }>;
-type CompatSessionListRoute = Readonly<{ type: "compat-session-list" }>;
 type VerifyEmailRoute = Readonly<{ type: "verify-email"; id: string }>;
 type UnknownRoute = Readonly<{ type: "unknown"; segments: Segments }>;
 
@@ -43,10 +41,8 @@ export type Route =
   | SessionDetailRoute
   | ProfileRoute
   | OAuth2ClientRoute
-  | OAuth2SessionList
   | BrowserSessionRoute
   | BrowserSessionListRoute
-  | CompatSessionListRoute
   | VerifyEmailRoute
   | UnknownRoute;
 
@@ -75,10 +71,6 @@ export const routeToSegments = (route: Route): Segments => {
       return ["browser-sessions"];
     case "browser-session":
       return ["browser-sessions", route.id];
-    case "oauth2-session-list":
-      return ["oauth2-sessions"];
-    case "compat-session-list":
-      return ["compat-sessions"];
     case "unknown":
       return route.segments;
   }
@@ -122,14 +114,6 @@ export const segmentsToRoute = (segments: Segments): Route => {
 
   if (matches("browser-sessions")) {
     return { type: "browser-session-list" };
-  }
-
-  if (matches("oauth2-sessions")) {
-    return { type: "oauth2-session-list" };
-  }
-
-  if (matches("compat-sessions")) {
-    return { type: "compat-session-list" };
   }
 
   if (matches("emails", P, "verify")) {

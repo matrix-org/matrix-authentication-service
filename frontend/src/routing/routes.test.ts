@@ -35,20 +35,6 @@ describe("routes", () => {
       });
     });
 
-    it("returns compat session list for compat-sessions", () => {
-      const segments: string[] = ["compat-sessions"];
-      expect(segmentsToRoute(segments)).toEqual({
-        type: "compat-session-list",
-      });
-    });
-
-    it("returns oauth session list for oauth2-sessions", () => {
-      const segments: string[] = ["oauth2-sessions"];
-      expect(segmentsToRoute(segments)).toEqual({
-        type: "oauth2-session-list",
-      });
-    });
-
     it("returns client detail route correctly", () => {
       const segments: string[] = ["clients", "client-id"];
       expect(segmentsToRoute(segments)).toEqual({
