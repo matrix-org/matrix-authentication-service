@@ -30,7 +30,7 @@ const QUERY = graphql(/* GraphQL */ `
 
       ... on User {
         id
-        ...UserSessionsOverview_user
+        ...BrowserSessionsOverview_user
       }
     }
   }

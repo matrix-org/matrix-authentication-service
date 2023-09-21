@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { H6, Text } from "@vector-im/compound-web";
+import { H5 } from "@vector-im/compound-web";
 import { atom, useAtomValue, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
@@ -28,6 +28,8 @@ import {
 } from "../../pagination";
 import { isOk, unwrap, unwrapOk } from "../../result";
 import BlockList from "../BlockList";
+import CompatSession from "../CompatSession";
+import OAuth2Session from "../OAuth2Session";
 import PaginationControls from "../PaginationControls";
 
 const QUERY = graphql(/* GraphQL */ `
@@ -53,6 +55,7 @@ const QUERY = graphql(/* GraphQL */ `
         edges {
           cursor
           node {
+            __typename
             ...CompatSession_session
             ...OAuth2Session_session
           }
@@ -72,7 +75,7 @@ const QUERY = graphql(/* GraphQL */ `
 const filterAtom = atom<SessionState | null>(SessionState.Active);
 const currentPaginationAtom = atomForCurrentPagination();
 
-const appSessionListFamily = atomFamily((userId: string) => {
+export const appSessionListFamily = atomFamily((userId: string) => {
   const appSessionListQuery = atomWithQuery({
     query: QUERY,
     getVariables: (get) => ({
@@ -124,8 +127,23 @@ const AppSessionsList: React.FC<{ userId: string }> = ({ userId }) => {
 
   return (
     <BlockList>
-      <H6>Apps</H6>
-      <Text>{`${appSessions.totalCount} active sessions`}</Text>
+      <header>
+        <H5>Apps</H5>
+      </header>
+      {appSessions.edges.map((session) => {
+        switch (session.node.__typename) {
+          case "Oauth2Session":
+            return (
+              <OAuth2Session key={session.cursor} session={session.node} />
+            );
+          case "CompatSession":
+            return (
+              <CompatSession key={session.cursor} session={session.node} />
+            );
+          default:
+            throw new Error("Unexpected session type.");
+        }
+      })}
       <PaginationControls
         onPrev={prevPage ? (): void => paginate(prevPage) : null}
         onNext={nextPage ? (): void => paginate(nextPage) : null}
