@@ -49,6 +49,10 @@ const BrowserSessionDetail: React.FC<Props> = ({ session }) => {
     ? [{ label: "Finished", value: <DateTime datetime={data.finishedAt} /> }]
     : [];
 
+  const ipAddress = data.ipAddress
+    ? [{ label: "IP Address", value: <code>{data.ipAddress}</code> }]
+    : [];
+
   const lastAuthentication = data.lastAuthentication
     ? [
         {
@@ -64,6 +68,7 @@ const BrowserSessionDetail: React.FC<Props> = ({ session }) => {
     { label: "User Name", value: <code>{data.user.username}</code> },
     { label: "Signed in", value: <DateTime datetime={data.createdAt} /> },
     ...finishedAt,
+    ...ipAddress,
     ...lastAuthentication,
   ];
 

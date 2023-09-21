@@ -45,19 +45,25 @@ const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
   const finishedAt = data.finishedAt
     ? [{ label: "Finished", value: <DateTime datetime={data.createdAt} /> }]
     : [];
+
+  const ipAddress = data.ipAddress
+    ? [{ label: "IP Address", value: <code>{data.ipAddress}</code> }]
+    : [];
+
   const sessionDetails = [
     { label: "ID", value: <code>{data.id}</code> },
     { label: "Device ID", value: <code>{deviceId}</code> },
     { label: "Signed in", value: <DateTime datetime={data.createdAt} /> },
     ...finishedAt,
+    ...ipAddress,
     {
       label: "Scopes",
       value: (
-        <>
+        <div>
           {scopes.map((scope) => (
             <code key={scope}>{scope}</code>
           ))}
-        </>
+        </div>
       ),
     },
   ];

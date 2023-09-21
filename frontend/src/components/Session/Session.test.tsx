@@ -56,6 +56,20 @@ describe("<Session />", () => {
         {...defaultProps}
         finishedAt={finishedAt}
         clientName={clientName}
+        clientLogoUri="https://client.org/logo.png"
+      />,
+    );
+    expect(component.toJSON()).toMatchSnapshot();
+  });
+
+  it("renders ip address", () => {
+    const clientName = "Element";
+    const component = create(
+      <Session
+        {...defaultProps}
+        finishedAt={finishedAt}
+        clientName={clientName}
+        ipAddress="127.0.0.1"
       />,
     );
     expect(component.toJSON()).toMatchSnapshot();
