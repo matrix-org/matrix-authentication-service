@@ -130,7 +130,7 @@ const exchanges = [
 ];
 
 export const client = createClient({
-  url: "/graphql?testtest",
+  url: "/graphql",
   // Add the devtools exchange in development
   exchanges: import.meta.env.DEV ? [devtoolsExchange, ...exchanges] : exchanges,
 });
