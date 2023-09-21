@@ -14,20 +14,24 @@
 
 import type { Meta, StoryObj } from "@storybook/react";
 import { Button } from "@vector-im/compound-web";
+import { parseISO } from "date-fns";
 import { ReactElement } from "react";
 
 import BlockList from "../BlockList/BlockList";
 
-import Session, { SessionProps } from "./Session";
-
-const Template: React.FC<React.PropsWithChildren<SessionProps>> = (props) => {
-  return <Session {...props} />;
-};
+import Session from "./Session";
 
 const meta = {
   title: "UI/Session/Session",
-  component: Template,
+  component: Session,
   tags: ["autodocs"],
+
+  argTypes: {
+    createdAt: { control: { type: "date" } },
+    finishedAt: { control: { type: "date" } },
+    lastActiveAt: { control: { type: "date" } },
+  },
+
   decorators: [
     (Story): ReactElement => (
       <div style={{ width: "378px" }}>
@@ -37,21 +41,22 @@ const meta = {
       </div>
     ),
   ],
-} satisfies Meta<typeof Template>;
+} satisfies Meta<typeof Session>;
 
 export default meta;
-type Story = StoryObj<typeof Template>;
+type Story = StoryObj<typeof Session>;
 
 const defaultProps = {
   id: "oauth2_session:01H5VAGA5NYTKJVXP3HMMKDJQ0",
-  createdAt: "2023-06-29T03:35:17.451292+00:00",
+  createdAt: parseISO("2023-06-29T03:35:17.451292+00:00"),
 };
 
 export const BasicSession: Story = {
   args: {
     ...defaultProps,
     name: "KlTqK9CRt3",
-    ipAddress: "2001:8003:c4614:f501:3091:888a:49c7",
+    lastActiveIp: "2001:8003:c4614:f501:3091:888a:49c7",
+    lastActiveAt: parseISO("2023-07-29T03:35:17.451292+00:00"),
     clientName: "Element",
   },
 };
@@ -60,7 +65,7 @@ export const BasicFinishedSession: Story = {
   args: {
     ...defaultProps,
     name: "Chrome on Android",
-    finishedAt: "2023-06-30T03:35:17.451292+00:00",
+    finishedAt: parseISO("2023-06-30T03:35:17.451292+00:00"),
   },
 };
 

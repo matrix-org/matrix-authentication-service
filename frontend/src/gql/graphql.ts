@@ -32,9 +32,9 @@ export type Scalars = {
    *
    * The input/output is a string in RFC3339 format.
    */
-  DateTime: { input: any; output: any };
+  DateTime: { input: string; output: string };
   /** URL is a String implementing the [URL Standard](http://url.spec.whatwg.org/) */
-  Url: { input: any; output: any };
+  Url: { input: string; output: string };
 };
 
 /** The input for the `addEmail` mutation */
@@ -1083,13 +1083,15 @@ export type CurrentViewerSessionQueryQuery = {
 export type BrowserSession_SessionFragment = {
   __typename?: "BrowserSession";
   id: string;
-  createdAt: any;
-  finishedAt?: any | null;
+  createdAt: string;
+  finishedAt?: string | null;
   userAgent?: string | null;
+  lastActiveIp?: string | null;
+  lastActiveAt?: string | null;
   lastAuthentication?: {
     __typename?: "Authentication";
     id: string;
-    createdAt: any;
+    createdAt: string;
   } | null;
 } & { " $fragmentName"?: "BrowserSession_SessionFragment" };
 
@@ -1154,23 +1156,25 @@ export type OAuth2Client_DetailFragment = {
   id: string;
   clientId: string;
   clientName?: string | null;
-  clientUri?: any | null;
-  logoUri?: any | null;
-  tosUri?: any | null;
-  policyUri?: any | null;
-  redirectUris: Array<any>;
+  clientUri?: string | null;
+  logoUri?: string | null;
+  tosUri?: string | null;
+  policyUri?: string | null;
+  redirectUris: Array<string>;
 } & { " $fragmentName"?: "OAuth2Client_DetailFragment" };
 
 export type CompatSession_SessionFragment = {
   __typename?: "CompatSession";
   id: string;
-  createdAt: any;
+  createdAt: string;
   deviceId: string;
-  finishedAt?: any | null;
+  finishedAt?: string | null;
+  lastActiveIp?: string | null;
+  lastActiveAt?: string | null;
   ssoLogin?: {
     __typename?: "CompatSsoLogin";
     id: string;
-    redirectUri: any;
+    redirectUri: string;
   } | null;
 } & { " $fragmentName"?: "CompatSession_SessionFragment" };
 
@@ -1186,7 +1190,7 @@ export type EndCompatSessionMutation = {
     compatSession?: {
       __typename?: "CompatSession";
       id: string;
-      finishedAt?: any | null;
+      finishedAt?: string | null;
     } | null;
   };
 };
@@ -1195,15 +1199,16 @@ export type OAuth2Session_SessionFragment = {
   __typename?: "Oauth2Session";
   id: string;
   scope: string;
-  createdAt: any;
-  finishedAt?: any | null;
+  createdAt: string;
+  finishedAt?: string | null;
+  lastActiveIp?: string | null;
+  lastActiveAt?: string | null;
   client: {
     __typename?: "Oauth2Client";
     id: string;
     clientId: string;
     clientName?: string | null;
-    clientUri?: any | null;
-    logoUri?: any | null;
+    logoUri?: string | null;
   };
 } & { " $fragmentName"?: "OAuth2Session_SessionFragment" };
 
@@ -1226,6 +1231,55 @@ export type EndOAuth2SessionMutation = {
   };
 };
 
+export type BrowserSession_DetailFragment = {
+  __typename?: "BrowserSession";
+  id: string;
+  createdAt: string;
+  finishedAt?: string | null;
+  userAgent?: string | null;
+  lastActiveIp?: string | null;
+  lastActiveAt?: string | null;
+  lastAuthentication?: {
+    __typename?: "Authentication";
+    id: string;
+    createdAt: string;
+  } | null;
+  user: { __typename?: "User"; id: string; username: string };
+} & { " $fragmentName"?: "BrowserSession_DetailFragment" };
+
+export type CompatSession_DetailFragment = {
+  __typename?: "CompatSession";
+  id: string;
+  createdAt: string;
+  deviceId: string;
+  finishedAt?: string | null;
+  lastActiveIp?: string | null;
+  lastActiveAt?: string | null;
+  ssoLogin?: {
+    __typename?: "CompatSsoLogin";
+    id: string;
+    redirectUri: string;
+  } | null;
+} & { " $fragmentName"?: "CompatSession_DetailFragment" };
+
+export type OAuth2Session_DetailFragment = {
+  __typename?: "Oauth2Session";
+  id: string;
+  scope: string;
+  createdAt: string;
+  finishedAt?: string | null;
+  lastActiveIp?: string | null;
+  lastActiveAt?: string | null;
+  client: {
+    __typename?: "Oauth2Client";
+    id: string;
+    clientId: string;
+    clientName?: string | null;
+    clientUri?: string | null;
+    logoUri?: string | null;
+  };
+} & { " $fragmentName"?: "OAuth2Session_DetailFragment" };
+
 export type SessionQueryQueryVariables = Exact<{
   userId: Scalars["ID"]["input"];
   deviceId: Scalars["String"]["input"];
@@ -1236,12 +1290,12 @@ export type SessionQueryQuery = {
   session?:
     | ({ __typename: "CompatSession" } & {
         " $fragmentRefs"?: {
-          CompatSession_SessionFragment: CompatSession_SessionFragment;
+          CompatSession_DetailFragment: CompatSession_DetailFragment;
         };
       })
     | ({ __typename: "Oauth2Session" } & {
         " $fragmentRefs"?: {
-          OAuth2Session_SessionFragment: OAuth2Session_SessionFragment;
+          OAuth2Session_DetailFragment: OAuth2Session_DetailFragment;
         };
       })
     | null;
@@ -1257,7 +1311,7 @@ export type UserEmail_EmailFragment = {
   __typename?: "UserEmail";
   id: string;
   email: string;
-  confirmedAt?: any | null;
+  confirmedAt?: string | null;
 } & { " $fragmentName"?: "UserEmail_EmailFragment" };
 
 export type RemoveEmailMutationVariables = Exact<{
@@ -1505,20 +1559,6 @@ export type ResendVerificationEmailMutation = {
   };
 };
 
-export type BrowserSession_DetailFragment = {
-  __typename?: "BrowserSession";
-  id: string;
-  createdAt: any;
-  finishedAt?: any | null;
-  userAgent?: string | null;
-  lastAuthentication?: {
-    __typename?: "Authentication";
-    id: string;
-    createdAt: any;
-  } | null;
-  user: { __typename?: "User"; id: string; username: string };
-} & { " $fragmentName"?: "BrowserSession_DetailFragment" };
-
 export type BrowserSessionQueryQueryVariables = Exact<{
   id: Scalars["ID"]["input"];
 }>;
@@ -1596,6 +1636,8 @@ export const BrowserSession_SessionFragmentDoc = {
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
           { kind: "Field", name: { kind: "Name", value: "userAgent" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveIp" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveAt" } },
           {
             kind: "Field",
             name: { kind: "Name", value: "lastAuthentication" },
@@ -1655,6 +1697,8 @@ export const CompatSession_SessionFragmentDoc = {
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "deviceId" } },
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveIp" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveAt" } },
           {
             kind: "Field",
             name: { kind: "Name", value: "ssoLogin" },
@@ -1688,6 +1732,126 @@ export const OAuth2Session_SessionFragmentDoc = {
           { kind: "Field", name: { kind: "Name", value: "scope" } },
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveIp" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveAt" } },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "client" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "clientId" } },
+                { kind: "Field", name: { kind: "Name", value: "clientName" } },
+                { kind: "Field", name: { kind: "Name", value: "logoUri" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<OAuth2Session_SessionFragment, unknown>;
+export const BrowserSession_DetailFragmentDoc = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "BrowserSession_detail" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "BrowserSession" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+          { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
+          { kind: "Field", name: { kind: "Name", value: "userAgent" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveIp" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveAt" } },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "lastAuthentication" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+              ],
+            },
+          },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "user" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "username" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<BrowserSession_DetailFragment, unknown>;
+export const CompatSession_DetailFragmentDoc = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "CompatSession_detail" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "CompatSession" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+          { kind: "Field", name: { kind: "Name", value: "deviceId" } },
+          { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveIp" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveAt" } },
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "ssoLogin" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "redirectUri" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<CompatSession_DetailFragment, unknown>;
+export const OAuth2Session_DetailFragmentDoc = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "FragmentDefinition",
+      name: { kind: "Name", value: "OAuth2Session_detail" },
+      typeCondition: {
+        kind: "NamedType",
+        name: { kind: "Name", value: "Oauth2Session" },
+      },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "id" } },
+          { kind: "Field", name: { kind: "Name", value: "scope" } },
+          { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+          { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveIp" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveAt" } },
           {
             kind: "Field",
             name: { kind: "Name", value: "client" },
@@ -1706,7 +1870,7 @@ export const OAuth2Session_SessionFragmentDoc = {
       },
     },
   ],
-} as unknown as DocumentNode<OAuth2Session_SessionFragment, unknown>;
+} as unknown as DocumentNode<OAuth2Session_DetailFragment, unknown>;
 export const UnverifiedEmailAlertFragmentDoc = {
   kind: "Document",
   definitions: [
@@ -1831,50 +1995,6 @@ export const UserEmail_VerifyEmailFragmentDoc = {
     },
   ],
 } as unknown as DocumentNode<UserEmail_VerifyEmailFragment, unknown>;
-export const BrowserSession_DetailFragmentDoc = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "FragmentDefinition",
-      name: { kind: "Name", value: "BrowserSession_detail" },
-      typeCondition: {
-        kind: "NamedType",
-        name: { kind: "Name", value: "BrowserSession" },
-      },
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          { kind: "Field", name: { kind: "Name", value: "id" } },
-          { kind: "Field", name: { kind: "Name", value: "createdAt" } },
-          { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
-          { kind: "Field", name: { kind: "Name", value: "userAgent" } },
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "lastAuthentication" },
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "id" } },
-                { kind: "Field", name: { kind: "Name", value: "createdAt" } },
-              ],
-            },
-          },
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "user" },
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "id" } },
-                { kind: "Field", name: { kind: "Name", value: "username" } },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<BrowserSession_DetailFragment, unknown>;
 export const CurrentViewerQueryDocument = {
   kind: "Document",
   definitions: [
@@ -2063,6 +2183,8 @@ export const EndBrowserSessionDocument = {
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
           { kind: "Field", name: { kind: "Name", value: "userAgent" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveIp" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveAt" } },
           {
             kind: "Field",
             name: { kind: "Name", value: "lastAuthentication" },
@@ -2295,6 +2417,8 @@ export const BrowserSessionListDocument = {
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
           { kind: "Field", name: { kind: "Name", value: "userAgent" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveIp" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveAt" } },
           {
             kind: "Field",
             name: { kind: "Name", value: "lastAuthentication" },
@@ -2465,6 +2589,8 @@ export const EndOAuth2SessionDocument = {
           { kind: "Field", name: { kind: "Name", value: "scope" } },
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveIp" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveAt" } },
           {
             kind: "Field",
             name: { kind: "Name", value: "client" },
@@ -2474,7 +2600,6 @@ export const EndOAuth2SessionDocument = {
                 { kind: "Field", name: { kind: "Name", value: "id" } },
                 { kind: "Field", name: { kind: "Name", value: "clientId" } },
                 { kind: "Field", name: { kind: "Name", value: "clientName" } },
-                { kind: "Field", name: { kind: "Name", value: "clientUri" } },
                 { kind: "Field", name: { kind: "Name", value: "logoUri" } },
               ],
             },
@@ -2551,11 +2676,11 @@ export const SessionQueryDocument = {
                 { kind: "Field", name: { kind: "Name", value: "__typename" } },
                 {
                   kind: "FragmentSpread",
-                  name: { kind: "Name", value: "CompatSession_session" },
+                  name: { kind: "Name", value: "CompatSession_detail" },
                 },
                 {
                   kind: "FragmentSpread",
-                  name: { kind: "Name", value: "OAuth2Session_session" },
+                  name: { kind: "Name", value: "OAuth2Session_detail" },
                 },
               ],
             },
@@ -2565,7 +2690,7 @@ export const SessionQueryDocument = {
     },
     {
       kind: "FragmentDefinition",
-      name: { kind: "Name", value: "CompatSession_session" },
+      name: { kind: "Name", value: "CompatSession_detail" },
       typeCondition: {
         kind: "NamedType",
         name: { kind: "Name", value: "CompatSession" },
@@ -2577,6 +2702,8 @@ export const SessionQueryDocument = {
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "deviceId" } },
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveIp" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveAt" } },
           {
             kind: "Field",
             name: { kind: "Name", value: "ssoLogin" },
@@ -2593,7 +2720,7 @@ export const SessionQueryDocument = {
     },
     {
       kind: "FragmentDefinition",
-      name: { kind: "Name", value: "OAuth2Session_session" },
+      name: { kind: "Name", value: "OAuth2Session_detail" },
       typeCondition: {
         kind: "NamedType",
         name: { kind: "Name", value: "Oauth2Session" },
@@ -2605,6 +2732,8 @@ export const SessionQueryDocument = {
           { kind: "Field", name: { kind: "Name", value: "scope" } },
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveIp" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveAt" } },
           {
             kind: "Field",
             name: { kind: "Name", value: "client" },
@@ -3563,6 +3692,8 @@ export const AppSessionListDocument = {
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "deviceId" } },
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveIp" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveAt" } },
           {
             kind: "Field",
             name: { kind: "Name", value: "ssoLogin" },
@@ -3591,6 +3722,8 @@ export const AppSessionListDocument = {
           { kind: "Field", name: { kind: "Name", value: "scope" } },
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveIp" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveAt" } },
           {
             kind: "Field",
             name: { kind: "Name", value: "client" },
@@ -3600,7 +3733,6 @@ export const AppSessionListDocument = {
                 { kind: "Field", name: { kind: "Name", value: "id" } },
                 { kind: "Field", name: { kind: "Name", value: "clientId" } },
                 { kind: "Field", name: { kind: "Name", value: "clientName" } },
-                { kind: "Field", name: { kind: "Name", value: "clientUri" } },
                 { kind: "Field", name: { kind: "Name", value: "logoUri" } },
               ],
             },
@@ -3907,6 +4039,8 @@ export const BrowserSessionQueryDocument = {
           { kind: "Field", name: { kind: "Name", value: "createdAt" } },
           { kind: "Field", name: { kind: "Name", value: "finishedAt" } },
           { kind: "Field", name: { kind: "Name", value: "userAgent" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveIp" } },
+          { kind: "Field", name: { kind: "Name", value: "lastActiveAt" } },
           {
             kind: "Field",
             name: { kind: "Name", value: "lastAuthentication" },

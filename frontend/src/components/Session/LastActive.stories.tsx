@@ -13,40 +13,44 @@
 // limitations under the License.
 
 import type { Meta, StoryObj } from "@storybook/react";
+import { parseISO, subDays, subHours } from "date-fns";
 
 import LastActive from "./LastActive";
 
-type Props = {
-  lastActiveTimestamp: number;
-  now: number;
-};
-const Template: React.FC<Props> = ({ lastActiveTimestamp, now }) => {
-  return <LastActive lastActiveTimestamp={lastActiveTimestamp} now={now} />;
-};
-
 const meta = {
   title: "UI/Session/Last active time",
-  component: Template,
+  component: LastActive,
+  argTypes: {
+    lastActive: { control: { type: "date" } },
+    now: { control: { type: "date" } },
+  },
   tags: ["autodocs"],
-} satisfies Meta<typeof Template>;
+} satisfies Meta<typeof LastActive>;
 
 export default meta;
-type Story = StoryObj<typeof Template>;
+type Story = StoryObj<typeof LastActive>;
 
-const now = 1694999531800;
-const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+const now = parseISO("2023-09-18T01:12:00.000Z");
 
 export const Basic: Story = {
   args: {
-    // yesterday
-    lastActiveTimestamp: now - ONE_DAY_MS,
+    // An hour ago
+    lastActive: subHours(now, 1),
+    now,
+  },
+};
+
+export const ActiveThreeDaysAgo: Story = {
+  args: {
+    // Three days ago
+    lastActive: subDays(now, 3),
     now,
   },
 };
 
 export const ActiveNow: Story = {
   args: {
-    lastActiveTimestamp: now - 1000,
+    lastActive: now,
     now,
   },
 };
@@ -54,7 +58,7 @@ export const ActiveNow: Story = {
 export const Inactive: Story = {
   args: {
     // 91 days ago
-    lastActiveTimestamp: now - 91 * ONE_DAY_MS,
+    lastActive: subDays(now, 91),
     now,
   },
 };

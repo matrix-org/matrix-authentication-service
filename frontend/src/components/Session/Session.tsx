@@ -19,21 +19,23 @@ import Block from "../Block";
 import DateTime from "../DateTime";
 
 import ClientAvatar from "./ClientAvatar";
+import LastActive from "./LastActive";
 import styles from "./Session.module.css";
 
 const SessionMetadata: React.FC<React.ComponentProps<typeof Body>> = (
   props,
 ) => <Body {...props} size="sm" className={styles.sessionMetadata} />;
 
-export type SessionProps = {
+type SessionProps = {
   id: string;
   name?: string | ReactNode;
-  createdAt: string;
-  finishedAt?: string;
+  createdAt: Date;
+  finishedAt?: Date;
   clientName?: string;
   clientLogoUri?: string;
   isCurrent?: boolean;
-  ipAddress?: string;
+  lastActiveIp?: string;
+  lastActiveAt?: Date;
 };
 const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
   id,
@@ -42,7 +44,8 @@ const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
   finishedAt,
   clientName,
   clientLogoUri,
-  ipAddress,
+  lastActiveIp,
+  lastActiveAt,
   isCurrent,
   children,
 }) => {
@@ -60,7 +63,12 @@ const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
           Finished <DateTime datetime={finishedAt} />
         </SessionMetadata>
       )}
-      {!!ipAddress && <SessionMetadata>{ipAddress}</SessionMetadata>}
+      {!!lastActiveAt && (
+        <SessionMetadata>
+          <LastActive lastActive={lastActiveAt} />
+        </SessionMetadata>
+      )}
+      {!!lastActiveIp && <SessionMetadata>{lastActiveIp}</SessionMetadata>}
       {!!clientName && (
         <SessionMetadata>
           <ClientAvatar

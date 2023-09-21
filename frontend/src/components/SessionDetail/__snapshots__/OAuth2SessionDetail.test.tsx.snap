@@ -100,12 +100,46 @@ exports[`<OAuth2SessionDetail> > renders session details 1`] = `
           <p
             class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
           >
+            Last Active
+          </p>
+          <p
+            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+          >
+            <span
+              title="Sat, 29 Jul 2023, 03:35"
+            >
+              Active Sat, 29 Jul 2023, 03:35
+            </span>
+          </p>
+        </li>
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+          >
+            IP Address
+          </p>
+          <p
+            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+          >
+            <code>
+              1.2.3.4
+            </code>
+          </p>
+        </li>
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+          >
             Scopes
           </p>
           <p
             class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
           >
-            <div>
+            <span>
               <code>
                 openid
               </code>
@@ -115,7 +149,7 @@ exports[`<OAuth2SessionDetail> > renders session details 1`] = `
               <code>
                 urn:matrix:org.matrix.msc2967.client:device:abcd1234
               </code>
-            </div>
+            </span>
           </p>
         </li>
       </ul>
