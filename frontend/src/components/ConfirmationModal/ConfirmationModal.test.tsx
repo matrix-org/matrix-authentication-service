@@ -84,6 +84,16 @@ describe("<ConfirmationModal />", () => {
 
     // no cancel button without onDeny
     expect(screen.queryByText("Cancel")).toBeFalsy();
+
+    // The dialog does not close on escape
+    fireEvent.keyDown(screen.getByRole("alertdialog"), {
+      key: "Escape",
+      code: "Escape",
+      keyCode: 27,
+    });
+
+    // dialog still open
+    expect(screen.queryByRole("alertdialog")).toBeTruthy();
   });
 
   it("calls onConfirm on confirmation", () => {

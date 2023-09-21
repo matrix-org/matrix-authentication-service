@@ -1,2951 +1,3157 @@
-import { IntrospectionQuery } from 'graphql';
+import { IntrospectionQuery } from "graphql";
 export default {
-  "__schema": {
-    "queryType": {
-      "name": "Query"
+  __schema: {
+    queryType: {
+      name: "Query",
     },
-    "mutationType": {
-      "name": "Mutation"
+    mutationType: {
+      name: "Mutation",
     },
-    "subscriptionType": null,
-    "types": [
+    subscriptionType: null,
+    types: [
       {
-        "kind": "OBJECT",
-        "name": "AddEmailPayload",
-        "fields": [
+        kind: "OBJECT",
+        name: "AddEmailPayload",
+        fields: [
           {
-            "name": "email",
-            "type": {
-              "kind": "OBJECT",
-              "name": "UserEmail",
-              "ofType": null
+            name: "email",
+            type: {
+              kind: "OBJECT",
+              name: "UserEmail",
+              ofType: null,
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "status",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "status",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "user",
-            "type": {
-              "kind": "OBJECT",
-              "name": "User",
-              "ofType": null
+            name: "user",
+            type: {
+              kind: "OBJECT",
+              name: "User",
+              ofType: null,
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "violations",
-            "type": {
-              "kind": "LIST",
-              "ofType": {
-                "kind": "NON_NULL",
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              }
+            name: "violations",
+            type: {
+              kind: "LIST",
+              ofType: {
+                kind: "NON_NULL",
+                ofType: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
             },
-            "args": []
-          }
+            args: [],
+          },
         ],
-        "interfaces": []
+        interfaces: [],
       },
       {
-        "kind": "OBJECT",
-        "name": "AddUserPayload",
-        "fields": [
+        kind: "OBJECT",
+        name: "AddUserPayload",
+        fields: [
           {
-            "name": "status",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "status",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "user",
-            "type": {
-              "kind": "OBJECT",
-              "name": "User",
-              "ofType": null
+            name: "user",
+            type: {
+              kind: "OBJECT",
+              name: "User",
+              ofType: null,
             },
-            "args": []
-          }
+            args: [],
+          },
         ],
-        "interfaces": []
+        interfaces: [],
       },
       {
-        "kind": "OBJECT",
-        "name": "Anonymous",
-        "fields": [
+        kind: "OBJECT",
+        name: "Anonymous",
+        fields: [
           {
-            "name": "id",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "id",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
-          }
+            args: [],
+          },
         ],
-        "interfaces": [
+        interfaces: [
           {
-            "kind": "INTERFACE",
-            "name": "Node"
-          }
-        ]
+            kind: "INTERFACE",
+            name: "Node",
+          },
+        ],
       },
       {
-        "kind": "OBJECT",
-        "name": "Authentication",
-        "fields": [
+        kind: "UNION",
+        name: "AppSession",
+        possibleTypes: [
           {
-            "name": "createdAt",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
-            },
-            "args": []
+            kind: "OBJECT",
+            name: "CompatSession",
           },
           {
-            "name": "id",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
-            },
-            "args": []
-          }
+            kind: "OBJECT",
+            name: "Oauth2Session",
+          },
         ],
-        "interfaces": [
-          {
-            "kind": "INTERFACE",
-            "name": "CreationEvent"
-          },
-          {
-            "kind": "INTERFACE",
-            "name": "Node"
-          }
-        ]
       },
       {
-        "kind": "OBJECT",
-        "name": "BrowserSession",
-        "fields": [
+        kind: "OBJECT",
+        name: "AppSessionConnection",
+        fields: [
           {
-            "name": "createdAt",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "edges",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "LIST",
+                ofType: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "OBJECT",
+                    name: "AppSessionEdge",
+                    ofType: null,
+                  },
+                },
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "finishedAt",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Any"
+            name: "nodes",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "LIST",
+                ofType: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "UNION",
+                    name: "AppSession",
+                    ofType: null,
+                  },
+                },
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "id",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "pageInfo",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "PageInfo",
+                ofType: null,
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "lastAuthentication",
-            "type": {
-              "kind": "OBJECT",
-              "name": "Authentication",
-              "ofType": null
+            name: "totalCount",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
-          {
-            "name": "state",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
-            },
-            "args": []
-          },
-          {
-            "name": "user",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "User",
-                "ofType": null
-              }
-            },
-            "args": []
-          },
-          {
-            "name": "userAgent",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Any"
-            },
-            "args": []
-          }
         ],
-        "interfaces": [
-          {
-            "kind": "INTERFACE",
-            "name": "CreationEvent"
-          },
-          {
-            "kind": "INTERFACE",
-            "name": "Node"
-          }
-        ]
+        interfaces: [],
       },
       {
-        "kind": "OBJECT",
-        "name": "BrowserSessionConnection",
-        "fields": [
+        kind: "OBJECT",
+        name: "AppSessionEdge",
+        fields: [
           {
-            "name": "edges",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "BrowserSessionEdge",
-                    "ofType": null
-                  }
-                }
-              }
+            name: "cursor",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "nodes",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "BrowserSession",
-                    "ofType": null
-                  }
-                }
-              }
+            name: "node",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "UNION",
+                name: "AppSession",
+                ofType: null,
+              },
             },
-            "args": []
+            args: [],
           },
-          {
-            "name": "pageInfo",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "PageInfo",
-                "ofType": null
-              }
-            },
-            "args": []
-          },
-          {
-            "name": "totalCount",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
-            },
-            "args": []
-          }
         ],
-        "interfaces": []
+        interfaces: [],
       },
       {
-        "kind": "OBJECT",
-        "name": "BrowserSessionEdge",
-        "fields": [
+        kind: "OBJECT",
+        name: "Authentication",
+        fields: [
           {
-            "name": "cursor",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "createdAt",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "node",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "BrowserSession",
-                "ofType": null
-              }
+            name: "id",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
-          }
+            args: [],
+          },
         ],
-        "interfaces": []
+        interfaces: [
+          {
+            kind: "INTERFACE",
+            name: "CreationEvent",
+          },
+          {
+            kind: "INTERFACE",
+            name: "Node",
+          },
+        ],
       },
       {
-        "kind": "OBJECT",
-        "name": "CompatSession",
-        "fields": [
+        kind: "OBJECT",
+        name: "BrowserSession",
+        fields: [
           {
-            "name": "createdAt",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "createdAt",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "deviceId",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "finishedAt",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "finishedAt",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Any"
+            name: "id",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "id",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "lastActiveAt",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "ssoLogin",
-            "type": {
-              "kind": "OBJECT",
-              "name": "CompatSsoLogin",
-              "ofType": null
+            name: "lastActiveIp",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "state",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "lastAuthentication",
+            type: {
+              kind: "OBJECT",
+              name: "Authentication",
+              ofType: null,
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "user",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "User",
-                "ofType": null
-              }
+            name: "state",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
-          }
+            args: [],
+          },
+          {
+            name: "user",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "User",
+                ofType: null,
+              },
+            },
+            args: [],
+          },
+          {
+            name: "userAgent",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
+            },
+            args: [],
+          },
         ],
-        "interfaces": [
+        interfaces: [
           {
-            "kind": "INTERFACE",
-            "name": "CreationEvent"
+            kind: "INTERFACE",
+            name: "CreationEvent",
           },
           {
-            "kind": "INTERFACE",
-            "name": "Node"
-          }
-        ]
+            kind: "INTERFACE",
+            name: "Node",
+          },
+        ],
       },
       {
-        "kind": "OBJECT",
-        "name": "CompatSessionConnection",
-        "fields": [
+        kind: "OBJECT",
+        name: "BrowserSessionConnection",
+        fields: [
           {
-            "name": "edges",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "CompatSessionEdge",
-                    "ofType": null
-                  }
-                }
-              }
+            name: "edges",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "LIST",
+                ofType: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "OBJECT",
+                    name: "BrowserSessionEdge",
+                    ofType: null,
+                  },
+                },
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "nodes",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "CompatSession",
-                    "ofType": null
-                  }
-                }
-              }
+            name: "nodes",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "LIST",
+                ofType: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "OBJECT",
+                    name: "BrowserSession",
+                    ofType: null,
+                  },
+                },
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "pageInfo",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "PageInfo",
-                "ofType": null
-              }
+            name: "pageInfo",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "PageInfo",
+                ofType: null,
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "totalCount",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "totalCount",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
-          }
+            args: [],
+          },
         ],
-        "interfaces": []
+        interfaces: [],
       },
       {
-        "kind": "OBJECT",
-        "name": "CompatSessionEdge",
-        "fields": [
+        kind: "OBJECT",
+        name: "BrowserSessionEdge",
+        fields: [
           {
-            "name": "cursor",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "cursor",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "node",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "CompatSession",
-                "ofType": null
-              }
+            name: "node",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "BrowserSession",
+                ofType: null,
+              },
             },
-            "args": []
-          }
+            args: [],
+          },
         ],
-        "interfaces": []
+        interfaces: [],
       },
       {
-        "kind": "OBJECT",
-        "name": "CompatSsoLogin",
-        "fields": [
+        kind: "OBJECT",
+        name: "CompatSession",
+        fields: [
           {
-            "name": "createdAt",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "createdAt",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "exchangedAt",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Any"
+            name: "deviceId",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "fulfilledAt",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Any"
+            name: "finishedAt",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "id",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "id",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "redirectUri",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "lastActiveAt",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "session",
-            "type": {
-              "kind": "OBJECT",
-              "name": "CompatSession",
-              "ofType": null
+            name: "lastActiveIp",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
             },
-            "args": []
-          }
+            args: [],
+          },
+          {
+            name: "ssoLogin",
+            type: {
+              kind: "OBJECT",
+              name: "CompatSsoLogin",
+              ofType: null,
+            },
+            args: [],
+          },
+          {
+            name: "state",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+          {
+            name: "user",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "User",
+                ofType: null,
+              },
+            },
+            args: [],
+          },
         ],
-        "interfaces": [
+        interfaces: [
           {
-            "kind": "INTERFACE",
-            "name": "Node"
-          }
-        ]
+            kind: "INTERFACE",
+            name: "CreationEvent",
+          },
+          {
+            kind: "INTERFACE",
+            name: "Node",
+          },
+        ],
       },
       {
-        "kind": "OBJECT",
-        "name": "CompatSsoLoginConnection",
-        "fields": [
+        kind: "OBJECT",
+        name: "CompatSessionConnection",
+        fields: [
           {
-            "name": "edges",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "CompatSsoLoginEdge",
-                    "ofType": null
-                  }
-                }
-              }
+            name: "edges",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "LIST",
+                ofType: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "OBJECT",
+                    name: "CompatSessionEdge",
+                    ofType: null,
+                  },
+                },
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "nodes",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "CompatSsoLogin",
-                    "ofType": null
-                  }
-                }
-              }
+            name: "nodes",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "LIST",
+                ofType: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "OBJECT",
+                    name: "CompatSession",
+                    ofType: null,
+                  },
+                },
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "pageInfo",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "PageInfo",
-                "ofType": null
-              }
+            name: "pageInfo",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "PageInfo",
+                ofType: null,
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "totalCount",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "totalCount",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
-          }
+            args: [],
+          },
         ],
-        "interfaces": []
+        interfaces: [],
       },
       {
-        "kind": "OBJECT",
-        "name": "CompatSsoLoginEdge",
-        "fields": [
+        kind: "OBJECT",
+        name: "CompatSessionEdge",
+        fields: [
           {
-            "name": "cursor",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "cursor",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "node",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "CompatSsoLogin",
-                "ofType": null
-              }
+            name: "node",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "CompatSession",
+                ofType: null,
+              },
             },
-            "args": []
-          }
+            args: [],
+          },
         ],
-        "interfaces": []
+        interfaces: [],
       },
       {
-        "kind": "OBJECT",
-        "name": "CreateOAuth2SessionPayload",
-        "fields": [
+        kind: "OBJECT",
+        name: "CompatSsoLogin",
+        fields: [
           {
-            "name": "accessToken",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "createdAt",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "oauth2Session",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "Oauth2Session",
-                "ofType": null
-              }
+            name: "exchangedAt",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "refreshToken",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Any"
+            name: "fulfilledAt",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
             },
-            "args": []
-          }
+            args: [],
+          },
+          {
+            name: "id",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+          {
+            name: "redirectUri",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+          {
+            name: "session",
+            type: {
+              kind: "OBJECT",
+              name: "CompatSession",
+              ofType: null,
+            },
+            args: [],
+          },
         ],
-        "interfaces": []
+        interfaces: [
+          {
+            kind: "INTERFACE",
+            name: "Node",
+          },
+        ],
       },
       {
-        "kind": "INTERFACE",
-        "name": "CreationEvent",
-        "fields": [
+        kind: "OBJECT",
+        name: "CompatSsoLoginConnection",
+        fields: [
           {
-            "name": "createdAt",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "edges",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "LIST",
+                ofType: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "OBJECT",
+                    name: "CompatSsoLoginEdge",
+                    ofType: null,
+                  },
+                },
+              },
             },
-            "args": []
-          }
+            args: [],
+          },
+          {
+            name: "nodes",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "LIST",
+                ofType: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "OBJECT",
+                    name: "CompatSsoLogin",
+                    ofType: null,
+                  },
+                },
+              },
+            },
+            args: [],
+          },
+          {
+            name: "pageInfo",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "PageInfo",
+                ofType: null,
+              },
+            },
+            args: [],
+          },
+          {
+            name: "totalCount",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
         ],
-        "interfaces": [],
-        "possibleTypes": [
-          {
-            "kind": "OBJECT",
-            "name": "Authentication"
-          },
-          {
-            "kind": "OBJECT",
-            "name": "BrowserSession"
-          },
-          {
-            "kind": "OBJECT",
-            "name": "CompatSession"
-          },
-          {
-            "kind": "OBJECT",
-            "name": "Oauth2Session"
-          },
-          {
-            "kind": "OBJECT",
-            "name": "UpstreamOAuth2Link"
-          },
-          {
-            "kind": "OBJECT",
-            "name": "UpstreamOAuth2Provider"
-          },
-          {
-            "kind": "OBJECT",
-            "name": "UserEmail"
-          }
-        ]
+        interfaces: [],
       },
       {
-        "kind": "OBJECT",
-        "name": "EndBrowserSessionPayload",
-        "fields": [
+        kind: "OBJECT",
+        name: "CompatSsoLoginEdge",
+        fields: [
           {
-            "name": "browserSession",
-            "type": {
-              "kind": "OBJECT",
-              "name": "BrowserSession",
-              "ofType": null
+            name: "cursor",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "status",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "node",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "CompatSsoLogin",
+                ofType: null,
+              },
             },
-            "args": []
-          }
+            args: [],
+          },
         ],
-        "interfaces": []
+        interfaces: [],
       },
       {
-        "kind": "OBJECT",
-        "name": "EndCompatSessionPayload",
-        "fields": [
+        kind: "OBJECT",
+        name: "CreateOAuth2SessionPayload",
+        fields: [
           {
-            "name": "compatSession",
-            "type": {
-              "kind": "OBJECT",
-              "name": "CompatSession",
-              "ofType": null
+            name: "accessToken",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "status",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "oauth2Session",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "Oauth2Session",
+                ofType: null,
+              },
             },
-            "args": []
-          }
+            args: [],
+          },
+          {
+            name: "refreshToken",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
+            },
+            args: [],
+          },
         ],
-        "interfaces": []
+        interfaces: [],
       },
       {
-        "kind": "OBJECT",
-        "name": "EndOAuth2SessionPayload",
-        "fields": [
+        kind: "INTERFACE",
+        name: "CreationEvent",
+        fields: [
           {
-            "name": "oauth2Session",
-            "type": {
-              "kind": "OBJECT",
-              "name": "Oauth2Session",
-              "ofType": null
+            name: "createdAt",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
+          },
+        ],
+        interfaces: [],
+        possibleTypes: [
+          {
+            kind: "OBJECT",
+            name: "Authentication",
           },
           {
-            "name": "status",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
-            },
-            "args": []
-          }
+            kind: "OBJECT",
+            name: "BrowserSession",
+          },
+          {
+            kind: "OBJECT",
+            name: "CompatSession",
+          },
+          {
+            kind: "OBJECT",
+            name: "Oauth2Session",
+          },
+          {
+            kind: "OBJECT",
+            name: "UpstreamOAuth2Link",
+          },
+          {
+            kind: "OBJECT",
+            name: "UpstreamOAuth2Provider",
+          },
+          {
+            kind: "OBJECT",
+            name: "UserEmail",
+          },
         ],
-        "interfaces": []
       },
       {
-        "kind": "OBJECT",
-        "name": "LockUserPayload",
-        "fields": [
+        kind: "OBJECT",
+        name: "EndBrowserSessionPayload",
+        fields: [
           {
-            "name": "status",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "browserSession",
+            type: {
+              kind: "OBJECT",
+              name: "BrowserSession",
+              ofType: null,
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "user",
-            "type": {
-              "kind": "OBJECT",
-              "name": "User",
-              "ofType": null
+            name: "status",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
-          }
+            args: [],
+          },
         ],
-        "interfaces": []
+        interfaces: [],
       },
       {
-        "kind": "OBJECT",
-        "name": "MatrixUser",
-        "fields": [
+        kind: "OBJECT",
+        name: "EndCompatSessionPayload",
+        fields: [
           {
-            "name": "avatarUrl",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Any"
+            name: "compatSession",
+            type: {
+              kind: "OBJECT",
+              name: "CompatSession",
+              ofType: null,
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "displayName",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Any"
+            name: "status",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
-          {
-            "name": "mxid",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
-            },
-            "args": []
-          }
         ],
-        "interfaces": []
+        interfaces: [],
       },
       {
-        "kind": "OBJECT",
-        "name": "Mutation",
-        "fields": [
+        kind: "OBJECT",
+        name: "EndOAuth2SessionPayload",
+        fields: [
           {
-            "name": "addEmail",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "AddEmailPayload",
-                "ofType": null
-              }
+            name: "oauth2Session",
+            type: {
+              kind: "OBJECT",
+              name: "Oauth2Session",
+              ofType: null,
             },
-            "args": [
+            args: [],
+          },
+          {
+            name: "status",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+        ],
+        interfaces: [],
+      },
+      {
+        kind: "OBJECT",
+        name: "LockUserPayload",
+        fields: [
+          {
+            name: "status",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+          {
+            name: "user",
+            type: {
+              kind: "OBJECT",
+              name: "User",
+              ofType: null,
+            },
+            args: [],
+          },
+        ],
+        interfaces: [],
+      },
+      {
+        kind: "OBJECT",
+        name: "MatrixUser",
+        fields: [
+          {
+            name: "avatarUrl",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
+            },
+            args: [],
+          },
+          {
+            name: "displayName",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
+            },
+            args: [],
+          },
+          {
+            name: "mxid",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+        ],
+        interfaces: [],
+      },
+      {
+        kind: "OBJECT",
+        name: "Mutation",
+        fields: [
+          {
+            name: "addEmail",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "AddEmailPayload",
+                ofType: null,
+              },
+            },
+            args: [
               {
-                "name": "input",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Any"
-                  }
-                }
-              }
-            ]
+                name: "input",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
           },
           {
-            "name": "addUser",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "AddUserPayload",
-                "ofType": null
-              }
+            name: "addUser",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "AddUserPayload",
+                ofType: null,
+              },
             },
-            "args": [
+            args: [
               {
-                "name": "input",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Any"
-                  }
-                }
-              }
-            ]
+                name: "input",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
           },
           {
-            "name": "createOauth2Session",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "CreateOAuth2SessionPayload",
-                "ofType": null
-              }
+            name: "createOauth2Session",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "CreateOAuth2SessionPayload",
+                ofType: null,
+              },
             },
-            "args": [
+            args: [
               {
-                "name": "input",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Any"
-                  }
-                }
-              }
-            ]
+                name: "input",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
           },
           {
-            "name": "endBrowserSession",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "EndBrowserSessionPayload",
-                "ofType": null
-              }
+            name: "endBrowserSession",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "EndBrowserSessionPayload",
+                ofType: null,
+              },
             },
-            "args": [
+            args: [
               {
-                "name": "input",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Any"
-                  }
-                }
-              }
-            ]
+                name: "input",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
           },
           {
-            "name": "endCompatSession",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "EndCompatSessionPayload",
-                "ofType": null
-              }
+            name: "endCompatSession",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "EndCompatSessionPayload",
+                ofType: null,
+              },
             },
-            "args": [
+            args: [
               {
-                "name": "input",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Any"
-                  }
-                }
-              }
-            ]
+                name: "input",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
           },
           {
-            "name": "endOauth2Session",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "EndOAuth2SessionPayload",
-                "ofType": null
-              }
+            name: "endOauth2Session",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "EndOAuth2SessionPayload",
+                ofType: null,
+              },
             },
-            "args": [
+            args: [
               {
-                "name": "input",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Any"
-                  }
-                }
-              }
-            ]
+                name: "input",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
           },
           {
-            "name": "lockUser",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "LockUserPayload",
-                "ofType": null
-              }
+            name: "lockUser",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "LockUserPayload",
+                ofType: null,
+              },
             },
-            "args": [
+            args: [
               {
-                "name": "input",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Any"
-                  }
-                }
-              }
-            ]
+                name: "input",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
           },
           {
-            "name": "removeEmail",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "RemoveEmailPayload",
-                "ofType": null
-              }
+            name: "removeEmail",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "RemoveEmailPayload",
+                ofType: null,
+              },
             },
-            "args": [
+            args: [
               {
-                "name": "input",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Any"
-                  }
-                }
-              }
-            ]
+                name: "input",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
           },
           {
-            "name": "sendVerificationEmail",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "SendVerificationEmailPayload",
-                "ofType": null
-              }
+            name: "sendVerificationEmail",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "SendVerificationEmailPayload",
+                ofType: null,
+              },
             },
-            "args": [
+            args: [
               {
-                "name": "input",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Any"
-                  }
-                }
-              }
-            ]
+                name: "input",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
           },
           {
-            "name": "setDisplayName",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "SetDisplayNamePayload",
-                "ofType": null
-              }
+            name: "setDisplayName",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "SetDisplayNamePayload",
+                ofType: null,
+              },
             },
-            "args": [
+            args: [
               {
-                "name": "input",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Any"
-                  }
-                }
-              }
-            ]
+                name: "input",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
           },
           {
-            "name": "setPrimaryEmail",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "SetPrimaryEmailPayload",
-                "ofType": null
-              }
+            name: "setPrimaryEmail",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "SetPrimaryEmailPayload",
+                ofType: null,
+              },
             },
-            "args": [
+            args: [
               {
-                "name": "input",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Any"
-                  }
-                }
-              }
-            ]
+                name: "input",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
           },
           {
-            "name": "verifyEmail",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "VerifyEmailPayload",
-                "ofType": null
-              }
+            name: "verifyEmail",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "VerifyEmailPayload",
+                ofType: null,
+              },
             },
-            "args": [
+            args: [
               {
-                "name": "input",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Any"
-                  }
-                }
-              }
-            ]
-          }
+                name: "input",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
+          },
         ],
-        "interfaces": []
+        interfaces: [],
       },
       {
-        "kind": "INTERFACE",
-        "name": "Node",
-        "fields": [
+        kind: "INTERFACE",
+        name: "Node",
+        fields: [
           {
-            "name": "id",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "id",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
-          }
+            args: [],
+          },
         ],
-        "interfaces": [],
-        "possibleTypes": [
+        interfaces: [],
+        possibleTypes: [
           {
-            "kind": "OBJECT",
-            "name": "Anonymous"
+            kind: "OBJECT",
+            name: "Anonymous",
           },
           {
-            "kind": "OBJECT",
-            "name": "Authentication"
+            kind: "OBJECT",
+            name: "Authentication",
           },
           {
-            "kind": "OBJECT",
-            "name": "BrowserSession"
+            kind: "OBJECT",
+            name: "BrowserSession",
           },
           {
-            "kind": "OBJECT",
-            "name": "CompatSession"
+            kind: "OBJECT",
+            name: "CompatSession",
           },
           {
-            "kind": "OBJECT",
-            "name": "CompatSsoLogin"
+            kind: "OBJECT",
+            name: "CompatSsoLogin",
           },
           {
-            "kind": "OBJECT",
-            "name": "Oauth2Client"
+            kind: "OBJECT",
+            name: "Oauth2Client",
           },
           {
-            "kind": "OBJECT",
-            "name": "Oauth2Session"
+            kind: "OBJECT",
+            name: "Oauth2Session",
           },
           {
-            "kind": "OBJECT",
-            "name": "UpstreamOAuth2Link"
+            kind: "OBJECT",
+            name: "UpstreamOAuth2Link",
           },
           {
-            "kind": "OBJECT",
-            "name": "UpstreamOAuth2Provider"
+            kind: "OBJECT",
+            name: "UpstreamOAuth2Provider",
           },
           {
-            "kind": "OBJECT",
-            "name": "User"
+            kind: "OBJECT",
+            name: "User",
           },
           {
-            "kind": "OBJECT",
-            "name": "UserEmail"
-          }
-        ]
+            kind: "OBJECT",
+            name: "UserEmail",
+          },
+        ],
       },
       {
-        "kind": "OBJECT",
-        "name": "Oauth2Client",
-        "fields": [
+        kind: "OBJECT",
+        name: "Oauth2Client",
+        fields: [
           {
-            "name": "applicationType",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Any"
+            name: "applicationType",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "clientId",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "clientId",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "clientName",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Any"
+            name: "clientName",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "clientUri",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Any"
+            name: "clientUri",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "contacts",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Any"
-                  }
-                }
-              }
+            name: "contacts",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "LIST",
+                ofType: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "id",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "id",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "logoUri",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Any"
+            name: "logoUri",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "policyUri",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Any"
+            name: "policyUri",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "redirectUris",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Any"
-                  }
-                }
-              }
+            name: "redirectUris",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "LIST",
+                ofType: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "tosUri",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Any"
+            name: "tosUri",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
             },
-            "args": []
-          }
+            args: [],
+          },
         ],
-        "interfaces": [
+        interfaces: [
           {
-            "kind": "INTERFACE",
-            "name": "Node"
-          }
-        ]
+            kind: "INTERFACE",
+            name: "Node",
+          },
+        ],
       },
       {
-        "kind": "OBJECT",
-        "name": "Oauth2Session",
-        "fields": [
+        kind: "OBJECT",
+        name: "Oauth2Session",
+        fields: [
           {
-            "name": "browserSession",
-            "type": {
-              "kind": "OBJECT",
-              "name": "BrowserSession",
-              "ofType": null
+            name: "browserSession",
+            type: {
+              kind: "OBJECT",
+              name: "BrowserSession",
+              ofType: null,
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "client",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "Oauth2Client",
-                "ofType": null
-              }
+            name: "client",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "Oauth2Client",
+                ofType: null,
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "createdAt",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "createdAt",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "finishedAt",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Any"
+            name: "finishedAt",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "id",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "id",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "scope",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "lastActiveAt",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "state",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "lastActiveIp",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "user",
-            "type": {
-              "kind": "OBJECT",
-              "name": "User",
-              "ofType": null
+            name: "scope",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
-          }
+            args: [],
+          },
+          {
+            name: "state",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+          {
+            name: "user",
+            type: {
+              kind: "OBJECT",
+              name: "User",
+              ofType: null,
+            },
+            args: [],
+          },
         ],
-        "interfaces": [
+        interfaces: [
           {
-            "kind": "INTERFACE",
-            "name": "CreationEvent"
+            kind: "INTERFACE",
+            name: "CreationEvent",
           },
           {
-            "kind": "INTERFACE",
-            "name": "Node"
-          }
-        ]
+            kind: "INTERFACE",
+            name: "Node",
+          },
+        ],
       },
       {
-        "kind": "OBJECT",
-        "name": "Oauth2SessionConnection",
-        "fields": [
+        kind: "OBJECT",
+        name: "Oauth2SessionConnection",
+        fields: [
           {
-            "name": "edges",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "Oauth2SessionEdge",
-                    "ofType": null
-                  }
-                }
-              }
+            name: "edges",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "LIST",
+                ofType: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "OBJECT",
+                    name: "Oauth2SessionEdge",
+                    ofType: null,
+                  },
+                },
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "nodes",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "Oauth2Session",
-                    "ofType": null
-                  }
-                }
-              }
+            name: "nodes",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "LIST",
+                ofType: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "OBJECT",
+                    name: "Oauth2Session",
+                    ofType: null,
+                  },
+                },
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "pageInfo",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "PageInfo",
-                "ofType": null
-              }
+            name: "pageInfo",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "PageInfo",
+                ofType: null,
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "totalCount",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "totalCount",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
-          }
+            args: [],
+          },
         ],
-        "interfaces": []
+        interfaces: [],
       },
       {
-        "kind": "OBJECT",
-        "name": "Oauth2SessionEdge",
-        "fields": [
+        kind: "OBJECT",
+        name: "Oauth2SessionEdge",
+        fields: [
           {
-            "name": "cursor",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "cursor",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "node",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "Oauth2Session",
-                "ofType": null
-              }
+            name: "node",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "Oauth2Session",
+                ofType: null,
+              },
             },
-            "args": []
-          }
+            args: [],
+          },
         ],
-        "interfaces": []
+        interfaces: [],
       },
       {
-        "kind": "OBJECT",
-        "name": "PageInfo",
-        "fields": [
+        kind: "OBJECT",
+        name: "PageInfo",
+        fields: [
           {
-            "name": "endCursor",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Any"
+            name: "endCursor",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "hasNextPage",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "hasNextPage",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "hasPreviousPage",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "hasPreviousPage",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "startCursor",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Any"
+            name: "startCursor",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
             },
-            "args": []
-          }
+            args: [],
+          },
         ],
-        "interfaces": []
+        interfaces: [],
       },
       {
-        "kind": "OBJECT",
-        "name": "Query",
-        "fields": [
+        kind: "OBJECT",
+        name: "Query",
+        fields: [
           {
-            "name": "browserSession",
-            "type": {
-              "kind": "OBJECT",
-              "name": "BrowserSession",
-              "ofType": null
+            name: "browserSession",
+            type: {
+              kind: "OBJECT",
+              name: "BrowserSession",
+              ofType: null,
             },
-            "args": [
+            args: [
               {
-                "name": "id",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Any"
-                  }
-                }
-              }
-            ]
+                name: "id",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
           },
           {
-            "name": "currentBrowserSession",
-            "type": {
-              "kind": "OBJECT",
-              "name": "BrowserSession",
-              "ofType": null
+            name: "currentBrowserSession",
+            type: {
+              kind: "OBJECT",
+              name: "BrowserSession",
+              ofType: null,
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "currentUser",
-            "type": {
-              "kind": "OBJECT",
-              "name": "User",
-              "ofType": null
+            name: "currentUser",
+            type: {
+              kind: "OBJECT",
+              name: "User",
+              ofType: null,
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "node",
-            "type": {
-              "kind": "INTERFACE",
-              "name": "Node",
-              "ofType": null
+            name: "node",
+            type: {
+              kind: "INTERFACE",
+              name: "Node",
+              ofType: null,
             },
-            "args": [
+            args: [
               {
-                "name": "id",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Any"
-                  }
-                }
-              }
-            ]
+                name: "id",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
           },
           {
-            "name": "oauth2Client",
-            "type": {
-              "kind": "OBJECT",
-              "name": "Oauth2Client",
-              "ofType": null
+            name: "oauth2Client",
+            type: {
+              kind: "OBJECT",
+              name: "Oauth2Client",
+              ofType: null,
             },
-            "args": [
+            args: [
               {
-                "name": "id",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Any"
-                  }
-                }
-              }
-            ]
+                name: "id",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
           },
           {
-            "name": "session",
-            "type": {
-              "kind": "UNION",
-              "name": "Session",
-              "ofType": null
+            name: "session",
+            type: {
+              kind: "UNION",
+              name: "Session",
+              ofType: null,
             },
-            "args": [
+            args: [
               {
-                "name": "deviceId",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Any"
-                  }
-                }
+                name: "deviceId",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
               },
               {
-                "name": "userId",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Any"
-                  }
-                }
-              }
-            ]
+                name: "userId",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
           },
           {
-            "name": "upstreamOauth2Link",
-            "type": {
-              "kind": "OBJECT",
-              "name": "UpstreamOAuth2Link",
-              "ofType": null
+            name: "upstreamOauth2Link",
+            type: {
+              kind: "OBJECT",
+              name: "UpstreamOAuth2Link",
+              ofType: null,
             },
-            "args": [
+            args: [
               {
-                "name": "id",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Any"
-                  }
-                }
-              }
-            ]
+                name: "id",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
           },
           {
-            "name": "upstreamOauth2Provider",
-            "type": {
-              "kind": "OBJECT",
-              "name": "UpstreamOAuth2Provider",
-              "ofType": null
+            name: "upstreamOauth2Provider",
+            type: {
+              kind: "OBJECT",
+              name: "UpstreamOAuth2Provider",
+              ofType: null,
             },
-            "args": [
+            args: [
               {
-                "name": "id",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Any"
-                  }
-                }
-              }
-            ]
+                name: "id",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
           },
           {
-            "name": "upstreamOauth2Providers",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "UpstreamOAuth2ProviderConnection",
-                "ofType": null
-              }
+            name: "upstreamOauth2Providers",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "UpstreamOAuth2ProviderConnection",
+                ofType: null,
+              },
             },
-            "args": [
+            args: [
               {
-                "name": "after",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
+                name: "after",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
               },
               {
-                "name": "before",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
+                name: "before",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
               },
               {
-                "name": "first",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
+                name: "first",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
               },
               {
-                "name": "last",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              }
-            ]
+                name: "last",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+            ],
           },
           {
-            "name": "user",
-            "type": {
-              "kind": "OBJECT",
-              "name": "User",
-              "ofType": null
+            name: "user",
+            type: {
+              kind: "OBJECT",
+              name: "User",
+              ofType: null,
             },
-            "args": [
+            args: [
               {
-                "name": "id",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Any"
-                  }
-                }
-              }
-            ]
+                name: "id",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
           },
           {
-            "name": "userByUsername",
-            "type": {
-              "kind": "OBJECT",
-              "name": "User",
-              "ofType": null
+            name: "userByUsername",
+            type: {
+              kind: "OBJECT",
+              name: "User",
+              ofType: null,
             },
-            "args": [
+            args: [
               {
-                "name": "username",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Any"
-                  }
-                }
-              }
-            ]
+                name: "username",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
           },
           {
-            "name": "userEmail",
-            "type": {
-              "kind": "OBJECT",
-              "name": "UserEmail",
-              "ofType": null
+            name: "userEmail",
+            type: {
+              kind: "OBJECT",
+              name: "UserEmail",
+              ofType: null,
             },
-            "args": [
+            args: [
               {
-                "name": "id",
-                "type": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "SCALAR",
-                    "name": "Any"
-                  }
-                }
-              }
-            ]
+                name: "id",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
           },
           {
-            "name": "viewer",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "UNION",
-                "name": "Viewer",
-                "ofType": null
-              }
+            name: "viewer",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "UNION",
+                name: "Viewer",
+                ofType: null,
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "viewerSession",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "UNION",
-                "name": "ViewerSession",
-                "ofType": null
-              }
+            name: "viewerSession",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "UNION",
+                name: "ViewerSession",
+                ofType: null,
+              },
             },
-            "args": []
-          }
+            args: [],
+          },
         ],
-        "interfaces": []
+        interfaces: [],
       },
       {
-        "kind": "OBJECT",
-        "name": "RemoveEmailPayload",
-        "fields": [
+        kind: "OBJECT",
+        name: "RemoveEmailPayload",
+        fields: [
           {
-            "name": "email",
-            "type": {
-              "kind": "OBJECT",
-              "name": "UserEmail",
-              "ofType": null
+            name: "email",
+            type: {
+              kind: "OBJECT",
+              name: "UserEmail",
+              ofType: null,
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "status",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "status",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "user",
-            "type": {
-              "kind": "OBJECT",
-              "name": "User",
-              "ofType": null
+            name: "user",
+            type: {
+              kind: "OBJECT",
+              name: "User",
+              ofType: null,
             },
-            "args": []
-          }
+            args: [],
+          },
         ],
-        "interfaces": []
+        interfaces: [],
       },
       {
-        "kind": "OBJECT",
-        "name": "SendVerificationEmailPayload",
-        "fields": [
+        kind: "OBJECT",
+        name: "SendVerificationEmailPayload",
+        fields: [
           {
-            "name": "email",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "UserEmail",
-                "ofType": null
-              }
+            name: "email",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "UserEmail",
+                ofType: null,
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "status",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "status",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "user",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "User",
-                "ofType": null
-              }
+            name: "user",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "User",
+                ofType: null,
+              },
             },
-            "args": []
-          }
+            args: [],
+          },
         ],
-        "interfaces": []
+        interfaces: [],
       },
       {
-        "kind": "UNION",
-        "name": "Session",
-        "possibleTypes": [
+        kind: "UNION",
+        name: "Session",
+        possibleTypes: [
           {
-            "kind": "OBJECT",
-            "name": "CompatSession"
+            kind: "OBJECT",
+            name: "CompatSession",
           },
           {
-            "kind": "OBJECT",
-            "name": "Oauth2Session"
-          }
-        ]
-      },
-      {
-        "kind": "OBJECT",
-        "name": "SetDisplayNamePayload",
-        "fields": [
-          {
-            "name": "status",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
-            },
-            "args": []
+            kind: "OBJECT",
+            name: "Oauth2Session",
           },
-          {
-            "name": "user",
-            "type": {
-              "kind": "OBJECT",
-              "name": "User",
-              "ofType": null
-            },
-            "args": []
-          }
         ],
-        "interfaces": []
       },
       {
-        "kind": "OBJECT",
-        "name": "SetPrimaryEmailPayload",
-        "fields": [
+        kind: "OBJECT",
+        name: "SetDisplayNamePayload",
+        fields: [
           {
-            "name": "status",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "status",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "user",
-            "type": {
-              "kind": "OBJECT",
-              "name": "User",
-              "ofType": null
+            name: "user",
+            type: {
+              kind: "OBJECT",
+              name: "User",
+              ofType: null,
             },
-            "args": []
-          }
+            args: [],
+          },
         ],
-        "interfaces": []
+        interfaces: [],
       },
       {
-        "kind": "OBJECT",
-        "name": "UpstreamOAuth2Link",
-        "fields": [
+        kind: "OBJECT",
+        name: "SetPrimaryEmailPayload",
+        fields: [
           {
-            "name": "createdAt",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "status",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "id",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "user",
+            type: {
+              kind: "OBJECT",
+              name: "User",
+              ofType: null,
             },
-            "args": []
+            args: [],
           },
-          {
-            "name": "provider",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "UpstreamOAuth2Provider",
-                "ofType": null
-              }
-            },
-            "args": []
-          },
-          {
-            "name": "subject",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
-            },
-            "args": []
-          },
-          {
-            "name": "user",
-            "type": {
-              "kind": "OBJECT",
-              "name": "User",
-              "ofType": null
-            },
-            "args": []
-          }
         ],
-        "interfaces": [
-          {
-            "kind": "INTERFACE",
-            "name": "CreationEvent"
-          },
-          {
-            "kind": "INTERFACE",
-            "name": "Node"
-          }
-        ]
+        interfaces: [],
       },
       {
-        "kind": "OBJECT",
-        "name": "UpstreamOAuth2LinkConnection",
-        "fields": [
+        kind: "OBJECT",
+        name: "UpstreamOAuth2Link",
+        fields: [
           {
-            "name": "edges",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "UpstreamOAuth2LinkEdge",
-                    "ofType": null
-                  }
-                }
-              }
+            name: "createdAt",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "nodes",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "UpstreamOAuth2Link",
-                    "ofType": null
-                  }
-                }
-              }
+            name: "id",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "pageInfo",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "PageInfo",
-                "ofType": null
-              }
+            name: "provider",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "UpstreamOAuth2Provider",
+                ofType: null,
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "totalCount",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "subject",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
-          }
+            args: [],
+          },
+          {
+            name: "user",
+            type: {
+              kind: "OBJECT",
+              name: "User",
+              ofType: null,
+            },
+            args: [],
+          },
         ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "UpstreamOAuth2LinkEdge",
-        "fields": [
+        interfaces: [
           {
-            "name": "cursor",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
-            },
-            "args": []
+            kind: "INTERFACE",
+            name: "CreationEvent",
           },
           {
-            "name": "node",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "UpstreamOAuth2Link",
-                "ofType": null
-              }
-            },
-            "args": []
-          }
+            kind: "INTERFACE",
+            name: "Node",
+          },
         ],
-        "interfaces": []
       },
       {
-        "kind": "OBJECT",
-        "name": "UpstreamOAuth2Provider",
-        "fields": [
+        kind: "OBJECT",
+        name: "UpstreamOAuth2LinkConnection",
+        fields: [
           {
-            "name": "clientId",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "edges",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "LIST",
+                ofType: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "OBJECT",
+                    name: "UpstreamOAuth2LinkEdge",
+                    ofType: null,
+                  },
+                },
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "createdAt",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "nodes",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "LIST",
+                ofType: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "OBJECT",
+                    name: "UpstreamOAuth2Link",
+                    ofType: null,
+                  },
+                },
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "id",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "pageInfo",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "PageInfo",
+                ofType: null,
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "issuer",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "totalCount",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
-          }
+            args: [],
+          },
         ],
-        "interfaces": [
-          {
-            "kind": "INTERFACE",
-            "name": "CreationEvent"
-          },
-          {
-            "kind": "INTERFACE",
-            "name": "Node"
-          }
-        ]
+        interfaces: [],
       },
       {
-        "kind": "OBJECT",
-        "name": "UpstreamOAuth2ProviderConnection",
-        "fields": [
+        kind: "OBJECT",
+        name: "UpstreamOAuth2LinkEdge",
+        fields: [
           {
-            "name": "edges",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "UpstreamOAuth2ProviderEdge",
-                    "ofType": null
-                  }
-                }
-              }
+            name: "cursor",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "nodes",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "UpstreamOAuth2Provider",
-                    "ofType": null
-                  }
-                }
-              }
+            name: "node",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "UpstreamOAuth2Link",
+                ofType: null,
+              },
             },
-            "args": []
+            args: [],
           },
-          {
-            "name": "pageInfo",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "PageInfo",
-                "ofType": null
-              }
-            },
-            "args": []
-          },
-          {
-            "name": "totalCount",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
-            },
-            "args": []
-          }
         ],
-        "interfaces": []
+        interfaces: [],
       },
       {
-        "kind": "OBJECT",
-        "name": "UpstreamOAuth2ProviderEdge",
-        "fields": [
+        kind: "OBJECT",
+        name: "UpstreamOAuth2Provider",
+        fields: [
           {
-            "name": "cursor",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "clientId",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "node",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "UpstreamOAuth2Provider",
-                "ofType": null
-              }
+            name: "createdAt",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
-          }
+            args: [],
+          },
+          {
+            name: "id",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+          {
+            name: "issuer",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
         ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "User",
-        "fields": [
+        interfaces: [
           {
-            "name": "browserSessions",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "BrowserSessionConnection",
-                "ofType": null
-              }
-            },
-            "args": [
-              {
-                "name": "after",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              },
-              {
-                "name": "before",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              },
-              {
-                "name": "first",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              },
-              {
-                "name": "last",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              },
-              {
-                "name": "state",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              }
-            ]
+            kind: "INTERFACE",
+            name: "CreationEvent",
           },
           {
-            "name": "compatSessions",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "CompatSessionConnection",
-                "ofType": null
-              }
-            },
-            "args": [
-              {
-                "name": "after",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              },
-              {
-                "name": "before",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              },
-              {
-                "name": "first",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              },
-              {
-                "name": "last",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              },
-              {
-                "name": "state",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              },
-              {
-                "name": "type",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              }
-            ]
+            kind: "INTERFACE",
+            name: "Node",
           },
-          {
-            "name": "compatSsoLogins",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "CompatSsoLoginConnection",
-                "ofType": null
-              }
-            },
-            "args": [
-              {
-                "name": "after",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              },
-              {
-                "name": "before",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              },
-              {
-                "name": "first",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              },
-              {
-                "name": "last",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              }
-            ]
-          },
-          {
-            "name": "createdAt",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
-            },
-            "args": []
-          },
-          {
-            "name": "emails",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "UserEmailConnection",
-                "ofType": null
-              }
-            },
-            "args": [
-              {
-                "name": "after",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              },
-              {
-                "name": "before",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              },
-              {
-                "name": "first",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              },
-              {
-                "name": "last",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              },
-              {
-                "name": "state",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              }
-            ]
-          },
-          {
-            "name": "id",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
-            },
-            "args": []
-          },
-          {
-            "name": "lockedAt",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Any"
-            },
-            "args": []
-          },
-          {
-            "name": "matrix",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "MatrixUser",
-                "ofType": null
-              }
-            },
-            "args": []
-          },
-          {
-            "name": "oauth2Sessions",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "Oauth2SessionConnection",
-                "ofType": null
-              }
-            },
-            "args": [
-              {
-                "name": "after",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              },
-              {
-                "name": "before",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              },
-              {
-                "name": "client",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              },
-              {
-                "name": "first",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              },
-              {
-                "name": "last",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              },
-              {
-                "name": "state",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              }
-            ]
-          },
-          {
-            "name": "primaryEmail",
-            "type": {
-              "kind": "OBJECT",
-              "name": "UserEmail",
-              "ofType": null
-            },
-            "args": []
-          },
-          {
-            "name": "upstreamOauth2Links",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "UpstreamOAuth2LinkConnection",
-                "ofType": null
-              }
-            },
-            "args": [
-              {
-                "name": "after",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              },
-              {
-                "name": "before",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              },
-              {
-                "name": "first",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              },
-              {
-                "name": "last",
-                "type": {
-                  "kind": "SCALAR",
-                  "name": "Any"
-                }
-              }
-            ]
-          },
-          {
-            "name": "username",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
-            },
-            "args": []
-          }
         ],
-        "interfaces": [
-          {
-            "kind": "INTERFACE",
-            "name": "Node"
-          }
-        ]
       },
       {
-        "kind": "OBJECT",
-        "name": "UserEmail",
-        "fields": [
+        kind: "OBJECT",
+        name: "UpstreamOAuth2ProviderConnection",
+        fields: [
           {
-            "name": "confirmedAt",
-            "type": {
-              "kind": "SCALAR",
-              "name": "Any"
+            name: "edges",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "LIST",
+                ofType: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "OBJECT",
+                    name: "UpstreamOAuth2ProviderEdge",
+                    ofType: null,
+                  },
+                },
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "createdAt",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "nodes",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "LIST",
+                ofType: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "OBJECT",
+                    name: "UpstreamOAuth2Provider",
+                    ofType: null,
+                  },
+                },
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "email",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "pageInfo",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "PageInfo",
+                ofType: null,
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "id",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "totalCount",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
-          }
+            args: [],
+          },
         ],
-        "interfaces": [
-          {
-            "kind": "INTERFACE",
-            "name": "CreationEvent"
-          },
-          {
-            "kind": "INTERFACE",
-            "name": "Node"
-          }
-        ]
+        interfaces: [],
       },
       {
-        "kind": "OBJECT",
-        "name": "UserEmailConnection",
-        "fields": [
+        kind: "OBJECT",
+        name: "UpstreamOAuth2ProviderEdge",
+        fields: [
           {
-            "name": "edges",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "UserEmailEdge",
-                    "ofType": null
-                  }
-                }
-              }
+            name: "cursor",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
             },
-            "args": []
+            args: [],
           },
           {
-            "name": "nodes",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "LIST",
-                "ofType": {
-                  "kind": "NON_NULL",
-                  "ofType": {
-                    "kind": "OBJECT",
-                    "name": "UserEmail",
-                    "ofType": null
-                  }
-                }
-              }
+            name: "node",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "UpstreamOAuth2Provider",
+                ofType: null,
+              },
             },
-            "args": []
+            args: [],
           },
-          {
-            "name": "pageInfo",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "PageInfo",
-                "ofType": null
-              }
-            },
-            "args": []
-          },
-          {
-            "name": "totalCount",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
-            },
-            "args": []
-          }
         ],
-        "interfaces": []
+        interfaces: [],
       },
       {
-        "kind": "OBJECT",
-        "name": "UserEmailEdge",
-        "fields": [
+        kind: "OBJECT",
+        name: "User",
+        fields: [
           {
-            "name": "cursor",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
+            name: "appSessions",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "AppSessionConnection",
+                ofType: null,
+              },
             },
-            "args": []
+            args: [
+              {
+                name: "after",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "before",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "first",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "last",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "state",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+            ],
           },
           {
-            "name": "node",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "OBJECT",
-                "name": "UserEmail",
-                "ofType": null
-              }
+            name: "browserSessions",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "BrowserSessionConnection",
+                ofType: null,
+              },
             },
-            "args": []
-          }
+            args: [
+              {
+                name: "after",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "before",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "first",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "last",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "state",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+            ],
+          },
+          {
+            name: "compatSessions",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "CompatSessionConnection",
+                ofType: null,
+              },
+            },
+            args: [
+              {
+                name: "after",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "before",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "first",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "last",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "state",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "type",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+            ],
+          },
+          {
+            name: "compatSsoLogins",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "CompatSsoLoginConnection",
+                ofType: null,
+              },
+            },
+            args: [
+              {
+                name: "after",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "before",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "first",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "last",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+            ],
+          },
+          {
+            name: "createdAt",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+          {
+            name: "emails",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "UserEmailConnection",
+                ofType: null,
+              },
+            },
+            args: [
+              {
+                name: "after",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "before",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "first",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "last",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "state",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+            ],
+          },
+          {
+            name: "id",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+          {
+            name: "lockedAt",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
+            },
+            args: [],
+          },
+          {
+            name: "matrix",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "MatrixUser",
+                ofType: null,
+              },
+            },
+            args: [],
+          },
+          {
+            name: "oauth2Sessions",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "Oauth2SessionConnection",
+                ofType: null,
+              },
+            },
+            args: [
+              {
+                name: "after",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "before",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "client",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "first",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "last",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "state",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+            ],
+          },
+          {
+            name: "primaryEmail",
+            type: {
+              kind: "OBJECT",
+              name: "UserEmail",
+              ofType: null,
+            },
+            args: [],
+          },
+          {
+            name: "upstreamOauth2Links",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "UpstreamOAuth2LinkConnection",
+                ofType: null,
+              },
+            },
+            args: [
+              {
+                name: "after",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "before",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "first",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
+                name: "last",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+            ],
+          },
+          {
+            name: "username",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
         ],
-        "interfaces": []
-      },
-      {
-        "kind": "OBJECT",
-        "name": "VerifyEmailPayload",
-        "fields": [
+        interfaces: [
           {
-            "name": "email",
-            "type": {
-              "kind": "OBJECT",
-              "name": "UserEmail",
-              "ofType": null
-            },
-            "args": []
+            kind: "INTERFACE",
+            name: "Node",
           },
-          {
-            "name": "status",
-            "type": {
-              "kind": "NON_NULL",
-              "ofType": {
-                "kind": "SCALAR",
-                "name": "Any"
-              }
-            },
-            "args": []
-          },
-          {
-            "name": "user",
-            "type": {
-              "kind": "OBJECT",
-              "name": "User",
-              "ofType": null
-            },
-            "args": []
-          }
         ],
-        "interfaces": []
       },
       {
-        "kind": "UNION",
-        "name": "Viewer",
-        "possibleTypes": [
+        kind: "OBJECT",
+        name: "UserEmail",
+        fields: [
           {
-            "kind": "OBJECT",
-            "name": "Anonymous"
+            name: "confirmedAt",
+            type: {
+              kind: "SCALAR",
+              name: "Any",
+            },
+            args: [],
           },
           {
-            "kind": "OBJECT",
-            "name": "User"
-          }
-        ]
+            name: "createdAt",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+          {
+            name: "email",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+          {
+            name: "id",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+        ],
+        interfaces: [
+          {
+            kind: "INTERFACE",
+            name: "CreationEvent",
+          },
+          {
+            kind: "INTERFACE",
+            name: "Node",
+          },
+        ],
       },
       {
-        "kind": "UNION",
-        "name": "ViewerSession",
-        "possibleTypes": [
+        kind: "OBJECT",
+        name: "UserEmailConnection",
+        fields: [
           {
-            "kind": "OBJECT",
-            "name": "Anonymous"
+            name: "edges",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "LIST",
+                ofType: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "OBJECT",
+                    name: "UserEmailEdge",
+                    ofType: null,
+                  },
+                },
+              },
+            },
+            args: [],
           },
           {
-            "kind": "OBJECT",
-            "name": "BrowserSession"
+            name: "nodes",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "LIST",
+                ofType: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "OBJECT",
+                    name: "UserEmail",
+                    ofType: null,
+                  },
+                },
+              },
+            },
+            args: [],
           },
           {
-            "kind": "OBJECT",
-            "name": "Oauth2Session"
-          }
-        ]
+            name: "pageInfo",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "PageInfo",
+                ofType: null,
+              },
+            },
+            args: [],
+          },
+          {
+            name: "totalCount",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+        ],
+        interfaces: [],
       },
       {
-        "kind": "SCALAR",
-        "name": "Any"
-      }
+        kind: "OBJECT",
+        name: "UserEmailEdge",
+        fields: [
+          {
+            name: "cursor",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+          {
+            name: "node",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "UserEmail",
+                ofType: null,
+              },
+            },
+            args: [],
+          },
+        ],
+        interfaces: [],
+      },
+      {
+        kind: "OBJECT",
+        name: "VerifyEmailPayload",
+        fields: [
+          {
+            name: "email",
+            type: {
+              kind: "OBJECT",
+              name: "UserEmail",
+              ofType: null,
+            },
+            args: [],
+          },
+          {
+            name: "status",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
+          },
+          {
+            name: "user",
+            type: {
+              kind: "OBJECT",
+              name: "User",
+              ofType: null,
+            },
+            args: [],
+          },
+        ],
+        interfaces: [],
+      },
+      {
+        kind: "UNION",
+        name: "Viewer",
+        possibleTypes: [
+          {
+            kind: "OBJECT",
+            name: "Anonymous",
+          },
+          {
+            kind: "OBJECT",
+            name: "User",
+          },
+        ],
+      },
+      {
+        kind: "UNION",
+        name: "ViewerSession",
+        possibleTypes: [
+          {
+            kind: "OBJECT",
+            name: "Anonymous",
+          },
+          {
+            kind: "OBJECT",
+            name: "BrowserSession",
+          },
+          {
+            kind: "OBJECT",
+            name: "Oauth2Session",
+          },
+        ],
+      },
+      {
+        kind: "SCALAR",
+        name: "Any",
+      },
     ],
-    "directives": []
-  }
+    directives: [],
+  },
 } as unknown as IntrospectionQuery;

@@ -12,28 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { parseISO } from "date-fns";
 import { create } from "react-test-renderer";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, beforeAll } from "vitest";
 
-import DateTime from "../DateTime";
+import { mockLocale } from "../../test-utils/mockLocale";
 
 import Session from "./Session";
-
-// Mock out datetime to avoid timezones/date formatting
-vi.mock("../DateTime", () => {
-  const MockDateTime: typeof DateTime = ({ datetime }) => (
-    <code>{datetime.toString()}</code>
-  );
-  return { default: MockDateTime };
-});
 
 describe("<Session />", () => {
   const defaultProps = {
     id: "session-id",
-    createdAt: "2023-06-29T03:35:17.451292+00:00",
+    createdAt: parseISO("2023-06-29T03:35:17.451292+00:00"),
   };
 
-  const finishedAt = "2023-06-29T03:35:19.451292+00:00";
+  const finishedAt = parseISO("2023-06-29T03:35:19.451292+00:00");
+
+  beforeAll(() => mockLocale());
 
   it("renders an active session", () => {
     const component = create(<Session {...defaultProps} />);
@@ -62,6 +57,20 @@ describe("<Session />", () => {
         {...defaultProps}
         finishedAt={finishedAt}
         clientName={clientName}
+        clientLogoUri="https://client.org/logo.png"
+      />,
+    );
+    expect(component.toJSON()).toMatchSnapshot();
+  });
+
+  it("renders ip address", () => {
+    const clientName = "Element";
+    const component = create(
+      <Session
+        {...defaultProps}
+        finishedAt={finishedAt}
+        clientName={clientName}
+        lastActiveIp="127.0.0.1"
       />,
     );
     expect(component.toJSON()).toMatchSnapshot();

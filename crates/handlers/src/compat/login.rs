@@ -33,7 +33,10 @@ use thiserror::Error;
 use zeroize::Zeroizing;
 
 use super::{MatrixError, MatrixHomeserver};
-use crate::{impl_from_error_for_route, passwords::PasswordManager, site_config::SiteConfig};
+use crate::{
+    impl_from_error_for_route, passwords::PasswordManager, site_config::SiteConfig,
+    BoundActivityTracker,
+};
 
 #[derive(Debug, Serialize)]
 #[serde(tag = "type")]
@@ -211,6 +214,7 @@ pub(crate) async fn post(
     clock: BoxClock,
     State(password_manager): State<PasswordManager>,
     mut repo: BoxRepository,
+    activity_tracker: BoundActivityTracker,
     State(homeserver): State<MatrixHomeserver>,
     State(site_config): State<SiteConfig>,
     Json(input): Json<RequestBody>,
@@ -268,6 +272,10 @@ pub(crate) async fn post(
     };
 
     repo.save().await?;
+
+    activity_tracker
+        .record_compat_session(&clock, &session)
+        .await;
 
     Ok(Json(ResponseBody {
         access_token: access_token.token,

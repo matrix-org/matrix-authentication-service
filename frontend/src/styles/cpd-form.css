@@ -18,8 +18,8 @@
  */
 
 .cpd-field {
-    display: flex;
-    flex-direction: column;
+  display: flex;
+  flex-direction: column;
 }
 
 /**
@@ -27,22 +27,22 @@
  */
 
 .cpd-label {
-    font-weight: var(--cpd-font-weight-medium);
+  font-weight: var(--cpd-font-weight-medium);
 }
 
 .cpd-label[for] {
-    cursor: pointer;
+  cursor: pointer;
 }
 
 .cpd-label[data-invalid] {
-    color: var(--cpd-color-text-critical-primary);
+  color: var(--cpd-color-text-critical-primary);
 }
 
 /* Currently working everywhere but on Firefox (only behind a labs flag)
 https://developer.mozilla.org/en-US/docs/Web/CSS/:has#browser_compatibility */
 .cpd-label:has(~ .cpd-control[disabled]) {
-    color: var(--cpd-color-text-disabled);
-    cursor: not-allowed;
+  color: var(--cpd-color-text-disabled);
+  cursor: not-allowed;
 }
 
 /**
@@ -50,33 +50,45 @@ https://developer.mozilla.org/en-US/docs/Web/CSS/:has#browser_compatibility */
  */
 
 .cpd-control {
-    border: 1px solid var(--cpd-color-border-interactive-primary);
-    background: var(--cpd-color-bg-canvas-default);
-    border-radius: 0.5rem;
-    padding: var(--cpd-space-3x) var(--cpd-space-4x);
-    box-sizing: border-box;
+  border: 1px solid var(--cpd-color-border-interactive-primary);
+  background: var(--cpd-color-bg-canvas-default);
+  border-radius: 0.5rem;
+  padding: var(--cpd-space-3x) var(--cpd-space-4x);
+  box-sizing: border-box;
 }
 
-.cpd-control:hover,
-input:hover ~ .cpd-control {
+/* Disabling the descending specificity rule to allow for selectors like below
+ * It is using the "fake" element hack to style checkboxes, radio, mfa codes ...
+ */
+
+/* stylelint-disable no-descending-specificity */
+@media (hover) {
+  .cpd-control:hover,
+  input:hover ~ .cpd-control {
     border-color: var(--cpd-color-border-interactive-hovered);
+  }
+}
+
+.cpd-control:active,
+input:active ~ .cpd-control {
+  border-color: var(--cpd-color-border-interactive-hovered);
 }
 
 .cpd-control:focus,
 input:focus ~ .cpd-control {
-    outline: 2px solid var(--cpd-color-border-focused);
-    border-color: transparent;
+  outline: 2px solid var(--cpd-color-border-focused);
+  border-color: transparent;
 }
 
 .cpd-control[data-invalid],
 input[data-invalid] ~ .cpd-control {
-    border-color: var(--cpd-color-text-critical-primary);
+  border-color: var(--cpd-color-text-critical-primary);
 }
 
 .cpd-control:disabled,
 input:disabled ~ .cpd-control {
-    background: var(--cpd-color-bg-canvas-disabled);
-    border-color: var(--cpd-color-border-disabled);
-    color: var(--cpd-color-text-disabled);
-    cursor: not-allowed;
+  background: var(--cpd-color-bg-canvas-disabled);
+  border-color: var(--cpd-color-border-disabled);
+  color: var(--cpd-color-text-disabled);
+  cursor: not-allowed;
 }

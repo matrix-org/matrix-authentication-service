@@ -15,22 +15,13 @@
 // @vitest-environment happy-dom
 
 import { render, cleanup } from "@testing-library/react";
-import { describe, expect, it, afterEach, vi } from "vitest";
+import { describe, expect, it, afterEach } from "vitest";
 
 import { makeFragmentData } from "../../gql/fragment-masking";
-import DateTime from "../DateTime";
 
 import OAuth2ClientDetail, {
   OAUTH2_CLIENT_FRAGMENT,
 } from "./OAuth2ClientDetail";
-
-// Mock out datetime to avoid timezones/date formatting
-vi.mock("./DateTime", () => {
-  const MockDateTime: typeof DateTime = ({ datetime }) => (
-    <code>{datetime.toString()}</code>
-  );
-  return { default: MockDateTime };
-});
 
 describe("<OAuth2ClientDetail>", () => {
   const baseClient = {

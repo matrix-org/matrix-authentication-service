@@ -15,36 +15,32 @@
 // @vitest-environment happy-dom
 
 import { create } from "react-test-renderer";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, beforeAll } from "vitest";
 
-import { FragmentType } from "../gql/fragment-masking";
+import { makeFragmentData } from "../gql";
 import { WithLocation } from "../test-utils/WithLocation";
+import { mockLocale } from "../test-utils/mockLocale";
 
-import CompatSession, { COMPAT_SESSION_FRAGMENT } from "./CompatSession";
-import DateTime from "./DateTime";
-
-// Mock out datetime to avoid timezones/date formatting
-vi.mock("./DateTime", () => {
-  const MockDateTime: typeof DateTime = ({ datetime }) => (
-    <code>{datetime.toString()}</code>
-  );
-  return { default: MockDateTime };
-});
+import CompatSession, { FRAGMENT } from "./CompatSession";
 
 describe("<CompatSession />", () => {
-  const session = {
+  const baseSession = {
     id: "session-id",
     deviceId: "abcd1234",
     createdAt: "2023-06-29T03:35:17.451292+00:00",
+    lastActiveIp: "1.2.3.4",
     ssoLogin: {
       id: "test-id",
       redirectUri: "https://element.io",
     },
-  } as FragmentType<typeof COMPAT_SESSION_FRAGMENT>;
+  };
 
   const finishedAt = "2023-06-29T03:35:19.451292+00:00";
 
+  beforeAll(() => mockLocale());
+
   it("renders an active session", () => {
+    const session = makeFragmentData(baseSession, FRAGMENT);
     const component = create(
       <WithLocation>
         <CompatSession session={session} />
@@ -54,13 +50,16 @@ describe("<CompatSession />", () => {
   });
 
   it("renders a finished session", () => {
-    const finishedSession = {
-      ...session,
-      finishedAt,
-    };
+    const session = makeFragmentData(
+      {
+        ...baseSession,
+        finishedAt,
+      },
+      FRAGMENT,
+    );
     const component = create(
       <WithLocation>
-        <CompatSession session={finishedSession} />
+        <CompatSession session={session} />
       </WithLocation>,
     );
     expect(component.toJSON()).toMatchSnapshot();

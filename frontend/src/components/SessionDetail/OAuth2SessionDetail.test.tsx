@@ -15,22 +15,13 @@
 // @vitest-environment happy-dom
 
 import { render, cleanup } from "@testing-library/react";
-import { describe, expect, it, afterEach, vi } from "vitest";
+import { describe, expect, it, afterEach, beforeAll } from "vitest";
 
-import { makeFragmentData } from "../../gql/fragment-masking";
+import { makeFragmentData } from "../../gql";
 import { WithLocation } from "../../test-utils/WithLocation";
-import DateTime from "../DateTime";
-import { OAUTH2_SESSION_FRAGMENT } from "../OAuth2Session";
+import { mockLocale } from "../../test-utils/mockLocale";
 
-import OAuth2SessionDetail from "./OAuth2SessionDetail";
-
-// Mock out datetime to avoid timezones/date formatting
-vi.mock("../DateTime", () => {
-  const MockDateTime: typeof DateTime = ({ datetime }) => (
-    <code>{datetime.toString()}</code>
-  );
-  return { default: MockDateTime };
-});
+import OAuth2SessionDetail, { FRAGMENT } from "./OAuth2SessionDetail";
 
 describe("<OAuth2SessionDetail>", () => {
   const baseSession = {
@@ -38,6 +29,8 @@ describe("<OAuth2SessionDetail>", () => {
     scope:
       "openid urn:matrix:org.matrix.msc2967.client:api:* urn:matrix:org.matrix.msc2967.client:device:abcd1234",
     createdAt: "2023-06-29T03:35:17.451292+00:00",
+    lastActiveAt: "2023-07-29T03:35:17.451292+00:00",
+    lastActiveIp: "1.2.3.4",
     client: {
       id: "test-id",
       clientId: "test-client-id",
@@ -45,10 +38,12 @@ describe("<OAuth2SessionDetail>", () => {
       clientUri: "https://element.io",
     },
   };
+
+  beforeAll(() => mockLocale());
   afterEach(cleanup);
 
   it("renders session details", () => {
-    const data = makeFragmentData(baseSession, OAUTH2_SESSION_FRAGMENT);
+    const data = makeFragmentData(baseSession, FRAGMENT);
 
     const { container } = render(
       <WithLocation>
@@ -65,7 +60,7 @@ describe("<OAuth2SessionDetail>", () => {
         ...baseSession,
         finishedAt: "2023-07-29T03:35:17.451292+00:00",
       },
-      OAUTH2_SESSION_FRAGMENT,
+      FRAGMENT,
     );
 
     const { getByText, queryByText } = render(

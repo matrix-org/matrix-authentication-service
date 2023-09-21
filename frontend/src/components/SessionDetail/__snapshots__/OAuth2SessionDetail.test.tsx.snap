@@ -9,7 +9,7 @@ exports[`<OAuth2SessionDetail> > renders session details 1`] = `
       class="_header_92353c"
     >
       <button
-        class="_icon-button_1segd_17"
+        class="_icon-button_9uxnz_17"
         style="--cpd-icon-button-size: 32px;"
         type="button"
       >
@@ -87,8 +87,44 @@ exports[`<OAuth2SessionDetail> > renders session details 1`] = `
           <p
             class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
           >
+            <time
+              datetime="2023-06-29T03:35:17Z"
+            >
+              Thu, 29 Jun 2023, 03:35
+            </time>
+          </p>
+        </li>
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+          >
+            Last Active
+          </p>
+          <p
+            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+          >
+            <span
+              title="Sat, 29 Jul 2023, 03:35"
+            >
+              Active Sat, 29 Jul 2023, 03:35
+            </span>
+          </p>
+        </li>
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+          >
+            IP Address
+          </p>
+          <p
+            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+          >
             <code>
-              2023-06-29T03:35:17.451292+00:00
+              1.2.3.4
             </code>
           </p>
         </li>
@@ -103,21 +139,17 @@ exports[`<OAuth2SessionDetail> > renders session details 1`] = `
           <p
             class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
           >
-            <p>
+            <span>
               <code>
                 openid
               </code>
-            </p>
-            <p>
               <code>
                 urn:matrix:org.matrix.msc2967.client:api:*
               </code>
-            </p>
-            <p>
               <code>
                 urn:matrix:org.matrix.msc2967.client:device:abcd1234
               </code>
-            </p>
+            </span>
           </p>
         </li>
       </ul>
@@ -193,7 +225,7 @@ exports[`<OAuth2SessionDetail> > renders session details 1`] = `
       aria-controls="radix-:r0:"
       aria-expanded="false"
       aria-haspopup="dialog"
-      class="_button_1raud_17"
+      class="_button_1ukgx_17"
       data-kind="destructive"
       data-size="sm"
       data-state="closed"

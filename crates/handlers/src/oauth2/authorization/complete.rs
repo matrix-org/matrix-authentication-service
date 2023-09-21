@@ -34,7 +34,7 @@ use tracing::warn;
 use ulid::Ulid;
 
 use super::callback::CallbackDestination;
-use crate::{impl_from_error_for_route, oauth2::generate_id_token};
+use crate::{impl_from_error_for_route, oauth2::generate_id_token, BoundActivityTracker};
 
 #[derive(Debug, Error)]
 pub enum RouteError {
@@ -93,6 +93,7 @@ pub(crate) async fn get(
     State(url_builder): State<UrlBuilder>,
     State(key_store): State<Keystore>,
     policy: Policy,
+    activity_tracker: BoundActivityTracker,
     mut repo: BoxRepository,
     cookie_jar: CookieJar,
     Path(grant_id): Path<Ulid>,
@@ -116,6 +117,10 @@ pub(crate) async fn get(
         return Ok((cookie_jar, mas_router::Login::and_then(continue_grant).go()).into_response());
     };
 
+    activity_tracker
+        .record_browser_session(&clock, &session)
+        .await;
+
     let client = repo
         .oauth2_client()
         .lookup(grant.client_id)
@@ -125,6 +130,7 @@ pub(crate) async fn get(
     match complete(
         &mut rng,
         &clock,
+        &activity_tracker,
         repo,
         key_store,
         policy,
@@ -192,6 +198,7 @@ impl_from_error_for_route!(GrantCompletionError: super::super::IdTokenSignatureE
 pub(crate) async fn complete(
     rng: &mut (impl rand::RngCore + rand::CryptoRng + Send),
     clock: &impl Clock,
+    activity_tracker: &BoundActivityTracker,
     mut repo: BoxRepository,
     key_store: Keystore,
     mut policy: Policy,
@@ -278,5 +285,10 @@ pub(crate) async fn complete(
     }
 
     repo.save().await?;
+
+    activity_tracker
+        .record_oauth2_session(clock, &session)
+        .await;
+
     Ok(params)
 }

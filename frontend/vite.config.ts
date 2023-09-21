@@ -127,6 +127,7 @@ export default defineConfig((env) => ({
   },
 
   test: {
+    globalSetup: "./vitest.global-setup.ts",
     coverage: {
       provider: "v8",
       src: ["./src/"],

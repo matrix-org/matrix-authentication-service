@@ -149,6 +149,7 @@ pub mod pagination;
 pub(crate) mod repository;
 mod utils;
 
+pub mod app_session;
 pub mod compat;
 pub mod job;
 pub mod oauth2;

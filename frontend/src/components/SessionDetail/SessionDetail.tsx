@@ -28,8 +28,8 @@ const QUERY = graphql(/* GraphQL */ `
   query SessionQuery($userId: ID!, $deviceId: String!) {
     session(userId: $userId, deviceId: $deviceId) {
       __typename
-      ...CompatSession_session
-      ...OAuth2Session_session
+      ...CompatSession_detail
+      ...OAuth2Session_detail
     }
   }
 `);
@@ -44,6 +44,11 @@ const sessionFamily = atomFamily(
     return sessionQueryAtom;
   },
 );
+
+// A type-safe way to ensure we've handled all session types
+const unknownSessionType = (type: never): never => {
+  throw new Error(`Unknown session type: ${type}`);
+};
 
 const SessionDetail: React.FC<{
   deviceId: string;
@@ -70,10 +75,13 @@ const SessionDetail: React.FC<{
 
   const sessionType = session.__typename;
 
-  if (sessionType === "Oauth2Session") {
-    return <OAuth2SessionDetail session={session} />;
-  } else {
-    return <CompatSessionDetail session={session} />;
+  switch (sessionType) {
+    case "CompatSession":
+      return <CompatSessionDetail session={session} />;
+    case "Oauth2Session":
+      return <OAuth2SessionDetail session={session} />;
+    default:
+      unknownSessionType(sessionType);
   }
 };
 

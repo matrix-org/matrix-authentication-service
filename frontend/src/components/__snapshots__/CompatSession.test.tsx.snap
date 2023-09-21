@@ -23,18 +23,27 @@ exports[`<CompatSession /> > renders a finished session 1`] = `
       className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
     >
       Signed in 
-      <code>
-        2023-06-29T03:35:17.451292+00:00
-      </code>
+      <time
+        dateTime="2023-06-29T03:35:17Z"
+      >
+        Thu, 29 Jun 2023, 03:35
+      </time>
     </p>
     <p
       className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
       data-finished={true}
     >
       Finished 
-      <code>
-        2023-06-29T03:35:19.451292+00:00
-      </code>
+      <time
+        dateTime="2023-06-29T03:35:19Z"
+      >
+        Thu, 29 Jun 2023, 03:35
+      </time>
+    </p>
+    <p
+      className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
+    >
+      1.2.3.4
     </p>
     <p
       className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
@@ -73,9 +82,16 @@ exports[`<CompatSession /> > renders an active session 1`] = `
       className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
     >
       Signed in 
-      <code>
-        2023-06-29T03:35:17.451292+00:00
-      </code>
+      <time
+        dateTime="2023-06-29T03:35:17Z"
+      >
+        Thu, 29 Jun 2023, 03:35
+      </time>
+    </p>
+    <p
+      className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
+    >
+      1.2.3.4
     </p>
     <p
       className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
@@ -94,7 +110,7 @@ exports[`<CompatSession /> > renders an active session 1`] = `
         aria-controls="radix-:r0:"
         aria-expanded={false}
         aria-haspopup="dialog"
-        className="_button_1raud_17"
+        className="_button_1ukgx_17"
         data-kind="destructive"
         data-size="sm"
         data-state="closed"

@@ -15,6 +15,7 @@ clap = { version = "4.4.4", features = ["derive"] }
 dotenvy = "0.15.7"
 httpdate = "1.0.3"
 hyper = { version = "0.14.27", features = ["full"] }
+ipnetwork = "0.20.0"
 itertools = "0.11.0"
 listenfd = "1.0.1"
 rand.workspace = true
@@ -49,9 +50,11 @@ sentry-tower = { version = "0.31.7", features = ["http"] }
 mas-config = { path = "../config" }
 mas-data-model = { path = "../data-model" }
 mas-email = { path = "../email" }
+mas-graphql = { path = "../graphql" }
 mas-handlers = { path = "../handlers", default-features = false }
 mas-http = { path = "../http", default-features = false, features = ["axum", "client"] }
 mas-iana = { path = "../iana" }
+mas-keystore = { path = "../keystore" }
 mas-listener = { path = "../listener" }
 mas-matrix = { path = "../matrix" }
 mas-matrix-synapse = { path = "../matrix-synapse" }

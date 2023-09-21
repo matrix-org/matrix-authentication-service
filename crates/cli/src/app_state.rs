@@ -1,4 +1,4 @@
-// Copyright 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2022-2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,15 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{convert::Infallible, sync::Arc, time::Instant};
+use std::{convert::Infallible, net::IpAddr, sync::Arc, time::Instant};
 
 use axum::{
     async_trait,
     extract::{FromRef, FromRequestParts},
-    response::{IntoResponse, Response},
 };
-use hyper::StatusCode;
-use mas_axum_utils::{cookies::CookieManager, http_client_factory::HttpClientFactory};
+use ipnetwork::IpNetwork;
+use mas_handlers::{
+    passwords::PasswordManager, ActivityTracker, BoundActivityTracker, CookieManager, ErrorWrapper,
+    HttpClientFactory, MatrixHomeserver, MetadataCache, SiteConfig,
+};
 use mas_keystore::{Encrypter, Keystore};
 use mas_policy::{Policy, PolicyFactory};
 use mas_router::UrlBuilder;
@@ -33,11 +35,6 @@ use opentelemetry::{
 };
 use rand::SeedableRng;
 use sqlx::PgPool;
-
-use crate::{
-    passwords::PasswordManager, site_config::SiteConfig, upstream_oauth2::cache::MetadataCache,
-    MatrixHomeserver,
-};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -54,6 +51,8 @@ pub struct AppState {
     pub password_manager: PasswordManager,
     pub metadata_cache: MetadataCache,
     pub site_config: SiteConfig,
+    pub activity_tracker: ActivityTracker,
+    pub trusted_proxies: Vec<IpNetwork>,
     pub conn_acquisition_histogram: Option<Histogram<u64>>,
 }
 
@@ -237,25 +236,6 @@ impl FromRequestParts<AppState> for BoxRng {
     }
 }
 
-/// A simple wrapper around an error that implements [`IntoResponse`].
-pub struct ErrorWrapper<T>(T);
-
-impl<T> From<T> for ErrorWrapper<T> {
-    fn from(input: T) -> Self {
-        Self(input)
-    }
-}
-
-impl<T> IntoResponse for ErrorWrapper<T>
-where
-    T: std::error::Error,
-{
-    fn into_response(self) -> Response {
-        // TODO: make this a bit more user friendly
-        (StatusCode::INTERNAL_SERVER_ERROR, self.0.to_string()).into_response()
-    }
-}
-
 #[async_trait]
 impl FromRequestParts<AppState> for Policy {
     type Rejection = ErrorWrapper<mas_policy::InstantiateError>;
@@ -266,6 +246,79 @@ impl FromRequestParts<AppState> for Policy {
     ) -> Result<Self, Self::Rejection> {
         let policy = state.policy_factory.instantiate().await?;
         Ok(policy)
+    }
+}
+
+#[async_trait]
+impl FromRequestParts<AppState> for ActivityTracker {
+    type Rejection = Infallible;
+
+    async fn from_request_parts(
+        _parts: &mut axum::http::request::Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        Ok(state.activity_tracker.clone())
+    }
+}
+
+fn infer_client_ip(
+    parts: &axum::http::request::Parts,
+    trusted_proxies: &[IpNetwork],
+) -> Option<IpAddr> {
+    let connection_info = parts.extensions.get::<mas_listener::ConnectionInfo>();
+
+    let peer = if let Some(info) = connection_info {
+        // We can always trust the proxy protocol to give us the correct IP address
+        if let Some(proxy) = info.get_proxy_ref() {
+            if let Some(source) = proxy.source() {
+                return Some(source.ip());
+            }
+        }
+
+        info.get_peer_addr().map(|addr| addr.ip())
+    } else {
+        None
+    };
+
+    // Get the list of IPs from the X-Forwarded-For header
+    let peers_from_header = parts
+        .headers
+        .get("x-forwarded-for")
+        .and_then(|value| value.to_str().ok())
+        .map(|value| value.split(',').filter_map(|v| v.parse().ok()))
+        .into_iter()
+        .flatten();
+
+    // This constructs a list of IP addresses that might be the client's IP address.
+    // Each intermediate proxy is supposed to add the client's IP address to front
+    // of the list. We are effectively adding the IP we got from the socket to the
+    // front of the list.
+    let peer_list: Vec<IpAddr> = peer.into_iter().chain(peers_from_header).collect();
+
+    // We'll fallback to the first IP in the list if all the IPs we got are trusted
+    let fallback = peer_list.first().copied();
+
+    // Now we go through the list, and the IP of the client is the first IP that is
+    // not in the list of trusted proxies, starting from the back.
+    let client_ip = peer_list
+        .iter()
+        .rfind(|ip| !trusted_proxies.iter().any(|network| network.contains(**ip)))
+        .copied();
+
+    client_ip.or(fallback)
+}
+
+#[async_trait]
+impl FromRequestParts<AppState> for BoundActivityTracker {
+    type Rejection = Infallible;
+
+    async fn from_request_parts(
+        parts: &mut axum::http::request::Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        let ip = infer_client_ip(parts, &state.trusted_proxies);
+        tracing::debug!(ip = ?ip, "Inferred client IP address");
+        Ok(state.activity_tracker.clone().bind(ip))
     }
 }
 

@@ -32,7 +32,7 @@ use mas_templates::{EmailVerificationPageContext, TemplateContext, Templates};
 use serde::Deserialize;
 use ulid::Ulid;
 
-use crate::views::shared::OptionalPostAuthAction;
+use crate::{views::shared::OptionalPostAuthAction, BoundActivityTracker};
 
 #[derive(Deserialize, Debug)]
 pub struct CodeForm {
@@ -49,6 +49,7 @@ pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
     State(templates): State<Templates>,
+    activity_tracker: BoundActivityTracker,
     mut repo: BoxRepository,
     Query(query): Query<OptionalPostAuthAction>,
     Path(id): Path<Ulid>,
@@ -63,6 +64,10 @@ pub(crate) async fn get(
         let login = mas_router::Login::default();
         return Ok((cookie_jar, login.go()).into_response());
     };
+
+    activity_tracker
+        .record_browser_session(&clock, &session)
+        .await;
 
     let user_email = repo
         .user_email()
@@ -96,6 +101,7 @@ pub(crate) async fn post(
     clock: BoxClock,
     mut repo: BoxRepository,
     cookie_jar: CookieJar,
+    activity_tracker: BoundActivityTracker,
     Query(query): Query<OptionalPostAuthAction>,
     Path(id): Path<Ulid>,
     Form(form): Form<ProtectedForm<CodeForm>>,
@@ -144,6 +150,10 @@ pub(crate) async fn post(
         .await?;
 
     repo.save().await?;
+
+    activity_tracker
+        .record_browser_session(&clock, &session)
+        .await;
 
     let destination = query.go_next_or_default(&mas_router::Account::default());
     Ok((cookie_jar, destination).into_response())

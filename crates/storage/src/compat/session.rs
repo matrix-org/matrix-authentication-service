@@ -12,7 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::net::IpAddr;
+
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use mas_data_model::{CompatSession, CompatSsoLogin, Device, User};
 use rand_core::RngCore;
 use ulid::Ulid;
@@ -129,7 +132,7 @@ impl<'a> CompatSessionFilter<'a> {
 }
 
 /// A [`CompatSessionRepository`] helps interacting with
-/// [`CompatSessionRepository`] saved in the storage backend
+/// [`CompatSession`] saved in the storage backend
 #[async_trait]
 pub trait CompatSessionRepository: Send + Sync {
     /// The error type returned by the repository
@@ -236,6 +239,21 @@ pub trait CompatSessionRepository: Send + Sync {
     ///
     /// Returns [`Self::Error`] if the underlying repository fails
     async fn count(&mut self, filter: CompatSessionFilter<'_>) -> Result<usize, Self::Error>;
+
+    /// Record a batch of [`CompatSession`] activity
+    ///
+    /// # Parameters
+    ///
+    /// * `activity`: A list of tuples containing the session ID, the last
+    ///   activity timestamp and the IP address of the client
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn record_batch_activity(
+        &mut self,
+        activity: Vec<(Ulid, DateTime<Utc>, Option<IpAddr>)>,
+    ) -> Result<(), Self::Error>;
 }
 
 repository_impl!(CompatSessionRepository:
@@ -269,4 +287,9 @@ repository_impl!(CompatSessionRepository:
     ) -> Result<Page<(CompatSession, Option<CompatSsoLogin>)>, Self::Error>;
 
     async fn count(&mut self, filter: CompatSessionFilter<'_>) -> Result<usize, Self::Error>;
+
+    async fn record_batch_activity(
+        &mut self,
+        activity: Vec<(Ulid, DateTime<Utc>, Option<IpAddr>)>,
+    ) -> Result<(), Self::Error>;
 );

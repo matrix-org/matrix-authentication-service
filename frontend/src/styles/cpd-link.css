@@ -30,12 +30,14 @@
   color: var(--cpd-color-text-critical-primary);
 }
 
-.cpd-link[data-kind="primary"]:hover {
-  background: var(--cpd-color-gray-300);
-}
+@media (hover) {
+  .cpd-link[data-kind="primary"]:hover {
+    background: var(--cpd-color-gray-300);
+  }
 
-.cpd-link[data-kind="critical"]:hover {
-  background: var(--cpd-color-red-300);
+  .cpd-link[data-kind="critical"]:hover {
+    background: var(--cpd-color-red-300);
+  }
 }
 
 .cpd-link:active {

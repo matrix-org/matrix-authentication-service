@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::ops::Deref;
+use std::{net::IpAddr, ops::Deref};
 
 use chrono::{DateTime, Duration, Utc};
 use rand::{Rng, SeedableRng};
@@ -81,6 +81,8 @@ pub struct BrowserSession {
     pub created_at: DateTime<Utc>,
     pub finished_at: Option<DateTime<Utc>>,
     pub user_agent: Option<String>,
+    pub last_active_at: Option<DateTime<Utc>>,
+    pub last_active_ip: Option<IpAddr>,
 }
 
 impl BrowserSession {
@@ -101,6 +103,8 @@ impl BrowserSession {
                 created_at: now,
                 finished_at: None,
                 user_agent: Some("Mozilla/5.0".to_owned()),
+                last_active_at: Some(now),
+                last_active_ip: None,
             })
             .collect()
     }

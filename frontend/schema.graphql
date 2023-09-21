@@ -111,6 +111,44 @@ type Anonymous implements Node {
 }
 
 """
+A session in an application, either a compatibility or an OAuth 2.0 one
+"""
+union AppSession = CompatSession | Oauth2Session
+
+type AppSessionConnection {
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+  """
+  A list of edges.
+  """
+  edges: [AppSessionEdge!]!
+  """
+  A list of nodes.
+  """
+  nodes: [AppSession!]!
+  """
+  Identifies the total count of items in the connection.
+  """
+  totalCount: Int!
+}
+
+"""
+An edge in a connection.
+"""
+type AppSessionEdge {
+  """
+  The item at the end of the edge
+  """
+  node: AppSession!
+  """
+  A cursor for use in pagination
+  """
+  cursor: String!
+}
+
+"""
 An authentication records when a user enter their credential in a browser
 session.
 """
@@ -152,11 +190,19 @@ type BrowserSession implements Node & CreationEvent {
   """
   The state of the session.
   """
-  state: BrowserSessionState!
+  state: SessionState!
   """
   The user-agent string with which the session was created.
   """
   userAgent: String
+  """
+  The last IP address used by the session.
+  """
+  lastActiveIp: String
+  """
+  The last time the session was active.
+  """
+  lastActiveAt: DateTime
 }
 
 type BrowserSessionConnection {
@@ -193,20 +239,6 @@ type BrowserSessionEdge {
 }
 
 """
-The state of a browser session.
-"""
-enum BrowserSessionState {
-  """
-  The session is active.
-  """
-  ACTIVE
-  """
-  The session is no longer active.
-  """
-  FINISHED
-}
-
-"""
 A compat session represents a client session which used the legacy Matrix
 login API.
 """
@@ -238,7 +270,15 @@ type CompatSession implements Node & CreationEvent {
   """
   The state of the session.
   """
-  state: CompatSessionState!
+  state: SessionState!
+  """
+  The last IP address used by the session.
+  """
+  lastActiveIp: String
+  """
+  The last time the session was active.
+  """
+  lastActiveAt: DateTime
 }
 
 type CompatSessionConnection {
@@ -272,20 +312,6 @@ type CompatSessionEdge {
   A cursor for use in pagination
   """
   cursor: String!
-}
-
-"""
-The state of a compatibility session.
-"""
-enum CompatSessionState {
-  """
-  The session is active.
-  """
-  ACTIVE
-  """
-  The session is no longer active.
-  """
-  FINISHED
 }
 
 """
@@ -731,7 +757,7 @@ type Oauth2Session implements Node & CreationEvent {
   """
   The state of the session.
   """
-  state: Oauth2SessionState!
+  state: SessionState!
   """
   The browser session which started this OAuth 2.0 session.
   """
@@ -740,6 +766,14 @@ type Oauth2Session implements Node & CreationEvent {
   User authorized for this session.
   """
   user: User
+  """
+  The last IP address used by the session.
+  """
+  lastActiveIp: String
+  """
+  The last time the session was active.
+  """
+  lastActiveAt: DateTime
 }
 
 type Oauth2SessionConnection {
@@ -773,20 +807,6 @@ type Oauth2SessionEdge {
   A cursor for use in pagination
   """
   cursor: String!
-}
-
-"""
-The state of an OAuth 2.0 session.
-"""
-enum Oauth2SessionState {
-  """
-  The session is active.
-  """
-  ACTIVE
-  """
-  The session is no longer active.
-  """
-  FINISHED
 }
 
 """
@@ -983,6 +1003,20 @@ enum SendVerificationEmailStatus {
 A client session, either compat or OAuth 2.0
 """
 union Session = CompatSession | Oauth2Session
+
+"""
+The state of a session
+"""
+enum SessionState {
+  """
+  The session is active.
+  """
+  ACTIVE
+  """
+  The session is no longer active.
+  """
+  FINISHED
+}
 
 """
 The input for the `addEmail` mutation
@@ -1234,7 +1268,7 @@ type User implements Node {
     """
     List only sessions with the given state.
     """
-    state: CompatSessionState
+    state: SessionState
     """
     List only sessions with the given type.
     """
@@ -1263,7 +1297,7 @@ type User implements Node {
     """
     List only sessions in the given state.
     """
-    state: BrowserSessionState
+    state: SessionState
     """
     Returns the elements in the list that come after the cursor.
     """
@@ -1313,7 +1347,7 @@ type User implements Node {
     """
     List only sessions in the given state.
     """
-    state: Oauth2SessionState
+    state: SessionState
     """
     List only sessions for the given client.
     """
@@ -1356,6 +1390,32 @@ type User implements Node {
     """
     last: Int
   ): UpstreamOAuth2LinkConnection!
+  """
+  Get the list of both compat and OAuth 2.0 sessions, chronologically
+  sorted
+  """
+  appSessions(
+    """
+    List only sessions in the given state.
+    """
+    state: SessionState
+    """
+    Returns the elements in the list that come after the cursor.
+    """
+    after: String
+    """
+    Returns the elements in the list that come before the cursor.
+    """
+    before: String
+    """
+    Returns the first *n* elements from the list.
+    """
+    first: Int
+    """
+    Returns the last *n* elements from the list.
+    """
+    last: Int
+  ): AppSessionConnection!
 }
 
 """

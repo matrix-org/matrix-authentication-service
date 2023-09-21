@@ -32,7 +32,7 @@ use oauth2_types::{
 };
 use thiserror::Error;
 
-use crate::impl_from_error_for_route;
+use crate::{impl_from_error_for_route, BoundActivityTracker};
 
 #[derive(Debug, Error)]
 pub(crate) enum RouteError {
@@ -121,6 +121,7 @@ pub(crate) async fn post(
     clock: BoxClock,
     State(http_client_factory): State<HttpClientFactory>,
     mut repo: BoxRepository,
+    activity_tracker: BoundActivityTracker,
     State(encrypter): State<Encrypter>,
     client_authorization: ClientAuthorization<RevocationRequest>,
 ) -> Result<impl IntoResponse, RouteError> {
@@ -201,6 +202,10 @@ pub(crate) async fn post(
     if client.id != session.client_id {
         return Err(RouteError::UnauthorizedClient);
     }
+
+    activity_tracker
+        .record_oauth2_session(&clock, &session)
+        .await;
 
     // If the session is associated with a user, make sure we schedule a device
     // deletion job for all the devices associated with the session.

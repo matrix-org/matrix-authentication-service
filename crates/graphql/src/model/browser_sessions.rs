@@ -12,22 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use async_graphql::{Context, Description, Enum, Object, ID};
+use async_graphql::{Context, Description, Object, ID};
 use chrono::{DateTime, Utc};
 use mas_storage::{user::BrowserSessionRepository, RepositoryAccess};
 
-use super::{NodeType, User};
+use super::{NodeType, SessionState, User};
 use crate::state::ContextExt;
-
-/// The state of a browser session.
-#[derive(Enum, Copy, Clone, Eq, PartialEq)]
-pub enum BrowserSessionState {
-    /// The session is active.
-    Active,
-
-    /// The session is no longer active.
-    Finished,
-}
 
 /// A browser session represents a logged in user in a browser.
 #[derive(Description)]
@@ -80,17 +70,27 @@ impl BrowserSession {
     }
 
     /// The state of the session.
-    pub async fn state(&self) -> BrowserSessionState {
+    pub async fn state(&self) -> SessionState {
         if self.0.finished_at.is_some() {
-            BrowserSessionState::Finished
+            SessionState::Finished
         } else {
-            BrowserSessionState::Active
+            SessionState::Active
         }
     }
 
     /// The user-agent string with which the session was created.
     pub async fn user_agent(&self) -> Option<&str> {
         self.0.user_agent.as_deref()
+    }
+
+    /// The last IP address used by the session.
+    pub async fn last_active_ip(&self) -> Option<String> {
+        self.0.last_active_ip.map(|ip| ip.to_string())
+    }
+
+    /// The last time the session was active.
+    pub async fn last_active_at(&self) -> Option<DateTime<Utc>> {
+        self.0.last_active_at
     }
 }
 

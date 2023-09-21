@@ -3,12 +3,12 @@
 exports[`<UnverifiedEmailAlert /> > renders a warning when there are unverified emails 1`] = `
 <div>
   <div
-    class="_alert_fxw8y_19 _alert_d86cd2"
+    class="_alert_19c1p_19 _alert_d86cd2"
     data-type="critical"
   >
     <svg
       aria-hidden="true"
-      class="_icon_fxw8y_52"
+      class="_icon_19c1p_52"
       fill="none"
       height="24"
       viewBox="0 0 24 24"
@@ -21,10 +21,10 @@ exports[`<UnverifiedEmailAlert /> > renders a warning when there are unverified 
       />
     </svg>
     <div
-      class="_content_fxw8y_44"
+      class="_content_19c1p_44"
     >
       <p
-        class="_title_fxw8y_48"
+        class="_title_19c1p_48"
       >
         Unverified email
       </p>
@@ -43,7 +43,7 @@ exports[`<UnverifiedEmailAlert /> > renders a warning when there are unverified 
     </div>
     <svg
       aria-label="Close"
-      class="_close_fxw8y_68"
+      class="_close_19c1p_68"
       fill="none"
       height="16"
       role="button"

@@ -15,24 +15,13 @@
 use anyhow::Context as _;
 use async_graphql::{Context, Description, Enum, Object, ID};
 use chrono::{DateTime, Utc};
-use mas_data_model::SessionState;
 use mas_storage::{oauth2::OAuth2ClientRepository, user::BrowserSessionRepository};
 use oauth2_types::{oidc::ApplicationType, scope::Scope};
 use ulid::Ulid;
 use url::Url;
 
-use super::{BrowserSession, NodeType, User};
+use super::{BrowserSession, NodeType, SessionState, User};
 use crate::{state::ContextExt, UserId};
-
-/// The state of an OAuth 2.0 session.
-#[derive(Enum, Copy, Clone, Eq, PartialEq)]
-pub enum OAuth2SessionState {
-    /// The session is active.
-    Active,
-
-    /// The session is no longer active.
-    Finished,
-}
 
 /// An OAuth 2.0 session represents a client session which used the OAuth APIs
 /// to login.
@@ -73,16 +62,16 @@ impl OAuth2Session {
     /// When the session ended.
     pub async fn finished_at(&self) -> Option<DateTime<Utc>> {
         match &self.0.state {
-            SessionState::Valid => None,
-            SessionState::Finished { finished_at } => Some(*finished_at),
+            mas_data_model::SessionState::Valid => None,
+            mas_data_model::SessionState::Finished { finished_at } => Some(*finished_at),
         }
     }
 
     /// The state of the session.
-    pub async fn state(&self) -> OAuth2SessionState {
+    pub async fn state(&self) -> SessionState {
         match &self.0.state {
-            SessionState::Valid => OAuth2SessionState::Active,
-            SessionState::Finished { .. } => OAuth2SessionState::Finished,
+            mas_data_model::SessionState::Valid => SessionState::Active,
+            mas_data_model::SessionState::Finished { .. } => SessionState::Finished,
         }
     }
 
@@ -127,6 +116,16 @@ impl OAuth2Session {
         repo.cancel().await?;
 
         Ok(Some(User(user)))
+    }
+
+    /// The last IP address used by the session.
+    pub async fn last_active_ip(&self) -> Option<String> {
+        self.0.last_active_ip.map(|ip| ip.to_string())
+    }
+
+    /// The last time the session was active.
+    pub async fn last_active_at(&self) -> Option<DateTime<Utc>> {
+        self.0.last_active_at
     }
 }
 

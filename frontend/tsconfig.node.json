@@ -9,6 +9,7 @@
   "include": [
     ".storybook/main.ts",
     "vite.config.ts",
+    "vitest.global-setup.ts",
     ".eslintrc.cjs",
     "postcss.config.cjs",
     "tailwind.config.cjs",

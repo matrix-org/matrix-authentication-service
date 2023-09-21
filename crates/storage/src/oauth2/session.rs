@@ -12,7 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::net::IpAddr;
+
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use mas_data_model::{BrowserSession, Client, Session, User};
 use oauth2_types::scope::Scope;
 use rand_core::RngCore;
@@ -268,6 +271,21 @@ pub trait OAuth2SessionRepository: Send + Sync {
     ///
     /// Returns [`Self::Error`] if the underlying repository fails
     async fn count(&mut self, filter: OAuth2SessionFilter<'_>) -> Result<usize, Self::Error>;
+
+    /// Record a batch of [`Session`] activity
+    ///
+    /// # Parameters
+    ///
+    /// * `activity`: A list of tuples containing the session ID, the last
+    ///   activity timestamp and the IP address of the client
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the underlying repository fails
+    async fn record_batch_activity(
+        &mut self,
+        activity: Vec<(Ulid, DateTime<Utc>, Option<IpAddr>)>,
+    ) -> Result<(), Self::Error>;
 }
 
 repository_impl!(OAuth2SessionRepository:
@@ -310,4 +328,9 @@ repository_impl!(OAuth2SessionRepository:
     ) -> Result<Page<Session>, Self::Error>;
 
     async fn count(&mut self, filter: OAuth2SessionFilter<'_>) -> Result<usize, Self::Error>;
+
+    async fn record_batch_activity(
+        &mut self,
+        activity: Vec<(Ulid, DateTime<Utc>, Option<IpAddr>)>,
+    ) -> Result<(), Self::Error>;
 );

@@ -29,6 +29,7 @@ use tracing_subscriber::{
 
 use crate::sentry_transport::HyperTransportFactory;
 
+mod app_state;
 mod commands;
 mod sentry_transport;
 mod server;

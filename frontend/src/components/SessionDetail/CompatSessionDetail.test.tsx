@@ -15,37 +15,32 @@
 // @vitest-environment happy-dom
 
 import { render, cleanup } from "@testing-library/react";
-import { describe, expect, it, afterEach, vi } from "vitest";
+import { describe, expect, it, afterEach, beforeAll } from "vitest";
 
-import { makeFragmentData } from "../../gql/fragment-masking";
+import { makeFragmentData } from "../../gql";
 import { WithLocation } from "../../test-utils/WithLocation";
-import { COMPAT_SESSION_FRAGMENT } from "../CompatSession";
-import DateTime from "../DateTime";
+import { mockLocale } from "../../test-utils/mockLocale";
 
-import CompatSessionDetail from "./CompatSessionDetail";
-
-// Mock out datetime to avoid timezones/date formatting
-vi.mock("../DateTime", () => {
-  const MockDateTime: typeof DateTime = ({ datetime }) => (
-    <code>{datetime.toString()}</code>
-  );
-  return { default: MockDateTime };
-});
+import CompatSessionDetail, { FRAGMENT } from "./CompatSessionDetail";
 
 describe("<CompatSessionDetail>", () => {
   const baseSession = {
     id: "session-id",
     deviceId: "abcd1234",
     createdAt: "2023-06-29T03:35:17.451292+00:00",
+    lastActiveIp: "1.2.3.4",
+    lastActiveAt: "2023-07-29T03:35:17.451292+00:00",
     ssoLogin: {
       id: "test-id",
       redirectUri: "https://element.io",
     },
   };
+
+  beforeAll(() => mockLocale());
   afterEach(cleanup);
 
   it("renders a compatability session details", () => {
-    const data = makeFragmentData(baseSession, COMPAT_SESSION_FRAGMENT);
+    const data = makeFragmentData(baseSession, FRAGMENT);
 
     const { container } = render(
       <WithLocation>
@@ -56,16 +51,13 @@ describe("<CompatSessionDetail>", () => {
     expect(container).toMatchSnapshot();
   });
 
-  it("renders a compatability session without an ssoLogin redirectUri", () => {
+  it("renders a compatability session without an ssoLogin", () => {
     const data = makeFragmentData(
       {
         ...baseSession,
-        ssoLogin: {
-          id: "dfsdjfdk",
-          redirectUri: undefined,
-        },
+        ssoLogin: null,
       },
-      COMPAT_SESSION_FRAGMENT,
+      FRAGMENT,
     );
 
     const { container } = render(
@@ -83,7 +75,7 @@ describe("<CompatSessionDetail>", () => {
         ...baseSession,
         finishedAt: "2023-07-29T03:35:17.451292+00:00",
       },
-      COMPAT_SESSION_FRAGMENT,
+      FRAGMENT,
     );
 
     const { getByText, queryByText } = render(

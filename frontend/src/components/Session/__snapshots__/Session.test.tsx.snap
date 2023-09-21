@@ -17,18 +17,22 @@ exports[`<Session /> > renders a finished session 1`] = `
       className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
     >
       Signed in 
-      <code>
-        2023-06-29T03:35:17.451292+00:00
-      </code>
+      <time
+        dateTime="2023-06-29T03:35:17Z"
+      >
+        Thu, 29 Jun 2023, 03:35
+      </time>
     </p>
     <p
       className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
       data-finished={true}
     >
       Finished 
-      <code>
-        2023-06-29T03:35:19.451292+00:00
-      </code>
+      <time
+        dateTime="2023-06-29T03:35:19Z"
+      >
+        Thu, 29 Jun 2023, 03:35
+      </time>
     </p>
   </div>
 </div>
@@ -51,9 +55,64 @@ exports[`<Session /> > renders an active session 1`] = `
       className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
     >
       Signed in 
-      <code>
-        2023-06-29T03:35:17.451292+00:00
-      </code>
+      <time
+        dateTime="2023-06-29T03:35:17Z"
+      >
+        Thu, 29 Jun 2023, 03:35
+      </time>
+    </p>
+  </div>
+</div>
+`;
+
+exports[`<Session /> > renders ip address 1`] = `
+<div
+  className="_block_17898c _session_634806"
+>
+  <div
+    className="_container_634806"
+  >
+    <h6
+      className="_font-body-md-semibold_1jx6b_64 _sessionName_634806"
+      title="session-id"
+    >
+      session-id
+    </h6>
+    <p
+      className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+    >
+      Signed in 
+      <time
+        dateTime="2023-06-29T03:35:17Z"
+      >
+        Thu, 29 Jun 2023, 03:35
+      </time>
+    </p>
+    <p
+      className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+      data-finished={true}
+    >
+      Finished 
+      <time
+        dateTime="2023-06-29T03:35:19Z"
+      >
+        Thu, 29 Jun 2023, 03:35
+      </time>
+    </p>
+    <p
+      className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
+    >
+      127.0.0.1
+    </p>
+    <p
+      className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
+    >
+       
+      <span
+        className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
+      >
+        Element
+      </span>
     </p>
   </div>
 </div>
@@ -76,22 +135,37 @@ exports[`<Session /> > uses client name when truthy 1`] = `
       className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
     >
       Signed in 
-      <code>
-        2023-06-29T03:35:17.451292+00:00
-      </code>
+      <time
+        dateTime="2023-06-29T03:35:17Z"
+      >
+        Thu, 29 Jun 2023, 03:35
+      </time>
     </p>
     <p
       className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
       data-finished={true}
     >
       Finished 
-      <code>
-        2023-06-29T03:35:19.451292+00:00
-      </code>
+      <time
+        dateTime="2023-06-29T03:35:19Z"
+      >
+        Thu, 29 Jun 2023, 03:35
+      </time>
     </p>
     <p
       className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
     >
+      <img
+        alt="Element"
+        className="_avatar_39aee3"
+        referrerPolicy="no-referrer"
+        src="https://client.org/logo.png"
+        style={
+          {
+            "--mas-avatar-size": "var(--cpd-space-4x)",
+          }
+        }
+      />
        
       <span
         className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
@@ -120,18 +194,22 @@ exports[`<Session /> > uses session name when truthy 1`] = `
       className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
     >
       Signed in 
-      <code>
-        2023-06-29T03:35:17.451292+00:00
-      </code>
+      <time
+        dateTime="2023-06-29T03:35:17Z"
+      >
+        Thu, 29 Jun 2023, 03:35
+      </time>
     </p>
     <p
       className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
       data-finished={true}
     >
       Finished 
-      <code>
-        2023-06-29T03:35:19.451292+00:00
-      </code>
+      <time
+        dateTime="2023-06-29T03:35:19Z"
+      >
+        Thu, 29 Jun 2023, 03:35
+      </time>
     </p>
   </div>
 </div>

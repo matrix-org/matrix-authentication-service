@@ -14,11 +14,14 @@
  */
 
 .cpd-button {
-  display: block;
-  text-align: center;
   border-radius: var(--cpd-radius-pill-effect);
   cursor: pointer;
-  -webkit-appearance: none;
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--cpd-space-2x);
+  box-sizing: border-box;
 }
 
 .cpd-button[disabled] {
@@ -32,12 +35,24 @@
 
 .cpd-button[data-size="lg"] {
   font: var(--cpd-font-body-lg-semibold);
-  padding: var(--cpd-space-3x) var(--cpd-space-10x);
+  padding-block: var(--cpd-space-2x);
+  padding-inline: var(--cpd-space-8x);
+  min-block-size: var(--cpd-space-12x);
+}
+
+.cpd-button[data-size="lg"].has-icon {
+  padding-inline-start: var(--cpd-space-7x);
 }
 
 .cpd-button[data-size="sm"] {
   font: var(--cpd-font-body-md-semibold);
-  padding: var(--cpd-space-1x) var(--cpd-space-6x);
+  padding-block: var(--cpd-space-1x);
+  padding-inline: var(--cpd-space-6x);
+  min-block-size: var(--cpd-space-9x);
+}
+
+.cpd-button[data-size="sm"].has-icon {
+  padding-inline-start: var(--cpd-space-5x);
 }
 
 /**
@@ -50,8 +65,10 @@
   border-width: 0;
 }
 
-.cpd-button[data-kind="primary"]:hover {
-  background: var(--cpd-color-bg-action-primary-hovered);
+@media (hover) {
+  .cpd-button[data-kind="primary"]:hover {
+    background: var(--cpd-color-bg-action-primary-hovered);
+  }
 }
 
 .cpd-button[data-kind="primary"]:active {
@@ -69,9 +86,11 @@
   background: var(--cpd-color-bg-canvas-default);
 }
 
-.cpd-button[data-kind="secondary"]:hover {
-  border-color: var(--cpd-color-border-interactive-hovered);
-  background: var(--cpd-color-bg-subtle-secondary);
+@media (hover) {
+  .cpd-button[data-kind="secondary"]:hover {
+    border-color: var(--cpd-color-border-interactive-hovered);
+    background: var(--cpd-color-bg-subtle-secondary);
+  }
 }
 
 .cpd-button[data-kind="secondary"]:active {
@@ -92,8 +111,10 @@
   background: transparent;
 }
 
-.cpd-button[data-kind="tertiary"]:hover {
-  background: var(--cpd-color-bg-subtle-secondary);
+@media (hover) {
+  .cpd-button[data-kind="tertiary"]:hover {
+    background: var(--cpd-color-bg-subtle-secondary);
+  }
 }
 
 .cpd-button[data-kind="tertiary"]:active {
@@ -110,9 +131,11 @@
   background: var(--cpd-color-bg-canvas-default);
 }
 
-.cpd-button[data-kind="destructive"]:hover {
-  border-color: var(--cpd-color-border-critical-hovered);
-  background: var(--cpd-color-bg-critical-subtle);
+@media (hover) {
+  .cpd-button[data-kind="destructive"]:hover {
+    border-color: var(--cpd-color-border-critical-hovered);
+    background: var(--cpd-color-bg-critical-subtle);
+  }
 }
 
 .cpd-button[data-kind="destructive"]:active {

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import IconArrowLeft from "@vector-im/compound-design-tokens/icons/arrow-left.svg";
 import IconSend from "@vector-im/compound-design-tokens/icons/check.svg";
 import {
   Button,
@@ -21,6 +22,8 @@ import {
   Submit,
   Root as Form,
   Alert,
+  H1,
+  Text,
 } from "@vector-im/compound-web";
 import { useSetAtom, atom, useAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
@@ -28,7 +31,7 @@ import { atomWithMutation } from "jotai-urql";
 import { useEffect, useRef, useTransition } from "react";
 
 import { FragmentType, graphql, useFragment } from "../../gql";
-import { routeAtom } from "../../routing";
+import { routeAtom, useNavigationLink } from "../../routing";
 
 import styles from "./VerifyEmail.module.css";
 
@@ -105,6 +108,24 @@ const resendVerificationEmailFamily = atomFamily((id: string) => {
   return resendVerificationEmailAtom;
 });
 
+const BackButton: React.FC = () => {
+  const { onClick, href, pending } = useNavigationLink({
+    type: "profile",
+  });
+
+  return (
+    <Button
+      as="a"
+      href={href}
+      onClick={onClick}
+      Icon={IconArrowLeft}
+      kind="tertiary"
+    >
+      {pending ? "Loading..." : "Back"}
+    </Button>
+  );
+};
+
 const VerifyEmail: React.FC<{
   email: FragmentType<typeof FRAGMENT>;
 }> = ({ email }) => {
@@ -155,14 +176,16 @@ const VerifyEmail: React.FC<{
     verifyEmailResult.data?.verifyEmail.status === "INVALID_CODE";
 
   return (
-    <>
+    <div className={styles.block}>
       <header className={styles.header}>
         <IconSend className={styles.icon} />
-        <h1 className={styles.title}>Verify your email</h1>
-        <p className={styles.tagline}>
+        <H1>Verify your email</H1>
+        <Text size="lg" className={styles.tagline}>
           Enter the 6-digit code sent to{" "}
-          <span className={styles.email}>{data.email}</span>
-        </p>
+          <Text as="span" size="lg" weight="semibold">
+            {data.email}
+          </Text>
+        </Text>
       </header>
 
       <Form onSubmit={onFormSubmit} className={styles.form}>
@@ -185,14 +208,15 @@ const VerifyEmail: React.FC<{
           Continue
         </Submit>
         <Button
-          kind="tertiary"
+          kind="secondary"
           disabled={pending || emailSent}
           onClick={onResendClick}
         >
           {emailSent ? "Sent!" : "Resend email"}
         </Button>
+        <BackButton />
       </Form>
-    </>
+    </div>
   );
 };
 

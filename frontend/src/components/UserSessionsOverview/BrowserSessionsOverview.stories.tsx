@@ -1,4 +1,4 @@
-// Copyright 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,17 +18,11 @@ import { useHydrateAtoms } from "jotai/utils";
 
 import { makeFragmentData } from "../../gql";
 import { appConfigAtom, locationAtom } from "../../routing";
-import { FRAGMENT as EMAIL_FRAGMENT } from "../UserEmail";
 
-import UserSessionsOverview, { FRAGMENT } from "./UserSessionsOverview";
+import BrowserSessionsOverview, { FRAGMENT } from "./BrowserSessionsOverview";
 
 type Props = {
-  primaryEmail: string | null;
-  unverifiedEmails: number;
-  confirmedEmails: number;
-  oauth2Sessions: number;
   browserSessions: number;
-  compatSessions: number;
 };
 
 const WithHomePage: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
@@ -39,46 +33,12 @@ const WithHomePage: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
   return <>{children}</>;
 };
 
-const Template: React.FC<Props> = ({
-  primaryEmail: email,
-  unverifiedEmails,
-  confirmedEmails,
-  oauth2Sessions,
-  browserSessions,
-  compatSessions,
-}) => {
-  let primaryEmail = null;
-  if (email) {
-    primaryEmail = {
-      id: "email:123",
-      ...makeFragmentData(
-        {
-          id: "email:123",
-          email,
-          confirmedAt: new Date(),
-        },
-        EMAIL_FRAGMENT,
-      ),
-    };
-  }
+const Template: React.FC<Props> = ({ browserSessions }) => {
   const data = makeFragmentData(
     {
       id: "user:123",
-      primaryEmail,
-      unverifiedEmails: {
-        totalCount: unverifiedEmails,
-      },
-      confirmedEmails: {
-        totalCount: confirmedEmails,
-      },
-      oauth2Sessions: {
-        totalCount: oauth2Sessions,
-      },
       browserSessions: {
         totalCount: browserSessions,
-      },
-      compatSessions: {
-        totalCount: compatSessions,
       },
     },
     FRAGMENT,
@@ -86,14 +46,14 @@ const Template: React.FC<Props> = ({
   return (
     <Provider>
       <WithHomePage>
-        <UserSessionsOverview user={data} />
+        <BrowserSessionsOverview user={data} />
       </WithHomePage>
     </Provider>
   );
 };
 
 const meta = {
-  title: "Pages/User Sessions Overview",
+  title: "Pages/User Sessions Overview/Browser Sessions",
   component: Template,
   tags: ["autodocs"],
 } satisfies Meta<typeof Template>;
@@ -103,33 +63,12 @@ type Story = StoryObj<typeof Template>;
 
 export const Basic: Story = {
   args: {
-    primaryEmail: "hello@example.com",
-    unverifiedEmails: 0,
-    confirmedEmails: 5,
-    oauth2Sessions: 3,
-    compatSessions: 1,
     browserSessions: 2,
   },
 };
 
 export const Empty: Story = {
   args: {
-    primaryEmail: "hello@example.com",
-    unverifiedEmails: 0,
-    confirmedEmails: 1,
-    oauth2Sessions: 0,
-    compatSessions: 0,
-    browserSessions: 0,
-  },
-};
-
-export const UnverifiedEmails: Story = {
-  args: {
-    primaryEmail: "hello@example.com",
-    unverifiedEmails: 1,
-    confirmedEmails: 1,
-    oauth2Sessions: 0,
-    compatSessions: 0,
     browserSessions: 0,
   },
 };

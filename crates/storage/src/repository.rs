@@ -16,6 +16,7 @@ use futures_util::future::BoxFuture;
 use thiserror::Error;
 
 use crate::{
+    app_session::AppSessionRepository,
     compat::{
         CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository,
         CompatSsoLoginRepository,
@@ -150,6 +151,9 @@ pub trait RepositoryAccess: Send {
         &'c mut self,
     ) -> Box<dyn BrowserSessionRepository<Error = Self::Error> + 'c>;
 
+    /// Get a [`AppSessionRepository`]
+    fn app_session<'c>(&'c mut self) -> Box<dyn AppSessionRepository<Error = Self::Error> + 'c>;
+
     /// Get an [`OAuth2ClientRepository`]
     fn oauth2_client<'c>(&'c mut self)
         -> Box<dyn OAuth2ClientRepository<Error = Self::Error> + 'c>;
@@ -205,6 +209,7 @@ mod impls {
 
     use super::RepositoryAccess;
     use crate::{
+        app_session::AppSessionRepository,
         compat::{
             CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository,
             CompatSsoLoginRepository,
@@ -308,6 +313,12 @@ mod impls {
             &'c mut self,
         ) -> Box<dyn BrowserSessionRepository<Error = Self::Error> + 'c> {
             Box::new(MapErr::new(self.inner.browser_session(), &mut self.mapper))
+        }
+
+        fn app_session<'c>(
+            &'c mut self,
+        ) -> Box<dyn AppSessionRepository<Error = Self::Error> + 'c> {
+            Box::new(MapErr::new(self.inner.app_session(), &mut self.mapper))
         }
 
         fn oauth2_client<'c>(
@@ -423,6 +434,12 @@ mod impls {
             &'c mut self,
         ) -> Box<dyn BrowserSessionRepository<Error = Self::Error> + 'c> {
             (**self).browser_session()
+        }
+
+        fn app_session<'c>(
+            &'c mut self,
+        ) -> Box<dyn AppSessionRepository<Error = Self::Error> + 'c> {
+            (**self).app_session()
         }
 
         fn oauth2_client<'c>(

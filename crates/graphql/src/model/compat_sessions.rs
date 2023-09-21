@@ -18,7 +18,7 @@ use chrono::{DateTime, Utc};
 use mas_storage::{compat::CompatSessionRepository, user::UserRepository};
 use url::Url;
 
-use super::{NodeType, User};
+use super::{NodeType, SessionState, User};
 use crate::state::ContextExt;
 
 /// Lazy-loaded reverse reference.
@@ -55,16 +55,6 @@ impl CompatSession {
         self.sso_login = ReverseReference::Loaded(sso_login);
         self
     }
-}
-
-/// The state of a compatibility session.
-#[derive(Enum, Copy, Clone, Eq, PartialEq)]
-pub enum CompatSessionState {
-    /// The session is active.
-    Active,
-
-    /// The session is no longer active.
-    Finished,
 }
 
 /// The type of a compatibility session.
@@ -136,11 +126,21 @@ impl CompatSession {
     }
 
     /// The state of the session.
-    pub async fn state(&self) -> CompatSessionState {
+    pub async fn state(&self) -> SessionState {
         match &self.session.state {
-            mas_data_model::CompatSessionState::Valid => CompatSessionState::Active,
-            mas_data_model::CompatSessionState::Finished { .. } => CompatSessionState::Finished,
+            mas_data_model::CompatSessionState::Valid => SessionState::Active,
+            mas_data_model::CompatSessionState::Finished { .. } => SessionState::Finished,
         }
+    }
+
+    /// The last IP address used by the session.
+    pub async fn last_active_ip(&self) -> Option<String> {
+        self.session.last_active_ip.map(|ip| ip.to_string())
+    }
+
+    /// The last time the session was active.
+    pub async fn last_active_at(&self) -> Option<DateTime<Utc>> {
+        self.session.last_active_at
     }
 }
 
