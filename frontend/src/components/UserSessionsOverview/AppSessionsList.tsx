@@ -110,6 +110,11 @@ const paginationFamily = atomFamily((userId: string) => {
   return paginationAtom;
 });
 
+// A type-safe way to ensure we've handled all session types
+const unknownSessionType = (type: never): never => {
+  throw new Error(`Unknown session type: ${type}`);
+};
+
 const AppSessionsList: React.FC<{ userId: string }> = ({ userId }) => {
   const [pending, startTransition] = useTransition();
   const result = useAtomValue(appSessionListFamily(userId));
@@ -131,7 +136,8 @@ const AppSessionsList: React.FC<{ userId: string }> = ({ userId }) => {
         <H5>Apps</H5>
       </header>
       {appSessions.edges.map((session) => {
-        switch (session.node.__typename) {
+        const type = session.node.__typename;
+        switch (type) {
           case "Oauth2Session":
             return (
               <OAuth2Session key={session.cursor} session={session.node} />
@@ -141,7 +147,7 @@ const AppSessionsList: React.FC<{ userId: string }> = ({ userId }) => {
               <CompatSession key={session.cursor} session={session.node} />
             );
           default:
-            throw new Error("Unexpected session type.");
+            unknownSessionType(type);
         }
       })}
       <PaginationControls
