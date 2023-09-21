@@ -21,6 +21,14 @@ const config: CodegenConfig = {
   generates: {
     "./src/gql/": {
       preset: "client",
+      config: {
+        // By default, unknown scalars are generated as `any`. This is not ideal for catching potential bugs.
+        defaultScalarType: "unknown",
+        scalars: {
+          DateTime: "string",
+          Url: "string",
+        },
+      },
     },
     "./src/gql/schema.ts": {
       plugins: ["urql-introspection"],

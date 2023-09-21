@@ -13,9 +13,9 @@
 // limitations under the License.
 
 import { Badge } from "@vector-im/compound-web";
+import { parseISO } from "date-fns";
 
-import { FragmentType, useFragment } from "../../gql";
-import { BROWSER_SESSION_DETAIL_FRAGMENT } from "../../pages/BrowserSession";
+import { FragmentType, graphql, useFragment } from "../../gql";
 import {
   parseUserAgent,
   sessionNameFromDeviceInformation,
@@ -25,17 +25,37 @@ import BlockList from "../BlockList/BlockList";
 import { useEndBrowserSession } from "../BrowserSession";
 import DateTime from "../DateTime";
 import EndSessionButton from "../Session/EndSessionButton";
+import LastActive from "../Session/LastActive";
 
 import styles from "./BrowserSessionDetail.module.css";
 import SessionDetails from "./SessionDetails";
 import SessionHeader from "./SessionHeader";
 
+const FRAGMENT = graphql(/* GraphQL */ `
+  fragment BrowserSession_detail on BrowserSession {
+    id
+    createdAt
+    finishedAt
+    userAgent
+    lastActiveIp
+    lastActiveAt
+    lastAuthentication {
+      id
+      createdAt
+    }
+    user {
+      id
+      username
+    }
+  }
+`);
+
 type Props = {
-  session: FragmentType<typeof BROWSER_SESSION_DETAIL_FRAGMENT>;
+  session: FragmentType<typeof FRAGMENT>;
 };
 
 const BrowserSessionDetail: React.FC<Props> = ({ session }) => {
-  const data = useFragment(BROWSER_SESSION_DETAIL_FRAGMENT, session);
+  const data = useFragment(FRAGMENT, session);
   const currentBrowserSessionId = useCurrentBrowserSessionId();
 
   const isCurrent = currentBrowserSessionId === data.id;
@@ -46,18 +66,34 @@ const BrowserSessionDetail: React.FC<Props> = ({ session }) => {
     sessionNameFromDeviceInformation(deviceInformation) || "Browser session";
 
   const finishedAt = data.finishedAt
-    ? [{ label: "Finished", value: <DateTime datetime={data.finishedAt} /> }]
+    ? [
+        {
+          label: "Finished",
+          value: <DateTime datetime={parseISO(data.finishedAt)} />,
+        },
+      ]
     : [];
 
-  const ipAddress = data.ipAddress
-    ? [{ label: "IP Address", value: <code>{data.ipAddress}</code> }]
+  const lastActiveIp = data.lastActiveIp
+    ? [{ label: "IP Address", value: <code>{data.lastActiveIp}</code> }]
+    : [];
+
+  const lastActiveAt = data.lastActiveAt
+    ? [
+        {
+          label: "Last Active",
+          value: <LastActive lastActive={parseISO(data.lastActiveAt)} />,
+        },
+      ]
     : [];
 
   const lastAuthentication = data.lastAuthentication
     ? [
         {
           label: "Last Authentication",
-          value: <DateTime datetime={data.lastAuthentication.createdAt} />,
+          value: (
+            <DateTime datetime={parseISO(data.lastAuthentication.createdAt)} />
+          ),
         },
       ]
     : [];
@@ -68,7 +104,8 @@ const BrowserSessionDetail: React.FC<Props> = ({ session }) => {
     { label: "User Name", value: <code>{data.user.username}</code> },
     { label: "Signed in", value: <DateTime datetime={data.createdAt} /> },
     ...finishedAt,
-    ...ipAddress,
+    ...lastActiveAt,
+    ...lastActiveIp,
     ...lastAuthentication,
   ];
 

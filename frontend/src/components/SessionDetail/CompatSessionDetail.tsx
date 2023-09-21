@@ -12,28 +12,41 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { parseISO } from "date-fns";
 import { useSetAtom } from "jotai";
 
-import { FragmentType, useFragment } from "../../gql";
+import { FragmentType, graphql, useFragment } from "../../gql";
 import BlockList from "../BlockList/BlockList";
-import {
-  COMPAT_SESSION_FRAGMENT,
-  endCompatSessionFamily,
-  simplifyUrl,
-} from "../CompatSession";
+import { endCompatSessionFamily, simplifyUrl } from "../CompatSession";
 import DateTime from "../DateTime";
 import ExternalLink from "../ExternalLink/ExternalLink";
 import EndSessionButton from "../Session/EndSessionButton";
+import LastActive from "../Session/LastActive";
 
 import SessionDetails from "./SessionDetails";
 import SessionHeader from "./SessionHeader";
 
+export const FRAGMENT = graphql(/* GraphQL */ `
+  fragment CompatSession_detail on CompatSession {
+    id
+    createdAt
+    deviceId
+    finishedAt
+    lastActiveIp
+    lastActiveAt
+    ssoLogin {
+      id
+      redirectUri
+    }
+  }
+`);
+
 type Props = {
-  session: FragmentType<typeof COMPAT_SESSION_FRAGMENT>;
+  session: FragmentType<typeof FRAGMENT>;
 };
 
 const CompatSessionDetail: React.FC<Props> = ({ session }) => {
-  const data = useFragment(COMPAT_SESSION_FRAGMENT, session);
+  const data = useFragment(FRAGMENT, session);
   const endSession = useSetAtom(endCompatSessionFamily(data.id));
 
   const onSessionEnd = async (): Promise<void> => {
@@ -41,19 +54,37 @@ const CompatSessionDetail: React.FC<Props> = ({ session }) => {
   };
 
   const finishedAt = data.finishedAt
-    ? [{ label: "Finished", value: <DateTime datetime={data.finishedAt} /> }]
+    ? [
+        {
+          label: "Finished",
+          value: <DateTime datetime={parseISO(data.finishedAt)} />,
+        },
+      ]
     : [];
 
-  const ipAddress = data.ipAddress
-    ? [{ label: "IP Address", value: <code>{data.ipAddress}</code> }]
+  const lastActiveIp = data.lastActiveIp
+    ? [{ label: "IP Address", value: <code>{data.lastActiveIp}</code> }]
+    : [];
+
+  const lastActiveAt = data.lastActiveAt
+    ? [
+        {
+          label: "Last Active",
+          value: <LastActive lastActive={parseISO(data.lastActiveAt)} />,
+        },
+      ]
     : [];
 
   const sessionDetails = [
     { label: "ID", value: <code>{data.id}</code> },
     { label: "Device ID", value: <code>{data.deviceId}</code> },
-    { label: "Signed in", value: <DateTime datetime={data.createdAt} /> },
+    {
+      label: "Signed in",
+      value: <DateTime datetime={parseISO(data.createdAt)} />,
+    },
     ...finishedAt,
-    ...ipAddress,
+    ...lastActiveAt,
+    ...lastActiveIp,
   ];
 
   const clientDetails: { label: string; value: string | JSX.Element }[] = [];
