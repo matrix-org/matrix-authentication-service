@@ -31,7 +31,7 @@ import { isOk, unwrap, unwrapOk } from "../result";
 import BlockList from "./BlockList";
 import BrowserSession from "./BrowserSession";
 import PaginationControls from "./PaginationControls";
-import { Title } from "./Typography";
+import SessionListHeader from "./SessionList/SessionListHeader";
 
 const QUERY = graphql(/* GraphQL */ `
   query BrowserSessionList(
@@ -135,7 +135,7 @@ const BrowserSessionList: React.FC<{ userId: string }> = ({ userId }) => {
 
   return (
     <BlockList>
-      <Title>Browser:</Title>
+      <SessionListHeader title="Browsers" />
       <PaginationControls
         onPrev={prevPage ? (): void => paginate(prevPage) : null}
         onNext={nextPage ? (): void => paginate(nextPage) : null}
