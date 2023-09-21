@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { parseISO } from "date-fns";
 import { atom, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
@@ -29,12 +30,14 @@ import { useCurrentBrowserSessionId } from "../utils/session/useCurrentBrowserSe
 import EndSessionButton from "./Session/EndSessionButton";
 import Session from "./Session/Session";
 
-export const BROWSER_SESSION_FRAGMENT = graphql(/* GraphQL */ `
+const FRAGMENT = graphql(/* GraphQL */ `
   fragment BrowserSession_session on BrowserSession {
     id
     createdAt
     finishedAt
     userAgent
+    lastActiveIp
+    lastActiveAt
     lastAuthentication {
       id
       createdAt
@@ -92,17 +95,21 @@ export const useEndBrowserSession = (
 };
 
 type Props = {
-  session: FragmentType<typeof BROWSER_SESSION_FRAGMENT>;
+  session: FragmentType<typeof FRAGMENT>;
 };
 
 const BrowserSession: React.FC<Props> = ({ session }) => {
   const currentBrowserSessionId = useCurrentBrowserSessionId();
-  const data = useFragment(BROWSER_SESSION_FRAGMENT, session);
+  const data = useFragment(FRAGMENT, session);
   const isCurrent = data.id === currentBrowserSessionId;
 
   const onSessionEnd = useEndBrowserSession(data.id, isCurrent);
 
-  const createdAt = data.createdAt;
+  const createdAt = parseISO(data.createdAt);
+  const finishedAt = data.finishedAt ? parseISO(data.finishedAt) : undefined;
+  const lastActiveAt = data.lastActiveAt
+    ? parseISO(data.lastActiveAt)
+    : undefined;
   const deviceInformation = parseUserAgent(data.userAgent || undefined);
   const sessionName =
     sessionNameFromDeviceInformation(deviceInformation) || "Browser session";
@@ -115,8 +122,10 @@ const BrowserSession: React.FC<Props> = ({ session }) => {
       id={data.id}
       name={name}
       createdAt={createdAt}
-      finishedAt={data.finishedAt}
+      finishedAt={finishedAt}
       isCurrent={isCurrent}
+      lastActiveIp={data.lastActiveIp || undefined}
+      lastActiveAt={lastActiveAt}
     >
       {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
     </Session>

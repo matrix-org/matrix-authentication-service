@@ -1,4 +1,4 @@
-// Copyright 2022 The Matrix.org Foundation C.I.C.
+// Copyright 2023 The Matrix.org Foundation C.I.C.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,29 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
+import { H5 } from "@vector-im/compound-web";
+import { atom, useAtomValue, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
 import { useTransition } from "react";
 
-import { mapQueryAtom } from "../atoms";
-import { graphql } from "../gql";
-import { SessionState, PageInfo } from "../gql/graphql";
+import { mapQueryAtom } from "../../atoms";
+import { graphql } from "../../gql";
+import { SessionState, PageInfo } from "../../gql/graphql";
 import {
   atomForCurrentPagination,
   atomWithPagination,
-  FIRST_PAGE,
   Pagination,
-} from "../pagination";
-import { isOk, unwrap, unwrapOk } from "../result";
-
-import BlockList from "./BlockList";
-import OAuth2Session from "./OAuth2Session";
-import PaginationControls from "./PaginationControls";
-import { Title } from "./Typography";
+} from "../../pagination";
+import { isOk, unwrap, unwrapOk } from "../../result";
+import BlockList from "../BlockList";
+import CompatSession from "../CompatSession";
+import OAuth2Session from "../OAuth2Session";
+import PaginationControls from "../PaginationControls";
 
 const QUERY = graphql(/* GraphQL */ `
-  query OAuth2SessionListQuery(
+  query AppSessionList(
     $userId: ID!
     $state: SessionState
     $first: Int
@@ -44,22 +43,24 @@ const QUERY = graphql(/* GraphQL */ `
   ) {
     user(id: $userId) {
       id
-      oauth2Sessions(
-        state: $state
+      appSessions(
         first: $first
         after: $after
         last: $last
         before: $before
+        state: $state
       ) {
+        totalCount
+
         edges {
           cursor
           node {
-            id
+            __typename
+            ...CompatSession_session
             ...OAuth2Session_session
           }
         }
 
-        totalCount
         pageInfo {
           hasNextPage
           hasPreviousPage
@@ -71,11 +72,11 @@ const QUERY = graphql(/* GraphQL */ `
   }
 `);
 
-const currentPaginationAtom = atomForCurrentPagination();
 const filterAtom = atom<SessionState | null>(SessionState.Active);
+const currentPaginationAtom = atomForCurrentPagination();
 
-const oauth2SessionListFamily = atomFamily((userId: string) => {
-  const oauth2SessionListQuery = atomWithQuery({
+export const appSessionListFamily = atomFamily((userId: string) => {
+  const appSessionListQuery = atomWithQuery({
     query: QUERY,
     getVariables: (get) => ({
       userId,
@@ -84,20 +85,19 @@ const oauth2SessionListFamily = atomFamily((userId: string) => {
     }),
   });
 
-  const oauth2SessionList = mapQueryAtom(
-    oauth2SessionListQuery,
-    (data) => data.user?.oauth2Sessions || null,
+  const appSessionList = mapQueryAtom(
+    appSessionListQuery,
+    (data) => data.user?.appSessions || null,
   );
 
-  return oauth2SessionList;
+  return appSessionList;
 });
 
 const pageInfoFamily = atomFamily((userId: string) => {
   const pageInfoAtom = atom(async (get): Promise<PageInfo | null> => {
-    const result = await get(oauth2SessionListFamily(userId));
+    const result = await get(appSessionListFamily(userId));
     return (isOk(result) && unwrapOk(result)?.pageInfo) || null;
   });
-
   return pageInfoAtom;
 });
 
@@ -106,22 +106,23 @@ const paginationFamily = atomFamily((userId: string) => {
     currentPaginationAtom,
     pageInfoFamily(userId),
   );
+
   return paginationAtom;
 });
 
-type Props = {
-  userId: string;
+// A type-safe way to ensure we've handled all session types
+const unknownSessionType = (type: never): never => {
+  throw new Error(`Unknown session type: ${type}`);
 };
 
-const OAuth2SessionList: React.FC<Props> = ({ userId }) => {
+const AppSessionsList: React.FC<{ userId: string }> = ({ userId }) => {
   const [pending, startTransition] = useTransition();
-  const result = useAtomValue(oauth2SessionListFamily(userId));
+  const result = useAtomValue(appSessionListFamily(userId));
   const setPagination = useSetAtom(currentPaginationAtom);
   const [prevPage, nextPage] = useAtomValue(paginationFamily(userId));
-  const [filter, setFilter] = useAtom(filterAtom);
 
-  const oauth2Sessions = unwrap(result);
-  if (oauth2Sessions === null) return <>Failed to load sessions.</>;
+  const appSessions = unwrap(result);
+  if (!appSessions) return <>Failed to load app sessions</>;
 
   const paginate = (pagination: Pagination): void => {
     startTransition(() => {
@@ -129,35 +130,34 @@ const OAuth2SessionList: React.FC<Props> = ({ userId }) => {
     });
   };
 
-  const toggleFilter = (): void => {
-    startTransition(() => {
-      setPagination(FIRST_PAGE);
-      setFilter(filter === SessionState.Active ? null : SessionState.Active);
-    });
-  };
-
   return (
     <BlockList>
-      <Title>New apps:</Title>
-      <label>
-        <input
-          type="checkbox"
-          checked={filter === SessionState.Active}
-          onChange={toggleFilter}
-        />{" "}
-        Active only
-      </label>
+      <header>
+        <H5>Apps</H5>
+      </header>
+      {appSessions.edges.map((session) => {
+        const type = session.node.__typename;
+        switch (type) {
+          case "Oauth2Session":
+            return (
+              <OAuth2Session key={session.cursor} session={session.node} />
+            );
+          case "CompatSession":
+            return (
+              <CompatSession key={session.cursor} session={session.node} />
+            );
+          default:
+            unknownSessionType(type);
+        }
+      })}
       <PaginationControls
         onPrev={prevPage ? (): void => paginate(prevPage) : null}
         onNext={nextPage ? (): void => paginate(nextPage) : null}
-        count={oauth2Sessions.totalCount}
+        count={appSessions.totalCount}
         disabled={pending}
       />
-      {oauth2Sessions.edges.map((n) => (
-        <OAuth2Session key={n.cursor} session={n.node} />
-      ))}
     </BlockList>
   );
 };
 
-export default OAuth2SessionList;
+export default AppSessionsList;

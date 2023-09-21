@@ -70,7 +70,7 @@ const OAuth2ClientDetail: React.FC<Props> = ({ client }) => {
     <BlockList>
       <header className={styles.header}>
         <ClientAvatar
-          logoUri={data.logoUri}
+          logoUri={data.logoUri || undefined}
           name={data.clientName || data.clientId}
           size="1.5rem"
         />

@@ -94,6 +94,40 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
             </time>
           </p>
         </li>
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+          >
+            Last Active
+          </p>
+          <p
+            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+          >
+            <span
+              title="Sat, 29 Jul 2023, 03:35"
+            >
+              Active Sat, 29 Jul 2023, 03:35
+            </span>
+          </p>
+        </li>
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+          >
+            IP Address
+          </p>
+          <p
+            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+          >
+            <code>
+              1.2.3.4
+            </code>
+          </p>
+        </li>
       </ul>
     </div>
     <div
@@ -163,7 +197,7 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
 </div>
 `;
 
-exports[`<CompatSessionDetail> > renders a compatability session without an ssoLogin redirectUri 1`] = `
+exports[`<CompatSessionDetail> > renders a compatability session without an ssoLogin 1`] = `
 <div>
   <div
     class="_blockList_f8cc7f"
@@ -255,6 +289,40 @@ exports[`<CompatSessionDetail> > renders a compatability session without an ssoL
             >
               Thu, 29 Jun 2023, 03:35
             </time>
+          </p>
+        </li>
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+          >
+            Last Active
+          </p>
+          <p
+            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+          >
+            <span
+              title="Sat, 29 Jul 2023, 03:35"
+            >
+              Active Sat, 29 Jul 2023, 03:35
+            </span>
+          </p>
+        </li>
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+          >
+            IP Address
+          </p>
+          <p
+            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+          >
+            <code>
+              1.2.3.4
+            </code>
           </p>
         </li>
       </ul>

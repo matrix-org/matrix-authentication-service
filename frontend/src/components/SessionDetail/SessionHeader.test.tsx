@@ -12,4 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-export { default } from "./UserSessionsOverview";
+// @vitest-environment happy-dom
+
+import { composeStory } from "@storybook/react";
+import { render, cleanup } from "@testing-library/react";
+import { describe, it, expect, afterEach } from "vitest";
+
+import Meta, { Basic } from "./SessionHeader.stories";
+
+describe("<SessionHeader />", () => {
+  afterEach(cleanup);
+  it("renders a session header", () => {
+    const Component = composeStory(Basic, Meta);
+    const { container } = render(<Component />);
+    expect(container).toMatchSnapshot();
+  });
+});

@@ -40,6 +40,11 @@ exports[`<CompatSession /> > renders a finished session 1`] = `
   <p
     className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
   >
+    1.2.3.4
+  </p>
+  <p
+    className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
+  >
      
     <span
       className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
@@ -75,6 +80,11 @@ exports[`<CompatSession /> > renders an active session 1`] = `
     >
       Thu, 29 Jun 2023, 03:35
     </time>
+  </p>
+  <p
+    className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
+  >
+    1.2.3.4
   </p>
   <p
     className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
