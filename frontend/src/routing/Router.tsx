@@ -49,6 +49,11 @@ const useRouteWithRedirect = (): [Route, boolean] => {
   return [route, redirecting];
 };
 
+// A type-safe way to ensure we've handled all routes
+const unknownRoute = (route: never): never => {
+  throw new Error(`Invalid route: ${JSON.stringify(route)}`);
+};
+
 const Router: React.FC = () => {
   const [route, redirecting] = useRouteWithRedirect();
 
@@ -73,6 +78,8 @@ const Router: React.FC = () => {
       return <VerifyEmail id={route.id} />;
     case "unknown":
       return <>Unknown route {JSON.stringify(route.segments)}</>;
+    default:
+      unknownRoute(route);
   }
 };
 
