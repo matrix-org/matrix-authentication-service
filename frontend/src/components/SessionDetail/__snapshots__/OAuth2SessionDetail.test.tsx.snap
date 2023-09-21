@@ -105,15 +105,17 @@ exports[`<OAuth2SessionDetail> > renders session details 1`] = `
           <p
             class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
           >
-            <code>
-              openid
-            </code>
-            <code>
-              urn:matrix:org.matrix.msc2967.client:api:*
-            </code>
-            <code>
-              urn:matrix:org.matrix.msc2967.client:device:abcd1234
-            </code>
+            <div>
+              <code>
+                openid
+              </code>
+              <code>
+                urn:matrix:org.matrix.msc2967.client:api:*
+              </code>
+              <code>
+                urn:matrix:org.matrix.msc2967.client:device:abcd1234
+              </code>
+            </div>
           </p>
         </li>
       </ul>

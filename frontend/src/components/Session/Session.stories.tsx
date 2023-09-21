@@ -51,6 +51,7 @@ export const BasicSession: Story = {
   args: {
     ...defaultProps,
     name: "KlTqK9CRt3",
+    ipAddress: "2001:8003:c4614:f501:3091:888a:49c7",
     clientName: "Element",
   },
 };

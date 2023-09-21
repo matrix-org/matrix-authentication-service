@@ -43,11 +43,17 @@ const CompatSessionDetail: React.FC<Props> = ({ session }) => {
   const finishedAt = data.finishedAt
     ? [{ label: "Finished", value: <DateTime datetime={data.finishedAt} /> }]
     : [];
+
+  const ipAddress = data.ipAddress
+    ? [{ label: "IP Address", value: <code>{data.ipAddress}</code> }]
+    : [];
+
   const sessionDetails = [
     { label: "ID", value: <code>{data.id}</code> },
     { label: "Device ID", value: <code>{data.deviceId}</code> },
     { label: "Signed in", value: <DateTime datetime={data.createdAt} /> },
     ...finishedAt,
+    ...ipAddress,
   ];
 
   const clientDetails: { label: string; value: string | JSX.Element }[] = [];

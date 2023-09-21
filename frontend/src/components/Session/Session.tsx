@@ -33,6 +33,7 @@ export type SessionProps = {
   clientName?: string;
   clientLogoUri?: string;
   isCurrent?: boolean;
+  ipAddress?: string;
 };
 const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
   id,
@@ -41,6 +42,7 @@ const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
   finishedAt,
   clientName,
   clientLogoUri,
+  ipAddress,
   isCurrent,
   children,
 }) => {
@@ -58,6 +60,7 @@ const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
           Finished <DateTime datetime={finishedAt} />
         </SessionMetadata>
       )}
+      {!!ipAddress && <SessionMetadata>{ipAddress}</SessionMetadata>}
       {!!clientName && (
         <SessionMetadata>
           <ClientAvatar
