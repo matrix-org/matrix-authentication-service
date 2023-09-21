@@ -18,6 +18,7 @@ import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
 
 import { FragmentType, graphql, useFragment } from "../gql";
+import { Oauth2ApplicationType } from "../gql/graphql";
 import { Link } from "../routing";
 import { getDeviceIdFromScope } from "../utils/deviceIdFromScope";
 import { DeviceType } from "../utils/parseUserAgent";
@@ -55,11 +56,13 @@ const END_SESSION_MUTATION = graphql(/* GraphQL */ `
   }
 `);
 
-const getDeviceTypeFromClientAppType = (appType?: string): DeviceType => {
-  if (appType === "web") {
+const getDeviceTypeFromClientAppType = (
+  appType?: Oauth2ApplicationType | null,
+): DeviceType => {
+  if (appType === Oauth2ApplicationType.Web) {
     return DeviceType.Web;
   }
-  if (appType === "native") {
+  if (appType === Oauth2ApplicationType.Native) {
     return DeviceType.Mobile;
   }
   return DeviceType.Unknown;
