@@ -1,0 +1,144 @@
+// Copyright 2023 The Matrix.org Foundation C.I.C.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+use std::collections::HashMap;
+
+use serde_json::Value;
+
+/// A list of arguments that can be accessed by index or name.
+#[derive(Debug, Clone, Default)]
+pub struct ArgumentList {
+    arguments: Vec<Value>,
+    name_index: HashMap<String, usize>,
+}
+
+impl ArgumentList {
+    pub fn get_by_index(&self, index: usize) -> Option<&Value> {
+        self.arguments.get(index)
+    }
+
+    pub fn get_by_name(&self, name: &str) -> Option<&Value> {
+        self.name_index
+            .get(name)
+            .and_then(|index| self.get_by_index(*index))
+    }
+}
+
+impl<A: Into<Argument>> FromIterator<A> for ArgumentList {
+    fn from_iter<T: IntoIterator<Item = A>>(iter: T) -> Self {
+        let mut arguments = Vec::new();
+        let mut name_index = HashMap::new();
+
+        for (index, argument) in iter.into_iter().enumerate() {
+            let argument = argument.into();
+            if let Some(name) = argument.name {
+                name_index.insert(name.clone(), index);
+            }
+
+            arguments.push(argument.value);
+        }
+
+        Self {
+            arguments,
+            name_index,
+        }
+    }
+}
+
+pub struct Argument {
+    name: Option<String>,
+    value: Value,
+}
+
+impl From<Value> for Argument {
+    fn from(value: Value) -> Self {
+        Self { name: None, value }
+    }
+}
+
+impl From<(&str, Value)> for Argument {
+    fn from((name, value): (&str, Value)) -> Self {
+        Self {
+            name: Some(name.to_owned()),
+            value,
+        }
+    }
+}
+
+impl From<(String, Value)> for Argument {
+    fn from((name, value): (String, Value)) -> Self {
+        Self {
+            name: Some(name),
+            value,
+        }
+    }
+}
+
+impl Argument {
+    /// Create a new argument with the given name and value.
+    pub fn named(name: String, value: Value) -> Self {
+        Self {
+            name: Some(name),
+            value,
+        }
+    }
+
+    /// Set the name of the argument.
+    pub fn with_name(mut self, name: String) -> Self {
+        self.name = Some(name);
+        self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn test_argument_list() {
+        let list = ArgumentList::from_iter([
+            ("hello", json!("world")),
+            ("alice", json!(null)),
+            ("bob", json!(42)),
+        ]);
+
+        assert_eq!(list.get_by_index(0), Some(&json!("world")));
+        assert_eq!(list.get_by_index(1), Some(&json!(null)));
+        assert_eq!(list.get_by_index(2), Some(&json!(42)));
+        assert_eq!(list.get_by_index(3), None);
+
+        assert_eq!(list.get_by_name("hello"), Some(&json!("world")));
+        assert_eq!(list.get_by_name("alice"), Some(&json!(null)));
+        assert_eq!(list.get_by_name("bob"), Some(&json!(42)));
+        assert_eq!(list.get_by_name("charlie"), None);
+
+        let list = ArgumentList::from_iter([
+            Argument::from(json!("hello")),
+            Argument::named("alice".to_owned(), json!(null)),
+            Argument::named("bob".to_owned(), json!(42)),
+        ]);
+
+        assert_eq!(list.get_by_index(0), Some(&json!("hello")));
+        assert_eq!(list.get_by_index(1), Some(&json!(null)));
+        assert_eq!(list.get_by_index(2), Some(&json!(42)));
+        assert_eq!(list.get_by_index(3), None);
+
+        assert_eq!(list.get_by_name("hello"), None);
+        assert_eq!(list.get_by_name("alice"), Some(&json!(null)));
+        assert_eq!(list.get_by_name("bob"), Some(&json!(42)));
+        assert_eq!(list.get_by_name("charlie"), None);
+    }
+}
