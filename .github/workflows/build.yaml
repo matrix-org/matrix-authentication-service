@@ -37,7 +37,7 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v4.0.0
+        uses: actions/checkout@v4.1.0
 
       - name: Setup OPA
         uses: open-policy-agent/setup-opa@v2.1.0
@@ -138,7 +138,7 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v4.0.0
+        uses: actions/checkout@v4.1.0
 
       - name: Docker meta
         id: meta
