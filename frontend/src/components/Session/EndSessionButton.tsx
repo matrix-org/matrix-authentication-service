@@ -25,6 +25,10 @@ import LoadingSpinner from "../LoadingSpinner/LoadingSpinner";
  */
 const EndSessionButton: React.FC<{
   endSession: () => Promise<void>;
+  /**
+   * The number of sessions that will be ended
+   * When falsy, ONE is used as default
+   */
   sessionCount?: number;
 }> = ({ endSession, sessionCount }) => {
   const [inProgress, setInProgress] = useState(false);
