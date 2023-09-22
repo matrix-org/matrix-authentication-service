@@ -42,6 +42,7 @@
     "@graphql-codegen/client-preset": "^4.1.0",
     "@graphql-codegen/urql-introspection": "^2.2.1",
     "@graphql-eslint/eslint-plugin": "^3.20.1",
+    "@storybook/addon-actions": "^7.4.3",
     "@storybook/addon-essentials": "^7.4.3",
     "@storybook/react": "^7.4.3",
     "@storybook/react-vite": "^7.4.3",

@@ -1,0 +1,20 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`<EndSessionButton /> > renders a basic end session button 1`] = `
+<div>
+  <button
+    aria-controls="radix-:r0:"
+    aria-expanded="false"
+    aria-haspopup="dialog"
+    class="_button_1ukgx_17"
+    data-kind="destructive"
+    data-size="sm"
+    data-state="closed"
+    role="button"
+    tabindex="0"
+    type="button"
+  >
+    End session
+  </button>
+</div>
+`;
