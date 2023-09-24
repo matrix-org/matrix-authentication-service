@@ -12,26 +12,46 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { parseISO } from "date-fns";
 import { useSetAtom } from "jotai";
 
-import { FragmentType, useFragment } from "../../gql";
+import { FragmentType, graphql, useFragment } from "../../gql";
 import { Link } from "../../routing";
 import { getDeviceIdFromScope } from "../../utils/deviceIdFromScope";
 import BlockList from "../BlockList/BlockList";
 import DateTime from "../DateTime";
-import { OAUTH2_SESSION_FRAGMENT, endSessionFamily } from "../OAuth2Session";
+import { endSessionFamily } from "../OAuth2Session";
 import ClientAvatar from "../Session/ClientAvatar";
 import EndSessionButton from "../Session/EndSessionButton";
+import LastActive from "../Session/LastActive";
 
 import SessionDetails from "./SessionDetails";
 import SessionHeader from "./SessionHeader";
 
+export const FRAGMENT = graphql(/* GraphQL */ `
+  fragment OAuth2Session_detail on Oauth2Session {
+    id
+    scope
+    createdAt
+    finishedAt
+    lastActiveIp
+    lastActiveAt
+    client {
+      id
+      clientId
+      clientName
+      clientUri
+      logoUri
+    }
+  }
+`);
+
 type Props = {
-  session: FragmentType<typeof OAUTH2_SESSION_FRAGMENT>;
+  session: FragmentType<typeof FRAGMENT>;
 };
 
 const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
-  const data = useFragment(OAUTH2_SESSION_FRAGMENT, session);
+  const data = useFragment(FRAGMENT, session);
   const endSession = useSetAtom(endSessionFamily(data.id));
 
   const onSessionEnd = async (): Promise<void> => {
@@ -43,21 +63,42 @@ const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
   const scopes = data.scope.split(" ");
 
   const finishedAt = data.finishedAt
-    ? [{ label: "Finished", value: <DateTime datetime={data.createdAt} /> }]
+    ? [
+        {
+          label: "Finished",
+          value: <DateTime datetime={parseISO(data.finishedAt)} />,
+        },
+      ]
     : [];
+
+  const lastActiveIp = data.lastActiveIp
+    ? [{ label: "IP Address", value: <code>{data.lastActiveIp}</code> }]
+    : [];
+
+  const lastActiveAt = data.lastActiveAt
+    ? [
+        {
+          label: "Last Active",
+          value: <LastActive lastActive={parseISO(data.lastActiveAt)} />,
+        },
+      ]
+    : [];
+
   const sessionDetails = [
     { label: "ID", value: <code>{data.id}</code> },
     { label: "Device ID", value: <code>{deviceId}</code> },
     { label: "Signed in", value: <DateTime datetime={data.createdAt} /> },
     ...finishedAt,
+    ...lastActiveAt,
+    ...lastActiveIp,
     {
       label: "Scopes",
       value: (
-        <>
+        <span>
           {scopes.map((scope) => (
             <code key={scope}>{scope}</code>
           ))}
-        </>
+        </span>
       ),
     },
   ];
@@ -83,7 +124,7 @@ const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
     {
       label: "Uri",
       value: (
-        <a target="_blank" href={data.client.clientUri}>
+        <a target="_blank" href={data.client.clientUri || undefined}>
           {data.client.clientUri}
         </a>
       ),
@@ -92,7 +133,13 @@ const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
 
   return (
     <BlockList>
-      <SessionHeader>{deviceId || data.id}</SessionHeader>
+      <SessionHeader
+        backToRoute={{
+          type: "sessions-overview",
+        }}
+      >
+        {deviceId || data.id}
+      </SessionHeader>
       <SessionDetails title="Session" details={sessionDetails} />
       <SessionDetails title={clientTitle} details={clientDetails} />
       {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}

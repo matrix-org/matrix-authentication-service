@@ -27,6 +27,6 @@ You can learn more about Matrix and OIDC at [areweoidcyet.com](https://areweoidc
 
 MAS is known to work with the following upstream IdPs via OIDC:
 
-- Keycloak
-- Dex
-- Google
+- [Keycloak](https://www.keycloak.org/)
+- [Dex](https://dexidp.io/)
+- [Google](https://developers.google.com/identity/openid-connect/openid-connect)

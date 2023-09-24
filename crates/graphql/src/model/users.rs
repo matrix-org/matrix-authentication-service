@@ -14,10 +14,11 @@
 
 use async_graphql::{
     connection::{query, Connection, Edge, OpaqueCursor},
-    Context, Description, Enum, Object, ID,
+    Context, Description, Enum, Object, Union, ID,
 };
 use chrono::{DateTime, Utc};
 use mas_storage::{
+    app_session::AppSessionFilter,
     compat::{CompatSessionFilter, CompatSsoLoginFilter, CompatSsoLoginRepository},
     oauth2::{OAuth2SessionFilter, OAuth2SessionRepository},
     upstream_oauth2::{UpstreamOAuthLinkFilter, UpstreamOAuthLinkRepository},
@@ -26,12 +27,10 @@ use mas_storage::{
 };
 
 use super::{
-    browser_sessions::BrowserSessionState,
-    compat_sessions::{CompatSessionState, CompatSessionType, CompatSsoLogin},
+    compat_sessions::{CompatSessionType, CompatSsoLogin},
     matrix::MatrixUser,
-    oauth::OAuth2SessionState,
     BrowserSession, CompatSession, Cursor, NodeCursor, NodeType, OAuth2Session,
-    PreloadedTotalCount, UpstreamOAuth2Link,
+    PreloadedTotalCount, SessionState, UpstreamOAuth2Link,
 };
 use crate::state::ContextExt;
 
@@ -160,7 +159,7 @@ impl User {
         ctx: &Context<'_>,
 
         #[graphql(name = "state", desc = "List only sessions with the given state.")]
-        state_param: Option<CompatSessionState>,
+        state_param: Option<SessionState>,
 
         #[graphql(name = "type", desc = "List only sessions with the given type.")]
         type_param: Option<CompatSessionType>,
@@ -192,8 +191,8 @@ impl User {
                 // Build the query filter
                 let filter = CompatSessionFilter::new().for_user(&self.0);
                 let filter = match state_param {
-                    Some(CompatSessionState::Active) => filter.active_only(),
-                    Some(CompatSessionState::Finished) => filter.finished_only(),
+                    Some(SessionState::Active) => filter.active_only(),
+                    Some(SessionState::Finished) => filter.finished_only(),
                     None => filter,
                 };
                 let filter = match type_param {
@@ -239,7 +238,7 @@ impl User {
         ctx: &Context<'_>,
 
         #[graphql(name = "state", desc = "List only sessions in the given state.")]
-        state_param: Option<BrowserSessionState>,
+        state_param: Option<SessionState>,
 
         #[graphql(desc = "Returns the elements in the list that come after the cursor.")]
         after: Option<String>,
@@ -267,8 +266,8 @@ impl User {
 
                 let filter = BrowserSessionFilter::new().for_user(&self.0);
                 let filter = match state_param {
-                    Some(BrowserSessionState::Active) => filter.active_only(),
-                    Some(BrowserSessionState::Finished) => filter.finished_only(),
+                    Some(SessionState::Active) => filter.active_only(),
+                    Some(SessionState::Finished) => filter.finished_only(),
                     None => filter,
                 };
 
@@ -377,7 +376,7 @@ impl User {
         ctx: &Context<'_>,
 
         #[graphql(name = "state", desc = "List only sessions in the given state.")]
-        state_param: Option<OAuth2SessionState>,
+        state_param: Option<SessionState>,
 
         #[graphql(desc = "List only sessions for the given client.")] client: Option<ID>,
 
@@ -422,8 +421,8 @@ impl User {
                 let filter = OAuth2SessionFilter::new().for_user(&self.0);
 
                 let filter = match state_param {
-                    Some(OAuth2SessionState::Active) => filter.active_only(),
-                    Some(OAuth2SessionState::Finished) => filter.finished_only(),
+                    Some(SessionState::Active) => filter.active_only(),
+                    Some(SessionState::Finished) => filter.finished_only(),
                     None => filter,
                 };
 
@@ -525,6 +524,94 @@ impl User {
         )
         .await
     }
+
+    /// Get the list of both compat and OAuth 2.0 sessions, chronologically
+    /// sorted
+    #[allow(clippy::too_many_arguments)]
+    async fn app_sessions(
+        &self,
+        ctx: &Context<'_>,
+
+        #[graphql(name = "state", desc = "List only sessions in the given state.")]
+        state_param: Option<SessionState>,
+
+        #[graphql(desc = "Returns the elements in the list that come after the cursor.")]
+        after: Option<String>,
+        #[graphql(desc = "Returns the elements in the list that come before the cursor.")]
+        before: Option<String>,
+        #[graphql(desc = "Returns the first *n* elements from the list.")] first: Option<i32>,
+        #[graphql(desc = "Returns the last *n* elements from the list.")] last: Option<i32>,
+    ) -> Result<Connection<Cursor, AppSession, PreloadedTotalCount>, async_graphql::Error> {
+        let state = ctx.state();
+        let mut repo = state.repository().await?;
+
+        query(
+            after,
+            before,
+            first,
+            last,
+            |after, before, first, last| async move {
+                let after_id = after
+                    .map(|x: OpaqueCursor<NodeCursor>| {
+                        x.extract_for_types(&[NodeType::OAuth2Session, NodeType::CompatSession])
+                    })
+                    .transpose()?;
+                let before_id = before
+                    .map(|x: OpaqueCursor<NodeCursor>| {
+                        x.extract_for_types(&[NodeType::OAuth2Session, NodeType::CompatSession])
+                    })
+                    .transpose()?;
+                let pagination = Pagination::try_new(before_id, after_id, first, last)?;
+
+                let filter = AppSessionFilter::new().for_user(&self.0);
+
+                let filter = match state_param {
+                    Some(SessionState::Active) => filter.active_only(),
+                    Some(SessionState::Finished) => filter.finished_only(),
+                    None => filter,
+                };
+
+                let page = repo.app_session().list(filter, pagination).await?;
+
+                let count = if ctx.look_ahead().field("totalCount").exists() {
+                    Some(repo.app_session().count(filter).await?)
+                } else {
+                    None
+                };
+
+                repo.cancel().await?;
+
+                let mut connection = Connection::with_additional_fields(
+                    page.has_previous_page,
+                    page.has_next_page,
+                    PreloadedTotalCount(count),
+                );
+
+                connection
+                    .edges
+                    .extend(page.edges.into_iter().map(|s| match s {
+                        mas_storage::app_session::AppSession::Compat(session) => Edge::new(
+                            OpaqueCursor(NodeCursor(NodeType::CompatSession, session.id)),
+                            AppSession::CompatSession(Box::new(CompatSession::new(*session))),
+                        ),
+                        mas_storage::app_session::AppSession::OAuth2(session) => Edge::new(
+                            OpaqueCursor(NodeCursor(NodeType::OAuth2Session, session.id)),
+                            AppSession::OAuth2Session(Box::new(OAuth2Session(*session))),
+                        ),
+                    }));
+
+                Ok::<_, async_graphql::Error>(connection)
+            },
+        )
+        .await
+    }
+}
+
+/// A session in an application, either a compatibility or an OAuth 2.0 one
+#[derive(Union)]
+enum AppSession {
+    CompatSession(Box<CompatSession>),
+    OAuth2Session(Box<OAuth2Session>),
 }
 
 /// A user email address

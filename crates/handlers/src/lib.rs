@@ -59,7 +59,6 @@ use sqlx::PgPool;
 use tower::util::AndThenLayer;
 use tower_http::cors::{Any, CorsLayer};
 
-mod app_state;
 mod compat;
 mod graphql;
 mod health;
@@ -89,11 +88,12 @@ macro_rules! impl_from_error_for_route {
     };
 }
 
-pub use mas_axum_utils::{cookies::CookieManager, http_client_factory::HttpClientFactory};
+pub use mas_axum_utils::{
+    cookies::CookieManager, http_client_factory::HttpClientFactory, ErrorWrapper,
+};
 
 pub use self::{
     activity_tracker::{ActivityTracker, Bound as BoundActivityTracker},
-    app_state::AppState,
     compat::MatrixHomeserver,
     graphql::schema as graphql_schema,
     site_config::SiteConfig,

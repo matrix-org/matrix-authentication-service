@@ -17,14 +17,13 @@ import { H3, IconButton } from "@vector-im/compound-web";
 import { PropsWithChildren } from "react";
 
 import { useNavigationLink } from "../../routing";
+import { Route } from "../../routing/routes";
 import LoadingSpinner from "../LoadingSpinner";
 
 import styles from "./SessionHeader.module.css";
 
-const BackButton: React.FC = () => {
-  const { onClick, pending } = useNavigationLink({
-    type: "sessions-overview",
-  });
+const BackButton: React.FC<{ backToRoute: Route }> = ({ backToRoute }) => {
+  const { onClick, pending } = useNavigationLink(backToRoute);
 
   return (
     <IconButton type="button" onClick={onClick}>
@@ -33,9 +32,12 @@ const BackButton: React.FC = () => {
   );
 };
 
-const SessionHeader: React.FC<PropsWithChildren> = ({ children }) => (
+const SessionHeader: React.FC<PropsWithChildren<{ backToRoute: Route }>> = ({
+  children,
+  backToRoute,
+}) => (
   <header className={styles.header}>
-    <BackButton />
+    <BackButton backToRoute={backToRoute} />
     <H3>{children}</H3>
   </header>
 );

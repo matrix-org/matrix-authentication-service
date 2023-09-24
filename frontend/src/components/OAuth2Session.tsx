@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { parseISO } from "date-fns";
 import { atom, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
@@ -23,35 +24,22 @@ import { getDeviceIdFromScope } from "../utils/deviceIdFromScope";
 import { Session } from "./Session";
 import EndSessionButton from "./Session/EndSessionButton";
 
-export const OAUTH2_SESSION_FRAGMENT = graphql(/* GraphQL */ `
+export const FRAGMENT = graphql(/* GraphQL */ `
   fragment OAuth2Session_session on Oauth2Session {
     id
     scope
     createdAt
     finishedAt
+    lastActiveIp
+    lastActiveAt
     client {
       id
       clientId
       clientName
-      clientUri
       logoUri
     }
   }
 `);
-
-export type Oauth2SessionType = {
-  id: string;
-  scope: string;
-  createdAt: string;
-  finishedAt: string | null;
-  client: {
-    id: string;
-    clientId: string;
-    clientName: string;
-    clientUri: string;
-    logoUri: string | null;
-  };
-};
 
 const END_SESSION_MUTATION = graphql(/* GraphQL */ `
   mutation EndOAuth2Session($id: ID!) {
@@ -78,14 +66,11 @@ export const endSessionFamily = atomFamily((id: string) => {
 });
 
 type Props = {
-  session: FragmentType<typeof OAUTH2_SESSION_FRAGMENT>;
+  session: FragmentType<typeof FRAGMENT>;
 };
 
 const OAuth2Session: React.FC<Props> = ({ session }) => {
-  const data = useFragment(
-    OAUTH2_SESSION_FRAGMENT,
-    session,
-  ) as Oauth2SessionType;
+  const data = useFragment(FRAGMENT, session);
   const endSession = useSetAtom(endSessionFamily(data.id));
 
   const onSessionEnd = async (): Promise<void> => {
@@ -98,14 +83,22 @@ const OAuth2Session: React.FC<Props> = ({ session }) => {
     <Link route={{ type: "session", id: deviceId }}>{deviceId}</Link>
   );
 
+  const createdAt = parseISO(data.createdAt);
+  const finishedAt = data.finishedAt ? parseISO(data.finishedAt) : undefined;
+  const lastActiveAt = data.lastActiveAt
+    ? parseISO(data.lastActiveAt)
+    : undefined;
+
   return (
     <Session
       id={data.id}
       name={name}
-      createdAt={data.createdAt}
-      finishedAt={data.finishedAt || undefined}
-      clientName={data.client.clientName}
+      createdAt={createdAt}
+      finishedAt={finishedAt}
+      clientName={data.client.clientName || data.client.clientId || undefined}
       clientLogoUri={data.client.logoUri || undefined}
+      lastActiveIp={data.lastActiveIp || undefined}
+      lastActiveAt={lastActiveAt}
     >
       {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
     </Session>

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { parseISO } from "date-fns";
 import { atom, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
@@ -22,12 +23,14 @@ import { Link } from "../routing";
 import { Session } from "./Session";
 import EndSessionButton from "./Session/EndSessionButton";
 
-export const COMPAT_SESSION_FRAGMENT = graphql(/* GraphQL */ `
+export const FRAGMENT = graphql(/* GraphQL */ `
   fragment CompatSession_session on CompatSession {
     id
     createdAt
     deviceId
     finishedAt
+    lastActiveIp
+    lastActiveAt
     ssoLogin {
       id
       redirectUri
@@ -81,9 +84,9 @@ export const simplifyUrl = (url: string): string => {
 };
 
 const CompatSession: React.FC<{
-  session: FragmentType<typeof COMPAT_SESSION_FRAGMENT>;
+  session: FragmentType<typeof FRAGMENT>;
 }> = ({ session }) => {
-  const data = useFragment(COMPAT_SESSION_FRAGMENT, session);
+  const data = useFragment(FRAGMENT, session);
   const endCompatSession = useSetAtom(endCompatSessionFamily(data.id));
 
   const onSessionEnd = async (): Promise<void> => {
@@ -98,13 +101,21 @@ const CompatSession: React.FC<{
     ? simplifyUrl(data.ssoLogin.redirectUri)
     : undefined;
 
+  const createdAt = parseISO(data.createdAt);
+  const finishedAt = data.finishedAt ? parseISO(data.finishedAt) : undefined;
+  const lastActiveAt = data.lastActiveAt
+    ? parseISO(data.lastActiveAt)
+    : undefined;
+
   return (
     <Session
       id={data.id}
       name={sessionName}
-      createdAt={data.createdAt}
-      finishedAt={data.finishedAt || undefined}
+      createdAt={createdAt}
+      finishedAt={finishedAt}
       clientName={clientName}
+      lastActiveIp={data.lastActiveIp || undefined}
+      lastActiveAt={lastActiveAt}
     >
       {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
     </Session>

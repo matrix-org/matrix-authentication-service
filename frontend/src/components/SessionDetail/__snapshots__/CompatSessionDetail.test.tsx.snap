@@ -9,7 +9,7 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
       class="_header_92353c"
     >
       <button
-        class="_icon-button_1segd_17"
+        class="_icon-button_9uxnz_17"
         style="--cpd-icon-button-size: 32px;"
         type="button"
       >
@@ -92,6 +92,40 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
             >
               Thu, 29 Jun 2023, 03:35
             </time>
+          </p>
+        </li>
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+          >
+            Last Active
+          </p>
+          <p
+            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+          >
+            <span
+              title="Sat, 29 Jul 2023, 03:35"
+            >
+              Active Sat, 29 Jul 2023, 03:35
+            </span>
+          </p>
+        </li>
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+          >
+            IP Address
+          </p>
+          <p
+            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+          >
+            <code>
+              1.2.3.4
+            </code>
           </p>
         </li>
       </ul>
@@ -133,7 +167,7 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
             class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
           >
             <a
-              class="_link_eqn56_17 _externalLink_a97355"
+              class="_link_1mzip_17 _externalLink_a97355"
               data-kind="primary"
               href="https://element.io"
               rel="noreferrer noopener"
@@ -149,7 +183,7 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
       aria-controls="radix-:r0:"
       aria-expanded="false"
       aria-haspopup="dialog"
-      class="_button_1raud_17"
+      class="_button_1ukgx_17"
       data-kind="destructive"
       data-size="sm"
       data-state="closed"
@@ -163,7 +197,7 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
 </div>
 `;
 
-exports[`<CompatSessionDetail> > renders a compatability session without an ssoLogin redirectUri 1`] = `
+exports[`<CompatSessionDetail> > renders a compatability session without an ssoLogin 1`] = `
 <div>
   <div
     class="_blockList_f8cc7f"
@@ -172,7 +206,7 @@ exports[`<CompatSessionDetail> > renders a compatability session without an ssoL
       class="_header_92353c"
     >
       <button
-        class="_icon-button_1segd_17"
+        class="_icon-button_9uxnz_17"
         style="--cpd-icon-button-size: 32px;"
         type="button"
       >
@@ -257,13 +291,47 @@ exports[`<CompatSessionDetail> > renders a compatability session without an ssoL
             </time>
           </p>
         </li>
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+          >
+            Last Active
+          </p>
+          <p
+            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+          >
+            <span
+              title="Sat, 29 Jul 2023, 03:35"
+            >
+              Active Sat, 29 Jul 2023, 03:35
+            </span>
+          </p>
+        </li>
+        <li
+          class="_detailRow_040867"
+        >
+          <p
+            class="_font-body-sm-semibold_1jx6b_45 _detailLabel_040867"
+          >
+            IP Address
+          </p>
+          <p
+            class="_font-body-sm-regular_1jx6b_40 _detailValue_040867"
+          >
+            <code>
+              1.2.3.4
+            </code>
+          </p>
+        </li>
       </ul>
     </div>
     <button
       aria-controls="radix-:r3:"
       aria-expanded="false"
       aria-haspopup="dialog"
-      class="_button_1raud_17"
+      class="_button_1ukgx_17"
       data-kind="destructive"
       data-size="sm"
       data-state="closed"

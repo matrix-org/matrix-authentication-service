@@ -12,4 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-export { default } from "./UserSessionsOverview";
+use axum::response::{IntoResponse, Response};
+use http::StatusCode;
+
+/// A simple wrapper around an error that implements [`IntoResponse`].
+pub struct ErrorWrapper<T>(pub T);
+
+impl<T> From<T> for ErrorWrapper<T> {
+    fn from(input: T) -> Self {
+        Self(input)
+    }
+}
+
+impl<T> IntoResponse for ErrorWrapper<T>
+where
+    T: std::error::Error,
+{
+    fn into_response(self) -> Response {
+        // TODO: make this a bit more user friendly
+        (StatusCode::INTERNAL_SERVER_ERROR, self.0.to_string()).into_response()
+    }
+}

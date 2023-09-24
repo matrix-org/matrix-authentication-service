@@ -17,26 +17,25 @@
 import { create } from "react-test-renderer";
 import { describe, expect, it, beforeAll } from "vitest";
 
-import { FragmentType } from "../gql/fragment-masking";
+import { makeFragmentData } from "../gql";
 import { WithLocation } from "../test-utils/WithLocation";
 import { mockLocale } from "../test-utils/mockLocale";
 
-import OAuth2Session, { OAUTH2_SESSION_FRAGMENT } from "./OAuth2Session";
+import OAuth2Session, { FRAGMENT } from "./OAuth2Session";
 
 describe("<OAuth2Session />", () => {
-  const defaultProps = {
-    session: {
-      id: "session-id",
-      scope:
-        "openid urn:matrix:org.matrix.msc2967.client:api:* urn:matrix:org.matrix.msc2967.client:device:abcd1234",
-      createdAt: "2023-06-29T03:35:17.451292+00:00",
-      client: {
-        id: "test-id",
-        clientId: "test-client-id",
-        clientName: "Element",
-        clientUri: "https://element.io",
-      },
-    } as FragmentType<typeof OAUTH2_SESSION_FRAGMENT>,
+  const defaultSession = {
+    id: "session-id",
+    scope:
+      "openid urn:matrix:org.matrix.msc2967.client:api:* urn:matrix:org.matrix.msc2967.client:device:abcd1234",
+    createdAt: "2023-06-29T03:35:17.451292+00:00",
+    lastActiveIp: "1.2.3.4",
+    client: {
+      id: "test-id",
+      clientId: "test-client-id",
+      clientName: "Element",
+      clientUri: "https://element.io",
+    },
   };
 
   const finishedAt = "2023-06-29T03:35:19.451292+00:00";
@@ -44,22 +43,27 @@ describe("<OAuth2Session />", () => {
   beforeAll(() => mockLocale());
 
   it("renders an active session", () => {
+    const session = makeFragmentData(defaultSession, FRAGMENT);
+
     const component = create(
       <WithLocation>
-        <OAuth2Session {...defaultProps} />
+        <OAuth2Session session={session} />
       </WithLocation>,
     );
     expect(component.toJSON()).toMatchSnapshot();
   });
 
   it("renders a finished session", () => {
-    const finishedSession = {
-      ...defaultProps.session,
-      finishedAt,
-    };
+    const session = makeFragmentData(
+      {
+        ...defaultSession,
+        finishedAt,
+      },
+      FRAGMENT,
+    );
     const component = create(
       <WithLocation>
-        <OAuth2Session session={finishedSession} />
+        <OAuth2Session session={session} />
       </WithLocation>,
     );
     expect(component.toJSON()).toMatchSnapshot();

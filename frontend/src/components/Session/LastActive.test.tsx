@@ -20,7 +20,12 @@ import { describe, afterEach, expect, it, beforeAll } from "vitest";
 
 import { mockLocale } from "../../test-utils/mockLocale";
 
-import Meta, { ActiveNow, Basic, Inactive } from "./LastActive.stories";
+import Meta, {
+  ActiveNow,
+  ActiveThreeDaysAgo,
+  Basic,
+  Inactive,
+} from "./LastActive.stories";
 
 describe("<LastActive", () => {
   beforeAll(() => mockLocale());
@@ -33,6 +38,12 @@ describe("<LastActive", () => {
   });
 
   it("renders a default timestamp", () => {
+    const Component = composeStory(ActiveThreeDaysAgo, Meta);
+    const { container } = render(<Component />);
+    expect(container).toMatchSnapshot();
+  });
+
+  it("renders a relative timestamp", () => {
     const Component = composeStory(Basic, Meta);
     const { container } = render(<Component />);
     expect(container).toMatchSnapshot();

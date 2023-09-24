@@ -24,23 +24,6 @@ import BrowserSessionDetail from "../components/SessionDetail/BrowserSessionDeta
 import { graphql } from "../gql";
 import { isErr, unwrapErr, unwrapOk } from "../result";
 
-export const BROWSER_SESSION_DETAIL_FRAGMENT = graphql(/* GraphQL */ `
-  fragment BrowserSession_detail on BrowserSession {
-    id
-    createdAt
-    finishedAt
-    userAgent
-    lastAuthentication {
-      id
-      createdAt
-    }
-    user {
-      id
-      username
-    }
-  }
-`);
-
 const QUERY = graphql(/* GraphQL */ `
   query BrowserSessionQuery($id: ID!) {
     browserSession(id: $id) {

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use async_graphql::{Interface, Object};
+use async_graphql::{Enum, Interface, Object};
 use chrono::{DateTime, Utc};
 
 mod browser_sessions;
@@ -62,4 +62,14 @@ impl PreloadedTotalCount {
         self.0
             .ok_or_else(|| async_graphql::Error::new("total count not preloaded"))
     }
+}
+
+/// The state of a session
+#[derive(Enum, Copy, Clone, Eq, PartialEq)]
+pub enum SessionState {
+    /// The session is active.
+    Active,
+
+    /// The session is no longer active.
+    Finished,
 }

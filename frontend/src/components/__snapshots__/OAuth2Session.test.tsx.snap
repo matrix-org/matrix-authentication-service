@@ -40,6 +40,11 @@ exports[`<OAuth2Session /> > renders a finished session 1`] = `
   <p
     className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
   >
+    1.2.3.4
+  </p>
+  <p
+    className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
+  >
      
     <span
       className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
@@ -79,6 +84,11 @@ exports[`<OAuth2Session /> > renders an active session 1`] = `
   <p
     className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
   >
+    1.2.3.4
+  </p>
+  <p
+    className="_font-body-sm-regular_1jx6b_40 _sessionMetadata_634806"
+  >
      
     <span
       className="_font-body-sm-semibold_1jx6b_45 _sessionMetadata_634806"
@@ -93,7 +103,7 @@ exports[`<OAuth2Session /> > renders an active session 1`] = `
       aria-controls="radix-:r0:"
       aria-expanded={false}
       aria-haspopup="dialog"
-      className="_button_1raud_17"
+      className="_button_1ukgx_17"
       data-kind="destructive"
       data-size="sm"
       data-state="closed"

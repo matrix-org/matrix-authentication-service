@@ -18,9 +18,7 @@ import { useEffect } from "react";
 import LoadingSpinner from "../components/LoadingSpinner";
 import BrowserSession from "../pages/BrowserSession";
 import BrowserSessionList from "../pages/BrowserSessionList";
-import CompatSessionList from "../pages/CompatSessionList";
 import OAuth2Client from "../pages/OAuth2Client";
-import OAuth2SessionList from "../pages/OAuth2SessionList";
 import Profile from "../pages/Profile";
 import SessionDetail from "../pages/SessionDetail";
 import SessionsOverview from "../pages/SessionsOverview";
@@ -51,6 +49,11 @@ const useRouteWithRedirect = (): [Route, boolean] => {
   return [route, redirecting];
 };
 
+// A type-safe way to ensure we've handled all routes
+const unknownRoute = (route: never): never => {
+  throw new Error(`Invalid route: ${JSON.stringify(route)}`);
+};
+
 const Router: React.FC = () => {
   const [route, redirecting] = useRouteWithRedirect();
 
@@ -65,12 +68,8 @@ const Router: React.FC = () => {
       return <SessionsOverview />;
     case "session":
       return <SessionDetail deviceId={route.id} />;
-    case "oauth2-session-list":
-      return <OAuth2SessionList />;
     case "browser-session-list":
       return <BrowserSessionList />;
-    case "compat-session-list":
-      return <CompatSessionList />;
     case "client":
       return <OAuth2Client id={route.id} />;
     case "browser-session":
@@ -79,6 +78,8 @@ const Router: React.FC = () => {
       return <VerifyEmail id={route.id} />;
     case "unknown":
       return <>Unknown route {JSON.stringify(route.segments)}</>;
+    default:
+      unknownRoute(route);
   }
 };
 

@@ -16,6 +16,7 @@ use std::ops::{Deref, DerefMut};
 
 use futures_util::{future::BoxFuture, FutureExt, TryFutureExt};
 use mas_storage::{
+    app_session::AppSessionRepository,
     compat::{
         CompatAccessTokenRepository, CompatRefreshTokenRepository, CompatSessionRepository,
         CompatSsoLoginRepository,
@@ -36,6 +37,7 @@ use sqlx::{PgConnection, PgPool, Postgres, Transaction};
 use tracing::Instrument;
 
 use crate::{
+    app_session::PgAppSessionRepository,
     compat::{
         PgCompatAccessTokenRepository, PgCompatRefreshTokenRepository, PgCompatSessionRepository,
         PgCompatSsoLoginRepository,
@@ -180,6 +182,10 @@ where
         &'c mut self,
     ) -> Box<dyn BrowserSessionRepository<Error = Self::Error> + 'c> {
         Box::new(PgBrowserSessionRepository::new(self.conn.as_mut()))
+    }
+
+    fn app_session<'c>(&'c mut self) -> Box<dyn AppSessionRepository<Error = Self::Error> + 'c> {
+        Box::new(PgAppSessionRepository::new(self.conn.as_mut()))
     }
 
     fn oauth2_client<'c>(
