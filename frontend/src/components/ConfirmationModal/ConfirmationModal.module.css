@@ -18,6 +18,7 @@
     flex-direction: row;
     justify-content: flex-end;
     gap: var(--cpd-space-2x);
+    margin-top: var(--cpd-space-2x);
 }
 
 .overlay {
