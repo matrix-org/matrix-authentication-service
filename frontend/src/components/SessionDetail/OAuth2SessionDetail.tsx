@@ -66,7 +66,7 @@ const OAuth2SessionDetail: React.FC<Props> = ({ session }) => {
     ? [
         {
           label: "Finished",
-          value: <DateTime datetime={parseISO(data.createdAt)} />,
+          value: <DateTime datetime={parseISO(data.finishedAt)} />,
         },
       ]
     : [];
