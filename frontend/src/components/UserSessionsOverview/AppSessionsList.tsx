@@ -12,25 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { H5 } from "@vector-im/compound-web";
+import { Button } from "@vector-im/compound-web";
 import { atom, useAtomValue, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
-import { useTransition } from "react";
+import { PropsWithChildren, useState, useTransition } from "react";
 
 import { mapQueryAtom } from "../../atoms";
 import { graphql } from "../../gql";
-import { SessionState, PageInfo } from "../../gql/graphql";
+import { SessionState, PageInfo, AppSessionEdge } from "../../gql/graphql";
 import {
   atomForCurrentPagination,
   atomWithPagination,
   Pagination,
 } from "../../pagination";
 import { isOk, unwrap, unwrapOk } from "../../result";
+import { useEndAppSessions } from "../../utils/session/useEndAppSession";
 import BlockList from "../BlockList";
 import CompatSession from "../CompatSession";
 import OAuth2Session from "../OAuth2Session";
 import PaginationControls from "../PaginationControls";
+import EndSessionButton from "../Session/EndSessionButton";
+import SelectableSession from "../Session/SelectableSession";
+import SessionListHeader from "../SessionList/SessionListHeader";
 
 const QUERY = graphql(/* GraphQL */ `
   query AppSessionList(
@@ -115,11 +119,30 @@ const unknownSessionType = (type: never): never => {
   throw new Error(`Unknown session type: ${type}`);
 };
 
+const SelectableSessionWrapper: React.FC<
+  PropsWithChildren<{
+    session: AppSessionEdge;
+    selection: AppSessionEdge[];
+    onSelect: (session: AppSessionEdge) => void;
+  }>
+> = ({ session, selection, onSelect, children }) => (
+  <SelectableSession
+    disabled={!!session.node.finishedAt}
+    isSelected={selection.includes(session)}
+    onSelect={(): void => onSelect(session)}
+  >
+    {children}
+  </SelectableSession>
+);
+
 const AppSessionsList: React.FC<{ userId: string }> = ({ userId }) => {
   const [pending, startTransition] = useTransition();
+  const [selection, setSelection] = useState<AppSessionEdge[]>([]);
   const result = useAtomValue(appSessionListFamily(userId));
   const setPagination = useSetAtom(currentPaginationAtom);
   const [prevPage, nextPage] = useAtomValue(paginationFamily(userId));
+
+  const endAppSessions = useEndAppSessions();
 
   const appSessions = unwrap(result);
   if (!appSessions) return <>Failed to load app sessions</>;
@@ -127,24 +150,69 @@ const AppSessionsList: React.FC<{ userId: string }> = ({ userId }) => {
   const paginate = (pagination: Pagination): void => {
     startTransition(() => {
       setPagination(pagination);
+      // clear selection on paging
+      setSelection([]);
     });
+  };
+
+  const onSelect = (session: AppSessionEdge): void => {
+    if (selection.includes(session)) {
+      setSelection(
+        selection.filter((selectedSession) => selectedSession !== session),
+      );
+    } else {
+      setSelection([...selection, session]);
+    }
+  };
+
+  const endSessions = async (): Promise<void> => {
+    await endAppSessions(selection);
+    setSelection([]);
   };
 
   return (
     <BlockList>
-      <header>
-        <H5>Apps</H5>
-      </header>
+      <SessionListHeader title="Apps">
+        {!!selection.length && (
+          <>
+            <Button
+              kind="tertiary"
+              size="sm"
+              onClick={(): void => setSelection([])}
+            >
+              Clear
+            </Button>
+            <EndSessionButton
+              endSession={endSessions}
+              // sessionCount={selection.length}
+            />
+          </>
+        )}
+      </SessionListHeader>
       {appSessions.edges.map((session) => {
         const type = session.node.__typename;
         switch (type) {
           case "Oauth2Session":
             return (
-              <OAuth2Session key={session.cursor} session={session.node} />
+              <SelectableSessionWrapper
+                key={session.cursor}
+                session={session as AppSessionEdge}
+                onSelect={onSelect}
+                selection={selection}
+              >
+                <OAuth2Session session={session.node} />
+              </SelectableSessionWrapper>
             );
           case "CompatSession":
             return (
-              <CompatSession key={session.cursor} session={session.node} />
+              <SelectableSessionWrapper
+                key={session.cursor}
+                session={session as AppSessionEdge}
+                onSelect={onSelect}
+                selection={selection}
+              >
+                <CompatSession session={session.node} />
+              </SelectableSessionWrapper>
             );
           default:
             unknownSessionType(type);

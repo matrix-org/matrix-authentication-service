@@ -19,6 +19,8 @@
     justify-content: space-between;
     align-items: center;
     gap: var(--cpd-space-1x);
+    /* magic number to be height of sm compound button */
+    min-height: 36px;
 }
 
 .title {
