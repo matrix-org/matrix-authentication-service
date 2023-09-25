@@ -53,8 +53,10 @@ const END_SESSION_MUTATION = graphql(/* GraphQL */ `
   }
 `);
 
+export const endSessionMutationAtom = atomWithMutation(END_SESSION_MUTATION);
+
 export const endSessionFamily = atomFamily((id: string) => {
-  const endSession = atomWithMutation(END_SESSION_MUTATION);
+  const endSession = endSessionMutationAtom;
 
   // A proxy atom which pre-sets the id variable in the mutation
   const endSessionAtom = atom(
