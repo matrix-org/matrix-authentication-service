@@ -19,6 +19,7 @@ import styles from "./SelectableSession.module.css";
 type Props = {
   isSelected?: boolean;
   onSelect: () => void;
+  disabled?: boolean;
 };
 
 /**
@@ -28,6 +29,7 @@ const SelectableSession: React.FC<React.PropsWithChildren<Props>> = ({
   isSelected,
   onSelect,
   children,
+  disabled,
 }) => {
   return (
     <div className={styles.selectableSession}>
@@ -37,6 +39,7 @@ const SelectableSession: React.FC<React.PropsWithChildren<Props>> = ({
         onChange={onSelect}
         aria-label="Select session"
         checked={isSelected}
+        disabled={disabled}
       />
       {children}
     </div>

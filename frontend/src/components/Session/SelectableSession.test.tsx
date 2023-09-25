@@ -14,7 +14,7 @@
 
 // @vitest-environment happy-dom
 
-import { render, cleanup, fireEvent } from "@testing-library/react";
+import { render, cleanup, fireEvent, screen } from "@testing-library/react";
 import { describe, it, vi, expect, afterEach, beforeAll } from "vitest";
 
 import { mockLocale } from "../../test-utils/mockLocale";
@@ -33,6 +33,18 @@ describe("<SelectableSession />", () => {
       </SelectableSession>,
     );
     expect(container).toMatchSnapshot();
+  });
+
+  it("renders an disabled session", () => {
+    const onSelect = vi.fn();
+    render(
+      <SelectableSession isSelected={false} onSelect={onSelect} disabled={true}>
+        <div>Test child</div>
+      </SelectableSession>,
+    );
+    expect(
+      screen.getByLabelText("Select session").hasAttribute("disabled"),
+    ).toBeTruthy();
   });
 
   it("calls onchange when checkbox is clicked", () => {
