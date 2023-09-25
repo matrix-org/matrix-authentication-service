@@ -184,7 +184,7 @@ const AppSessionsList: React.FC<{ userId: string }> = ({ userId }) => {
             </Button>
             <EndSessionButton
               endSession={endSessions}
-              // sessionCount={selection.length}
+              sessionCount={selection.length}
             />
           </>
         )}
