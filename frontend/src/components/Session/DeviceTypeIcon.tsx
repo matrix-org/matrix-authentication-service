@@ -13,9 +13,8 @@
 // limitations under the License.
 
 import IconComputer from "@vector-im/compound-design-tokens/icons/computer.svg";
-// @TODO(kerrya) placeholder until unknown icon added
-import IconUnknown from "@vector-im/compound-design-tokens/icons/info.svg";
 import IconMobile from "@vector-im/compound-design-tokens/icons/mobile.svg";
+import IconUnknown from "@vector-im/compound-design-tokens/icons/unknown.svg";
 import IconBrowser from "@vector-im/compound-design-tokens/icons/web-browser.svg";
 
 import { DeviceType } from "../../utils/parseUserAgent";
