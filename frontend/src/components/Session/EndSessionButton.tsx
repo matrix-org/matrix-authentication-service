@@ -20,11 +20,17 @@ import LoadingSpinner from "../LoadingSpinner/LoadingSpinner";
 
 /**
  * Generic end session button
+ * Launches a confirmation modal on click
  * Handles loading state while endSession is in progress
  */
-const EndSessionButton: React.FC<{ endSession: () => Promise<void> }> = ({
-  endSession,
-}) => {
+const EndSessionButton: React.FC<{
+  endSession: () => Promise<void>;
+  /**
+   * The number of sessions that will be ended
+   * When falsy, ONE is used as default
+   */
+  sessionCount?: number;
+}> = ({ endSession, sessionCount }) => {
   const [inProgress, setInProgress] = useState(false);
 
   const onConfirm = async (): Promise<void> => {
@@ -40,15 +46,25 @@ const EndSessionButton: React.FC<{ endSession: () => Promise<void> }> = ({
   // NOOP so we render cancel button
   const onDeny = (): void => {};
 
+  const title =
+    sessionCount && sessionCount > 1
+      ? `Are you sure you want to end ${sessionCount} sessions?`
+      : "Are you sure you want to end this session?";
+  const buttonLabel =
+    sessionCount && sessionCount > 1
+      ? `End ${sessionCount} sessions`
+      : "End session";
+
   return (
     <>
       <ConfirmationModal
         onDeny={onDeny}
         onConfirm={onConfirm}
-        title="Are you sure you want to end this session?"
+        title={title}
         trigger={
           <Button kind="destructive" size="sm" disabled={inProgress}>
-            {inProgress && <LoadingSpinner inline />}End session
+            {inProgress && <LoadingSpinner inline />}
+            {buttonLabel}
           </Button>
         }
       />
