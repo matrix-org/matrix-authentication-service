@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import IconArrowLeft from "@vector-im/compound-design-tokens/icons/arrow-left.svg";
+import IconArrowLeft from "@vector-im/compound-design-tokens/icons/arrow-left.svg?react";
 import { H3, IconButton } from "@vector-im/compound-web";
 import { PropsWithChildren } from "react";
 

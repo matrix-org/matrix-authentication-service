@@ -12,11 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-declare module "*.svg" {
-  const ReactComponent: React.FunctionComponent<
-    React.SVGAttributes<SVGElement>
-  >;
-  export default ReactComponent;
-}
+import { H5 } from "@vector-im/compound-web";
+import { PropsWithChildren } from "react";
 
-declare module "*.module.css";
+import styles from "./SessionListHeader.module.css";
+
+type Props = PropsWithChildren<{
+  title: string;
+}>;
+const SessionListHeader: React.FC<Props> = ({ title, children }) => (
+  <header className={styles.sessionListHeader}>
+    <H5 className={styles.title}>{title}</H5>
+    {children}
+  </header>
+);
+
+export default SessionListHeader;
