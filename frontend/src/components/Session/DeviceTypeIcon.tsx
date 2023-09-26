@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import IconComputer from "@vector-im/compound-design-tokens/icons/computer.svg";
-import IconMobile from "@vector-im/compound-design-tokens/icons/mobile.svg";
-import IconUnknown from "@vector-im/compound-design-tokens/icons/unknown.svg";
-import IconBrowser from "@vector-im/compound-design-tokens/icons/web-browser.svg";
+import IconComputer from "@vector-im/compound-design-tokens/icons/computer.svg?react";
+import IconMobile from "@vector-im/compound-design-tokens/icons/mobile.svg?react";
+import IconUnknown from "@vector-im/compound-design-tokens/icons/unknown.svg?react";
+import IconBrowser from "@vector-im/compound-design-tokens/icons/web-browser.svg?react";
+import { FunctionComponent, SVGProps } from "react";
 
 import { DeviceType } from "../../utils/parseUserAgent";
 
@@ -23,7 +24,7 @@ import styles from "./DeviceTypeIcon.module.css";
 
 const deviceTypeToIcon: Record<
   DeviceType,
-  React.FC<React.SVGAttributes<SVGAElement>>
+  FunctionComponent<SVGProps<SVGSVGElement> & { title?: string | undefined }>
 > = {
   [DeviceType.Unknown]: IconUnknown,
   [DeviceType.Desktop]: IconComputer,
