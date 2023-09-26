@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import IconArrowLeft from "@vector-im/compound-design-tokens/icons/arrow-left.svg";
-import IconSend from "@vector-im/compound-design-tokens/icons/check.svg";
+import IconArrowLeft from "@vector-im/compound-design-tokens/icons/arrow-left.svg?react";
+import IconSend from "@vector-im/compound-design-tokens/icons/check.svg?react";
 import {
   Button,
   Control,
