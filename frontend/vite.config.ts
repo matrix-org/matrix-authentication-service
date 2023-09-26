@@ -82,8 +82,6 @@ export default defineConfig((env) => ({
     manifestSRI(),
 
     svgr({
-      exportAsDefault: true,
-
       esbuildOptions: {
         // This makes sure we're using the same JSX runtime as React itself
         jsx: "automatic",
