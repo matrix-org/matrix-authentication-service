@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import IconDelete from "@vector-im/compound-design-tokens/icons/delete.svg";
+import IconDelete from "@vector-im/compound-design-tokens/icons/delete.svg?react";
 import { Body } from "@vector-im/compound-web";
 import { atom, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
