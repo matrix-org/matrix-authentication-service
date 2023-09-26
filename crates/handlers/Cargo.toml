@@ -30,7 +30,7 @@ axum = "0.6.20"
 axum-macros = "0.3.8"
 axum-extra = { version = "0.8.0", features = ["cookie-private"] }
 
-async-graphql = { version = "6.0.6", features = ["tracing", "apollo_tracing"] }
+async-graphql = { version = "6.0.7", features = ["tracing", "apollo_tracing"] }
 
 # Emails
 lettre = { version = "0.10.4", default-features = false, features = ["builder"] }
@@ -54,7 +54,7 @@ zeroize = "1.6.0"
 camino = "1.1.6"
 chrono.workspace = true
 psl = "2.1.4"
-time = "0.3.28"
+time = "0.3.29"
 url.workspace = true
 mime = "0.3.17"
 rand.workspace = true
@@ -80,7 +80,7 @@ mas-templates = { path = "../templates" }
 oauth2-types = { path = "../oauth2-types" }
 
 [dev-dependencies]
-insta = "1.31.0"
+insta = "1.32.0"
 tracing-subscriber = "0.3.17"
 cookie_store = "0.20.0"
 

@@ -60,15 +60,10 @@ skip = [
     { name = "rustls-webpki" },
     { name = "syn", version = "1.0.109" }, # There are a few crates still depdending on the 1.x
     { name = "spin", version = "0.5.2" }, # lazy_static and ring depends on the old version
-    { name = "socket2", version = "0.4.9" }, # hyper depends on the old version
     { name = "event-listener", version = "2.5.3" }, # async-channel (wiremock) and sqlx-core depend on the old version
     { name = "regex-syntax", version = "0.6.29" }, # tracing-subscriber[env-filter] -> matchers depends on the old version
     { name = "regex-automata", version = "0.1.10" }, # ^
     { name = "ordered-float", version = "2.10.0" }, # opentelemetry-jaeger -> thrift depends on the old version
-    { name = "addr2line", version = "0.20.0" }, # wasmtime depends on the old version
-    { name = "gimli", version = "0.27.3" }, # wasmtime depends on the old version
-    { name = "object", version = "0.31.1" }, # wasmtime depends on the old version
-    { name = "rustix", version = "0.37.23" }, # wasmtime depends on the old version
     { name = "itertools", version = "0.10.5" }, # wasmtime & others depends on the old version
     { name = "idna", version = "0.3.0" }, # lettre depends on an old version
     { name = "hashbrown" }, # Too many versions :(
