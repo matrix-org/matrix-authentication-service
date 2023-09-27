@@ -106,7 +106,7 @@ impl std::fmt::Display for TypeSpecifier {
             Self::HexadecimalNumberUppercase => 'X',
             Self::Json => 'j',
         };
-        write!(f, "{}", specifier)
+        write!(f, "{specifier}")
     }
 }
 
@@ -119,8 +119,8 @@ pub enum ArgumentReference {
 impl std::fmt::Display for ArgumentReference {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ArgumentReference::Indexed(index) => write!(f, "{}$", index),
-            ArgumentReference::Named(name) => write!(f, "({})", name),
+            ArgumentReference::Indexed(index) => write!(f, "{index}$"),
+            ArgumentReference::Named(name) => write!(f, "({name})"),
         }
     }
 }
@@ -135,16 +135,16 @@ impl std::fmt::Display for PaddingSpecifier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             PaddingSpecifier::Zero => write!(f, "0"),
-            PaddingSpecifier::Char(c) => write!(f, "'{}", c),
+            PaddingSpecifier::Char(c) => write!(f, "'{c}"),
         }
     }
 }
 
 impl PaddingSpecifier {
-    pub fn char(&self) -> char {
+    pub fn char(self) -> char {
         match self {
             PaddingSpecifier::Zero => '0',
-            PaddingSpecifier::Char(c) => *c,
+            PaddingSpecifier::Char(c) => c,
         }
     }
 
@@ -152,13 +152,6 @@ impl PaddingSpecifier {
         match self {
             PaddingSpecifier::Zero => true,
             PaddingSpecifier::Char(_) => false,
-        }
-    }
-
-    pub const fn is_char(self) -> bool {
-        match self {
-            PaddingSpecifier::Zero => false,
-            PaddingSpecifier::Char(_) => true,
         }
     }
 }
@@ -177,14 +170,7 @@ pub struct Placeholder {
 impl Placeholder {
     pub fn padding_specifier_is_zero(&self) -> bool {
         self.padding_specifier
-            .map(PaddingSpecifier::is_zero)
-            .unwrap_or(false)
-    }
-
-    pub fn padding_specifier_is_char(&self) -> bool {
-        self.padding_specifier
-            .map(PaddingSpecifier::is_char)
-            .unwrap_or(false)
+            .is_some_and(PaddingSpecifier::is_zero)
     }
 
     /// Whether it should be formatted as a number for the width argument
@@ -198,7 +184,7 @@ impl std::fmt::Display for Placeholder {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "%")?;
         if let Some(argument) = &self.requested_argument {
-            write!(f, "{}", argument)?;
+            write!(f, "{argument}")?;
         }
 
         if self.plus_sign {
@@ -206,7 +192,7 @@ impl std::fmt::Display for Placeholder {
         }
 
         if let Some(padding_specifier) = &self.padding_specifier {
-            write!(f, "{}", padding_specifier)?;
+            write!(f, "{padding_specifier}")?;
         }
 
         if self.left_align {
@@ -214,11 +200,11 @@ impl std::fmt::Display for Placeholder {
         }
 
         if let Some(width) = self.width {
-            write!(f, "{}", width)?;
+            write!(f, "{width}")?;
         }
 
         if let Some(precision) = self.precision {
-            write!(f, ".{}", precision)?;
+            write!(f, ".{precision}")?;
         }
 
         write!(f, "{}", self.type_specifier)
@@ -227,37 +213,28 @@ impl std::fmt::Display for Placeholder {
 
 #[derive(Debug, Clone)]
 pub struct Message {
-    parts: Vec<MessagePart>,
+    parts: Vec<Part>,
 }
 
 impl std::fmt::Display for Message {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for part in self.parts.iter() {
-            write!(f, "{}", part)?;
+        for part in &self.parts {
+            write!(f, "{part}")?;
         }
         Ok(())
     }
 }
 
-impl FromIterator<MessagePart> for Message {
-    fn from_iter<T: IntoIterator<Item = MessagePart>>(iter: T) -> Self {
+impl FromIterator<Part> for Message {
+    fn from_iter<T: IntoIterator<Item = Part>>(iter: T) -> Self {
         Self {
             parts: iter.into_iter().collect(),
         }
     }
 }
 
-impl IntoIterator for Message {
-    type Item = MessagePart;
-    type IntoIter = std::vec::IntoIter<Self::Item>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.parts.into_iter()
-    }
-}
-
 impl Message {
-    pub fn parts(&self) -> std::slice::Iter<'_, MessagePart> {
+    pub(crate) fn parts(&self) -> std::slice::Iter<'_, Part> {
         self.parts.iter()
     }
 }
@@ -272,35 +249,35 @@ impl Serialize for Message {
 impl<'de> Deserialize<'de> for Message {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let string = String::deserialize(deserializer)?;
-        Ok(string.parse().map_err(serde::de::Error::custom)?)
+        string.parse().map_err(serde::de::Error::custom)
     }
 }
 
 #[derive(Debug, Clone)]
-pub enum MessagePart {
+pub(crate) enum Part {
     Percent,
     Text(String),
     Placeholder(Placeholder),
 }
 
-impl From<Placeholder> for MessagePart {
+impl From<Placeholder> for Part {
     fn from(placeholder: Placeholder) -> Self {
         Self::Placeholder(placeholder)
     }
 }
 
-impl From<String> for MessagePart {
+impl From<String> for Part {
     fn from(text: String) -> Self {
         Self::Text(text)
     }
 }
 
-impl std::fmt::Display for MessagePart {
+impl std::fmt::Display for Part {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            MessagePart::Percent => write!(f, "%%"),
-            MessagePart::Text(text) => write!(f, "{}", text),
-            MessagePart::Placeholder(placeholder) => write!(f, "{}", placeholder),
+            Part::Percent => write!(f, "%%"),
+            Part::Text(text) => write!(f, "{text}"),
+            Part::Placeholder(placeholder) => write!(f, "{placeholder}"),
         }
     }
 }

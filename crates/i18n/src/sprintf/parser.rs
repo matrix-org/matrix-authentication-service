@@ -19,7 +19,7 @@ use std::str::FromStr;
 use pest::{error::ErrorVariant, iterators::Pair, Parser, Span};
 
 use super::message::{
-    ArgumentReference, Message, MessagePart, PaddingSpecifier, Placeholder, TypeSpecifier,
+    ArgumentReference, Message, PaddingSpecifier, Part, Placeholder, TypeSpecifier,
 };
 
 #[derive(pest_derive::Parser)]
@@ -73,17 +73,17 @@ fn ensure_rule_type(pair: &Pair<Rule>, rule: Rule) -> Result<()> {
     }
 }
 
-fn interpret_ident(pair: Pair<Rule>) -> Result<String> {
-    ensure_rule_type(&pair, Rule::ident)?;
+fn interpret_ident(pair: &Pair<Rule>) -> Result<String> {
+    ensure_rule_type(pair, Rule::ident)?;
     Ok(pair.as_str().to_owned())
 }
 
-fn interpret_number(pair: Pair<Rule>) -> Result<usize> {
-    ensure_rule_type(&pair, Rule::number)?;
+fn interpret_number(pair: &Pair<Rule>) -> Result<usize> {
+    ensure_rule_type(pair, Rule::number)?;
     pair.as_str().parse().map_err(|e| {
         Error::new_from_span(
             ErrorVariant::CustomError {
-                message: format!("Failed to parse number: {}", e),
+                message: format!("Failed to parse number: {e}"),
             },
             pair.as_span(),
         )
@@ -96,7 +96,7 @@ fn interpret_arg_named(pair: Pair<Rule>) -> Result<ArgumentReference> {
     let mut pairs = pair.into_inner();
 
     let ident = next_pair(&mut pairs, span)?;
-    let ident = interpret_ident(ident)?;
+    let ident = interpret_ident(&ident)?;
 
     ensure_end_of_pairs(&mut pairs, span)?;
     Ok(ArgumentReference::Named(ident))
@@ -108,14 +108,14 @@ fn interpret_arg_indexed(pair: Pair<Rule>) -> Result<ArgumentReference> {
     let mut pairs = pair.into_inner();
 
     let number = next_pair(&mut pairs, span)?;
-    let number = interpret_number(number)?;
+    let number = interpret_number(&number)?;
 
     ensure_end_of_pairs(&mut pairs, span)?;
     Ok(ArgumentReference::Indexed(number))
 }
 
-fn interpret_padding_specifier(pair: Pair<Rule>) -> Result<PaddingSpecifier> {
-    ensure_rule_type(&pair, Rule::padding_specifier)?;
+fn interpret_padding_specifier(pair: &Pair<Rule>) -> Result<PaddingSpecifier> {
+    ensure_rule_type(pair, Rule::padding_specifier)?;
     let specifier: Vec<char> = pair.as_str().chars().collect();
 
     let specifier = match specifier[..] {
@@ -124,7 +124,7 @@ fn interpret_padding_specifier(pair: Pair<Rule>) -> Result<PaddingSpecifier> {
         ref specifier => {
             return Err(Error::new_from_span(
                 ErrorVariant::CustomError {
-                    message: format!("Unexpected padding specifier: {:?}", specifier),
+                    message: format!("Unexpected padding specifier: {specifier:?}"),
                 },
                 pair.as_span(),
             ))
@@ -140,7 +140,7 @@ fn interpret_width(pair: Pair<Rule>) -> Result<usize> {
     let mut pairs = pair.into_inner();
 
     let number = next_pair(&mut pairs, span)?;
-    let number = interpret_number(number)?;
+    let number = interpret_number(&number)?;
 
     ensure_end_of_pairs(&mut pairs, span)?;
     Ok(number)
@@ -152,14 +152,14 @@ fn interpret_precision(pair: Pair<Rule>) -> Result<usize> {
     let mut pairs = pair.into_inner();
 
     let number = next_pair(&mut pairs, span)?;
-    let number = interpret_number(number)?;
+    let number = interpret_number(&number)?;
 
     ensure_end_of_pairs(&mut pairs, span)?;
     Ok(number)
 }
 
-fn interpret_type_specifier(pair: Pair<Rule>) -> Result<TypeSpecifier> {
-    ensure_rule_type(&pair, Rule::type_specifier)?;
+fn interpret_type_specifier(pair: &Pair<Rule>) -> Result<TypeSpecifier> {
+    ensure_rule_type(pair, Rule::type_specifier)?;
     let specifier: Vec<char> = pair.as_str().chars().collect();
 
     let type_specifier = match specifier[..] {
@@ -218,7 +218,7 @@ fn interpret_placeholder(pair: Pair<Rule>) -> Result<Placeholder> {
     };
 
     let padding_specifier = if current_pair.as_rule() == Rule::padding_specifier {
-        let padding_specifier = interpret_padding_specifier(current_pair)?;
+        let padding_specifier = interpret_padding_specifier(&current_pair)?;
         current_pair = next_pair(&mut pairs, span)?;
         Some(padding_specifier)
     } else {
@@ -248,7 +248,7 @@ fn interpret_placeholder(pair: Pair<Rule>) -> Result<Placeholder> {
         None
     };
 
-    let type_specifier = interpret_type_specifier(current_pair)?;
+    let type_specifier = interpret_type_specifier(&current_pair)?;
 
     ensure_end_of_pairs(&mut pairs, span)?;
 
@@ -272,7 +272,7 @@ impl FromStr for Message {
             .filter(|pair| pair.as_rule() != Rule::EOI)
             .map(|pair| match pair.as_rule() {
                 Rule::text => Ok(pair.as_str().to_owned().into()),
-                Rule::percent => Ok(MessagePart::Percent),
+                Rule::percent => Ok(Part::Percent),
                 Rule::placeholder => Ok(interpret_placeholder(pair)?.into()),
                 _ => Err(unexpected_rule_error(&pair)),
             })
@@ -335,9 +335,9 @@ mod tests {
             "Hello %(who)s!",
         ];
 
-        for case in cases.into_iter() {
+        for case in cases {
             let result: Result<Message> = case.parse();
-            assert!(result.is_ok(), "Failed to parse: {}", case);
+            assert!(result.is_ok(), "Failed to parse: {case}");
             let message = result.unwrap();
             assert_eq!(message.to_string(), *case);
         }

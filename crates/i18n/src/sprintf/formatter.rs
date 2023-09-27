@@ -18,7 +18,9 @@ use serde_json::{ser::PrettyFormatter, Value};
 use thiserror::Error;
 
 use super::{ArgumentList, Message};
-use crate::sprintf::message::{ArgumentReference, MessagePart, Placeholder, TypeSpecifier};
+use crate::sprintf::message::{
+    ArgumentReference, PaddingSpecifier, Part, Placeholder, TypeSpecifier,
+};
 
 macro_rules! format_placeholder {
     ($value:expr, $type:literal, $placeholder:expr) => {
@@ -185,13 +187,9 @@ fn find_value<'a>(
     current_index: usize,
 ) -> Result<&'a Value, FormatError> {
     match requested_argument {
-        Some(ArgumentReference::Named(name)) => {
-            arguments
-                .get_by_name(name)
-                .ok_or(FormatError::UnknownNamedArgument {
-                    name: name.to_owned(),
-                })
-        }
+        Some(ArgumentReference::Named(name)) => arguments
+            .get_by_name(name)
+            .ok_or(FormatError::UnknownNamedArgument { name: name.clone() }),
 
         Some(ArgumentReference::Indexed(index)) => arguments
             .get_by_index(*index - 1)
@@ -216,11 +214,15 @@ fn to_precision(number: f64, mut placeholder: Placeholder) -> String {
     }
 
     // This tells us how many numbers are before the decimal point
-    let log10 = number.abs().log10().floor() as i32;
+    // This lossy cast is fine because we only care about the order of magnitude,
+    // and special cases are handled above
+    #[allow(clippy::cast_possible_truncation)]
+    let log10 = number.abs().log10().floor() as i64;
+    let precision_i64 = precision.try_into().unwrap_or(i64::MAX);
     // We can fit the number in the precision, so we just format it as normal
-    if log10 > 0 && log10 <= precision as i32 || number.abs() < 10.0 {
+    if log10 > 0 && log10 <= precision_i64 || number.abs() < 10.0 {
         // We remove the number of digits before the decimal point from the precision
-        placeholder.precision = Some(precision - 1 - log10.max(0) as usize);
+        placeholder.precision = Some(precision - 1 - log10.try_into().unwrap_or(0usize));
         format_placeholder!(number, &placeholder)
     } else {
         // Else in scientific notation there is always one digit before the decimal
@@ -230,6 +232,7 @@ fn to_precision(number: f64, mut placeholder: Placeholder) -> String {
     }
 }
 
+#[allow(clippy::too_many_lines, clippy::match_same_arms)]
 fn format_value(value: &Value, placeholder: &Placeholder) -> Result<String, FormatError> {
     match (value, &placeholder.type_specifier) {
         (Value::Number(number), ts @ TypeSpecifier::BinaryNumber) => {
@@ -297,10 +300,9 @@ fn format_value(value: &Value, placeholder: &Placeholder) -> Result<String, Form
             if let Some(number) = number.as_u64() {
                 Ok(format_placeholder!(number, placeholder))
             } else if let Some(number) = number.as_i64() {
-                // Truncate to a i32 to mimic JS's behaviour
-                let number = number as i32;
-                // Then cast to u32 to mimic JS's behaviour
-                let number = number as u32;
+                // Truncate to a i32 and then u32 to mimic JS's behaviour
+                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                let number = number as i32 as u32;
                 Ok(format_placeholder!(number, placeholder))
             } else {
                 Err(FormatError::InvalidTypeSpecifier {
@@ -367,10 +369,9 @@ fn format_value(value: &Value, placeholder: &Placeholder) -> Result<String, Form
             if let Some(number) = number.as_u64() {
                 Ok(format_placeholder!(number, "o", placeholder))
             } else if let Some(number) = number.as_i64() {
-                // Truncate to a i32 to mimic JS's behaviour
-                let number = number as i32;
-                // Bit by bit cast to u32 to mimic JS's behaviour
-                let number = number as u32;
+                // Truncate to a i32 and then u32 to mimic JS's behaviour
+                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                let number = number as i32 as u32;
                 Ok(format_placeholder!(number, "o", placeholder))
             } else {
                 Err(FormatError::InvalidTypeSpecifier {
@@ -422,10 +423,9 @@ fn format_value(value: &Value, placeholder: &Placeholder) -> Result<String, Form
             if let Some(number) = n.as_u64() {
                 Ok(format_placeholder!(number, "x", placeholder))
             } else if let Some(number) = n.as_i64() {
-                // Truncate to a i32 to mimic JS's behaviour
-                let number = number as i32;
-                // Then cast to u32 to mimic JS's behaviour
-                let number = number as u32;
+                // Truncate to a i32 and then u32 to mimic JS's behaviour
+                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                let number = number as i32 as u32;
                 Ok(format_placeholder!(number, "x", placeholder))
             } else {
                 Err(FormatError::InvalidTypeSpecifier {
@@ -445,10 +445,9 @@ fn format_value(value: &Value, placeholder: &Placeholder) -> Result<String, Form
             if let Some(number) = n.as_u64() {
                 Ok(format_placeholder!(number, "X", placeholder))
             } else if let Some(number) = n.as_i64() {
-                // Truncate to a i32 to mimic JS's behaviour
-                let number = number as i32;
-                // Then cast to u32 to mimic JS's behaviour
-                let number = number as u32;
+                // Truncate to a i32 and then u32 to mimic JS's behaviour
+                #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                let number = number as i32 as u32;
                 Ok(format_placeholder!(number, "X", placeholder))
             } else {
                 Err(FormatError::InvalidTypeSpecifier {
@@ -484,6 +483,12 @@ fn format_value(value: &Value, placeholder: &Placeholder) -> Result<String, Form
 }
 
 impl Message {
+    /// Format the message with the given arguments.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the message can't be formatted with the given
+    /// arguments.
     pub fn format(&self, arguments: &ArgumentList) -> Result<String, FormatError> {
         let mut buffer = String::new();
 
@@ -492,13 +497,13 @@ impl Message {
         let mut current_placeholder = 0usize;
         for part in self.parts() {
             match part {
-                MessagePart::Percent => {
+                Part::Percent => {
                     buffer.push('%');
                 }
-                MessagePart::Text(text) => {
+                Part::Text(text) => {
                     buffer.push_str(text);
                 }
-                MessagePart::Placeholder(placeholder) => {
+                Part::Placeholder(placeholder) => {
                     let value = find_value(
                         arguments,
                         placeholder.requested_argument.as_ref(),
@@ -511,8 +516,7 @@ impl Message {
                     let formatted = if let Some(width) = placeholder.width {
                         let spacer = placeholder
                             .padding_specifier
-                            .map(|p| p.char())
-                            .unwrap_or(' ');
+                            .map_or(' ', PaddingSpecifier::char);
 
                         let alignment = if placeholder.left_align {
                             Alignment::Left
