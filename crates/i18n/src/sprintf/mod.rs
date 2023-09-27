@@ -27,14 +27,14 @@ pub use self::{
 macro_rules! arg_list_inner {
     ($var:ident | $name:ident = $($arg:expr)*, $($rest:tt)*) => {{
         $var.push($crate::sprintf::Argument::from((stringify!($name), ::serde_json::json!($($arg)*))));
-        arg_list_inner!($var | $($rest)* );
+        $crate::sprintf::arg_list_inner!($var | $($rest)* );
     }};
     ($var:ident | $name:ident = $($arg:expr)*) => {{
         $var.push($crate::sprintf::Argument::from((stringify!($name), ::serde_json::json!($($arg)*))));
     }};
     ($var:ident | $($arg:expr)*, $($rest:tt)*) => {{
         $var.push($crate::sprintf::Argument::from(::serde_json::json!($($arg)*)));
-        arg_list_inner!($var | $($rest)* );
+        $crate::sprintf::arg_list_inner!($var | $($rest)* );
     }};
     ($var:ident | $($arg:expr)*) => {{
         $var.push($crate::sprintf::Argument::from(::serde_json::json!($($arg)*)));
@@ -45,16 +45,9 @@ macro_rules! arg_list_inner {
 macro_rules! arg_list {
     ($($args:tt)*) => {{
         let mut __args = Vec::new();
-        arg_list_inner!(__args | $($args)* );
+        $crate::sprintf::arg_list_inner!(__args | $($args)* );
         $crate::sprintf::ArgumentList::from_iter(__args)
     }}
-}
-
-#[derive(Debug, Error)]
-#[error(transparent)]
-enum Error {
-    Format(#[from] self::formatter::FormatError),
-    Parse(#[from] self::parser::Error),
 }
 
 macro_rules! sprintf {
@@ -71,10 +64,21 @@ macro_rules! sprintf {
         <$crate::sprintf::Message as ::std::str::FromStr>::from_str($message)
             .map_err($crate::sprintf::Error::from)
             .and_then(|message| {
-                let __args = arg_list!($($args)*);
+                let __args = $crate::sprintf::arg_list!($($args)*);
                 message.format(&__args).map_err($crate::sprintf::Error::from)
             })
     }};
+}
+
+pub(crate) use arg_list;
+pub(crate) use arg_list_inner;
+pub(crate) use sprintf;
+
+#[derive(Debug, Error)]
+#[error(transparent)]
+enum Error {
+    Format(#[from] self::formatter::FormatError),
+    Parse(#[from] self::parser::Error),
 }
 
 #[cfg(test)]

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use serde::{Deserialize, Serialize};
+
 /// Specifies how to format an argument.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TypeSpecifier {
@@ -223,7 +225,7 @@ impl std::fmt::Display for Placeholder {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Message {
     parts: Vec<MessagePart>,
 }
@@ -260,7 +262,21 @@ impl Message {
     }
 }
 
-#[derive(Debug)]
+impl Serialize for Message {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let string = self.to_string();
+        serializer.serialize_str(&string)
+    }
+}
+
+impl<'de> Deserialize<'de> for Message {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let string = String::deserialize(deserializer)?;
+        Ok(string.parse().map_err(serde::de::Error::custom)?)
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum MessagePart {
     Percent,
     Text(String),

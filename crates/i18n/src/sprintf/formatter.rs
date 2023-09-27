@@ -387,6 +387,10 @@ fn format_value(value: &Value, placeholder: &Placeholder) -> Result<String, Form
         (Value::String(string), TypeSpecifier::String) => {
             Ok(format_placeholder!(string, placeholder))
         }
+        (Value::Number(number), TypeSpecifier::String) => {
+            let string = format!("{number}");
+            Ok(format_placeholder!(string, placeholder))
+        }
         (v, ts @ TypeSpecifier::String) => Err(FormatError::InvalidTypeSpecifier {
             type_specifier: *ts,
             value_type: ValueType::of_value(v),
