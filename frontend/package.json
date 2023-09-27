@@ -40,7 +40,7 @@
   "devDependencies": {
     "@graphql-codegen/cli": "^5.0.0",
     "@graphql-codegen/client-preset": "^4.1.0",
-    "@graphql-codegen/urql-introspection": "^2.2.1",
+    "@graphql-codegen/urql-introspection": "^3.0.0",
     "@graphql-eslint/eslint-plugin": "^3.20.1",
     "@storybook/addon-essentials": "^7.4.5",
     "@storybook/react": "^7.4.5",
