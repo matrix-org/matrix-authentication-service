@@ -20,11 +20,12 @@ mod parser;
 use thiserror::Error;
 
 pub use self::{
-    argument::{Argument, ArgumentList},
+    argument::{Argument, List as ArgumentList},
     message::Message,
 };
 
 macro_rules! arg_list_inner {
+    ($var:ident |) => { };
     ($var:ident | $name:ident = $($arg:expr)*, $($rest:tt)*) => {{
         $var.push($crate::sprintf::Argument::from((stringify!($name), ::serde_json::json!($($arg)*))));
         $crate::sprintf::arg_list_inner!($var | $($rest)* );
@@ -39,12 +40,11 @@ macro_rules! arg_list_inner {
     ($var:ident | $($arg:expr)*) => {{
         $var.push($crate::sprintf::Argument::from(::serde_json::json!($($arg)*)));
     }};
-    ($var:ident |) => { };
 }
 
 macro_rules! arg_list {
     ($($args:tt)*) => {{
-        let mut __args = Vec::new();
+        let mut __args = Vec::<$crate::sprintf::Argument>::new();
         $crate::sprintf::arg_list_inner!(__args | $($args)* );
         $crate::sprintf::ArgumentList::from_iter(__args)
     }}
@@ -72,7 +72,6 @@ macro_rules! sprintf {
 
 pub(crate) use arg_list;
 pub(crate) use arg_list_inner;
-pub(crate) use sprintf;
 
 #[derive(Debug, Error)]
 #[error(transparent)]

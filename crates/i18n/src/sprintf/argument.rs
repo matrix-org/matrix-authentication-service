@@ -18,16 +18,18 @@ use serde_json::Value;
 
 /// A list of arguments that can be accessed by index or name.
 #[derive(Debug, Clone, Default)]
-pub struct ArgumentList {
+pub struct List {
     arguments: Vec<Value>,
     name_index: HashMap<String, usize>,
 }
 
-impl ArgumentList {
+impl List {
+    #[must_use]
     pub fn get_by_index(&self, index: usize) -> Option<&Value> {
         self.arguments.get(index)
     }
 
+    #[must_use]
     pub fn get_by_name(&self, name: &str) -> Option<&Value> {
         self.name_index
             .get(name)
@@ -35,7 +37,7 @@ impl ArgumentList {
     }
 }
 
-impl<A: Into<Argument>> FromIterator<A> for ArgumentList {
+impl<A: Into<Argument>> FromIterator<A> for List {
     fn from_iter<T: IntoIterator<Item = A>>(iter: T) -> Self {
         let mut arguments = Vec::new();
         let mut name_index = HashMap::new();
@@ -87,6 +89,7 @@ impl From<(String, Value)> for Argument {
 
 impl Argument {
     /// Create a new argument with the given name and value.
+    #[must_use]
     pub fn named(name: String, value: Value) -> Self {
         Self {
             name: Some(name),
@@ -95,6 +98,7 @@ impl Argument {
     }
 
     /// Set the name of the argument.
+    #[must_use]
     pub fn with_name(mut self, name: String) -> Self {
         self.name = Some(name);
         self
@@ -109,7 +113,7 @@ mod tests {
 
     #[test]
     fn test_argument_list() {
-        let list = ArgumentList::from_iter([
+        let list = List::from_iter([
             ("hello", json!("world")),
             ("alice", json!(null)),
             ("bob", json!(42)),
@@ -125,7 +129,7 @@ mod tests {
         assert_eq!(list.get_by_name("bob"), Some(&json!(42)));
         assert_eq!(list.get_by_name("charlie"), None);
 
-        let list = ArgumentList::from_iter([
+        let list = List::from_iter([
             Argument::from(json!("hello")),
             Argument::named("alice".to_owned(), json!(null)),
             Argument::named("bob".to_owned(), json!(42)),

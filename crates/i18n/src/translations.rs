@@ -87,7 +87,7 @@ impl TranslationTree {
         match self {
             TranslationTree::Message(_) => None,
             TranslationTree::Children(tree) => {
-                let child = tree.get(next.deref())?;
+                let child = tree.get(&*next)?;
                 child.walk_path(path)
             }
         }
@@ -96,14 +96,7 @@ impl TranslationTree {
     fn as_message(&self) -> Option<&Message> {
         match self {
             TranslationTree::Message(message) => Some(message),
-            _ => None,
-        }
-    }
-
-    fn as_children(&self) -> Option<&BTreeMap<String, TranslationTree>> {
-        match self {
-            TranslationTree::Children(children) => Some(children),
-            _ => None,
+            TranslationTree::Children(_) => None,
         }
     }
 }
@@ -111,7 +104,7 @@ impl TranslationTree {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sprintf::arg_list;
+    use crate::sprintf::{arg_list, ArgumentList};
 
     #[test]
     fn test_it_works() {
@@ -131,15 +124,12 @@ mod tests {
         let message = tree.message("hello");
         assert!(message.is_some());
         let message = message.unwrap();
-        assert_eq!(message.format(&Default::default()).unwrap(), "world");
+        assert_eq!(message.format(&ArgumentList::default()).unwrap(), "world");
 
         let message = tree.message("damals.about_x_hours_ago.one");
         assert!(message.is_some());
         let message = message.unwrap();
-        assert_eq!(
-            message.format(&Default::default()).unwrap(),
-            "about one hour ago"
-        );
+        assert_eq!(message.format(&arg_list!()).unwrap(), "about one hour ago");
 
         let message = tree.pluralize("damals.about_x_hours_ago", PluralCategory::Other);
         assert!(message.is_some());
