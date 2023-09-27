@@ -18,7 +18,7 @@ event-listener = "3.0.0"
 futures-lite = "1.13.0"
 rand.workspace = true
 rand_chacha = "0.3.1"
-sqlx = { version = "0.7.1", features = ["runtime-tokio-rustls", "postgres"] }
+sqlx = { version = "0.7.2", features = ["runtime-tokio-rustls", "postgres"] }
 thiserror.workspace = true
 tokio = { version = "1.32.0", features = ["rt"] }
 tower = "0.4.13"
