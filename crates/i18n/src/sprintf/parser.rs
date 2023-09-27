@@ -338,6 +338,8 @@ mod tests {
         for case in cases.into_iter() {
             let result: Result<Message> = case.parse();
             assert!(result.is_ok(), "Failed to parse: {}", case);
+            let message = result.unwrap();
+            assert_eq!(message.to_string(), *case);
         }
     }
 }
