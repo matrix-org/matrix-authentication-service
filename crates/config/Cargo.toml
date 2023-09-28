@@ -15,7 +15,7 @@ async-trait = "0.1.73"
 thiserror.workspace = true
 anyhow.workspace = true
 
-camino = { version = "1.1.6", features = ["serde1"] }
+camino = { workspace = true, features = ["serde1"] }
 chrono.workspace = true
 figment = { version = "0.10.10", features = ["env", "yaml", "test"] }
 ipnetwork = { version = "0.20.0", features = ["serde", "schemars"] }

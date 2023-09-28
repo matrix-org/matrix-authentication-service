@@ -37,6 +37,12 @@ pub enum TranslationTree {
     Children(BTreeMap<String, TranslationTree>),
 }
 
+impl Default for TranslationTree {
+    fn default() -> Self {
+        Self::Children(BTreeMap::new())
+    }
+}
+
 impl TranslationTree {
     /// Get a message from the tree by key.
     ///
@@ -71,6 +77,33 @@ impl TranslationTree {
             // Fallback to the "other" category
             let message = subtree.get("other")?.as_message()?;
             Some(message)
+        }
+    }
+
+    #[doc(hidden)]
+    pub fn set_if_not_defined<K: Deref<Target = str>, I: IntoIterator<Item = K>>(
+        &mut self,
+        path: I,
+        value: Message,
+    ) {
+        let mut path = path.into_iter();
+        let Some(next) = path.next() else {
+            if let TranslationTree::Message(_) = self {
+                return;
+            }
+
+            *self = TranslationTree::Message(value);
+            return;
+        };
+
+        match self {
+            TranslationTree::Message(_) => panic!("cannot set a value on a message node"),
+            TranslationTree::Children(children) => {
+                children
+                    .entry(next.deref().to_owned())
+                    .or_default()
+                    .set_if_not_defined(path, value);
+            }
         }
     }
 

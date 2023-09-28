@@ -3019,6 +3019,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "mas-i18n-scan"
+version = "0.2.0"
+dependencies = [
+ "camino",
+ "clap",
+ "mas-i18n",
+ "serde_json",
+ "tera",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "mas-iana"
 version = "0.2.0"
 dependencies = [
