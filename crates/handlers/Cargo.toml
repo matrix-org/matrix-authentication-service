@@ -81,7 +81,7 @@ oauth2-types = { path = "../oauth2-types" }
 
 [dev-dependencies]
 insta = "1.32.0"
-tracing-subscriber = "0.3.17"
+tracing-subscriber.workspace = true
 cookie_store = "0.20.0"
 
 [features]

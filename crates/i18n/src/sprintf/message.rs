@@ -110,7 +110,7 @@ impl std::fmt::Display for TypeSpecifier {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ArgumentReference {
     Indexed(usize),
     Named(String),
@@ -125,7 +125,7 @@ impl std::fmt::Display for ArgumentReference {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PaddingSpecifier {
     Zero,
     Char(char),
@@ -156,7 +156,7 @@ impl PaddingSpecifier {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Placeholder {
     pub type_specifier: TypeSpecifier,
     pub requested_argument: Option<ArgumentReference>,
@@ -211,7 +211,7 @@ impl std::fmt::Display for Placeholder {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Message {
     parts: Vec<Part>,
 }
@@ -253,7 +253,7 @@ impl<'de> Deserialize<'de> for Message {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Part {
     Percent,
     Text(String),

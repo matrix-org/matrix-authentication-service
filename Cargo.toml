@@ -47,6 +47,8 @@ version = "1.0.48"
 # Logging and tracing
 [workspace.dependencies.tracing]
 version = "0.1.37"
+[workspace.dependencies.tracing-subscriber]
+version = "0.3.17"
 
 # URL manipulation
 [workspace.dependencies.url]
