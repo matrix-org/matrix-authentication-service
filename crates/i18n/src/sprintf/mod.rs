@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![allow(unused_macros)]
+
 mod argument;
 mod formatter;
 mod message;
@@ -70,8 +72,12 @@ macro_rules! sprintf {
     }};
 }
 
+#[allow(unused_imports)]
 pub(crate) use arg_list;
+#[allow(unused_imports)]
 pub(crate) use arg_list_inner;
+#[allow(unused_imports)]
+pub(crate) use sprintf;
 
 #[derive(Debug, Error)]
 #[error(transparent)]

@@ -14,41 +14,34 @@
 
 use std::{collections::BTreeMap, ops::Deref};
 
+use icu_plurals::PluralCategory;
 use serde::{Deserialize, Serialize};
 
 use crate::sprintf::Message;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PluralCategory {
-    Zero,
-    One,
-    Two,
-    Few,
-    Many,
-    Other,
-}
-
-impl PluralCategory {
-    fn as_str(self) -> &'static str {
-        match self {
-            Self::Zero => "zero",
-            Self::One => "one",
-            Self::Two => "two",
-            Self::Few => "few",
-            Self::Many => "many",
-            Self::Other => "other",
-        }
+fn plural_category_as_str(category: PluralCategory) -> &'static str {
+    match category {
+        PluralCategory::Zero => "zero",
+        PluralCategory::One => "one",
+        PluralCategory::Two => "two",
+        PluralCategory::Few => "few",
+        PluralCategory::Many => "many",
+        PluralCategory::Other => "other",
     }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
-enum TranslationTree {
+pub enum TranslationTree {
     Message(Message),
     Children(BTreeMap<String, TranslationTree>),
 }
 
 impl TranslationTree {
+    /// Get a message from the tree by key.
+    ///
+    /// Returns `None` if the requested key is not found.
+    #[must_use]
     pub fn message(&self, key: &str) -> Option<&Message> {
         let keys = key.split('.');
         let node = self.walk_path(keys)?;
@@ -56,6 +49,12 @@ impl TranslationTree {
         Some(message)
     }
 
+    /// Get a pluralized message from the tree by key and plural category.
+    ///
+    /// If the key doesn't have plural variants, this will return the message
+    /// itself. Returns the "other" category if the requested category is
+    /// not found. Returns `None` if the requested key is not found.
+    #[must_use]
     pub fn pluralize(&self, key: &str, category: PluralCategory) -> Option<&Message> {
         let keys = key.split('.');
         let node = self.walk_path(keys)?;
@@ -65,7 +64,7 @@ impl TranslationTree {
             TranslationTree::Children(tree) => tree,
         };
 
-        if let Some(node) = subtree.get(category.as_str()) {
+        if let Some(node) = subtree.get(plural_category_as_str(category)) {
             let message = node.as_message()?;
             Some(message)
         } else {

@@ -18,4 +18,4 @@ hyper = { version = "0.14.27", features = ["tcp", "client", "http1"] }
 serde.workspace = true
 tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread", "fs", "io-util"] }
 tracing.workspace = true
-tracing-subscriber = "0.3.17"
+tracing-subscriber.workspace = true

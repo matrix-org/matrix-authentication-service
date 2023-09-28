@@ -24,11 +24,13 @@ pub struct List {
 }
 
 impl List {
+    /// Get an argument by its index.
     #[must_use]
     pub fn get_by_index(&self, index: usize) -> Option<&Value> {
         self.arguments.get(index)
     }
 
+    /// Get an argument by its name.
     #[must_use]
     pub fn get_by_name(&self, name: &str) -> Option<&Value> {
         self.name_index
@@ -58,6 +60,7 @@ impl<A: Into<Argument>> FromIterator<A> for List {
     }
 }
 
+/// A single argument value.
 pub struct Argument {
     name: Option<String>,
     value: Value,
