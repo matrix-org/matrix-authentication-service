@@ -51,7 +51,7 @@ pbkdf2 = { version = "0.12.2", features = ["password-hash", "std", "simple", "pa
 zeroize = "1.6.0"
 
 # Various data types and utilities
-camino = "1.1.6"
+camino.workspace = true
 chrono.workspace = true
 psl = "2.1.4"
 time = "0.3.29"

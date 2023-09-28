@@ -23,6 +23,15 @@ version = "0.4.31"
 default-features = false
 features = ["serde", "clock"]
 
+# UTF-8 paths
+[workspace.dependencies.camino]
+version = "1.1.6"
+
+# CLI argument parsing
+[workspace.dependencies.clap]
+version = "4.4.4"
+features = ["derive"]
+
 # HTTP request/response
 [workspace.dependencies.http]
 version = "0.2.9"
@@ -49,6 +58,11 @@ version = "1.0.48"
 version = "0.1.37"
 [workspace.dependencies.tracing-subscriber]
 version = "0.3.17"
+
+# Templates
+[workspace.dependencies.tera]
+version = "1.19.1"
+default-features = false
 
 # URL manipulation
 [workspace.dependencies.url]

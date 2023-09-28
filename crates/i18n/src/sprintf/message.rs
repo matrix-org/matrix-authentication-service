@@ -237,6 +237,14 @@ impl Message {
     pub(crate) fn parts(&self) -> std::slice::Iter<'_, Part> {
         self.parts.iter()
     }
+
+    /// Create a message from a literal string, without any placeholders.
+    #[must_use]
+    pub fn from_literal(literal: String) -> Message {
+        Message {
+            parts: vec![Part::Text(literal)],
+        }
+    }
 }
 
 impl Serialize for Message {
