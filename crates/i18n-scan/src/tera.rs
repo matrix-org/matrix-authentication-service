@@ -12,47 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use mas_i18n::{translations::TranslationTree, Message};
 use tera::{
     ast::{Block, Expr, ExprVal, FunctionCall, MacroDefinition, Node},
     Error, Template, Tera,
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum KeyKind {
-    Message,
-    Plural,
-}
-
-pub struct Key {
-    kind: KeyKind,
-    key: String,
-}
-
-impl Key {
-    fn default_value(&self) -> String {
-        match self.kind {
-            KeyKind::Message => self.key.clone(),
-            KeyKind::Plural => format!("%(count)d {}", self.key),
-        }
-    }
-}
-
-pub fn add_missing(translation_tree: &mut TranslationTree, keys: &[Key]) {
-    for translatable in keys {
-        let message = Message::from_literal(translatable.default_value());
-        let key = translatable
-            .key
-            .split('.')
-            .chain(if translatable.kind == KeyKind::Plural {
-                Some("other")
-            } else {
-                None
-            });
-
-        translation_tree.set_if_not_defined(key, message);
-    }
-}
+use crate::key::{Key, KeyKind};
 
 /// Find all translatable strings in a Tera instance.
 ///
@@ -309,7 +274,7 @@ fn find_in_function_call(
             KeyKind::Message
         };
 
-        keys.push(Key { kind, key });
+        keys.push(Key::new(kind, key))
     }
 
     Ok(keys)
@@ -320,6 +285,7 @@ mod tests {
     use tera::Tera;
 
     use super::*;
+    use crate::key::add_missing;
 
     #[test]
     fn test_find_keys() {
