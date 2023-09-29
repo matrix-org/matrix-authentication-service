@@ -10,9 +10,11 @@ repository.workspace = true
 [dependencies]
 camino.workspace = true
 clap.workspace = true
-tera.workspace = true
-tracing.workspace = true
-tracing-subscriber.workspace = true
+minijinja = { version = "1.0.8", features = ["unstable_machinery"] }
 serde_json.workspace = true
+tera.workspace = true
+tracing-subscriber.workspace = true
+tracing.workspace = true
+walkdir = "2.4.0"
 
 mas-i18n = { path = "../i18n" }
