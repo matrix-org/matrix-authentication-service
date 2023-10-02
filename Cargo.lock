@@ -3306,6 +3306,7 @@ dependencies = [
  "tracing",
  "ulid",
  "url",
+ "v_htmlescape",
  "walkdir",
 ]
 
@@ -3410,6 +3411,7 @@ dependencies = [
  "self_cell",
  "serde",
  "serde_json",
+ "v_htmlescape",
 ]
 
 [[package]]
@@ -6189,6 +6191,12 @@ checksum = "79daa5ed5740825c40b389c5e50312b9c86df53fccd33f281df655642b43869d"
 dependencies = [
  "serde",
 ]
+
+[[package]]
+name = "v_htmlescape"
+version = "0.15.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4e8257fbc510f0a46eb602c10215901938b5c2a7d5e70fc11483b1d3c9b5b18c"
 
 [[package]]
 name = "valuable"
