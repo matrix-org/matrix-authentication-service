@@ -85,25 +85,23 @@ impl TranslationTree {
         &mut self,
         path: I,
         value: Message,
-    ) {
+    ) -> bool {
         let mut path = path.into_iter();
         let Some(next) = path.next() else {
             if let TranslationTree::Message(_) = self {
-                return;
+                return false;
             }
 
             *self = TranslationTree::Message(value);
-            return;
+            return true;
         };
 
         match self {
             TranslationTree::Message(_) => panic!("cannot set a value on a message node"),
-            TranslationTree::Children(children) => {
-                children
-                    .entry(next.deref().to_owned())
-                    .or_default()
-                    .set_if_not_defined(path, value);
-            }
+            TranslationTree::Children(children) => children
+                .entry(next.deref().to_owned())
+                .or_default()
+                .set_if_not_defined(path, value),
         }
     }
 

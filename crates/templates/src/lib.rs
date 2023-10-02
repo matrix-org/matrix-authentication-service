@@ -29,6 +29,7 @@ use std::{collections::HashSet, sync::Arc};
 use anyhow::Context as _;
 use arc_swap::ArcSwap;
 use camino::{Utf8Path, Utf8PathBuf};
+use mas_i18n::Translator;
 use mas_router::UrlBuilder;
 use mas_spa::ViteManifest;
 use rand::Rng;
@@ -72,6 +73,7 @@ pub struct Templates {
     environment: Arc<ArcSwap<minijinja::Environment<'static>>>,
     url_builder: UrlBuilder,
     vite_manifest_path: Utf8PathBuf,
+    translations_path: Utf8PathBuf,
     path: Utf8PathBuf,
 }
 
@@ -89,6 +91,10 @@ pub enum TemplateLoadingError {
     /// Failed to deserialize the assets manifest
     #[error("invalid assets manifest")]
     ViteManifest(#[from] serde_json::Error),
+
+    /// Failed to load the translations
+    #[error("failed to load the translations")]
+    Translations(#[from] mas_i18n::LoadError),
 
     /// Failed to traverse the filesystem
     #[error("failed to traverse the filesystem")]
@@ -143,13 +149,21 @@ impl Templates {
         path: Utf8PathBuf,
         url_builder: UrlBuilder,
         vite_manifest_path: Utf8PathBuf,
+        translations_path: Utf8PathBuf,
     ) -> Result<Self, TemplateLoadingError> {
-        let environment = Self::load_(&path, url_builder.clone(), &vite_manifest_path).await?;
+        let environment = Self::load_(
+            &path,
+            url_builder.clone(),
+            &vite_manifest_path,
+            &translations_path,
+        )
+        .await?;
         Ok(Self {
             environment: Arc::new(ArcSwap::from_pointee(environment)),
             path,
             url_builder,
             vite_manifest_path,
+            translations_path,
         })
     }
 
@@ -157,6 +171,7 @@ impl Templates {
         path: &Utf8Path,
         url_builder: UrlBuilder,
         vite_manifest_path: &Utf8Path,
+        translations_path: &Utf8Path,
     ) -> Result<minijinja::Environment<'static>, TemplateLoadingError> {
         let path = path.to_owned();
         let span = tracing::Span::current();
@@ -169,6 +184,11 @@ impl Templates {
         // Parse it
         let vite_manifest: ViteManifest =
             serde_json::from_slice(&vite_manifest).map_err(TemplateLoadingError::ViteManifest)?;
+
+        let translations_path = translations_path.to_owned();
+        let translator =
+            tokio::task::spawn_blocking(move || Translator::load_from_path(&translations_path))
+                .await??;
 
         let (loaded, mut env) = tokio::task::spawn_blocking(move || {
             span.in_scope(move || {
@@ -203,7 +223,7 @@ impl Templates {
         })
         .await??;
 
-        self::functions::register(&mut env, url_builder, vite_manifest);
+        self::functions::register(&mut env, url_builder, vite_manifest, translator);
 
         let needed: HashSet<_> = TEMPLATES.into_iter().map(ToOwned::to_owned).collect();
         debug!(?loaded, ?needed, "Templates loaded");
@@ -228,6 +248,7 @@ impl Templates {
             &self.path,
             self.url_builder.clone(),
             &self.vite_manifest_path,
+            &self.translations_path,
         )
         .await?;
 
@@ -373,7 +394,9 @@ mod tests {
         let url_builder = UrlBuilder::new("https://example.com/".parse().unwrap(), None, None);
         let vite_manifest_path =
             Utf8Path::new(env!("CARGO_MANIFEST_DIR")).join("../../frontend/dist/manifest.json");
-        let templates = Templates::load(path, url_builder, vite_manifest_path)
+        let translations_path =
+            Utf8Path::new(env!("CARGO_MANIFEST_DIR")).join("../../translations");
+        let templates = Templates::load(path, url_builder, vite_manifest_path, translations_path)
             .await
             .unwrap();
         templates.check_render(now, &mut rng).unwrap();

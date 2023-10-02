@@ -50,6 +50,21 @@ fn default_assets_path() -> Utf8PathBuf {
     "./share/manifest.json".into()
 }
 
+#[cfg(not(any(feature = "docker", feature = "dist")))]
+fn default_translations_path() -> Utf8PathBuf {
+    "./translations/".into()
+}
+
+#[cfg(feature = "docker")]
+fn default_translations_path() -> Utf8PathBuf {
+    "/usr/local/share/mas-cli/translations/".into()
+}
+
+#[cfg(feature = "dist")]
+fn default_translations_path() -> Utf8PathBuf {
+    "./share/translations/".into()
+}
+
 /// Configuration related to templates
 #[derive(Debug, Serialize, Deserialize, JsonSchema, Clone)]
 pub struct TemplatesConfig {
@@ -62,6 +77,11 @@ pub struct TemplatesConfig {
     #[serde(default = "default_assets_path")]
     #[schemars(with = "Option<String>")]
     pub assets_manifest: Utf8PathBuf,
+
+    /// Path to the translations
+    #[serde(default = "default_translations_path")]
+    #[schemars(with = "Option<String>")]
+    pub translations_path: Utf8PathBuf,
 }
 
 impl Default for TemplatesConfig {
@@ -69,6 +89,7 @@ impl Default for TemplatesConfig {
         Self {
             path: default_path(),
             assets_manifest: default_assets_path(),
+            translations_path: default_translations_path(),
         }
     }
 }

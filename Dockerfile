@@ -157,6 +157,7 @@ FROM --platform=${BUILDPLATFORM} scratch AS share
 COPY --from=frontend /share /share
 COPY --from=policy /app/policies/policy.wasm /share/policy.wasm
 COPY ./templates/ /share/templates
+COPY ./translations/ /share/translations
 
 ##################################
 ## Runtime stage, debug variant ##

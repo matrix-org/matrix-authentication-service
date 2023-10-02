@@ -119,6 +119,7 @@ impl TestState {
             workspace_root.join("templates"),
             url_builder.clone(),
             workspace_root.join("frontend/dist/manifest.json"),
+            workspace_root.join("translations"),
         )
         .await?;
 

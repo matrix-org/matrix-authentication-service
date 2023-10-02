@@ -42,6 +42,11 @@ struct Options {
     /// The name of the translation function
     #[clap(long, default_value = "_")]
     function: String,
+
+    /// Whether the existing translation file should be updated with missing
+    /// keys in-place
+    #[clap(long)]
+    update: bool,
 }
 
 fn main() {
@@ -50,7 +55,7 @@ fn main() {
     let options = Options::parse();
 
     // Open the existing translation file if one was provided
-    let mut tree = if let Some(path) = options.existing {
+    let mut tree = if let Some(path) = &options.existing {
         let mut file = File::open(path).expect("Failed to open existing translation file");
         serde_json::from_reader(&mut file).expect("Failed to parse existing translation file")
     } else {
@@ -86,10 +91,30 @@ fn main() {
         }
     }
 
-    context.add_missing(&mut tree);
+    let count = context.add_missing(&mut tree);
 
-    serde_json::to_writer_pretty(std::io::stdout(), &tree)
-        .expect("Failed to write translation tree");
+    match count {
+        0 => tracing::debug!("No missing keys"),
+        1 => tracing::info!("Added 1 missing key"),
+        count => tracing::info!("Added {} missing keys", count),
+    }
+
+    if options.update {
+        let mut file = File::options()
+            .write(true)
+            .read(false)
+            .open(
+                options
+                    .existing
+                    .expect("--update requires an existing translation file"),
+            )
+            .expect("Failed to open existing translation file");
+
+        serde_json::to_writer_pretty(&mut file, &tree).expect("Failed to write translation tree");
+    } else {
+        serde_json::to_writer_pretty(std::io::stdout(), &tree)
+            .expect("Failed to write translation tree");
+    }
 
     // Just to make sure we don't end up with a trailing newline
     println!();

@@ -3293,6 +3293,7 @@ dependencies = [
  "chrono",
  "http",
  "mas-data-model",
+ "mas-i18n",
  "mas-router",
  "mas-spa",
  "minijinja",
