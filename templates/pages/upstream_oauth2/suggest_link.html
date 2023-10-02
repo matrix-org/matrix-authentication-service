@@ -17,7 +17,7 @@ limitations under the License.
 {% extends "base.html" %}
 
 {% block content %}
-  {{ navbar::top() }}
+  {{ navbar.top() }}
   <section class="flex items-center justify-center flex-1">
     <div class="grid grid-cols-1 gap-6 w-96 my-2 mx-8">
       <h1 class="rounded-lg bg-grey-25 dark:bg-grey-450 p-2 flex flex-col font-medium text-lg text-center">
@@ -28,10 +28,10 @@ limitations under the License.
         <input type="hidden" name="csrf" value="{{ csrf_token }}" />
         <input type="hidden" name="action" value="link" />
 
-        {{ button::button(text="Link", class="flex-1") }}
+        {{ button.button(text="Link", class="flex-1") }}
       </form>
 
-      <div>Or {{ logout::button(text="Logout", csrf_token=csrf_token, post_logout_action=post_logout_action, as_link=true) }}</div>
+      <div>Or {{ logout.button(text="Logout", csrf_token=csrf_token, post_logout_action=post_logout_action, as_link=true) }}</div>
     </div>
   </section>
 {% endblock content %}

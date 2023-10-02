@@ -289,7 +289,7 @@ async fn render(
     };
     let ctx = ctx.with_csrf(csrf_token.form_value());
 
-    let content = templates.render_login(&ctx).await?;
+    let content = templates.render_login(&ctx)?;
     Ok(content)
 }
 

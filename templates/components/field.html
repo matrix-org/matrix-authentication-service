@@ -16,10 +16,10 @@ limitations under the License.
 
 {% macro input(label, name, type="text", form_state=false, autocomplete=false, class="", inputmode="text", autocorrect=false, autocapitalize=false, disabled=false, required=false) %}
   {% if not form_state %}
-    {% set form_state = dict(errors=[], fields=dict()) %}
+    {% set form_state = {"errors": [], "fields": {}} %}
   {% endif %}
 
-  {% set state = form_state.fields[name] | default(value=dict(errors=[], value="")) %}
+  {% set state = form_state.fields[name] | default({"errors": [], "value": ""}) %}
 
   <div class="flex flex-col cpd-field {{ class }}">
     <div class="cpd-label"{% if state.errors is not empty %} data-invalid{% endif %}>{{ label }}</div>
@@ -53,4 +53,4 @@ limitations under the License.
       {% endfor %}
     {% endif %}
   </div>
-{% endmacro input %}
+{% endmacro %}

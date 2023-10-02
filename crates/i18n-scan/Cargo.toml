@@ -10,7 +10,7 @@ repository.workspace = true
 [dependencies]
 camino.workspace = true
 clap.workspace = true
-minijinja = { version = "1.0.8", features = ["unstable_machinery"] }
+minijinja = { workspace = true, features = ["unstable_machinery"] }
 serde_json.workspace = true
 tera.workspace = true
 tracing-subscriber.workspace = true

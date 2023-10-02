@@ -104,7 +104,7 @@ pub async fn get(
             .with_code("compat_sso_login_expired")
             .with_description("This login session expired.".to_owned());
 
-        let content = templates.render_error(&ctx).await?;
+        let content = templates.render_error(&ctx)?;
         return Ok((cookie_jar, Html(content)).into_response());
     }
 
@@ -112,7 +112,7 @@ pub async fn get(
         .with_session(session)
         .with_csrf(csrf_token.form_value());
 
-    let content = templates.render_sso_login(&ctx).await?;
+    let content = templates.render_sso_login(&ctx)?;
 
     Ok((cookie_jar, Html(content)).into_response())
 }
@@ -171,7 +171,7 @@ pub async fn post(
             .with_code("compat_sso_login_expired")
             .with_description("This login session expired.".to_owned());
 
-        let content = templates.render_error(&ctx).await?;
+        let content = templates.render_error(&ctx)?;
         return Ok((cookie_jar, Html(content)).into_response());
     }
 

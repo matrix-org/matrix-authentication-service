@@ -50,7 +50,7 @@ pub async fn get(
         .await;
 
     let ctx = AppContext::default();
-    let content = templates.render_app(&ctx).await?;
+    let content = templates.render_app(&ctx)?;
 
     Ok((cookie_jar, Html(content)).into_response())
 }

@@ -266,7 +266,7 @@ pub(crate) async fn get(
                 .with_session(user_session)
                 .with_csrf(csrf_token.form_value());
 
-            Html(templates.render_upstream_oauth2_link_mismatch(&ctx).await?).into_response()
+            Html(templates.render_upstream_oauth2_link_mismatch(&ctx)?).into_response()
         }
 
         (Some(user_session), None) => {
@@ -275,7 +275,7 @@ pub(crate) async fn get(
                 .with_session(user_session)
                 .with_csrf(csrf_token.form_value());
 
-            Html(templates.render_upstream_oauth2_suggest_link(&ctx).await?).into_response()
+            Html(templates.render_upstream_oauth2_suggest_link(&ctx)?).into_response()
         }
 
         (None, Some(user_id)) => {
@@ -360,7 +360,7 @@ pub(crate) async fn get(
 
             let ctx = ctx.with_csrf(csrf_token.form_value());
 
-            Html(templates.render_upstream_oauth2_do_register(&ctx).await?).into_response()
+            Html(templates.render_upstream_oauth2_do_register(&ctx)?).into_response()
         }
     };
 

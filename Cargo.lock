@@ -203,6 +203,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2d098ff73c1ca148721f37baad5ea6a465a13f9573aba8641fbbbae8164a54e"
 
 [[package]]
+name = "arc-swap"
+version = "1.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bddcadddf5e9015d310179a59bb28c4d4b9920ad0f11e8e14dbadf654890c9a6"
+
+[[package]]
 name = "argon2"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3334,23 +3340,25 @@ name = "mas-templates"
 version = "0.2.0"
 dependencies = [
  "anyhow",
+ "arc-swap",
  "camino",
  "chrono",
  "http",
  "mas-data-model",
  "mas-router",
  "mas-spa",
+ "minijinja",
  "oauth2-types",
  "rand 0.8.5",
  "serde",
  "serde_json",
  "serde_urlencoded",
- "tera",
  "thiserror",
  "tokio",
  "tracing",
  "ulid",
  "url",
+ "walkdir",
 ]
 
 [[package]]
@@ -3414,6 +3422,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "memo-map"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "374c335b2df19e62d4cb323103473cbc6510980253119180de862d89184f6a83"
+
+[[package]]
 name = "memoffset"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3444,7 +3458,10 @@ version = "1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "80084fa3099f58b7afab51e5f92e24c2c2c68dcad26e96ad104bd6011570461d"
 dependencies = [
+ "memo-map",
+ "self_cell",
  "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -4905,6 +4922,12 @@ dependencies = [
  "core-foundation-sys",
  "libc",
 ]
+
+[[package]]
+name = "self_cell"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4c309e515543e67811222dbc9e3dd7e1056279b782e1dacffe4242b718734fb6"
 
 [[package]]
 name = "semver"

@@ -23,7 +23,7 @@ limitations under the License.
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>matrix-authentication-service</title>
     <script>
-      window.APP_CONFIG = JSON.parse("{{ app_config | json_encode | addslashes | safe }}");
+      window.APP_CONFIG = JSON.parse("{{ app_config | tojson | add_slashes | safe }}");
       (function () {
         const query = window.matchMedia("(prefers-color-scheme: dark)");
         function handleChange(list) {
@@ -38,7 +38,7 @@ limitations under the License.
         handleChange(query);
       })();
     </script>
-    {{ include_asset(path='src/main.tsx', preload=true) | indent(prefix="    ") | safe }}
+    {{ include_asset('src/main.tsx', preload=true) | indent(4) | safe }}
   </head>
 
   <body>

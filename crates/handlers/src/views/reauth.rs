@@ -81,7 +81,7 @@ pub(crate) async fn get(
     };
     let ctx = ctx.with_session(session).with_csrf(csrf_token.form_value());
 
-    let content = templates.render_reauth(&ctx).await?;
+    let content = templates.render_reauth(&ctx)?;
 
     Ok((cookie_jar, Html(content)).into_response())
 }
