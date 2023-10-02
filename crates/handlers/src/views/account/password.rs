@@ -88,7 +88,7 @@ async fn render(
         .with_session(session)
         .with_csrf(csrf_token.form_value());
 
-    let content = templates.render_account_password(&ctx).await?;
+    let content = templates.render_account_password(&ctx)?;
 
     Ok((cookie_jar, Html(content)).into_response())
 }

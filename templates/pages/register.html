@@ -26,37 +26,37 @@ limitations under the License.
       {% if form.errors is not empty %}
         {% for error in form.errors %}
           <div class="text-critical font-medium">
-            {{ errors::form_error_message(error=error) }}
+            {{ errors.form_error_message(error=error) }}
           </div>
         {% endfor %}
       {% endif %}
 
       <input type="hidden" name="csrf" value="{{ csrf_token }}" />
-      {{ field::input(label="Username", name="username", form_state=form, autocomplete="username", autocorrect="off", autocapitalize="none") }}
-      {{ field::input(label="Email", name="email", type="email", form_state=form, autocomplete="email") }}
-      {{ field::input(label="Password", name="password", type="password", form_state=form, autocomplete="new-password") }}
-      {{ field::input(label="Confirm Password", name="password_confirm", type="password", form_state=form, autocomplete="new-password") }}
+      {{ field.input(label="Username", name="username", form_state=form, autocomplete="username", autocorrect="off", autocapitalize="none") }}
+      {{ field.input(label="Email", name="email", type="email", form_state=form, autocomplete="email") }}
+      {{ field.input(label="Password", name="password", type="password", form_state=form, autocomplete="new-password") }}
+      {{ field.input(label="Confirm Password", name="password_confirm", type="password", form_state=form, autocomplete="new-password") }}
 
       {% if next and next.kind == "continue_authorization_grant" %}
         <div class="grid grid-cols-2 gap-4">
-          {{ back_to_client::link(
+          {{ back_to_client.link(
             text="Cancel",
             kind="destructive",
             uri=next.grant.redirect_uri,
             mode=next.grant.response_mode,
             params=dict(error="access_denied", state=next.grant.state)
           ) }}
-          {{ button::button(text="Next") }}
+          {{ button.button(text="Next") }}
         </div>
       {% else %}
         <div class="grid grid-cols-1 gap-4">    
-          {{ button::button(text="Next") }}
+          {{ button.button(text="Next") }}
         </div>
       {% endif %}
       <div class="text-center mt-4">
         Already have an account?
-        {% set params = next | safe_get(key="params") | to_params(prefix="?") %}
-        {{ button::link_text(text="Sign in instead", href="/login" ~ params) }}
+        {% set params = next["params"] | default({}) | to_params(prefix="?") %}
+        {{ button.link_text(text="Sign in instead", href="/login" ~ params) }}
       </div>
     </form>
   </section>

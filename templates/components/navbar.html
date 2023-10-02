@@ -24,12 +24,12 @@ limitations under the License.
           Signed in as <span class="font-semibold">{{ current_session.user.username }}</span>.
         </div>
 
-        {{ button::link(text="My account", href="/account/") }}
-        {{ logout::button(text="Sign out", csrf_token=csrf_token) }}
+        {{ button.link(text="My account", href="/account/") }}
+        {{ logout.button(text="Sign out", csrf_token=csrf_token) }}
       {% else %}
-        {{ button::link(text="Sign in", href="/login") }}
-        {{ button::link_outline(text="Create an account", href="/register") }}
+        {{ button.link(text="Sign in", href="/login") }}
+        {{ button.link_outline(text="Create an account", href="/register") }}
       {% endif %}
     </div>
   </nav>
-{% endmacro top %}
+{% endmacro %}

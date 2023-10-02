@@ -86,7 +86,7 @@ pub(crate) async fn get(
         .with_session(session)
         .with_csrf(csrf_token.form_value());
 
-    let content = templates.render_account_verify_email(&ctx).await?;
+    let content = templates.render_account_verify_email(&ctx)?;
 
     Ok((cookie_jar, Html(content)).into_response())
 }

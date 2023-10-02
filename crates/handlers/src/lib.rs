@@ -406,7 +406,7 @@ where
                     // Error responses should have an ErrorContext attached to them
                     let ext = response.extensions().get::<ErrorContext>();
                     if let Some(ctx) = ext {
-                        if let Ok(res) = templates.render_error(ctx).await {
+                        if let Ok(res) = templates.render_error(ctx) {
                             let (mut parts, _original_body) = response.into_parts();
                             parts.headers.remove(CONTENT_TYPE);
                             parts.headers.remove(CONTENT_LENGTH);
@@ -434,7 +434,7 @@ pub async fn fallback(
     let ctx = NotFoundContext::new(&method, version, &uri);
     // XXX: this should look at the Accept header and return JSON if requested
 
-    let res = templates.render_not_found(&ctx).await?;
+    let res = templates.render_not_found(&ctx)?;
 
     Ok((StatusCode::NOT_FOUND, Html(res)))
 }

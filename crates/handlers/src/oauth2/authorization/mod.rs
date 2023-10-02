@@ -420,7 +420,7 @@ pub(crate) async fn get(
                                 .with_session(user_session)
                                 .with_csrf(csrf_token.form_value());
 
-                            let content = templates.render_policy_violation(&ctx).await?;
+                            let content = templates.render_policy_violation(&ctx)?;
                             Html(content).into_response()
                         }
                         Err(GrantCompletionError::RequiresReauth) => {

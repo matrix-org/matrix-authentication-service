@@ -162,7 +162,7 @@ pub(crate) async fn get(
                 .with_session(session)
                 .with_csrf(csrf_token.form_value());
 
-            let content = templates.render_policy_violation(&ctx).await?;
+            let content = templates.render_policy_violation(&ctx)?;
 
             Ok((cookie_jar, Html(content)).into_response())
         }

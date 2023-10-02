@@ -63,27 +63,18 @@ impl Mailer {
             .reply_to(self.reply_to.clone())
     }
 
-    async fn prepare_verification_email(
+    fn prepare_verification_email(
         &self,
         to: Mailbox,
         context: &EmailVerificationContext,
     ) -> Result<Message, Error> {
-        let plain = self
-            .templates
-            .render_email_verification_txt(context)
-            .await?;
+        let plain = self.templates.render_email_verification_txt(context)?;
 
-        let html = self
-            .templates
-            .render_email_verification_html(context)
-            .await?;
+        let html = self.templates.render_email_verification_html(context)?;
 
         let multipart = MultiPart::alternative_plain_html(plain, html);
 
-        let subject = self
-            .templates
-            .render_email_verification_subject(context)
-            .await?;
+        let subject = self.templates.render_email_verification_subject(context)?;
 
         let message = self
             .base_message()
@@ -115,7 +106,7 @@ impl Mailer {
         to: Mailbox,
         context: &EmailVerificationContext,
     ) -> Result<(), Error> {
-        let message = self.prepare_verification_email(to, context).await?;
+        let message = self.prepare_verification_email(to, context)?;
         self.transport.send(message).await?;
         Ok(())
     }

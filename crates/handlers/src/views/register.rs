@@ -252,7 +252,7 @@ async fn render(
     };
     let ctx = ctx.with_csrf(csrf_token.form_value());
 
-    let content = templates.render_register(&ctx).await?;
+    let content = templates.render_register(&ctx)?;
     Ok(content)
 }
 

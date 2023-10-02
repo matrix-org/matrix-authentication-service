@@ -23,7 +23,7 @@ limitations under the License.
   </head>
   <body onload="javascript:document.forms[0].submit()">
     <form method="post" action="{{ redirect_uri }}">
-      {% for key, value in params %}
+      {% for key, value in params|items %}
         <input type="hidden" name="{{ key }}" value="{{ value }}" />
       {% endfor %}
     </form>

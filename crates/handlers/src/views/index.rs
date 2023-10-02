@@ -47,7 +47,7 @@ pub async fn get(
         .maybe_with_session(session)
         .with_csrf(csrf_token.form_value());
 
-    let content = templates.render_index(&ctx).await?;
+    let content = templates.render_index(&ctx)?;
 
     tracing::info!("rendered index page");
 

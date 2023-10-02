@@ -36,7 +36,7 @@ limitations under the License.
             <div class="font-mono">{{ suggested_localpart }}</div>
           </div>
         {% else %}
-          {{ field::input(label="Username", name="username", autocomplete="username", autocorrect="off", autocapitalize="none") }}
+          {{ field.input(label="Username", name="username", autocomplete="username", autocorrect="off", autocapitalize="none") }}
         {% endif %}
 
         {% if suggested_email %}
@@ -67,14 +67,14 @@ limitations under the License.
           </div>
         {% endif %}
 
-        {{ button::button(text="Create a new account") }}
+        {{ button.button(text="Create a new account") }}
       </form>
       <div class="flex items-center">
         <hr class="flex-1" />
         <div class="mx-2">Or</div>
         <hr class="flex-1" />
       </div>
-      {{ button::link_outline(text="Link to an existing account", href=login_link) }}
+      {{ button.link_outline(text="Link to an existing account", href=login_link) }}
     </div>
   </section>
 {% endblock content %}
