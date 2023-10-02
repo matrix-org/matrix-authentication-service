@@ -14,43 +14,65 @@
 
 use mas_i18n::{translations::TranslationTree, Message};
 
+pub struct Context {
+    keys: Vec<Key>,
+    func: String,
+}
+
+impl Context {
+    pub fn new(func: String) -> Self {
+        Self {
+            keys: Vec::new(),
+            func,
+        }
+    }
+
+    pub fn record(&mut self, key: Key) {
+        self.keys.push(key);
+    }
+
+    pub fn func(&self) -> &str {
+        &self.func
+    }
+
+    pub fn add_missing(&self, translation_tree: &mut TranslationTree) {
+        for translatable in &self.keys {
+            let message = Message::from_literal(translatable.default_value());
+            let key = translatable
+                .key
+                .split('.')
+                .chain(if translatable.kind == Kind::Plural {
+                    Some("other")
+                } else {
+                    None
+                });
+
+            translation_tree.set_if_not_defined(key, message);
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum KeyKind {
+pub enum Kind {
     Message,
     Plural,
 }
 
 #[derive(Debug, Clone)]
 pub struct Key {
-    kind: KeyKind,
+    kind: Kind,
     key: String,
 }
 
 impl Key {
-    pub fn new(kind: KeyKind, key: String) -> Self {
+    pub fn new(kind: Kind, key: String) -> Self {
         Self { kind, key }
     }
 
     pub fn default_value(&self) -> String {
         match self.kind {
-            KeyKind::Message => self.key.clone(),
-            KeyKind::Plural => format!("%(count)d {}", self.key),
+            Kind::Message => self.key.clone(),
+            Kind::Plural => format!("%(count)d {}", self.key),
         }
-    }
-}
-
-pub fn add_missing(translation_tree: &mut TranslationTree, keys: &[Key]) {
-    for translatable in keys {
-        let message = Message::from_literal(translatable.default_value());
-        let key = translatable
-            .key
-            .split('.')
-            .chain(if translatable.kind == KeyKind::Plural {
-                Some("other")
-            } else {
-                None
-            });
-
-        translation_tree.set_if_not_defined(key, message);
     }
 }

@@ -17,17 +17,13 @@
 
 use std::fs::File;
 
-use ::tera::Tera;
 use camino::Utf8PathBuf;
 use clap::Parser;
-use key::add_missing;
+use key::Context;
 use mas_i18n::translations::TranslationTree;
-
-use crate::tera::find_keys;
 
 mod key;
 mod minijinja;
-mod tera;
 
 /// Scan a directory of templates for usage of the translation function and
 /// output a translation tree.
@@ -39,12 +35,12 @@ struct Options {
     /// Path of the existing translation file
     existing: Option<Utf8PathBuf>,
 
-    /// Whether to use minijinja instead of tera
-    #[clap(long)]
-    minijinja: bool,
+    /// The extensions of the templates
+    #[clap(long, default_value = "html,txt,subject")]
+    extensions: String,
 
     /// The name of the translation function
-    #[clap(long, default_value = "t")]
+    #[clap(long, default_value = "_")]
     function: String,
 }
 
@@ -53,6 +49,7 @@ fn main() {
 
     let options = Options::parse();
 
+    // Open the existing translation file if one was provided
     let mut tree = if let Some(path) = options.existing {
         let mut file = File::open(path).expect("Failed to open existing translation file");
         serde_json::from_reader(&mut file).expect("Failed to parse existing translation file")
@@ -60,36 +57,36 @@ fn main() {
         TranslationTree::default()
     };
 
-    let keys = if options.minijinja {
-        let mut keys = Vec::new();
-        for entry in walkdir::WalkDir::new(&options.templates) {
-            let entry = entry.unwrap();
-            let filename = entry.file_name().to_str().expect("Invalid filename");
-            if entry.file_type().is_file()
-                && (filename.ends_with(".html")
-                    || filename.ends_with(".txt")
-                    || filename.ends_with(".subject"))
-            {
-                let content = std::fs::read_to_string(entry.path()).unwrap();
-                match minijinja::parse(&content, filename) {
-                    Ok(ast) => {
-                        keys.extend(minijinja::find_in_stmt(&ast).unwrap());
-                    }
-                    Err(err) => {
-                        tracing::error!("Failed to parse {}: {}", entry.path().display(), err);
-                    }
+    let mut context = Context::new(options.function);
+
+    for entry in walkdir::WalkDir::new(&options.templates) {
+        let entry = entry.unwrap();
+        if !entry.file_type().is_file() {
+            continue;
+        }
+
+        let path: Utf8PathBuf = entry.into_path().try_into().expect("Non-UTF8 path");
+        let relative = path.strip_prefix(&options.templates).expect("Invalid path");
+
+        let Some(extension) = path.extension() else {
+            continue;
+        };
+
+        if options.extensions.split(',').any(|e| e == extension) {
+            tracing::debug!("Parsing {relative}");
+            let template = std::fs::read_to_string(&path).expect("Failed to read template");
+            match minijinja::parse(&template, relative.as_str()) {
+                Ok(ast) => {
+                    minijinja::find_in_stmt(&mut context, &ast).unwrap();
+                }
+                Err(err) => {
+                    tracing::error!("Failed to parse {relative}: {}", err);
                 }
             }
         }
-        keys
-    } else {
-        let glob = format!("{base}/**/*.{{html,txt,subject}}", base = options.templates);
-        tracing::debug!("Scanning templates in {}", glob);
-        let tera = Tera::new(&glob).expect("Failed to load templates");
+    }
 
-        find_keys(&tera, &options.function).unwrap()
-    };
-    add_missing(&mut tree, &keys);
+    context.add_missing(&mut tree);
 
     serde_json::to_writer_pretty(std::io::stdout(), &tree)
         .expect("Failed to write translation tree");

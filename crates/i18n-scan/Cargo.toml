@@ -12,7 +12,6 @@ camino.workspace = true
 clap.workspace = true
 minijinja = { workspace = true, features = ["unstable_machinery"] }
 serde_json.workspace = true
-tera.workspace = true
 tracing-subscriber.workspace = true
 tracing.workspace = true
 walkdir = "2.4.0"
