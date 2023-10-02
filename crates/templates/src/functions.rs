@@ -43,7 +43,6 @@ pub fn register(
     env.add_filter("add_slashes", filter_add_slashes);
     env.add_filter("split", filter_split);
     env.add_function("add_params_to_url", function_add_params_to_url);
-    //tera.register_function("merge", function_merge);
     env.add_global(
         "include_asset",
         Value::from_object(IncludeAsset {
@@ -182,20 +181,6 @@ fn function_add_params_to_url(
 
     Ok(uri.to_string())
 }
-
-/*
-fn function_merge(params: &HashMap<String, Value>) -> Result<Value, tera::Error> {
-    let mut ret = serde_json::Map::new();
-    for (k, v) in params {
-        let v = v
-            .as_object()
-            .ok_or_else(|| tera::Error::msg(format!("Parameter {k:?} should be an object")))?;
-        ret.extend(v.clone());
-    }
-
-    Ok(Value::Object(ret))
-}
- */
 
 #[derive(Debug)]
 struct IncludeAsset {

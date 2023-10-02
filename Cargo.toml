@@ -53,11 +53,6 @@ features = ["derive"] # Most of the time, if we need serde, we need derive
 [workspace.dependencies.serde_json]
 version = "1.0.107"
 
-# Templates
-[workspace.dependencies.tera]
-version = "1.19.1"
-default-features = false
-
 # Custom error types
 [workspace.dependencies.thiserror]
 version = "1.0.48"
