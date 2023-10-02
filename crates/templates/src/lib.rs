@@ -57,6 +57,14 @@ pub use self::{
     forms::{FieldError, FormError, FormField, FormState, ToFormState},
 };
 
+/// Escape the given string for use in HTML
+///
+/// It uses the same crate as the one used by the minijinja templates
+#[must_use]
+pub fn escape_html(input: &str) -> String {
+    v_htmlescape::escape(input).to_string()
+}
+
 /// Wrapper around [`minijinja::Environment`] helping rendering the various
 /// templates
 #[derive(Debug, Clone)]
