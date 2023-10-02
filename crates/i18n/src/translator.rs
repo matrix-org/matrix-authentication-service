@@ -297,6 +297,45 @@ impl Translator {
         let list = formatter.format_to_string(items);
         Ok(list)
     }
+
+    /// Get a list of available locales.
+    #[must_use]
+    pub fn available_locales(&self) -> Vec<&DataLocale> {
+        self.translations.keys().collect()
+    }
+
+    /// Check if a locale is available.
+    #[must_use]
+    pub fn has_locale(&self, locale: &DataLocale) -> bool {
+        self.translations.contains_key(locale)
+    }
+
+    /// Choose the best available locale from a list of candidates.
+    #[must_use]
+    pub fn choose_locale<'a>(
+        &self,
+        iter: impl Iterator<Item = &'a DataLocale>,
+    ) -> Option<DataLocale> {
+        for locale in iter {
+            let mut fallbacker = self
+                .fallbacker
+                .for_config(LocaleFallbackConfig::default())
+                .fallback_for(locale.clone());
+
+            loop {
+                if fallbacker.get().is_und() {
+                    break;
+                }
+
+                if self.has_locale(fallbacker.get()) {
+                    return Some(fallbacker.take());
+                }
+                fallbacker.step();
+            }
+        }
+
+        None
+    }
 }
 
 #[cfg(test)]

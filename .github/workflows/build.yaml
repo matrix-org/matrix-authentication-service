@@ -121,6 +121,7 @@ jobs:
             frontend/dist/
             policies/policy.wasm
             templates/
+            translations/
             LICENSE
 
 
@@ -251,6 +252,7 @@ jobs:
           mv artifacts/frontend/dist/manifest.json dist/share/manifest.json
           mv artifacts/frontend/dist/ dist/share/assets
           mv artifacts/templates/ dist/share/templates
+          mv artifacts/translations/ dist/share/translations
           mv artifacts/LICENSE dist/LICENSE
           chmod -R u=rwX,go=rX dist/
 

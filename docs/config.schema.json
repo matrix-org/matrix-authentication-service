@@ -199,7 +199,8 @@
       "description": "Configuration related to templates",
       "default": {
         "assets_manifest": "./frontend/dist/manifest.json",
-        "path": "./templates/"
+        "path": "./templates/",
+        "translations_path": "./translations/"
       },
       "allOf": [
         {
@@ -1917,6 +1918,11 @@
         "path": {
           "description": "Path to the folder which holds the templates",
           "default": "./templates/",
+          "type": "string"
+        },
+        "translations_path": {
+          "description": "Path to the translations",
+          "default": "./translations/",
           "type": "string"
         }
       }

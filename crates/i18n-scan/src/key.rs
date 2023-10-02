@@ -35,7 +35,8 @@ impl Context {
         &self.func
     }
 
-    pub fn add_missing(&self, translation_tree: &mut TranslationTree) {
+    pub fn add_missing(&self, translation_tree: &mut TranslationTree) -> usize {
+        let mut count = 0;
         for translatable in &self.keys {
             let message = Message::from_literal(translatable.default_value());
             let key = translatable
@@ -47,8 +48,11 @@ impl Context {
                     None
                 });
 
-            translation_tree.set_if_not_defined(key, message);
+            if translation_tree.set_if_not_defined(key, message) {
+                count += 1;
+            }
         }
+        count
     }
 }
 

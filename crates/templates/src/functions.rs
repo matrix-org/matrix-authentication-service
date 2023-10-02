@@ -19,10 +19,13 @@
 
 use std::{
     collections::{BTreeSet, HashMap},
+    fmt::Formatter,
     str::FromStr,
+    sync::Arc,
 };
 
 use camino::Utf8Path;
+use mas_i18n::{Argument, ArgumentList, DataLocale, Translator};
 use mas_router::UrlBuilder;
 use mas_spa::ViteManifest;
 use minijinja::{
@@ -35,6 +38,7 @@ pub fn register(
     env: &mut minijinja::Environment,
     url_builder: UrlBuilder,
     vite_manifest: ViteManifest,
+    translator: Translator,
 ) {
     env.add_test("empty", self::tester_empty);
     env.add_test("starting_with", tester_starting_with);
@@ -48,6 +52,12 @@ pub fn register(
         Value::from_object(IncludeAsset {
             url_builder,
             vite_manifest,
+        }),
+    );
+    env.add_global(
+        "_",
+        Value::from_object(Translate {
+            translations: Arc::new(translator),
         }),
     );
 }
@@ -182,10 +192,93 @@ fn function_add_params_to_url(
     Ok(uri.to_string())
 }
 
-#[derive(Debug)]
+struct Translate {
+    translations: Arc<Translator>,
+}
+
+impl std::fmt::Debug for Translate {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Translate")
+            .field("translations", &"..")
+            .finish()
+    }
+}
+
+impl std::fmt::Display for Translate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("translate")
+    }
+}
+
+impl Object for Translate {
+    fn call(&self, state: &State, args: &[Value]) -> Result<Value, Error> {
+        let lang = state.lookup("lang").ok_or(minijinja::Error::new(
+            ErrorKind::UndefinedError,
+            "`lang` is not set",
+        ))?;
+
+        let lang = lang.as_str().ok_or(minijinja::Error::new(
+            ErrorKind::InvalidOperation,
+            "`lang` is not a string",
+        ))?;
+
+        let lang: DataLocale = lang.parse().map_err(|e| {
+            Error::new(ErrorKind::InvalidOperation, "Could not parse `lang`").with_source(e)
+        })?;
+
+        let (key, kwargs): (&str, Kwargs) = from_args(args)?;
+
+        let (message, _locale) = if let Some(count) = kwargs.get("count")? {
+            self.translations
+                .plural_with_fallback(lang, key, count)
+                .ok_or(Error::new(
+                    ErrorKind::InvalidOperation,
+                    "Missing translation",
+                ))?
+        } else {
+            self.translations
+                .message_with_fallback(lang, key)
+                .ok_or(Error::new(
+                    ErrorKind::InvalidOperation,
+                    "Missing translation",
+                ))?
+        };
+
+        let res: Result<ArgumentList, Error> = kwargs
+            .args()
+            .map(|name| {
+                let value: Value = kwargs.get(name)?;
+                let value = serde_json::to_value(value).map_err(|e| {
+                    Error::new(ErrorKind::InvalidOperation, "Could not serialize argument")
+                        .with_source(e)
+                })?;
+
+                Ok::<_, Error>(Argument::named(name.to_owned(), value))
+            })
+            .collect();
+        let list = res?;
+
+        let formatted = message.format(&list).map_err(|e| {
+            Error::new(ErrorKind::InvalidOperation, "Could not format message").with_source(e)
+        })?;
+
+        // TODO: escape
+        Ok(Value::from_safe_string(formatted))
+    }
+}
+
 struct IncludeAsset {
     url_builder: UrlBuilder,
     vite_manifest: ViteManifest,
+}
+
+impl std::fmt::Debug for IncludeAsset {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("IncludeAsset")
+            .field("url_builder", &self.url_builder.assets_base())
+            .field("vite_manifest", &"..")
+            .finish()
+    }
 }
 
 impl std::fmt::Display for IncludeAsset {

@@ -31,5 +31,6 @@ rand.workspace = true
 
 oauth2-types = { path = "../oauth2-types" }
 mas-data-model = { path = "../data-model" }
+mas-i18n = { path = "../i18n" }
 mas-router = { path = "../router" }
 mas-spa = { path = "../spa" }

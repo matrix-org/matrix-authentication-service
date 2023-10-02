@@ -19,7 +19,9 @@ pub mod sprintf;
 pub mod translations;
 mod translator;
 
+pub use icu_provider::DataLocale;
+
 pub use self::{
     sprintf::{Argument, ArgumentList, Message},
-    translator::Translator,
+    translator::{LoadError, Translator},
 };

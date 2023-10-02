@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::fmt::Formatter;
+
 use pad::{Alignment, PadStr};
 use serde::Serialize;
 use serde_json::{ser::PrettyFormatter, Value};
@@ -482,6 +484,33 @@ fn format_value(value: &Value, placeholder: &Placeholder) -> Result<String, Form
     }
 }
 
+enum FormattedMessagePart<'a> {
+    Text(&'a str),
+    Placeholder(String),
+}
+
+impl std::fmt::Display for FormattedMessagePart<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FormattedMessagePart::Text(text) => write!(f, "{text}"),
+            FormattedMessagePart::Placeholder(placeholder) => write!(f, "{placeholder}"),
+        }
+    }
+}
+
+pub struct FormattedMessage<'a> {
+    parts: Vec<FormattedMessagePart<'a>>,
+}
+
+impl std::fmt::Display for FormattedMessage<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        for part in &self.parts {
+            write!(f, "{part}")?;
+        }
+        Ok(())
+    }
+}
+
 impl Message {
     /// Format the message with the given arguments.
     ///
@@ -490,19 +519,20 @@ impl Message {
     /// Returns an error if the message can't be formatted with the given
     /// arguments.
     pub fn format(&self, arguments: &ArgumentList) -> Result<String, FormatError> {
-        let mut buffer = String::new();
+        self.format_(arguments).map(|fm| fm.to_string())
+    }
+
+    #[doc(hidden)]
+    pub fn format_(&self, arguments: &ArgumentList) -> Result<FormattedMessage<'_>, FormatError> {
+        let mut parts = Vec::with_capacity(self.parts().len());
 
         // Holds the current index of the placeholder we are formatting, which is used
         // by non-named, non-indexed placeholders
         let mut current_placeholder = 0usize;
         for part in self.parts() {
-            match part {
-                Part::Percent => {
-                    buffer.push('%');
-                }
-                Part::Text(text) => {
-                    buffer.push_str(text);
-                }
+            let formatted = match part {
+                Part::Percent => FormattedMessagePart::Text("%"),
+                Part::Text(text) => FormattedMessagePart::Text(text),
                 Part::Placeholder(placeholder) => {
                     let value = find_value(
                         arguments,
@@ -529,13 +559,13 @@ impl Message {
                         formatted
                     };
 
-                    buffer.push_str(&formatted);
-
                     current_placeholder += 1;
+                    FormattedMessagePart::Placeholder(formatted)
                 }
-            }
+            };
+            parts.push(formatted);
         }
 
-        Ok(buffer)
+        Ok(FormattedMessage { parts })
     }
 }

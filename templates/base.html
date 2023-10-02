@@ -22,12 +22,14 @@ limitations under the License.
 {% import "components/errors.html" as errors %}
 {% import "components/icon.html" as icon %}
 {% import "components/scope.html" as scope %}
+{# TODO: detect the locale from the browser #}
+{% set lang = "en-US" %}
 
 <!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8">
-    <title>{% block title %}matrix-authentication-service{% endblock title %}</title>
+    <title>{% block title %}{{ _("app.name") }}{% endblock title %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     {{ include_asset('src/templates.css', preload=true) | indent(4) | safe }}
   </head>

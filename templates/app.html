@@ -15,13 +15,15 @@ limitations under the License.
 #}
 
 {# Must be kept in sync with frontend/index.html #}
+{# TODO: detect the locale from the browser #}
+{% set lang = "en-US" %}
 
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>matrix-authentication-service</title>
+    <title>{{ _("app.name") }}</title>
     <script>
       window.APP_CONFIG = JSON.parse("{{ app_config | tojson | add_slashes | safe }}");
       (function () {
