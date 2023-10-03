@@ -484,9 +484,20 @@ fn format_value(value: &Value, placeholder: &Placeholder) -> Result<String, Form
     }
 }
 
-enum FormattedMessagePart<'a> {
+pub enum FormattedMessagePart<'a> {
+    /// A literal text part of the message. It should not be escaped.
     Text(&'a str),
+    /// A placeholder part of the message. It should be escaped.
     Placeholder(String),
+}
+
+impl<'a> FormattedMessagePart<'a> {
+    fn len(&self) -> usize {
+        match self {
+            FormattedMessagePart::Text(text) => text.len(),
+            FormattedMessagePart::Placeholder(placeholder) => placeholder.len(),
+        }
+    }
 }
 
 impl std::fmt::Display for FormattedMessagePart<'_> {
@@ -500,6 +511,27 @@ impl std::fmt::Display for FormattedMessagePart<'_> {
 
 pub struct FormattedMessage<'a> {
     parts: Vec<FormattedMessagePart<'a>>,
+    total_len: usize,
+}
+
+impl FormattedMessage<'_> {
+    /// Returns the length of the formatted message (not the number of parts).
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.total_len
+    }
+
+    /// Returns `true` if the formatted message is empty.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.total_len == 0
+    }
+
+    /// Returns the list of parts of the formatted message.
+    #[must_use]
+    pub fn parts(&self) -> &[FormattedMessagePart<'_>] {
+        &self.parts
+    }
 }
 
 impl std::fmt::Display for FormattedMessage<'_> {
@@ -529,6 +561,8 @@ impl Message {
         // Holds the current index of the placeholder we are formatting, which is used
         // by non-named, non-indexed placeholders
         let mut current_placeholder = 0usize;
+        // Compute the total length of the formatted message
+        let mut total_len = 0usize;
         for part in self.parts() {
             let formatted = match part {
                 Part::Percent => FormattedMessagePart::Text("%"),
@@ -563,9 +597,10 @@ impl Message {
                     FormattedMessagePart::Placeholder(formatted)
                 }
             };
+            total_len += formatted.len();
             parts.push(formatted);
         }
 
-        Ok(FormattedMessage { parts })
+        Ok(FormattedMessage { parts, total_len })
     }
 }
