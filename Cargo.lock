@@ -2697,6 +2697,7 @@ dependencies = [
  "headers",
  "http",
  "http-body",
+ "icu_locid",
  "mas-data-model",
  "mas-http",
  "mas-iana",
