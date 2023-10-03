@@ -6,7 +6,7 @@ on:
     tags:
       - 'v*'
     paths-ignore: 
-      - 'tools/**'  
+      - 'tools/**'
 
   # Only run for pull requests if relevant files were changed
   pull_request:
