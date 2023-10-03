@@ -87,7 +87,7 @@ impl Context {
     pub fn set_key_location(&self, mut key: Key, span: Span) -> Key {
         if let Some(file) = &self.current_file {
             key.location = Some(Location {
-                file: file.to_owned(),
+                file: file.clone(),
                 span,
             });
         }

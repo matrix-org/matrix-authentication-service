@@ -287,7 +287,7 @@ impl Tree {
         next_key: K,
         mut path: I,
     ) -> Option<&Node> {
-        let next = self.inner.get(next_key.deref())?;
+        let next = self.inner.get(&*next_key)?;
 
         match path.next() {
             Some(next_key) => match &next.value {
