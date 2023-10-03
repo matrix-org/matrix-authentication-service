@@ -14,7 +14,7 @@
 
 pub use minijinja::machinery::parse;
 use minijinja::{
-    machinery::ast::{Call, Const, Expr, Macro, Stmt},
+    machinery::ast::{Call, Const, Expr, Macro, Spanned, Stmt},
     ErrorKind,
 };
 
@@ -113,7 +113,11 @@ fn find_in_macro<'a>(context: &mut Context, macro_: &'a Macro<'a>) -> Result<(),
     Ok(())
 }
 
-fn find_in_call<'a>(context: &mut Context, call: &'a Call<'a>) -> Result<(), minijinja::Error> {
+fn find_in_call<'a>(
+    context: &mut Context,
+    call: &'a Spanned<Call<'a>>,
+) -> Result<(), minijinja::Error> {
+    let span = call.span();
     if let Expr::Var(var_) = &call.expr {
         if var_.id == context.func() {
             let key = call
@@ -134,14 +138,18 @@ fn find_in_call<'a>(context: &mut Context, call: &'a Call<'a>) -> Result<(), min
                 }
             });
 
-            context.record(Key::new(
+            let key = Key::new(
                 if has_count {
                     crate::key::Kind::Plural
                 } else {
                     crate::key::Kind::Message
                 },
                 key.to_owned(),
-            ));
+            );
+
+            let key = context.set_key_location(key, span);
+
+            context.record(key);
         }
     }
 

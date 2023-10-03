@@ -82,6 +82,7 @@ fn main() {
             let template = std::fs::read_to_string(&path).expect("Failed to read template");
             match minijinja::parse(&template, relative.as_str()) {
                 Ok(ast) => {
+                    context.set_current_file(relative.as_str());
                     minijinja::find_in_stmt(&mut context, &ast).unwrap();
                 }
                 Err(err) => {
@@ -103,6 +104,7 @@ fn main() {
         let mut file = File::options()
             .write(true)
             .read(false)
+            .truncate(true)
             .open(
                 options
                     .existing

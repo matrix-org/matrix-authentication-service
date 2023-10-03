@@ -1,6 +1,26 @@
 {
   "app": {
     "human_name": "Matrix Authentication Service",
-    "name": "matrix-authentication-service"
+    "@human_name": {
+      "context": "pages/index.html:23:63-82",
+      "description": "Human readable name of the application"
+    },
+    "name": "matrix-authentication-service",
+    "@name": {
+      "context": "app.html:26:14-27, base.html:32:31-44",
+      "description": "Name of the application"
+    },
+    "technical_description": "OpenID Connect discovery document: <a class=\"cpd-link\" data-kind=\"primary\" href=\"%(discovery_url)s\">%(discovery_url)s</a>",
+    "@technical_description": {
+      "context": "pages/index.html:25:11-70",
+      "description": "Introduction text displayed on the home page"
+    }
+  },
+  "error": {
+    "unexpected": "Unexpected error",
+    "@unexpected": {
+      "context": "pages/error.html:22:41-62",
+      "description": "Error message displayed when an unexpected error occurs"
+    }
   }
 }
