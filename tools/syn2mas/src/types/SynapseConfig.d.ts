@@ -49,4 +49,5 @@ export interface SynapseConfig {
   enable_registration_captcha?: boolean;
   enable_registration?: boolean;
   user_consent?: {};
+  enable_3pid_changes?: boolean;
 }
