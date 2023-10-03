@@ -22,8 +22,7 @@ limitations under the License.
     <div class="my-2 mx-8">
       <h1 class="my-2 text-5xl font-semibold leading-tight">{{ _("app.human_name") }}</h1>
       <p class="text-lg">
-        OpenID Connect discovery document:
-        <a class="cpd-link" data-kind="primary" href="{{ discovery_url }}">{{ discovery_url }}</a>
+        {{ _("app.technical_description", discovery_url=discovery_url) }}
       </p>
     </div>
   </section>

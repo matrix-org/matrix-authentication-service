@@ -13,10 +13,12 @@
 // limitations under the License.
 
 use mas_i18n::{translations::TranslationTree, Message};
+use minijinja::machinery::Span;
 
 pub struct Context {
     keys: Vec<Key>,
     func: String,
+    current_file: Option<String>,
 }
 
 impl Context {
@@ -24,7 +26,12 @@ impl Context {
         Self {
             keys: Vec::new(),
             func,
+            current_file: None,
         }
+    }
+
+    pub fn set_current_file(&mut self, file: &str) {
+        self.current_file = Some(file.to_owned());
     }
 
     pub fn record(&mut self, key: Key) {
@@ -39,6 +46,28 @@ impl Context {
         let mut count = 0;
         for translatable in &self.keys {
             let message = Message::from_literal(translatable.default_value());
+
+            let location = translatable.location.as_ref().map(|location| {
+                if location.span.start_line == location.span.end_line {
+                    format!(
+                        "{}:{}:{}-{}",
+                        location.file,
+                        location.span.start_line,
+                        location.span.start_col,
+                        location.span.end_col
+                    )
+                } else {
+                    format!(
+                        "{}:{}:{}-{}:{}",
+                        location.file,
+                        location.span.start_line,
+                        location.span.start_col,
+                        location.span.end_line,
+                        location.span.end_col
+                    )
+                }
+            });
+
             let key = translatable
                 .key
                 .split('.')
@@ -48,11 +77,22 @@ impl Context {
                     None
                 });
 
-            if translation_tree.set_if_not_defined(key, message) {
+            if translation_tree.set_if_not_defined(key, message, location) {
                 count += 1;
             }
         }
         count
+    }
+
+    pub fn set_key_location(&self, mut key: Key, span: Span) -> Key {
+        if let Some(file) = &self.current_file {
+            key.location = Some(Location {
+                file: file.to_owned(),
+                span,
+            });
+        }
+
+        key
     }
 }
 
@@ -63,14 +103,25 @@ pub enum Kind {
 }
 
 #[derive(Debug, Clone)]
+pub struct Location {
+    file: String,
+    span: Span,
+}
+
+#[derive(Debug, Clone)]
 pub struct Key {
     kind: Kind,
     key: String,
+    location: Option<Location>,
 }
 
 impl Key {
     pub fn new(kind: Kind, key: String) -> Self {
-        Self { kind, key }
+        Self {
+            kind,
+            key,
+            location: None,
+        }
     }
 
     pub fn default_value(&self) -> String {

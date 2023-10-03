@@ -80,4 +80,4 @@ text = @{ (!start ~ ANY)+ }
 
 start = _{ "%" }
 number = @{ ASCII_NONZERO_DIGIT ~ ASCII_DIGIT* }
-ident = @{ ASCII_ALPHA ~ ASCII_ALPHANUMERIC* }
+ident = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_")* }
