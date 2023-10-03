@@ -19,10 +19,9 @@ mod formatter;
 mod message;
 mod parser;
 
-use thiserror::Error;
-
 pub use self::{
     argument::{Argument, List as ArgumentList},
+    formatter::{FormatError, FormattedMessage, FormattedMessagePart},
     message::Message,
 };
 
@@ -79,7 +78,7 @@ pub(crate) use arg_list_inner;
 #[allow(unused_imports)]
 pub(crate) use sprintf;
 
-#[derive(Debug, Error)]
+#[derive(Debug, thiserror::Error)]
 #[error(transparent)]
 enum Error {
     Format(#[from] self::formatter::FormatError),

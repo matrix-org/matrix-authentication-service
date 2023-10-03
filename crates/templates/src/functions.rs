@@ -25,10 +25,12 @@ use std::{
 };
 
 use camino::Utf8Path;
-use mas_i18n::{Argument, ArgumentList, DataLocale, Translator};
+use mas_i18n::{sprintf::FormattedMessagePart, Argument, ArgumentList, DataLocale, Translator};
 use mas_router::UrlBuilder;
 use mas_spa::ViteManifest;
 use minijinja::{
+    escape_formatter,
+    machinery::make_string_output,
     value::{from_args, Kwargs, Object, SeqObject, ViaDeserialize},
     Error, ErrorKind, State, Value,
 };
@@ -258,12 +260,26 @@ impl Object for Translate {
             .collect();
         let list = res?;
 
-        let formatted = message.format(&list).map_err(|e| {
+        let formatted = message.format_(&list).map_err(|e| {
             Error::new(ErrorKind::InvalidOperation, "Could not format message").with_source(e)
         })?;
 
-        // TODO: escape
-        Ok(Value::from_safe_string(formatted))
+        let mut buf = String::with_capacity(formatted.len());
+        let mut output = make_string_output(&mut buf);
+        for part in formatted.parts() {
+            match part {
+                FormattedMessagePart::Text(text) => {
+                    // Literal text, just write it
+                    output.write_str(text)?;
+                }
+                FormattedMessagePart::Placeholder(placeholder) => {
+                    // Placeholder, escape it
+                    escape_formatter(&mut output, state, &placeholder.as_str().into())?;
+                }
+            }
+        }
+
+        Ok(Value::from_safe_string(buf))
     }
 }
 
