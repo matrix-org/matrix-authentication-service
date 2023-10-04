@@ -37,6 +37,8 @@ use mas_templates::{CompatSsoContext, ErrorContext, TemplateContext, Templates};
 use serde::{Deserialize, Serialize};
 use ulid::Ulid;
 
+use crate::PreferredLanguage;
+
 #[derive(Serialize)]
 struct AllParams<'s> {
     #[serde(flatten)]
@@ -58,6 +60,7 @@ pub struct Params {
     err,
 )]
 pub async fn get(
+    PreferredLanguage(locale): PreferredLanguage,
     mut rng: BoxRng,
     clock: BoxClock,
     mut repo: BoxRepository,
@@ -110,7 +113,8 @@ pub async fn get(
 
     let ctx = CompatSsoContext::new(login)
         .with_session(session)
-        .with_csrf(csrf_token.form_value());
+        .with_csrf(csrf_token.form_value())
+        .with_language(locale);
 
     let content = templates.render_sso_login(&ctx)?;
 

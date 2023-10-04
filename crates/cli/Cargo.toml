@@ -53,6 +53,7 @@ mas-email = { path = "../email" }
 mas-graphql = { path = "../graphql" }
 mas-handlers = { path = "../handlers", default-features = false }
 mas-http = { path = "../http", default-features = false, features = ["axum", "client"] }
+mas-i18n = { path = "../i18n" }
 mas-iana = { path = "../iana" }
 mas-keystore = { path = "../keystore" }
 mas-listener = { path = "../listener" }

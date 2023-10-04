@@ -45,7 +45,7 @@ impl Context {
     pub fn add_missing(&self, translation_tree: &mut TranslationTree) -> usize {
         let mut count = 0;
         for translatable in &self.keys {
-            let message = Message::from_literal(translatable.default_value());
+            let message = Message::from_literal(String::new());
 
             let location = translatable.location.as_ref().map(|location| {
                 if location.span.start_line == location.span.end_line {
@@ -121,13 +121,6 @@ impl Key {
             kind,
             key,
             location: None,
-        }
-    }
-
-    pub fn default_value(&self) -> String {
-        match self.kind {
-            Kind::Message => self.key.clone(),
-            Kind::Plural => format!("%(count)d {}", self.key),
         }
     }
 }

@@ -23,6 +23,7 @@ use mas_handlers::{
     passwords::PasswordManager, ActivityTracker, BoundActivityTracker, CookieManager, ErrorWrapper,
     HttpClientFactory, MatrixHomeserver, MetadataCache, SiteConfig,
 };
+use mas_i18n::Translator;
 use mas_keystore::{Encrypter, Keystore};
 use mas_policy::{Policy, PolicyFactory};
 use mas_router::UrlBuilder;
@@ -149,6 +150,12 @@ impl FromRef<AppState> for mas_graphql::Schema {
 impl FromRef<AppState> for Templates {
     fn from_ref(input: &AppState) -> Self {
         input.templates.clone()
+    }
+}
+
+impl FromRef<AppState> for Arc<Translator> {
+    fn from_ref(input: &AppState) -> Self {
+        input.templates.translator()
     }
 }
 

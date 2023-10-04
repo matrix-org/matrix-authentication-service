@@ -40,7 +40,7 @@ pub fn register(
     env: &mut minijinja::Environment,
     url_builder: UrlBuilder,
     vite_manifest: ViteManifest,
-    translator: Translator,
+    translator: Arc<Translator>,
 ) {
     env.add_test("empty", self::tester_empty);
     env.add_test("starting_with", tester_starting_with);
@@ -56,12 +56,7 @@ pub fn register(
             vite_manifest,
         }),
     );
-    env.add_global(
-        "_",
-        Value::from_object(Translate {
-            translations: Arc::new(translator),
-        }),
-    );
+    env.add_global("_", Value::from_object(Translate { translator }));
 }
 
 fn tester_empty(seq: &dyn SeqObject) -> bool {
@@ -195,7 +190,7 @@ fn function_add_params_to_url(
 }
 
 struct Translate {
-    translations: Arc<Translator>,
+    translator: Arc<Translator>,
 }
 
 impl std::fmt::Debug for Translate {
@@ -231,14 +226,14 @@ impl Object for Translate {
         let (key, kwargs): (&str, Kwargs) = from_args(args)?;
 
         let (message, _locale) = if let Some(count) = kwargs.get("count")? {
-            self.translations
+            self.translator
                 .plural_with_fallback(lang, key, count)
                 .ok_or(Error::new(
                     ErrorKind::InvalidOperation,
                     "Missing translation",
                 ))?
         } else {
-            self.translations
+            self.translator
                 .message_with_fallback(lang, key)
                 .ok_or(Error::new(
                     ErrorKind::InvalidOperation,

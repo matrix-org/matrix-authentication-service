@@ -25,6 +25,7 @@ use mas_axum_utils::{
     FancyError, SessionInfoExt,
 };
 use mas_data_model::BrowserSession;
+use mas_i18n::DataLocale;
 use mas_router::{Route, UpstreamOAuth2Authorize};
 use mas_storage::{
     upstream_oauth2::UpstreamOAuthProviderRepository,
@@ -39,7 +40,7 @@ use serde::{Deserialize, Serialize};
 use zeroize::Zeroizing;
 
 use super::shared::OptionalPostAuthAction;
-use crate::{passwords::PasswordManager, BoundActivityTracker};
+use crate::{passwords::PasswordManager, BoundActivityTracker, PreferredLanguage};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub(crate) struct LoginForm {
@@ -55,6 +56,7 @@ impl ToFormState for LoginForm {
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
+    PreferredLanguage(locale): PreferredLanguage,
     State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
     mut repo: BoxRepository,
@@ -93,6 +95,7 @@ pub(crate) async fn get(
     };
 
     let content = render(
+        locale,
         LoginContext::default()
             // XXX: we might want to have a site-wide config in the templates context instead?
             .with_password_login(password_manager.is_enabled())
@@ -111,6 +114,7 @@ pub(crate) async fn get(
 pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
+    PreferredLanguage(locale): PreferredLanguage,
     State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
     mut repo: BoxRepository,
@@ -148,6 +152,7 @@ pub(crate) async fn post(
     if !state.is_valid() {
         let providers = repo.upstream_oauth_provider().all().await?;
         let content = render(
+            locale,
             LoginContext::default()
                 .with_form_state(state)
                 .with_upstream_providers(providers),
@@ -187,6 +192,7 @@ pub(crate) async fn post(
             let state = state.with_error_on_form(e);
 
             let content = render(
+                locale,
                 LoginContext::default().with_form_state(state),
                 query,
                 csrf_token,
@@ -275,6 +281,7 @@ async fn login(
 }
 
 async fn render(
+    locale: DataLocale,
     ctx: LoginContext,
     action: OptionalPostAuthAction,
     csrf_token: CsrfToken,
@@ -287,7 +294,7 @@ async fn render(
     } else {
         ctx
     };
-    let ctx = ctx.with_csrf(csrf_token.form_value());
+    let ctx = ctx.with_csrf(csrf_token.form_value()).with_language(locale);
 
     let content = templates.render_login(&ctx)?;
     Ok(content)

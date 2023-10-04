@@ -50,6 +50,13 @@ pub struct AcceptLanguage {
     parts: Vec<AcceptLanguagePart>,
 }
 
+impl AcceptLanguage {
+    pub fn iter(&self) -> impl Iterator<Item = &Locale> {
+        // This should stop when we hit the first None, aka the first *
+        self.parts.iter().map_while(|item| item.locale.as_ref())
+    }
+}
+
 /// Utility to trim ASCII whitespace from the start and end of a byte slice
 const fn trim_bytes(mut bytes: &[u8]) -> &[u8] {
     // Trim leading and trailing whitespace

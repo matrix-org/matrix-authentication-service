@@ -42,7 +42,7 @@ use thiserror::Error;
 use ulid::Ulid;
 
 use super::UpstreamSessionsCookie;
-use crate::{impl_from_error_for_route, views::shared::OptionalPostAuthAction};
+use crate::{impl_from_error_for_route, views::shared::OptionalPostAuthAction, PreferredLanguage};
 
 #[derive(Debug, Error)]
 pub(crate) enum RouteError {
@@ -189,6 +189,7 @@ pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
     mut repo: BoxRepository,
+    PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
     cookie_jar: CookieJar,
     user_agent: Option<TypedHeader<headers::UserAgent>>,
@@ -264,7 +265,8 @@ pub(crate) async fn get(
 
             let ctx = UpstreamExistingLinkContext::new(user)
                 .with_session(user_session)
-                .with_csrf(csrf_token.form_value());
+                .with_csrf(csrf_token.form_value())
+                .with_language(locale);
 
             Html(templates.render_upstream_oauth2_link_mismatch(&ctx)?).into_response()
         }
@@ -273,7 +275,8 @@ pub(crate) async fn get(
             // Session not linked, but user logged in: suggest linking account
             let ctx = UpstreamSuggestLink::new(&link)
                 .with_session(user_session)
-                .with_csrf(csrf_token.form_value());
+                .with_csrf(csrf_token.form_value())
+                .with_language(locale);
 
             Html(templates.render_upstream_oauth2_suggest_link(&ctx)?).into_response()
         }
@@ -358,7 +361,7 @@ pub(crate) async fn get(
                 },
             )?;
 
-            let ctx = ctx.with_csrf(csrf_token.form_value());
+            let ctx = ctx.with_csrf(csrf_token.form_value()).with_language(locale);
 
             Html(templates.render_upstream_oauth2_do_register(&ctx)?).into_response()
         }

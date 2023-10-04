@@ -53,7 +53,7 @@ use mas_keystore::{Encrypter, Keystore};
 use mas_policy::Policy;
 use mas_router::{Route, UrlBuilder};
 use mas_storage::{BoxClock, BoxRepository, BoxRng};
-use mas_templates::{ErrorContext, NotFoundContext, Templates};
+use mas_templates::{ErrorContext, NotFoundContext, TemplateContext, Templates};
 use passwords::PasswordManager;
 use sqlx::PgPool;
 use tower::util::AndThenLayer;
@@ -68,6 +68,7 @@ pub mod upstream_oauth2;
 mod views;
 
 mod activity_tracker;
+mod preferred_language;
 mod site_config;
 #[cfg(test)]
 mod test_utils;
@@ -96,6 +97,7 @@ pub use self::{
     activity_tracker::{ActivityTracker, Bound as BoundActivityTracker},
     compat::MatrixHomeserver,
     graphql::schema as graphql_schema,
+    preferred_language::PreferredLanguage,
     site_config::SiteConfig,
     upstream_oauth2::cache::MetadataCache,
 };
@@ -295,6 +297,7 @@ where
     <B as HttpBody>::Error: std::error::Error + Send + Sync,
     S: Clone + Send + Sync + 'static,
     UrlBuilder: FromRef<S>,
+    PreferredLanguage: FromRequestParts<S>,
     BoxRepository: FromRequestParts<S>,
     CookieJar: FromRequestParts<S>,
     BoundActivityTracker: FromRequestParts<S>,
@@ -430,8 +433,9 @@ pub async fn fallback(
     OriginalUri(uri): OriginalUri,
     method: Method,
     version: Version,
+    PreferredLanguage(locale): PreferredLanguage,
 ) -> Result<impl IntoResponse, FancyError> {
-    let ctx = NotFoundContext::new(&method, version, &uri);
+    let ctx = NotFoundContext::new(&method, version, &uri).with_language(locale);
     // XXX: this should look at the Accept header and return JSON if requested
 
     let res = templates.render_not_found(&ctx)?;
