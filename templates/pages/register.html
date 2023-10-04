@@ -20,8 +20,8 @@ limitations under the License.
   <section class="flex items-center justify-center flex-1">
     <form method="POST" class="grid grid-cols-1 gap-6 w-96 my-2 mx-8">
       <div class="text-center">
-        <h1 class="text-lg text-center font-medium">Create an account</h1>
-        <p>Please create an account to get started:</p>
+        <h1 class="text-lg text-center font-medium">{{ _("mas.register.create_account.heading") }}</h1>
+        <p>{{ _("mas.register.create_account.description") }}</p>
       </div>
       {% if form.errors is not empty %}
         {% for error in form.errors %}
@@ -32,31 +32,31 @@ limitations under the License.
       {% endif %}
 
       <input type="hidden" name="csrf" value="{{ csrf_token }}" />
-      {{ field.input(label="Username", name="username", form_state=form, autocomplete="username", autocorrect="off", autocapitalize="none") }}
-      {{ field.input(label="Email", name="email", type="email", form_state=form, autocomplete="email") }}
-      {{ field.input(label="Password", name="password", type="password", form_state=form, autocomplete="new-password") }}
-      {{ field.input(label="Confirm Password", name="password_confirm", type="password", form_state=form, autocomplete="new-password") }}
+      {{ field.input(label=_("common.username"), name="username", form_state=form, autocomplete="username", autocorrect="off", autocapitalize="none") }}
+      {{ field.input(label=_("common.email_address"), name="email", type="email", form_state=form, autocomplete="email") }}
+      {{ field.input(label=_("common.password"), name="password", type="password", form_state=form, autocomplete="new-password") }}
+      {{ field.input(label=_("common.password_confirm"), name="password_confirm", type="password", form_state=form, autocomplete="new-password") }}
 
       {% if next and next.kind == "continue_authorization_grant" %}
         <div class="grid grid-cols-2 gap-4">
           {{ back_to_client.link(
-            text="Cancel",
+            text=_("action.cancel"),
             kind="destructive",
             uri=next.grant.redirect_uri,
             mode=next.grant.response_mode,
             params=dict(error="access_denied", state=next.grant.state)
           ) }}
-          {{ button.button(text="Next") }}
+          {{ button.button(text=_("action.continue")) }}
         </div>
       {% else %}
         <div class="grid grid-cols-1 gap-4">    
-          {{ button.button(text="Next") }}
+          {{ button.button(text=_("action.continue")) }}
         </div>
       {% endif %}
       <div class="text-center mt-4">
-        Already have an account?
+        {{ _("mas.register.already_have_account") }}
         {% set params = next["params"] | default({}) | to_params(prefix="?") %}
-        {{ button.link_text(text="Sign in instead", href="/login" ~ params) }}
+        {{ button.link_text(text=_("mas.register.sign_in_instead"), href="/login" ~ params) }}
       </div>
     </form>
   </section>
