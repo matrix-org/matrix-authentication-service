@@ -3,12 +3,8 @@ name: Coverage
 on:
   push:
     branches: [ main ]
-    paths-ignore: 
-      - 'tools/**'
   pull_request:
     branches: [ main ]
-    paths-ignore: 
-      - 'tools/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
