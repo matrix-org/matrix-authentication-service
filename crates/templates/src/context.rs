@@ -20,6 +20,7 @@ use mas_data_model::{
     AuthorizationGrant, BrowserSession, Client, CompatSsoLogin, CompatSsoLoginState,
     UpstreamOAuthLink, UpstreamOAuthProvider, User, UserEmail, UserEmailVerification,
 };
+use mas_i18n::DataLocale;
 use mas_router::{PostAuthAction, Route};
 use rand::Rng;
 use serde::{ser::SerializeStruct, Deserialize, Serialize};
@@ -68,6 +69,17 @@ pub trait TemplateContext: Serialize {
         }
     }
 
+    /// Attach a language to the template context
+    fn with_language(self, lang: DataLocale) -> WithLanguage<Self>
+    where
+        Self: Sized,
+    {
+        WithLanguage {
+            lang: lang.to_string(),
+            inner: self,
+        }
+    }
+
     /// Generate sample values for this context type
     ///
     /// This is then used to check for template validity in unit tests and in
@@ -83,6 +95,30 @@ impl TemplateContext for () {
         Self: Sized,
     {
         Vec::new()
+    }
+}
+
+/// Context with a specified locale in it
+#[derive(Serialize)]
+pub struct WithLanguage<T> {
+    lang: String,
+
+    #[serde(flatten)]
+    inner: T,
+}
+
+impl<T: TemplateContext> TemplateContext for WithLanguage<T> {
+    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        T::sample(now, rng)
+            .into_iter()
+            .map(|inner| WithLanguage {
+                lang: "en".into(),
+                inner,
+            })
+            .collect()
     }
 }
 

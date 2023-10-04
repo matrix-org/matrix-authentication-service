@@ -32,7 +32,7 @@ use mas_templates::{EmailVerificationPageContext, TemplateContext, Templates};
 use serde::Deserialize;
 use ulid::Ulid;
 
-use crate::{views::shared::OptionalPostAuthAction, BoundActivityTracker};
+use crate::{views::shared::OptionalPostAuthAction, BoundActivityTracker, PreferredLanguage};
 
 #[derive(Deserialize, Debug)]
 pub struct CodeForm {
@@ -48,6 +48,7 @@ pub struct CodeForm {
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
+    PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
     activity_tracker: BoundActivityTracker,
     mut repo: BoxRepository,
@@ -84,7 +85,8 @@ pub(crate) async fn get(
 
     let ctx = EmailVerificationPageContext::new(user_email)
         .with_session(session)
-        .with_csrf(csrf_token.form_value());
+        .with_csrf(csrf_token.form_value())
+        .with_language(locale);
 
     let content = templates.render_account_verify_email(&ctx)?;
 

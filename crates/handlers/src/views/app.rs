@@ -19,12 +19,13 @@ use axum::{
 use mas_axum_utils::{cookies::CookieJar, FancyError, SessionInfoExt};
 use mas_router::{PostAuthAction, Route};
 use mas_storage::{BoxClock, BoxRepository};
-use mas_templates::{AppContext, Templates};
+use mas_templates::{AppContext, TemplateContext, Templates};
 
-use crate::BoundActivityTracker;
+use crate::{BoundActivityTracker, PreferredLanguage};
 
 #[tracing::instrument(name = "handlers.views.app.get", skip_all, err)]
 pub async fn get(
+    PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
     activity_tracker: BoundActivityTracker,
     action: Option<Query<mas_router::AccountAction>>,
@@ -49,7 +50,7 @@ pub async fn get(
         .record_browser_session(&clock, &session)
         .await;
 
-    let ctx = AppContext::default();
+    let ctx = AppContext::default().with_language(locale);
     let content = templates.render_app(&ctx)?;
 
     Ok((cookie_jar, Html(content)).into_response())

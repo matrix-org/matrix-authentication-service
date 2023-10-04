@@ -29,7 +29,7 @@ use std::{collections::HashSet, sync::Arc};
 use anyhow::Context as _;
 use arc_swap::ArcSwap;
 use camino::{Utf8Path, Utf8PathBuf};
-use mas_i18n::Translator;
+use mas_i18n::{Translator};
 use mas_router::UrlBuilder;
 use mas_spa::ViteManifest;
 use rand::Rng;
@@ -53,7 +53,7 @@ pub use self::{
         LoginContext, LoginFormField, NotFoundContext, PolicyViolationContext, PostAuthContext,
         PostAuthContextInner, ReauthContext, ReauthFormField, RegisterContext, RegisterFormField,
         TemplateContext, UpstreamExistingLinkContext, UpstreamRegister, UpstreamSuggestLink,
-        WithCsrf, WithOptionalSession, WithSession,
+        WithCsrf, WithLanguage, WithOptionalSession, WithSession,
     },
     forms::{FieldError, FormError, FormField, FormState, ToFormState},
 };
@@ -71,6 +71,7 @@ pub fn escape_html(input: &str) -> String {
 #[derive(Debug, Clone)]
 pub struct Templates {
     environment: Arc<ArcSwap<minijinja::Environment<'static>>>,
+    translator: Arc<ArcSwap<Translator>>,
     url_builder: UrlBuilder,
     vite_manifest_path: Utf8PathBuf,
     translations_path: Utf8PathBuf,
@@ -151,7 +152,7 @@ impl Templates {
         vite_manifest_path: Utf8PathBuf,
         translations_path: Utf8PathBuf,
     ) -> Result<Self, TemplateLoadingError> {
-        let environment = Self::load_(
+        let (translator, environment) = Self::load_(
             &path,
             url_builder.clone(),
             &vite_manifest_path,
@@ -159,7 +160,8 @@ impl Templates {
         )
         .await?;
         Ok(Self {
-            environment: Arc::new(ArcSwap::from_pointee(environment)),
+            environment: Arc::new(ArcSwap::new(environment)),
+            translator: Arc::new(ArcSwap::new(translator)),
             path,
             url_builder,
             vite_manifest_path,
@@ -172,7 +174,7 @@ impl Templates {
         url_builder: UrlBuilder,
         vite_manifest_path: &Utf8Path,
         translations_path: &Utf8Path,
-    ) -> Result<minijinja::Environment<'static>, TemplateLoadingError> {
+    ) -> Result<(Arc<Translator>, Arc<minijinja::Environment<'static>>), TemplateLoadingError> {
         let path = path.to_owned();
         let span = tracing::Span::current();
 
@@ -189,6 +191,7 @@ impl Templates {
         let translator =
             tokio::task::spawn_blocking(move || Translator::load_from_path(&translations_path))
                 .await??;
+        let translator = Arc::new(translator);
 
         let (loaded, mut env) = tokio::task::spawn_blocking(move || {
             span.in_scope(move || {
@@ -223,14 +226,21 @@ impl Templates {
         })
         .await??;
 
-        self::functions::register(&mut env, url_builder, vite_manifest, translator);
+        self::functions::register(
+            &mut env,
+            url_builder,
+            vite_manifest,
+            Arc::clone(&translator),
+        );
+
+        let env = Arc::new(env);
 
         let needed: HashSet<_> = TEMPLATES.into_iter().map(ToOwned::to_owned).collect();
         debug!(?loaded, ?needed, "Templates loaded");
         let missing: HashSet<_> = needed.difference(&loaded).cloned().collect();
 
         if missing.is_empty() {
-            Ok(env)
+            Ok((translator, env))
         } else {
             Err(TemplateLoadingError::MissingTemplates { missing, loaded })
         }
@@ -244,7 +254,7 @@ impl Templates {
         err,
     )]
     pub async fn reload(&self) -> Result<(), TemplateLoadingError> {
-        let new_minijinja = Self::load_(
+        let (translator, environment) = Self::load_(
             &self.path,
             self.url_builder.clone(),
             &self.vite_manifest_path,
@@ -252,10 +262,17 @@ impl Templates {
         )
         .await?;
 
-        // Swap it
-        self.environment.store(Arc::new(new_minijinja));
+        // Swap them
+        self.environment.store(environment);
+        self.translator.store(translator);
 
         Ok(())
+    }
+
+    /// Get the translator
+    #[must_use]
+    pub fn translator(&self) -> Arc<Translator> {
+        self.translator.load_full()
     }
 }
 
@@ -287,40 +304,40 @@ pub enum TemplateError {
 
 register_templates! {
     /// Render the not found fallback page
-    pub fn render_not_found(NotFoundContext) { "pages/404.html" }
+    pub fn render_not_found(WithLanguage<NotFoundContext>) { "pages/404.html" }
 
     /// Render the frontend app
-    pub fn render_app(AppContext) { "app.html" }
+    pub fn render_app(WithLanguage<AppContext>) { "app.html" }
 
     /// Render the login page
-    pub fn render_login(WithCsrf<LoginContext>) { "pages/login.html" }
+    pub fn render_login(WithLanguage<WithCsrf<LoginContext>>) { "pages/login.html" }
 
     /// Render the registration page
-    pub fn render_register(WithCsrf<RegisterContext>) { "pages/register.html" }
+    pub fn render_register(WithLanguage<WithCsrf<RegisterContext>>) { "pages/register.html" }
 
     /// Render the client consent page
-    pub fn render_consent(WithCsrf<WithSession<ConsentContext>>) { "pages/consent.html" }
+    pub fn render_consent(WithLanguage<WithCsrf<WithSession<ConsentContext>>>) { "pages/consent.html" }
 
     /// Render the policy violation page
-    pub fn render_policy_violation(WithCsrf<WithSession<PolicyViolationContext>>) { "pages/policy_violation.html" }
+    pub fn render_policy_violation(WithLanguage<WithCsrf<WithSession<PolicyViolationContext>>>) { "pages/policy_violation.html" }
 
     /// Render the legacy SSO login consent page
-    pub fn render_sso_login(WithCsrf<WithSession<CompatSsoContext>>) { "pages/sso.html" }
+    pub fn render_sso_login(WithLanguage<WithCsrf<WithSession<CompatSsoContext>>>) { "pages/sso.html" }
 
     /// Render the home page
-    pub fn render_index(WithCsrf<WithOptionalSession<IndexContext>>) { "pages/index.html" }
+    pub fn render_index(WithLanguage<WithCsrf<WithOptionalSession<IndexContext>>>) { "pages/index.html" }
 
     /// Render the password change page
-    pub fn render_account_password(WithCsrf<WithSession<EmptyContext>>) { "pages/account/password.html" }
+    pub fn render_account_password(WithLanguage<WithCsrf<WithSession<EmptyContext>>>) { "pages/account/password.html" }
 
     /// Render the email verification page
-    pub fn render_account_verify_email(WithCsrf<WithSession<EmailVerificationPageContext>>) { "pages/account/emails/verify.html" }
+    pub fn render_account_verify_email(WithLanguage<WithCsrf<WithSession<EmailVerificationPageContext>>>) { "pages/account/emails/verify.html" }
 
     /// Render the email verification page
-    pub fn render_account_add_email(WithCsrf<WithSession<EmailAddContext>>) { "pages/account/emails/add.html" }
+    pub fn render_account_add_email(WithLanguage<WithCsrf<WithSession<EmailAddContext>>>) { "pages/account/emails/add.html" }
 
     /// Render the re-authentication form
-    pub fn render_reauth(WithCsrf<WithSession<ReauthContext>>) { "pages/reauth.html" }
+    pub fn render_reauth(WithLanguage<WithCsrf<WithSession<ReauthContext>>>) { "pages/reauth.html" }
 
     /// Render the form used by the form_post response mode
     pub fn render_form_post<T: Serialize>(FormPostContext<T>) { "form_post.html" }
@@ -338,13 +355,13 @@ register_templates! {
     pub fn render_email_verification_subject(EmailVerificationContext) { "emails/verification.subject" }
 
     /// Render the upstream link mismatch message
-    pub fn render_upstream_oauth2_link_mismatch(WithCsrf<WithSession<UpstreamExistingLinkContext>>) { "pages/upstream_oauth2/link_mismatch.html" }
+    pub fn render_upstream_oauth2_link_mismatch(WithLanguage<WithCsrf<WithSession<UpstreamExistingLinkContext>>>) { "pages/upstream_oauth2/link_mismatch.html" }
 
     /// Render the upstream suggest link message
-    pub fn render_upstream_oauth2_suggest_link(WithCsrf<WithSession<UpstreamSuggestLink>>) { "pages/upstream_oauth2/suggest_link.html" }
+    pub fn render_upstream_oauth2_suggest_link(WithLanguage<WithCsrf<WithSession<UpstreamSuggestLink>>>) { "pages/upstream_oauth2/suggest_link.html" }
 
     /// Render the upstream register screen
-    pub fn render_upstream_oauth2_do_register(WithCsrf<UpstreamRegister>) { "pages/upstream_oauth2/do_register.html" }
+    pub fn render_upstream_oauth2_do_register(WithLanguage<WithCsrf<UpstreamRegister>>) { "pages/upstream_oauth2/do_register.html" }
 }
 
 impl Templates {

@@ -66,6 +66,7 @@ mas-axum-utils = { path = "../axum-utils", default-features = false }
 mas-data-model = { path = "../data-model" }
 mas-graphql = { path = "../graphql" }
 mas-http = { path = "../http", default-features = false }
+mas-i18n = { path = "../i18n" }
 mas-iana = { path = "../iana" }
 mas-jose = { path = "../jose" }
 mas-keystore = { path = "../keystore" }

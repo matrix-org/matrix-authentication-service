@@ -31,7 +31,7 @@ use mas_storage::{
 use mas_templates::{EmailAddContext, ErrorContext, TemplateContext, Templates};
 use serde::Deserialize;
 
-use crate::{views::shared::OptionalPostAuthAction, BoundActivityTracker};
+use crate::{views::shared::OptionalPostAuthAction, BoundActivityTracker, PreferredLanguage};
 
 #[derive(Deserialize, Debug)]
 pub struct EmailForm {
@@ -42,6 +42,7 @@ pub struct EmailForm {
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
+    PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
     activity_tracker: BoundActivityTracker,
     mut repo: BoxRepository,
@@ -63,7 +64,8 @@ pub(crate) async fn get(
 
     let ctx = EmailAddContext::new()
         .with_session(session)
-        .with_csrf(csrf_token.form_value());
+        .with_csrf(csrf_token.form_value())
+        .with_language(locale);
 
     let content = templates.render_account_add_email(&ctx)?;
 
