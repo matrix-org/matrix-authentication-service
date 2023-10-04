@@ -15,20 +15,21 @@ limitations under the License.
 #}
 
 {% macro top() %}
+  <!-- {{ lang }} -->
   <nav class="container mx-auto py-2 flex-initial flex items-center px-8" role="navigation" aria-label="main navigation">
     <div class="flex-1"></div>
 
     <div class="grid grid-flow-col auto-cols-max gap-4 place-items-center">
       {% if current_session %}
         <div class="text-grey-200 dark:text-grey-250 mx-2">
-          Signed in as <span class="font-semibold">{{ current_session.user.username }}</span>.
+          {{ _("mas.navbar.signed_in_as", username=current_session.user.username) }}
         </div>
 
-        {{ button.link(text="My account", href="/account/") }}
-        {{ logout.button(text="Sign out", csrf_token=csrf_token) }}
+        {{ button.link(text=_("mas.navbar.my_account"), href="/account/") }}
+        {{ logout.button(text=_("action.sign_out"), csrf_token=csrf_token) }}
       {% else %}
-        {{ button.link(text="Sign in", href="/login") }}
-        {{ button.link_outline(text="Create an account", href="/register") }}
+        {{ button.link(text=_("action.sign_in"), href="/login") }}
+        {{ button.link_outline(text=_("mas.navbar.register"), href="/register") }}
       {% endif %}
     </div>
   </nav>

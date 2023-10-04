@@ -19,10 +19,10 @@ limitations under the License.
 {% block content %}
 <section class="flex-1 flex items-center justify-center">
     <div class="w-64 flex flex-col gap-2">
-        <h1 class="text-xl font-semibold">Page not found</h1>
-        <p>The page you were looking for doesn't exist or has been moved</p>
+        <h1 class="text-xl font-semibold">{{ _("mas.not_found.heading") }}</h1>
+        <p>{{ _("mas.not_found.description") }}</p>
         <div>
-            <a class="cpd-link" data-kind="primary" href="/">Go back to the homepage</a>
+            <a class="cpd-link" data-kind="primary" href="/">{{ _("mas.back_to_homepage") }}</a>
         </div>
 
         <hr />

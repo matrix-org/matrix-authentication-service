@@ -22,11 +22,9 @@ limitations under the License.
 {% import "components/errors.html" as errors %}
 {% import "components/icon.html" as icon %}
 {% import "components/scope.html" as scope %}
-{# TODO: detect the locale from the browser #}
-{% set lang = "en-US" %}
 
 <!DOCTYPE html>
-<html>
+<html lang="{{ lang }}">
   <head>
     <meta charset="utf-8">
     <title>{% block title %}{{ _("app.name") }}{% endblock title %}</title>
