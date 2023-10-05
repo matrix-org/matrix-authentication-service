@@ -22,9 +22,9 @@ limitations under the License.
       <form method="POST" class="grid grid-cols-1 gap-6">
         <h1 class="rounded-lg bg-grey-25 dark:bg-grey-450 p-2 text-center font-medium text-lg">
           {% if force_localpart %}
-            Create a new account
+            {{ _("mas.upstream_oauth2.register.create_account") }}
           {% else %}
-            Choose your username
+            {{ _("mas.upstream_oauth2.register.choose_username") }}
           {% endif %}
         </h1>
 
@@ -32,21 +32,21 @@ limitations under the License.
         <input type="hidden" name="action" value="register" />
         {% if force_localpart %}
           <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-4">
-            <div class="font-medium">Will use the following username</div>
+            <div class="font-medium"> {{ _("mas.upstream_oauth2.register.forced_localpart") }}</div>
             <div class="font-mono">{{ suggested_localpart }}</div>
           </div>
         {% else %}
-          {{ field.input(label="Username", name="username", autocomplete="username", autocorrect="off", autocapitalize="none") }}
+          {{ field.input(label=_("common.username"), name="username", autocomplete="username", autocorrect="off", autocapitalize="none") }}
         {% endif %}
 
         {% if suggested_email %}
           <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-4">
             <div class="font-medium">
               {% if force_email %}
-                Will import the following email address
+                {{ _("mas.upstream_oauth2.register.forced_email") }}
               {% else %}
                 <input type="checkbox" name="import_email" id="import_email" checked="checked" />
-                <label for="import_email">Import email address</label>
+                <label for="import_email">{{ _("mas.upstream_oauth2.register.suggested_email") }}</label>
               {% endif %}
             </div>
             <div class="font-mono">{{ suggested_email }}</div>
@@ -57,24 +57,24 @@ limitations under the License.
           <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-4">
             <div class="font-medium">
               {% if force_display_name %}
-                Will import the following display name
+                {{ _("mas.upstream_oauth2.register.forced_display_name") }}
               {% else %}
               <input type="checkbox" name="import_display_name" id="import_display_name" checked="checked" />
-              <label for="import_display_name">Import display name</label>
+              <label for="import_display_name">{{ _("mas.upstream_oauth2.register.suggested_display_name") }}</label>
               {% endif %}
             </div>
             <div class="font-mono">{{ suggested_display_name }}</div>
           </div>
         {% endif %}
 
-        {{ button.button(text="Create a new account") }}
+        {{ button.button(text=_("action.create_account")) }}
       </form>
       <div class="flex items-center">
         <hr class="flex-1" />
-        <div class="mx-2">Or</div>
+        <div class="mx-2">{{ _("mas.or_separator") }}</div>
         <hr class="flex-1" />
       </div>
-      {{ button.link_outline(text="Link to an existing account", href=login_link) }}
+      {{ button.link_outline(text=_("mas.upstream_oauth2.register.link_existing"), href=login_link) }}
     </div>
   </section>
 {% endblock content %}

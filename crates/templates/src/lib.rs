@@ -29,7 +29,7 @@ use std::{collections::HashSet, sync::Arc};
 use anyhow::Context as _;
 use arc_swap::ArcSwap;
 use camino::{Utf8Path, Utf8PathBuf};
-use mas_i18n::{Translator};
+use mas_i18n::Translator;
 use mas_router::UrlBuilder;
 use mas_spa::ViteManifest;
 use rand::Rng;
@@ -346,13 +346,13 @@ register_templates! {
     pub fn render_error(ErrorContext) { "pages/error.html" }
 
     /// Render the email verification email (plain text variant)
-    pub fn render_email_verification_txt(EmailVerificationContext) { "emails/verification.txt" }
+    pub fn render_email_verification_txt(WithLanguage<EmailVerificationContext>) { "emails/verification.txt" }
 
     /// Render the email verification email (HTML text variant)
-    pub fn render_email_verification_html(EmailVerificationContext) { "emails/verification.html" }
+    pub fn render_email_verification_html(WithLanguage<EmailVerificationContext>) { "emails/verification.html" }
 
     /// Render the email verification subject
-    pub fn render_email_verification_subject(EmailVerificationContext) { "emails/verification.subject" }
+    pub fn render_email_verification_subject(WithLanguage<EmailVerificationContext>) { "emails/verification.subject" }
 
     /// Render the upstream link mismatch message
     pub fn render_upstream_oauth2_link_mismatch(WithLanguage<WithCsrf<WithSession<UpstreamExistingLinkContext>>>) { "pages/upstream_oauth2/link_mismatch.html" }

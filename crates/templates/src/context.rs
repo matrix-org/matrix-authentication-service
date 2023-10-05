@@ -109,6 +109,21 @@ pub struct WithLanguage<T> {
     inner: T,
 }
 
+impl<T> WithLanguage<T> {
+    /// Get the language of this context
+    pub fn language(&self) -> &str {
+        &self.lang
+    }
+}
+
+impl<T> std::ops::Deref for WithLanguage<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
 impl<T: TemplateContext> TemplateContext for WithLanguage<T> {
     fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
     where
@@ -984,6 +999,7 @@ pub struct ErrorContext {
     code: Option<&'static str>,
     description: Option<String>,
     details: Option<String>,
+    lang: Option<String>,
 }
 
 impl std::fmt::Display for ErrorContext {
@@ -1044,6 +1060,13 @@ impl ErrorContext {
     #[must_use]
     pub fn with_details(mut self, details: String) -> Self {
         self.details = Some(details);
+        self
+    }
+
+    /// Add the language to the context
+    #[must_use]
+    pub fn with_language(mut self, lang: &DataLocale) -> Self {
+        self.lang = Some(lang.to_string());
         self
     }
 

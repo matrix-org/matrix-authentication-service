@@ -20,8 +20,8 @@ limitations under the License.
   <section class="flex items-center justify-center flex-1">
     <div class="w-96 my-2 mx-8">
       <div class="grid grid-cols-1 gap-6">
-        <h1 class="text-xl font-semibold">The authorization request was denied the policy enforced by this service.</h1>
-        <p>This might be because of the client which authored the request, the currently logged in user, or the request itself.</p>
+        <h1 class="text-xl font-semibold">{{ _("mas.policy_violation.heading") }}</h1>
+        <p>{{ _("mas.policy_violation.description") }}</p>
         <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-2 flex items-center">
           <div class="bg-white rounded w-16 h-16 overflow-hidden mx-auto">
             {% if client.logo_uri %}
@@ -33,14 +33,14 @@ limitations under the License.
 
         <div class="rounded-lg bg-grey-25 dark:bg-grey-450 p-2 flex items-center">
           <div class="text-center flex-1">
-            Logged as <span class="font-semibold">{{ current_session.user.username }}</span>
+            {{ _("mas.policy_violation.logged_as", username=current_session.user.username) }}
           </div>
 
-          {{ logout.button(text="Sign out", csrf_token=csrf_token, post_logout_action=action) }}
+          {{ logout.button(text=_("action.sign_out"), csrf_token=csrf_token, post_logout_action=action) }}
         </div>
 
         {{ back_to_client.link(
-          text="Cancel",
+          text=_("action.cancel"),
           kind="destructive",
           uri=grant.redirect_uri,
           mode=grant.response_mode,

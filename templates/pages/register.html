@@ -54,7 +54,7 @@ limitations under the License.
         </div>
       {% endif %}
       <div class="text-center mt-4">
-        {{ _("mas.register.already_have_account") }}
+        {{ _("mas.register.call_to_login") }}
         {% set params = next["params"] | default({}) | to_params(prefix="?") %}
         {{ button.link_text(text=_("mas.register.sign_in_instead"), href="/login" ~ params) }}
       </div>

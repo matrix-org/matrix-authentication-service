@@ -26,6 +26,7 @@ limitations under the License.
     <input name="{{ name }}"
       class="cpd-control"
       {% if state.errors is not empty %} data-invalid {% endif %}
+      {% if state.value %} value="{{ state.value }}" {% endif %}
       type="{{ type }}"
       inputmode="{{ inputmode }}"
       {% if required %} required {% endif %}
@@ -40,11 +41,11 @@ limitations under the License.
         {% if error.kind != "unspecified" %}
           <div class="text-sm text-critical">
             {% if error.kind == "required" %}
-              This field is required
+              {{ _("mas.errors.field_required") }}
             {% elif error.kind == "exists" and name == "username" %}
-              This username is already taken
+              {{ _("mas.errors.username_taken") }}
             {% elif error.kind == "policy" %}
-              Denied by policy: {{ error.message }}
+              {{ _("mas.errors.denied_policy", message=error.message) }}
             {% else %}
               {{ error.kind }}
             {% endif %}

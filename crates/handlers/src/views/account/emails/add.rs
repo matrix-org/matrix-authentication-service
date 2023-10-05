@@ -77,6 +77,7 @@ pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
     mut repo: BoxRepository,
+    PreferredLanguage(locale): PreferredLanguage,
     mut policy: Policy,
     cookie_jar: CookieJar,
     activity_tracker: BoundActivityTracker,
@@ -124,7 +125,7 @@ pub(crate) async fn post(
     // verify page
     let next = if user_email.confirmed_at.is_none() {
         repo.job()
-            .schedule_job(VerifyEmailJob::new(&user_email))
+            .schedule_job(VerifyEmailJob::new(&user_email).with_language(locale.to_string()))
             .await?;
 
         let next = mas_router::AccountVerifyEmail::new(user_email.id);
