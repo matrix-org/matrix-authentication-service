@@ -1,0 +1,38 @@
+name: Download translation files from Localazy
+on:
+  workflow_dispatch:
+    secrets:
+      BOT_GITHUB_TOKEN:
+        required: true
+
+jobs:
+  download:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4.1.0
+
+      - name: Download translation files
+        uses: localazy/download@v1.0.0
+
+      - name: "Fix the owner of the downloaded files"
+        run: "sudo chown runner:docker translations/*.json"
+
+      - name: Create Pull Request
+        id: cpr
+        uses: peter-evans/create-pull-request@v5.0.2
+        with:
+          token: ${{ secrets.BOT_GITHUB_TOKEN }}
+          branch: actions/localazy-download
+          delete-branch: true
+          title: Localazy Download
+
+      - name: Enable automerge
+        run: gh pr merge --merge --auto "$PR_NUMBER"
+        if: steps.cpr.outputs.pull-request-operation == 'created'
+        env:
+          GH_TOKEN: ${{ secrets.BOT_GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.cpr.outputs.pull-request-number }}
