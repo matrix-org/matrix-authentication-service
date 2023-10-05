@@ -2243,9 +2243,9 @@ dependencies = [
 
 [[package]]
 name = "icu_locid_transform"
-version = "1.3.1"
+version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "19b10b2a476daefcfe19707e095f5fdc1f446870a56e250250ae64782016bcf9"
+checksum = "6551daf80882d8e68eee186cc19e132d8bde1b1f059a79b93384a5ca0e8fc5e7"
 dependencies = [
  "displaydoc",
  "icu_locid",
@@ -2257,9 +2257,9 @@ dependencies = [
 
 [[package]]
 name = "icu_locid_transform_data"
-version = "1.3.0"
+version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce5d8151979828a4645be945302e05c903cbb5c4a86a936965f7605bd5142e06"
+checksum = "2a741eba5431f75eb2f1f9022d3cffabcadda6771e54fb4e77c8ba8653e4da44"
 
 [[package]]
 name = "icu_plurals"
@@ -2284,9 +2284,9 @@ checksum = "587cb66266fc618b5593ab11a5fa8c44391e10006acf979ae176e6bd4ead6c3f"
 
 [[package]]
 name = "icu_provider"
-version = "1.3.1"
+version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18d505243d809d5e14491a29ab9842f8a4b0568a33b462251f8ebf971ba55c83"
+checksum = "68acdef80034b5e35d8524e9817479d389a4f9774f3f0cbe1bf3884d80fd5934"
 dependencies = [
  "displaydoc",
  "icu_locid",
@@ -2314,9 +2314,9 @@ dependencies = [
 
 [[package]]
 name = "icu_provider_macros"
-version = "1.3.0"
+version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca9be8af0b117ccf1516251daab4c9137c012646a211c2a02d2f568ea3cd0df4"
+checksum = "2060258edfcfe32ca7058849bf0f146cb5c59aadbedf480333c0d0002f97bc99"
 dependencies = [
  "proc-macro2",
  "quote",
