@@ -12,6 +12,7 @@
 - [Database setup](./setup/database.md)
 - [Homeserver configuration](./setup/homeserver.md)
 - [Configuring a reverse proxy](./setup/reverse-proxy.md)
+- [Configuring .well-known](./setup/well-known.md)
 - [Running the service](./setup/running.md)
 - [Migrating an existing homeserver](./setup/migration.md)
 # Usage
