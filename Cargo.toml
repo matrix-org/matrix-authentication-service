@@ -29,7 +29,7 @@ features = ["serde", "clock"]
 
 # CLI argument parsing
 [workspace.dependencies.clap]
-version = "4.4.4"
+version = "4.4.6"
 features = ["derive"]
 
 # HTTP request/response
