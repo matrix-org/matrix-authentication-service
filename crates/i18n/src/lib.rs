@@ -19,6 +19,7 @@ pub mod sprintf;
 pub mod translations;
 mod translator;
 
+pub use icu_locid::locale;
 pub use icu_provider::DataLocale;
 
 pub use self::{

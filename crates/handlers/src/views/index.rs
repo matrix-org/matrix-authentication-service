@@ -34,7 +34,6 @@ pub async fn get(
     cookie_jar: CookieJar,
     PreferredLanguage(locale): PreferredLanguage,
 ) -> Result<impl IntoResponse, FancyError> {
-    tracing::info!("{locale}");
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
     let session = session_info.load_session(&mut repo).await?;
@@ -51,8 +50,6 @@ pub async fn get(
         .with_language(locale);
 
     let content = templates.render_index(&ctx)?;
-
-    tracing::info!("rendered index page");
 
     Ok((cookie_jar, Html(content)))
 }

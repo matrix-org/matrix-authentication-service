@@ -239,6 +239,7 @@ mod jobs {
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct VerifyEmailJob {
         user_email_id: Ulid,
+        language: Option<String>,
     }
 
     impl VerifyEmailJob {
@@ -247,7 +248,21 @@ mod jobs {
         pub fn new(user_email: &UserEmail) -> Self {
             Self {
                 user_email_id: user_email.id,
+                language: None,
             }
+        }
+
+        /// Set the language to use for the email.
+        #[must_use]
+        pub fn with_language(mut self, language: String) -> Self {
+            self.language = Some(language);
+            self
+        }
+
+        /// The language to use for the email.
+        #[must_use]
+        pub fn language(&self) -> Option<&str> {
+            self.language.as_deref()
         }
 
         /// The ID of the email address to verify.

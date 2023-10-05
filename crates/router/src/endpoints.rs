@@ -18,7 +18,7 @@ use ulid::Ulid;
 pub use crate::traits::*;
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
-#[serde(rename_all = "snake_case", tag = "next")]
+#[serde(rename_all = "snake_case", tag = "kind")]
 pub enum PostAuthAction {
     ContinueAuthorizationGrant {
         id: Ulid,

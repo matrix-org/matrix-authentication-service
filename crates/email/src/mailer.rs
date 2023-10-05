@@ -18,7 +18,7 @@ use lettre::{
     message::{Mailbox, MessageBuilder, MultiPart},
     AsyncTransport, Message,
 };
-use mas_templates::{EmailVerificationContext, Templates};
+use mas_templates::{EmailVerificationContext, Templates, WithLanguage};
 use thiserror::Error;
 
 use crate::MailTransport;
@@ -66,7 +66,7 @@ impl Mailer {
     fn prepare_verification_email(
         &self,
         to: Mailbox,
-        context: &EmailVerificationContext,
+        context: &WithLanguage<EmailVerificationContext>,
     ) -> Result<Message, Error> {
         let plain = self.templates.render_email_verification_txt(context)?;
 
@@ -95,6 +95,7 @@ impl Mailer {
         skip_all,
         fields(
             email.to = %to,
+            email.language = %context.language(),
             user.id = %context.user().id,
             user_email_verification.id = %context.verification().id,
             user_email_verification.code = context.verification().code,
@@ -104,7 +105,7 @@ impl Mailer {
     pub async fn send_verification_email(
         &self,
         to: Mailbox,
-        context: &EmailVerificationContext,
+        context: &WithLanguage<EmailVerificationContext>,
     ) -> Result<(), Error> {
         let message = self.prepare_verification_email(to, context)?;
         self.transport.send(message).await?;

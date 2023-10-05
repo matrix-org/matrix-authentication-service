@@ -225,7 +225,7 @@ pub(crate) async fn post(
         .await?;
 
     repo.job()
-        .schedule_job(VerifyEmailJob::new(&user_email))
+        .schedule_job(VerifyEmailJob::new(&user_email).with_language(locale.to_string()))
         .await?;
 
     repo.job()
