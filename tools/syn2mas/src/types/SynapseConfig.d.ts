@@ -24,7 +24,7 @@ export interface SynapseConfig {
       host?: string;
       port?: number;
     };
-  } | any;
+  } | {};
 
   oidc_providers?: SynapseOIDCProvider[];
   oidc_config?: SynapseOIDCProvider;
@@ -52,5 +52,5 @@ export interface SynapseConfig {
   enable_3pid_changes?: boolean;
   login_via_existing_session?: {
     enabled?: boolean;
-  }
+  };
 }
