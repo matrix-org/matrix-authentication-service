@@ -56,7 +56,10 @@ pub fn register(
             vite_manifest,
         }),
     );
-    env.add_global("_", Value::from_object(Translate { translator }));
+    env.add_global(
+        "translator",
+        Value::from_object(TranslatorFunc { translator }),
+    );
 }
 
 fn tester_empty(seq: &dyn SeqObject) -> bool {
@@ -189,52 +192,73 @@ fn function_add_params_to_url(
     Ok(uri.to_string())
 }
 
-struct Translate {
+struct TranslatorFunc {
     translator: Arc<Translator>,
 }
 
-impl std::fmt::Debug for Translate {
+impl std::fmt::Debug for TranslatorFunc {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Translate")
-            .field("translations", &"..")
+        f.debug_struct("TranslatorFunc")
+            .field("translator", &"..")
             .finish()
     }
 }
 
-impl std::fmt::Display for Translate {
+impl std::fmt::Display for TranslatorFunc {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("translator")
+    }
+}
+
+impl Object for TranslatorFunc {
+    fn call(&self, _state: &State, args: &[Value]) -> Result<Value, Error> {
+        let (lang,): (&str,) = from_args(args)?;
+
+        let lang: DataLocale = lang.parse().map_err(|e| {
+            Error::new(ErrorKind::InvalidOperation, "Invalid language").with_source(e)
+        })?;
+
+        Ok(Value::from_object(TranslateFunc {
+            lang,
+            translator: Arc::clone(&self.translator),
+        }))
+    }
+}
+
+struct TranslateFunc {
+    translator: Arc<Translator>,
+    lang: DataLocale,
+}
+
+impl std::fmt::Debug for TranslateFunc {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Translate")
+            .field("translator", &"..")
+            .field("lang", &self.lang)
+            .finish()
+    }
+}
+
+impl std::fmt::Display for TranslateFunc {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str("translate")
     }
 }
 
-impl Object for Translate {
+impl Object for TranslateFunc {
     fn call(&self, state: &State, args: &[Value]) -> Result<Value, Error> {
-        let lang = state.lookup("lang").ok_or(minijinja::Error::new(
-            ErrorKind::UndefinedError,
-            "`lang` is not set",
-        ))?;
-
-        let lang = lang.as_str().ok_or(minijinja::Error::new(
-            ErrorKind::InvalidOperation,
-            "`lang` is not a string",
-        ))?;
-
-        let lang: DataLocale = lang.parse().map_err(|e| {
-            Error::new(ErrorKind::InvalidOperation, "Could not parse `lang`").with_source(e)
-        })?;
-
         let (key, kwargs): (&str, Kwargs) = from_args(args)?;
 
         let (message, _locale) = if let Some(count) = kwargs.get("count")? {
             self.translator
-                .plural_with_fallback(lang, key, count)
+                .plural_with_fallback(self.lang.clone(), key, count)
                 .ok_or(Error::new(
                     ErrorKind::InvalidOperation,
                     "Missing translation",
                 ))?
         } else {
             self.translator
-                .message_with_fallback(lang, key)
+                .message_with_fallback(self.lang.clone(), key)
                 .ok_or(Error::new(
                     ErrorKind::InvalidOperation,
                     "Missing translation",
