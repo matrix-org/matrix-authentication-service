@@ -14,6 +14,8 @@
 
 //! Contexts used in templates
 
+use std::fmt::Formatter;
+
 use chrono::{DateTime, Utc};
 use http::{Method, Uri, Version};
 use mas_data_model::{
@@ -982,6 +984,23 @@ pub struct ErrorContext {
     code: Option<&'static str>,
     description: Option<String>,
     details: Option<String>,
+}
+
+impl std::fmt::Display for ErrorContext {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if let Some(code) = &self.code {
+            writeln!(f, "code: {code}")?;
+        }
+        if let Some(description) = &self.description {
+            writeln!(f, "{description}")?;
+        }
+
+        if let Some(details) = &self.details {
+            writeln!(f, "details: {details}")?;
+        }
+
+        Ok(())
+    }
 }
 
 impl TemplateContext for ErrorContext {
