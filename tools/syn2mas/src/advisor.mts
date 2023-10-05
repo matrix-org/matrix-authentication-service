@@ -145,4 +145,8 @@ export async function advisor(argv?: string[]): Promise<void> {
   if (synapseConfig.enable_3pid_changes === true) {
     warn("Synapse config has enable_3pid_changes enabled which must to be disabled or removed after migration");
   }
+
+  if (synapseConfig.login_via_existing_session?.enabled === true) {
+    warn("Synapse config has login_via_existing_session enabled which must to be disabled or removed after migration");
+  }
 }
