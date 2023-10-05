@@ -15,7 +15,7 @@ limitations under the License.
 #}
 
 {# Sometimes we don't have the language set, so we default to english #}
-{% set lang = lang | default("en") %}
+{% set lang = lang or "en" %}
 
 {% extends "base.html" %}
 
