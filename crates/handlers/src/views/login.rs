@@ -335,7 +335,7 @@ mod test {
         let response = state.request(Request::get("/login").empty()).await;
         response.assert_status(StatusCode::OK);
         response.assert_header_value(CONTENT_TYPE, "text/html; charset=utf-8");
-        assert!(response.body().contains("No login method available"));
+        assert!(response.body().contains("No login methods available"));
 
         // Adding an upstream provider should redirect to it
         let mut repo = state.repository().await.unwrap();
