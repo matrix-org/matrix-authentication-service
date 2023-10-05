@@ -303,17 +303,17 @@ mod tests {
             tree,
             serde_json::json!({
                 "hello": "Hello!",
-                "world": "world",
+                "world": "",
                 "plural": {
-                    "other": "%(count)d plural"
+                    "other": ""
                 },
                 "nested": {
-                    "1": "nested.1",
-                    "2": "nested.2",
-                    "3": "nested.3",
-                    "4": "nested.4",
-                    "5": "nested.5",
-                    "6": "nested.6",
+                    "1": "",
+                    "2": "",
+                    "3": "",
+                    "4": "",
+                    "5": "",
+                    "6": "",
                 },
             })
         );
