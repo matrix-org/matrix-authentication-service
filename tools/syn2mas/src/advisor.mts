@@ -119,7 +119,7 @@ export async function advisor(argv?: string[]): Promise<void> {
   if (synapseConfig.password_config?.enabled !== false && synapseConfig.password_config?.localdb_enabled === false) {
     warn("Synapse has a non-standard password auth enabled which won't work after migration and will need to be manually mapped to an upstream OpenID Provider during migration");
   } else if (synapseConfig.password_config?.enabled !== false) {
-    warn("Migration of Synapse password auth is not yet supported");
+    warn("Synapse has password auth enabled, but support for password auth in MAS is not feature complete");
   }
 
   const externalIdAuthProviders = await synapse.select("auth_provider").count("* as Count").from("user_external_ids").groupBy("auth_provider") as { auth_provider: string; "Count": number }[];

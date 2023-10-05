@@ -1,7 +1,7 @@
 import { ArgumentConfig, parse } from "ts-command-line-args";
 import log4js from "log4js";
 
-// import { migrate } from "./migrate.mjs";
+import { migrate } from "./migrate.mjs";
 import { advisor } from "./advisor.mjs";
 
 log4js.configure({
@@ -28,10 +28,10 @@ const mainArgOptions: ArgumentConfig<MainOptions> = {
 export const mainArgs = parse<MainOptions>(mainArgOptions, { stopAtFirstUnknown: true });
 
 try {
-  // if (mainArgs.command === "migrate") {
-  //   await migrate();
-  //   process.exit(0);
-  // }
+  if (mainArgs.command === "migrate") {
+    await migrate();
+    process.exit(0);
+  }
 
   if (mainArgs.command === "advisor") {
     await advisor();
