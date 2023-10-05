@@ -24,7 +24,7 @@ export interface SynapseConfig {
       host?: string;
       port?: number;
     };
-  } | {};
+  } | any;
 
   oidc_providers?: SynapseOIDCProvider[];
   oidc_config?: SynapseOIDCProvider;
