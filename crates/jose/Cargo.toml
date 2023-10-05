@@ -12,7 +12,7 @@ base64ct = { version = "1.6.0", features = ["std"] }
 chrono.workspace = true
 digest = "0.10.7"
 ecdsa = { version = "0.16.8", features = ["signing", "verifying"] }
-elliptic-curve = "0.13.5"
+elliptic-curve = "0.13.6"
 generic-array = "0.14.7"
 hmac = "0.12.1"
 k256 = { version = "0.13.1", features = ["ecdsa"] }
