@@ -38,7 +38,7 @@ export async function migrate(argv?: string[]): Promise<void> {
     synapseConfigFile: { type: String, description: "Path to synapse homeserver.yaml config file" },
     masConfigFile: { type: String, description: "Path to MAS config.yaml" },
     upstreamProviderMapping: { type: String, defaultValue: [], multiple: true, description: "Mapping of upstream provider IDs to MAS provider IDs. Format: <upstream_provider_id>:<mas_provider_id>" },
-    dryRun: { type: Boolean, optional: true, defaultValue: false },
+    dryRun: { type: Boolean, optional: true, defaultValue: false, description: "Dry run only, do not write to database" },
     help: { type: Boolean, optional: true, alias: "h", description: "Prints this usage guide" },
   },
   {
