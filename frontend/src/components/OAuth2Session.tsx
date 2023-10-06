@@ -18,8 +18,10 @@ import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
 
 import { FragmentType, graphql, useFragment } from "../gql";
+import { Oauth2ApplicationType } from "../gql/graphql";
 import { Link } from "../routing";
 import { getDeviceIdFromScope } from "../utils/deviceIdFromScope";
+import { DeviceType } from "../utils/parseUserAgent";
 
 import { Session } from "./Session";
 import EndSessionButton from "./Session/EndSessionButton";
@@ -36,6 +38,7 @@ export const FRAGMENT = graphql(/* GraphQL */ `
       id
       clientId
       clientName
+      applicationType
       logoUri
     }
   }
@@ -52,6 +55,18 @@ const END_SESSION_MUTATION = graphql(/* GraphQL */ `
     }
   }
 `);
+
+const getDeviceTypeFromClientAppType = (
+  appType?: Oauth2ApplicationType | null,
+): DeviceType => {
+  if (appType === Oauth2ApplicationType.Web) {
+    return DeviceType.Web;
+  }
+  if (appType === Oauth2ApplicationType.Native) {
+    return DeviceType.Mobile;
+  }
+  return DeviceType.Unknown;
+};
 
 export const endSessionFamily = atomFamily((id: string) => {
   const endSession = atomWithMutation(END_SESSION_MUTATION);
@@ -89,6 +104,10 @@ const OAuth2Session: React.FC<Props> = ({ session }) => {
     ? parseISO(data.lastActiveAt)
     : undefined;
 
+  const deviceType = getDeviceTypeFromClientAppType(
+    data.client.applicationType,
+  );
+
   return (
     <Session
       id={data.id}
@@ -97,6 +116,7 @@ const OAuth2Session: React.FC<Props> = ({ session }) => {
       finishedAt={finishedAt}
       clientName={data.client.clientName || data.client.clientId || undefined}
       clientLogoUri={data.client.logoUri || undefined}
+      deviceType={deviceType}
       lastActiveIp={data.lastActiveIp || undefined}
       lastActiveAt={lastActiveAt}
     >

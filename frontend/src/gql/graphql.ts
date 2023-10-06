@@ -1208,6 +1208,7 @@ export type OAuth2Session_SessionFragment = {
     id: string;
     clientId: string;
     clientName?: string | null;
+    applicationType?: Oauth2ApplicationType | null;
     logoUri?: string | null;
   };
 } & { " $fragmentName"?: "OAuth2Session_SessionFragment" };
@@ -1743,6 +1744,10 @@ export const OAuth2Session_SessionFragmentDoc = {
                 { kind: "Field", name: { kind: "Name", value: "id" } },
                 { kind: "Field", name: { kind: "Name", value: "clientId" } },
                 { kind: "Field", name: { kind: "Name", value: "clientName" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "applicationType" },
+                },
                 { kind: "Field", name: { kind: "Name", value: "logoUri" } },
               ],
             },
@@ -2600,6 +2605,10 @@ export const EndOAuth2SessionDocument = {
                 { kind: "Field", name: { kind: "Name", value: "id" } },
                 { kind: "Field", name: { kind: "Name", value: "clientId" } },
                 { kind: "Field", name: { kind: "Name", value: "clientName" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "applicationType" },
+                },
                 { kind: "Field", name: { kind: "Name", value: "logoUri" } },
               ],
             },
@@ -3733,6 +3742,10 @@ export const AppSessionListDocument = {
                 { kind: "Field", name: { kind: "Name", value: "id" } },
                 { kind: "Field", name: { kind: "Name", value: "clientId" } },
                 { kind: "Field", name: { kind: "Name", value: "clientName" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "applicationType" },
+                },
                 { kind: "Field", name: { kind: "Name", value: "logoUri" } },
               ],
             },

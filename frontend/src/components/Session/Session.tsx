@@ -15,10 +15,12 @@
 import { H6, Body, Badge } from "@vector-im/compound-web";
 import { ReactNode } from "react";
 
+import { DeviceType } from "../../utils/parseUserAgent";
 import Block from "../Block";
 import DateTime from "../DateTime";
 
 import ClientAvatar from "./ClientAvatar";
+import DeviceTypeIcon from "./DeviceTypeIcon";
 import LastActive from "./LastActive";
 import styles from "./Session.module.css";
 
@@ -34,6 +36,7 @@ type SessionProps = {
   clientName?: string;
   clientLogoUri?: string;
   isCurrent?: boolean;
+  deviceType?: DeviceType;
   lastActiveIp?: string;
   lastActiveAt?: Date;
 };
@@ -48,40 +51,44 @@ const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
   lastActiveAt,
   isCurrent,
   children,
+  deviceType,
 }) => {
   return (
-    <Block>
-      {isCurrent && <Badge kind="success">Current</Badge>}
-      <H6 className={styles.sessionName} title={id}>
-        {name || id}
-      </H6>
-      <SessionMetadata weight="semibold">
-        Signed in <DateTime datetime={createdAt} />
-      </SessionMetadata>
-      {!!finishedAt && (
-        <SessionMetadata weight="semibold" data-finished={true}>
-          Finished <DateTime datetime={finishedAt} />
+    <Block className={styles.session}>
+      <DeviceTypeIcon deviceType={deviceType || DeviceType.Unknown} />
+      <div className={styles.container}>
+        {isCurrent && <Badge kind="success">Current</Badge>}
+        <H6 className={styles.sessionName} title={id}>
+          {name || id}
+        </H6>
+        <SessionMetadata weight="semibold">
+          Signed in <DateTime datetime={createdAt} />
         </SessionMetadata>
-      )}
-      {!!lastActiveAt && (
-        <SessionMetadata>
-          <LastActive lastActive={lastActiveAt} />
-        </SessionMetadata>
-      )}
-      {!!lastActiveIp && <SessionMetadata>{lastActiveIp}</SessionMetadata>}
-      {!!clientName && (
-        <SessionMetadata>
-          <ClientAvatar
-            size="var(--cpd-space-4x)"
-            name={clientName}
-            logoUri={clientLogoUri}
-          />{" "}
-          <SessionMetadata weight="semibold" as="span">
-            {clientName}
+        {!!finishedAt && (
+          <SessionMetadata weight="semibold" data-finished={true}>
+            Finished <DateTime datetime={finishedAt} />
           </SessionMetadata>
-        </SessionMetadata>
-      )}
-      {!!children && <div className={styles.sessionActions}>{children}</div>}
+        )}
+        {!!lastActiveAt && (
+          <SessionMetadata>
+            <LastActive lastActive={lastActiveAt} />
+          </SessionMetadata>
+        )}
+        {!!lastActiveIp && <SessionMetadata>{lastActiveIp}</SessionMetadata>}
+        {!!clientName && (
+          <SessionMetadata>
+            <ClientAvatar
+              size="var(--cpd-space-4x)"
+              name={clientName}
+              logoUri={clientLogoUri}
+            />{" "}
+            <SessionMetadata weight="semibold" as="span">
+              {clientName}
+            </SessionMetadata>
+          </SessionMetadata>
+        )}
+        {!!children && <div className={styles.sessionActions}>{children}</div>}
+      </div>
     </Block>
   );
 };

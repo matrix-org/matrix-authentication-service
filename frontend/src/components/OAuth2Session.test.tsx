@@ -18,6 +18,7 @@ import { create } from "react-test-renderer";
 import { describe, expect, it, beforeAll } from "vitest";
 
 import { makeFragmentData } from "../gql";
+import { Oauth2ApplicationType } from "../gql/graphql";
 import { WithLocation } from "../test-utils/WithLocation";
 import { mockLocale } from "../test-utils/mockLocale";
 
@@ -35,6 +36,7 @@ describe("<OAuth2Session />", () => {
       clientId: "test-client-id",
       clientName: "Element",
       clientUri: "https://element.io",
+      applicationType: Oauth2ApplicationType.Web,
     },
   };
 
@@ -58,6 +60,26 @@ describe("<OAuth2Session />", () => {
       {
         ...defaultSession,
         finishedAt,
+      },
+      FRAGMENT,
+    );
+    const component = create(
+      <WithLocation>
+        <OAuth2Session session={session} />
+      </WithLocation>,
+    );
+    expect(component.toJSON()).toMatchSnapshot();
+  });
+
+  it("renders correct icon for a native session", () => {
+    const session = makeFragmentData(
+      {
+        ...defaultSession,
+        finishedAt,
+        client: {
+          ...defaultSession.client,
+          applicationType: Oauth2ApplicationType.Native,
+        },
       },
       FRAGMENT,
     );

@@ -124,6 +124,7 @@ const BrowserSession: React.FC<Props> = ({ session }) => {
       createdAt={createdAt}
       finishedAt={finishedAt}
       isCurrent={isCurrent}
+      deviceType={deviceInformation?.deviceType}
       lastActiveIp={data.lastActiveIp || undefined}
       lastActiveAt={lastActiveAt}
     >
