@@ -32,6 +32,7 @@ tracing.workspace = true
 url.workspace = true
 ulid.workspace = true
 
+oauth2-types = { path = "../oauth2-types" }
 mas-data-model = { path = "../data-model" }
 mas-http = { path = "../http", features = ["client"] }
 mas-iana = { path = "../iana" }

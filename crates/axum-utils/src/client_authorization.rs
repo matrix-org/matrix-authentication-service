@@ -22,7 +22,7 @@ use axum::{
         Form, FromRequest, FromRequestParts, TypedHeader,
     },
     response::IntoResponse,
-    BoxError,
+    BoxError, Json,
 };
 use headers::{authorization::Basic, Authorization};
 use http::{Request, StatusCode};
@@ -32,6 +32,7 @@ use mas_iana::oauth::OAuthClientAuthenticationMethod;
 use mas_jose::{jwk::PublicJsonWebKeySet, jwt::Jwt};
 use mas_keystore::Encrypter;
 use mas_storage::{oauth2::OAuth2ClientRepository, RepositoryAccess};
+use oauth2_types::errors::{ClientError, ClientErrorCode};
 use serde::{de::DeserializeOwned, Deserialize};
 use serde_json::Value;
 use thiserror::Error;
@@ -249,8 +250,78 @@ pub enum ClientAuthorizationError {
 
 impl IntoResponse for ClientAuthorizationError {
     fn into_response(self) -> axum::response::Response {
-        // TODO
-        StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        match self {
+            ClientAuthorizationError::InvalidHeader => (
+                StatusCode::BAD_REQUEST,
+                Json(ClientError::new(
+                    ClientErrorCode::InvalidRequest,
+                    "Invalid Authorization header",
+                )),
+            ),
+
+            ClientAuthorizationError::BadForm(err) => (
+                StatusCode::BAD_REQUEST,
+                Json(
+                    ClientError::from(ClientErrorCode::InvalidRequest)
+                        .with_description(format!("{err}")),
+                ),
+            ),
+
+            ClientAuthorizationError::ClientIdMismatch { form, credential } => {
+                let description = format!(
+                    "client_id in form ({form:?}) does not match credential ({credential:?})"
+                );
+
+                (
+                    StatusCode::BAD_REQUEST,
+                    Json(
+                        ClientError::from(ClientErrorCode::InvalidGrant)
+                            .with_description(description),
+                    ),
+                )
+            }
+
+            ClientAuthorizationError::UnsupportedClientAssertion {
+                client_assertion_type,
+            } => (
+                StatusCode::BAD_REQUEST,
+                Json(
+                    ClientError::from(ClientErrorCode::InvalidRequest).with_description(format!(
+                        "Unsupported client_assertion_type: {client_assertion_type}",
+                    )),
+                ),
+            ),
+
+            ClientAuthorizationError::MissingCredentials => (
+                StatusCode::BAD_REQUEST,
+                Json(ClientError::new(
+                    ClientErrorCode::InvalidRequest,
+                    "No credentials were presented",
+                )),
+            ),
+
+            ClientAuthorizationError::InvalidRequest => (
+                StatusCode::BAD_REQUEST,
+                Json(ClientError::from(ClientErrorCode::InvalidRequest)),
+            ),
+
+            ClientAuthorizationError::InvalidAssertion => (
+                StatusCode::BAD_REQUEST,
+                Json(ClientError::new(
+                    ClientErrorCode::InvalidRequest,
+                    "Invalid client_assertion",
+                )),
+            ),
+
+            ClientAuthorizationError::Internal(e) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(
+                    ClientError::from(ClientErrorCode::ServerError)
+                        .with_description(format!("{e}")),
+                ),
+            ),
+        }
+        .into_response()
     }
 }
 
