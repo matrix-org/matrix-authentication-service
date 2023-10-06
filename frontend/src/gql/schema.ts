@@ -2546,6 +2546,13 @@ export default {
                 },
               },
               {
+                name: "device",
+                type: {
+                  kind: "SCALAR",
+                  name: "Any",
+                },
+              },
+              {
                 name: "first",
                 type: {
                   kind: "SCALAR",
