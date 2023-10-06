@@ -26,8 +26,7 @@ env:
 jobs:
   build-binaries:
     name: Build binaries
-    runs-on: memory-l-storage
-    container: docker.io/library/buildpack-deps:bookworm
+    runs-on: ubuntu-22.04
 
     env:
       SDKROOT: /opt/MacOSX11.3.sdk
