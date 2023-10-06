@@ -1400,6 +1400,10 @@ type User implements Node {
     """
     state: SessionState
     """
+    List only sessions for the given device.
+    """
+    device: String
+    """
     Returns the elements in the list that come after the cursor.
     """
     after: String

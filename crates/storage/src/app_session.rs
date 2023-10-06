@@ -15,7 +15,7 @@
 //! Repositories to interact with all kinds of sessions
 
 use async_trait::async_trait;
-use mas_data_model::{CompatSession, Session, User};
+use mas_data_model::{CompatSession, Device, Session, User};
 
 use crate::{repository_impl, Page, Pagination};
 
@@ -57,6 +57,7 @@ pub enum AppSession {
 pub struct AppSessionFilter<'a> {
     user: Option<&'a User>,
     state: Option<AppSessionState>,
+    device_id: Option<&'a Device>,
 }
 
 impl<'a> AppSessionFilter<'a> {
@@ -77,6 +78,19 @@ impl<'a> AppSessionFilter<'a> {
     #[must_use]
     pub fn user(&self) -> Option<&User> {
         self.user
+    }
+
+    /// Set the device ID filter
+    #[must_use]
+    pub fn for_device(mut self, device_id: &'a Device) -> Self {
+        self.device_id = Some(device_id);
+        self
+    }
+
+    /// Get the device ID filter
+    #[must_use]
+    pub fn device(&self) -> Option<&'a Device> {
+        self.device_id
     }
 
     /// Only return active compatibility sessions
