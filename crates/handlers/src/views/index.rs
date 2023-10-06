@@ -21,7 +21,7 @@ use mas_router::UrlBuilder;
 use mas_storage::{BoxClock, BoxRepository, BoxRng};
 use mas_templates::{IndexContext, TemplateContext, Templates};
 
-use crate::BoundActivityTracker;
+use crate::{preferred_language::PreferredLanguage, BoundActivityTracker};
 
 #[tracing::instrument(name = "handlers.views.index.get", skip_all, err)]
 pub async fn get(
@@ -32,6 +32,7 @@ pub async fn get(
     State(url_builder): State<UrlBuilder>,
     mut repo: BoxRepository,
     cookie_jar: CookieJar,
+    PreferredLanguage(locale): PreferredLanguage,
 ) -> Result<impl IntoResponse, FancyError> {
     let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
     let (session_info, cookie_jar) = cookie_jar.session_info();
@@ -45,11 +46,10 @@ pub async fn get(
 
     let ctx = IndexContext::new(url_builder.oidc_discovery())
         .maybe_with_session(session)
-        .with_csrf(csrf_token.form_value());
+        .with_csrf(csrf_token.form_value())
+        .with_language(locale);
 
-    let content = templates.render_index(&ctx).await?;
-
-    tracing::info!("rendered index page");
+    let content = templates.render_index(&ctx)?;
 
     Ok((cookie_jar, Html(content)))
 }

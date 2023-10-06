@@ -17,7 +17,7 @@ limitations under the License.
 {% extends "base.html" %}
 
 {% block content %}
-  {% set client_name = client.client_name | default(value=client.client_id) %}
+  {% set client_name = client.client_name | default(client.client_id) %}
   <section class="flex items-center justify-center flex-1">
     <div class="w-96 mx-2 my-8 flex flex-col gap-6">
       <div class="flex flex-col gap-2 text-center">
@@ -25,7 +25,7 @@ limitations under the License.
           <img class="consent-client-icon image" referrerpolicy="no-referrer" src="{{ client.logo_uri }}" />
         {% else %}
           <div class="consent-client-icon generic">
-            {{ icon::web_browser() }}
+            {{ icon.web_browser() }}
           </div>
         {% endif %}
 
@@ -34,7 +34,7 @@ limitations under the License.
       </div>
 
       <div class="consent-scope-list">
-        {{ scope::list(scopes=grant.scope) }}
+        {{ scope.list(scopes=grant.scope) }}
       </div>
 
       <div class="my-2 text-center cpd-text-body-md-regular">
@@ -56,11 +56,11 @@ limitations under the License.
 
       <form method="POST" class="flex flex-col">
         <input type="hidden" name="csrf" value="{{ csrf_token }}" />
-        {{ button::button(text="Continue") }}
+        {{ button.button(text=_("action.continue")) }}
       </form>
 
-      {{ back_to_client::link(
-        text="Cancel",
+      {{ back_to_client.link(
+        text=_("action.cancel"),
         kind="tertiary",
         uri=grant.redirect_uri,
         mode=grant.response_mode,
@@ -68,8 +68,8 @@ limitations under the License.
       ) }}
 
       <div class="text-center">
-        Not {{ current_session.user.username }}?
-        {{ logout::button(text="Sign out", csrf_token=csrf_token, post_logout_action=action, as_link=true) }}
+        {{ _("mas.not_you", username=current_session.user.username) }}
+        {{ logout.button(text=_("action.sign_out"), csrf_token=csrf_token, post_logout_action=action, as_link=true) }}
       </div>
     </div>
   </section>

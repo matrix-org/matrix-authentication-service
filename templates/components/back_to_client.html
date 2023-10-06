@@ -25,13 +25,13 @@ limitations under the License.
 
   {% if mode == "form_post" %}
     <form method="post" action="{{ uri }}">
-      {% for key, value in params %}
+      {% for key, value in params|items %}
         <input type="hidden" name="{{ key }}" value="{{ value }}" />
       {% endfor %}
       <button class="{{ class }}" data-kind="{{ kind }}" data-size="lg" type="submit">{{ text }}</button>
     </form>
   {% elif mode == "fragment" or mode == "query" %}
-    <a class="{{ class }}" data-kind="{{ kind }}" data-size="lg" href="{{ add_params_to_url(uri=uri, mode=mode, params=params) }}">{{ text }}</a>
+    <a class="{{ class }}" data-kind="{{ kind }}" data-size="lg" href="{{ add_params_to_url(uri, mode, params) }}">{{ text }}</a>
   {% else %}
     {{ throw(message="Invalid mode") }}
   {% endif %}

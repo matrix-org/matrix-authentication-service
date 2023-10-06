@@ -14,12 +14,15 @@
 
 //! Contexts used in templates
 
+use std::fmt::Formatter;
+
 use chrono::{DateTime, Utc};
 use http::{Method, Uri, Version};
 use mas_data_model::{
     AuthorizationGrant, BrowserSession, Client, CompatSsoLogin, CompatSsoLoginState,
     UpstreamOAuthLink, UpstreamOAuthProvider, User, UserEmail, UserEmailVerification,
 };
+use mas_i18n::DataLocale;
 use mas_router::{PostAuthAction, Route};
 use rand::Rng;
 use serde::{ser::SerializeStruct, Deserialize, Serialize};
@@ -68,6 +71,17 @@ pub trait TemplateContext: Serialize {
         }
     }
 
+    /// Attach a language to the template context
+    fn with_language(self, lang: DataLocale) -> WithLanguage<Self>
+    where
+        Self: Sized,
+    {
+        WithLanguage {
+            lang: lang.to_string(),
+            inner: self,
+        }
+    }
+
     /// Generate sample values for this context type
     ///
     /// This is then used to check for template validity in unit tests and in
@@ -83,6 +97,45 @@ impl TemplateContext for () {
         Self: Sized,
     {
         Vec::new()
+    }
+}
+
+/// Context with a specified locale in it
+#[derive(Serialize)]
+pub struct WithLanguage<T> {
+    lang: String,
+
+    #[serde(flatten)]
+    inner: T,
+}
+
+impl<T> WithLanguage<T> {
+    /// Get the language of this context
+    pub fn language(&self) -> &str {
+        &self.lang
+    }
+}
+
+impl<T> std::ops::Deref for WithLanguage<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl<T: TemplateContext> TemplateContext for WithLanguage<T> {
+    fn sample(now: chrono::DateTime<Utc>, rng: &mut impl Rng) -> Vec<Self>
+    where
+        Self: Sized,
+    {
+        T::sample(now, rng)
+            .into_iter()
+            .map(|inner| WithLanguage {
+                lang: "en".into(),
+                inner,
+            })
+            .collect()
     }
 }
 
@@ -946,6 +999,24 @@ pub struct ErrorContext {
     code: Option<&'static str>,
     description: Option<String>,
     details: Option<String>,
+    lang: Option<String>,
+}
+
+impl std::fmt::Display for ErrorContext {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if let Some(code) = &self.code {
+            writeln!(f, "code: {code}")?;
+        }
+        if let Some(description) = &self.description {
+            writeln!(f, "{description}")?;
+        }
+
+        if let Some(details) = &self.details {
+            writeln!(f, "details: {details}")?;
+        }
+
+        Ok(())
+    }
 }
 
 impl TemplateContext for ErrorContext {
@@ -989,6 +1060,13 @@ impl ErrorContext {
     #[must_use]
     pub fn with_details(mut self, details: String) -> Self {
         self.details = Some(details);
+        self
+    }
+
+    /// Add the language to the context
+    #[must_use]
+    pub fn with_language(mut self, lang: &DataLocale) -> Self {
+        self.lang = Some(lang.to_string());
         self
     }
 

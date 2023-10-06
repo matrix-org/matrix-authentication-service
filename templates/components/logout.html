@@ -14,14 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 #}
 
-{% macro button(text, csrf_token, as_link=false, post_logout_action=false) %}
+{% macro button(text, csrf_token, as_link=false, post_logout_action={}) %}
   <form method="POST" action="/logout" class="inline">
     <input type="hidden" name="csrf" value="{{ csrf_token }}" />
-    {% if post_logout_action %}
-      {% for key, value in post_logout_action %}
-        <input type="hidden" name="{{ key }}" value="{{ value }}" />
-      {% endfor %}
-    {% endif %}
+    {% for key, value in post_logout_action|items %}
+      <input type="hidden" name="{{ key }}" value="{{ value }}" />
+    {% endfor %}
     <button class="{% if as_link %}cpd-link{% else %}cpd-button{% endif %}" data-kind="critical" type="submit">{{ text }}</button>
   </form>
 {% endmacro %}

@@ -12,7 +12,7 @@ base64ct = { version = "1.6.0", features = ["std"] }
 chrono.workspace = true
 digest = "0.10.7"
 ecdsa = { version = "0.16.8", features = ["signing", "verifying"] }
-elliptic-curve = "0.13.5"
+elliptic-curve = "0.13.6"
 generic-array = "0.14.7"
 hmac = "0.12.1"
 k256 = { version = "0.13.1", features = ["ecdsa"] }
@@ -25,7 +25,7 @@ sec1 = "0.7.3"
 serde.workspace = true
 serde_json.workspace = true
 serde_with = "3.3.0"
-sha2 = { version = "0.10.7", features = ["oid"] }
+sha2 = { version = "0.10.8", features = ["oid"] }
 signature = "2.1.0"
 thiserror.workspace = true
 tracing.workspace = true
@@ -34,5 +34,5 @@ url.workspace = true
 mas-iana = { path = "../iana" }
 
 [dev-dependencies]
-insta = { version = "1.32.0" }
+insta = { version = "1.33.0" }
 rand_chacha = "0.3.1"

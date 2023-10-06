@@ -27,7 +27,7 @@ anyhow.workspace = true
 rustls-pemfile = "1.0.3"
 tokio = { version = "1.32.0", features = ["net", "rt", "macros", "signal", "time", "rt-multi-thread"] }
 tokio-test = "0.4.3"
-tracing-subscriber = "0.3.17"
+tracing-subscriber.workspace = true
 
 [[example]]
 name = "demo"

@@ -44,7 +44,7 @@ mod tests {
         assert_eq!(Index.relative_url(), Cow::Borrowed("/"));
         assert_eq!(
             Login::and_continue_grant(Ulid::nil()).relative_url(),
-            Cow::Borrowed("/login?next=continue_authorization_grant&id=00000000000000000000000000")
+            Cow::Borrowed("/login?kind=continue_authorization_grant&id=00000000000000000000000000")
         );
     }
 

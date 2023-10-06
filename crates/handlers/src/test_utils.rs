@@ -33,6 +33,7 @@ use hyper::{
 use mas_axum_utils::{
     cookies::CookieManager, http_client_factory::HttpClientFactory, ErrorWrapper,
 };
+use mas_i18n::Translator;
 use mas_keystore::{Encrypter, JsonWebKey, JsonWebKeySet, Keystore, PrivateKey};
 use mas_matrix::{HomeserverConnection, MockHomeserverConnection};
 use mas_policy::{InstantiateError, Policy, PolicyFactory};
@@ -119,6 +120,7 @@ impl TestState {
             workspace_root.join("templates"),
             url_builder.clone(),
             workspace_root.join("frontend/dist/manifest.json"),
+            workspace_root.join("translations"),
         )
         .await?;
 
@@ -315,6 +317,12 @@ impl FromRef<TestState> for mas_graphql::Schema {
 impl FromRef<TestState> for Templates {
     fn from_ref(input: &TestState) -> Self {
         input.templates.clone()
+    }
+}
+
+impl FromRef<TestState> for Arc<Translator> {
+    fn from_ref(input: &TestState) -> Self {
+        input.templates.translator()
     }
 }
 

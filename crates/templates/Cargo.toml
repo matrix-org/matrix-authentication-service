@@ -8,18 +8,21 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
+arc-swap = "1.6.0"
 tracing.workspace = true
 tokio = { version = "1.32.0", features = ["macros", "rt", "fs"] }
+walkdir = "2.4.0"
 
 anyhow.workspace = true
 thiserror.workspace = true
 
-tera = { version = "1.19.1", default-features = false }
+minijinja = { workspace = true, features = ["loader", "json", "speedups", "unstable_machinery"] }
 serde.workspace = true
 serde_json.workspace = true
 serde_urlencoded = "0.7.1"
+v_htmlescape = "0.15.8"
 
-camino = "1.1.6"
+camino.workspace = true
 chrono.workspace = true
 url.workspace = true
 http.workspace = true
@@ -28,5 +31,6 @@ rand.workspace = true
 
 oauth2-types = { path = "../oauth2-types" }
 mas-data-model = { path = "../data-model" }
+mas-i18n = { path = "../i18n" }
 mas-router = { path = "../router" }
 mas-spa = { path = "../spa" }

@@ -31,7 +31,7 @@ use mas_storage::{
 use mas_templates::{EmailAddContext, ErrorContext, TemplateContext, Templates};
 use serde::Deserialize;
 
-use crate::{views::shared::OptionalPostAuthAction, BoundActivityTracker};
+use crate::{views::shared::OptionalPostAuthAction, BoundActivityTracker, PreferredLanguage};
 
 #[derive(Deserialize, Debug)]
 pub struct EmailForm {
@@ -42,6 +42,7 @@ pub struct EmailForm {
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
+    PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
     activity_tracker: BoundActivityTracker,
     mut repo: BoxRepository,
@@ -63,9 +64,10 @@ pub(crate) async fn get(
 
     let ctx = EmailAddContext::new()
         .with_session(session)
-        .with_csrf(csrf_token.form_value());
+        .with_csrf(csrf_token.form_value())
+        .with_language(locale);
 
-    let content = templates.render_account_add_email(&ctx).await?;
+    let content = templates.render_account_add_email(&ctx)?;
 
     Ok((cookie_jar, Html(content)).into_response())
 }
@@ -75,6 +77,7 @@ pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
     mut repo: BoxRepository,
+    PreferredLanguage(locale): PreferredLanguage,
     mut policy: Policy,
     cookie_jar: CookieJar,
     activity_tracker: BoundActivityTracker,
@@ -122,7 +125,7 @@ pub(crate) async fn post(
     // verify page
     let next = if user_email.confirmed_at.is_none() {
         repo.job()
-            .schedule_job(VerifyEmailJob::new(&user_email))
+            .schedule_job(VerifyEmailJob::new(&user_email).with_language(locale.to_string()))
             .await?;
 
         let next = mas_router::AccountVerifyEmail::new(user_email.id);

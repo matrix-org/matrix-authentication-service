@@ -36,7 +36,7 @@ async-graphql = { version = "6.0.7", features = ["tracing", "apollo_tracing"] }
 lettre = { version = "0.10.4", default-features = false, features = ["builder"] }
 
 # Database access
-sqlx = { version = "0.7.1", features = ["runtime-tokio-rustls", "postgres"] }
+sqlx = { version = "0.7.2", features = ["runtime-tokio-rustls", "postgres"] }
 
 # Various structure (de)serialization
 serde.workspace = true
@@ -51,7 +51,7 @@ pbkdf2 = { version = "0.12.2", features = ["password-hash", "std", "simple", "pa
 zeroize = "1.6.0"
 
 # Various data types and utilities
-camino = "1.1.6"
+camino.workspace = true
 chrono.workspace = true
 psl = "2.1.4"
 time = "0.3.29"
@@ -66,6 +66,7 @@ mas-axum-utils = { path = "../axum-utils", default-features = false }
 mas-data-model = { path = "../data-model" }
 mas-graphql = { path = "../graphql" }
 mas-http = { path = "../http", default-features = false }
+mas-i18n = { path = "../i18n" }
 mas-iana = { path = "../iana" }
 mas-jose = { path = "../jose" }
 mas-keystore = { path = "../keystore" }
@@ -80,8 +81,8 @@ mas-templates = { path = "../templates" }
 oauth2-types = { path = "../oauth2-types" }
 
 [dev-dependencies]
-insta = "1.32.0"
-tracing-subscriber = "0.3.17"
+insta = "1.33.0"
+tracing-subscriber.workspace = true
 cookie_store = "0.20.0"
 
 [features]

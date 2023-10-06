@@ -17,15 +17,28 @@ repository = "https://github.com/matrix-org/matrix-authentication-service/"
 [workspace.dependencies.anyhow]
 version = "1.0.75"
 
+# UTF-8 paths
+[workspace.dependencies.camino]
+version = "1.1.6"
+
 # Time utilities
 [workspace.dependencies.chrono]
 version = "0.4.31"
 default-features = false
 features = ["serde", "clock"]
 
+# CLI argument parsing
+[workspace.dependencies.clap]
+version = "4.4.6"
+features = ["derive"]
+
 # HTTP request/response
 [workspace.dependencies.http]
 version = "0.2.9"
+
+# Templates
+[workspace.dependencies.minijinja]
+version = "1.0.8"
 
 # Random values
 [workspace.dependencies.rand]
@@ -42,11 +55,13 @@ version = "1.0.107"
 
 # Custom error types
 [workspace.dependencies.thiserror]
-version = "1.0.48"
+version = "1.0.49"
 
 # Logging and tracing
 [workspace.dependencies.tracing]
 version = "0.1.37"
+[workspace.dependencies.tracing-subscriber]
+version = "0.3.17"
 
 # URL manipulation
 [workspace.dependencies.url]

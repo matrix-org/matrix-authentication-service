@@ -37,6 +37,8 @@ use mas_templates::{CompatSsoContext, ErrorContext, TemplateContext, Templates};
 use serde::{Deserialize, Serialize};
 use ulid::Ulid;
 
+use crate::PreferredLanguage;
+
 #[derive(Serialize)]
 struct AllParams<'s> {
     #[serde(flatten)]
@@ -58,6 +60,7 @@ pub struct Params {
     err,
 )]
 pub async fn get(
+    PreferredLanguage(locale): PreferredLanguage,
     mut rng: BoxRng,
     clock: BoxClock,
     mut repo: BoxRepository,
@@ -102,17 +105,19 @@ pub async fn get(
     if clock.now() > login.created_at + Duration::minutes(30) {
         let ctx = ErrorContext::new()
             .with_code("compat_sso_login_expired")
-            .with_description("This login session expired.".to_owned());
+            .with_description("This login session expired.".to_owned())
+            .with_language(&locale);
 
-        let content = templates.render_error(&ctx).await?;
+        let content = templates.render_error(&ctx)?;
         return Ok((cookie_jar, Html(content)).into_response());
     }
 
     let ctx = CompatSsoContext::new(login)
         .with_session(session)
-        .with_csrf(csrf_token.form_value());
+        .with_csrf(csrf_token.form_value())
+        .with_language(locale);
 
-    let content = templates.render_sso_login(&ctx).await?;
+    let content = templates.render_sso_login(&ctx)?;
 
     Ok((cookie_jar, Html(content)).into_response())
 }
@@ -127,6 +132,7 @@ pub async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
     mut repo: BoxRepository,
+    PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
     cookie_jar: CookieJar,
     Path(id): Path<Ulid>,
@@ -169,9 +175,10 @@ pub async fn post(
     if clock.now() > login.created_at + Duration::minutes(30) {
         let ctx = ErrorContext::new()
             .with_code("compat_sso_login_expired")
-            .with_description("This login session expired.".to_owned());
+            .with_description("This login session expired.".to_owned())
+            .with_language(&locale);
 
-        let content = templates.render_error(&ctx).await?;
+        let content = templates.render_error(&ctx)?;
         return Ok((cookie_jar, Html(content)).into_response());
     }
 

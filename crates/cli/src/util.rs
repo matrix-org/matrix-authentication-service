@@ -122,6 +122,7 @@ pub async fn templates_from_config(
         config.path.clone(),
         url_builder.clone(),
         config.assets_manifest.clone(),
+        config.translations_path.clone(),
     )
     .await
 }

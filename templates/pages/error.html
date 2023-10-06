@@ -14,12 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 #}
 
+{# Sometimes we don't have the language set, so we default to english #}
+{% set lang = lang or "en" %}
+
 {% extends "base.html" %}
 
 {% block content %}
 <section class="flex-1 flex items-center justify-center">
   <div class="w-64 flex flex-col gap-2">
-    <h1 class="text-xl font-semibold">Unexpected error</h1>
+    <h1 class="text-xl font-semibold">{{ _("error.unexpected") }}</h1>
     {% if code %}
     <p class="font-semibold font-mono">
       {{ code }}

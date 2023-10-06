@@ -10,8 +10,8 @@ repository.workspace = true
 [dependencies]
 anyhow.workspace = true
 axum = "0.6.20"
-camino = "1.1.6"
-clap = { version = "4.4.4", features = ["derive"] }
+camino.workspace = true
+clap.workspace = true
 dotenvy = "0.15.7"
 httpdate = "1.0.3"
 hyper = { version = "0.14.27", features = ["full"] }
@@ -23,7 +23,7 @@ rand_chacha = "0.3.1"
 rustls = "0.21.7"
 serde_json.workspace = true
 serde_yaml = "0.9.25"
-sqlx = { version = "0.7.1", features = ["runtime-tokio-rustls", "postgres"] }
+sqlx = { version = "0.7.2", features = ["runtime-tokio-rustls", "postgres"] }
 tokio = { version = "1.32.0", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.4.4", features = ["fs"] }
@@ -32,7 +32,7 @@ zeroize = "1.6.0"
 
 tracing.workspace = true
 tracing-appender = "0.2.2"
-tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
 tracing-opentelemetry = "0.21.0"
 opentelemetry = { version = "0.20.0", features = ["trace", "metrics", "rt-tokio"] }
 opentelemetry-http = { version = "0.9.0", features = ["tokio", "hyper"] }
@@ -53,6 +53,7 @@ mas-email = { path = "../email" }
 mas-graphql = { path = "../graphql" }
 mas-handlers = { path = "../handlers", default-features = false }
 mas-http = { path = "../http", default-features = false, features = ["axum", "client"] }
+mas-i18n = { path = "../i18n" }
 mas-iana = { path = "../iana" }
 mas-keystore = { path = "../keystore" }
 mas-listener = { path = "../listener" }

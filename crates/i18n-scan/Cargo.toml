@@ -1,0 +1,19 @@
+[package]
+name = "mas-i18n-scan"
+version.workspace = true
+license.workspace = true
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+camino.workspace = true
+clap.workspace = true
+minijinja = { workspace = true, features = ["unstable_machinery"] }
+serde_json.workspace = true
+tracing-subscriber.workspace = true
+tracing.workspace = true
+walkdir = "2.4.0"
+
+mas-i18n = { path = "../i18n" }

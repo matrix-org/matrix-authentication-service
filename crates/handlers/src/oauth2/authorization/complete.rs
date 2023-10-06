@@ -34,7 +34,9 @@ use tracing::warn;
 use ulid::Ulid;
 
 use super::callback::CallbackDestination;
-use crate::{impl_from_error_for_route, oauth2::generate_id_token, BoundActivityTracker};
+use crate::{
+    impl_from_error_for_route, oauth2::generate_id_token, BoundActivityTracker, PreferredLanguage,
+};
 
 #[derive(Debug, Error)]
 pub enum RouteError {
@@ -89,6 +91,7 @@ impl_from_error_for_route!(super::callback::CallbackDestinationError);
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
+    PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
     State(url_builder): State<UrlBuilder>,
     State(key_store): State<Keystore>,
@@ -160,9 +163,10 @@ pub(crate) async fn get(
             let (csrf_token, cookie_jar) = cookie_jar.csrf_token(&clock, &mut rng);
             let ctx = PolicyViolationContext::new(grant, client)
                 .with_session(session)
-                .with_csrf(csrf_token.form_value());
+                .with_csrf(csrf_token.form_value())
+                .with_language(locale);
 
-            let content = templates.render_policy_violation(&ctx).await?;
+            let content = templates.render_policy_violation(&ctx)?;
 
             Ok((cookie_jar, Html(content)).into_response())
         }

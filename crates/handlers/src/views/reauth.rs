@@ -33,7 +33,7 @@ use serde::Deserialize;
 use zeroize::Zeroizing;
 
 use super::shared::OptionalPostAuthAction;
-use crate::{passwords::PasswordManager, BoundActivityTracker};
+use crate::{passwords::PasswordManager, BoundActivityTracker, PreferredLanguage};
 
 #[derive(Deserialize, Debug)]
 pub(crate) struct ReauthForm {
@@ -44,6 +44,7 @@ pub(crate) struct ReauthForm {
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
+    PreferredLanguage(locale): PreferredLanguage,
     State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
     activity_tracker: BoundActivityTracker,
@@ -79,9 +80,12 @@ pub(crate) async fn get(
     } else {
         ctx
     };
-    let ctx = ctx.with_session(session).with_csrf(csrf_token.form_value());
+    let ctx = ctx
+        .with_session(session)
+        .with_csrf(csrf_token.form_value())
+        .with_language(locale);
 
-    let content = templates.render_reauth(&ctx).await?;
+    let content = templates.render_reauth(&ctx)?;
 
     Ok((cookie_jar, Html(content)).into_response())
 }

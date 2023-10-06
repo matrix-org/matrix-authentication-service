@@ -18,7 +18,7 @@ use ulid::Ulid;
 pub use crate::traits::*;
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
-#[serde(rename_all = "snake_case", tag = "next")]
+#[serde(rename_all = "snake_case", tag = "kind")]
 pub enum PostAuthAction {
     ContinueAuthorizationGrant {
         id: Ulid,
@@ -691,4 +691,18 @@ impl Route for StaticAsset {
     fn path(&self) -> std::borrow::Cow<'static, str> {
         format!("/assets/{}", self.path).into()
     }
+}
+
+/// `GET|POST /graphql`
+pub struct GraphQL;
+
+impl SimpleRoute for GraphQL {
+    const PATH: &'static str = "/graphql";
+}
+
+/// `GET /graphql/playground`
+pub struct GraphQLPlayground;
+
+impl SimpleRoute for GraphQLPlayground {
+    const PATH: &'static str = "/graphql/playground";
 }

@@ -27,6 +27,7 @@ use mas_axum_utils::{
     csrf::{CsrfExt, CsrfToken, ProtectedForm},
     FancyError, SessionInfoExt,
 };
+use mas_i18n::DataLocale;
 use mas_policy::Policy;
 use mas_router::Route;
 use mas_storage::{
@@ -42,7 +43,7 @@ use serde::{Deserialize, Serialize};
 use zeroize::Zeroizing;
 
 use super::shared::OptionalPostAuthAction;
-use crate::{passwords::PasswordManager, BoundActivityTracker};
+use crate::{passwords::PasswordManager, BoundActivityTracker, PreferredLanguage};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub(crate) struct RegisterForm {
@@ -60,6 +61,7 @@ impl ToFormState for RegisterForm {
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
+    PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
     State(password_manager): State<PasswordManager>,
     mut repo: BoxRepository,
@@ -84,6 +86,7 @@ pub(crate) async fn get(
     }
 
     let content = render(
+        locale,
         RegisterContext::default(),
         query,
         csrf_token,
@@ -100,6 +103,7 @@ pub(crate) async fn get(
 pub(crate) async fn post(
     mut rng: BoxRng,
     clock: BoxClock,
+    PreferredLanguage(locale): PreferredLanguage,
     State(password_manager): State<PasswordManager>,
     State(templates): State<Templates>,
     mut policy: Policy,
@@ -184,6 +188,7 @@ pub(crate) async fn post(
 
     if !state.is_valid() {
         let content = render(
+            locale,
             RegisterContext::default().with_form_state(state),
             query,
             csrf_token,
@@ -220,7 +225,7 @@ pub(crate) async fn post(
         .await?;
 
     repo.job()
-        .schedule_job(VerifyEmailJob::new(&user_email))
+        .schedule_job(VerifyEmailJob::new(&user_email).with_language(locale.to_string()))
         .await?;
 
     repo.job()
@@ -238,6 +243,7 @@ pub(crate) async fn post(
 }
 
 async fn render(
+    locale: DataLocale,
     ctx: RegisterContext,
     action: OptionalPostAuthAction,
     csrf_token: CsrfToken,
@@ -250,9 +256,9 @@ async fn render(
     } else {
         ctx
     };
-    let ctx = ctx.with_csrf(csrf_token.form_value());
+    let ctx = ctx.with_csrf(csrf_token.form_value()).with_language(locale);
 
-    let content = templates.render_register(&ctx).await?;
+    let content = templates.render_register(&ctx)?;
     Ok(content)
 }
 

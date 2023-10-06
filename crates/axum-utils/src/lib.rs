@@ -29,6 +29,7 @@ pub mod error_wrapper;
 pub mod fancy_error;
 pub mod http_client_factory;
 pub mod jwt;
+pub mod language_detection;
 pub mod sentry;
 pub mod session;
 pub mod user_authorization;

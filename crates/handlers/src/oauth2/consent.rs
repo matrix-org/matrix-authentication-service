@@ -34,7 +34,7 @@ use mas_templates::{ConsentContext, PolicyViolationContext, TemplateContext, Tem
 use thiserror::Error;
 use ulid::Ulid;
 
-use crate::{impl_from_error_for_route, BoundActivityTracker};
+use crate::{impl_from_error_for_route, BoundActivityTracker, PreferredLanguage};
 
 #[derive(Debug, Error)]
 pub enum RouteError {
@@ -82,6 +82,7 @@ impl IntoResponse for RouteError {
 pub(crate) async fn get(
     mut rng: BoxRng,
     clock: BoxClock,
+    PreferredLanguage(locale): PreferredLanguage,
     State(templates): State<Templates>,
     mut policy: Policy,
     mut repo: BoxRepository,
@@ -123,17 +124,19 @@ pub(crate) async fn get(
         if res.valid() {
             let ctx = ConsentContext::new(grant, client)
                 .with_session(session)
-                .with_csrf(csrf_token.form_value());
+                .with_csrf(csrf_token.form_value())
+                .with_language(locale);
 
-            let content = templates.render_consent(&ctx).await?;
+            let content = templates.render_consent(&ctx)?;
 
             Ok((cookie_jar, Html(content)).into_response())
         } else {
             let ctx = PolicyViolationContext::new(grant, client)
                 .with_session(session)
-                .with_csrf(csrf_token.form_value());
+                .with_csrf(csrf_token.form_value())
+                .with_language(locale);
 
-            let content = templates.render_policy_violation(&ctx).await?;
+            let content = templates.render_policy_violation(&ctx)?;
 
             Ok((cookie_jar, Html(content)).into_response())
         }
