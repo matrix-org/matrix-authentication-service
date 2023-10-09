@@ -22,6 +22,8 @@ env:
   CARGO_TERM_COLOR: always
   CARGO_NET_GIT_FETCH_WITH_CLI: "true"
   IMAGE: ghcr.io/matrix-org/matrix-authentication-service
+  IMAGE_SYN2MAS: ghcr.io/matrix-org/matrix-authentication-service/syn2mas
+  BUILDCACHE: ghcr.io/matrix-org/matrix-authentication-service/buildcache
 
 jobs:
   build-binaries:
@@ -171,6 +173,22 @@ jobs:
             type=semver,pattern={{major}}
             type=sha
 
+      - name: Docker meta (syn2mas)
+        id: meta-syn2mas
+        uses: docker/metadata-action@v5.0.0
+        with:
+          images: "${{ env.IMAGE_SYN2MAS }}"
+          bake-target: docker-metadata-action-syn2mas
+          flavor: |
+            latest=auto
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha
+
+
       - name: Setup Cosign
         uses: sigstore/cosign-installer@v3.1.2
 
@@ -199,9 +217,11 @@ jobs:
             docker-bake.hcl
             ${{ steps.meta.outputs.bake-file }}
             ${{ steps.meta-debug.outputs.bake-file }}
+            ${{ steps.meta-syn2mas.outputs.bake-file }}
           set: |
             base.context=https://github.com/${{ github.repository }}.git#${{ github.ref }}
-            base.cache-from=type=registry,ref=${{ env.IMAGE }}:buildcache
+            syn2mas.context=https://github.com/${{ github.repository }}.git#${{ github.ref }}:tools/syn2mas/
+            base.cache-from=type=registry,ref=${{ env.BUILDCACHE }}:buildcache
 
       - name: Build and push
         id: bake
@@ -214,9 +234,10 @@ jobs:
             ${{ steps.meta-debug.outputs.bake-file }}
           set: |
             base.context=https://github.com/${{ github.repository }}.git#${{ github.ref }}
+            syn2mas.context=https://github.com/${{ github.repository }}.git#${{ github.ref }}:tools/syn2mas/
             base.output=type=image,push=true
-            base.cache-from=type=registry,ref=${{ env.IMAGE }}:buildcache
-            base.cache-to=type=registry,ref=${{ env.IMAGE }}:buildcache,mode=max
+            base.cache-from=type=registry,ref=${{ env.BUILDCACHE }}:buildcache
+            base.cache-to=type=registry,ref=${{ env.BUILDCACHE }}:buildcache,mode=max
 
       - name: Sign the images with GitHub Actions provided token
         # Only sign on tags and on commits on main branch
@@ -227,7 +248,8 @@ jobs:
         run: |-
           cosign sign --yes \
             "${{ env.IMAGE }}@${{ fromJSON(steps.bake.outputs.metadata).regular['containerimage.digest'] }}" \
-            "${{ env.IMAGE }}@${{ fromJSON(steps.bake.outputs.metadata).debug['containerimage.digest'] }}"
+            "${{ env.IMAGE }}@${{ fromJSON(steps.bake.outputs.metadata).debug['containerimage.digest'] }}" \
+            "${{ env.IMAGE_SYN2MAS }}@${{ fromJSON(steps.bake.outputs.metadata).syn2mas['containerimage.digest'] }}"
 
 
   release:
@@ -293,6 +315,17 @@ jobs:
               - Tags:
                 ```
                 ${{ fromJSON(needs.build-image.outputs.metadata).debug['image.name'] }}
+                ```
+            
+            `syn2mas` migration tool: 
+            
+              - Digest: 
+                ```
+                ${{ env.IMAGE_SYN2MAS }}@${{ fromJSON(needs.build-image.outputs.metadata).syn2mas['containerimage.digest'] }}
+                ```
+              - Tags:
+                ```
+                ${{ fromJSON(needs.build-image.outputs.metadata).syn2mas['image.name'] }}
                 ```
 
           files: |
