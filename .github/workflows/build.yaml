@@ -81,19 +81,6 @@ jobs:
         working-directory: ./frontend
         run: npm run build
 
-      - name: Install syn2mas Node
-        uses: actions/setup-node@v3.8.1
-        with:
-          node-version-file: ./tools/syn2mas/.nvmrc
-
-      - name: Install syn2mas Node dependencies
-        working-directory: ./tools/syn2mas
-        run: npm ci
-
-      - name: Build syn2mas
-        working-directory: ./tools/syn2mas
-        run: npm run build
-
       - name: Build policies
         working-directory: ./policies
         run: make

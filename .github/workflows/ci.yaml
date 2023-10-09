@@ -281,8 +281,8 @@ jobs:
         run: |
           cargo test --workspace
 
-  syn2mas-lint:
-    name: Check syn2mas style
+  syn2mas:
+    name: Check syn2mas
     runs-on: ubuntu-latest
 
     permissions:
@@ -305,6 +305,10 @@ jobs:
         working-directory: ./tools/syn2mas
         run: npm run lint
 
+      - name: Build
+        working-directory: ./tools/syn2mas
+        run: npm run build
+
   tests-done:
     name: Tests done
     if: ${{ always() }}
@@ -317,7 +321,7 @@ jobs:
       - clippy
       - check-schema
       - test
-      - syn2mas-lint
+      - syn2mas
     runs-on: ubuntu-latest
 
     steps:
