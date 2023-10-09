@@ -436,6 +436,11 @@ export type Mutation = {
   removeEmail: RemoveEmailPayload;
   /** Send a verification code for an email address */
   sendVerificationEmail: SendVerificationEmailPayload;
+  /**
+   * Set whether a user can request admin. This is only available to
+   * administrators.
+   */
+  setCanRequestAdmin: SetCanRequestAdminPayload;
   /** Set the display name of a user */
   setDisplayName: SetDisplayNamePayload;
   /** Set an email address as primary */
@@ -487,6 +492,11 @@ export type MutationRemoveEmailArgs = {
 /** The mutations root of the GraphQL interface. */
 export type MutationSendVerificationEmailArgs = {
   input: SendVerificationEmailInput;
+};
+
+/** The mutations root of the GraphQL interface. */
+export type MutationSetCanRequestAdminArgs = {
+  input: SetCanRequestAdminInput;
 };
 
 /** The mutations root of the GraphQL interface. */
@@ -762,6 +772,21 @@ export enum SessionState {
   Finished = "FINISHED",
 }
 
+/** The input for the `setCanRequestAdmin` mutation. */
+export type SetCanRequestAdminInput = {
+  /** Whether the user can request admin. */
+  canRequestAdmin: Scalars["Boolean"]["input"];
+  /** The ID of the user to update. */
+  userId: Scalars["ID"]["input"];
+};
+
+/** The payload for the `setCanRequestAdmin` mutation. */
+export type SetCanRequestAdminPayload = {
+  __typename?: "SetCanRequestAdminPayload";
+  /** The user that was updated. */
+  user?: Maybe<User>;
+};
+
 /** The input for the `addEmail` mutation */
 export type SetDisplayNameInput = {
   /** The display name to set. If `None`, the display name will be removed. */
@@ -891,6 +916,8 @@ export type User = Node & {
   appSessions: AppSessionConnection;
   /** Get the list of active browser sessions, chronologically sorted */
   browserSessions: BrowserSessionConnection;
+  /** Whether the user can request admin privileges. */
+  canRequestAdmin: Scalars["Boolean"]["output"];
   /** Get the list of compatibility sessions, chronologically sorted */
   compatSessions: CompatSessionConnection;
   /** Get the list of compatibility SSO logins, chronologically sorted */

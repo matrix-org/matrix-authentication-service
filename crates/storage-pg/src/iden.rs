@@ -34,6 +34,7 @@ pub enum Users {
     PrimaryUserEmailId,
     CreatedAt,
     LockedAt,
+    CanRequestAdmin,
 }
 
 #[derive(sea_query::Iden)]

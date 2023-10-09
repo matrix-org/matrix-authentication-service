@@ -73,6 +73,11 @@ impl User {
         self.0.locked_at
     }
 
+    /// Whether the user can request admin privileges.
+    pub async fn can_request_admin(&self) -> bool {
+        self.0.can_request_admin
+    }
+
     /// Access to the user's Matrix account information.
     async fn matrix(&self, ctx: &Context<'_>) -> Result<MatrixUser, async_graphql::Error> {
         let state = ctx.state();

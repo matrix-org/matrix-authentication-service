@@ -126,6 +126,37 @@ impl LockUserPayload {
     }
 }
 
+/// The input for the `setCanRequestAdmin` mutation.
+#[derive(InputObject)]
+struct SetCanRequestAdminInput {
+    /// The ID of the user to update.
+    user_id: ID,
+
+    /// Whether the user can request admin.
+    can_request_admin: bool,
+}
+
+/// The payload for the `setCanRequestAdmin` mutation.
+#[derive(Description)]
+enum SetCanRequestAdminPayload {
+    /// The user was updated.
+    Updated(mas_data_model::User),
+
+    /// The user was not found.
+    NotFound,
+}
+
+#[Object(use_type_description)]
+impl SetCanRequestAdminPayload {
+    /// The user that was updated.
+    async fn user(&self) -> Option<User> {
+        match self {
+            Self::Updated(user) => Some(User(user.clone())),
+            Self::NotFound => None,
+        }
+    }
+}
+
 fn valid_username_character(c: char) -> bool {
     c.is_ascii_lowercase()
         || c.is_ascii_digit()
@@ -231,5 +262,38 @@ impl UserMutations {
         repo.save().await?;
 
         Ok(LockUserPayload::Locked(user))
+    }
+
+    /// Set whether a user can request admin. This is only available to
+    /// administrators.
+    async fn set_can_request_admin(
+        &self,
+        ctx: &Context<'_>,
+        input: SetCanRequestAdminInput,
+    ) -> Result<SetCanRequestAdminPayload, async_graphql::Error> {
+        let state = ctx.state();
+        let requester = ctx.requester();
+
+        if !requester.is_admin() {
+            return Err(async_graphql::Error::new("Unauthorized"));
+        }
+
+        let mut repo = state.repository().await?;
+
+        let user_id = NodeType::User.extract_ulid(&input.user_id)?;
+        let user = repo.user().lookup(user_id).await?;
+
+        let Some(user) = user else {
+            return Ok(SetCanRequestAdminPayload::NotFound);
+        };
+
+        let user = repo
+            .user()
+            .set_can_request_admin(user, input.can_request_admin)
+            .await?;
+
+        repo.save().await?;
+
+        Ok(SetCanRequestAdminPayload::Updated(user))
     }
 }

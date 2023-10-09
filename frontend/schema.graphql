@@ -643,6 +643,13 @@ type Mutation {
   """
   lockUser(input: LockUserInput!): LockUserPayload!
   """
+  Set whether a user can request admin. This is only available to
+  administrators.
+  """
+  setCanRequestAdmin(
+    input: SetCanRequestAdminInput!
+  ): SetCanRequestAdminPayload!
+  """
   Create a new arbitrary OAuth 2.0 Session.
 
   Only available for administrators.
@@ -1019,6 +1026,30 @@ enum SessionState {
 }
 
 """
+The input for the `setCanRequestAdmin` mutation.
+"""
+input SetCanRequestAdminInput {
+  """
+  The ID of the user to update.
+  """
+  userId: ID!
+  """
+  Whether the user can request admin.
+  """
+  canRequestAdmin: Boolean!
+}
+
+"""
+The payload for the `setCanRequestAdmin` mutation.
+"""
+type SetCanRequestAdminPayload {
+  """
+  The user that was updated.
+  """
+  user: User
+}
+
+"""
 The input for the `addEmail` mutation
 """
 input SetDisplayNameInput {
@@ -1232,6 +1263,10 @@ type User implements Node {
   When the user was locked out.
   """
   lockedAt: DateTime
+  """
+  Whether the user can request admin privileges.
+  """
+  canRequestAdmin: Boolean!
   """
   Access to the user's Matrix account information.
   """
