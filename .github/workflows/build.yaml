@@ -232,6 +232,7 @@ jobs:
             docker-bake.hcl
             ${{ steps.meta.outputs.bake-file }}
             ${{ steps.meta-debug.outputs.bake-file }}
+            ${{ steps.meta-syn2mas.outputs.bake-file }}
           set: |
             base.context=https://github.com/${{ github.repository }}.git#${{ github.ref }}
             syn2mas.context=https://github.com/${{ github.repository }}.git#${{ github.ref }}:tools/syn2mas/
