@@ -15,7 +15,7 @@ Features that are provided to support this include:
 If
 There will be tools to help with the migration process itself. But these aren't quite ready yet.
 
-## Preparation for the migration
+## Preparing for the migration
 
 The deployment is non-trivial so it is important to read through and understand the steps involved and make a plan before starting.
 
@@ -49,7 +49,9 @@ If no errors are reported then you can proceed to the next step.
 
 ## Doing the migration
 
-### Backup your data
+Having done the preparation, you can now proceed with the actual migration. Note that this will require downtime for the homeserver and is not easily reversible.
+
+### Backup your data
 
 As with any migration, it is important to backup your data before proceeding.
 
