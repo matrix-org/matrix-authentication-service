@@ -1262,6 +1262,29 @@ export default {
             ],
           },
           {
+            name: "setCanRequestAdmin",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "OBJECT",
+                name: "SetCanRequestAdminPayload",
+                ofType: null,
+              },
+            },
+            args: [
+              {
+                name: "input",
+                type: {
+                  kind: "NON_NULL",
+                  ofType: {
+                    kind: "SCALAR",
+                    name: "Any",
+                  },
+                },
+              },
+            ],
+          },
+          {
             name: "setDisplayName",
             type: {
               kind: "NON_NULL",
@@ -2142,6 +2165,22 @@ export default {
       },
       {
         kind: "OBJECT",
+        name: "SetCanRequestAdminPayload",
+        fields: [
+          {
+            name: "user",
+            type: {
+              kind: "OBJECT",
+              name: "User",
+              ofType: null,
+            },
+            args: [],
+          },
+        ],
+        interfaces: [],
+      },
+      {
+        kind: "OBJECT",
         name: "SetDisplayNamePayload",
         fields: [
           {
@@ -2622,6 +2661,17 @@ export default {
                 },
               },
             ],
+          },
+          {
+            name: "canRequestAdmin",
+            type: {
+              kind: "NON_NULL",
+              ofType: {
+                kind: "SCALAR",
+                name: "Any",
+              },
+            },
+            args: [],
           },
           {
             name: "compatSessions",

@@ -27,6 +27,7 @@ pub struct User {
     pub primary_user_email_id: Option<Ulid>,
     pub created_at: DateTime<Utc>,
     pub locked_at: Option<DateTime<Utc>>,
+    pub can_request_admin: bool,
 }
 
 impl User {
@@ -47,6 +48,7 @@ impl User {
             primary_user_email_id: None,
             created_at: now,
             locked_at: None,
+            can_request_admin: false,
         }]
     }
 }

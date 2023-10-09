@@ -96,6 +96,20 @@ test_synapse_admin_scopes {
 		with data.admin_users as []
 		with input.grant_type as "authorization_code"
 		with input.scope as "urn:synapse:admin:*"
+
+	allow with input.user as user
+		with input.user.can_request_admin as true
+		with input.client as client
+		with data.admin_users as []
+		with input.grant_type as "authorization_code"
+		with input.scope as "urn:synapse:admin:*"
+
+	not allow with input.user as user
+		with input.user.can_request_admin as false
+		with input.client as client
+		with data.admin_users as []
+		with input.grant_type as "authorization_code"
+		with input.scope as "urn:synapse:admin:*"
 }
 
 test_mas_scopes {
