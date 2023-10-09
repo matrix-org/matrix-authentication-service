@@ -20,4 +20,4 @@ If the .well-known is hosted elsewhere then `org.matrix.msc2965.authentication` 
 }
 ```
 
-For more context on what the correct values are, see [here](README.md).
+For more context on what the correct values are, see [here](./).
