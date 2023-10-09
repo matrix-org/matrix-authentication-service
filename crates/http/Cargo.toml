@@ -24,7 +24,7 @@ serde.workspace = true
 serde_json.workspace = true
 serde_urlencoded = "0.7.1"
 thiserror.workspace = true
-tokio = { version = "1.32.0", features = ["sync", "parking_lot"], optional = true }
+tokio = { version = "1.33.0", features = ["sync", "parking_lot"], optional = true }
 tower = { version = "0.4.13", features = [] }
 tower-http = { version = "0.4.4", features = ["cors"] }
 tracing.workspace = true
@@ -35,7 +35,7 @@ mas-tower = { path = "../tower" }
 
 [dev-dependencies]
 anyhow.workspace = true
-tokio = { version = "1.32.0", features = ["macros", "rt"] }
+tokio = { version = "1.33.0", features = ["macros", "rt"] }
 tower = { version = "0.4.13", features = ["util"] }
 
 [features]
