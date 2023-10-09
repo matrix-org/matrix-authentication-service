@@ -24,7 +24,7 @@ rustls = "0.21.7"
 serde_json.workspace = true
 serde_yaml = "0.9.25"
 sqlx = { version = "0.7.2", features = ["runtime-tokio-rustls", "postgres"] }
-tokio = { version = "1.32.0", features = ["full"] }
+tokio = { version = "1.33.0", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.4.4", features = ["fs"] }
 url.workspace = true
