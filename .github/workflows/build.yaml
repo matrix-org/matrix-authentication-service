@@ -132,7 +132,6 @@ jobs:
           path: |
             target/*/release/mas-cli
             frontend/dist/
-            tools/syn2mas/dist/
             policies/policy.wasm
             templates/
             LICENSE
