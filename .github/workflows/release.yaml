@@ -56,7 +56,7 @@ jobs:
             const version = process.env.VERSION;
             const parent = context.sha;
             const cargoToml = await fs.readFile("Cargo.toml");
-            const cargoTomlBlob = await octokit.rest.git.createBlob({
+            const cargoTomlBlob = await github.rest.git.createBlob({
               owner,
               repo,
               content: cargoToml.toString("base64"),
@@ -64,14 +64,14 @@ jobs:
             });
 
             const cargoLock = await fs.readFile("Cargo.lock");
-            const cargoLockBlob = await octokit.rest.git.createBlob({
+            const cargoLockBlob = await github.rest.git.createBlob({
               owner,
               repo,
               content: cargoLock.toString("base64"),
               encoding: "base64",
             });
 
-            const tree = await octokit.rest.git.createTree({
+            const tree = await github.rest.git.createTree({
               owner,
               repo,
               tree: [{
@@ -88,7 +88,7 @@ jobs:
               base_tree: parent,
             });
 
-            const commit = await octokit.rest.git.createCommit({
+            const commit = await github.rest.git.createCommit({
               owner,
               repo,
               message: version,
@@ -96,7 +96,7 @@ jobs:
               tree: tree.data.sha,
             });
 
-            await octokit.rest.git.createTag({
+            await github.rest.git.createTag({
               owner,
               repo,
               tag: version,
@@ -119,14 +119,14 @@ jobs:
             const [owner, repo] = process.env.GITHUB_REPOSITORY.split("/");
             const version = process.env.VERSION;
             const commit = process.env.COMMIT;
-            await octokit.rest.git.createRef({
+            await github.rest.git.createRef({
               owner,
               repo,
               ref: `refs/tags/${version}`,
               sha: commit,
             });
 
-            await octokit.rest.git.updateRef({
+            await github.rest.git.updateRef({
               owner,
               repo,
               ref: "heads/main",
