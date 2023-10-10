@@ -1,0 +1,134 @@
+name: Trigger a release
+on:
+  workflow_dispatch:
+    secrets:
+      BOT_GITHUB_TOKEN:
+        required: true
+    inputs:
+      bump:
+        type: choice
+        description: "What semver bump to use for the release"
+        required: true
+        options:
+          - "major"
+          - "minor"
+          - "patch"
+        default: "minor"
+
+
+jobs:
+  set-version:
+    name: Bump version and push a tag
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4.1.0
+
+      - name: Install Rust toolchain
+        run: |
+          rustup toolchain install stable
+          rustup default stable
+
+      - name: Install cargo-edit
+        run: cargo install cargo-edit
+
+      - name: Bump version
+        run: cargo set-version --workspace --bump=${{ github.event.inputs.bump }}
+
+      - name: Extract version
+        id: version
+        run: echo "version=v$(cargo metadata --format-version 1 | jq -r '.packages[] | select(.name == "mas-cli") | .version')" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and tag using the GitHub API
+        uses: actions/github-script@v5.2.0
+        id: commit
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        with:
+          result-encoding: string
+          # Commit & tag with the actions token, so that they get signed
+          script: |
+            const fs = require("fs/promises");
+            const [owner, repo] = process.env.GITHUB_REPOSITORY.split("/");
+            const version = process.env.VERSION;
+            const parent = context.sha;
+            const cargoToml = await fs.readFile("Cargo.toml");
+            const cargoTomlBlob = await octokit.rest.git.createBlob({
+              owner,
+              repo,
+              content: cargoToml.toString("base64"),
+              encoding: "base64",
+            });
+
+            const cargoLock = await fs.readFile("Cargo.lock");
+            const cargoLockBlob = await octokit.rest.git.createBlob({
+              owner,
+              repo,
+              content: cargoLock.toString("base64"),
+              encoding: "base64",
+            });
+
+            const tree = await octokit.rest.git.createTree({
+              owner,
+              repo,
+              tree: [{
+                path: "Cargo.toml",
+                mode: "100644",
+                type: "blob",
+                sha: cargoTomlBlob.data.sha,
+              }, {
+                path: "Cargo.lock",
+                mode: "100644",
+                type: "blob",
+                sha: cargoLockBlob.data.sha,
+              }],
+              base_tree: parent,
+            });
+
+            const commit = await octokit.rest.git.createCommit({
+              owner,
+              repo,
+              message: version,
+              parents: [parent],
+              tree: tree.data.sha,
+            });
+
+            await octokit.rest.git.createTag({
+              owner,
+              repo,
+              tag: version,
+              message: version,
+              type: "commit",
+              object: commit.data.sha,
+            });
+
+            return commit.data.sha;
+
+      - name: Update the refs
+        uses: actions/github-script@v5.2.0
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          COMMIT: ${{ steps.commit.outputs.result }}
+        with:
+          # Update the refs with the bot
+          github-token: ${{ secrets.BOT_GITHUB_TOKEN }}
+          script: |
+            const [owner, repo] = process.env.GITHUB_REPOSITORY.split("/");
+            const version = process.env.VERSION;
+            const commit = process.env.COMMIT;
+            await octokit.rest.git.createRef({
+              owner,
+              repo,
+              ref: `refs/tags/${version}`,
+              sha: commit,
+            });
+
+            await octokit.rest.git.updateRef({
+              owner,
+              repo,
+              ref: "heads/main",
+              sha: commit,
+            });
