@@ -83,6 +83,9 @@ updates:
 
   - package-ecosystem: "npm"
     directory: "/tools/syn2mas/"
+    labels:
+      - "A-Dependencies"
+      - "Z-Deps-Syn2Mas"
     schedule:
       interval: "weekly"
     ignore:
