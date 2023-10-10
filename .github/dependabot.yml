@@ -85,6 +85,10 @@ updates:
     directory: "/tools/syn2mas/"
     schedule:
       interval: "weekly"
+    ignore:
+      # Ignore @types/node until we can upgrade to Node 20
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     groups:
       production:
         dependency-type: "production"
