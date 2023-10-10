@@ -2,6 +2,9 @@ version: 2
 updates:
   - package-ecosystem: "cargo"
     directory: "/"
+    labels:
+      - "A-Dependencies"
+      - "Z-Deps-Backend"
     schedule:
       interval: "daily"
     groups:
@@ -29,11 +32,17 @@ updates:
 
   - package-ecosystem: "github-actions"
     directory: "/"
+    labels:
+      - "A-Dependencies"
+      - "Z-Deps-CI"
     schedule:
       interval: "daily"
 
   - package-ecosystem: "npm"
     directory: "/frontend/"
+    labels:
+      - "A-Dependencies"
+      - "Z-Deps-Frontend"
     schedule:
       interval: "daily"
     groups:
@@ -68,8 +77,16 @@ updates:
       graphql-codegen:
         patterns:
           - "@graphql-codegen/*"
+      types:
+        patterns:
+          - "@types/*"
 
   - package-ecosystem: "npm"
     directory: "/tools/syn2mas/"
     schedule:
       interval: "weekly"
+    groups:
+      production:
+        dependency-type: "production"
+      development:
+        dependency-type: "development"
