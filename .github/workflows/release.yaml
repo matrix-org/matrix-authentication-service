@@ -43,7 +43,7 @@ jobs:
         run: echo "version=v$(cargo metadata --format-version 1 | jq -r '.packages[] | select(.name == "mas-cli") | .version')" >> "$GITHUB_OUTPUT"
 
       - name: Commit and tag using the GitHub API
-        uses: actions/github-script@v5.2.0
+        uses: actions/github-script@v6.4.1
         id: commit
         env:
           VERSION: ${{ steps.version.outputs.version }}
@@ -108,7 +108,7 @@ jobs:
             return commit.data.sha;
 
       - name: Update the refs
-        uses: actions/github-script@v5.2.0
+        uses: actions/github-script@v6.4.1
         env:
           VERSION: ${{ steps.version.outputs.version }}
           COMMIT: ${{ steps.commit.outputs.result }}
