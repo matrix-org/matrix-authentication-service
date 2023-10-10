@@ -9,23 +9,28 @@ export interface SynapseOIDCProvider {
   client_secret_jwt_key?: string;
 }
 
-export interface SynapseConfig {
-  database?: {
+export interface Sqlite3DatabaseConfig {
     name: "sqlite3";
     args?: {
-      database: string;
+        database: string;
     };
-  } | {
-    name: "psycopg2";
-    args?: {
-      user?: string;
-      password?: string;
-      database?: string;
-      host?: string;
-      port?: number;
-    };
-  } | any;
+}
 
+export interface Psycopg2DatabaseConfig {
+  name: "psycopg2";
+  args?: {
+    user?: string;
+    password?: string;
+    database?: string;
+    host?: string;
+    port?: number;
+  };
+}
+
+export type DatabaseConfig = Sqlite3DatabaseConfig | Psycopg2DatabaseConfig | { name?: Omit<string, "sqlite3" | "psycopg2"> };
+
+export interface SynapseConfig {
+  database?: DatabaseConfig;
   oidc_providers?: SynapseOIDCProvider[];
   oidc_config?: SynapseOIDCProvider;
   allow_guest_access?: boolean;

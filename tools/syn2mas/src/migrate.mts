@@ -95,7 +95,7 @@ export async function migrate(argv?: string[]): Promise<void> {
     upstreamProviders.set(providerId, existingProvider);
   }
   
-  function stringifyAndRedact(input: any): string {
+  function stringifyAndRedact(input: unknown): string {
     const x = JSON.stringify(input);
   
     return x.replace(/("(password_hash|hashed_password|access_token|token)":")[^"]*"/, "$1redacted\"");
