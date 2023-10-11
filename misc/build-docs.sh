@@ -43,6 +43,7 @@ env RUSTC_BOOTSTRAP=1 \
 rm target/doc/.lock
 
 # Move the Rust documentation within the mdBook
+rm -rf target/book/rustdoc
 mv target/doc target/book/rustdoc
 
 # Build the frontend storybook
