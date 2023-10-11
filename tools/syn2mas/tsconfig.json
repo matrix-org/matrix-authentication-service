@@ -1,16 +1,12 @@
 {
+  "extends": [
+    "@tsconfig/strictest/tsconfig.json",
+    "@tsconfig/node18/tsconfig.json"
+  ],
   "compilerOptions": {
-      "target": "ES2022",
-      "module": "ES2022",
-      "lib": ["ES2022"],
-      "moduleResolution": "node",
-      "strict": true,
-      "sourceMap": true,
-      "declaration": false,
-      "outDir": "./dist",
-      "rootDir": "./src",
-      "esModuleInterop": true,
-      "allowSyntheticDefaultImports": true,
-      "skipLibCheck": true
+    "outDir": "dist",
+    "rootDir": "src",
+    "sourceMap": true,
+    "declaration": false,
   }
 }

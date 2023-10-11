@@ -1,25 +1,40 @@
+// Copyright 2023 The Matrix.org Foundation C.I.C.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import { readFile } from "node:fs/promises";
-import { parse } from "ts-command-line-args";
+
 import id128 from "id128";
 import log4js from "log4js";
+import { parse } from "ts-command-line-args";
 import yaml from "yaml";
 
-import { SUser } from "./types/SUser";
-import { SUserThreePid } from "./types/SUserThreePid";
-import { MUserPassword } from "./types/MUserPassword";
-import { MUserEmail } from "./types/MUserEmail";
-import { SUserExternalId } from "./types/SUserExternalId";
-import { SAccessToken } from "./types/SAccessToken";
-import { SRefreshToken } from "./types/SRefreshToken";
-import { MCompatAccessToken } from "./types/MCompatAccessToken";
-import { MCompatRefreshToken } from "./types/MCompatRefreshToken";
-import { MCompatSession } from "./types/MCompatSession";
-import { MUpstreamOauthLink } from "./types/MUpstreamOauthLink";
-import { MUpstreamOauthProvider } from "./types/MUpstreamOauthProvider";
-import { UUID } from "./types";
 import { connectToSynapseDatabase, connectToMASDatabase } from "./db.mjs";
-import { synapseConfig as synapseConfigSchema } from "./schemas/synapse.mjs";
 import { masConfig as masConfigSchema } from "./schemas/mas.mjs";
+import { synapseConfig as synapseConfigSchema } from "./schemas/synapse.mjs";
+import type { MCompatAccessToken } from "./types/MCompatAccessToken.d.ts";
+import type { MCompatRefreshToken } from "./types/MCompatRefreshToken.d.ts";
+import type { MCompatSession } from "./types/MCompatSession.d.ts";
+import type { MUpstreamOauthLink } from "./types/MUpstreamOauthLink.d.ts";
+import type { MUpstreamOauthProvider } from "./types/MUpstreamOauthProvider.d.ts";
+import type { MUserEmail } from "./types/MUserEmail.d.ts";
+import type { MUserPassword } from "./types/MUserPassword.d.ts";
+import type { SAccessToken } from "./types/SAccessToken.d.ts";
+import type { SRefreshToken } from "./types/SRefreshToken.d.ts";
+import type { SUser } from "./types/SUser.d.ts";
+import type { SUserExternalId } from "./types/SUserExternalId.d.ts";
+import type { SUserThreePid } from "./types/SUserThreePid.d.ts";
+import type { UUID } from "./types/index.d.ts";
 
 const log = log4js.getLogger("migrate");
 
@@ -32,7 +47,7 @@ interface MigrationOptions {
   help?: boolean;
 }
 
-export async function migrate(argv?: string[]): Promise<void> {
+export async function migrate(): Promise<void> {
   const args = parse<MigrationOptions>(
     {
       command: {
@@ -68,7 +83,6 @@ export async function migrate(argv?: string[]): Promise<void> {
     },
     {
       helpArg: "help",
-      argv,
     },
   );
 
@@ -113,6 +127,12 @@ export async function migrate(argv?: string[]): Promise<void> {
 
   for (const mapping of args.upstreamProviderMapping) {
     const [providerId, masProviderId] = mapping.split(":");
+    if (!providerId || !masProviderId) {
+      throw new Error(
+        `Upstream provider mapping is not in correct format. It should be <upstream_provider_id>:<mas_provider_id>: ${mapping}`,
+      );
+    }
+
     if (
       !id128.Uuid.isRaw(masProviderId) &&
       !id128.Uuid.isCanonical(masProviderId)
@@ -220,10 +240,13 @@ export async function migrate(argv?: string[]): Promise<void> {
         user_id: masUser.user_id,
         email: threePid.address.toLowerCase(),
         created_at: new Date(parseInt(`${threePid.added_at}`) * 1000),
-        confirmed_at: threePid.validated_at
-          ? new Date(parseInt(`${threePid.validated_at}`) * 1000)
-          : undefined,
       };
+
+      if (threePid.validated_at) {
+        masUserEmail.confirmed_at = new Date(
+          parseInt(`${threePid.validated_at}`) * 1000,
+        );
+      }
 
       log.debug(
         `${stringifyAndRedact(threePid)} => ${stringifyAndRedact(

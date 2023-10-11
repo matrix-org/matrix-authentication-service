@@ -1,18 +1,33 @@
-import { readFile } from "node:fs/promises";
-import { parse } from "ts-command-line-args";
-import log4js from "log4js";
-import yaml from "yaml";
-import { Knex } from "knex";
+// Copyright 2023 The Matrix.org Foundation C.I.C.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-import { SUser } from "./types/SUser";
+import { readFile } from "node:fs/promises";
+
+import { Knex } from "knex";
+import log4js from "log4js";
+import { parse } from "ts-command-line-args";
+import yaml from "yaml";
+
 import { connectToSynapseDatabase } from "./db.mjs";
-import { SUserThreePid } from "./types/SUserThreePid";
-import { SAccessToken } from "./types/SAccessToken";
-import { SRefreshToken } from "./types/SRefreshToken";
 import {
   synapseConfig as synapseConfigSchema,
   SynapseOIDCProvider,
 } from "./schemas/synapse.mjs";
+import type { SAccessToken } from "./types/SAccessToken.d.ts";
+import type { SRefreshToken } from "./types/SRefreshToken.d.ts";
+import type { SUser } from "./types/SUser.d.ts";
+import type { SUserThreePid } from "./types/SUserThreePid.d.ts";
 
 const log = log4js.getLogger("migrate");
 
@@ -22,7 +37,7 @@ interface Options {
   help?: boolean;
 }
 
-export async function advisor(argv?: string[]): Promise<void> {
+export async function advisor(): Promise<void> {
   const args = parse<Options>(
     {
       command: {
