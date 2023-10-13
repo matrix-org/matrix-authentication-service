@@ -46,7 +46,7 @@ version = "0.8.5"
 
 # Serialization and deserialization
 [workspace.dependencies.serde]
-version = "1.0.188"
+version = "1.0.189"
 features = ["derive"] # Most of the time, if we need serde, we need derive
 
 # JSON serialization and deserialization
