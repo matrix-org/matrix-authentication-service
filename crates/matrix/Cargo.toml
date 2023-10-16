@@ -10,7 +10,7 @@ repository.workspace = true
 [dependencies]
 anyhow.workspace = true
 serde.workspace = true
-async-trait = "0.1.73"
+async-trait = "0.1.74"
 http.workspace = true
 tokio = { version = "1.33.0", features = ["sync", "macros", "rt"] }
 url.workspace = true

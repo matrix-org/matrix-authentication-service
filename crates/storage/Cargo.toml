@@ -8,7 +8,7 @@ homepage.workspace = true
 repository.workspace = true
 
 [dependencies]
-async-trait = "0.1.73"
+async-trait = "0.1.74"
 chrono.workspace = true
 thiserror.workspace = true
 futures-util = "0.3.28"
