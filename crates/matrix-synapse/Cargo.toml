@@ -9,7 +9,7 @@ repository.workspace = true
 
 [dependencies]
 anyhow.workspace = true
-async-trait = "0.1.73"
+async-trait = "0.1.74"
 http.workspace = true
 serde.workspace = true
 tower = { version = "0.4.13", features = ["util"] }

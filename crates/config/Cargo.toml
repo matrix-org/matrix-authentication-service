@@ -10,7 +10,7 @@ repository.workspace = true
 [dependencies]
 tokio = { version = "1.33.0", features = ["fs", "rt"] }
 tracing.workspace = true
-async-trait = "0.1.73"
+async-trait = "0.1.74"
 
 thiserror.workspace = true
 anyhow.workspace = true

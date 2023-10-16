@@ -9,7 +9,7 @@ repository.workspace = true
 
 [dependencies]
 anyhow.workspace = true
-async-trait = "0.1.73"
+async-trait = "0.1.74"
 camino.workspace = true
 convert_case = "0.6.0"
 csv = "1.3.0"
