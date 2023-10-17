@@ -16,10 +16,7 @@ exports[`BrowserSessionsOverview > renders with no browser sessions 1`] = `
       <p
         class="_font-body-md-regular_1jx6b_59"
       >
-        0
-         active
-         
-        sessions
+        0 active sessions
       </p>
     </div>
     <a
@@ -48,10 +45,7 @@ exports[`BrowserSessionsOverview > renders with sessions 1`] = `
       <p
         class="_font-body-md-regular_1jx6b_59"
       >
-        2
-         active
-         
-        sessions
+        2 active sessions
       </p>
     </div>
     <a
