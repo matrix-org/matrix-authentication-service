@@ -25,7 +25,7 @@ i18n
   .use(initReactI18next)
   .init({
     fallbackLng: "en",
-    keySeparator: "|",
+    keySeparator: ".",
     interpolation: {
       escapeValue: false, // React has built-in XSS protections
     },

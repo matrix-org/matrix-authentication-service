@@ -1,5 +1,5 @@
 export default {
-    keySeparator: "|",
+    keySeparator: ".",
     defaultNamespace: "frontend",
     lexers: {
         ts: [
