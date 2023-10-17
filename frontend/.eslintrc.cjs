@@ -21,6 +21,7 @@ module.exports = {
     "**/coverage/**",
     "!.storybook",
     "*/gql/*.ts",
+    "i18next-parser.config.js",
   ],
   overrides: [
     // General rules for JS/TS files

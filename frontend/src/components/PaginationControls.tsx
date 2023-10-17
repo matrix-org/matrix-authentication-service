@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import { Button } from "@vector-im/compound-web";
+import { useTranslation } from "react-i18next";
 
 type Props = {
   onNext: (() => void) | null;
@@ -30,6 +31,8 @@ const PaginationControls: React.FC<Props> = ({
   count,
   disabled,
 }) => {
+  const { t } = useTranslation();
+
   if (autoHide && !onNext && !onPrev) {
     return null;
   }
@@ -41,10 +44,12 @@ const PaginationControls: React.FC<Props> = ({
         disabled={disabled || !onPrev}
         onClick={(): void => onPrev?.()}
       >
-        Previous
+        {t("common.previous")}
       </Button>
       <div className="text-center">
-        {count !== undefined ? <>Total: {count}</> : null}
+        {count !== undefined ? (
+          <>{t("frontend.pagination_controls.total", { totalCount: count })}</>
+        ) : null}
       </div>
       <Button
         kind="secondary"
@@ -52,7 +57,7 @@ const PaginationControls: React.FC<Props> = ({
         disabled={disabled || !onNext}
         onClick={(): void => onNext?.()}
       >
-        Next
+        {t("common.next")}
       </Button>
     </div>
   );

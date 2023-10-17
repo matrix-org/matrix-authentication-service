@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import { H3 } from "@vector-im/compound-web";
+import { useTranslation } from "react-i18next";
 
 import { FragmentType, useFragment } from "../../gql";
 import BlockList from "../BlockList";
@@ -24,10 +25,11 @@ const UserSessionsOverview: React.FC<{
   user: FragmentType<typeof FRAGMENT>;
 }> = ({ user }) => {
   const data = useFragment(FRAGMENT, user);
+  const { t } = useTranslation();
 
   return (
     <BlockList>
-      <H3>Where you're signed in</H3>
+      <H3>{t("frontend.user_sessions_overview.heading")}</H3>
       <BrowserSessionsOverview user={user} />
       <AppSessionsList userId={data.id} />
     </BlockList>

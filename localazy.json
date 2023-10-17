@@ -3,13 +3,26 @@
   "readKey": "a7633943728394577700-c0f9f1df124fbdbe76b2c7dfcbfe574476d56509e0da6180e2a321dbbe056c40",
   "upload": {
     "type": "json",
-    "files": "translations/en.json",
-    "features": [
-      "arb_metadata",
-      "plural_object"
-    ]
+    "files": [{
+      "file": "file.json",
+      "pattern": "translations/en.json",
+      "features": [
+        "arb_metadata",
+        "plural_object"
+      ]
+    }, {
+      "file": "frontend.json",
+      "path": "frontend/public/locales/en.json",
+      "features": ["plural_postfix_dd"]
+    }]
   },
   "download": {
-    "files": "translations/${lang}.json"
+    "files": [{
+      "conditions": "equals: ${file}, file.json",
+      "output": "translations/${lang}.json"
+    }, {
+      "conditions": "equals: ${file}, frontend.json",
+      "output": "frontend/public/locales/${lang}.json"
+    }]
   }
 }

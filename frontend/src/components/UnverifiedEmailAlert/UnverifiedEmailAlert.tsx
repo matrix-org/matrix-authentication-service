@@ -14,6 +14,7 @@
 
 import { Alert } from "@vector-im/compound-web";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { FragmentType, useFragment, graphql } from "../../gql";
 import { Link } from "../../routing";
@@ -34,6 +35,7 @@ const UnverifiedEmailAlert: React.FC<{
 }> = ({ user }) => {
   const data = useFragment(UNVERIFIED_EMAILS_FRAGMENT, user);
   const [dismiss, setDismiss] = useState(false);
+  const { t } = useTranslation();
 
   const doDismiss = (): void => setDismiss(true);
 
@@ -48,13 +50,15 @@ const UnverifiedEmailAlert: React.FC<{
   return (
     <Alert
       type="critical"
-      title="Unverified email"
+      title={t("frontend.unverified_email_alert.title")}
       onClose={doDismiss}
       className={styles.alert}
     >
-      You have {data.unverifiedEmails.totalCount} unverified email address(es).{" "}
+      {t("frontend.unverified_email_alert.text", {
+        count: data.unverifiedEmails.totalCount,
+      })}{" "}
       <Link kind="button" route={{ type: "profile" }}>
-        Review and verify
+        {t("frontend.unverified_email_alert.button")}
       </Link>
     </Alert>
   );

@@ -18,6 +18,7 @@ import type frontend from "../../public/locales/en.json";
 declare module "i18next" {
   interface CustomTypeOptions {
     keySeparator: ".";
+    pluralSeparator: ":";
     defaultNS: "frontend";
     resources: {
       frontend: typeof frontend;

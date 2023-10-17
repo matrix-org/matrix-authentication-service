@@ -17,6 +17,7 @@ import { useAtomValue } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 
 import { graphql } from "../../gql";
 import { Link } from "../../routing";
@@ -59,15 +60,19 @@ const SessionDetail: React.FC<{
     [deviceId, userId],
   );
   const result = useAtomValue(sessionFamilyAtomWithProps);
+  const { t } = useTranslation();
 
   const session = result.data?.session;
 
   if (!session) {
     return (
-      <Alert type="critical" title={`Cannot find session: ${deviceId}`}>
-        This session does not exist, or is no longer active.
+      <Alert
+        type="critical"
+        title={t("frontend.session_detail.alert.title", { deviceId })}
+      >
+        {t("frontend.session_detail.alert.text")}
         <Link kind="button" route={{ type: "sessions-overview" }}>
-          Go back
+          {t("frontend.session_detail.alert.button")}
         </Link>
       </Alert>
     );

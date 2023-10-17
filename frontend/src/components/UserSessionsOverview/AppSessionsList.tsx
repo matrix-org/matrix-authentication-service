@@ -17,6 +17,7 @@ import { atom, useAtomValue, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
 import { useTransition } from "react";
+import { useTranslation } from "react-i18next";
 
 import { mapQueryAtom } from "../../atoms";
 import { graphql } from "../../gql";
@@ -120,9 +121,10 @@ const AppSessionsList: React.FC<{ userId: string }> = ({ userId }) => {
   const result = useAtomValue(appSessionListFamily(userId));
   const setPagination = useSetAtom(currentPaginationAtom);
   const [prevPage, nextPage] = useAtomValue(paginationFamily(userId));
+  const { t } = useTranslation();
 
   const appSessions = unwrap(result);
-  if (!appSessions) return <>Failed to load app sessions</>;
+  if (!appSessions) return <>{t("frontend.app_sessions_list.error")}</>;
 
   const paginate = (pagination: Pagination): void => {
     startTransition(() => {
@@ -133,7 +135,7 @@ const AppSessionsList: React.FC<{ userId: string }> = ({ userId }) => {
   return (
     <BlockList>
       <header>
-        <H5>Apps</H5>
+        <H5>{t("frontend.app_sessions_list.heading")}</H5>
       </header>
       {appSessions.edges.map((session) => {
         const type = session.node.__typename;

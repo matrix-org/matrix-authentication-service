@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import i18n from 'i18next';
-import { initReactI18next } from 'react-i18next';
+import i18n from "i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
 import I18NextHttpBackend from "i18next-http-backend";
+import { initReactI18next } from "react-i18next";
 
 const languageDetector = new LanguageDetector();
 
@@ -26,13 +26,13 @@ i18n
   .init({
     fallbackLng: "en",
     keySeparator: ".",
+    pluralSeparator: ":",
     interpolation: {
       escapeValue: false, // React has built-in XSS protections
     },
     backend: {
-      loadPath: '/locales/{{lng}}.json',
-    }
+      loadPath: "/locales/{{lng}}.json",
+    },
   });
-
 
 export default i18n;

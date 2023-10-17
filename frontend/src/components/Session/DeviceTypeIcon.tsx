@@ -17,6 +17,7 @@ import IconMobile from "@vector-im/compound-design-tokens/icons/mobile.svg?react
 import IconUnknown from "@vector-im/compound-design-tokens/icons/unknown.svg?react";
 import IconBrowser from "@vector-im/compound-design-tokens/icons/web-browser.svg?react";
 import { FunctionComponent, SVGProps } from "react";
+import { useTranslation } from "react-i18next";
 
 import { DeviceType } from "../../utils/parseUserAgent";
 
@@ -32,17 +33,20 @@ const deviceTypeToIcon: Record<
   [DeviceType.Web]: IconBrowser,
 };
 
-const deviceTypeToLabel: Record<DeviceType, string> = {
-  [DeviceType.Unknown]: "Unknown device type",
-  [DeviceType.Desktop]: "Desktop",
-  [DeviceType.Mobile]: "Mobile",
-  [DeviceType.Web]: "Web",
-};
-
 const DeviceTypeIcon: React.FC<{ deviceType: DeviceType }> = ({
   deviceType,
 }) => {
+  const { t } = useTranslation();
+
   const Icon = deviceTypeToIcon[deviceType];
+
+  const deviceTypeToLabel: Record<DeviceType, string> = {
+    [DeviceType.Unknown]: t("frontend.device_type_icon_label.unknown"),
+    [DeviceType.Desktop]: t("frontend.device_type_icon_label.desktop"),
+    [DeviceType.Mobile]: t("frontend.device_type_icon_label.mobile"),
+    [DeviceType.Web]: t("frontend.device_type_icon_label.web"),
+  };
+
   const label = deviceTypeToLabel[deviceType];
 
   return <Icon className={styles.icon} aria-label={label} />;

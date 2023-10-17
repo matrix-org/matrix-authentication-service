@@ -26,6 +26,7 @@ import {
 import { Button } from "@vector-im/compound-web";
 import classNames from "classnames";
 import { ReactNode } from "react";
+import { Translation } from "react-i18next";
 
 import styles from "./ConfirmationModal.module.css";
 
@@ -51,40 +52,44 @@ const ConfirmationModal: React.FC<React.PropsWithChildren<Props>> = ({
   trigger,
   title,
 }) => (
-  <Root>
-    <Trigger asChild>{trigger}</Trigger>
-    <Portal>
-      <Overlay className={styles.overlay} />
-      <Content
-        className={classNames(styles.content, className)}
-        onEscapeKeyDown={(event): void => {
-          if (onDeny) {
-            onDeny();
-          } else {
-            // if there is no deny callback, we should prevent the escape key from closing the modal
-            event.preventDefault();
-          }
-        }}
-      >
-        <Title>{title}</Title>
-        <Description>{children}</Description>
-        <div className={styles.buttons}>
-          {onDeny && (
-            <Cancel asChild>
-              <Button kind="tertiary" size="sm" onClick={onDeny}>
-                Cancel
-              </Button>
-            </Cancel>
-          )}
-          <Action asChild>
-            <Button kind="destructive" size="sm" onClick={onConfirm}>
-              Continue
-            </Button>
-          </Action>
-        </div>
-      </Content>
-    </Portal>
-  </Root>
+  <Translation>
+    {(t): ReactNode => (
+      <Root>
+        <Trigger asChild>{trigger}</Trigger>
+        <Portal>
+          <Overlay className={styles.overlay} />
+          <Content
+            className={classNames(styles.content, className)}
+            onEscapeKeyDown={(event): void => {
+              if (onDeny) {
+                onDeny();
+              } else {
+                // if there is no deny callback, we should prevent the escape key from closing the modal
+                event.preventDefault();
+              }
+            }}
+          >
+            <Title>{title}</Title>
+            <Description>{children}</Description>
+            <div className={styles.buttons}>
+              {onDeny && (
+                <Cancel asChild>
+                  <Button kind="tertiary" size="sm" onClick={onDeny}>
+                    {t("action.cancel")}
+                  </Button>
+                </Cancel>
+              )}
+              <Action asChild>
+                <Button kind="destructive" size="sm" onClick={onConfirm}>
+                  {t("action.continue")}
+                </Button>
+              </Action>
+            </div>
+          </Content>
+        </Portal>
+      </Root>
+    )}
+  </Translation>
 );
 
 export default ConfirmationModal;
