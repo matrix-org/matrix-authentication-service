@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import i18n from "i18next";
+import * as i18n from "i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
 import I18NextHttpBackend from "i18next-http-backend";
 import { initReactI18next } from "react-i18next";
@@ -37,7 +37,7 @@ i18n
 
 import.meta.hot?.on("locales-update", () => {
   i18n.reloadResources().then(() => {
-    i18n.changeLanguage(i18n.language);
+    i18n.changeLanguage(i18n.default.language);
   });
 });
 
