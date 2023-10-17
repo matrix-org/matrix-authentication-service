@@ -14,6 +14,7 @@
 
 import { resolve } from "path";
 
+import { PluginOption } from "vite";
 import react from "@vitejs/plugin-react";
 import compression from "vite-plugin-compression";
 import codegen from "vite-plugin-graphql-codegen";
@@ -21,21 +22,19 @@ import manifestSRI from "vite-plugin-manifest-sri";
 import svgr from "vite-plugin-svgr";
 import { defineConfig } from "vitest/config";
 
-import { PluginOption } from "vite";
-
 function i18nHotReload(): PluginOption {
   return {
     name: "i18n-hot-reload",
-    handleHotUpdate({ file, server }) {
+    handleHotUpdate({ file, server }): void {
       if (file.includes("locales") && file.endsWith(".json")) {
-        console.log("Locale file updated")
+        console.log("Locale file updated");
         server.ws.send({
           type: "custom",
           event: "locales-update",
         });
       }
     },
-  }
+  };
 }
 export default defineConfig((env) => ({
   base: "./",
