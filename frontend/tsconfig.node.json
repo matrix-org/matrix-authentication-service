@@ -4,12 +4,14 @@
     "module": "ESNext",
     "moduleResolution": "Node",
     "allowSyntheticDefaultImports": true,
-    "allowJs": true
+    "allowJs": true,
+    "resolveJsonModule": true
   },
   "include": [
     ".storybook/main.ts",
     "vite.config.ts",
     "vitest.global-setup.ts",
+    "vitest.i18n-setup.ts",
     ".eslintrc.cjs",
     "postcss.config.cjs",
     "tailwind.config.cjs",
