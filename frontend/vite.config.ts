@@ -14,8 +14,8 @@
 
 import { resolve } from "path";
 
-import { PluginOption } from "vite";
 import react from "@vitejs/plugin-react";
+import { PluginOption } from "vite";
 import compression from "vite-plugin-compression";
 import codegen from "vite-plugin-graphql-codegen";
 import manifestSRI from "vite-plugin-manifest-sri";

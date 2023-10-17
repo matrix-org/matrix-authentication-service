@@ -29,7 +29,7 @@ beforeEach(() => {
     lng: "en",
     resources: {
       en: {
-        translation: EN
+        translation: EN,
       },
     },
   });
