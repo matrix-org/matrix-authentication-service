@@ -12,7 +12,7 @@
       ]
     }, {
       "file": "frontend.json",
-      "path": "frontend/public/locales/en.json",
+      "pattern": "frontend/public/locales/en.json",
       "features": ["plural_postfix_dd"]
     }]
   },
