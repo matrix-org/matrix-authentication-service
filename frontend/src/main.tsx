@@ -22,6 +22,7 @@ import Layout from "./components/Layout";
 import LoadingScreen from "./components/LoadingScreen";
 import LoadingSpinner from "./components/LoadingSpinner";
 import { Router } from "./routing";
+import "./i18n";
 import "./main.css";
 
 createRoot(document.getElementById("root") as HTMLElement).render(
