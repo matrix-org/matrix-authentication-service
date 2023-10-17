@@ -21,6 +21,22 @@ import manifestSRI from "vite-plugin-manifest-sri";
 import svgr from "vite-plugin-svgr";
 import { defineConfig } from "vitest/config";
 
+import { PluginOption } from "vite";
+
+function i18nHotReload(): PluginOption {
+  return {
+    name: "i18n-hot-reload",
+    handleHotUpdate({ file, server }) {
+      if (file.includes("locales") && file.endsWith(".json")) {
+        console.log("Locale file updated")
+        server.ws.send({
+          type: "custom",
+          event: "locales-update",
+        });
+      }
+    },
+  }
+}
 export default defineConfig((env) => ({
   base: "./",
 
@@ -113,6 +129,8 @@ export default defineConfig((env) => ({
       algorithm: "deflate",
       ext: ".zz",
     }),
+
+    i18nHotReload(),
   ],
 
   server: {
