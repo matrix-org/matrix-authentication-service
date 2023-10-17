@@ -1,5 +1,6 @@
 export default {
     keySeparator: ".",
+    pluralSeparator: ":",
     defaultNamespace: "frontend",
     lexers: {
         ts: [
