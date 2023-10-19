@@ -148,6 +148,30 @@ impl<'a> Asset<'a> {
             FileType::Woff | FileType::Woff2 | FileType::Json => None,
         }
     }
+
+    /// Returns `true` if the asset type is a script
+    #[must_use]
+    pub fn is_script(&self) -> bool {
+        self.file_type == FileType::Script
+    }
+
+    /// Returns `true` if the asset type is a stylesheet
+    #[must_use]
+    pub fn is_stylesheet(&self) -> bool {
+        self.file_type == FileType::Stylesheet
+    }
+
+    /// Returns `true` if the asset type is JSON
+    #[must_use]
+    pub fn is_json(&self) -> bool {
+        self.file_type == FileType::Json
+    }
+
+    /// Returns `true` if the asset type is a font
+    #[must_use]
+    pub fn is_font(&self) -> bool {
+        self.file_type == FileType::Woff || self.file_type == FileType::Woff2
+    }
 }
 
 impl Manifest {
