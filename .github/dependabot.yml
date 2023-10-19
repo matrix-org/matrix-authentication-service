@@ -8,6 +8,10 @@ updates:
     schedule:
       interval: "daily"
     groups:
+      apalis:
+        patterns:
+          - "apalis"
+          - "apalis-*"
       aws:
         patterns:
           - "aws-*"
@@ -59,10 +63,17 @@ updates:
           - "vite"
           - "@vitejs/*"
           - "vite-*"
+      i18next:
+        patterns:
+          - "i18next"
+          - "i18next-*"
+          - "react-i18next"
       react:
         patterns:
           - "react"
           - "react-*"
+        exclude-patterns:
+          - "react-i18next"
       jotai:
         patterns:
           - "jotai"
