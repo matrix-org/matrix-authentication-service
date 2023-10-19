@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import * as i18n from "i18next";
-import { InitOptions } from "i18next";
-import LanguageDetector from "i18next-browser-languagedetector";
+import { default as i18n, InitOptions } from "i18next";
+import LanguageDetector, {
+  DetectorOptions,
+} from "i18next-browser-languagedetector";
 import I18NextHttpBackend, { HttpBackendOptions } from "i18next-http-backend";
 import { initReactI18next } from "react-i18next";
 
@@ -44,6 +45,9 @@ i18n
     keySeparator: ".",
     pluralSeparator: ":",
     supportedLngs,
+    detection: {
+      order: ["navigator", "htmlTag"],
+    } satisfies DetectorOptions,
     interpolation: {
       escapeValue: false, // React has built-in XSS protections
     },
@@ -60,7 +64,7 @@ i18n
 
 import.meta.hot?.on("locales-update", () => {
   i18n.reloadResources().then(() => {
-    i18n.changeLanguage(i18n.default.language);
+    i18n.changeLanguage(i18n.language);
   });
 });
 

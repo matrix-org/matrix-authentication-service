@@ -19,7 +19,7 @@ jobs:
         uses: localazy/download@v1.1.0
 
       - name: "Fix the owner of the downloaded files"
-        run: "sudo chown runner:docker translations/*.json"
+        run: "sudo chown runner:docker translations/*.json frontend/locales/*.json"
 
       - name: Create Pull Request
         id: cpr
@@ -29,6 +29,7 @@ jobs:
           branch: actions/localazy-download
           delete-branch: true
           title: Localazy Download
+          commit-message: Translations updates
 
       - name: Enable automerge
         run: gh pr merge --merge --auto "$PR_NUMBER"

@@ -38,6 +38,9 @@ const config: StorybookConfig = {
 
     // Theme switch toolbar
     "@storybook/addon-toolbars",
+
+    // i18next integration
+    "storybook-react-i18next",
   ],
 
   framework: "@storybook/react-vite",
