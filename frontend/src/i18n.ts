@@ -14,7 +14,7 @@
 
 import * as i18n from "i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
-import I18NextHttpBackend from "i18next-http-backend";
+import I18NextHttpBackend, { HttpBackendOptions } from "i18next-http-backend";
 import { initReactI18next } from "react-i18next";
 
 i18n
@@ -30,7 +30,7 @@ i18n
     },
     backend: {
       loadPath: "/locales/{{lng}}.json",
-    },
+    } satisfies HttpBackendOptions,
   });
 
 import.meta.hot?.on("locales-update", () => {
