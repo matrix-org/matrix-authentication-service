@@ -22,7 +22,7 @@ mime = "0.3.17"
 rand.workspace = true
 sentry = { version = "0.31.7", default-features = false }
 serde.workspace = true
-serde_with = "3.3.0"
+serde_with = "3.4.0"
 serde_urlencoded = "0.7.1"
 serde_json.workspace = true
 thiserror.workspace = true

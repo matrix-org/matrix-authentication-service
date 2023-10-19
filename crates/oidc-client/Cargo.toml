@@ -35,7 +35,7 @@ rand.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 serde_urlencoded = "0.7.1"
-serde_with = "3.3.0"
+serde_with = "3.4.0"
 thiserror.workspace = true
 tokio = { version = "1.33.0", features = ["rt", "macros", "rt-multi-thread"] }
 tower = { version = "0.4.13", features = ["full"] }
@@ -67,7 +67,7 @@ optional = true
 
 [dev-dependencies]
 assert_matches = "1.5.0"
-bitflags = "2.4.0"
+bitflags = "2.4.1"
 mas-keystore = { path = "../keystore" }
 rand_chacha = "0.3.1"
 wiremock = "0.5.19"

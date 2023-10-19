@@ -55,7 +55,7 @@ version = "1.0.107"
 
 # Custom error types
 [workspace.dependencies.thiserror]
-version = "1.0.49"
+version = "1.0.50"
 
 # Logging and tracing
 [workspace.dependencies.tracing]
