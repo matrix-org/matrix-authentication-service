@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import { Body, H5 } from "@vector-im/compound-web";
+import { useTranslation } from "react-i18next";
 
 import { FragmentType, graphql, useFragment } from "../../gql";
 import { Link } from "../../routing";
@@ -34,22 +35,20 @@ const BrowserSessionsOverview: React.FC<{
   user: FragmentType<typeof FRAGMENT>;
 }> = ({ user }) => {
   const data = useFragment(FRAGMENT, user);
-
-  // allow this until we get i18n
-  const pluraliseSession = (count: number): string =>
-    count === 1 ? "session" : "sessions";
+  const { t } = useTranslation();
 
   return (
     <Block className={styles.sessionListBlock}>
       <div className={styles.sessionListBlockInfo}>
-        <H5>Browsers</H5>
+        <H5>{t("frontend.browser_sessions_overview.heading")}</H5>
         <Body>
-          {data.browserSessions.totalCount} active{" "}
-          {pluraliseSession(data.browserSessions.totalCount)}
+          {t("frontend.browser_sessions_overview.body", {
+            count: data.browserSessions.totalCount,
+          })}
         </Body>
       </div>
       <Link kind="button" route={{ type: "browser-session-list" }}>
-        View all
+        {t("frontend.browser_sessions_overview.view_all_button")}
       </Link>
     </Block>
   );

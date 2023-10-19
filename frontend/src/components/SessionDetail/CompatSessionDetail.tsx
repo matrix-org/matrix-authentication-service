@@ -14,6 +14,7 @@
 
 import { parseISO } from "date-fns";
 import { useSetAtom } from "jotai";
+import { useTranslation } from "react-i18next";
 
 import { FragmentType, graphql, useFragment } from "../../gql";
 import BlockList from "../BlockList/BlockList";
@@ -48,6 +49,7 @@ type Props = {
 const CompatSessionDetail: React.FC<Props> = ({ session }) => {
   const data = useFragment(FRAGMENT, session);
   const endSession = useSetAtom(endCompatSessionFamily(data.id));
+  const { t } = useTranslation();
 
   const onSessionEnd = async (): Promise<void> => {
     await endSession();
@@ -91,7 +93,7 @@ const CompatSessionDetail: React.FC<Props> = ({ session }) => {
 
   if (data.ssoLogin?.redirectUri) {
     clientDetails.push({
-      label: "Name",
+      label: t("frontend.compat_session_detail.name"),
       value: simplifyUrl(data.ssoLogin.redirectUri),
     });
     clientDetails.push({
@@ -113,9 +115,15 @@ const CompatSessionDetail: React.FC<Props> = ({ session }) => {
       >
         {data.deviceId || data.id}
       </SessionHeader>
-      <SessionDetails title="Session" details={sessionDetails} />
+      <SessionDetails
+        title={t("frontend.compat_session_detail.session_details_title")}
+        details={sessionDetails}
+      />
       {clientDetails.length > 0 ? (
-        <SessionDetails title="Client" details={clientDetails} />
+        <SessionDetails
+          title={t("frontend.compat_session_detail.client_details_title")}
+          details={clientDetails}
+        />
       ) : null}
       {!data.finishedAt && <EndSessionButton endSession={onSessionEnd} />}
     </BlockList>

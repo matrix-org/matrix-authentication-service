@@ -17,7 +17,8 @@ import { Body } from "@vector-im/compound-web";
 import { atom, useSetAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
-import { useTransition, ComponentProps } from "react";
+import { useTransition, ComponentProps, ReactNode } from "react";
+import { Translation, useTranslation } from "react-i18next";
 
 import { FragmentType, graphql, useFragment } from "../../gql";
 import { Link } from "../../routing";
@@ -90,19 +91,24 @@ const DeleteButton: React.FC<{ disabled?: boolean; onClick?: () => void }> = ({
   disabled,
   onClick,
 }) => (
-  <button
-    disabled={disabled}
-    onClick={onClick}
-    className={styles.userEmailDelete}
-    title="Remove email address"
-  >
-    <IconDelete className={styles.userEmailDeleteIcon} />
-  </button>
+  <Translation>
+    {(t): ReactNode => (
+      <button
+        disabled={disabled}
+        onClick={onClick}
+        className={styles.userEmailDelete}
+        title={t("frontend.user_email.delete_button_title")}
+      >
+        <IconDelete className={styles.userEmailDeleteIcon} />
+      </button>
+    )}
+  </Translation>
 );
 
 const DeleteButtonWithConfirmation: React.FC<
   ComponentProps<typeof DeleteButton>
 > = ({ onClick, ...rest }) => {
+  const { t } = useTranslation();
   const onConfirm = (): void => {
     onClick?.();
   };
@@ -117,7 +123,9 @@ const DeleteButtonWithConfirmation: React.FC<
         onDeny={onDeny}
         onConfirm={onConfirm}
       >
-        <Body>Are you sure you want to remove this email?</Body>
+        <Body>
+          {t("frontend.user_email.delete_button_confirmation_modal.body")}
+        </Body>
       </ConfirmationModal>
     </>
   );
@@ -134,6 +142,7 @@ const UserEmail: React.FC<{
   const data = useFragment(FRAGMENT, email);
   const setPrimaryEmail = useSetAtom(setPrimaryEmailFamily(data.id));
   const removeEmail = useSetAtom(removeEmailFamily(data.id));
+  const { t } = useTranslation();
 
   const onRemoveClick = (): void => {
     startTransition(() => {
@@ -155,7 +164,11 @@ const UserEmail: React.FC<{
 
   return (
     <div className={styles.userEmail}>
-      {isPrimary ? <Body>Primary email</Body> : <Body>Email</Body>}
+      {isPrimary ? (
+        <Body>{t("frontend.user_email.primary_email")}</Body>
+      ) : (
+        <Body>{t("frontend.user_email.email")}</Body>
+      )}
 
       <div className={styles.userEmailLine}>
         <div className={styles.userEmailField}>{data.email}</div>
@@ -170,14 +183,17 @@ const UserEmail: React.FC<{
           disabled={pending}
           onClick={onSetPrimaryClick}
         >
-          Make primary
+          {t("frontend.user_email.make_primary_button")}
         </button>
       )}
       {!data.confirmedAt && (
         <div>
-          <span className={styles.userEmailUnverified}>Unverified</span> |{" "}
+          <span className={styles.userEmailUnverified}>
+            {t("frontend.user_email.unverified")}
+          </span>{" "}
+          |{" "}
           <Link kind="button" route={{ type: "verify-email", id: data.id }}>
-            Retry verification
+            {t("frontend.user_email.retry_button")}
           </Link>
         </div>
       )}

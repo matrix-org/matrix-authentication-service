@@ -21,7 +21,7 @@ exports[`LoadingScreen > render <LoadingScreen /> 1`] = `
     <span
       className="sr-only"
     >
-      Loading...
+      Loading…
     </span>
   </div>
 </main>

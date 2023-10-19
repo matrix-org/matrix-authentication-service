@@ -15,6 +15,7 @@
 import { useAtomValue } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
+import { useTranslation } from "react-i18next";
 
 import { mapQueryAtom } from "../atoms";
 import ErrorBoundary from "../components/ErrorBoundary";
@@ -47,10 +48,12 @@ const verifyEmailFamily = atomFamily((id: string) => {
 
 const VerifyEmail: React.FC<{ id: string }> = ({ id }) => {
   const result = useAtomValue(verifyEmailFamily(id));
+  const { t } = useTranslation();
+
   if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
 
   const email = unwrapOk(result);
-  if (email == null) return <>Unknown email</>;
+  if (email == null) return <>{t("frontend.verify_email.unknown_email")}</>;
 
   return (
     <ErrorBoundary>

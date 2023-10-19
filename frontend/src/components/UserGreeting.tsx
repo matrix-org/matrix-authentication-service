@@ -16,6 +16,7 @@ import { Heading, Body, Avatar } from "@vector-im/compound-web";
 import { useAtomValue } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithQuery } from "jotai-urql";
+import { useTranslation } from "react-i18next";
 
 import { graphql } from "../gql";
 
@@ -48,6 +49,7 @@ export const userGreetingFamily = atomFamily((userId: string) => {
 
 const UserGreeting: React.FC<{ userId: string }> = ({ userId }) => {
   const result = useAtomValue(userGreetingFamily(userId));
+  const { t } = useTranslation();
 
   if (result.data?.user) {
     const user = result.data.user;
@@ -71,7 +73,7 @@ const UserGreeting: React.FC<{ userId: string }> = ({ userId }) => {
     );
   }
 
-  return <>Failed to load user</>;
+  return <>{t("frontend.user_greeting.error")}</>;
 };
 
 export default UserGreeting;

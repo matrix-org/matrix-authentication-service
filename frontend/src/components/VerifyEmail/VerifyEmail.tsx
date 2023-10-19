@@ -29,6 +29,7 @@ import { useSetAtom, atom, useAtom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
 import { useEffect, useRef, useTransition } from "react";
+import { Trans, useTranslation } from "react-i18next";
 
 import { FragmentType, graphql, useFragment } from "../../gql";
 import { routeAtom, useNavigationLink } from "../../routing";
@@ -137,6 +138,7 @@ const VerifyEmail: React.FC<{
   );
   const setRoute = useSetAtom(routeAtom);
   const fieldRef = useRef<HTMLInputElement>(null);
+  const { t } = useTranslation();
 
   const onFormSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
@@ -174,24 +176,32 @@ const VerifyEmail: React.FC<{
     resendVerificationEmailResult.data?.sendVerificationEmail.status === "SENT";
   const invalidCode =
     verifyEmailResult.data?.verifyEmail.status === "INVALID_CODE";
+  const { email: codeEmail } = data;
 
   return (
     <div className={styles.block}>
       <header className={styles.header}>
         <IconSend className={styles.icon} />
-        <H1>Verify your email</H1>
+        <H1>{t("frontend.verify_email.heading")}</H1>
         <Text size="lg" className={styles.tagline}>
-          Enter the 6-digit code sent to{" "}
-          <Text as="span" size="lg" weight="semibold">
-            {data.email}
-          </Text>
+          <Trans i18nKey="frontend.verify_email.enter_code_prompt">
+            Enter the 6-digit code sent to{" "}
+            <Text as="span" size="lg" weight="semibold">
+              {{ codeEmail }}
+            </Text>
+          </Trans>
         </Text>
       </header>
 
       <Form onSubmit={onFormSubmit} className={styles.form}>
-        {invalidCode && <Alert type="critical" title="Invalid code" />}
+        {invalidCode && (
+          <Alert
+            type="critical"
+            title={t("frontend.verify_email.invalid_code_alert")}
+          />
+        )}
         <Field name="code" serverInvalid={invalidCode}>
-          <Label>6-digit code</Label>
+          <Label>{t("frontend.verify_email.code_field_label")}</Label>
           <Control
             ref={fieldRef}
             placeholder="xxxxxx"
@@ -205,7 +215,7 @@ const VerifyEmail: React.FC<{
           disabled={pending}
           className={styles.submitButton}
         >
-          Continue
+          {t("action.continue")}
         </Submit>
         <Button
           kind="secondary"

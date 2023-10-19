@@ -24,6 +24,7 @@ import { useAtomValue, useAtom, useSetAtom, atom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { atomWithMutation } from "jotai-urql";
 import { useState, useEffect, ChangeEventHandler } from "react";
+import { useTranslation } from "react-i18next";
 
 import { graphql } from "../../gql";
 import LoadingSpinner from "../LoadingSpinner/LoadingSpinner";
@@ -83,6 +84,7 @@ const UserName: React.FC<{ userId: string }> = ({ userId }) => {
   const [fieldValue, setFieldValue] = useState(displayName);
 
   const userGreeting = useSetAtom(userGreetingFamily(userId));
+  const { t } = useTranslation();
 
   useEffect(() => {
     setFieldValue(displayName);
@@ -131,7 +133,7 @@ const UserName: React.FC<{ userId: string }> = ({ userId }) => {
   return (
     <Root onSubmit={onSubmit} className={styles.form}>
       <Field name="displayname">
-        <Label>Display Name</Label>
+        <Label>{t("frontend.user_name.display_name_field_label")}</Label>
         <Control
           value={fieldValue}
           onChange={onChange}
@@ -140,7 +142,7 @@ const UserName: React.FC<{ userId: string }> = ({ userId }) => {
         />
       </Field>
       {!inProgress && errorMessage && (
-        <Alert type="critical" title="Error">
+        <Alert type="critical" title={t("common.error")}>
           {errorMessage}
         </Alert>
       )}
@@ -152,7 +154,8 @@ const UserName: React.FC<{ userId: string }> = ({ userId }) => {
         size="sm"
         type="submit"
       >
-        {!!inProgress && <LoadingSpinner inline />}Save
+        {!!inProgress && <LoadingSpinner inline />}
+        {t("action.save")}
       </Button>
     </Root>
   );

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import { useAtomValue } from "jotai";
+import { useTranslation } from "react-i18next";
 
 import { currentUserIdAtom } from "../atoms";
 import { isErr, unwrapErr, unwrapOk } from "../result";
@@ -28,6 +29,8 @@ import UserGreeting from "./UserGreeting";
 const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const route = useAtomValue(routeAtom);
   const result = useAtomValue(currentUserIdAtom);
+  const { t } = useTranslation();
+
   if (isErr(result)) return <GraphQLError error={unwrapErr(result)} />;
 
   // Hide the nav bar & user greeting on the verify-email page
@@ -48,8 +51,12 @@ const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
           <UserGreeting userId={userId} />
 
           <NavBar>
-            <NavItem route={{ type: "profile" }}>Profile</NavItem>
-            <NavItem route={{ type: "sessions-overview" }}>Sessions</NavItem>
+            <NavItem route={{ type: "profile" }}>
+              {t("frontend.nav.profile")}
+            </NavItem>
+            <NavItem route={{ type: "sessions-overview" }}>
+              {t("frontend.nav.sessions")}
+            </NavItem>
           </NavBar>
         </>
       )}

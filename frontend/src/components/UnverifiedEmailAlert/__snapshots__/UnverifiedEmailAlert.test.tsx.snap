@@ -29,9 +29,7 @@ exports[`<UnverifiedEmailAlert /> > renders a warning when there are unverified 
         Unverified email
       </p>
       <p>
-        You have 
-        2
-         unverified email address(es).
+        You have 2 unverified email addresses.
          
         <a
           class="_linkButton_b80ad8"

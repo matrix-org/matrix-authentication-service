@@ -362,15 +362,17 @@ impl Object for IncludeAsset {
             BTreeSet::new()
         };
 
-        let tags: Vec<String> = preloads
+        let preloads = preloads
             .iter()
-            .map(|asset| asset.preload_tag(self.url_builder.assets_base().into()))
-            .chain(
-                assets
-                    .iter()
-                    .filter_map(|asset| asset.include_tag(self.url_builder.assets_base().into())),
-            )
-            .collect();
+            // Only preload scripts and stylesheets for now
+            .filter(|asset| asset.is_script() || asset.is_stylesheet())
+            .map(|asset| asset.preload_tag(self.url_builder.assets_base().into()));
+
+        let assets = assets
+            .iter()
+            .filter_map(|asset| asset.include_tag(self.url_builder.assets_base().into()));
+
+        let tags: Vec<String> = preloads.chain(assets).collect();
 
         Ok(Value::from_safe_string(tags.join("\n")))
     }

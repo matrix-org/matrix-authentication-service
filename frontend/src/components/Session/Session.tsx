@@ -14,6 +14,7 @@
 
 import { H6, Body, Badge } from "@vector-im/compound-web";
 import { ReactNode } from "react";
+import { Trans, useTranslation } from "react-i18next";
 
 import { DeviceType } from "../../utils/parseUserAgent";
 import Block from "../Block";
@@ -53,20 +54,28 @@ const Session: React.FC<React.PropsWithChildren<SessionProps>> = ({
   children,
   deviceType,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <Block className={styles.session}>
       <DeviceTypeIcon deviceType={deviceType || DeviceType.Unknown} />
       <div className={styles.container}>
-        {isCurrent && <Badge kind="success">Current</Badge>}
+        {isCurrent && (
+          <Badge kind="success">{t("frontend.session.current_badge")}</Badge>
+        )}
         <H6 className={styles.sessionName} title={id}>
           {name || id}
         </H6>
         <SessionMetadata weight="semibold">
-          Signed in <DateTime datetime={createdAt} />
+          <Trans i18nKey="frontend.session.signed_in_date">
+            Signed in <DateTime datetime={createdAt} />
+          </Trans>
         </SessionMetadata>
         {!!finishedAt && (
           <SessionMetadata weight="semibold" data-finished={true}>
-            Finished <DateTime datetime={finishedAt} />
+            <Trans i18nKey="frontend.session.finished_date">
+              Finished <DateTime datetime={finishedAt} />
+            </Trans>
           </SessionMetadata>
         )}
         {!!lastActiveAt && (

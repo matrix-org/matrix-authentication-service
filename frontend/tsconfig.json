@@ -7,6 +7,7 @@
       "DOM.Iterable",
       "ESNext"
     ],
+    "types": ["vite/client"],
     "allowJs": false,
     "skipLibCheck": true,
     "esModuleInterop": false,
@@ -22,6 +23,7 @@
   },
   "include": [
     "src",
+    "locales",
     ".storybook/preview.tsx"
   ],
   "references": [

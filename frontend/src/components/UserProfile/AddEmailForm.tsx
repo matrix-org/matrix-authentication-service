@@ -23,6 +23,7 @@ import {
 import { useAtom } from "jotai";
 import { atomWithMutation } from "jotai-urql";
 import { useRef, useTransition } from "react";
+import { useTranslation } from "react-i18next";
 
 import { graphql } from "../../gql";
 
@@ -49,6 +50,7 @@ const AddEmailForm: React.FC<{
   const fieldRef = useRef<HTMLInputElement>(null);
   const [addEmailResult, addEmail] = useAtom(addUserEmailAtom);
   const [pending, startTransition] = useTransition();
+  const { t } = useTranslation();
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
@@ -87,20 +89,29 @@ const AddEmailForm: React.FC<{
     <>
       <Root ref={formRef} onSubmit={handleSubmit}>
         {emailExists && (
-          <Alert type="info" title="Email already exists">
-            The entered email is already added to this account
+          <Alert
+            type="info"
+            title={t("frontend.add_email_form.email_exists_alert.title")}
+          >
+            {t("frontend.add_email_form.email_exists_alert.text")}
           </Alert>
         )}
 
         {emailInvalid && (
-          <Alert type="critical" title="Invalid email">
-            The entered email is invalid
+          <Alert
+            type="critical"
+            title={t("frontend.add_email_form.email_invalid_alert.title")}
+          >
+            {t("frontend.add_email_form.email_invalid_alert.text")}
           </Alert>
         )}
 
         {emailDenied && (
-          <Alert type="critical" title="Email denied by policy">
-            The entered email is not allowed by the server policy.
+          <Alert
+            type="critical"
+            title={t("frontend.add_email_form.email_denied_alert.title")}
+          >
+            {t("frontend.add_email_form.email_denied_alert.text")}
             <ul>
               {violations.map((violation, index) => (
                 <li key={index}>• {violation}</li>
@@ -110,11 +121,11 @@ const AddEmailForm: React.FC<{
         )}
 
         <Field name="email" className="my-2">
-          <Label>Add email</Label>
+          <Label>{t("frontend.add_email_form.email_field_label")}</Label>
           <Control disabled={pending} inputMode="email" ref={fieldRef} />
         </Field>
         <Submit size="sm" disabled={pending}>
-          Add
+          {t("common.add")}
         </Submit>
       </Root>
     </>

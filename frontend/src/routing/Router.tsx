@@ -14,6 +14,7 @@
 
 import { useAtom, useAtomValue } from "jotai";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 import LoadingSpinner from "../components/LoadingSpinner";
 import BrowserSession from "../pages/BrowserSession";
@@ -56,6 +57,7 @@ const unknownRoute = (route: never): never => {
 
 const Router: React.FC = () => {
   const [route, redirecting] = useRouteWithRedirect();
+  const { t } = useTranslation();
 
   if (redirecting) {
     return <LoadingSpinner />;
@@ -77,7 +79,13 @@ const Router: React.FC = () => {
     case "verify-email":
       return <VerifyEmail id={route.id} />;
     case "unknown":
-      return <>Unknown route {JSON.stringify(route.segments)}</>;
+      return (
+        <>
+          {t("frontend.unknown_route", {
+            route: JSON.stringify(route.segments),
+          })}
+        </>
+      );
     default:
       unknownRoute(route);
   }

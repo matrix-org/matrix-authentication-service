@@ -12,16 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Alert } from "@vector-im/compound-web";
-import { ReactNode } from "react";
-import { Translation } from "react-i18next";
+import type { UserConfig } from "i18next-parser";
 
-const NotLoggedIn: React.FC = () => (
-  <Translation>
-    {(t): ReactNode => (
-      <Alert type="critical" title={t("frontend.not_logged_in_alert")} />
-    )}
-  </Translation>
-);
+const config: UserConfig = {
+  keySeparator: ".",
+  pluralSeparator: ":",
+  defaultNamespace: "frontend",
+  lexers: {
+    ts: [
+      {
+        lexer: "JavascriptLexer",
+        functions: ["t", "translatedError"],
+        namespaceFunctions: ["useTranslation", "withTranslation"],
+      },
+    ],
+  },
+  locales: ["en"],
+  output: "locales/$LOCALE.json",
+  input: ["src/**/*.{ts,tsx}"],
+  sort: true,
+};
 
-export default NotLoggedIn;
+export default config;

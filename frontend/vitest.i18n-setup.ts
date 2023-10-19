@@ -12,16 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Alert } from "@vector-im/compound-web";
-import { ReactNode } from "react";
-import { Translation } from "react-i18next";
+import * as i18n from "i18next";
+import { initReactI18next } from "react-i18next";
+import { beforeEach } from "vitest";
 
-const NotLoggedIn: React.FC = () => (
-  <Translation>
-    {(t): ReactNode => (
-      <Alert type="critical" title={t("frontend.not_logged_in_alert")} />
-    )}
-  </Translation>
-);
+import EN from "./locales/en.json";
 
-export default NotLoggedIn;
+beforeEach(() => {
+  i18n.use(initReactI18next).init({
+    fallbackLng: "en",
+    keySeparator: ".",
+    pluralSeparator: ":",
+    interpolation: {
+      escapeValue: false, // React has built-in XSS protections
+    },
+    lng: "en",
+    resources: {
+      en: {
+        translation: EN,
+      },
+    },
+  });
+});

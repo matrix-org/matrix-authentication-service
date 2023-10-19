@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import { differenceInSeconds, parseISO } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 import { formatDate, formatReadableDate } from "../DateTime";
 
@@ -27,6 +28,8 @@ const LastActive: React.FC<{
   lastActive: Date | string;
   now?: Date | string;
 }> = ({ lastActive: lastActiveProps, now: nowProps }) => {
+  const { t } = useTranslation();
+
   const lastActive =
     typeof lastActiveProps === "string"
       ? parseISO(lastActiveProps)
@@ -42,15 +45,23 @@ const LastActive: React.FC<{
   if (differenceInSeconds(now, lastActive) <= ACTIVE_NOW_MAX_AGE) {
     return (
       <span title={formattedDate} className={styles.active}>
-        Active now
+        {t("frontend.last_active.active_now")}
       </span>
     );
   }
   if (differenceInSeconds(now, lastActive) > INACTIVE_MIN_AGE) {
-    return <span title={formattedDate}>Inactive for 90+ days</span>;
+    return (
+      <span title={formattedDate}>
+        {t("frontend.last_active.inactive_90_days")}
+      </span>
+    );
   }
   const relativeDate = formatReadableDate(lastActive, now);
-  return <span title={formattedDate}>{`Active ${relativeDate}`}</span>;
+  return (
+    <span title={formattedDate}>
+      {t("frontend.last_active.active_date", { relativeDate })}
+    </span>
+  );
 };
 
 export default LastActive;
