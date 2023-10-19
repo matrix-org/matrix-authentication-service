@@ -9,7 +9,7 @@ exports[`<CompatSessionDetail> > renders a compatability session details 1`] = `
       class="_header_92353c"
     >
       <button
-        class="_icon-button_9uxnz_17"
+        class="_icon-button_1qjaf_17"
         style="--cpd-icon-button-size: 32px;"
         type="button"
       >
@@ -206,7 +206,7 @@ exports[`<CompatSessionDetail> > renders a compatability session without an ssoL
       class="_header_92353c"
     >
       <button
-        class="_icon-button_9uxnz_17"
+        class="_icon-button_1qjaf_17"
         style="--cpd-icon-button-size: 32px;"
         type="button"
       >
