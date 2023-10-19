@@ -56,23 +56,20 @@ deny = [
 multiple-versions = "deny"
 
 skip = [
-    { name = "webpki-roots" }, # We, lettre and sqlx have different versions :(
-    { name = "rustls-webpki" },
-    { name = "syn", version = "1.0.109" }, # There are a few crates still depdending on the 1.x
+    { name = "webpki-roots", version = "0.24.0" }, # sqlx depends on an old version
     { name = "spin", version = "0.5.2" }, # lazy_static and ring depends on the old version
     { name = "event-listener", version = "2.5.3" }, # async-channel (wiremock) and sqlx-core depend on the old version
     { name = "regex-syntax", version = "0.6.29" }, # tracing-subscriber[env-filter] -> matchers depends on the old version
     { name = "regex-automata", version = "0.1.10" }, # ^
     { name = "ordered-float", version = "2.10.0" }, # opentelemetry-jaeger -> thrift depends on the old version
     { name = "itertools", version = "0.10.5" }, # wasmtime & others depends on the old version
-    { name = "idna", version = "0.3.0" }, # lettre depends on an old version
-    { name = "hashbrown" }, # Too many versions :(
+    { name = "bitflags", version = "1.3.2" }, # axum depends on an old version
 ]
 
 skip-tree = [
+    { name = "hashbrown", depth = 2 }, # Too many versions :(
     # Let's ignore wiremock for now, we want to get rid of it
     { name = "wiremock", depth = 3 },
-    { name = "rustix", version = "0.37.23", depth = 2 }, # wasmtime depends on the old version
     { name = "darling", version = "0.14.4", depth = 2 }, # sea-query-attr depends on an old version
 ]
 
