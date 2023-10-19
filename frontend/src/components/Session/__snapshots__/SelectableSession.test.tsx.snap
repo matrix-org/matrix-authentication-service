@@ -6,7 +6,7 @@ exports[`<SelectableSession /> > renders an unselected session 1`] = `
     class="_selectableSession_3b8f53"
   >
     <div
-      class="_checkbox_1wdss_17 _checkbox_3b8f53"
+      class="_checkbox_1q844_17 _checkbox_3b8f53"
       data-kind="primary"
     >
       <input
@@ -14,7 +14,7 @@ exports[`<SelectableSession /> > renders an unselected session 1`] = `
         type="checkbox"
       />
       <div
-        class="_checkbox-ui_1wdss_37"
+        class="_checkbox-ui_1q844_37"
       >
         <svg
           aria-hidden="true"
