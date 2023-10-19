@@ -23,6 +23,7 @@
   },
   "include": [
     "src",
+    "locales",
     ".storybook/preview.tsx"
   ],
   "references": [

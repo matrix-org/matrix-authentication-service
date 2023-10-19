@@ -12,7 +12,7 @@
       ]
     }, {
       "file": "frontend.json",
-      "pattern": "frontend/public/locales/en.json",
+      "pattern": "frontend/locales/en.json",
       "features": ["plural_postfix_dd"]
     }]
   },
@@ -22,7 +22,7 @@
       "output": "translations/${lang}.json"
     }, {
       "conditions": "equals: ${file}, frontend.json",
-      "output": "frontend/public/locales/${lang}.json"
+      "output": "frontend/locales/${lang}.json"
     }]
   }
 }

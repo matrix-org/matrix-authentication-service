@@ -54,6 +54,7 @@ enum FileType {
     Stylesheet,
     Woff,
     Woff2,
+    Json,
 }
 
 impl FileType {
@@ -63,6 +64,7 @@ impl FileType {
             Some("js") => Some(Self::Script),
             Some("woff") => Some(Self::Woff),
             Some("woff2") => Some(Self::Woff2),
+            Some("json") => Some(Self::Json),
             _ => None,
         }
     }
@@ -122,6 +124,9 @@ impl<'a> Asset<'a> {
             FileType::Woff | FileType::Woff2 => {
                 format!(r#"<link rel="preload" href="{href}" as="font" crossorigin {integrity}/>"#,)
             }
+            FileType::Json => {
+                format!(r#"<link rel="preload" href="{href}" as="fetch" crossorigin {integrity}/>"#,)
+            }
         }
     }
 
@@ -140,7 +145,7 @@ impl<'a> Asset<'a> {
             FileType::Script => Some(format!(
                 r#"<script type="module" src="{src}" crossorigin {integrity}></script>"#
             )),
-            FileType::Woff | FileType::Woff2 => None,
+            FileType::Woff | FileType::Woff2 | FileType::Json => None,
         }
     }
 }

@@ -13,9 +13,27 @@
 // limitations under the License.
 
 import * as i18n from "i18next";
+import { InitOptions } from "i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
 import I18NextHttpBackend, { HttpBackendOptions } from "i18next-http-backend";
 import { initReactI18next } from "react-i18next";
+
+// This generates a map of locale names to their URL (based on import.meta.url), which looks like this:
+// {
+//   "../locales/en.json": "/whatever/assets/root/locales/en-aabbcc.json",
+//   ...
+// }
+const locales = import.meta.glob("../locales/*.json", {
+  as: "url",
+  eager: true,
+});
+
+const getLocaleUrl = (name: string): string =>
+  locales[`../locales/${name}.json`];
+
+const supportedLngs = Object.keys(locales).map(
+  (url) => url.match(/\/([^/]+)\.json$/)![1],
+);
 
 i18n
   .use(I18NextHttpBackend)
@@ -25,13 +43,20 @@ i18n
     fallbackLng: "en",
     keySeparator: ".",
     pluralSeparator: ":",
+    supportedLngs,
     interpolation: {
       escapeValue: false, // React has built-in XSS protections
     },
     backend: {
-      loadPath: "/locales/{{lng}}.json",
-    } satisfies HttpBackendOptions,
-  });
+      crossDomain: true,
+      loadPath(lngs: string[], _ns: string[]): string {
+        return getLocaleUrl(lngs[0]);
+      },
+      requestOptions: {
+        credentials: "same-origin",
+      },
+    },
+  } satisfies InitOptions<HttpBackendOptions>);
 
 import.meta.hot?.on("locales-update", () => {
   i18n.reloadResources().then(() => {

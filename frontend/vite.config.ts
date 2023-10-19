@@ -45,6 +45,8 @@ export default defineConfig((env) => ({
     },
   },
 
+  assetsInclude: ["locales/*.json"],
+
   build: {
     manifest: true,
     assetsDir: "",

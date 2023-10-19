@@ -28,7 +28,7 @@ const config: UserConfig = {
     ],
   },
   locales: ["en"],
-  output: "public/locales/$LOCALE.json",
+  output: "locales/$LOCALE.json",
   input: ["src/**/*.{ts,tsx}"],
   sort: true,
 };

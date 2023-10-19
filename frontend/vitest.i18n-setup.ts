@@ -16,7 +16,7 @@ import * as i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import { beforeEach } from "vitest";
 
-import EN from "./public/locales/en.json";
+import EN from "./locales/en.json";
 
 beforeEach(() => {
   i18n.use(initReactI18next).init({
