@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@emotion/react": "^11.11.1",
-    "@fontsource/inter": "^5.0.13",
+    "@fontsource/inter": "^5.0.14",
     "@radix-ui/react-alert-dialog": "^1.0.5",
     "@types/ua-parser-js": "^0.7.38",
     "@urql/core": "^4.1.4",
