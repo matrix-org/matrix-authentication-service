@@ -1,5 +1,6 @@
 {
   "action": {
+    "back": "Back",
     "cancel": "Cancel",
     "continue": "Continue",
     "save": "Save"
@@ -131,9 +132,11 @@
     },
     "verify_email": {
       "code_field_label": "6-digit code",
-      "enter_code_prompt": "Enter the 6-digit code sent to <1>{{email}</1>",
+      "enter_code_prompt": "Enter the 6-digit code sent to <2>{{email}}</2>",
       "heading": "Verify your email",
       "invalid_code_alert": "Invalid code",
+      "resend_email": "Resend email",
+      "sent": "Sent!",
       "unknown_email": "Unknown email"
     }
   }

@@ -113,6 +113,7 @@ const BackButton: React.FC = () => {
   const { onClick, href, pending } = useNavigationLink({
     type: "profile",
   });
+  const { t } = useTranslation();
 
   return (
     <Button
@@ -122,7 +123,7 @@ const BackButton: React.FC = () => {
       Icon={IconArrowLeft}
       kind="tertiary"
     >
-      {pending ? "Loading..." : "Back"}
+      {pending ? t("common.loading") : t("action.back")}
     </Button>
   );
 };
@@ -187,7 +188,7 @@ const VerifyEmail: React.FC<{
           <Trans i18nKey="frontend.verify_email.enter_code_prompt">
             Enter the 6-digit code sent to{" "}
             <Text as="span" size="lg" weight="semibold">
-              {{ codeEmail }}
+              {{ email: codeEmail }}
             </Text>
           </Trans>
         </Text>
@@ -222,7 +223,9 @@ const VerifyEmail: React.FC<{
           disabled={pending || emailSent}
           onClick={onResendClick}
         >
-          {emailSent ? "Sent!" : "Resend email"}
+          {emailSent
+            ? t("frontend.verify_email.sent")
+            : t("frontend.verify_email.resend_email")}
         </Button>
         <BackButton />
       </Form>

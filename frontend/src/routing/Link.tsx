@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { useTranslation } from "react-i18next";
+
 import styles from "./Link.module.css";
 import { Route } from "./routes";
 import { useNavigationLink } from "./useNavigationLink";
@@ -24,6 +26,7 @@ const Link: React.FC<
   } & React.HTMLProps<HTMLAnchorElement>
 > = ({ route, children, kind, className, ...props }) => {
   const { onClick, href, pending } = useNavigationLink(route);
+  const { t } = useTranslation();
 
   const classNames = [
     kind === "button" ? styles.linkButton : "",
@@ -32,7 +35,7 @@ const Link: React.FC<
 
   return (
     <a href={href} onClick={onClick} className={classNames} {...props}>
-      {pending ? "Loading..." : children}
+      {pending ? t("common.loading") : children}
     </a>
   );
 };
