@@ -21,6 +21,8 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+  SCCACHE_GHA_ENABLED: "true"
+  RUSTC_WRAPPER: "sccache"
   IMAGE: ghcr.io/matrix-org/matrix-authentication-service
   IMAGE_SYN2MAS: ghcr.io/matrix-org/matrix-authentication-service/syn2mas
   BUILDCACHE: ghcr.io/matrix-org/matrix-authentication-service/buildcache
@@ -54,10 +56,8 @@ jobs:
             x86_64-apple-darwin
             aarch64-apple-darwin
 
-      - name: Setup Rust build cache
-        uses: Swatinem/rust-cache@v2.7.0
-        with:
-          save-if: "${{ github.event_name != 'pull_request' }}"
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.3
 
       - name: Install zig
         uses: goto-bus-stop/setup-zig@v2
