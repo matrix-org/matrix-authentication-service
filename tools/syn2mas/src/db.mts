@@ -40,6 +40,7 @@ export function connectToSynapseDatabase({
   database.args.database && (connection.database = database.args.database);
   database.args.user && (connection.user = database.args.user);
   database.args.password && (connection.password = database.args.password);
+  database.args.host && (connection.host = database.args.host);
   typeof database.args.port === "number" &&
     (connection.port = database.args.port);
   typeof database.args.port === "string" &&
@@ -66,6 +67,7 @@ export function connectToMASDatabase({
     database.database && (connection.database = database.database);
     database.username && (connection.user = database.username);
     database.password && (connection.password = database.password);
+    database.host && (connection.host = database.host);
     database.port && (connection.port = database.port);
   }
 
