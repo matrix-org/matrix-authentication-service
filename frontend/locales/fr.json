@@ -15,16 +15,16 @@
   "frontend": {
     "add_email_form": {
       "email_denied_alert": {
-        "text": "L'e-mail saisi n'est pas autorisé par la politique du serveur.",
-        "title": "E-mail refusé par la politique du serveur"
+        "text": "L’adresse e-mail saisie n’est pas autorisée par la politique du serveur.",
+        "title": "Adresse e-mail refusé par la politique du serveur"
       },
       "email_exists_alert": {
-        "text": "L'adresse e-mail saisie est déjà ajoutée à ce compte",
+        "text": "L’adresse e-mail saisie est déjà ajoutée à ce compte",
         "title": "Cette adresse e-mail existe déjà"
       },
       "email_field_label": "Ajouter une adresse e-mail",
       "email_invalid_alert": {
-        "text": "L'adresse e-mail saisie est invalide",
+        "text": "L’adresse e-mail saisie est invalide",
         "title": "Adresse e-mail invalide"
       }
     },
@@ -37,8 +37,8 @@
       "session_details_title": "Session"
     },
     "browser_sessions_overview": {
-      "body:one": "{{count}} session active",
-      "body:other": "{{count}} sessions actives",
+      "body:one": "{{count}} session active",
+      "body:other": "{{count}} sessions actives",
       "heading": "Navigateurs",
       "view_all_button": "Tout voir"
     },
@@ -50,7 +50,7 @@
     "device_type_icon_label": {
       "desktop": "Ordinateur",
       "mobile": "Mobile",
-      "unknown": "Type d'appareil inconnu",
+      "unknown": "Type d’appareil inconnu",
       "web": "Web"
     },
     "end_session_button": {
@@ -74,7 +74,7 @@
       "id": "Client ID",
       "name": "Nom",
       "policy": "Politique de confidentialité",
-      "terms": "Conditions d'utilisation"
+      "terms": "Conditions d’utilisation"
     },
     "oauth2_session_detail": {
       "client_details_name": "Nom",
@@ -82,7 +82,7 @@
       "session_details_title": "Session"
     },
     "pagination_controls": {
-      "total": "Total : {{totalCount}}"
+      "total": "Total : {{totalCount}}"
     },
     "selectable_session": {
       "label": "Sélectionner une session"
@@ -102,16 +102,16 @@
     "unknown_route": "Route inconnue {{route}}",
     "unverified_email_alert": {
       "button": "Examiner et confirmer",
-      "text:one": "Vous avez {{count}} adresse e-mail non vérifiée.",
-      "text:other": "Vous avez {{count}} adresses e-mail non vérifiées.",
-      "title": "E-mail non vérifié"
+      "text:one": "Vous avez {{count}} adresse e-mail non vérifiée.",
+      "text:other": "Vous avez {{count}} adresses e-mail non vérifiées.",
+      "title": "Adresse e-mail non vérifiée"
     },
     "user_email": {
       "delete_button_confirmation_modal": {
-        "body": "Êtes-vous sûr de vouloir supprimer cet adresse e-mail ?"
+        "body": "Êtes-vous sûr de vouloir supprimer cette adresse e-mail ?"
       },
-      "delete_button_title": "Supprimer l'adresse e-mail",
-      "email": "E-mail",
+      "delete_button_title": "Supprimer l’adresse e-mail",
+      "email": "Adresse e-mail",
       "make_primary_button": "Utiliser comme adresse principale",
       "primary_email": "Adresse e-mail principale",
       "retry_button": "Réessayer la vérification",
@@ -136,7 +136,7 @@
       "heading": "Vérification de votre adresse e-mail",
       "invalid_code_alert": "Code invalide",
       "resend_email": "Renvoyer l’e-mail",
-      "sent": "Envoyé !",
+      "sent": "Envoyé !",
       "unknown_email": "Adresse e-mail inconnue"
     }
   }

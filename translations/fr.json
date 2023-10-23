@@ -10,7 +10,7 @@
   "app": {
     "human_name": "Matrix Authentication Service",
     "name": "matrix-authentication-service",
-    "technical_description": "Document de découverte OpenID Connect : <a class=\"cpd-link\" data-kind=\"primary\" href=\"%(discovery_url)s\">%(discovery_url)s</a>"
+    "technical_description": "Document de découverte OpenID Connect : <a class=\"cpd-link\" data-kind=\"primary\" href=\"%(discovery_url)s\">%(discovery_url)s</a>"
   },
   "common": {
     "email_address": "Adresse e-mail",
@@ -36,7 +36,7 @@
     "emails": {
       "greeting": "Bonjour %(username)s,",
       "verify": {
-        "body_html": "Votre code de vérification pour confirmer cette adresse e-mail est : <strong>%(code)s</strong>",
+        "body_html": "Votre code de vérification pour confirmer cette adresse e-mail est : <strong>%(code)s</strong>",
         "body_text": "Votre code de vérification pour confirmer cette adresse e-mail est : %(code)s",
         "subject": "Votre code de vérification est : %(code)s"
       }
@@ -51,7 +51,7 @@
     "login": {
       "call_to_register": "Vous n’avez pas encore de compte ?",
       "continue_with_provider": "Poursuivre avec %(provider)s",
-      "description": "Veuillez vous connecter pour continuer :",
+      "description": "Veuillez vous connecter pour continuer :",
       "headline": "Se connecter",
       "link": {
         "description": "Associer votre compte <span class=\"break-keep text-links\">%(provider)s</span>",
@@ -101,11 +101,11 @@
         "choose_username": "Choisissez votre nom d'utilisateur",
         "create_account": "Créer un nouveau compte",
         "forced_display_name": "Utilisera le pseudonyme suivant",
-        "forced_email": "Utilisera l'adresse e-mail suivante",
+        "forced_email": "Utilisera l’adresse e-mail suivante",
         "forced_localpart": "Utilisera le nom d'utilisateur suivant",
         "link_existing": "Associer un compte existant",
         "suggested_display_name": "Importer le pseudonyme",
-        "suggested_email": "Importer l'adresse email"
+        "suggested_email": "Importer l’adresse email"
       },
       "suggest_link": {
         "action": "Associer",
@@ -114,7 +114,7 @@
     },
     "verify_email": {
       "code": "Code",
-      "description": "Veuillez saisir le code à 6 chiffres envoyé à : <span class=\"font-semibold\">%(email)s </span>",
+      "description": "Veuillez saisir le code à 6 chiffres envoyé à : <span class=\"font-semibold\">%(email)s </span>",
       "headline": "Vérification d'adresse email"
     }
   }
