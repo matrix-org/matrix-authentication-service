@@ -75,8 +75,30 @@ impl Transport {
     ) -> Result<Self, lettre::transport::smtp::Error> {
         let mut t = match mode {
             SmtpMode::Plain => AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(hostname),
-            SmtpMode::StartTls => AsyncSmtpTransport::<Tokio1Executor>::starttls_relay(hostname)?,
-            SmtpMode::Tls => AsyncSmtpTransport::<Tokio1Executor>::relay(hostname)?,
+            SmtpMode::StartTls => {
+                let tls_parameters =
+                    lettre::transport::smtp::client::TlsParameters::builder(hostname.to_owned())
+                        .dangerous_accept_invalid_certs(true)
+                        .build()?;
+
+                AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(hostname)
+                    .port(lettre::transport::smtp::SUBMISSION_PORT)
+                    .tls(lettre::transport::smtp::client::Tls::Required(
+                        tls_parameters,
+                    ))
+            }
+            SmtpMode::Tls => {
+                let tls_parameters =
+                    lettre::transport::smtp::client::TlsParameters::builder(hostname.to_owned())
+                        .dangerous_accept_invalid_certs(true)
+                        .build()?;
+
+                AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(hostname)
+                    .port(lettre::transport::smtp::SUBMISSIONS_PORT)
+                    .tls(lettre::transport::smtp::client::Tls::Wrapper(
+                        tls_parameters,
+                    ))
+            }
         };
 
         if let Some(credentials) = credentials {
