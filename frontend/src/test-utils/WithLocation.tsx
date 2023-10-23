@@ -12,17 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// @vitest-environment happy-dom
-
 import { Provider } from "jotai";
 import { useHydrateAtoms } from "jotai/utils";
+import { Suspense, useEffect } from "react";
 
-import { appConfigAtom, locationAtom } from "../routing";
+import { appConfigAtom, history, locationAtom } from "../routing";
 
 const HydrateLocation: React.FC<React.PropsWithChildren<{ path: string }>> = ({
   children,
   path,
 }) => {
+  useEffect(() => {
+    history.replace(path);
+  }, [path]);
+
   useHydrateAtoms([
     [appConfigAtom, { root: "/", graphqlEndpoint: "/graphql" }],
     [locationAtom, { pathname: path }],
@@ -47,7 +50,9 @@ export const WithLocation: React.FC<
 > = ({ children, path }) => {
   return (
     <Provider>
-      <HydrateLocation path={path || "/"}>{children}</HydrateLocation>
+      <Suspense>
+        <HydrateLocation path={path || "/"}>{children}</HydrateLocation>
+      </Suspense>
     </Provider>
   );
 };
